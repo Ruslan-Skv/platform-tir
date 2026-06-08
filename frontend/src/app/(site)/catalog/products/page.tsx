@@ -1,6 +1,8 @@
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { parseNextSearchParamsRecord } from '@/views/catalog/lib/catalog-search-params';
 import { buildCatalogMetadata } from '@/views/catalog/lib/catalog-seo';
+import { getCatalogHubCategoriesCached } from '@/views/catalog/lib/fetch-catalog-hub-categories';
+import { getCatalogHubPreviewCached } from '@/views/catalog/lib/fetch-catalog-hub-preview';
 import { getCatalogPageCached } from '@/views/catalog/lib/get-catalog-page-cached';
 import {
   loadCatalogRoutePage,
@@ -19,11 +21,17 @@ export default async function AllProductsPage({ searchParams }: AllProductsPageP
   const searchQueryString = searchParamsRecordToQueryString(sp);
 
   if (!parsed.branch) {
+    const [initialHubCategories, initialHubPreview] = await Promise.all([
+      getCatalogHubCategoriesCached(),
+      getCatalogHubPreviewCached('featured'),
+    ]);
     return (
       <CatalogPageShell
         categorySlug="all"
         categoryName="Каталог"
         initialPage={null}
+        initialHubCategories={initialHubCategories}
+        initialHubPreview={initialHubPreview}
         pagination={null}
       />
     );

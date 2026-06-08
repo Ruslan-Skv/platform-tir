@@ -1,4 +1,6 @@
+import type { CatalogHubPreviewResponse } from '@/shared/api/catalog-hub-preview';
 import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list';
+import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import type { CatalogPaginationLinksInput } from '@/views/catalog/lib/catalog-seo';
 import { CatalogPage, type CatalogPageProps } from '@/views/catalog/ui/CatalogPage';
 import { CatalogPaginationLinks } from '@/views/catalog/ui/CatalogPaginationLinks';
@@ -9,6 +11,8 @@ interface CatalogPageShellProps extends Omit<
   'initialPage' | 'initialList' | 'initialFilters'
 > {
   initialPage: PublicCatalogPageResponse | null;
+  initialHubCategories?: CategoryFilterOption[] | null;
+  initialHubPreview?: CatalogHubPreviewResponse | null;
   pagination?: CatalogPaginationLinksInput | null;
 }
 
@@ -17,6 +21,8 @@ interface CatalogPageShellProps extends Omit<
  */
 export function CatalogPageShell({
   initialPage,
+  initialHubCategories = null,
+  initialHubPreview = null,
   pagination,
   listUrl,
   ...catalogPageProps
@@ -27,7 +33,13 @@ export function CatalogPageShell({
       {initialPage?.products.length ? (
         <CatalogServerProductGrid products={initialPage.products} />
       ) : null}
-      <CatalogPage {...catalogPageProps} initialPage={initialPage} listUrl={listUrl} />
+      <CatalogPage
+        {...catalogPageProps}
+        initialPage={initialPage}
+        initialHubCategories={initialHubCategories}
+        initialHubPreview={initialHubPreview}
+        listUrl={listUrl}
+      />
     </>
   );
 }

@@ -182,6 +182,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/catalog-filters',
   },
   {
+    id: 'admin.settings.catalog-hub-preview',
+    label: 'Превью каталога',
+    path: '/admin/settings/catalog-hub-preview',
+  },
+  {
     id: 'admin.settings.catalog-dropdown-lists',
     label: 'Выпадающие списки',
     path: '/admin/settings/dropdown-lists',

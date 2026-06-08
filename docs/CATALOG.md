@@ -37,7 +37,7 @@ URL (?page, ?sort, ?branch, ?search, фильтры…)
 
 | URL | Поведение |
 |-----|-----------|
-| `/catalog/products` | **Хаб**: товары не показываются, пока не выбрана ветка `?branch=<slug>` |
+| `/catalog/products` | **Хаб**: превью 3–4 разделов по категориям (переключатель «Популярное / Новинки»), фильтры слева из **GET `/categories`**. Полный каталог — при `?branch=<slug>` |
 | `/catalog/products/entrance-doors` | Категория верхнего уровня |
 | `/catalog/products/entrance-doors/model-x` | Подкатегория |
 
@@ -73,6 +73,7 @@ URL (?page, ?sort, ?branch, ?search, фильтры…)
 | GET | `/products/catalog/list` | Только список (совместимость, отдельные клиенты) |
 | GET | `/products/catalog/filters` | Только faceted-фильтры |
 | GET | `/products/catalog/sitemap-data` | Slug категорий и товаров для `sitemap.xml` |
+| GET | `/products/catalog/hub-preview?mode=featured\|new` | Превью разделов на хабе `/catalog/products` |
 
 Удалён: **`GET /products/catalog/all`** — не использовать.
 
@@ -110,7 +111,11 @@ CREATE INDEX ON products("categoryId", "isActive", "sortOrder");
 | `views/catalog/lib/useCatalogPage.ts` | React Query: один запрос `/catalog/page` |
 | `views/catalog/lib/useCatalogFilters.ts` | Фильтры из того же query cache |
 | `views/catalog/lib/get-catalog-page-cached.ts` | `react/cache` — один fetch на SSR-рендер (page + metadata) |
-| `views/catalog/lib/load-catalog-route-page.ts` | Общая загрузка для route-страниц |
+| `views/catalog/lib/fetch-catalog-hub-categories.ts` | Категории для хаба (`GET /categories` → опции `?branch=`) |
+| `views/catalog/lib/fetch-catalog-hub-preview.ts` | SSR-превью хаба (`GET /products/catalog/hub-preview`) |
+| `views/catalog/lib/useCatalogHubCategories.ts` | React Query для хаба без `?branch=` |
+| `views/catalog/lib/useCatalogHubPreview.ts` | React Query для превью (режим featured/new) |
+| `views/catalog/ui/CatalogHubPreview/` | Блоки разделов на хабе, кнопка «Смотреть все» |
 | `views/catalog/ui/CatalogPageShell.tsx` | SSR-оболочка: prev/next, SEO-сетка, CatalogPage |
 | `views/catalog/ui/ProductsGrid/` | Сетка карточек, сортировка, inline-редактирование цены |
 | `views/catalog/lib/patch-catalog-page-cache.ts` | Обновление цены в query cache после PATCH |
@@ -163,7 +168,7 @@ CREATE INDEX ON products("categoryId", "isActive", "sortOrder");
 `isCacheableCatalogRequest()` — только индексируемые URL (см. robots выше).
 
 - **Next.js Data Cache**: `revalidate: 60` секунд.
-- Теги: `catalog-page-{slug}[-p{N}]`, общий `catalog-pages`.
+- Теги: `catalog-page-{slug}[-p{N}]`, общий `catalog-pages`, `catalog-hub-preview` (превью хаба, revalidate 60 с).
 
 ### Инвалидация после изменения товара
 
@@ -207,6 +212,7 @@ POST /api/revalidate
 
 - **Категории**: `/admin/catalog/categories`, дерево slug → публичные URL.
 - **Блоки фильтров каталога**: настройка фасетов по категории (наличие, производитель, атрибуты).
+- **Превью хаба каталога**: `/admin/settings/catalog-hub-preview` — до 4 корневых категорий, ручной подбор товаров для «Популярное» / «Новинки»; API `GET|PUT /admin/catalog/hub-preview`.
 - **Elasticsearch**: индекс `products`; переиндексация — см. `docs/MIGRATION-REG-TO-TIMEWEB.md` (`/admin/catalog/products/reindex-elasticsearch`).
 
 ---
@@ -229,7 +235,7 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml exec backe
 
 **Публичный каталог**
 
-- [ ] `/catalog/products` — без `branch` пустая витрина, подсказка выбрать категорию
+- [ ] `/catalog/products` — без `branch` видна колонка «Категории» (радио-выбор раздела), не пустая страница без фильтров
 - [ ] `/catalog/products?branch=entrance-doors` — товары и фильтры
 - [ ] `/catalog/products/entrance-doors` — SSR: View Source содержит ссылки в `#catalog-seo-fallback`
 - [ ] Фильтр производителя → счётчики других фасетов и подкатегорий уменьшаются

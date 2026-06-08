@@ -4,13 +4,17 @@ import React, { Suspense, useCallback, useEffect, useMemo, useRef, useState } fr
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import type { CatalogHubPreviewResponse } from '@/shared/api/catalog-hub-preview';
 import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list';
+import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import { parseCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
+import { useCatalogHubCategories } from '@/views/catalog/lib/useCatalogHubCategories';
 import { useCatalogProductsPerPage } from '@/views/catalog/lib/useCatalogProductsPerPage';
 
 import { Breadcrumbs } from '../Breadcrumbs';
+import { CatalogHubPreview } from '../CatalogHubPreview';
 import { CatalogItemListJsonLd } from '../CatalogItemListJsonLd';
 import { CatalogSeoFallbackController } from '../CatalogSeoFallbackController';
 import { FiltersSidebar } from '../FiltersSidebar';
@@ -25,6 +29,10 @@ export interface CatalogPageProps {
   parentCategorySlug?: string;
   /** SSR: список + фильтры одним ответом */
   initialPage?: PublicCatalogPageResponse | null;
+  /** SSR: категории для хаба /catalog/products (без ?branch=) */
+  initialHubCategories?: CategoryFilterOption[] | null;
+  /** SSR: превью разделов на хабе */
+  initialHubPreview?: CatalogHubPreviewResponse | null;
   listUrl?: string;
 }
 
@@ -47,9 +55,12 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   parentCategoryName,
   parentCategorySlug,
   initialPage = null,
+  initialHubCategories = null,
+  initialHubPreview = null,
   listUrl,
 }) => {
   const displayCategoryName = categoryName || categorySlug || 'Каталог';
+  const isCatalogHub = categorySlug === 'all';
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -66,8 +77,14 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const searchFromUrl = searchParams.get('search') ?? '';
   const prevSearchFromUrlRef = useRef<string | null>(null);
 
-  const facetBranchSlug =
-    categorySlug === 'all' ? searchParams.get('branch')?.trim() || null : null;
+  const facetBranchSlug = isCatalogHub ? searchParams.get('branch')?.trim() || null : null;
+
+  const isHubPreviewMode = isCatalogHub && !facetBranchSlug;
+  const needsHubCategories = isHubPreviewMode;
+  const { options: hubCategoryOptions, loading: hubCategoriesLoading } = useCatalogHubCategories(
+    needsHubCategories,
+    initialHubCategories
+  );
 
   const {
     filters: catalogFilters,
@@ -75,14 +92,28 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     hasFacets,
     categoryFilterOptions,
   } = useCatalogFilters(categorySlug, facetBranchSlug, parsedParams, productsPerPage, initialPage);
+
+  const effectiveCategoryOptions = useMemo(
+    () => (needsHubCategories ? hubCategoryOptions : categoryFilterOptions),
+    [needsHubCategories, hubCategoryOptions, categoryFilterOptions]
+  );
+
   const showFilterColumn = Boolean(
-    filtersLoading || hasFacets || priceBounds || categoryFilterOptions.length > 0
+    isCatalogHub ||
+    filtersLoading ||
+    hubCategoriesLoading ||
+    hasFacets ||
+    priceBounds ||
+    effectiveCategoryOptions.length > 0
   );
 
   const catalogUrlKey = useMemo(
     () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
     [pathname, searchParams]
   );
+
+  /** SEO-сетка только для списка товаров; ready с превью хаба не должен её скрывать. */
+  const seoFallbackReady = !isHubPreviewMode && catalogGridReady;
 
   const currentPage = useMemo(() => {
     if (totalPages > 0) {
@@ -169,7 +200,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   return (
     <div className={styles.catalogPage}>
-      <CatalogSeoFallbackController ready={catalogGridReady} />
+      <CatalogSeoFallbackController ready={seoFallbackReady} syncKey={catalogUrlKey} />
       {initialPage?.products?.length && listUrl ? (
         <CatalogItemListJsonLd products={initialPage.products} listUrl={listUrl} />
       ) : null}
@@ -193,10 +224,10 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
           <aside className={styles.filtersSidebar}>
             <FiltersSidebar
               filters={catalogFilters}
-              loading={filtersLoading}
+              loading={filtersLoading || hubCategoriesLoading}
               priceBounds={priceBounds}
-              categoryOptions={categoryFilterOptions}
-              parentCategoryRadioMode={categorySlug === 'all'}
+              categoryOptions={effectiveCategoryOptions}
+              parentCategoryRadioMode={isCatalogHub}
               catalogBranchRadioGroupSuffix="desktop"
             />
           </aside>
@@ -215,31 +246,41 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
                 mobileOpen={mobileFiltersOpen}
                 onClose={() => setMobileFiltersOpen(false)}
                 filters={catalogFilters}
-                loading={filtersLoading}
+                loading={filtersLoading || hubCategoriesLoading}
                 priceBounds={priceBounds}
-                categoryOptions={categoryFilterOptions}
-                parentCategoryRadioMode={categorySlug === 'all'}
+                categoryOptions={effectiveCategoryOptions}
+                parentCategoryRadioMode={isCatalogHub}
                 catalogBranchRadioGroupSuffix="mobile"
               />
             </div>
           </div>
         ) : null}
 
-        {/* Колонка с товарами */}
+        {/* Колонка с товарами или превью хаба */}
         <main className={styles.productsSection}>
-          <ProductsGrid
-            categorySlug={categorySlug}
-            categoryName={displayCategoryName}
-            onTotalPagesChange={setTotalPages}
-            onSortChange={goToFirstCatalogPage}
-            onProductsPerPageLayoutChange={goToFirstCatalogPage}
-            onBasePriceBoundsChange={setPriceBounds}
-            onCatalogGridReady={setCatalogGridReady}
-            showMobileFiltersButton={showFilterColumn}
-            onMobileFiltersOpen={() => setMobileFiltersOpen(true)}
-            initialPage={initialPage}
-            facetBranchSlug={facetBranchSlug}
-          />
+          {isHubPreviewMode ? (
+            <CatalogHubPreview
+              categoryName={displayCategoryName}
+              initialPreview={initialHubPreview}
+              showMobileFiltersButton={showFilterColumn}
+              onMobileFiltersOpen={() => setMobileFiltersOpen(true)}
+              onPreviewReady={setCatalogGridReady}
+            />
+          ) : (
+            <ProductsGrid
+              categorySlug={categorySlug}
+              categoryName={displayCategoryName}
+              onTotalPagesChange={setTotalPages}
+              onSortChange={goToFirstCatalogPage}
+              onProductsPerPageLayoutChange={goToFirstCatalogPage}
+              onBasePriceBoundsChange={setPriceBounds}
+              onCatalogGridReady={setCatalogGridReady}
+              showMobileFiltersButton={showFilterColumn}
+              onMobileFiltersOpen={() => setMobileFiltersOpen(true)}
+              initialPage={initialPage}
+              facetBranchSlug={facetBranchSlug}
+            />
+          )}
         </main>
       </div>
 

@@ -386,6 +386,18 @@ export class PublicCatalogService {
       : [];
   }
 
+  /**
+   * ?cat=slug родителя должен включать товары из подкатегорий (как applyCatalogFilters на клиенте).
+   */
+  private matchesCategoryCatFilter(
+    category: { slug: string; parent: { slug: string } | null },
+    allowed: Set<string>,
+  ): boolean {
+    if (allowed.has(category.slug)) return true;
+    const parentSlug = category.parent?.slug;
+    return parentSlug != null && allowed.has(parentSlug);
+  }
+
   private getAvailability(stock: number, onOrder: boolean): string {
     if (stock > 0) return 'in_stock';
     if (onOrder) return 'on_order';
@@ -434,7 +446,7 @@ export class PublicCatalogService {
 
     if (!options.excludeCat && params.cat?.length) {
       const allowed = new Set(params.cat);
-      result = result.filter((p) => allowed.has(p.category.slug));
+      result = result.filter((p) => this.matchesCategoryCatFilter(p.category, allowed));
     }
 
     if (!options.excludeAvail && params.avail?.length) {
@@ -580,6 +592,12 @@ export class PublicCatalogService {
         include: { badge: true },
       },
     };
+  }
+
+  /** Карточки товаров для публичного каталога в заданном порядке id. */
+  async getPublicCardsByIds(orderedIds: string[]) {
+    if (orderedIds.length === 0) return [];
+    return this.loadPublicCardsByIds(orderedIds);
   }
 
   private async loadPublicCardsByIds(orderedIds: string[]) {

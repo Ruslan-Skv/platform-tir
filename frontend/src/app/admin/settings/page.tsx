@@ -48,6 +48,13 @@ export default function AdminSettingsPage() {
           Блок фильтров
         </Link>
         <Link
+          href="/admin/settings/catalog-hub-preview"
+          className={styles.subtitle}
+          style={{ color: '#4f46e5', textDecoration: 'underline' }}
+        >
+          Превью каталога (хаб)
+        </Link>
+        <Link
           href="/admin/settings/notifications"
           className={styles.subtitle}
           style={{ color: '#4f46e5', textDecoration: 'underline' }}

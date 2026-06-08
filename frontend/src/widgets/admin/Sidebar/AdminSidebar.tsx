@@ -390,6 +390,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.catalog-filters',
       },
       {
+        label: 'Превью каталога',
+        href: '/admin/settings/catalog-hub-preview',
+        resourceId: 'admin.settings.catalog-hub-preview',
+      },
+      {
         label: 'Личный кабинет',
         href: '/admin/settings/user-cabinet',
         resourceId: 'admin.settings.user-cabinet',

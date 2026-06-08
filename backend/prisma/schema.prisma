@@ -1277,6 +1277,7 @@ model Category {
   attributes  CategoryAttribute[]
   products    Product[]
   catalogFilterBlock CatalogFilterBlock?
+  catalogHubPreviewSections CatalogHubPreviewSection[]
   createdBy   User?               @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("categories")
@@ -1358,6 +1359,7 @@ model Product {
   components       ProductComponent[]
   cardVariants          ProductCardVariant[]
   cardBadgeSelections   ProductCardBadgeOnProduct[]
+  catalogHubPreviewPicks CatalogHubPreviewProductPick[]
 
   @@index([categoryId, isActive, sortOrder])
   @@map("products")
@@ -2462,4 +2464,47 @@ model OfficeIncassation {
   @@index([officeId])
   @@index([incassationDate])
   @@map("office_incassations")
+}
+
+/// Настройки превью на хабе каталога /catalog/products (без ?branch=)
+model CatalogHubPreviewSettings {
+  id               String                     @id @default("main")
+  productsPerGroup Int                        @default(6)
+  updatedAt        DateTime                   @updatedAt
+  sections         CatalogHubPreviewSection[]
+
+  @@map("catalog_hub_preview_settings")
+}
+
+/// Раздел превью: категория верхнего уровня с подборкой товаров
+model CatalogHubPreviewSection {
+  id         String   @id @default(cuid())
+  settingsId String   @default("main")
+  categoryId String
+  sortOrder  Int      @default(0)
+  isActive   Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  settings     CatalogHubPreviewSettings      @relation(fields: [settingsId], references: [id], onDelete: Cascade)
+  category     Category                       @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  productPicks CatalogHubPreviewProductPick[]
+
+  @@unique([settingsId, categoryId])
+  @@map("catalog_hub_preview_sections")
+}
+
+/// Ручной подбор товаров для раздела превью (featured = популярное, new = новинки)
+model CatalogHubPreviewProductPick {
+  id        String @id @default(cuid())
+  sectionId String
+  productId String
+  mode      String
+  sortOrder Int    @default(0)
+
+  section CatalogHubPreviewSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  product Product                  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([sectionId, productId, mode])
+  @@map("catalog_hub_preview_product_picks")
 }

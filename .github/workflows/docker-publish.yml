@@ -31,6 +31,11 @@ jobs:
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
+        with:
+          # docker-container тянет moby/buildkit с registry-1.docker.io при boot builder —
+          # на GitHub Actions периодически Client.Timeout. Встроенный driver: docker
+          # использует BuildKit раннера, GHA cache (type=gha) продолжает работать.
+          driver: docker
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
