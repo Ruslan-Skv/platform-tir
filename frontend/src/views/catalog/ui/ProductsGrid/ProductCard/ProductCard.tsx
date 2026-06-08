@@ -23,6 +23,7 @@ import { isPublicPriceDraftDirty } from '@/shared/lib/public-price-draft';
 import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
+import { formatCatalogPriceWithRuble } from '@/views/catalog/lib/format-catalog-price';
 import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 import styles from './ProductCard.module.css';
@@ -501,7 +502,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                 <Wallet size={18} strokeWidth={2} />
               </span>
               {oldPrice && !isEditingPublicPrice && (
-                <span className={styles.oldPrice}>{oldPrice.toLocaleString()} ₽</span>
+                <span className={styles.oldPrice}>{formatCatalogPriceWithRuble(oldPrice)}</span>
               )}
               {isEditingPublicPrice ? (
                 <span className={styles.priceEditRow}>
@@ -516,7 +517,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                   <span className={styles.priceCurrency}>₽</span>
                 </span>
               ) : (
-                <span className={styles.finalPrice}>{finalPrice.toLocaleString()} ₽</span>
+                <span className={styles.finalPrice}>{formatCatalogPriceWithRuble(finalPrice)}</span>
               )}
             </div>
             {showPublicPriceEdit ? (

@@ -68,18 +68,16 @@ export default async function RootLayout({
   }
 
   return (
-    <html
-      lang="ru"
-      suppressHydrationWarning
-      data-mobile-catalog-columns={serverDefaultMobileCatalogColumns === 2 ? '2' : undefined}
-    >
-      <body>
-        {/* Тема и сетка каталога на html до React — без мигания при перезагрузке */}
+    <html lang="ru" suppressHydrationWarning>
+      <head>
+        {/* До гидратации: тема и колонки каталога (только скрипт, без SSR-атрибута на html) */}
         <script
           dangerouslySetInnerHTML={{
             __html: buildSiteBootstrapScript(serverDefaultMobileCatalogColumns),
           }}
         />
+      </head>
+      <body>
         <StoreProvider>
           <ThemeInitializer>{children}</ThemeInitializer>
         </StoreProvider>

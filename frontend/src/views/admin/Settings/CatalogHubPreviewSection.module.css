@@ -110,6 +110,18 @@
   background: #f7fafc;
 }
 
+.searchError {
+  color: #c53030;
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
+.searchEmpty {
+  color: #718096;
+  font-size: 0.875rem;
+  margin: 0.25rem 0 0;
+}
+
 .emptyPick {
   color: #718096;
   font-size: 0.875rem;

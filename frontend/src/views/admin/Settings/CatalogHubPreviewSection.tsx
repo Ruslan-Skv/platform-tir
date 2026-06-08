@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import {
@@ -43,44 +43,80 @@ function ProductPickEditor({
   mode,
   categoryId,
   products,
-  getAuthHeaders,
   onChange,
 }: {
   title: string;
   mode: PickMode;
   categoryId: string;
   products: AdminHubPreviewProductRef[];
-  getAuthHeaders: () => Record<string, string>;
   onChange: (products: AdminHubPreviewProductRef[]) => void;
 }) {
+  const { getAuthHeaders } = useAuth();
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<AdminProductListItem[]>([]);
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState<string | null>(null);
+  const [hasSearched, setHasSearched] = useState(false);
+  const searchRequestIdRef = useRef(0);
 
-  const runSearch = useCallback(async () => {
+  const runSearch = useCallback(
+    async (query: string) => {
+      const trimmed = query.trim();
+      if (!trimmed) {
+        setResults([]);
+        setSearchError(null);
+        setHasSearched(false);
+        return;
+      }
+
+      const requestId = ++searchRequestIdRef.current;
+      setSearching(true);
+      setSearchError(null);
+      setHasSearched(true);
+
+      try {
+        const response = await fetchAdminProductsList(
+          {
+            search: trimmed,
+            limit: 20,
+            page: 1,
+          },
+          getAuthHeaders()
+        );
+
+        if (requestId !== searchRequestIdRef.current) return;
+
+        const pickedIds = new Set(products.map((p) => p.id));
+        setResults(response.data.filter((item) => !pickedIds.has(item.id)));
+      } catch (error) {
+        if (requestId !== searchRequestIdRef.current) return;
+        setResults([]);
+        setSearchError(
+          error instanceof Error ? error.message : 'Не удалось выполнить поиск товаров'
+        );
+      } finally {
+        if (requestId === searchRequestIdRef.current) {
+          setSearching(false);
+        }
+      }
+    },
+    [getAuthHeaders, products]
+  );
+
+  useEffect(() => {
     if (!search.trim()) {
       setResults([]);
+      setSearchError(null);
+      setHasSearched(false);
       return;
     }
-    setSearching(true);
-    try {
-      const response = await fetchAdminProductsList(
-        {
-          search: search.trim(),
-          categoryId: categoryId || undefined,
-          isActive: true,
-          limit: 15,
-          page: 1,
-        },
-        getAuthHeaders()
-      );
-      setResults(response.data);
-    } catch {
-      setResults([]);
-    } finally {
-      setSearching(false);
-    }
-  }, [categoryId, getAuthHeaders, search]);
+
+    const timer = window.setTimeout(() => {
+      void runSearch(search);
+    }, 350);
+
+    return () => window.clearTimeout(timer);
+  }, [search, runSearch]);
 
   const addProduct = (item: AdminProductListItem) => {
     if (products.some((p) => p.id === item.id)) return;
@@ -137,19 +173,25 @@ function ProductPickEditor({
           onKeyDown={(e) => {
             if (e.key === 'Enter') {
               e.preventDefault();
-              void runSearch();
+              void runSearch(search);
             }
           }}
         />
         <button
           type="button"
           className={sectionStyles.secondaryButton}
-          onClick={() => void runSearch()}
+          onClick={() => void runSearch(search)}
           disabled={searching || !search.trim()}
         >
           {searching ? 'Поиск…' : 'Найти'}
         </button>
       </div>
+      {categoryId ? (
+        <p className={sectionStyles.hint}>
+          Поиск по всему каталогу. Категория раздела задаёт заголовок блока на витрине.
+        </p>
+      ) : null}
+      {searchError ? <p className={sectionStyles.searchError}>{searchError}</p> : null}
       {results.length > 0 ? (
         <div className={sectionStyles.searchResults}>
           {results.map((item) => (
@@ -160,10 +202,14 @@ function ProductPickEditor({
               onClick={() => addProduct(item)}
             >
               <span>{item.name}</span>
-              <span className={sectionStyles.pickItemMeta}>{item.sku || item.category.name}</span>
+              <span className={sectionStyles.pickItemMeta}>
+                {[item.sku, item.category.name].filter(Boolean).join(' · ')}
+              </span>
             </button>
           ))}
         </div>
+      ) : hasSearched && !searching && !searchError ? (
+        <p className={sectionStyles.searchEmpty}>Ничего не найдено. Попробуйте другой запрос.</p>
       ) : null}
     </div>
   );
@@ -413,7 +459,6 @@ export function CatalogHubPreviewSection() {
                 mode="featured"
                 categoryId={section.categoryId}
                 products={section.featuredProducts}
-                getAuthHeaders={getAuthHeaders}
                 onChange={(featuredProducts) =>
                   updateSection(section.localKey, { featuredProducts })
                 }
@@ -424,7 +469,6 @@ export function CatalogHubPreviewSection() {
                 mode="new"
                 categoryId={section.categoryId}
                 products={section.newProducts}
-                getAuthHeaders={getAuthHeaders}
                 onChange={(newProducts) => updateSection(section.localKey, { newProducts })}
               />
             </article>
