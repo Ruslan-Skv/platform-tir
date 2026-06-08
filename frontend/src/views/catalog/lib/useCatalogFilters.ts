@@ -30,17 +30,19 @@ export function useCatalogFilters(
     return b ? b : null;
   }, [categorySlug, facetBranchSlug]);
 
-  const filters = data?.filters?.filters ?? [];
+  /** На хабе без ?branch= запрос отключён — не показывать фасеты предыдущей ветки из кэша. */
+  const filters = filtersSlug ? (data?.filters?.filters ?? []) : [];
   const hasFacets = filters.length > 0;
-  const categoryFilterOptions =
-    data?.filters?.categoryFilterOptions ?? data?.categoryFilterOptions ?? [];
+  const categoryFilterOptions = filtersSlug
+    ? (data?.filters?.categoryFilterOptions ?? data?.categoryFilterOptions ?? [])
+    : [];
 
   return {
     filters,
-    branch: data?.filters?.branch ?? null,
+    branch: filtersSlug ? (data?.filters?.branch ?? null) : null,
     categoryFilterOptions,
     loading: Boolean(filtersSlug) && isLoading && !data,
-    refreshing: isFetching && Boolean(data),
+    refreshing: Boolean(filtersSlug) && isFetching && Boolean(data),
     hasFacets,
   };
 }

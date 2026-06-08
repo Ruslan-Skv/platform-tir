@@ -2,7 +2,9 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 import { parseNextSearchParamsRecord } from '@/views/catalog/lib/catalog-search-params';
 import { buildCatalogMetadata } from '@/views/catalog/lib/catalog-seo';
+import { getCatalogHubCategoriesCached } from '@/views/catalog/lib/fetch-catalog-hub-categories';
 import { getCatalogPageCached } from '@/views/catalog/lib/get-catalog-page-cached';
+import { isCacheableCatalogRequest } from '@/views/catalog/lib/is-cacheable-catalog-request';
 import {
   loadCatalogRoutePage,
   searchParamsRecordToQueryString,
@@ -55,12 +57,15 @@ export default async function SubcategoryPage({ params, searchParams }: Subcateg
   const pathname = `/catalog/products/${category}/${subcategory}`;
   const searchQueryString = searchParamsRecordToQueryString(sp);
 
-  const route = await loadCatalogRoutePage({
-    categorySlug,
-    parsed,
-    pathname,
-    searchQueryString,
-  });
+  const [route, initialHubCategories] = await Promise.all([
+    loadCatalogRoutePage({
+      categorySlug,
+      parsed,
+      pathname,
+      searchQueryString,
+    }),
+    getCatalogHubCategoriesCached(),
+  ]);
 
   return (
     <CatalogPageShell
@@ -69,8 +74,10 @@ export default async function SubcategoryPage({ params, searchParams }: Subcateg
       parentCategoryName={parentCategoryName}
       parentCategorySlug={category}
       initialPage={route.initialPage}
+      initialHubCategories={initialHubCategories}
       listUrl={route.listUrl}
       pagination={route.pagination}
+      showSeoProductGrid={isCacheableCatalogRequest(parsed)}
     />
   );
 }

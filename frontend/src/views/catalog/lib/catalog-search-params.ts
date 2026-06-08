@@ -127,6 +127,33 @@ export function buildPublicCatalogListQuery(input: PublicCatalogListQueryInput):
   return qs;
 }
 
+/** Полная сигнатура запроса списка каталога — для сопоставления SSR initialData с URL. */
+export function buildCatalogPageRequestSignature(
+  categorySlug: string | undefined,
+  parsed: ParsedCatalogSearchParams,
+  limit: number
+): string {
+  const attrParts = Object.keys(parsed.attributes)
+    .sort()
+    .map((key) => `${key}=${[...parsed.attributes[key]].sort().join(',')}`);
+  const parts = [
+    `category=${categorySlug ?? ''}`,
+    `limit=${limit}`,
+    `page=${parsed.page}`,
+    `sort=${parsed.sort}`,
+    `search=${parsed.search}`,
+    `branch=${parsed.branch ?? ''}`,
+    `price_min=${parsed.priceMin}`,
+    `price_max=${parsed.priceMax}`,
+    ...parsed.avail.map((v) => `avail=${v}`),
+    ...parsed.mfr.map((v) => `mfr=${v}`),
+    ...parsed.cat.map((v) => `cat=${v}`),
+    ...attrParts,
+  ];
+  parts.sort();
+  return parts.join('&');
+}
+
 /** Сигнатура фильтров без page/search/sort — для сброса страницы. */
 export function catalogFilterSignature(params: URLSearchParams): string {
   const parsed = parseCatalogSearchParams(params);

@@ -9,6 +9,7 @@ import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list
 import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import { parseCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
+import { resolveActiveCatalogBranchSlug } from '@/views/catalog/lib/resolve-active-catalog-branch-slug';
 import { useCatalogFilters } from '@/views/catalog/lib/useCatalogFilters';
 import { useCatalogHubCategories } from '@/views/catalog/lib/useCatalogHubCategories';
 import { useCatalogProductsPerPage } from '@/views/catalog/lib/useCatalogProductsPerPage';
@@ -61,6 +62,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 }) => {
   const displayCategoryName = categoryName || categorySlug || 'Каталог';
   const isCatalogHub = categorySlug === 'all';
+  const isCategoryPage = Boolean(categorySlug && !isCatalogHub);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -71,7 +73,6 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [didRestoreScroll, setDidRestoreScroll] = useState(false);
   const [priceBounds, setPriceBounds] = useState<{ min: number; max: number } | null>(null);
-  const [catalogGridReady, setCatalogGridReady] = useState(false);
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
   const searchFromUrl = searchParams.get('search') ?? '';
@@ -80,8 +81,26 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
   const facetBranchSlug = isCatalogHub ? searchParams.get('branch')?.trim() || null : null;
 
   const isHubPreviewMode = isCatalogHub && !facetBranchSlug;
+
+  const [catalogGridReady, setCatalogGridReady] = useState(() =>
+    Boolean(initialPage?.products?.length && !(isCatalogHub && !searchParams.get('branch')?.trim()))
+  );
+
+  const prevHubPreviewRef = useRef(isHubPreviewMode);
+  useEffect(() => {
+    if (prevHubPreviewRef.current && !isHubPreviewMode) {
+      setCatalogGridReady(false);
+    }
+    prevHubPreviewRef.current = isHubPreviewMode;
+  }, [isHubPreviewMode]);
+
+  useEffect(() => {
+    if (isHubPreviewMode) {
+      setPriceBounds(null);
+    }
+  }, [isHubPreviewMode]);
   const { options: hubCategoryOptions, loading: hubCategoriesLoading } = useCatalogHubCategories(
-    isCatalogHub,
+    isCatalogHub || isCategoryPage,
     initialHubCategories
   );
 
@@ -92,7 +111,26 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     categoryFilterOptions,
   } = useCatalogFilters(categorySlug, facetBranchSlug, parsedParams, productsPerPage, initialPage);
 
+  const catalogBranchOptions = useMemo(
+    () => hubCategoryOptions.filter((o) => o.depth !== 1),
+    [hubCategoryOptions]
+  );
+
+  const activeCatalogBranchSlug = useMemo(
+    () =>
+      isCategoryPage
+        ? resolveActiveCatalogBranchSlug(categorySlug, parentCategorySlug, hubCategoryOptions)
+        : null,
+    [isCategoryPage, categorySlug, parentCategorySlug, hubCategoryOptions]
+  );
+
+  const subcategoryFilterOptions = useMemo(
+    () => categoryFilterOptions.filter((o) => o.depth === 1),
+    [categoryFilterOptions]
+  );
+
   const effectiveCategoryOptions = useMemo(() => {
+    if (isCategoryPage) return subcategoryFilterOptions;
     if (!isCatalogHub) return categoryFilterOptions;
     if (!facetBranchSlug) return hubCategoryOptions;
     const roots = hubCategoryOptions.filter((o) => o.depth !== 1);
@@ -104,10 +142,18 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     );
     const rootWithCount = facetedRoot ? { ...activeRoot, count: facetedRoot.count } : activeRoot;
     return [rootWithCount, ...children];
-  }, [isCatalogHub, facetBranchSlug, hubCategoryOptions, categoryFilterOptions]);
+  }, [
+    isCategoryPage,
+    isCatalogHub,
+    facetBranchSlug,
+    hubCategoryOptions,
+    categoryFilterOptions,
+    subcategoryFilterOptions,
+  ]);
 
   const showFilterColumn = Boolean(
     isCatalogHub ||
+    (isCategoryPage && catalogBranchOptions.length > 0) ||
     filtersLoading ||
     hubCategoriesLoading ||
     hasFacets ||
@@ -119,9 +165,6 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
     () => `${pathname}${searchParams.size > 0 ? `?${searchParams.toString()}` : ''}`,
     [pathname, searchParams]
   );
-
-  /** SEO-сетка только для списка товаров; ready с превью хаба не должен её скрывать. */
-  const seoFallbackReady = !isHubPreviewMode && catalogGridReady;
 
   const currentPage = useMemo(() => {
     if (totalPages > 0) {
@@ -208,7 +251,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   return (
     <div className={styles.catalogPage}>
-      <CatalogSeoFallbackController ready={seoFallbackReady} syncKey={catalogUrlKey} />
+      <CatalogSeoFallbackController syncKey={catalogUrlKey} />
       {initialPage?.products?.length && listUrl ? (
         <CatalogItemListJsonLd products={initialPage.products} listUrl={listUrl} />
       ) : null}
@@ -236,6 +279,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
               priceBounds={priceBounds}
               categoryOptions={effectiveCategoryOptions}
               parentCategoryRadioMode={isCatalogHub}
+              categoryPageBranchMode={isCategoryPage}
+              catalogBranchOptions={catalogBranchOptions}
+              activeCatalogBranchSlug={activeCatalogBranchSlug}
               catalogBranchRadioGroupSuffix="desktop"
             />
           </aside>
@@ -258,6 +304,9 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
                 priceBounds={priceBounds}
                 categoryOptions={effectiveCategoryOptions}
                 parentCategoryRadioMode={isCatalogHub}
+                categoryPageBranchMode={isCategoryPage}
+                catalogBranchOptions={catalogBranchOptions}
+                activeCatalogBranchSlug={activeCatalogBranchSlug}
                 catalogBranchRadioGroupSuffix="mobile"
               />
             </div>

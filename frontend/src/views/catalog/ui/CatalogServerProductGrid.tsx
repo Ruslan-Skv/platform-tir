@@ -10,14 +10,19 @@ interface CatalogServerProductGridProps {
 }
 
 /**
- * SSR-разметка карточек для SEO: видна до гидратации клиентской сетки,
- * затем скрывается через атрибут hidden (см. CatalogPage).
+ * SSR-разметка карточек для SEO: в HTML для краулеров, но скрыта от пользователей
+ * (атрибут hidden + CatalogSeoFallbackController), чтобы не мелькала до гидратации.
  */
 export function CatalogServerProductGrid({ products }: CatalogServerProductGridProps) {
   if (products.length === 0) return null;
 
   return (
-    <section id="catalog-seo-fallback" className={styles.seoGrid} aria-label="Товары в категории">
+    <section
+      id="catalog-seo-fallback"
+      className={styles.seoGrid}
+      aria-label="Товары в категории"
+      hidden
+    >
       <ul className={styles.seoList}>
         {products.map((product) => {
           const image = product.images?.[0];

@@ -14,6 +14,8 @@ interface CatalogPageShellProps extends Omit<
   initialHubCategories?: CategoryFilterOption[] | null;
   initialHubPreview?: CatalogHubPreviewResponse | null;
   pagination?: CatalogPaginationLinksInput | null;
+  /** SSR-сетка только для индексируемых URL без фильтров/сортировки в query */
+  showSeoProductGrid?: boolean;
 }
 
 /**
@@ -25,12 +27,13 @@ export function CatalogPageShell({
   initialHubPreview = null,
   pagination,
   listUrl,
+  showSeoProductGrid = false,
   ...catalogPageProps
 }: CatalogPageShellProps) {
   return (
     <>
       {pagination ? <CatalogPaginationLinks {...pagination} /> : null}
-      {initialPage?.products.length ? (
+      {showSeoProductGrid && initialPage?.products.length ? (
         <CatalogServerProductGrid products={initialPage.products} />
       ) : null}
       <CatalogPage

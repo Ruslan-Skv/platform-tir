@@ -8,7 +8,7 @@ import {
   fetchCatalogHubCategories,
 } from '@/views/catalog/lib/fetch-catalog-hub-categories';
 
-/** Категории для выбора ?branch= на хабе /catalog/products */
+/** Корневые категории каталога: хаб /catalog/products и переключатель разделов на /catalog/products/[slug] */
 export function useCatalogHubCategories(
   enabled: boolean,
   initialOptions?: CategoryFilterOption[] | null

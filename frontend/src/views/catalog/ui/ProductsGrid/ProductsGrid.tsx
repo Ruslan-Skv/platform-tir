@@ -160,7 +160,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
   );
 
   const handleSortChange = (sort: PublicCatalogSort) => {
-    const next = new URLSearchParams(searchParams.toString());
+    const next = newURLSearchParamsLive(pathname, searchParams.toString());
     if (sort === 'default') {
       next.delete('sort');
     } else {
@@ -169,7 +169,8 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
     next.delete('page');
     const q = next.toString();
     router.replace(q ? `${pathname}?${q}` : pathname, { scroll: false });
-    onSortChange?.();
+    // Не вызываем onSortChange (goToFirstCatalogPage): второй router.replace с устаревшими
+    // searchParams затирает только что выставленный sort.
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 

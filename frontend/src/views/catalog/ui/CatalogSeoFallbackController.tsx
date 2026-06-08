@@ -2,24 +2,18 @@
 
 import { useLayoutEffect } from 'react';
 
-/** Скрывает SSR SEO-сетку после загрузки клиентского каталога. */
+/** Держит SSR SEO-сетку скрытой; контент остаётся в DOM для краулеров. */
 export function CatalogSeoFallbackController({
-  ready,
   syncKey,
 }: {
-  ready: boolean;
-  /** При смене URL (ветка, фильтры) в DOM может появиться новая SSR-сетка — пересинхронизировать hidden. */
+  /** При смене URL в DOM может появиться новая SSR-сетка — снова скрыть. */
   syncKey: string;
 }) {
   useLayoutEffect(() => {
     const el = document.getElementById('catalog-seo-fallback');
     if (!el) return;
-    if (ready) {
-      el.setAttribute('hidden', '');
-    } else {
-      el.removeAttribute('hidden');
-    }
-  }, [ready, syncKey]);
+    el.setAttribute('hidden', '');
+  }, [syncKey]);
 
   return null;
 }

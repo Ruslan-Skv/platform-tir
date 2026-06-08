@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
@@ -9,7 +9,10 @@ import {
   type PublicCatalogPageResponse,
   fetchPublicCatalogPage,
 } from '@/shared/api/public-catalog-list';
-import type { ParsedCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
+import {
+  type ParsedCatalogSearchParams,
+  buildCatalogPageRequestSignature,
+} from '@/views/catalog/lib/catalog-search-params';
 
 export function useCatalogPage(
   categorySlug: string | undefined,
@@ -30,8 +33,21 @@ export function useCatalogPage(
 
   const queryKey = useMemo(() => ({ categorySlug, parsed, limit }), [categorySlug, parsed, limit]);
 
+  /** SSR-ответ применим только к тому же запросу, что и при первом рендере (sort, фильтры, page). */
+  const initialRequestSignatureRef = useRef<string | null>(null);
+  if (initialRequestSignatureRef.current === null && initialPage) {
+    initialRequestSignatureRef.current = buildCatalogPageRequestSignature(
+      categorySlug,
+      parsed,
+      limit
+    );
+  }
+
+  const requestSignature = buildCatalogPageRequestSignature(categorySlug, parsed, limit);
   const initialData =
-    initialPage && initialPage.page === parsed.page && initialPage.limit === limit
+    initialPage &&
+    initialRequestSignatureRef.current !== null &&
+    initialRequestSignatureRef.current === requestSignature
       ? initialPage
       : undefined;
 

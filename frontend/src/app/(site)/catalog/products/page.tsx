@@ -4,6 +4,7 @@ import { buildCatalogMetadata } from '@/views/catalog/lib/catalog-seo';
 import { getCatalogHubCategoriesCached } from '@/views/catalog/lib/fetch-catalog-hub-categories';
 import { getCatalogHubPreviewCached } from '@/views/catalog/lib/fetch-catalog-hub-preview';
 import { getCatalogPageCached } from '@/views/catalog/lib/get-catalog-page-cached';
+import { isCacheableCatalogRequest } from '@/views/catalog/lib/is-cacheable-catalog-request';
 import {
   loadCatalogRoutePage,
   searchParamsRecordToQueryString,
@@ -51,6 +52,7 @@ export default async function AllProductsPage({ searchParams }: AllProductsPageP
       initialPage={route.initialPage}
       listUrl={route.listUrl}
       pagination={route.pagination}
+      showSeoProductGrid={isCacheableCatalogRequest(parsed)}
     />
   );
 }

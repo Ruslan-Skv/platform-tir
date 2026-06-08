@@ -35,6 +35,14 @@ export interface FiltersSidebarProps {
    */
   parentCategoryRadioMode?: boolean;
   /**
+   * Страница категории (/catalog/products/[slug]): переключение раздела — переход на другой slug.
+   */
+  categoryPageBranchMode?: boolean;
+  /** Корневые разделы каталога (с хаба) для categoryPageBranchMode */
+  catalogBranchOptions?: CategoryFilterOption[];
+  /** Текущий выбранный корневой раздел на странице категории */
+  activeCatalogBranchSlug?: string | null;
+  /**
    * Уникальный суффикс для name у радио (на странице два экземпляра сайдбара — десктоп и мобильный drawer).
    * Без него все радио с одним name образуют одну группу в документе и ломают отображение :checked.
    */
@@ -155,9 +163,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
   priceBounds,
   categoryOptions = [],
   parentCategoryRadioMode = false,
+  categoryPageBranchMode = false,
+  catalogBranchOptions = [],
+  activeCatalogBranchSlug = null,
   catalogBranchRadioGroupSuffix = 'main',
 }) => {
   const branchRadioName = `catalog-parent-branch-${catalogBranchRadioGroupSuffix}`;
+  const categoryPageBranchRadioName = `catalog-page-branch-${catalogBranchRadioGroupSuffix}`;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -197,6 +209,14 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       }
     },
     [pathname, router, searchParams]
+  );
+
+  const navigateCategoryPageBranch = useCallback(
+    (slug: string | null) => {
+      const path = slug ? `/catalog/products/${slug}` : '/catalog/products';
+      router.push(path);
+    },
+    [router]
   );
 
   /** Режим «весь каталог»: выбор родительской ветки + сброс прочих фильтров и пагинации */
@@ -652,9 +672,17 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     return null;
   };
 
+  /** На хабе фасеты и цена — только у выбранного раздела, не в «Все категории». */
+  const showBranchFacetFilters = !parentCategoryRadioMode || displayCatalogBranch !== null;
+  const effectivePriceBounds = showBranchFacetFilters ? priceBounds : null;
+  const effectiveFilters = showBranchFacetFilters ? filters : [];
+
   /** Не схлопывать панель в «Загрузка…» при смене ветки: иначе колонка дергается, пока грузятся фасеты. */
   const showCompactLoadingOnly =
-    loading && filters.length === 0 && !priceBounds && categoryOptions.length === 0;
+    loading &&
+    effectiveFilters.length === 0 &&
+    !effectivePriceBounds &&
+    categoryOptions.length === 0;
 
   if (showCompactLoadingOnly) {
     return (
@@ -669,7 +697,12 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
     );
   }
 
-  if (!priceBounds && filters.length === 0 && categoryOptions.length === 0) {
+  if (
+    !effectivePriceBounds &&
+    effectiveFilters.length === 0 &&
+    categoryOptions.length === 0 &&
+    !(categoryPageBranchMode && catalogBranchOptions.length > 0)
+  ) {
     return null;
   }
 
@@ -703,7 +736,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
       </div>
 
       <div className={styles.sections}>
-        {priceBounds && priceBounds.max >= priceBounds.min ? (
+        {effectivePriceBounds && effectivePriceBounds.max >= effectivePriceBounds.min ? (
           <CatalogFilterSection
             sectionId="price"
             title="Цена"
@@ -760,8 +793,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
               <input
                 type="range"
                 className={`${styles.priceRange} ${styles.priceRangeMin}`}
-                min={priceBounds.min}
-                max={priceBounds.max}
+                min={effectivePriceBounds.min}
+                max={effectivePriceBounds.max}
                 step={PRICE_STEP}
                 value={selectedMin}
                 onChange={(e) => {
@@ -773,8 +806,8 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
               <input
                 type="range"
                 className={`${styles.priceRange} ${styles.priceRangeMax}`}
-                min={priceBounds.min}
-                max={priceBounds.max}
+                min={effectivePriceBounds.min}
+                max={effectivePriceBounds.max}
                 step={PRICE_STEP}
                 value={selectedMax}
                 onChange={(e) => {
@@ -790,10 +823,49 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
             </div>
           </CatalogFilterSection>
         ) : null}
+        {categoryPageBranchMode && catalogBranchOptions.length > 0 ? (
+          <CatalogFilterSection
+            sectionId="catalog-branch"
+            title="Раздел каталога"
+            isOpen={isSectionOpen('catalog-branch')}
+            onToggle={() => toggleSection('catalog-branch')}
+          >
+            <p className={styles.categoryRadioHint}>
+              Перейдите в другой раздел каталога или вернитесь к обзору всех категорий.
+            </p>
+            <div className={styles.options}>
+              <label className={`${styles.option} ${styles.categoryOptionParentLabel}`}>
+                <input
+                  type="radio"
+                  name={categoryPageBranchRadioName}
+                  checked={false}
+                  onChange={() => navigateCategoryPageBranch(null)}
+                />
+                <span className={styles.optionText}>Все категории</span>
+              </label>
+              {catalogBranchOptions.map((opt) => (
+                <label
+                  key={opt.slug}
+                  className={`${styles.option} ${styles.categoryOptionParentLabel}`}
+                >
+                  <input
+                    type="radio"
+                    name={categoryPageBranchRadioName}
+                    checked={activeCatalogBranchSlug === opt.slug}
+                    onChange={() => navigateCategoryPageBranch(opt.slug)}
+                  />
+                  <span className={styles.optionText}>
+                    {formatFilterOptionLabel(opt.label, opt.count)}
+                  </span>
+                </label>
+              ))}
+            </div>
+          </CatalogFilterSection>
+        ) : null}
         {categoryOptions.length > 0 ? (
           <CatalogFilterSection
             sectionId="category"
-            title="Категории"
+            title={categoryPageBranchMode ? 'Подкатегории' : 'Категории'}
             isOpen={isSectionOpen('category')}
             onToggle={() => toggleSection('category')}
           >
@@ -976,7 +1048,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
             </div>
           </CatalogFilterSection>
         ) : null}
-        {filters.map((f) => renderFacet(f))}
+        {effectiveFilters.map((f) => renderFacet(f))}
       </div>
 
       {onClose ? (
