@@ -294,6 +294,12 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Территория знаний',
+    href: '/admin/knowledge',
+    icon: '📚',
+    resourceId: 'admin.knowledge',
+  },
+  {
     label: 'Аналитика',
     href: '/admin/analytics',
     icon: '📈',

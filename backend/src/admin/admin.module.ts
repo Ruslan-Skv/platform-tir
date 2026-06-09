@@ -9,6 +9,7 @@ import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
 import { TasksModule } from './tasks/tasks.module';
 import { PagesModule } from './pages/pages.module';
 import { BlogModule } from './blog/blog.module';
+import { KnowledgeModule } from './knowledge/knowledge.module';
 import { ManufacturersModule } from './catalog/manufacturers/manufacturers.module';
 import { CoatingMaterialsModule } from './catalog/coating-materials/coating-materials.module';
 import { CanvasTypesModule } from './catalog/canvas-types/canvas-types.module';
@@ -55,6 +56,7 @@ import { InstallersModule } from './installers/installers.module';
     // CMS
     PagesModule,
     BlogModule,
+    KnowledgeModule,
     // Catalog
     ManufacturersModule,
     CoatingMaterialsModule,
@@ -94,6 +96,7 @@ import { InstallersModule } from './installers/installers.module';
     TasksModule,
     PagesModule,
     BlogModule,
+    KnowledgeModule,
     ManufacturersModule,
     CoatingMaterialsModule,
     CanvasTypesModule,

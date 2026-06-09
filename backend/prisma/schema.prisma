@@ -52,6 +52,8 @@ model User {
   adminNotificationOverride UserAdminNotificationOverride?
   addresses         Address[]
   blogPosts         BlogPost[]
+  knowledgeMaterials KnowledgeMaterial[]
+  knowledgeVideoProgress KnowledgeVideoProgress[]
   cartItems         CartItem[]
   cartServiceItems  CartServiceItem[]
   comments          Comment[]
@@ -794,6 +796,88 @@ model BlogBadgePreset {
   createdAt DateTime @default(now())
 
   @@map("blog_badge_presets")
+}
+
+enum KnowledgeMaterialType {
+  ARTICLE
+  VIDEO
+  LINK
+}
+
+model KnowledgeCategory {
+  id          String              @id @default(cuid())
+  name        String
+  slug        String              @unique
+  description String?
+  image       String?
+  order       Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  materials   KnowledgeMaterial[]
+
+  @@map("knowledge_categories")
+}
+
+model KnowledgeMaterial {
+  id           String                        @id @default(cuid())
+  categoryId   String
+  type         KnowledgeMaterialType
+  title        String
+  slug         String                        @unique
+  excerpt      String?
+  content      String?                       @db.Text
+  videoUrl     String?
+  externalUrl  String?
+  thumbnailUrl String?
+  sortOrder    Int                           @default(0)
+  isPinned     Boolean                       @default(false)
+  status       PageStatus                    @default(DRAFT)
+  publishedAt  DateTime?
+  authorId     String
+  createdAt    DateTime                      @default(now())
+  updatedAt    DateTime                      @updatedAt
+  category     KnowledgeCategory             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author       User                          @relation(fields: [authorId], references: [id])
+  attachments  KnowledgeMaterialAttachment[]
+  videoProgress KnowledgeVideoProgress[]
+
+  @@index([categoryId])
+  @@index([type])
+  @@index([status])
+  @@index([isPinned])
+  @@map("knowledge_materials")
+}
+
+model KnowledgeMaterialAttachment {
+  id         String            @id @default(cuid())
+  materialId String
+  fileName   String
+  fileUrl    String
+  fileSize   Int?
+  mimeType   String?
+  sortOrder  Int               @default(0)
+  createdAt  DateTime          @default(now())
+  material   KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+
+  @@index([materialId])
+  @@map("knowledge_material_attachments")
+}
+
+model KnowledgeVideoProgress {
+  id              String            @id @default(cuid())
+  materialId      String
+  userId          String
+  progressPercent Int               @default(0)
+  positionSeconds Float             @default(0)
+  completed       Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  material        KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user            User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, userId])
+  @@index([userId])
+  @@map("knowledge_video_progress")
 }
 
 model PhotoCategory {

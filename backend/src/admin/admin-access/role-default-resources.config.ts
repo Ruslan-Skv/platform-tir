@@ -8,6 +8,7 @@ import { UserRole } from '@prisma/client';
 export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ADMIN: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -84,6 +85,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   CONTENT_MANAGER: [
     'admin',
+    'admin.knowledge',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',
@@ -118,6 +120,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   MODERATOR: [
     'admin',
+    'admin.knowledge',
     'admin.orders',
     'admin.orders.checkout-info',
     'admin.crm',
@@ -129,6 +132,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   SUPPORT: [
     'admin',
+    'admin.knowledge',
     'admin.orders',
     'admin.support',
     'admin.crm',
@@ -140,6 +144,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   MANAGER: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -163,6 +168,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   TECHNOLOGIST: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -182,6 +188,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   PARTNER: [
     'admin',
+    'admin.knowledge',
     'admin.catalog',
     'admin.catalog.products',
     'admin.catalog.categories',
@@ -190,6 +197,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   BRIGADIER: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -208,6 +216,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   LEAD_SPECIALIST_FURNITURE: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -226,6 +235,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   LEAD_SPECIALIST_WINDOWS_DOORS: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.contract-payments',
@@ -244,12 +254,13 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   SURVEYOR: [
     'admin',
+    'admin.knowledge',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.installers',
     'admin.crm.customers',
     'admin.forms',
   ],
-  DRIVER: ['admin', 'admin.crm', 'admin.crm.installers'],
-  INSTALLER: ['admin', 'admin.crm', 'admin.crm.installers'],
+  DRIVER: ['admin', 'admin.knowledge', 'admin.crm', 'admin.crm.installers'],
+  INSTALLER: ['admin', 'admin.knowledge', 'admin.crm', 'admin.crm.installers'],
 };
