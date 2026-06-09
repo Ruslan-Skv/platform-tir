@@ -51,6 +51,13 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
           message: 'Запись не найдена или уже удалена.',
           error: 'Not Found',
         });
+      case 'P2021':
+        return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+          statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
+          message:
+            'Таблица в базе данных не найдена. Возможно, не применены миграции Prisma (prisma migrate deploy).',
+          error: 'Internal Server Error',
+        });
       default:
         return res.status(HttpStatus.BAD_REQUEST).json({
           statusCode: HttpStatus.BAD_REQUEST,
