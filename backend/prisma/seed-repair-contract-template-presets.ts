@@ -60,7 +60,7 @@ function extractTemplateFromTsFile(filePath: string): string {
 function loadDefaultsFromFrontendRepo(): PresetItem[] {
   const templatesDir = path.join(
     __dirname,
-    '../../frontend/src/views/admin/ContractDocuments/repair/templates'
+    '../../frontend/src/views/admin/ContractDocuments/packages/templates'
   );
   const files: Record<(typeof LIBRARY_TABS)[number], string> = {
     contract: 'contract.ts',

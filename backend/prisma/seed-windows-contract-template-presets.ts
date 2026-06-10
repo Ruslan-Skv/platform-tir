@@ -50,7 +50,7 @@ function extractTemplateFromTsFile(filePath: string): string {
 function loadDefaultsFromFrontendRepo(): PresetItem[] {
   const templatesDir = path.join(
     __dirname,
-    '../../frontend/src/views/admin/ContractDocuments/repair/templates'
+    '../../frontend/src/views/admin/ContractDocuments/packages/templates'
   );
   return LIBRARY_TABS.map((tabId) => ({
     id: `seed-windows-${tabId}`,

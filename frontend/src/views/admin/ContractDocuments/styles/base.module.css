@@ -1,0 +1,1953 @@
+.page {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--admin-space-0) var(--admin-space-md) var(--admin-space-xl);
+  --admin-print-font-size-8pt: 8pt;
+  --admin-print-font-size-9pt: 9pt;
+  --admin-print-font-size-10px: 10px;
+  --admin-print-font-size-11px: 11px;
+  --admin-print-font-size-11pt: 11pt;
+  --admin-print-font-size-12px: 12px;
+  --admin-print-font-size-15px: 15px;
+  --admin-print-font-size-18px: 18px;
+}
+
+/* --- dark theme (unmapped) --- */
+/* Тёмная тема: страница /contract-documents/estimates */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGenerateFromMeasurementBtn:hover:not(:disabled) {
+  border-color: var(--admin-info-bright);
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAddObjectBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGroupTitleField
+  input::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesGroupBlockHasBound
+  .estimatesGroupHeader {
+  background: color-mix(in srgb, var(--admin-success-bg-soft) 40%, var(--admin-surface-soft));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesCardActions
+  .estimatesIconBtn:disabled {
+  opacity: 0.42;
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesCardActions
+  .estimatesIconBtn:disabled
+  svg {
+  stroke: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .tab:not(.tabActive) {
+  color: var(--admin-bg-page);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .tab:not(.tabActive):hover {
+  color: var(--admin-bg-page);
+}
+
+/* Активная вкладка: .tab:hover в тёмной теме перебивает цвет с .tabActive (белый текст на info-bg-soft) */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .tab.tabActive:hover {
+  color: var(--admin-info-strong);
+  background: var(--admin-info-bg-soft);
+}
+
+/* «+ Д/с» / «− Д/с» на мятной панели: success-текст, не .secondaryBtn (светлый hover) */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn {
+  background: rgb(6 95 70 / 0.1);
+  border-color: var(--admin-success-text);
+  color: var(--admin-success-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn:hover:not(:disabled) {
+  background: rgb(6 95 70 / 0.2);
+  border-color: var(--admin-success-deep);
+  color: var(--admin-success-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact.blockTabs
+  .repairAddAddendumTabBtn:disabled {
+  background: rgb(6 95 70 / 0.05);
+  border-color: rgb(6 95 70 / 0.35);
+  color: rgb(6 95 70 / 0.55);
+  opacity: 1;
+}
+
+/* Базовый dark-слой для всех вкладок Contract Documents */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .dataTopRow
+  > .dataTopBlock:nth-child(2)
+  .repairCustomerSearchWrap,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .dataTopRow
+  > .dataTopBlock:nth-child(2)
+  .repairCustomerSearchSlot {
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
+  border-color: rgb(52 211 153 / 0.32);
+}
+
+/* Контраст текста на затемнённых карточках вкладки «Данные» */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCard
+  .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCard
+  .field
+  label,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  .field
+  label {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .crmCompactBox
+  p {
+  color: rgba(243, 244, 246, 0.92);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .field
+  input[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .field
+  textarea[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .field
+  select:disabled {
+  background: rgb(17 24 39 / 0.65);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesAddObjectBtn:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .secondaryBtn.estimatesAddObjectBtn:hover:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .secondaryBtn.mergeObjectModalSaveBtn:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .managerQuestionnaireNeedRow,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .managerQuestionnaireNeedRow
+  span {
+  color: var(--admin-bg-page);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBar {
+  background: rgb(255 255 255 / 0.08);
+  border-color: var(--admin-border-strong);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBtn {
+  background: rgb(255 255 255 / 0.06);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workOrderParamsBar
+  .repairWorkOrderGradeBtn:hover {
+  background: rgb(255 255 255 / 0.12);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
+/* Точечный dark-фикс для вкладок "Акт начала работ" / "Акт приёмки" */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.docPrint) {
+  color: var(--admin-text-primary) !important;
+  background: transparent !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(h1),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(h2),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(p),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(span),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(strong),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(em),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(td),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(th) {
+  color: var(--admin-text-primary) !important;
+  background: transparent !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable tr),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable td),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairActTwinSheet
+  .contractA4Preview
+  :global(.signTable th) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+/* Точечный dark-фикс: вкладка "Заказ-наряд" (строки категорий/помещений) */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4CategorySection),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4Room),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4RoomHeader),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed .estimateA4RoomHeader *) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background:#f8fafc']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background: #f8fafc']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background:#eef2ff']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(.estimateA4DocPrintEmbed td[style*='background: #eef2ff']) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(td.workOrderCategoryRow),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateTabCompact
+  .contractA4Preview
+  :global(td.workOrderRoomRow) {
+  background: transparent !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .paymentsTab
+  .paymentsBlockAccentSummary {
+  background: color-mix(in srgb, var(--admin-bg-page) 94%, rgb(245 158 11) 6%);
+  border-left-color: color-mix(in srgb, rgb(251 191 36 / 0.4) 50%, var(--admin-border));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .packageFlowPayPctOrbYellow {
+  background: color-mix(in srgb, rgb(66 32 6 / 0.55) 50%, var(--admin-surface));
+  border-color: color-mix(in srgb, #ca8a04 50%, var(--admin-surface));
+}
+
+/* Тёмная тема: вкладка «Интерактивная итоговая смета» */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .estimateSectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButton {
+  background: color-mix(in srgb, var(--admin-bg-page) 88%, rgb(148 163 184) 12%);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonMarked:not(.workCategoryButtonActive) {
+  background: color-mix(in srgb, var(--admin-bg-page) 80%, rgb(34 197 94) 20%);
+  border-color: rgb(52 211 153 / 0.5);
+  color: rgb(220 252 231);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonActive {
+  background: rgb(var(--color-accent-rgb));
+  border-color: rgb(var(--color-accent-rgb) / 0.92);
+  color: #fff;
+  box-shadow:
+    0 0 0 1px rgb(0 0 0 / 0.35),
+    0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .workCategoryButtonActive.workCategoryButtonMarked {
+  background: linear-gradient(180deg, rgb(74 222 128) 0%, rgb(22 163 74) 100%);
+  border-color: rgb(52 211 153 / 0.95);
+  color: #fff;
+  box-shadow:
+    0 0 0 2px rgb(20 83 45 / 0.55),
+    0 1px 3px rgb(0 0 0 / 0.3);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .installerAssignedCountBadgeZero {
+  background: rgb(51 65 85);
+  color: rgba(226, 232, 240, 0.92);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateCategoryHeader {
+  border-top-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateCategoryMeta {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateRoomHeader {
+  color: rgba(243, 244, 246, 0.92);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .estimateA4Empty {
+  color: rgba(226, 232, 240, 0.78);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  th {
+  background: rgb(17 24 39 / 0.88);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  td {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+/* Специфичность ≥ правила для всех td, иначе подсветка активного мастера не видна */
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRow:hover
+  td {
+  background: rgb(30 41 59 / 0.82);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowUnassigned
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 70%, rgb(245 158 11) 30%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowAssigned
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 65%, rgb(34 197 94) 35%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowActiveInstaller
+  td {
+  background: color-mix(in srgb, var(--admin-surface-soft) 45%, rgb(34 197 94) 55%);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveAssignedInstallerName {
+  background: color-mix(in srgb, var(--admin-bg-page) 55%, rgb(34 197 94) 45%);
+  border-color: rgb(52 211 153 / 0.45);
+  color: rgb(220 252 231);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .interactiveFinalEstimateTab
+  .interactiveEstimateUnassignedLabel {
+  color: rgb(253 230 138);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .packageLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .estimateLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .contractLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .addendumLockNotice {
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  input.autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  input.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  select.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  .field
+  textarea.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  input.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  select.repairContractObjectFieldEdited,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .contractCompactBlock
+  .field
+  textarea.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 40%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .contractCompactBlock
+  input:-webkit-autofill:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1000px var(--admin-surface-soft) inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
+/* ——— Вкладка «Оплаты» (журнал по пакету ремонта) ——— */
+.paymentsTab {
+  max-width: 1200px;
+}
+
+.paymentsTabHub {
+  max-width: none;
+}
+
+.paymentsTabHubPart {
+  background: transparent !important;
+  border: none !important;
+  max-width: none;
+  padding: 0 !important;
+}
+
+.paymentsHubBlockTitle {
+  margin: 0 0 var(--admin-space-md, 8px);
+}
+
+/* Компактная сводка в модалке «Оплаты и Управление договором» */
+.paymentsHubCompactCard {
+  margin-bottom: 0;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.paymentsHubCompactHint {
+  margin: 0 0 var(--admin-space-sm) !important;
+  font-size: var(--admin-font-size-xs);
+}
+
+.paymentsHubCompactCard .paymentsTableWrap {
+  margin-top: 0;
+}
+
+.paymentsHubSummaryTable {
+  table-layout: auto;
+}
+
+.paymentsHubSummaryTable th,
+.paymentsHubSummaryTable td {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+}
+
+.paymentsHubSummaryNumCol {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.paymentsHubSummaryRecommendedCol {
+  color: var(--admin-info-text);
+  font-weight: 600;
+}
+
+.paymentsHubSummaryFooterRow td {
+  background: var(--admin-surface-soft);
+  border-top-width: 2px;
+  font-weight: 600;
+}
+
+.paymentsHubSummaryFooterRow td:first-child {
+  color: var(--admin-text-secondary);
+}
+
+.paymentsHubCompactPct {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+}
+
+/* Разные акценты карточек вкладки «Оплаты» */
+.paymentsTab .paymentsBlockAccentContract {
+  background: var(--admin-info-bg-soft);
+  border-left: 3px solid var(--admin-info);
+}
+
+.paymentsTab .paymentsBlockAccentAddendum {
+  background: var(--admin-success-bg-soft);
+  border-left: 3px solid var(--admin-success-emerald);
+}
+
+.paymentsTab .paymentsBlockAccentSummary {
+  background: var(--admin-warning-bg);
+  border-left: 3px solid var(--admin-warning-strong);
+}
+
+.paymentsTab .paymentsBlockAccentForm {
+  background: var(--admin-accent-soft);
+  border-left: 3px solid var(--admin-accent-border);
+}
+
+.paymentsTab .paymentsBlockAccentJournal {
+  background: var(--admin-surface-muted);
+  border-left: 3px solid var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsPreFormSummaryHeading {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsKvTotalRow.paymentsKvKey {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  .paymentsPreFormSummarySection
+  + .paymentsPreFormSummarySection {
+  border-left-color: var(--admin-border-strong);
+}
+
+.paymentsDocFieldsCard {
+  margin-bottom: var(--admin-space-lg);
+}
+
+/* Договор / Д/с: три поля (сумма | пропись | предоплата/100%) в одну строку */
+.paymentsTab .paymentsContractMoneyRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  align-items: start;
+}
+
+.paymentsTab .paymentsContractMoneyRow .field {
+  min-width: 0;
+}
+
+.paymentsTab .paymentsContractMoneyRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Рекомендованная предоплата / оплата — отдельный акцент (не как прочие auto-filled) */
+.paymentsTab input.paymentsRecommendedAmountInput {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+}
+
+.paymentsTab input.paymentsRecommendedAmountInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-info-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsTab
+  input.paymentsRecommendedAmountInput {
+  background: color-mix(in srgb, var(--admin-bg-page) 78%, rgb(96 165 250) 22%) !important;
+  border-color: rgb(96 165 250 / 0.5) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+/* Сводка перед формой «Добавить оплату»: договор+Д/с, журнал, остаток */
+.paymentsPreFormSummaryCard {
+  margin-bottom: var(--admin-space-lg);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.paymentsPreFormSummaryCard .sectionTitle {
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.paymentsPreFormSummarySections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+@media (min-width: 960px) {
+  .paymentsPreFormSummarySections {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(150px, 200px) minmax(120px, 190px);
+    column-gap: var(--admin-space-md);
+    row-gap: 0;
+    align-items: start;
+  }
+
+  .paymentsPreFormSummarySection + .paymentsPreFormSummarySection {
+    border-left: 1px solid var(--admin-border);
+    padding-left: var(--admin-space-md);
+    margin-left: 0;
+  }
+}
+
+.paymentsPreFormSummarySection {
+  margin: 0;
+}
+
+.paymentsPreFormSummaryHeading {
+  margin: 0 0 var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: 1.25;
+}
+
+.paymentsPreFormSummaryCard .paymentsKvGrid {
+  gap: 2px var(--admin-space-md);
+}
+
+.paymentsKvGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--admin-space-xs) var(--admin-space-lg);
+  align-items: baseline;
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsPreFormSummaryCard .paymentsKvTotalRow {
+  margin-top: 4px;
+  padding-top: 6px;
+}
+
+.paymentsKvKey {
+  color: var(--admin-text-muted);
+}
+
+.paymentsKvVal {
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  text-align: right;
+  color: var(--admin-text-primary);
+}
+
+.paymentsKvPctSuffix {
+  font-weight: 500;
+  font-size: 0.92em;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.paymentsKvTotalRow {
+  margin-top: var(--admin-space-xs);
+  padding-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border);
+  font-weight: 700;
+}
+
+.paymentsKvTotalRow.paymentsKvKey {
+  color: var(--admin-text-primary);
+}
+
+.paymentsKvOverpay {
+  color: var(--admin-warning-strong);
+}
+
+/* Основание: select + новый текст + «+» в одну строку */
+.paymentsBasisInlineRow {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  min-width: 0;
+  margin-top: 0;
+}
+
+.paymentsBasisSelectWrap {
+  flex: 1 1 38%;
+  min-width: 0;
+  display: flex;
+}
+
+.paymentsBasisSelectWrap select {
+  width: 100%;
+  min-width: 0;
+}
+
+.paymentsBasisInlineRow .paymentsNewBasisInput {
+  flex: 1 1 42%;
+  min-width: 120px;
+  width: auto;
+  max-width: none;
+}
+
+.paymentsAddBasisIconBtn {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  cursor: pointer;
+}
+
+.paymentsAddBasisIconBtn:hover {
+  background: var(--admin-surface-soft);
+}
+
+@media (max-width: 640px) {
+  .paymentsBasisInlineRow {
+    flex-wrap: wrap;
+  }
+
+  .paymentsBasisSelectWrap {
+    flex: 1 1 100%;
+  }
+
+  .paymentsBasisInlineRow .paymentsNewBasisInput {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+.paymentsSummaryGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-lg);
+}
+
+@media (max-width: 960px) {
+  .paymentsSummaryGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paymentsSummaryCard,
+.paymentsFormCard,
+.paymentsTableCard {
+  margin-bottom: 0;
+}
+
+.paymentsBreakdownList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsBreakdownList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: 6px 0;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.paymentsBreakdownList li:last-child {
+  border-bottom: none;
+}
+
+.paymentsBreakdownGrand {
+  font-weight: 600;
+  padding-top: var(--admin-space-sm);
+  margin-top: var(--admin-space-xs);
+  border-top: 1px dashed var(--admin-border-strong) !important;
+}
+
+.paymentsBreakdownRemainder strong {
+  color: var(--admin-info-strong);
+}
+
+.paymentsFormGrid {
+  display: grid;
+  grid-template-columns: minmax(140px, 200px) minmax(0, 1fr) minmax(160px, 240px);
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+  align-items: start;
+}
+
+/* Блок «Провести оплату» в модалке хаба — все поля в одну строку */
+.paymentsFormHubRow {
+  align-items: flex-end;
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+/* Компактная строка в модалке «Оплаты и Управление договором» — без горизонтального скролла */
+.paymentsHubConductTitleRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+}
+
+.paymentsHubConductTitleRow .paymentsHubBlockTitle {
+  margin-bottom: 0;
+}
+
+.paymentsHubConductDoneMsg {
+  color: var(--admin-success, #16a34a);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+/* Обёртка формы «Провести оплату» в модалке — без accent-карточки вкладки оплат */
+.paymentsHubConductFormWrap {
+  background: transparent;
+  border: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Поля как на бланке замера (MeasurementFormPage .blankSheet + .blankMetaGrid) */
+.paymentsHubConductBlank {
+  margin-top: 0;
+}
+
+.invoiceLinesSection {
+  margin-top: 12px;
+}
+
+.invoiceLinesSectionTitle {
+  font-size: var(--admin-font-size-sm, 0.875rem);
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.invoiceLinesTable input,
+.invoiceLinesTable select {
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  min-height: 1.75rem;
+  padding: 2px 6px;
+  width: 100%;
+}
+
+.invoiceLinesTable .invoiceLinesNameCol input {
+  min-width: 140px;
+}
+
+.invoiceLinesKindCol {
+  width: 88px;
+  min-width: 88px;
+}
+
+.invoiceLinesTable .invoiceLinesKindCol select {
+  width: 100%;
+  min-width: 0;
+}
+
+.invoiceLinesGroupHeader td {
+  background: #f1f5f9;
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 6px 8px;
+  border-top: 1px solid #e2e8f0;
+}
+
+.invoiceLinesActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.invoiceIssuedRowActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.invoiceLinesLoadRow {
+  align-items: flex-end;
+  margin-bottom: 10px;
+}
+
+.invoiceLinesLoadField {
+  flex: 1 1 220px;
+  min-width: 200px;
+  max-width: 420px;
+}
+
+.paymentsHubConductField {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.paymentsHubConductLabel {
+  font-size: var(--admin-font-size-2xs, 0.6875rem) !important;
+  font-weight: 500 !important;
+  line-height: 1.25;
+  margin-bottom: 2px !important;
+}
+
+.paymentsHubConductControl {
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-xs, 0.8125rem) !important;
+  min-height: 2rem !important;
+  padding: 4px var(--admin-space-md, 8px) !important;
+  width: 100%;
+}
+
+.paymentsHubConductControl:disabled {
+  cursor: not-allowed;
+  opacity: 0.72;
+}
+
+.paymentsFormHubRowCompact > .paymentsHubConductField {
+  flex: unset;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact .paymentsHubConductControl {
+  max-width: 100%;
+  min-width: 0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsHubConductBlank .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+/* Тёмная тема: поля как бланк замера; синяя рамка только у активного (focus) поля */
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsHubConductBlank {
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled) {
+  background: var(--admin-surface-soft, #374151) !important;
+  border-color: var(--admin-sidebar-text, rgba(255 255 255 / 0.72)) !important;
+  color: var(--admin-text-primary, #f3f4f6) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:not(:disabled):focus-visible {
+  border-color: var(--admin-info-light, #60a5fa) !important;
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136, rgb(6 182 212 / 0.2)) !important;
+  outline: none !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsHubConductBlank
+  .paymentsHubConductControl:disabled {
+  border-color: var(--admin-border-strong, #4b5563) !important;
+  opacity: 0.55;
+}
+
+.paymentsFormHubRowCompact {
+  display: grid;
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(0, 1fr)
+    minmax(6.75rem, 8rem)
+    minmax(5.25rem, 6.5rem)
+    auto;
+  overflow-x: visible;
+  overflow-y: visible;
+  padding-bottom: 0;
+}
+
+/* Модалка «Счета на оплату»: дата | узкий № | широкое основание | итого | кнопки */
+.paymentsFormHubRowCompact.paymentsFormHubRowInvoice {
+  grid-template-columns:
+    minmax(7.25rem, 8.25rem)
+    minmax(4.25rem, 5.25rem)
+    minmax(0, 1fr)
+    minmax(5.25rem, 6.5rem)
+    auto;
+}
+
+.paymentsFormHubRowCompact > .field {
+  flex: unset;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact > .paymentsFormHubDateField,
+.paymentsFormHubRowCompact > .paymentsFormHubAmountField {
+  max-width: 100%;
+}
+
+.paymentsFormHubRow > .field {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(1) {
+  flex: 0 0 10.5rem;
+}
+
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(2) {
+  flex: 0 0 8.5rem;
+}
+
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(3) {
+  flex: 0 0 9.5rem;
+}
+
+.paymentsFormHubRow:not(.paymentsFormHubRowCompact) > .field:nth-child(4) {
+  flex: 1 1 12rem;
+  min-width: 11rem;
+}
+
+.paymentsFormHubRow > .field input,
+.paymentsFormHubRow > .field select {
+  max-width: 100%;
+  min-width: 0;
+  width: 100%;
+}
+
+.paymentsFormHubSubmitField {
+  flex: 0 0 auto;
+  min-width: max-content;
+}
+
+.paymentsFormHubSubmitSpacer {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.25;
+  min-height: 1.25em;
+  visibility: hidden;
+}
+
+/* Как «+ Новый расчёт из замера»; отдельный класс — в портале модалки нет токенов layout */
+.paymentsFormHubSubmitField .paymentsHubConductBtn {
+  align-items: center;
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 2.125rem;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:not(:disabled) {
+  border: 1px solid var(--admin-info, #2563eb);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-info-bg, #dbeafe) 100%
+  );
+  box-shadow: 0 2px 8px var(--admin-overlay-color-129, rgb(37 99 235 / 0.14));
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:not(:disabled):hover {
+  border-color: var(--admin-info-bright, #3b82f6);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg, #dbeafe) 0%,
+    var(--admin-info-border-soft, #bfdbfe) 100%
+  );
+  color: var(--admin-info-text, #1e40af);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--admin-surface, #ffffff),
+    0 0 0 4px rgb(37 99 235 / 0.35);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductBtn:disabled {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+  cursor: not-allowed;
+  opacity: 0.65;
+  box-shadow: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsFormHubSubmitField
+  .paymentsHubConductBtn:not(:disabled) {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info, #3b82f6) 0%,
+    var(--admin-info-strong, #2563eb) 100%
+  );
+  color: var(--admin-text-inverse, #f9fafb);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .paymentsFormHubSubmitField
+  .paymentsHubConductBtn:not(:disabled):hover {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-strong, #2563eb) 0%,
+    var(--admin-info, #3b82f6) 100%
+  );
+  color: var(--admin-text-inverse, #f9fafb);
+}
+
+.paymentsHubConductActions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-text, #111827);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  font-weight: 600;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 2.125rem;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  white-space: nowrap;
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn:not(:disabled):hover {
+  border-color: var(--admin-text-muted, #6b7280);
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.paymentsFormHubSubmitField .paymentsHubConductSecondaryBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.paymentsFormHubHint {
+  flex: 1 1 100%;
+  grid-column: 1 / -1;
+  margin: 0 !important;
+  min-width: 0;
+}
+
+.paymentsFormHubRowCompact .paymentsFormHubHint {
+  flex: unset;
+}
+
+.paymentsFormGrid > .field {
+  min-width: 0;
+}
+
+.paymentsAmountField {
+  gap: var(--admin-space-2xs);
+}
+
+.paymentsAmountFieldTitle {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.paymentsAmountPairRow {
+  display: grid;
+  grid-template-columns: minmax(0, 200px) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  align-items: start;
+}
+
+.paymentsAmountPairCell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
+}
+
+.paymentsAmountWordsPreview {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: default;
+}
+
+@media (max-width: 720px) {
+  .paymentsFormGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .paymentsFormHubRow:not(.paymentsFormHubRowCompact) {
+    flex-wrap: wrap;
+  }
+
+  .paymentsFormHubRowCompact {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .paymentsFormHubRowCompact .paymentsFormHubSubmitField {
+    grid-column: 1 / -1;
+  }
+
+  .paymentsFormHubSubmitField {
+    flex: 1 1 100%;
+  }
+
+  .paymentsFormHubSubmitField :global([data-modal-btn='primary']) {
+    width: 100%;
+  }
+
+  .paymentsAmountPairRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.paymentsFormActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-lg);
+}
+
+.paymentsTableWrap {
+  overflow-x: auto;
+  margin-top: var(--admin-space-sm);
+}
+
+.paymentsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm);
+}
+
+.paymentsTable th,
+.paymentsTable td {
+  border: 1px solid var(--admin-border);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  text-align: left;
+  vertical-align: top;
+}
+
+.paymentsTable th {
+  background: var(--admin-surface-soft);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.paymentsTablePctCol {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.paymentsTableBasisCell {
+  max-width: 280px;
+  word-break: break-word;
+}
+
+.paymentsTableUserCell {
+  white-space: nowrap;
+  font-size: var(--admin-font-size-xs);
+}
+
+.paymentsTableActionsCell {
+  white-space: nowrap;
+}
+
+.paymentsTableActionsCell button {
+  margin-right: var(--admin-space-xs);
+}
+
+.workScopeSplitModalForm [data-modal-form-hint],
+.workScopeSplitModalForm [data-modal-form-error] {
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  line-height: 1.35;
+}
+
+.workScopeSplitModalForm [data-modal-footer-info-text] {
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  line-height: 1.35;
+}
+
+.workScopeSplitHeading {
+  padding: 2px 0;
+}
+
+.workScopeSplitHeadingLabel {
+  flex-shrink: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+.workScopeSplitHeadingLeader {
+  align-self: flex-end;
+  border-bottom: 1px dotted var(--admin-text-muted);
+  box-sizing: border-box;
+  flex: 1 1 auto;
+  height: 0.55em;
+  margin: 0 0.35rem;
+  min-width: 0.75rem;
+  opacity: 0.55;
+}
+
+.workScopeSplitTreePanel {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  max-height: min(52vh, 480px);
+  min-height: 0;
+  overflow: hidden;
+  padding: var(--admin-space-md);
+}
+
+.workScopeSplitTreeToolbar {
+  align-items: center;
+  border-bottom: 1px solid var(--admin-border-strong, #e5e7eb);
+  display: flex;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+  gap: 0.15em 0.4em;
+  line-height: 1.25;
+  margin: -2px 0 6px;
+  padding-bottom: 5px;
+}
+
+.workScopeSplitTreeScroll {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+.workScopeSplitBulkLink {
+  background: none;
+  border: none;
+  color: var(--admin-accent-action, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  margin: 0;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.workScopeSplitBulkLink:hover:not(:disabled) {
+  color: var(--admin-accent-action-hover, #1d4ed8);
+}
+
+.workScopeSplitBulkLink:disabled {
+  color: var(--admin-text-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+  text-decoration: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workScopeSplitBulkLink {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitBulkLink:hover:not(:disabled) {
+  color: #bfdbfe;
+}
+
+.workScopeSplitBulkSep {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  user-select: none;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow {
+  align-items: flex-start;
+  color: var(--modal-text, var(--admin-text-primary));
+  display: flex;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  font-weight: 400;
+  margin-bottom: 0;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent1 {
+  color: var(--admin-info-bright, #1d4ed8);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent2 {
+  color: var(--admin-success-emerald, #047857);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent3 {
+  color: var(--admin-warning-amber, #b45309);
+  font-weight: 400;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading .workScopeSplitRowMeta {
+  color: var(--admin-text-muted);
+  font-weight: 400;
+  margin-left: 0;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading {
+  align-items: flex-end;
+}
+
+.workScopeSplitTreePanel label.workScopeSplitRow.workScopeSplitHeading > input[type='checkbox'] {
+  align-self: center;
+  margin: 0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent1 {
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent2 {
+  color: #6ee7b7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .workScopeSplitTreePanel
+  label.workScopeSplitRow.workScopeSplitHeading.workScopeSplitIndent3 {
+  color: #fcd34d;
+}
+
+.workScopeSplitTreePanel input[type='checkbox'] {
+  box-sizing: border-box;
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 13px;
+  margin: 2px 0 0;
+  min-height: 13px;
+  min-width: 13px;
+  width: 13px;
+}
+
+.workScopeSplitRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
+  line-height: 1.28;
+  padding: 1px 0;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+}
+
+.workScopeSplitRowMeta {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.workScopeSplitIndent1 {
+  padding-left: 0;
+}
+
+.workScopeSplitIndent2 {
+  padding-left: 1.25rem;
+}
+
+.workScopeSplitIndent3 {
+  padding-left: 2.5rem;
+}
+
+.workScopeSplitIndent4 {
+  padding-left: 3.75rem;
+}
+
+.workScopeSplitClaimedCheckbox {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: 2px;
+  box-sizing: border-box;
+  color: #dc2626;
+  display: inline-flex;
+  flex-shrink: 0;
+  height: 14px;
+  justify-content: center;
+  margin: 2px 0 0;
+  width: 14px;
+}
+
+.workScopeSplitClaimedCheckbox svg {
+  display: block;
+  height: 9px;
+  width: 9px;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .workScopeSplitClaimedCheckbox {
+  color: #f87171;
+}
+
+/*
+ * Печать листа сметы / итоговой сметы / заказ-наряда с текущей страницы (класс на body задаётся из RepairContractDocumentEditorPage).
+ * Тот же DOM и те же CSS Modules, что во вкладках «Смета», «Итог. смета», «Итог. заказ-наряд».
+ */
+@media print {
+  @page {
+    margin: 0;
+    size: A4 portrait;
+  }
+
+  :global(body.body-print-estimate-sheet) {
+    margin: 0 !important;
+    padding: var(--admin-space-0) !important;
+    background: var(--admin-surface) !important;
+    color-scheme: light !important;
+  }
+
+  :global(body.body-print-estimate-sheet),
+  :global(body.body-print-estimate-sheet) * {
+    visibility: hidden !important;
+  }
+
+  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'] *,
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'] *,
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] * {
+    visibility: visible !important;
+  }
+
+  :global(body.body-print-estimate-sheet) [data-print-target='estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='final-estimate-sheet'],
+  :global(body.body-print-estimate-sheet) [data-print-target='work-order-sheet'] {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 210mm !important;
+    max-width: 100% !important;
+    margin: 0 !important;
+    padding: 12mm 11mm !important;
+    box-sizing: border-box !important;
+    box-shadow: none !important;
+    background: var(--admin-surface) !important;
+    color: var(--admin-text-primary) !important;
+    color-scheme: light !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    z-index: 2147483647 !important;
+  }
+}
+
+/* ——— Объединение договоров в объект ——— */
+.mergeObjectModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: min(480px, 92vw);
+}
+
+.mergeObjectModalHint {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectModeTabs {
+  display: flex;
+  gap: 8px;
+}
+
+.mergeObjectModeTab,
+.mergeObjectModeTabActive {
+  flex: 1;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  font-size: 0.875rem;
+  cursor: pointer;
+}
+
+.mergeObjectModeTabActive {
+  border-color: var(--admin-accent, #2563eb);
+  background: color-mix(in srgb, var(--admin-accent, #2563eb) 12%, var(--admin-surface));
+  font-weight: 600;
+}
+
+.mergeObjectFields {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.mergeObjectField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 0.8125rem;
+}
+
+.mergeObjectField input,
+.mergeObjectField textarea,
+.mergeObjectField select {
+  padding: 8px 10px;
+  border: 1px solid var(--admin-border);
+  border-radius: 6px;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.mergeObjectNormalizedHint {
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectNormalizedHint code {
+  font-size: 0.75rem;
+}
+
+.mergeObjectSuggestionsTitle {
+  margin: 0 0 6px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+
+.mergeObjectSuggestionsList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  max-height: 160px;
+  overflow-y: auto;
+}
+
+.mergeObjectSuggestionLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+  font-size: 0.8125rem;
+  cursor: pointer;
+}
+
+.mergeObjectSuggestionsLoading {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--admin-text-secondary);
+}
+
+.mergeObjectModalActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 4px;
+}
+
+/* Строка-сводка по объекту — голубой фон */
+.repairContractsListObjectRow td {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  font-weight: normal;
+}
+
+.repairContractsListObjectAddressLabel,
+.estimatesListObjectAddressLabel {
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+.repairContractsListObjectRow:hover td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.repairContractsListObjectRowExpanded td {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.repairContractsListObjectRowExpanded:hover td {
+  background: color-mix(in srgb, var(--admin-info, #3b82f6) 18%, var(--admin-info-bg, #dbeafe));
+}
+
+/* Договоры внутри раскрытого объекта — янтарный фон, контрастнее сводки */
+.repairContractsListChildRow td {
+  background: var(--admin-contract-object-child-bg);
+}
+
+.repairContractsListChildRow:hover td {
+  background: var(--admin-contract-object-child-bg-hover);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow td {
+  background: rgb(59 130 246 / 0.24);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow:hover td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRowExpanded td {
+  background: rgb(59 130 246 / 0.32);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractsListObjectRowExpanded:hover
+  td {
+  background: rgb(59 130 246 / 0.38);
+}
+
+.repairContractsListExpandBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  font-size: 0.625rem;
+  line-height: 1;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  cursor: pointer;
+  vertical-align: middle;
+  color: var(--admin-text-secondary);
+}
+
+.repairContractsListExpandBtn:hover {
+  background: var(--admin-surface-hover, rgba(0, 0, 0, 0.06));
+}
+
+.repairContractsListObjectBadge {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--admin-surface-muted, #e5e7eb);
+  color: var(--admin-text-secondary);
+}
+
+/* Фон карточек «Данные» = .blankSheet замера (только светлая / только тёмная, без !important) */
+html[data-theme='light'] .repairContractDataTabDense .sectionCard.repairDataBlankSheet {
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface-soft, #f8fafc) 100%
+  );
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .sectionCard.repairDataBlankSheet {
+  border-color: var(--admin-info-light);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136) 0%,
+    var(--admin-overlay-color-021) 100%
+  );
+}

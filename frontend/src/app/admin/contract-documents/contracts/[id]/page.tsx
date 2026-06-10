@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 
-import { RepairContractDocumentEditorPage } from '@/views/admin/ContractDocuments/repair/RepairContractDocumentEditorPage';
+import { PackageDocumentEditorPage } from '@/views/admin/ContractDocuments/packages/pages/PackageDocumentEditorPage';
 
 export default function AdminContractDocumentsContractsIdPage() {
   const params = useParams();
@@ -10,5 +10,5 @@ export default function AdminContractDocumentsContractsIdPage() {
   if (!id) {
     return <p style={{ padding: 24 }}>Некорректный идентификатор.</p>;
   }
-  return <RepairContractDocumentEditorPage packageId={id} />;
+  return <PackageDocumentEditorPage packageId={id} />;
 }

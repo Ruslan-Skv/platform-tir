@@ -557,8 +557,11 @@ export class ContractDocumentPackagesController {
       throw new BadRequestException('Файл не загружен');
     }
     const pkg = await this.service.findOne(id);
-    if (pkg.kind !== ContractDocumentPackageKind.WINDOWS) {
-      throw new BadRequestException('Доступно только для пакета «Окна»');
+    if (
+      pkg.kind !== ContractDocumentPackageKind.WINDOWS &&
+      pkg.kind !== ContractDocumentPackageKind.DOORS
+    ) {
+      throw new BadRequestException('Доступно только для пакетов «Окна» и «Двери»');
     }
     const filename = path.basename(file.path);
     return {

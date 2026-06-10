@@ -1,0 +1,813 @@
+/* Вкладка «Смета»: плотнее блок между вкладками и превью листа */
+.estimateTabCompact {
+  padding: var(--admin-space-2xs) var(--admin-space-xs);
+}
+
+.estimateTabCompact .formGrid {
+  gap: 3px 6px;
+}
+
+.estimateTabCompact .sectionCard {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateTabCompact.dataCompact .sectionTitle {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xs);
+  padding-top: 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.estimateTabCompact .estimateSectionHeader {
+  gap: 3px 5px;
+}
+
+.repairAddendumMarkSignedProminentBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-weight: 700;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.2;
+  color: var(--admin-surface);
+  background: var(--admin-info);
+  border: 2px solid var(--admin-info-strong);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  box-shadow: 0 1px 3px rgb(37 99 235 / 0.25);
+  white-space: nowrap;
+}
+
+.repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+  border-color: var(--admin-info-strong);
+  color: var(--admin-surface);
+  box-shadow: 0 2px 10px rgb(29 78 216 / 0.4);
+}
+
+.repairAddendumMarkSignedProminentBtn:focus-visible {
+  outline: 2px solid var(--admin-info-light);
+  outline-offset: 2px;
+}
+
+.repairAddendumMarkSignedProminentBtn:disabled {
+  opacity: 0.52;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.estimateTabCompact .repairAddendumMarkSignedProminentBtn {
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairAddendumMarkSignedProminentBtn {
+  background: var(--admin-info-bright);
+  border-color: var(--admin-info-light);
+  color: #f8fafc;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+  background: var(--admin-info-light);
+  border-color: var(--admin-info-light);
+  color: #f8fafc;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairAddendumMarkSignedProminentBtn:disabled {
+  opacity: 0.45;
+}
+
+.repairAddendumHeaderCornerActions {
+  flex-shrink: 0;
+  align-self: flex-start;
+  margin-left: auto;
+}
+
+.estimateTabCompact .estimateSectionTitle {
+  margin-bottom: 0;
+}
+
+.estimateTabCompact .estimatesPageRefreshIconBtn {
+  min-width: 28px;
+  min-height: 28px;
+  padding: var(--admin-space-xs);
+}
+
+.estimateTabCompact .estimatesPageRefreshIconBtn svg {
+  width: 15px;
+  height: 15px;
+}
+
+.estimateTabCompact .sectionFields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 3px 6px;
+}
+
+.estimatePickAndAttachedRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 38%);
+  gap: 5px 8px;
+  align-items: stretch;
+}
+
+.estimatePickColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
+}
+
+.estimateSelectsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: end;
+}
+
+.estimateAttachBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+@media (max-width: 600px) {
+  .estimateSelectsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.estimateAttachedColumn {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  background: var(--admin-surface-muted);
+  min-width: 0;
+  max-height: 188px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateAttachedColumnTitle {
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  color: var(--admin-sidebar-text);
+  letter-spacing: var(--admin-letter-spacing-wide);
+  line-height: var(--admin-line-height-xs);
+}
+
+.estimateAttachedEmpty {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-xs);
+}
+
+.estimateAttachedPresetMain {
+  min-width: 0;
+}
+
+.estimateAttachedPresetMain strong {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+}
+
+.estimateAttachedPresetMeta {
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+}
+
+.estimateAttachedRemoveBtn {
+  padding: var(--admin-space-0) var(--admin-space-sm);
+  min-width: 24px;
+  min-height: 24px;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .estimatePickAndAttachedRow {
+    grid-template-columns: 1fr;
+  }
+
+  .estimateAttachedColumn {
+    max-height: 140px;
+  }
+}
+
+.estimateTabCompact.dataCompact .field {
+  gap: var(--admin-space-0);
+}
+
+.estimateTabCompact.dataCompact .field label {
+  font-size: var(--admin-font-size-2xs);
+}
+
+.estimateTabCompact.dataCompact .field input,
+.estimateTabCompact.dataCompact .field select,
+.estimateTabCompact.dataCompact .field textarea {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateAttachActionsRow {
+  display: flex;
+  gap: var(--admin-space-xs);
+  margin-top: var(--admin-space-2xs);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.estimateAttachPrimaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateTabHint {
+  margin: 1px 0 0;
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabHintFullWidth {
+  grid-column: 1 / -1;
+  margin-top: var(--admin-space-2xs);
+}
+
+.estimateAttachedPresetList {
+  display: grid;
+  gap: var(--admin-space-xs);
+}
+
+.estimateAttachedPresetRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-xs);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xs);
+  padding: var(--admin-space-xs) var(--admin-space-xs);
+  cursor: grab;
+  background: var(--admin-surface);
+}
+
+.estimateSheetField {
+  gap: var(--admin-space-2xs);
+}
+
+.estimateSheetField > label {
+  font-size: var(--admin-font-size-2xs);
+}
+
+.estimateTabCompact .estimateA4Wrap {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  margin-top: 0;
+}
+
+.estimateTabCompact .field .secondaryBtn:not(.estimateAttachedRemoveBtn) {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+/* E-mail слева, телефоны справа — одна строка сетки «Заказчик» */
+.customerEmailPhonesRow {
+  align-items: flex-start;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  grid-column: 1 / -1;
+}
+
+.customerEmailInRow {
+  flex: 0 1 18rem;
+  margin: 0;
+  max-width: 22rem;
+  min-width: 12rem;
+}
+
+/* Блок «Телефоны»: справа от e-mail; поля и кнопки в одну линию с переносом */
+.customerPhonesBlock {
+  flex: 1 1 16rem;
+  margin: 0;
+  min-width: 0;
+}
+
+.customerPhonesRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.customerPhonesRow input[type='tel'] {
+  box-sizing: border-box;
+  max-width: 100%;
+  min-width: 9rem;
+  width: 11.5rem;
+}
+
+.sectionCustomer {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+}
+
+.sectionExecutor {
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-soft);
+}
+
+.sectionObject {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-chart-cyan-border);
+}
+
+.crmCompactField {
+  gap: var(--admin-space-2xs);
+}
+
+.crmCompactBox {
+  width: 100%;
+  justify-self: start;
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-sm);
+}
+
+.repairCustomerSearchModeRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.repairCustomerSearchKindGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+}
+
+.repairCustomerSearchCrmBtn {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  box-shadow: 0 1px 4px rgb(15 23 42 / 18%);
+}
+
+.repairCustomerSearchCrmBtn:hover {
+  box-shadow: 0 2px 8px rgb(15 23 42 / 22%);
+}
+
+.repairCustomerSearchFlGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--admin-space-sm);
+  align-items: start;
+}
+
+.repairCustomerSearchUlGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  align-items: start;
+}
+
+@media (max-width: 720px) {
+  .repairCustomerSearchFlGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .repairCustomerSearchUlGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.repairCustomerSearchWrap {
+  position: relative;
+  z-index: 5;
+  overflow: visible;
+}
+
+.repairCustomerSearchDropdown {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 100%;
+  margin-top: var(--admin-space-xs);
+  max-height: min(50vh, 320px);
+  display: flex;
+  flex-direction: column;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  z-index: 30;
+}
+
+.repairCustomerSearchDropdownHeader {
+  flex-shrink: 0;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.repairCustomerSearchDropdownBody {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.repairCustomerSearchDropdownList {
+  margin: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  list-style: none;
+}
+
+@media (max-width: 980px) {
+  .dataTopRow {
+    grid-template-columns: 1fr;
+  }
+
+  .contractInlineRow {
+    grid-template-columns: 1fr;
+  }
+
+  .paymentsTab .paymentsContractMoneyRow {
+    grid-template-columns: 1fr;
+  }
+
+  .contractSumAndWordsRow {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2.2fr);
+  }
+
+  .contractHeaderMetaRow {
+    grid-template-columns: 1fr;
+  }
+
+  .contractObjectAddressRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.crmCompactField .secondaryBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+.crmResultsList {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+.crmResultItem {
+  margin-bottom: var(--admin-space-xs);
+}
+
+.crmResultBtn {
+  text-align: left;
+  width: 100%;
+  justify-content: flex-start;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.fieldSpanAll {
+  grid-column: 1 / -1;
+}
+
+/* Банковские реквизиты исполнителя: ~2 колонки сетки, без растяжки на всю строку */
+.executorBankDetailsField {
+  grid-column: span 2;
+  max-width: min(100%, 32rem);
+  min-width: 0;
+}
+
+.field label {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.field input,
+.field select,
+.field textarea {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-base);
+}
+
+.field textarea {
+  min-height: 72px;
+  resize: vertical;
+}
+
+.autoFilledInput {
+  background: var(--admin-warning-bg);
+  border-color: var(--admin-warning);
+}
+
+.autoFilledInput:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-171);
+}
+
+/* «Договор и объект»: поле изменено относительно загруженного пакета */
+.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
+}
+
+.contractCompactBlock .repairContractObjectFieldEdited:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-success) 45%, transparent);
+}
+
+/* Перебивает .repairContractDataTabDense .field input/select { background: surface } */
+.repairContractDataTabDense .contractCompactBlock .field input.repairContractObjectFieldEdited,
+.repairContractDataTabDense .contractCompactBlock .field select.repairContractObjectFieldEdited,
+.repairContractDataTabDense .contractCompactBlock .field textarea.repairContractObjectFieldEdited {
+  background: var(--admin-success-bg-soft) !important;
+  border-color: var(--admin-success) !important;
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
+}
+
+.sectionTitle {
+  grid-column: 1 / -1;
+  font-size: var(--admin-font-size-lg);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: 10px 0 3px;
+  padding-top: 6px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.sectionTitle:first-child {
+  border-top: none;
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.docPane {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-3xl);
+  background: var(--admin-surface);
+  min-height: 200px;
+}
+
+.previewResizable {
+  resize: vertical;
+  overflow: auto;
+  min-height: 220px;
+  max-height: 85vh;
+}
+
+.visualEditor {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.visualEditorScrollable {
+  resize: vertical;
+  min-height: 220px;
+  max-height: 85vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.visualEditor :global(table) {
+  width: 100% !important;
+  max-width: 100%;
+  table-layout: fixed;
+}
+
+.visualEditor :global(td),
+.visualEditor :global(th) {
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.visualEditor :global(.signTable td),
+.visualEditor :global(.signTable th),
+.visualEditor :global(.signTableActHandwritten td),
+.visualEditor :global(.signTableActHandwritten th) {
+  word-break: normal;
+  overflow-wrap: normal;
+}
+
+.docPane :global(.docPrint) {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-base);
+  color: var(--admin-text-secondary);
+}
+
+.docPane :global(.docPrint a) {
+  color: var(--admin-text-secondary) !important;
+  text-decoration: none;
+}
+
+/* Блок реквизитов: убираем визуальное жирное/курсив у <strong>/<em> (заголовки колонок — через style на <p>). */
+.docPane :global(.contractRequisitesBlock) :global(strong),
+.docPane :global(.contractRequisitesBlock) :global(b),
+.docPane :global(.contractRequisitesBlock) :global(em),
+.docPane :global(.contractRequisitesBlock) :global(i) {
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody),
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) :global(p),
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) :global(div) {
+  font-weight: normal !important;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(strong),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.contractRequisitesBlock) :global(b),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.contractRequisitesBlock) :global(em),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.contractRequisitesBlock) :global(i),
+.templatesLibraryPage .docPane :global(.contractRequisitesBlock) :global(strong),
+.templatesLibraryPage .docPane :global(.contractRequisitesBlock) :global(b),
+.templatesLibraryPage .docPane :global(.contractRequisitesBlock) :global(em),
+.templatesLibraryPage .docPane :global(.contractRequisitesBlock) :global(i) {
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody)
+  :global(p),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody)
+  :global(p) {
+  font-weight: normal !important;
+}
+
+.docPane :global(.contractRequisitesBlock) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(tr.contractRequisitesRequisitesRow) {
+  height: 1px;
+}
+
+.docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow)
+  > :global(td.contractRequisitesCol) {
+  height: 100%;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColInner) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) {
+  flex: 1 1 auto;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 14pt;
+}
+
+.docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  > :global(td) {
+  padding-top: 14pt;
+  vertical-align: top;
+}
+
+.docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  :global(.contractRequisitesSignatures) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) :global(p) {
+  margin: 0;
+}
+
+.docPane :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) :global(p + p) {
+  margin-top: 2pt;
+}
+
+.docPane :global(.docPrint:not(.docPrintContractCompact)) :global(h1) {
+  font-size: var(--admin-font-size-xl);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
+  text-align: center;
+}
+
+.docPane :global(.docPrint:not(.docPrintContractCompact)) :global(h2) {
+  font-size: var(--admin-font-size-lg);
+  margin: 16px 0 8px;
+}
+
+/* Д/с: шапка из HTML-шаблона (innerHTML — только :global). */
+.docPane :global(.docPrint .repairAddendumHeaderBlock) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+}
+
+.docPane :global(.docPrint h1.repairAddendumHeaderTitle) {
+  text-align: center;
+  font-weight: 700;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+}
+
+.docPane :global(.docPrint .repairAddendumHeaderSub) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
+  text-align: center;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-base);
+  font-weight: normal;
+}
+
+.docPane :global(.docPrint .repairAddendumMetaRow) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  align-items: baseline;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
+}
+
+.docPane :global(.docPrint .repairAddendumMetaDate) {
+  text-align: left;
+}
+
+.docPane :global(.docPrint .repairAddendumMetaCity) {
+  text-align: right;
+}
+
+.docPane :global(.docPrint h2.repairAddendumEstimateHeading) {
+  text-align: center;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field label {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field input::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .field textarea::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox input:-webkit-autofill,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:hover,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .crmCompactBox
+  input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  box-shadow: 0 0 0 1000px var(--admin-surface-soft) inset !important;
+  transition: background-color 9999s ease-out 0s;
+}

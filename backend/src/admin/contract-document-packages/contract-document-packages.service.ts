@@ -167,7 +167,8 @@ export class ContractDocumentPackagesService {
     let formDataInput: unknown = dto.formData ?? {};
     if (
       dto.kind === ContractDocumentPackageKind.REPAIR ||
-      dto.kind === ContractDocumentPackageKind.WINDOWS
+      dto.kind === ContractDocumentPackageKind.WINDOWS ||
+      dto.kind === ContractDocumentPackageKind.DOORS
     ) {
       const defaultDays = await this.resolveDefaultWorkPeriodDays(dto.kind);
       formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
@@ -1355,7 +1356,8 @@ export class ContractDocumentPackagesService {
   }
 
   private fallbackWorkPeriodDays(kind: ContractDocumentPackageKind): number {
-    return kind === ContractDocumentPackageKind.WINDOWS
+    return kind === ContractDocumentPackageKind.WINDOWS ||
+      kind === ContractDocumentPackageKind.DOORS
       ? DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS
       : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS;
   }
@@ -1386,7 +1388,10 @@ export class ContractDocumentPackagesService {
       defaultWorkPeriodDays: days,
       updatedAt: row?.updatedAt?.toISOString() ?? null,
     };
-    if (kind === ContractDocumentPackageKind.WINDOWS) {
+    if (
+      kind === ContractDocumentPackageKind.WINDOWS ||
+      kind === ContractDocumentPackageKind.DOORS
+    ) {
       return {
         ...base,
         windowsWorkOrderMarkupPercent: await this.resolveWindowsWorkOrderMarkupPercent(),

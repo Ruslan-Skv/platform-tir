@@ -1,0 +1,485 @@
+/* Шапка редактора ремонта: ссылка слева, «В работе» по центру промежутка, действия справа */
+.repairEditorHeaderThreeCol {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: var(--admin-space-md);
+}
+
+.repairEditorHeaderThreeCol > .headerActions {
+  margin-left: auto;
+}
+
+.repairEditorHeaderThreeCol:has(.repairEditorHeaderCenterSlot) > .headerActions {
+  margin-left: 0;
+}
+
+.repairEditorHeaderLeft {
+  min-width: 0;
+}
+
+.repairEditorHeaderLeft .backLink {
+  display: inline-block;
+  font-size: var(--admin-font-size-sm);
+  margin: 0;
+  line-height: 1.2;
+  color: var(--admin-text-muted);
+  text-decoration: none;
+}
+
+.repairEditorHeaderLeft .backLink:hover {
+  color: var(--admin-info);
+}
+
+.repairEditorHeaderCenterSlot {
+  flex: 1 1 8rem;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  min-width: 0;
+}
+
+.repairEditorHeaderCenterControls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: center;
+  gap: var(--admin-space-md);
+}
+
+/* Одна внешняя высота для бейджа и кнопки: 1px + 1px рамки + вертикальные отступы + строка (1.15em) */
+.repairEditorHeaderCenterControls .packageFlowStatusBadge,
+.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn,
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  box-sizing: border-box;
+  line-height: 1.15;
+  min-height: calc(2px + 2 * var(--admin-space-xs) + 1.15em);
+  align-items: center;
+}
+
+.repairEditorHeaderCenterControls .packageFlowStatusBadge,
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  font-weight: 600;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+  appearance: none;
+  -webkit-appearance: none;
+  margin: 0;
+  cursor: default;
+  text-align: center;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn:disabled {
+  opacity: 1;
+}
+
+.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 400;
+  border-radius: var(--admin-radius-pill);
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+.repairPackageRefusedBanner {
+  margin: 0 0 var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid rgb(185 28 28 / 0.35);
+  background: rgb(254 242 242);
+  color: var(--admin-text);
+}
+
+.repairContractRefusalReasonTextarea {
+  width: 100%;
+  min-height: 7rem;
+  box-sizing: border-box;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  font: inherit;
+  resize: vertical;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageRefusedBanner {
+  background: rgb(127 29 29 / 0.35);
+  border-color: rgb(248 113 113 / 0.4);
+}
+
+.draftTitleInput {
+  min-width: 240px;
+  padding: var(--admin-space-sm) var(--admin-space-9);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+}
+
+.headerButtonsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm);
+}
+
+/* Как «+ Новый объект» на /estimates, без margin-left: auto из панели фильтров */
+.headerButtonsRow .estimatesAddObjectBtn {
+  margin-left: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+:global([data-modal-form-actions]) .secondaryBtn.mergeObjectModalSaveBtn {
+  margin-left: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  min-height: 40px;
+}
+
+/* «+ Новый договор» — тот же размер, что addButton на /admin/measurements */
+.contractsListHeaderAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-info);
+  color: var(--admin-surface);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  transition: background 0.15s ease;
+}
+
+.contractsListHeaderAddBtn:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+}
+
+.contractsListHeaderAddBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.contractSignedRevertUi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  max-width: min(100%, 520px);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+}
+
+.contractSignedRevertLoader {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+}
+
+.contractSignedRevertRingSvg {
+  width: 40px;
+  height: 40px;
+  display: block;
+}
+
+.contractSignedRevertRingTrack {
+  stroke: var(--admin-border-strong);
+  stroke-width: 3;
+}
+
+.contractSignedRevertRingProgress {
+  stroke: var(--admin-accent);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dasharray 0.1s linear;
+}
+
+.contractSignedRevertRingSec {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--admin-text-primary);
+  pointer-events: none;
+}
+
+.contractSignedRevertHint {
+  margin: 0;
+  flex: 1 1 180px;
+  min-width: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+  color: var(--admin-text-secondary);
+}
+
+.contractSignedRevertBtn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertUi {
+  background: rgb(17 24 39 / 0.45);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertRingTrack {
+  stroke: rgb(75 85 99 / 0.85);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractSignedRevertHint {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+.estimatesPageRefreshIconBtn {
+  flex-shrink: 0;
+  padding: var(--admin-space-md);
+  min-width: 40px;
+  min-height: 40px;
+  border-radius: var(--admin-radius-md);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--admin-info);
+}
+
+.estimatesPageArchiveIconBtn {
+  color: var(--admin-text-secondary);
+}
+
+.estimatesPageArchiveIconBtn:hover:not(:disabled) {
+  color: var(--admin-info);
+}
+
+.estimatesRefreshIconSpinning {
+  animation: estimatesRefreshSpin 0.85s linear infinite;
+}
+
+@keyframes estimatesRefreshSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.backLink {
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+  text-decoration: none;
+}
+
+.backLink:hover {
+  color: var(--admin-info);
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
+  border-bottom: 1px solid var(--admin-border);
+  padding-bottom: 4px;
+}
+
+.blockTabs {
+  background: var(--admin-success-bg-soft);
+  border: 1px solid var(--admin-success-border-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-sm);
+  border-bottom-color: var(--admin-border);
+}
+
+.tab {
+  padding: var(--admin-space-sm) var(--admin-space-9);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  color: var(--admin-sidebar-text);
+}
+
+.tab:hover {
+  background: var(--admin-surface-soft);
+}
+
+.tabActive {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+.repairPackageTabBarCompact {
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-xs);
+  padding-bottom: 3px;
+}
+
+.repairPackageTabBarCompact.blockTabs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.repairPackageTabList {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.repairPackageTabBarAddendumActions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex-shrink: 0;
+}
+
+.repairPackageTabBarCompact .tab {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-xs);
+  border-radius: var(--admin-radius-sm);
+  cursor: grab;
+  user-select: none;
+}
+
+.repairPackageTabBarCompact .tab:active {
+  cursor: grabbing;
+}
+
+.repairPackageTabBarCompact .tabActive {
+  font-size: var(--admin-font-size-xs);
+}
+
+.repairPackageTabBarCompact .summaryTab {
+  background: transparent;
+  border-top: 1px solid var(--admin-info-border);
+  border-bottom: 1px solid var(--admin-info-border);
+  border-left: 1px solid var(--admin-info-border);
+  border-right: none;
+  border-radius: 0;
+}
+
+.repairPackageTabBarCompact .summaryTabFirst {
+  margin-left: auto;
+  border-left: 1px solid var(--admin-info-border);
+  border-top: 1px solid var(--admin-info-border);
+  border-bottom: 1px solid var(--admin-info-border);
+  border-top-left-radius: 7px;
+  border-bottom-left-radius: 7px;
+}
+
+.repairPackageTabBarCompact .summaryTabLast {
+  border-right: 1px solid var(--admin-info-border);
+  border-top-right-radius: 7px;
+  border-bottom-right-radius: 7px;
+}
+
+.repairPackageTabBarCompact .summaryTab.tabActive {
+  background: var(--admin-info-bg-soft);
+}
+
+.repairPackageTabBarRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: var(--admin-space-md);
+}
+
+.repairPackageTabBarRow > .tabBar {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.repairAddAddendumTabBtnWrap {
+  display: inline-flex;
+  flex-shrink: 0;
+  cursor: default;
+}
+
+.repairAddAddendumTabBtnWrap:has(button:disabled) {
+  cursor: not-allowed;
+}
+
+.repairPackageTabBarCompact .repairAddAddendumTabBtn {
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-xs);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  white-space: nowrap;
+  min-height: 0;
+}
+
+.repairAddendumDateFieldRow {
+  max-width: 320px;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+}
+
+.repairAddendumMetaInlineRow {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: var(--admin-space-md);
+  align-items: flex-end;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+}
+
+.repairAddendumMetaInlineRow .repairAddendumDateFieldRow {
+  margin: 0;
+  max-width: 320px;
+}
+
+.repairAddendumWorkPeriodIncreaseFieldRow {
+  margin: 0;
+  max-width: 240px;
+}
+
+.repairAddendumWorkPeriodIncreaseFieldRow input {
+  width: 100%;
+}
+
+.repairAddendumEstimateHeading {
+  font-size: var(--admin-print-font-size-11pt);
+  margin: 12pt 0 6pt;
+  text-align: center;
+}
+
+.repairAddendumEstimateBody {
+  margin-bottom: 8pt;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageTabBarCompact.blockTabs {
+  background: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-border-soft);
+}
+
+/* Неактивные вкладки: тёмный текст на «мятном» фоне панели (в т.ч. summaryTab — иначе наследует .tab и остаётся слишком светлым) */
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .draftTitleInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}

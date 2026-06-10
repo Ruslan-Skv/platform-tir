@@ -1,0 +1,1 @@
+export { DoorsSpecificationTab } from './DoorsSpecificationTab';

@@ -1,0 +1,265 @@
+/* Модалка «В работе»: две колонки (дата | файл); min-width для ellipsis в узкой ячейке */
+.repairWorkStartModalTopGrid [data-modal-form-group] {
+  min-width: 0;
+}
+
+.repairWorkStartModalDateFieldWrap {
+  align-self: flex-start;
+  max-width: 100%;
+  width: fit-content;
+}
+
+/* В общих стилях модалки у input width: 100% — для даты оставляем по содержимому */
+.repairWorkStartModalDateFieldWrap input[type='date'] {
+  width: auto !important;
+  min-width: 11rem;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.repairWorkStartModalFileRow {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  max-width: 100%;
+}
+
+.repairWorkStartModalFileInputSrOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+.repairWorkStartModalFilePickBtn {
+  margin: 0;
+  flex-shrink: 0;
+}
+
+.repairWorkStartModalFileRow:focus-within .repairWorkStartModalFilePickBtn {
+  outline: 2px solid var(--admin-info);
+  outline-offset: 2px;
+}
+
+.repairWorkStartModalFileRow:has(.repairWorkStartModalFileInputSrOnly:disabled)
+  .repairWorkStartModalFilePickBtn {
+  opacity: 0.5;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.repairWorkStartModalFileName {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  min-width: 0;
+  flex: 1 1 8rem;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repairWorkStartModalFileRemoveBtn {
+  flex-shrink: 0;
+}
+
+.repairWorkStartModalPreview {
+  margin: 0;
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.repairWorkStartModalPreview img {
+  max-width: 100%;
+  max-height: 220px;
+  object-fit: contain;
+  border-radius: var(--admin-radius-sm);
+}
+
+.windowsSpecMainRow {
+  display: grid;
+  grid-template-columns: minmax(9.5rem, 12.5rem) minmax(0, 1fr);
+  gap: var(--admin-space-xs) var(--admin-space-md);
+  align-items: start;
+}
+
+.windowsSpecMainRow > .field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.windowsSpecAmountField {
+  max-width: 12.5rem;
+}
+
+.windowsSpecAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
+.windowsSpecFileField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateTabCompact.dataCompact .windowsSpecFieldCaption {
+  display: block;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: 1.25;
+}
+
+.estimateTabCompact.dataCompact:not(.windowsContractTabTypography) .windowsSpecFieldCaption {
+  font-size: var(--admin-font-size-2xs);
+}
+
+.windowsSpecFileControlRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-xs) * var(--admin-line-height-sm)
+  );
+}
+
+.windowsSpecFilePickBtn {
+  margin: 0;
+  flex-shrink: 0;
+  cursor: pointer;
+  align-self: center;
+}
+
+.windowsSpecFilePickBtn[data-disabled] {
+  opacity: 0.55;
+  pointer-events: none;
+  cursor: not-allowed;
+}
+
+.windowsSpecFileHint {
+  flex: 1 1 10rem;
+  min-width: 0;
+  margin: 0;
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+.estimateTabCompact:not(.windowsContractTabTypography) .windowsSpecFileHint {
+  font-size: var(--admin-font-size-2xs);
+}
+
+.windowsSpecFileRemoveBtn {
+  flex-shrink: 0;
+  align-self: center;
+}
+
+.windowsSpecFileMeta {
+  margin: 0;
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+}
+
+.estimateTabCompact:not(.windowsContractTabTypography) .windowsSpecFileMeta {
+  font-size: var(--admin-font-size-2xs);
+}
+
+@media (max-width: 720px) {
+  .windowsSpecMainRow {
+    grid-template-columns: 1fr;
+  }
+
+  .windowsSpecAmountField,
+  .windowsSpecAmountField input {
+    max-width: 100%;
+  }
+}
+
+.repairAttachedActPhotosList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.repairAttachedActPhotoBlock {
+  min-width: 0;
+}
+
+.repairAttachedActPhotoTitle {
+  margin: 0 0 var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.repairAttachedActPhotoMeta {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.repairAttachedActPhotoImageLink {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairAttachedActPhotoImageLink:focus-visible {
+  outline: 2px solid var(--admin-info);
+  outline-offset: 2px;
+}
+
+.repairAttachedActPhotoLinkLine {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.repairAttachedActPhotoLinkLine a {
+  color: var(--admin-info);
+  text-decoration: underline;
+}
+
+.repairAttachedActPhotoLinkLine a:hover {
+  text-decoration: none;
+}
+
+.finalEstimateTable tfoot th {
+  background: var(--admin-info-bg-soft);
+  font-weight: 700;
+}
+
+.versionJsonPre {
+  margin: 0;
+  max-height: min(520px, 65vh);
+  overflow: auto;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-base);
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairWorkStartModalPreview {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .versionJsonPre {
+  color: var(--admin-text-primary);
+}

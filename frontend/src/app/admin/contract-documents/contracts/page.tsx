@@ -1,7 +1,7 @@
 'use client';
 
-import { RepairContractDocumentsListPage } from '@/views/admin/ContractDocuments/repair/RepairContractDocumentsListPage';
+import { ContractsListPage } from '@/views/admin/ContractDocuments/packages/pages/ContractsListPage';
 
 export default function AdminContractDocumentsContractsPage() {
-  return <RepairContractDocumentsListPage />;
+  return <ContractsListPage />;
 }

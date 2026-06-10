@@ -5,16 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type CrmCustomerDetail, getCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import { RepairManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/repair/RepairManagerQuestionnaire1Tab';
-import { mergeRepairFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/repair/applyCrmContractToForm';
+import { RepairManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/RepairManagerQuestionnaire1Tab';
+import { mergeRepairFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/applyCrmContractToForm';
 import {
   persistManagerQuestionnaire1ToCrmCustomer,
   readManagerQuestionnaire1FromCrmDetail,
-} from '@/views/admin/ContractDocuments/repair/crmManagerQuestionnaire1';
+} from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/crmManagerQuestionnaire1';
 import {
   type RepairManagerQuestionnaire1Block,
   defaultRepairPackageFormData,
-} from '@/views/admin/ContractDocuments/repair/repairPackageForm';
+} from '@/views/admin/ContractDocuments/packages/directions/repair/repairPackageForm';
 
 const MQ1_CRM_SAVE_DEBOUNCE_MS = 400;
 

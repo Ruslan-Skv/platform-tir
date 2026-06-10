@@ -1,0 +1,161 @@
+/* Интерактивная итоговая смета: светлая тема (пакет и модалка заказ-нарядов) */
+.interactiveFinalEstimateTab.blockData {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
+}
+
+.interactiveFinalEstimateTab .sectionCard {
+  background: color-mix(in srgb, var(--admin-info-bg-soft) 28%, var(--admin-surface));
+  border-color: var(--admin-info-border-soft);
+  box-shadow: 0 1px 3px rgb(17 24 39 / 0.06);
+}
+
+.interactiveFinalEstimateTab .workCategoryButtonMarked:not(.workCategoryButtonActive) {
+  border-color: var(--admin-success-deep);
+  background: var(--admin-success-bg);
+  color: var(--admin-success-deep);
+  font-weight: 700;
+}
+
+.interactiveFinalEstimateTab .workCategoryButtonActive.workCategoryButtonMarked {
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-success-strong) 35%, transparent),
+    0 1px 2px rgb(22 163 74 / 0.2);
+}
+
+.interactiveFinalEstimateTab .interactiveEstimateTable.estimateA4Table th {
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+.interactiveFinalEstimateTab .interactiveEstimateTable.estimateA4Table td {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border);
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRow:hover
+  td {
+  background: var(--admin-info-bg-soft);
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowUnassigned
+  td {
+  background: color-mix(in srgb, var(--admin-warning-bg) 42%, var(--admin-surface));
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowAssigned
+  td {
+  background: color-mix(in srgb, var(--admin-success-bg) 50%, var(--admin-surface));
+}
+
+.interactiveFinalEstimateTab
+  .interactiveEstimateTable.estimateA4Table
+  tr.interactiveEstimateRowActiveInstaller
+  td {
+  background: color-mix(in srgb, var(--admin-success-bg) 72%, var(--admin-success-strong) 28%);
+  color: var(--admin-text-primary);
+}
+
+.repairTabUnassignedBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.repairTabUnassignedBadgePending {
+  background: var(--admin-accent);
+  color: #fff;
+}
+
+.repairTabUnassignedBadgeDone {
+  background: var(--admin-success-strong);
+  color: #fff;
+}
+
+.postWorkQ2Header {
+  text-align: center;
+}
+
+.postWorkQ2Header .sectionTitle {
+  margin-bottom: var(--admin-space-xs, 4px);
+}
+
+.postWorkQ2Header .hint {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+.postWorkQ2RatingRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px 16px;
+  padding: var(--admin-space-lg) var(--admin-space-0);
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.postWorkQ2RatingRow:last-of-type {
+  border-bottom: none;
+}
+
+.postWorkQ2RatingQuestion {
+  flex: 1 1 220px;
+  min-width: 0;
+  font-size: var(--admin-font-size-md);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  margin: 0;
+  line-height: var(--admin-line-height-base);
+}
+
+.postWorkQ2RatingScale {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  flex-shrink: 0;
+}
+
+.postWorkQ2RatingOption {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-md);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.postWorkQ2RatingOption input {
+  margin: 0;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab.blockData {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .interactiveFinalEstimateTab .sectionCard {
+  background: color-mix(in srgb, var(--admin-bg-page) 91%, rgb(var(--color-accent-rgb)) 9%);
+  border-color: var(--admin-accent-border);
+}

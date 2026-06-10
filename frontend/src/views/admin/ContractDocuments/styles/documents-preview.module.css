@@ -1,0 +1,2175 @@
+/* New Estimate workspace compact layout */
+.estimateWorkspaceTitle {
+  margin-top: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.estimateWorkspaceSubtitle {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateWorkspaceToolbar {
+  margin-bottom: var(--admin-space-md);
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-surface-muted) 0%,
+    var(--admin-scrollbar-track) 100%
+  );
+  gap: var(--admin-space-md);
+}
+
+.estimateWorkspaceFieldWide {
+  min-width: 300px;
+  flex: 1 1 360px;
+}
+
+.estimateWorkspaceFieldName {
+  min-width: 240px;
+  flex: 1 1 280px;
+}
+
+.estimateWorkspaceCategoriesBox {
+  max-height: 142px;
+  overflow: auto;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  background: var(--admin-surface);
+  display: grid;
+  gap: var(--admin-space-xs);
+}
+
+.estimateWorkspaceCategoryOption {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+}
+
+.estimateWorkspaceActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  align-items: center;
+}
+
+.estimateWorkspaceHeaderControls {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.estimateWorkspaceHeaderNameField {
+  min-width: 300px;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateWorkspaceHeaderNameField > span {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-2xs);
+}
+
+.estimateWorkspaceHeaderNameField input {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  min-height: 28px;
+}
+
+.estimateWorkspaceHeaderControls .estimateWorkspaceActions {
+  gap: var(--admin-space-sm);
+  flex-wrap: nowrap;
+}
+
+.estimateWorkspaceHeaderControls .primaryBtn,
+.estimateWorkspaceHeaderControls .secondaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  min-height: 28px;
+}
+
+.estimateWorkspaceExitBtn {
+  color: var(--admin-danger);
+  background: linear-gradient(180deg, var(--admin-danger-bg) 0%, var(--admin-danger-bg-soft) 100%);
+  border-color: var(--admin-danger-border);
+  font-weight: 700;
+}
+
+.estimateWorkspaceExitBtn:hover:not(:disabled) {
+  color: var(--admin-danger-text);
+  background: linear-gradient(
+    180deg,
+    var(--admin-danger-bg-soft) 0%,
+    var(--admin-warning-bg-soft) 100%
+  );
+  border-color: var(--admin-danger-border-soft);
+}
+
+.estimateWorkspaceTabBar {
+  margin-bottom: var(--admin-space-sm);
+  gap: var(--admin-space-xs);
+}
+
+.estimateWorkspaceTabBar .tab {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  border-radius: var(--admin-radius-md);
+}
+
+.estimateWorkspaceCategoryTitle {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+}
+
+/* Импорт Word (WordSection1, КО и т.п.): плотнее по вертикали; тот же класс учитывается в printDocument.ts */
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable) {
+  border-collapse: collapse !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable td),
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable th) {
+  padding: 0 0.5pt !important;
+  line-height: var(--admin-line-height-2xs) !important;
+  vertical-align: top !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 p.MsoNormal),
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 p) {
+  margin: 0 !important;
+  line-height: var(--admin-line-height-2xs) !important;
+}
+
+.docPane :global(.docPrint.docPrintWordCompact .WordSection1 tr[style*='height']) {
+  height: auto !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable) {
+  border-collapse: collapse !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable td),
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 table.MsoNormalTable th) {
+  padding: 0 0.5pt !important;
+  line-height: var(--admin-line-height-2xs) !important;
+  vertical-align: top !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 p.MsoNormal),
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 p) {
+  margin: 0 !important;
+  line-height: var(--admin-line-height-2xs) !important;
+}
+
+.visualEditor :global(.docPrint.docPrintWordCompact .WordSection1 tr[style*='height']) {
+  height: auto !important;
+}
+
+/* Колонка «Линия отреза» + соседняя узкая полоса с рамкой (КО-1), класс ставится при импорте */
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell) {
+  width: 11pt !important;
+  max-width: 11pt !important;
+  min-width: 8pt !important;
+  padding-left: 0 !important;
+  padding-right: 1pt !important;
+  box-sizing: border-box !important;
+}
+
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell span) {
+  letter-spacing: var(--admin-letter-spacing-widest) !important;
+  font-size: var(--admin-print-font-size-8pt) !important;
+}
+
+.docPane :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell + td) {
+  width: 4pt !important;
+  max-width: 5pt !important;
+  min-width: 3pt !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell) {
+  width: 11pt !important;
+  max-width: 11pt !important;
+  min-width: 8pt !important;
+  padding-left: 0 !important;
+  padding-right: 1pt !important;
+  box-sizing: border-box !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell span) {
+  letter-spacing: var(--admin-letter-spacing-widest) !important;
+  font-size: var(--admin-print-font-size-8pt) !important;
+}
+
+.visualEditor :global(.docPrint .WordSection1 table.MsoNormalTable td.koTearGuideCell + td) {
+  width: 4pt !important;
+  max-width: 5pt !important;
+  min-width: 3pt !important;
+  padding-left: 0 !important;
+  padding-right: 0 !important;
+  box-sizing: border-box !important;
+}
+
+.docPane :global(.signTable),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTable) {
+  width: 100%;
+  margin-top: var(--admin-space-4xl);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.docPane :global(.signTable td),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTable td) {
+  width: 50%;
+  vertical-align: bottom;
+  padding: var(--admin-space-md);
+}
+
+.docPane :global(.signTableActHandwritten) :global(.signTableSignRow) td,
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableSignRow) td,
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .signTableSignRow td) {
+  vertical-align: bottom;
+}
+
+.docPane :global(.signTableActHandwritten) :global(td),
+.contractA4Preview :global(.signTableActHandwritten) :global(td),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.signTableActHandwritten td) {
+  margin: 0 !important;
+  line-height: inherit !important;
+}
+
+.docPane :global(.signTableActHandwritten) :global(.signTableDateRow) td {
+  padding-top: var(--admin-space-lg);
+  font-size: 10pt;
+  vertical-align: top;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSlashRow),
+.docPane :global(.signTableActHandwritten .contractSignCustomerSlash),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSlashRow),
+.contractA4Preview :global(.signTableActHandwritten .contractSignCustomerSlash),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSlashRow),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignCustomerSlash) {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 0;
+  white-space: nowrap;
+  line-height: 1;
+  vertical-align: bottom;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSignatureLine),
+.docPane :global(.signTableActHandwritten .contractSignFioLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSignatureLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignFioLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSignatureLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignFioLine) {
+  display: block;
+  flex-shrink: 0;
+  height: 1.05em;
+  margin: 0;
+  padding: 0;
+  line-height: 1;
+  border-bottom: 1px solid var(--admin-text-primary, #111827);
+  box-sizing: border-box;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignSignatureLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignSignatureLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignSignatureLine) {
+  width: 8.5em;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignFioLine),
+.contractA4Preview :global(.signTableActHandwritten .contractSignFioLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignFioLine) {
+  width: 12em;
+  max-width: 55%;
+}
+
+.docPane :global(.signTableActHandwritten .contractSignNameText),
+.contractA4Preview :global(.signTableActHandwritten .contractSignNameText),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.signTableActHandwritten .contractSignNameText) {
+  display: block;
+  flex: 0 1 auto;
+  min-width: 10em;
+  margin: 0;
+  padding: 0 0 1px;
+  line-height: 1.05em;
+  white-space: nowrap;
+}
+
+.docPane :global(.estimatePre) {
+  white-space: pre-wrap;
+  font-family: inherit;
+  background: var(--admin-surface-muted);
+  padding: var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+}
+
+/* Вкладка «Договор»: превью как печатный лист A4 (как смета) */
+.contractA4Preview {
+  min-height: 0;
+}
+
+.contractA4Preview :global(.docPrint) {
+  font-size: var(--admin-print-font-size-12px);
+  line-height: var(--admin-line-height-md);
+  color: var(--admin-text-primary);
+}
+
+/* Договор: единая типографика на экране (как при печати, 10pt + Times).
+   Для .docPrint без docPrintContractCompact (Word, вложенные div) — те же правила, что в конструкторе. */
+.docPane :global(.docPrint.docPrintContractCompact),
+.contractA4Preview :global(.docPrint.docPrintContractCompact),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint.docPrintContractCompact),
+.templatesLibraryPage .docPane :global(.docPrint),
+.contractA4Preview :global(.docPrint),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) {
+  font-family: 'Times New Roman', Times, serif;
+  font-size: 10pt;
+  line-height: 1.32;
+  color: var(--admin-text-primary);
+}
+
+.docPane :global(.docPrint.docPrintContractDense) :global(p),
+.contractA4Preview :global(.docPrint.docPrintContractDense) :global(p),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractDense)
+  :global(p),
+.templatesLibraryPage .docPane :global(.docPrint.docPrintContractDense) :global(p) {
+  margin: 0 0 4pt !important;
+  line-height: 1.28 !important;
+}
+
+.docPane :global(.docPrint.docPrintContractDense) :global(h1),
+.contractA4Preview :global(.docPrint.docPrintContractDense) :global(h1),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractDense)
+  :global(h1),
+.templatesLibraryPage .docPane :global(.docPrint.docPrintContractDense) :global(h1) {
+  margin: 0 0 8pt !important;
+  line-height: 1.28 !important;
+}
+
+.docPane :global(.docPrint.docPrintContractDense) :global(h2),
+.docPane :global(.docPrint.docPrintContractDense) :global(h3),
+.contractA4Preview :global(.docPrint.docPrintContractDense) :global(h2),
+.contractA4Preview :global(.docPrint.docPrintContractDense) :global(h3),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractDense)
+  :global(h2),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractDense)
+  :global(h3),
+.templatesLibraryPage .docPane :global(.docPrint.docPrintContractDense) :global(h2),
+.templatesLibraryPage .docPane :global(.docPrint.docPrintContractDense) :global(h3) {
+  margin: 8pt 0 3pt !important;
+  line-height: 1.28 !important;
+}
+
+.docPane :global(.docPrint.docPrintContractDense) :global(ol.contractLegalList[data-section] > li),
+.contractA4Preview
+  :global(.docPrint.docPrintContractDense)
+  :global(ol.contractLegalList[data-section] > li),
+.templatesLibraryPage
+  .docPane
+  :global(.docPrint.docPrintContractDense)
+  :global(ol.contractLegalList[data-section] > li) {
+  margin: 0 0 3pt !important;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) *,
+.contractA4Preview :global(.docPrint.docPrintContractCompact) *,
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint.docPrintContractCompact) *,
+.templatesLibraryPage .docPane :global(.docPrint) *,
+.contractA4Preview :global(.docPrint) *,
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) * {
+  font-family: inherit;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p:not([style*='font-size'])),
+.docPane :global(.docPrint.docPrintContractCompact) :global(div:not([style*='font-size'])),
+.docPane :global(.docPrint.docPrintContractCompact) :global(td:not([style*='font-size'])),
+.docPane :global(.docPrint.docPrintContractCompact) :global(th:not([style*='font-size'])),
+.docPane :global(.docPrint.docPrintContractCompact) :global(li:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(p:not([style*='font-size'])),
+.contractA4Preview
+  :global(.docPrint.docPrintContractCompact)
+  :global(div:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(td:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(th:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(li:not([style*='font-size'])),
+.templatesLibraryPage .docPane :global(.docPrint) :global(p:not([style*='font-size'])),
+.templatesLibraryPage .docPane :global(.docPrint) :global(div:not([style*='font-size'])),
+.templatesLibraryPage .docPane :global(.docPrint) :global(td:not([style*='font-size'])),
+.templatesLibraryPage .docPane :global(.docPrint) :global(th:not([style*='font-size'])),
+.templatesLibraryPage .docPane :global(.docPrint) :global(li:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint) :global(p:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint) :global(div:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint) :global(td:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint) :global(th:not([style*='font-size'])),
+.contractA4Preview :global(.docPrint) :global(li:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(div:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(td:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(th:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(li:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(p:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(div:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(td:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(th:not([style*='font-size'])),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(li:not([style*='font-size'])) {
+  font-size: 10pt !important;
+  line-height: 1.32 !important;
+  font-family: inherit !important;
+}
+
+/* Кегли H1–H3 как в панели конструктора (14 / 12 / 11 pt), не как у компактной печати. */
+.docPane :global(.docPrint.docPrintContractCompact) :global(h1),
+.docPane :global(.docPrint.docPrintContractCompact) :global(h1.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h1),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h1.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h1),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h1.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h1),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h1.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h1),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h1.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h1),
+.contractA4Preview :global(.docPrint) :global(h1.contractDocTitle) {
+  font-size: 14pt !important;
+  line-height: 1.28 !important;
+  margin: 14pt 0 8pt;
+  font-family: inherit !important;
+  font-weight: bold;
+  text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h2:not(.contractDocTitle)),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2:not(.contractDocTitle)),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h2:not(.contractDocTitle)),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(h2:not(.contractDocTitle)),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h2:not(.contractDocTitle)),
+.contractA4Preview :global(.docPrint) :global(h2:not(.contractDocTitle)) {
+  font-size: 12pt !important;
+  line-height: 1.28 !important;
+  margin: 14pt 0 8pt;
+  font-family: inherit !important;
+  font-weight: normal;
+  text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h2.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h2.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h2.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h2.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h2.contractDocTitle) {
+  font-size: 12pt !important;
+  line-height: 1.28 !important;
+  margin: 14pt 0 8pt;
+  font-family: inherit !important;
+  font-weight: bold;
+  text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(p.contractAppendixRef),
+.templatesLibraryPage .docPane :global(.docPrint) :global(p.contractAppendixRef),
+.contractA4Preview :global(.docPrint) :global(p.contractAppendixRef) {
+  font-size: 9pt !important;
+  line-height: 1.32 !important;
+  margin: 0 0 4pt !important;
+  font-weight: normal !important;
+  text-align: left !important;
+  color: inherit;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p.contractAppendixRef) :global(*),
+.contractA4Preview
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(p.contractAppendixRef)
+  :global(*),
+.templatesLibraryPage .docPane :global(.docPrint) :global(p.contractAppendixRef) :global(*),
+.contractA4Preview :global(.docPrint) :global(p.contractAppendixRef) :global(*) {
+  font-size: inherit !important;
+  font-weight: normal !important;
+  text-align: left !important;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h3),
+.docPane :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h3),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h3),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h3.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h3),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h3.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h3),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h3),
+.contractA4Preview :global(.docPrint) :global(h3.contractDocTitle) {
+  font-size: 11pt !important;
+  line-height: 1.28 !important;
+  margin: 14pt 0 8pt;
+  font-family: inherit !important;
+  font-weight: normal;
+  text-align: center;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h3.contractDocTitle),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h3.contractDocTitle),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h3.contractDocTitle),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h3.contractDocTitle),
+.contractA4Preview :global(.docPrint) :global(h3.contractDocTitle) {
+  font-weight: bold;
+}
+
+/* До нормализации: h3 внутри h1 из Word/конструктора — жирный заголовок договора. */
+.docPane :global(.docPrint.docPrintContractCompact) :global(h1) :global(h3),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h1) :global(h3),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h1)
+  :global(h3),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h1) :global(h3),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h1) :global(h3),
+.contractA4Preview :global(.docPrint) :global(h1) :global(h3) {
+  font-weight: bold !important;
+  font-size: 14pt !important;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(h1) :global(*),
+.docPane :global(.docPrint.docPrintContractCompact) :global(h2) :global(*),
+.docPane :global(.docPrint.docPrintContractCompact) :global(h3) :global(*),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h1) :global(*),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h2) :global(*),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(h3) :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h1)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h2)
+  :global(*),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(h3)
+  :global(*),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h1) :global(*),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h2) :global(*),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(h3) :global(*),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h1) :global(*),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h2) :global(*),
+.templatesLibraryPage .docPane :global(.docPrint) :global(h3) :global(*),
+.contractA4Preview :global(.docPrint) :global(h1) :global(*),
+.contractA4Preview :global(.docPrint) :global(h2) :global(*),
+.contractA4Preview :global(.docPrint) :global(h3) :global(*) {
+  font-size: inherit !important;
+}
+
+.docPane :global(.docPrint.docPrintContractCompact) :global(p),
+.contractA4Preview :global(.docPrint.docPrintContractCompact) :global(p),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint.docPrintContractCompact)
+  :global(p),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(.docPrint) :global(p) {
+  margin: 0 0 6pt;
+}
+
+/* Договорный список: пункты 1, 2, 3…; подпункты 1.1, 1.2… (data-numbering=clause). */
+.docPane :global(ol.contractLegalList[data-section]),
+.contractA4Preview :global(ol.contractLegalList[data-section]),
+.templatesLibraryPage .templatesLibraryVisualEditor :global(ol.contractLegalList[data-section]) {
+  list-style: none;
+  margin: 0 0 8pt;
+  padding: 0;
+  counter-reset: contract-clause;
+}
+
+.docPane :global(ol.contractLegalList[data-section] > li),
+.contractA4Preview :global(ol.contractLegalList[data-section] > li),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList[data-section] > li) {
+  position: relative;
+  margin: 0 0 6pt;
+  padding: 0 0 0 1.45cm;
+  text-align: justify;
+  counter-increment: contract-clause;
+  min-height: 1.35em;
+}
+
+.docPane
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint > ol.contractLegalList[data-numbering='clause'] > li[data-section]::before),
+.docPane :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint > ol.contractLegalList:not([data-numbering]) > li[data-section]::before) {
+  content: counter(contract-clause) '.';
+  position: absolute;
+  left: 0;
+  width: 1.35cm;
+  text-align: right;
+  font-weight: normal;
+}
+
+.docPane
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before),
+.contractA4Preview
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint > ol.contractLegalList[data-numbering='section'] > li[data-section]::before) {
+  content: attr(data-section) '.' counter(contract-clause) '.';
+  position: absolute;
+  left: 0;
+  width: 1.35cm;
+  text-align: right;
+  font-weight: normal;
+}
+
+.docPane :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section]),
+.contractA4Preview
+  :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section]),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList[data-section] > li > ol.contractLegalList[data-section]) {
+  counter-reset: contract-subclause;
+  margin: 4pt 0 0;
+  padding: 0;
+}
+
+.docPane
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ),
+.contractA4Preview
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li:not(.contractRemarkBlankLines)
+  ) {
+  counter-increment: contract-subclause;
+  padding-left: 1.85cm;
+}
+
+.docPane
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ),
+.contractA4Preview
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(
+    ol.contractLegalList
+      > li
+      > ol.contractLegalList
+      > li[data-section]:not(.contractRemarkBlankLines)::before
+  ) {
+  content: counter(contract-clause) '.' counter(contract-subclause) '.';
+  width: 1.85cm;
+  left: 0;
+  text-align: right;
+}
+
+/* 2 пустые строки для замечаний — без номера, не увеличивают счётчик (важно: после правил [data-section] > li). */
+.docPane :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.contractA4Preview :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList[data-section] > li.contractRemarkBlankLines),
+.docPane
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ),
+.contractA4Preview
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(
+    ol.contractLegalList[data-section]
+      > li
+      > ol.contractLegalList[data-section]
+      > li.contractRemarkBlankLines
+  ) {
+  counter-increment: none !important;
+  list-style: none;
+  min-height: 0;
+  margin: 0 0 3pt;
+}
+
+.docPane :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.contractA4Preview :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li.contractRemarkBlankLines::before),
+.docPane
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before),
+.contractA4Preview
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines::before) {
+  content: none !important;
+  display: none;
+}
+
+.docPane :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine),
+.contractA4Preview :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine) {
+  display: block;
+  margin: 0 0 3pt;
+  padding: 0 0 1pt;
+  min-height: 0.75em;
+  line-height: 1.1;
+  text-indent: 0;
+  border-bottom: 1px solid var(--admin-text-primary, #111827);
+  box-sizing: border-box;
+}
+
+.docPane :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child),
+.contractA4Preview :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(li.contractRemarkBlankLines > p.contractRemarkBlankLine:last-child) {
+  margin-bottom: 0;
+}
+
+.docPane :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines),
+.contractA4Preview
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines),
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ol.contractLegalList > li > ol.contractLegalList > li.contractRemarkBlankLines) {
+  padding-left: 1.85cm;
+}
+
+.contractA4Preview :global(.docPrint a) {
+  color: var(--admin-text-primary) !important;
+  text-decoration: none;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(strong),
+.contractA4Preview :global(.contractRequisitesBlock) :global(b),
+.contractA4Preview :global(.contractRequisitesBlock) :global(em),
+.contractA4Preview :global(.contractRequisitesBlock) :global(i) {
+  font-weight: normal !important;
+  font-style: normal !important;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesColBody),
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody)
+  :global(p) {
+  font-weight: normal !important;
+}
+
+.contractA4Preview :global(em),
+.contractA4Preview :global(i),
+.contractA4Preview :global([style*='font-style: italic']) {
+  font-style: italic !important;
+  font-synthesis: style;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) {
+  table-layout: fixed;
+  width: 100%;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(tr.contractRequisitesRequisitesRow) {
+  height: 1px;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow)
+  > :global(td.contractRequisitesCol) {
+  height: 100%;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesColInner) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) {
+  flex: 1 1 auto;
+}
+
+.contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesSignatures) {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 14pt;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  > :global(td) {
+  padding-top: 14pt;
+  vertical-align: top;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  :global(.contractRequisitesSignatures) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures)
+  :global(p) {
+  margin: 0;
+}
+
+.contractA4Preview
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures)
+  :global(p + p) {
+  margin-top: 2pt;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow) {
+  height: 1px;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow)
+  > :global(td.contractRequisitesCol),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesRequisitesRow)
+  > :global(td.contractRequisitesCol) {
+  height: 100%;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColInner),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColInner) {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 100%;
+  box-sizing: border-box;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody) {
+  flex: 1 1 auto;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesSignatures) {
+  flex: 0 0 auto;
+  margin-top: auto;
+  padding-top: 14pt;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  :global(.contractRequisitesSignatures),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(tr.contractRequisitesSignaturesRow)
+  :global(.contractRequisitesSignatures) {
+  margin-top: 0;
+  padding-top: 0;
+}
+
+/* Сметы/акты без compact: крупные заголовки. Договор в .contractA4Preview — см. правила .docPrint h1–h3 выше. */
+.contractA4Preview
+  :global(.docPrint:not(.docPrintContractCompact):not(:has(.docPrint)))
+  :global(h1) {
+  font-size: var(--admin-print-font-size-18px);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+  text-align: center;
+}
+
+.contractA4Preview
+  :global(.docPrint:not(.docPrintContractCompact):not(:has(.docPrint)))
+  :global(h2) {
+  font-size: var(--admin-print-font-size-15px);
+  margin: 14px 0 8px;
+}
+
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint h1) {
+  font-size: 12pt !important;
+  font-weight: normal;
+  line-height: 1.28;
+  margin: 0 0 8pt;
+  text-align: center;
+}
+
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint h2) {
+  font-size: 11pt !important;
+  font-weight: normal;
+  line-height: 1.28;
+  margin: 10pt 0 4pt;
+  text-align: left;
+}
+
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint strong),
+.contractA4Preview :global(.docPrint.repairQuestionnairePrint th) {
+  font-weight: normal;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumHeaderBlock) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
+}
+
+.contractA4Preview :global(.docPrint h1.repairAddendumHeaderTitle) {
+  text-align: center;
+  font-weight: 700;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumHeaderSub) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
+  text-align: center;
+  font-size: var(--admin-print-font-size-12px);
+  line-height: var(--admin-line-height-md);
+  font-weight: normal;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaRow) {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  width: 100%;
+  align-items: baseline;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
+  font-size: var(--admin-print-font-size-12px);
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaDate) {
+  text-align: left;
+}
+
+.contractA4Preview :global(.docPrint .repairAddendumMetaCity) {
+  text-align: right;
+}
+
+.contractA4Preview :global(.docPrint h2.repairAddendumEstimateHeading) {
+  text-align: center;
+}
+
+.contractA4Preview :global(.signTable) {
+  width: 100%;
+  margin-top: var(--admin-space-3xl);
+  border-collapse: collapse;
+}
+
+.contractA4Preview :global(.signTable td) {
+  width: 50%;
+  vertical-align: bottom;
+  padding: var(--admin-space-md);
+}
+
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableSignRow) td {
+  vertical-align: bottom;
+}
+
+.contractA4Preview :global(.signTableActHandwritten) :global(.signTableDateRow) td {
+  padding-top: var(--admin-space-lg);
+  font-size: 10pt;
+  vertical-align: top;
+}
+
+.contractA4Preview :global(.estimatePre) {
+  white-space: pre-wrap;
+  font-family: inherit;
+  background: var(--admin-surface-muted);
+  padding: var(--admin-space-lg);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border);
+}
+
+.contractA4Preview :global(.contractPageSignatures) {
+  margin-top: var(--admin-space-xl);
+  padding-top: 10px;
+  border-top: 1px solid var(--admin-border);
+}
+
+/* Акты начала работ / приёмки: два экземпляра на одном листе A4 (экономия бумаги) */
+.estimateA4Sheet.repairActTwinSheet {
+  min-height: auto;
+}
+
+.estimateA4Wrap {
+  overflow-x: auto;
+  padding: var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft);
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.estimateA4Sheet {
+  width: 210mm;
+  min-height: 297mm;
+  margin: 0 auto;
+  padding: 12mm 11mm;
+  box-sizing: border-box;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  box-shadow: 0 2px 14px var(--admin-overlay-color-025);
+  font-size: var(--admin-print-font-size-11px);
+  line-height: var(--admin-line-height-base);
+}
+
+.estimateA4AppendixRef {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  font-size: var(--admin-print-font-size-10px);
+  line-height: var(--admin-line-height-sm);
+  text-align: left;
+  color: var(--admin-text-secondary);
+  font-weight: 600;
+}
+
+.estimateA4Title {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+  font-size: var(--admin-print-font-size-15px);
+  line-height: var(--admin-line-height-sm);
+  text-align: center;
+}
+
+.estimateA4Meta {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  color: var(--admin-text-secondary);
+  line-height: var(--admin-line-height-base);
+}
+
+.estimateA4Category {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  color: var(--admin-text-primary);
+}
+
+.estimateA4Room {
+  margin-bottom: var(--admin-space-lg);
+}
+
+.estimateA4CategorySection {
+  margin-bottom: var(--admin-space-sm);
+}
+
+.estimateA4RoomHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateA4Table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.estimateA4Table th,
+.estimateA4Table td {
+  border: 1px solid var(--admin-text-muted);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  text-align: left;
+  vertical-align: top;
+  line-height: var(--admin-line-height-sm);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+/* Единая сетка колонок для всех таблиц помещений на листе сметы (наименование шире — меньше переносов) */
+.estimateA4Table th:nth-child(1),
+.estimateA4Table td:nth-child(1) {
+  width: 5%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.estimateA4Table th:nth-child(2),
+.estimateA4Table td:nth-child(2) {
+  width: 52%;
+}
+
+.estimateA4Table th:nth-child(3),
+.estimateA4Table td:nth-child(3) {
+  width: 6%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(4),
+.estimateA4Table td:nth-child(4) {
+  width: 9%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(5),
+.estimateA4Table td:nth-child(5) {
+  width: 12%;
+  text-align: right;
+}
+
+.estimateA4Table th:nth-child(6),
+.estimateA4Table td:nth-child(6) {
+  width: 18%;
+  text-align: right;
+}
+
+.estimateA4Table th {
+  background: var(--admin-surface-muted);
+  font-weight: 700;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.estimateA4Total {
+  margin: 10px 0 0;
+  font-size: var(--admin-print-font-size-12px);
+  line-height: var(--admin-line-height-sm);
+  text-align: right;
+}
+
+.estimateA4DiscountMeta {
+  margin: 6px 0 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  text-align: right;
+  color: var(--admin-text-muted);
+}
+
+.estimateA4Signatures {
+  margin-top: var(--admin-space-xl);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.estimateA4SignaturesTable {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.estimateA4SignaturesCellLeft,
+.estimateA4SignaturesCellRight {
+  width: 50%;
+  vertical-align: bottom;
+}
+
+.estimateA4SignaturesCellLeft {
+  padding-right: 10px;
+}
+
+.estimateA4SignaturesCellRight {
+  padding-left: 10px;
+}
+
+.estimateA4SignaturePartyLine {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.estimateA4SignNote {
+  margin: 0;
+  font-size: var(--admin-print-font-size-9pt);
+  color: var(--admin-text-secondary);
+}
+
+.estimateA4HandwritingNote {
+  margin-top: var(--admin-space-xl);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.estimateA4HandwritingNoteLabel {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateA4HandwritingLines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.estimateA4HandwritingLine {
+  min-height: 1.1em;
+  border-bottom: 1px solid var(--admin-text-primary);
+}
+
+.estimateA4Summary {
+  margin-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border-strong);
+  padding-top: 6px;
+}
+
+.estimateA4SummaryTitle {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+  font-size: var(--admin-print-font-size-11px);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateA4SummaryList {
+  list-style: none;
+  margin: 0;
+  padding: var(--admin-space-0);
+  display: grid;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateA4SummaryList li {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--admin-space-lg);
+}
+
+.estimateA4Empty {
+  margin: 0;
+  color: var(--admin-text-muted);
+}
+
+/* Встроенная смета в HTML договора/Д/с (innerHTML): те же классы, что на вкладке «Смета». */
+.docPane :global(.docPrint .estimateA4DocPrintEmbed),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed) {
+  line-height: var(--admin-line-height-base);
+  color: var(--admin-text-primary);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection) {
+  margin-bottom: var(--admin-space-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Meta),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Meta) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  color: var(--admin-text-secondary);
+  line-height: var(--admin-line-height-base);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Room),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Room) {
+  margin-bottom: var(--admin-space-lg);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4RoomHeader),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4RoomHeader) {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table) {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td) {
+  border: 1px solid var(--admin-text-muted);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  text-align: left;
+  vertical-align: top;
+  line-height: var(--admin-line-height-sm);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(1)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(1)) {
+  width: 5%;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(2)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(2)) {
+  width: 52%;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(3)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(3)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(3)) {
+  width: 6%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(4)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(4)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(4)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(4)) {
+  width: 9%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(5)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(5)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(5)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(5)) {
+  width: 12%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(6)),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(6)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th:nth-child(6)),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table td:nth-child(6)) {
+  width: 18%;
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Table th) {
+  background: var(--admin-surface-muted);
+  font-weight: 700;
+  padding-top: 3px;
+  padding-bottom: 3px;
+}
+
+.contractA4Preview :global(.docPrint td.workOrderCategoryRow) {
+  background: var(--admin-info-bg-soft);
+}
+
+.contractA4Preview :global(.docPrint td.workOrderRoomRow) {
+  background: var(--admin-surface-muted);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Summary) {
+  margin-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border-strong);
+  padding-top: 6px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryTitle),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryTitle) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+  font-size: var(--admin-print-font-size-11px);
+  line-height: var(--admin-line-height-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList) {
+  list-style: none;
+  margin: 0;
+  padding: var(--admin-space-0);
+  display: grid;
+  gap: var(--admin-space-2xs);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li) {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--admin-space-lg);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Total),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Total) {
+  margin: 10px 0 0;
+  font-size: var(--admin-print-font-size-12px);
+  line-height: var(--admin-line-height-sm);
+  text-align: right;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4DiscountMeta),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4DiscountMeta) {
+  margin: 6px 0 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  text-align: right;
+  color: var(--admin-text-muted);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Signatures),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4Signatures) {
+  margin-top: var(--admin-space-xl);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesTable),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesTable) {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight) {
+  width: 50%;
+  vertical-align: bottom;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellLeft) {
+  padding-right: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturesCellRight) {
+  padding-left: 10px;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturePartyLine),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignaturePartyLine) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignNote),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SignNote) {
+  margin: 0;
+  font-size: var(--admin-print-font-size-9pt);
+  color: var(--admin-text-secondary);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNote),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNote) {
+  margin-top: var(--admin-space-xl);
+  page-break-inside: avoid;
+  break-inside: avoid;
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNoteLabel),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingNoteLabel) {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLines),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLines) {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLine),
+.contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4HandwritingLine) {
+  min-height: 1.1em;
+  border-bottom: 1px solid var(--admin-text-primary);
+}
+
+.visuallyHidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: var(--admin-space-0);
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.contractModeBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
+}
+
+.contractModeBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-weight: 500;
+  font-size: var(--admin-font-size-md);
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.contractModeBtn:hover {
+  background: var(--admin-border);
+}
+
+.contractModeBtnActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-weight: 600;
+  font-size: var(--admin-font-size-md);
+  color: var(--admin-info-strong);
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.contractEditGrid {
+  display: grid;
+  grid-template-columns: minmax(200px, 260px) 1fr;
+  gap: var(--admin-space-2xl);
+  align-items: start;
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.contractLiveGrid {
+  display: grid;
+  grid-template-columns: minmax(520px, 1fr) minmax(420px, 1fr);
+  gap: var(--admin-space-2xl);
+  align-items: start;
+}
+
+.contractEditColumn {
+  min-width: 0;
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md);
+}
+
+.contractPreviewColumn {
+  min-width: 0;
+  position: sticky;
+  top: 8px;
+  background: var(--admin-accent-soft);
+  border: 1px solid var(--admin-accent-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md);
+}
+
+.contractTopTools {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(520px, 640px);
+  gap: var(--admin-space-sm);
+  align-items: start;
+}
+
+.placeholderPanelTop {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  max-height: 140px;
+  overflow-y: auto;
+  background: var(--admin-surface-muted);
+}
+
+@media (max-width: 900px) {
+  .contractLiveGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .contractPreviewColumn {
+    position: static;
+  }
+
+  .contractEditGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.placeholderPanel {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  max-height: 520px;
+  overflow-y: auto;
+  background: var(--admin-surface-muted);
+}
+
+.placeholderGroupTitle {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  margin: 10px 0 6px;
+}
+
+.placeholderGroupTitle:first-child {
+  margin-top: 0;
+}
+
+.placeholderChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.placeholderChip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  text-align: left;
+}
+
+.placeholderChip:hover {
+  border-color: var(--admin-info);
+  color: var(--admin-info-strong);
+}
+
+.placeholderChip code {
+  font-size: var(--admin-font-size-xs);
+  background: transparent;
+  padding: var(--admin-space-0);
+}
+
+.contractEditorMain {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.contractEditorLabel {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  margin: 0;
+}
+
+.formatToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-2xs);
+  max-height: 96px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.formatToolbarTopRow {
+  display: flex;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: var(--admin-space-2xs);
+  flex-wrap: wrap;
+}
+
+.formatSearchInput {
+  min-width: 220px;
+  max-width: 320px;
+  flex: 1 1 240px;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+.formatLevelBar {
+  display: flex;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-2xs);
+}
+
+.formatLevelBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.formatLevelBtn:hover {
+  background: var(--admin-surface-soft);
+}
+
+.formatLevelBtnActive {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-info-border);
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.formatBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-md);
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.formatBtn:hover {
+  border-color: var(--admin-info-border);
+  background: var(--admin-info-bg-soft);
+}
+
+.formatBtnActive {
+  border-color: var(--admin-info-border);
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+.formatBtnActive:hover {
+  border-color: var(--admin-info-border);
+  background: var(--admin-info-bg-soft);
+}
+
+@media (max-width: 1100px) {
+  .contractTopTools {
+    grid-template-columns: 1fr;
+  }
+
+  .placeholderPanelTop {
+    max-height: 220px;
+  }
+}
+
+.contractHtmlTextarea {
+  width: 100%;
+  min-height: 360px;
+  padding: var(--admin-space-xl);
+  font-family:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
+    monospace;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-lg);
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.previewBlockTitle {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.docToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  align-items: center;
+  margin-bottom: var(--admin-space-md);
+}
+
+.blockImport {
+  background: var(--admin-danger-bg-soft);
+  border: 1px solid var(--admin-danger-border-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md) var(--admin-space-md);
+}
+
+.blockMode {
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-chart-cyan-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-sm);
+}
+
+.blockTools {
+  background: var(--admin-success-bg);
+  border: 1px solid var(--admin-success-border-soft);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md) var(--admin-space-md);
+}
+
+.instructionArticle {
+  max-width: 900px;
+  font-size: var(--admin-font-size-base);
+  line-height: var(--admin-line-height-xl);
+  color: var(--admin-text-secondary);
+}
+
+.instructionArticle h2 {
+  font-size: var(--admin-font-size-xl);
+  margin: 28px 0 12px;
+  color: var(--admin-text-primary);
+}
+
+.instructionArticle h2:first-of-type {
+  margin-top: var(--admin-space-md);
+}
+
+.instructionArticle ul {
+  margin: 8px 0 12px;
+  padding-left: 1.35rem;
+}
+
+.instructionArticle li {
+  margin-bottom: var(--admin-space-sm);
+}
+
+.instructionArticle pre {
+  background: var(--admin-surface-muted);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-xl) var(--admin-space-xl);
+  overflow-x: auto;
+  font-size: var(--admin-font-size-md);
+  margin: var(--admin-space-lg) var(--admin-space-0);
+}
+
+.instructionArticle code {
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface-soft);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-xs);
+}
+
+.hint {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  margin-top: var(--admin-space-xs);
+}
+
+.hint.packageLockNotice,
+.hint.estimateLockNotice,
+.hint.contractLockNotice,
+.hint.addendumLockNotice {
+  color: var(--admin-warning-text, #92400e);
+  margin-top: var(--admin-space-0);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractInstructionHint {
+  color: var(--admin-bg-page);
+}
+
+.error {
+  color: var(--admin-error-text);
+  font-size: var(--admin-font-size-base);
+  margin: var(--admin-space-md) var(--admin-space-0);
+}
+
+.success {
+  color: var(--admin-success-text-strong);
+  background: var(--admin-success-bg-soft);
+  border: 1px solid var(--admin-success-border-soft);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  margin: var(--admin-space-md) var(--admin-space-0);
+}
+
+.saveModalBackdrop {
+  position: fixed;
+  inset: 0;
+  background: var(--admin-overlay-color-028);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: var(--admin-space-2xl);
+}
+
+.saveModalCard {
+  width: min(420px, 100%);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-xl);
+  box-shadow: 0 18px 40px var(--admin-overlay-color-027);
+  padding: var(--admin-space-2xl);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.saveModalTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-lg);
+  color: var(--admin-text-primary);
+}
+
+.saveModalText {
+  margin: 0;
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+}
+
+.saveModalActionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  justify-content: flex-end;
+  margin-top: var(--admin-space-xs);
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalCard {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveModalText {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditColumn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractPreviewColumn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderPanelTop,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderPanel {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractEditorLabel,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderGroupTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewBlockTitle {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatSearchInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractModeBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatLevelBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .placeholderChip {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractModeBtnActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatLevelBtnActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formatBtnActive {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet .contractA4Preview,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.packageLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.estimateLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.addendumLockNotice,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .hint.contractLockNotice {
+  color: var(--admin-warning-text, #fcd34d);
+}
+
+/* Точечный фикс: вкладка "Данные" -> блок "Договор" */

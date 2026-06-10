@@ -1,0 +1,1037 @@
+/* Страница договора: все жёлтые подложки на 50% светлее (как вкладка «Данные») */
+.repairContractEditorPage .blockData {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning-border-soft) 50%, white);
+}
+
+.repairContractEditorPage .packageLockNotice,
+.repairContractEditorPage .estimateLockNotice,
+.repairContractEditorPage .contractLockNotice,
+.repairContractEditorPage .addendumLockNotice {
+  background: var(--admin-surface, #fff);
+  border-color: color-mix(in srgb, var(--admin-warning-border) 55%, var(--admin-border, #e2e8f0));
+  border-left-color: var(--admin-warning, #d97706);
+  box-shadow: 0 1px 3px rgb(15 23 42 / 0.08);
+}
+
+.repairContractEditorPage .autoFilledInput {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
+}
+
+.repairContractEditorPage .paymentsTab .paymentsBlockAccentSummary {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-left-color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
+}
+
+.repairContractEditorPage .packageFlowPayPctOrbYellow {
+  background: color-mix(in srgb, #fef9c3 50%, white);
+  border-color: color-mix(in srgb, #eab308 50%, white);
+}
+
+.repairWorkOrderGradeField {
+  min-width: 280px;
+}
+
+.repairWorkOrderGradeBar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: 4px;
+  padding: 4px;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: inset 0 1px 2px rgb(17 24 39 / 0.04);
+}
+
+.repairWorkOrderGradeBtn {
+  appearance: none;
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: 6px;
+  color: var(--admin-text-secondary, #4b5563);
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  padding: 7px 16px;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    color 0.15s ease,
+    transform 0.1s ease;
+}
+
+.repairWorkOrderGradeBtn:hover {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.repairWorkOrderGradeBtn:focus {
+  outline: none;
+}
+
+.repairWorkOrderGradeBtn:focus-visible {
+  box-shadow: 0 0 0 2px var(--admin-info-border-soft, #bfdbfe);
+}
+
+.repairWorkOrderGradeBtnActive4 {
+  background: var(--admin-info-bg-soft, #eff6ff) !important;
+  border-color: var(--admin-info-strong, #2563eb) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-info-strong, #2563eb) 28%, transparent),
+    0 1px 2px rgb(37 99 235 / 0.12) !important;
+  color: var(--admin-info-strong, #1d4ed8) !important;
+  font-weight: 700;
+}
+
+.repairWorkOrderGradeBtnActive5 {
+  background: var(--admin-warning-bg, #fef3c7) !important;
+  border-color: var(--admin-warning-strong, #d97706) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-warning-strong, #d97706) 32%, transparent),
+    0 1px 2px rgb(217 119 6 / 0.14) !important;
+  color: var(--admin-warning-text, #92400e) !important;
+  font-weight: 700;
+}
+
+.repairWorkOrderGradeBtnActive6 {
+  background: var(--admin-danger-bg, #fef2f2) !important;
+  border-color: var(--admin-danger-border-strong, #dc2626) !important;
+  box-shadow:
+    0 0 0 2px color-mix(in srgb, var(--admin-danger-border-strong, #dc2626) 32%, transparent),
+    0 1px 2px rgb(220 38 38 / 0.14) !important;
+  color: var(--admin-danger-text, #991b1b) !important;
+  font-weight: 700;
+}
+
+.repairContractEditorPage .paymentsKvOverpay {
+  color: color-mix(in srgb, var(--admin-warning-strong) 50%, white);
+}
+
+.repairPackageHubPipelineBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: var(--admin-space-sm);
+}
+
+.repairPackageHubPipelineActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+}
+
+.repairPackageHubRevertRow {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-sm);
+  padding-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border);
+}
+
+.repairEditorHubPrimaryBtn {
+  align-items: center;
+  display: inline-flex;
+  gap: var(--admin-space-sm);
+}
+
+.repairEditorHubBtnLabel {
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  font-weight: 600;
+}
+
+.repairEditorHubPendingBadge {
+  align-items: center;
+  background: var(--admin-warning-strong, #d97706);
+  border-radius: 999px;
+  color: #fff;
+  display: inline-flex;
+  font-size: 0.6875rem;
+  font-weight: 700;
+  justify-content: center;
+  line-height: 1;
+  min-width: 1.125rem;
+  padding: 2px 5px;
+}
+
+.repairTabAddendumUnsigned:not(.tabActive) {
+  border-color: rgb(245 158 11 / 45%);
+}
+
+.repairTabAddendumUnsigned.tabActive {
+  box-shadow: inset 0 -2px 0 rgb(245 158 11 / 70%);
+}
+
+.repairTabAddendumSignBadge {
+  background: rgb(254 243 199 / 90%);
+  border-radius: 999px;
+  color: rgb(146 64 14);
+  font-size: 0.625rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  padding: 1px 6px;
+  text-transform: uppercase;
+}
+
+.repairAddendumUnsignedBanner {
+  background: rgb(255 251 235);
+  border: 1px solid rgb(253 230 138);
+  border-radius: var(--admin-radius-md, 8px);
+  color: rgb(120 53 15);
+  font-size: var(--admin-fs-sm, 0.8125rem);
+  line-height: 1.45;
+  margin-bottom: var(--admin-space-md, 8px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.repairAddendumUnsignedBannerLink {
+  background: none;
+  border: none;
+  color: var(--admin-primary, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 600;
+  padding: 0;
+  text-decoration: underline;
+}
+
+.repairAddendumUnsignedBannerLink:hover {
+  color: var(--admin-primary-hover, #1d4ed8);
+}
+
+.dataCompact .formGrid {
+  gap: 8px 10px;
+}
+
+.dataTopRow {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: minmax(320px, 1fr) minmax(320px, 1fr);
+  gap: var(--admin-space-lg);
+  align-items: start;
+}
+
+.dataTopBlock {
+  display: grid;
+  gap: var(--admin-space-md);
+  align-content: start;
+}
+
+.contractCompactBlock {
+  width: 100%;
+  max-width: min(520px, 100%);
+  justify-self: start;
+  gap: var(--admin-space-sm);
+}
+
+.contractCompactBlock .field {
+  gap: var(--admin-space-2xs);
+}
+
+.contractCompactBlock .field label {
+  font-size: var(--admin-font-size-xs);
+}
+
+.contractCompactBlock .field input,
+.contractCompactBlock .field select,
+.contractCompactBlock .field textarea {
+  box-sizing: border-box;
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+.contractCompactBlock .field input {
+  width: 50%;
+  min-width: 150px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+}
+
+.contractInlineRow {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-md);
+}
+
+/* Номер | дата | срок | скидка — четыре равные колонки */
+.contractHeaderMetaRow {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  column-gap: var(--admin-space-md);
+  align-items: start;
+}
+
+/* Базовое правило .contractCompactBlock .field input задаёт min-width: 150px — в узких колонках
+   это ломает сетку; здесь явно сбрасываем, чтобы инпуты ужимались внутри ячеек */
+.contractCompactBlock .contractHeaderMetaRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* Описание работ / объекта — на всю ширину строки */
+.contractObjectDescDiscountRow {
+  grid-template-columns: minmax(0, 1fr);
+  column-gap: var(--admin-space-xl);
+  align-items: start;
+}
+
+.contractCompactBlock .contractObjectDescDiscountRow .field textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 3.25rem;
+  resize: vertical;
+}
+
+/* Исполнитель и менеджер (из справочников) — одна строка в «Договор и объект» */
+.contractProfilesRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  column-gap: var(--admin-space-xl);
+}
+
+.contractCompactBlock .contractProfilesRow .field select {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+}
+
+.contractDiscountFieldCell {
+  min-width: 0;
+}
+
+.contractDiscountLabelRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+/* Карточка «Данные»: замок в углу при статусе «Договор подписан» */
+.repairDataSectionCardLocked {
+  position: relative;
+  padding-right: calc(var(--admin-space-md) + 18px);
+}
+
+.repairDataSectionLockCorner {
+  position: absolute;
+  top: var(--admin-space-sm);
+  right: var(--admin-space-sm);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.repairDataSectionLockCorner .repairTabLockIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.repairContractDataTabDense .repairDataSectionCardLocked {
+  padding-right: calc(var(--admin-space-sm) + 18px);
+}
+
+.repairContractDataTabDense .repairDataSectionLockCorner {
+  top: 6px;
+  right: 6px;
+}
+
+.repairCustomerSearchWrapLocked,
+.repairCustomerSearchSlotLocked {
+  opacity: 0.96;
+}
+
+.repairCustomerSearchSlot {
+  position: relative;
+  z-index: 5;
+  width: 100%;
+  overflow: visible;
+}
+
+.repairCustomerSearchSlot > article {
+  height: 100%;
+  min-height: min-content;
+}
+
+/* Адрес объекта | этаж — под реквизитами договора */
+.contractObjectAddressRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 120px);
+  column-gap: var(--admin-space-xl);
+}
+
+.contractCompactBlock .contractObjectAddressRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .contractCompactBlock .contractObjectDescDiscountRow .field textarea {
+  min-height: 2.75rem;
+  resize: vertical;
+}
+
+/* Пара «цифры | пропись»: пропись шире (~2.5× первой колонки), одна строка */
+.contractSumAndWordsRow {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2.5fr);
+}
+
+.contractCompactBlock .contractSumAndWordsRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.contractInlineField {
+  min-width: 0;
+}
+
+.contractInlineField input {
+  width: 100%;
+  min-width: 0;
+}
+
+/* «Основание»: на всю ширину блока договора (≈ вдвине шире одной колонки сетки 1fr 1fr) */
+.contractPaymentBasisRow {
+  grid-template-columns: 1fr;
+}
+
+.contractCompactBlock .contractPaymentBasisField input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.dataTopBlock .sectionTitle {
+  grid-column: auto;
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-2xs);
+  padding-top: 0;
+}
+
+.dataCompact .sectionTitle {
+  margin: 8px 0 2px;
+  padding-top: 4px;
+  font-size: var(--admin-font-size-base);
+}
+
+.dataCompact .field {
+  gap: var(--admin-space-2xs);
+}
+
+.dataCompact .field label {
+  font-size: var(--admin-font-size-xs);
+}
+
+.dataCompact .field input,
+.dataCompact .field select,
+.dataCompact .field textarea {
+  box-sizing: border-box;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+.dataCompact .field textarea {
+  min-height: 58px;
+}
+
+/* Заказчик: банковские реквизиты — по высоте как у input в том же блоке */
+.dataCompact .sectionCustomer .customerBankDetailsField.field textarea {
+  min-height: calc(
+    2 * var(--admin-space-sm) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
+  );
+  max-height: 8rem;
+  resize: vertical;
+}
+
+/* Вкладка «Данные» договора ремонта: плотнее отступы и сетка */
+.repairContractDataTabDense {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.repairContractDataTabDense .formGrid {
+  gap: 6px 8px;
+}
+
+.repairContractDataTabDense .dataTopRow {
+  gap: var(--admin-space-md);
+  row-gap: var(--admin-space-sm);
+  align-items: stretch;
+}
+
+.repairContractDataTabDense .dataTopBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  min-height: 0;
+}
+
+/* «Договор и объект» и «Поиск заказчика» — одинаковая высота цветных карточек */
+.repairContractDataTabDense .dataTopBlock > .sectionCard,
+.repairContractDataTabDense .dataTopBlock > .repairCustomerSearchSlot {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* «Договор и объект»: на широкой колонке форма на всю ширину карточки; отступы как у блока поиска */
+.repairContractDataTabDense .dataTopBlock > .sectionCard {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.repairContractDataTabDense .dataTopBlock .contractCompactBlock {
+  max-width: 100%;
+}
+
+.repairContractDataTabDense .dataTopBlockCustomerCol {
+  gap: var(--admin-space-xs);
+  min-height: 100%;
+}
+
+/* Панель поиска растягивается; поля стоимости — фиксированная строка внизу колонки */
+.repairContractDataTabDense .dataTopBlockCustomerCol .repairCustomerSearchSlot {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.repairContractDataTabDense .dataTopBlockCustomerCol .repairCustomerSearchSlot > article {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+}
+
+.repairContractDataTabDense .dataTopBlock:first-child > .sectionCard {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.repairContractDataTabDense .repairDataContractAmountField {
+  flex: 0 0 auto;
+  max-width: 12.5rem;
+  margin-bottom: 0;
+}
+
+.repairContractDataTabDense .repairDataContractAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
+.repairContractDataTabDense .windowsContractCostStack {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px 8px;
+  width: 100%;
+  flex: 0 0 auto;
+}
+
+.repairContractDataTabDense .windowsContractCostStack .field {
+  margin-bottom: 0;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .windowsContractCostStack .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .dataTopRow > .dataTopBlock:nth-child(2) .repairCustomerSearchSlot {
+  min-height: 0;
+}
+
+.repairContractDataTabDense .sectionCard {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+}
+
+/* Карточки «Данные»: layout как .blankSheet; фон — в конце файла (перебивает .sectionCard) */
+.repairContractDataTabDense .sectionCard.repairDataBlankSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  box-sizing: border-box;
+}
+
+.repairContractDataTabDense .sectionCard .sectionTitle {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.repairContractDataTabDense .sectionTitle {
+  margin: 4px 0 2px;
+  padding-top: 2px;
+  font-size: var(--admin-font-size-sm);
+}
+
+.repairContractDataTabDense .sectionCustomerHeader {
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xs);
+}
+
+.repairContractDataTabDense .sectionCustomerHeader .sectionTitle {
+  margin: 0;
+  padding-top: 2px;
+  font-size: var(--admin-font-size-sm);
+}
+
+/* Кнопка CRM в шапке «Заказчик»: создание (accent), сохранение (primary), «в базе» (secondary) */
+.repairContractDataTabDense .sectionCustomerHeader .repairCustomerCreateCrmBtn {
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+}
+
+.repairCustomerCrmSyncedBtn {
+  max-width: min(100%, 26rem);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.repairContractDataTabDense .sectionFields {
+  display: grid;
+  gap: 6px 8px;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+/* Заказчик, Исполнитель, Менеджер — колонкой на всю ширину formGrid */
+.repairContractDataTabDense .sectionCard.repairDataPartySection {
+  grid-column: 1 / -1;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  gap: var(--admin-space-2xs);
+}
+
+.repairContractDataTabDense .repairDataPartySection .sectionTitle {
+  margin: 0;
+  padding-top: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  flex-wrap: wrap;
+}
+
+.repairContractDataTabDense .repairDataPartySectionHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionCompletion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.repairContractDataTabDense .repairDataPartySectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySectionTitleRow .sectionTitle {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.repairContractDataTabDense .repairDataSectionLockInline {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+.repairContractDataTabDense .repairDataSectionLockInline .repairTabLockIcon {
+  width: 14px;
+  height: 14px;
+}
+
+.repairContractDataTabDense .repairDataPartySectionCollapseBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: var(--admin-space-xs);
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairContractDataTabDense .repairDataPartySectionCollapseIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.repairContractDataTabDense .repairDataPartySectionIntroHint {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.repairContractDataTabDense .repairDataPartySectionFieldHint {
+  margin-top: 2px;
+  margin-bottom: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.repairContractDataTabDense .repairDataPartySection .sectionFields {
+  gap: 4px 8px;
+}
+
+/* Заказчик (физлицо): две строки по 4 равные колонки */
+.repairContractDataTabDense .repairCustomerPrimaryRow,
+.repairContractDataTabDense .repairCustomerSecondaryRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairCustomerPrimaryRow .field,
+.repairContractDataTabDense .repairCustomerSecondaryRow .field {
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairCustomerPrimaryRow .field input,
+.repairContractDataTabDense .repairCustomerPrimaryRow .field select,
+.repairContractDataTabDense .repairCustomerSecondaryRow .field input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySection .field {
+  gap: 2px;
+}
+
+.repairContractDataTabDense .repairDataPartySection .field label {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.repairContractDataTabDense .field {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.repairContractDataTabDense .repairDataPartySection .field input,
+.repairContractDataTabDense .repairDataPartySection .field select,
+.repairContractDataTabDense .repairDataPartySection .field textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+.repairContractDataTabDense .repairDataPartySection .field textarea {
+  min-height: 2.5rem;
+}
+
+.repairContractDataTabDense .repairDataPartySection .customerBankDetailsField.field textarea,
+.repairContractDataTabDense .repairDataPartySection .executorBankDetailsField.field textarea {
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
+  );
+}
+
+.repairContractDataTabDense .field input,
+.repairContractDataTabDense .field select,
+.repairContractDataTabDense .field textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+/* Нередактируемые vs редактируемые поля на вкладке «Данные» */
+.repairContractDataTabDense .field input[readonly],
+.repairContractDataTabDense .field textarea[readonly],
+.repairContractDataTabDense .field select:disabled {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  cursor: default;
+}
+
+/* Автоподстановка / нередактируемая стоимость и срок — как .autoFilledInput, не серый readonly */
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput,
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput[readonly],
+.repairContractEditorPage .repairContractDataTabDense .field input.autoFilledInput:disabled {
+  background: color-mix(in srgb, var(--admin-warning-bg) 50%, white);
+  border-color: color-mix(in srgb, var(--admin-warning) 50%, white);
+  cursor: default;
+}
+
+.repairContractDataTabDense
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='radio']),
+.repairContractDataTabDense .field select:not(:disabled),
+.repairContractDataTabDense .field textarea:not([readonly]):not(:disabled) {
+  background: var(--admin-surface);
+}
+
+.repairContractDataTabDense .field textarea {
+  min-height: 48px;
+}
+
+.repairContractDataTabDense .customerBankDetailsField.field textarea {
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
+  );
+}
+
+/* Телефоны заказчика: кнопки вне модалки — те же secondary, компактный размер как у полей */
+.repairContractDataTabDense .customerEmailPhonesRow {
+  gap: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.repairContractDataTabDense .customerEmailPhonesRow .secondaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+  border-radius: var(--admin-radius-sm);
+  white-space: nowrap;
+}
+
+.repairContractDataTabDense .contractHeaderMetaRow {
+  column-gap: var(--admin-space-md);
+}
+
+.repairContractDataTabDense .contractObjectAddressRow {
+  column-gap: var(--admin-space-md);
+}
+
+.repairContractDataTabDense .crmCompactBox {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.repairContractDataTabDense .repairCustomerSearchModeRow {
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-5xl);
+}
+
+.repairContractDataTabDense .repairCustomerSearchFlGrid,
+.repairContractDataTabDense .repairCustomerSearchUlGrid {
+  gap: var(--admin-space-xs);
+}
+
+.repairContractDataTabDense .crmCompactField .primaryBtn,
+.repairContractDataTabDense .crmCompactField .secondaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.repairContractDataTabDense .crmCompactField .repairCustomerSearchCrmBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+}
+
+.repairContractDataTabDense .crmResultBtn {
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.repairContractDataTabDense .contractInstructionHint {
+  margin-top: var(--admin-space-xs);
+  margin-bottom: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .hint code {
+  color: var(--admin-text-primary);
+  background: rgb(0 0 0 / 0.22);
+  border-radius: var(--admin-radius-sm);
+  padding: 0.1em 0.35em;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractDataTabDense .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-sidebar-text);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-md);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field label {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .repairDataPartySection
+  .field
+  input,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .repairDataPartySection
+  .field
+  select,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractDataTabDense
+  .repairDataPartySection
+  .field
+  textarea {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock input[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock textarea[readonly],
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractCompactBlock select[readonly] {
+  background: var(--admin-surface-soft) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+  opacity: 1 !important;
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentContract {
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(59 130 246) 11%);
+  border-left-color: rgb(96 165 250 / 0.42);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentAddendum {
+  background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
+  border-left-color: rgb(52 211 153 / 0.38);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentSummary {
+  background: color-mix(in srgb, var(--admin-bg-page) 88%, rgb(245 158 11) 12%);
+  border-left-color: rgb(251 191 36 / 0.4);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentForm {
+  background: color-mix(in srgb, var(--admin-bg-page) 90%, rgb(var(--color-accent-rgb)) 10%);
+  border-left-color: var(--admin-accent-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsBlockAccentJournal {
+  background: color-mix(in srgb, var(--admin-bg-page) 93%, rgb(148 163 184) 7%);
+  border-left-color: var(--admin-border-strong);
+}
+
+/* Тёмная тема: контраст текста и таблицы на вкладке «Оплаты» */
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .sectionTitle {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .field label {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .hint {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvKey {
+  color: rgba(229, 231, 235, 0.85);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvVal {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvPctSuffix {
+  color: rgba(229, 231, 235, 0.72);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsAmountFieldTitle {
+  color: rgba(243, 244, 246, 0.9);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsAmountWordsPreview {
+  color: rgba(243, 244, 246, 0.88);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsKvOverpay {
+  color: var(--admin-danger-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .autoFilledInput {
+  background: rgb(17 24 39 / 0.58) !important;
+  border-color: var(--admin-border-strong) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsTable th {
+  background: rgb(17 24 39 / 0.72);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsTable td {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
+  border-color: var(--admin-border-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .paymentsTab .paymentsTablePctCol {
+  color: rgba(243, 244, 246, 0.88);
+}

@@ -21,20 +21,28 @@ import {
 } from '@/shared/api/admin-payment-invoices';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import styles from '@/views/admin/ContractDocuments/ContractDocuments.module.css';
-import { RepairContractInvoicesModal } from '@/views/admin/ContractDocuments/repair/RepairContractInvoicesModal';
-import { RepairIssueInvoicePanel } from '@/views/admin/ContractDocuments/repair/RepairIssueInvoicePanel';
-import { mergeFormDataFromStorage } from '@/views/admin/ContractDocuments/repair/formDataTemplateStorage';
-import type { RepairDocumentTemplateTabId } from '@/views/admin/ContractDocuments/repair/formDataTemplateStorage';
-import { getRepairContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/repair/packageContractDisplay';
-import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/repair/repairActTwinCopiesOnOnePageHtml';
+import { isProductDirectionPackageKind } from '@/views/admin/ContractDocuments/packages/config/productDirectionPackageKind';
+import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/packages/directions/repair/documents/repairActTwinCopiesOnOnePageHtml';
+import { resolveRepairTemplateHtml } from '@/views/admin/ContractDocuments/packages/directions/repair/documents/resolveRepairTemplateHtml';
+import { mergeFormDataFromStorage } from '@/views/admin/ContractDocuments/packages/directions/repair/formDataTemplateStorage';
+import type { RepairDocumentTemplateTabId } from '@/views/admin/ContractDocuments/packages/directions/repair/formDataTemplateStorage';
+import { RepairIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/directions/repair/payments/RepairIssueInvoicePanel';
 import {
   buildRepairInvoicePrintHtml,
   downloadRepairPaymentInvoice,
   paymentInvoiceLineItemsForApi,
   printRepairPaymentInvoice,
-} from '@/views/admin/ContractDocuments/repair/repairInvoicePrint';
-import { resolveRepairTemplateHtml } from '@/views/admin/ContractDocuments/repair/resolveRepairTemplateHtml';
+} from '@/views/admin/ContractDocuments/packages/directions/repair/payments/repairInvoicePrint';
+import { RepairContractInvoicesModal } from '@/views/admin/ContractDocuments/packages/shared/hub/RepairContractInvoicesModal';
+
+import cdBase from '../ContractDocuments/styles/base.module.css';
+import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
+import cdDataTab from '../ContractDocuments/styles/data-tab.module.css';
+import cdDocPreview from '../ContractDocuments/styles/documents-preview.module.css';
+import cdChrome from '../ContractDocuments/styles/editor-chrome.module.css';
+import cdEstimateTab from '../ContractDocuments/styles/estimate-tab.module.css';
+import cdEstimatesList from '../ContractDocuments/styles/estimates-list.module.css';
+import cdWorkspace from '../ContractDocuments/styles/estimates-workspace.module.css';
 
 function formatDateRu(isoDate: string) {
   const d = new Date(`${isoDate}T12:00:00`);
@@ -161,22 +169,26 @@ export function AccountingInvoicesPage() {
   };
 
   return (
-    <div className={`${styles.page} ${styles.pageWide}`}>
-      <div className={`${styles.editorHeader} ${styles.blockHeader}`}>
-        <div className={styles.repairEditorHeaderLeft}>
-          <h1 className={styles.title}>Счета на оплату</h1>
-          <p className={styles.subtitle}>
+    <div className={`${cdBase.page} ${cdBase.pageWide}`}>
+      <div className={`${cdWorkspace.editorHeader} ${cdHub.blockHeader}`}>
+        <div className={cdChrome.repairEditorHeaderLeft}>
+          <h1 className={cdWorkspace.title}>Счета на оплату</h1>
+          <p className={cdWorkspace.subtitle}>
             Единый журнал выставленных счетов по договорам ремонта. Номер счёта общий для всей
             организации.
           </p>
         </div>
-        <div className={styles.headerActions}>
-          <button type="button" className={styles.primaryBtn} onClick={() => void openIssueModal()}>
+        <div className={cdHub.headerActions}>
+          <button
+            type="button"
+            className={cdWorkspace.primaryBtn}
+            onClick={() => void openIssueModal()}
+          >
             + Выставить счёт
           </button>
           <button
             type="button"
-            className={`${styles.secondaryBtn} ${styles.estimatesPageRefreshIconBtn}`}
+            className={`${cdBase.secondaryBtn} ${cdBase.estimatesPageRefreshIconBtn}`}
             disabled={loading}
             aria-busy={loading}
             title="Обновить список"
@@ -192,7 +204,7 @@ export function AccountingInvoicesPage() {
               strokeWidth={2}
               strokeLinecap="round"
               strokeLinejoin="round"
-              className={loading ? styles.estimatesRefreshIconSpinning : undefined}
+              className={loading ? cdChrome.estimatesRefreshIconSpinning : undefined}
               aria-hidden
             >
               <path d="M23 4v6h-6" />
@@ -203,10 +215,10 @@ export function AccountingInvoicesPage() {
         </div>
       </div>
 
-      <div className={styles.estimatesToolbar} style={{ marginBottom: 16 }}>
+      <div className={cdWorkspace.estimatesToolbar} style={{ marginBottom: 16 }}>
         <input
           type="search"
-          className={styles.searchInput}
+          className={cdBase.searchInput}
           placeholder="Поиск: № счёта, договор, заказчик, основание…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
@@ -214,10 +226,10 @@ export function AccountingInvoicesPage() {
         />
       </div>
 
-      {error ? <p className={styles.errorBanner}>{error}</p> : null}
+      {error ? <p className={cdBase.errorBanner}>{error}</p> : null}
 
-      <div className={styles.paymentsTableWrap}>
-        <table className={`${styles.paymentsTable} ${styles.repairContractsTable}`}>
+      <div className={cdBase.paymentsTableWrap}>
+        <table className={`${cdBase.paymentsTable} ${cdBase.repairContractsTable}`}>
           <thead>
             <tr>
               <th>№ счёта</th>
@@ -225,7 +237,7 @@ export function AccountingInvoicesPage() {
               <th>Договор</th>
               <th>Заказчик</th>
               <th>Основание</th>
-              <th className={styles.paymentsHubSummaryNumCol}>Сумма</th>
+              <th className={cdBase.paymentsHubSummaryNumCol}>Сумма</th>
               <th></th>
             </tr>
           </thead>
@@ -233,13 +245,13 @@ export function AccountingInvoicesPage() {
             {loading ? (
               <tr>
                 <td colSpan={7}>
-                  <p className={styles.hint}>Загрузка…</p>
+                  <p className={cdBase.hint}>Загрузка…</p>
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
                 <td colSpan={7}>
-                  <p className={styles.hint}>Счетов пока нет.</p>
+                  <p className={cdBase.hint}>Счетов пока нет.</p>
                 </td>
               </tr>
             ) : (
@@ -254,11 +266,11 @@ export function AccountingInvoicesPage() {
                   </td>
                   <td>{row.customerName || '—'}</td>
                   <td>{row.basis}</td>
-                  <td className={styles.paymentsHubSummaryNumCol}>{formatMoneyRub(row.amount)}</td>
+                  <td className={cdBase.paymentsHubSummaryNumCol}>{formatMoneyRub(row.amount)}</td>
                   <td>
                     <button
                       type="button"
-                      className={styles.paymentsHubConductSecondaryBtn}
+                      className={cdBase.paymentsHubConductSecondaryBtn}
                       onClick={() => openContractInvoices(row.packageId)}
                     >
                       Счета договора
@@ -288,7 +300,7 @@ export function AccountingInvoicesPage() {
             автоматически.
           </p>
           <div
-            className={`${styles.field} ${styles.contractInlineField}`}
+            className={`${cdBase.field} ${cdDataTab.contractInlineField}`}
             style={{ marginBottom: 16 }}
           >
             <label htmlFor="accounting_issue_package">Договор</label>
@@ -435,8 +447,9 @@ function RepairContractInvoicesModalLoader({
     void (async () => {
       try {
         const row = await getContractDocumentPackage(packageId);
-        const presetsKind: ContractDocumentPackageKind =
-          row.kind === 'WINDOWS' ? 'WINDOWS' : 'REPAIR';
+        const presetsKind: ContractDocumentPackageKind = isProductDirectionPackageKind(row.kind)
+          ? row.kind
+          : 'REPAIR';
         const presetsRes = await getContractDocumentTemplatePresets(presetsKind);
         if (cancelled) return;
         const merged = mergeFormDataFromStorage(row.formData);

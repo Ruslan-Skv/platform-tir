@@ -1,0 +1,688 @@
+/* Strong overrides for New Estimate compact layout */
+.docToolbar.estimateWorkspaceToolbar {
+  margin-bottom: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  gap: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-left: 3px solid var(--admin-text-muted);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    180deg,
+    var(--admin-surface-muted) 0%,
+    var(--admin-scrollbar-track) 100%
+  );
+}
+
+.estimateWorkspaceToolbar .field {
+  gap: var(--admin-space-xs);
+}
+
+.estimateWorkspaceToolbar .field > span,
+.estimateWorkspaceToolbar .field > label {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+}
+
+.estimateWorkspaceToolbar .field input,
+.estimateWorkspaceToolbar .field select {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  border-radius: var(--admin-radius-md);
+}
+
+.estimateWorkspaceToolbar .primaryBtn,
+.estimateWorkspaceToolbar .secondaryBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+}
+
+.estimateWorkspaceCategoriesBox {
+  max-height: 120px;
+}
+
+.estimateWorkspaceTitle {
+  margin-top: var(--admin-space-2xs);
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-2xl);
+}
+
+.estimateWorkspaceSubtitle {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  max-width: 820px;
+}
+
+/* Hard compact preset for "Новый расчёт" page */
+.estimateWorkspacePage .editorHeader {
+  margin-bottom: var(--admin-space-xs);
+  flex-wrap: nowrap;
+  align-items: flex-start;
+}
+
+.estimateWorkspacePage .editorHeader > div:first-child {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.estimateWorkspacePage .estimateWorkspaceHeaderControls {
+  flex-shrink: 0;
+  min-width: 0;
+}
+
+.estimateWorkspacePage .title {
+  font-size: var(--admin-font-size-xl);
+}
+
+.estimateWorkspacePage .subtitle {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-xs);
+  margin-top: var(--admin-space-2xs);
+}
+
+.estimateWorkspacePage .backLink {
+  display: inline-block;
+  font-size: var(--admin-font-size-sm);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.estimateWorkspacePage .backLink:hover {
+  color: var(--admin-info);
+}
+
+.estimateWorkspacePage .docToolbar.estimateWorkspaceToolbar {
+  margin-bottom: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  gap: var(--admin-space-sm);
+}
+
+.estimateWorkspaceTopRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--admin-space-lg);
+  align-items: stretch;
+  margin-bottom: var(--admin-space-md);
+}
+
+.estimateWorkspaceTopBlock {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.estimateWorkspaceTopBlock > .sectionCard {
+  flex: 1 1 auto;
+  height: 100%;
+}
+
+.estimateWorkspaceCategoriesCard,
+.estimateWorkspaceCustomerCard {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.estimateWorkspaceCategoriesCard .estimateWorkspaceCategoryChips {
+  padding: 0;
+}
+
+@media (max-width: 980px) {
+  .estimateWorkspaceTopRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Обёртка blankSheet без второй рамки (сама карточка уже sectionCard) */
+.estimateWorkspaceCustomerBlankSheet {
+  padding: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  gap: var(--admin-space-sm);
+}
+
+/* Название расчёта — рамка и фокус как у поля «Поиск» в CrmCustomerSearchPanel */
+.estimateWorkspaceNameSearchInput {
+  width: 100%;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  box-sizing: border-box;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.estimateWorkspaceNameSearchInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+.estimateWorkspaceNameSearchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceNameSearchInput {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimateWorkspaceNameSearchInput::placeholder {
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceNameSearchInput:focus {
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
+/* Редактор пакета договора (ремонт): рамка активных полей как в CrmCustomerSearchPanel */
+.repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']),
+.repairContractEditorPage .field select:not(:disabled),
+.repairContractEditorPage .field textarea:not([readonly]):not(:disabled),
+.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled),
+.repairContractEditorPage .repairWorkStartModalDateFieldWrap input[type='date']:not(:disabled) {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+}
+
+.repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']):focus,
+.repairContractEditorPage .field select:not(:disabled):focus,
+.repairContractEditorPage .field textarea:not([readonly]):not(:disabled):focus,
+.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled):focus,
+.repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled):focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  select:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  textarea:not([readonly]):not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairContractRefusalReasonTextarea:not(:disabled),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled) {
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-sidebar-text);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
+    [type='checkbox']
+  ):not([type='radio']):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  select:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .field
+  textarea:not([readonly]):not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairContractRefusalReasonTextarea:not(:disabled):focus,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairContractEditorPage
+  .repairWorkStartModalDateFieldWrap
+  input[type='date']:not(:disabled):focus {
+  outline: none;
+  border-color: var(--admin-info-light);
+  box-shadow: 0 0 0 2px var(--admin-overlay-color-136);
+}
+
+.estimateWorkspaceCustomerFieldsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateWorkspaceCustomerFieldsRow > * {
+  margin-bottom: 0;
+}
+
+@media (max-width: 720px) {
+  .estimateWorkspaceCustomerFieldsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.estimateWorkspaceCustomerCard .repairCustomerSearchSlot {
+  margin-top: var(--admin-space-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceHeaderControls {
+  gap: var(--admin-space-sm);
+  flex-direction: row;
+  align-items: center;
+}
+
+.estimateWorkspacePage .estimateWorkspaceHeaderNameField {
+  min-width: 300px;
+}
+
+.estimateWorkspacePage .estimateWorkspaceHeaderNameField input {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceToolbar .field > span,
+.estimateWorkspacePage .estimateWorkspaceToolbar .field > label {
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceToolbar .field input,
+.estimateWorkspacePage .estimateWorkspaceToolbar .field select {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceToolbar .primaryBtn,
+.estimateWorkspacePage .estimateWorkspaceToolbar .secondaryBtn {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceCategoriesBox {
+  max-height: 108px;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateWorkspacePage .estimateWorkspaceCategoryOption {
+  font-size: var(--admin-font-size-xs);
+  gap: var(--admin-space-sm);
+}
+
+.estimateWorkspaceCategoryChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-xs) var(--admin-space-0);
+}
+
+.estimateWorkspaceCategoryChip {
+  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border-radius: var(--admin-radius-pill);
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-xs);
+  cursor: pointer;
+}
+
+.estimateWorkspaceCategoryChipActive {
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent-soft-strong);
+  font-weight: 700;
+}
+
+.estimateWorkspaceCategoryChip:hover {
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceCategoryChip {
+  border-color: var(--admin-sidebar-text);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimateWorkspaceCategoryChipActive {
+  border-color: var(--admin-accent-soft-strong);
+  background: var(--admin-accent);
+  color: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTabs {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tab {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tab:hover {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tabActive {
+  background: var(--admin-overlay-color-014);
+  border-color: var(--admin-accent-soft-strong);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTabFirst,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .repairPackageTabBarCompact
+  .summaryTabLast {
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockMode,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTools,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockImport {
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockMode,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockTools,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .blockImport {
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox p,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox code {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .secondaryBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .crmResultBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .sectionTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field label,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field label {
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .field textarea,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field input,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .field textarea {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionCustomer .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionExecutor .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sectionObject .autoFilledInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .crmCompactBox .autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .autoFilledInput {
+  background: var(--admin-surface-soft) !important;
+  border-color: var(--admin-sidebar-text) !important;
+  color: var(--admin-text-primary) !important;
+  -webkit-text-fill-color: var(--admin-text-primary) !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListSection {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  box-shadow: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesToolbar {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupBlock {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesGroupHeader {
+  background: var(--admin-surface-soft);
+  border-bottom-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesPage .estimatesCard:hover {
+  box-shadow: 0 2px 12px rgb(0 0 0 / 0.25);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .estimatesListEstimateRow:hover td {
+  background: var(--admin-surface-muted);
+}
+
+.estimateWorkspacePage .estimateWorkspaceTabBar {
+  margin-bottom: var(--admin-space-xs);
+  gap: var(--admin-space-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceTabBar .tab {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .estimateWorkspaceCategoryTitle {
+  margin-bottom: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateWorkspacePage .docPane {
+  padding: var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
+}
+
+.estimateWorkspaceCalculatorError {
+  margin: 0 0 var(--admin-space-md);
+}
+
+.pageWide {
+  max-width: none;
+  width: 100%;
+}
+
+.title {
+  font-size: var(--admin-font-size-3xl);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md);
+}
+
+.subtitle {
+  color: var(--admin-text-muted);
+  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl);
+  align-items: center;
+  margin-bottom: var(--admin-space-3xl);
+}
+
+.primaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-lg) var(--admin-space-18);
+  font-weight: 600;
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-surface);
+  background: var(--admin-info);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.primaryBtn:hover {
+  background: var(--admin-info-strong);
+}
+
+.secondaryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-weight: 500;
+  font-size: var(--admin-font-size-md);
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.secondaryBtn:hover {
+  background: var(--admin-border);
+}
+
+.dangerBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-weight: 500;
+  font-size: var(--admin-font-size-md);
+  color: var(--admin-error-text);
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.dangerBtn:hover {
+  background: var(--admin-error-bg-soft);
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-base);
+}
+
+.table th,
+.table td {
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  text-align: left;
+  border-bottom: 1px solid var(--admin-surface-soft);
+}
+
+.table th {
+  background: var(--admin-surface-muted);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.table tr:last-child td {
+  border-bottom: none;
+}
+
+/* --- dark theme --- */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn:hover {
+  background: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn.estimatesAddObjectBtn,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .secondaryBtn.mergeObjectModalSaveBtn {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .tableWrap {
+  background: var(--admin-surface);
+  border-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table th {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  border-bottom-color: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .table td {
+  color: var(--admin-text-primary);
+  border-bottom-color: var(--admin-sidebar-text);
+}
+
+/* Тёмная тема: страница /contract-documents/templates */
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractEditorPage .blockData {
+  /* Как вкладка «Данные»: без жёлтой подложки под карточки */
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
