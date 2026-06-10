@@ -64,7 +64,7 @@
   color: var(--admin-text-primary);
 }
 
-.repairTabUnassignedBadge {
+.packageTabUnassignedBadge {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -77,12 +77,12 @@
   line-height: 1;
 }
 
-.repairTabUnassignedBadgePending {
+.packageTabUnassignedBadgePending {
   background: var(--admin-accent);
   color: #fff;
 }
 
-.repairTabUnassignedBadgeDone {
+.packageTabUnassignedBadgeDone {
   background: var(--admin-success-strong);
   color: #fff;
 }

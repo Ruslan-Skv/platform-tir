@@ -1,4 +1,4 @@
-export const repairTemplateProductionLog = `
+export const packageTemplateProductionLog = `
 <div class="docPrint">
   <h1>Производственный журнал</h1>
   <p>Объект: {{object.objectAddress}}. Заказчик: {{customer.fullName|plain}} ({{customer.typeLabel|plain}}).</p>

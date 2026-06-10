@@ -1078,7 +1078,7 @@
   margin: 14px 0 8px;
 }
 
-.contractA4Preview :global(.docPrint.repairQuestionnairePrint h1) {
+.contractA4Preview :global(.docPrint.packageQuestionnairePrint h1) {
   font-size: 12pt !important;
   font-weight: normal;
   line-height: 1.28;
@@ -1086,7 +1086,7 @@
   text-align: center;
 }
 
-.contractA4Preview :global(.docPrint.repairQuestionnairePrint h2) {
+.contractA4Preview :global(.docPrint.packageQuestionnairePrint h2) {
   font-size: 11pt !important;
   font-weight: normal;
   line-height: 1.28;
@@ -1094,22 +1094,22 @@
   text-align: left;
 }
 
-.contractA4Preview :global(.docPrint.repairQuestionnairePrint strong),
-.contractA4Preview :global(.docPrint.repairQuestionnairePrint th) {
+.contractA4Preview :global(.docPrint.packageQuestionnairePrint strong),
+.contractA4Preview :global(.docPrint.packageQuestionnairePrint th) {
   font-weight: normal;
 }
 
-.contractA4Preview :global(.docPrint .repairAddendumHeaderBlock) {
+.contractA4Preview :global(.docPrint .packageAddendumHeaderBlock) {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
 
-.contractA4Preview :global(.docPrint h1.repairAddendumHeaderTitle) {
+.contractA4Preview :global(.docPrint h1.packageAddendumHeaderTitle) {
   text-align: center;
   font-weight: 700;
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
 }
 
-.contractA4Preview :global(.docPrint .repairAddendumHeaderSub) {
+.contractA4Preview :global(.docPrint .packageAddendumHeaderSub) {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
   text-align: center;
   font-size: var(--admin-print-font-size-12px);
@@ -1117,7 +1117,7 @@
   font-weight: normal;
 }
 
-.contractA4Preview :global(.docPrint .repairAddendumMetaRow) {
+.contractA4Preview :global(.docPrint .packageAddendumMetaRow) {
   display: grid;
   grid-template-columns: 1fr auto;
   width: 100%;
@@ -1126,15 +1126,15 @@
   font-size: var(--admin-print-font-size-12px);
 }
 
-.contractA4Preview :global(.docPrint .repairAddendumMetaDate) {
+.contractA4Preview :global(.docPrint .packageAddendumMetaDate) {
   text-align: left;
 }
 
-.contractA4Preview :global(.docPrint .repairAddendumMetaCity) {
+.contractA4Preview :global(.docPrint .packageAddendumMetaCity) {
   text-align: right;
 }
 
-.contractA4Preview :global(.docPrint h2.repairAddendumEstimateHeading) {
+.contractA4Preview :global(.docPrint h2.packageAddendumEstimateHeading) {
   text-align: center;
 }
 
@@ -1176,7 +1176,7 @@
 }
 
 /* Акты начала работ / приёмки: два экземпляра на одном листе A4 (экономия бумаги) */
-.estimateA4Sheet.repairActTwinSheet {
+.estimateA4Sheet.packageActTwinSheet {
   min-height: auto;
 }
 
@@ -2159,12 +2159,12 @@
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageActTwinSheet {
   background: var(--admin-surface);
   border-color: var(--admin-sidebar-text);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairActTwinSheet .contractA4Preview,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageActTwinSheet .contractA4Preview,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hint.packageLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hint.estimateLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hint.addendumLockNotice,

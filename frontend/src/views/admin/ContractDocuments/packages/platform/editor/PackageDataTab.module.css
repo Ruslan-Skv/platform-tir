@@ -1,0 +1,242 @@
+/* Co-located styles for PackageDataTab party sections (requires :global(.packageDataTabDense) ancestor). */
+
+.packageDataSectionCardLocked {
+  position: relative;
+  padding-right: calc(var(--admin-space-md) + 18px);
+}
+
+.packageDataSectionLockCorner {
+  position: absolute;
+  top: var(--admin-space-sm);
+  right: var(--admin-space-sm);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.packageDataSectionLockCorner :global(.packageTabLockIcon) {
+  width: 14px;
+  height: 14px;
+}
+
+:global(.packageDataTabDense) .packageDataSectionCardLocked {
+  padding-right: calc(var(--admin-space-sm) + 18px);
+}
+
+:global(.packageDataTabDense) .packageDataSectionLockCorner {
+  top: 6px;
+  right: 6px;
+}
+
+:global(.packageDataTabDense) .packageDataContractAmountField {
+  flex: 0 0 auto;
+  max-width: 12.5rem;
+  margin-bottom: 0;
+}
+
+:global(.packageDataTabDense) .packageDataContractAmountField input {
+  width: 100%;
+  max-width: 12.5rem;
+}
+
+:global(.packageDataTabDense) :global(.sectionCard).packageDataBlankSheet {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  box-sizing: border-box;
+}
+
+:global(.packageDataTabDense) :global(.sectionCard).packageDataPartySection {
+  grid-column: 1 / -1;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  gap: var(--admin-space-2xs);
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.sectionTitle) {
+  margin: 0;
+  padding-top: 0;
+}
+
+.packageDataPartySectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  flex-wrap: wrap;
+}
+
+.packageDataPartySectionHeaderActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.packageDataPartySectionCompletion {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text);
+  font-size: 12px;
+  line-height: 1;
+  font-weight: 600;
+}
+
+.packageDataPartySectionTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+:global(.packageDataTabDense) .packageDataPartySectionTitleRow :global(.sectionTitle) {
+  flex: 0 1 auto;
+  min-width: 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.packageDataSectionLockInline {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  line-height: 0;
+}
+
+:global(.packageDataTabDense) .packageDataSectionLockInline :global(.packageTabLockIcon) {
+  width: 14px;
+  height: 14px;
+}
+
+.packageDataPartySectionCollapseBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  min-height: 28px;
+  padding: var(--admin-space-xs);
+  border-radius: var(--admin-radius-sm);
+}
+
+.packageDataPartySectionCollapseIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
+.packageDataPartySectionIntroHint {
+  margin-top: 2px;
+  margin-bottom: 4px;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.packageDataPartySectionFieldHint {
+  margin-top: 2px;
+  margin-bottom: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.sectionFields) {
+  gap: 4px 8px;
+}
+
+.packageCustomerPrimaryRow,
+.packageCustomerSecondaryRow {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 4px 8px;
+  width: 100%;
+  min-width: 0;
+}
+
+:global(.packageDataTabDense) .packageCustomerPrimaryRow :global(.field),
+:global(.packageDataTabDense) .packageCustomerSecondaryRow :global(.field) {
+  min-width: 0;
+}
+
+:global(.packageDataTabDense) .packageCustomerPrimaryRow :global(.field) input,
+:global(.packageDataTabDense) .packageCustomerPrimaryRow :global(.field) select,
+:global(.packageDataTabDense) .packageCustomerSecondaryRow :global(.field) input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) {
+  gap: 2px;
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) label {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) input,
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) select,
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) textarea {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+}
+
+:global(.packageDataTabDense) .packageDataPartySection :global(.field) textarea {
+  min-height: 2.5rem;
+}
+
+:global(.packageDataTabDense)
+  .packageDataPartySection
+  .customerBankDetailsField:global(.field)
+  textarea,
+:global(.packageDataTabDense)
+  .packageDataPartySection
+  .executorBankDetailsField:global(.field)
+  textarea {
+  min-height: calc(
+    2 * var(--admin-space-xs) + var(--admin-font-size-sm) * var(--admin-line-height-sm)
+  );
+}
+
+.contractInstructionHint {
+  margin-top: var(--admin-space-xs);
+  margin-bottom: 0;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  :global(.packageDataTabDense)
+  .packageDataPartySection
+  :global(.field)
+  input,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  :global(.packageDataTabDense)
+  .packageDataPartySection
+  :global(.field)
+  select,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  :global(.packageDataTabDense)
+  .packageDataPartySection
+  :global(.field)
+  textarea {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-text-primary);
+}

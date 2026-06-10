@@ -4,20 +4,20 @@
 
 Меняйте **partial-файлы** в этой папке — это единственный источник стилей:
 
-| Файл                              | Назначение                             |
-| --------------------------------- | -------------------------------------- |
-| `base.module.css`                 | `.page`, общие переменные, print       |
-| `estimates-workspace.module.css`  | Рабочая область расчётов               |
-| `contracts-list-hub.module.css`   | Список договоров, хаб                  |
-| `editor-chrome.module.css`        | Шапка редактора, кнопки                |
-| `windows-package.module.css`      | Пакет «Окна» / продуктовые направления |
-| `data-tab.module.css`             | Вкладка «Данные»                       |
-| `templates-library.module.css`    | Библиотека шаблонов                    |
-| `estimate-tab.module.css`         | Вкладка сметы                          |
-| `documents-preview.module.css`    | Превью документов                      |
-| `hub-modals.module.css`           | Модалки hub                            |
-| `estimates-list.module.css`       | Список расчётов                        |
-| `interactive-estimate.module.css` | Интерактивная смета                    |
+| Файл                              | Назначение                       |
+| --------------------------------- | -------------------------------- |
+| `base.module.css`                 | `.page`, общие переменные, print |
+| `estimates-workspace.module.css`  | Рабочая область расчётов         |
+| `contracts-list-hub.module.css`   | Список договоров, хаб            |
+| `editor-chrome.module.css`        | Шапка редактора, кнопки          |
+| `product-package.module.css`      | PRODUCT_LIKE: окна, двери, …     |
+| `data-tab.module.css`             | Вкладка «Данные»                 |
+| `templates-library.module.css`    | Библиотека шаблонов              |
+| `estimate-tab.module.css`         | Вкладка сметы                    |
+| `documents-preview.module.css`    | Превью документов                |
+| `hub-modals.module.css`           | Модалки hub                      |
+| `estimates-list.module.css`       | Список расчётов                  |
+| `interactive-estimate.module.css` | Интерактивная смета              |
 
 Тёмная тема встроена в те же partial-файлы (блоки `:where(html[data-theme='dark'])`).
 

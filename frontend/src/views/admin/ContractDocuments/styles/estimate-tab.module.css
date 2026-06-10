@@ -21,7 +21,7 @@
   gap: 3px 5px;
 }
 
-.repairAddendumMarkSignedProminentBtn {
+.packageAddendumMarkSignedProminentBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -38,30 +38,30 @@
   white-space: nowrap;
 }
 
-.repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+.packageAddendumMarkSignedProminentBtn:hover:not(:disabled) {
   background: var(--admin-info-strong);
   border-color: var(--admin-info-strong);
   color: var(--admin-surface);
   box-shadow: 0 2px 10px rgb(29 78 216 / 0.4);
 }
 
-.repairAddendumMarkSignedProminentBtn:focus-visible {
+.packageAddendumMarkSignedProminentBtn:focus-visible {
   outline: 2px solid var(--admin-info-light);
   outline-offset: 2px;
 }
 
-.repairAddendumMarkSignedProminentBtn:disabled {
+.packageAddendumMarkSignedProminentBtn:disabled {
   opacity: 0.52;
   cursor: not-allowed;
   box-shadow: none;
 }
 
-.estimateTabCompact .repairAddendumMarkSignedProminentBtn {
+.estimateTabCompact .packageAddendumMarkSignedProminentBtn {
   font-size: var(--admin-font-size-xs);
   padding: var(--admin-space-2xs) var(--admin-space-sm);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairAddendumMarkSignedProminentBtn {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageAddendumMarkSignedProminentBtn {
   background: var(--admin-info-bright);
   border-color: var(--admin-info-light);
   color: #f8fafc;
@@ -69,18 +69,18 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairAddendumMarkSignedProminentBtn:hover:not(:disabled) {
+  .packageAddendumMarkSignedProminentBtn:hover:not(:disabled) {
   background: var(--admin-info-light);
   border-color: var(--admin-info-light);
   color: #f8fafc;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairAddendumMarkSignedProminentBtn:disabled {
+  .packageAddendumMarkSignedProminentBtn:disabled {
   opacity: 0.45;
 }
 
-.repairAddendumHeaderCornerActions {
+.packageAddendumHeaderCornerActions {
   flex-shrink: 0;
   align-self: flex-start;
   margin-left: auto;
@@ -107,101 +107,6 @@
   gap: 3px 6px;
 }
 
-.estimatePickAndAttachedRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(180px, 38%);
-  gap: 5px 8px;
-  align-items: stretch;
-}
-
-.estimatePickColumn {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-2xs);
-  min-width: 0;
-}
-
-.estimateSelectsRow {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 4px 8px;
-  align-items: end;
-}
-
-.estimateAttachBlock {
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-2xs);
-}
-
-@media (max-width: 600px) {
-  .estimateSelectsRow {
-    grid-template-columns: 1fr;
-  }
-}
-
-.estimateAttachedColumn {
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-sm);
-  padding: var(--admin-space-xs) var(--admin-space-sm);
-  background: var(--admin-surface-muted);
-  min-width: 0;
-  max-height: 188px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: var(--admin-space-2xs);
-}
-
-.estimateAttachedColumnTitle {
-  font-size: var(--admin-font-size-2xs);
-  font-weight: 700;
-  color: var(--admin-sidebar-text);
-  letter-spacing: var(--admin-letter-spacing-wide);
-  line-height: var(--admin-line-height-xs);
-}
-
-.estimateAttachedEmpty {
-  margin: 0;
-  font-size: var(--admin-font-size-2xs);
-  color: var(--admin-text-muted);
-  line-height: var(--admin-line-height-xs);
-}
-
-.estimateAttachedPresetMain {
-  min-width: 0;
-}
-
-.estimateAttachedPresetMain strong {
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-}
-
-.estimateAttachedPresetMeta {
-  font-size: var(--admin-font-size-2xs);
-  color: var(--admin-text-muted);
-}
-
-.estimateAttachedRemoveBtn {
-  padding: var(--admin-space-0) var(--admin-space-sm);
-  min-width: 24px;
-  min-height: 24px;
-  font-size: var(--admin-font-size-xl);
-  line-height: var(--admin-line-height-flat);
-  font-weight: 500;
-  flex-shrink: 0;
-}
-
-@media (max-width: 900px) {
-  .estimatePickAndAttachedRow {
-    grid-template-columns: 1fr;
-  }
-
-  .estimateAttachedColumn {
-    max-height: 140px;
-  }
-}
-
 .estimateTabCompact.dataCompact .field {
   gap: var(--admin-space-0);
 }
@@ -215,55 +120,6 @@
 .estimateTabCompact.dataCompact .field textarea {
   padding: var(--admin-space-xs) var(--admin-space-sm);
   font-size: var(--admin-font-size-xs);
-}
-
-.estimateAttachActionsRow {
-  display: flex;
-  gap: var(--admin-space-xs);
-  margin-top: var(--admin-space-2xs);
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.estimateAttachPrimaryBtn {
-  padding: var(--admin-space-xs) var(--admin-space-lg);
-  font-size: var(--admin-font-size-xs);
-}
-
-.estimateTabHint {
-  margin: 1px 0 0;
-  font-size: var(--admin-font-size-2xs);
-  line-height: var(--admin-line-height-sm);
-}
-
-.estimateTabHintFullWidth {
-  grid-column: 1 / -1;
-  margin-top: var(--admin-space-2xs);
-}
-
-.estimateAttachedPresetList {
-  display: grid;
-  gap: var(--admin-space-xs);
-}
-
-.estimateAttachedPresetRow {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  gap: var(--admin-space-xs);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-xs);
-  padding: var(--admin-space-xs) var(--admin-space-xs);
-  cursor: grab;
-  background: var(--admin-surface);
-}
-
-.estimateSheetField {
-  gap: var(--admin-space-2xs);
-}
-
-.estimateSheetField > label {
-  font-size: var(--admin-font-size-2xs);
 }
 
 .estimateTabCompact .estimateA4Wrap {
@@ -341,7 +197,7 @@
   padding: var(--admin-space-sm);
 }
 
-.repairCustomerSearchModeRow {
+.packageCustomerSearchModeRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -356,7 +212,7 @@
   align-items: center;
 }
 
-.repairCustomerSearchCrmBtn {
+.packageCustomerSearchCrmBtn {
   margin-left: auto;
   flex-shrink: 0;
   font-weight: 700;
@@ -364,18 +220,18 @@
   box-shadow: 0 1px 4px rgb(15 23 42 / 18%);
 }
 
-.repairCustomerSearchCrmBtn:hover {
+.packageCustomerSearchCrmBtn:hover {
   box-shadow: 0 2px 8px rgb(15 23 42 / 22%);
 }
 
-.repairCustomerSearchFlGrid {
+.packageCustomerSearchFlGrid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: var(--admin-space-sm);
   align-items: start;
 }
 
-.repairCustomerSearchUlGrid {
+.packageCustomerSearchUlGrid {
   display: grid;
   grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
   gap: var(--admin-space-sm);
@@ -383,11 +239,11 @@
 }
 
 @media (max-width: 720px) {
-  .repairCustomerSearchFlGrid {
+  .packageCustomerSearchFlGrid {
     grid-template-columns: 1fr;
   }
 
-  .repairCustomerSearchUlGrid {
+  .packageCustomerSearchUlGrid {
     grid-template-columns: 1fr;
   }
 }
@@ -532,21 +388,21 @@
 }
 
 /* «Договор и объект»: поле изменено относительно загруженного пакета */
-.repairContractObjectFieldEdited {
+.packageContractObjectFieldEdited {
   background: var(--admin-success-bg-soft) !important;
   border-color: var(--admin-success) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
 }
 
-.contractCompactBlock .repairContractObjectFieldEdited:focus {
+.contractCompactBlock .packageContractObjectFieldEdited:focus {
   outline: none;
   box-shadow: 0 0 0 2px color-mix(in srgb, var(--admin-success) 45%, transparent);
 }
 
-/* Перебивает .repairContractDataTabDense .field input/select { background: surface } */
-.repairContractDataTabDense .contractCompactBlock .field input.repairContractObjectFieldEdited,
-.repairContractDataTabDense .contractCompactBlock .field select.repairContractObjectFieldEdited,
-.repairContractDataTabDense .contractCompactBlock .field textarea.repairContractObjectFieldEdited {
+/* Перебивает .packageDataTabDense .field input/select { background: surface } */
+.packageDataTabDense .contractCompactBlock .field input.packageContractObjectFieldEdited,
+.packageDataTabDense .contractCompactBlock .field select.packageContractObjectFieldEdited,
+.packageDataTabDense .contractCompactBlock .field textarea.packageContractObjectFieldEdited {
   background: var(--admin-success-bg-soft) !important;
   border-color: var(--admin-success) !important;
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--admin-success) 35%, transparent);
@@ -748,17 +604,17 @@
 }
 
 /* Д/с: шапка из HTML-шаблона (innerHTML — только :global). */
-.docPane :global(.docPrint .repairAddendumHeaderBlock) {
+.docPane :global(.docPrint .packageAddendumHeaderBlock) {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
 
-.docPane :global(.docPrint h1.repairAddendumHeaderTitle) {
+.docPane :global(.docPrint h1.packageAddendumHeaderTitle) {
   text-align: center;
   font-weight: 700;
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
 }
 
-.docPane :global(.docPrint .repairAddendumHeaderSub) {
+.docPane :global(.docPrint .packageAddendumHeaderSub) {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl);
   text-align: center;
   font-size: var(--admin-font-size-xs);
@@ -766,7 +622,7 @@
   font-weight: normal;
 }
 
-.docPane :global(.docPrint .repairAddendumMetaRow) {
+.docPane :global(.docPrint .packageAddendumMetaRow) {
   display: grid;
   grid-template-columns: 1fr auto;
   width: 100%;
@@ -775,15 +631,15 @@
   font-size: var(--admin-font-size-xs);
 }
 
-.docPane :global(.docPrint .repairAddendumMetaDate) {
+.docPane :global(.docPrint .packageAddendumMetaDate) {
   text-align: left;
 }
 
-.docPane :global(.docPrint .repairAddendumMetaCity) {
+.docPane :global(.docPrint .packageAddendumMetaCity) {
   text-align: right;
 }
 
-.docPane :global(.docPrint h2.repairAddendumEstimateHeading) {
+.docPane :global(.docPrint h2.packageAddendumEstimateHeading) {
   text-align: center;
 }
 

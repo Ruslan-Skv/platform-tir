@@ -1,5 +1,5 @@
 /** Шаблон вкладки «Договор» (ремонт). Плейсхолдеры: {{customer.*}}, {{executor.*}}, {{object.*}}, {{contract.*}}. Для реквизитов Исполнителя удобно {{executor.innKppRegLine}} (ЮЛ: ИНН, КПП, ОГРН; ИП: ИНН, ОГРНИП). */
-export const repairTemplateContract = `
+export const packageTemplateContract = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 12pt;">
     ДОГОВОР № {{contract.number}}<br />

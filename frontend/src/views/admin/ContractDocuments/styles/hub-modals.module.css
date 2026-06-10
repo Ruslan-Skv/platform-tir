@@ -1,23 +1,23 @@
 /* Модалка «В работе»: две колонки (дата | файл); min-width для ellipsis в узкой ячейке */
-.repairWorkStartModalTopGrid [data-modal-form-group] {
+.packageWorkStartModalTopGrid [data-modal-form-group] {
   min-width: 0;
 }
 
-.repairWorkStartModalDateFieldWrap {
+.packageWorkStartModalDateFieldWrap {
   align-self: flex-start;
   max-width: 100%;
   width: fit-content;
 }
 
 /* В общих стилях модалки у input width: 100% — для даты оставляем по содержимому */
-.repairWorkStartModalDateFieldWrap input[type='date'] {
+.packageWorkStartModalDateFieldWrap input[type='date'] {
   width: auto !important;
   min-width: 11rem;
   max-width: 100%;
   box-sizing: border-box;
 }
 
-.repairWorkStartModalFileRow {
+.packageWorkStartModalFileRow {
   position: relative;
   display: flex;
   flex-wrap: wrap;
@@ -26,7 +26,7 @@
   max-width: 100%;
 }
 
-.repairWorkStartModalFileInputSrOnly {
+.packageWorkStartModalFileInputSrOnly {
   position: absolute;
   width: 1px;
   height: 1px;
@@ -38,24 +38,24 @@
   border-width: 0;
 }
 
-.repairWorkStartModalFilePickBtn {
+.packageWorkStartModalFilePickBtn {
   margin: 0;
   flex-shrink: 0;
 }
 
-.repairWorkStartModalFileRow:focus-within .repairWorkStartModalFilePickBtn {
+.packageWorkStartModalFileRow:focus-within .packageWorkStartModalFilePickBtn {
   outline: 2px solid var(--admin-info);
   outline-offset: 2px;
 }
 
-.repairWorkStartModalFileRow:has(.repairWorkStartModalFileInputSrOnly:disabled)
-  .repairWorkStartModalFilePickBtn {
+.packageWorkStartModalFileRow:has(.packageWorkStartModalFileInputSrOnly:disabled)
+  .packageWorkStartModalFilePickBtn {
   opacity: 0.5;
   pointer-events: none;
   cursor: not-allowed;
 }
 
-.repairWorkStartModalFileName {
+.packageWorkStartModalFileName {
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   min-width: 0;
@@ -66,11 +66,11 @@
   white-space: nowrap;
 }
 
-.repairWorkStartModalFileRemoveBtn {
+.packageWorkStartModalFileRemoveBtn {
   flex-shrink: 0;
 }
 
-.repairWorkStartModalPreview {
+.packageWorkStartModalPreview {
   margin: 0;
   padding: var(--admin-space-md);
   border-radius: var(--admin-radius-md);
@@ -81,7 +81,7 @@
   align-items: center;
 }
 
-.repairWorkStartModalPreview img {
+.packageWorkStartModalPreview img {
   max-width: 100%;
   max-height: 220px;
   object-fit: contain;
@@ -187,7 +187,7 @@
   }
 }
 
-.repairAttachedActPhotosList {
+.packageAttachedActPhotosList {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-xl);
@@ -195,24 +195,24 @@
   min-width: 0;
 }
 
-.repairAttachedActPhotoBlock {
+.packageAttachedActPhotoBlock {
   min-width: 0;
 }
 
-.repairAttachedActPhotoTitle {
+.packageAttachedActPhotoTitle {
   margin: 0 0 var(--admin-space-xs);
   font-size: var(--admin-font-size-sm);
   font-weight: 600;
   color: var(--admin-text-secondary);
 }
 
-.repairAttachedActPhotoMeta {
+.packageAttachedActPhotoMeta {
   margin: 0 0 var(--admin-space-sm);
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
 }
 
-.repairAttachedActPhotoImageLink {
+.packageAttachedActPhotoImageLink {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -220,22 +220,22 @@
   border-radius: var(--admin-radius-sm);
 }
 
-.repairAttachedActPhotoImageLink:focus-visible {
+.packageAttachedActPhotoImageLink:focus-visible {
   outline: 2px solid var(--admin-info);
   outline-offset: 2px;
 }
 
-.repairAttachedActPhotoLinkLine {
+.packageAttachedActPhotoLinkLine {
   margin: var(--admin-space-sm) 0 0;
   font-size: var(--admin-font-size-sm);
 }
 
-.repairAttachedActPhotoLinkLine a {
+.packageAttachedActPhotoLinkLine a {
   color: var(--admin-info);
   text-decoration: underline;
 }
 
-.repairAttachedActPhotoLinkLine a:hover {
+.packageAttachedActPhotoLinkLine a:hover {
   text-decoration: none;
 }
 
@@ -255,7 +255,7 @@
 }
 
 /* --- dark theme --- */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairWorkStartModalPreview {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageWorkStartModalPreview {
   background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
 }

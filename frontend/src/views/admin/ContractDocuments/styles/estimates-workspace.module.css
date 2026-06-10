@@ -179,29 +179,29 @@
 }
 
 /* Редактор пакета договора (ремонт): рамка активных полей как в CrmCustomerSearchPanel */
-.repairContractEditorPage
+.packageDocumentEditorPage
   .field
   input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
     [type='checkbox']
   ):not([type='radio']),
-.repairContractEditorPage .field select:not(:disabled),
-.repairContractEditorPage .field textarea:not([readonly]):not(:disabled),
-.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled),
-.repairContractEditorPage .repairWorkStartModalDateFieldWrap input[type='date']:not(:disabled) {
+.packageDocumentEditorPage .field select:not(:disabled),
+.packageDocumentEditorPage .field textarea:not([readonly]):not(:disabled),
+.packageDocumentEditorPage .packageContractRefusalReasonTextarea:not(:disabled),
+.packageDocumentEditorPage .packageWorkStartModalDateFieldWrap input[type='date']:not(:disabled) {
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
 }
 
-.repairContractEditorPage
+.packageDocumentEditorPage
   .field
   input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
     [type='checkbox']
   ):not([type='radio']):focus,
-.repairContractEditorPage .field select:not(:disabled):focus,
-.repairContractEditorPage .field textarea:not([readonly]):not(:disabled):focus,
-.repairContractEditorPage .repairContractRefusalReasonTextarea:not(:disabled):focus,
-.repairContractEditorPage
-  .repairWorkStartModalDateFieldWrap
+.packageDocumentEditorPage .field select:not(:disabled):focus,
+.packageDocumentEditorPage .field textarea:not([readonly]):not(:disabled):focus,
+.packageDocumentEditorPage .packageContractRefusalReasonTextarea:not(:disabled):focus,
+.packageDocumentEditorPage
+  .packageWorkStartModalDateFieldWrap
   input[type='date']:not(:disabled):focus {
   outline: none;
   border-color: var(--admin-accent);
@@ -209,25 +209,25 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
     [type='checkbox']
   ):not([type='radio']),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   select:not(:disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   textarea:not([readonly]):not(:disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
-  .repairContractRefusalReasonTextarea:not(:disabled),
+  .packageDocumentEditorPage
+  .packageContractRefusalReasonTextarea:not(:disabled),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
-  .repairWorkStartModalDateFieldWrap
+  .packageDocumentEditorPage
+  .packageWorkStartModalDateFieldWrap
   input[type='date']:not(:disabled) {
   background: var(--admin-surface-soft);
   border: 1px solid var(--admin-sidebar-text);
@@ -236,25 +236,25 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   input:not([readonly]):not(:disabled):not([type='hidden']):not([type='file']):not(
     [type='checkbox']
   ):not([type='radio']):focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   select:not(:disabled):focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .field
   textarea:not([readonly]):not(:disabled):focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
-  .repairContractRefusalReasonTextarea:not(:disabled):focus,
+  .packageDocumentEditorPage
+  .packageContractRefusalReasonTextarea:not(:disabled):focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
-  .repairWorkStartModalDateFieldWrap
+  .packageDocumentEditorPage
+  .packageWorkStartModalDateFieldWrap
   input[type='date']:not(:disabled):focus {
   outline: none;
   border-color: var(--admin-info-light);
@@ -277,7 +277,7 @@
   }
 }
 
-.estimateWorkspaceCustomerCard .repairCustomerSearchSlot {
+.estimateWorkspaceCustomerCard .packageCustomerSearchSlot {
   margin-top: var(--admin-space-xs);
 }
 
@@ -385,12 +385,8 @@
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact
-  .summaryTabFirst,
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact
-  .summaryTabLast {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageTabBarCompact .summaryTabFirst,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageTabBarCompact .summaryTabLast {
   border-color: var(--admin-sidebar-text);
 }
 
@@ -681,7 +677,7 @@
 
 /* Тёмная тема: страница /contract-documents/templates */
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractEditorPage .blockData {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDocumentEditorPage .blockData {
   /* Как вкладка «Данные»: без жёлтой подложки под карточки */
   background: var(--admin-surface);
   border-color: var(--admin-border);

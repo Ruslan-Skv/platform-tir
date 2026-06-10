@@ -3,7 +3,7 @@ import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-do
 import {
   packageExecutorProfilesKind,
   packageContractSettingsKind as registryContractSettingsKind,
-} from '../shared/catalogKinds';
+} from '../platform/catalogKinds';
 import { isProductLikePackageKind } from './packageDirectionRegistry';
 
 /** @deprecated Используйте {@link isProductLikePackageKind} из `packages/config`. */

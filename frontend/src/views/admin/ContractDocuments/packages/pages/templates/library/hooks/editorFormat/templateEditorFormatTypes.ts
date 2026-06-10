@@ -1,0 +1,26 @@
+export type UseTemplatesLibraryEditorFormatParams = {
+  isSuperAdmin: boolean;
+  html: string;
+  setHtml: React.Dispatch<React.SetStateAction<string>>;
+  visualDraftHtml: string;
+  setVisualDraftHtml: React.Dispatch<React.SetStateAction<string>>;
+  editorMode: 'html' | 'visual';
+  setEditorMode: React.Dispatch<React.SetStateAction<'html' | 'visual'>>;
+  setOk: React.Dispatch<React.SetStateAction<string | null>>;
+  setError: React.Dispatch<React.SetStateAction<string | null>>;
+  visualEditorRef: React.RefObject<HTMLDivElement | null>;
+  htmlTextareaRef: React.RefObject<HTMLTextAreaElement | null>;
+  visualSelectionRangeRef: React.MutableRefObject<Range | null>;
+  pushTemplateHistory: (nextHtml: string) => void;
+  switchEditorMode: (mode: 'html' | 'visual') => void;
+  syncVisualEditorToHtmlState: () => string;
+  applyTemplateHistorySnapshot: (htmlSnapshot: string) => void;
+  templateHistoryIndex: number;
+  templateHistory: string[];
+  templateHistoryRef: React.MutableRefObject<string[]>;
+  templateHistoryIndexRef: React.MutableRefObject<number>;
+  setTemplateHistoryIndex: React.Dispatch<React.SetStateAction<number>>;
+  tableEditActive: boolean;
+  setTableEditActive: React.Dispatch<React.SetStateAction<boolean>>;
+  ensureTemplateDraftForEditing: () => string;
+};

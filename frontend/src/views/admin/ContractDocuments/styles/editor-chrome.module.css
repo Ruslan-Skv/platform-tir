@@ -1,5 +1,5 @@
 /* Шапка редактора ремонта: ссылка слева, «В работе» по центру промежутка, действия справа */
-.repairEditorHeaderThreeCol {
+.packageEditorHeaderThreeCol {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -7,19 +7,19 @@
   gap: var(--admin-space-md);
 }
 
-.repairEditorHeaderThreeCol > .headerActions {
+.packageEditorHeaderThreeCol > .headerActions {
   margin-left: auto;
 }
 
-.repairEditorHeaderThreeCol:has(.repairEditorHeaderCenterSlot) > .headerActions {
+.packageEditorHeaderThreeCol:has(.packageEditorHeaderCenterSlot) > .headerActions {
   margin-left: 0;
 }
 
-.repairEditorHeaderLeft {
+.packageEditorHeaderLeft {
   min-width: 0;
 }
 
-.repairEditorHeaderLeft .backLink {
+.packageEditorHeaderLeft .backLink {
   display: inline-block;
   font-size: var(--admin-font-size-sm);
   margin: 0;
@@ -28,11 +28,11 @@
   text-decoration: none;
 }
 
-.repairEditorHeaderLeft .backLink:hover {
+.packageEditorHeaderLeft .backLink:hover {
   color: var(--admin-info);
 }
 
-.repairEditorHeaderCenterSlot {
+.packageEditorHeaderCenterSlot {
   flex: 1 1 8rem;
   display: flex;
   justify-content: center;
@@ -40,7 +40,7 @@
   min-width: 0;
 }
 
-.repairEditorHeaderCenterControls {
+.packageEditorHeaderCenterControls {
   display: flex;
   flex-wrap: wrap;
   align-items: flex-start;
@@ -49,21 +49,21 @@
 }
 
 /* Одна внешняя высота для бейджа и кнопки: 1px + 1px рамки + вертикальные отступы + строка (1.15em) */
-.repairEditorHeaderCenterControls .packageFlowStatusBadge,
-.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn,
-.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+.packageEditorHeaderCenterControls .packageFlowStatusBadge,
+.packageEditorHeaderCenterControls .packageEditorHeaderPipelineBtn,
+.packageEditorHeaderCenterControls .packageEditorHeaderClosedStatusBtn {
   box-sizing: border-box;
   line-height: 1.15;
   min-height: calc(2px + 2 * var(--admin-space-xs) + 1.15em);
   align-items: center;
 }
 
-.repairEditorHeaderCenterControls .packageFlowStatusBadge,
-.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+.packageEditorHeaderCenterControls .packageFlowStatusBadge,
+.packageEditorHeaderCenterControls .packageEditorHeaderClosedStatusBtn {
   font-weight: 600;
 }
 
-.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn {
+.packageEditorHeaderCenterControls .packageEditorHeaderClosedStatusBtn {
   appearance: none;
   -webkit-appearance: none;
   margin: 0;
@@ -71,11 +71,11 @@
   text-align: center;
 }
 
-.repairEditorHeaderCenterControls .repairEditorHeaderClosedStatusBtn:disabled {
+.packageEditorHeaderCenterControls .packageEditorHeaderClosedStatusBtn:disabled {
   opacity: 1;
 }
 
-.repairEditorHeaderCenterControls .repairEditorHeaderPipelineBtn {
+.packageEditorHeaderCenterControls .packageEditorHeaderPipelineBtn {
   padding: var(--admin-space-xs) var(--admin-space-lg);
   font-size: var(--admin-font-size-xs);
   font-weight: 400;
@@ -84,7 +84,7 @@
   -webkit-appearance: none;
 }
 
-.repairPackageRefusedBanner {
+.packageRefusedBanner {
   margin: 0 0 var(--admin-space-md);
   padding: var(--admin-space-sm) var(--admin-space-md);
   border-radius: var(--admin-radius-md);
@@ -93,7 +93,7 @@
   color: var(--admin-text);
 }
 
-.repairContractRefusalReasonTextarea {
+.packageContractRefusalReasonTextarea {
   width: 100%;
   min-height: 7rem;
   box-sizing: border-box;
@@ -104,7 +104,7 @@
   resize: vertical;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageRefusedBanner {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageRefusedBanner {
   background: rgb(127 29 29 / 0.35);
   border-color: rgb(248 113 113 / 0.4);
 }
@@ -256,6 +256,15 @@
   color: var(--admin-info);
 }
 
+/* Повышенная специфичность: secondaryBtn из другого CSS-модуля иначе перебивает цвет. */
+.estimatesPageRefreshIconBtn.estimatesPageRefreshIconBtn {
+  color: var(--admin-info);
+}
+
+.estimatesPageRefreshIconBtn.estimatesPageRefreshIconBtn:hover:not(:disabled) {
+  color: var(--admin-info-strong, var(--admin-info));
+}
+
 .estimatesPageArchiveIconBtn {
   color: var(--admin-text-secondary);
 }
@@ -322,13 +331,13 @@
   font-weight: 600;
 }
 
-.repairPackageTabBarCompact {
+.packageTabBarCompact {
   gap: var(--admin-space-xs);
   margin-bottom: var(--admin-space-xs);
   padding-bottom: 3px;
 }
 
-.repairPackageTabBarCompact.blockTabs {
+.packageTabBarCompact.blockTabs {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -337,7 +346,7 @@
   margin-bottom: var(--admin-space-xs);
 }
 
-.repairPackageTabList {
+.packageTabList {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -349,7 +358,7 @@
   border-bottom: none;
 }
 
-.repairPackageTabBarAddendumActions {
+.packageTabBarAddendumActions {
   display: inline-flex;
   flex-wrap: wrap;
   align-items: center;
@@ -357,7 +366,7 @@
   flex-shrink: 0;
 }
 
-.repairPackageTabBarCompact .tab {
+.packageTabBarCompact .tab {
   padding: var(--admin-space-xs) var(--admin-space-sm);
   font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-xs);
@@ -366,15 +375,15 @@
   user-select: none;
 }
 
-.repairPackageTabBarCompact .tab:active {
+.packageTabBarCompact .tab:active {
   cursor: grabbing;
 }
 
-.repairPackageTabBarCompact .tabActive {
+.packageTabBarCompact .tabActive {
   font-size: var(--admin-font-size-xs);
 }
 
-.repairPackageTabBarCompact .summaryTab {
+.packageTabBarCompact .summaryTab {
   background: transparent;
   border-top: 1px solid var(--admin-info-border);
   border-bottom: 1px solid var(--admin-info-border);
@@ -383,7 +392,7 @@
   border-radius: 0;
 }
 
-.repairPackageTabBarCompact .summaryTabFirst {
+.packageTabBarCompact .summaryTabFirst {
   margin-left: auto;
   border-left: 1px solid var(--admin-info-border);
   border-top: 1px solid var(--admin-info-border);
@@ -392,39 +401,39 @@
   border-bottom-left-radius: 7px;
 }
 
-.repairPackageTabBarCompact .summaryTabLast {
+.packageTabBarCompact .summaryTabLast {
   border-right: 1px solid var(--admin-info-border);
   border-top-right-radius: 7px;
   border-bottom-right-radius: 7px;
 }
 
-.repairPackageTabBarCompact .summaryTab.tabActive {
+.packageTabBarCompact .summaryTab.tabActive {
   background: var(--admin-info-bg-soft);
 }
 
-.repairPackageTabBarRow {
+.packageTabBarRow {
   display: flex;
   flex-wrap: wrap;
   align-items: stretch;
   gap: var(--admin-space-md);
 }
 
-.repairPackageTabBarRow > .tabBar {
+.packageTabBarRow > .tabBar {
   flex: 1 1 auto;
   min-width: 0;
 }
 
-.repairAddAddendumTabBtnWrap {
+.packageAddAddendumTabBtnWrap {
   display: inline-flex;
   flex-shrink: 0;
   cursor: default;
 }
 
-.repairAddAddendumTabBtnWrap:has(button:disabled) {
+.packageAddAddendumTabBtnWrap:has(button:disabled) {
   cursor: not-allowed;
 }
 
-.repairPackageTabBarCompact .repairAddAddendumTabBtn {
+.packageTabBarCompact .packageAddAddendumTabBtn {
   flex-shrink: 0;
   font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-xs);
@@ -433,12 +442,12 @@
   min-height: 0;
 }
 
-.repairAddendumDateFieldRow {
+.packageAddendumDateFieldRow {
   max-width: 320px;
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
 
-.repairAddendumMetaInlineRow {
+.packageAddendumMetaInlineRow {
   display: flex;
   flex-wrap: nowrap;
   gap: var(--admin-space-md);
@@ -446,32 +455,32 @@
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-lg);
 }
 
-.repairAddendumMetaInlineRow .repairAddendumDateFieldRow {
+.packageAddendumMetaInlineRow .packageAddendumDateFieldRow {
   margin: 0;
   max-width: 320px;
 }
 
-.repairAddendumWorkPeriodIncreaseFieldRow {
+.packageAddendumWorkPeriodIncreaseFieldRow {
   margin: 0;
   max-width: 240px;
 }
 
-.repairAddendumWorkPeriodIncreaseFieldRow input {
+.packageAddendumWorkPeriodIncreaseFieldRow input {
   width: 100%;
 }
 
-.repairAddendumEstimateHeading {
+.packageAddendumEstimateHeading {
   font-size: var(--admin-print-font-size-11pt);
   margin: 12pt 0 6pt;
   text-align: center;
 }
 
-.repairAddendumEstimateBody {
+.packageAddendumEstimateBody {
   margin-bottom: 8pt;
 }
 
 /* --- dark theme --- */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairPackageTabBarCompact.blockTabs {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageTabBarCompact.blockTabs {
   background: var(--admin-success-bg-soft);
   border-color: var(--admin-success-border-soft);
 }

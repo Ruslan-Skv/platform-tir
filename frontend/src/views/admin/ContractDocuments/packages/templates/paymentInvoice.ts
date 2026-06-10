@@ -3,7 +3,7 @@ const INV_BORDER = 'border:1px solid #000;';
 const INV_CELL = `${INV_BORDER} padding:3px 5px; font-size:10pt; vertical-align:top;`;
 const INV_TH = `${INV_CELL} font-weight:normal; text-align:center;`;
 
-export const repairTemplatePaymentInvoice = `
+export const packageTemplatePaymentInvoice = `
 <div class="docPrint" style="font-family: Arial, Helvetica, sans-serif; font-size:10pt; color:#000;">
   <table style="width:100%; border-collapse:collapse; margin:0 0 10pt;">
     <tbody>

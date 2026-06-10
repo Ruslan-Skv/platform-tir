@@ -1,12 +1,12 @@
 /** Универсальный шаблон для вкладок «Дополнительное соглашение №1..№5». */
-export const repairTemplateAddendum = `
+export const packageTemplateAddendum = `
 <div class="docPrint{{addendum.printDocClass}}">
-  <div class="repairAddendumHeaderBlock">
-    <h1 class="repairAddendumHeaderTitle">{{addendum.headerMain}}</h1>
-    <p class="repairAddendumHeaderSub">{{addendum.headerSub}}</p>
-    <div class="repairAddendumMetaRow">
-      <span class="repairAddendumMetaDate">{{addendum.documentDate}}</span>
-      <span class="repairAddendumMetaCity">г. Мурманск</span>
+  <div class="packageAddendumHeaderBlock">
+    <h1 class="packageAddendumHeaderTitle">{{addendum.headerMain}}</h1>
+    <p class="packageAddendumHeaderSub">{{addendum.headerSub}}</p>
+    <div class="packageAddendumMetaRow">
+      <span class="packageAddendumMetaDate">{{addendum.documentDate}}</span>
+      <span class="packageAddendumMetaCity">г. Мурманск</span>
     </div>
   </div>
 

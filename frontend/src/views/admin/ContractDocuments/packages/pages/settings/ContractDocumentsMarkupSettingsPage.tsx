@@ -19,7 +19,7 @@ import cdTemplates from '../../../styles/templates-library.module.css';
 import {
   DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
   normalizeWindowsWorkOrderMarkupPercent,
-} from '../../directions/windows/repairWindowsWorkOrder';
+} from '../../families/product-like/print/productWorkOrder';
 
 function formatMarkupPercentInput(value: number): string {
   return String(normalizeWindowsWorkOrderMarkupPercent(value));
@@ -104,7 +104,7 @@ export function ContractDocumentsMarkupSettingsPage() {
       {error ? <p className={cdTemplates.error}>{error}</p> : null}
       {ok ? <p className={cdTemplates.hint}>{ok}</p> : null}
 
-      <section className={cdHub.repairSettingsCard}>
+      <section className={cdHub.packageSettingsCard}>
         <h2 className={cdEstimateTab.sectionTitle}>Окна — заказ-наряд</h2>
         {loading ? (
           <p className={cdTemplates.hint}>Загрузка…</p>
@@ -136,7 +136,7 @@ export function ContractDocumentsMarkupSettingsPage() {
               ) : null}
             </div>
             {isSuperAdmin ? (
-              <div className={cdHub.repairSettingsActions}>
+              <div className={cdHub.packageSettingsActions}>
                 <button
                   type="button"
                   className={cdWorkspace.primaryBtn}

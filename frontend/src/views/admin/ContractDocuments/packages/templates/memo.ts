@@ -1,4 +1,4 @@
-import { buildContractAppendixRefParagraphHtml } from '../../shared/typography/contractTemplateAppendixRef';
+import { buildContractAppendixRefParagraphHtml } from '../../core/typography/contractTemplateAppendixRef';
 
 /** Шаблон «Памятка по эксплуатации ПВХ-окон» (направление «Окна», приложение №4). */
 export const windowsTemplateMemo = `

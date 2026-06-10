@@ -22,18 +22,19 @@ import {
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
 import { isProductDirectionPackageKind } from '@/views/admin/ContractDocuments/packages/config/productDirectionPackageKind';
-import { REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/packages/directions/repair/documents/repairActTwinCopiesOnOnePageHtml';
-import { resolveRepairTemplateHtml } from '@/views/admin/ContractDocuments/packages/directions/repair/documents/resolveRepairTemplateHtml';
-import { mergeFormDataFromStorage } from '@/views/admin/ContractDocuments/packages/directions/repair/formDataTemplateStorage';
-import type { RepairDocumentTemplateTabId } from '@/views/admin/ContractDocuments/packages/directions/repair/formDataTemplateStorage';
-import { RepairIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/directions/repair/payments/RepairIssueInvoicePanel';
+import { mergeFormDataFromStorage } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
+import type { PackageDocumentTemplateTabId } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
+import { getPackageContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
+import { resolvePackageTemplateHtml } from '@/views/admin/ContractDocuments/packages/platform/form/resolvePackageTemplateHtml';
+import { PackageInvoicesModal } from '@/views/admin/ContractDocuments/packages/platform/hub/PackageInvoicesModal';
+import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/PackageIssueInvoicePanel';
 import {
-  buildRepairInvoicePrintHtml,
-  downloadRepairPaymentInvoice,
+  buildPackageInvoicePrintHtml,
+  downloadPackagePaymentInvoice,
   paymentInvoiceLineItemsForApi,
-  printRepairPaymentInvoice,
-} from '@/views/admin/ContractDocuments/packages/directions/repair/payments/repairInvoicePrint';
-import { RepairContractInvoicesModal } from '@/views/admin/ContractDocuments/packages/shared/hub/RepairContractInvoicesModal';
+  printPackagePaymentInvoice,
+} from '@/views/admin/ContractDocuments/packages/platform/payments/packageInvoicePrint';
+import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageActPrintTabs';
 
 import cdBase from '../ContractDocuments/styles/base.module.css';
 import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
@@ -72,10 +73,10 @@ export function AccountingInvoicesPage() {
   const [issuePackageForm, setIssuePackageForm] = useState(() => mergeFormDataFromStorage({}).form);
   const [issueTemplatePresets, setIssueTemplatePresets] = useState<ContractTemplatePreset[]>([]);
   const [issueTemplateOverrides, setIssueTemplateOverrides] = useState<
-    Partial<Record<RepairDocumentTemplateTabId, string>>
+    Partial<Record<PackageDocumentTemplateTabId, string>>
   >({});
   const [issueSelectedTemplateIds, setIssueSelectedTemplateIds] = useState<
-    Partial<Record<RepairDocumentTemplateTabId, string>>
+    Partial<Record<PackageDocumentTemplateTabId, string>>
   >({});
   const [issuePackageInvoices, setIssuePackageInvoices] = useState<
     ContractDocumentPaymentInvoice[]
@@ -110,7 +111,7 @@ export function AccountingInvoicesPage() {
       .filter((p) => p.kind === 'REPAIR' && !p.deletedAt)
       .map((p) => {
         const { form } = mergeFormDataFromStorage(p.formData);
-        const label = `${getRepairContractNumberDisplayForForm(form)}${form.customer.fullName ? ` — ${form.customer.fullName}` : ''}`;
+        const label = `${getPackageContractNumberDisplayForForm(form)}${form.customer.fullName ? ` — ${form.customer.fullName}` : ''}`;
         return { id: p.id, label };
       })
       .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
@@ -151,8 +152,8 @@ export function AccountingInvoicesPage() {
   };
 
   const resolveIssueTemplateHtml = () =>
-    resolveRepairTemplateHtml(
-      REPAIR_PAYMENT_INVOICE_TEMPLATE_TAB,
+    resolvePackageTemplateHtml(
+      PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB,
       issueTemplatePresets,
       issueSelectedTemplateIds,
       issueTemplateOverrides
@@ -171,7 +172,7 @@ export function AccountingInvoicesPage() {
   return (
     <div className={`${cdBase.page} ${cdBase.pageWide}`}>
       <div className={`${cdWorkspace.editorHeader} ${cdHub.blockHeader}`}>
-        <div className={cdChrome.repairEditorHeaderLeft}>
+        <div className={cdChrome.packageEditorHeaderLeft}>
           <h1 className={cdWorkspace.title}>Счета на оплату</h1>
           <p className={cdWorkspace.subtitle}>
             Единый журнал выставленных счетов по договорам ремонта. Номер счёта общий для всей
@@ -319,7 +320,7 @@ export function AccountingInvoicesPage() {
             </select>
           </div>
           {selectedPackageId ? (
-            <RepairIssueInvoicePanel
+            <PackageIssueInvoicePanel
               packageId={selectedPackageId}
               form={issuePackageForm}
               issuedRows={issuePackageInvoices}
@@ -349,12 +350,12 @@ export function AccountingInvoicesPage() {
                       ? { addendumNumber: option.addendumNumber }
                       : {}),
                   });
-                  const html = await buildRepairInvoicePrintHtml(
+                  const html = await buildPackageInvoicePrintHtml(
                     issuePackageForm,
                     resolveIssueTemplateHtml(),
                     conduct
                   );
-                  if (html.trim()) printRepairPaymentInvoice(html);
+                  if (html.trim()) printPackagePaymentInvoice(html);
                   await load();
                   await loadSelectedPackageForIssue(selectedPackageId);
                   setIssueOpen(false);
@@ -367,7 +368,7 @@ export function AccountingInvoicesPage() {
               }}
               onPrint={(conduct) => {
                 void (async () => {
-                  const html = await buildRepairInvoicePrintHtml(
+                  const html = await buildPackageInvoicePrintHtml(
                     issuePackageForm,
                     resolveIssueTemplateHtml(),
                     conduct
@@ -376,13 +377,13 @@ export function AccountingInvoicesPage() {
                     setError('Нет данных для печати счёта');
                     return;
                   }
-                  printRepairPaymentInvoice(html);
+                  printPackagePaymentInvoice(html);
                 })();
               }}
               onDownload={(conduct) => {
                 void (async () => {
                   try {
-                    const html = await buildRepairInvoicePrintHtml(
+                    const html = await buildPackageInvoicePrintHtml(
                       issuePackageForm,
                       resolveIssueTemplateHtml(),
                       conduct
@@ -391,7 +392,7 @@ export function AccountingInvoicesPage() {
                       setError('Нет данных для скачивания счёта');
                       return;
                     }
-                    await downloadRepairPaymentInvoice(html, conduct);
+                    await downloadPackagePaymentInvoice(html, conduct);
                   } catch (e) {
                     setError(e instanceof Error ? e.message : 'Не удалось сформировать PDF');
                   }
@@ -404,7 +405,7 @@ export function AccountingInvoicesPage() {
       </Modal>
 
       {contractEditorOpen && contractEditorPackageId ? (
-        <RepairContractInvoicesModalLoader
+        <PackageInvoicesModalLoader
           packageId={contractEditorPackageId}
           isOpen={contractEditorOpen}
           onClose={() => {
@@ -421,7 +422,7 @@ export function AccountingInvoicesPage() {
 }
 
 /** Загружает данные пакета для модалки счетов из раздела бухгалтерии. */
-function RepairContractInvoicesModalLoader({
+function PackageInvoicesModalLoader({
   packageId,
   isOpen,
   onClose,
@@ -472,7 +473,7 @@ function RepairContractInvoicesModalLoader({
   if (!ready) return null;
 
   return (
-    <RepairContractInvoicesModal
+    <PackageInvoicesModal
       packageId={packageId}
       packageKind={packageKind}
       form={form}

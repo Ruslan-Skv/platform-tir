@@ -1,5 +1,5 @@
 /** Шаблон вкладки «Заказ-наряд» (ремонт). */
-export const repairTemplateWorkOrder = `
+export const packageTemplateWorkOrder = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 10pt;">ЗАКАЗ-НАРЯД</h1>
   <p style="margin: 0 0 6pt;">
@@ -25,7 +25,7 @@ export const repairTemplateWorkOrder = `
 `.trim();
 
 /** Шаблон «Заказ-наряд по доп. соглашению» (используется для всех слотов). */
-export const repairTemplateWorkOrderAddendum = `
+export const packageTemplateWorkOrderAddendum = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 10pt;">
     ЗАКАЗ-НАРЯД ПО Д/С № {{workOrderAddendum.slotNumber}}
@@ -51,7 +51,7 @@ export const repairTemplateWorkOrderAddendum = `
 `.trim();
 
 /** Заказ-наряд по Д/с в пакете «Окна» (оформление как основной заказ-наряд). */
-export const repairTemplateWindowsWorkOrderAddendum = `
+export const packageTemplateWindowsWorkOrderAddendum = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 10pt;">
     ЗАКАЗ-НАРЯД ПО Д/С № {{workOrderAddendum.slotNumber}}

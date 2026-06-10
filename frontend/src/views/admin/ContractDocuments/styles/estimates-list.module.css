@@ -38,13 +38,13 @@
   margin: 0 0 var(--admin-space-md);
 }
 
-.repairContractsListHeaderLeft {
+.contractsListHeaderLeft {
   display: flex;
   align-items: center;
   gap: var(--admin-space-2xl);
 }
 
-.repairContractsListCount {
+.contractsListCount {
   background: var(--admin-border);
   padding: var(--admin-space-xs) var(--admin-space-xl);
   border-radius: var(--admin-radius-3xl);
@@ -235,7 +235,7 @@
   color: var(--admin-text-muted);
 }
 
-/* Шапка списка: разделитель и заголовок (ранее через .repairContractsListPage в монолите) */
+/* Шапка списка: разделитель и заголовок (ранее через .contractsListPage в монолите) */
 .estimatesPage .editorHeader {
   align-items: flex-start;
   margin-bottom: var(--admin-space-lg);
@@ -268,7 +268,7 @@
   min-width: 0;
 }
 
-.estimatesPage .estimatesEditorHeaderStack .repairContractsListHeaderLeft {
+.estimatesPage .estimatesEditorHeaderStack .contractsListHeaderLeft {
   flex-wrap: wrap;
 }
 
@@ -513,7 +513,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-radius: 0;
 }
 
-.repairContractsListSelectCol {
+.contractsListSelectCol {
   width: 20px;
   min-width: 20px;
   max-width: 20px;
@@ -523,43 +523,36 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   vertical-align: middle;
 }
 
-.estimatesDirectoryTable.repairContractsDirectoryTable
-  .repairContractsListTable
-  th.repairContractsListSelectCol {
+.estimatesDirectoryTable.contractsDirectoryTable .contractsListTable th.contractsListSelectCol {
   padding-left: 2px !important;
   padding-right: 2px !important;
 }
 
 /* Список расчётов — шапка таблицы как directoryTable (замеры, заказчики) */
-.estimatesDirectoryTable.repairContractsDirectoryTable thead {
+.estimatesDirectoryTable.contractsDirectoryTable thead {
   box-shadow: 0 2px 0 var(--admin-border-strong);
 }
 
-.estimatesDirectoryTable.repairContractsDirectoryTable thead th {
+.estimatesDirectoryTable.contractsDirectoryTable thead th {
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
   font-weight: 700;
   border-bottom: 2px solid var(--admin-border-strong);
 }
 
-.estimatesDirectoryTable.repairContractsDirectoryTable thead th:hover {
+.estimatesDirectoryTable.contractsDirectoryTable thead th:hover {
   background: var(--admin-border);
 }
 
 /* Компактное тело таблицы */
-.estimatesDirectoryTable.repairContractsDirectoryTable
-  .repairContractsListTable.estimatesListTable
-  td {
+.estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
   padding: 4px 6px;
   font-size: 0.75rem;
   line-height: 1.25;
   vertical-align: middle;
 }
 
-.estimatesDirectoryTable.repairContractsDirectoryTable
-  .repairContractsListTable.estimatesListTable
-  thead
-  th {
+.estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable thead th {
   padding: var(--admin-space-md) var(--admin-space-sm);
   font-size: var(--admin-font-size-xs);
   font-weight: 700;
@@ -571,9 +564,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 @media (min-width: 1280px) {
-  .estimatesDirectoryTable.repairContractsDirectoryTable
-    .repairContractsListTable.estimatesListTable
-    td {
+  .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
     padding: 4px 5px;
   }
 }
@@ -671,8 +662,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-muted);
 }
 
-.estimatesDirectoryTable .repairContractsListTable th.repairContractsListActionsCol,
-.estimatesDirectoryTable .repairContractsListTable td.repairContractsListActionsCol {
+.estimatesDirectoryTable .contractsListTable th.contractsListActionsCol,
+.estimatesDirectoryTable .contractsListTable td.contractsListActionsCol {
   width: auto;
   min-width: 11.5rem;
   max-width: none;
@@ -1081,7 +1072,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 /* Список договоров: копировать / удалить / фото актов (слот фото всегда) */
-.repairContractsListActionsGrid.estimatesCardActions {
+.contractsListActionsGrid.estimatesCardActions {
   display: grid;
   grid-template-columns: repeat(5, 24px);
   column-gap: 2px;
@@ -1095,7 +1086,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   white-space: nowrap;
 }
 
-.repairContractsListActionsSlot {
+.contractsListActionsSlot {
   display: flex;
   justify-content: center;
   align-items: center;
@@ -1104,7 +1095,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   min-width: 24px;
 }
 
-.repairContractsListActionsSlot > button {
+.contractsListActionsSlot > button {
   min-width: 24px;
   min-height: 24px;
   width: 24px;
@@ -1112,7 +1103,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   padding: 2px;
 }
 
-.repairContractsListActionsIconPlaceholder {
+.contractsListActionsIconPlaceholder {
   display: inline-flex;
   box-sizing: border-box;
   flex-shrink: 0;
@@ -1124,7 +1115,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   pointer-events: none;
 }
 
-.repairContractsDirectoryTable .repairContractsListStatusBadge {
+.contractsDirectoryTable .contractsListStatusBadge {
   padding: 1px 6px;
   font-size: 0.6875rem;
 }
@@ -1153,11 +1144,11 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   flex-shrink: 0;
 }
 
-.workOrderParamsBar .repairWorkOrderShowAmountsLabel {
+.workOrderParamsBar .packageWorkOrderShowAmountsLabel {
   align-items: center;
 }
 
-.workOrderParamsBar .repairWorkOrderShowAmountsLabel input {
+.workOrderParamsBar .packageWorkOrderShowAmountsLabel input {
   margin-top: 0;
   align-self: center;
 }
@@ -1565,7 +1556,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListCount {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListCount {
   background: var(--admin-text-secondary);
   color: var(--admin-text-muted);
 }

@@ -1,4 +1,4 @@
-import { buildContractAppendixRefParagraphHtml } from '../../shared/typography/contractTemplateAppendixRef';
+import { buildContractAppendixRefParagraphHtml } from '../../core/typography/contractTemplateAppendixRef';
 
 /** Шаблон «Памятка по эксплуатации дверей» (направление «Двери», приложение №4). */
 export const doorsTemplateMemo = `

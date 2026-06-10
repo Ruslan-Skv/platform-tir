@@ -58,13 +58,13 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
+  .packageTabBarCompact.blockTabs
   .tab:not(.tabActive) {
   color: var(--admin-bg-page);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
+  .packageTabBarCompact.blockTabs
   .tab:not(.tabActive):hover {
   color: var(--admin-bg-page);
 }
@@ -72,7 +72,7 @@
 /* Активная вкладка: .tab:hover в тёмной теме перебивает цвет с .tabActive (белый текст на info-bg-soft) */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
+  .packageTabBarCompact.blockTabs
   .tab.tabActive:hover {
   color: var(--admin-info-strong);
   background: var(--admin-info-bg-soft);
@@ -81,24 +81,24 @@
 /* «+ Д/с» / «− Д/с» на мятной панели: success-текст, не .secondaryBtn (светлый hover) */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
-  .repairAddAddendumTabBtn {
+  .packageTabBarCompact.blockTabs
+  .packageAddAddendumTabBtn {
   background: rgb(6 95 70 / 0.1);
   border-color: var(--admin-success-text);
   color: var(--admin-success-text-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
-  .repairAddAddendumTabBtn:hover:not(:disabled) {
+  .packageTabBarCompact.blockTabs
+  .packageAddAddendumTabBtn:hover:not(:disabled) {
   background: rgb(6 95 70 / 0.2);
   border-color: var(--admin-success-deep);
   color: var(--admin-success-text-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairPackageTabBarCompact.blockTabs
-  .repairAddAddendumTabBtn:disabled {
+  .packageTabBarCompact.blockTabs
+  .packageAddAddendumTabBtn:disabled {
   background: rgb(6 95 70 / 0.05);
   border-color: rgb(6 95 70 / 0.35);
   color: rgb(6 95 70 / 0.55);
@@ -108,15 +108,15 @@
 /* Базовый dark-слой для всех вкладок Contract Documents */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .dataTopRow
   > .dataTopBlock:nth-child(2)
   .repairCustomerSearchWrap,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .dataTopRow
   > .dataTopBlock:nth-child(2)
-  .repairCustomerSearchSlot {
+  .packageCustomerSearchSlot {
   background: color-mix(in srgb, var(--admin-bg-page) 89%, rgb(16 185 129) 11%);
   border-color: rgb(52 211 153 / 0.32);
 }
@@ -124,46 +124,43 @@
 /* Контраст текста на затемнённых карточках вкладки «Данные» */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .sectionCard
   .sectionTitle,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .crmCompactBox
   .sectionTitle {
   color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .sectionCard
   .field
   label,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .crmCompactBox
   .field
   label {
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .crmCompactBox
-  p {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .packageDataTabDense .crmCompactBox p {
   color: rgba(243, 244, 246, 0.92);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .field
   input[readonly],
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .field
   textarea[readonly],
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .field
   select:disabled {
   background: rgb(17 24 39 / 0.65);
@@ -194,7 +191,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .workOrderParamsBar
-  .repairWorkOrderGradeBar {
+  .packageWorkOrderGradeBar {
   background: rgb(255 255 255 / 0.08);
   border-color: var(--admin-border-strong);
   box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
@@ -202,7 +199,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .workOrderParamsBar
-  .repairWorkOrderGradeBtn {
+  .packageWorkOrderGradeBtn {
   background: rgb(255 255 255 / 0.06);
   border-color: var(--admin-border-strong);
   color: var(--admin-text-secondary);
@@ -210,7 +207,7 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .workOrderParamsBar
-  .repairWorkOrderGradeBtn:hover {
+  .packageWorkOrderGradeBtn:hover {
   background: rgb(255 255 255 / 0.12);
   border-color: var(--admin-accent-soft-strong);
   color: var(--admin-text-primary);
@@ -219,7 +216,7 @@
 /* Точечный dark-фикс для вкладок "Акт начала работ" / "Акт приёмки" */
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(.docPrint) {
   color: var(--admin-text-primary) !important;
@@ -227,35 +224,35 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(h1),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(h2),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(p),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(span),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(strong),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(em),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(td),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(th) {
   color: var(--admin-text-primary) !important;
@@ -263,19 +260,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(.signTable),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(.signTable tr),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(.signTable td),
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairActTwinSheet
+  .packageActTwinSheet
   .contractA4Preview
   :global(.signTable th) {
   background: transparent !important;
@@ -337,7 +334,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .paymentsTab
   .paymentsBlockAccentSummary {
   background: color-mix(in srgb, var(--admin-bg-page) 94%, rgb(245 158 11) 6%);
@@ -345,7 +342,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .packageFlowPayPctOrbYellow {
   background: color-mix(in srgb, rgb(66 32 6 / 0.55) 50%, var(--admin-surface));
   border-color: color-mix(in srgb, #ca8a04 50%, var(--admin-surface));
@@ -499,16 +496,16 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .packageLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .estimateLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .contractLockNotice,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractEditorPage
+  .packageDocumentEditorPage
   .addendumLockNotice {
   background: var(--admin-surface);
 }
@@ -525,30 +522,30 @@
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .contractCompactBlock
   .field
-  input.repairContractObjectFieldEdited,
+  input.packageContractObjectFieldEdited,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .contractCompactBlock
   .field
-  select.repairContractObjectFieldEdited,
+  select.packageContractObjectFieldEdited,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .contractCompactBlock
   .field
-  textarea.repairContractObjectFieldEdited,
+  textarea.packageContractObjectFieldEdited,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .contractCompactBlock
   .field
-  input.repairContractObjectFieldEdited,
+  input.packageContractObjectFieldEdited,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .contractCompactBlock
   .field
-  select.repairContractObjectFieldEdited,
+  select.packageContractObjectFieldEdited,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
+  .packageDataTabDense
   .contractCompactBlock
   .field
-  textarea.repairContractObjectFieldEdited {
+  textarea.packageContractObjectFieldEdited {
   background: var(--admin-success-bg-soft) !important;
   border-color: var(--admin-success) !important;
   color: var(--admin-text-primary) !important;
@@ -1849,54 +1846,52 @@
 }
 
 /* Строка-сводка по объекту — голубой фон */
-.repairContractsListObjectRow td {
+.contractsListObjectRow td {
   background: var(--admin-info-bg-soft, #eff6ff);
   font-weight: normal;
 }
 
-.repairContractsListObjectAddressLabel,
+.contractsListObjectAddressLabel,
 .estimatesListObjectAddressLabel {
   font-weight: 700;
   color: var(--admin-text-primary);
 }
 
-.repairContractsListObjectRow:hover td {
+.contractsListObjectRow:hover td {
   background: var(--admin-info-bg, #dbeafe);
 }
 
-.repairContractsListObjectRowExpanded td {
+.contractsListObjectRowExpanded td {
   background: var(--admin-info-bg, #dbeafe);
 }
 
-.repairContractsListObjectRowExpanded:hover td {
+.contractsListObjectRowExpanded:hover td {
   background: color-mix(in srgb, var(--admin-info, #3b82f6) 18%, var(--admin-info-bg, #dbeafe));
 }
 
 /* Договоры внутри раскрытого объекта — янтарный фон, контрастнее сводки */
-.repairContractsListChildRow td {
+.contractsListChildRow td {
   background: var(--admin-contract-object-child-bg);
 }
 
-.repairContractsListChildRow:hover td {
+.contractsListChildRow:hover td {
   background: var(--admin-contract-object-child-bg-hover);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow td {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListObjectRow td {
   background: rgb(59 130 246 / 0.24);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRow:hover td,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListObjectRowExpanded td {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListObjectRow:hover td,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListObjectRowExpanded td {
   background: rgb(59 130 246 / 0.32);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListObjectRowExpanded:hover
-  td {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListObjectRowExpanded:hover td {
   background: rgb(59 130 246 / 0.38);
 }
 
-.repairContractsListExpandBtn {
+.contractsListExpandBtn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -1914,11 +1909,11 @@
   color: var(--admin-text-secondary);
 }
 
-.repairContractsListExpandBtn:hover {
+.contractsListExpandBtn:hover {
   background: var(--admin-surface-hover, rgba(0, 0, 0, 0.06));
 }
 
-.repairContractsListObjectBadge {
+.contractsListObjectBadge {
   display: inline-block;
   margin-left: 8px;
   padding: 2px 8px;
@@ -1930,7 +1925,7 @@
 }
 
 /* Фон карточек «Данные» = .blankSheet замера (только светлая / только тёмная, без !important) */
-html[data-theme='light'] .repairContractDataTabDense .sectionCard.repairDataBlankSheet {
+html[data-theme='light'] .packageDataTabDense .sectionCard.packageDataBlankSheet {
   border: 1px solid var(--admin-info-border-soft, #bfdbfe);
   border-radius: var(--admin-radius-md);
   background: linear-gradient(
@@ -1941,8 +1936,8 @@ html[data-theme='light'] .repairContractDataTabDense .sectionCard.repairDataBlan
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractDataTabDense
-  .sectionCard.repairDataBlankSheet {
+  .packageDataTabDense
+  .sectionCard.packageDataBlankSheet {
   border-color: var(--admin-info-light);
   border-radius: var(--admin-radius-md);
   background: linear-gradient(

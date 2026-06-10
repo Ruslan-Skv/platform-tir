@@ -1,45 +1,45 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
-import type { RepairLibraryTemplateTabId } from '../directions/repair/documents/repairLibraryTemplateTabs';
-import type { RepairDocumentTemplateTabId } from '../directions/repair/formDataTemplateStorage';
-import { repairTemplateActAcceptance } from './actAcceptance';
-import { repairTemplateActStart } from './actStart';
-import { repairTemplateAddendum } from './addendum';
-import { repairTemplateCashOrder } from './cashOrder';
-import { repairTemplateContract } from './contract';
+import type { PackageDocumentTemplateTabId } from '../platform/form/formDataTemplateStorage';
+import type { PackageLibraryTemplateTabId } from '../platform/tabs/packageLibraryTemplateTabs';
+import { packageTemplateActAcceptance } from './actAcceptance';
+import { packageTemplateActStart } from './actStart';
+import { packageTemplateAddendum } from './addendum';
+import { packageTemplateCashOrder } from './cashOrder';
+import { packageTemplateContract } from './contract';
 import { doorsTemplateActAcceptance } from './doorsActAcceptance';
 import { doorsTemplateContract } from './doorsTemplateContract';
 import { doorsTemplateMemo } from './doorsTemplateMemo';
-import { repairLibraryFallbackStub } from './libraryFallbackStub';
+import { packageLibraryFallbackStub } from './libraryFallbackStub';
 import { windowsTemplateMemo } from './memo';
-import { repairTemplatePaymentInvoice } from './paymentInvoice';
-import { repairTemplateProductionLog } from './productionLog';
+import { packageTemplatePaymentInvoice } from './paymentInvoice';
+import { packageTemplateProductionLog } from './productionLog';
 import { windowsTemplateActAcceptance } from './windowsActAcceptance';
 import {
-  repairTemplateWindowsWorkOrderAddendum,
-  repairTemplateWorkOrder,
-  repairTemplateWorkOrderAddendum,
+  packageTemplateWindowsWorkOrderAddendum,
+  packageTemplateWorkOrder,
+  packageTemplateWorkOrderAddendum,
 } from './workOrder';
 
-const stub = (title: string) => repairLibraryFallbackStub(title);
+const stub = (title: string) => packageLibraryFallbackStub(title);
 
 /** Резервный HTML, если в библиотеке нет пресета (вкладки библиотеки + заглушки для прочих вкладок пакета). */
-export const REPAIR_LIBRARY_TEMPLATE_HTML: Record<RepairLibraryTemplateTabId, string> = {
-  contract: repairTemplateContract,
-  actStart: repairTemplateActStart,
-  actAcceptance: repairTemplateActAcceptance,
+export const PACKAGE_LIBRARY_TEMPLATE_HTML: Record<PackageLibraryTemplateTabId, string> = {
+  contract: packageTemplateContract,
+  actStart: packageTemplateActStart,
+  actAcceptance: packageTemplateActAcceptance,
   memo: windowsTemplateMemo,
-  cashOrder: repairTemplateCashOrder,
-  paymentInvoice: repairTemplatePaymentInvoice,
-  productionLog: repairTemplateProductionLog,
+  cashOrder: packageTemplateCashOrder,
+  paymentInvoice: packageTemplatePaymentInvoice,
+  productionLog: packageTemplateProductionLog,
 };
 
-const WINDOWS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<RepairLibraryTemplateTabId, string>> = {
+const WINDOWS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
   actAcceptance: windowsTemplateActAcceptance,
   memo: windowsTemplateMemo,
 };
 
-const DOORS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<RepairLibraryTemplateTabId, string>> = {
+const DOORS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
   contract: doorsTemplateContract,
   actAcceptance: doorsTemplateActAcceptance,
   memo: doorsTemplateMemo,
@@ -48,7 +48,7 @@ const DOORS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<RepairLibraryTemplateTabI
 /** Резервный HTML вкладки библиотеки с учётом направления пакета. */
 export function libraryTemplateFallbackHtml(
   kind: ContractDocumentPackageKind,
-  tab: RepairLibraryTemplateTabId
+  tab: PackageLibraryTemplateTabId
 ): string {
   if (kind === 'DOORS') {
     const doorsHtml = DOORS_LIBRARY_TEMPLATE_OVERRIDES[tab];
@@ -58,41 +58,22 @@ export function libraryTemplateFallbackHtml(
     const windowsHtml = WINDOWS_LIBRARY_TEMPLATE_OVERRIDES[tab];
     if (windowsHtml) return windowsHtml;
   }
-  return REPAIR_LIBRARY_TEMPLATE_HTML[tab];
+  return PACKAGE_LIBRARY_TEMPLATE_HTML[tab];
 }
 
-const WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES: Partial<Record<RepairDocumentTemplateTabId, string>> = {
-  workOrderAddendum1: repairTemplateWindowsWorkOrderAddendum,
-  workOrderAddendum2: repairTemplateWindowsWorkOrderAddendum,
-  workOrderAddendum3: repairTemplateWindowsWorkOrderAddendum,
-  workOrderAddendum4: repairTemplateWindowsWorkOrderAddendum,
-  workOrderAddendum5: repairTemplateWindowsWorkOrderAddendum,
+const WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES: Partial<Record<PackageDocumentTemplateTabId, string>> = {
+  workOrderAddendum1: packageTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum2: packageTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum3: packageTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum4: packageTemplateWindowsWorkOrderAddendum,
+  workOrderAddendum5: packageTemplateWindowsWorkOrderAddendum,
 };
 
-const DOORS_DOCUMENT_TEMPLATE_OVERRIDES: Partial<Record<RepairDocumentTemplateTabId, string>> =
+const DOORS_DOCUMENT_TEMPLATE_OVERRIDES: Partial<Record<PackageDocumentTemplateTabId, string>> =
   WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES;
 
-/** Резервный HTML вкладки редактора с учётом направления пакета. */
-export function repairDocumentTemplateFallbackHtml(
-  kind: ContractDocumentPackageKind,
-  tab: RepairDocumentTemplateTabId
-): string {
-  if (kind === 'DOORS') {
-    const doorsDocHtml = DOORS_DOCUMENT_TEMPLATE_OVERRIDES[tab];
-    if (doorsDocHtml) return doorsDocHtml;
-    const doorsLibraryTab = tab as RepairLibraryTemplateTabId;
-    const doorsHtml = DOORS_LIBRARY_TEMPLATE_OVERRIDES[doorsLibraryTab];
-    if (doorsHtml) return doorsHtml;
-  }
-  if (kind === 'WINDOWS') {
-    const windowsHtml = WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES[tab];
-    if (windowsHtml) return windowsHtml;
-  }
-  return REPAIR_DOCUMENT_TEMPLATES[tab];
-}
-
-export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, string> = {
-  ...REPAIR_LIBRARY_TEMPLATE_HTML,
+export const PACKAGE_DOCUMENT_TEMPLATES: Record<PackageDocumentTemplateTabId, string> = {
+  ...PACKAGE_LIBRARY_TEMPLATE_HTML,
   estimate: stub('Смета'),
   finalEstimate: stub('Итоговая смета'),
   specification: stub('Спецификация'),
@@ -100,15 +81,34 @@ export const REPAIR_DOCUMENT_TEMPLATES: Record<RepairDocumentTemplateTabId, stri
   finalWorkOrder: stub('Итоговый заказ-наряд'),
   questionnaire1: stub('Анкета 1'),
   questionnaire2: stub('Анкета 2'),
-  addendum1: repairTemplateAddendum,
-  addendum2: repairTemplateAddendum,
-  addendum3: repairTemplateAddendum,
-  addendum4: repairTemplateAddendum,
-  addendum5: repairTemplateAddendum,
-  workOrder: repairTemplateWorkOrder,
-  workOrderAddendum1: repairTemplateWorkOrderAddendum,
-  workOrderAddendum2: repairTemplateWorkOrderAddendum,
-  workOrderAddendum3: repairTemplateWorkOrderAddendum,
-  workOrderAddendum4: repairTemplateWorkOrderAddendum,
-  workOrderAddendum5: repairTemplateWorkOrderAddendum,
+  addendum1: packageTemplateAddendum,
+  addendum2: packageTemplateAddendum,
+  addendum3: packageTemplateAddendum,
+  addendum4: packageTemplateAddendum,
+  addendum5: packageTemplateAddendum,
+  workOrder: packageTemplateWorkOrder,
+  workOrderAddendum1: packageTemplateWorkOrderAddendum,
+  workOrderAddendum2: packageTemplateWorkOrderAddendum,
+  workOrderAddendum3: packageTemplateWorkOrderAddendum,
+  workOrderAddendum4: packageTemplateWorkOrderAddendum,
+  workOrderAddendum5: packageTemplateWorkOrderAddendum,
 };
+
+/** Резервный HTML вкладки редактора с учётом направления пакета. */
+export function packageDocumentTemplateFallbackHtml(
+  kind: ContractDocumentPackageKind,
+  tab: PackageDocumentTemplateTabId
+): string {
+  if (kind === 'DOORS') {
+    const doorsDocHtml = DOORS_DOCUMENT_TEMPLATE_OVERRIDES[tab];
+    if (doorsDocHtml) return doorsDocHtml;
+    const doorsLibraryTab = tab as PackageLibraryTemplateTabId;
+    const doorsHtml = DOORS_LIBRARY_TEMPLATE_OVERRIDES[doorsLibraryTab];
+    if (doorsHtml) return doorsHtml;
+  }
+  if (kind === 'WINDOWS') {
+    const windowsHtml = WINDOWS_DOCUMENT_TEMPLATE_OVERRIDES[tab];
+    if (windowsHtml) return windowsHtml;
+  }
+  return PACKAGE_DOCUMENT_TEMPLATES[tab];
+}

@@ -32,7 +32,7 @@ import {
   normalizeEstimateCustomWorkItemDef,
   parseCustomWorkFormInput,
   splitDraftLineItems,
-} from '@/views/admin/ContractDocuments/packages/directions/repair/estimates/estimateCustomWorkItems';
+} from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateCustomWorkItems';
 
 import styles from './ServiceCategoryPage.module.css';
 

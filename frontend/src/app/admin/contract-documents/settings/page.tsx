@@ -1,7 +1,7 @@
 'use client';
 
-import { ContractDocumentsRepairSettingsPage } from '@/views/admin/ContractDocuments/packages/pages/settings/ContractDocumentsRepairSettingsPage';
+import { ContractDocumentsPackageSettingsPage } from '@/views/admin/ContractDocuments/packages/pages/settings/ContractDocumentsPackageSettingsPage';
 
-export default function AdminContractDocumentsRepairSettingsPage() {
-  return <ContractDocumentsRepairSettingsPage />;
+export default function AdminContractDocumentsPackageSettingsPage() {
+  return <ContractDocumentsPackageSettingsPage />;
 }

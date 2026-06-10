@@ -1,4 +1,4 @@
-export const repairTemplateCashOrder = `
+export const packageTemplateCashOrder = `
 <div class="docPrint">
   <h1>Приходный кассовый ордер</h1>
   <p>От {{customer.fullName|plain}}</p>

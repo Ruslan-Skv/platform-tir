@@ -1,10 +1,10 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
-import type { RepairDocumentTabId } from '../directions/repair/documents/repairDocumentTabs';
-import type { RepairLibraryTemplateTabId } from '../directions/repair/documents/repairLibraryTemplateTabs';
+import type { PackageDocumentTabId } from '../platform/tabs/packageDocumentTabs';
+import type { PackageLibraryTemplateTabId } from '../platform/tabs/packageLibraryTemplateTabs';
 import type { PackageDirectionConfig, PackageDirectionFamily } from './types';
 
-const PRODUCT_LIKE_HIDDEN_EDITOR_TABS: readonly RepairDocumentTabId[] = [
+const PRODUCT_LIKE_HIDDEN_EDITOR_TABS: readonly PackageDocumentTabId[] = [
   'actStart',
   'productionLog',
   'interactiveFinalEstimate',
@@ -17,12 +17,12 @@ const PRODUCT_LIKE_HIDDEN_EDITOR_TABS: readonly RepairDocumentTabId[] = [
   'workOrderAddendum5',
 ];
 
-const PRODUCT_LIBRARY_EXCLUDED: readonly RepairLibraryTemplateTabId[] = [
+const PRODUCT_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = [
   'actStart',
   'productionLog',
 ];
 
-const REPAIR_LIBRARY_EXCLUDED: readonly RepairLibraryTemplateTabId[] = ['memo'];
+const REPAIR_DIRECTION_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = ['memo'];
 
 const PRODUCT_TAB_LABEL_OVERRIDES: PackageDirectionConfig['tabLabelOverrides'] = {
   estimate: { full: 'Счёт-заказ', short: 'Счёт-заказ' },
@@ -45,7 +45,7 @@ function repairLikeConfig(
     settingsKind: 'REPAIR',
     estimateCatalogKind: kind,
     templatePresetsKind: kind,
-    excludedLibraryTemplateTabs: REPAIR_LIBRARY_EXCLUDED,
+    excludedLibraryTemplateTabs: REPAIR_DIRECTION_LIBRARY_EXCLUDED,
   };
 }
 

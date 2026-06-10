@@ -1,1 +1,6 @@
-export { DoorsSpecificationTab } from './DoorsSpecificationTab';
+/** Направление «Двери» — PRODUCT_LIKE; общий UI в `families/product-like/`. */
+export { ProductSpecificationTabContent as DoorsSpecificationTab } from '../../families/product-like/specification/ProductSpecificationTabContent';
+export { ProductAddendumTab as DoorsAddendumTab } from '../../families/product-like/addendum/ProductAddendumTab';
+export { ProductAddendumSpecificationLinesEditor as DoorsAddendumSpecificationLinesEditor } from '../../families/product-like/addendum/ProductAddendumSpecificationLinesEditor';
+export { ProductAddendumGrandTotalsSummary as DoorsAddendumGrandTotalsSummary } from '../../families/product-like/addendum/ProductAddendumGrandTotalsSummary';
+export { ProductContractCostFields as DoorsContractCostFields } from '../../families/product-like/cost/ProductContractCostFields';

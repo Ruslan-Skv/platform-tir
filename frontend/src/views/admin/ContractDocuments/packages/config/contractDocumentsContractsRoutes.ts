@@ -6,6 +6,6 @@ export const ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF = '/admin/contract-document
 export const ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_REPAIR_HREF =
   ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF;
 
-export function adminContractDocumentsContractsRepairPackageHref(packageId: string): string {
+export function adminContractDocumentsContractsPackageHref(packageId: string): string {
   return `${ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF}/${packageId}`;
 }

@@ -1,7 +1,6 @@
 export type {
   PackageDirectionConfig,
   PackageDirectionFamily,
-  PackageSpecificationMode,
   PackageTabLabelOverride,
 } from './types';
 
@@ -25,7 +24,7 @@ export {
 export {
   ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_HREF,
   ADMIN_CONTRACT_DOCUMENTS_CONTRACTS_REPAIR_HREF,
-  adminContractDocumentsContractsRepairPackageHref,
+  adminContractDocumentsContractsPackageHref,
 } from './contractDocumentsContractsRoutes';
 
 export { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from './contractDocumentsListKinds';

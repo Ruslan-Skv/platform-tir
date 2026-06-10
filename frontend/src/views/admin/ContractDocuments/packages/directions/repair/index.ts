@@ -1,14 +1,5 @@
-export * from './repairPackageForm';
-export * from './formDataTemplateStorage';
-export * from './payments';
-export * from './questionnaires';
-export * from './workOrders/repairWorkOrderHubTabs';
-export * from './documents/repairDocumentTabs';
-export * from './documents/repairLibraryTemplateTabs';
-export * from './documents/resolveRepairTemplateHtml';
-export * from './estimates/estimatePresetsCatalogKind';
-export * from './estimates/repairApplyEstimatePresetIds';
-export * from './estimates/repairContractDiscount';
-export * from './estimates/contractDocumentsEstimateSnapshot';
-export * from './estimates/estimateCustomWorkItems';
-export * from './documents/repairActTwinCopiesOnOnePageHtml';
+/**
+ * Направление «Ремонт» (`REPAIR_LIKE`).
+ * Редактор, hub, сметы, оплаты и анкеты — в `packages/platform/`.
+ */
+export {};

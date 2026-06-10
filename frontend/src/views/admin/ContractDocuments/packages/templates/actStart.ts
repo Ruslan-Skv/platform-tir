@@ -1,4 +1,4 @@
-export const repairTemplateActStart = `
+export const packageTemplateActStart = `
 <div class="docPrint">
   <h1>Акт начала работ</h1>
   <p>к договору подряда № {{contract.number}} от {{contract.date}}</p>

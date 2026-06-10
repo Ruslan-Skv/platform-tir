@@ -5,16 +5,16 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { type CrmCustomerDetail, getCrmCustomer } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import { RepairManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/RepairManagerQuestionnaire1Tab';
-import { mergeRepairFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/applyCrmContractToForm';
+import {
+  type PackageManagerQuestionnaire1Block,
+  defaultPackageFormData,
+} from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
+import { PackageManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/platform/hub/PackageManagerQuestionnaire1Tab';
+import { mergePackageFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/packages/platform/questionnaires/applyCrmContractToForm';
 import {
   persistManagerQuestionnaire1ToCrmCustomer,
   readManagerQuestionnaire1FromCrmDetail,
-} from '@/views/admin/ContractDocuments/packages/directions/repair/questionnaires/crmManagerQuestionnaire1';
-import {
-  type RepairManagerQuestionnaire1Block,
-  defaultRepairPackageFormData,
-} from '@/views/admin/ContractDocuments/packages/directions/repair/repairPackageForm';
+} from '@/views/admin/ContractDocuments/packages/platform/questionnaires/crmManagerQuestionnaire1';
 
 const MQ1_CRM_SAVE_DEBOUNCE_MS = 400;
 
@@ -32,8 +32,8 @@ export function CrmCustomerManagerQuestionnaire1Modal({
   onUpdated,
 }: CrmCustomerManagerQuestionnaire1ModalProps) {
   const [detail, setDetail] = useState<CrmCustomerDetail | null>(null);
-  const [questionnaire, setQuestionnaire] = useState<RepairManagerQuestionnaire1Block>(
-    () => defaultRepairPackageFormData().managerQuestionnaire1
+  const [questionnaire, setQuestionnaire] = useState<PackageManagerQuestionnaire1Block>(
+    () => defaultPackageFormData().managerQuestionnaire1
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,13 +73,13 @@ export function CrmCustomerManagerQuestionnaire1Modal({
 
   const formForTab = useMemo(() => {
     const base = detail
-      ? mergeRepairFormFromCrmCustomerDetail(detail, defaultRepairPackageFormData())
-      : defaultRepairPackageFormData();
+      ? mergePackageFormFromCrmCustomerDetail(detail, defaultPackageFormData())
+      : defaultPackageFormData();
     return { ...base, managerQuestionnaire1: questionnaire };
   }, [detail, questionnaire]);
 
   const scheduleSave = useCallback(
-    (nextBlock: RepairManagerQuestionnaire1Block) => {
+    (nextBlock: PackageManagerQuestionnaire1Block) => {
       if (saveDebounceRef.current !== null) {
         window.clearTimeout(saveDebounceRef.current);
       }
@@ -107,7 +107,7 @@ export function CrmCustomerManagerQuestionnaire1Modal({
   );
 
   const onPatch = useCallback(
-    (patch: Partial<RepairManagerQuestionnaire1Block>) => {
+    (patch: Partial<PackageManagerQuestionnaire1Block>) => {
       setQuestionnaire((prev) => {
         const next = { ...prev, ...patch };
         scheduleSave(next);
@@ -181,7 +181,7 @@ export function CrmCustomerManagerQuestionnaire1Modal({
           </p>
           {saving ? <p data-modal-form-hint>Сохранение…</p> : null}
           {saveError ? <p data-modal-form-error>{saveError}</p> : null}
-          <RepairManagerQuestionnaire1Tab
+          <PackageManagerQuestionnaire1Tab
             form={formForTab}
             onPatch={onPatch}
             onToggleTrafficSource={onToggleTrafficSource}

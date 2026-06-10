@@ -1,0 +1,151 @@
+/* Co-located: UI прикрепления расчётов (вкладка «Смета» и блоки Д/с). */
+
+.estimatePickAndAttachedRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 38%);
+  gap: 5px 8px;
+  align-items: stretch;
+}
+
+.estimatePickColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  min-width: 0;
+}
+
+.estimateSelectsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 4px 8px;
+  align-items: end;
+}
+
+.estimateAttachBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+@media (max-width: 600px) {
+  .estimateSelectsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
+.estimateAttachedColumn {
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  background: var(--admin-surface-muted);
+  min-width: 0;
+  max-height: 188px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+}
+
+.estimateAttachedColumnTitle {
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  color: var(--admin-sidebar-text);
+  letter-spacing: var(--admin-letter-spacing-wide);
+  line-height: var(--admin-line-height-xs);
+}
+
+.estimateAttachedEmpty {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-xs);
+}
+
+.estimateAttachedPresetMain {
+  min-width: 0;
+}
+
+.estimateAttachedPresetMain strong {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+}
+
+.estimateAttachedPresetMeta {
+  font-size: var(--admin-font-size-2xs);
+  color: var(--admin-text-muted);
+}
+
+.estimateAttachedRemoveBtn {
+  padding: var(--admin-space-0) var(--admin-space-sm);
+  min-width: 24px;
+  min-height: 24px;
+  font-size: var(--admin-font-size-xl);
+  line-height: var(--admin-line-height-flat);
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+@media (max-width: 900px) {
+  .estimatePickAndAttachedRow {
+    grid-template-columns: 1fr;
+  }
+
+  .estimateAttachedColumn {
+    max-height: 140px;
+  }
+}
+
+.estimateAttachActionsRow {
+  display: flex;
+  gap: var(--admin-space-xs);
+  margin-top: var(--admin-space-2xs);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.estimateAttachPrimaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+}
+
+.estimateAttachPrimaryBtn.estimateAttachPrimaryBtn {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabHint {
+  margin: 1px 0 0;
+  font-size: var(--admin-font-size-2xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabHintFullWidth {
+  grid-column: 1 / -1;
+  margin-top: var(--admin-space-2xs);
+}
+
+.estimateAttachedPresetList {
+  display: grid;
+  gap: var(--admin-space-xs);
+}
+
+.estimateAttachedPresetRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-xs);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xs);
+  padding: var(--admin-space-xs) var(--admin-space-xs);
+  cursor: grab;
+  background: var(--admin-surface);
+}
+
+.estimateSheetField {
+  gap: var(--admin-space-2xs);
+}
+
+.estimateSheetField > label {
+  font-size: var(--admin-font-size-2xs);
+}

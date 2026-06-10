@@ -1,18 +1,18 @@
 /* Список договоров: заголовок и счётчик как на /admin/measurements */
-.repairContractsListHeaderLeft {
+.contractsListHeaderLeft {
   display: flex;
   align-items: center;
   gap: var(--admin-space-2xl);
 }
 
-.repairContractsListPage .editorHeader .title {
+.contractsListPage .editorHeader .title {
   font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
 }
 
-.repairContractsListCount {
+.contractsListCount {
   background: var(--admin-border);
   padding: var(--admin-space-xs) var(--admin-space-xl);
   border-radius: var(--admin-radius-3xl);
@@ -21,51 +21,48 @@
   white-space: nowrap;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListPage
-  .editorHeader
-  .title {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListPage .editorHeader .title {
   color: var(--admin-text-primary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListCount {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListCount {
   background: var(--admin-text-secondary);
   color: var(--admin-text-muted);
 }
 
 /* Договора, Расчёты: отступ и разделитель между шапкой и фильтрами */
-.repairContractsListPage .editorHeader {
+.contractsListPage .editorHeader {
   margin-bottom: var(--admin-space-lg);
   padding-bottom: var(--admin-space-md);
   border-bottom: 1px solid var(--admin-border);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListPage .editorHeader {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListPage .editorHeader {
   border-bottom-color: var(--admin-border);
 }
 
 /* Список договоров: фильтры как на /admin/measurements */
-.repairContractsListFilters {
+.contractsListFilters {
   display: flex;
   flex-wrap: wrap;
   gap: var(--admin-space-md);
   margin-bottom: var(--admin-space-xl);
 }
 
-.repairContractsListPagination {
+.contractsListPagination {
   justify-content: center;
   gap: var(--admin-space-2xl);
   flex-wrap: wrap;
 }
 
-.repairContractsListPaginationPageActive {
+.contractsListPaginationPageActive {
   background: var(--admin-surface);
   border-color: var(--admin-icon-copy);
   color: var(--admin-icon-copy);
   font-weight: 600;
 }
 
-.repairContractsListSelect {
+.contractsListSelect {
   padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
@@ -75,12 +72,12 @@
   cursor: pointer;
 }
 
-.repairContractsListSelect:disabled {
+.contractsListSelect:disabled {
   opacity: 0.6;
   cursor: not-allowed;
 }
 
-.repairContractsListSearchInput {
+.contractsListSearchInput {
   flex: 1;
   min-width: 160px;
   max-width: 360px;
@@ -91,27 +88,27 @@
   background: var(--admin-surface);
 }
 
-.repairContractsListSearchInput:focus,
-.repairContractsListSelect:focus,
-.repairContractsListDateInput:focus {
+.contractsListSearchInput:focus,
+.contractsListSelect:focus,
+.contractsListDateInput:focus {
   border-color: var(--admin-accent, #2563eb);
   box-shadow: var(--admin-shadow-focus-soft);
   outline: none;
 }
 
-.repairContractsListDateLabel {
+.contractsListDateLabel {
   display: flex;
   align-items: center;
   gap: var(--admin-space-sm);
 }
 
-.repairContractsListDateLabelText {
+.contractsListDateLabelText {
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
-.repairContractsListDateInput {
+.contractsListDateInput {
   padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
@@ -120,37 +117,37 @@
 }
 
 /* Поле фильтра не в исходном состоянии */
-.repairContractsListFilterActive {
+.contractsListFilterActive {
   border-color: var(--admin-info);
   background: var(--admin-info-bg-soft);
   box-shadow: 0 0 0 1px var(--admin-info-border-soft);
 }
 
 /* Список договоров: шапка таблицы как directoryTable (замеры, заказчики) */
-.repairContractsDirectoryTable thead {
+.contractsDirectoryTable thead {
   box-shadow: 0 2px 0 var(--admin-border-strong);
 }
 
-.repairContractsDirectoryTable thead th {
+.contractsDirectoryTable thead th {
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
   font-weight: 700;
   border-bottom: 2px solid var(--admin-border-strong);
 }
 
-.repairContractsDirectoryTable thead th:hover {
+.contractsDirectoryTable thead th:hover {
   background: var(--admin-border);
 }
 
 /* Компактное тело таблицы; шапка — как DataTable на /admin/measurements */
-.repairContractsDirectoryTable .repairContractsListTable td {
+.contractsDirectoryTable .contractsListTable td {
   padding: 4px 6px;
   font-size: 0.75rem;
   line-height: 1.25;
   vertical-align: middle;
 }
 
-.repairContractsDirectoryTable .repairContractsListTable thead th {
+.contractsDirectoryTable .contractsListTable thead th {
   padding: var(--admin-space-md) var(--admin-space-sm);
   font-size: var(--admin-font-size-xs);
   font-weight: 700;
@@ -162,28 +159,28 @@
 }
 
 @media (min-width: 1280px) {
-  .repairContractsDirectoryTable .repairContractsListTable td {
+  .contractsDirectoryTable .contractsListTable td {
     padding: 4px 5px;
   }
 }
 
 /* Строка списка договоров — клик открывает пакет (как DataTable на /admin/measurements) */
-.repairContractsListClickableRow {
+.contractsListClickableRow {
   cursor: pointer;
   transition: background 0.15s ease;
 }
 
-.repairContractsListClickableRow:hover {
+.contractsListClickableRow:hover {
   background: var(--admin-surface-muted);
 }
 
-.repairContractsListClickableRow:focus-visible {
+.contractsListClickableRow:focus-visible {
   outline: 2px solid var(--admin-accent);
   outline-offset: -2px;
 }
 
 /* Статусы списка договоров — как бейджи на /admin/measurements */
-.repairContractsListStatusBadge {
+.contractsListStatusBadge {
   display: inline-block;
   padding: var(--admin-space-2xs) var(--admin-space-md);
   border-radius: var(--admin-radius-xl);
@@ -195,33 +192,33 @@
 }
 
 /* В проекте — как «Новый» */
-.repairContractsListStatusBadgeInProject {
+.contractsListStatusBadgeInProject {
   background: var(--admin-accent-soft);
   color: var(--admin-accent);
 }
 
 /* Подписан — как «Договор» */
-.repairContractsListStatusBadgeSigned {
+.contractsListStatusBadgeSigned {
   background: var(--admin-success-bg);
   border-color: var(--admin-success-lime);
   color: var(--admin-success-text-strong);
 }
 
 /* В работе — как «В работе» (замер) */
-.repairContractsListStatusBadgeWork {
+.contractsListStatusBadgeWork {
   background: var(--admin-warning-bg);
   color: var(--admin-warning-text);
 }
 
 /* Закрыт — как «Выполнен» */
-.repairContractsListStatusBadgeClosed {
+.contractsListStatusBadgeClosed {
   background: var(--admin-measurement-status-completed-bg, #ede4d6);
   border-color: var(--admin-measurement-status-completed-border, #d4bc9a);
   color: var(--admin-measurement-status-completed-text, #5c4a36);
 }
 
 /* Отказ — как «Отказ» */
-.repairContractsListStatusBadgeRefused {
+.contractsListStatusBadgeRefused {
   background: var(--admin-error-bg-soft);
   color: var(--admin-error-text-strong);
 }
@@ -243,7 +240,7 @@
   max-width: 36rem;
 }
 
-.repairSettingsCard {
+.packageSettingsCard {
   margin-top: var(--admin-space-lg);
   padding: var(--admin-space-lg);
   border: 1px solid var(--admin-border);
@@ -252,7 +249,7 @@
   max-width: 420px;
 }
 
-.repairSettingsActions {
+.packageSettingsActions {
   display: flex;
   flex-wrap: wrap;
   gap: var(--admin-space-sm);
@@ -332,14 +329,14 @@
   margin: 0;
 }
 
-.repairHeaderContractSignedDate {
+.packageHeaderContractSignedDate {
   font-size: var(--admin-font-size-xl);
   font-weight: 500;
   color: var(--admin-text-muted);
   white-space: nowrap;
 }
 
-.repairContractsListSelectCol {
+.contractsListSelectCol {
   width: 20px;
   min-width: 20px;
   max-width: 20px;
@@ -349,17 +346,17 @@
   vertical-align: middle;
 }
 
-.repairContractsListTable th.repairContractsListSelectCol {
+.contractsListTable th.contractsListSelectCol {
   padding-left: 2px !important;
   padding-right: 2px !important;
 }
 
-.repairContractsListKindCol {
+.contractsListKindCol {
   white-space: nowrap;
   font-size: 0.8125rem;
 }
 
-.repairContractsListActionsCol {
+.contractsListActionsCol {
   width: 130px;
   min-width: 130px;
   max-width: 130px;
@@ -369,8 +366,8 @@
   padding-right: 2px;
 }
 
-.repairContractsListTable th.repairContractsListActionsCol,
-.repairContractsListTable td.repairContractsListActionsCol {
+.contractsListTable th.contractsListActionsCol,
+.contractsListTable td.contractsListActionsCol {
   text-align: right;
 }
 
@@ -511,7 +508,7 @@
   align-items: flex-end;
 }
 
-.repairEditorDraftTitleRow {
+.packageEditorDraftTitleRow {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -520,58 +517,58 @@
   justify-content: flex-end;
 }
 
-.repairEditorDraftTitleRow .draftTitleInput {
+.packageEditorDraftTitleRow .draftTitleInput {
   flex: 1 1 240px;
   min-width: 240px;
 }
 
-.repairEditorDraftTitleRow > button {
+.packageEditorDraftTitleRow > button {
   flex-shrink: 0;
 }
 
 /* --- dark theme --- */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSearchInput:focus,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSelect:focus,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateInput:focus {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSelect:focus,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListDateInput:focus {
   border-color: var(--admin-accent);
   box-shadow: var(--admin-shadow-focus-soft);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSearchInput,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListSelect,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateInput {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListDateInput {
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListDateLabelText {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListDateLabelText {
   color: var(--admin-text-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeInProject {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeInProject {
   background: var(--admin-overlay-color-139);
   color: var(--admin-accent);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeSigned {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeSigned {
   background: var(--admin-overlay-color-098);
   border-color: var(--admin-success-lime);
   color: var(--admin-success-border-soft);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeWork {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeWork {
   background: var(--admin-overlay-color-020);
   color: var(--admin-warning-border);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeClosed {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeClosed {
   background: var(--admin-measurement-status-completed-bg, #4a3f32);
   border-color: var(--admin-measurement-status-completed-border, #a08968);
   color: var(--admin-measurement-status-completed-text, #e8dcc8);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .repairContractsListStatusBadgeRefused {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeRefused {
   background: var(--admin-overlay-color-031);
   color: var(--admin-danger-border-strong);
 }
@@ -581,17 +578,16 @@
   border-color: var(--admin-accent-soft-strong);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSearchInput::placeholder {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput::placeholder {
   color: var(--admin-text-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSearchInput.repairContractsListFilterActive,
+  .contractsListSearchInput.contractsListFilterActive,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSelect.repairContractsListFilterActive,
+  .contractsListSelect.contractsListFilterActive,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListDateInput.repairContractsListFilterActive {
+  .contractsListDateInput.contractsListFilterActive {
   border-color: var(--admin-info-bright, #60a5fa);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
   color: var(--admin-text-primary, #f9fafb);
@@ -601,11 +597,11 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSearchInput.repairContractsListFilterActive:focus,
+  .contractsListSearchInput.contractsListFilterActive:focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSelect.repairContractsListFilterActive:focus,
+  .contractsListSelect.contractsListFilterActive:focus,
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListDateInput.repairContractsListFilterActive:focus {
+  .contractsListDateInput.contractsListFilterActive:focus {
   border-color: var(--admin-info-light, #93c5fd);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.28));
   box-shadow:
@@ -615,6 +611,6 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
-  .repairContractsListSearchInput.repairContractsListFilterActive::placeholder {
+  .contractsListSearchInput.contractsListFilterActive::placeholder {
   color: var(--admin-text-muted);
 }
