@@ -20,8 +20,8 @@ import {
 } from '@/views/admin/ContractDocuments/core/typography/contractTemplateLists';
 import { REMARK_BLANK_LINES_TOOLTIP } from '@/views/admin/ContractDocuments/core/typography/contractTemplateRemarkBlankLines';
 import { CLEANUP_TOOLTIP } from '@/views/admin/ContractDocuments/core/typography/contractTemplateTypography';
+import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
 
-import cdTemplates from '../../../../styles/templates-library.module.css';
 import {
   type FormatTool,
   FormatToolbarGlyph,

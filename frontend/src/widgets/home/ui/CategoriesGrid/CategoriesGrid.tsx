@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from 'react';
 
 import { useHomeDirectionsImages } from '@/shared/lib/hooks/useHomePageData';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import { type Category, categories } from '../../lib/constants';
 import { DEFAULT_DIRECTION_IMAGES } from '../../lib/constants/homeConstants';
@@ -10,6 +11,14 @@ import styles from './CategoriesGrid.module.css';
 import { CategoryCard } from './CategoryCard';
 
 const DIRECTIONS_IMAGES_STORAGE_KEY = 'platform-tir:home-directions-images';
+
+function normalizeDirectionImages(data: Record<string, string>): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [slug, url] of Object.entries(data)) {
+    out[slug] = publicUploadUrl(url);
+  }
+  return out;
+}
 
 function getStoredDirectionImages(): Record<string, string> {
   if (typeof window === 'undefined') return {};
@@ -41,13 +50,14 @@ export const CategoriesGrid: React.FC = () => {
 
   useEffect(() => {
     if (fetchedImages && Object.keys(fetchedImages).length > 0) {
-      setStoredDirectionImages(fetchedImages);
-      setDirectionImages(fetchedImages);
+      const normalized = normalizeDirectionImages(fetchedImages);
+      setStoredDirectionImages(normalized);
+      setDirectionImages(normalized);
       return;
     }
     const stored = getStoredDirectionImages();
     if (Object.keys(stored).length > 0) {
-      setDirectionImages(stored);
+      setDirectionImages(normalizeDirectionImages(stored));
     }
   }, [fetchedImages]);
 

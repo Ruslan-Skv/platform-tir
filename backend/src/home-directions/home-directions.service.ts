@@ -1,6 +1,5 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
-import { uploadsBaseUrl } from '../common/utils/uploads-url';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -13,14 +12,13 @@ const UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'directions');
 export class HomeDirectionsService {
   constructor(private prisma: PrismaService) {}
 
-  async getImages(baseUrl?: string): Promise<Record<string, string>> {
+  async getImages(): Promise<Record<string, string>> {
     const records = await this.prisma.homeDirectionImage.findMany();
     const map: Record<string, string> = {};
-    const prefix = uploadsBaseUrl(baseUrl);
     for (const slug of SLUGS) {
       const r = records.find((x) => x.slug === slug);
       if (r?.imageUrl) {
-        map[slug] = prefix ? `${prefix}${r.imageUrl}` : r.imageUrl;
+        map[slug] = r.imageUrl;
       }
     }
     return map;
@@ -29,7 +27,6 @@ export class HomeDirectionsService {
   async uploadImage(
     slug: string,
     file: Express.Multer.File,
-    baseUrl: string,
   ): Promise<{ slug: string; imageUrl: string }> {
     if (!SLUGS.includes(slug as DirectionSlug)) {
       throw new BadRequestException(`Недопустимый slug. Допустимые: ${SLUGS.join(', ')}`);
@@ -46,13 +43,12 @@ export class HomeDirectionsService {
     }
     fs.renameSync(file.path, destPath);
     const imageUrl = `/uploads/directions/${filename}`;
-    const fullUrl = `${uploadsBaseUrl(baseUrl)}${imageUrl}`;
     await this.prisma.homeDirectionImage.upsert({
       where: { slug },
       create: { slug, imageUrl },
       update: { imageUrl },
     });
-    return { slug, imageUrl: fullUrl };
+    return { slug, imageUrl };
   }
 
   getSlugs(): string[] {

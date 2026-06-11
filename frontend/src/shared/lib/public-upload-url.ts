@@ -17,7 +17,8 @@ export function normalizeUploadsInUrl(url: string): string {
   if (!url) return url;
   return url
     .replace(/^(https?:\/\/[^/?#]+)\/api\/v1(?=\/uploads\/)/i, '$1')
-    .replace(/^\/api\/v1(?=\/uploads\/)/, '');
+    .replace(/^\/api\/v1(?=\/uploads\/)/, '')
+    .replace(/^https?:\/\/[^/?#]+(?=\/uploads\/)/i, '');
 }
 
 export function publicUploadUrl(path: string | null | undefined): string {

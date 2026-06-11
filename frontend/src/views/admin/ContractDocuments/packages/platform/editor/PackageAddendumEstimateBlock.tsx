@@ -2,13 +2,13 @@
 
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import cdDataTab from '../../../../styles/data-tab.module.css';
-import cdDocPreview from '../../../../styles/documents-preview.module.css';
-import cdChrome from '../../../../styles/editor-chrome.module.css';
-import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
-import cdProduct from '../../../../styles/product-package.module.css';
-import cdTemplates from '../../../../styles/templates-library.module.css';
+import cdDataTab from '../../../styles/data-tab.module.css';
+import cdDocPreview from '../../../styles/documents-preview.module.css';
+import cdChrome from '../../../styles/editor-chrome.module.css';
+import cdEstimateTab from '../../../styles/estimate-tab.module.css';
+import cdWorkspace from '../../../styles/estimates-workspace.module.css';
+import cdProduct from '../../../styles/product-package.module.css';
+import cdTemplates from '../../../styles/templates-library.module.css';
 import { formatWindowsAddendumMoney } from '../../families/product-like/addendum/addendumSpecification';
 import type { PackageAddendumSlotEstimateBlock } from '../form/types';
 import attachStyles from './PackageEstimateAttach.module.css';

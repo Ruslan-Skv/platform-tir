@@ -7,8 +7,7 @@ import {
   TEMPLATE_EDITOR_ZOOM_MAX_PCT,
   TEMPLATE_EDITOR_ZOOM_MIN_PCT,
 } from '@/views/admin/ContractDocuments/packages/platform/templateEditorHistory';
-
-import cdTemplates from '../../../../styles/templates-library.module.css';
+import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
 
 export type FormatToolHelp = {
   title: string;

@@ -6,7 +6,6 @@ import {
   UseGuards,
   UseInterceptors,
   UploadedFile,
-  Req,
   BadRequestException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -18,7 +17,6 @@ import { HomeDirectionsService } from './home-directions.service';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
-import type { Request } from 'express';
 
 const uploadDir = process.cwd() + '/uploads/directions';
 
@@ -39,9 +37,8 @@ export class HomeDirectionsController {
 
   @Get('images')
   @ApiOperation({ summary: 'Получить URL картинок для раздела «Наши направления» (публичный)' })
-  getImages(@Req() req: Request) {
-    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    return this.homeDirections.getImages(baseUrl);
+  getImages() {
+    return this.homeDirections.getImages();
   }
 
   @Get('slugs')
@@ -61,9 +58,8 @@ export class AdminHomeDirectionsController {
 
   @Get('images')
   @ApiOperation({ summary: 'Получить URL картинок (админ)' })
-  getImages(@Req() req: Request) {
-    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    return this.homeDirections.getImages(baseUrl);
+  getImages() {
+    return this.homeDirections.getImages();
   }
 
   @Post('upload/:slug')
@@ -86,12 +82,7 @@ export class AdminHomeDirectionsController {
     schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
   })
   @ApiOperation({ summary: 'Загрузить картинку для направления' })
-  async upload(
-    @Param('slug') slug: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Req() req: Request,
-  ) {
-    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
-    return this.homeDirections.uploadImage(slug, file, baseUrl);
+  async upload(@Param('slug') slug: string, @UploadedFile() file: Express.Multer.File) {
+    return this.homeDirections.uploadImage(slug, file);
   }
 }

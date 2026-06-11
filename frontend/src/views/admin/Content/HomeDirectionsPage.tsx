@@ -4,13 +4,13 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { categories } from '@/widgets/home/lib/constants';
 
 import styles from './HomeDirectionsPage.module.css';
 import { SectionVisibilityCheckbox } from './SectionVisibilityCheckbox';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
 
 export function HomeDirectionsPage() {
   const { getAuthHeaders } = useAuth();
@@ -42,11 +42,7 @@ export function HomeDirectionsPage() {
     fetchImages();
   }, [fetchImages]);
 
-  const imageUrl = (slug: string, url: string) => {
-    if (!url) return null;
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const previewUrl = (url: string) => (url ? publicUploadUrl(url) : null);
 
   const handleFileChange = async (slug: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -95,7 +91,7 @@ export function HomeDirectionsPage() {
       ) : (
         <div className={styles.grid}>
           {categories.map((cat) => {
-            const url = imageUrl(cat.slug, images[cat.slug] ?? '');
+            const url = previewUrl(images[cat.slug] ?? '');
             return (
               <div key={cat.slug} className={styles.card}>
                 <h3 className={styles.cardTitle}>{cat.name}</h3>
