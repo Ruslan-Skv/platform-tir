@@ -35,7 +35,7 @@ extract_backend_validate_summary() {
 
 extract_frontend_validate_summary() {
   printf '%s\n' "$1" | awk '
-    /^✅/ || /^📊/ || /^  ⚠/ || /^Итого:/ || /Критичных/ || /предупрежден/ {
+    /^✅/ || /^📊/ || /^  ⚠/ || /^Итого:/ || /Архитектура frontend/ || /Критичных/ || /предупрежден/ {
       print
     }
   ' | tail -15

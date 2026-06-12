@@ -584,9 +584,11 @@ function main() {
   }
 
   const warnCount = collector.warnings.length;
-  console.log(
-    `✅ Критичных нарушений нет${warnCount ? ` (${warnCount} предупреждений — см. отчёт выше)` : ''}.\n`
-  );
+  if (warnCount === 0) {
+    console.log('✅ Архитектура frontend в порядке.\n');
+  } else {
+    console.log(`✅ Критичных нарушений нет (${warnCount} предупреждений — см. отчёт выше).\n`);
+  }
 }
 
 main();
