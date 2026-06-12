@@ -35,10 +35,10 @@ extract_backend_validate_summary() {
 
 extract_frontend_validate_summary() {
   printf '%s\n' "$1" | awk '
-    /^✅/ || /^⚠/ || /^❌/ || /Критичных/ || /Проверка архитектуры/ {
+    /^✅/ || /^📊/ || /^  ⚠/ || /^Итого:/ || /Критичных/ || /предупрежден/ {
       print
     }
-  ' | tail -10
+  ' | tail -15
 }
 
 echo "🚀 Pre-commit: platform-tir (backend + frontend)"

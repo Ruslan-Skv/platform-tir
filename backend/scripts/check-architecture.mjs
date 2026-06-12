@@ -30,18 +30,21 @@ function relSrc(absPath) {
   return toPosix(path.relative(SRC_DIR, absPath));
 }
 
+function globToRegExpSource(pattern) {
+  return pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '{{GLOBSTAR}}')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\{\{GLOBSTAR\}\}/g, '.*');
+}
+
 function globMatch(pattern, value) {
   const normalized = toPosix(value);
   if (pattern.endsWith('/**')) {
     const prefix = pattern.slice(0, -3);
     return normalized === prefix || normalized.startsWith(`${prefix}/`);
   }
-  const re = new RegExp(
-    `^${pattern
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*\*/g, '.*')
-      .replace(/\*/g, '[^/]*')}$`
-  );
+  const re = new RegExp(`^${globToRegExpSource(pattern)}$`);
   return re.test(normalized);
 }
 

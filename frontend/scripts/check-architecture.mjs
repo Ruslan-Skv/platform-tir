@@ -161,18 +161,21 @@ function relSrc(absPath) {
   return toPosix(path.relative(SRC_DIR, absPath));
 }
 
+function globToRegExpSource(pattern) {
+  return pattern
+    .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+    .replace(/\*\*/g, '{{GLOBSTAR}}')
+    .replace(/\*/g, '[^/]*')
+    .replace(/\{\{GLOBSTAR\}\}/g, '.*');
+}
+
 function globMatch(pattern, value) {
   const normalized = toPosix(value);
   if (pattern.endsWith('/**')) {
     const prefix = pattern.slice(0, -3);
     return normalized === prefix || normalized.startsWith(`${prefix}/`);
   }
-  const re = new RegExp(
-    `^${pattern
-      .replace(/[.+^${}()|[\]\\]/g, '\\$&')
-      .replace(/\*\*/g, '.*')
-      .replace(/\*/g, '[^/]*')}$`
-  );
+  const re = new RegExp(`^${globToRegExpSource(pattern)}$`);
   return re.test(normalized);
 }
 
@@ -409,7 +412,7 @@ function checkViewPageLineLimit(rule, category, label) {
 
   const files = walkFiles(SRC_DIR, (f) => {
     const rel = relSrc(f);
-    if (!/Page\.tsx$/.test(f)) return false;
+    if (!/Page\.tsx$/.test(rel)) return false;
     if (!globMatch(rule.glob, rel)) return false;
     if (rule.excludeGlobs?.some((g) => globMatch(g, rel))) return false;
     return true;
@@ -511,6 +514,22 @@ function walkDirs(dir, acc = []) {
   return acc;
 }
 
+function printWarningBreakdown() {
+  const warnings = collector.warnings;
+  if (warnings.length === 0) return;
+
+  const byCategory = new Map();
+  for (const item of warnings) {
+    byCategory.set(item.category, (byCategory.get(item.category) ?? 0) + 1);
+  }
+
+  console.log(`📊 Предупреждения (${warnings.length}):`);
+  for (const [category, count] of [...byCategory.entries()].sort((a, b) => b[1] - a[1])) {
+    console.log(`  ⚠️ ${CATEGORY_TITLES[category] ?? category}: ${count}`);
+  }
+  console.log('');
+}
+
 function printSummary() {
   const errors = collector.errors;
   const warnings = collector.warnings;
@@ -556,6 +575,8 @@ function main() {
     collector.print();
     printSummary();
   }
+
+  printWarningBreakdown();
 
   if (collector.errors.length > 0) {
     console.log('См. frontend/docs/ARCHITECTURE.md\n');

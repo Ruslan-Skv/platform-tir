@@ -1,17 +1,17 @@
 'use client';
 
-import cdBase from '../../../styles/base.module.css';
-import cdDocPreview from '../../../styles/documents-preview.module.css';
-import cdEstimateTab from '../../../styles/estimate-tab.module.css';
-import cdWorkspace from '../../../styles/estimates-workspace.module.css';
-import cdTemplates from '../../../styles/templates-library.module.css';
-import { TemplatesLibraryControlsSection } from './library/TemplatesLibraryControlsSection';
-import { TemplatesLibraryEditorPane } from './library/TemplatesLibraryEditorPane';
-import { TemplatesLibraryFormatToolbarSection } from './library/TemplatesLibraryFormatToolbarSection';
-import { TemplatesLibraryModals } from './library/TemplatesLibraryModals';
-import { TemplatesLibraryPageHeader } from './library/TemplatesLibraryPageHeader';
-import { TemplatesLibraryPreviewPane } from './library/TemplatesLibraryPreviewPane';
-import type { TemplatesLibraryPageModel } from './library/hooks/useTemplatesLibraryPage';
+import cdBase from '../../../../styles/base.module.css';
+import cdDocPreview from '../../../../styles/documents-preview.module.css';
+import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
+import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import cdTemplates from '../../../../styles/templates-library.module.css';
+import { TemplatesLibraryControlsSection } from './TemplatesLibraryControlsSection';
+import { TemplatesLibraryEditorPane } from './TemplatesLibraryEditorPane';
+import { TemplatesLibraryFormatToolbarSection } from './TemplatesLibraryFormatToolbarSection';
+import { TemplatesLibraryModals } from './TemplatesLibraryModals';
+import { TemplatesLibraryPageHeader } from './TemplatesLibraryPageHeader';
+import { TemplatesLibraryPreviewPane } from './TemplatesLibraryPreviewPane';
+import type { TemplatesLibraryPageModel } from './hooks/useTemplatesLibraryPage';
 
 export function TemplatesLibraryPageView(props: TemplatesLibraryPageModel) {
   const { loading, error, ok, editingId, showArchivedTemplates, isSuperAdmin } = props;

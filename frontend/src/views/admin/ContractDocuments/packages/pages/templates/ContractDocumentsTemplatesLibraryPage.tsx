@@ -1,9 +1,7 @@
 'use client';
 
-import { TemplatesLibraryPageView } from './TemplatesLibraryPageView';
-import { useTemplatesLibraryPage } from './library/hooks/useTemplatesLibraryPage';
+import { TemplatesLibraryPage } from './library/TemplatesLibraryPage';
 
 export function ContractDocumentsTemplatesLibraryPage() {
-  const page = useTemplatesLibraryPage();
-  return <TemplatesLibraryPageView {...page} />;
+  return <TemplatesLibraryPage />;
 }

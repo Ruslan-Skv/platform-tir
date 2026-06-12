@@ -1,5 +1,3 @@
-'use client';
-
 import { useAuth } from '@/features/auth';
 
 import { useTemplatesLibraryCreateTemplateHelp } from './useTemplatesLibraryCreateTemplateHelp';
