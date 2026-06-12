@@ -41,6 +41,40 @@ export type TokenLoginPayload = {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
+const REFRESH_FAIL_KEY = 'auth_refresh_failed_at';
+/** После 401 на refresh не долбим API, пока пользователь снова не войдёт. */
+const REFRESH_FAIL_COOLDOWN_MS = 10 * 60_000;
+
+function markRefreshFailed(): void {
+  sessionStorage.setItem(REFRESH_FAIL_KEY, String(Date.now()));
+}
+
+function clearRefreshCooldown(): void {
+  sessionStorage.removeItem(REFRESH_FAIL_KEY);
+}
+
+function isRefreshInCooldown(): boolean {
+  const raw = sessionStorage.getItem(REFRESH_FAIL_KEY);
+  if (!raw) return false;
+  const at = Number(raw);
+  if (!Number.isFinite(at)) return false;
+  if (Date.now() - at > REFRESH_FAIL_COOLDOWN_MS) {
+    clearRefreshCooldown();
+    return false;
+  }
+  return true;
+}
+
+/** Сброс access в localStorage (refresh только в httpOnly cookie). */
+export function clearStoredAuthSession(): void {
+  if (typeof window === 'undefined') return;
+  localStorage.removeItem('user_token');
+  localStorage.removeItem('user_data');
+  localStorage.removeItem('admin_token');
+  localStorage.removeItem('admin_user');
+  window.dispatchEvent(new Event('auth-token-changed'));
+}
+
 function base64UrlDecode(segment: string): string {
   const padded = segment.replace(/-/g, '+').replace(/_/g, '/');
   const padLen = (4 - (padded.length % 4)) % 4;
@@ -63,6 +97,7 @@ export function getJwtExpMs(token: string): number | null {
 /** Сохранить access и user в localStorage (refresh только в httpOnly cookie у API origin). */
 export function persistTokenResponse(data: TokenLoginPayload): void {
   if (typeof window === 'undefined') return;
+  clearRefreshCooldown();
   const isAdmin = ADMIN_ROLES.has(data.user.role);
   localStorage.setItem('user_token', data.access_token);
   localStorage.setItem('user_data', JSON.stringify(data.user));
@@ -78,6 +113,7 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
 
 export async function refreshAccessTokenSilently(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+  if (isRefreshInCooldown()) return false;
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
     try {
@@ -86,7 +122,13 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
         headers: { 'Content-Type': 'application/json' },
         body: '{}',
       });
-      if (!res.ok) return false;
+      if (!res.ok) {
+        if (res.status === 401 || res.status === 403) {
+          markRefreshFailed();
+          clearStoredAuthSession();
+        }
+        return false;
+      }
       const data = (await res.json()) as TokenLoginPayload;
       if (!data.access_token || !data.user) return false;
       persistTokenResponse(data);
@@ -103,6 +145,7 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
 /** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
 export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
   if (typeof window === 'undefined') return false;
+  if (isRefreshInCooldown()) return false;
   const current = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
   if (!current) return false;
   const expMs = getJwtExpMs(current);

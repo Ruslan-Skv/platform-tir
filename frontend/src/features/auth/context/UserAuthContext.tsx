@@ -481,7 +481,12 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       const exp = getJwtExpMs(t);
       if (!exp) return;
       if (exp - Date.now() < 120_000) {
-        void refreshAccessTokenSilently();
+        void refreshAccessTokenSilently().then((ok) => {
+          if (!ok && exp <= Date.now()) {
+            setToken(null);
+            setUser(null);
+          }
+        });
       }
     };
     const id = window.setInterval(tick, 60_000);

@@ -121,6 +121,26 @@ docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml up -d
 
 ---
 
+## Сессии и `/auth/refresh` (401 в консоли)
+
+Access-токен хранится в `localStorage`, refresh — в httpOnly cookie `rt` (path `/api/v1/auth`, `Secure` в production).
+
+После деплоя с новой схемой авторизации пользователям с **старыми** токенами в браузере нужно **выйти и войти снова** — иначе в консоли будут 401 на `POST /api/v1/auth/refresh` (cookie `rt` нет или сессия в БД отозвана).
+
+Проверка на сервере:
+
+| Что проверить | Значение |
+|---------------|----------|
+| `CORS_ORIGIN` | `https://territory-interior.ru` (+ зеркала при необходимости) |
+| `REFRESH_COOKIE_SECURE` | `true` при HTTPS |
+| `REFRESH_COOKIE_DOMAIN` | пусто или `.territory-interior.ru` (не ставить, если сомневаетесь) |
+| `NEXT_PUBLIC_API_URL` при сборке frontend | `/api/v1` (относительный, см. GitHub Actions) |
+| Миграции | `docker compose … exec backend npx prisma migrate deploy` |
+
+После входа в DevTools → Application → Cookies → `territory-interior.ru` должна появиться cookie `rt` с path `/api/v1/auth`.
+
+---
+
 ## Несколько доменов и зеркалирование
 
 **Основной домен:** territory-interior.ru  
