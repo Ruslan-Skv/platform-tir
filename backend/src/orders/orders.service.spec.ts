@@ -1,11 +1,12 @@
 import { BadRequestException } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../database/prisma.service';
-import { CartService } from '../cart/cart.service';
 import { UsersService } from '../users/users.service';
-import { OrderMailService } from './order-mail.service';
+import { OrderMailService } from './services/order-mail.service';
+import { OrdersCartCheckoutService } from './services/orders-cart-checkout.service';
+import { OrdersDeliveryService } from './services/orders-delivery.service';
+import { OrdersServiceOrdersService } from './services/orders-service-orders.service';
 import { OrdersService } from './orders.service';
 
 describe('OrdersService', () => {
@@ -31,9 +32,24 @@ describe('OrdersService', () => {
     orderServiceItem: { createMany: jest.fn(), deleteMany: jest.fn() },
   };
 
-  const mockCartService = {
-    getCartItems: jest.fn(),
-    getCartServiceItems: jest.fn(),
+  const mockCartCheckout = {
+    submitFromCart: jest.fn(),
+    submitFromCartForCustomer: jest.fn(),
+    addCartItemToOrder: jest.fn(),
+  };
+
+  const mockOrdersDelivery = {
+    getDeliverySettlements: jest.fn(),
+    getShippingMethods: jest.fn(),
+    calculateDelivery: jest.fn(),
+    getDeliveryConfig: jest.fn(),
+    getBaseDeliveryCost: jest.fn(),
+  };
+
+  const mockOrdersServiceOrders = {
+    canPlaceServiceOrder: jest.fn(),
+    createServiceOrder: jest.fn(),
+    updateServiceOrderCustomer: jest.fn(),
   };
 
   const mockUsersService = {
@@ -54,10 +70,12 @@ describe('OrdersService', () => {
       providers: [
         OrdersService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: CartService, useValue: mockCartService },
         { provide: UsersService, useValue: mockUsersService },
         { provide: OrderMailService, useValue: mockOrderMailService },
         { provide: ConfigService, useValue: mockConfigService },
+        { provide: OrdersDeliveryService, useValue: mockOrdersDelivery },
+        { provide: OrdersServiceOrdersService, useValue: mockOrdersServiceOrders },
+        { provide: OrdersCartCheckoutService, useValue: mockCartCheckout },
       ],
     }).compile();
 
@@ -65,106 +83,25 @@ describe('OrdersService', () => {
   });
 
   describe('submitFromCart', () => {
-    it('выбрасывает BadRequestException, если корзина пуста (нет ни товаров, ни услуг)', async () => {
-      mockCartService.getCartItems.mockResolvedValue([]);
-      mockCartService.getCartServiceItems.mockResolvedValue([]);
+    it('делегирует оформление корзины в OrdersCartCheckoutService', async () => {
+      const createdOrder = { id: 'order-1', status: 'PENDING_REVIEW' };
+      mockCartCheckout.submitFromCart.mockResolvedValue(createdOrder);
+
+      const result = await service.submitFromCart('user-id', { cartItemIds: ['ci-1'] }, 'USER');
+
+      expect(mockCartCheckout.submitFromCart).toHaveBeenCalledWith(
+        'user-id',
+        { cartItemIds: ['ci-1'] },
+        'USER',
+      );
+      expect(result).toEqual(createdOrder);
+    });
+
+    it('пробрасывает ошибки checkout-сервиса', async () => {
+      mockCartCheckout.submitFromCart.mockRejectedValue(new BadRequestException('Корзина пуста'));
 
       await expect(service.submitFromCart('user-id')).rejects.toThrow(BadRequestException);
       await expect(service.submitFromCart('user-id')).rejects.toThrow('Корзина пуста');
-    });
-
-    it('выбрасывает BadRequestException, если в корзине нет позиций для заказа', async () => {
-      mockCartService.getCartItems.mockResolvedValue([
-        { id: 'ci-1', productId: null, product: null, componentId: null, component: null },
-      ]);
-      mockCartService.getCartServiceItems.mockResolvedValue([]);
-
-      await expect(service.submitFromCart('user-id')).rejects.toThrow(BadRequestException);
-      await expect(service.submitFromCart('user-id')).rejects.toThrow(
-        'В корзине нет позиций для заказа',
-      );
-    });
-
-    it('создаёт заказ со статусом PENDING_REVIEW при корзине только из услуг', async () => {
-      const categoryId = 'cat-1';
-      const itemId = 'srv-item-1';
-      mockCartService.getCartItems.mockResolvedValue([]);
-      mockCartService.getCartServiceItems.mockResolvedValue([
-        {
-          id: 'csi-1',
-          userId: 'user-id',
-          serviceCatalogCategoryId: categoryId,
-          items: [{ itemId, quantity: 2 }],
-          category: { id: categoryId, name: 'Уборка', slug: 'uborka' },
-        },
-      ]);
-
-      (mockPrisma.serviceCatalogItem.findMany as jest.Mock).mockResolvedValue([
-        {
-          id: itemId,
-          categoryId,
-          name: 'Уборка квартиры',
-          unit: 'м²',
-          price: 500,
-          isActive: true,
-          category: { name: 'Уборка', priceMarkupPercent: 0 },
-        },
-      ]);
-      (mockPrisma.serviceCatalogCategory.findMany as jest.Mock).mockResolvedValue([
-        {
-          id: categoryId,
-          parentId: null,
-          priceMarkupPercent: new Prisma.Decimal(0),
-        },
-      ]);
-      (mockPrisma.cartServiceItem.delete as jest.Mock).mockResolvedValue({});
-      (mockPrisma.user.findMany as jest.Mock).mockResolvedValue([{ id: 'admin-1' }]);
-
-      const createdOrder = {
-        id: 'order-1',
-        orderNumber: 'ORD-123',
-        userId: 'user-id',
-        status: 'PENDING_REVIEW',
-        subtotal: 1000,
-        total: 1000,
-        orderServiceItems: [
-          {
-            serviceCatalogItemId: itemId,
-            name: 'Уборка квартиры',
-            categoryName: 'Уборка',
-            quantity: 2,
-            price: 500,
-            amount: 1000,
-          },
-        ],
-      };
-      (mockPrisma.order.create as jest.Mock).mockResolvedValue(createdOrder);
-
-      const result = await service.submitFromCart('user-id', undefined, 'USER');
-
-      expect(result).toEqual(createdOrder);
-      expect(mockPrisma.order.create).toHaveBeenCalledWith(
-        expect.objectContaining({
-          data: expect.objectContaining({
-            userId: 'user-id',
-            status: 'PENDING_REVIEW',
-            subtotal: 1000,
-            total: 1000,
-            orderServiceItems: {
-              create: expect.arrayContaining([
-                expect.objectContaining({
-                  serviceCatalogItemId: itemId,
-                  name: 'Уборка квартиры',
-                  categoryName: 'Уборка',
-                  quantity: 2,
-                  price: 500,
-                  amount: 1000,
-                }),
-              ]),
-            },
-          }),
-        }),
-      );
     });
   });
 

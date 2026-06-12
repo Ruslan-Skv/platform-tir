@@ -1,7 +1,7 @@
 import Link from 'next/link';
 
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 import { formatCatalogProductPrice } from '@/views/catalog/lib/format-catalog-price';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 import styles from './CatalogServerProductGrid.module.css';
 

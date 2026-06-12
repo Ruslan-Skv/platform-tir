@@ -1,5 +1,9 @@
 import { Module } from '@nestjs/common';
 import { AdminProductsService } from './admin-products.service';
+import { AdminProductsQueryService } from './services/admin-products-query.service';
+import { AdminProductsBulkService } from './services/admin-products-bulk.service';
+import { AdminProductsImportService } from './services/admin-products-import.service';
+import { AdminProductsReviewsService } from './services/admin-products-reviews.service';
 import { AdminProductsController } from './admin-products.controller';
 import { DatabaseModule } from '../../../database/database.module';
 import { ProductsModule } from '../../../products/products.module';
@@ -7,7 +11,13 @@ import { ProductsModule } from '../../../products/products.module';
 @Module({
   imports: [DatabaseModule, ProductsModule],
   controllers: [AdminProductsController],
-  providers: [AdminProductsService],
+  providers: [
+    AdminProductsService,
+    AdminProductsQueryService,
+    AdminProductsBulkService,
+    AdminProductsImportService,
+    AdminProductsReviewsService,
+  ],
   exports: [AdminProductsService],
 })
 export class AdminProductsModule {}

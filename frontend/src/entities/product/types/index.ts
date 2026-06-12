@@ -4,3 +4,4 @@ export type {
   ProductCharacteristic,
   ProductCategory,
 } from './product';
+export type { CategoryAttributeForCopy, ProductForCopy } from './product-for-copy';

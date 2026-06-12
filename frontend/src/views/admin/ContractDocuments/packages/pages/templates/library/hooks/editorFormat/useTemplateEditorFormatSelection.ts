@@ -9,17 +9,19 @@ import {
 
 import { type ParagraphTextAlign } from '../../editor/templateEditorFormatToolbar';
 import {
-  DEFAULT_VISUAL_FONT_SIZE_PT,
   EMPTY_INLINE_FORMAT_ACTIVE,
-  type HeadingLevel,
   type InlineFormatKind,
+  isHtmlInlineFormatActive,
+} from '../../editor/templateEditorFormattingInline';
+import {
+  DEFAULT_VISUAL_FONT_SIZE_PT,
+  type HeadingLevel,
   getHtmlSelectionHeadingLevel,
   getHtmlSelectionTextAlign,
   getVisualSelectionFontSizePt,
   getVisualSelectionHeadingLevel,
   getVisualSelectionTextAlign,
-  isHtmlInlineFormatActive,
-} from '../../editor/templateEditorFormatting';
+} from '../../editor/templateEditorFormattingTypography';
 import type { UseTemplatesLibraryEditorFormatParams } from './templateEditorFormatTypes';
 
 export type TemplateEditorFormatSelection = ReturnType<typeof useTemplateEditorFormatSelection>;

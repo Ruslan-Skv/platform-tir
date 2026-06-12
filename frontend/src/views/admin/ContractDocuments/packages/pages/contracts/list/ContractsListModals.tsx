@@ -6,10 +6,10 @@ import { Modal } from '@/shared/ui/Modal';
 
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { packageKindUiLabel, packageKindsWithCreateEnabled } from '../../../config';
-import { PackageHubModal } from '../../../platform/hub/PackageHubModal';
-import { PackageWorkOrdersHubListModal } from '../../../platform/hub/PackageWorkOrdersHubListModal';
-import { PackageContractTrashModal } from '../modals/PackageContractTrashModal';
+import { PackageHubModal } from '../../../platform/hub/hubModal/PackageHubModal';
+import { PackageWorkOrdersHubListModal } from '../../../platform/hub/workOrders/PackageWorkOrdersHubListModal';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
+import { PackageContractTrashModal } from './modals/PackageContractTrashModal';
 
 type ContractsListModalsProps = {
   creating: boolean;

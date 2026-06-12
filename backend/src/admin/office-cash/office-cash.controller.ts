@@ -15,7 +15,6 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
-import { PrismaService } from '../../database/prisma.service';
 import { OfficeCashService } from './office-cash.service';
 import { CreateOfficeOtherExpenseDto } from './dto/create-other-expense.dto';
 import { CreateOfficeIncassationDto } from './dto/create-incassation.dto';
@@ -42,10 +41,7 @@ const CRM_ROLES = [
 @ApiBearerAuth()
 @ApiTags('Office cash')
 export class OfficeCashController {
-  constructor(
-    private readonly service: OfficeCashService,
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly service: OfficeCashService) {}
 
   @Get('summary')
   @ApiOperation({
@@ -82,15 +78,7 @@ export class OfficeCashController {
     @Body() dto: UpdateOtherExpenseCollectionDto,
     @Req() req: RequestWithUser,
   ) {
-    const canEdit =
-      req.user.role === 'SUPER_ADMIN' ||
-      (await this.prisma.adminResourcePermission.findFirst({
-        where: {
-          resourceId: 'admin.crm.contract-payments.incassation',
-          userId: req.user.id,
-          permission: 'EDIT',
-        },
-      }));
+    const canEdit = await this.service.canEditIncassation(req.user.id, req.user.role);
     if (!canEdit) {
       throw new ForbiddenException(
         'Только суперадмин или назначенное лицо может редактировать инкассацию',

@@ -1,9 +1,8 @@
+import type { CategoryAttributeForCopy, ProductForCopy } from '@/entities/product';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { ProductCreatePage } from '@/views/admin/Catalog/Products/ProductCreatePage';
 import {
-  type CategoryAttributeForCopy,
   type CopiedProductData,
-  type ProductForCopy,
   mapProductToCopyData,
 } from '@/views/admin/Catalog/Products/copy-product-utils';
 

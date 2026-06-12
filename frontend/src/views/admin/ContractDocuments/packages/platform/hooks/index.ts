@@ -1,146 +1,146 @@
-export { usePackageDocumentPersist } from './usePackageDocumentPersist';
-export { usePackageDocumentVersions } from './usePackageDocumentVersions';
+export { usePackageDocumentPersist } from './document/usePackageDocumentPersist';
+export { usePackageDocumentVersions } from './document/usePackageDocumentVersions';
 export {
   usePackageDocumentLoad,
   type PackageDocumentLoadSetters,
   type UsePackageDocumentLoadOptions,
-} from './usePackageDocumentLoad';
+} from './document/usePackageDocumentLoad';
 export {
   usePackageRenderedDocument,
   usePackageFormForTemplate,
   isPackageTemplateA4SheetTab,
-} from './usePackageRenderedDocument';
+} from './document/usePackageRenderedDocument';
 export {
   usePackageAddendumEditor,
   type UsePackageAddendumEditorOptions,
-} from './usePackageAddendumEditor';
+} from './addendum/usePackageAddendumEditor';
 export {
   useContractTemplateEditor,
   type UseContractTemplateEditorOptions,
-} from './useContractTemplateEditor';
+} from './document/useContractTemplateEditor';
 export {
   usePackageContractInstallers,
   type UsePackageContractInstallersOptions,
-} from './usePackageContractInstallers';
+} from './contract/usePackageContractInstallers';
 export {
   usePackageFinalEstimateWorkOrders,
   type UsePackageFinalEstimateWorkOrdersOptions,
-} from './usePackageFinalEstimateWorkOrders';
+} from './estimate/usePackageFinalEstimateWorkOrders';
 export {
   usePackageWorkOrderHubContext,
   type UsePackageWorkOrderHubContextOptions,
-} from './usePackageWorkOrderHubContext';
+} from './work-orders/usePackageWorkOrderHubContext';
 export {
   usePackageEstimatePresetHandlers,
   type UsePackageEstimatePresetHandlersOptions,
-} from './usePackageEstimatePresetHandlers';
+} from './estimate/usePackageEstimatePresetHandlers';
 export {
   usePackageContractTotalSync,
   usePackageAddendumSlotActions,
   type UsePackageContractTotalSyncOptions,
   type UsePackageAddendumDocumentDateAutofillOptions,
-} from './usePackageContractTotalSync';
+} from './contract/usePackageContractTotalSync';
 export {
   usePackageDataTabFieldHelp,
   type UsePackageDataTabFieldHelpOptions,
-} from './usePackageDataTabFieldHelp';
+} from './data-tab/usePackageDataTabFieldHelp';
 export {
   usePackageEstimateAttachCatalog,
   type PackageEstimateUsageEntry,
   type UsePackageEstimateAttachCatalogOptions,
-} from './usePackageEstimateAttachCatalog';
+} from './estimate/usePackageEstimateAttachCatalog';
 export {
   usePackageProfileDirectoryHandlers,
   type UsePackageProfileDirectoryHandlersOptions,
-} from './usePackageProfileDirectoryHandlers';
+} from './profile/usePackageProfileDirectoryHandlers';
 export {
   usePackageContractFieldHandlers,
   type UsePackageContractFieldHandlersOptions,
-} from './usePackageContractFieldHandlers';
+} from './contract/usePackageContractFieldHandlers';
 export {
   usePackageQuestionnaireHandlers,
   type UsePackageQuestionnaireHandlersOptions,
-} from './usePackageQuestionnaireHandlers';
+} from './questionnaire/usePackageQuestionnaireHandlers';
 export {
   usePackageEditorActiveTabGuards,
   type UsePackageEditorActiveTabGuardsOptions,
-} from './usePackageEditorActiveTabGuards';
+} from './editor/usePackageEditorActiveTabGuards';
 export {
   usePackageManagerQuestionnaire1CrmHydrate,
   type UsePackageManagerQuestionnaire1CrmHydrateOptions,
-} from './usePackageManagerQuestionnaire1CrmHydrate';
+} from './questionnaire/usePackageManagerQuestionnaire1CrmHydrate';
 export {
   usePackageTemplatePresetResolution,
   type UsePackageTemplatePresetResolutionOptions,
-} from './usePackageTemplatePresetResolution';
+} from './template/usePackageTemplatePresetResolution';
 export {
   usePackageContractObjectBlockUi,
   type UsePackageContractObjectBlockUiOptions,
-} from './usePackageContractObjectBlockUi';
+} from './contract/usePackageContractObjectBlockUi';
 export {
   usePackageEditorHubCallbacks,
   type UsePackageEditorHubCallbacksOptions,
-} from './usePackageEditorHubCallbacks';
+} from './editor/usePackageEditorHubCallbacks';
 export {
   usePackageManagerQuestionnaire1CrmSync,
   type UsePackageManagerQuestionnaire1CrmSyncOptions,
-} from './usePackageManagerQuestionnaire1CrmSync';
+} from './questionnaire/usePackageManagerQuestionnaire1CrmSync';
 export {
   usePackageProductSpecificationHandlers,
   type UsePackageProductSpecificationHandlersOptions,
-} from './usePackageProductSpecificationHandlers';
+} from './product-spec/usePackageProductSpecificationHandlers';
 export {
   usePackageTemplateEditorState,
   type UsePackageTemplateEditorStateOptions,
-} from './usePackageTemplateEditorState';
+} from './editor/usePackageTemplateEditorState';
 export {
   usePackageEditorHeaderState,
   type UsePackageEditorHeaderStateOptions,
-} from './usePackageEditorHeaderState';
+} from './editor/usePackageEditorHeaderState';
 export {
   usePackageEstimateTabHandlers,
   type UsePackageEstimateTabHandlersOptions,
-} from './usePackageEstimateTabHandlers';
-export { usePackageDataTabSectionExpansion } from './usePackageDataTabSectionExpansion';
+} from './estimate/usePackageEstimateTabHandlers';
+export { usePackageDataTabSectionExpansion } from './data-tab/usePackageDataTabSectionExpansion';
 export {
   usePackageDocumentEditorTabProps,
   type UsePackageDocumentEditorTabPropsOptions,
-} from './usePackageDocumentEditorTabProps';
+} from './editor/usePackageDocumentEditorTabProps';
 export {
   usePackageEditorHeaderHubActions,
   type UsePackageEditorHeaderHubActionsOptions,
-} from './usePackageEditorHeaderHubActions';
+} from './editor/usePackageEditorHeaderHubActions';
 export {
   usePackageDocumentEditorModalsProps,
   type UsePackageDocumentEditorModalsPropsOptions,
-} from './usePackageDocumentEditorModalsProps';
+} from './editor/usePackageDocumentEditorModalsProps';
 export {
   usePackageWorkOrdersListSurfaceProps,
   type UsePackageWorkOrdersListSurfacePropsOptions,
-} from './usePackageWorkOrdersListSurfaceProps';
+} from './work-orders/usePackageWorkOrdersListSurfaceProps';
 export {
   usePackageDocumentEditorTabContentShellProps,
   type UsePackageDocumentEditorTabContentShellPropsOptions,
-} from './usePackageDocumentEditorTabContentShellProps';
+} from './editor/usePackageDocumentEditorTabContentShellProps';
 export {
   usePackageDocumentEditorUiProps,
   type UsePackageDocumentEditorUiPropsOptions,
-} from './usePackageDocumentEditorUiProps';
+} from './editor/usePackageDocumentEditorUiProps';
 export {
   usePackageEditorCatalogState,
   type PackageEditorCatalogState,
-} from './usePackageEditorCatalogState';
+} from './editor/usePackageEditorCatalogState';
 export {
   usePackageEditorEstimateDerivedState,
   type UsePackageEditorEstimateDerivedStateOptions,
-} from './usePackageEditorEstimateDerivedState';
+} from './editor/usePackageEditorEstimateDerivedState';
 export {
   usePackageDocumentEditorController,
   type UsePackageDocumentEditorControllerOptions,
   type PackageDocumentEditorControllerResult,
-} from './usePackageDocumentEditorController';
-export { usePackageEditorTabNavigation } from './usePackageEditorTabNavigation';
+} from './editor/usePackageDocumentEditorController';
+export { usePackageEditorTabNavigation } from './editor/usePackageEditorTabNavigation';
 export {
   usePackageEditorHubPanelState,
   type UsePackageEditorHubPanelStateOptions,
-} from './usePackageEditorHubPanelState';
+} from './editor/usePackageEditorHubPanelState';

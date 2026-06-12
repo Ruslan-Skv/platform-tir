@@ -9,7 +9,8 @@ import { AdminTablePagination } from '@/shared/ui/admin/AdminTablePagination';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import { ContractListObjectRow, ContractListPackageRow } from './ContractsListTableRows';
+import { ContractListObjectRow } from './ContractListObjectRow';
+import { ContractListPackageRow } from './ContractListPackageRow';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
 import type { ContractsListDisplayItem } from './contractsListLayout';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';

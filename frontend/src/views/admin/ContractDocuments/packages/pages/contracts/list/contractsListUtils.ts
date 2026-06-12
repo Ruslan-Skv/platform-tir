@@ -13,7 +13,7 @@ import { type PackageFormData, mergePackageFormData } from '../../../platform/fo
 import {
   type PackageListPipelineStatus,
   packageListPipelineStatusFromPackage,
-} from '../../../platform/hub/packagePipeline';
+} from '../../../platform/hub/pipeline/packagePipeline';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 
 export function formatContractsListActDate(raw: string): string {

@@ -30,7 +30,7 @@ import {
   isSelectionAllUppercaseLetters,
   selectionHasLetters,
   selectionPlainTextForCaseCheck,
-} from '../../editor/templateEditorFormatting';
+} from '../../editor/templateEditorFormattingCase';
 import type { TemplateEditorFormatDeps } from './templateEditorFormatDeps';
 
 export type TemplateEditorFormatBlocks = ReturnType<typeof useTemplateEditorFormatBlocks>;

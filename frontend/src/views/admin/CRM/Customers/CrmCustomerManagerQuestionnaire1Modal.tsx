@@ -9,7 +9,7 @@ import {
   type PackageManagerQuestionnaire1Block,
   defaultPackageFormData,
 } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
-import { PackageManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/platform/hub/PackageManagerQuestionnaire1Tab';
+import { PackageManagerQuestionnaire1Tab } from '@/views/admin/ContractDocuments/packages/platform/hub/questionnaires/PackageManagerQuestionnaire1Tab';
 import { mergePackageFormFromCrmCustomerDetail } from '@/views/admin/ContractDocuments/packages/platform/questionnaires/applyCrmContractToForm';
 import {
   persistManagerQuestionnaire1ToCrmCustomer,

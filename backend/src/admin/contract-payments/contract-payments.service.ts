@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
+import { canEditContractPaymentsIncassation } from '../../common/utils/contract-payments-incassation-permission';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateContractPaymentDto } from './dto/create-contract-payment.dto';
 
@@ -154,6 +155,10 @@ export class ContractPaymentsService {
   async remove(id: string) {
     await this.findOne(id);
     return this.prisma.contractPayment.delete({ where: { id } });
+  }
+
+  canEditIncassation(userId: string, userRole: string) {
+    return canEditContractPaymentsIncassation(this.prisma, userId, userRole);
   }
 
   async updateCollectionAmount(id: string, collectionAmount: number | null) {

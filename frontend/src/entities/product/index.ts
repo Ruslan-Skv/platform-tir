@@ -1,1 +1,7 @@
-export type { Product, ProductCharacteristic, ProductCategory } from './types';
+export type {
+  CategoryAttributeForCopy,
+  Product,
+  ProductCharacteristic,
+  ProductCategory,
+  ProductForCopy,
+} from './types';

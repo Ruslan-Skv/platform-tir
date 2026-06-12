@@ -2,9 +2,9 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type ParsedCatalogSearchParams,
   buildPublicCatalogListQuery,
-} from '@/views/catalog/lib/catalog-search-params';
-import type { CatalogFiltersResponse } from '@/views/catalog/lib/catalogFilters.types';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+} from '@/shared/lib/catalog/catalog-search-params';
+import type { CatalogApiProduct, PublicCatalogSort } from '@/shared/types/catalog';
+import type { CatalogFiltersResponse } from '@/shared/types/catalog-filters';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -12,14 +12,7 @@ export const PUBLIC_CATALOG_LIST_QUERY_KEY = 'public-catalog-list';
 export const PUBLIC_CATALOG_FILTERS_QUERY_KEY = 'public-catalog-filters';
 export const PUBLIC_CATALOG_PAGE_QUERY_KEY = 'public-catalog-page';
 
-export type PublicCatalogSort =
-  | 'default'
-  | 'price-asc'
-  | 'price-desc'
-  | 'name-asc'
-  | 'name-desc'
-  | 'new'
-  | 'rating';
+export type { PublicCatalogSort };
 
 export interface PublicCatalogListResponse {
   category: {

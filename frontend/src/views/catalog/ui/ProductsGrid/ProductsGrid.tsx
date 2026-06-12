@@ -14,15 +14,13 @@ import type {
   PublicCatalogSort,
 } from '@/shared/api/public-catalog-list';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { mapCatalogApiProductToProduct } from '@/shared/lib/catalog/mapCatalogApiProductToProduct';
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 import {
   CATALOG_SORT_OPTIONS,
   catalogFilterSignature,
   parseCatalogSearchParams,
 } from '@/views/catalog/lib/catalog-search-params';
-import {
-  type CatalogApiProduct,
-  mapCatalogApiProductToProduct,
-} from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 import { patchProductInCatalogPageCache } from '@/views/catalog/lib/patch-catalog-page-cache';
 import { useCatalogPage } from '@/views/catalog/lib/useCatalogPage';

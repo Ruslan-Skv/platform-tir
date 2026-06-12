@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 

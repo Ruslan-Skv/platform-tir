@@ -1,7 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { Category, Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
-import { PublicCatalogService } from '../products/public-catalog.service';
+import { PublicCatalogService } from '../products/public-catalog/public-catalog.service';
 import type { UpdateCatalogHubPreviewDto } from './dto/catalog-hub-preview.dto';
 
 export type HubPreviewMode = 'featured' | 'new';

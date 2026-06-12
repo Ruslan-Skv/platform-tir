@@ -3,7 +3,6 @@
 import { ChevronDownIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ReactNode } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
@@ -15,7 +14,17 @@ import {
 import type { CatalogFilterFacet } from '@/views/catalog/lib/catalogFilters.types';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
+import { CatalogFilterSection } from './CatalogFilterSection';
 import styles from './FiltersSidebar.module.css';
+import {
+  FILTERS_PRICE_STEP,
+  clampCatalogPriceRange,
+  clearCatalogFilterKeys,
+  formatFilterOptionLabel,
+  formatPriceInput,
+  normalizePriceInput,
+  parsePriceInput,
+} from './filters-sidebar-utils';
 
 export type { CategoryFilterOption };
 
@@ -47,112 +56,6 @@ export interface FiltersSidebarProps {
    * Без него все радио с одним name образуют одну группу в документе и ломают отображение :checked.
    */
   catalogBranchRadioGroupSuffix?: string;
-}
-
-const PRICE_STEP = 100;
-
-function formatFilterOptionLabel(label: string, count: number | undefined): string {
-  if (count === undefined || !Number.isFinite(count)) return label;
-  return `${label} (${count.toLocaleString('ru-RU')})`;
-}
-
-function formatPriceInput(value: number): string {
-  return Math.max(0, Math.round(value)).toLocaleString('ru-RU');
-}
-
-function normalizePriceInput(raw: string): string {
-  return raw
-    .replace(/[^\d\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trimStart();
-}
-
-function parsePriceInput(raw: string): number | null {
-  const digits = raw.replace(/\s+/g, '');
-  if (!digits) return null;
-  const num = Number(digits);
-  return Number.isFinite(num) ? num : null;
-}
-
-function clampCatalogPriceRange(
-  bounds: { min: number; max: number },
-  nextMin: number,
-  nextMax: number
-): { min: number; max: number } {
-  const snap = (v: number) => Math.round(v / PRICE_STEP) * PRICE_STEP;
-  const snappedMin = snap(nextMin);
-  const snappedMax = snap(nextMax);
-  const clampedMin = Math.max(bounds.min, Math.min(snappedMin, bounds.max));
-  const clampedMax = Math.max(clampedMin, Math.min(snappedMax, bounds.max));
-  return { min: clampedMin, max: clampedMax };
-}
-
-type FilterSectionProps = {
-  sectionId: string;
-  title: string;
-  isOpen: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-};
-
-function CatalogFilterSection({
-  sectionId,
-  title,
-  isOpen,
-  onToggle,
-  children,
-}: FilterSectionProps) {
-  return (
-    <div className={styles.section}>
-      <div className={styles.sectionHeaderRow}>
-        <h3 className={styles.sectionTitle} id={`filter-heading-${sectionId}`}>
-          {title}
-        </h3>
-        <button
-          type="button"
-          className={styles.sectionToggle}
-          onClick={onToggle}
-          aria-expanded={isOpen}
-          aria-controls={`filter-body-${sectionId}`}
-          title={isOpen ? 'Свернуть' : 'Развернуть'}
-        >
-          <ChevronDownIcon
-            className={`${styles.sectionChevron} ${!isOpen ? styles.sectionChevronCollapsed : ''}`}
-            aria-hidden
-          />
-        </button>
-      </div>
-      {isOpen ? (
-        <div
-          className={styles.sectionBody}
-          id={`filter-body-${sectionId}`}
-          role="region"
-          aria-labelledby={`filter-heading-${sectionId}`}
-        >
-          {children}
-        </div>
-      ) : null}
-    </div>
-  );
-}
-
-function clearCatalogFilterKeys(params: URLSearchParams): void {
-  const toRemove = new Set<string>();
-  for (const k of params.keys()) {
-    if (
-      k.startsWith('attr_') ||
-      k === 'avail' ||
-      k === 'mfr' ||
-      k === 'price_min' ||
-      k === 'price_max' ||
-      k === 'cat' ||
-      k === 'branch'
-    ) {
-      toRemove.add(k);
-    }
-  }
-  toRemove.forEach((k) => params.delete(k));
-  params.delete('page');
 }
 
 export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
@@ -795,7 +698,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                 className={`${styles.priceRange} ${styles.priceRangeMin}`}
                 min={effectivePriceBounds.min}
                 max={effectivePriceBounds.max}
-                step={PRICE_STEP}
+                step={FILTERS_PRICE_STEP}
                 value={selectedMin}
                 onChange={(e) => {
                   pendingMinRef.current = null;
@@ -808,7 +711,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                 className={`${styles.priceRange} ${styles.priceRangeMax}`}
                 min={effectivePriceBounds.min}
                 max={effectivePriceBounds.max}
-                step={PRICE_STEP}
+                step={FILTERS_PRICE_STEP}
                 value={selectedMax}
                 onChange={(e) => {
                   pendingMinRef.current = null;

@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 
 import { hasSiteAuthToken } from './compare';
 

@@ -2,8 +2,8 @@
 
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
-import { TemplateTrashModal } from '../TemplateTrashModal';
 import type { TemplatesLibraryPageModel } from './hooks/useTemplatesLibraryPage';
+import { TemplateTrashModal } from './modals/TemplateTrashModal';
 
 type TemplatesLibraryModalsProps = Pick<
   TemplatesLibraryPageModel,

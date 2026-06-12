@@ -3,8 +3,8 @@
 import cdBase from '../../styles/base.module.css';
 import cdTemplates from '../../styles/templates-library.module.css';
 import { PackageDocumentEditorWorkOrdersListSurface } from '../platform/editor';
-import { usePackageDocumentEditorController } from '../platform/hooks/usePackageDocumentEditorController';
-import { PackageDocumentEditorMainView } from '../platform/hub/PackageDocumentEditorMainView';
+import { usePackageDocumentEditorController } from '../platform/hooks/editor/usePackageDocumentEditorController';
+import { PackageDocumentEditorMainView } from '../platform/hub/hubModal/PackageDocumentEditorMainView';
 
 export interface PackageDocumentEditorPageProps {
   packageId: string;

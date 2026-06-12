@@ -5,13 +5,13 @@ import React, { useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 
 import type { Product } from '@/entities/product/types';
+import { ProductCard } from '@/features/catalog';
 import type { FeaturedApiProduct, FeaturedProductsBlockSettings } from '@/shared/api/home';
 import {
   useFeaturedProducts,
   useFeaturedProductsBlock,
   usePartnerProductsCardSettings,
 } from '@/shared/lib/hooks/useHomePageData';
-import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 
 import styles from './FeaturedProducts.module.css';
 

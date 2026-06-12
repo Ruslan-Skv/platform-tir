@@ -5,7 +5,7 @@ import type { PackageFormData } from '../form/packageForm';
 import {
   type PackageQuestionnaireHubTabId,
   packageQuestionnaireHubTabLabel,
-} from '../hub/packageQuestionnaireHubTabs';
+} from '../hub/questionnaires/packageQuestionnaireHubTabs';
 import { buildManagerQuestionnaire1PrintHtml } from './managerQuestionnaire1Print';
 import { buildPostWorkQuestionnaire2PrintHtml } from './postWorkQuestionnaire2Print';
 

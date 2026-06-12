@@ -14,8 +14,8 @@ import {
   setResourcePermission,
   setRolePermission,
 } from '@/shared/api/admin-access';
+import { ROLES_CONFIG } from '@/shared/config/admin-roles';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
-import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
 
 import styles from './AccessModal.module.css';
 

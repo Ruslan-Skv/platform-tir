@@ -4,7 +4,7 @@ import {
   PUBLIC_CATALOG_PAGE_QUERY_KEY,
   type PublicCatalogPageResponse,
 } from '@/shared/api/public-catalog-list';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 
 /** Обновить товар во всех закэшированных страницах каталога (inline-редактирование цены). */
 export function patchProductInCatalogPageCache(

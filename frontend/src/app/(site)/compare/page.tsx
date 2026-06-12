@@ -6,14 +6,14 @@ import Link from 'next/link';
 
 import type { ProductCharacteristic } from '@/entities/product';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { mapCatalogApiProductToProduct } from '@/shared/lib/catalog/mapCatalogApiProductToProduct';
 import { useCompare } from '@/shared/lib/hooks';
 import { useCompareProducts } from '@/shared/lib/hooks/useCompareProducts';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
-import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 import catalogGridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';
 

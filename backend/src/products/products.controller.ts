@@ -22,7 +22,7 @@ import { CompareProductIdsDto } from './dto/compare-product-ids.dto';
 import { WishlistProductIdsDto } from './dto/wishlist-product-ids.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
-import { PublicCatalogService } from './public-catalog.service';
+import { PublicCatalogService } from './public-catalog/public-catalog.service';
 import { parsePublicCatalogListQuery } from './dto/public-catalog-list.dto';
 
 @ApiTags('products')

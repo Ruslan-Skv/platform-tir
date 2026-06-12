@@ -1,3 +1,3 @@
-export { HeroSectionPage, HeroSectionPage as default } from './HeroSectionPage';
+export { HeroSectionPage, HeroSectionPage as default } from './Hero/HeroSectionPage';
 export { HomeDirectionsPage } from './HomeDirectionsPage';
-export { NavigationSectionPage } from './NavigationSectionPage';
+export { NavigationSectionPage } from './Navigation/NavigationSectionPage';

@@ -1,0 +1,226 @@
+'use client';
+
+import Link from 'next/link';
+
+import { Modal } from '@/shared/ui/Modal';
+import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageIssueInvoicePanel';
+
+import cdBase from '../ContractDocuments/styles/base.module.css';
+import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
+import cdDataTab from '../ContractDocuments/styles/data-tab.module.css';
+import cdChrome from '../ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '../ContractDocuments/styles/estimates-workspace.module.css';
+import { PackageInvoicesModalLoader } from './PackageInvoicesModalLoader';
+import { formatDateRu, formatMoneyRub } from './accounting-invoices-page.utils';
+import type { AccountingInvoicesPageModel } from './hooks/useAccountingInvoicesPage';
+
+type AccountingInvoicesPageViewProps = {
+  model: AccountingInvoicesPageModel;
+};
+
+export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageViewProps) {
+  const {
+    rows,
+    loading,
+    error,
+    setError,
+    search,
+    setSearch,
+    issueOpen,
+    packagesLoading,
+    selectedPackageId,
+    setSelectedPackageId,
+    issuePackageForm,
+    issuePackageInvoices,
+    issuePaymentRows,
+    issueSaving,
+    contractEditorOpen,
+    contractEditorPackageId,
+    packageOptions,
+    load,
+    openIssueModal,
+    closeIssueModal,
+    openContractInvoices,
+    closeContractInvoices,
+    handleIssueInvoice,
+    handlePrintInvoice,
+    handleDownloadInvoice,
+  } = model;
+
+  return (
+    <div className={`${cdBase.page} ${cdBase.pageWide}`}>
+      <div className={`${cdWorkspace.editorHeader} ${cdHub.blockHeader}`}>
+        <div className={cdChrome.packageEditorHeaderLeft}>
+          <h1 className={cdWorkspace.title}>Счета на оплату</h1>
+          <p className={cdWorkspace.subtitle}>
+            Единый журнал выставленных счетов по договорам ремонта. Номер счёта общий для всей
+            организации.
+          </p>
+        </div>
+        <div className={cdHub.headerActions}>
+          <button
+            type="button"
+            className={cdWorkspace.primaryBtn}
+            onClick={() => void openIssueModal()}
+          >
+            + Выставить счёт
+          </button>
+          <button
+            type="button"
+            className={`${cdBase.secondaryBtn} ${cdBase.estimatesPageRefreshIconBtn}`}
+            disabled={loading}
+            aria-busy={loading}
+            title="Обновить список"
+            onClick={() => void load()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className={loading ? cdChrome.estimatesRefreshIconSpinning : undefined}
+              aria-hidden
+            >
+              <path d="M23 4v6h-6" />
+              <path d="M1 20v-6h6" />
+              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div className={cdWorkspace.estimatesToolbar} style={{ marginBottom: 16 }}>
+        <input
+          type="search"
+          className={cdBase.searchInput}
+          placeholder="Поиск: № счёта, договор, заказчик, основание…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          aria-label="Поиск по счетам"
+        />
+      </div>
+
+      {error ? <p className={cdBase.errorBanner}>{error}</p> : null}
+
+      <div className={cdBase.paymentsTableWrap}>
+        <table className={`${cdBase.paymentsTable} ${cdBase.repairContractsTable}`}>
+          <thead>
+            <tr>
+              <th>№ счёта</th>
+              <th>Дата</th>
+              <th>Договор</th>
+              <th>Заказчик</th>
+              <th>Основание</th>
+              <th className={cdBase.paymentsHubSummaryNumCol}>Сумма</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan={7}>
+                  <p className={cdBase.hint}>Загрузка…</p>
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan={7}>
+                  <p className={cdBase.hint}>Счетов пока нет.</p>
+                </td>
+              </tr>
+            ) : (
+              rows.map((row) => (
+                <tr key={row.id}>
+                  <td>{row.invoiceNumber}</td>
+                  <td>{formatDateRu(row.invoiceDate)}</td>
+                  <td>
+                    <Link href={`/admin/contract-documents/contracts/${row.packageId}`}>
+                      {row.contractNumber || '—'}
+                    </Link>
+                  </td>
+                  <td>{row.customerName || '—'}</td>
+                  <td>{row.basis}</td>
+                  <td className={cdBase.paymentsHubSummaryNumCol}>{formatMoneyRub(row.amount)}</td>
+                  <td>
+                    <button
+                      type="button"
+                      className={cdBase.paymentsHubConductSecondaryBtn}
+                      onClick={() => openContractInvoices(row.packageId)}
+                    >
+                      Счета договора
+                    </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      <Modal
+        isOpen={issueOpen}
+        onClose={closeIssueModal}
+        title="Выставить счёт по договору"
+        size="lg"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
+      >
+        <div data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Выберите договор, основание и позиции в таблице. Итог и номер счёта подставляются
+            автоматически.
+          </p>
+          <div
+            className={`${cdBase.field} ${cdDataTab.contractInlineField}`}
+            style={{ marginBottom: 16 }}
+          >
+            <label htmlFor="accounting_issue_package">Договор</label>
+            <select
+              id="accounting_issue_package"
+              value={selectedPackageId}
+              disabled={packagesLoading}
+              onChange={(e) => setSelectedPackageId(e.target.value)}
+            >
+              <option value="">— выберите договор —</option>
+              {packageOptions.map((opt) => (
+                <option key={opt.id} value={opt.id}>
+                  {opt.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          {selectedPackageId ? (
+            <PackageIssueInvoicePanel
+              packageId={selectedPackageId}
+              form={issuePackageForm}
+              issuedRows={issuePackageInvoices}
+              paymentRows={issuePaymentRows}
+              onError={setError}
+              saving={issueSaving}
+              onIssue={handleIssueInvoice}
+              onPrint={handlePrintInvoice}
+              onDownload={handleDownloadInvoice}
+              showIssuedTable={false}
+            />
+          ) : null}
+        </div>
+      </Modal>
+
+      {contractEditorOpen && contractEditorPackageId ? (
+        <PackageInvoicesModalLoader
+          packageId={contractEditorPackageId}
+          isOpen={contractEditorOpen}
+          onClose={closeContractInvoices}
+          onError={setError}
+          onInvoicesChanged={() => void load()}
+        />
+      ) : null}
+    </div>
+  );
+}

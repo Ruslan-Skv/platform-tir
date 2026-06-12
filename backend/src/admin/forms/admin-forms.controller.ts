@@ -1,231 +1,76 @@
 import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
-import { Prisma } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { PrismaService } from '../../database/prisma.service';
 import { UpdateCallbackFormBlockDto } from './dto/update-callback-form-block.dto';
 import { UpdateDirectorMessageBlockDto } from './dto/update-director-message-block.dto';
 import { UpdateMeasurementFormBlockDto } from './dto/update-measurement-form-block.dto';
 import { UpdateQuoteFormBlockDto } from './dto/update-quote-form-block.dto';
+import { AdminFormsService } from './admin-forms.service';
 
 @ApiTags('admin/forms')
 @Controller('admin/forms')
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminFormsController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly adminForms: AdminFormsService) {}
 
   @Get()
   @ApiOperation({ summary: 'Список заявок с форм (замер, обратный звонок, письмо директору)' })
-  async findAll(
+  findAll(
     @Query('type') type?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
     const pageNum = page ? parseInt(page, 10) : 1;
     const limitNum = limit ? parseInt(limit, 10) : 20;
-    const skip = (pageNum - 1) * limitNum;
-
-    const where =
-      type && ['measurement', 'callback', 'director', 'quote'].includes(type) ? { type } : {};
-
-    const [data, total] = await Promise.all([
-      this.prisma.formSubmission.findMany({
-        where,
-        orderBy: { createdAt: 'desc' },
-        skip,
-        take: limitNum,
-      }),
-      this.prisma.formSubmission.count({ where }),
-    ]);
-
-    return {
-      data,
-      total,
-      page: pageNum,
-      limit: limitNum,
-      totalPages: Math.ceil(total / limitNum),
-    };
+    return this.adminForms.findSubmissions(type, pageNum, limitNum);
   }
 
   @Get('director-settings')
   @ApiOperation({ summary: 'Настройки формы «Письмо директору»' })
-  async getDirectorSettings() {
-    const block = await this.prisma.directorMessageBlock.findUnique({
-      where: { id: 'main' },
-    });
-    return {
-      directorEmail: block?.directorEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+  getDirectorSettings() {
+    return this.adminForms.getDirectorSettings();
   }
 
   @Patch('director-settings')
   @ApiOperation({ summary: 'Обновить настройки формы «Письмо директору»' })
-  async updateDirectorSettings(@Body() dto: UpdateDirectorMessageBlockDto) {
-    const block = await this.prisma.directorMessageBlock.upsert({
-      where: { id: 'main' },
-      create: {
-        id: 'main',
-        directorEmail: dto.directorEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
-        updatedAt: new Date(),
-      },
-      update: {
-        ...(dto.directorEmail !== undefined && {
-          directorEmail: dto.directorEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
-        updatedAt: new Date(),
-      },
-    });
-    return {
-      directorEmail: block.directorEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+  updateDirectorSettings(@Body() dto: UpdateDirectorMessageBlockDto) {
+    return this.adminForms.updateDirectorSettings(dto);
   }
 
   @Get('measurement-form-settings')
   @ApiOperation({ summary: 'Настройки формы «Записаться на замер»' })
-  async getMeasurementFormSettings() {
-    const block = await this.prisma.measurementFormBlock.findUnique({
-      where: { id: 'main' },
-    });
-    return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+  getMeasurementFormSettings() {
+    return this.adminForms.getMeasurementFormSettings();
   }
 
   @Patch('measurement-form-settings')
   @ApiOperation({ summary: 'Обновить настройки формы «Записаться на замер»' })
-  async updateMeasurementFormSettings(@Body() dto: UpdateMeasurementFormBlockDto) {
-    const block = await this.prisma.measurementFormBlock.upsert({
-      where: { id: 'main' },
-      create: {
-        id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
-        updatedAt: new Date(),
-      },
-      update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
-        updatedAt: new Date(),
-      },
-    });
-    return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+  updateMeasurementFormSettings(@Body() dto: UpdateMeasurementFormBlockDto) {
+    return this.adminForms.updateMeasurementFormSettings(dto);
   }
 
   @Get('callback-form-settings')
   @ApiOperation({ summary: 'Настройки формы «Заказать звонок»' })
-  async getCallbackFormSettings() {
-    const block = await this.prisma.callbackFormBlock.findUnique({
-      where: { id: 'main' },
-    });
-    return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+  getCallbackFormSettings() {
+    return this.adminForms.getCallbackFormSettings();
   }
 
   @Patch('callback-form-settings')
   @ApiOperation({ summary: 'Обновить настройки формы «Заказать звонок»' })
-  async updateCallbackFormSettings(@Body() dto: UpdateCallbackFormBlockDto) {
-    const block = await this.prisma.callbackFormBlock.upsert({
-      where: { id: 'main' },
-      create: {
-        id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
-        updatedAt: new Date(),
-      },
-      update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
-        updatedAt: new Date(),
-      },
-    });
-    return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+  updateCallbackFormSettings(@Body() dto: UpdateCallbackFormBlockDto) {
+    return this.adminForms.updateCallbackFormSettings(dto);
   }
 
   @Get('quote-form-settings')
   @ApiOperation({ summary: 'Настройки формы «Рассчитать стоимость»' })
-  async getQuoteFormSettings() {
-    const block = await this.prisma.quoteFormBlock.findUnique({
-      where: { id: 'main' },
-    });
-    const opts = block?.serviceTypeOptions;
-    const options = Array.isArray(opts) ? opts : [];
-    return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      serviceTypeOptions: options,
-      updatedAt: block?.updatedAt ?? null,
-    };
+  getQuoteFormSettings() {
+    return this.adminForms.getQuoteFormSettings();
   }
 
   @Patch('quote-form-settings')
   @ApiOperation({ summary: 'Обновить настройки формы «Рассчитать стоимость»' })
-  async updateQuoteFormSettings(@Body() dto: UpdateQuoteFormBlockDto) {
-    const serviceTypeOptionsValue: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined =
-      dto.serviceTypeOptions === undefined
-        ? undefined
-        : dto.serviceTypeOptions === null
-          ? Prisma.JsonNull
-          : (dto.serviceTypeOptions as Prisma.InputJsonValue);
-
-    const block = await this.prisma.quoteFormBlock.upsert({
-      where: { id: 'main' },
-      create: {
-        id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
-        serviceTypeOptions: dto.serviceTypeOptions ?? undefined,
-        updatedAt: new Date(),
-      },
-      update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
-        ...(serviceTypeOptionsValue !== undefined && {
-          serviceTypeOptions: serviceTypeOptionsValue,
-        }),
-        updatedAt: new Date(),
-      },
-    });
-    const opts = block.serviceTypeOptions;
-    const options = Array.isArray(opts) ? opts : [];
-    return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
-      serviceTypeOptions: options,
-      updatedAt: block.updatedAt,
-    };
+  updateQuoteFormSettings(@Body() dto: UpdateQuoteFormBlockDto) {
+    return this.adminForms.updateQuoteFormSettings(dto);
   }
 }

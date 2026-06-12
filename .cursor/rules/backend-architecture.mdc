@@ -1,0 +1,30 @@
+---
+description: Архитектура backend NestJS — зоны, модули, controller/service/dto
+globs: backend/src/**/*.ts
+alwaysApply: false
+---
+
+# Backend architecture (Platform TIR)
+
+Полный документ: `backend/docs/ARCHITECTURE.md`. Проверка: `npm run check-architecture`.
+
+## Зоны импорта
+
+`infrastructure` (common, database, elasticsearch) → `core` (auth, users) → `public` → `admin`
+
+- `public` **не** импортирует `admin`
+- `PrismaService` только в **services**, не в controllers
+- Зависимости между admin-модулями — через `*Module` imports/exports
+
+## Feature-модуль
+
+```
+*.module.ts
+*.controller.ts    # тонкий HTTP-слой
+*.service.ts       # Prisma + логика
+dto/               # class-validator DTO
+```
+
+## Крупные домены
+
+При росте — отдельные `*-payments.service.ts`, `dto/` в подпапке; ≤ 12 `.ts` в корне модуля.

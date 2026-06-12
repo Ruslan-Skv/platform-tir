@@ -24,22 +24,9 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { PrismaService } from '../../database/prisma.service';
-import { UserRole } from '@prisma/client';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
 import { uploadsBaseUrl } from '../../common/utils/uploads-url';
-
-/** Prisma findUnique/upsert не принимают role: null — используем findFirst для default. */
-async function findBlockByRole(prisma: PrismaService, role: string | null) {
-  if (role !== null) {
-    return prisma.adminNotificationsBlock.findUnique({
-      where: { role },
-    });
-  }
-  return prisma.adminNotificationsBlock.findFirst({
-    where: { role: null },
-  });
-}
+import { AdminNotificationsService } from './admin-notifications.service';
 
 const soundsDir = path.join(process.cwd(), 'uploads', 'notification-sounds');
 
@@ -59,319 +46,95 @@ const soundStorage = diskStorage({
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminNotificationsController {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private getDefaultSettings() {
-    return {
-      id: 'default',
-      role: null as string | null,
-      soundEnabled: true,
-      soundVolume: 70,
-      soundType: 'beep',
-      customSoundUrl: null,
-      desktopNotifications: false,
-      checkIntervalSeconds: 60,
-      notifyOnReviews: true,
-      notifyOnOrders: true,
-      notifyOnSupportChat: true,
-      notifyOnMeasurementForm: true,
-      notifyOnCallbackForm: true,
-    };
-  }
+  constructor(private readonly notifications: AdminNotificationsService) {}
 
   @Get('settings')
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })
-  async getSettings(@Req() req: RequestWithUser) {
-    const userId = req.user?.id;
-    const userRole = req.user?.role ?? null;
-    if (userId) {
-      const override = await this.prisma.userAdminNotificationOverride.findUnique({
-        where: { userId },
-      });
-      if (override) {
-        return { ...override, role: null };
-      }
-    }
-    const block = userRole
-      ? ((await findBlockByRole(this.prisma, userRole)) ??
-        (await findBlockByRole(this.prisma, null)))
-      : await findBlockByRole(this.prisma, null);
-    if (!block) return this.getDefaultSettings();
-    return block;
+  getSettings(@Req() req: RequestWithUser) {
+    return this.notifications.getSettingsForUser(req.user?.id, req.user?.role ?? null);
   }
 
   @Get('settings/by-user/:userId')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Получить настройки для пользователя (только супер-админ)' })
-  async getSettingsByUser(@Req() req: RequestWithUser, @Param('userId') userId: string) {
-    const override = await this.prisma.userAdminNotificationOverride.findUnique({
-      where: { userId },
-    });
-    if (override) {
-      const u = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      return { ...override, role: u?.role ?? null };
-    }
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId },
-      select: { role: true },
-    });
-    const role = user?.role ?? null;
-    const block = role
-      ? ((await findBlockByRole(this.prisma, role)) ?? (await findBlockByRole(this.prisma, null)))
-      : await findBlockByRole(this.prisma, null);
-    if (!block) return { ...this.getDefaultSettings(), userId, role };
-    return { ...block, userId };
+  getSettingsByUser(@Param('userId') userId: string) {
+    return this.notifications.getSettingsByUser(userId);
   }
 
   @Patch('settings/by-user/:userId')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Обновить настройки для пользователя (только супер-админ)' })
-  async updateSettingsByUser(
-    @Req() req: RequestWithUser,
-    @Param('userId') userId: string,
-    @Body() dto: UpdateAdminNotificationsDto,
-  ) {
-    const data = {
-      soundEnabled: dto.soundEnabled,
-      soundVolume: dto.soundVolume,
-      soundType: dto.soundType,
-      customSoundUrl: dto.customSoundUrl,
-      desktopNotifications: dto.desktopNotifications,
-      checkIntervalSeconds: dto.checkIntervalSeconds,
-      notifyOnReviews: dto.notifyOnReviews,
-      notifyOnOrders: dto.notifyOnOrders,
-      notifyOnSupportChat: dto.notifyOnSupportChat,
-      notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
-      notifyOnCallbackForm: dto.notifyOnCallbackForm,
-    };
-    const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    const createData = {
-      userId,
-      soundEnabled: dto.soundEnabled ?? true,
-      soundVolume: dto.soundVolume ?? 70,
-      soundType: dto.soundType ?? 'beep',
-      customSoundUrl: dto.customSoundUrl ?? null,
-      desktopNotifications: dto.desktopNotifications ?? false,
-      checkIntervalSeconds: dto.checkIntervalSeconds ?? 60,
-      notifyOnReviews: dto.notifyOnReviews ?? true,
-      notifyOnOrders: dto.notifyOnOrders ?? true,
-      notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
-      notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
-      notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
-    };
-    return this.prisma.userAdminNotificationOverride.upsert({
-      where: { userId },
-      update: updateData,
-      create: createData,
-    });
+  updateSettingsByUser(@Param('userId') userId: string, @Body() dto: UpdateAdminNotificationsDto) {
+    return this.notifications.updateSettingsByUser(userId, dto);
   }
 
   @Get('customers')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Список покупателей (USER) для настройки уведомлений' })
-  async getCustomers() {
-    return this.prisma.user.findMany({
-      where: { role: 'USER' },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-      },
-      orderBy: [{ email: 'asc' }],
-    });
+  getCustomers() {
+    return this.notifications.getCustomers();
   }
 
   @Patch('customers/bulk')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Обновить настройки уведомлений для всех покупателей (USER)' })
-  async updateAllCustomersNotificationSettings(
-    @Body() body: { notifyOnSupportChatReply?: boolean },
-  ) {
-    const users = await this.prisma.user.findMany({
-      where: { role: 'USER' },
-      select: { id: true },
-    });
-    const value = body.notifyOnSupportChatReply ?? true;
-    const results = await Promise.all(
-      users.map((u) =>
-        this.prisma.userNotificationSettings.upsert({
-          where: { userId: u.id },
-          update: { notifyOnSupportChatReply: value },
-          create: {
-            userId: u.id,
-            notifyOnSupportChatReply: value,
-          },
-        }),
-      ),
-    );
-    return { updated: results.length };
+  updateAllCustomersNotificationSettings(@Body() body: { notifyOnSupportChatReply?: boolean }) {
+    return this.notifications.updateAllCustomersNotificationSettings(body.notifyOnSupportChatReply);
   }
 
   @Get('customers/:userId/settings')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Настройки уведомлений покупателя (чат поддержки)' })
-  async getCustomerNotificationSettings(@Param('userId') userId: string) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId, role: 'USER' },
-    });
-    if (!user) throw new BadRequestException('Пользователь не найден');
-    const settings = await this.prisma.userNotificationSettings.findUnique({
-      where: { userId },
-    });
-    return (
-      settings ?? {
-        id: null,
-        userId,
-        notifyOnSupportChatReply: true,
-        createdAt: null,
-        updatedAt: null,
-      }
-    );
+  getCustomerNotificationSettings(@Param('userId') userId: string) {
+    return this.notifications.getCustomerNotificationSettings(userId);
   }
 
   @Patch('customers/:userId/settings')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Обновить настройки уведомлений покупателя' })
-  async updateCustomerNotificationSettings(
+  updateCustomerNotificationSettings(
     @Param('userId') userId: string,
     @Body() body: { notifyOnSupportChatReply?: boolean },
   ) {
-    const user = await this.prisma.user.findUnique({
-      where: { id: userId, role: 'USER' },
-    });
-    if (!user) throw new BadRequestException('Пользователь не найден');
-    return this.prisma.userNotificationSettings.upsert({
-      where: { userId },
-      update: { ...body },
-      create: {
-        userId,
-        notifyOnSupportChatReply: body.notifyOnSupportChatReply ?? true,
-      },
-    });
+    return this.notifications.updateCustomerNotificationSettings(userId, body);
   }
 
   @Get('users')
   @UseGuards(RolesGuard)
   @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Список пользователей админки для выбора (только супер-админ)' })
-  async getAdminUsers() {
-    const ADMIN_ROLES: UserRole[] = [
-      'SUPER_ADMIN',
-      'ADMIN',
-      'CONTENT_MANAGER',
-      'MODERATOR',
-      'SUPPORT',
-      'MANAGER',
-      'TECHNOLOGIST',
-      'PARTNER',
-      'BRIGADIER',
-      'LEAD_SPECIALIST_FURNITURE',
-      'LEAD_SPECIALIST_WINDOWS_DOORS',
-      'SURVEYOR',
-      'DRIVER',
-      'INSTALLER',
-    ];
-    return this.prisma.user.findMany({
-      where: { role: { in: ADMIN_ROLES } },
-      select: {
-        id: true,
-        email: true,
-        firstName: true,
-        lastName: true,
-        role: true,
-      },
-      orderBy: [{ role: 'asc' }, { email: 'asc' }],
-    });
+  getAdminUsers() {
+    return this.notifications.getAdminUsers();
   }
 
   @Get('settings/by-role')
   @ApiOperation({ summary: 'Получить настройки для конкретной роли (для страницы настроек)' })
-  async getSettingsByRole(@Req() req: RequestWithUser, @Query('role') role?: string) {
-    const roleValue = role === 'default' || role === '' || !role ? null : role;
-    const block = await findBlockByRole(this.prisma, roleValue);
-    if (!block) return { ...this.getDefaultSettings(), role: roleValue };
-    return block;
+  getSettingsByRole(@Query('role') role?: string) {
+    return this.notifications.getSettingsByRole(role);
   }
 
   @Get('settings/all')
   @ApiOperation({ summary: 'Список всех профилей настроек по ролям' })
-  async getAllSettings() {
-    const blocks = await this.prisma.adminNotificationsBlock.findMany({
-      orderBy: [{ role: 'asc' }],
-    });
-    return blocks;
+  getAllSettings() {
+    return this.notifications.getAllSettings();
   }
 
   @Patch('settings')
   @ApiOperation({ summary: 'Обновить настройки уведомлений' })
-  async updateSettings(@Body() dto: UpdateAdminNotificationsDto) {
-    const role = dto.role === 'default' || dto.role === '' ? null : (dto.role ?? null);
-    const data = {
-      soundEnabled: dto.soundEnabled,
-      soundVolume: dto.soundVolume,
-      soundType: dto.soundType,
-      customSoundUrl: dto.customSoundUrl,
-      desktopNotifications: dto.desktopNotifications,
-      checkIntervalSeconds: dto.checkIntervalSeconds,
-      notifyOnReviews: dto.notifyOnReviews,
-      notifyOnOrders: dto.notifyOnOrders,
-      notifyOnSupportChat: dto.notifyOnSupportChat,
-      notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
-      notifyOnCallbackForm: dto.notifyOnCallbackForm,
-    };
-    const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
-    const createData = {
-      role,
-      soundEnabled: dto.soundEnabled ?? true,
-      soundVolume: dto.soundVolume ?? 70,
-      soundType: dto.soundType ?? 'beep',
-      customSoundUrl: dto.customSoundUrl ?? null,
-      desktopNotifications: dto.desktopNotifications ?? false,
-      checkIntervalSeconds: dto.checkIntervalSeconds ?? 60,
-      notifyOnReviews: dto.notifyOnReviews ?? true,
-      notifyOnOrders: dto.notifyOnOrders ?? true,
-      notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
-      notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
-      notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
-    };
-    if (role !== null) {
-      return this.prisma.adminNotificationsBlock.upsert({
-        where: { role },
-        update: updateData,
-        create: createData,
-      });
-    }
-    const existing = await this.prisma.adminNotificationsBlock.findFirst({
-      where: { role: null },
-    });
-    if (existing) {
-      return this.prisma.adminNotificationsBlock.update({
-        where: { id: existing.id },
-        data: updateData,
-      });
-    }
-    return this.prisma.adminNotificationsBlock.create({
-      data: createData,
-    });
+  updateSettings(@Body() dto: UpdateAdminNotificationsDto) {
+    return this.notifications.updateSettings(dto);
   }
 
   @Get('sounds')
   @ApiOperation({ summary: 'Список загруженных звуков' })
-  async getSounds() {
-    return this.prisma.notificationSound.findMany({
-      orderBy: { createdAt: 'desc' },
-    });
+  getSounds() {
+    return this.notifications.getSounds();
   }
 
   @Post('sounds')
@@ -417,47 +180,12 @@ export class AdminNotificationsController {
     const prefix = uploadsBaseUrl(baseUrl);
     const fullUrl = `${prefix}${fileUrl}`;
 
-    const sound = await this.prisma.notificationSound.create({
-      data: {
-        name: name || file.originalname || 'Звук',
-        fileUrl: fullUrl,
-      },
-    });
-    return sound;
+    return this.notifications.createSound(name || file.originalname || 'Звук', fullUrl);
   }
 
   @Delete('sounds/:id')
   @ApiOperation({ summary: 'Удалить звук' })
-  async deleteSound(@Param('id') id: string) {
-    const sound = await this.prisma.notificationSound.findUnique({
-      where: { id },
-    });
-    if (!sound) {
-      throw new BadRequestException('Звук не найден');
-    }
-    let relativePath = sound.fileUrl;
-    try {
-      const url = new URL(sound.fileUrl);
-      relativePath = url.pathname;
-    } catch {
-      // fileUrl может быть относительным путём
-    }
-    const baseDir = path.resolve(process.cwd(), 'uploads');
-    const resolvedPath = path.resolve(
-      process.cwd(),
-      relativePath.replace(/^\//, '').replace(/^\\/, ''),
-    );
-    if (
-      (resolvedPath.startsWith(baseDir + path.sep) || resolvedPath === baseDir) &&
-      !resolvedPath.includes('..')
-    ) {
-      try {
-        fs.unlinkSync(resolvedPath);
-      } catch {
-        // Игнорируем ошибки удаления файла
-      }
-    }
-    await this.prisma.notificationSound.delete({ where: { id } });
-    return { success: true };
+  deleteSound(@Param('id') id: string) {
+    return this.notifications.deleteSound(id);
   }
 }

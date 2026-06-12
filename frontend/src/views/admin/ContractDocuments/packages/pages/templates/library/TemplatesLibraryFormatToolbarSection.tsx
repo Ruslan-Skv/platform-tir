@@ -7,7 +7,7 @@ import { PACKAGE_CONTRACT_PLACEHOLDER_GROUPS } from '@/views/admin/ContractDocum
 
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { FormatToolbarHelpTooltip } from './editor/templateEditorFormatToolbar';
-import { VISUAL_FONT_SIZE_PT_OPTIONS } from './editor/templateEditorFormatting';
+import { VISUAL_FONT_SIZE_PT_OPTIONS } from './editor/templateEditorFormattingTypography';
 import type { TemplatesLibraryPageModel } from './hooks/useTemplatesLibraryPage';
 
 export type TemplatesLibraryFormatToolbarSectionProps = Pick<

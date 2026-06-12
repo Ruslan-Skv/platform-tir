@@ -6,7 +6,7 @@ import { useMemo } from 'react';
 
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import attachStyles from '../../../platform/editor/PackageEstimateAttach.module.css';
+import attachStyles from '../../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
 import {
   type ProductAddendumSectionTotalMode,
   type ProductAddendumSpecificationLine,

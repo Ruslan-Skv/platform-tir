@@ -5,9 +5,9 @@ import React, { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { mapCatalogApiProductToProduct } from '@/shared/lib/catalog/mapCatalogApiProductToProduct';
 import { useWishlist } from '@/shared/lib/hooks';
 import { useWishlistProducts } from '@/shared/lib/hooks/useWishlistProducts';
-import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 import catalogGridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';
 

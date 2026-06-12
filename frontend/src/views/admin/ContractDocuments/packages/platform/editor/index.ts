@@ -1,67 +1,70 @@
 export {
   PackageDocumentEditorTabBar,
   type PackageDocumentEditorTabBarProps,
-} from './PackageDocumentEditorTabBar';
-export { PackageDocumentEditorHeader } from './PackageDocumentEditorHeader';
-export { PackageDataTab, type PackageDataTabProps } from './PackageDataTab';
+} from './chrome/PackageDocumentEditorTabBar';
+export { PackageDocumentEditorHeader } from './chrome/PackageDocumentEditorHeader';
+export { PackageDataTab, type PackageDataTabProps } from './dataTab/PackageDataTab';
 export {
   PackageAddendumTabBarActions,
   type PackageAddendumTabBarActionsProps,
-} from './PackageAddendumTabBarActions';
-export { PackageEstimateTab, type PackageEstimateTabProps } from './PackageEstimateTab';
+} from './addendum/PackageAddendumTabBarActions';
+export { PackageEstimateTab, type PackageEstimateTabProps } from './estimateTab/PackageEstimateTab';
 export {
   ProductSpecificationTab,
   type ProductSpecificationTabProps,
-} from './ProductSpecificationTab';
-export { formatPackageMoneyValue, PackageEstimateSignaturesBlock } from './estimateTabUi';
-export { PackageTemplateDocumentPreview } from './PackageTemplateDocumentPreview';
-export { PackageTemplateEditorPane } from './PackageTemplateEditorPane';
+} from './tabs/ProductSpecificationTab';
+export {
+  formatPackageMoneyValue,
+  PackageEstimateSignaturesBlock,
+} from './estimateTab/estimateTabUi';
+export { PackageTemplateDocumentPreview } from './template/PackageTemplateDocumentPreview';
+export { PackageTemplateEditorPane } from './template/PackageTemplateEditorPane';
 export {
   PackageAddendumEditorPane,
   type PackageAddendumEditorPaneProps,
-} from './PackageAddendumEditorPane';
+} from './addendum/PackageAddendumEditorPane';
 export {
   PackageContractTemplateEditorPane,
   type PackageContractTemplateEditorPaneProps,
-} from './PackageContractTemplateEditorPane';
-export { formatContractConcludedDateForHeader } from './formatContractConcludedDateForHeader';
+} from './template/PackageContractTemplateEditorPane';
+export { formatContractConcludedDateForHeader } from './chrome/formatContractConcludedDateForHeader';
 export {
   snapshotPackageContractObjectBlockFields,
   type PackageContractObjectBlockFieldId,
-} from './packageContractObjectBlock';
+} from './shared/packageContractObjectBlock';
 export {
   PACKAGE_TEMPLATE_TAB_IDS,
   normalizePackageContractTemplatePreset,
   normalizePackageTemplateTabId,
   type PackageTemplateTabId,
-} from './packageTemplateTabUtils';
+} from './template/packageTemplateTabUtils';
 export {
   PackageDataSectionLockInline,
   PackageDataPartySectionCollapseButton,
   calcPackageSectionCompletionPercent,
   packageCompletionBadgeStyle,
-} from './packageDataTabUi';
+} from './dataTab/packageDataTabUi';
 export {
   PackageDocumentEditorTabContent,
   type PackageDocumentEditorTabContentProps,
-} from './PackageDocumentEditorTabContent';
+} from './chrome/PackageDocumentEditorTabContent';
 export {
   PackageDocumentEditorModals,
   type PackageDocumentEditorModalsProps,
-} from './PackageDocumentEditorModals';
+} from './chrome/PackageDocumentEditorModals';
 export {
   PackageDocumentEditorWorkOrdersListSurface,
   type PackageDocumentEditorWorkOrdersListSurfaceProps,
-} from './PackageDocumentEditorWorkOrdersListSurface';
+} from './chrome/PackageDocumentEditorWorkOrdersListSurface';
 export {
   PackageDocumentEditorRefusedBanner,
   type PackageDocumentEditorRefusedBannerProps,
-} from './PackageDocumentEditorRefusedBanner';
+} from './chrome/PackageDocumentEditorRefusedBanner';
 export {
   PackageDocumentEditorChrome,
   type PackageDocumentEditorChromeProps,
-} from './PackageDocumentEditorChrome';
-export { executePackageDocumentPrint } from './executePackageDocumentPrint';
+} from './chrome/PackageDocumentEditorChrome';
+export { executePackageDocumentPrint } from './chrome/executePackageDocumentPrint';
 export {
   buildFinalEstimateSummary,
   formatInstallerGradeShort,
@@ -72,8 +75,8 @@ export {
   parsePercentForWorkOrder,
   type FinalEstimateSummaryRow,
   type InstallerGradePercent,
-} from './finalEstimateSummary';
+} from './shared/finalEstimateSummary';
 export {
   buildPackageTemplatePreviewHtml,
   type BuildPackageTemplatePreviewHtmlOptions,
-} from './buildPackageTemplatePreviewHtml';
+} from './template/buildPackageTemplatePreviewHtml';

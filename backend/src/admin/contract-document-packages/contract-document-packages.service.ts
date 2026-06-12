@@ -1,1573 +1,218 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { randomUUID } from 'crypto';
-import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
+import { Injectable } from '@nestjs/common';
+import { ContractDocumentPackageKind } from '@prisma/client';
 
-import { PrismaService } from '../../database/prisma.service';
-import { contractDocumentPackageInclude } from './contract-package.include';
-import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
-import {
-  ExecutorProfileDto,
-  SetGlobalExecutorProfilesDto,
-} from './dto/set-global-executor-profiles.dto';
-import {
-  ContractTemplatePresetDto,
-  SetGlobalContractTemplatesDto,
-} from './dto/set-global-contract-templates.dto';
-import {
-  SetGlobalSignatoryProfilesDto,
-  SignatoryProfileDto,
-} from './dto/set-global-signatory-profiles.dto';
-import {
-  ContractEstimateGroupDto,
-  ContractEstimatePresetDto,
-  SetGlobalEstimatePresetsDto,
-} from './dto/set-global-estimate-presets.dto';
+import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
+import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
+import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
+import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
+import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
 } from './dto/set-repair-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
-import {
-  DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
-  DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS,
-  DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
-  injectDefaultWorkPeriodIntoFormData,
-  isWorkPeriodManualInFormData,
-  setWorkPeriodInFormData,
-} from './repair-contract-work-period';
-import { buildPackageVersionKeyMoments } from './package-version-key-moments';
+import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
+import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
+import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
+import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
+import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
 
 @Injectable()
 export class ContractDocumentPackagesService {
-  constructor(private readonly prisma: PrismaService) {}
-  private static readonly EXECUTOR_PROFILES_TAB = 'executor_profiles';
-  private static readonly SIGNATORY_PROFILES_TAB = 'signatory_profiles';
-  private static readonly CONTRACT_TEMPLATES_TAB = 'contract_templates';
-  private static readonly ESTIMATE_PRESETS_TAB = 'estimate_presets';
-  /** Срок хранения в корзине до безвозвратного удаления (расчёты, шаблоны). */
-  static readonly ESTIMATE_PRESET_TRASH_RETENTION_DAYS = 30;
-  static readonly CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS = 30;
-  private static readonly ESTIMATE_PRESET_TRASH_RETENTION_MS =
-    ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  private static readonly CONTRACT_TEMPLATE_TRASH_RETENTION_MS =
-    ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-  private async assertCrmContractExists(contractId: string) {
-    const row = await this.prisma.contract.findUnique({
-      where: { id: contractId },
-      select: { id: true },
-    });
-    if (!row) {
-      throw new BadRequestException('Указан несуществующий договор CRM');
-    }
-  }
+  constructor(
+    private readonly crud: ContractDocumentPackageCrudService,
+    private readonly globalLibrary: ContractDocumentPackageGlobalLibraryService,
+    private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
+    private readonly kindSettings: ContractDocumentPackageKindSettingsService,
+  ) {}
 
-  /** Id сохранённых расчётов из formData.estimate (мульти + legacy). */
-  private extractRepairEstimatePresetIds(formData: unknown): string[] {
-    if (!formData || typeof formData !== 'object') return [];
-    const est = (formData as Record<string, unknown>).estimate;
-    if (!est || typeof est !== 'object') return [];
-    const e = est as Record<string, unknown>;
-    const ids: string[] = [];
-    if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) {
-      ids.push(e.selectedPresetId.trim());
-    }
-    if (Array.isArray(e.selectedPresetIds)) {
-      for (const x of e.selectedPresetIds) {
-        if (typeof x === 'string' && x.trim()) ids.push(x.trim());
-      }
-    }
-    return [...new Set(ids)];
-  }
-
-  /**
-   * Один расчёт (preset) не может быть прикреплён к двум пакетам ремонта одновременно.
-   * @param currentPackageId пакет при update; null при create
-   */
-  private async assertRepairEstimatePresetsExclusive(
-    currentPackageId: string | null,
-    formData: unknown,
-    options?: { previousFormData?: unknown },
-  ): Promise<void> {
-    const ids = this.extractRepairEstimatePresetIds(formData);
-    if (ids.length === 0) return;
-
-    const previousIdsList =
-      options?.previousFormData !== undefined
-        ? this.extractRepairEstimatePresetIds(options.previousFormData)
-        : null;
-    if (previousIdsList !== null) {
-      const previousSet = new Set(previousIdsList);
-      const unchanged =
-        ids.length === previousIdsList.length && ids.every((id) => previousSet.has(id));
-      if (unchanged) return;
-    }
-
-    const previousIds = previousIdsList !== null ? new Set(previousIdsList) : null;
-    const idsToValidatePipeline = previousIds ? ids.filter((id) => !previousIds.has(id)) : ids;
-    if (idsToValidatePipeline.length > 0) {
-      await this.assertRepairEstimatePresetsPipelineActive(idsToValidatePipeline);
-    }
-
-    const others = await this.prisma.contractDocumentPackage.findMany({
-      where: {
-        kind: ContractDocumentPackageKind.REPAIR,
-        deletedAt: null,
-        ...(currentPackageId ? { NOT: { id: currentPackageId } } : {}),
-      },
-      select: { id: true, formData: true },
-    });
-    for (const pkg of others) {
-      const otherIds = this.extractRepairEstimatePresetIds(pkg.formData);
-      const conflict = ids.find((id) => otherIds.includes(id));
-      if (conflict) {
-        throw new BadRequestException(
-          'Этот расчёт уже прикреплён к другому договору. Сначала отвяжите его в том пакете или выберите другой расчёт.',
-        );
-      }
-    }
-  }
-
-  /** Прикреплять к договору можно только расчёты со вкладки «В работе» (не архив, не перспектива). */
-  private async assertRepairEstimatePresetsPipelineActive(presetIds: string[]): Promise<void> {
-    const raw = await this.loadGlobalEstimatePresetsBlob(ContractDocumentPackageKind.REPAIR);
-    const groupsById = new Map((raw.groups ?? []).map((g) => [g.id, g]));
-    for (const id of presetIds) {
-      const preset = raw.items.find((item) => item.id === id);
-      if (!preset) continue;
-      if (preset.archived) {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт из архива. Восстановите его в списке расчётов.',
-        );
-      }
-      if (preset.pipelineStage === 'prospect') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт из вкладки «В перспективе». Перенесите его в «В работе».',
-        );
-      }
-      const group = preset.groupId ? groupsById.get(preset.groupId) : undefined;
-      if (group?.archived) {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт архивного объекта. Восстановите объект в списке расчётов.',
-        );
-      }
-      if (group?.pipelineStage === 'prospect') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт объекта из вкладки «В перспективе». Перенесите объект в «В работе».',
-        );
-      }
-    }
-  }
-
-  async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
-    if (dto.crmContractId) {
-      await this.assertCrmContractExists(dto.crmContractId);
-    }
-    let formDataInput: unknown = dto.formData ?? {};
-    if (
-      dto.kind === ContractDocumentPackageKind.REPAIR ||
-      dto.kind === ContractDocumentPackageKind.WINDOWS ||
-      dto.kind === ContractDocumentPackageKind.DOORS
-    ) {
-      const defaultDays = await this.resolveDefaultWorkPeriodDays(dto.kind);
-      formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
-    }
-    if (dto.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(null, formDataInput);
-    } else if (dto.formData !== undefined) {
-      await this.assertRepairEstimatePresetsExclusive(null, dto.formData);
-    }
-    const created = await this.prisma.contractDocumentPackage.create({
-      data: {
-        kind: dto.kind,
-        title: dto.title ?? null,
-        formData: formDataInput as Prisma.InputJsonValue,
-        createdById: createdById ?? null,
-        crmContractId: dto.crmContractId ?? null,
-      },
-      include: contractDocumentPackageInclude,
-    });
-    await this.appendPackageVersion(
-      created.id,
-      {
-        title: created.title,
-        formData: created.formData as Prisma.InputJsonValue,
-        crmContractId: created.crmContractId,
-        status: created.status,
-      },
-      createdById ?? null,
-    );
-    return this.findOne(created.id);
+  create(dto: CreateContractDocumentPackageDto, createdById?: string) {
+    return this.crud.create(dto, createdById);
   }
 
   findAll(kind?: ContractDocumentPackageKind) {
-    return this.prisma.contractDocumentPackage.findMany({
-      where: {
-        deletedAt: null,
-        ...(kind ? { kind } : {}),
-      },
-      orderBy: { updatedAt: 'desc' },
-      include: {
-        ...contractDocumentPackageInclude,
-        _count: { select: { versions: true } },
-      },
-    });
+    return this.crud.findAll(kind);
   }
 
-  private displayContractNumberFromFormData(formData: unknown): string {
-    if (!formData || typeof formData !== 'object') return '—';
-    const fd = formData as Record<string, unknown>;
-    const contract =
-      fd.contract && typeof fd.contract === 'object'
-        ? (fd.contract as Record<string, unknown>)
-        : null;
-    const num = typeof contract?.number === 'string' ? contract.number.trim() : '';
-    return num || '—';
+  findOne(id: string, options?: { allowTrashed?: boolean }) {
+    return this.crud.findOne(id, options);
   }
 
-  private customerNameFromFormData(formData: unknown): string {
-    if (!formData || typeof formData !== 'object') return '—';
-    const fd = formData as Record<string, unknown>;
-    const c =
-      fd.customer && typeof fd.customer === 'object'
-        ? (fd.customer as Record<string, unknown>)
-        : null;
-    if (!c) return '—';
-    const type = c.type;
-    if (type === 'COMPANY' || type === 'ENTREPRENEUR') {
-      const org = typeof c.organizationName === 'string' ? c.organizationName.trim() : '';
-      return org || '—';
-    }
-    const full = typeof c.fullName === 'string' ? c.fullName.trim() : '';
-    return full || '—';
-  }
-
-  private packageMatchesTrashSearch(
-    pkg: {
-      title: string | null;
-      formData: unknown;
-      crmContract: { customerName: string | null } | null;
-    },
-    searchNorm: string,
-  ): boolean {
-    const haystack = [
-      this.displayContractNumberFromFormData(pkg.formData),
-      this.customerNameFromFormData(pkg.formData),
-      pkg.crmContract?.customerName ?? '',
-      pkg.title ?? '',
-    ]
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(searchNorm);
-  }
-
-  async findOne(id: string, options?: { allowTrashed?: boolean }) {
-    const row = await this.prisma.contractDocumentPackage.findUnique({
-      where: { id },
-      include: contractDocumentPackageInclude,
-    });
-    if (!row) {
-      throw new NotFoundException('Пакет документов не найден');
-    }
-    if (row.deletedAt && !options?.allowTrashed) {
-      throw new NotFoundException('Пакет документов не найден');
-    }
-    return row;
-  }
-
-  async findTrash(
+  findTrash(
     kind: ContractDocumentPackageKind,
     params?: { search?: string; page?: number; limit?: number },
   ) {
-    const page = params?.page ?? 1;
-    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
-    const skip = (page - 1) * limit;
-    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
-
-    const rows = await this.prisma.contractDocumentPackage.findMany({
-      where: { kind, deletedAt: { not: null } },
-      orderBy: { deletedAt: 'desc' },
-      include: {
-        deletedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-        crmContract: {
-          select: {
-            customerName: true,
-          },
-        },
-      },
-    });
-
-    const filtered = searchNorm
-      ? rows.filter((pkg) => this.packageMatchesTrashSearch(pkg, searchNorm))
-      : rows;
-    const total = filtered.length;
-    const pageRows = filtered.slice(skip, skip + limit);
-
-    return {
-      data: pageRows.map((pkg) => ({
-        id: pkg.id,
-        contractNumber: this.displayContractNumberFromFormData(pkg.formData),
-        customerName: this.customerNameFromFormData(pkg.formData),
-        title: pkg.title,
-        deletedAt: pkg.deletedAt!.toISOString(),
-        deletedBy: pkg.deletedBy,
-      })),
-      total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-    };
+    return this.crud.findTrash(kind, params);
   }
 
-  async update(id: string, dto: UpdateContractDocumentPackageDto, savedById?: string | null) {
-    const row = await this.findOne(id);
-    if (dto.crmContractId) {
-      await this.assertCrmContractExists(dto.crmContractId);
-    }
-    if (dto.formData !== undefined && row.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(id, dto.formData, {
-        previousFormData: row.formData,
-      });
-    }
-    const recordVersion = dto.recordVersion === true;
-    const updated = await this.prisma.contractDocumentPackage.update({
-      where: { id },
-      data: {
-        ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.formData !== undefined ? { formData: dto.formData as Prisma.InputJsonValue } : {}),
-        ...(dto.crmContractId !== undefined ? { crmContractId: dto.crmContractId } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
-      },
-      include: contractDocumentPackageInclude,
-    });
-    if (recordVersion) {
-      await this.appendPackageVersion(
-        id,
-        {
-          title: updated.title,
-          formData: updated.formData as Prisma.InputJsonValue,
-          crmContractId: updated.crmContractId,
-          status: updated.status,
-        },
-        savedById ?? null,
-      );
-    }
-    return this.findOne(id);
+  update(id: string, dto: UpdateContractDocumentPackageDto, savedById?: string | null) {
+    return this.crud.update(id, dto, savedById);
   }
 
-  private async appendPackageVersion(
-    packageId: string,
-    snapshot: {
-      title: string | null;
-      formData: Prisma.InputJsonValue;
-      crmContractId: string | null;
-      status: ContractDocumentPackageStatus;
-    },
-    savedById?: string | null,
-  ) {
-    await this.prisma.$transaction(async (tx) => {
-      const latest = await tx.contractDocumentPackageVersion.findFirst({
-        where: { packageId },
-        orderBy: { versionNumber: 'desc' },
-        select: {
-          title: true,
-          formData: true,
-          crmContractId: true,
-          status: true,
-        },
-      });
-      if (
-        latest &&
-        this.buildVersionSnapshotSignature(latest) === this.buildVersionSnapshotSignature(snapshot)
-      ) {
-        return;
-      }
-      const agg = await tx.contractDocumentPackageVersion.aggregate({
-        where: { packageId },
-        _max: { versionNumber: true },
-      });
-      const next = (agg._max.versionNumber ?? 0) + 1;
-      await tx.contractDocumentPackageVersion.create({
-        data: {
-          packageId,
-          versionNumber: next,
-          title: snapshot.title,
-          formData: snapshot.formData,
-          crmContractId: snapshot.crmContractId,
-          status: snapshot.status,
-          savedById: savedById ?? null,
-        },
-      });
-    });
+  listVersions(packageId: string) {
+    return this.crud.listVersions(packageId);
   }
 
-  private buildVersionSnapshotSignature(snapshot: {
-    title: string | null;
-    status: ContractDocumentPackageStatus;
-    crmContractId: string | null;
-    formData: unknown;
-  }): string {
-    return JSON.stringify({
-      title: snapshot.title ?? null,
-      status: snapshot.status,
-      crmContractId: snapshot.crmContractId ?? null,
-      formData: snapshot.formData ?? {},
-    });
+  getVersion(packageId: string, versionId: string) {
+    return this.crud.getVersion(packageId, versionId);
   }
 
-  private resolveVersionAction(args: {
-    index: number;
-    versions: Array<{
-      title: string | null;
-      status: ContractDocumentPackageStatus;
-      crmContractId: string | null;
-      formData: unknown;
-    }>;
-  }): 'CREATE' | 'UPDATE' | 'ROLLBACK' {
-    const { index, versions } = args;
-    if (index === versions.length - 1) return 'CREATE';
-    const current = versions[index];
-    const currentSignature = this.buildVersionSnapshotSignature(current);
-    for (let i = index + 2; i < versions.length; i += 1) {
-      if (this.buildVersionSnapshotSignature(versions[i]) === currentSignature) {
-        return 'ROLLBACK';
-      }
-    }
-    return 'UPDATE';
+  moveToTrash(id: string, actorUserId?: string) {
+    return this.crud.moveToTrash(id, actorUserId);
   }
 
-  async listVersions(packageId: string) {
-    await this.findOne(packageId);
-    const versions = await this.prisma.contractDocumentPackageVersion.findMany({
-      where: { packageId },
-      orderBy: { versionNumber: 'desc' },
-      select: {
-        id: true,
-        packageId: true,
-        versionNumber: true,
-        title: true,
-        status: true,
-        crmContractId: true,
-        formData: true,
-        createdAt: true,
-        savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-      },
-    });
-    return versions.map(({ formData, ...compactVersion }, index) => {
-      const previous = versions[index + 1] ?? null;
-      const action = this.resolveVersionAction({ index, versions });
-      const keyMoments = buildPackageVersionKeyMoments({
-        previous: previous
-          ? {
-              title: previous.title,
-              status: previous.status,
-              crmContractId: previous.crmContractId,
-              formData: previous.formData,
-            }
-          : null,
-        current: {
-          title: compactVersion.title,
-          status: compactVersion.status,
-          crmContractId: compactVersion.crmContractId,
-          formData,
-        },
-        action,
-      });
-      return {
-        ...compactVersion,
-        action,
-        keyMoments,
-      };
-    });
+  restoreFromTrash(id: string) {
+    return this.crud.restoreFromTrash(id);
   }
 
-  async getVersion(packageId: string, versionId: string) {
-    await this.findOne(packageId);
-    const row = await this.prisma.contractDocumentPackageVersion.findFirst({
-      where: { id: versionId, packageId },
-      include: {
-        savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-      },
-    });
-    if (!row) {
-      throw new NotFoundException('Версия не найдена');
-    }
-    return row;
+  remove(id: string, actorUserId?: string) {
+    return this.crud.remove(id, actorUserId);
   }
 
-  async moveToTrash(id: string, actorUserId?: string) {
-    const row = await this.findOne(id);
-    if (row.deletedAt) {
-      throw new BadRequestException('Договор уже в корзине');
-    }
-    if (row.kind === ContractDocumentPackageKind.REPAIR) {
-      const paymentCount = await this.prisma.contractDocumentPackagePayment.count({
-        where: { packageId: id },
-      });
-      if (paymentCount > 0) {
-        throw new BadRequestException(
-          'Нельзя удалить пакет с зарегистрированными оплатами. Сначала удалите записи об оплатах.',
-        );
-      }
-      const estimatePresetIds = this.extractRepairEstimatePresetIds(row.formData);
-      if (estimatePresetIds.length > 0) {
-        throw new BadRequestException(
-          'Нельзя удалить договор с прикреплённой сметой. Сначала отвяжите расчёты на вкладке «Смета».',
-        );
-      }
-    }
-    return this.prisma.contractDocumentPackage.update({
-      where: { id },
-      data: {
-        deletedAt: new Date(),
-        deletedById: actorUserId ?? null,
-      },
-      include: contractDocumentPackageInclude,
-    });
+  getGlobalTemplate(kind: ContractDocumentPackageKind, tab: string) {
+    return this.globalLibrary.getGlobalTemplate(kind, tab);
   }
 
-  async restoreFromTrash(id: string) {
-    const row = await this.findOne(id, { allowTrashed: true });
-    if (!row.deletedAt) {
-      throw new BadRequestException('Договор не в корзине');
-    }
-    if (row.kind === ContractDocumentPackageKind.REPAIR && row.formData !== undefined) {
-      await this.assertRepairEstimatePresetsExclusive(id, row.formData);
-    }
-    return this.prisma.contractDocumentPackage.update({
-      where: { id },
-      data: {
-        deletedAt: null,
-        deletedById: null,
-      },
-      include: contractDocumentPackageInclude,
-    });
+  setGlobalTemplate(dto: SetGlobalContractTemplateDto, updatedById?: string) {
+    return this.globalLibrary.setGlobalTemplate(dto, updatedById);
   }
 
-  /** @deprecated Используйте moveToTrash — сохранено для совместимости вызовов. */
-  async remove(id: string, actorUserId?: string) {
-    return this.moveToTrash(id, actorUserId);
+  getGlobalContractTemplates(kind: ContractDocumentPackageKind) {
+    return this.globalLibrary.getGlobalContractTemplates(kind);
   }
 
-  private assertGlobalTab(tab: string) {
-    const allowed = new Set([
-      'contract',
-      'actStart',
-      'actAcceptance',
-      'cashOrder',
-      'questionnaire1',
-      'questionnaire2',
-      'addendum',
-      'workOrder',
-      'workOrderAddendum',
-      'productionLog',
-    ]);
-    if (!allowed.has(tab)) {
-      throw new BadRequestException(`Недопустимый tab: ${tab}`);
-    }
-  }
-
-  async getGlobalTemplate(kind: ContractDocumentPackageKind, tab: string) {
-    this.assertGlobalTab(tab);
-    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
-      where: { kind_tab: { kind, tab } },
-      select: { html: true, updatedAt: true, updatedById: true },
-    });
-    return {
-      html: row?.html ?? null,
-      updatedAt: row?.updatedAt?.toISOString() ?? null,
-    };
-  }
-
-  async setGlobalTemplate(dto: SetGlobalContractTemplateDto, updatedById?: string) {
-    const tab = dto.tab.trim();
-    this.assertGlobalTab(tab);
-    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: { kind_tab: { kind: dto.kind, tab } },
-      create: {
-        kind: dto.kind,
-        tab,
-        html: dto.html,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        html: dto.html,
-        updatedById: updatedById ?? null,
-      },
-      select: { id: true, kind: true, tab: true, updatedAt: true },
-    });
-    return row;
-  }
-
-  /** Убирает legacy-поля из JSON (например isProtected из seed), чтобы не ломать PUT и хранилище. */
-  private sanitizeContractTemplatePresetItem(
-    item: ContractTemplatePresetDto,
-  ): ContractTemplatePresetDto {
-    const tabId = item.tabId?.trim();
-    const deletedAt = item.deletedAt?.trim();
-    const deletedById = item.deletedById?.trim();
-    const out: ContractTemplatePresetDto = {
-      id: item.id,
-      title: item.title,
-      html: item.html,
-    };
-    if (tabId) out.tabId = tabId;
-    if (item.isDefault != null) out.isDefault = Boolean(item.isDefault);
-    if (item.archived != null) out.archived = Boolean(item.archived);
-    if (deletedAt) out.deletedAt = deletedAt;
-    if (deletedById) out.deletedById = deletedById;
-    return out;
-  }
-
-  private isContractTemplateTrashed(item: ContractTemplatePresetDto): boolean {
-    return Boolean(item.deletedAt?.trim());
-  }
-
-  private isContractTemplateTrashExpired(deletedAt: string | undefined): boolean {
-    const trimmed = deletedAt?.trim();
-    if (!trimmed) return false;
-    const deletedMs = Date.parse(trimmed);
-    if (!Number.isFinite(deletedMs)) return false;
-    return (
-      deletedMs < Date.now() - ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_MS
-    );
-  }
-
-  private async loadGlobalContractTemplatesBlob(kind: ContractDocumentPackageKind): Promise<{
-    items: ContractTemplatePresetDto[];
-    updatedAt: string | null;
-  }> {
-    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
-      },
-      select: { html: true, updatedAt: true },
-    });
-    if (!row) {
-      return { items: [] as ContractTemplatePresetDto[], updatedAt: null };
-    }
-    try {
-      const parsed = JSON.parse(row.html) as { items?: ContractTemplatePresetDto[] };
-      return {
-        items: Array.isArray(parsed?.items) ? parsed.items : [],
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    } catch {
-      return { items: [] as ContractTemplatePresetDto[], updatedAt: row.updatedAt.toISOString() };
-    }
-  }
-
-  private async purgeExpiredTrashedContractTemplates(
-    kind: ContractDocumentPackageKind,
-  ): Promise<number> {
-    const raw = await this.loadGlobalContractTemplatesBlob(kind);
-    const nextItems = raw.items.filter(
-      (item) =>
-        !this.isContractTemplateTrashed(item) ||
-        !this.isContractTemplateTrashExpired(item.deletedAt),
-    );
-    const purged = raw.items.length - nextItems.length;
-    if (purged === 0) return 0;
-    const payload = JSON.stringify({ items: nextItems });
-    await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
-      },
-      create: {
-        kind,
-        tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB,
-        html: payload,
-        updatedById: null,
-      },
-      update: { html: payload },
-      select: { id: true },
-    });
-    return purged;
-  }
-
-  private contractTemplateTabLabel(tabId: string | undefined): string {
-    const labels: Record<string, string> = {
-      contract: 'Договор',
-      actStart: 'Акт начала работ',
-      actAcceptance: 'Акт сдачи-приёмки',
-      memo: 'Памятка',
-      cashOrder: 'ПКО',
-      paymentInvoice: 'Счёт на оплату',
-      productionLog: 'Производственный журнал',
-    };
-    const key = tabId?.trim() || 'contract';
-    return labels[key] ?? key;
-  }
-
-  private contractTemplateMatchesTrashSearch(
-    item: ContractTemplatePresetDto,
-    searchNorm: string,
-  ): boolean {
-    const haystack = [item.title, this.contractTemplateTabLabel(item.tabId), item.tabId ?? '']
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(searchNorm);
-  }
-
-  async getGlobalContractTemplates(kind: ContractDocumentPackageKind) {
-    await this.purgeExpiredTrashedContractTemplates(kind);
-    const raw = await this.loadGlobalContractTemplatesBlob(kind);
-    return {
-      items: raw.items
-        .filter((item) => !this.isContractTemplateTrashed(item))
-        .map((item) => this.sanitizeContractTemplatePresetItem(item)),
-      updatedAt: raw.updatedAt,
-    };
-  }
-
-  async findContractTemplatesTrash(
+  findContractTemplatesTrash(
     kind: ContractDocumentPackageKind,
     params?: { search?: string; page?: number; limit?: number },
   ) {
-    await this.purgeExpiredTrashedContractTemplates(kind);
-    const raw = await this.loadGlobalContractTemplatesBlob(kind);
-    const page = params?.page ?? 1;
-    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
-    const skip = (page - 1) * limit;
-    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
-
-    let trashed = raw.items.filter((item) => this.isContractTemplateTrashed(item));
-    trashed.sort((a, b) => {
-      const ta = Date.parse(a.deletedAt ?? '') || 0;
-      const tb = Date.parse(b.deletedAt ?? '') || 0;
-      return tb - ta;
-    });
-
-    if (searchNorm) {
-      trashed = trashed.filter((item) => this.contractTemplateMatchesTrashSearch(item, searchNorm));
-    }
-
-    const total = trashed.length;
-    const pageRows = trashed.slice(skip, skip + limit);
-
-    const userIds = [
-      ...new Set(
-        pageRows.map((row) => row.deletedById?.trim()).filter((id): id is string => Boolean(id)),
-      ),
-    ];
-    const users =
-      userIds.length > 0
-        ? await this.prisma.user.findMany({
-            where: { id: { in: userIds } },
-            select: { id: true, email: true, firstName: true, lastName: true },
-          })
-        : [];
-    const userById = new Map(users.map((u) => [u.id, u]));
-
-    return {
-      data: pageRows.map((item) => {
-        const deletedById = item.deletedById?.trim() ?? null;
-        const deletedBy = deletedById ? (userById.get(deletedById) ?? null) : null;
-        const deletedMs = Date.parse(item.deletedAt ?? '');
-        const permanentDeleteAt = Number.isFinite(deletedMs)
-          ? new Date(
-              deletedMs + ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_MS,
-            ).toISOString()
-          : null;
-        return {
-          id: item.id,
-          title: item.title,
-          tabId: item.tabId ?? 'contract',
-          tabLabel: this.contractTemplateTabLabel(item.tabId),
-          deletedAt: item.deletedAt!,
-          permanentDeleteAt,
-          deletedBy,
-        };
-      }),
-      total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      trashRetentionDays: ContractDocumentPackagesService.CONTRACT_TEMPLATE_TRASH_RETENTION_DAYS,
-    };
+    return this.globalLibrary.findContractTemplatesTrash(kind, params);
   }
 
-  async trashContractTemplate(
+  trashContractTemplate(
     kind: ContractDocumentPackageKind,
-    presetId: string,
+    templateId: string,
     actorUserId?: string,
   ) {
-    await this.purgeExpiredTrashedContractTemplates(kind);
-    const raw = await this.loadGlobalContractTemplatesBlob(kind);
-    const index = raw.items.findIndex((item) => item.id === presetId);
-    if (index < 0) {
-      throw new NotFoundException('Шаблон не найден');
-    }
-    const item = raw.items[index];
-    if (this.isContractTemplateTrashed(item)) {
-      throw new BadRequestException('Шаблон уже в корзине');
-    }
-    const nextItems = [...raw.items];
-    nextItems[index] = {
-      ...item,
-      deletedAt: new Date().toISOString(),
-      deletedById: actorUserId ?? undefined,
-      archived: false,
-      isDefault: false,
-    };
-    await this.setGlobalContractTemplates({ kind, items: nextItems }, actorUserId);
-    return { ok: true };
+    return this.globalLibrary.trashContractTemplate(kind, templateId, actorUserId);
   }
 
-  async restoreContractTemplateFromTrash(
+  restoreContractTemplateFromTrash(
     kind: ContractDocumentPackageKind,
-    presetId: string,
+    templateId: string,
     updatedById?: string,
   ) {
-    await this.purgeExpiredTrashedContractTemplates(kind);
-    const raw = await this.loadGlobalContractTemplatesBlob(kind);
-    const index = raw.items.findIndex((item) => item.id === presetId);
-    if (index < 0) {
-      throw new NotFoundException('Шаблон не найден');
-    }
-    const item = raw.items[index];
-    if (!this.isContractTemplateTrashed(item)) {
-      throw new BadRequestException('Шаблон не в корзине');
-    }
-    const nextItems = [...raw.items];
-    const restored = { ...item };
-    delete restored.deletedAt;
-    delete restored.deletedById;
-    nextItems[index] = restored;
-    await this.setGlobalContractTemplates({ kind, items: nextItems }, updatedById);
-    return { ok: true };
+    return this.globalLibrary.restoreContractTemplateFromTrash(kind, templateId, updatedById);
   }
 
-  async setGlobalContractTemplates(dto: SetGlobalContractTemplatesDto, updatedById?: string) {
-    await this.purgeExpiredTrashedContractTemplates(dto.kind);
-    const previousRaw = await this.loadGlobalContractTemplatesBlob(dto.kind);
-    const previousTrashedItems = previousRaw.items.filter((item) =>
-      this.isContractTemplateTrashed(item),
-    );
-    const dtoItems = dto.items ?? [];
-    const activeFromDto = dtoItems
-      .filter((item) => !this.isContractTemplateTrashed(item))
-      .map((item) => {
-        const copy = { ...item };
-        delete copy.deletedAt;
-        delete copy.deletedById;
-        return copy;
-      });
-    const trashedFromDto = dtoItems.filter((item) => this.isContractTemplateTrashed(item));
-    const activeIds = new Set(activeFromDto.map((item) => item.id));
-    const trashedFromDtoIds = new Set(trashedFromDto.map((item) => item.id));
-    const preservedTrash = previousTrashedItems.filter(
-      (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
-    );
-    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash].map((item) =>
-      this.sanitizeContractTemplatePresetItem(item),
-    );
-    const payload = JSON.stringify({ items: nextItems });
-    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB },
-      },
-      create: {
-        kind: dto.kind,
-        tab: ContractDocumentPackagesService.CONTRACT_TEMPLATES_TAB,
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      select: { id: true, kind: true, tab: true, updatedAt: true },
-    });
-    return row;
+  setGlobalContractTemplates(dto: SetGlobalContractTemplatesDto, updatedById?: string) {
+    return this.globalLibrary.setGlobalContractTemplates(dto, updatedById);
   }
 
-  async getGlobalExecutorProfiles(kind: ContractDocumentPackageKind) {
-    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB },
-      },
-      select: { html: true, updatedAt: true },
-    });
-
-    if (!row) {
-      return { items: [] as ExecutorProfileDto[], updatedAt: null as string | null };
-    }
-
-    try {
-      const parsed = JSON.parse(row.html) as { items?: ExecutorProfileDto[] };
-      return {
-        items: Array.isArray(parsed?.items) ? parsed.items : [],
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    } catch {
-      return { items: [] as ExecutorProfileDto[], updatedAt: row.updatedAt.toISOString() };
-    }
+  getGlobalExecutorProfiles(kind: ContractDocumentPackageKind) {
+    return this.globalLibrary.getGlobalExecutorProfiles(kind);
   }
 
-  async setGlobalExecutorProfiles(dto: SetGlobalExecutorProfilesDto, updatedById?: string) {
-    const payload = JSON.stringify({ items: dto.items ?? [] });
-    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB },
-      },
-      create: {
-        kind: dto.kind,
-        tab: ContractDocumentPackagesService.EXECUTOR_PROFILES_TAB,
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      select: { id: true, kind: true, tab: true, updatedAt: true },
-    });
-    return row;
+  setGlobalExecutorProfiles(dto: SetGlobalExecutorProfilesDto, updatedById?: string) {
+    return this.globalLibrary.setGlobalExecutorProfiles(dto, updatedById);
   }
 
-  async getGlobalSignatoryProfiles(kind: ContractDocumentPackageKind) {
-    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB },
-      },
-      select: { html: true, updatedAt: true },
-    });
-
-    if (!row) {
-      return { items: [] as SignatoryProfileDto[], updatedAt: null as string | null };
-    }
-
-    try {
-      const parsed = JSON.parse(row.html) as { items?: SignatoryProfileDto[] };
-      return {
-        items: Array.isArray(parsed?.items) ? parsed.items : [],
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    } catch {
-      return { items: [] as SignatoryProfileDto[], updatedAt: row.updatedAt.toISOString() };
-    }
+  getGlobalSignatoryProfiles(kind: ContractDocumentPackageKind) {
+    return this.globalLibrary.getGlobalSignatoryProfiles(kind);
   }
 
-  async setGlobalSignatoryProfiles(dto: SetGlobalSignatoryProfilesDto, updatedById?: string) {
-    const payload = JSON.stringify({ items: dto.items ?? [] });
-    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB },
-      },
-      create: {
-        kind: dto.kind,
-        tab: ContractDocumentPackagesService.SIGNATORY_PROFILES_TAB,
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      select: { id: true, kind: true, tab: true, updatedAt: true },
-    });
-    return row;
+  setGlobalSignatoryProfiles(dto: SetGlobalSignatoryProfilesDto, updatedById?: string) {
+    return this.globalLibrary.setGlobalSignatoryProfiles(dto, updatedById);
   }
 
-  private isEstimatePresetTrashed(item: ContractEstimatePresetDto): boolean {
-    return Boolean(item.deletedAt?.trim());
+  getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
+    return this.estimatePresets.getGlobalEstimatePresets(kind);
   }
 
-  private isEstimatePresetTrashExpired(deletedAt: string | undefined): boolean {
-    const trimmed = deletedAt?.trim();
-    if (!trimmed) return false;
-    const deletedMs = Date.parse(trimmed);
-    if (!Number.isFinite(deletedMs)) return false;
-    return (
-      deletedMs < Date.now() - ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_MS
-    );
-  }
-
-  /** Безвозвратно удаляет расчёты из корзины, лежащие дольше срока хранения. */
-  private async purgeExpiredTrashedEstimatePresets(
-    kind: ContractDocumentPackageKind,
-  ): Promise<number> {
-    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
-    const nextItems = raw.items.filter(
-      (item) =>
-        !this.isEstimatePresetTrashed(item) || !this.isEstimatePresetTrashExpired(item.deletedAt),
-    );
-    const purged = raw.items.length - nextItems.length;
-    if (purged === 0) return 0;
-    const payload = JSON.stringify({
-      items: nextItems,
-      groups: raw.groups,
-    });
-    await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
-      },
-      create: {
-        kind,
-        tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB,
-        html: payload,
-        updatedById: null,
-      },
-      update: {
-        html: payload,
-      },
-      select: { id: true },
-    });
-    return purged;
-  }
-
-  private async loadGlobalEstimatePresetsBlob(kind: ContractDocumentPackageKind): Promise<{
-    items: ContractEstimatePresetDto[];
-    groups: ContractEstimateGroupDto[];
-    updatedAt: string | null;
-  }> {
-    const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
-      where: {
-        kind_tab: { kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
-      },
-      select: { html: true, updatedAt: true },
-    });
-    if (!row) {
-      return {
-        items: [] as ContractEstimatePresetDto[],
-        groups: [] as ContractEstimateGroupDto[],
-        updatedAt: null,
-      };
-    }
-    try {
-      const parsed = JSON.parse(row.html) as {
-        items?: ContractEstimatePresetDto[];
-        groups?: ContractEstimateGroupDto[];
-      };
-      return {
-        items: Array.isArray(parsed?.items) ? parsed.items : [],
-        groups: Array.isArray(parsed?.groups) ? parsed.groups : [],
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    } catch {
-      return {
-        items: [] as ContractEstimatePresetDto[],
-        groups: [] as ContractEstimateGroupDto[],
-        updatedAt: row.updatedAt.toISOString(),
-      };
-    }
-  }
-
-  private estimatePresetMatchesTrashSearch(
-    item: ContractEstimatePresetDto,
-    groups: ContractEstimateGroupDto[],
-    searchNorm: string,
-  ): boolean {
-    const groupTitle = item.groupId ? (groups.find((g) => g.id === item.groupId)?.title ?? '') : '';
-    const haystack = [item.title, item.categoryName, item.categorySlug, groupTitle]
-      .join(' ')
-      .toLowerCase();
-    return haystack.includes(searchNorm);
-  }
-
-  async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
-    await this.purgeExpiredTrashedEstimatePresets(kind);
-    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
-    return {
-      items: raw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
-      groups: raw.groups,
-      updatedAt: raw.updatedAt,
-    };
-  }
-
-  async findEstimatePresetsTrash(
+  findEstimatePresetsTrash(
     kind: ContractDocumentPackageKind,
     params?: { search?: string; page?: number; limit?: number },
   ) {
-    await this.purgeExpiredTrashedEstimatePresets(kind);
-    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
-    const page = params?.page ?? 1;
-    const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
-    const skip = (page - 1) * limit;
-    const searchNorm = params?.search?.trim().toLowerCase() ?? '';
-
-    let trashed = raw.items.filter((item) => this.isEstimatePresetTrashed(item));
-    trashed.sort((a, b) => {
-      const ta = Date.parse(a.deletedAt ?? '') || 0;
-      const tb = Date.parse(b.deletedAt ?? '') || 0;
-      return tb - ta;
-    });
-
-    if (searchNorm) {
-      trashed = trashed.filter((item) =>
-        this.estimatePresetMatchesTrashSearch(item, raw.groups, searchNorm),
-      );
-    }
-
-    const total = trashed.length;
-    const pageRows = trashed.slice(skip, skip + limit);
-
-    const userIds = [
-      ...new Set(
-        pageRows.map((row) => row.deletedById?.trim()).filter((id): id is string => Boolean(id)),
-      ),
-    ];
-    const users =
-      userIds.length > 0
-        ? await this.prisma.user.findMany({
-            where: { id: { in: userIds } },
-            select: { id: true, email: true, firstName: true, lastName: true },
-          })
-        : [];
-    const userById = new Map(users.map((u) => [u.id, u]));
-
-    return {
-      data: pageRows.map((item) => {
-        const deletedById = item.deletedById?.trim() ?? null;
-        const deletedBy = deletedById ? (userById.get(deletedById) ?? null) : null;
-        const group = item.groupId ? raw.groups.find((g) => g.id === item.groupId) : undefined;
-        const deletedMs = Date.parse(item.deletedAt ?? '');
-        const permanentDeleteAt = Number.isFinite(deletedMs)
-          ? new Date(
-              deletedMs + ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_MS,
-            ).toISOString()
-          : null;
-        return {
-          id: item.id,
-          title: item.title,
-          categoryName: item.categoryName,
-          groupTitle: group?.title ?? null,
-          deletedAt: item.deletedAt!,
-          permanentDeleteAt,
-          deletedBy,
-        };
-      }),
-      total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      trashRetentionDays: ContractDocumentPackagesService.ESTIMATE_PRESET_TRASH_RETENTION_DAYS,
-    };
+    return this.estimatePresets.findEstimatePresetsTrash(kind, params);
   }
 
-  async trashEstimatePreset(
-    kind: ContractDocumentPackageKind,
-    presetId: string,
-    actorUserId?: string,
-  ) {
-    await this.purgeExpiredTrashedEstimatePresets(kind);
-    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
-    const index = raw.items.findIndex((item) => item.id === presetId);
-    if (index < 0) {
-      throw new NotFoundException('Расчёт не найден');
-    }
-    const item = raw.items[index];
-    if (this.isEstimatePresetTrashed(item)) {
-      throw new BadRequestException('Расчёт уже в корзине');
-    }
-    const nextItems = [...raw.items];
-    nextItems[index] = {
-      ...item,
-      deletedAt: new Date().toISOString(),
-      deletedById: actorUserId ?? undefined,
-    };
-    await this.setGlobalEstimatePresets(
-      { kind, items: nextItems, groups: raw.groups },
-      actorUserId,
-    );
-    return { ok: true };
+  trashEstimatePreset(kind: ContractDocumentPackageKind, presetId: string, actorUserId?: string) {
+    return this.estimatePresets.trashEstimatePreset(kind, presetId, actorUserId);
   }
 
-  async restoreEstimatePresetFromTrash(kind: ContractDocumentPackageKind, presetId: string) {
-    const raw = await this.loadGlobalEstimatePresetsBlob(kind);
-    const index = raw.items.findIndex((item) => item.id === presetId);
-    if (index < 0) {
-      throw new NotFoundException('Расчёт не найден');
-    }
-    const item = raw.items[index];
-    if (!this.isEstimatePresetTrashed(item)) {
-      throw new BadRequestException('Расчёт не в корзине');
-    }
-    const nextItems = [...raw.items];
-    const restored = { ...item };
-    delete restored.deletedAt;
-    delete restored.deletedById;
-    nextItems[index] = restored;
-    await this.setGlobalEstimatePresets({ kind, items: nextItems, groups: raw.groups });
-    return { ok: true };
+  restoreEstimatePresetFromTrash(kind: ContractDocumentPackageKind, presetId: string) {
+    return this.estimatePresets.restoreEstimatePresetFromTrash(kind, presetId);
   }
 
-  private buildEstimatePresetsChangedFields(args: {
-    previousItems: ContractEstimatePresetDto[];
-    previousGroups: ContractEstimateGroupDto[];
-    nextItems: ContractEstimatePresetDto[];
-    nextGroups: ContractEstimateGroupDto[];
-  }): string[] {
-    const { previousItems, previousGroups, nextItems, nextGroups } = args;
-    const changed: string[] = [];
-    if (previousItems.length !== nextItems.length) {
-      changed.push('estimateItemsCountChanged');
-    }
-    if (previousGroups.length !== nextGroups.length) {
-      changed.push('estimateGroupsCountChanged');
-    }
-    if (JSON.stringify(previousItems) !== JSON.stringify(nextItems)) {
-      changed.push('estimateItemsUpdated');
-    }
-    if (JSON.stringify(previousGroups) !== JSON.stringify(nextGroups)) {
-      changed.push('estimateGroupsUpdated');
-    }
-    return changed.length > 0 ? changed : ['estimateDataUpdated'];
+  listGlobalEstimatePresetsHistory(kind: ContractDocumentPackageKind) {
+    return this.estimatePresets.listGlobalEstimatePresetsHistory(kind);
   }
 
-  async listGlobalEstimatePresetsHistory(kind: ContractDocumentPackageKind) {
-    let rows: Array<{
-      id: string;
-      kind: ContractDocumentPackageKind;
-      changedFields: string[];
-      action: string;
-      changedAt: Date;
-      changedById: string | null;
-      changedByEmail: string | null;
-      changedByFirstName: string | null;
-      changedByLastName: string | null;
-    }> = [];
-    try {
-      rows = await this.prisma.$queryRaw<
-        Array<{
-          id: string;
-          kind: ContractDocumentPackageKind;
-          changedFields: string[];
-          action: string;
-          changedAt: Date;
-          changedById: string | null;
-          changedByEmail: string | null;
-          changedByFirstName: string | null;
-          changedByLastName: string | null;
-        }>
-      >(Prisma.sql`
-        SELECT
-          h.id,
-          h.kind,
-          h.changed_fields as "changedFields",
-          h.action,
-          h.changed_at as "changedAt",
-          u.id as "changedById",
-          u.email as "changedByEmail",
-          u.first_name as "changedByFirstName",
-          u.last_name as "changedByLastName"
-        FROM contract_document_estimate_presets_history h
-        LEFT JOIN users u ON u.id = h.changed_by_id
-        WHERE h.kind = ${kind}
-        ORDER BY h.changed_at DESC
-      `);
-    } catch {
-      // Таблица истории могла ещё не быть применена миграцией — не валим UI.
-      return [];
-    }
-    return rows.map((row) => ({
-      id: row.id,
-      kind: row.kind,
-      changedFields: Array.isArray(row.changedFields) ? row.changedFields : [],
-      action: row.action,
-      changedAt: row.changedAt,
-      changedBy: row.changedById
-        ? {
-            id: row.changedById,
-            email: row.changedByEmail ?? '',
-            firstName: row.changedByFirstName,
-            lastName: row.changedByLastName,
-          }
-        : null,
-    }));
+  setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
+    return this.estimatePresets.setGlobalEstimatePresets(dto, updatedById);
   }
 
-  async setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
-    const previousRaw = await this.loadGlobalEstimatePresetsBlob(dto.kind);
-    const previousTrashedItems = previousRaw.items.filter((item) =>
-      this.isEstimatePresetTrashed(item),
-    );
-    const dtoItems = dto.items ?? [];
-    const activeFromDto = dtoItems
-      .filter((item) => !this.isEstimatePresetTrashed(item))
-      .map((item) => {
-        const copy = { ...item };
-        delete copy.deletedAt;
-        delete copy.deletedById;
-        return copy;
-      });
-    const trashedFromDto = dtoItems.filter((item) => this.isEstimatePresetTrashed(item));
-    const activeIds = new Set(activeFromDto.map((item) => item.id));
-    const trashedFromDtoIds = new Set(trashedFromDto.map((item) => item.id));
-    const preservedTrash = previousTrashedItems.filter(
-      (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
-    );
-    const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash];
-    const nextGroups = dto.groups ?? previousRaw.groups;
-    const previous = {
-      items: previousRaw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
-      groups: previousRaw.groups,
-      updatedAt: previousRaw.updatedAt,
-    };
-    const changedFields = this.buildEstimatePresetsChangedFields({
-      previousItems: previous.items,
-      previousGroups: previous.groups,
-      nextItems,
-      nextGroups,
-    });
-    const action: 'CREATE' | 'UPDATE' = previous.updatedAt ? 'UPDATE' : 'CREATE';
-    const payload = JSON.stringify({
-      items: nextItems,
-      groups: nextGroups,
-    });
-    const row = await this.prisma.contractDocumentGlobalTemplate.upsert({
-      where: {
-        kind_tab: { kind: dto.kind, tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB },
-      },
-      create: {
-        kind: dto.kind,
-        tab: ContractDocumentPackagesService.ESTIMATE_PRESETS_TAB,
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        html: payload,
-        updatedById: updatedById ?? null,
-      },
-      select: { id: true, kind: true, tab: true, updatedAt: true },
-    });
-    try {
-      await this.prisma.$executeRaw(Prisma.sql`
-        INSERT INTO contract_document_estimate_presets_history
-          (id, kind, items, groups, changed_fields, action, changed_by_id, changed_at)
-        VALUES
-          (
-            ${randomUUID()},
-            ${dto.kind}::"ContractDocumentPackageKind",
-            ${JSON.stringify(nextItems)}::jsonb,
-            ${JSON.stringify(nextGroups)}::jsonb,
-            ${changedFields}::text[],
-            ${action},
-            ${updatedById ?? null},
-            NOW()
-          )
-      `);
-    } catch {
-      // Не блокируем сохранение расчётов, если таблица истории ещё не создана.
-    }
-    return row;
+  resolveDefaultWorkPeriodDays(kind: ContractDocumentPackageKind) {
+    return this.kindSettings.resolveDefaultWorkPeriodDays(kind);
   }
 
-  private fallbackWorkPeriodDays(kind: ContractDocumentPackageKind): number {
-    return kind === ContractDocumentPackageKind.WINDOWS ||
-      kind === ContractDocumentPackageKind.DOORS
-      ? DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS
-      : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS;
+  resolveDefaultRepairWorkPeriodDays() {
+    return this.kindSettings.resolveDefaultRepairWorkPeriodDays();
   }
 
-  async resolveDefaultWorkPeriodDays(kind: ContractDocumentPackageKind): Promise<number> {
-    const fallback = this.fallbackWorkPeriodDays(kind);
-    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-      where: { kind },
-      select: { defaultWorkPeriodDays: true },
-    });
-    const days = row?.defaultWorkPeriodDays ?? fallback;
-    return Number.isFinite(days) && days >= 1 ? Math.trunc(days) : fallback;
+  getWorkPeriodSettings(kind: ContractDocumentPackageKind) {
+    return this.kindSettings.getWorkPeriodSettings(kind);
   }
 
-  /** @deprecated Используйте {@link resolveDefaultWorkPeriodDays} */
-  async resolveDefaultRepairWorkPeriodDays(): Promise<number> {
-    return this.resolveDefaultWorkPeriodDays(ContractDocumentPackageKind.REPAIR);
+  getRepairSettings() {
+    return this.kindSettings.getRepairSettings();
   }
 
-  async getWorkPeriodSettings(kind: ContractDocumentPackageKind) {
-    const days = await this.resolveDefaultWorkPeriodDays(kind);
-    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-      where: { kind },
-      select: { updatedAt: true },
-    });
-    const base = {
-      kind,
-      defaultWorkPeriodDays: days,
-      updatedAt: row?.updatedAt?.toISOString() ?? null,
-    };
-    if (
-      kind === ContractDocumentPackageKind.WINDOWS ||
-      kind === ContractDocumentPackageKind.DOORS
-    ) {
-      return {
-        ...base,
-        windowsWorkOrderMarkupPercent: await this.resolveWindowsWorkOrderMarkupPercent(),
-      };
-    }
-    return base;
+  getWindowsSettings() {
+    return this.kindSettings.getWindowsSettings();
   }
 
-  async getRepairSettings() {
-    return this.getWorkPeriodSettings(ContractDocumentPackageKind.REPAIR);
-  }
-
-  async getWindowsSettings() {
-    return this.getWorkPeriodSettings(ContractDocumentPackageKind.WINDOWS);
-  }
-
-  async setWorkPeriodSettings(
+  setWorkPeriodSettings(
     kind: ContractDocumentPackageKind,
     dto: SetRepairContractSettingsDto,
     updatedById?: string,
   ) {
-    const row = await this.prisma.contractDocumentRepairSettings.upsert({
-      where: { kind },
-      create: {
-        kind,
-        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        defaultWorkPeriodDays: dto.defaultWorkPeriodDays,
-        updatedById: updatedById ?? null,
-      },
-      select: { defaultWorkPeriodDays: true, updatedAt: true },
-    });
-    return {
-      kind,
-      defaultWorkPeriodDays: row.defaultWorkPeriodDays,
-      updatedAt: row.updatedAt.toISOString(),
-    };
+    return this.kindSettings.setWorkPeriodSettings(kind, dto, updatedById);
   }
 
-  async setRepairSettings(dto: SetRepairContractSettingsDto, updatedById?: string) {
-    return this.setWorkPeriodSettings(ContractDocumentPackageKind.REPAIR, dto, updatedById);
+  setRepairSettings(dto: SetRepairContractSettingsDto, updatedById?: string) {
+    return this.kindSettings.setRepairSettings(dto, updatedById);
   }
 
-  async setWindowsSettings(
-    dto: { defaultWorkPeriodDays?: number; windowsWorkOrderMarkupPercent?: number },
-    updatedById?: string,
-  ) {
-    const kind = ContractDocumentPackageKind.WINDOWS;
-    const fallbackDays = this.fallbackWorkPeriodDays(kind);
-    const currentDays = await this.resolveDefaultWorkPeriodDays(kind);
-    const row = await this.prisma.contractDocumentRepairSettings.upsert({
-      where: { kind },
-      create: {
-        kind,
-        defaultWorkPeriodDays: dto.defaultWorkPeriodDays ?? fallbackDays,
-        windowsWorkOrderMarkupPercent:
-          dto.windowsWorkOrderMarkupPercent ?? DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        ...(dto.defaultWorkPeriodDays !== undefined
-          ? { defaultWorkPeriodDays: dto.defaultWorkPeriodDays }
-          : {}),
-        ...(dto.windowsWorkOrderMarkupPercent !== undefined
-          ? { windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent }
-          : {}),
-        updatedById: updatedById ?? null,
-      },
-      select: { defaultWorkPeriodDays: true, updatedAt: true },
-    });
-    return {
-      kind,
-      defaultWorkPeriodDays: row.defaultWorkPeriodDays ?? currentDays,
-      windowsWorkOrderMarkupPercent: await this.resolveWindowsWorkOrderMarkupPercent(),
-      updatedAt: row.updatedAt.toISOString(),
-    };
+  setWindowsSettings(dto: SetWindowsContractSettingsDto, updatedById?: string) {
+    return this.kindSettings.setWindowsSettings(dto, updatedById);
   }
 
-  async applyWorkPeriodToAllPackages(
+  applyWorkPeriodToAllPackages(
     kind: ContractDocumentPackageKind,
     dto: ApplyRepairWorkPeriodToAllDto,
   ) {
-    const packages = await this.prisma.contractDocumentPackage.findMany({
-      where: {
-        kind,
-        deletedAt: null,
-      },
-      select: { id: true, formData: true, status: true },
-    });
-    let updated = 0;
-    let skippedSigned = 0;
-    let skippedManual = 0;
-    for (const pkg of packages) {
-      if (
-        pkg.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED ||
-        pkg.status === ContractDocumentPackageStatus.REFUSED
-      ) {
-        skippedSigned += 1;
-        continue;
-      }
-      if (isWorkPeriodManualInFormData(pkg.formData)) {
-        skippedManual += 1;
-        continue;
-      }
-      const next = setWorkPeriodInFormData(pkg.formData, dto.workPeriodDays);
-      await this.prisma.contractDocumentPackage.update({
-        where: { id: pkg.id },
-        data: { formData: next as Prisma.InputJsonValue },
-      });
-      updated += 1;
-    }
-    return {
-      updated,
-      skippedSigned,
-      skippedManual,
-      workPeriodDays: dto.workPeriodDays,
-      kind,
-    };
+    return this.kindSettings.applyWorkPeriodToAllPackages(kind, dto);
   }
 
-  async applyRepairWorkPeriodToAllPackages(dto: ApplyRepairWorkPeriodToAllDto) {
-    return this.applyWorkPeriodToAllPackages(ContractDocumentPackageKind.REPAIR, dto);
+  applyRepairWorkPeriodToAllPackages(dto: ApplyRepairWorkPeriodToAllDto) {
+    return this.kindSettings.applyRepairWorkPeriodToAllPackages(dto);
   }
 
-  async applyWindowsWorkPeriodToAllPackages(dto: ApplyRepairWorkPeriodToAllDto) {
-    return this.applyWorkPeriodToAllPackages(ContractDocumentPackageKind.WINDOWS, dto);
+  applyWindowsWorkPeriodToAllPackages(dto: ApplyRepairWorkPeriodToAllDto) {
+    return this.kindSettings.applyWindowsWorkPeriodToAllPackages(dto);
   }
 
-  async resolveWindowsWorkOrderMarkupPercent(): Promise<number> {
-    try {
-      const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-        where: { kind: ContractDocumentPackageKind.WINDOWS },
-        select: { windowsWorkOrderMarkupPercent: true },
-      });
-      const raw = row?.windowsWorkOrderMarkupPercent ?? DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT;
-      return Number.isFinite(raw) && raw >= 0 && raw <= 100
-        ? Math.trunc(raw)
-        : DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT;
-    } catch {
-      return DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT;
-    }
+  resolveWindowsWorkOrderMarkupPercent() {
+    return this.kindSettings.resolveWindowsWorkOrderMarkupPercent();
   }
 
-  async getWindowsWorkOrderMarkupSettings() {
-    const windowsWorkOrderMarkupPercent = await this.resolveWindowsWorkOrderMarkupPercent();
-    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-      where: { kind: ContractDocumentPackageKind.WINDOWS },
-      select: { updatedAt: true },
-    });
-    return {
-      windowsWorkOrderMarkupPercent,
-      updatedAt: row?.updatedAt?.toISOString() ?? null,
-    };
+  getWindowsWorkOrderMarkupSettings() {
+    return this.kindSettings.getWindowsWorkOrderMarkupSettings();
   }
 
-  async setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
-    const fallbackDays = this.fallbackWorkPeriodDays(ContractDocumentPackageKind.WINDOWS);
-    const row = await this.prisma.contractDocumentRepairSettings.upsert({
-      where: { kind: ContractDocumentPackageKind.WINDOWS },
-      create: {
-        kind: ContractDocumentPackageKind.WINDOWS,
-        defaultWorkPeriodDays: fallbackDays,
-        windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
-        updatedById: updatedById ?? null,
-      },
-      update: {
-        windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
-        updatedById: updatedById ?? null,
-      },
-      select: { windowsWorkOrderMarkupPercent: true, updatedAt: true },
-    });
-    return {
-      windowsWorkOrderMarkupPercent: row.windowsWorkOrderMarkupPercent,
-      updatedAt: row.updatedAt.toISOString(),
-    };
+  setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
+    return this.kindSettings.setWindowsWorkOrderMarkupSettings(dto, updatedById);
   }
 }

@@ -4,7 +4,7 @@ import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-docum
 import type { CrmDirection } from '@/shared/api/admin-crm';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import type { PackageListPipelineStatus } from '../../../platform/hub/packagePipeline';
+import type { PackageListPipelineStatus } from '../../../platform/hub/pipeline/packagePipeline';
 import {
   CONTRACTS_PAGE_LIMIT_OPTIONS,
   type ContractsListViewMode,

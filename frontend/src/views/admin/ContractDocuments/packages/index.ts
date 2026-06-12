@@ -23,5 +23,5 @@ export {
   type PackageDocumentEditorPageProps,
 } from './pages/PackageDocumentEditorPage';
 export { ContractsListPage } from './pages/contracts/ContractsListPage';
-export { ProductSpecificationTab } from './platform/editor/ProductSpecificationTab';
-export { PackageFinalEstimateTab } from './platform/editor/PackageFinalEstimateTab';
+export { ProductSpecificationTab } from './platform/editor/tabs/ProductSpecificationTab';
+export { PackageFinalEstimateTab } from './platform/editor/tabs/PackageFinalEstimateTab';

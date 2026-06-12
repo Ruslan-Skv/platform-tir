@@ -4,8 +4,7 @@ import React, { useLayoutEffect } from 'react';
 
 import { usePathname } from 'next/navigation';
 
-import { useAppDispatch } from '@/shared/lib/redux/hooks';
-
+import { useAppDispatch } from '../lib/redux/hooks';
 import { initializeTheme, setTheme } from '../model/themeSlice';
 
 interface ThemeInitializerProps {

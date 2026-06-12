@@ -1,0 +1,39 @@
+---
+description: Архитектура frontend Platform TIR — слои, структура views, паттерны страниц
+globs: frontend/src/**/*.{ts,tsx}
+alwaysApply: false
+---
+
+# Frontend architecture (Platform TIR)
+
+Полный документ: `frontend/docs/ARCHITECTURE.md`. Проверка: `npm run check-architecture`.
+
+## Слои (импорт только вниз)
+
+`shared` → `entities` → `features` → `widgets` → `views` → `app`
+
+- `app/**/page.tsx` — тонкие оболочки; логика в `views/`
+- `shared` не импортирует `views`, `widgets`, `features` (кроме allowlist в `architecture.config.mjs`)
+- Используй `@/shared/…`, `@/views/…`, не относительные пути через несколько слоёв
+
+## Новая страница / крупный экран
+
+```
+FeaturePage.tsx          # shell
+useFeaturePage.ts(x)     # state, handlers
+FeaturePageView.tsx      # presentation
+Feature*Section.tsx      # sections with Pick<Props, …>
+```
+
+## ContractDocuments/packages
+
+- `platform/editor/` и `platform/hub/` — в корне только `index.ts`; код в подпапках (`chrome/`, `payments/`, …)
+- Межмодульный импорт — через `editor/index.ts`, `hub/index.ts`, `packages/index.ts`
+- ≤ 25 `.ts`/`.tsx` на директорию — иначе новая подпапка по домену
+- CSS: co-located `*.module.css` + общие partials в `ContractDocuments/styles/`
+
+## Запрещено
+
+- Типы/компоненты из `*.module.css`
+- Barrel `index.ts` внутри подпапок editor/hub (только корневые index)
+- Бизнес-логика в `app/`

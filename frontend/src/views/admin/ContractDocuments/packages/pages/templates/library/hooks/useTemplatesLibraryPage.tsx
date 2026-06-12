@@ -1,19 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-
 import { useAuth } from '@/features/auth';
-import { type ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
-import { type PackageTemplatePreviewCustomerKind } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
-import {
-  type PackageLibraryTemplateTabId,
-  libraryTemplateTabIdsForPackageKind,
-} from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
-import {
-  readStoredTemplatesLibraryKind,
-  readStoredTemplatesLibraryTab,
-} from '../templatesLibraryPresetUtils';
 import { useTemplatesLibraryCreateTemplateHelp } from './useTemplatesLibraryCreateTemplateHelp';
 import { useTemplatesLibraryDerivedData } from './useTemplatesLibraryDerivedData';
 import { useTemplatesLibraryEditorCore } from './useTemplatesLibraryEditorCore';
@@ -22,27 +10,63 @@ import { useTemplatesLibraryLoad } from './useTemplatesLibraryLoad';
 import { useTemplatesLibraryModalsState } from './useTemplatesLibraryModalsState';
 import { useTemplatesLibraryMutations } from './useTemplatesLibraryMutations';
 import { useTemplatesLibraryNavigation } from './useTemplatesLibraryNavigation';
+import { useTemplatesLibraryPageRefs } from './useTemplatesLibraryPageRefs';
+import { useTemplatesLibraryPageScope } from './useTemplatesLibraryPageScope';
 import { useTemplatesLibraryPreviewUi } from './useTemplatesLibraryPreviewUi';
+import { useTemplatesLibraryTitleRenameFocus } from './useTemplatesLibraryTitleRenameFocus';
 import { useTemplatesLibraryUiPrefsSync } from './useTemplatesLibraryUiPrefsSync';
 
 export function useTemplatesLibraryPage() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  const [activeLibraryKind, setActiveLibraryKind] = useState<ContractDocumentPackageKind>(
-    readStoredTemplatesLibraryKind
-  );
-  const [activeTemplateTab, setActiveTemplateTab] = useState<PackageLibraryTemplateTabId>(() =>
-    readStoredTemplatesLibraryTab(readStoredTemplatesLibraryKind())
-  );
-  const libraryTemplateTabIds = useMemo(
-    () => libraryTemplateTabIdsForPackageKind(activeLibraryKind),
-    [activeLibraryKind]
-  );
-  const [previewCustomerKind, setPreviewCustomerKind] =
-    useState<PackageTemplatePreviewCustomerKind>('PERSON');
-  const [showArchivedTemplates, setShowArchivedTemplates] = useState(false);
-  const [saving, setSaving] = useState(false);
+  const scope = useTemplatesLibraryPageScope();
+  const {
+    activeLibraryKind,
+    activeTemplateTab,
+    autosaveSavedVisible,
+    editingId,
+    error,
+    libraryTemplateTabIds,
+    ok,
+    placeholdersCollapsed,
+    previewCustomerKind,
+    saving,
+    setActiveLibraryKind,
+    setActiveTemplateTab,
+    setAutosaveSavedVisible,
+    setEditingId,
+    setError,
+    setOk,
+    setPlaceholdersCollapsed,
+    setPreviewCustomerKind,
+    setSaving,
+    setShowArchivedTemplates,
+    setTitle,
+    setTitleRenameMode,
+    showArchivedTemplates,
+    templatesScopeKey,
+    title,
+    titleRenameMode,
+  } = scope;
+
+  const refs = useTemplatesLibraryPageRefs();
+  const {
+    autosaveTimerRef,
+    createTemplateHelpWrapRef,
+    isInitialHydrationRef,
+    lastSavedSnapshotRef,
+    preferredTemplateIdsRef,
+    previewPaneRef,
+    templateArchiveSwitchRef,
+    templateHtmlFileInputRef,
+    templateTabSwitchRef,
+    titleRenameInputRef,
+    uiPrefsLoadedRef,
+  } = refs;
+
+  useTemplatesLibraryTitleRenameFocus(titleRenameMode, titleRenameInputRef);
+
   const {
     trashOpen,
     setTrashOpen,
@@ -51,30 +75,6 @@ export function useTemplatesLibraryPage() {
     templateArchivePending,
     setTemplateArchivePending,
   } = useTemplatesLibraryModalsState();
-  const [autosaveSavedVisible, setAutosaveSavedVisible] = useState(false);
-  const lastSavedSnapshotRef = useRef<string>('');
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInitialHydrationRef = useRef(true);
-  const templateTabSwitchRef = useRef(false);
-  const templateArchiveSwitchRef = useRef(false);
-  const [error, setError] = useState<string | null>(null);
-  const [ok, setOk] = useState<string | null>(null);
-  const [editingId, setEditingId] = useState('');
-  const [title, setTitle] = useState('');
-  const [titleRenameMode, setTitleRenameMode] = useState(false);
-  const [placeholdersCollapsed, setPlaceholdersCollapsed] = useState(false);
-  const createTemplateHelpWrapRef = useRef<HTMLDivElement>(null);
-  const titleRenameInputRef = useRef<HTMLInputElement>(null);
-  const templateHtmlFileInputRef = useRef<HTMLInputElement>(null);
-  const previewPaneRef = useRef<HTMLDivElement>(null);
-  const preferredTemplateIdsRef = useRef<Record<string, string>>({});
-  const uiPrefsLoadedRef = useRef(false);
-
-  const templatesScopeKey = useCallback(
-    (kind: ContractDocumentPackageKind, tab: PackageLibraryTemplateTabId, archived: boolean) =>
-      `${kind}:${tab}:${archived ? 'arch' : 'active'}`,
-    []
-  );
 
   const {
     items,
@@ -172,15 +172,6 @@ export function useTemplatesLibraryPage() {
     visualZoomDraft,
     visualZoomPct,
   } = previewUi;
-
-  useEffect(() => {
-    if (!titleRenameMode) return;
-    const id = window.setTimeout(() => {
-      titleRenameInputRef.current?.focus();
-      titleRenameInputRef.current?.select();
-    }, 0);
-    return () => window.clearTimeout(id);
-  }, [titleRenameMode]);
 
   useTemplatesLibraryUiPrefsSync({
     previewZoomPct,
@@ -325,159 +316,35 @@ export function useTemplatesLibraryPage() {
     setPlaceholdersCollapsed,
   });
 
-  const {
-    confirmArchiveTemplate,
-    confirmMoveTemplateToTrash,
-    createNewTemplate,
-    handleActiveTemplateTabChange,
-    handleExportSeedJson,
-    handleSaveNow,
-    handleTrashRestored,
-    requestArchiveTemplate,
-    requestMoveTemplateToTrash,
-    restoreArchivedTemplate,
-    selectTemplate,
-    templateArchiveConfirmMessage,
-    templateTrashConfirmMessage,
-  } = mutations;
-
-  const {
-    applyVisualFontSizeFromToolbar,
-    captureVisualSelection,
-    editorModeToggle,
-    formatTools,
-    handleSyncHtmlWithVisualEditor,
-    handleTemplateRedo,
-    handleTemplateUndo,
-    handleVisualEditorKeyDown,
-    handleVisualEditorPaste,
-    headingLevelActive,
-    inlineFormatActive,
-    insertPlaceholder,
-    paragraphAlignActive,
-    refreshInlineFormatActiveState,
-    renderCleanupToolbar,
-    renderListToolbar,
-    renderTableStructureToolbar,
-    templateHistoryCanRedo,
-    templateHistoryCanUndo,
-    visualFontSizeControl,
-  } = editorFormat;
-
-  const {
-    handleActiveLibraryKindChange,
-    handlePreviewCustomerKindChange,
-    handleRenameTemplateTitle,
-    toggleArchiveMode,
-    togglePlaceholdersCollapsed,
-  } = navigation;
-
   return {
-    activeLibraryKind,
-    activeTemplateTab,
-    applyVisualFontSizeFromToolbar,
-    archivedCountOnTab,
-    archivedTemplatesCount,
-    autosaveSavedVisible,
-    captureHtmlEditorHeight,
-    capturePreviewPaneHeight,
-    captureVisualEditorHeight,
-    captureVisualSelection,
-    commitPreviewZoomDraft,
-    commitVisualZoomDraft,
-    confirmArchiveTemplate,
-    confirmMoveTemplateToTrash,
-    createNewTemplate,
+    isSuperAdmin,
+    ...scope,
+    createTemplateHelpWrapRef,
+    titleRenameInputRef,
+    templateHtmlFileInputRef,
+    trashOpen,
+    setTrashOpen,
+    templateTrashPending,
+    setTemplateTrashPending,
+    templateArchivePending,
+    setTemplateArchivePending,
+    items,
+    setItems,
+    loading,
+    trashCount,
+    refreshTrashCount,
+    ...editorCore,
+    ...previewUi,
+    ...derived,
+    ...mutations,
+    ...editorFormat,
+    ...navigation,
     createTemplateHelpOpen,
     createTemplateHelpPortalReady,
-    createTemplateHelpWrapRef,
     createTemplateTooltipPos,
-    editingId,
-    editorMode,
-    editorModeToggle,
-    ensureTemplateDraftForEditing,
-    error,
-    formatTools,
-    handleActiveLibraryKindChange,
-    handleActiveTemplateTabChange,
-    handleExportSeedJson,
-    handlePreviewCustomerKindChange,
-    handleRenameTemplateTitle,
-    handleSaveNow,
-    handleSyncHtmlWithVisualEditor,
-    handleTemplateHtmlFileImport,
-    handleTemplateRedo,
-    handleTemplateUndo,
-    handleTrashRestored,
-    handleVisualEditorKeyDown,
-    handleVisualEditorPaste,
-    headingLevelActive,
     hideCreateTemplateHelpWithDelay,
-    html,
-    htmlEditorHeightPx,
-    htmlTextareaRef,
-    inlineFormatActive,
-    insertPlaceholder,
-    isSuperAdmin,
-    items,
-    itemsByActiveTab,
-    libraryTemplateTabIds,
-    loading,
-    ok,
-    paragraphAlignActive,
-    placeholdersCollapsed,
-    previewCustomerKind,
-    previewPaneHeightPx,
-    previewPaneRef,
-    previewZoomDraft,
-    previewZoomPct,
-    refreshInlineFormatActiveState,
-    refreshTrashCount,
-    renderCleanupToolbar,
-    renderListToolbar,
-    renderTableStructureToolbar,
-    renderedPreviewDisplay,
-    requestArchiveTemplate,
-    requestMoveTemplateToTrash,
-    restoreArchivedTemplate,
-    saving,
-    schedulePushTemplateHistoryFromHtml,
-    selectTemplate,
-    setHtml,
-    setItems,
-    setPreviewZoomDraft,
-    setTemplateArchivePending,
-    setTemplateTrashPending,
-    setTitle,
-    setTitleRenameMode,
-    setTrashOpen,
-    setVisualDraftHtml,
-    setVisualZoomDraft,
-    showArchivedTemplates,
     showCreateTemplateHelp,
-    stepPreviewZoom,
-    stepVisualZoom,
-    syncVisualEditorToHtmlState,
-    templateArchiveConfirmMessage,
-    templateArchivePending,
-    templateHistoryCanRedo,
-    templateHistoryCanUndo,
-    templateHtmlFileInputRef,
-    templateTrashConfirmMessage,
-    templateTrashPending,
-    templatesCountByTab,
-    title,
-    titleRenameInputRef,
-    titleRenameMode,
-    toggleArchiveMode,
-    togglePlaceholdersCollapsed,
-    trashCount,
-    trashOpen,
-    visualEditorHeightPx,
-    visualEditorRef,
-    visualFontSizeControl,
-    visualZoomDraft,
-    visualZoomPct,
+    previewPaneRef,
   };
 }
 

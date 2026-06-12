@@ -1,4 +1,4 @@
-import type { PackagePerInstallerWorkOrder } from '../hub/PackageWorkOrderHubContext';
+import type { PackagePerInstallerWorkOrder } from '../hub/workOrders/PackageWorkOrderHubContext';
 
 function escapeHtml(value: string): string {
   return value

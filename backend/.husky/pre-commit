@@ -55,4 +55,11 @@ npx secretlint "src/**/*.{ts,js}" "prisma/**/*.ts" "*.{js,json}" --format json |
   exit 1
 }
 
+# 7. Проверка архитектуры backend
+echo "🔍 Checking backend architecture..."
+npm run check-architecture || {
+  echo "❌ Architecture violations found (see backend/docs/ARCHITECTURE.md)"
+  exit 1
+}
+
 echo "✅ All backend pre-commit checks passed!"

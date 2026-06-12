@@ -1,7 +1,7 @@
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import type { PackageListPipelineStatus } from '../../../platform/hub/packagePipeline';
+import type { PackageListPipelineStatus } from '../../../platform/hub/pipeline/packagePipeline';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 
 export function ContractsListActPhotosTriggerIcon() {

@@ -24,10 +24,10 @@ npm run lint || {
   exit 1
 }
 
-# 4. Проверка FSD-архитектуры
-echo "🔍 Checking FSD architecture..."
-npm run check-fsd || {
-  echo "❌ FSD architecture violations found"
+# 4. Проверка архитектуры frontend
+echo "🔍 Checking frontend architecture..."
+npm run check-architecture || {
+  echo "❌ Architecture violations found (see frontend/docs/ARCHITECTURE.md)"
   exit 1
 }
 

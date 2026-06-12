@@ -1,12 +1,12 @@
 import { printDocumentHtml } from '../../../core/printDocument';
 import { pickWindowsPackagePrintDocumentOptions } from '../../families/product-like/print/productPackagePrint';
-import type { PackageWorkOrderHubContextValue } from '../hub/PackageWorkOrderHubContext';
+import type { PackageWorkOrderHubContextValue } from '../hub/workOrders/PackageWorkOrderHubContext';
 import {
   PACKAGE_WORK_ORDER_HUB_MODAL_TITLE,
   type PackageWorkOrderHubTabId,
   packageWorkOrderHubTabLabel,
   packageWorkOrderHubTabsForPackage,
-} from '../hub/packageWorkOrderHubTabs';
+} from '../hub/workOrders/packageWorkOrderHubTabs';
 import { isPackageWorkOrderAddendumTab } from '../tabs/packageDocumentTabs';
 import {
   type FinalWorkOrderPrintEmbedInput,

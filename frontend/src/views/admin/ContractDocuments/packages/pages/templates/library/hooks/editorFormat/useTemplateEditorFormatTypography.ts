@@ -8,16 +8,18 @@ import {
   INLINE_FORMAT_TAGS,
   INLINE_FORMAT_WRAP,
   type InlineFormatKind,
-  applyHtmlParagraphIndentCm,
-  applyVisualFontSizePt,
-  applyVisualLineSpacing,
-  applyVisualParagraphIndent,
   toggleVisualBoldInEditor,
   toggleVisualItalicInEditor,
   tryUnwrapHtmlFontStyleItalic,
   tryUnwrapHtmlFontWeightBold,
   tryUnwrapHtmlInlineTags,
-} from '../../editor/templateEditorFormatting';
+} from '../../editor/templateEditorFormattingInline';
+import {
+  applyHtmlParagraphIndentCm,
+  applyVisualFontSizePt,
+  applyVisualLineSpacing,
+  applyVisualParagraphIndent,
+} from '../../editor/templateEditorFormattingTypography';
 import { normalizeTemplateEditorHtml } from '../../templatesLibraryHtmlNormalize';
 import type { TemplateEditorFormatDeps } from './templateEditorFormatDeps';
 

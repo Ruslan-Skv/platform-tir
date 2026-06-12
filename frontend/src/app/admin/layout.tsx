@@ -7,8 +7,8 @@ import { usePathname, useRouter } from 'next/navigation';
 
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AuthProvider, useAuth } from '@/features/auth';
+import { getOrCreateStore } from '@/features/theme';
 import { QueryProvider } from '@/shared/lib/react-query/QueryProvider';
-import { getOrCreateStore } from '@/shared/lib/redux/store';
 import { AdminHeader } from '@/widgets/admin/Header/AdminHeader';
 import { AdminPresenceHeartbeat } from '@/widgets/admin/Header/AdminPresenceHeartbeat';
 import { AdminSidebar } from '@/widgets/admin/Sidebar/AdminSidebar';

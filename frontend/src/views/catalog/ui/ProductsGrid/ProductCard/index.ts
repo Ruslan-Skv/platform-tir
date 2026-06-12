@@ -1,1 +1,1 @@
-export { ProductCard } from './ProductCard';
+export { ProductCard } from '@/features/catalog';

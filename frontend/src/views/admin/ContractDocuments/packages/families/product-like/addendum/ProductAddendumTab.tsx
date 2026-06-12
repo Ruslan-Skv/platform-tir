@@ -4,11 +4,11 @@ import type { ComponentProps } from 'react';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import { PackageAddendumEstimateBlock } from '../../../platform/editor/PackageAddendumEstimateBlock';
+import { PackageAddendumEstimateBlock } from '../../../platform/editor/addendum/PackageAddendumEstimateBlock';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
-} from '../../../platform/editor/packageLockNoticeUi';
+} from '../../../platform/editor/shared/packageLockNoticeUi';
 import type { PackageAddendumSlotEstimateBlock } from '../../../platform/form/packageForm';
 import { ProductAddendumGrandTotalsSummary } from './ProductAddendumGrandTotalsSummary';
 import { ProductAddendumSpecificationLinesEditor } from './ProductAddendumSpecificationLinesEditor';

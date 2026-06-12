@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { canEditContractPaymentsIncassation } from '../../common/utils/contract-payments-incassation-permission';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateOfficeOtherExpenseDto } from './dto/create-other-expense.dto';
 import { CreateOfficeIncassationDto } from './dto/create-incassation.dto';
@@ -178,6 +179,10 @@ export class OfficeCashService {
       },
       orderBy: { incassationDate: 'desc' },
     });
+  }
+
+  canEditIncassation(userId: string, userRole: string) {
+    return canEditContractPaymentsIncassation(this.prisma, userId, userRole);
   }
 
   async createIncassation(dto: CreateOfficeIncassationDto, createdById?: string) {

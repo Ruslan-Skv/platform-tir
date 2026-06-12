@@ -91,20 +91,28 @@ docker run -d \
 http://localhost:3001/api/v1/docs
 ```
 
+## Архитектура
+
+Правила зон, модулей NestJS и крупных доменов: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+
+```bash
+npm run check-architecture   # проверка (входит в validate и pre-commit)
+```
+
 ## Структура проекта
 
 ```
 src/
-├── auth/              # Аутентификация (JWT)
-├── users/             # Пользователи
-├── admin/             # Админ-панель (CRM, каталог, контент, поддержка)
-├── products/          # Товары, категории
-├── cart/              # Корзина
-├── orders/            # Заказы
+├── common/            # guards, decorators, filters
 ├── database/          # Prisma
 ├── elasticsearch/     # Поиск
-├── hero, footer, forms, reviews, ...  # Секции сайта
-└── main.ts            # Точка входа
+├── auth/              # JWT
+├── users/             # Пользователи
+├── admin/             # Админ API (CRM, CMS, каталог, contract-documents)
+├── products/          # Товары, публичный каталог
+├── orders/, cart/      # Заказы, корзина
+├── hero, footer, …    # Секции сайта
+└── main.ts
 ```
 
 ## Скрипты
@@ -116,7 +124,8 @@ src/
 - `npm run format` - форматирование кода с помощью Prettier
 - `npm run format:check` - проверка форматирования
 - `npm run type-check` - проверка типов TypeScript
-- `npm run validate` - запуск всех проверок (type-check, lint, format:check)
+- `npm run check-architecture` - проверка архитектуры
+- `npm run validate` - все проверки (type-check, lint, format, architecture)
 - `npm run commit` - интерактивный коммит с проверками (Commitizen)
 - `npm run test` - запуск тестов
 - `npm run prisma:generate` - генерация Prisma Client

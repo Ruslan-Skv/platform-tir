@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import type { PackageListPipelineStatus } from '../../../../platform/hub/packagePipeline';
+import type { PackageListPipelineStatus } from '../../../../platform/hub/pipeline/packagePipeline';
 import {
   type ContractsListViewMode,
   type ContractsPageLimit,

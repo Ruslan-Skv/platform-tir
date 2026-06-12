@@ -1,5 +1,5 @@
+import type { CatalogApiProduct } from '@/shared/types/catalog';
 import { buildCatalogItemListJsonLd } from '@/views/catalog/lib/catalog-seo';
-import type { CatalogApiProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
 
 export function CatalogItemListJsonLd({
   products,

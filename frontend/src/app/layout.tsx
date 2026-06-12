@@ -1,8 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 
-import { ThemeInitializer } from '@/features/theme';
+import { StoreProvider, ThemeInitializer } from '@/features/theme';
 import { buildSiteBootstrapScript } from '@/shared/lib/mobile-catalog-columns-bootstrap-script';
-import { StoreProvider } from '@/shared/lib/redux';
 import { getCatalogSettingsCached } from '@/views/catalog/lib/fetch-catalog-settings-cached';
 
 import './globals.css';

@@ -1,5 +1,5 @@
-import { isPackageQuestionnaireHubTabHiddenFromPackageEditor } from '../hub/packageQuestionnaireHubTabs';
-import { isPackageWorkOrderHubTabHiddenFromPackageEditor } from '../hub/packageWorkOrderHubTabs';
+import { isPackageQuestionnaireHubTabHiddenFromPackageEditor } from '../hub/questionnaires/packageQuestionnaireHubTabs';
+import { isPackageWorkOrderHubTabHiddenFromPackageEditor } from '../hub/workOrders/packageWorkOrderHubTabs';
 
 /** Вкладки, показываемые в строке табов редактора (без hub-only и payments). */
 export function isPackageEditorTabBarTab(id: string): boolean {

@@ -12,7 +12,7 @@ import type {
   CatalogHubPreviewResponse,
 } from '@/shared/api/catalog-hub-preview';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { mapCatalogApiProductToProduct } from '@/views/catalog/lib/mapCatalogApiProductToProduct';
+import { mapCatalogApiProductToProduct } from '@/shared/lib/catalog/mapCatalogApiProductToProduct';
 import { useCatalogHubPreview } from '@/views/catalog/lib/useCatalogHubPreview';
 import { ProductCard } from '@/views/catalog/ui/ProductsGrid';
 import gridStyles from '@/views/catalog/ui/ProductsGrid/ProductsGrid.module.css';

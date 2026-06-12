@@ -1,8 +1,12 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../database/prisma.service';
-import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
-import { PriceScraperService } from './price-scraper.service';
+import { CatalogFilterBlocksService } from '../catalog-filter-blocks/catalog-filter-blocks.service';
+import { ProductsCatalogQueryService } from './products-catalog-query.service';
+import { ProductsSearchIndexService } from './products-search-index.service';
+import { ProductsSupplierPricesService } from './products-supplier-prices.service';
+import { ProductsReadService } from './services/products-read.service';
+import { ProductsMutationsService } from './services/products-mutations.service';
 import { ProductsService } from './products.service';
 
 describe('ProductsService', () => {
@@ -20,23 +24,36 @@ describe('ProductsService', () => {
     review: { groupBy: jest.fn().mockResolvedValue([]) },
   };
 
-  const mockElasticsearch = {
-    search: jest.fn(),
-    createIndex: jest.fn(),
-    deleteDocument: jest.fn(),
-    isAvailable: jest.fn().mockReturnValue(false),
+  const mockCatalogQuery = {
+    enrichProductsWithRating: jest.fn((products: unknown[]) => Promise.resolve(products)),
+    getCatalogPublicListInclude: jest.fn(() => ({})),
   };
 
-  const mockPriceScraper = { getPriceFromUrl: jest.fn() };
+  const mockMutations = {};
+
+  const mockSearchIndex = {
+    indexProduct: jest.fn(),
+    deleteProduct: jest.fn(),
+  };
+
+  const mockSupplierPrices = {};
+
+  const mockCatalogFilterBlocks = {
+    getPublicFiltersByCategorySlug: jest.fn(),
+  };
 
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         ProductsService,
+        ProductsReadService,
         { provide: PrismaService, useValue: mockPrisma },
-        { provide: ElasticsearchService, useValue: mockElasticsearch },
-        { provide: PriceScraperService, useValue: mockPriceScraper },
+        { provide: ProductsCatalogQueryService, useValue: mockCatalogQuery },
+        { provide: ProductsMutationsService, useValue: mockMutations },
+        { provide: ProductsSearchIndexService, useValue: mockSearchIndex },
+        { provide: ProductsSupplierPricesService, useValue: mockSupplierPrices },
+        { provide: CatalogFilterBlocksService, useValue: mockCatalogFilterBlocks },
       ],
     }).compile();
 
@@ -64,6 +81,7 @@ describe('ProductsService', () => {
         cardVariants: [],
       };
       mockPrisma.product.findUnique.mockResolvedValue(product);
+      mockCatalogQuery.enrichProductsWithRating.mockResolvedValue([product]);
       const result = await service.findOne('prod-1');
       expect(result).toBeDefined();
       expect(result?.id).toBe('prod-1');

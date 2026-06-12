@@ -18,7 +18,7 @@ import { isProductDirectionPackageKind } from '../../../config/productDirectionP
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
-} from '../../../platform/editor/packageLockNoticeUi';
+} from '../../../platform/editor/shared/packageLockNoticeUi';
 import { productSpecificationCopy } from './productSpecificationCopy';
 
 const SPEC_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estimateTabCompact} ${cdHubModals.estimateTabCompact}`;

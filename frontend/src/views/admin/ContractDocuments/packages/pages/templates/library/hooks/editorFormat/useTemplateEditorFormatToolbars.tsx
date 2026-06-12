@@ -2,14 +2,12 @@
 
 import { useMemo } from 'react';
 
-import {
-  TemplateEditorFormatCleanupToolbar,
-  TemplateEditorFormatListToolbar,
-  TemplateEditorFormatTableToolbar,
-  TemplateEditorModeToggle,
-  buildTemplateEditorFormatTools,
-} from './templateEditorFormatToolbarUi';
 import type { UseTemplatesLibraryEditorFormatParams } from './templateEditorFormatTypes';
+import { TemplateEditorFormatCleanupToolbar } from './toolbars/templateEditorFormatCleanupToolbar';
+import { TemplateEditorFormatListToolbar } from './toolbars/templateEditorFormatListToolbar';
+import { TemplateEditorModeToggle } from './toolbars/templateEditorFormatModeToggle';
+import { TemplateEditorFormatTableToolbar } from './toolbars/templateEditorFormatTableToolbar';
+import { buildTemplateEditorFormatTools } from './toolbars/templateEditorFormatTools';
 import type { TemplateEditorFormatHandlers } from './useTemplateEditorFormatHandlers';
 import type { TemplateEditorFormatSelection } from './useTemplateEditorFormatSelection';
 
