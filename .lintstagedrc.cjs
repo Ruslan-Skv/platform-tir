@@ -19,9 +19,10 @@ module.exports = {
   ],
   'frontend/**/*.{ts,tsx,js,jsx}': [
     'node scripts/lint-staged-workspace.js frontend npx prettier --write',
+    'node scripts/lint-staged-workspace.js frontend npx eslint --fix --max-warnings=50',
     'node scripts/lint-staged-workspace.js frontend npx secretlint --format stylish',
   ],
-  'frontend/scripts/**/*.{js,mjs,ts}': [
+  'frontend/scripts/**/*.mjs': [
     'node scripts/lint-staged-workspace.js frontend npx prettier --write',
     'node scripts/lint-staged-workspace.js frontend npx secretlint --format stylish',
   ],

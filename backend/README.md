@@ -138,9 +138,9 @@ src/
 
 Порядок проверок (без дублирования):
 
-1. **lint-staged** — форматирование, ESLint (backend), **secretlint** (backend + frontend) только для staged-файлов (конфиг: `.lintstagedrc.cjs` в корне репозитория). Команды запускаются через `scripts/lint-staged-workspace.js`: cwd переключается в `backend/` или `frontend/`, чтобы резолвились локальные `node_modules`.
-2. **backend** — `npm run validate` + `npm run secretlint`
-3. **frontend** — `npm run validate:precommit` + `npm run secretlint`
+1. **lint-staged** — prettier, eslint, secretlint на staged code (backend + frontend); prisma format для `.prisma`. Через `scripts/lint-staged-workspace.js` (cwd = workspace).
+2. **backend** — полный `npm run validate` + `npm run secretlint`
+3. **frontend** — `npm run validate:precommit` + `npm run secretlint` (eslint/format по staged — в lint-staged; полный `npm run validate` — вручную / CI)
 
 Коммит из `backend/` или `frontend/`:
 
