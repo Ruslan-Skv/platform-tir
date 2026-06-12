@@ -197,9 +197,9 @@ packages/
 
 Проверки при коммите общие для backend и frontend: hook `backend/.husky/pre-commit`.
 
-1. **lint-staged** (`.lintstagedrc.cjs` в корне) — prettier для staged frontend-файлов через `scripts/lint-staged-workspace.js` (cwd = `frontend/`, иначе не резолвится `@trivago/prettier-plugin-sort-imports`).
-2. **backend** — `validate` + `secretlint`.
-3. **frontend** — `validate:precommit` (`type-check` + `check-architecture`). Полный `npm run validate` (lint + format) — вручную перед релизом; на 2025-06 проходит без ошибок.
+1. **lint-staged** (`.lintstagedrc.cjs` в корне) — prettier + **secretlint** для staged backend/frontend через `scripts/lint-staged-workspace.js` (cwd = workspace, иначе не резолвятся локальные плагины).
+2. **backend** — `validate` + `secretlint` (полный скан).
+3. **frontend** — `validate:precommit` (`type-check` + `check-architecture`) + `secretlint` (полный скан). Полный `npm run validate` (lint + format) — вручную перед релизом.
 
 Коммит: `npm run commit` (из любого пакета). Ручная проверка без коммита: `cd backend && npm run validate:monorepo`.
 
@@ -207,6 +207,7 @@ packages/
 
 ```bash
 npm run check-architecture   # проверка архитектуры
+npm run secretlint           # проверка секретов (preset-recommend)
 npm run validate             # type-check + lint + format + architecture
 npm run commit               # git add + cz → backend/.husky/pre-commit
 ```

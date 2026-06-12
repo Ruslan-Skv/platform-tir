@@ -179,12 +179,13 @@ contract-document-packages/
 
 Единый hook для всего репозитория: `backend/.husky/pre-commit` (`git config core.hooksPath` → `backend/.husky`).
 
-| Этап                        | Что делает                                                                    |
-| --------------------------- | ----------------------------------------------------------------------------- |
-| lint-staged                 | Prettier / ESLint / secretlint / prisma format только для staged-файлов       |
-| backend validate            | `type-check`, `lint`, `format:check`, `check-architecture`, `prisma generate` |
-| backend secretlint          | Повторная проверка секретов по всему backend                                  |
-| frontend validate:precommit | `type-check`, `check-architecture` (полный `validate` — вручную / CI)         |
+| Этап                        | Что делает                                                                                   |
+| --------------------------- | -------------------------------------------------------------------------------------------- |
+| lint-staged                 | Prettier / ESLint / secretlint / prisma format только для staged-файлов (backend + frontend) |
+| backend validate            | `type-check`, `lint`, `format:check`, `check-architecture`, `prisma generate`                |
+| backend secretlint          | Проверка секретов по всему backend (`src/`, `prisma/`, корневые `*.{js,json}`)               |
+| frontend validate:precommit | `type-check`, `check-architecture` (полный `validate` — вручную / CI)                        |
+| frontend secretlint         | Проверка секретов по всему frontend (`src/`, `scripts/`, корневые `*.{js,json,mjs}`)         |
 
 Конфиг lint-staged: `.lintstagedrc.cjs` в корне. Команды идут через `scripts/lint-staged-workspace.js` — runner переключает cwd в `backend/` или `frontend/`, иначе Prettier не находит workspace-плагины (например `@trivago/prettier-plugin-sort-imports` во frontend).
 

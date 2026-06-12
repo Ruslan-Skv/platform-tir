@@ -17,7 +17,20 @@ module.exports = {
   'backend/**/*.prisma': [
     'node scripts/lint-staged-workspace.js backend npx prisma format',
   ],
-  'frontend/**/*.{ts,tsx,js,jsx,json,css,scss,md}': [
+  'frontend/**/*.{ts,tsx,js,jsx}': [
+    'node scripts/lint-staged-workspace.js frontend npx prettier --write',
+    'node scripts/lint-staged-workspace.js frontend npx secretlint --format stylish',
+  ],
+  'frontend/scripts/**/*.{js,mjs,ts}': [
+    'node scripts/lint-staged-workspace.js frontend npx prettier --write',
+    'node scripts/lint-staged-workspace.js frontend npx secretlint --format stylish',
+  ],
+  'frontend/**/*.{json,md}': [
+    'node scripts/lint-staged-workspace.js frontend npx prettier --write',
+    'node scripts/lint-staged-workspace.js frontend npx secretlint --format stylish',
+  ],
+  '!frontend/package-lock.json': [],
+  'frontend/**/*.{css,scss}': [
     'node scripts/lint-staged-workspace.js frontend npx prettier --write',
   ],
 };

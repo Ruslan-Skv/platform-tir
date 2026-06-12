@@ -25,6 +25,17 @@ run_capture() {
   printf '%s' "$output"
 }
 
+run_secretlint() {
+  workspace=$1
+  echo "🔍 ${workspace} secretlint..."
+  if ! npm run secretlint --prefix "$workspace" >/dev/null 2>&1; then
+    npm run secretlint --prefix "$workspace"
+    echo "❌ ${workspace} secretlint failed"
+    exit 1
+  fi
+  append_summary "✅ secretlint (${workspace}) — no secrets found"
+}
+
 extract_backend_validate_summary() {
   printf '%s\n' "$1" | awk '
     /^✅/ || /^⚠/ || /^❌/ || /^✖/ || /^📋/ || /problem/ || /Критичных/ || /Архитектура/ {
@@ -60,13 +71,7 @@ if [ -n "$backend_summary" ]; then
   append_summary "$backend_summary"
 fi
 
-echo "🔍 backend secretlint..."
-if ! npm run secretlint --prefix backend >/dev/null 2>&1; then
-  npm run secretlint --prefix backend
-  echo "❌ backend secretlint failed"
-  exit 1
-fi
-append_summary "✅ secretlint — no secrets found"
+run_secretlint backend
 
 frontend_out=$(run_capture "frontend validate (precommit)" npm run validate:precommit --prefix frontend)
 frontend_summary=$(extract_frontend_validate_summary "$frontend_out")
@@ -76,6 +81,8 @@ append_summary "✅ validate:precommit (type-check, architecture)"
 if [ -n "$frontend_summary" ]; then
   append_summary "$frontend_summary"
 fi
+
+run_secretlint frontend
 
 append_summary ""
 append_summary "✅ Pre-commit passed (backend + frontend)."

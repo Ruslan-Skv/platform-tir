@@ -138,9 +138,9 @@ src/
 
 Порядок проверок (без дублирования):
 
-1. **lint-staged** — форматирование и автофикс только staged-файлов (конфиг: `.lintstagedrc.cjs` в корне репозитория). Команды запускаются через `scripts/lint-staged-workspace.js`: cwd переключается в `backend/` или `frontend/`, чтобы резолвились локальные `node_modules` (prettier-плагины, eslint, secretlint, prisma).
+1. **lint-staged** — форматирование, ESLint (backend), **secretlint** (backend + frontend) только для staged-файлов (конфиг: `.lintstagedrc.cjs` в корне репозитория). Команды запускаются через `scripts/lint-staged-workspace.js`: cwd переключается в `backend/` или `frontend/`, чтобы резолвились локальные `node_modules`.
 2. **backend** — `npm run validate` + `npm run secretlint`
-3. **frontend** — `npm run validate:precommit` (type-check, architecture; lint/format — через lint-staged на staged-файлах)
+3. **frontend** — `npm run validate:precommit` + `npm run secretlint`
 
 Коммит из `backend/` или `frontend/`:
 
