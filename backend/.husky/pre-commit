@@ -4,33 +4,81 @@
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
+SUMMARY_FILE="$ROOT/.git/precommit-summary.txt"
+: > "$SUMMARY_FILE"
+
+append_summary() {
+  printf '%s\n' "$1" >> "$SUMMARY_FILE"
+}
+
+run_capture() {
+  label=$1
+  shift
+  echo "🔍 $label..."
+  output=$("$@" 2>&1)
+  code=$?
+  if [ $code -ne 0 ]; then
+    printf '%s\n' "$output"
+    echo "❌ $label failed"
+    exit 1
+  fi
+  printf '%s' "$output"
+}
+
+extract_backend_validate_summary() {
+  printf '%s\n' "$1" | awk '
+    /^✅/ || /^⚠/ || /^❌/ || /^✖/ || /^📋/ || /problem/ || /Критичных/ || /Архитектура/ {
+      print
+    }
+  ' | tail -20
+}
+
+extract_frontend_validate_summary() {
+  printf '%s\n' "$1" | awk '
+    /^✅/ || /^⚠/ || /^❌/ || /Критичных/ || /Проверка архитектуры/ {
+      print
+    }
+  ' | tail -10
+}
+
 echo "🚀 Pre-commit: platform-tir (backend + frontend)"
 echo ""
 
 echo "🔍 lint-staged (format & fix staged files)..."
-npx lint-staged || {
+npx lint-staged --quiet || {
   echo "❌ lint-staged failed"
   exit 1
 }
+append_summary "✅ lint-staged — staged files formatted & checked"
 
-echo ""
-echo "🔍 backend validate..."
-npm run validate --prefix backend || {
-  echo "❌ Backend validation failed (see backend/docs/ARCHITECTURE.md)"
-  exit 1
-}
+backend_out=$(run_capture "backend validate" npm run validate --prefix backend)
+backend_summary=$(extract_backend_validate_summary "$backend_out")
+append_summary ""
+append_summary "── backend ──"
+append_summary "✅ validate (type-check, lint, format, architecture)"
+if [ -n "$backend_summary" ]; then
+  append_summary "$backend_summary"
+fi
 
-npm run secretlint --prefix backend || {
-  echo "❌ Secretlint failed (backend)"
+echo "🔍 backend secretlint..."
+if ! npm run secretlint --prefix backend >/dev/null 2>&1; then
+  npm run secretlint --prefix backend
+  echo "❌ backend secretlint failed"
   exit 1
-}
+fi
+append_summary "✅ secretlint — no secrets found"
 
-echo ""
-echo "🔍 frontend validate (precommit)..."
-npm run validate:precommit --prefix frontend || {
-  echo "❌ Frontend validation failed (see frontend/docs/ARCHITECTURE.md)"
-  exit 1
-}
+frontend_out=$(run_capture "frontend validate (precommit)" npm run validate:precommit --prefix frontend)
+frontend_summary=$(extract_frontend_validate_summary "$frontend_out")
+append_summary ""
+append_summary "── frontend ──"
+append_summary "✅ validate:precommit (type-check, architecture)"
+if [ -n "$frontend_summary" ]; then
+  append_summary "$frontend_summary"
+fi
+
+append_summary ""
+append_summary "✅ Pre-commit passed (backend + frontend)."
 
 echo ""
 echo "✅ Pre-commit passed (backend + frontend)."

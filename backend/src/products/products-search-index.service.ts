@@ -1,6 +1,11 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
+
+type ProductWithCategory = Prisma.ProductGetPayload<{
+  include: { category: true };
+}>;
 
 @Injectable()
 export class ProductsSearchIndexService {
@@ -11,7 +16,7 @@ export class ProductsSearchIndexService {
     private elasticsearch: ElasticsearchService,
   ) {}
 
-  async indexProduct(product: any) {
+  async indexProduct(product: ProductWithCategory) {
     try {
       await this.elasticsearch.createIndex(this.indexName, {
         mappings: {
