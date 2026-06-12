@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 
-import { CategoryAttributesPage } from '@/views/admin/Catalog/Categories/CategoryAttributesPage';
+import { CategoryAttributesPage } from '@/views/admin/Catalog/Categories';
 
 export default function AdminCategoryAttributesPage({
   params,

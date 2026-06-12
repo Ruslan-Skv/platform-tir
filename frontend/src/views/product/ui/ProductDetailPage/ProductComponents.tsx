@@ -71,7 +71,7 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
           initialQuantities[comp.id] = 1;
         });
         setQuantities(initialQuantities);
-      } catch (error) {
+      } catch {
         // Error handled silently
       } finally {
         setLoading(false);

@@ -82,7 +82,7 @@ const CatalogPageContent: React.FC<CatalogPageProps> = ({
 
   const isHubPreviewMode = isCatalogHub && !facetBranchSlug;
 
-  const [catalogGridReady, setCatalogGridReady] = useState(() =>
+  const [, setCatalogGridReady] = useState(() =>
     Boolean(initialPage?.products?.length && !(isCatalogHub && !searchParams.get('branch')?.trim()))
   );
 

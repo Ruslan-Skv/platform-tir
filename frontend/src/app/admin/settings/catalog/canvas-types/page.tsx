@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import { CanvasTypesSettingsSection } from '@/views/admin/Settings/CanvasTypesSettingsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { CanvasTypesSettingsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminCanvasTypesSettingsPage() {
   return (

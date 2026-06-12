@@ -2,7 +2,7 @@
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import type { PackageFormData } from '../../form/packageForm';
 import { PackageContractPaymentsTab } from './PackageContractPaymentsTab';

@@ -3,8 +3,11 @@
 /**
  * Проверка архитектуры frontend.
  * @see frontend/docs/ARCHITECTURE.md
+ *
+ * Флаги:
+ *   --verbose  глубокие относительные импорты
+ *   --audit    полный отчёт по всем категориям (без обрезки предупреждений)
  */
-
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -15,18 +18,140 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const FRONTEND_ROOT = path.join(__dirname, '..');
 const SRC_DIR = path.join(FRONTEND_ROOT, 'src');
 
-/** @typedef {{ layers: string[], allowedImports: Record<string, string[]>, allowlist: Array<{ file: string, import: string, reason: string, severity: 'warn'|'error' }>, moduleRoots: Array<{ dir: string, allowedFiles: string[] }>, maxFilesPerDir: { default: number, overrides: Array<{ glob: string, max: number, severity?: 'warn'|'error' }> }, appPageMaxLines: number, maxRelativeDepth: number }} ArchitectureConfig */
+/**
+ * @typedef {Object} ArchitectureConfig
+ * @property {string[]} layers
+ * @property {Record<string, string[]>} allowedImports
+ * @property {Array<{ file: string, import: string, reason: string, severity: 'warn'|'error' }>} allowlist
+ * @property {Array<{ dir: string, allowedFiles: string[] }>} moduleRoots
+ * @property {{ default: number, overrides: Array<{ glob: string, max: number, severity?: 'warn'|'error' }> }} maxFilesPerDir
+ * @property {import('./architecture.config.mjs').default['viewsAdminLayout']} [viewsAdminLayout]
+ * @property {number} appPageMaxLines
+ * @property {{ max: number, glob: string, excludeGlobs?: string[], severity?: 'warn'|'error' }} [viewPageShellMaxLines]
+ * @property {{ max: number, glob: string, excludeGlobs?: string[], severity?: 'warn'|'error' }} [viewPageMaxLines]
+ * @property {number} maxRelativeDepth
+ */
 
 const IMPORT_RE = /^\s*import\s+(?:type\s+)?(?:[\w*{}\s,]+\s+from\s+)?['"]([^'"]+)['"]/;
 
-/** @type {string[]} */
-const errors = [];
-/** @type {string[]} */
-const warnings = [];
+const VERBOSE = process.argv.includes('--verbose');
+const AUDIT = process.argv.includes('--audit');
+
+const IGNORED_DIR_NAMES = new Set(['node_modules', '.next', '__tests__']);
+
 /** @type {Map<string, string>} */
 const allowlistedDebt = new Map();
 
-const VERBOSE = process.argv.includes('--verbose');
+class ViolationCollector {
+  constructor() {
+    /** @type {Array<{ severity: 'error'|'warn', category: string, message: string, sortKey?: string|number }>} */
+    this.items = [];
+  }
+
+  /**
+   * @param {'error'|'warn'} severity
+   * @param {string} category
+   * @param {string} message
+   * @param {{ sortKey?: string|number }} [meta]
+   */
+  add(severity, category, message, meta = {}) {
+    this.items.push({ severity, category, message, sortKey: meta.sortKey ?? message });
+  }
+
+  /** @returns {Map<string, typeof this.items>} */
+  groupByCategory() {
+    const map = new Map();
+    for (const item of this.items) {
+      if (!map.has(item.category)) map.set(item.category, []);
+      map.get(item.category).push(item);
+    }
+    for (const list of map.values()) {
+      list.sort((a, b) => {
+        const ak = typeof a.sortKey === 'number' ? a.sortKey : String(a.sortKey);
+        const bk = typeof b.sortKey === 'number' ? b.sortKey : String(b.sortKey);
+        if (typeof ak === 'number' && typeof bk === 'number') return bk - ak;
+        return String(bk).localeCompare(String(ak), 'ru');
+      });
+    }
+    return map;
+  }
+
+  get errors() {
+    return this.items.filter((i) => i.severity === 'error');
+  }
+
+  get warnings() {
+    return this.items.filter((i) => i.severity === 'warn');
+  }
+
+  print() {
+    const grouped = this.groupByCategory();
+    const categoryOrder = [
+      'layer-boundary',
+      'module-root',
+      'max-files-per-dir',
+      'views-admin-grouped-root',
+      'views-admin-flat-root',
+      'view-page-shell',
+      'view-page-thick',
+      'app-page-thick',
+      'css-module-types',
+      'relative-import-depth',
+    ];
+
+    const printed = new Set();
+
+    for (const category of categoryOrder) {
+      if (!grouped.has(category)) continue;
+      this.printCategory(category, grouped.get(category));
+      printed.add(category);
+    }
+
+    for (const [category, items] of grouped) {
+      if (printed.has(category)) continue;
+      this.printCategory(category, items);
+    }
+  }
+
+  /**
+   * @param {string} category
+   * @param {Array<{ severity: string, message: string }>} items
+   */
+  printCategory(category, items) {
+    const errors = items.filter((i) => i.severity === 'error');
+    const warnings = items.filter((i) => i.severity === 'warn');
+    const icon = errors.length > 0 ? '❌' : '⚠️';
+    const title = CATEGORY_TITLES[category] ?? category;
+
+    console.log(`${icon} ${title} (${items.length}):`);
+    const limit = AUDIT ? items.length : Math.min(items.length, 50);
+    for (const item of items.slice(0, limit)) {
+      const prefix = item.severity === 'error' ? '  ❌' : '  ⚠️';
+      console.log(`${prefix} ${item.message}`);
+    }
+    if (!AUDIT && items.length > limit) {
+      console.log(`  … и ещё ${items.length - limit} (запустите с --audit)`);
+    }
+    console.log('');
+  }
+}
+
+/** @type {ViolationCollector} */
+const collector = new ViolationCollector();
+
+/** @type {Record<string, string>} */
+const CATEGORY_TITLES = {
+  'layer-boundary': 'Нарушения границ слоёв',
+  'module-root': 'Лишние файлы в корне platform/editor или hub',
+  'max-files-per-dir': 'Слишком много .ts/.tsx в одной папке',
+  'views-admin-grouped-root': 'Домен views/admin с подпапками — лишние файлы в корне',
+  'views-admin-flat-root': 'Плоский корень views/admin — нужна группировка',
+  'view-page-shell': 'Толстые оболочки *Page.tsx (ожидается shell ≤ лимита)',
+  'view-page-thick': 'Крупные *Page.tsx (нужна декомпозиция shell + hook + view)',
+  'app-page-thick': 'Толстые app/**/page.tsx',
+  'css-module-types': 'Импорт типов из *.module.css',
+  'relative-import-depth': 'Глубокие относительные импорты',
+};
 
 function toPosix(p) {
   return p.replace(/\\/g, '/');
@@ -49,6 +174,14 @@ function globMatch(pattern, value) {
       .replace(/\*/g, '[^/]*')}$`
   );
   return re.test(normalized);
+}
+
+function matchesAnyGlob(globs, value) {
+  return globs.some((g) => globMatch(g, value));
+}
+
+function isTsSourceFile(name) {
+  return /\.tsx?$/.test(name) && !/\.(test|spec)\.tsx?$/.test(name);
 }
 
 function getLayer(absPath) {
@@ -95,9 +228,7 @@ function collectImports(filePath) {
 function findAllowlistEntry(fromRel, importSpec) {
   for (const entry of config.allowlist) {
     if (!globMatch(entry.file, fromRel)) continue;
-    const importPattern = entry.import.startsWith('@/')
-      ? entry.import.slice(2)
-      : entry.import;
+    const importPattern = entry.import.startsWith('@/') ? entry.import.slice(2) : entry.import;
     if (importSpec.startsWith('@/')) {
       const rest = importSpec.slice(2);
       if (globMatch(importPattern, rest)) return entry;
@@ -106,8 +237,34 @@ function findAllowlistEntry(fromRel, importSpec) {
   return null;
 }
 
+function listDirEntries(dir) {
+  return fs.readdirSync(dir, { withFileTypes: true });
+}
+
+function countTsFiles(dir) {
+  return listDirEntries(dir).filter((e) => e.isFile() && isTsSourceFile(e.name)).length;
+}
+
+function listRootTsFiles(dir) {
+  return listDirEntries(dir)
+    .filter((e) => e.isFile() && isTsSourceFile(e.name))
+    .map((e) => e.name);
+}
+
+function isAllowedRootFile(name, layout) {
+  if (layout.allowedRootFiles?.includes(name)) return true;
+  for (const pattern of layout.allowedRootGlobs ?? []) {
+    if (pattern === '*.md' && name.endsWith('.md')) return true;
+    if (pattern === 'README*' && name.startsWith('README')) return true;
+  }
+  return false;
+}
+
 function checkLayerBoundaries() {
-  const files = walkFiles(SRC_DIR, (f) => /\.(ts|tsx)$/.test(f) && !/\.(test|spec)\.(ts|tsx)$/.test(f));
+  const files = walkFiles(
+    SRC_DIR,
+    (f) => /\.(ts|tsx)$/.test(f) && !/\.(test|spec)\.(ts|tsx)$/.test(f)
+  );
 
   for (const file of files) {
     const fromLayer = getLayer(file);
@@ -127,18 +284,18 @@ function checkLayerBoundaries() {
 
       const allowEntry = findAllowlistEntry(fromRel, spec);
       const allowSeverity = allowEntry?.severity;
-      const msg = `${fromRel} — импорт из слоя «${toLayer}» запрещён для «${fromLayer}»: ${spec}\n    ${line}`;
+      const msg = `${fromRel} — импорт из слоя «${toLayer}» запрещён для «${fromLayer}»: ${spec}\n      ${line}`;
 
       if (allowSeverity === 'warn') {
         allowlistedDebt.set(fromRel, allowEntry.reason ?? msg);
         continue;
       }
       if (allowSeverity === 'error') {
-        errors.push(`❌ ${msg} (allowlist)`);
+        collector.add('error', 'layer-boundary', `${msg} (allowlist)`);
         continue;
       }
 
-      errors.push(`❌ ${msg}`);
+      collector.add('error', 'layer-boundary', msg);
     }
   }
 }
@@ -148,21 +305,17 @@ function checkModuleRoots() {
     const absDir = path.join(SRC_DIR, dir);
     if (!fs.existsSync(absDir)) continue;
 
-    for (const entry of fs.readdirSync(absDir, { withFileTypes: true })) {
+    for (const entry of listDirEntries(absDir)) {
       if (!entry.isFile()) continue;
       if (allowedFiles.includes(entry.name)) continue;
       if (entry.name.endsWith('.md')) continue;
-      errors.push(
-        `❌ ${dir}/ — в корне модуля лишний файл «${entry.name}». Разрешены: ${allowedFiles.join(', ')}`
+      collector.add(
+        'error',
+        'module-root',
+        `${dir}/ — в корне модуля лишний файл «${entry.name}». Разрешены: ${allowedFiles.join(', ')}`
       );
     }
   }
-}
-
-function countTsFiles(dir) {
-  return fs.readdirSync(dir, { withFileTypes: true }).filter(
-    (e) => e.isFile() && /\.tsx?$/.test(e.name) && !/\.(test|spec)\.tsx?$/.test(e.name)
-  ).length;
 }
 
 function checkMaxFilesPerDir() {
@@ -184,14 +337,97 @@ function checkMaxFilesPerDir() {
 
     if (count <= max) continue;
 
-    const msg = `${rel}/ — ${count} файлов .ts/.tsx (лимит ${max}). Разбейте на подпапки.`;
-    if (severity === 'warn') warnings.push(`⚠️  ${msg}`);
-    else errors.push(`❌ ${msg}`);
+    collector.add(
+      severity,
+      'max-files-per-dir',
+      `${rel}/ — ${count} файлов .ts/.tsx (лимит ${max}). Разбейте на подпапки.`,
+      { sortKey: count }
+    );
+  }
+}
+
+function shouldSkipViewsAdminLayoutDir(rel, layout) {
+  if (layout.excludeGlobs?.some((g) => globMatch(g, rel))) return true;
+  const base = path.basename(rel);
+  if (layout.skipDirBasenames?.some((b) => b.toLowerCase() === base.toLowerCase())) return true;
+  return false;
+}
+
+function checkViewsAdminLayout() {
+  const layout = config.viewsAdminLayout;
+  if (!layout) return;
+
+  const structural = new Set((layout.structuralSubdirs ?? []).map((s) => s.toLowerCase()));
+  const severity = layout.severity ?? 'warn';
+  const dirs = walkDirs(path.join(SRC_DIR, 'views', 'admin'));
+
+  for (const dir of dirs) {
+    const rel = relSrc(dir);
+    if (shouldSkipViewsAdminLayoutDir(rel, layout)) continue;
+
+    const entries = listDirEntries(dir);
+    const subdirs = entries.filter((e) => e.isDirectory() && !IGNORED_DIR_NAMES.has(e.name));
+    const rootTsNames = listRootTsFiles(dir);
+    const rootTsCount = rootTsNames.length;
+
+    const domainSubdirs = subdirs.filter((e) => !structural.has(e.name.toLowerCase()));
+    const hasDomainSubdirs = domainSubdirs.length > 0;
+    const groupedRoot = matchesAnyGlob(layout.groupedRootGlobs ?? [], rel);
+    const flatRoot = matchesAnyGlob(layout.flatRootGlobs ?? [], rel);
+
+    if (groupedRoot && hasDomainSubdirs) {
+      const disallowed = rootTsNames.filter((name) => !isAllowedRootFile(name, layout));
+      if (disallowed.length > 0) {
+        const subdirList = domainSubdirs.map((d) => d.name).join(', ');
+        collector.add(
+          severity,
+          'views-admin-grouped-root',
+          `${rel}/ — в корне лишние файлы: ${disallowed.join(', ')}. ` +
+            `Есть доменные подпапки (${subdirList}); в корне допускается только ${(layout.allowedRootFiles ?? ['index.ts']).join(', ')}.`,
+          { sortKey: disallowed.length }
+        );
+      }
+    } else if (flatRoot && rootTsCount > layout.maxRootTsFiles) {
+      collector.add(
+        severity,
+        'views-admin-flat-root',
+        `${rel}/ — ${rootTsCount} файлов .ts/.tsx в корне (лимит ${layout.maxRootTsFiles}). ` +
+          `Сгруппируйте по list/edit/shared или подпапке раздела; публичный API — index.ts.`,
+        { sortKey: rootTsCount }
+      );
+    }
+  }
+}
+
+/**
+ * @param {{ max: number, glob: string, excludeGlobs?: string[], severity?: 'warn'|'error' }} rule
+ * @param {string} category
+ * @param {string} label
+ */
+function checkViewPageLineLimit(rule, category, label) {
+  if (!rule) return;
+
+  const files = walkFiles(SRC_DIR, (f) => {
+    const rel = relSrc(f);
+    if (!/Page\.tsx$/.test(f)) return false;
+    if (!globMatch(rule.glob, rel)) return false;
+    if (rule.excludeGlobs?.some((g) => globMatch(g, rel))) return false;
+    return true;
+  });
+
+  const severity = rule.severity ?? 'warn';
+
+  for (const file of files) {
+    const lines = fs.readFileSync(file, 'utf8').split('\n').length;
+    if (lines <= rule.max) continue;
+
+    collector.add(severity, category, `${relSrc(file)} — ${lines} строк (${label} ${rule.max}).`, {
+      sortKey: lines,
+    });
   }
 }
 
 function checkAppPagesThin() {
-  // Строго для новых разделов; остальной app/ — постепенная миграция
   const pages = walkFiles(
     SRC_DIR,
     (f) =>
@@ -202,13 +438,18 @@ function checkAppPagesThin() {
   for (const file of pages) {
     const lines = fs.readFileSync(file, 'utf8').split('\n').length;
     if (lines <= config.appPageMaxLines) continue;
-    errors.push(
-      `❌ ${relSrc(file)} — ${lines} строк (лимит ${config.appPageMaxLines}). Вынесите логику в views/.`
+    collector.add(
+      'error',
+      'app-page-thick',
+      `${relSrc(file)} — ${lines} строк (лимит ${config.appPageMaxLines}). Вынесите логику в views/.`,
+      { sortKey: lines }
     );
   }
 }
 
 function checkRelativeImportDepth() {
+  if (!VERBOSE) return;
+
   const files = walkFiles(SRC_DIR, (f) => /\.(ts|tsx)$/.test(f));
 
   for (const file of files) {
@@ -217,9 +458,10 @@ function checkRelativeImportDepth() {
       if (!spec.startsWith('.')) continue;
       const depth = (spec.match(/\.\.\//g) || []).length;
       if (depth < config.maxRelativeDepth) continue;
-      if (!VERBOSE) continue;
-      warnings.push(
-        `⚠️  ${fromRel} — глубокий относительный импорт (${depth}× ..): ${spec}\n    ${line}`
+      collector.add(
+        'warn',
+        'relative-import-depth',
+        `${fromRel} — глубокий относительный импорт (${depth}× ..): ${spec}\n      ${line}`
       );
     }
   }
@@ -236,8 +478,10 @@ function checkCssModuleTypeImports() {
         if (line.match(/import\s+[\w*,\s{}]+\s+from/) && !line.match(/import\s+type\s+\{/)) {
           const isStyleDefault = /^import\s+\w+\s+from/.test(line) && !line.includes('{');
           if (!isStyleDefault) {
-            errors.push(
-              `❌ ${fromRel} — типы/компоненты нельзя импортировать из .module.css: ${spec}\n    ${line}`
+            collector.add(
+              'error',
+              'css-module-types',
+              `${fromRel} — типы/компоненты нельзя импортировать из .module.css: ${spec}\n      ${line}`
             );
           }
         }
@@ -248,8 +492,8 @@ function checkCssModuleTypeImports() {
 
 function walkFiles(dir, predicate, acc = []) {
   if (!fs.existsSync(dir)) return acc;
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.next') continue;
+  for (const entry of listDirEntries(dir)) {
+    if (IGNORED_DIR_NAMES.has(entry.name)) continue;
     const full = path.join(dir, entry.name);
     if (entry.isDirectory()) walkFiles(full, predicate, acc);
     else if (predicate(full)) acc.push(full);
@@ -260,11 +504,29 @@ function walkFiles(dir, predicate, acc = []) {
 function walkDirs(dir, acc = []) {
   if (!fs.existsSync(dir)) return acc;
   acc.push(dir);
-  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
-    if (entry.name === 'node_modules' || entry.name === '.next') continue;
+  for (const entry of listDirEntries(dir)) {
+    if (IGNORED_DIR_NAMES.has(entry.name)) continue;
     if (entry.isDirectory()) walkDirs(path.join(dir, entry.name), acc);
   }
   return acc;
+}
+
+function printSummary() {
+  const errors = collector.errors;
+  const warnings = collector.warnings;
+
+  if (errors.length === 0 && warnings.length === 0) return;
+
+  console.log('─'.repeat(60));
+  console.log(
+    `Итого: ${errors.length} ошибок, ${warnings.length} предупреждений` +
+      (AUDIT ? ' (режим --audit)' : '')
+  );
+  if (warnings.length > 0 && !AUDIT) {
+    console.log('Подсказка: npm run check-architecture -- --audit — полный список предупреждений');
+  }
+  console.log('─'.repeat(60));
+  console.log('');
 }
 
 function main() {
@@ -273,34 +535,36 @@ function main() {
   checkLayerBoundaries();
   checkModuleRoots();
   checkMaxFilesPerDir();
+  checkViewsAdminLayout();
+  checkViewPageLineLimit(config.viewPageShellMaxLines, 'view-page-shell', 'лимит shell');
+  checkViewPageLineLimit(config.viewPageMaxLines, 'view-page-thick', 'лимит');
   checkAppPagesThin();
   checkRelativeImportDepth();
   checkCssModuleTypeImports();
 
   if (allowlistedDebt.size > 0) {
-    console.log(`📋 Известный техдолг (${allowlistedDebt.size} файлов, не блокирует commit):`);
+    console.log(
+      `📋 Известный техдолг allowlist (${allowlistedDebt.size} файлов, не блокирует commit):`
+    );
     for (const [file, reason] of allowlistedDebt) {
       console.log(`  • ${file} — ${reason}`);
     }
     console.log('');
   }
 
-  if (warnings.length > 0) {
-    console.log(`⚠️  Предупреждения (${warnings.length}):`);
-    for (const w of warnings.slice(0, 15)) console.log(`  ${w}`);
-    if (warnings.length > 15) console.log(`  … и ещё ${warnings.length - 15}`);
-    console.log('');
+  if (collector.items.length > 0) {
+    collector.print();
+    printSummary();
   }
 
-  if (errors.length > 0) {
-    console.log(`❌ Ошибки архитектуры (${errors.length}):`);
-    for (const e of errors) console.log(`  ${e}`);
-    console.log('\nСм. frontend/docs/ARCHITECTURE.md\n');
+  if (collector.errors.length > 0) {
+    console.log('См. frontend/docs/ARCHITECTURE.md\n');
     process.exit(1);
   }
 
+  const warnCount = collector.warnings.length;
   console.log(
-    `✅ Архитектура в порядке${warnings.length ? ` (${warnings.length} предупреждений — см. выше)` : ''}.\n`
+    `✅ Критичных нарушений нет${warnCount ? ` (${warnCount} предупреждений — см. отчёт выше)` : ''}.\n`
   );
 }
 

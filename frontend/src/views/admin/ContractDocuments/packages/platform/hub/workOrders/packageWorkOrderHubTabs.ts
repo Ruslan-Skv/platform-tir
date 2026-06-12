@@ -54,7 +54,7 @@ const WINDOWS_WORK_ORDER_HUB_TAB_LABELS: Partial<Record<PackageWorkOrderHubTabId
 
 export function packageWorkOrderHubTabsForPackage(
   addendumSlotCount: number,
-  packageKind: ContractDocumentPackageKind = 'REPAIR'
+  _packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): PackageWorkOrderHubTabId[] {
   return PACKAGE_WORK_ORDER_HUB_TAB_IDS.filter((id) => {
     if (isPackageWorkOrderAddendumTab(id)) {

@@ -1,7 +1,7 @@
 'use client';
 
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import type { PackageHubModalModel } from './usePackageHubModal';

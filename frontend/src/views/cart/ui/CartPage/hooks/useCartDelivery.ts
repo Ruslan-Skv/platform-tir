@@ -75,7 +75,7 @@ export function useCartDelivery({ orderWithDelivery, subtotal }: UseCartDelivery
       deliveryHasElevator: orderWithDelivery.deliveryHasElevator ?? false,
       preferredDeliveryTime: orderWithDelivery.preferredDeliveryTime ?? '',
     }));
-  }, [orderWithDelivery?.id, !!orderWithDelivery]);
+  }, [orderWithDelivery]);
 
   const deliveryFormValidForCalculation =
     wantDelivery &&

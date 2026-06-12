@@ -1,4 +1,4 @@
-import { PhotoProjectFormPage } from '@/views/admin/Content/PhotoProjectFormPage';
+import { PhotoProjectFormPage } from '@/views/admin/Content/Photo';
 
 interface EditPhotoProjectPageProps {
   params: Promise<{ id: string }>;

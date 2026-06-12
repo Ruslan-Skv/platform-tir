@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
+  bindAuthRefreshOnPageVisible,
   getApiBaseUrl,
   getJwtExpMs,
   persistTokenResponse,
@@ -384,7 +385,6 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const updatedUser = await response.json();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _password, ...userWithoutPassword } = updatedUser;
         setUser(userWithoutPassword);
         const isAdminToken = token && localStorage.getItem(ADMIN_TOKEN_KEY) === token;
@@ -439,7 +439,6 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         }
 
         const { user: updatedUser } = await response.json();
-        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         const { password: _password, ...userWithoutPassword } = updatedUser;
         setUser(userWithoutPassword);
         const isAdminToken = token && localStorage.getItem(ADMIN_TOKEN_KEY) === token;
@@ -482,16 +481,20 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       if (!exp) return;
       if (exp - Date.now() < 120_000) {
         void refreshAccessTokenSilently().then((ok) => {
-          if (!ok && exp <= Date.now()) {
-            setToken(null);
-            setUser(null);
-          }
+          if (!ok) return;
+          const latest =
+            localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+          if (latest) setToken(latest);
         });
       }
     };
     const id = window.setInterval(tick, 60_000);
     tick();
-    return () => window.clearInterval(id);
+    const unbindVisible = bindAuthRefreshOnPageVisible();
+    return () => {
+      window.clearInterval(id);
+      unbindVisible();
+    };
   }, [token]);
 
   const value: UserAuthContextType = {

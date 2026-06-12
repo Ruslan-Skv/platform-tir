@@ -9,7 +9,7 @@ import {
   getDeliveryConfig,
   updateDeliveryConfig,
 } from '@/shared/api/admin-orders';
-import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
+import { ROLES_CONFIG } from '@/views/admin/Settings';
 
 import styles from './page.module.css';
 

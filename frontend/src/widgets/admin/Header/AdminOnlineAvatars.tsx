@@ -72,7 +72,6 @@ export function AdminOnlineAvatars() {
         return (
           <div key={u.id} className={styles.onlineFace} style={{ zIndex: index + 1 }} title={label}>
             {src ? (
-              // eslint-disable-next-line @next/next/no-img-element -- URL из API
               <img src={src} alt="" className={styles.onlineImg} />
             ) : (
               <span className={styles.onlineInitials} aria-hidden>

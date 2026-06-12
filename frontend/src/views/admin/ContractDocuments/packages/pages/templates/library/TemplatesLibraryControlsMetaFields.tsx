@@ -1,7 +1,7 @@
 'use client';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 import type { PackageTemplatePreviewCustomerKind } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import {
   PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS,

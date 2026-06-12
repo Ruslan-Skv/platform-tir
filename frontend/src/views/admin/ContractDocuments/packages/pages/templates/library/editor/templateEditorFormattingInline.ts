@@ -230,7 +230,7 @@ function stripBoldFontWeightFromElementStyle(el: HTMLElement): void {
   else el.removeAttribute('style');
 }
 
-function stripBoldFromHtmlFragment(fragment: DocumentFragment): DocumentFragment {
+function _stripBoldFromHtmlFragment(fragment: DocumentFragment): DocumentFragment {
   const holder = document.createElement('div');
   holder.appendChild(fragment);
   for (const el of [...holder.querySelectorAll('b, strong, B, STRONG')]) {

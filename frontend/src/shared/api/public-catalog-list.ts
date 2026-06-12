@@ -71,7 +71,7 @@ export interface PublicCatalogPageResponse extends PublicCatalogListResponse {
   filters: CatalogFiltersResponse;
 }
 
-export interface FetchPublicCatalogPageOptions extends FetchPublicCatalogListOptions {}
+export type FetchPublicCatalogPageOptions = FetchPublicCatalogListOptions;
 
 export async function fetchPublicCatalogPage(
   options: FetchPublicCatalogPageOptions,

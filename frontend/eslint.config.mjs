@@ -63,6 +63,9 @@ export default [
       // General
       'prefer-const': 'error',
       'no-var': 'error',
+
+      // Загрузки с API/CDN и HTML-редакторы — next/image не подходит без remotePatterns на каждый URL
+      '@next/next/no-img-element': 'off',
     },
   },
 ];

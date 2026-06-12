@@ -1,5 +1,6 @@
 export {
   SupplierSettlementsPage,
   SupplierSettlementsPage as default,
-} from './SupplierSettlementsPage';
-export { SupplierSettlementDetailPage } from './SupplierSettlementDetailPage';
+} from './list/SupplierSettlementsPage';
+export { SupplierSettlementDetailPage } from './detail/SupplierSettlementDetailPage';
+export type { SupplierSettlementRow } from './detail/supplier-settlement-detail-page.types';

@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  CheckCircleIcon,
   ChevronDownIcon,
   ChevronUpIcon,
   PlusCircleIcon,
@@ -30,7 +29,6 @@ type ServiceCategoryPageViewProps = {
 
 export function ServiceCategoryPageView({ model }: ServiceCategoryPageViewProps) {
   const {
-    slug,
     hideAddToCart,
     hideBreadcrumbs,
     hideTitleBlock,
@@ -38,21 +36,16 @@ export function ServiceCategoryPageView({ model }: ServiceCategoryPageViewProps)
     data,
     showCategoryLoading,
     calculations,
-    setCalculations,
     activeCalcId,
     setActiveCalcId,
     addToCartLoading,
     addToCartError,
-    detachedFromCart,
     lastAddedTotal,
-    presetInCart,
     detachConfirmOpen,
     setDetachConfirmOpen,
     pendingReviewConfirmOpen,
     setPendingReviewConfirmOpen,
-    orderStatus,
     collapsedWorkGroupKeys,
-    draftCustomItems,
     customWorkName,
     setCustomWorkName,
     customWorkUnit,
@@ -73,7 +66,6 @@ export function ServiceCategoryPageView({ model }: ServiceCategoryPageViewProps)
     toggleCollapsed,
     handleAddToCart,
     showPrices,
-    activeCalc,
     activeCalcLines,
     tableSections,
     tableColCount,

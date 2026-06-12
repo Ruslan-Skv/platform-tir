@@ -1,7 +1,7 @@
 'use client';
 
-import { CatalogFilterBlockSection } from '@/views/admin/Settings/CatalogFilterBlockSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { CatalogFilterBlockSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminCatalogFiltersSettingsPage() {
   return (

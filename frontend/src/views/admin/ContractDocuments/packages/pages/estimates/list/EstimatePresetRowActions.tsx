@@ -6,7 +6,6 @@ import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 import {
   buildEstimateWorkScopeTree,
-  listPresetsInSplitBundle,
   resolveSplitBundleId,
 } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateWorkScopeTree';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';

@@ -42,7 +42,7 @@ export function CartOrderServiceGroupCard({
   group,
   sectionId,
   orderIdForServices,
-  index,
+  index: _index,
 }: CartOrderServiceGroupCardProps) {
   const roomsForPreset = group.rooms.map((room) => ({
     name: room.roomName,

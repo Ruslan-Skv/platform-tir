@@ -79,7 +79,7 @@ function OrderViewContent() {
     if (!token || !order || loading) return;
     const intervalId = setInterval(loadOrder, POLL_INTERVAL_MS);
     return () => clearInterval(intervalId);
-  }, [token, order?.id, loading, loadOrder]);
+  }, [token, order, loading, loadOrder]);
 
   // Обновить при возврате на вкладку (например, после правок в админке)
   useEffect(() => {
@@ -87,7 +87,7 @@ function OrderViewContent() {
     const onFocus = loadOrder;
     window.addEventListener('focus', onFocus);
     return () => window.removeEventListener('focus', onFocus);
-  }, [token, order?.id, loadOrder]);
+  }, [token, order, loadOrder]);
 
   if (loading) {
     return (

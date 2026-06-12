@@ -158,7 +158,7 @@ export function defaultPackageFormData(): PackageFormData {
   };
 }
 
-function normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
+function _normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
   if (!Array.isArray(raw)) return [];
   const out: PackageIssuedInvoice[] = [];
   for (const item of raw) {

@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import { ManufacturersSettingsSection } from '@/views/admin/Settings/ManufacturersSettingsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { ManufacturersSettingsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminManufacturersSettingsPage() {
   return (

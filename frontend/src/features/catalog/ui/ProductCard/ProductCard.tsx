@@ -55,8 +55,8 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   showPartnerIconOnCards = true,
   onProductCatalogPatched,
 }) => {
-  const { toggleWishlist, isInWishlist, wishlist } = useWishlist();
-  const { toggleCompare, isInCompare, compare, removeFromCompare } = useCompare();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const { toggleCompare, isInCompare, removeFromCompare } = useCompare();
   const { cart, addToCart, updateQuantity, updateCartItemQuantityById } = useCart();
   const [isLoading, setIsLoading] = useState(false);
   const [isCompareLoading, setIsCompareLoading] = useState(false);
@@ -103,22 +103,17 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     setIsEditingPublicPrice(false);
   }, [product.originalId, product.slug, selectedVariantIndex]);
 
-  // Получаем оригинальный ID товара из API
-  const getProductId = (): string => {
-    // Используем originalId если он есть, иначе пробуем преобразовать id в string
+  // Получаем ID товара один раз
+  const productId = useMemo(() => {
     if (product.originalId) {
       return product.originalId;
     }
-    // Fallback на id как string
     return String(product.id);
-  };
-
-  // Получаем ID товара один раз
-  const productId = useMemo(() => getProductId(), [product.id, product.originalId]);
+  }, [product.id, product.originalId]);
 
   // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
-  const isFavorite = useMemo(() => isInWishlist(productId), [isInWishlist, productId, wishlist]);
-  const isInCompareState = useMemo(() => isInCompare(productId), [isInCompare, productId, compare]);
+  const isFavorite = useMemo(() => isInWishlist(productId), [isInWishlist, productId]);
+  const isInCompareState = useMemo(() => isInCompare(productId), [isInCompare, productId]);
 
   const finalPrice = displayPrice;
   const oldPrice = displayOldPrice;
@@ -260,7 +255,6 @@ export const ProductCard: React.FC<ProductCardProps> = ({
     e.preventDefault();
     e.stopPropagation();
 
-    const productId = getProductId();
     const cardVariantId = selectedVariant?.id;
 
     try {

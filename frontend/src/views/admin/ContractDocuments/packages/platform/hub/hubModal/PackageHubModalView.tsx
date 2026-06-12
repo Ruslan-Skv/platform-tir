@@ -2,8 +2,8 @@
 
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { PackageContractPaymentsJournalModal } from '../payments/PackageContractPaymentsJournalModal';

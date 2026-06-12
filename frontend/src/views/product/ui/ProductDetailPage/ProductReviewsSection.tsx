@@ -17,7 +17,7 @@ interface ProductReviewsSectionProps {
 
 export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   productId,
-  productName,
+  productName: _productName,
   initialRating = 0,
   initialReviewsCount = 0,
   initialReviews = [],
@@ -61,7 +61,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
         setLoading(false);
       }
     },
-    [productId, initialRating, settings?.enabled]
+    [productId, settings?.enabled]
   );
 
   useEffect(() => {
@@ -72,7 +72,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
       setTotal(initialReviewsCount);
       setReviewsCount(initialReviewsCount);
     }
-  }, [settings?.enabled, initialReviews.length, initialReviewsCount]);
+  }, [settings?.enabled, initialReviews, initialReviewsCount, loadReviews, page]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

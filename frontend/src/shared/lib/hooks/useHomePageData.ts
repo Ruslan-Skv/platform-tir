@@ -4,7 +4,7 @@ import { keepPreviousData, useQuery } from '@tanstack/react-query';
 
 import type { ContactFormBlock } from '@/shared/api/contact-form';
 import { getContactFormBlock } from '@/shared/api/contact-form';
-import type { FeaturedProductsBlockSettings, FeaturedProductsQueryParams } from '@/shared/api/home';
+import type { FeaturedProductsQueryParams } from '@/shared/api/home';
 import {
   getFeaturedProducts,
   getFeaturedProductsBlock,

@@ -1,10 +1,10 @@
 import type { CategoryAttributeForCopy, ProductForCopy } from '@/entities/product';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { ProductCreatePage } from '@/views/admin/Catalog/Products/ProductCreatePage';
 import {
   type CopiedProductData,
+  ProductCreatePage,
   mapProductToCopyData,
-} from '@/views/admin/Catalog/Products/copy-product-utils';
+} from '@/views/admin/Catalog/Products';
 
 // RSC: ходим на бэкенд напрямую (см. app/(site)/page.tsx). NEXT_PUBLIC_API_URL часто указывает на прокси
 // Next (:3000) — с сервера такой fetch в Docker/SSR даёт не-JSON или ошибку, копирование ломается.

@@ -1,7 +1,7 @@
 'use client';
 
-import { CatalogHubPreviewSection } from '@/views/admin/Settings/CatalogHubPreviewSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { CatalogHubPreviewSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminCatalogHubPreviewSettingsPage() {
   return (

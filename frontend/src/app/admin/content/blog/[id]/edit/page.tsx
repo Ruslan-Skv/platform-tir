@@ -1,4 +1,4 @@
-import { BlogPostFormPage } from '@/views/admin/Content/BlogPostFormPage';
+import { BlogPostFormPage } from '@/views/admin/Content/Blog';
 
 interface AdminBlogEditPageProps {
   params: Promise<{ id: string }>;

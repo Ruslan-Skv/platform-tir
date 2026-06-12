@@ -2,7 +2,7 @@
 
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CartProvider } from '@/shared/lib/contexts/CartContext';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
 
 import cdBase from '../../../../styles/base.module.css';

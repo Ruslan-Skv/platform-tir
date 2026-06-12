@@ -13,7 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 function ResetPasswordContent() {
   const searchParams = useSearchParams();
-  const router = useRouter();
+  const _router = useRouter();
   const token = searchParams.get('token') ?? '';
 
   const [password, setPassword] = useState('');

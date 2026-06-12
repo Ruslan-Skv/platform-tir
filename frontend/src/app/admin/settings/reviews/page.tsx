@@ -1,7 +1,7 @@
 'use client';
 
-import { ReviewsSection } from '@/views/admin/Settings/ReviewsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { ReviewsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminReviewsPage() {
   return (

@@ -1,2 +1,2 @@
-export { UsersPage, UsersPage as default } from './UsersPage';
-export type { AdminUser } from './UsersPage';
+export { UsersPage, UsersPage as default } from './list/UsersPage';
+export type { AdminUser } from './list/users-page.types';

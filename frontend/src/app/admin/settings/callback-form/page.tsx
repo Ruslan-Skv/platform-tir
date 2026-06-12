@@ -1,7 +1,7 @@
 'use client';
 
-import { CallbackFormSection } from '@/views/admin/Settings/CallbackFormSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { CallbackFormSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminCallbackFormPage() {
   return (

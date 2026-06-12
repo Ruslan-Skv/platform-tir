@@ -1,0 +1,1 @@
+export const ORDERS_SHIPPING_PAGE_LIMIT = 20;

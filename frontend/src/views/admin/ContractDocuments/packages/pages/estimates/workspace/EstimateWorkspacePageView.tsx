@@ -1,6 +1,6 @@
 'use client';
 
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';

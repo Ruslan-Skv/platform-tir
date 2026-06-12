@@ -4,7 +4,7 @@ import { Suspense, use } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
-import { ProductEditPage } from '@/views/admin/Catalog/Products/ProductEditPage';
+import { ProductEditPage } from '@/views/admin/Catalog/Products';
 
 /**
  * key по searchParams: при повторном входе в ту же карточку Next.js может восстановить сегмент из Router Cache

@@ -1,8 +1,4 @@
-import {
-  CONTRACT_LEGAL_LIST_CLASS,
-  detectSectionNumber,
-  getContractLegalListContext,
-} from './contractLegalList';
+import { detectSectionNumber, getContractLegalListContext } from './contractLegalList';
 
 /** Пункт-заглушка: 2 пустые строки для рукописных замечаний (без номера, счётчик не сдвигается). */
 export const CONTRACT_REMARK_BLANK_LINES_CLASS = 'contractRemarkBlankLines';

@@ -282,6 +282,7 @@ export function usePackageAddendumEditor({
     setDraggingAddendumExcludedEstimatePresetId,
     unmarkAddendumSlotPaid,
     unmarkAddendumSlotSigned,
+    formRef,
   ]);
 
   const windowsAddendumTabProps = useMemo((): ComponentProps<typeof ProductAddendumTab> | null => {

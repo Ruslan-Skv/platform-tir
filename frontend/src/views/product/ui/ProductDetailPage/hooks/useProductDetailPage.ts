@@ -18,7 +18,6 @@ import {
   patchProductComponent,
 } from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
@@ -35,7 +34,6 @@ import {
   type ProductVariant,
 } from '../product-detail-page.types';
 import {
-  catalogBadgeIdsFromProduct,
   scrollProductDetailToTop,
   serializePublicAttributeDraft,
   serializePublicComponentsDraft,
@@ -51,8 +49,8 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
     updateCartItemQuantityById,
     removeCartItemById,
   } = useCart();
-  const { toggleWishlist, isInWishlist, wishlist } = useWishlist();
-  const { toggleCompare, isInCompare, compare } = useCompare();
+  const { toggleWishlist, isInWishlist } = useWishlist();
+  const { toggleCompare, isInCompare } = useCompare();
   const [product, setProduct] = useState<ProductData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -357,11 +355,11 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
   // Используем глобальное состояние напрямую - автоматически обновляется при изменении wishlist/compare
   const isFavorite = useMemo(
     () => (productId ? isInWishlist(productId) : false),
-    [isInWishlist, productId, wishlist]
+    [isInWishlist, productId]
   );
   const isInCompareState = useMemo(
     () => (productId ? isInCompare(productId) : false),
-    [isInCompare, productId, compare]
+    [isInCompare, productId]
   );
 
   const handleFavoriteClick = async () => {
@@ -673,7 +671,7 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
     } finally {
       setSavingPublicBadges(false);
     }
-  }, [product, draftCatalogBadgeIds]);
+  }, [product, draftCatalogBadgeIds, router]);
 
   const handleSavePublicAttributes = useCallback(async () => {
     if (!product) return;

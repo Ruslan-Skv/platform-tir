@@ -9,9 +9,9 @@ import {
 } from '@/shared/api/admin-contract-document-estimate-presets-trash';
 import type { ContractDocumentPackageUserRef } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
-import panelStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import styles from '@/views/admin/CRM/Customers/CrmCustomerTrashModal.module.css';
-import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/crmCustomerDisplay';
+import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';
+import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/shared/crmCustomerDisplay';
 
 import {
   ESTIMATE_TRASH_RETENTION_NOTICE,

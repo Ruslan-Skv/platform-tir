@@ -7,7 +7,6 @@ import {
   defaultPackageFormData,
   defaultPackageManagerQuestionnaire1Block,
   defaultPackagePostWorkQuestionnaire2Block,
-  defaultPackagePostWorkQuestionnaire2TradeRatings,
 } from './defaults';
 import { resolveExecutorBankFields } from './executorBankFields';
 import type {
@@ -269,7 +268,7 @@ export function clampPackageAddendumSlotCount(raw: unknown): number {
   return Math.trunc(x);
 }
 
-function normalizeAddendumSlotCount(raw: unknown): number {
+function _normalizeAddendumSlotCount(raw: unknown): number {
   return clampPackageAddendumSlotCount(raw);
 }
 

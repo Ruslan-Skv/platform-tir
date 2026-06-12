@@ -30,13 +30,7 @@ export function usePackageContractTotalSync({
 }: UsePackageContractTotalSyncOptions) {
   const productContractCostBreakdown = useMemo(
     () => (isProductDirectionPackage ? computeProductContractCostBreakdown(form) : null),
-    [
-      isProductDirectionPackage,
-      form.estimate.snapshot?.total,
-      form.estimate.selectedPresetIds,
-      form.productSpecificationAmount,
-      form.contract.discountPercent,
-    ]
+    [isProductDirectionPackage, form]
   );
 
   const contractTotalFromMainEstimate = useMemo(() => {
@@ -45,12 +39,7 @@ export function usePackageContractTotalSync({
       form.estimate.snapshot?.total ?? null,
       form.contract.discountPercent
     );
-  }, [
-    isProductDirectionPackage,
-    form.estimate.snapshot?.total,
-    form.estimate.selectedPresetIds,
-    form.contract.discountPercent,
-  ]);
+  }, [isProductDirectionPackage, form.estimate.snapshot?.total, form.contract.discountPercent]);
 
   useEffect(() => {
     if (isProductDirectionPackage) return;

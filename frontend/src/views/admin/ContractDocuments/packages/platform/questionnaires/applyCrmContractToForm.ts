@@ -4,8 +4,8 @@ import type {
   CrmCustomerDetail,
   DocumentCustomerBlock,
 } from '@/shared/api/admin-crm';
-import { formFromCrmCustomerDetail } from '@/views/admin/CRM/Customers/crmCustomerForm';
-import { joinPersonFullName } from '@/views/admin/CRM/Customers/crmCustomerName';
+import { formFromCrmCustomerDetail } from '@/views/admin/CRM/Customers/shared/crmCustomerForm';
+import { joinPersonFullName } from '@/views/admin/CRM/Customers/shared/crmCustomerName';
 
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
 import { isoOrCrmDateToContractDdMmYyyy } from '../../../core/contractDateFormat';

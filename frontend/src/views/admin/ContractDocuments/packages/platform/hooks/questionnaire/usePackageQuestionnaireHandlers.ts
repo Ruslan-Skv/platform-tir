@@ -7,7 +7,6 @@ import type {
   PackageManagerQuestionnaire1Block,
   PackagePostWorkQuestionnaire2Block,
 } from '../../form/packageForm';
-import { persistManagerQuestionnaire1ToCrmCustomer } from '../../questionnaires/crmManagerQuestionnaire1';
 
 export type UsePackageQuestionnaireHandlersOptions = {
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;

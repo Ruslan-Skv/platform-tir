@@ -10,7 +10,7 @@ import {
   updateAdminSitePublicSettings,
 } from '@/shared/api/admin-site-public';
 import { parseRolesShowAdminLinkFromApi } from '@/shared/lib/site-public-admin-link';
-import { ROLES_CONFIG } from '@/views/admin/Settings/rolesConfig';
+import { ROLES_CONFIG } from '@/views/admin/Settings';
 
 import styles from './page.module.css';
 

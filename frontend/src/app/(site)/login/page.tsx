@@ -82,7 +82,7 @@ export default function LoginPage() {
           setError(result.error || 'Ошибка регистрации');
         }
       }
-    } catch (err) {
+    } catch {
       setError('Произошла ошибка. Попробуйте еще раз.');
     } finally {
       setIsLoading(false);

@@ -33,7 +33,7 @@ const $ = () => {
       }, []);
     (s.useEffect(() => {
       const t = async (r) => {
-        var n;
+        let n;
         if ((n = r.clipboardData) != null && n.files.length) {
           for (const a of r.clipboardData.files) if (a.type !== 'application/zip') return;
           (r.preventDefault(), w(r.clipboardData.files));

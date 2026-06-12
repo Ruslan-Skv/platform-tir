@@ -1,7 +1,7 @@
 'use client';
 
-import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
-import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel.module.css';
+import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
+import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel.module.css';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import { ProductContractCostFields } from '../../../families/product-like/cost/ProductContractCostFields';

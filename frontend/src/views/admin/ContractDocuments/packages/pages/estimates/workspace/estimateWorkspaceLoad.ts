@@ -4,7 +4,7 @@ import {
   getContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import { getCrmCustomer, getMeasurement } from '@/shared/api/admin-crm';
-import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
+import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/shared/crmCustomerExtendedProfile';
 
 import {
   type EstimateCrmCustomerFields,

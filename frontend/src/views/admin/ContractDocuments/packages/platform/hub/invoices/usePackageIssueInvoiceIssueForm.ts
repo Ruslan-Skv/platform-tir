@@ -44,7 +44,6 @@ export function usePackageIssueInvoiceIssueForm({
   basisKey,
   setBasisKey,
   lineItems,
-  linesTotalRub,
   resetLineItems,
   prefillFirstLine,
   estimateSourceOptions,

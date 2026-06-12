@@ -5,6 +5,62 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AdminTablePagination } from '../AdminTablePagination';
 import styles from './DataTable.module.css';
 
+function getTableCellValue(item: unknown, key: string): unknown {
+  const keys = key.split('.');
+  let value: unknown = item;
+  for (const k of keys) {
+    if (value && typeof value === 'object' && k in value) {
+      value = (value as Record<string, unknown>)[k];
+    } else {
+      return undefined;
+    }
+  }
+  return value;
+}
+
+function toSortableTimestamp(value: unknown): number | null {
+  if (value instanceof Date) {
+    const time = value.getTime();
+    return Number.isNaN(time) ? null : time;
+  }
+  if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
+    const time = Date.parse(value);
+    return Number.isNaN(time) ? null : time;
+  }
+  return null;
+}
+
+function compareTableValues(a: unknown, b: unknown, order: 'asc' | 'desc'): number {
+  const aNull = a === null || a === undefined;
+  const bNull = b === null || b === undefined;
+  if (aNull && bNull) return 0;
+  if (aNull) return order === 'asc' ? 1 : -1;
+  if (bNull) return order === 'asc' ? -1 : 1;
+  if (typeof a === 'boolean' && typeof b === 'boolean') {
+    const va = a ? 1 : 0;
+    const vb = b ? 1 : 0;
+    return order === 'asc' ? va - vb : vb - va;
+  }
+  const aTime = toSortableTimestamp(a);
+  const bTime = toSortableTimestamp(b);
+  if (aTime !== null && bTime !== null) {
+    return order === 'asc' ? aTime - bTime : bTime - aTime;
+  }
+  if (aTime !== null || bTime !== null) {
+    if (aTime !== null) return order === 'asc' ? -1 : 1;
+    return order === 'asc' ? 1 : -1;
+  }
+  const aNum = typeof a === 'number' ? a : parseFloat(String(a));
+  const bNum = typeof b === 'number' ? b : parseFloat(String(b));
+  if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
+    return order === 'asc' ? aNum - bNum : bNum - aNum;
+  }
+  const sa = String(a).toLowerCase();
+  const sb = String(b).toLowerCase();
+  const cmp = sa.localeCompare(sb, undefined, { numeric: true });
+  return order === 'asc' ? cmp : -cmp;
+}
+
 interface Column<T> {
   key: keyof T | string;
   title: string;
@@ -194,68 +250,12 @@ export function DataTable<T>({
     }
   };
 
-  const getValue = (item: T, key: string): unknown => {
-    const keys = key.split('.');
-    let value: unknown = item;
-    for (const k of keys) {
-      if (value && typeof value === 'object' && k in value) {
-        value = (value as Record<string, unknown>)[k];
-      } else {
-        return undefined;
-      }
-    }
-    return value;
-  };
-
-  const toSortableTimestamp = (value: unknown): number | null => {
-    if (value instanceof Date) {
-      const time = value.getTime();
-      return Number.isNaN(time) ? null : time;
-    }
-    if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}/.test(value)) {
-      const time = Date.parse(value);
-      return Number.isNaN(time) ? null : time;
-    }
-    return null;
-  };
-
-  const compareValues = (a: unknown, b: unknown, order: 'asc' | 'desc'): number => {
-    const aNull = a === null || a === undefined;
-    const bNull = b === null || b === undefined;
-    if (aNull && bNull) return 0;
-    if (aNull) return order === 'asc' ? 1 : -1;
-    if (bNull) return order === 'asc' ? -1 : 1;
-    if (typeof a === 'boolean' && typeof b === 'boolean') {
-      const va = a ? 1 : 0;
-      const vb = b ? 1 : 0;
-      return order === 'asc' ? va - vb : vb - va;
-    }
-    const aTime = toSortableTimestamp(a);
-    const bTime = toSortableTimestamp(b);
-    if (aTime !== null && bTime !== null) {
-      return order === 'asc' ? aTime - bTime : bTime - aTime;
-    }
-    if (aTime !== null || bTime !== null) {
-      if (aTime !== null) return order === 'asc' ? -1 : 1;
-      return order === 'asc' ? 1 : -1;
-    }
-    const aNum = typeof a === 'number' ? a : parseFloat(String(a));
-    const bNum = typeof b === 'number' ? b : parseFloat(String(b));
-    if (!Number.isNaN(aNum) && !Number.isNaN(bNum)) {
-      return order === 'asc' ? aNum - bNum : bNum - aNum;
-    }
-    const sa = String(a).toLowerCase();
-    const sb = String(b).toLowerCase();
-    const cmp = sa.localeCompare(sb, undefined, { numeric: true });
-    return order === 'asc' ? cmp : -cmp;
-  };
-
   const sortedData = useMemo(() => {
     if (isServerSort || !sortBy || data.length === 0) return data;
     return [...data].sort((a, b) => {
-      const aVal = getValue(a, sortBy);
-      const bVal = getValue(b, sortBy);
-      return compareValues(aVal, bVal, sortOrder);
+      const aVal = getTableCellValue(a, sortBy);
+      const bVal = getTableCellValue(b, sortBy);
+      return compareTableValues(aVal, bVal, sortOrder);
     });
   }, [data, isServerSort, sortBy, sortOrder]);
 
@@ -496,7 +496,7 @@ export function DataTable<T>({
                         <td key={String(column.key)}>
                           {column.render
                             ? column.render(item)
-                            : String(getValue(item, String(column.key)) ?? '')}
+                            : String(getTableCellValue(item, String(column.key)) ?? '')}
                         </td>
                       ))}
                     </tr>

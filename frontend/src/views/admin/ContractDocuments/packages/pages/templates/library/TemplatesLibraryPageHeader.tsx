@@ -9,7 +9,7 @@ import {
   AdminToolbarIconButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 import { PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
 import cdTemplates from '../../../../styles/templates-library.module.css';

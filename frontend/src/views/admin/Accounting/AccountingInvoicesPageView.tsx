@@ -3,7 +3,7 @@
 import Link from 'next/link';
 
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageIssueInvoicePanel';
 
 import cdBase from '../ContractDocuments/styles/base.module.css';

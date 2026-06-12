@@ -207,6 +207,7 @@ export function useTemplatesLibraryUiPrefsSync({
     setShowArchivedTemplates,
     setVisualEditorHeightPx,
     setVisualZoomPct,
+    uiPrefsLoadedRef,
   ]);
 
   useEffect(() => {
@@ -262,6 +263,7 @@ export function useTemplatesLibraryUiPrefsSync({
     showArchivedTemplates,
     visualEditorHeightPx,
     visualZoomPct,
+    uiPrefsLoadedRef,
   ]);
 
   useEffect(() => {
@@ -294,6 +296,7 @@ export function useTemplatesLibraryUiPrefsSync({
     previewZoomPct,
     visualEditorHeightPx,
     visualZoomPct,
+    uiPrefsLoadedRef,
   ]);
 
   useEffect(() => {
@@ -356,5 +359,6 @@ export function useTemplatesLibraryUiPrefsSync({
     visualEditorHeightPx,
     visualEditorRef,
     visualZoomPct,
+    uiPrefsLoadedRef,
   ]);
 }

@@ -31,7 +31,6 @@ export function CatalogServerProductGrid({ products }: CatalogServerProductGridP
             <li key={product.id} className={styles.seoItem}>
               <Link href={`/product/${product.slug}`} className={styles.seoLink}>
                 {image ? (
-                  // eslint-disable-next-line @next/next/no-img-element
                   <img src={image} alt={product.name} className={styles.seoImage} loading="lazy" />
                 ) : null}
                 <span className={styles.seoName}>{product.name}</span>

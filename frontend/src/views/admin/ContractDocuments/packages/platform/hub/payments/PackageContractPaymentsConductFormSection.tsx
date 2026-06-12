@@ -1,8 +1,8 @@
 'use client';
 
 import { type ContractDocumentPackagePaymentInput } from '@/shared/api/admin-contract-document-packages';
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
-import measurementBlankStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
+import measurementBlankStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';

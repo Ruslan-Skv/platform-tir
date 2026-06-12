@@ -1,4 +1,4 @@
-import { PromotionFormPage } from '@/views/admin/Content/PromotionFormPage';
+import { PromotionFormPage } from '@/views/admin/Content/Promotions/PromotionFormPage';
 
 interface PageProps {
   params: Promise<{ id: string }>;

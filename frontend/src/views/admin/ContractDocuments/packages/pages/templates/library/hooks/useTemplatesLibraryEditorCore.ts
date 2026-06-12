@@ -215,7 +215,10 @@ export function useTemplatesLibraryEditorCore({
     }
   };
 
-  const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
+  const readVisualEditorHtml = useCallback(
+    (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml,
+    [visualDraftHtml]
+  );
 
   const applyTemplateHistorySnapshot = useCallback((htmlSnapshot: string) => {
     skipNextTemplateHistoryPushRef.current = true;
@@ -245,7 +248,7 @@ export function useTemplatesLibraryEditorCore({
     setVisualDraftHtml(next);
     setHtml(next);
     return next;
-  }, [visualDraftHtml]);
+  }, [readVisualEditorHtml]);
 
   const switchEditorMode = useCallback(
     (mode: 'html' | 'visual') => {

@@ -1,3 +1,5 @@
-export { ProductsPage, ProductsPage as default } from './ProductsPage';
-export { ProductEditPage } from './ProductEditPage';
-export { ProductCreatePage } from './ProductCreatePage';
+export { ProductsPage, ProductsPage as default } from './list/ProductsPage';
+export { ProductEditPage } from './edit/ProductEditPage';
+export { ProductCreatePage } from './create/ProductCreatePage';
+export type { CopiedProductData } from './shared/copy-product-utils';
+export { mapProductToCopyData } from './shared/copy-product-utils';

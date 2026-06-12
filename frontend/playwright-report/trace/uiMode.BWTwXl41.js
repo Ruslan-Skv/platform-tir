@@ -32,7 +32,7 @@ const __vite__mapDeps = (
   m = __vite__mapDeps,
   d = m.f || (m.f = ['./assets/xtermModule-CsJ4vdCR.js', './xtermModule.DYP7pi_n.css'])
 ) => i.map((i) => d[i]);
-var se = {};
+const se = {};
 class dt {
   constructor(t, e = {}) {
     ((this.isListing = !1),
@@ -90,7 +90,7 @@ class dt {
     if (e === 'onExit') return this._onExit();
   }
   _onConfigure(t) {
-    var e, s;
+    let e, s;
     ((this._rootDir = t.rootDir),
       (this._config = this._parseConfig(t)),
       (s = (e = this._reporter).onConfigure) == null || s.call(e, this._config));
@@ -104,11 +104,11 @@ class dt {
     for (const s of t.suites) this._mergeSuiteInto(s, e);
   }
   _onBegin() {
-    var t, e;
+    let t, e;
     (e = (t = this._reporter).onBegin) == null || e.call(t, this._rootSuite);
   }
   _onTestBegin(t, e) {
-    var d, n;
+    let d, n;
     const s = this._tests.get(t);
     this._options.clearPreviousResultsWhenTestBegins && (s.results = []);
     const i = s._createTestResult(e.id);
@@ -119,7 +119,7 @@ class dt {
       (n = (d = this._reporter).onTestBegin) == null || n.call(d, s, i));
   }
   _onTestEnd(t, e) {
-    var d, n, m;
+    let d, n, m;
     const s = this._tests.get(t.testId);
     ((s.timeout = t.timeout), (s.expectedStatus = t.expectedStatus));
     const i = s.results.find((c) => c._id === e.id);
@@ -136,7 +136,7 @@ class dt {
       (i._stepMap = new Map()));
   }
   _onStepBegin(t, e, s) {
-    var f, a;
+    let f, a;
     const i = this._tests.get(t),
       d = i.results.find((w) => w._id === e),
       n = s.parentStepId ? d._stepMap.get(s.parentStepId) : void 0,
@@ -147,7 +147,7 @@ class dt {
       (a = (f = this._reporter).onStepBegin) == null || a.call(f, i, d, c));
   }
   _onStepEnd(t, e, s) {
-    var m, c;
+    let m, c;
     const i = this._tests.get(t),
       d = i.results.find((f) => f._id === e),
       n = d._stepMap.get(s.id);
@@ -170,11 +170,11 @@ class dt {
       );
   }
   _onError(t) {
-    var e, s;
+    let e, s;
     (s = (e = this._reporter).onError) == null || s.call(e, t);
   }
   _onStdIO(t, e, s, i, d) {
-    var f, a, w, x;
+    let f, a, w, x;
     const n = d ? (globalThis.Buffer ? Buffer.from(i, 'base64') : atob(i)) : i,
       m = e ? this._tests.get(e) : void 0,
       c = m && s ? m.results.find((l) => l._id === s) : void 0;
@@ -185,13 +185,13 @@ class dt {
         (x = (w = this._reporter).onStdErr) == null || x.call(w, n, m, c));
   }
   async _onEnd(t) {
-    var e, s;
+    let e, s;
     await ((s = (e = this._reporter).onEnd) == null
       ? void 0
       : s.call(e, { status: t.status, startTime: new Date(t.startTime), duration: t.duration }));
   }
   _onExit() {
-    var t, e;
+    let t, e;
     return (e = (t = this._reporter).onExit) == null ? void 0 : e.call(t);
   }
   _parseConfig(t) {
@@ -304,7 +304,7 @@ class X {
     return ((this.title || this._type !== 'describe') && t.push(this.title), t);
   }
   project() {
-    var t;
+    let t;
     return this._project ?? ((t = this.parent) == null ? void 0 : t.project());
   }
   _addTest(t) {
@@ -359,7 +359,7 @@ class oe {
       (this._result = i));
   }
   titlePath() {
-    var e;
+    let e;
     return [...(((e = this.parent) == null ? void 0 : e.titlePath()) || []), this.title];
   }
   get startTime() {
@@ -369,7 +369,7 @@ class oe {
     this._startTime = +t;
   }
   get attachments() {
-    var t, e;
+    let t, e;
     return (
       ((e = (t = this._endPayload) == null ? void 0 : t.attachments) == null
         ? void 0
@@ -377,7 +377,7 @@ class oe {
     );
   }
   get annotations() {
-    var t;
+    let t;
     return ((t = this._endPayload) == null ? void 0 : t.annotations) ?? [];
   }
 }
@@ -712,7 +712,7 @@ function Tt(o) {
 function le(o) {
   const t = new Set(),
     e = (s) => {
-      var i;
+      let i;
       s.kind === 'case'
         ? s.tests.map((d) => d.id).forEach((d) => t.add(d))
         : s.kind === 'test'
@@ -755,7 +755,7 @@ class ce {
           )));
       },
       onBegin: (t) => {
-        var e;
+        let e;
         if ((this.rootSuite || (this.rootSuite = t), this._testResultsSnapshot)) {
           for (const s of this.rootSuite.allTests())
             s.results =
@@ -798,20 +798,20 @@ class ce {
     for (const s of t) e.dispatch(s);
   }
   processListReport(t) {
-    var s;
+    let s;
     const e = ((s = this.rootSuite) == null ? void 0 : s.allTests()) || [];
     ((this._testResultsSnapshot = new Map(e.map((i) => [i.id, i.results]))),
       this._receiver.reset());
     for (const i of t) this._receiver.dispatch(i);
   }
   processTestReportEvent(t) {
-    var e, s, i;
+    let e, s, i;
     ((s = (e = this._lastRunReceiver) == null ? void 0 : e.dispatch(t)) == null ||
       s.catch(() => {}),
       (i = this._receiver.dispatch(t)) == null || i.catch(() => {}));
   }
   _handleOnError(t) {
-    var e, s;
+    let e, s;
     (this.loadErrors.push(t),
       (s = (e = this._options).onError) == null || s.call(e, t),
       this._options.onUpdate());
@@ -947,7 +947,7 @@ const de = ({ source: o }) => {
     const [c, f] = u.useState(!1),
       a = u.useRef(null);
     u.useEffect(() => {
-      var l;
+      let l;
       (l = a.current) == null || l.focus();
     }, []);
     const w =
@@ -1047,7 +1047,7 @@ Projects: ` +
                             type: 'checkbox',
                             checked: T,
                             onChange: () => {
-                              var R;
+                              let R;
                               const _ = new Map(i);
                               (_.set(l, !_.get(l)), d(_));
                               const b =
@@ -1123,7 +1123,7 @@ const me = Ht,
       if (!d || d.itemSelectedByUser) return;
       let h;
       const E = (S) => {
-        var M;
+        let M;
         (S.children.forEach(E),
           !h &&
             S.status === 'failed' &&
@@ -1266,7 +1266,7 @@ function ve(o, t) {
       source: {
         errors: t.loadErrors
           .filter((e) => {
-            var s;
+            let s;
             return ((s = e.location) == null ? void 0 : s.file) === o.location.file;
           })
           .map((e) => ({ line: e.location.line, message: e.message })),
@@ -1278,7 +1278,7 @@ function we(o) {
   return `.playwright-artifacts-${o}`;
 }
 const be = ({ item: o, rootDir: t, onOpenExternally: e, revealSource: s, pathSeparator: i }) => {
-    var w, x;
+    let w, x;
     const [d, n] = u.useState(void 0),
       [m, c] = u.useState(0),
       f = u.useRef(null),
@@ -1288,7 +1288,7 @@ const be = ({ item: o, rootDir: t, onOpenExternally: e, revealSource: s, pathSep
       );
     return (
       u.useEffect(() => {
-        var b, R;
+        let b, R;
         f.current && clearTimeout(f.current);
         const l = (b = o.testCase) == null ? void 0 : b.results[0];
         if (!l) {
@@ -1348,7 +1348,7 @@ const be = ({ item: o, rootDir: t, onOpenExternally: e, revealSource: s, pathSep
     );
   },
   xe = (o) => {
-    var t;
+    let t;
     for (let e = o.parent; e; e = e.parent)
       if (e.project()) return (t = e.project()) == null ? void 0 : t.outputDir;
   };
@@ -1380,7 +1380,7 @@ B.updateSnapshots &&
   (B.updateSnapshots = void 0);
 const bt = navigator.platform === 'MacIntel',
   Te = ({}) => {
-    var _t;
+    let _t;
     const [o, t] = u.useState(''),
       [e, s] = u.useState(!1),
       [i, d] = u.useState(!1),
@@ -1421,7 +1421,7 @@ const bt = navigator.platform === 'MacIntel',
         Et((p) => (p == null || p.close(), new Qt(new Xt(ft))));
       }, []);
     (u.useEffect(() => {
-      var p;
+      let p;
       ((p = Dt.current) == null || p.focus(), N(!0), it());
     }, [it]),
       u.useEffect(() => {
@@ -1533,7 +1533,7 @@ const bt = navigator.platform === 'MacIntel',
             (p === 'bounce-if-busy' && L) ||
             ((S.current = new Set([...S.current, ...g])),
             (E.current = E.current.then(async () => {
-              var P, U, F;
+              let P, U, F;
               const j = S.current;
               if (((S.current = new Set()), !j.size)) return;
               {
@@ -1630,11 +1630,11 @@ const bt = navigator.platform === 'MacIntel',
       }, [V, it, v, b, e]));
     const lt = u.useRef(null),
       Ft = u.useCallback((p) => {
-        var g;
+        let g;
         (p.preventDefault(), p.stopPropagation(), (g = lt.current) == null || g.showModal());
       }, []),
       ct = u.useCallback((p) => {
-        var g;
+        let g;
         (p.preventDefault(), p.stopPropagation(), (g = lt.current) == null || g.close());
       }, []),
       Ot = u.useCallback(

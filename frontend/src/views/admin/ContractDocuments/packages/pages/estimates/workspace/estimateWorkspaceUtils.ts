@@ -1,6 +1,6 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 import { getCrmCustomer } from '@/shared/api/admin-crm';
-import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/crmCustomerExtendedProfile';
+import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/shared/crmCustomerExtendedProfile';
 
 import { clampEstimateAdditionalMarkupPercent } from '../../../platform/estimates/applyEstimatePresetIds';
 import { parseDraftRooms } from '../../../platform/estimates/contractDocumentsEstimateSnapshot';

@@ -55,7 +55,7 @@ export function addWorkingDaysExcludingWeekends(
 ): Date | null {
   const count = Math.trunc(workingDays);
   if (count < 1) return null;
-  let cursor = parseContractCalendarDate(startIso);
+  const cursor = parseContractCalendarDate(startIso);
   if (!cursor) return null;
 
   let counted = 0;

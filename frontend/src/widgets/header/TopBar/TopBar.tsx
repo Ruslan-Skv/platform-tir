@@ -101,7 +101,6 @@ function TopBarCatalogSearch({ catalogSearch }: { catalogSearch: CatalogHeaderSe
                   onMouseEnter={() => setHighlight(index)}
                 >
                   {s.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className={styles.suggestionThumb}
                       src={s.imageUrl}

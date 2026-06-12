@@ -65,12 +65,25 @@ export default function Page() {
 views/
 ├── catalog/          # публичный каталог
 ├── admin/            # админка по подразделам
+│   ├── Content/      # контент главной и разделов сайта — по подпапке на раздел
+│   │   ├── Blog/     # список постов + форма/редактор
+│   │   ├── Hero/, Footer/, Navigation/, …
+│   │   └── shared/   # общие UI-блоки раздела (SectionVisibilityCheckbox)
 │   └── ContractDocuments/
 │       ├── core/     # утилиты без привязки к направлению
 │       ├── styles/   # общие CSS partials раздела
 │       └── packages/ # см. packages/README.md
 └── …
 ```
+
+В `views/admin/Content/` и крупных доменах вроде `views/admin/Catalog/Products/` не складывать экраны в общий список в корне. Правила:
+
+- **Content:** одна папка = пункт меню (`Blog/`, `Promotions/`, `Home/`, …), общие блоки — `shared/`.
+- **Products:** `list/` (журнал), `edit/`, `create/`, `shared/` (форма, секции, модалки, утилиты). Публичный API — `Products/index.ts`.
+- **Knowledge:** `territory/` (список), `materials/` (просмотр), `materials/form/`, `shared/` (вложения, плеер, утилиты). API — `Knowledge/index.ts`.
+- **Settings:** подпапки по разделам настроек (`catalog/`, `forms/`, `roles/`, …), `shared/` (`rolesConfig`, общие стили), `hub/` (обзорная страница). API — `Settings/index.ts`.
+
+Лимит check-architecture: не более 25 `.ts`/`.tsx` в одной папке.
 
 ### Паттерн страницы (обязателен для новых и при рефакторинге крупных экранов)
 
@@ -155,7 +168,7 @@ packages/
 3. ~~Повторяющиеся доменные модели в `entities/`~~ — `entities/product` (`Product`, `ProductForCopy`, …).
 4. ~~Крупные экраны админки и витрины~~ — shell + `use*Page` + `*PageView` (см. список в истории коммитов; формы товара — `sections/`).
 
-Новые крупные `*Page.tsx` (> ~250 строк) сразу раскладывать по паттерну shell + hook + view. Недавно: `CategoryEditPage`, `AccountingInvoicesPage`, `PartnerEditPage`, `KnowledgeMaterialFormPage`.
+Новые крупные `*Page.tsx` (> ~250 строк) сразу раскладывать по паттерну shell + hook + view. Недавно: `CategoryEditPage`, `AccountingInvoicesPage`, `PartnerEditPage`, `KnowledgeMaterialFormPage`, `InstallersPage`, `SupplierEditPage`, `OfficesPage`, `PartnersPage`, `PhotoProjectFormPage`, `PhotoSectionPage`, `OrdersPage`, `OrderCheckoutInfoPage` (статическая документация — shell + view + constants), `OrderDetailPage`, `ServiceOrdersPage`, `ServiceOrderDetailPage`, `OrdersShippingPage`.
 
 ---
 
@@ -163,16 +176,22 @@ packages/
 
 Скрипт `scripts/check-architecture.mjs` + конфиг `scripts/architecture.config.mjs`.
 
-| Проверка                                               | Уровень                                                |
-| ------------------------------------------------------ | ------------------------------------------------------ |
-| Границы слоёв (импорты)                                | error                                                  |
-| Лишние файлы в корне `platform/editor`, `platform/hub` | error                                                  |
-| > 25 `.ts`/`.tsx` в одной папке                        | error (с overrides для `shared/api`, `platform/hooks`) |
-| Толстые `app/admin/contract-documents/**/page.tsx`     | error (> 80 строк)                                     |
-| Импорт типов из `*.module.css`                         | error                                                  |
-| Известный техдолг из allowlist                         | warn (сводка, не блокирует)                            |
+| Проверка                                               | Уровень                                               |
+| ------------------------------------------------------ | ----------------------------------------------------- |
+| Границы слоёв (импорты)                                | error                                                 |
+| Лишние файлы в корне `platform/editor`, `platform/hub` | error                                                 |
+| > 25 `.ts`/`.tsx` в одной папке                        | error (с overrides для `shared/api`, `shared/lib`, …) |
+| Плоский корень `views/admin/**` (> 6 `.ts`/`.tsx`)     | error — группировка list/edit/shared + `index.ts`     |
+| Домен с подпапками без `index.ts` в корне              | warn — лишние файлы рядом с `Blog/`, `list/`, …       |
+| Толстый shell `views/**/*Page.tsx`                     | warn (> 80 строк, не `*PageView`)                     |
+| Крупный `views/**/*Page.tsx`                           | warn (> 250 строк — нужна декомпозиция)               |
+| Толстые `app/admin/contract-documents/**/page.tsx`     | error (> 80 строк)                                    |
+| Импорт типов из `*.module.css`                         | error                                                 |
+| Известный техдолг из allowlist                         | warn (сводка, не блокирует)                           |
 
-Новые нарушения allowlist **не добавлять** — исправлять архитектуру. Подробный вывод: `node scripts/check-architecture.mjs --verbose`.
+Нарушения **группируются по категории** — в одном прогоне видны все похожие директории. Полный отчёт: `npm run check-architecture -- --audit`. Глубокие импорты: `--verbose`.
+
+Новые нарушения allowlist **не добавлять** — исправлять архитектуру.
 
 ## Pre-commit (монорепозиторий)
 
@@ -180,7 +199,7 @@ packages/
 
 1. **lint-staged** (`.lintstagedrc.cjs` в корне) — prettier для staged frontend-файлов через `scripts/lint-staged-workspace.js` (cwd = `frontend/`, иначе не резолвится `@trivago/prettier-plugin-sort-imports`).
 2. **backend** — `validate` + `secretlint`.
-3. **frontend** — `validate:precommit` (`type-check` + `check-architecture`; полный `validate` с lint — вручную).
+3. **frontend** — `validate:precommit` (`type-check` + `check-architecture`). Полный `npm run validate` (lint + format) — вручную перед релизом; на 2025-06 проходит без ошибок.
 
 Коммит: `npm run commit` (из любого пакета). Ручная проверка без коммита: `cd backend && npm run validate:monorepo`.
 

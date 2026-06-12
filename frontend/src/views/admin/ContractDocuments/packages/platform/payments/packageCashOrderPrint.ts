@@ -3,7 +3,6 @@ import type { ContractDocumentPackagePaymentInput } from '@/shared/api/admin-con
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
 import { applyTemplate } from '../../../core/applyTemplate';
 import { printDocumentHtml } from '../../../core/printDocument';
-import type { PackageDocumentTemplateTabId } from '../form/formDataTemplateStorage';
 import type { PackageFormData } from '../form/packageForm';
 import { packageFormForTemplate } from '../form/packageForm';
 import {

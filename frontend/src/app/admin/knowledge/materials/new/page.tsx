@@ -1,6 +1,6 @@
 'use client';
 
-import { KnowledgeMaterialFormPage } from '@/views/admin/Knowledge/KnowledgeMaterialFormPage';
+import { KnowledgeMaterialFormPage } from '@/views/admin/Knowledge';
 
 export default function AdminKnowledgeMaterialNewPage() {
   return <KnowledgeMaterialFormPage />;

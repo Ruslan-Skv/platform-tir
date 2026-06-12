@@ -24,14 +24,9 @@ export function useTemplatesLibraryPage() {
   const {
     activeLibraryKind,
     activeTemplateTab,
-    autosaveSavedVisible,
     editingId,
-    error,
-    libraryTemplateTabIds,
-    ok,
     placeholdersCollapsed,
     previewCustomerKind,
-    saving,
     setActiveLibraryKind,
     setActiveTemplateTab,
     setAutosaveSavedVisible,
@@ -119,12 +114,10 @@ export function useTemplatesLibraryPage() {
     commitTemplateHtmlToState,
     editorMode,
     ensureTemplateDraftForEditing,
-    handleTemplateHtmlFileImport,
     html,
     htmlTextareaRef,
     pushTemplateHistory,
     resetTemplateHistory,
-    schedulePushTemplateHistoryFromHtml,
     setEditorMode,
     setHtml,
     setVisualDraftHtml,
@@ -150,26 +143,15 @@ export function useTemplatesLibraryPage() {
   });
 
   const {
-    captureHtmlEditorHeight,
-    capturePreviewPaneHeight,
-    captureVisualEditorHeight,
-    commitPreviewZoomDraft,
-    commitVisualZoomDraft,
     htmlEditorHeightPx,
     previewPaneHeightPx,
-    previewZoomDraft,
     previewZoomPct,
     setHtmlEditorHeightPx,
     setPreviewPaneHeightPx,
-    setPreviewZoomDraft,
     setPreviewZoomPct,
     setVisualEditorHeightPx,
-    setVisualZoomDraft,
     setVisualZoomPct,
-    stepPreviewZoom,
-    stepVisualZoom,
     visualEditorHeightPx,
-    visualZoomDraft,
     visualZoomPct,
   } = previewUi;
 
@@ -222,13 +204,7 @@ export function useTemplatesLibraryPage() {
     firstSignatoryProfile,
     previewCustomerKind,
   });
-  const {
-    renderedPreviewDisplay,
-    itemsByActiveTab,
-    templatesCountByTab,
-    archivedCountOnTab,
-    archivedTemplatesCount,
-  } = derived;
+  const { itemsByActiveTab } = derived;
 
   const mutations = useTemplatesLibraryMutations({
     isSuperAdmin,

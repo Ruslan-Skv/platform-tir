@@ -1,4 +1,4 @@
-import { BlogSectionPage } from '@/views/admin/Content/Blog/BlogSectionPage';
+import { BlogSectionPage } from '@/views/admin/Content/Blog';
 
 export default function AdminBlogPage() {
   return <BlogSectionPage />;

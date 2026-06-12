@@ -1,4 +1,4 @@
-import { HomeSectionsSection } from '@/views/admin/Content/HomeSectionsSection';
+import { HomeSectionsSection } from '@/views/admin/Content/Home/HomeSectionsSection';
 
 export default function AdminContentHomePage() {
   return (

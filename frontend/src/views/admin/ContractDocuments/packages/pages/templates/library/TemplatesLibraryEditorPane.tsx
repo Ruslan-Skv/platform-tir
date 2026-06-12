@@ -1,6 +1,6 @@
 'use client';
 
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { TemplateEditorZoomControl } from './editor/templateEditorFormatToolbar';
@@ -181,7 +181,7 @@ export function TemplatesLibraryEditorPane(props: TemplatesLibraryEditorPaneProp
             onSelect={refreshInlineFormatActiveState}
             onKeyUp={refreshInlineFormatActiveState}
             onClick={refreshInlineFormatActiveState}
-            onMouseUp={(e) => {
+            onMouseUp={() => {
               captureHtmlEditorHeight();
               refreshInlineFormatActiveState();
             }}

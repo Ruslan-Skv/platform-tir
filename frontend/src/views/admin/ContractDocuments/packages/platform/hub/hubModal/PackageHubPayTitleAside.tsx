@@ -3,7 +3,7 @@
 import type { CSSProperties } from 'react';
 
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 export type PackageHubPayOrb = {
   title: string;

@@ -9,9 +9,9 @@ import {
   restoreRepairContractPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
-import panelStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import styles from '@/views/admin/CRM/Customers/CrmCustomerTrashModal.module.css';
-import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/crmCustomerDisplay';
+import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';
+import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/shared/crmCustomerDisplay';
 
 const PAGE_SIZE = 15;
 

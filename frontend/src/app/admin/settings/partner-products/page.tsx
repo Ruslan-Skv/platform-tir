@@ -1,7 +1,7 @@
 'use client';
 
-import { PartnerProductsSection } from '@/views/admin/Settings/PartnerProductsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { PartnerProductsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminPartnerProductsPage() {
   return (

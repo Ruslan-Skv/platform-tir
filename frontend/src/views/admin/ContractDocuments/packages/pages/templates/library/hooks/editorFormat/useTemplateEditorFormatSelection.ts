@@ -29,7 +29,7 @@ export type TemplateEditorFormatSelection = ReturnType<typeof useTemplateEditorF
 export function useTemplateEditorFormatSelection({
   html,
   setHtml,
-  visualDraftHtml,
+  visualDraftHtml: _visualDraftHtml,
   setVisualDraftHtml,
   editorMode,
   visualEditorRef,
@@ -38,8 +38,6 @@ export function useTemplateEditorFormatSelection({
   pushTemplateHistory,
   setTableEditActive,
 }: UseTemplatesLibraryEditorFormatParams) {
-  const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
-
   const [inlineFormatActive, setInlineFormatActive] = useState<Record<InlineFormatKind, boolean>>(
     EMPTY_INLINE_FORMAT_ACTIVE
   );
@@ -109,7 +107,7 @@ export function useTemplateEditorFormatSelection({
     setParagraphAlignActive(getHtmlSelectionTextAlign(html, start, end));
     setHeadingLevelActive(getHtmlSelectionHeadingLevel(html, start, end));
     setTableEditActive(isCursorInsideHtmlTable(html, start));
-  }, [editorMode, html]);
+  }, [editorMode, html, htmlTextareaRef, setTableEditActive, visualEditorRef]);
 
   useEffect(() => {
     const onSelectionChange = () => {

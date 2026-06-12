@@ -1,7 +1,6 @@
 import { useMemo } from 'react';
 
 import type {
-  ContractEstimateGroup,
   ContractEstimatePreset,
   ContractSignatoryProfile,
   ExecutorRequisiteProfile,

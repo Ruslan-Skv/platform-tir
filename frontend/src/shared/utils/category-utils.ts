@@ -1,6 +1,13 @@
 // Возможные slug категории "Двери межкомнатные"
 const INTERIOR_DOORS_SLUGS = ['interior-doors', 'dveri-mezhkomnatnye', 'mezhkomnatnye-dveri'];
 
+export type CategoryTreeNode = {
+  id: string;
+  slug: string;
+  parentId?: string | null;
+  children?: CategoryTreeNode[];
+};
+
 /**
  * Проверяет, является ли slug категорией "Двери межкомнатные"
  */
@@ -76,11 +83,7 @@ export function isInteriorDoorsProduct(category: {
  * Преобразует вложенную структуру категорий в плоский массив
  */
 function flattenCategories(
-  categories: Array<{
-    id: string;
-    slug: string;
-    children?: Array<{ id: string; slug: string; parentId?: string | null }>;
-  }>,
+  categories: CategoryTreeNode[],
   parentId: string | null = null
 ): Array<{ id: string; slug: string; parentId: string | null }> {
   const result: Array<{ id: string; slug: string; parentId: string | null }> = [];
@@ -94,7 +97,7 @@ function flattenCategories(
 
     if (category.children && category.children.length > 0) {
       // Рекурсивно обрабатываем дочерние категории
-      const children = flattenCategories(category.children as any, category.id);
+      const children = flattenCategories(category.children, category.id);
       result.push(...children);
     }
   }
@@ -109,7 +112,7 @@ function flattenCategories(
  */
 export function isInteriorDoorsCategoryById(
   categoryId: string,
-  categories: Array<{ id: string; slug: string; parentId?: string | null; children?: any[] }>
+  categories: CategoryTreeNode[]
 ): boolean {
   if (!categoryId || categories.length === 0) {
     return false;
@@ -120,7 +123,7 @@ export function isInteriorDoorsCategoryById(
 
   // Если вложенная структура, преобразуем в плоскую
   const flatCategories = hasNestedStructure
-    ? flattenCategories(categories as any)
+    ? flattenCategories(categories)
     : (categories as Array<{ id: string; slug: string; parentId?: string | null }>);
 
   return checkCategoryRecursive(categoryId, flatCategories);

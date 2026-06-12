@@ -28,6 +28,14 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 type Tab = 'profile' | 'orders' | 'notifications' | 'notificationHistory' | 'password';
 
+const PROFILE_TABS: { id: Tab; label: string }[] = [
+  { id: 'profile', label: 'Личные данные' },
+  { id: 'orders', label: 'Мои заказы' },
+  { id: 'notifications', label: 'Уведомления' },
+  { id: 'notificationHistory', label: 'История уведомлений' },
+  { id: 'password', label: 'Смена пароля' },
+];
+
 const ORDER_STATUS_LABELS: Record<string, string> = {
   PENDING: 'Ожидает',
   PROCESSING: 'В обработке',
@@ -181,17 +189,11 @@ export default function ProfilePage() {
     if (activeTab === 'notificationHistory' && isAuthenticated) loadNotificationHistory();
   }, [activeTab, isAuthenticated, loadNotificationHistory]);
 
-  const allTabs: { id: Tab; label: string }[] = [
-    { id: 'profile', label: 'Личные данные' },
-    { id: 'orders', label: 'Мои заказы' },
-    { id: 'notifications', label: 'Уведомления' },
-    { id: 'notificationHistory', label: 'История уведомлений' },
-    { id: 'password', label: 'Смена пароля' },
-  ];
+  const allTabs = PROFILE_TABS;
 
   useEffect(() => {
     if (!cabinetSettings) return;
-    const visibleTabs = allTabs.filter((t) => {
+    const visibleTabs = PROFILE_TABS.filter((t) => {
       if (t.id === 'profile') return cabinetSettings.showProfileSection;
       if (t.id === 'orders') return cabinetSettings.showOrdersSection;
       if (t.id === 'notifications') return cabinetSettings.showNotificationsSection;

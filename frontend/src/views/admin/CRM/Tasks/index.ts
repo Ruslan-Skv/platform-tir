@@ -1,1 +1,1 @@
-export { TasksPage, TasksPage as default } from './TasksPage';
+export { TasksPage, TasksPage as default } from './list/TasksPage';

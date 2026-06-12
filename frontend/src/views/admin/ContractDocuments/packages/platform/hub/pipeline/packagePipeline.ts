@@ -15,11 +15,7 @@ import type {
 import { clampPackageAddendumSlotCount, mergePackageFormData } from '../../form/packageForm';
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from '../hubModal/packageHubConstants';
-import {
-  formatPackagePipelineActDate,
-  isWithinMsSinceIso,
-  isWithinRevertWindow,
-} from '../hubModal/packageHubUtils';
+import { formatPackagePipelineActDate, isWithinMsSinceIso } from '../hubModal/packageHubUtils';
 
 /** Допуск при сравнении сумм оплат (руб.). */
 export const PACKAGE_PAYMENT_TOLERANCE_RUB = 0.5;

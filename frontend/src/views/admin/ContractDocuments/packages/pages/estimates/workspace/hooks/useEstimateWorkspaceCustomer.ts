@@ -1,7 +1,7 @@
 import { useCallback, useRef } from 'react';
 
 import { type CrmCustomerDetail } from '@/shared/api/admin-crm';
-import type { CrmCustomerAppliedContext } from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
+import type { CrmCustomerAppliedContext } from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
 
 import {
   type EstimateCrmCustomerFields,

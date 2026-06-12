@@ -4,8 +4,8 @@ import { ArrowPathIcon } from '@heroicons/react/24/outline';
 
 import type { ContractDocumentPackageVersionListItem } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import hubStyles from '../hubModal/PackageHubModal.module.css';
 import styles from './PackageEventsJournalModal.module.css';

@@ -4,7 +4,7 @@ import Link from 'next/link';
 
 import { AdminToolbarTrashButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import toolbarBadgeStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarTrashButton.module.css';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';

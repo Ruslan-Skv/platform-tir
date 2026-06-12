@@ -12,10 +12,7 @@ import {
   type PackageDocumentTabId,
   normalizeLegacyPackageTabId,
 } from '../../tabs/packageDocumentTabs';
-import {
-  isPackageLibraryTemplateTabId,
-  packageLibraryTemplateTabIdFromPreset,
-} from '../../tabs/packageLibraryTemplateTabs';
+import { packageLibraryTemplateTabIdFromPreset } from '../../tabs/packageLibraryTemplateTabs';
 import { packageTemplatePresetEditorTabId } from '../../tabs/packageTemplatePresetTab';
 
 export type PackageTemplateTabId = Exclude<

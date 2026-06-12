@@ -22,7 +22,7 @@ export function usePackageEditorHeaderState({
 }: UsePackageEditorHeaderStateOptions) {
   const headerContractNumberLabel = useMemo(
     () => getPackageContractNumberDisplayForForm(form),
-    [form.contract.number, form._repairCopyContractNumberBaseline]
+    [form]
   );
 
   const unsignedAddendumOrdinals = useMemo(

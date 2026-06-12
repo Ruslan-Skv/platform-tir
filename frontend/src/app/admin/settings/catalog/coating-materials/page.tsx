@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import { CoatingMaterialsSettingsSection } from '@/views/admin/Settings/CoatingMaterialsSettingsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { CoatingMaterialsSettingsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminCoatingMaterialsSettingsPage() {
   return (

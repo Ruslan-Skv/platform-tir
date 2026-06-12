@@ -4,7 +4,7 @@ import { BanknotesIcon } from '@heroicons/react/24/outline';
 
 import { useEffect, useRef, useState } from 'react';
 
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import type { PackageHubModalProps } from './PackageHubModal';
 import hubStyles from './PackageHubModal.module.css';

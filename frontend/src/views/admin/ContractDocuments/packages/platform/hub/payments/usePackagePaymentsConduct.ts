@@ -207,6 +207,7 @@ export function usePackagePaymentsConduct({
     payableBreakdown,
     journalPaidRub,
     paidAllocations.contractPaidRub,
+    paidAllocations.byAddendum,
   ]);
 
   const resetDraft = () => {

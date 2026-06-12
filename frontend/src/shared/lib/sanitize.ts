@@ -72,7 +72,6 @@ export function sanitizeHtml(html: string): string {
     return sanitizeHtmlServer(html);
   }
   // Клиент: dompurify (только в браузере)
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const DOMPurify = require('dompurify');
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS: ALLOWED_BLOG_TAGS,

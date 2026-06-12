@@ -100,7 +100,6 @@ function HeaderMobileCatalogSearch({ catalogSearch }: { catalogSearch: CatalogHe
                   onMouseEnter={() => setHighlight(index)}
                 >
                   {s.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className={styles.mobileSuggestionThumb}
                       src={s.imageUrl}
@@ -210,7 +209,6 @@ function HeaderChrome({
                 >
                   {isAuthenticated && user ? (
                     user.avatar && !headerAvatarLoadError ? (
-                      // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={getAvatarUrl(user.avatar) ?? ''}
                         alt=""

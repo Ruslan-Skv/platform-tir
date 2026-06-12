@@ -109,7 +109,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
           setCartServiceItems(serviceItems);
           setServiceOrderCategoryKeys(getOrderServiceCategoryKeys(orders));
           setDetachedServiceCategoryKeys(getDetachedServiceCategoryKeys());
-        } catch (error) {
+        } catch {
           setCart([]);
           setCartServiceItems([]);
           setServiceOrderCategoryKeys([]);

@@ -2,7 +2,7 @@
 
 import { Suspense, use } from 'react';
 
-import { ProductsPage } from '@/views/admin/Catalog/Products/ProductsPage';
+import { ProductsPage } from '@/views/admin/Catalog/Products';
 
 export default function AdminProductsByCategoryPage({
   params,

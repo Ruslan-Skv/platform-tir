@@ -1,7 +1,7 @@
-var Qs = Object.defineProperty;
-var zs = (s, t, e) =>
+const Qs = Object.defineProperty;
+const zs = (s, t, e) =>
   t in s ? Qs(s, t, { enumerable: !0, configurable: !0, writable: !0, value: e }) : (s[t] = e);
-var L = (s, t, e) => zs(s, typeof t != 'symbol' ? t + '' : t, e);
+const L = (s, t, e) => zs(s, typeof t != 'symbol' ? t + '' : t, e);
 function er(s, t) {
   const e = new Array(t.length).fill(0);
   return new Array(t.length).fill(0).map((n, r) => (i, a) => {
@@ -151,7 +151,7 @@ class or {
     return this._snapshots[this._index].viewport;
   }
   closestScreenshot() {
-    var r;
+    let r;
     const { wallTime: t, timestamp: e } = this.snapshot(),
       n =
         t && (r = this._screencastFrames[0]) != null && r.frameSwapWallTime
@@ -423,7 +423,7 @@ function fr(s, ...t) {
           }
         }
         if (A.length > 0) {
-          let y = function (m, E) {
+          const y = function (m, E) {
             function R() {
               const x = document.createElement('canvas');
               ((x.width = x.width / Math.floor(x.width / 24)),
@@ -442,7 +442,7 @@ function fr(s, ...t) {
           };
           const O = new Image();
           ((O.onload = () => {
-            var m;
+            let m;
             for (const E of A) {
               const R = E.getContext('2d'),
                 x = E.getAttribute('__playwright_bounding_rect__');
@@ -782,7 +782,7 @@ class gr {
     return t;
   }
   _modernize_1_to_2(t) {
-    var e;
+    let e;
     for (const n of t)
       n.type !== 'frame-snapshot' ||
         !n.snapshot.isMainFrame ||
@@ -823,7 +823,7 @@ class gr {
     return e;
   }
   _modernize_event_3_to_4(t) {
-    var n, r, i, a;
+    let n, r, i, a;
     if (t.type !== 'action' && t.type !== 'event') return t;
     const e = t.metadata;
     return e.internal || e.method.startsWith('tracing')
@@ -876,7 +876,7 @@ class gr {
     return e;
   }
   _modernize_event_4_to_5(t) {
-    var e, n;
+    let e, n;
     if (
       (t.type === 'event' &&
         t.method === '__create__' &&
@@ -980,7 +980,7 @@ class br {
     L(this, '_resourceToContentType', new Map());
   }
   async load(t, e) {
-    var o, l;
+    let o, l;
     this._backend = t;
     const n = [];
     let r = !1;
@@ -4780,7 +4780,7 @@ class go {
     return (await this._entriesPromise).has(t);
   }
   async readText(t) {
-    var i;
+    let i;
     const n = (await this._entriesPromise).get(t);
     if (!n) return;
     const r = new Ae.TextWriter();
@@ -4873,7 +4873,7 @@ function Xs(s, t, e, n) {
   return (Pe.set(r, o), o);
 }
 async function xo(s, t) {
-  var r;
+  let r;
   await Ro();
   const e = new br();
   try {

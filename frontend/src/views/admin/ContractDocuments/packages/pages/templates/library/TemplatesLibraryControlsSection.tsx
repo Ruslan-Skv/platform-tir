@@ -1,6 +1,6 @@
 'use client';
 
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { TemplatesLibraryControlsMetaActions } from './TemplatesLibraryControlsMetaActions';

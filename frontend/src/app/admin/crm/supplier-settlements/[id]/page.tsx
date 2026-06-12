@@ -1,4 +1,4 @@
-import { SupplierSettlementDetailPage } from '@/views/admin/CRM/SupplierSettlements/SupplierSettlementDetailPage';
+import { SupplierSettlementDetailPage } from '@/views/admin/CRM/SupplierSettlements';
 
 export default function AdminSupplierSettlementDetailPage() {
   return <SupplierSettlementDetailPage />;

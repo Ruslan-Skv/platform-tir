@@ -1,5 +1,9 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
+import {
+  ensureFreshAccessToken,
+  getStoredAccessToken,
+  hasUsableStoredAccessToken,
+} from '@/shared/lib/auth-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -86,11 +90,17 @@ export async function getUserNotificationHistory(params?: {
 export async function checkNewSupportReplies(
   since: string
 ): Promise<{ conversationIds: string[] }> {
-  // Поллер работает долго; при access=15m заранее обновляем токен и избегаем 401 в консоли.
-  await ensureFreshAccessToken();
+  await ensureFreshAccessToken(120_000);
+  if (!hasUsableStoredAccessToken()) return { conversationIds: [] };
+
   const params = new URLSearchParams({ since });
+  const token = getStoredAccessToken();
+  const headers: HeadersInit = { 'Content-Type': 'application/json' };
+  if (token) {
+    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+  }
   const res = await apiFetch(`${API_URL}/support/conversations/check-new-replies?${params}`, {
-    headers: getUserAuthHeaders(),
+    headers,
   });
   if (!res.ok) return { conversationIds: [] };
   return res.json();

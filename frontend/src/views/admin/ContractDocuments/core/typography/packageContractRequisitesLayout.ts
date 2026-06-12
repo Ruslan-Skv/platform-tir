@@ -300,7 +300,7 @@ function mergeHeaderAndDataRowsInTableHtml(tableHtml: string): string {
 function transformRequisitesTableToTwoRows(tableHtml: string): string {
   if (tableHtml.includes(SIGNATURES_ROW_CLASS)) return tableHtml;
 
-  let working = mergeHeaderAndDataRowsInTableHtml(tableHtml);
+  const working = mergeHeaderAndDataRowsInTableHtml(tableHtml);
 
   const rowStart = findPartyRowIndexStrict(working);
   if (rowStart < 0) return tableHtml;

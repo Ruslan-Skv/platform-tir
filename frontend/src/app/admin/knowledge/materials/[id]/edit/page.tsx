@@ -2,7 +2,7 @@
 
 import { use } from 'react';
 
-import { KnowledgeMaterialFormPage } from '@/views/admin/Knowledge/KnowledgeMaterialFormPage';
+import { KnowledgeMaterialFormPage } from '@/views/admin/Knowledge';
 
 export default function AdminKnowledgeMaterialEditPage({
   params,

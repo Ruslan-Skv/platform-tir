@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
@@ -257,7 +257,7 @@ export function useServiceCategoryPage({
     if (!data || data.slug !== slug) return;
     if (skipPersistCalculatorDraftRef.current) return;
     writeCalculatorDraftToStorage(slug, calculations, activeCalcId, draftCustomItems);
-  }, [slug, data?.id, calculations, activeCalcId, draftCustomItems]);
+  }, [slug, data, calculations, activeCalcId, draftCustomItems]);
 
   useEffect(() => {
     if (!activeCalcId && calculations.length > 0) {
@@ -385,38 +385,41 @@ export function useServiceCategoryPage({
     );
   };
 
-  const calculateForLines = async (lines: CalculatorLine[]) => {
-    const items = lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity }));
-    const { catalog, custom } = splitDraftLineItems(items, draftCustomItems);
-    const categoryName = data?.name ?? '';
+  const calculateForLines = useCallback(
+    async (lines: CalculatorLine[]) => {
+      const items = lines.map((l) => ({ itemId: l.itemId, quantity: l.quantity }));
+      const { catalog, custom } = splitDraftLineItems(items, draftCustomItems);
+      const categoryName = data?.name ?? '';
 
-    if (catalog.length === 0) {
-      const customLines = custom.map(({ itemId, quantity, def }) => ({
-        itemId,
-        name: def.name,
-        categoryName,
-        unit: def.unit,
-        quantity,
-        price: def.price,
-        amount: def.price * quantity,
-      }));
-      const total = customLines.reduce((s, l) => s + l.amount, 0);
-      return {
-        total,
-        lines: customLines,
-        showPricesInPublic: true,
-      };
-    }
+      if (catalog.length === 0) {
+        const customLines = custom.map(({ itemId, quantity, def }) => ({
+          itemId,
+          name: def.name,
+          categoryName,
+          unit: def.unit,
+          quantity,
+          price: def.price,
+          amount: def.price * quantity,
+        }));
+        const total = customLines.reduce((s, l) => s + l.amount, 0);
+        return {
+          total,
+          lines: customLines,
+          showPricesInPublic: true,
+        };
+      }
 
-    const res = await apiFetch(`${API_URL}/service-catalog/calculate`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ items: catalog }),
-    });
-    if (!res.ok) throw new Error('Не удалось рассчитать стоимость');
-    const apiResult = (await res.json()) as CalculateResult;
-    return mergeCalculateResultWithCustomLines(apiResult, custom, categoryName);
-  };
+      const res = await apiFetch(`${API_URL}/service-catalog/calculate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items: catalog }),
+      });
+      if (!res.ok) throw new Error('Не удалось рассчитать стоимость');
+      const apiResult = (await res.json()) as CalculateResult;
+      return mergeCalculateResultWithCustomLines(apiResult, custom, categoryName);
+    },
+    [data?.name, draftCustomItems]
+  );
 
   const addCustomWorkToCalculator = async () => {
     const def = parseCustomWorkFormInput(customWorkName, customWorkUnit, customWorkPrice);
@@ -584,7 +587,7 @@ export function useServiceCategoryPage({
       }, 400);
       calcTimers.current.set(calc.id, timerId);
     }
-  }, [calculations]);
+  }, [calculations, calculateForLines]);
 
   const showPrices = data?.showPricesInPublic ?? true;
   const activeCalc = calculations.find((calc) => calc.id === activeCalcId) ?? calculations[0];

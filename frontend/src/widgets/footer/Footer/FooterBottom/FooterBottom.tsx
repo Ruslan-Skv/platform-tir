@@ -10,8 +10,8 @@ interface FooterBottomProps {
 
 export const FooterBottom: React.FC<FooterBottomProps> = ({
   copyrightCompanyName,
-  developer,
-  email,
+  developer: _developer,
+  email: _email,
 }) => {
   const currentYear = new Date().getFullYear();
 

@@ -1,9 +1,8 @@
 'use client';
 
-import { SectionVisibilityCheckbox } from '../SectionVisibilityCheckbox';
+import { SectionVisibilityCheckbox } from '../shared/SectionVisibilityCheckbox';
 import styles from './ServicesSectionPage.module.css';
 import type { ServicesSectionPageModel } from './hooks/useServicesSectionPage';
-import { EMPTY_NEW_SERVICE_ITEM } from './services-section-page.constants';
 import { formatFeatures, parseFeatures } from './services-section-page.utils';
 
 type ServicesSectionPageViewProps = {

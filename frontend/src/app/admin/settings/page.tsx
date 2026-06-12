@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminSettingsPage() {
   return (

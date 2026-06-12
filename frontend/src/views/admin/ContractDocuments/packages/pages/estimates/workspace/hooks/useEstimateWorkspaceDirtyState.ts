@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import {
   estimateWorkspaceCustomerDirty,
@@ -69,7 +69,6 @@ export function useEstimateWorkspaceDirtyState({
       baseline,
       estimateCategorySlugs,
       estimateNameDraft,
-      draftPollTick,
       crmCustomerId,
       customerName,
       objectAddress,

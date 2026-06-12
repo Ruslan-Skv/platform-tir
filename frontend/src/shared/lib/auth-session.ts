@@ -154,6 +154,41 @@ export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean
   return refreshAccessTokenSilently();
 }
 
+/** Токен из localStorage (user или admin). */
+export function getStoredAccessToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  return localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+}
+
+/** Есть bearer и он не истёк (с запасом minTtlMs). */
+export function hasUsableStoredAccessToken(minTtlMs = 0): boolean {
+  const token = getStoredAccessToken();
+  if (!token) return false;
+  const expMs = getJwtExpMs(token);
+  if (!expMs) return true;
+  return expMs - Date.now() > minTtlMs;
+}
+
+/**
+ * В фоновой вкладке setInterval почти не работает — при возврате обновляем access до поллеров.
+ * @returns cleanup
+ */
+export function bindAuthRefreshOnPageVisible(minTtlMs = 120_000): () => void {
+  if (typeof window === 'undefined') return () => {};
+
+  const refreshIfVisible = () => {
+    if (document.visibilityState !== 'visible') return;
+    void ensureFreshAccessToken(minTtlMs);
+  };
+
+  document.addEventListener('visibilitychange', refreshIfVisible);
+  window.addEventListener('focus', refreshIfVisible);
+  return () => {
+    document.removeEventListener('visibilitychange', refreshIfVisible);
+    window.removeEventListener('focus', refreshIfVisible);
+  };
+}
+
 export async function revokeRefreshOnServer(): Promise<void> {
   if (typeof window === 'undefined') return;
   try {

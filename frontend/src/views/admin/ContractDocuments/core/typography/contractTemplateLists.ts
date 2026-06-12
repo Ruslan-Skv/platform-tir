@@ -1,7 +1,6 @@
 import {
   CONTRACT_LEGAL_LIST_CLASS,
   applyContractLegalListInVisualEditor,
-  buildContractLegalListHtml,
   detectSectionNumber,
   isNodeInsideContractLegalList,
 } from './contractLegalList';

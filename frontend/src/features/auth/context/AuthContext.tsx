@@ -5,6 +5,7 @@ import React, { createContext, useCallback, useContext, useEffect, useState } fr
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
+  bindAuthRefreshOnPageVisible,
   getApiBaseUrl,
   getJwtExpMs,
   persistTokenResponse,
@@ -317,15 +318,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (!exp) return;
       if (exp - Date.now() < 120_000) {
         void refreshAccessTokenSilently().then((ok) => {
-          if (!ok && exp <= Date.now()) {
-            logout();
-          }
+          if (!ok) return;
+          const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+          if (latest) setToken(latest);
         });
       }
     };
     const id = window.setInterval(tick, 60_000);
     tick();
-    return () => window.clearInterval(id);
+    const unbindVisible = bindAuthRefreshOnPageVisible();
+    return () => {
+      window.clearInterval(id);
+      unbindVisible();
+    };
   }, [token]);
 
   const value: AuthContextType = {

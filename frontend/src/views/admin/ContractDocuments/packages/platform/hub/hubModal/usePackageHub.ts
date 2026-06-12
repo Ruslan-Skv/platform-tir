@@ -77,7 +77,7 @@ export function usePackageHub({
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
-  const [undoUiTick, setUndoUiTick] = useState(0);
+  const [, setUndoUiTick] = useState(0);
 
   const formRef = useRef(form);
   formRef.current = form;
@@ -177,7 +177,7 @@ export function usePackageHub({
       packageJournalSchedulerRef.current?.dispose();
       packageJournalSchedulerRef.current = null;
     };
-  }, [isOpen, packageId]);
+  }, [isOpen, packageId, buildHubPersistedFormData]);
 
   const loadHub = useCallback(async () => {
     const background = hubContentReadyRef.current;
@@ -394,7 +394,7 @@ export function usePackageHub({
         payments: paymentRows,
         nowMs: Date.now(),
       }),
-    [packageKind, packageFlowStatus, form, paymentRows, undoUiTick]
+    [packageKind, packageFlowStatus, form, paymentRows]
   );
 
   const attachedActPhotos = useMemo(() => {

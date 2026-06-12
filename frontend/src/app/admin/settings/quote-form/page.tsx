@@ -1,7 +1,7 @@
 'use client';
 
-import { QuoteFormSection } from '@/views/admin/Settings/QuoteFormSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { QuoteFormSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminQuoteFormPage() {
   return (

@@ -1,8 +1,7 @@
 'use client';
 
 import styles from '../Hero/HeroSectionPage.module.css';
-import { SectionVisibilityCheckbox } from '../SectionVisibilityCheckbox';
-import { EMPTY_NEW_ADVANTAGE_ITEM } from './advantages-section-page.constants';
+import { SectionVisibilityCheckbox } from '../shared/SectionVisibilityCheckbox';
 import type { AdvantagesSectionPageModel } from './hooks/useAdvantagesSectionPage';
 
 type AdvantagesSectionPageViewProps = {

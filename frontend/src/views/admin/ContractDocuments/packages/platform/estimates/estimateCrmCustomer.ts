@@ -1,5 +1,5 @@
 import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
-import { measurementFieldsFromCrmCustomerDetail } from '@/views/admin/CRM/Measurements/measurementCrmCustomer';
+import { measurementFieldsFromCrmCustomerDetail } from '@/views/admin/CRM/Measurements/shared/measurementCrmCustomer';
 
 export type EstimateCrmCustomerFields = {
   crmCustomerId: string | null;

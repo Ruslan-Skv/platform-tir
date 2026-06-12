@@ -1,6 +1,6 @@
 'use client';
 
-import { SectionVisibilityCheckbox } from '../SectionVisibilityCheckbox';
+import { SectionVisibilityCheckbox } from '../shared/SectionVisibilityCheckbox';
 import styles from './HeroSectionPage.module.css';
 import { HERO_SLIDE_SHOW_MODES } from './hero-section-page.constants';
 import type { HeroSlideShowMode } from './hero-section-page.types';

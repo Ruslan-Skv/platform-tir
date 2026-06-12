@@ -2,7 +2,7 @@
 
 import { Fragment } from 'react';
 
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';

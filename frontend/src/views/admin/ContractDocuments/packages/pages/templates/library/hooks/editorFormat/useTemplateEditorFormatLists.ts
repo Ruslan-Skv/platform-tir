@@ -37,7 +37,10 @@ export function useTemplateEditorFormatLists(deps: TemplateEditorFormatDeps) {
     visualEditorRef,
   } = deps;
 
-  const readVisualEditorHtml = (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml;
+  const readVisualEditorHtml = useCallback(
+    (): string => visualEditorRef.current?.innerHTML ?? visualDraftHtml,
+    [visualDraftHtml, visualEditorRef]
+  );
 
   const [bulletMarker, setBulletMarker] = useState<BulletMarkerId>('disc');
 
@@ -135,7 +138,14 @@ export function useTemplateEditorFormatLists(deps: TemplateEditorFormatDeps) {
     applyTemplateHistorySnapshot(next);
     setOk('Списки исправлены: убрана лишняя обёртка, пустые пункты (1.3) и служебные комментарии.');
     setError(null);
-  }, [applyTemplateHistorySnapshot, editorMode, isSuperAdmin, setError, setOk]);
+  }, [
+    applyTemplateHistorySnapshot,
+    editorMode,
+    isSuperAdmin,
+    readVisualEditorHtml,
+    setError,
+    setOk,
+  ]);
 
   const changeListLevel = (direction: 'indent' | 'outdent') => {
     if (editorMode !== 'visual' || !visualEditorRef.current) return;

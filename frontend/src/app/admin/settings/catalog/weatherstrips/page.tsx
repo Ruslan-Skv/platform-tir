@@ -2,8 +2,8 @@
 
 import Link from 'next/link';
 
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
-import { WeatherstripSettingsSection } from '@/views/admin/Settings/WeatherstripSettingsSection';
+import { WeatherstripSettingsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminWeatherstripsSettingsPage() {
   return (

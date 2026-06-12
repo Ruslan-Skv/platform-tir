@@ -321,7 +321,7 @@ function collectHtmlBlockOpenTagRefsIntersectingRange(
   return [];
 }
 
-function collectHtmlBlocksIntersectingRange(
+function _collectHtmlBlocksIntersectingRange(
   source: string,
   start: number,
   end: number

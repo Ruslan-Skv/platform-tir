@@ -1,7 +1,7 @@
 'use client';
 
-import { NotificationsSection } from '@/views/admin/Settings/NotificationsSection';
-import styles from '@/views/admin/Settings/SettingsPage.module.css';
+import { NotificationsSection } from '@/views/admin/Settings';
+import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 
 export default function AdminNotificationsPage() {
   return (

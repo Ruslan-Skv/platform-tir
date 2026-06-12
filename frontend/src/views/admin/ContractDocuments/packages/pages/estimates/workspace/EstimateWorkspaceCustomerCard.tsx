@@ -4,8 +4,8 @@ import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
 import {
   type CrmCustomerAppliedContext,
   CrmCustomerSearchPanel,
-} from '@/views/admin/CRM/Customers/CrmCustomerSearchPanel';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/MeasurementFormPage.module.css';
+} from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
+import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';

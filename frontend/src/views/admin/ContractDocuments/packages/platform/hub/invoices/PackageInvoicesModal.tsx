@@ -16,8 +16,8 @@ import {
   listPackagePaymentInvoices,
 } from '@/shared/api/admin-payment-invoices';
 import { Modal } from '@/shared/ui/Modal';
-import crmFormStyles from '@/views/admin/CRM/Customers/AddCrmCustomerModal.module.css';
-import crmDetailStyles from '@/views/admin/CRM/Customers/CrmCustomerDetailModal.module.css';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '../../form/packageContractDisplay';
