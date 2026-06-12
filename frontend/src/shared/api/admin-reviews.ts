@@ -19,6 +19,8 @@ export interface AdminReview {
   userEmail: string | null;
   rating: number;
   comment: string | null;
+  adminReply?: string | null;
+  adminReplyAt?: string | null;
   isApproved: boolean;
   createdAt: string;
   updatedAt: string;

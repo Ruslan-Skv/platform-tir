@@ -120,11 +120,13 @@ export function PromotionsPage() {
 
       {deleteTarget && (
         <ConfirmModal
+          isOpen
           title="Удалить акцию?"
           message={`Вы уверены, что хотите удалить акцию «${deleteTarget.title}»?`}
           onConfirm={handleDelete}
-          onCancel={() => setDeleteTarget(null)}
-          loading={deleting}
+          onClose={() => setDeleteTarget(null)}
+          confirmText={deleting ? 'Удаление...' : 'Удалить'}
+          variant="danger"
         />
       )}
     </div>

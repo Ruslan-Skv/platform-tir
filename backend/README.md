@@ -134,20 +134,31 @@ src/
 
 ## Pre-commit хуки
 
-Проект настроен с Husky для автоматических проверок перед коммитом:
+Единый hook: `backend/.husky/pre-commit` (для всего монорепозитория). Срабатывает при `git commit` / `npm run commit`.
 
-- **lint-staged** - форматирование и проверка staged файлов
-- **TypeScript** - проверка типов
-- **Prettier** - проверка форматирования
-- **ESLint** - проверка кода
-- **Secretlint** - проверка на наличие секретов
+Порядок проверок (без дублирования):
 
-Для коммита используйте:
+1. **lint-staged** — форматирование и автофикс только staged-файлов (конфиг: `.lintstagedrc.cjs` в корне репозитория). Команды запускаются через `scripts/lint-staged-workspace.js`: cwd переключается в `backend/` или `frontend/`, чтобы резолвились локальные `node_modules` (prettier-плагины, eslint, secretlint, prisma).
+2. **backend** — `npm run validate` + `npm run secretlint`
+3. **frontend** — `npm run validate:precommit` (type-check, architecture; lint/format — через lint-staged на staged-файлах)
+
+Коммит из `backend/` или `frontend/`:
+
 ```bash
 npm run commit
 ```
 
-Это запустит все проверки и интерактивный интерфейс Commitizen для создания коммита.
+Проверки без коммита:
+
+```bash
+cd backend && npm run validate:monorepo
+```
+
+Установка husky (один раз после клона):
+
+```bash
+cd backend && npm run husky:install
+```
 
 ## Лицензия
 

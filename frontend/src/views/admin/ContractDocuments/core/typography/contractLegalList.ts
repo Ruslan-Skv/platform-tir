@@ -1049,13 +1049,13 @@ function unwrapNestedContractLegalLists(root: HTMLElement): void {
     const container = outerOl.parentElement;
     if (!container) continue;
 
-    const intro = introTextFromListItem(parentLi, legalOl);
+    const intro = introTextFromListItem(parentLi, legalOl as HTMLOListElement);
     legalOl.remove();
     container.insertBefore(legalOl, outerOl);
     outerOl.remove();
 
     if (intro) {
-      ensureIntroItemWithNestedSubclauses(legalOl, intro);
+      ensureIntroItemWithNestedSubclauses(legalOl as HTMLOListElement, intro);
     }
   }
 }

@@ -6,8 +6,8 @@
     "dev": "next dev",
     "build": "node scripts/inject-sw-version.js && next build",
     "start": "next start",
-    "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.CI){process.exit(0)}\" && husky install || true",
-    "type-check": "tsc --noEmit --skipLibCheck",
+    "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.CI){process.exit(0)}\" && cd .. && husky install backend/.husky || true",
+    "type-check": "tsc --noEmit --skipLibCheck -p tsconfig.typecheck.json",
     "lint": "eslint src --max-warnings=50",
     "lint:fix": "eslint src --fix --max-warnings=50",
     "format": "prettier --write .",
@@ -15,12 +15,13 @@
     "check-fsd": "node scripts/check-fsd.js",
     "check-architecture": "node scripts/check-architecture.mjs",
     "validate": "npm run type-check && npm run lint && npm run format:check && npm run check-architecture",
+    "validate:precommit": "npm run type-check && npm run check-architecture",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "commit": "cd .. && git add -A && cd frontend && cz"
+    "commit": "cd .. && git add -A && cd backend && cz"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",
@@ -93,16 +94,5 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
-  },
-  "lint-staged": {
-    "*.{ts,tsx}": [
-      "prettier --write"
-    ],
-    "*.{js,jsx}": [
-      "prettier --write"
-    ],
-    "*.{json,css,scss,md}": [
-      "prettier --write"
-    ]
   }
 }

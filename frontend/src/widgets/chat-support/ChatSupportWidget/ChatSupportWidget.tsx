@@ -257,7 +257,7 @@ export function ChatSupportWidget() {
       <button
         type="button"
         className={styles.fab}
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         aria-label="Чат поддержки"
       >
         <ChatBubbleLeftRightIcon className={styles.fabIcon} />

@@ -464,13 +464,14 @@ function groupLinesIntoStages(args: {
     return [{ id: `wst:${gri}:0`, label: '', amount, lines: lineRows }];
   }
 
+  const stageByItemId = itemIdToStage!;
   type Bucket = { label: string; rows: WorkScopeLineRow[]; order: number };
   const buckets = new Map<string, Bucket>();
   let order = 0;
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li]!;
     const itemId = itemIds[li]!;
-    const stageLabel = (itemIdToStage.get(itemId) ?? '—').trim() || '—';
+    const stageLabel = (stageByItemId.get(itemId) ?? '—').trim() || '—';
     let b = buckets.get(stageLabel);
     if (!b) {
       b = { label: stageLabel, rows: [], order: order++ };

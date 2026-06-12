@@ -174,10 +174,20 @@ packages/
 
 Новые нарушения allowlist **не добавлять** — исправлять архитектуру. Подробный вывод: `node scripts/check-architecture.mjs --verbose`.
 
+## Pre-commit (монорепозиторий)
+
+Проверки при коммите общие для backend и frontend: hook `backend/.husky/pre-commit`.
+
+1. **lint-staged** (`.lintstagedrc.cjs` в корне) — prettier для staged frontend-файлов через `scripts/lint-staged-workspace.js` (cwd = `frontend/`, иначе не резолвится `@trivago/prettier-plugin-sort-imports`).
+2. **backend** — `validate` + `secretlint`.
+3. **frontend** — `validate:precommit` (`type-check` + `check-architecture`; полный `validate` с lint — вручную).
+
+Коммит: `npm run commit` (из любого пакета). Ручная проверка без коммита: `cd backend && npm run validate:monorepo`.
+
 ## Связанные команды
 
 ```bash
 npm run check-architecture   # проверка архитектуры
 npm run validate             # type-check + lint + format + architecture
-npm run commit               # commitizen (pre-commit запускает проверки через husky)
+npm run commit               # git add + cz → backend/.husky/pre-commit
 ```

@@ -82,7 +82,11 @@ export function NotificationsSection() {
   const hasInitializedRole = React.useRef(false);
 
   useEffect(() => {
-    if (user?.role && ADMIN_ROLES.includes(user.role) && !hasInitializedRole.current) {
+    if (
+      user?.role &&
+      (ADMIN_ROLES as readonly string[]).includes(user.role) &&
+      !hasInitializedRole.current
+    ) {
       hasInitializedRole.current = true;
       setSelectedRole(user.role);
       if (user.id) setSelectedUserId(user.id);
@@ -290,6 +294,8 @@ export function NotificationsSection() {
     }
   };
 
+  const editModeForUi: EditMode = editMode;
+  const customerScopeForUi: CustomerScope = customerScope;
   const showUserSelectPrompt = editMode === 'user' && !selectedUserId;
   const defaultSettingsForForm: AdminNotificationsSettings = {
     id: 'default',
@@ -339,7 +345,7 @@ export function NotificationsSection() {
                     <input
                       type="radio"
                       name="editMode"
-                      checked={editMode === 'role'}
+                      checked={editModeForUi === 'role'}
                       onChange={() => setEditMode('role')}
                     />
                     По роли
@@ -348,7 +354,7 @@ export function NotificationsSection() {
                     <input
                       type="radio"
                       name="editMode"
-                      checked={editMode === 'user'}
+                      checked={editModeForUi === 'user'}
                       onChange={() => setEditMode('user')}
                     />
                     Для пользователя
@@ -357,7 +363,7 @@ export function NotificationsSection() {
                     <input
                       type="radio"
                       name="editMode"
-                      checked={editMode === 'customer'}
+                      checked={editModeForUi === 'customer'}
                       onChange={() => setEditMode('customer')}
                     />
                     Покупатели
@@ -408,7 +414,7 @@ export function NotificationsSection() {
                   <input
                     type="radio"
                     name="editMode"
-                    checked={editMode === 'role'}
+                    checked={editModeForUi === 'role'}
                     onChange={() => setEditMode('role')}
                   />
                   По роли
@@ -417,7 +423,7 @@ export function NotificationsSection() {
                   <input
                     type="radio"
                     name="editMode"
-                    checked={editMode === 'user'}
+                    checked={editModeForUi === 'user'}
                     onChange={() => setEditMode('user')}
                   />
                   Для пользователя
@@ -426,7 +432,7 @@ export function NotificationsSection() {
                   <input
                     type="radio"
                     name="editMode"
-                    checked={editMode === 'customer'}
+                    checked={editModeForUi === 'customer'}
                     onChange={() => setEditMode('customer')}
                   />
                   Покупатели
@@ -440,7 +446,7 @@ export function NotificationsSection() {
                   <input
                     type="radio"
                     name="customerScope"
-                    checked={customerScope === 'single'}
+                    checked={customerScopeForUi === 'single'}
                     onChange={() => setCustomerScope('single')}
                   />
                   Конкретный покупатель
@@ -449,7 +455,7 @@ export function NotificationsSection() {
                   <input
                     type="radio"
                     name="customerScope"
-                    checked={customerScope === 'all'}
+                    checked={customerScopeForUi === 'all'}
                     onChange={() => setCustomerScope('all')}
                   />
                   Все покупатели

@@ -1,65 +1,36 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-echo "🚀 Running backend pre-commit checks..."
+ROOT="$(git rev-parse --show-toplevel)"
+cd "$ROOT" || exit 1
 
-# Переходим в директорию backend для выполнения команд
-cd backend || {
-  echo "❌ Cannot find backend directory"
+echo "🚀 Pre-commit: platform-tir (backend + frontend)"
+echo ""
+
+echo "🔍 lint-staged (format & fix staged files)..."
+npx lint-staged || {
+  echo "❌ lint-staged failed"
   exit 1
 }
 
-# 1. Запуск lint-staged для проверки и форматирования только staged файлов
-# (Prettier, ESLint, Secretlint для staged файлов)
-echo "🔍 Running lint-staged on staged files..."
-cd .. && npx lint-staged || {
-  echo "❌ Lint-staged checks failed"
+echo ""
+echo "🔍 backend validate..."
+npm run validate --prefix backend || {
+  echo "❌ Backend validation failed (see backend/docs/ARCHITECTURE.md)"
   exit 1
 }
 
-# Возвращаемся в backend для выполнения остальных команд
-cd backend || exit 1
-
-# 2. Prisma Client (после npm ci без postinstall или очистки node_modules)
-echo "🔍 Generating Prisma Client..."
-npx prisma generate || {
-  echo "❌ prisma generate failed"
+npm run secretlint --prefix backend || {
+  echo "❌ Secretlint failed (backend)"
   exit 1
 }
 
-# 3. Проверка типов TypeScript (tsc --noEmit)
-echo "🔍 Type checking (tsc --noEmit)..."
-npm run type-check || {
-  echo "❌ TypeScript errors found"
+echo ""
+echo "🔍 frontend validate (precommit)..."
+npm run validate:precommit --prefix frontend || {
+  echo "❌ Frontend validation failed (see frontend/docs/ARCHITECTURE.md)"
   exit 1
 }
 
-# 4. Проверка форматирования Prettier
-echo "🔍 Checking formatting (Prettier)..."
-npm run format:check || {
-  echo "❌ Formatting issues found. Run 'npm run format' to fix."
-  exit 1
-}
-
-# 5. Проверка ESLint
-echo "🔍 Linting (ESLint)..."
-npm run lint || {
-  echo "❌ ESLint errors found"
-  exit 1
-}
-
-# 6. Проверка секретов (Secretlint) для всего проекта
-echo "🔍 Checking for secrets (Secretlint)..."
-npx secretlint "src/**/*.{ts,js}" "prisma/**/*.ts" "*.{js,json}" --format json || {
-  echo "⚠️  Potential secrets found"
-  exit 1
-}
-
-# 7. Проверка архитектуры backend
-echo "🔍 Checking backend architecture..."
-npm run check-architecture || {
-  echo "❌ Architecture violations found (see backend/docs/ARCHITECTURE.md)"
-  exit 1
-}
-
-echo "✅ All backend pre-commit checks passed!"
+echo ""
+echo "✅ Pre-commit passed (backend + frontend)."

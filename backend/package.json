@@ -19,10 +19,12 @@
     "postinstall": "node scripts/postinstall-prisma.js",
     "check-architecture": "node scripts/check-architecture.mjs",
     "validate": "prisma generate && npm run type-check && npm run lint && npm run format:check && npm run check-architecture",
-    "prepare": "node -e \"if(process.env.HUSKY==='0')process.exit(0)\" && husky install || true",
+    "validate:monorepo": "npm run validate && npm run secretlint && npm run validate --prefix ../frontend",
+    "validate:precommit:monorepo": "npm run validate && npm run secretlint && npm run validate:precommit --prefix ../frontend",
+    "secretlint": "npx secretlint \"src/**/*.{ts,js}\" \"prisma/**/*.ts\" \"*.{js,json}\" --format json",
+    "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.CI){process.exit(0)}\" && cd .. && husky install backend/.husky || true",
     "husky:install": "cd .. && husky install backend/.husky",
-    "pre-commit": "npm run validate && npx secretlint \"src/**/*.{ts,js}\" \"prisma/**/*.ts\" \"*.{js,json}\" --format json",
-    "commit": "npm run pre-commit && cd .. && git add -A && cd backend && cz",
+    "commit": "cd .. && git add -A && cd backend && cz",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
@@ -109,25 +111,6 @@
     "commitizen": {
       "path": "cz-conventional-changelog"
     }
-  },
-  "lint-staged": {
-    "backend/src/**/*.ts": [
-      "prettier --write --config backend/.prettierrc",
-      "node backend/scripts/lint-staged-runner.js eslint --fix",
-      "node backend/scripts/lint-staged-runner.js npx secretlint"
-    ],
-    "backend/prisma/seed.ts": [
-      "prettier --write --config backend/.prettierrc",
-      "node backend/scripts/lint-staged-runner.js npx secretlint"
-    ],
-    "backend/**/*.{js,json,md}": [
-      "prettier --write --config backend/.prettierrc",
-      "node backend/scripts/lint-staged-runner.js npx secretlint"
-    ],
-    "!backend/package-lock.json": [],
-    "backend/**/*.prisma": [
-      "node backend/scripts/lint-staged-runner.js prisma format"
-    ]
   },
   "jest": {
     "moduleFileExtensions": [

@@ -128,7 +128,7 @@ export function mergeCalculateResultWithCustomLines<
     quantity,
     price: def.price,
     amount: def.price * quantity,
-  })) as T[];
+  })) as unknown as T[];
   const customTotal = customLines.reduce((s, l) => s + l.amount, 0);
   return {
     total: apiResult.total + customTotal,

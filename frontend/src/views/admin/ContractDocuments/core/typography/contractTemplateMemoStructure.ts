@@ -155,7 +155,7 @@ function replaceHeadingWithMemoBlocks(
 
 function findNestedMemoInnerH2(outer: HTMLElement): HTMLElement | null {
   const direct = outer.querySelector(':scope > h2');
-  if (direct && direct !== outer) return direct;
+  if (direct && direct !== outer) return direct as HTMLElement;
   return outer.getElementsByTagName('h2')[0] ?? null;
 }
 

@@ -190,7 +190,10 @@ export async function buildPaymentInvoiceQrDataUrl(
     const winPayload = buildSt0001PaymentQrPayload(input, PAYMENT_QR_GOST_FORMAT_ID_WIN1251);
     if (winPayload) {
       try {
-        return await QRCode.toDataURL(encodeWin1251Payload(winPayload), qrOptions);
+        return await QRCode.toDataURL(
+          [{ data: encodeWin1251Payload(winPayload), mode: 'byte' }],
+          qrOptions
+        );
       } catch {
         /* UTF-8 fallback */
       }

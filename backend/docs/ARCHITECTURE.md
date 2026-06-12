@@ -16,13 +16,13 @@ public/             публичные и «сайтовые» модули в �
 admin/              admin/** — CRM, CMS, каталог (админ), аналитика
 ```
 
-| Зона | Пути | Может импортировать |
-|------|------|---------------------|
-| `infrastructure` | `common/`, `database/`, `elasticsearch/` | только `infrastructure` |
-| `core` | `auth/`, `users/` | `infrastructure`, `core` |
-| `public` | остальные модули в `src/` (products, orders, hero, …) | `infrastructure`, `core`, `public` |
-| `admin` | `admin/**` | `infrastructure`, `core`, `public`, `admin` |
-| `bootstrap` | `main.ts`, `app.module.ts`, `app.controller.ts`, `app.service.ts` | все зоны |
+| Зона             | Пути                                                              | Может импортировать                         |
+| ---------------- | ----------------------------------------------------------------- | ------------------------------------------- |
+| `infrastructure` | `common/`, `database/`, `elasticsearch/`                          | только `infrastructure`                     |
+| `core`           | `auth/`, `users/`                                                 | `infrastructure`, `core`                    |
+| `public`         | остальные модули в `src/` (products, orders, hero, …)             | `infrastructure`, `core`, `public`          |
+| `admin`          | `admin/**`                                                        | `infrastructure`, `core`, `public`, `admin` |
+| `bootstrap`      | `main.ts`, `app.module.ts`, `app.controller.ts`, `app.service.ts` | все зоны                                    |
 
 **Запрещено:**
 
@@ -76,14 +76,14 @@ feature-name/
 
 Агрегатор: `admin.module.ts` импортирует подмодули. Группы:
 
-| Группа | Примеры |
-|--------|---------|
-| CRM | customers, measurements, contracts, tasks, installers |
-| CMS | blog, pages, photo, knowledge, promotions |
-| Catalog (admin) | `admin/catalog/*`, suppliers, partners |
-| Orders | admin/orders |
+| Группа             | Примеры                                                                  |
+| ------------------ | ------------------------------------------------------------------------ |
+| CRM                | customers, measurements, contracts, tasks, installers                    |
+| CMS                | blog, pages, photo, knowledge, promotions                                |
+| Catalog (admin)    | `admin/catalog/*`, suppliers, partners                                   |
+| Orders             | admin/orders                                                             |
 | Contract documents | contract-document-packages, contract-document-objects, contract-payments |
-| System | admin-access, admin-presence, notifications, analytics |
+| System             | admin-access, admin-presence, notifications, analytics                   |
 
 **Перекрёстные зависимости admin:** через `imports: [OtherModule]` и `exports: [OtherService]`, не через глубокие относительные пути к чужим файлам без module wiring.
 
@@ -132,11 +132,11 @@ contract-document-packages/
 
 ## Публичное vs админ API
 
-| Тип | Расположение | Префикс маршрута |
-|-----|--------------|------------------|
-| Сайт / кабинет | `src/products/`, `src/orders/`, … | `/api/v1/...` |
-| Админка | `src/admin/**` | `/api/v1/admin/...` |
-| Публичные куски админ-домена | `*-public.controller.ts` | по соглашению модуля |
+| Тип                          | Расположение                      | Префикс маршрута     |
+| ---------------------------- | --------------------------------- | -------------------- |
+| Сайт / кабинет               | `src/products/`, `src/orders/`, … | `/api/v1/...`        |
+| Админка                      | `src/admin/**`                    | `/api/v1/admin/...`  |
+| Публичные куски админ-домена | `*-public.controller.ts`          | по соглашению модуля |
 
 ---
 
@@ -152,13 +152,13 @@ contract-document-packages/
 
 `scripts/check-architecture.mjs` + `scripts/architecture.config.mjs`.
 
-| Проверка | Уровень |
-|----------|---------|
-| Импорты между зонами | error |
-| `PrismaService` в `*.controller.ts` | error (allowlist для legacy) |
-| > 12 `.ts` в корне feature-модуля (кроме `dto/`) | error |
-| > 15 `.ts` в `dto/` одного модуля | warn |
-| Service > 600 строк | warn (allowlist для legacy) |
+| Проверка                                         | Уровень                      |
+| ------------------------------------------------ | ---------------------------- |
+| Импорты между зонами                             | error                        |
+| `PrismaService` в `*.controller.ts`              | error (allowlist для legacy) |
+| > 12 `.ts` в корне feature-модуля (кроме `dto/`) | error                        |
+| > 15 `.ts` в `dto/` одного модуля                | warn                         |
+| Service > 600 строк                              | warn (allowlist для legacy)  |
 
 ---
 
@@ -175,10 +175,28 @@ contract-document-packages/
 
 ---
 
+## Pre-commit (монорепозиторий)
+
+Единый hook для всего репозитория: `backend/.husky/pre-commit` (`git config core.hooksPath` → `backend/.husky`).
+
+| Этап                        | Что делает                                                                    |
+| --------------------------- | ----------------------------------------------------------------------------- |
+| lint-staged                 | Prettier / ESLint / secretlint / prisma format только для staged-файлов       |
+| backend validate            | `type-check`, `lint`, `format:check`, `check-architecture`, `prisma generate` |
+| backend secretlint          | Повторная проверка секретов по всему backend                                  |
+| frontend validate:precommit | `type-check`, `check-architecture` (полный `validate` — вручную / CI)         |
+
+Конфиг lint-staged: `.lintstagedrc.cjs` в корне. Команды идут через `scripts/lint-staged-workspace.js` — runner переключает cwd в `backend/` или `frontend/`, иначе Prettier не находит workspace-плагины (например `@trivago/prettier-plugin-sort-imports` во frontend).
+
+Коммит: `npm run commit` из `backend/` или `frontend/` (git add всего репо + Commitizen). Husky после клона: `cd backend && npm run husky:install`.
+
+---
+
 ## Команды
 
 ```bash
 npm run check-architecture
 npm run validate          # + type-check, lint, format, prisma generate
-npm run commit            # pre-commit через husky
+npm run commit            # git add + cz; проверки — backend/.husky/pre-commit
+npm run validate:monorepo # ручная проверка backend + frontend без коммита
 ```

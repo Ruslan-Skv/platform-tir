@@ -295,11 +295,14 @@ export function CrmCustomerDetailModal({
         form,
         lockedPhones,
         data,
-        initialPersonName ?? {
-          lastName: initialForm.lastName,
-          firstName: initialForm.firstName,
-          patronymic: initialForm.patronymic,
-        }
+        initialPersonName ??
+          (initialForm
+            ? {
+                lastName: initialForm.lastName,
+                firstName: initialForm.firstName,
+                patronymic: initialForm.patronymic,
+              }
+            : { lastName: '', firstName: '', patronymic: '' })
       );
       await updateCrmCustomer(customerId, payload);
       await loadCustomer(customerId);

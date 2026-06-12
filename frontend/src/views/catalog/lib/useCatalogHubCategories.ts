@@ -13,7 +13,7 @@ export function useCatalogHubCategories(
   enabled: boolean,
   initialOptions?: CategoryFilterOption[] | null
 ) {
-  const { data, isLoading } = useQuery({
+  const { data, isLoading } = useQuery<CategoryFilterOption[]>({
     queryKey: [CATALOG_HUB_CATEGORIES_QUERY_KEY],
     queryFn: () => fetchCatalogHubCategories(),
     enabled,
@@ -21,8 +21,9 @@ export function useCatalogHubCategories(
     staleTime: 5 * 60_000,
   });
 
+  const options = data ?? [];
   return {
-    options: data ?? [],
-    loading: enabled && isLoading && !data?.length,
+    options,
+    loading: enabled && isLoading && options.length === 0,
   };
 }

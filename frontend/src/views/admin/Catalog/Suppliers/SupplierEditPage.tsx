@@ -81,7 +81,7 @@ export function SupplierEditPage({ supplierId }: SupplierEditPageProps) {
       // Обработка телефонов: может быть массивом или строкой (для обратной совместимости)
       let phones: string[] = [];
       if (Array.isArray(data.phone)) {
-        phones = data.phone.filter((p) => p && p.trim());
+        phones = data.phone.filter((p: string) => p && p.trim());
       } else if (data.phone && typeof data.phone === 'string') {
         phones = [data.phone];
       }

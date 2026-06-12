@@ -22,7 +22,10 @@ npm run dev
 ```bash
 npm run check-architecture   # проверка (входит в validate и pre-commit)
 npm run validate             # type-check + lint + format + architecture
+npm run commit               # git add + cz (hook: backend/.husky/pre-commit)
 ```
+
+Pre-commit для всего монорепозитория: lint-staged → backend validate → frontend validate. Подробнее: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 Приложение: [http://localhost:3000](http://localhost:3000)
 

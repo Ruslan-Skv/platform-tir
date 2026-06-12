@@ -821,7 +821,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                     return (
                       <label
                         key={opt.slug}
-                        className={`${styles.option} ${opt.depth === 1 ? styles.categoryOptionNested : ''}`}
+                        className={`${styles.option} ${opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
                       >
                         <input
                           type="radio"
@@ -830,7 +830,7 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                           onChange={() => selectCatalogBranch(opt.slug)}
                         />
                         <span
-                          className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
+                          className={`${styles.optionText} ${opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
                         >
                           {formatFilterOptionLabel(opt.label, opt.count)}
                         </span>
