@@ -6,7 +6,7 @@ Next.js 16 приложение (App Router) для платформы инте�
 
 - Next.js 16, React
 - TypeScript
-- SASS
+- CSS Modules (`.module.css`) + глобальные токены в `app/globals.css`
 
 ## Разработка
 
@@ -14,6 +14,10 @@ Next.js 16 приложение (App Router) для платформы инте�
 npm install
 npm run dev
 ```
+
+Приложение: [http://localhost:3000](http://localhost:3000)
+
+Требуется запущенный backend (см. `../backend/README.md`) и PostgreSQL, Elasticsearch.
 
 ## Архитектура
 
@@ -27,9 +31,12 @@ npm run commit               # git add + cz (hook: backend/.husky/pre-commit)
 
 Pre-commit для всего монорепозитория: lint-staged → backend validate → frontend validate. Подробнее: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
-Приложение: [http://localhost:3000](http://localhost:3000)
+## Стили
 
-Требуется запущенный backend (см. `../backend/README.md`) и PostgreSQL, Elasticsearch.
+Единый подход: **CSS Modules** + `app/globals.css`. SCSS, Tailwind и CSS-in-JS не используем.
+
+- Общие правила (co-location, inline, `app/` без UI): [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md) — раздел «Стили»
+- Hybrid-модель для крупных feature (shared partials + co-located modules): [src/views/admin/ContractDocuments/styles/README.md](./src/views/admin/ContractDocuments/styles/README.md)
 
 ## Docker
 

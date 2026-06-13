@@ -1,19 +1,13 @@
-'use client';
-
 import { CatalogFilterBlockSection } from '@/views/admin/Settings';
-import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
+import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
-export default function AdminCatalogFiltersSettingsPage() {
+export default function AdminCatalogFiltersPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Блок фильтров каталога</h1>
-        <p className={styles.subtitle}>
-          Настройка фильтров витрины: категория-якорь, распространение на подкатегории и набор
-          фильтров (атрибуты категории, наличие, производитель).
-        </p>
-      </header>
+    <SettingsSubPageView
+      title="Блок фильтров каталога"
+      subtitle="Настройка отображения блока фильтров на страницах каталога."
+    >
       <CatalogFilterBlockSection />
-    </div>
+    </SettingsSubPageView>
   );
 }

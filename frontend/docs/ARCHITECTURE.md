@@ -82,7 +82,7 @@ views/
 - **Content:** одна папка = пункт меню (`Blog/`, `Promotions/`, `Home/`, …), общие блоки — `shared/`.
 - **Products:** `list/` (журнал), `edit/`, `create/`, `shared/` (форма, секции, модалки, утилиты). Публичный API — `Products/index.ts`.
 - **Knowledge:** `territory/` (список), `materials/` (просмотр), `materials/form/`, `shared/` (вложения, плеер, утилиты). API — `Knowledge/index.ts`.
-- **Settings:** подпапки по разделам настроек (`catalog/`, `forms/`, `roles/`, …), `shared/` (`rolesConfig`, общие стили), `hub/` (обзорная страница). API — `Settings/index.ts`.
+- **Settings:** подпапки по разделам настроек (`catalog/`, `forms/`, `roles/`, …), `shared/` (`SettingsSubPageView`, `SettingsPage.module.css`, `rolesConfig`), `hub/` (обзорная страница). API — `Settings/index.ts`.
 
 Лимит check-architecture: не более 25 `.ts`/`.tsx` в одной папке.
 
@@ -271,12 +271,7 @@ export default function LoginPage() {
 - **Server route (каталог, блог, товар)** → `views/<domain>/routes/*-page-route.tsx` с `generate*Metadata`; shell — re-export.
 - **Runtime inline** → отдельный компонент **вне** `*PageView`/`*Section*` в той же feature-папке или `shared/ui/`.
 
-Оставшийся техдолг (allowlist в `architecture.config.mjs`, warn не блокирует):
-
-- `app/(site)/checkout/page.tsx`, `app/(site)/order/view/page.tsx` — legacy site pages.
-- `app/admin/settings/**/page.tsx` — подстраницы настроек с общим header (мигрировать по мере касания).
-
-Новый код — сразу по правилам выше. Big bang не делаем; при касании legacy-файла из allowlist — выносить в `views/`.
+Оставшийся техдолг по стилям: **нет** — allowlist `app-page-with-styles` очищен. Settings используют `SettingsSubPageView`; site checkout/order — `views/site/`; delivery/admin-link/checkout — `views/admin/Settings/*/`.
 
 ---
 
@@ -298,7 +293,7 @@ export default function LoginPage() {
 2. ~~`platform/hooks/` сгруппированы по доменам~~ (`document/`, `editor/`, `contract/`, `estimate/`, `questionnaire/`, `work-orders/`, `addendum/`, `data-tab/`, `template/`, `profile/`, `product-spec/`); публичный API — `platform/hooks/index.ts`.
 3. ~~Повторяющиеся доменные модели в `entities/`~~ — `entities/product` (`Product`, `ProductForCopy`, …).
 4. ~~Крупные экраны админки и витрины~~ — shell + `use*Page` + `*PageView` (см. список в истории коммитов; формы товара — `sections/`).
-5. ~~Стилизация: CSS Modules, architecture checks, inline → modules, app pages → views~~ ✅ — Tailwind удалён; `check-architecture` по CSS без warn; `views/site/` и `views/*/routes/` для вынесенных страниц. Остаток — allowlist: checkout, order/view, settings sub-pages.
+5. ~~Стилизация: CSS Modules, architecture checks, inline → modules, app pages → views, allowlist очищен~~ ✅
 
 Новые крупные `*Page.tsx` (> ~250 строк) сразу раскладывать по паттерну shell + hook + view. Недавно: `CategoryEditPage`, `AccountingInvoicesPage`, `PartnerEditPage`, `KnowledgeMaterialFormPage`, `InstallersPage`, `SupplierEditPage`, `OfficesPage`, `PartnersPage`, `PhotoProjectFormPage`, `PhotoSectionPage`, `OrdersPage`, `OrderCheckoutInfoPage` (статическая документация — shell + view + constants), `OrderDetailPage`, `ServiceOrdersPage`, `ServiceOrderDetailPage`, `OrdersShippingPage`; site: auth, profile, compare, favorites; catalog/blog/product routes.
 

@@ -1,18 +1,13 @@
-'use client';
-
 import { CallbackFormSection } from '@/views/admin/Settings';
-import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
+import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
 export default function AdminCallbackFormPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Заказать звонок</h1>
-        <p className={styles.subtitle}>
-          Настройка формы «Заказать звонок»: email для получения уведомлений о новых заявках.
-        </p>
-      </header>
+    <SettingsSubPageView
+      title="Заказать звонок"
+      subtitle="Настройка формы «Заказать звонок»: email для получения уведомлений."
+    >
       <CallbackFormSection />
-    </div>
+    </SettingsSubPageView>
   );
 }

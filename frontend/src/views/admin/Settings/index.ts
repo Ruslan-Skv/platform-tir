@@ -22,3 +22,4 @@ export { PartnerProductsSection } from './partner-products/PartnerProductsSectio
 export { UserCabinetSection } from './user-cabinet/UserCabinetSection';
 export { ROLES_CONFIG } from './shared/rolesConfig';
 export type { BackendRole, RoleConfig } from './shared/rolesConfig';
+export { SettingsSubPageView } from './shared/SettingsSubPageView';

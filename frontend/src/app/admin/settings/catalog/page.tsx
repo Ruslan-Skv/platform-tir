@@ -1,18 +1,13 @@
-'use client';
-
 import { CatalogSection } from '@/views/admin/Settings';
-import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
+import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
 export default function AdminCatalogSettingsPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Настройки каталога</h1>
-        <p className={styles.subtitle}>
-          Режим просмотра карточек товаров на мобильных устройствах по умолчанию.
-        </p>
-      </header>
+    <SettingsSubPageView
+      title="Настройки каталога"
+      subtitle="Режим просмотра карточек товаров на мобильных устройствах по умолчанию."
+    >
       <CatalogSection />
-    </div>
+    </SettingsSubPageView>
   );
 }

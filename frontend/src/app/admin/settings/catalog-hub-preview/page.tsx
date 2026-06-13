@@ -1,19 +1,13 @@
-'use client';
-
 import { CatalogHubPreviewSection } from '@/views/admin/Settings';
-import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
+import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
-export default function AdminCatalogHubPreviewSettingsPage() {
+export default function AdminCatalogHubPreviewPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Превью каталога</h1>
-        <p className={styles.subtitle}>
-          Разделы на странице /catalog/products: выбор категорий (до 4), ручной подбор товаров для
-          режимов «Популярное» и «Новинки». Если подбор не задан — товары подбираются автоматически.
-        </p>
-      </header>
+    <SettingsSubPageView
+      title="Превью каталога"
+      subtitle="Настройка блока превью каталога на главной странице."
+    >
       <CatalogHubPreviewSection />
-    </div>
+    </SettingsSubPageView>
   );
 }

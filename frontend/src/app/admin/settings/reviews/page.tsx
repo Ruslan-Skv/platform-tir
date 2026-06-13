@@ -1,18 +1,13 @@
-'use client';
-
 import { ReviewsSection } from '@/views/admin/Settings';
-import styles from '@/views/admin/Settings/shared/SettingsPage.module.css';
+import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
 export default function AdminReviewsPage() {
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <h1 className={styles.title}>Отзывы и оценки</h1>
-        <p className={styles.subtitle}>
-          Настройка функциональности отзывов на товары и модерация отзывов.
-        </p>
-      </header>
+    <SettingsSubPageView
+      title="Отзывы и оценки"
+      subtitle="Настройки блока отзывов на главной странице и модерации отзывов."
+    >
       <ReviewsSection />
-    </div>
+    </SettingsSubPageView>
   );
 }

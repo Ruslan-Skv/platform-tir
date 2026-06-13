@@ -204,20 +204,7 @@ export default {
     appPageWithStyles: {
       severity: 'warn',
       maxLines: 40,
-      allowlist: [
-        {
-          file: 'app/(site)/checkout/page.tsx',
-          reason: 'legacy site page — refactor when touched',
-        },
-        {
-          file: 'app/(site)/order/view/page.tsx',
-          reason: 'legacy site page — refactor when touched',
-        },
-        {
-          file: 'app/admin/settings/**/page.tsx',
-          reason: 'settings shells with shared header — migrate to views incrementally',
-        },
-      ],
+      allowlist: [],
     },
   },
 };
