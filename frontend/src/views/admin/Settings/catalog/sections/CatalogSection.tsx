@@ -9,6 +9,7 @@ import {
   updateAdminCatalogBlockSettings,
 } from '@/shared/api/admin-catalog-block';
 
+import actionStyles from '../../shared/SettingsActions.module.css';
 import styles from '../../user-cabinet/UserCabinetSection.module.css';
 
 export function CatalogSection() {
@@ -84,11 +85,8 @@ export function CatalogSection() {
         </p>
         <form onSubmit={handleSave} className={styles.form}>
           {toast && <div className={`${styles.toast} ${styles[toast.type]}`}>{toast.message}</div>}
-          <div style={{ marginBottom: 16 }}>
-            <label
-              htmlFor="defaultMobileCatalogColumns"
-              style={{ display: 'block', marginBottom: 8, fontSize: '0.9375rem', fontWeight: 500 }}
-            >
+          <div className={actionStyles.fieldGroup}>
+            <label htmlFor="defaultMobileCatalogColumns" className={actionStyles.fieldLabel}>
               Карточек в строке по умолчанию
             </label>
             <select
@@ -99,7 +97,7 @@ export function CatalogSection() {
                   s ? { ...s, defaultMobileCatalogColumns: Number(e.target.value) as 1 | 2 } : s
                 )
               }
-              style={{ padding: '8px 12px', fontSize: '0.9375rem', borderRadius: 8, minWidth: 220 }}
+              className={actionStyles.fieldSelect}
             >
               <option value={1}>1 карточка в строке</option>
               <option value={2}>2 карточки в строке</option>

@@ -1,5 +1,7 @@
 'use client';
 
+import { IndentedBlock } from '@/shared/ui/IndentedBlock/IndentedBlock';
+
 import { CATEGORY_ICONS } from '../shared/categories-page.constants';
 import type { Category } from '../shared/categories-page.types';
 import { generateSlug } from '../shared/categories-page.utils';
@@ -46,7 +48,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
 
     return (
       <div key={category.id} className={styles.categoryItem}>
-        <div className={styles.categoryRow} style={{ paddingLeft: `${level * 24 + 16}px` }}>
+        <IndentedBlock paddingLeft={level * 24 + 16} className={styles.categoryRow}>
           <div className={styles.categoryInfo}>
             {hasChildren ? (
               <button className={styles.expandButton} onClick={() => toggleExpand(category.id)}>
@@ -98,7 +100,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
               🗑️
             </button>
           </div>
-        </div>
+        </IndentedBlock>
         {hasChildren && isExpanded && (
           <div className={styles.children}>
             {category.children!.map((child) => renderCategory(child, level + 1))}

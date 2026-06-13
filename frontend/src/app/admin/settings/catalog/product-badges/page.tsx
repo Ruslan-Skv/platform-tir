@@ -17,7 +17,7 @@ export default function AdminProductCardBadgesPage() {
           «Новинка», скидка и видео.
         </p>
         <p className={styles.badgesBack}>
-          <Link href="/admin/settings/catalog" style={{ color: '#d90652' }}>
+          <Link href="/admin/settings/catalog" className={styles.backLink}>
             ← Настройки каталога
           </Link>
         </p>

@@ -557,6 +557,14 @@
   box-sizing: border-box;
 }
 
+.inputPriceNarrow {
+  width: 100px;
+}
+
+.inputSortNarrow {
+  width: 60px;
+}
+
 .addItemButton {
   margin-top: var(--admin-space-fluid-lg);
   padding: var(--admin-space-fluid-md) var(--admin-space-fluid-2xl);

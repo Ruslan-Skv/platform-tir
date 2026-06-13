@@ -97,11 +97,8 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
 
   return (
     <div className={styles.page}>
-      <div
-        className={styles.header}
-        style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+      <div className={`${styles.header} ${styles.headerRow}`}>
+        <div className={styles.headerLeft}>
           <button
             className={styles.backButton}
             onClick={() => {
@@ -300,14 +297,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                 </div>
               </div>
             )}
-            <div
-              style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                gap: '0.75rem',
-                marginBottom: '0.75rem',
-              }}
-            >
+            <div className={styles.draftComponentsGrid}>
               <div className={styles.formGroup}>
                 <label htmlFor="componentDraftName">Название</label>
                 <input
@@ -399,8 +389,8 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                 />
               </div>
             </div>
-            <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-              <label style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+            <div className={styles.draftComponentsActions}>
+              <label className={componentStyles.inlineCheckbox}>
                 <input
                   type="checkbox"
                   checked={newComponentDraft.isActive}
@@ -416,7 +406,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             </div>
 
             {componentsToCopy.length > 0 && (
-              <div style={{ marginTop: '1rem', display: 'grid', gap: '0.5rem' }}>
+              <div className={styles.draftComponentsList}>
                 {componentsToCopy.map((component, index) => (
                   <div
                     key={`${component.name}-${component.type}-${index}`}
@@ -424,13 +414,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                   >
                     {editingComponentIndex === index ? (
                       <div className={componentStyles.componentInfo}>
-                        <div
-                          style={{
-                            display: 'grid',
-                            gridTemplateColumns: 'repeat(3, minmax(0, 1fr))',
-                            gap: '0.75rem',
-                          }}
-                        >
+                        <div className={componentStyles.editFormGrid}>
                           <div className={componentStyles.inlineField}>
                             <label className={componentStyles.inlineLabel}>Наименование</label>
                             <input
@@ -630,13 +614,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
       />
 
       {/* Кнопка "Назад к списку" в самом низу */}
-      <div
-        style={{
-          marginTop: '2rem',
-          paddingTop: '1.5rem',
-          borderTop: '1px solid var(--admin-border)',
-        }}
-      >
+      <div className={styles.pageFooter}>
         <button
           type="button"
           className={styles.backButtonBottom}

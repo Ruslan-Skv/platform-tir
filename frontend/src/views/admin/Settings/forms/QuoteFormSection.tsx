@@ -11,6 +11,7 @@ import {
 } from '@/shared/api/admin-forms-quote';
 
 import styles from '../shared/SettingsPage.module.css';
+import formStyles from './FormsSettingsSection.module.css';
 
 export function QuoteFormSection() {
   const { getAuthHeaders } = useAuth();
@@ -84,11 +85,11 @@ export function QuoteFormSection() {
         Укажите каналы уведомлений: email и/или Telegram (ID чата). Для Telegram добавьте
         TELEGRAM_BOT_TOKEN в .env.
       </p>
-      <p className={styles.sectionDescription} style={{ marginTop: -8 }}>
+      <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
         Укажите виды работ и товаров для выбора в форме — каждая строка станет отдельным чекбоксом.
         Пользователь также может написать свой вариант.
       </p>
-      <p className={styles.sectionDescription} style={{ marginTop: -8 }}>
+      <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
         Заявки также сохраняются в разделе{' '}
         <Link href="/admin/forms?type=quote" className={styles.infoBlockLink}>
           Заявки с форм
@@ -96,28 +97,20 @@ export function QuoteFormSection() {
         .
       </p>
 
-      <form onSubmit={handleSave} className={styles.form} style={{ maxWidth: 560 }}>
+      <form onSubmit={handleSave} className={formStyles.formWide}>
         {toast && (
           <div
-            className={`${styles.infoBlock}`}
-            style={{
-              marginBottom: 16,
-              backgroundColor:
-                toast.type === 'success'
-                  ? 'var(--admin-success-bg-soft)'
-                  : 'var(--admin-danger-bg-soft)',
-              borderColor:
-                toast.type === 'success' ? 'var(--admin-success-deep)' : 'var(--admin-danger)',
-            }}
+            className={`${styles.infoBlock} ${formStyles.toast} ${
+              toast.type === 'success' ? formStyles.toastSuccess : formStyles.toastError
+            }`}
           >
             {toast.message}
           </div>
         )}
-        <div className={styles.formGroup} style={{ marginBottom: 16 }}>
+        <div className={formStyles.formGroup}>
           <label
             htmlFor="recipientEmail"
-            className={styles.templateCheckboxLabel}
-            style={{ marginBottom: 8 }}
+            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
           >
             Email для уведомлений
           </label>
@@ -127,20 +120,13 @@ export function QuoteFormSection() {
             value={recipientEmail}
             onChange={(e) => setRecipientEmail(e.target.value)}
             placeholder="manager@company.ru"
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '0.9375rem',
-              border: '1px solid var(--admin-border-strong)',
-              borderRadius: 6,
-            }}
+            className={formStyles.formInput}
           />
         </div>
-        <div className={styles.formGroup} style={{ marginBottom: 16 }}>
+        <div className={formStyles.formGroup}>
           <label
             htmlFor="telegramChatId"
-            className={styles.templateCheckboxLabel}
-            style={{ marginBottom: 8 }}
+            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
           >
             ID чата Telegram
           </label>
@@ -150,20 +136,13 @@ export function QuoteFormSection() {
             value={telegramChatId}
             onChange={(e) => setTelegramChatId(e.target.value)}
             placeholder="-1001234567890 или 123456789"
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '0.9375rem',
-              border: '1px solid var(--admin-border-strong)',
-              borderRadius: 6,
-            }}
+            className={formStyles.formInput}
           />
         </div>
-        <div className={styles.formGroup} style={{ marginBottom: 16 }}>
+        <div className={formStyles.formGroup}>
           <label
             htmlFor="serviceTypeOptions"
-            className={styles.templateCheckboxLabel}
-            style={{ marginBottom: 8 }}
+            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
           >
             Виды работ и товаров (каждая строка — отдельный чекбокс)
           </label>
@@ -179,29 +158,10 @@ export function QuoteFormSection() {
 Мебель
 Ремонт квартир"
             rows={8}
-            style={{
-              width: '100%',
-              padding: '8px 12px',
-              fontSize: '0.9375rem',
-              border: '1px solid var(--admin-border-strong)',
-              borderRadius: 6,
-              resize: 'vertical',
-            }}
+            className={formStyles.formTextarea}
           />
         </div>
-        <button
-          type="submit"
-          disabled={saving}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'var(--admin-accent)',
-            color: 'var(--admin-text-inverse)',
-            border: 'none',
-            borderRadius: 6,
-            cursor: saving ? 'not-allowed' : 'pointer',
-            fontSize: '0.875rem',
-          }}
-        >
+        <button type="submit" disabled={saving} className={formStyles.submitButton}>
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>

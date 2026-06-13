@@ -772,6 +772,10 @@
   margin-bottom: var(--admin-space-3xl);
 }
 
+.checkboxLabelTight {
+  margin-bottom: 0.75rem;
+}
+
 .checkboxLabel input {
   accent-color: var(--admin-accent);
 }

@@ -197,6 +197,7 @@
   position: relative;
   display: inline-block;
   padding-top: 2px;
+  width: var(--spreadsheet-total-width);
 }
 
 .tableResizeHandle {
@@ -237,6 +238,7 @@
   border-collapse: collapse;
   border-spacing: 0;
   font-size: var(--admin-font-size-xs);
+  table-layout: fixed;
 }
 
 .table thead tr {

@@ -1,0 +1,16 @@
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 24px;
+}
+
+.navLink {
+  color: #4f46e5;
+  text-decoration: underline;
+  font-size: var(--admin-font-size-base);
+}
+
+.navLink:hover {
+  color: #4f46e5;
+}

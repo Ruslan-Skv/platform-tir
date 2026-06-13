@@ -138,8 +138,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
               const v = parseInt(e.target.value, 10);
               handleBlockChange('slideGap', Number.isNaN(v) ? 16 : Math.max(0, Math.min(100, v)));
             }}
-            className={styles.input}
-            style={{ maxWidth: 100 }}
+            className={`${styles.input} ${styles.inputNarrow}`}
           />
           <p className={styles.hint}>От 0 до 100 пикселей. По умолчанию 16.</p>
         </div>

@@ -65,6 +65,10 @@
   margin-bottom: var(--admin-space-md);
 }
 
+.hiddenFileInput {
+  display: none;
+}
+
 .formGroup {
   display: flex;
   flex-direction: column;
@@ -269,6 +273,12 @@
   align-items: center;
   gap: var(--admin-space-sm);
   width: 100%;
+}
+
+.editFormGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
 }
 
 .inlineField {

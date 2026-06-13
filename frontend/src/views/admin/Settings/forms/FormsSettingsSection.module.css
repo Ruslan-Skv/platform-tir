@@ -1,0 +1,60 @@
+.sectionDescriptionTight {
+  margin-top: -8px;
+}
+
+.form {
+  max-width: 480px;
+}
+
+.formWide {
+  max-width: 560px;
+}
+
+.formGroup {
+  margin-bottom: 16px;
+}
+
+.formLabel {
+  margin-bottom: 8px;
+}
+
+.formInput,
+.formTextarea {
+  width: 100%;
+  padding: 8px 12px;
+  font-size: 0.9375rem;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 6px;
+}
+
+.formTextarea {
+  resize: vertical;
+}
+
+.toast {
+  margin-bottom: 16px;
+}
+
+.toastSuccess {
+  background-color: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-deep);
+}
+
+.toastError {
+  background-color: var(--admin-danger-bg-soft);
+  border-color: var(--admin-danger);
+}
+
+.submitButton {
+  padding: 8px 16px;
+  background-color: var(--admin-accent);
+  color: var(--admin-text-inverse);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.submitButton:disabled {
+  cursor: not-allowed;
+}

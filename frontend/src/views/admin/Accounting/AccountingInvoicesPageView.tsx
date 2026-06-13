@@ -11,6 +11,7 @@ import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
 import cdDataTab from '../ContractDocuments/styles/data-tab.module.css';
 import cdChrome from '../ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '../ContractDocuments/styles/estimates-workspace.module.css';
+import pageStyles from './AccountingInvoicesPage.module.css';
 import { PackageInvoicesModalLoader } from './PackageInvoicesModalLoader';
 import { formatDateRu, formatMoneyRub } from './accounting-invoices-page.utils';
 import type { AccountingInvoicesPageModel } from './hooks/useAccountingInvoicesPage';
@@ -95,7 +96,7 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
         </div>
       </div>
 
-      <div className={cdWorkspace.estimatesToolbar} style={{ marginBottom: 16 }}>
+      <div className={`${cdWorkspace.estimatesToolbar} ${pageStyles.toolbarSpaced}`}>
         <input
           type="search"
           className={cdBase.searchInput}
@@ -172,13 +173,12 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
         showCloseButton
       >
         <div data-modal-form data-modal-density="compact">
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
+          <p data-modal-form-hint className={pageStyles.modalHint}>
             Выберите договор, основание и позиции в таблице. Итог и номер счёта подставляются
             автоматически.
           </p>
           <div
-            className={`${cdBase.field} ${cdDataTab.contractInlineField}`}
-            style={{ marginBottom: 16 }}
+            className={`${cdBase.field} ${cdDataTab.contractInlineField} ${pageStyles.modalFieldSpaced}`}
           >
             <label htmlFor="accounting_issue_package">Договор</label>
             <select

@@ -285,6 +285,15 @@
   margin: 0;
 }
 
+.subtitleSpaced {
+  margin-bottom: 16px;
+}
+
+.introLink {
+  color: #4f46e5;
+  text-decoration: underline;
+}
+
 /* Status Badge */
 .statusBadge,
 .paymentBadge {

@@ -135,18 +135,10 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Кнопки меню</h2>
         {items.length === 0 && !adding ? (
-          <p style={{ color: 'var(--admin-text-muted)', marginBottom: 16 }}>
+          <p className={styles.emptyHint}>
             Пунктов пока нет. Добавьте первую кнопку ниже или выполните в backend команду{' '}
-            <code
-              style={{
-                background: 'var(--admin-surface-soft)',
-                padding: '2px 6px',
-                borderRadius: 4,
-              }}
-            >
-              npx prisma db seed
-            </code>
-            , чтобы создать пункты по умолчанию (Каталог, Блог и т.д.).
+            <code>npx prisma db seed</code>, чтобы создать пункты по умолчанию (Каталог, Блог и
+            т.д.).
           </p>
         ) : (
           items.map((item, index) => (
@@ -231,8 +223,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
               ) : (
                 <>
                   <span
-                    className={styles.itemName}
-                    style={item.isActive === false ? { opacity: 0.7 } : undefined}
+                    className={`${styles.itemName}${item.isActive === false ? ` ${styles.itemNameInactive}` : ''}`}
                   >
                     {item.name}
                   </span>
@@ -290,17 +281,14 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                       </p>
                       <Link
                         href="/admin/catalog/categories"
-                        className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
-                        style={{ marginBottom: 12 }}
+                        className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall} ${styles.catalogCategoriesLink}`}
                       >
                         Управление категориями каталога
                       </Link>
                       {catalogCategoriesLoading ? (
-                        <p style={{ color: 'var(--admin-text-muted)', marginTop: 8 }}>
-                          Загрузка разделов…
-                        </p>
+                        <p className={styles.mutedNote}>Загрузка разделов…</p>
                       ) : catalogCategories.length === 0 ? (
-                        <p style={{ color: 'var(--admin-text-muted)', marginTop: 8 }}>
+                        <p className={styles.mutedNote}>
                           Категорий пока нет. Добавьте их в разделе Каталог → Категории.
                         </p>
                       ) : (
@@ -558,23 +546,21 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                               <div className={styles.addForm}>
                                 <input
                                   type="text"
-                                  className={styles.input}
+                                  className={`${styles.input} ${styles.inputName}`}
                                   value={newSubItem.name}
                                   onChange={(e) =>
                                     setNewSubItem((p) => ({ ...p, name: e.target.value }))
                                   }
                                   placeholder="Название подпункта"
-                                  style={{ maxWidth: 180 }}
                                 />
                                 <input
                                   type="text"
-                                  className={styles.input}
+                                  className={`${styles.input} ${styles.inputHref}`}
                                   value={newSubItem.href}
                                   onChange={(e) =>
                                     setNewSubItem((p) => ({ ...p, href: e.target.value }))
                                   }
                                   placeholder="Ссылка"
-                                  style={{ maxWidth: 200 }}
                                 />
                                 <button
                                   type="button"
@@ -603,33 +589,30 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                         <div className={styles.addForm}>
                           <input
                             type="text"
-                            className={styles.input}
+                            className={`${styles.input} ${styles.inputName}`}
                             value={newDropdownItem.name}
                             onChange={(e) =>
                               setNewDropdownItem((p) => ({ ...p, name: e.target.value }))
                             }
                             placeholder="Название пункта"
-                            style={{ maxWidth: 180 }}
                           />
                           <input
                             type="text"
-                            className={styles.input}
+                            className={`${styles.input} ${styles.inputHref}`}
                             value={newDropdownItem.href}
                             onChange={(e) =>
                               setNewDropdownItem((p) => ({ ...p, href: e.target.value }))
                             }
                             placeholder="Ссылка"
-                            style={{ maxWidth: 200 }}
                           />
                           <input
                             type="text"
-                            className={styles.input}
+                            className={`${styles.input} ${styles.inputIcon}`}
                             value={newDropdownItem.icon}
                             onChange={(e) =>
                               setNewDropdownItem((p) => ({ ...p, icon: e.target.value }))
                             }
                             placeholder="Иконка (опционально)"
-                            style={{ maxWidth: 160 }}
                           />
                           <button
                             type="button"
@@ -653,9 +636,8 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                       ) : (
                         <button
                           type="button"
-                          className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
+                          className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall} ${styles.addDropdownTrigger}`}
                           onClick={() => setAddingDropdownForNavId(item.id)}
-                          style={{ marginTop: 8 }}
                         >
                           + Добавить пункт выпадающего меню
                         </button>
@@ -672,19 +654,17 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
           <div className={styles.addForm}>
             <input
               type="text"
-              className={styles.input}
+              className={`${styles.input} ${styles.inputName}`}
               value={newItem.name}
               onChange={(e) => setNewItem((p) => ({ ...p, name: e.target.value }))}
               placeholder="Текст кнопки"
-              style={{ maxWidth: 180 }}
             />
             <input
               type="text"
-              className={styles.input}
+              className={`${styles.input} ${styles.inputHref}`}
               value={newItem.href}
               onChange={(e) => setNewItem((p) => ({ ...p, href: e.target.value }))}
               placeholder="Ссылка (например /blog)"
-              style={{ maxWidth: 200 }}
             />
             <label className={styles.checkboxLabel}>
               <input
@@ -724,9 +704,8 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
         ) : (
           <button
             type="button"
-            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
+            className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall} ${styles.addNavTrigger}`}
             onClick={() => setAdding(true)}
-            style={{ marginTop: 16 }}
           >
             + Добавить кнопку меню
           </button>

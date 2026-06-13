@@ -690,7 +690,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                   type="file"
                   accept="image/*"
                   onChange={(e) => handleImageUpload(e.target.files)}
-                  style={{ display: 'none' }}
+                  className={styles.hiddenFileInput}
                 />
                 <button
                   type="button"
@@ -769,7 +769,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                           type="file"
                           accept="image/*"
                           onChange={(e) => handleImageUploadInline(component.id, e.target.files)}
-                          style={{ display: 'none' }}
+                          className={styles.hiddenFileInput}
                           id={`image-input-${component.id}`}
                         />
                         <button

@@ -492,7 +492,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3 className={styles.modalTitle}>Отправить заказ на доработку</h3>
-            <p className={styles.muted} style={{ marginBottom: '0.5rem' }}>
+            <p className={`${styles.muted} ${styles.modalHint}`}>
               Покупатель получит уведомление и сможет внести правки. Укажите общий комментарий
               (опционально):
             </p>
@@ -717,7 +717,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
             {new Date(order.returnedForCorrectionAt).toLocaleString('ru-RU')}
           </p>
           {order.returnedForCorrectionComment && (
-            <p style={{ marginTop: '0.25rem' }}>{order.returnedForCorrectionComment}</p>
+            <p className={styles.correctionComment}>{order.returnedForCorrectionComment}</p>
           )}
         </section>
       )}

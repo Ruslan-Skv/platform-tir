@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
 
 import {
   formatDate,
@@ -357,9 +358,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                         {m.type === 'VIDEO' && m.myVideoProgress && (
                           <div className={styles.videoProgress}>
                             <div className={styles.videoProgressBar}>
-                              <div
+                              <VideoProgressFill
+                                percent={m.myVideoProgress.progressPercent}
                                 className={styles.videoProgressFill}
-                                style={{ width: `${m.myVideoProgress.progressPercent}%` }}
                               />
                             </div>
                             <span className={styles.videoProgressText}>

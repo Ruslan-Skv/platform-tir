@@ -18,6 +18,10 @@ import { ProductEditPricingSection } from '../shared/sections/ProductEditPricing
 import { ProductEditSeoSection } from '../shared/sections/ProductEditSeoSection';
 import { ProductEditVariantsSection } from '../shared/sections/ProductEditVariantsSection';
 import { ProductEditVideoSection } from '../shared/sections/ProductEditVideoSection';
+import {
+  ProductEditPageRoot,
+  ProductEditSaveButtonPlaceholder,
+} from '../shared/ui/ProductEditDynamicLayout';
 import { ProductEditSaveButton } from '../shared/ui/ProductEditSaveButton';
 import type { ProductEditPageModel } from './useProductEditPage';
 
@@ -132,10 +136,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
   }
 
   return (
-    <div
-      className={styles.page}
-      style={{ '--product-edit-sticky-top': `${saveButtonPinnedTopPx}px` } as React.CSSProperties}
-    >
+    <ProductEditPageRoot stickyTopPx={saveButtonPinnedTopPx}>
       <div ref={pageHeaderRef} className={styles.pageHeader}>
         <div className={styles.pageHeaderMain}>
           <button className={styles.backButton} onClick={navigateBackToProductsList}>
@@ -161,13 +162,9 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           </button>
           <div ref={saveButtonAnchorRef} className={styles.saveButtonAnchor}>
             {saveButtonFixed && saveButtonPlaceholderSize ? (
-              <span
-                className={styles.saveButtonPlaceholder}
-                style={{
-                  width: saveButtonPlaceholderSize.width,
-                  height: saveButtonPlaceholderSize.height,
-                }}
-                aria-hidden
+              <ProductEditSaveButtonPlaceholder
+                width={saveButtonPlaceholderSize.width}
+                height={saveButtonPlaceholderSize.height}
               />
             ) : null}
             {!saveButtonFixed ? (
@@ -423,14 +420,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
       {productId && <ProductReviewsSection productId={productId} />}
 
       {/* Нижняя строка: слева "Назад к списку", справа "Отмена" и "Сохранить изменения" */}
-      <div
-        className={styles.formActions}
-        style={{
-          marginTop: '1rem',
-          paddingTop: '1rem',
-          borderTop: '1px solid var(--admin-border)',
-        }}
-      >
+      <div className={`${styles.formActions} ${styles.formActionsFooter}`}>
         <button
           type="button"
           className={styles.backButtonBottom}
@@ -489,6 +479,6 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           </button>
         </div>
       )}
-    </div>
+    </ProductEditPageRoot>
   );
 }

@@ -4,6 +4,7 @@ import { Suspense, use } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { PageSuspenseFallback } from '@/shared/ui/PageSuspenseFallback';
 import { ProductEditPage } from '@/views/admin/Catalog/Products';
 
 /**
@@ -20,7 +21,7 @@ function ProductEditContent({ params }: { params: Promise<{ id: string }> }) {
 
 export default function AdminProductEditPage({ params }: { params: Promise<{ id: string }> }) {
   return (
-    <Suspense fallback={<div style={{ padding: '2rem' }}>Загрузка…</div>}>
+    <Suspense fallback={<PageSuspenseFallback />}>
       <ProductEditContent params={params} />
     </Suspense>
   );

@@ -191,17 +191,9 @@ export function AdvantagesSectionPageView({ model }: AdvantagesSectionPageViewPr
                   ) : (
                     <span className={styles.featureIcon}>{item.icon}</span>
                   )}
-                  <div style={{ flex: 1 }}>
+                  <div className={styles.featureBody}>
                     <span className={styles.featureTitle}>{item.title}</span>
-                    <p
-                      style={{
-                        margin: '4px 0 0',
-                        fontSize: '0.875rem',
-                        color: 'var(--admin-text-muted)',
-                      }}
-                    >
-                      {item.description}
-                    </p>
+                    <p className={styles.featureDescription}>{item.description}</p>
                   </div>
                   <button
                     type="button"

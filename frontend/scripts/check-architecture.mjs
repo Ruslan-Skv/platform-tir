@@ -30,6 +30,7 @@ const SRC_DIR = path.join(FRONTEND_ROOT, 'src');
  * @property {{ max: number, glob: string, excludeGlobs?: string[], severity?: 'warn'|'error' }} [viewPageShellMaxLines]
  * @property {{ max: number, glob: string, excludeGlobs?: string[], severity?: 'warn'|'error' }} [viewPageMaxLines]
  * @property {number} maxRelativeDepth
+ * @property {import('./architecture.config.mjs').default['cssRules']} [cssRules]
  */
 
 const IMPORT_RE = /^\s*import\s+(?:type\s+)?(?:[\w*{}\s,]+\s+from\s+)?['"]([^'"]+)['"]/;
@@ -96,6 +97,10 @@ class ViolationCollector {
       'view-page-thick',
       'app-page-thick',
       'css-module-types',
+      'plain-css-import',
+      'inline-style-layout',
+      'css-not-colocated',
+      'app-page-with-styles',
       'relative-import-depth',
     ];
 
@@ -150,6 +155,10 @@ const CATEGORY_TITLES = {
   'view-page-thick': 'Крупные *Page.tsx (нужна декомпозиция shell + hook + view)',
   'app-page-thick': 'Толстые app/**/page.tsx',
   'css-module-types': 'Импорт типов из *.module.css',
+  'plain-css-import': 'Plain CSS import (не .module.css)',
+  'inline-style-layout': 'Inline style={{}} в PageView/Section',
+  'css-not-colocated': 'CSS module не co-located',
+  'app-page-with-styles': 'app/**/page.tsx со стилями или толстой разметкой',
   'relative-import-depth': 'Глубокие относительные импорты',
 };
 
@@ -470,6 +479,159 @@ function checkRelativeImportDepth() {
   }
 }
 
+function findCssAllowlistEntry(ruleId, fileRel) {
+  const rule = config.cssRules?.[ruleId];
+  if (!rule?.allowlist) return null;
+  for (const entry of rule.allowlist) {
+    if (globMatch(entry.file, fileRel)) return entry;
+  }
+  return null;
+}
+
+function isPlainCssImport(spec) {
+  return spec.endsWith('.css') && !spec.endsWith('.module.css');
+}
+
+function dirHasAllowedBasename(relDir) {
+  const parts = relDir.split('/');
+  const allowed = config.cssRules?.cssNotColocated?.allowedDirBasenames ?? ['styles', 'shared'];
+  return parts.some((p) => allowed.includes(p));
+}
+
+function checkPlainCssImports() {
+  const rule = config.cssRules?.plainCssImport;
+  if (!rule) return;
+
+  const allowImports = new Map((rule.allowlist ?? []).map((e) => [e.file, e.import]));
+
+  const files = walkFiles(SRC_DIR, (f) => /\.(ts|tsx)$/.test(f));
+
+  for (const file of files) {
+    const fromRel = relSrc(file);
+    for (const { spec, line } of collectImports(file)) {
+      if (!isPlainCssImport(spec)) continue;
+
+      const allowedImport = allowImports.get(fromRel);
+      if (allowedImport && spec === allowedImport) continue;
+
+      collector.add(
+        rule.severity ?? 'error',
+        'plain-css-import',
+        `${fromRel} — plain CSS import запрещён (используйте .module.css или globals.css): ${spec}\n      ${line}`
+      );
+    }
+  }
+}
+
+function checkInlineStyleLayout() {
+  const rule = config.cssRules?.inlineStyleLayout;
+  if (!rule) return;
+
+  const severity = rule.severity ?? 'warn';
+  const targets = rule.targetGlobs ?? [];
+
+  const files = walkFiles(SRC_DIR, (f) => {
+    const rel = relSrc(f);
+    if (!/\.tsx$/.test(rel)) return false;
+    return targets.some((g) => globMatch(g, rel));
+  });
+
+  for (const file of files) {
+    const fromRel = relSrc(file);
+    if (findCssAllowlistEntry('inlineStyleLayout', fromRel)) continue;
+
+    const content = fs.readFileSync(file, 'utf8');
+    const matches = content.match(/style=\{\{/g);
+    if (!matches?.length) continue;
+
+    collector.add(
+      severity,
+      'inline-style-layout',
+      `${fromRel} — ${matches.length} inline style={{}} (layout/spacing → .module.css).`,
+      { sortKey: matches.length }
+    );
+  }
+}
+
+function tsxImportsCssFromSameDir(tsxPath, cssBasename) {
+  const content = fs.readFileSync(tsxPath, 'utf8');
+  return content.includes(cssBasename);
+}
+
+function checkCssNotColocated() {
+  const rule = config.cssRules?.cssNotColocated;
+  if (!rule) return;
+
+  const severity = rule.severity ?? 'warn';
+  const cssFiles = walkFiles(SRC_DIR, (f) => f.endsWith('.module.css'));
+
+  for (const cssFile of cssFiles) {
+    const cssRel = relSrc(cssFile);
+    if (findCssAllowlistEntry('cssNotColocated', cssRel)) continue;
+
+    const dir = path.dirname(cssFile);
+    const dirRel = relSrc(dir);
+    if (dirHasAllowedBasename(dirRel)) continue;
+
+    const cssBasename = path.basename(cssFile);
+    const stem = cssBasename.replace(/\.module\.css$/, '');
+
+    const tsxInDir = listDirEntries(dir)
+      .filter((e) => e.isFile() && /\.tsx$/.test(e.name))
+      .map((e) => path.join(dir, e.name));
+
+    const hasMatchingTsx = tsxInDir.some((tsx) => path.basename(tsx, '.tsx') === stem);
+    if (hasMatchingTsx) continue;
+
+    const importedLocally = tsxInDir.some((tsx) => tsxImportsCssFromSameDir(tsx, cssBasename));
+    if (importedLocally) continue;
+
+    collector.add(
+      severity,
+      'css-not-colocated',
+      `${cssRel} — не co-located (ожидается рядом с .tsx или в styles/shared).`,
+      { sortKey: cssRel }
+    );
+  }
+}
+
+function checkAppPageWithStyles() {
+  const rule = config.cssRules?.appPageWithStyles;
+  if (!rule) return;
+
+  const severity = rule.severity ?? 'warn';
+  const maxLines = rule.maxLines ?? 40;
+
+  const pages = walkFiles(
+    SRC_DIR,
+    (f) => /[/\\]app[/\\].*[/\\]page\.tsx$/.test(f) || /[/\\]app[/\\]page\.tsx$/.test(f)
+  );
+
+  for (const file of pages) {
+    const fromRel = relSrc(file);
+    if (findCssAllowlistEntry('appPageWithStyles', fromRel)) continue;
+
+    const content = fs.readFileSync(file, 'utf8');
+    const lines = content.split('\n').length;
+    const hasInlineStyle = /style=\{\{/.test(content);
+    const hasModuleCss = /\.module\.css['"]/.test(content);
+    const reasons = [];
+
+    if (hasInlineStyle) reasons.push('inline style');
+    if (hasModuleCss) reasons.push('import .module.css');
+    if (lines > maxLines) reasons.push(`${lines} строк (лимит ${maxLines})`);
+
+    if (reasons.length === 0) continue;
+
+    collector.add(
+      severity,
+      'app-page-with-styles',
+      `${fromRel} — ${reasons.join(', ')}. Вынесите UI в views/.`,
+      { sortKey: lines }
+    );
+  }
+}
+
 function checkCssModuleTypeImports() {
   const files = walkFiles(SRC_DIR, (f) => /\.(ts|tsx)$/.test(f));
 
@@ -560,6 +722,10 @@ function main() {
   checkAppPagesThin();
   checkRelativeImportDepth();
   checkCssModuleTypeImports();
+  checkPlainCssImports();
+  checkInlineStyleLayout();
+  checkCssNotColocated();
+  checkAppPageWithStyles();
 
   if (allowlistedDebt.size > 0) {
     console.log(

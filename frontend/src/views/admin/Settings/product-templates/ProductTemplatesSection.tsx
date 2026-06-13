@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
+import actionStyles from '../shared/SettingsActions.module.css';
 import styles from '../shared/SettingsPage.module.css';
 
 const TABLE_COLUMNS_STORAGE_KEY = 'admin_product_table_template_columns';
@@ -135,19 +136,16 @@ export function ProductTemplatesSection() {
         </ol>
       </div>
 
-      <div className={styles.rolesGrid} style={{ gridTemplateColumns: '1fr 1fr' }}>
+      <div className={`${styles.rolesGrid} ${actionStyles.templatesGrid}`}>
         <div className={styles.roleCard}>
-          <h3 className={styles.sectionTitle} style={{ marginBottom: 12 }}>
+          <h3 className={`${styles.sectionTitle} ${actionStyles.cardTitle}`}>
             Шаблон таблицы товаров
           </h3>
-          <p
-            className={styles.sectionDescription}
-            style={{ marginBottom: 16, fontSize: '0.875rem' }}
-          >
+          <p className={`${styles.sectionDescription} ${actionStyles.compactDescription}`}>
             Выберите колонки по умолчанию для таблицы товаров. Атрибуты категории добавляются
             автоматически при просмотре по категории.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className={actionStyles.checkboxColumn}>
             {TABLE_COLUMN_OPTIONS.map((opt) => (
               <label key={opt.key} className={styles.templateCheckboxLabel}>
                 <input
@@ -162,33 +160,21 @@ export function ProductTemplatesSection() {
           <button
             type="button"
             onClick={saveTableColumns}
-            style={{
-              marginTop: 16,
-              padding: '8px 16px',
-              backgroundColor: 'var(--admin-accent)',
-              color: 'var(--admin-text-inverse)',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
+            className={`${actionStyles.primaryButton} ${actionStyles.cardActions}`}
           >
             Сохранить шаблон таблицы
           </button>
         </div>
 
         <div className={styles.roleCard}>
-          <h3 className={styles.sectionTitle} style={{ marginBottom: 12 }}>
+          <h3 className={`${styles.sectionTitle} ${actionStyles.cardTitle}`}>
             Шаблон карточки товара
           </h3>
-          <p
-            className={styles.sectionDescription}
-            style={{ marginBottom: 16, fontSize: '0.875rem' }}
-          >
+          <p className={`${styles.sectionDescription} ${actionStyles.compactDescription}`}>
             Выберите блоки формы редактирования товара. Блок «Характеристики» всегда показывает
             атрибуты выбранной категории.
           </p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className={actionStyles.checkboxColumn}>
             {CARD_SECTION_OPTIONS.map((opt) => (
               <label
                 key={opt.key}
@@ -211,45 +197,18 @@ export function ProductTemplatesSection() {
           <button
             type="button"
             onClick={saveCardSections}
-            style={{
-              marginTop: 16,
-              padding: '8px 16px',
-              backgroundColor: 'var(--admin-accent)',
-              color: 'var(--admin-text-inverse)',
-              border: 'none',
-              borderRadius: 6,
-              cursor: 'pointer',
-              fontSize: '0.875rem',
-            }}
+            className={`${actionStyles.primaryButton} ${actionStyles.cardActions}`}
           >
             Сохранить шаблон карточки
           </button>
         </div>
       </div>
 
-      <div style={{ marginTop: 24 }}>
-        <button
-          type="button"
-          onClick={resetToDefaults}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'var(--admin-text-muted)',
-            color: 'var(--admin-text-inverse)',
-            border: 'none',
-            borderRadius: 6,
-            cursor: 'pointer',
-            fontSize: '0.875rem',
-          }}
-        >
+      <div className={actionStyles.footerActions}>
+        <button type="button" onClick={resetToDefaults} className={actionStyles.secondaryButton}>
           Сбросить к значениям по умолчанию
         </button>
-        {saved && (
-          <span
-            style={{ marginLeft: 12, color: 'var(--admin-success-deep)', fontSize: '0.875rem' }}
-          >
-            ✓ Сохранено
-          </span>
-        )}
+        {saved && <span className={actionStyles.savedHint}>✓ Сохранено</span>}
       </div>
     </section>
   );

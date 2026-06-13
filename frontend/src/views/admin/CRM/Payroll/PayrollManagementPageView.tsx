@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import styles from './PayrollManagementPage.module.css';
+import { PayrollTableHeadCell } from './PayrollTableHeadCell';
 import { TABLE_HEADERS } from './hooks/payroll-management-page.constants';
 import type { PayrollManagementPageModel } from './hooks/usePayrollManagementPage';
 
@@ -92,9 +93,9 @@ export function PayrollManagementPageView({ model }: PayrollManagementPageViewPr
           <thead>
             <tr>
               {TABLE_HEADERS.map((col) => (
-                <th key={col.key} style={{ minWidth: col.width }}>
+                <PayrollTableHeadCell key={col.key} minWidth={col.width}>
                   {col.title}
-                </th>
+                </PayrollTableHeadCell>
               ))}
             </tr>
           </thead>

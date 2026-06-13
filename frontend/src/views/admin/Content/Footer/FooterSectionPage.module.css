@@ -222,6 +222,26 @@
   min-width: 120px;
 }
 
+.iconUrlInput {
+  margin-top: 8px;
+}
+
+.sectionTitleInput {
+  max-width: 200px;
+}
+
+.linkEditName {
+  flex: 1;
+}
+
+.linkEditHref {
+  flex: 2;
+}
+
+.newSectionInput {
+  max-width: 300px;
+}
+
 .addSectionForm {
   display: flex;
   gap: var(--admin-space-xl);

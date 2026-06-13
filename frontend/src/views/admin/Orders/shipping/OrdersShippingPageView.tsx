@@ -90,12 +90,9 @@ export function OrdersShippingPageView({ model }: OrdersShippingPageViewProps) {
         </div>
       </div>
 
-      <p className={styles.subtitle} style={{ marginBottom: 16 }}>
+      <p className={`${styles.subtitle} ${styles.subtitleSpaced}`}>
         Все заказы, в которых оформлена доставка. Настройки расчёта доставки — в разделе{' '}
-        <Link
-          href="/admin/settings/delivery"
-          style={{ color: '#4f46e5', textDecoration: 'underline' }}
-        >
+        <Link href="/admin/settings/delivery" className={styles.introLink}>
           Настройки → Доставка
         </Link>
         .

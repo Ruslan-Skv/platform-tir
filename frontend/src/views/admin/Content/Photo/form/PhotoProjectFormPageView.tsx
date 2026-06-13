@@ -161,7 +161,7 @@ export function PhotoProjectFormPageView({ model }: PhotoProjectFormPageViewProp
             accept="image/*"
             multiple
             onChange={handleFileSelect}
-            style={{ display: 'none' }}
+            className={styles.hiddenFileInput}
           />
           <button
             type="button"

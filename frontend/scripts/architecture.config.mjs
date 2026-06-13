@@ -161,4 +161,63 @@ export default {
 
   /** Предупреждение при глубоких относительных импортах (--verbose) */
   maxRelativeDepth: 4,
+
+  /**
+   * Правила стилизации (см. ARCHITECTURE.md § Стили).
+   * allowlist: { file, reason?, severity? } — file glob относительно src/
+   */
+  cssRules: {
+    /** Запрет import '…css' без .module (error) */
+    plainCssImport: {
+      severity: 'error',
+      allowlist: [{ file: 'app/layout.tsx', import: './globals.css' }],
+    },
+
+    /** style={{}} в презентационных view/section (warn) */
+    inlineStyleLayout: {
+      severity: 'warn',
+      targetGlobs: ['views/**/*PageView.tsx', 'views/**/*Section*.tsx'],
+      allowlist: [
+        {
+          file: 'views/admin/ContractDocuments/**',
+          reason: 'dynamic UI (editor, charts, positioning)',
+        },
+        { file: 'shared/ui/BadgeTooltip/**', reason: 'tooltip positioning' },
+        { file: 'shared/ui/VideoPlayer/**', reason: 'player controls' },
+        { file: 'views/admin/Analytics/**', reason: 'chart colors' },
+      ],
+    },
+
+    /** .module.css вне co-location и вне styles/shared (warn) */
+    cssNotColocated: {
+      severity: 'warn',
+      allowedDirBasenames: ['styles', 'shared'],
+      allowlist: [
+        {
+          file: 'views/admin/Catalog/Categories/attributes/CategoryAttributesPage.module.css',
+          reason: 'shared by page + utils in same feature folder',
+        },
+      ],
+    },
+
+    /** Толстые app/page.tsx со стилями (warn) */
+    appPageWithStyles: {
+      severity: 'warn',
+      maxLines: 40,
+      allowlist: [
+        {
+          file: 'app/(site)/checkout/page.tsx',
+          reason: 'legacy site page — refactor when touched',
+        },
+        {
+          file: 'app/(site)/order/view/page.tsx',
+          reason: 'legacy site page — refactor when touched',
+        },
+        {
+          file: 'app/admin/settings/**/page.tsx',
+          reason: 'settings shells with shared header — migrate to views incrementally',
+        },
+      ],
+    },
+  },
 };

@@ -2,6 +2,7 @@
 
 import { Suspense, use } from 'react';
 
+import { PageSuspenseFallback } from '@/shared/ui/PageSuspenseFallback';
 import { ProductsPage } from '@/views/admin/Catalog/Products';
 
 export default function AdminProductsByCategoryPage({
@@ -11,7 +12,7 @@ export default function AdminProductsByCategoryPage({
 }) {
   const { categoryId } = use(params);
   return (
-    <Suspense fallback={<div style={{ padding: '2rem' }}>Загрузка...</div>}>
+    <Suspense fallback={<PageSuspenseFallback message="Загрузка..." />}>
       <ProductsPage categoryId={categoryId} />
     </Suspense>
   );

@@ -1,0 +1,1 @@
+export { PageSuspenseFallback } from './PageSuspenseFallback';

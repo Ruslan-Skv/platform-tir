@@ -97,8 +97,7 @@ export function FeaturedProductsSectionPageView({ model }: FeaturedProductsSecti
             max={24}
             value={data.limit}
             onChange={(e) => handleLimitChange(e.target.value)}
-            className={styles.input}
-            style={{ maxWidth: 120 }}
+            className={`${styles.input} ${styles.inputLimit}`}
           />
         </div>
         <div className={styles.saveBlock}>

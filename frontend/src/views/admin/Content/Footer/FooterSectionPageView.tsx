@@ -189,9 +189,8 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
               type="text"
               value={data.block.socialLinks.vk.icon}
               onChange={(e) => handleBlockChange('socialLinks.vk.icon', e.target.value)}
-              className={styles.input}
+              className={`${styles.input} ${styles.iconUrlInput}`}
               placeholder="/images/icons-vk.png или URL"
-              style={{ marginTop: 8 }}
             />
           </div>
         </div>
@@ -228,8 +227,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                         : prev
                     )
                   }
-                  className={styles.input}
-                  style={{ maxWidth: 200 }}
+                  className={`${styles.input} ${styles.sectionTitleInput}`}
                   autoFocus
                 />
               ) : (
@@ -300,9 +298,8 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                               : prev
                           )
                         }
-                        className={styles.input}
+                        className={`${styles.input} ${styles.linkEditName}`}
                         placeholder="Название"
-                        style={{ flex: 1 }}
                       />
                       <input
                         type="text"
@@ -326,9 +323,8 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                               : prev
                           )
                         }
-                        className={styles.input}
+                        className={`${styles.input} ${styles.linkEditHref}`}
                         placeholder="/path или https://..."
-                        style={{ flex: 2 }}
                       />
                       <button
                         type="button"
@@ -418,9 +414,8 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
             type="text"
             value={newSectionTitle}
             onChange={(e) => setNewSectionTitle(e.target.value)}
-            className={styles.input}
+            className={`${styles.input} ${styles.newSectionInput}`}
             placeholder="Название новой секции"
-            style={{ maxWidth: 300 }}
           />
           <button
             type="button"

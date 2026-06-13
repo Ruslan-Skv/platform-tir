@@ -574,6 +574,14 @@
   margin: 0.25rem 0 0 0;
 }
 
+.modalHint {
+  margin-bottom: 0.5rem;
+}
+
+.correctionComment {
+  margin-top: 0.25rem;
+}
+
 .itemsTable {
   width: 100%;
   border-collapse: collapse;

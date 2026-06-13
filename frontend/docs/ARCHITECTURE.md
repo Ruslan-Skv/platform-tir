@@ -63,7 +63,8 @@ export default function Page() {
 
 ```
 views/
-├── catalog/          # публичный каталог
+├── catalog/          # публичный каталог (+ routes/ для RSC-страниц)
+├── site/             # публичные экраны вне каталога (auth, profile, favorites, compare)
 ├── admin/            # админка по подразделам
 │   ├── Content/      # контент главной и разделов сайта — по подпапке на раздел
 │   │   ├── Blog/     # список постов + форма/редактор
@@ -149,6 +150,136 @@ packages/
 
 ---
 
+## Стили
+
+Единый подход: **CSS Modules** (`.module.css`) + глобальные токены в `app/globals.css`. SCSS, Tailwind и CSS-in-JS **не используем**.
+
+### Стек
+
+| Технология      | Решение                                                              |
+| --------------- | -------------------------------------------------------------------- |
+| Компоненты      | Co-located `Component.module.css` рядом с `Component.tsx`            |
+| Глобал          | Только `app/globals.css` — design tokens (`:root`), шрифты, reset    |
+| Крупный feature | Hybrid: `styles/*.module.css` (shared partials) + co-located modules |
+| SCSS            | Не вводим — tokens в CSS variables                                   |
+| Tailwind        | Не используем                                                        |
+
+### Co-location (по умолчанию)
+
+```tsx
+// views/admin/Orders/list/OrdersPageView.tsx
+import styles from './OrdersPage.module.css';
+
+export function OrdersPageView() {
+  return <div className={styles.page}>…</div>;
+}
+```
+
+Один компонент — один `.module.css` в той же папке. Импорт типов и компонентов из `.module.css` запрещён (только default import классов).
+
+### Глобальные стили
+
+`app/globals.css` — единственный plain CSS. Подключается **только** из `app/layout.tsx`:
+
+```tsx
+import './globals.css';
+```
+
+Сюда: CSS variables (`--admin-*`, `--color-*`), `@font-face`, базовый reset. Не добавлять page-specific правила.
+
+### Крупные модули (hybrid)
+
+Для feature вроде `ContractDocuments` — shared partials в `styles/` + локальные modules у компонентов. Подробно: [`views/admin/ContractDocuments/styles/README.md`](../src/views/admin/ContractDocuments/styles/README.md).
+
+Импорт shared partials — предпочтительно через алиас:
+
+```tsx
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+```
+
+Co-located пример:
+
+```tsx
+import styles from './PackageHubModal.module.css';
+```
+
+### Inline `style={{}}`
+
+| Можно                                                     | Нельзя                                                |
+| --------------------------------------------------------- | ----------------------------------------------------- |
+| Динамика: `transform`, `width: '${pct}%'`, цвета графиков | Layout: `display`, `flex`, `gap`, `margin`, `padding` |
+| Позиционирование tooltip/popover от JS                    | Статичные размеры и отступы                           |
+| Toast/статус с runtime-цветом                             | Дублирование того, что есть в module                  |
+
+Layout и spacing — в `.module.css`. Inline допустим для значений, вычисляемых в runtime.
+
+### `app/` — без UI и стилей
+
+`app/**/page.tsx` — тонкий shell: params, metadata, re-export route или рендер view из `views/`. Без разметки секций, без `style={{}}`, без импорта `.module.css`.
+
+```tsx
+// ✅ app/admin/settings/page.tsx
+import { SettingsHubPageView } from '@/views/admin/Settings/hub/SettingsHubPageView';
+
+export default function Page() {
+  return <SettingsHubPageView />;
+}
+```
+
+```tsx
+// ✅ app/(site)/catalog/products/page.tsx — RSC-логика в views/*/routes/
+export {
+  default,
+  generateAllProductsMetadata as generateMetadata,
+} from '@/views/catalog/routes/all-products-page-route';
+```
+
+```tsx
+// ✅ app/(site)/login/page.tsx — клиентский UI в views/site/
+import { LoginPageView } from '@/views/site/auth/LoginPageView';
+
+export default function LoginPage() {
+  return <LoginPageView />;
+}
+```
+
+### Антипаттерны
+
+- Plain CSS (`import './foo.css'`) вне `app/layout.tsx`
+- Tailwind-классы или `@tailwind` directives
+- Page-specific стили в `globals.css`
+- Импорт `.module.css` из `app/**/page.tsx` (выносить в view)
+- Barrel `@import` между CSS Modules (ломает составные селекторы)
+
+### Миграция legacy (стили)
+
+**Статус: основная миграция завершена** — `npm run check-architecture` проходит без предупреждений по CSS-правилам.
+
+Что сделано:
+
+| Область           | Результат                                                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Stack             | CSS Modules + `globals.css`; Tailwind удалён из deps                                                                                                           |
+| Проверки          | 4 CSS-правила в `check-architecture` (plain CSS, inline layout, co-location, app pages)                                                                        |
+| Admin inline      | `*PageView` / `*Section*` — layout/spacing в `.module.css`; динамика — helper-компоненты (`IndentedBlock`, `VideoProgressFill`, `SpreadsheetTableViewport`, …) |
+| `app/**/page.tsx` | UI и `.module.css` вынесены в `views/`; RSC-страницы — в `views/*/routes/`                                                                                     |
+| Site pages        | `views/site/` — auth, profile, favorites, compare                                                                                                              |
+
+Паттерны выноса:
+
+- **Клиентская страница** → `views/site/<feature>/*PageView.tsx` + co-located `.module.css`; shell в `app/` — 4–5 строк.
+- **Server route (каталог, блог, товар)** → `views/<domain>/routes/*-page-route.tsx` с `generate*Metadata`; shell — re-export.
+- **Runtime inline** → отдельный компонент **вне** `*PageView`/`*Section*` в той же feature-папке или `shared/ui/`.
+
+Оставшийся техдолг (allowlist в `architecture.config.mjs`, warn не блокирует):
+
+- `app/(site)/checkout/page.tsx`, `app/(site)/order/view/page.tsx` — legacy site pages.
+- `app/admin/settings/**/page.tsx` — подстраницы настроек с общим header (мигрировать по мере касания).
+
+Новый код — сразу по правилам выше. Big bang не делаем; при касании legacy-файла из allowlist — выносить в `views/`.
+
+---
+
 ## Тесты
 
 - Unit: `*.test.ts` рядом с модулем или в `__tests__/`.
@@ -167,8 +298,9 @@ packages/
 2. ~~`platform/hooks/` сгруппированы по доменам~~ (`document/`, `editor/`, `contract/`, `estimate/`, `questionnaire/`, `work-orders/`, `addendum/`, `data-tab/`, `template/`, `profile/`, `product-spec/`); публичный API — `platform/hooks/index.ts`.
 3. ~~Повторяющиеся доменные модели в `entities/`~~ — `entities/product` (`Product`, `ProductForCopy`, …).
 4. ~~Крупные экраны админки и витрины~~ — shell + `use*Page` + `*PageView` (см. список в истории коммитов; формы товара — `sections/`).
+5. ~~Стилизация: CSS Modules, architecture checks, inline → modules, app pages → views~~ ✅ — Tailwind удалён; `check-architecture` по CSS без warn; `views/site/` и `views/*/routes/` для вынесенных страниц. Остаток — allowlist: checkout, order/view, settings sub-pages.
 
-Новые крупные `*Page.tsx` (> ~250 строк) сразу раскладывать по паттерну shell + hook + view. Недавно: `CategoryEditPage`, `AccountingInvoicesPage`, `PartnerEditPage`, `KnowledgeMaterialFormPage`, `InstallersPage`, `SupplierEditPage`, `OfficesPage`, `PartnersPage`, `PhotoProjectFormPage`, `PhotoSectionPage`, `OrdersPage`, `OrderCheckoutInfoPage` (статическая документация — shell + view + constants), `OrderDetailPage`, `ServiceOrdersPage`, `ServiceOrderDetailPage`, `OrdersShippingPage`.
+Новые крупные `*Page.tsx` (> ~250 строк) сразу раскладывать по паттерну shell + hook + view. Недавно: `CategoryEditPage`, `AccountingInvoicesPage`, `PartnerEditPage`, `KnowledgeMaterialFormPage`, `InstallersPage`, `SupplierEditPage`, `OfficesPage`, `PartnersPage`, `PhotoProjectFormPage`, `PhotoSectionPage`, `OrdersPage`, `OrderCheckoutInfoPage` (статическая документация — shell + view + constants), `OrderDetailPage`, `ServiceOrdersPage`, `ServiceOrderDetailPage`, `OrdersShippingPage`; site: auth, profile, compare, favorites; catalog/blog/product routes.
 
 ---
 
@@ -187,6 +319,10 @@ packages/
 | Крупный `views/**/*Page.tsx`                           | warn (> 250 строк — нужна декомпозиция)               |
 | Толстые `app/admin/contract-documents/**/page.tsx`     | error (> 80 строк)                                    |
 | Импорт типов из `*.module.css`                         | error                                                 |
+| Plain CSS import (не `.module.css`) в `src/**`         | error (allowlist: `app/layout.tsx` → `globals.css`)   |
+| Inline layout в `*PageView.tsx` / `*Section*.tsx`      | warn (allowlist: ContractDocuments, tooltips, charts) |
+| `.module.css` не co-located и не в `styles/`/`shared/` | warn                                                  |
+| `app/**/page.tsx` со стилями или толстой разметкой     | warn (> ~40 строк, inline, import `.module.css`)      |
 | Известный техдолг из allowlist                         | warn (сводка, не блокирует)                           |
 
 Нарушения **группируются по категории** — в одном прогоне видны все похожие директории. Полный отчёт: `npm run check-architecture -- --audit`. Глубокие импорты: `--verbose`.

@@ -14,8 +14,8 @@ export default function AdminDoorThicknessesSettingsPage() {
           Справочник для поля «Толщина двери» в атрибутах категории (slug атрибута обычно{' '}
           <code>door-thickness</code>). Значения в карточке товара выбираются из этого списка.
         </p>
-        <p style={{ marginTop: '0.5rem' }}>
-          <Link href="/admin/settings/catalog" style={{ color: '#d90652' }}>
+        <p className={styles.backNav}>
+          <Link href="/admin/settings/catalog" className={styles.backLink}>
             ← Настройки каталога
           </Link>
         </p>

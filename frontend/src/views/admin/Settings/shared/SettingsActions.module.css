@@ -1,0 +1,83 @@
+.primaryButton {
+  padding: 8px 16px;
+  background-color: var(--admin-accent);
+  color: var(--admin-text-inverse);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.primaryButton:disabled {
+  cursor: not-allowed;
+}
+
+.secondaryButton {
+  padding: 8px 16px;
+  background-color: var(--admin-text-muted);
+  color: var(--admin-text-inverse);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.875rem;
+}
+
+.savedHint {
+  margin-left: 12px;
+  color: var(--admin-success-deep);
+  font-size: 0.875rem;
+}
+
+.footerActions {
+  margin-top: 24px;
+}
+
+.cardActions {
+  margin-top: 16px;
+}
+
+.checkboxColumn {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cardTitle {
+  margin-bottom: 12px;
+}
+
+.compactDescription {
+  margin-bottom: 16px;
+  font-size: 0.875rem;
+}
+
+.hintText {
+  margin-top: 8px;
+  font-size: 0.875rem;
+}
+
+.formGroupSpaced {
+  margin-bottom: 20px;
+}
+
+.templatesGrid {
+  grid-template-columns: 1fr 1fr;
+}
+
+.fieldGroup {
+  margin-bottom: 16px;
+}
+
+.fieldLabel {
+  display: block;
+  margin-bottom: 8px;
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.fieldSelect {
+  padding: 8px 12px;
+  font-size: 0.9375rem;
+  border-radius: 8px;
+  min-width: 220px;
+}

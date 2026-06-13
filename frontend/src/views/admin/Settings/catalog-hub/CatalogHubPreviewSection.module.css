@@ -212,3 +212,10 @@
   background: #fff5f5;
   color: #c53030;
 }
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}

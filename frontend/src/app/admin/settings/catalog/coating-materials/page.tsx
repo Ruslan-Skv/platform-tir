@@ -14,8 +14,8 @@ export default function AdminCoatingMaterialsSettingsPage() {
           Справочник для поля «Материал покрытия» в атрибутах категории (slug атрибута:{' '}
           <code>coating-material</code>). Добавление, редактирование и удаление позиций.
         </p>
-        <p style={{ marginTop: '0.5rem' }}>
-          <Link href="/admin/settings/catalog" style={{ color: '#d90652' }}>
+        <p className={styles.backNav}>
+          <Link href="/admin/settings/catalog" className={styles.backLink}>
             ← Настройки каталога
           </Link>
         </p>

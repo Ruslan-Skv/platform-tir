@@ -191,6 +191,10 @@
   gap: var(--admin-space-xl);
 }
 
+.gridSpaced {
+  margin-top: 1rem;
+}
+
 @media (min-width: 640px) {
   .grid {
     grid-template-columns: 1fr 1fr;

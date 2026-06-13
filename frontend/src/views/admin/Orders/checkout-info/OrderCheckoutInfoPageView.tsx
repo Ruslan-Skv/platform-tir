@@ -88,7 +88,7 @@ export function OrderCheckoutInfoPageView() {
             </li>
           </ul>
         </div>
-        <div className={styles.note} style={{ marginTop: 12 }}>
+        <div className={`${styles.note} ${styles.noteSpaced}`}>
           После статуса <strong>APPROVED</strong> действует окно оформления (настраивается в{' '}
           <Link href="/admin/settings/checkout" className={styles.link}>
             Настройки → Оформление заказов
@@ -113,18 +113,18 @@ export function OrderCheckoutInfoPageView() {
               </Link>
               ). Три способа:
             </li>
-            <li style={{ marginTop: 8, listStyle: 'none', paddingLeft: 0 }}>
+            <li className={styles.listSubItemFirst}>
               — <strong>Админка, страница заказа</strong>: блок «Клиент» (Email, ФИО, телефон) +
               кнопка «Отправить на email покупателя». Используются данные из формы.
             </li>
-            <li style={{ listStyle: 'none', paddingLeft: 0 }}>
+            <li className={styles.listSubItem}>
               — <strong>Корзина</strong>: когда заказ в статусе{' '}
               <span className={styles.inlineCode}>APPROVED</span> и время оформления не истекло, под
               кнопкой «Оформить заказ» появляется ссылка «Отправить заказ на email клиенту». Клик
               открывает модалку с полями Email (обязательное), Телефон, Фамилия, Имя, Отчество.
               Перед отправкой данные покупателя сохраняются в заказе.
             </li>
-            <li style={{ listStyle: 'none', paddingLeft: 0 }}>
+            <li className={styles.listSubItem}>
               — <strong>Страница просмотра заказа</strong> (
               <span className={styles.inlineCode}>/order/view?token=...</span>): для менеджеров при
               статусе <span className={styles.inlineCode}>APPROVED</span> и активном таймере —
@@ -163,7 +163,7 @@ export function OrderCheckoutInfoPageView() {
             </li>
           </ul>
         </div>
-        <div className={styles.note} style={{ marginTop: 12 }}>
+        <div className={`${styles.note} ${styles.noteSpaced}`}>
           Если доставка не выбрана, заказ отправляется на проверку без адреса и расчёта доставки.
           Менеджер может добавить/изменить доставку в админке.
         </div>
@@ -218,7 +218,7 @@ export function OrderCheckoutInfoPageView() {
             </ul>
           </div>
         </div>
-        <div className={styles.note} style={{ marginTop: 12 }}>
+        <div className={`${styles.note} ${styles.noteSpaced}`}>
           Отдельные заказы на услуги отображаются в админке как «Заказы на услуги». В них
           заполняются данные покупателя, после чего заказ подтверждается или отменяется менеджером.
         </div>

@@ -1,0 +1,22 @@
+.page {
+  max-width: 56rem;
+  margin: 0 auto;
+  padding: var(--admin-space-4xl);
+}
+
+.header {
+  margin-bottom: var(--admin-space-5xl);
+}
+
+.title {
+  font-size: var(--admin-font-size-3xl);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--admin-text-muted);
+  margin-top: var(--admin-space-xs);
+  margin-bottom: 0;
+}

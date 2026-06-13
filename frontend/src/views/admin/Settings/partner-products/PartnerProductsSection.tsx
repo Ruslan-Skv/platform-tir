@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+import actionStyles from '../shared/SettingsActions.module.css';
 import styles from '../shared/SettingsPage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -84,7 +85,7 @@ export function PartnerProductsSection() {
       </p>
 
       <div className={styles.roleCard}>
-        <div className={styles.formGroup} style={{ marginBottom: 20 }}>
+        <div className={actionStyles.formGroupSpaced}>
           <label className={styles.templateCheckboxLabel}>
             <input
               type="checkbox"
@@ -93,7 +94,7 @@ export function PartnerProductsSection() {
             />
             Показывать иконку партнёра на карточках товаров
           </label>
-          <p className={styles.sectionDescription} style={{ marginTop: 8, fontSize: '0.875rem' }}>
+          <p className={`${styles.sectionDescription} ${actionStyles.hintText}`}>
             Включите, чтобы отображать логотип партнёра на карточках товаров. Логотип берётся из
             настроек конкретного партнёра.
           </p>
@@ -103,25 +104,11 @@ export function PartnerProductsSection() {
           type="button"
           onClick={handleSave}
           disabled={saving}
-          style={{
-            padding: '8px 16px',
-            backgroundColor: 'var(--admin-accent)',
-            color: 'var(--admin-text-inverse)',
-            border: 'none',
-            borderRadius: 6,
-            cursor: saving ? 'not-allowed' : 'pointer',
-            fontSize: '0.875rem',
-          }}
+          className={actionStyles.primaryButton}
         >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
-        {saved && (
-          <span
-            style={{ marginLeft: 12, color: 'var(--admin-success-deep)', fontSize: '0.875rem' }}
-          >
-            ✓ Сохранено
-          </span>
-        )}
+        {saved && <span className={actionStyles.savedHint}>✓ Сохранено</span>}
       </div>
     </section>
   );

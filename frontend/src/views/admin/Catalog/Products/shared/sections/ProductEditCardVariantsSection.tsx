@@ -46,11 +46,10 @@ export function ProductEditCardVariantsSection({
         type="file"
         accept="image/jpeg,image/png,image/webp,image/gif"
         className={styles.fileInput}
-        style={{ display: 'none' }}
         onChange={(e) => void handleFileChange(e)}
       />
       <h2 className={styles.sectionTitle}>Схожие товары в карточке</h2>
-      <p className={styles.hint} style={{ marginBottom: '1rem' }}>
+      <p className={`${styles.hint} ${styles.hintSpaced}`}>
         До 5 вариантов в одной карточке (как на Wildberries/Озон): отличаются ценой, размером, фото,
         наименованием, цветом, доп. опцией. Пользователь выбирает нужный вариант прямо в карточке.
       </p>
@@ -58,7 +57,7 @@ export function ProductEditCardVariantsSection({
         <div key={`card-variant-${index}`} className={styles.cardVariantBlock}>
           <h3 className={styles.cardVariantBlockTitle}>Вариант {index + 1}</h3>
           <div className={styles.formRow}>
-            <div className={styles.formGroup} style={{ flex: 2 }}>
+            <div className={`${styles.formGroup} ${styles.formGroupWide}`}>
               <label>Наименование *</label>
               <input
                 type="text"

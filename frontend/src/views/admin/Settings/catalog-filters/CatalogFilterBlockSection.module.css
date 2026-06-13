@@ -151,3 +151,23 @@
     grid-template-columns: 1fr;
   }
 }
+
+.errorText {
+  color: var(--admin-danger-text);
+}
+
+.formCardTitle {
+  margin-top: 0;
+}
+
+.mutedSpaced {
+  margin-bottom: 0.75rem;
+}
+
+.addFilterActions {
+  margin-top: 12px;
+}
+
+.saveFormActions {
+  margin-top: 20px;
+}

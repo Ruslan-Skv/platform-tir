@@ -1,10 +1,11 @@
 import { Suspense } from 'react';
 
+import { PageSuspenseFallback } from '@/shared/ui/PageSuspenseFallback';
 import { BlogPage } from '@/views/blog/ui/BlogPage';
 
 export default function BlogListPage() {
   return (
-    <Suspense fallback={<div style={{ padding: '2rem', textAlign: 'center' }}>Загрузка…</div>}>
+    <Suspense fallback={<PageSuspenseFallback />}>
       <BlogPage />
     </Suspense>
   );

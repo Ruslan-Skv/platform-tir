@@ -102,6 +102,10 @@
   cursor: not-allowed;
 }
 
+.hiddenFileInput {
+  display: none;
+}
+
 .photosGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));

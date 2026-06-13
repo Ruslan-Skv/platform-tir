@@ -1,5 +1,7 @@
 'use client';
 
+import { AttributeColorDot } from '@/shared/ui/AttributeColorDot/AttributeColorDot';
+
 import {
   AttributeOptionRowsEditor,
   type AttributeOptionRowsEditorMod,
@@ -173,7 +175,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                       {ca.attribute.values.slice(0, 5).map((v) => (
                         <span key={v.id} className={styles.valueTag}>
                           {v.colorHex && (
-                            <span className={styles.colorDot} style={{ background: v.colorHex }} />
+                            <AttributeColorDot color={v.colorHex} className={styles.colorDot} />
                           )}
                           {v.value}
                         </span>
@@ -283,7 +285,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
               Отметьте «Обязательный для товара», чтобы на карточке товара поле подсвечивалось и не
               давало сохранить товар без значения (в категориях с этим атрибутом).
             </p>
-            <label className={styles.checkboxLabel} style={{ marginBottom: '0.75rem' }}>
+            <label className={`${styles.checkboxLabel} ${styles.checkboxLabelTight}`}>
               <input
                 type="checkbox"
                 checked={bulkAddAsRequired}

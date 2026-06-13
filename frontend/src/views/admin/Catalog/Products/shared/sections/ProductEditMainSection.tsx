@@ -258,7 +258,7 @@ export function ProductEditMainSection({
         <div className={`${styles.formRow} ${styles.supplierUrlPriceRow}`}>
           <div className={`${styles.formGroup} ${styles.supplierUrlGroup}`}>
             <label htmlFor="supplierProductUrl">Ссылка на товар поставщика *</label>
-            <div style={{ display: 'flex', gap: '0.5rem' }}>
+            <div className={styles.supplierUrlActions}>
               <div className={`${styles.inputWithAction} ${styles.inputWithActionGrow}`}>
                 <input
                   type="url"
@@ -286,17 +286,7 @@ export function ProductEditMainSection({
                 type="button"
                 onClick={() => void handleFetchSupplierPrice()}
                 disabled={fetchingPrice || !formData.supplierProductUrl}
-                className={styles.button}
-                style={{
-                  padding: '0.5rem 1rem',
-                  whiteSpace: 'nowrap',
-                  backgroundColor: 'var(--admin-info-strong)',
-                  color: 'var(--admin-text-inverse)',
-                  border: 'none',
-                  borderRadius: '0.375rem',
-                  cursor: fetchingPrice || !formData.supplierProductUrl ? 'not-allowed' : 'pointer',
-                  opacity: fetchingPrice || !formData.supplierProductUrl ? 0.5 : 1,
-                }}
+                className={`${styles.button} ${styles.fetchPriceButton}`}
               >
                 {fetchingPrice ? 'Загрузка...' : 'Получить цену'}
               </button>

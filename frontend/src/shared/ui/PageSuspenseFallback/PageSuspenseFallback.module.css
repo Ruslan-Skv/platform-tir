@@ -1,0 +1,12 @@
+.root {
+  padding: 2rem;
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-base);
+}
+
+.rootCompact {
+  padding: 24px;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-base);
+}

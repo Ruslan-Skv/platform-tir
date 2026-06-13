@@ -349,9 +349,7 @@ export function CatalogFilterBlockSection() {
       </p>
 
       {error ? (
-        <p className={baseStyles.sectionDescription} style={{ color: 'var(--admin-danger-text)' }}>
-          {error}
-        </p>
+        <p className={`${baseStyles.sectionDescription} ${styles.errorText}`}>{error}</p>
       ) : null}
 
       <div className={styles.toolbar}>
@@ -372,7 +370,7 @@ export function CatalogFilterBlockSection() {
 
       {(creating || editingId) && (
         <div className={styles.formCard}>
-          <h3 className={baseStyles.sectionTitle} style={{ marginTop: 0 }}>
+          <h3 className={`${baseStyles.sectionTitle} ${styles.formCardTitle}`}>
             {editingId ? 'Редактирование блока' : 'Новый блок'}
           </h3>
           <div className={styles.formGrid}>
@@ -433,7 +431,7 @@ export function CatalogFilterBlockSection() {
           </div>
 
           <h4 className={styles.itemsTitle}>Фильтры (порядок секций = порядок на сайте)</h4>
-          <p className={styles.muted} style={{ marginBottom: '0.75rem' }}>
+          <p className={`${styles.muted} ${styles.mutedSpaced}`}>
             Для фильтров по атрибуту можно задать порядок значений внутри секции (например толщина:
             от большей к меньшей) или перечислить значения вручную — строки должны совпадать с
             данными в карточке товара.
@@ -548,7 +546,7 @@ export function CatalogFilterBlockSection() {
               ) : null}
             </div>
           ))}
-          <div style={{ marginTop: 12 }}>
+          <div className={styles.addFilterActions}>
             <button
               type="button"
               className={styles.secondaryBtn}
@@ -558,7 +556,7 @@ export function CatalogFilterBlockSection() {
             </button>
           </div>
 
-          <div style={{ marginTop: 20 }}>
+          <div className={styles.saveFormActions}>
             <button
               type="button"
               className={styles.primaryBtn}

@@ -315,8 +315,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                           price: parseFloat(e.target.value.replace(',', '.')) || 0,
                                         }))
                                       }
-                                      className={styles.input}
-                                      style={{ width: 100 }}
+                                      className={`${styles.input} ${styles.inputPriceNarrow}`}
                                     />
                                   ) : (
                                     formatPrice(item.price)
@@ -342,8 +341,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                       onChange={(e) =>
                                         setEditItemData((p) => ({ ...p, unit: e.target.value }))
                                       }
-                                      className={styles.input}
-                                      style={{ width: 60 }}
+                                      className={`${styles.input} ${styles.inputSortNarrow}`}
                                     />
                                   ) : (
                                     item.unit
@@ -465,7 +463,6 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                   }
                                   placeholder="Базовая цена"
                                   className={styles.input}
-                                  style={{ width: '100%', boxSizing: 'border-box' }}
                                 />
                               </td>
                               <td className={styles.priceDerivedCell}>
@@ -485,7 +482,6 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                   }
                                   placeholder="м²"
                                   className={styles.input}
-                                  style={{ width: '100%', boxSizing: 'border-box' }}
                                 />
                               </td>
                               <td>

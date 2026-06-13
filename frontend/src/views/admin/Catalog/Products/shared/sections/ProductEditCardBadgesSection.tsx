@@ -54,7 +54,7 @@ export function ProductEditCardBadgesSection({
       </p>
       <div className={styles.cardBadgesPickGrid}>
         {badgeDefinitions.map((b) => (
-          <label key={b.id} className={styles.checkbox} style={{ alignItems: 'flex-start' }}>
+          <label key={b.id} className={`${styles.checkbox} ${styles.checkboxBadgesPick}`}>
             <input
               type="checkbox"
               checked={catalogBadgeIds.includes(b.id)}

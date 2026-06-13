@@ -254,7 +254,7 @@ export default function AdminSettingsDeliveryPage() {
             + Добавить населённый пункт
           </button>
 
-          <div className={styles.grid} style={{ marginTop: '1rem' }}>
+          <div className={`${styles.grid} ${styles.gridSpaced}`}>
             <div className={styles.field}>
               <label htmlFor="deliveryPricePerKmOutside">
                 Стоимость за 1 км для адресов вне списка, ₽

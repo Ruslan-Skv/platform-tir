@@ -445,7 +445,7 @@ export function CatalogHubPreviewSection() {
                 </select>
               </div>
 
-              <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+              <label className={sectionStyles.checkboxLabel}>
                 <input
                   type="checkbox"
                   checked={section.isActive}

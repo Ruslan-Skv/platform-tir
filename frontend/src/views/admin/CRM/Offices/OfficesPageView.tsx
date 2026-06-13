@@ -72,13 +72,13 @@ export function OfficesPageView({ model }: OfficesPageViewProps) {
         <table className={styles.table}>
           <thead>
             <tr>
-              <th style={{ width: '50px' }}>№</th>
+              <th className={styles.colIndex}>№</th>
               <th>Название</th>
-              <th style={{ width: '100px' }}>Префикс</th>
+              <th className={styles.colPrefix}>Префикс</th>
               <th>Адрес</th>
               <th>Телефон</th>
-              <th style={{ width: '80px' }}>Активен</th>
-              <th style={{ width: '120px' }}>Действия</th>
+              <th className={styles.colActive}>Активен</th>
+              <th className={styles.colActions}>Действия</th>
             </tr>
           </thead>
           <tbody>

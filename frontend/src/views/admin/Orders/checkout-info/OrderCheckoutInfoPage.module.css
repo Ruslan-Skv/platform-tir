@@ -132,3 +132,18 @@
 .link:hover {
   text-decoration: underline;
 }
+
+.noteSpaced {
+  margin-top: 12px;
+}
+
+.listSubItem {
+  list-style: none;
+  padding-left: 0;
+}
+
+.listSubItemFirst {
+  margin-top: 8px;
+  list-style: none;
+  padding-left: 0;
+}

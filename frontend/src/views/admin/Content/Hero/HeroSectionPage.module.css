@@ -61,6 +61,10 @@
   font-size: var(--admin-font-size-base);
 }
 
+.inputNarrow {
+  max-width: 100px;
+}
+
 .textarea {
   width: 100%;
   padding: var(--admin-space-lg) var(--admin-space-xl);
@@ -245,6 +249,16 @@
   flex: 1;
   font-size: var(--admin-font-size-base);
   color: var(--admin-text-secondary);
+}
+
+.featureBody {
+  flex: 1;
+}
+
+.featureDescription {
+  margin: 4px 0 0;
+  font-size: 0.875rem;
+  color: var(--admin-text-muted);
 }
 
 .iconInput {

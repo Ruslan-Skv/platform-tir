@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { IndentedBlock } from '@/shared/ui/IndentedBlock/IndentedBlock';
 
 import { SERVICE_ICON_OPTIONS } from '../shared/SERVICE_ICON_OPTIONS';
 import styles from './ServiceCatalogSectionPage.module.css';
@@ -339,10 +340,7 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
                         </button>
                       </div>
                     ) : (
-                      <div
-                        className={styles.categoryRow}
-                        style={{ paddingLeft: `${12 + level * 18}px` }}
-                      >
+                      <IndentedBlock paddingLeft={12 + level * 18} className={styles.categoryRow}>
                         <div className={styles.categoryInfo}>
                           {hasChildNodes ? (
                             <button
@@ -417,7 +415,7 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
                             🗑️
                           </button>
                         </div>
-                      </div>
+                      </IndentedBlock>
                     )}
                   </li>
                 );

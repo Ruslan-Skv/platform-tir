@@ -106,6 +106,22 @@
   color: var(--admin-text-secondary);
 }
 
+.colIndex {
+  width: 50px;
+}
+
+.colPrefix {
+  width: 100px;
+}
+
+.colActive {
+  width: 80px;
+}
+
+.colActions {
+  width: 120px;
+}
+
 .table td {
   padding: var(--admin-space-xl) var(--admin-space-2xl);
   border-bottom: 1px solid var(--admin-surface-soft);
