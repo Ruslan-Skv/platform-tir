@@ -1,6 +1,7 @@
 import { PrismaClient } from '@prisma/client';
 import { seedRemontKvartirCatalog } from './seed-remont-kvartir-catalog';
 import { seedProductCardBadges } from './seed-product-card-badges';
+import { seedQuizMebel } from './seed-quiz-mebel';
 import { hashPassword } from '../src/auth/password-crypto';
 import { config } from 'dotenv';
 import * as path from 'path';
@@ -28,11 +29,36 @@ const TEST_PASSWORD = 'Test123!';
 // Супер-администратора не создаём — его создаёте вы сами.
 const TEST_USERS = [
   { email: 'admin@example.com', firstName: 'Админ', lastName: 'Системы', role: 'ADMIN' as const },
-  { email: 'content_manager@example.com', firstName: 'Контент', lastName: 'Менеджер', role: 'CONTENT_MANAGER' as const },
-  { email: 'moderator@example.com', firstName: 'Модератор', lastName: 'Сайта', role: 'MODERATOR' as const },
-  { email: 'support@example.com', firstName: 'Поддержка', lastName: 'Клиентов', role: 'SUPPORT' as const },
-  { email: 'partner@example.com', firstName: 'Партнёр', lastName: 'Компании', role: 'PARTNER' as const },
-  { email: 'user@example.com', firstName: 'Тестовый', lastName: 'Пользователь', role: 'USER' as const },
+  {
+    email: 'content_manager@example.com',
+    firstName: 'Контент',
+    lastName: 'Менеджер',
+    role: 'CONTENT_MANAGER' as const,
+  },
+  {
+    email: 'moderator@example.com',
+    firstName: 'Модератор',
+    lastName: 'Сайта',
+    role: 'MODERATOR' as const,
+  },
+  {
+    email: 'support@example.com',
+    firstName: 'Поддержка',
+    lastName: 'Клиентов',
+    role: 'SUPPORT' as const,
+  },
+  {
+    email: 'partner@example.com',
+    firstName: 'Партнёр',
+    lastName: 'Компании',
+    role: 'PARTNER' as const,
+  },
+  {
+    email: 'user@example.com',
+    firstName: 'Тестовый',
+    lastName: 'Пользователь',
+    role: 'USER' as const,
+  },
   { email: 'guest@example.com', firstName: 'Гость', lastName: 'Сайта', role: 'GUEST' as const },
 ];
 
@@ -100,7 +126,9 @@ async function main() {
   console.log('✅ ReviewsBlock: настройки отзывов');
 
   console.log(`\n📋 Пароль для всех тестовых пользователей: ${TEST_PASSWORD}`);
-  console.log('   Вход в админку: admin@example.com, content_manager@example.com, moderator@example.com, support@example.com, partner@example.com');
+  console.log(
+    '   Вход в админку: admin@example.com, content_manager@example.com, moderator@example.com, support@example.com, partner@example.com',
+  );
   console.log('   Обычный пользователь: user@example.com. Гость: guest@example.com');
   console.log('   Супер-администратора в seed нет — создаёте сами.\n');
 
@@ -295,7 +323,9 @@ async function main() {
         },
       },
     });
-    console.log('✅ CatalogFilterBlock: входные двери (производитель, толщина, уплотнитель, наличие)');
+    console.log(
+      '✅ CatalogFilterBlock: входные двери (производитель, толщина, уплотнитель, наличие)',
+    );
   } else {
     console.log('✅ CatalogFilterBlock: входные двери — блок уже есть, пропуск');
   }
@@ -660,16 +690,28 @@ async function main() {
       { name: 'Работы по электрике', href: '/catalog/services/electrical', icon: 'Bolt' },
       { name: 'Работы по полам', href: '/catalog/services/floors', icon: 'Square3Stack3D' },
       { name: 'Работы по потолкам', href: '/catalog/services/ceilings', icon: 'Cube' },
-      { name: 'Работы по сантехнике', href: '/catalog/services/plumbing', icon: 'WrenchScrewdriver' },
+      {
+        name: 'Работы по сантехнике',
+        href: '/catalog/services/plumbing',
+        icon: 'WrenchScrewdriver',
+      },
       { name: 'Работы с кафелем', href: '/catalog/services/tiling', icon: 'Squares2X2' },
-      { name: 'Монтаж дверей', href: '/catalog/services/door-installation', icon: 'RectangleStack' },
+      {
+        name: 'Монтаж дверей',
+        href: '/catalog/services/door-installation',
+        icon: 'RectangleStack',
+      },
       { name: 'Монтаж окон', href: '/catalog/services/window-installation', icon: 'Squares2X2' },
       {
         name: 'Монтаж натяжных потолков',
         href: '/catalog/services/stretch-ceiling-installation',
         icon: 'Cube',
       },
-      { name: 'Монтаж жалюзей', href: '/catalog/services/blinds-installation', icon: 'ViewColumns' },
+      {
+        name: 'Монтаж жалюзей',
+        href: '/catalog/services/blinds-installation',
+        icon: 'ViewColumns',
+      },
     ],
     Акции: [{ name: 'Все акции', href: '/promotions', icon: 'Tag' }],
     Блог: [{ name: 'Все записи', href: '/blog', icon: 'DocumentText' }],
@@ -778,7 +820,8 @@ async function main() {
       where: { slug: 'kak-vybrat-dveri-i-mebel' },
       update: {
         content: testPostContent,
-        excerpt: 'Полезные советы по выбору входных дверей, мягкой мебели и натяжных потолков. Создайте уют в вашем доме с помощью профессионалов.',
+        excerpt:
+          'Полезные советы по выбору входных дверей, мягкой мебели и натяжных потолков. Создайте уют в вашем доме с помощью профессионалов.',
       },
       create: {
         title: 'Как выбрать входные двери и мебель для дома',
@@ -841,7 +884,12 @@ async function main() {
   for (const p of promotions) {
     await prisma.promotion.upsert({
       where: { slug: p.slug },
-      update: { title: p.title, imageUrl: p.imageUrl, description: p.description, sortOrder: p.sortOrder },
+      update: {
+        title: p.title,
+        imageUrl: p.imageUrl,
+        description: p.description,
+        sortOrder: p.sortOrder,
+      },
       create: { ...p, isActive: true },
     });
   }
@@ -893,6 +941,8 @@ async function main() {
 
   await seedProductCardBadges(prisma);
   console.log('✅ ProductCardBadge: справочник бэйджей карточки товара');
+
+  await seedQuizMebel(prisma);
 
   console.log('🎉 Seeding completed!');
 }

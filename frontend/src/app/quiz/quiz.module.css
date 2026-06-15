@@ -1,0 +1,12 @@
+.main {
+  min-height: 100vh;
+}
+
+.loading {
+  color: #fff;
+  text-align: center;
+  padding: 4rem 1rem;
+  background: #1a1a1f;
+  min-height: 100vh;
+  margin: 0;
+}

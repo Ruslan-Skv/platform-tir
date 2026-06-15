@@ -239,6 +239,13 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Квизы',
+    href: '/admin/quiz/mebel',
+    icon: '🎯',
+    resourceId: 'admin.quiz',
+    children: [{ label: 'Мебель', href: '/admin/quiz/mebel', resourceId: 'admin.quiz.mebel' }],
+  },
+  {
     label: 'Каталог',
     href: '/admin/catalog',
     icon: '📦',

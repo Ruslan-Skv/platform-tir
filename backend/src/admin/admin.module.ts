@@ -24,6 +24,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminFormsModule } from './forms/admin-forms.module';
+import { AdminQuizModule } from './quiz/admin-quiz.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
 import { UserCabinetModule } from './user-cabinet/user-cabinet.module';
@@ -72,6 +73,7 @@ import { InstallersModule } from './installers/installers.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    AdminQuizModule,
     PhotoModule,
     PromotionModule,
     UserCabinetModule,
@@ -110,6 +112,7 @@ import { InstallersModule } from './installers/installers.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    AdminQuizModule,
     PhotoModule,
     PromotionModule,
     UserCabinetModule,

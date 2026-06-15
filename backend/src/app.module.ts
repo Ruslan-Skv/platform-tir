@@ -30,6 +30,7 @@ import { CatalogBlockModule } from './catalog-block/catalog-block.module';
 import { CatalogFilterBlocksModule } from './catalog-filter-blocks/catalog-filter-blocks.module';
 import { CatalogHubPreviewModule } from './catalog-hub-preview/catalog-hub-preview.module';
 import { FormsModule } from './forms/forms.module';
+import { QuizModule } from './quiz/quiz.module';
 import { HomeSectionsModule } from './home-sections/home-sections.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
 import { SitePublicModule } from './site-public/site-public.module';
@@ -91,6 +92,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     CatalogFilterBlocksModule,
     CatalogHubPreviewModule,
     FormsModule,
+    QuizModule,
     HomeSectionsModule,
     ContactFormModule,
     SitePublicModule,

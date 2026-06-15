@@ -11,7 +11,7 @@ model UserNotificationSettings {
   id                       String   @id @default(cuid())
   userId                   String   @unique
   notifyOnSupportChatReply Boolean  @default(true)
-  mobileCatalogColumns     Int?     // 1 или 2 — кол-во карточек в строке на мобильном (null = по умолчанию сайта)
+  mobileCatalogColumns     Int? // 1 или 2 — кол-во карточек в строке на мобильном (null = по умолчанию сайта)
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
   user                     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -22,7 +22,7 @@ model UserNotificationSettings {
 model UserNotification {
   id        String   @id @default(cuid())
   userId    String
-  type      String   // support_chat | order_status | system
+  type      String // support_chat | order_status | system
   title     String
   message   String   @db.Text
   isRead    Boolean  @default(false)
@@ -34,89 +34,89 @@ model UserNotification {
 }
 
 model User {
-  id                String         @id @default(cuid())
-  email             String         @unique
-  password          String
-  firstName         String?
-  lastName          String?
-  role              UserRole       @default(USER)
-  isActive          Boolean        @default(true)
-  isGuest           Boolean        @default(false) // Для заказов от менеджера: гость до регистрации
-  yandexId          String?        @unique // ID аккаунта Яндекс для OAuth
-  createdAt         DateTime       @default(now())
-  updatedAt         DateTime       @updatedAt
-  avatar            String?
-  phone             String?
-  notificationSettings UserNotificationSettings?
-  notificationHistory  UserNotification[]
-  adminNotificationOverride UserAdminNotificationOverride?
-  addresses         Address[]
-  blogPosts         BlogPost[]
-  knowledgeMaterials KnowledgeMaterial[]
-  knowledgeVideoProgress KnowledgeVideoProgress[]
-  cartItems         CartItem[]
-  cartServiceItems  CartServiceItem[]
-  comments          Comment[]
-  assignedCustomers Customer[]     @relation("ManagerCustomers")
-  customersCreated  Customer[]     @relation("CustomerCreatedBy")
-  customersUpdated  Customer[]     @relation("CustomerUpdatedBy")
-  interactions      Interaction[]
-  orders            Order[]
-  ordersCreatedForCustomers Order[] @relation("OrdersCreatedByManager")
-  ordersProcessedByManagers Order[] @relation("OrdersProcessedByManager")
-  salesMetrics      SalesMetric[]
-  tasks             Task[]         @relation("AssignedTasks")
-  createdTasks      Task[]         @relation("CreatedTasks")
-  wishlist          WishlistItem[]
-  compareItems      CompareItem[]
-  supportConversations       SupportConversation[] @relation("SupportUser")
-  assignedSupportConversations SupportConversation[] @relation("SupportAgent")
-  supportMessages   SupportMessage[]
-  managedMeasurements   Measurement[] @relation("MeasurementManager")
-  surveyedMeasurements  Measurement[] @relation("MeasurementSurveyor")
-  managedContracts      Contract[]    @relation("ContractManager")
-  surveyedContracts     Contract[]    @relation("ContractSurveyor")
-  contractPayments      ContractPayment[]
-  measurementHistory       MeasurementHistory[] @relation("MeasurementHistoryChangedBy")
-  contractHistory          ContractHistory[]    @relation("ContractHistoryChangedBy")
-  complexObjectHistory     ComplexObjectHistory[] @relation("ComplexObjectHistoryChangedBy")
-  officeHistory            OfficeHistory[]      @relation("OfficeHistoryChangedBy")
-  supplierSettlementHistory SupplierSettlementHistory[] @relation("SupplierSettlementHistoryChangedBy")
-  taskHistory              TaskHistory[]       @relation("TaskHistoryChangedBy")
-  customerHistory          CustomerHistory[]   @relation("CustomerHistoryChangedBy")
-  managedComplexObjects ComplexObject[]      @relation("ComplexObjectManager")
-  adminResourcePermissions AdminResourcePermission[]
-  officeOtherExpensesCreated OfficeOtherExpense[]
-  officeIncassationsCreated  OfficeIncassation[]
-  orderEventsAsActor         OrderEvent[]     @relation("OrderEventActor")
-  serviceOrders              ServiceOrder[]   @relation
-  serviceOrdersCreated       ServiceOrder[]   @relation("ServiceOrdersCreatedByManager")
-  passwordResetTokens        PasswordResetToken[]
-  refreshSessions            UserRefreshToken[]
-  productsCreated            Product[]             @relation("ProductCreatedBy")
-  productsUpdated            Product[]             @relation("ProductUpdatedBy")
-  categoriesCreated          Category[]            @relation("CategoryCreatedBy")
-  contractDocumentPackagesCreated ContractDocumentPackage[] @relation("ContractDocumentPackagesCreated")
-  contractDocumentPackagesDeleted ContractDocumentPackage[] @relation("ContractDocumentPackagesDeleted")
-  contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[] @relation("ContractDocumentPackagePaymentRecordedBy")
-  contractDocumentPaymentInvoicesIssued ContractDocumentPaymentInvoice[] @relation("ContractDocumentPaymentInvoiceIssuedBy")
-  contractDocumentGlobalTemplatesUpdated ContractDocumentGlobalTemplate[] @relation("GlobalContractTemplateUpdatedBy")
-  contractDocumentRepairSettingsUpdated ContractDocumentRepairSettings[] @relation("ContractDocumentRepairSettingsUpdatedBy")
-  contractDocumentPackageVersionsSaved ContractDocumentPackageVersion[] @relation("ContractDocumentPackageVersionSavedBy")
-  contractDocumentEstimatePresetsHistory ContractDocumentEstimatePresetsHistory[] @relation("ContractDocumentEstimatePresetsHistoryChangedBy")
+  id                                      String                                   @id @default(cuid())
+  email                                   String                                   @unique
+  password                                String
+  firstName                               String?
+  lastName                                String?
+  role                                    UserRole                                 @default(USER)
+  isActive                                Boolean                                  @default(true)
+  isGuest                                 Boolean                                  @default(false) // Для заказов от менеджера: гость до регистрации
+  yandexId                                String?                                  @unique // ID аккаунта Яндекс для OAuth
+  createdAt                               DateTime                                 @default(now())
+  updatedAt                               DateTime                                 @updatedAt
+  avatar                                  String?
+  phone                                   String?
+  notificationSettings                    UserNotificationSettings?
+  notificationHistory                     UserNotification[]
+  adminNotificationOverride               UserAdminNotificationOverride?
+  addresses                               Address[]
+  blogPosts                               BlogPost[]
+  knowledgeMaterials                      KnowledgeMaterial[]
+  knowledgeVideoProgress                  KnowledgeVideoProgress[]
+  cartItems                               CartItem[]
+  cartServiceItems                        CartServiceItem[]
+  comments                                Comment[]
+  assignedCustomers                       Customer[]                               @relation("ManagerCustomers")
+  customersCreated                        Customer[]                               @relation("CustomerCreatedBy")
+  customersUpdated                        Customer[]                               @relation("CustomerUpdatedBy")
+  interactions                            Interaction[]
+  orders                                  Order[]
+  ordersCreatedForCustomers               Order[]                                  @relation("OrdersCreatedByManager")
+  ordersProcessedByManagers               Order[]                                  @relation("OrdersProcessedByManager")
+  salesMetrics                            SalesMetric[]
+  tasks                                   Task[]                                   @relation("AssignedTasks")
+  createdTasks                            Task[]                                   @relation("CreatedTasks")
+  wishlist                                WishlistItem[]
+  compareItems                            CompareItem[]
+  supportConversations                    SupportConversation[]                    @relation("SupportUser")
+  assignedSupportConversations            SupportConversation[]                    @relation("SupportAgent")
+  supportMessages                         SupportMessage[]
+  managedMeasurements                     Measurement[]                            @relation("MeasurementManager")
+  surveyedMeasurements                    Measurement[]                            @relation("MeasurementSurveyor")
+  managedContracts                        Contract[]                               @relation("ContractManager")
+  surveyedContracts                       Contract[]                               @relation("ContractSurveyor")
+  contractPayments                        ContractPayment[]
+  measurementHistory                      MeasurementHistory[]                     @relation("MeasurementHistoryChangedBy")
+  contractHistory                         ContractHistory[]                        @relation("ContractHistoryChangedBy")
+  complexObjectHistory                    ComplexObjectHistory[]                   @relation("ComplexObjectHistoryChangedBy")
+  officeHistory                           OfficeHistory[]                          @relation("OfficeHistoryChangedBy")
+  supplierSettlementHistory               SupplierSettlementHistory[]              @relation("SupplierSettlementHistoryChangedBy")
+  taskHistory                             TaskHistory[]                            @relation("TaskHistoryChangedBy")
+  customerHistory                         CustomerHistory[]                        @relation("CustomerHistoryChangedBy")
+  managedComplexObjects                   ComplexObject[]                          @relation("ComplexObjectManager")
+  adminResourcePermissions                AdminResourcePermission[]
+  officeOtherExpensesCreated              OfficeOtherExpense[]
+  officeIncassationsCreated               OfficeIncassation[]
+  orderEventsAsActor                      OrderEvent[]                             @relation("OrderEventActor")
+  serviceOrders                           ServiceOrder[]                           @relation
+  serviceOrdersCreated                    ServiceOrder[]                           @relation("ServiceOrdersCreatedByManager")
+  passwordResetTokens                     PasswordResetToken[]
+  refreshSessions                         UserRefreshToken[]
+  productsCreated                         Product[]                                @relation("ProductCreatedBy")
+  productsUpdated                         Product[]                                @relation("ProductUpdatedBy")
+  categoriesCreated                       Category[]                               @relation("CategoryCreatedBy")
+  contractDocumentPackagesCreated         ContractDocumentPackage[]                @relation("ContractDocumentPackagesCreated")
+  contractDocumentPackagesDeleted         ContractDocumentPackage[]                @relation("ContractDocumentPackagesDeleted")
+  contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]         @relation("ContractDocumentPackagePaymentRecordedBy")
+  contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
+  contractDocumentGlobalTemplatesUpdated  ContractDocumentGlobalTemplate[]         @relation("GlobalContractTemplateUpdatedBy")
+  contractDocumentRepairSettingsUpdated   ContractDocumentRepairSettings[]         @relation("ContractDocumentRepairSettingsUpdatedBy")
+  contractDocumentPackageVersionsSaved    ContractDocumentPackageVersion[]         @relation("ContractDocumentPackageVersionSavedBy")
+  contractDocumentEstimatePresetsHistory  ContractDocumentEstimatePresetsHistory[] @relation("ContractDocumentEstimatePresetsHistoryChangedBy")
 
   @@map("users")
 }
 
 /// Токен для восстановления пароля. Срок действия 1 час.
 model PasswordResetToken {
-  id        String   @id @default(cuid())
+  id        String    @id @default(cuid())
   userId    String
-  token     String   @unique
+  token     String    @unique
   expiresAt DateTime
   usedAt    DateTime?
-  createdAt DateTime @default(now())
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime  @default(now())
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([token])
   @@index([userId])
@@ -143,7 +143,7 @@ model AdminResourcePermission {
   id         String   @id @default(cuid())
   resourceId String
   userId     String
-  permission String   // VIEW | EDIT | DENIED
+  permission String // VIEW | EDIT | DENIED
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -157,8 +157,8 @@ model AdminResourcePermission {
 model AdminResourceRolePermission {
   id         String   @id @default(cuid())
   resourceId String
-  role       String   // SUPER_ADMIN, ADMIN, CONTENT_MANAGER и т.д.
-  permission String   // VIEW | EDIT | DENIED
+  role       String // SUPER_ADMIN, ADMIN, CONTENT_MANAGER и т.д.
+  permission String // VIEW | EDIT | DENIED
   createdAt  DateTime @default(now())
 
   @@unique([resourceId, role])
@@ -168,35 +168,35 @@ model AdminResourceRolePermission {
 }
 
 model SupportConversation {
-  id           String              @id @default(cuid())
+  id           String             @id @default(cuid())
   userId       String
   assignedToId String?
-  status       ConversationStatus  @default(OPEN)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  user         User                @relation("SupportUser", fields: [userId], references: [id], onDelete: Cascade)
-  assignedTo   User?               @relation("SupportAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
+  status       ConversationStatus @default(OPEN)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation("SupportUser", fields: [userId], references: [id], onDelete: Cascade)
+  assignedTo   User?              @relation("SupportAgent", fields: [assignedToId], references: [id], onDelete: SetNull)
   messages     SupportMessage[]
 
   @@map("support_conversations")
 }
 
 model SupportMessage {
-  id             String             @id @default(cuid())
+  id             String              @id @default(cuid())
   conversationId String
   senderId       String
-  content        String             @db.Text
-  createdAt      DateTime           @default(now())
+  content        String              @db.Text
+  createdAt      DateTime            @default(now())
   conversation   SupportConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  sender         User               @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  sender         User                @relation(fields: [senderId], references: [id], onDelete: Cascade)
 
   @@map("support_messages")
 }
 
 model HomeDirectionImage {
-  id       String   @id @default(cuid())
-  slug     String   @unique
-  imageUrl String
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  imageUrl  String
   updatedAt DateTime @updatedAt
 
   @@map("home_direction_images")
@@ -275,54 +275,54 @@ model FeaturedProductsBlock {
 }
 
 model HomePageSectionsBlock {
-  id                    String   @id @default("main")
-  heroVisible           Boolean  @default(true)
-  directionsVisible     Boolean  @default(true)
-  advantagesVisible     Boolean  @default(true)
-  servicesVisible       Boolean  @default(true)
-  featuredProductsVisible Boolean @default(true)
-  contactFormVisible    Boolean  @default(true)
-  updatedAt             DateTime @updatedAt
+  id                      String   @id @default("main")
+  heroVisible             Boolean  @default(true)
+  directionsVisible       Boolean  @default(true)
+  advantagesVisible       Boolean  @default(true)
+  servicesVisible         Boolean  @default(true)
+  featuredProductsVisible Boolean  @default(true)
+  contactFormVisible      Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
 
   @@map("home_page_sections_block")
 }
 
 model ContactFormBlock {
-  id                 String   @id @default("main")
-  title              String   @default("Готовы начать проект?")
-  subtitle           String   @default("Оставьте заявку и получите бесплатную консультацию специалиста") @db.Text
-  backgroundImage    String?  // URL или путь к фоновой картинке
-  backgroundOpacity  Float?   // Прозрачность фона 0–1 (null = 0.5)
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default("main")
+  title             String   @default("Готовы начать проект?")
+  subtitle          String   @default("Оставьте заявку и получите бесплатную консультацию специалиста") @db.Text
+  backgroundImage   String? // URL или путь к фоновой картинке
+  backgroundOpacity Float? // Прозрачность фона 0–1 (null = 0.5)
+  updatedAt         DateTime @updatedAt
 
   @@map("contact_form_block")
 }
 
 model DirectorMessageBlock {
-  id              String   @id @default("main")
-  directorEmail   String?  // Email директора для формы «Письмо директору» (если пусто — письма не отправляются)
-  telegramChatId  String?  // ID чата Telegram для уведомлений (если пусто — уведомления в Telegram не отправляются)
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default("main")
+  directorEmail  String? // Email директора для формы «Письмо директору» (если пусто — письма не отправляются)
+  telegramChatId String? // ID чата Telegram для уведомлений (если пусто — уведомления в Telegram не отправляются)
+  updatedAt      DateTime @updatedAt
 
   @@map("director_message_block")
 }
 
 /// Настройки формы «Записаться на замер»: email и Telegram для уведомлений при подаче заявки
 model MeasurementFormBlock {
-  id              String   @id @default("main")
-  recipientEmail  String?  // Email для получения уведомлений о новых заявках (если пусто — только сохранение в БД)
-  telegramChatId  String?  // ID чата Telegram для уведомлений
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default("main")
+  recipientEmail String? // Email для получения уведомлений о новых заявках (если пусто — только сохранение в БД)
+  telegramChatId String? // ID чата Telegram для уведомлений
+  updatedAt      DateTime @updatedAt
 
   @@map("measurement_form_block")
 }
 
 /// Настройки формы «Заказать звонок»: email и Telegram для уведомлений при подаче заявки
 model CallbackFormBlock {
-  id              String   @id @default("main")
-  recipientEmail  String?  // Email для получения уведомлений (если пусто — только сохранение в БД)
-  telegramChatId  String?  // ID чата Telegram для уведомлений
-  updatedAt       DateTime @updatedAt
+  id             String   @id @default("main")
+  recipientEmail String? // Email для получения уведомлений (если пусто — только сохранение в БД)
+  telegramChatId String? // ID чата Telegram для уведомлений
+  updatedAt      DateTime @updatedAt
 
   @@map("callback_form_block")
 }
@@ -330,63 +330,135 @@ model CallbackFormBlock {
 /// Настройки формы «Рассчитать стоимость» / «Отправить заявку»: email, Telegram и список позиций
 model QuoteFormBlock {
   id                 String   @id @default("main")
-  recipientEmail     String?  // Email для получения уведомлений (если пусто — только сохранение в БД)
-  telegramChatId     String?  // ID чата Telegram для уведомлений
-  serviceTypeOptions Json?    // Массив строк — виды работ/товаров для выбора (настраивается в админке)
+  recipientEmail     String? // Email для получения уведомлений (если пусто — только сохранение в БД)
+  telegramChatId     String? // ID чата Telegram для уведомлений
+  serviceTypeOptions Json? // Массив строк — виды работ/товаров для выбора (настраивается в админке)
   updatedAt          DateTime @updatedAt
 
   @@map("quote_form_block")
 }
 
+/// Квиз-лендинг (мебель, ремонт и др. направления)
+model QuizLanding {
+  id                String           @id @default(cuid())
+  slug              String           @unique
+  direction         String           @default("furniture") // furniture | repair | windows | ...
+  title             String
+  domain            String?          @unique
+  isActive          Boolean          @default(true)
+  headline          String?
+  subheadline       String?          @db.Text
+  promoText         String?
+  logoUrl           String?
+  primaryColor      String           @default("#c9a227")
+  theme             Json? // цвета, шрифты, фон — см. QuizTheme
+  displayPhone      String?
+  city              String?
+  successTitle      String?
+  successText       String?          @db.Text
+  catalogFileUrl    String?
+  privacyPolicyUrl  String?
+  notifyEmails      Json? // string[]
+  notifyTelegramIds Json? // string[]
+  notifyPhones      Json? // string[] — для SMS в будущем; дублируется в тексте уведомления
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  steps             QuizStep[]
+  submissions       QuizSubmission[]
+
+  @@map("quiz_landings")
+}
+
+model QuizStep {
+  id          String      @id @default(cuid())
+  quizId      String
+  key         String
+  sortOrder   Int
+  type        String // choice | text | contact
+  title       String
+  subtitle    String?
+  placeholder String?
+  required    Boolean     @default(true)
+  options     Json? // { value, label, imageUrl? }[]
+  showWhen    Json? // { branchKey, values } | null — ветвление
+  quiz        QuizLanding @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@unique([quizId, key])
+  @@map("quiz_steps")
+}
+
+model QuizSubmission {
+  id            String      @id @default(cuid())
+  quizId        String
+  name          String
+  phone         String
+  answers       Json
+  furnitureType String?
+  status        String      @default("new") // new | contacted | in_progress | completed | cancelled
+  managerNote   String?     @db.Text
+  utmSource     String?
+  utmMedium     String?
+  utmCampaign   String?
+  referrer      String?
+  landingUrl    String?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  quiz          QuizLanding @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, createdAt])
+  @@index([quizId, status])
+  @@map("quiz_submissions")
+}
+
 model Partner {
-  id                 String   @id @default(cuid())
-  name               String   // Название партнёра
-  logoUrl            String?  // URL логотипа (для карточек товаров)
-  showLogoOnCards    Boolean  @default(true) // Показывать логотип на карточках товаров
-  tooltipText        String?  // Текст всплывающей подсказки при наведении на логотип (если пусто — "Товар Партнёра : название")
-  showTooltip        Boolean  @default(true) // Показывать всплывающую подсказку при наведении на логотип
-  website            String?
-  email              String?
-  phone              String[] @default([])
-  description        String?  @db.Text
-  isActive           Boolean  @default(true)
-  sortOrder          Int      @default(0)
-  createdAt          DateTime @default(now())
-  updatedAt          DateTime @updatedAt
-  products           Product[]
+  id              String    @id @default(cuid())
+  name            String // Название партнёра
+  logoUrl         String? // URL логотипа (для карточек товаров)
+  showLogoOnCards Boolean   @default(true) // Показывать логотип на карточках товаров
+  tooltipText     String? // Текст всплывающей подсказки при наведении на логотип (если пусто — "Товар Партнёра : название")
+  showTooltip     Boolean   @default(true) // Показывать всплывающую подсказку при наведении на логотип
+  website         String?
+  email           String?
+  phone           String[]  @default([])
+  description     String?   @db.Text
+  isActive        Boolean   @default(true)
+  sortOrder       Int       @default(0)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  products        Product[]
 
   @@map("partners")
 }
 
 model PartnerProductsBlock {
-  id                    String   @id @default("main")
-  partnerLogoUrl        String?  // URL логотипа партнёра по умолчанию (в кружке на карточках)
-  showPartnerIconOnCards Boolean @default(true) // Показывать иконку партнёра на карточках товаров
-  updatedAt             DateTime @updatedAt
+  id                     String   @id @default("main")
+  partnerLogoUrl         String? // URL логотипа партнёра по умолчанию (в кружке на карточках)
+  showPartnerIconOnCards Boolean  @default(true) // Показывать иконку партнёра на карточках товаров
+  updatedAt              DateTime @updatedAt
 
   @@map("partner_products_block")
 }
 
 model FooterBlock {
-  id                    String   @id @default("main")
-  workingHoursWeekdays  String   @default("пн-пт: 11-19")
-  workingHoursSaturday  String   @default("сб: 12-16")
-  workingHoursSunday    String   @default("вс: выходной")
-  phone                 String   @default("8 (8152) 60-12-70")
-  email                 String   @default("skvirya@mail.ru")
-  developer             String   @default("ИП Сквиря Р.В.")
-  copyrightCompanyName  String   @default("Территория интерьерных решений")
-  vkHref                String   @default("https://vk.com/pskpobeda")
-  vkIcon                String   @default("/images/icons-vk.png")
-  updatedAt             DateTime @updatedAt
+  id                   String   @id @default("main")
+  workingHoursWeekdays String   @default("пн-пт: 11-19")
+  workingHoursSaturday String   @default("сб: 12-16")
+  workingHoursSunday   String   @default("вс: выходной")
+  phone                String   @default("8 (8152) 60-12-70")
+  email                String   @default("skvirya@mail.ru")
+  developer            String   @default("ИП Сквиря Р.В.")
+  copyrightCompanyName String   @default("Территория интерьерных решений")
+  vkHref               String   @default("https://vk.com/pskpobeda")
+  vkIcon               String   @default("/images/icons-vk.png")
+  updatedAt            DateTime @updatedAt
 
   @@map("footer_block")
 }
 
 model FooterSection {
-  id        String   @id @default(cuid())
+  id        String              @id @default(cuid())
   title     String
-  sortOrder Int      @default(0)
+  sortOrder Int                 @default(0)
   links     FooterSectionLink[]
 
   @@map("footer_sections")
@@ -404,36 +476,36 @@ model FooterSectionLink {
 }
 
 model NavigationItem {
-  id             String                    @id @default(cuid())
-  name           String
-  href           String                    @default("#")
-  sortOrder      Int                       @default(0)
-  hasDropdown    Boolean                   @default(false)
-  isActive       Boolean                   @default(true)
-  dropdownItems  NavigationDropdownItem[]
+  id            String                   @id @default(cuid())
+  name          String
+  href          String                   @default("#")
+  sortOrder     Int                      @default(0)
+  hasDropdown   Boolean                  @default(false)
+  isActive      Boolean                  @default(true)
+  dropdownItems NavigationDropdownItem[]
 
   @@map("navigation_items")
 }
 
 model NavigationDropdownItem {
-  id        String                         @id @default(cuid())
+  id        String                      @id @default(cuid())
   navItemId String
   name      String
-  href      String                         @default("#")
-  sortOrder Int                            @default(0)
-  icon      String?                        // имя иконки heroicons или URL
-  navItem   NavigationItem                @relation(fields: [navItemId], references: [id], onDelete: Cascade)
+  href      String                      @default("#")
+  sortOrder Int                         @default(0)
+  icon      String? // имя иконки heroicons или URL
+  navItem   NavigationItem              @relation(fields: [navItemId], references: [id], onDelete: Cascade)
   submenu   NavigationDropdownSubItem[]
 
   @@map("navigation_dropdown_items")
 }
 
 model NavigationDropdownSubItem {
-  id          String                  @id @default(cuid())
-  dropdownId  String
-  name        String
-  href        String                  @default("#")
-  sortOrder   Int                     @default(0)
+  id           String                 @id @default(cuid())
+  dropdownId   String
+  name         String
+  href         String                 @default("#")
+  sortOrder    Int                    @default(0)
   dropdownItem NavigationDropdownItem @relation(fields: [dropdownId], references: [id], onDelete: Cascade)
 
   @@map("navigation_dropdown_sub_items")
@@ -454,56 +526,56 @@ model ServiceItem {
 
 // --- Ремонт квартир (виды работ с ценами) ---
 model ServiceCatalogBlock {
-  id                  String   @id @default("main")
-  title               String   @default("Ремонт квартир")
-  showPricesInPublic  Boolean  @default(true) // Показывать стоимость в публичной части
-  updatedAt           DateTime @updatedAt
+  id                 String   @id @default("main")
+  title              String   @default("Ремонт квартир")
+  showPricesInPublic Boolean  @default(true) // Показывать стоимость в публичной части
+  updatedAt          DateTime @updatedAt
 
   @@map("service_catalog_block")
 }
 
 model ServiceCatalogCategory {
-  id                 String    @id @default(cuid())
-  name               String
-  slug               String    @unique
-  description        String?   @db.Text
-  icon               String? // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
-  image              String? // URL или base64 — при наличии показывается вместо иконки
+  id                        String                   @id @default(cuid())
+  name                      String
+  slug                      String                   @unique
+  description               String?                  @db.Text
+  icon                      String? // Имя иконки heroicons (PaintBrush, Bolt и т.д.)
+  image                     String? // URL или base64 — при наличии показывается вместо иконки
   /// Фон карточки категории на странице «Ремонт квартир» (URL или data URL)
-  cardBackgroundImage String?
+  cardBackgroundImage       String?
   /// Публичная плитка категории без заливки (#fff / тёмный фон) — виден фон страницы; при фоновой картинке слой затемнения слабее
-  cardBackgroundTransparent Boolean @default(false)
+  cardBackgroundTransparent Boolean                  @default(false)
   /// Наценка на все виды работ в этой категории, % к базовой цене позиции (может быть отрицательной). 0 — наследовать у родителя; ненулевое — своя наценка. Публичка показывает только итог.
-  priceMarkupPercent Decimal   @default(0) @db.Decimal(10, 2)
-  showPricesInPublic Boolean   @default(true) // Показывать стоимость в публичной части
-  sortOrder          Int       @default(0)
-  isActive           Boolean   @default(true)
-  parentId           String?
-  parent             ServiceCatalogCategory?  @relation("ServiceCatalogCategoryChildren", fields: [parentId], references: [id], onDelete: Restrict)
-  children           ServiceCatalogCategory[] @relation("ServiceCatalogCategoryChildren")
-  createdAt          DateTime  @default(now())
-  updatedAt          DateTime  @updatedAt
-  items              ServiceCatalogItem[]
-  cartServiceItems   CartServiceItem[]
+  priceMarkupPercent        Decimal                  @default(0) @db.Decimal(10, 2)
+  showPricesInPublic        Boolean                  @default(true) // Показывать стоимость в публичной части
+  sortOrder                 Int                      @default(0)
+  isActive                  Boolean                  @default(true)
+  parentId                  String?
+  parent                    ServiceCatalogCategory?  @relation("ServiceCatalogCategoryChildren", fields: [parentId], references: [id], onDelete: Restrict)
+  children                  ServiceCatalogCategory[] @relation("ServiceCatalogCategoryChildren")
+  createdAt                 DateTime                 @default(now())
+  updatedAt                 DateTime                 @updatedAt
+  items                     ServiceCatalogItem[]
+  cartServiceItems          CartServiceItem[]
 
   @@index([parentId])
   @@map("service_catalog_categories")
 }
 
 model ServiceCatalogItem {
-  id          String                 @id @default(cuid())
-  categoryId  String
-  name        String                 // Вид работ (например "Шпатлёвка стен")
-  description String?                @db.Text
-  price       Decimal                @db.Decimal(12, 2) // Стоимость за единицу
-  unit        String                 @default("м²") // Единица измерения: м², шт, п.м. и т.д.
-  sortOrder   Int                    @default(0)
-  isActive    Boolean                @default(true)
-  createdAt   DateTime               @default(now())
-  updatedAt   DateTime               @updatedAt
-  category    ServiceCatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  serviceOrderItems   ServiceOrderItem[]
-  orderServiceItems   OrderServiceItem[]
+  id                String                 @id @default(cuid())
+  categoryId        String
+  name              String // Вид работ (например "Шпатлёвка стен")
+  description       String?                @db.Text
+  price             Decimal                @db.Decimal(12, 2) // Стоимость за единицу
+  unit              String                 @default("м²") // Единица измерения: м², шт, п.м. и т.д.
+  sortOrder         Int                    @default(0)
+  isActive          Boolean                @default(true)
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+  category          ServiceCatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  serviceOrderItems ServiceOrderItem[]
+  orderServiceItems OrderServiceItem[]
 
   @@index([categoryId])
   @@map("service_catalog_items")
@@ -511,39 +583,39 @@ model ServiceCatalogItem {
 
 /// Заказ на услуги (оформляет менеджер для клиента).
 model ServiceOrder {
-  id                 String            @id @default(cuid())
-  orderNumber        String            @unique
-  userId             String            // Покупатель (существующий или гость)
-  createdByManagerId String?           // Менеджер, оформивший заказ
-  customerEmail      String            // Email получателя
+  id                 String             @id @default(cuid())
+  orderNumber        String             @unique
+  userId             String // Покупатель (существующий или гость)
+  createdByManagerId String? // Менеджер, оформивший заказ
+  customerEmail      String // Email получателя
   customerFirstName  String?
   customerLastName   String?
-  customerPhone      String?           // Телефон покупателя
-  total              Decimal           @db.Decimal(12, 2)
+  customerPhone      String? // Телефон покупателя
+  total              Decimal            @db.Decimal(12, 2)
   status             ServiceOrderStatus @default(PENDING)
-  customerNotes      String?           @db.Text
-  adminNotes         String?           @db.Text
-  createdAt          DateTime          @default(now())
-  updatedAt          DateTime          @updatedAt
-  user               User              @relation(fields: [userId], references: [id], onDelete: Restrict)
-  createdByManager   User?             @relation("ServiceOrdersCreatedByManager", fields: [createdByManagerId], references: [id], onDelete: SetNull)
+  customerNotes      String?            @db.Text
+  adminNotes         String?            @db.Text
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  user               User               @relation(fields: [userId], references: [id], onDelete: Restrict)
+  createdByManager   User?              @relation("ServiceOrdersCreatedByManager", fields: [createdByManagerId], references: [id], onDelete: SetNull)
   items              ServiceOrderItem[]
 
   @@map("service_orders")
 }
 
 model ServiceOrderItem {
-  id                   String           @id @default(cuid())
+  id                   String             @id @default(cuid())
   serviceOrderId       String
   serviceCatalogItemId String
-  name                 String           // Название вида работ (денормализация)
-  categoryName         String           // Название категории (денормализация)
-  unit                 String           // Ед. изм.
-  quantity             Decimal          @db.Decimal(12, 2)
-  price                Decimal          @db.Decimal(12, 2)
-  amount               Decimal          @db.Decimal(12, 2)
-  createdAt            DateTime         @default(now())
-  serviceOrder         ServiceOrder     @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
+  name                 String // Название вида работ (денормализация)
+  categoryName         String // Название категории (денормализация)
+  unit                 String // Ед. изм.
+  quantity             Decimal            @db.Decimal(12, 2)
+  price                Decimal            @db.Decimal(12, 2)
+  amount               Decimal            @db.Decimal(12, 2)
+  createdAt            DateTime           @default(now())
+  serviceOrder         ServiceOrder       @relation(fields: [serviceOrderId], references: [id], onDelete: Cascade)
   serviceCatalogItem   ServiceCatalogItem @relation(fields: [serviceCatalogItemId], references: [id], onDelete: Restrict)
 
   @@index([serviceOrderId])
@@ -552,44 +624,44 @@ model ServiceOrderItem {
 }
 
 model Customer {
-  id            String         @id @default(cuid())
-  email         String?        @unique
-  phone         String?
+  id              String            @id @default(cuid())
+  email           String?           @unique
+  phone           String?
   /// Все номера телефонов (первый дублируется в phone для поиска и старых интеграций)
-  phones        String[]       @default([]) @map("phones")
-  firstName     String
-  lastName      String?
-  company       String?
-  position      String?
+  phones          String[]          @default([]) @map("phones")
+  firstName       String
+  lastName        String?
+  company         String?
+  position        String?
   /// PERSON | COMPANY | ENTREPRENEUR — вид заказчика в CRM
-  entityType      String? @map("entity_type") @db.VarChar(32)
+  entityType      String?           @map("entity_type") @db.VarChar(32)
   /// Реквизиты в формате блока «Заказчик» пакета «Ремонт» (JSON)
-  extendedProfile Json?   @map("extended_profile")
-  source        LeadSource     @default(WEBSITE)
-  status        CustomerStatus @default(LEAD)
-  stage         DealStage      @default(NEW)
-  dealValue     Decimal?       @db.Decimal(12, 2)
-  notes         String?
-  tags          String[]
-  managerId     String?
-  createdById   String?        @map("created_by_id")
-  updatedById   String?        @map("updated_by_id")
-  isActive      Boolean        @default(true)
-  lastContactAt DateTime?
-  nextFollowUp  DateTime?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  extendedProfile Json?             @map("extended_profile")
+  source          LeadSource        @default(WEBSITE)
+  status          CustomerStatus    @default(LEAD)
+  stage           DealStage         @default(NEW)
+  dealValue       Decimal?          @db.Decimal(12, 2)
+  notes           String?
+  tags            String[]
+  managerId       String?
+  createdById     String?           @map("created_by_id")
+  updatedById     String?           @map("updated_by_id")
+  isActive        Boolean           @default(true)
+  lastContactAt   DateTime?
+  nextFollowUp    DateTime?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
   /// Мягкое удаление: карточка в корзине, не показывается в справочнике
-  deletedAt     DateTime?      @map("deleted_at")
-  manager       User?          @relation("ManagerCustomers", fields: [managerId], references: [id])
-  createdBy     User?          @relation("CustomerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy     User?          @relation("CustomerUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  deals         Deal[]
-  interactions  Interaction[]
-  tasks         Task[]
-  measurements  Measurement[]
-  contracts     Contract[]
-  history       CustomerHistory[]
+  deletedAt       DateTime?         @map("deleted_at")
+  manager         User?             @relation("ManagerCustomers", fields: [managerId], references: [id])
+  createdBy       User?             @relation("CustomerCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy       User?             @relation("CustomerUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  deals           Deal[]
+  interactions    Interaction[]
+  tasks           Task[]
+  measurements    Measurement[]
+  contracts       Contract[]
+  history         CustomerHistory[]
 
   @@index([deletedAt])
   @@map("customers")
@@ -645,35 +717,35 @@ model Deal {
 }
 
 model Task {
-  id          String       @id @default(cuid())
+  id          String        @id @default(cuid())
   title       String
   description String?
-  type        TaskType     @default(TODO)
-  priority    TaskPriority @default(MEDIUM)
-  status      TaskStatus   @default(PENDING)
+  type        TaskType      @default(TODO)
+  priority    TaskPriority  @default(MEDIUM)
+  status      TaskStatus    @default(PENDING)
   dueDate     DateTime?
   completedAt DateTime?
   customerId  String?
   assigneeId  String?
   createdById String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
-  assignee    User?        @relation("AssignedTasks", fields: [assigneeId], references: [id])
-  createdBy   User         @relation("CreatedTasks", fields: [createdById], references: [id])
-  customer    Customer?    @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  assignee    User?         @relation("AssignedTasks", fields: [assigneeId], references: [id])
+  createdBy   User          @relation("CreatedTasks", fields: [createdById], references: [id])
+  customer    Customer?     @relation(fields: [customerId], references: [id], onDelete: Cascade)
   history     TaskHistory[]
 
   @@map("tasks")
 }
 
 model TaskHistory {
-  id         String   @id @default(cuid())
-  taskId     String
-  snapshot   Json
+  id            String   @id @default(cuid())
+  taskId        String
+  snapshot      Json
   changedFields String[] @default([])
-  action     String   // UPDATE | ROLLBACK
-  changedById String
-  changedAt  DateTime @default(now())
+  action        String // UPDATE | ROLLBACK
+  changedById   String
+  changedAt     DateTime @default(now())
 
   task      Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
   changedBy User @relation("TaskHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
@@ -714,26 +786,26 @@ model BlogPost {
   contentAlign       BlogContentAlign @default(JUSTIFY)
   excerpt            String?
   featuredImage      String?
-  featuredImageAlt   String         @default("")
+  featuredImageAlt   String           @default("")
   badge              String?
-  readingTimeMinutes Int            @default(1)
-  sortOrder          Int            @default(0)
+  readingTimeMinutes Int              @default(1)
+  sortOrder          Int              @default(0)
   authorByline       String?
-  status             PageStatus     @default(DRAFT)
+  status             PageStatus       @default(DRAFT)
   publishedAt        DateTime?
   authorId           String
   categoryId         String?
   tags               String[]
-  viewCount          Int            @default(0)
+  viewCount          Int              @default(0)
   seoTitle           String?
   seoDescription     String?
-  createdAt          DateTime       @default(now())
-  updatedAt          DateTime       @updatedAt
-  author         User           @relation(fields: [authorId], references: [id])
-  category       BlogCategory?  @relation(fields: [categoryId], references: [id])
-  comments       Comment[]
-  likes          BlogPostLike[]
-  blocks         BlogPostBlock[]
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+  author             User             @relation(fields: [authorId], references: [id])
+  category           BlogCategory?    @relation(fields: [categoryId], references: [id])
+  comments           Comment[]
+  likes              BlogPostLike[]
+  blocks             BlogPostBlock[]
 
   @@map("blog_posts")
 }
@@ -765,7 +837,7 @@ model BlogPostBlockImage {
 model BlogPostLike {
   id        String   @id @default(cuid())
   postId    String
-  likerId   String   // userId или "g_" + guestUuid
+  likerId   String // userId или "g_" + guestUuid
   createdAt DateTime @default(now())
   post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
 
@@ -819,26 +891,26 @@ model KnowledgeCategory {
 }
 
 model KnowledgeMaterial {
-  id           String                        @id @default(cuid())
-  categoryId   String
-  type         KnowledgeMaterialType
-  title        String
-  slug         String                        @unique
-  excerpt      String?
-  content      String?                       @db.Text
-  videoUrl     String?
-  externalUrl  String?
-  thumbnailUrl String?
-  sortOrder    Int                           @default(0)
-  isPinned     Boolean                       @default(false)
-  status       PageStatus                    @default(DRAFT)
-  publishedAt  DateTime?
-  authorId     String
-  createdAt    DateTime                      @default(now())
-  updatedAt    DateTime                      @updatedAt
-  category     KnowledgeCategory             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  author       User                          @relation(fields: [authorId], references: [id])
-  attachments  KnowledgeMaterialAttachment[]
+  id            String                        @id @default(cuid())
+  categoryId    String
+  type          KnowledgeMaterialType
+  title         String
+  slug          String                        @unique
+  excerpt       String?
+  content       String?                       @db.Text
+  videoUrl      String?
+  externalUrl   String?
+  thumbnailUrl  String?
+  sortOrder     Int                           @default(0)
+  isPinned      Boolean                       @default(false)
+  status        PageStatus                    @default(DRAFT)
+  publishedAt   DateTime?
+  authorId      String
+  createdAt     DateTime                      @default(now())
+  updatedAt     DateTime                      @updatedAt
+  category      KnowledgeCategory             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  author        User                          @relation(fields: [authorId], references: [id])
+  attachments   KnowledgeMaterialAttachment[]
   videoProgress KnowledgeVideoProgress[]
 
   @@index([categoryId])
@@ -881,44 +953,44 @@ model KnowledgeVideoProgress {
 }
 
 model PhotoCategory {
-  id          String        @id @default(cuid())
+  id          String         @id @default(cuid())
   name        String
-  slug        String        @unique
+  slug        String         @unique
   description String?
   image       String?
-  order       Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
+  order       Int            @default(0)
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
   projects    PhotoProject[]
 
   @@map("photo_categories")
 }
 
 model PhotoProject {
-  id          String        @id @default(cuid())
-  categoryId  String
-  title       String        // Название объекта (например "Квартира ул. Ленина 15")
-  description String?       @db.Text // Описание выполненных работ
-  displayMode String        @default("grid") // десктоп: grid | masonry | slider
-  displayModeMobile String  @default("grid") // мобила: grid | masonry | slider
-  publishedAt DateTime      @default(now()) // дата показа на сайте «Наши работы», не createdAt
-  sortOrder   Int           @default(0)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  category    PhotoCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  photos      Photo[]
+  id                String        @id @default(cuid())
+  categoryId        String
+  title             String // Название объекта (например "Квартира ул. Ленина 15")
+  description       String?       @db.Text // Описание выполненных работ
+  displayMode       String        @default("grid") // десктоп: grid | masonry | slider
+  displayModeMobile String        @default("grid") // мобила: grid | masonry | slider
+  publishedAt       DateTime      @default(now()) // дата показа на сайте «Наши работы», не createdAt
+  sortOrder         Int           @default(0)
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  category          PhotoCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  photos            Photo[]
 
   @@map("photo_projects")
 }
 
 model Photo {
-  id         String       @id @default(cuid())
-  projectId  String
-  imageUrl   String
-  sortOrder  Int          @default(0)
-  createdAt  DateTime     @default(now())
-  updatedAt  DateTime     @updatedAt
-  project    PhotoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  id        String       @id @default(cuid())
+  projectId String
+  imageUrl  String
+  sortOrder Int          @default(0)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+  project   PhotoProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 
   @@map("photos")
 }
@@ -1034,18 +1106,18 @@ model Weatherstrip {
 }
 
 model Attribute {
-  id           String              @id @default(cuid())
-  name         String
-  slug         String              @unique
-  type         AttributeType       @default(TEXT)
-  unit         String?
-  isFilterable Boolean             @default(true)
-  isRequired   Boolean             @default(false)
-  order        Int                 @default(0)
-  createdAt    DateTime            @default(now())
-  updatedAt    DateTime            @updatedAt
-  values       AttributeValue[]
-  categories   CategoryAttribute[]
+  id                      String                   @id @default(cuid())
+  name                    String
+  slug                    String                   @unique
+  type                    AttributeType            @default(TEXT)
+  unit                    String?
+  isFilterable            Boolean                  @default(true)
+  isRequired              Boolean                  @default(false)
+  order                   Int                      @default(0)
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+  values                  AttributeValue[]
+  categories              CategoryAttribute[]
   catalogFilterBlockItems CatalogFilterBlockItem[]
 
   @@map("attributes")
@@ -1064,27 +1136,27 @@ model AttributeValue {
 }
 
 model Supplier {
-  id              String            @id @default(cuid())
-  name            String?           // Для обратной совместимости
-  legalName       String            // Наименование юридическое (обязательное)
-  commercialName  String?           // Наименование коммерческое
-  email           String?
-  phone           String[]          @default([]) // Массив телефонов
-  website         String?           // Адрес сайта
-  legalAddress    String?           // Юридический адрес
-  inn             String?           @unique // ИНН (уникальный)
-  bankName        String?           // Банк
-  bankAccount     String?           // Расчетный счет (р/сч)
-  bankBik         String?           // БИК
-  apiUrl          String?
-  apiKey          String?
-  priceMarkup     Decimal           @default(0) @db.Decimal(5, 2)
-  isActive        Boolean           @default(true)
-  syncEnabled     Boolean           @default(false)
-  syncSchedule    String?
-  lastSyncAt      DateTime?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  id                String                      @id @default(cuid())
+  name              String? // Для обратной совместимости
+  legalName         String // Наименование юридическое (обязательное)
+  commercialName    String? // Наименование коммерческое
+  email             String?
+  phone             String[]                    @default([]) // Массив телефонов
+  website           String? // Адрес сайта
+  legalAddress      String? // Юридический адрес
+  inn               String?                     @unique // ИНН (уникальный)
+  bankName          String? // Банк
+  bankAccount       String? // Расчетный счет (р/сч)
+  bankBik           String? // БИК
+  apiUrl            String?
+  apiKey            String?
+  priceMarkup       Decimal                     @default(0) @db.Decimal(5, 2)
+  isActive          Boolean                     @default(true)
+  syncEnabled       Boolean                     @default(false)
+  syncSchedule      String?
+  lastSyncAt        DateTime?
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
   products          ProductSupplier[]
   syncLogs          SupplierSyncLog[]
   settlementRows    SupplierSettlementRow[]
@@ -1094,16 +1166,16 @@ model Supplier {
 }
 
 model SupplierSettlementRow {
-  id          String    @id @default(cuid())
-  supplierId  String
-  date        String?   // YYYY-MM-DD
-  invoice     String?
-  amount      Decimal?  @db.Decimal(12, 2)
-  payment     Decimal?  @db.Decimal(12, 2)
-  note        String?   @db.Text
-  sortOrder   Int       @default(0)
+  id         String   @id @default(cuid())
+  supplierId String
+  date       String? // YYYY-MM-DD
+  invoice    String?
+  amount     Decimal? @db.Decimal(12, 2)
+  payment    Decimal? @db.Decimal(12, 2)
+  note       String?  @db.Text
+  sortOrder  Int      @default(0)
 
-  supplier    Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@index([supplierId])
   @@map("supplier_settlement_rows")
@@ -1112,14 +1184,14 @@ model SupplierSettlementRow {
 model SupplierSettlementHistory {
   id            String   @id @default(cuid())
   supplierId    String
-  snapshot      Json     // Массив строк { rows: [...] }
+  snapshot      Json // Массив строк { rows: [...] }
   changedFields String[] @default([])
-  action        String   // UPDATE | ROLLBACK
+  action        String // UPDATE | ROLLBACK
   changedById   String
   changedAt     DateTime @default(now())
 
-  supplier   Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
-  changedBy  User     @relation("SupplierSettlementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  supplier  Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  changedBy User     @relation("SupplierSettlementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
 
   @@index([supplierId])
   @@index([changedAt])
@@ -1132,15 +1204,15 @@ model ProductSupplier {
   supplierId             String
   supplierSku            String
   supplierPrice          Decimal   @db.Decimal(10, 2)
-  supplierStock         Int       @default(0)
-  supplierProductUrl    String?   // Ссылка на товар у поставщика
+  supplierStock          Int       @default(0)
+  supplierProductUrl     String? // Ссылка на товар у поставщика
   supplierPriceChangedAt DateTime? // Пометка: цена поставщика изменилась при последней синхронизации
-  isMainSupplier        Boolean   @default(false)
-  lastSyncAt            DateTime?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-  product               Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
-  supplier              Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  isMainSupplier         Boolean   @default(false)
+  lastSyncAt             DateTime?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  product                Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier               Supplier  @relation(fields: [supplierId], references: [id], onDelete: Cascade)
 
   @@unique([productId, supplierId])
   @@map("product_suppliers")
@@ -1181,35 +1253,35 @@ model ShippingMethod {
 
 /// Настройки расчёта доставки: населённые пункты с фикс. стоимостью, грузчики по массе и габаритам.
 model DeliveryConfig {
-  id                        String   @id @default(cuid())
-  deliveryPriceMurmansk     Decimal  @db.Decimal(10, 2) // Deprecated: используется deliverySettlements
-  deliveryPricePerKmOutside Decimal  @db.Decimal(10, 2) // Стоимость за 1 км для адресов вне списка, руб
-  deliveryPaymentMode       String?  @default("WITH_ORDER") // WITH_ORDER = оплата с заказом, ON_SITE = оплата по месту
-  moversPriceMurmansk       Decimal  @db.Decimal(10, 2) // Стоимость грузчиков в населённом пункте из списка (за 1 чел), руб
-  moversPriceOutside        Decimal  @db.Decimal(10, 2) // Стоимость грузчиков за пределами списка (за 1 чел), руб
-  moversKgPerPerson         Decimal  @db.Decimal(10, 2) // Кг на одного грузчика
-  moversVolumePerPerson     Decimal? @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
+  id                           String               @id @default(cuid())
+  deliveryPriceMurmansk        Decimal              @db.Decimal(10, 2) // Deprecated: используется deliverySettlements
+  deliveryPricePerKmOutside    Decimal              @db.Decimal(10, 2) // Стоимость за 1 км для адресов вне списка, руб
+  deliveryPaymentMode          String?              @default("WITH_ORDER") // WITH_ORDER = оплата с заказом, ON_SITE = оплата по месту
+  moversPriceMurmansk          Decimal              @db.Decimal(10, 2) // Стоимость грузчиков в населённом пункте из списка (за 1 чел), руб
+  moversPriceOutside           Decimal              @db.Decimal(10, 2) // Стоимость грузчиков за пределами списка (за 1 чел), руб
+  moversKgPerPerson            Decimal              @db.Decimal(10, 2) // Кг на одного грузчика
+  moversVolumePerPerson        Decimal?             @db.Decimal(10, 4) // м³ на одного грузчика (опционально)
   /// Роли, которым разрешено оформлять заказ для клиента (массив строк, напр. ["SUPER_ADMIN","ADMIN","MANAGER"]). null = по умолчанию все три.
   rolesAllowedOrderForCustomer Json?
   /// Время действия статуса «Заказ проверен» (минуты). После истечения заказ отменяется, товары возвращаются в корзину.
-  approvalValidMinutes       Int      @default(60)
-  createdAt                 DateTime @default(now())
-  updatedAt                 DateTime @updatedAt
-  settlements               DeliverySettlement[]
+  approvalValidMinutes         Int                  @default(60)
+  createdAt                    DateTime             @default(now())
+  updatedAt                    DateTime             @updatedAt
+  settlements                  DeliverySettlement[]
 
   @@map("delivery_config")
 }
 
 /// Населённый пункт с фиксированной стоимостью доставки.
 model DeliverySettlement {
-  id        String   @id @default(cuid())
+  id        String         @id @default(cuid())
   configId  String
   config    DeliveryConfig @relation(fields: [configId], references: [id], onDelete: Cascade)
-  name      String   // Название населённого пункта
-  price     Decimal  @db.Decimal(10, 2) // Стоимость доставки, руб
-  order     Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  name      String // Название населённого пункта
+  price     Decimal        @db.Decimal(10, 2) // Стоимость доставки, руб
+  order     Int            @default(0)
+  createdAt DateTime       @default(now())
+  updatedAt DateTime       @updatedAt
 
   @@map("delivery_settlements")
 }
@@ -1344,25 +1416,25 @@ model CatalogFilterBlockItem {
 }
 
 model Category {
-  id          String              @id @default(cuid())
-  name        String
-  slug        String              @unique
-  description String?
-  image       String?
-  parentId    String?
-  order       Int                 @default(0)
-  isActive    Boolean             @default(true)
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  icon        String?
-  createdById String?
-  parent      Category?           @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
-  children    Category[]          @relation("CategoryTree")
-  attributes  CategoryAttribute[]
-  products    Product[]
-  catalogFilterBlock CatalogFilterBlock?
+  id                        String                     @id @default(cuid())
+  name                      String
+  slug                      String                     @unique
+  description               String?
+  image                     String?
+  parentId                  String?
+  order                     Int                        @default(0)
+  isActive                  Boolean                    @default(true)
+  createdAt                 DateTime                   @default(now())
+  updatedAt                 DateTime                   @updatedAt
+  icon                      String?
+  createdById               String?
+  parent                    Category?                  @relation("CategoryTree", fields: [parentId], references: [id], onDelete: Cascade)
+  children                  Category[]                 @relation("CategoryTree")
+  attributes                CategoryAttribute[]
+  products                  Product[]
+  catalogFilterBlock        CatalogFilterBlock?
   catalogHubPreviewSections CatalogHubPreviewSection[]
-  createdBy   User?               @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdBy                 User?                      @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@map("categories")
 }
@@ -1382,67 +1454,67 @@ model CategoryAttribute {
 }
 
 model Product {
-  id               String             @id @default(cuid())
-  name             String
-  slug             String             @unique
-  description      String?
-  sku              String?            @unique
-  price            Decimal            @db.Decimal(10, 2)
-  comparePrice     Decimal?           @db.Decimal(10, 2)
-  stock            Int                @default(0)
+  id                     String                         @id @default(cuid())
+  name                   String
+  slug                   String                         @unique
+  description            String?
+  sku                    String?                        @unique
+  price                  Decimal                        @db.Decimal(10, 2)
+  comparePrice           Decimal?                       @db.Decimal(10, 2)
+  stock                  Int                            @default(0)
   /// При нулевом остатке: витрина «Под заказ» вместо «Товар закончился». Если остаток больше нуля — всегда «В наличии».
-  onOrder          Boolean            @default(false)
-  isActive         Boolean            @default(true)
-  isFeatured       Boolean            @default(false)
-  isNew            Boolean            @default(false)
-  isPartnerProduct Boolean            @default(false)
-  partnerId        String?
-  sortOrder        Int                @default(0)
-  categoryId       String
-  images           String[]
-  videoUrl         String?   // URL видеоролика о товаре (YouTube, Vimeo или свой хостинг)
-  attributes       Json?
-  seoTitle         String?
-  seoDescription   String?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
-  createdById      String?            // Кто создал карточку товара
-  updatedById      String?            // Кто последний изменил
-  barcode          String?
-  costPrice        Decimal?           @db.Decimal(10, 2)
-  height           Decimal?           @db.Decimal(8, 2)
-  length           Decimal?           @db.Decimal(8, 2)
-  manufacturerId   String?
-  coatingMaterialId String?
-  canvasTypeId     String?
-  doorThicknessId  String?
-  weatherstripId   String?
-  minStock         Int                @default(0)
-  seoKeywords      String[]
-  shortDescription String?
-  weight           Decimal?           @db.Decimal(8, 3)
-  width            Decimal?           @db.Decimal(8, 2)
-  sizes            String[]
-  openingSide      String[]
+  onOrder                Boolean                        @default(false)
+  isActive               Boolean                        @default(true)
+  isFeatured             Boolean                        @default(false)
+  isNew                  Boolean                        @default(false)
+  isPartnerProduct       Boolean                        @default(false)
+  partnerId              String?
+  sortOrder              Int                            @default(0)
+  categoryId             String
+  images                 String[]
+  videoUrl               String? // URL видеоролика о товаре (YouTube, Vimeo или свой хостинг)
+  attributes             Json?
+  seoTitle               String?
+  seoDescription         String?
+  createdAt              DateTime                       @default(now())
+  updatedAt              DateTime                       @updatedAt
+  createdById            String? // Кто создал карточку товара
+  updatedById            String? // Кто последний изменил
+  barcode                String?
+  costPrice              Decimal?                       @db.Decimal(10, 2)
+  height                 Decimal?                       @db.Decimal(8, 2)
+  length                 Decimal?                       @db.Decimal(8, 2)
+  manufacturerId         String?
+  coatingMaterialId      String?
+  canvasTypeId           String?
+  doorThicknessId        String?
+  weatherstripId         String?
+  minStock               Int                            @default(0)
+  seoKeywords            String[]
+  shortDescription       String?
+  weight                 Decimal?                       @db.Decimal(8, 3)
+  width                  Decimal?                       @db.Decimal(8, 2)
+  sizes                  String[]
+  openingSide            String[]
   cartItems              CartItem[]
   orderItems             OrderItem[]
-  orderItemsReplacedFrom OrderItem[]  @relation("OrderItemReplacedFrom")
+  orderItemsReplacedFrom OrderItem[]                    @relation("OrderItemReplacedFrom")
   suppliers              ProductSupplier[]
-  category         Category           @relation(fields: [categoryId], references: [id])
-  manufacturer     Manufacturer?      @relation(fields: [manufacturerId], references: [id])
-  coatingMaterial  CoatingMaterial?   @relation(fields: [coatingMaterialId], references: [id])
-  canvasType       CanvasType?        @relation(fields: [canvasTypeId], references: [id])
-  doorThickness    DoorThickness?     @relation(fields: [doorThicknessId], references: [id])
-  weatherstrip     Weatherstrip?      @relation(fields: [weatherstripId], references: [id])
-  partner          Partner?           @relation(fields: [partnerId], references: [id], onDelete: SetNull)
-  createdBy        User?              @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy        User?              @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
-  reviews          Review[]
-  wishlist         WishlistItem[]
-  compareItems     CompareItem[]
-  components       ProductComponent[]
-  cardVariants          ProductCardVariant[]
-  cardBadgeSelections   ProductCardBadgeOnProduct[]
+  category               Category                       @relation(fields: [categoryId], references: [id])
+  manufacturer           Manufacturer?                  @relation(fields: [manufacturerId], references: [id])
+  coatingMaterial        CoatingMaterial?               @relation(fields: [coatingMaterialId], references: [id])
+  canvasType             CanvasType?                    @relation(fields: [canvasTypeId], references: [id])
+  doorThickness          DoorThickness?                 @relation(fields: [doorThicknessId], references: [id])
+  weatherstrip           Weatherstrip?                  @relation(fields: [weatherstripId], references: [id])
+  partner                Partner?                       @relation(fields: [partnerId], references: [id], onDelete: SetNull)
+  createdBy              User?                          @relation("ProductCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy              User?                          @relation("ProductUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  reviews                Review[]
+  wishlist               WishlistItem[]
+  compareItems           CompareItem[]
+  components             ProductComponent[]
+  cardVariants           ProductCardVariant[]
+  cardBadgeSelections    ProductCardBadgeOnProduct[]
   catalogHubPreviewPicks CatalogHubPreviewProductPick[]
 
   @@index([categoryId, isActive, sortOrder])
@@ -1451,12 +1523,12 @@ model Product {
 
 /// Справочник бэйджей карточки товара (слева от фото — JPG из настроек каталога).
 model ProductCardBadgeDefinition {
-  id          String   @id @default(cuid())
-  key         String   @unique
+  id          String                      @id @default(cuid())
+  key         String                      @unique
   label       String
-  description String?  @db.Text
+  description String?                     @db.Text
   imageUrl    String?
-  sortOrder   Int      @default(0)
+  sortOrder   Int                         @default(0)
   products    ProductCardBadgeOnProduct[]
 
   @@map("product_card_badge_definitions")
@@ -1464,11 +1536,11 @@ model ProductCardBadgeDefinition {
 
 /// Выбранные для товара бэйджи (макс. 5 на товар), порядок = sortOrder.
 model ProductCardBadgeOnProduct {
-  id        String   @id @default(cuid())
+  id        String                     @id @default(cuid())
   productId String
   badgeId   String
-  sortOrder Int      @default(0)
-  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder Int                        @default(0)
+  product   Product                    @relation(fields: [productId], references: [id], onDelete: Cascade)
   badge     ProductCardBadgeDefinition @relation(fields: [badgeId], references: [id], onDelete: Cascade)
 
   @@unique([productId, badgeId])
@@ -1480,12 +1552,12 @@ model ProductCardBadgeOnProduct {
 model ProductCardVariant {
   id          String     @id @default(cuid())
   productId   String
-  name        String     // Наименование варианта
+  name        String // Наименование варианта
   price       Decimal    @db.Decimal(10, 2)
-  image       String?    // URL или base64
-  size        String?    // Размер
-  color       String?    // Цвет
-  extraOption String?    // Доп. опция
+  image       String? // URL или base64
+  size        String? // Размер
+  color       String? // Цвет
+  extraOption String? // Доп. опция
   sortOrder   Int        @default(0)
   createdAt   DateTime   @default(now())
   updatedAt   DateTime   @updatedAt
@@ -1514,60 +1586,60 @@ model ProductComponent {
 }
 
 model Order {
-  id                String          @id @default(cuid())
-  userId            String
-  createdByManagerId String?        // Менеджер оформил заказ для покупателя
-  customerEmail     String?         // Email получателя (дублирует user.email для поиска)
-  customerPhone     String?         // Телефон покупателя (для заказов менеджера)
-  customerFirstName String?         // Имя покупателя (для заказов менеджера)
-  customerMiddleName String?        // Отчество покупателя (для заказов менеджера)
-  customerLastName  String?         // Фамилия покупателя (для заказов менеджера)
-  processedByManagerId String?      // Менеджер, который обработал заказ
-  sentToEmailAt     DateTime?       // Когда заказ отправлен на email покупателя
-  orderViewToken    String?         @unique // Подписанный токен для просмотра по ссылке из письма
-  status            OrderStatus     @default(PENDING)
-  total             Decimal         @db.Decimal(10, 2)
-  subtotal          Decimal         @db.Decimal(10, 2)
-  tax               Decimal         @db.Decimal(10, 2)
-  shippingAddressId String?         // Опционально для заказов «на проверке» (до согласования)
-  paymentStatus     PaymentStatus   @default(PENDING)
-  createdAt         DateTime        @default(now())
-  updatedAt         DateTime        @updatedAt
-  adminNotes        String?
-  cancelReason      String?
-  cancelledAt       DateTime?
-  customerNotes     String?
-  deliveredAt       DateTime?
-  discount          Decimal         @default(0) @db.Decimal(10, 2)
-  orderNumber                 String          @unique
-  refundAmount                Decimal?        @db.Decimal(10, 2)
-  refundReason                String?
-  refundedAt                  DateTime?
-  shippedAt                   DateTime?
-  shippingCost                Decimal         @db.Decimal(10, 2)
-  carryCost                   Decimal?        @db.Decimal(10, 2) // Стоимость грузчиков (оплата по месту и т.п.)
-  moversCount                 Int?            // Количество грузчиков (указывает админ)
-  plannedDeliveryDate         DateTime?       @db.Date // Планируемая дата доставки (указывает админ)
-  shippingMethodId            String?
-  trackingNumber              String?
-  returnedForCorrectionAt     DateTime?       // Когда менеджер отправил заказ на доработку покупателю
-  returnedForCorrectionComment String?        @db.Text // Комментарий при отправке на доработку
-  approvedAt                  DateTime?      // Когда заказ переведён в «Проверен»; действие 60 мин
-  adminEditedAt               DateTime?      // Когда админ вносил изменения (пометка «Отредактировано!» у покупателя)
-  submittedForReviewAt        DateTime?      // Дата и время приёма заказа на проверку (из корзины)
-  deliveryType                 String?        // TO_ENTRANCE | TO_APARTMENT — до подъезда или подъём в квартиру
-  deliveryFloor                Int?           // Этаж (при подъёме в квартиру)
-  deliveryHasElevator          Boolean?       // Есть лифт (при подъёме в квартиру)
-  preferredDeliveryTime        String?        @db.Text // Когда покупателю удобно принять заказ
-  items                       OrderItem[]
-  orderServiceItems           OrderServiceItem[]
-  shippingAddress             Address?        @relation(fields: [shippingAddressId], references: [id])
-  shippingMethod              ShippingMethod? @relation(fields: [shippingMethodId], references: [id])
-  user                        User            @relation(fields: [userId], references: [id])
-  createdByManager            User?           @relation("OrdersCreatedByManager", fields: [createdByManagerId], references: [id])
-  processedByManager          User?           @relation("OrdersProcessedByManager", fields: [processedByManagerId], references: [id])
-  payments                    Payment[]
-  orderEvents                 OrderEvent[]
+  id                           String             @id @default(cuid())
+  userId                       String
+  createdByManagerId           String? // Менеджер оформил заказ для покупателя
+  customerEmail                String? // Email получателя (дублирует user.email для поиска)
+  customerPhone                String? // Телефон покупателя (для заказов менеджера)
+  customerFirstName            String? // Имя покупателя (для заказов менеджера)
+  customerMiddleName           String? // Отчество покупателя (для заказов менеджера)
+  customerLastName             String? // Фамилия покупателя (для заказов менеджера)
+  processedByManagerId         String? // Менеджер, который обработал заказ
+  sentToEmailAt                DateTime? // Когда заказ отправлен на email покупателя
+  orderViewToken               String?            @unique // Подписанный токен для просмотра по ссылке из письма
+  status                       OrderStatus        @default(PENDING)
+  total                        Decimal            @db.Decimal(10, 2)
+  subtotal                     Decimal            @db.Decimal(10, 2)
+  tax                          Decimal            @db.Decimal(10, 2)
+  shippingAddressId            String? // Опционально для заказов «на проверке» (до согласования)
+  paymentStatus                PaymentStatus      @default(PENDING)
+  createdAt                    DateTime           @default(now())
+  updatedAt                    DateTime           @updatedAt
+  adminNotes                   String?
+  cancelReason                 String?
+  cancelledAt                  DateTime?
+  customerNotes                String?
+  deliveredAt                  DateTime?
+  discount                     Decimal            @default(0) @db.Decimal(10, 2)
+  orderNumber                  String             @unique
+  refundAmount                 Decimal?           @db.Decimal(10, 2)
+  refundReason                 String?
+  refundedAt                   DateTime?
+  shippedAt                    DateTime?
+  shippingCost                 Decimal            @db.Decimal(10, 2)
+  carryCost                    Decimal?           @db.Decimal(10, 2) // Стоимость грузчиков (оплата по месту и т.п.)
+  moversCount                  Int? // Количество грузчиков (указывает админ)
+  plannedDeliveryDate          DateTime?          @db.Date // Планируемая дата доставки (указывает админ)
+  shippingMethodId             String?
+  trackingNumber               String?
+  returnedForCorrectionAt      DateTime? // Когда менеджер отправил заказ на доработку покупателю
+  returnedForCorrectionComment String?            @db.Text // Комментарий при отправке на доработку
+  approvedAt                   DateTime? // Когда заказ переведён в «Проверен»; действие 60 мин
+  adminEditedAt                DateTime? // Когда админ вносил изменения (пометка «Отредактировано!» у покупателя)
+  submittedForReviewAt         DateTime? // Дата и время приёма заказа на проверку (из корзины)
+  deliveryType                 String? // TO_ENTRANCE | TO_APARTMENT — до подъезда или подъём в квартиру
+  deliveryFloor                Int? // Этаж (при подъёме в квартиру)
+  deliveryHasElevator          Boolean? // Есть лифт (при подъёме в квартиру)
+  preferredDeliveryTime        String?            @db.Text // Когда покупателю удобно принять заказ
+  items                        OrderItem[]
+  orderServiceItems            OrderServiceItem[]
+  shippingAddress              Address?           @relation(fields: [shippingAddressId], references: [id])
+  shippingMethod               ShippingMethod?    @relation(fields: [shippingMethodId], references: [id])
+  user                         User               @relation(fields: [userId], references: [id])
+  createdByManager             User?              @relation("OrdersCreatedByManager", fields: [createdByManagerId], references: [id])
+  processedByManager           User?              @relation("OrdersProcessedByManager", fields: [processedByManagerId], references: [id])
+  payments                     Payment[]
+  orderEvents                  OrderEvent[]
 
   @@map("orders")
 }
@@ -1578,9 +1650,9 @@ model OrderEvent {
   orderId   String
   order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-  type      String   // created, submitted_for_review, approved, returned_for_correction, cancelled, shipped, delivered, refunded, delivery_edited, customer_edited, item_comment_edited, sent_to_email, add_to_review, add_to_approved
-  actor     String   // customer | manager
-  userId    String?  // ID пользователя (менеджера или покупателя), если известен
+  type      String // created, submitted_for_review, approved, returned_for_correction, cancelled, shipped, delivered, refunded, delivery_edited, customer_edited, item_comment_edited, sent_to_email, add_to_review, add_to_approved
+  actor     String // customer | manager
+  userId    String? // ID пользователя (менеджера или покупателя), если известен
   user      User?    @relation("OrderEventActor", fields: [userId], references: [id])
 
   @@index([orderId])
@@ -1588,40 +1660,40 @@ model OrderEvent {
 }
 
 model OrderItem {
-  id                    String    @id @default(cuid())
+  id                    String   @id @default(cuid())
   orderId               String
   /// Обнуляется при удалении товара из каталога (позиция заказа и цена остаются в истории)
   productId             String?
-  cardVariantId         String?   // Вариант из «схожих товаров в карточке» (для истории)
+  cardVariantId         String? // Вариант из «схожих товаров в карточке» (для истории)
   quantity              Int
-  price                 Decimal   @db.Decimal(10, 2)
+  price                 Decimal  @db.Decimal(10, 2)
   size                  String?
   openingSide           String?
-  managerComment        String?   @db.Text // Комментарий менеджера по пункту (для доработки покупателем)
-  replacedFromProductId String?   // Если менеджер заменил товар — ID исходного товара (для пометки покупателю)
-  replacementNote       String?   @db.Text // Пометка о замене для покупателя
-  createdAt             DateTime  @default(now())
-  order                 Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product               Product?  @relation(fields: [productId], references: [id], onDelete: SetNull)
-  replacedFromProduct   Product?  @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id], onDelete: SetNull)
+  managerComment        String?  @db.Text // Комментарий менеджера по пункту (для доработки покупателем)
+  replacedFromProductId String? // Если менеджер заменил товар — ID исходного товара (для пометки покупателю)
+  replacementNote       String?  @db.Text // Пометка о замене для покупателя
+  createdAt             DateTime @default(now())
+  order                 Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  replacedFromProduct   Product? @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id], onDelete: SetNull)
 
   @@map("order_items")
 }
 
 /// Позиция услуг в заказе (Order). Услуги из корзины добавляются в тот же Order, что и товары.
 model OrderServiceItem {
-  id                   String    @id @default(cuid())
+  id                   String             @id @default(cuid())
   orderId              String
   serviceCatalogItemId String
-  name                 String    // Название вида работ (денормализация)
-  categoryName         String    // Название категории (денормализация)
-  roomName             String?   // Название помещения (если расчёт делали по помещениям)
-  unit                 String    // Ед. изм.
-  quantity             Decimal   @db.Decimal(12, 2)
-  price                Decimal   @db.Decimal(12, 2)
-  amount               Decimal   @db.Decimal(12, 2)
-  createdAt            DateTime  @default(now())
-  order                Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  name                 String // Название вида работ (денормализация)
+  categoryName         String // Название категории (денормализация)
+  roomName             String? // Название помещения (если расчёт делали по помещениям)
+  unit                 String // Ед. изм.
+  quantity             Decimal            @db.Decimal(12, 2)
+  price                Decimal            @db.Decimal(12, 2)
+  amount               Decimal            @db.Decimal(12, 2)
+  createdAt            DateTime           @default(now())
+  order                Order              @relation(fields: [orderId], references: [id], onDelete: Cascade)
   serviceCatalogItem   ServiceCatalogItem @relation(fields: [serviceCatalogItemId], references: [id], onDelete: Restrict)
 
   @@index([orderId])
@@ -1651,20 +1723,20 @@ model Address {
 }
 
 model CartItem {
-  id             String               @id @default(cuid())
-  userId         String
-  productId      String?
-  componentId    String?
-  cardVariantId  String?              // Вариант из «схожих товаров в карточке»
-  quantity       Float                // Float для поддержки половинок
-  size           String?
-  openingSide    String?
-  createdAt      DateTime             @default(now())
-  updatedAt      DateTime             @updatedAt
-  product        Product?             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  component      ProductComponent?    @relation(fields: [componentId], references: [id], onDelete: Cascade)
-  cardVariant    ProductCardVariant?   @relation(fields: [cardVariantId], references: [id], onDelete: SetNull)
-  user           User                 @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id            String              @id @default(cuid())
+  userId        String
+  productId     String?
+  componentId   String?
+  cardVariantId String? // Вариант из «схожих товаров в карточке»
+  quantity      Float // Float для поддержки половинок
+  size          String?
+  openingSide   String?
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  product       Product?            @relation(fields: [productId], references: [id], onDelete: Cascade)
+  component     ProductComponent?   @relation(fields: [componentId], references: [id], onDelete: Cascade)
+  cardVariant   ProductCardVariant? @relation(fields: [cardVariantId], references: [id], onDelete: SetNull)
+  user          User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId, productId])
   @@index([userId, componentId])
@@ -1674,14 +1746,14 @@ model CartItem {
 /// Элемент корзины — выбранные услуги из категории каталога услуг.
 /// 1 CartServiceItem = 1 категория; счётчик корзины +1 за каждую категорию.
 model CartServiceItem {
-  id                     String   @id @default(cuid())
-  userId                 String
+  id                       String                 @id @default(cuid())
+  userId                   String
   serviceCatalogCategoryId String
-  items                  Json     // [{ itemId: string, quantity: number }]
-  createdAt              DateTime @default(now())
-  updatedAt              DateTime @updatedAt
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  category               ServiceCatalogCategory @relation(fields: [serviceCatalogCategoryId], references: [id], onDelete: Cascade)
+  items                    Json // [{ itemId: string, quantity: number }]
+  createdAt                DateTime               @default(now())
+  updatedAt                DateTime               @updatedAt
+  user                     User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  category                 ServiceCatalogCategory @relation(fields: [serviceCatalogCategoryId], references: [id], onDelete: Cascade)
 
   @@unique([userId, serviceCatalogCategoryId])
   @@index([userId])
@@ -1717,7 +1789,7 @@ model Review {
   productId    String
   userId       String?
   userName     String
-  userEmail    String?   // Для гостевых отзывов
+  userEmail    String? // Для гостевых отзывов
   rating       Int       @db.SmallInt
   comment      String?   @db.Text
   adminReply   String?   @db.Text // Ответ администратора
@@ -1731,34 +1803,34 @@ model Review {
 }
 
 model UserCabinetBlock {
-  id                    String   @id @default("main")
-  showProfileSection    Boolean  @default(true) // Личные данные
-  showOrdersSection     Boolean  @default(true) // Мои заказы
-  showNotificationsSection Boolean @default(true) // Уведомления
-  showNotificationHistory Boolean @default(true) // История уведомлений (только чтение)
-  showPasswordSection   Boolean  @default(true) // Смена пароля
-  showQuickLinks       Boolean  @default(true) // Быстрые ссылки
-  updatedAt             DateTime @updatedAt
+  id                       String   @id @default("main")
+  showProfileSection       Boolean  @default(true) // Личные данные
+  showOrdersSection        Boolean  @default(true) // Мои заказы
+  showNotificationsSection Boolean  @default(true) // Уведомления
+  showNotificationHistory  Boolean  @default(true) // История уведомлений (только чтение)
+  showPasswordSection      Boolean  @default(true) // Смена пароля
+  showQuickLinks           Boolean  @default(true) // Быстрые ссылки
+  updatedAt                DateTime @updatedAt
 
   @@map("user_cabinet_block")
 }
 
 model ReviewsBlock {
-  id                 String   @id @default("main")
-  enabled             Boolean  @default(true) // Включить отзывы и оценки
-  showOnCards        Boolean  @default(true) // Показывать рейтинг на карточках товаров
-  requirePurchase    Boolean  @default(false) // Только покупатели могут оставлять отзывы
-  allowGuestReviews  Boolean  @default(true) // Разрешить гостям оставлять отзывы
-  requireModeration  Boolean  @default(true) // Требовать модерацию перед публикацией
-  updatedAt          DateTime @updatedAt
+  id                String   @id @default("main")
+  enabled           Boolean  @default(true) // Включить отзывы и оценки
+  showOnCards       Boolean  @default(true) // Показывать рейтинг на карточках товаров
+  requirePurchase   Boolean  @default(false) // Только покупатели могут оставлять отзывы
+  allowGuestReviews Boolean  @default(true) // Разрешить гостям оставлять отзывы
+  requireModeration Boolean  @default(true) // Требовать модерацию перед публикацией
+  updatedAt         DateTime @updatedAt
 
   @@map("reviews_block")
 }
 
 model CatalogBlock {
-  id                      String   @id @default("main")
-  defaultMobileCatalogColumns Int  @default(1) // 1 или 2 карточки в строке на мобильном (по умолчанию для сайта)
-  updatedAt               DateTime @updatedAt
+  id                          String   @id @default("main")
+  defaultMobileCatalogColumns Int      @default(1) // 1 или 2 карточки в строке на мобильном (по умолчанию для сайта)
+  updatedAt                   DateTime @updatedAt
 
   @@map("catalog_block")
 }
@@ -1766,87 +1838,87 @@ model CatalogBlock {
 /// Роли, которым показывать кнопку «Админка» на публичном сайте.
 /// null = дефолт сервера. Либо JSON-массив ролей (одинаково для десктопа и мобилки), либо объект { desktop, mobile } с массивами или null по каналам.
 model SitePublicConfig {
-  id                   String   @id @default("main")
-  rolesShowAdminLink   Json?
-  updatedAt            DateTime @updatedAt
+  id                 String   @id @default("main")
+  rolesShowAdminLink Json?
+  updatedAt          DateTime @updatedAt
 
   @@map("site_public_config")
 }
 
 model NotificationSound {
   id        String   @id @default(cuid())
-  name      String   // Название звука
-  fileUrl   String   // URL файла (/uploads/notification-sounds/...)
+  name      String // Название звука
+  fileUrl   String // URL файла (/uploads/notification-sounds/...)
   createdAt DateTime @default(now())
 
   @@map("notification_sounds")
 }
 
 model UserAdminNotificationOverride {
-  id                     String   @id @default(cuid())
-  userId                 String   @unique // Персональные настройки для пользователя (переопределяют роль)
-  soundEnabled           Boolean  @default(true)
-  soundVolume            Int      @default(70)
-  soundType              String   @default("beep")
-  customSoundUrl         String?
-  desktopNotifications   Boolean  @default(false)
-  checkIntervalSeconds   Int      @default(60)
-  notifyOnReviews        Boolean  @default(true)
-  notifyOnOrders         Boolean  @default(true)
-  notifyOnSupportChat    Boolean  @default(true)
+  id                      String   @id @default(cuid())
+  userId                  String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  soundEnabled            Boolean  @default(true)
+  soundVolume             Int      @default(70)
+  soundType               String   @default("beep")
+  customSoundUrl          String?
+  desktopNotifications    Boolean  @default(false)
+  checkIntervalSeconds    Int      @default(60)
+  notifyOnReviews         Boolean  @default(true)
+  notifyOnOrders          Boolean  @default(true)
+  notifyOnSupportChat     Boolean  @default(true)
   notifyOnMeasurementForm Boolean  @default(true)
-  notifyOnCallbackForm   Boolean  @default(true)
-  updatedAt              DateTime @updatedAt
-  user                   User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  notifyOnCallbackForm    Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_admin_notification_override")
 }
 
 model AdminNotificationsBlock {
-  id                     String   @id @default(cuid())
-  role                   String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
-  soundEnabled           Boolean  @default(true) // Звук при событиях
-  soundVolume            Int      @default(70) // Громкость 0-100
-  soundType              String   @default("beep") // beep, ding, chime, bell или custom
-  customSoundUrl         String?  // URL загруженного звука (при soundType=custom)
-  desktopNotifications   Boolean  @default(false) // Браузерные уведомления
-  checkIntervalSeconds   Int      @default(60) // Интервал проверки (сек)
-  notifyOnReviews        Boolean  @default(true) // Уведомления о новых отзывах
-  notifyOnOrders         Boolean  @default(true) // Уведомления о новых заказах
-  notifyOnSupportChat    Boolean  @default(true) // Уведомления о сообщениях в чате
-  notifyOnMeasurementForm  Boolean @default(true) // Уведомления о записи на замер
-  notifyOnCallbackForm     Boolean @default(true) // Уведомления о заказе обратного звонка
-  updatedAt              DateTime @updatedAt
+  id                      String   @id @default(cuid())
+  role                    String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
+  soundEnabled            Boolean  @default(true) // Звук при событиях
+  soundVolume             Int      @default(70) // Громкость 0-100
+  soundType               String   @default("beep") // beep, ding, chime, bell или custom
+  customSoundUrl          String? // URL загруженного звука (при soundType=custom)
+  desktopNotifications    Boolean  @default(false) // Браузерные уведомления
+  checkIntervalSeconds    Int      @default(60) // Интервал проверки (сек)
+  notifyOnReviews         Boolean  @default(true) // Уведомления о новых отзывах
+  notifyOnOrders          Boolean  @default(true) // Уведомления о новых заказах
+  notifyOnSupportChat     Boolean  @default(true) // Уведомления о сообщениях в чате
+  notifyOnMeasurementForm Boolean  @default(true) // Уведомления о записи на замер
+  notifyOnCallbackForm    Boolean  @default(true) // Уведомления о заказе обратного звонка
+  updatedAt               DateTime @updatedAt
 
   @@map("admin_notifications_block")
 }
 
 model FormSubmission {
-  id             String   @id @default(cuid())
-  type           String   // "measurement" | "callback" | "director"
-  name           String
-  phone          String
-  email          String?
-  address        String?
-  preferredDate  String?
-  preferredTime  String
-  productType    String?  // для director — тема (subject)
-  comment        String?  @db.Text
-  subject        String?  // тема письма для type=director
-  createdAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  type          String // "measurement" | "callback" | "director"
+  name          String
+  phone         String
+  email         String?
+  address       String?
+  preferredDate String?
+  preferredTime String
+  productType   String? // для director — тема (subject)
+  comment       String?  @db.Text
+  subject       String? // тема письма для type=director
+  createdAt     DateTime @default(now())
 
   @@map("form_submissions")
 }
 
 // --- CRM: Направления ---
 model CrmDirection {
-  id           String   @id @default(cuid())
-  name         String
-  slug         String   @unique
-  isActive     Boolean  @default(true)
-  sortOrder    Int      @default(0)
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                              String                           @id @default(cuid())
+  name                            String
+  slug                            String                           @unique
+  isActive                        Boolean                          @default(true)
+  sortOrder                       Int                              @default(0)
+  createdAt                       DateTime                         @default(now())
+  updatedAt                       DateTime                         @updatedAt
   measurements                    Measurement[]
   measurementAdditionalDirections MeasurementAdditionalDirection[]
   contracts                       Contract[]
@@ -1882,28 +1954,28 @@ model InstallerMaster {
 
 // --- CRM: Замеры ---
 model Measurement {
-  id               String            @id @default(cuid())
-  managerId        String
-  receptionDate    DateTime          @db.Date
-  executionDate    DateTime?         @db.Date
-  surveyorId       String?
-  directionId      String?
-  customerName     String
-  customerAddress  String?           @db.Text
-  customerPhone    String
-  comments         String?           @db.Text
-  status           MeasurementStatus @default(NEW)
-  customerId       String?
-  createdAt        DateTime         @default(now())
-  updatedAt        DateTime         @updatedAt
+  id              String            @id @default(cuid())
+  managerId       String
+  receptionDate   DateTime          @db.Date
+  executionDate   DateTime?         @db.Date
+  surveyorId      String?
+  directionId     String?
+  customerName    String
+  customerAddress String?           @db.Text
+  customerPhone   String
+  comments        String?           @db.Text
+  status          MeasurementStatus @default(NEW)
+  customerId      String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
 
-  manager    User          @relation("MeasurementManager", fields: [managerId], references: [id], onDelete: Restrict)
-  surveyor   User?         @relation("MeasurementSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  direction             CrmDirection?                    @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  additionalDirections  MeasurementAdditionalDirection[]
-  customer              Customer?                        @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  contract                Contract?                        @relation("MeasurementToContract")
-  history                 MeasurementHistory[]
+  manager              User                             @relation("MeasurementManager", fields: [managerId], references: [id], onDelete: Restrict)
+  surveyor             User?                            @relation("MeasurementSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  direction            CrmDirection?                    @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  additionalDirections MeasurementAdditionalDirection[]
+  customer             Customer?                        @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  contract             Contract?                        @relation("MeasurementToContract")
+  history              MeasurementHistory[]
 
   @@index([managerId])
   @@index([status])
@@ -1912,16 +1984,16 @@ model Measurement {
 }
 
 model MeasurementHistory {
-  id             String   @id @default(cuid())
-  measurementId  String
-  snapshot       Json     // Полное состояние замера до изменения
-  changedFields  String[] @default([]) // Список изменённых полей для UPDATE
-  action         String   // UPDATE | ROLLBACK
-  changedById    String
-  changedAt      DateTime @default(now())
+  id            String   @id @default(cuid())
+  measurementId String
+  snapshot      Json // Полное состояние замера до изменения
+  changedFields String[] @default([]) // Список изменённых полей для UPDATE
+  action        String // UPDATE | ROLLBACK
+  changedById   String
+  changedAt     DateTime @default(now())
 
-  measurement  Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
-  changedBy    User        @relation("MeasurementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
+  measurement Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+  changedBy   User        @relation("MeasurementHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
 
   @@index([measurementId])
   @@index([changedAt])
@@ -1932,20 +2004,20 @@ model MeasurementHistory {
 // --- Комплексные объекты (группы договоров) ---
 model ComplexObject {
   id             String   @id @default(cuid())
-  name           String   // Название объекта (например, адрес или имя клиента)
-  customerName   String?  // ФИО заказчика
+  name           String // Название объекта (например, адрес или имя клиента)
+  customerName   String? // ФИО заказчика
   customerPhones String[] @default([]) // Телефоны заказчика (может быть несколько)
   address        String?  @db.Text // Адрес объекта
   notes          String?  @db.Text
   hasElevator    Boolean? // Есть ли лифт
-  floor          Int?     // Этаж
+  floor          Int? // Этаж
   officeId       String?
   managerId      String?
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  office    Office? @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  manager   User?   @relation("ComplexObjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  office    Office?                @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  manager   User?                  @relation("ComplexObjectManager", fields: [managerId], references: [id], onDelete: SetNull)
   contracts Contract[]
   history   ComplexObjectHistory[]
 
@@ -1959,9 +2031,9 @@ model ComplexObjectHistory {
   complexObjectId String
   snapshot        Json
   changedFields   String[] @default([])
-  action          String   // UPDATE | ROLLBACK
+  action          String // UPDATE | ROLLBACK
   changedById     String
-  changedAt      DateTime @default(now())
+  changedAt       DateTime @default(now())
 
   complexObject ComplexObject @relation(fields: [complexObjectId], references: [id], onDelete: Cascade)
   changedBy     User          @relation("ComplexObjectHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
@@ -1972,54 +2044,54 @@ model ComplexObjectHistory {
 }
 
 model Contract {
-  id                   String         @id @default(cuid())
-  contractNumber       String         @unique
-  contractDate         DateTime       @db.Date
-  status               ContractStatus @default(DRAFT)
-  directionId          String?
-  managerId            String?
-  deliveryId           String?
-  surveyorId           String?
-  officeId             String?
-  complexObjectId      String?
-  validityStart        DateTime?      @db.Date
-  validityEnd          DateTime?      @db.Date
-  contractDurationDays Int?           // Срок договора (число дней)
-  contractDurationType String?       // CALENDAR | WORKING — календарные или рабочие дни
-  installationDate     DateTime?      @db.Date
-  installationDurationDays Int?      // Продолжительность монтажа в днях
-  deliveryDate         DateTime?      @db.Date
-  customerName         String?
-  customerAddress      String?        @db.Text
-  customerPhone        String?
-  customerId           String?
-  discount             Decimal        @default(0) @db.Decimal(12, 2)
-  totalAmount          Decimal        @db.Decimal(12, 2)
-  advanceAmount        Decimal        @default(0) @db.Decimal(12, 2)
-  notes                String?        @db.Text
-  source               String?
-  preferredExecutorId  String?
-  measurementId        String?        @unique
-  actWorkStartDate     DateTime?      @db.Date
-  actWorkEndDate       DateTime?      @db.Date
-  actWorkStartImages   String[]       @default([])
-  actWorkEndImages     String[]       @default([])
-  goodsTransferDate    DateTime?      @db.Date
-  installers           String[]       @default([])
-  createdAt            DateTime       @default(now())
-  updatedAt            DateTime       @updatedAt
+  id                       String         @id @default(cuid())
+  contractNumber           String         @unique
+  contractDate             DateTime       @db.Date
+  status                   ContractStatus @default(DRAFT)
+  directionId              String?
+  managerId                String?
+  deliveryId               String?
+  surveyorId               String?
+  officeId                 String?
+  complexObjectId          String?
+  validityStart            DateTime?      @db.Date
+  validityEnd              DateTime?      @db.Date
+  contractDurationDays     Int? // Срок договора (число дней)
+  contractDurationType     String? // CALENDAR | WORKING — календарные или рабочие дни
+  installationDate         DateTime?      @db.Date
+  installationDurationDays Int? // Продолжительность монтажа в днях
+  deliveryDate             DateTime?      @db.Date
+  customerName             String?
+  customerAddress          String?        @db.Text
+  customerPhone            String?
+  customerId               String?
+  discount                 Decimal        @default(0) @db.Decimal(12, 2)
+  totalAmount              Decimal        @db.Decimal(12, 2)
+  advanceAmount            Decimal        @default(0) @db.Decimal(12, 2)
+  notes                    String?        @db.Text
+  source                   String?
+  preferredExecutorId      String?
+  measurementId            String?        @unique
+  actWorkStartDate         DateTime?      @db.Date
+  actWorkEndDate           DateTime?      @db.Date
+  actWorkStartImages       String[]       @default([])
+  actWorkEndImages         String[]       @default([])
+  goodsTransferDate        DateTime?      @db.Date
+  installers               String[]       @default([])
+  createdAt                DateTime       @default(now())
+  updatedAt                DateTime       @updatedAt
 
-  direction     CrmDirection?     @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  manager       User?             @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
-  surveyor      User?             @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  customer      Customer?         @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  measurement   Measurement?      @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
-  office        Office?           @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  complexObject ComplexObject?    @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
-  advances      ContractAdvance[]
-  amendments    ContractAmendment[]
-  payments      ContractPayment[]
-  history       ContractHistory[]
+  direction        CrmDirection?             @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  manager          User?                     @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
+  surveyor         User?                     @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  customer         Customer?                 @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  measurement      Measurement?              @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
+  office           Office?                   @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  complexObject    ComplexObject?            @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
+  advances         ContractAdvance[]
+  amendments       ContractAmendment[]
+  payments         ContractPayment[]
+  history          ContractHistory[]
   documentPackages ContractDocumentPackage[]
 
   @@index([managerId])
@@ -2033,9 +2105,9 @@ model Contract {
 model ContractHistory {
   id            String   @id @default(cuid())
   contractId    String
-  snapshot      Json     // Состояние договора до изменения
+  snapshot      Json // Состояние договора до изменения
   changedFields String[] @default([])
-  action        String   // UPDATE | ROLLBACK
+  action        String // UPDATE | ROLLBACK
   changedById   String
   changedAt     DateTime @default(now())
 
@@ -2059,32 +2131,32 @@ model ContractAdvance {
 }
 
 model ContractAmendment {
-  id                    String    @id @default(cuid())
-  contractId            String
-  number                Int?      // Номер д/с по порядку (1, 2, 3...)
-  amount                Decimal   @db.Decimal(12, 2)  // изменение стоимости: +, -, 0
-  discount              Decimal   @default(0) @db.Decimal(12, 2)  // скидка по д/с
-  date                  DateTime  @db.Date
-  extendsValidityTo     DateTime? @db.Date            // deprecated, см. durationAdditionDays
-  durationAdditionDays  Int?      // дней к сроку договора (0/null = без изменений)
-  durationAdditionType  String?   // CALENDAR | WORKING
-  notes                 String?   @db.Text
-  contract              Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  id                   String    @id @default(cuid())
+  contractId           String
+  number               Int? // Номер д/с по порядку (1, 2, 3...)
+  amount               Decimal   @db.Decimal(12, 2) // изменение стоимости: +, -, 0
+  discount             Decimal   @default(0) @db.Decimal(12, 2) // скидка по д/с
+  date                 DateTime  @db.Date
+  extendsValidityTo    DateTime? @db.Date // deprecated, см. durationAdditionDays
+  durationAdditionDays Int? // дней к сроку договора (0/null = без изменений)
+  durationAdditionType String? // CALENDAR | WORKING
+  notes                String?   @db.Text
+  contract             Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
 
   @@map("contract_amendments")
 }
 
 model ContractPayment {
-  id               String       @id @default(cuid())
+  id               String      @id @default(cuid())
   contractId       String
-  paymentDate      DateTime     @db.Date
-  amount           Decimal      @db.Decimal(12, 2)
-  collectionAmount Decimal?     @db.Decimal(12, 2)
+  paymentDate      DateTime    @db.Date
+  amount           Decimal     @db.Decimal(12, 2)
+  collectionAmount Decimal?    @db.Decimal(12, 2)
   paymentForm      PaymentForm
   paymentType      PaymentType
   managerId        String?
-  notes            String?      @db.Text
-  createdAt        DateTime     @default(now())
+  notes            String?     @db.Text
+  createdAt        DateTime    @default(now())
 
   contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
   manager  User?    @relation(fields: [managerId], references: [id], onDelete: SetNull)
@@ -2127,28 +2199,28 @@ model ContractDocumentObject {
 }
 
 model ContractDocumentPackage {
-  id             String                      @id @default(cuid())
-  kind           ContractDocumentPackageKind
-  title          String?
-  status         ContractDocumentPackageStatus @default(IN_PROGRESS)
+  id               String                        @id @default(cuid())
+  kind             ContractDocumentPackageKind
+  title            String?
+  status           ContractDocumentPackageStatus @default(IN_PROGRESS)
   /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
-  formData       Json                        @default("{}")
+  formData         Json                          @default("{}")
   /// Связь с договором в учётной системе (таблица `Contract`).
-  crmContractId  String?
+  crmContractId    String?
   /// Группа «объект» (несколько пакетов / направлений на одном адресе).
   documentObjectId String?
-  createdById    String?
-  deletedAt      DateTime?                   @map("deleted_at")
-  deletedById    String?                     @map("deleted_by_id")
-  createdAt      DateTime                    @default(now())
-  updatedAt      DateTime                    @updatedAt
+  createdById      String?
+  deletedAt        DateTime?                     @map("deleted_at")
+  deletedById      String?                       @map("deleted_by_id")
+  createdAt        DateTime                      @default(now())
+  updatedAt        DateTime                      @updatedAt
 
-  documentObject ContractDocumentObject? @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
-  createdBy      User?                   @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedBy      User?                   @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract    Contract?               @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
-  versions       ContractDocumentPackageVersion[]
-  payments       ContractDocumentPackagePayment[]
+  documentObject  ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy       User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy       User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract     Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions        ContractDocumentPackageVersion[]
+  payments        ContractDocumentPackagePayment[]
   paymentInvoices ContractDocumentPaymentInvoice[]
 
   @@index([kind])
@@ -2161,21 +2233,21 @@ model ContractDocumentPackage {
 
 /// Фактические оплаты заказчика по пакету документов (ремонт и др.): журнал для остатка и аналитики.
 model ContractDocumentPackagePayment {
-  id             String       @id @default(cuid())
+  id             String      @id @default(cuid())
   packageId      String
-  paymentDate    DateTime     @db.Date
-  amount         Decimal      @db.Decimal(12, 2)
+  paymentDate    DateTime    @db.Date
+  amount         Decimal     @db.Decimal(12, 2)
   paymentForm    PaymentForm
   /// PREPAYMENT — при заключении (в т.ч. 70%, «нулевой» договор и т.д.); AMENDMENT — оплата по Д/с; FINAL — окончательный расчёт; ADVANCE — прочие частичные.
   paymentType    PaymentType
   /// Для paymentType AMENDMENT: номер Д/с 1…5.
   addendumNumber Int?
   /// За что оплачено (основание / пояснение для ПКО и внутреннего учёта).
-  basis          String?      @db.Text
-  notes          String?      @db.Text
+  basis          String?     @db.Text
+  notes          String?     @db.Text
   recordedById   String?
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
 
   package    ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
   recordedBy User?                   @relation("ContractDocumentPackagePaymentRecordedBy", fields: [recordedById], references: [id], onDelete: SetNull)
@@ -2248,7 +2320,7 @@ model ContractDocumentEstimatePresetsHistory {
   items         Json                        @default("[]")
   groups        Json                        @default("[]")
   changedFields String[]                    @default([])
-  action        String                      // CREATE | UPDATE | ROLLBACK
+  action        String // CREATE | UPDATE | ROLLBACK
   changedAt     DateTime                    @default(now())
   changedById   String?
 
@@ -2277,11 +2349,11 @@ model ContractDocumentGlobalTemplate {
 /// Срок договора по умолчанию (рабочие дни) по направлению: REPAIR, WINDOWS, …
 model ContractDocumentRepairSettings {
   kind                          ContractDocumentPackageKind @id
-  defaultWorkPeriodDays         Int                       @default(60)
+  defaultWorkPeriodDays         Int                         @default(60)
   /// Наценка при расчёте заказ-наряда «Окна» (вычитается из цены счёт-заказа), %.
-  windowsWorkOrderMarkupPercent Int                       @default(33)
+  windowsWorkOrderMarkupPercent Int                         @default(33)
   updatedById                   String?
-  updatedAt                     DateTime                  @updatedAt
+  updatedAt                     DateTime                    @updatedAt
 
   updatedBy User? @relation("ContractDocumentRepairSettingsUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
 
@@ -2311,7 +2383,7 @@ enum PaymentForm {
   TERMINAL
   QR
   INVOICE
-  LC_TRANSFER  // Переводы на личный счёт (ЛК)
+  LC_TRANSFER // Переводы на личный счёт (ЛК)
 }
 
 enum PaymentType {
@@ -2445,9 +2517,9 @@ enum SyncStatus {
 
 enum OrderStatus {
   PENDING
-  PENDING_REVIEW           // На проверке (отправлен из корзины)
-  RETURNED_FOR_CORRECTION  // Отправлен на доработку покупателю (есть комментарии менеджера)
-  APPROVED                 // Проверен менеджером — можно переходить к оформлению и оплате
+  PENDING_REVIEW // На проверке (отправлен из корзины)
+  RETURNED_FOR_CORRECTION // Отправлен на доработку покупателю (есть комментарии менеджера)
+  APPROVED // Проверен менеджером — можно переходить к оформлению и оплате
   PROCESSING
   SHIPPED
   DELIVERED
@@ -2456,8 +2528,8 @@ enum OrderStatus {
 }
 
 enum ServiceOrderStatus {
-  PENDING    // Ожидает подтверждения
-  CONFIRMED  // Подтверждён
+  PENDING // Ожидает подтверждения
+  CONFIRMED // Подтверждён
   IN_PROGRESS
   COMPLETED
   CANCELLED
@@ -2478,33 +2550,33 @@ enum AddressType {
 // --- Офисы ---
 model Office {
   id        String   @id @default(cuid())
-  name      String   // Название офиса (например, "Главный офис", "Офис на Ленина")
-  prefix    String?  // Префикс офиса (для нумерации договоров и т.п.)
+  name      String // Название офиса (например, "Главный офис", "Офис на Ленина")
+  prefix    String? // Префикс офиса (для нумерации договоров и т.п.)
   address   String?  @db.Text // Адрес офиса
-  phone     String?  // Телефон офиса
+  phone     String? // Телефон офиса
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  contracts         Contract[]
-  complexObjects    ComplexObject[]
-  otherExpenses     OfficeOtherExpense[]
-  incassations      OfficeIncassation[]
-  history          OfficeHistory[]
+  contracts      Contract[]
+  complexObjects ComplexObject[]
+  otherExpenses  OfficeOtherExpense[]
+  incassations   OfficeIncassation[]
+  history        OfficeHistory[]
 
   @@index([isActive])
   @@map("offices")
 }
 
 model OfficeHistory {
-  id         String   @id @default(cuid())
-  officeId   String
-  snapshot   Json
+  id            String   @id @default(cuid())
+  officeId      String
+  snapshot      Json
   changedFields String[] @default([])
-  action     String   // UPDATE | ROLLBACK
-  changedById String
-  changedAt  DateTime @default(now())
+  action        String // UPDATE | ROLLBACK
+  changedById   String
+  changedAt     DateTime @default(now())
 
   office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
   changedBy User   @relation("OfficeHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
@@ -2515,14 +2587,14 @@ model OfficeHistory {
 }
 
 model OfficeOtherExpense {
-  id               String    @id @default(cuid())
+  id               String   @id @default(cuid())
   officeId         String
-  amount           Decimal   @db.Decimal(12, 2)
-  collectionAmount Decimal?   @db.Decimal(12, 2)
-  expenseDate      DateTime  @db.Date
-  description String?  @db.Text
-  createdById String?
-  createdAt   DateTime @default(now())
+  amount           Decimal  @db.Decimal(12, 2)
+  collectionAmount Decimal? @db.Decimal(12, 2)
+  expenseDate      DateTime @db.Date
+  description      String?  @db.Text
+  createdById      String?
+  createdAt        DateTime @default(now())
 
   office    Office @relation(fields: [officeId], references: [id], onDelete: Cascade)
   createdBy User?  @relation(fields: [createdById], references: [id], onDelete: SetNull)

@@ -159,6 +159,23 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 4. **DNS:** A-записи всех доменов должны указывать на IP сервера.
 5. Готовый шаблон: `cp .env.production.example .env`
 
+### Квиз «Мебель на заказ» (отдельный домен)
+
+**Домен лендинга:** mebel-na-zakaz-51.ru (не редиректится на основной сайт).
+
+1. **DNS:** A-запись `mebel-na-zakaz-51.ru` → IP сервера.
+2. **CORS_ORIGIN** — добавьте домен квиза:
+   ```
+   CORS_ORIGIN=https://territory-interior.ru,...,https://mebel-na-zakaz-51.ru
+   ```
+3. **QUIZ_DOMAINS** и **NEXT_PUBLIC_QUIZ_DOMAINS** — `mebel-na-zakaz-51.ru` (см. `.env.example`).
+4. **SSL:** включите домен в сертификат (`scripts/expand-ssl-domains.sh` или certbot `-d mebel-na-zakaz-51.ru`).
+5. **nginx:** в `nginx/nginx-ssl.conf` есть `server_name mebel-na-zakaz-51.ru` → тот же frontend/backend.
+6. **Админка:** раздел «Квизы → Мебель» (`/admin/quiz/mebel`) — тексты, шаги, уведомления, заявки.
+7. **Реклама на кухни:** ссылка с `?type=kitchen` пропускает шаг выбора типа мебели.
+
+Локальная проверка: `http://localhost:3000/quiz` или `http://localhost:3000/quiz?type=kitchen`.
+
 ---
 
 ## SSL (HTTPS)
