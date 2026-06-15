@@ -2,7 +2,7 @@
 
 import type { RefObject } from 'react';
 
-import styles from '../ProductEditPage.module.css';
+import { AdminSaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 type ProductEditSaveButtonProps = {
   buttonRef: RefObject<HTMLButtonElement | null>;
@@ -13,6 +13,7 @@ type ProductEditSaveButtonProps = {
   onClick: (e: React.MouseEvent<HTMLButtonElement>) => void;
 };
 
+/** @deprecated Use AdminSaveButton or AdminStickySaveButtonSlot from @/views/admin/ui/AdminStickySaveButton */
 export function ProductEditSaveButton({
   buttonRef,
   saving,
@@ -22,20 +23,14 @@ export function ProductEditSaveButton({
   onClick,
 }: ProductEditSaveButtonProps) {
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      className={`${styles.saveButton} ${styles.headerSaveButton} ${fixed ? styles.saveButtonFixed : ''}`}
-      style={fixed && fixedLeft != null ? { left: fixedLeft, top: pinnedTopPx } : undefined}
-      disabled={saving}
+    <AdminSaveButton
+      buttonRef={buttonRef}
+      saving={saving}
+      label="Сохранить изменения"
+      fixed={fixed}
+      fixedLeft={fixedLeft}
+      pinnedTopPx={pinnedTopPx}
       onClick={onClick}
-    >
-      <span className={styles.saveButtonTextWrap} aria-live="polite">
-        <span>{saving ? 'Сохранение...' : 'Сохранить изменения'}</span>
-        <span className={styles.saveButtonTextSizer} aria-hidden>
-          Сохранить изменения
-        </span>
-      </span>
-    </button>
+    />
   );
 }

@@ -65,6 +65,13 @@ export class AdminQuizService {
     if (dto.catalogFileUrl !== undefined) data.catalogFileUrl = dto.catalogFileUrl?.trim() || null;
     if (dto.privacyPolicyUrl !== undefined)
       data.privacyPolicyUrl = dto.privacyPolicyUrl?.trim() || null;
+    if (dto.privacyPolicyTitle !== undefined)
+      data.privacyPolicyTitle = dto.privacyPolicyTitle?.trim() || null;
+    if (dto.privacyPolicyContent !== undefined)
+      data.privacyPolicyContent = dto.privacyPolicyContent?.trim() || null;
+    if (dto.consentText !== undefined) data.consentText = dto.consentText?.trim() || null;
+    if (dto.consentLinkText !== undefined)
+      data.consentLinkText = dto.consentLinkText?.trim() || null;
     if (dto.notifyEmails !== undefined) {
       data.notifyEmails = dto.notifyEmails.map((e) => e.trim()).filter(Boolean);
     }

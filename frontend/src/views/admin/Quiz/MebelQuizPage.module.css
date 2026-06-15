@@ -1,71 +1,133 @@
 .page {
   width: 100%;
   max-width: 1400px;
-  padding: 1.5rem;
+  padding: var(--admin-space-lg, 1rem);
   box-sizing: border-box;
+  --admin-sticky-save-top: 4.75rem;
 }
 
 .header {
   display: flex;
+  flex-wrap: wrap;
   justify-content: space-between;
   align-items: flex-start;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
+  gap: var(--admin-space-md, 0.75rem);
+  margin-bottom: var(--admin-space-lg, 1rem);
+  padding-bottom: var(--admin-space-md, 0.75rem);
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  scroll-margin-top: var(--admin-sticky-save-top, 4.75rem);
+}
+
+.headerMain {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 0.35rem);
+}
+
+.headerTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--admin-space-sm, 0.5rem) var(--admin-space-md, 0.75rem);
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm, 0.5rem);
+  flex-shrink: 0;
 }
 
 .title {
-  margin: 0 0 0.35rem;
-  font-size: 1.5rem;
+  margin: 0;
+  font-size: var(--admin-font-size-2xl, 1.35rem);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--admin-text-secondary, #334155);
 }
 
 .subtitle {
   margin: 0;
   color: var(--admin-text-muted, #64748b);
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm, 0.875rem);
+  line-height: 1.3;
+}
+
+.subtitleMuted {
+  color: var(--admin-text-muted, #64748b);
+}
+
+.subtitleSep {
+  margin: 0 0.15rem;
+  color: var(--admin-text-muted, #94a3b8);
 }
 
 .subtitle a {
   color: var(--admin-link, #2563eb);
+  text-decoration: none;
+}
+
+.subtitle a:hover {
+  text-decoration: underline;
 }
 
 .activeToggle {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 0.9rem;
+  gap: 0.4rem;
+  font-size: var(--admin-font-size-sm, 0.875rem);
   white-space: nowrap;
 }
 
-.tabsBar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--admin-border, #e2e8f0);
-  padding-bottom: 0.5rem;
-}
-
-.tabs {
+.tabBar {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  min-width: 0;
+  gap: var(--admin-space-xs, 0.25rem);
+  margin: 0 0 calc(-1 * var(--admin-space-md, 0.75rem));
+  padding: 0;
 }
 
 .tab {
-  border: none;
-  background: transparent;
-  padding: 0.5rem 0.85rem;
-  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-xs, 0.35rem) var(--admin-space-md, 0.75rem);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.25;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-bottom: none;
+  border-radius: var(--admin-radius-md, 8px) var(--admin-radius-md, 8px) 0 0;
+  background: var(--admin-surface, #fff);
   cursor: pointer;
-  font-size: 0.9rem;
+  color: var(--admin-sidebar-text, #475569);
+}
+
+.tab:hover {
+  background: var(--admin-surface-soft, #f8fafc);
 }
 
 .tabActive {
-  background: var(--admin-primary-soft, #eff6ff);
-  color: var(--admin-primary, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-info-strong, #1d4ed8);
   font-weight: 600;
+}
+
+.tabCount {
+  margin-left: var(--admin-space-xs, 0.25rem);
+  padding: 0 var(--admin-space-sm, 0.5rem);
+  border-radius: var(--admin-radius-3xl, 999px);
+  background: var(--admin-border, #e2e8f0);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.tabActive .tabCount {
+  background: var(--admin-info-border-soft, #bfdbfe);
+  color: var(--admin-info-strong, #1d4ed8);
 }
 
 .section {
@@ -209,22 +271,6 @@
   margin: 0;
   font-size: 0.82rem;
   color: var(--admin-text-muted, #94a3b8);
-}
-
-.saveButton {
-  flex-shrink: 0;
-  padding: 0.6rem 1.1rem;
-  border: none;
-  border-radius: 8px;
-  background: var(--admin-primary, #2563eb);
-  color: #fff;
-  font-weight: 600;
-  cursor: pointer;
-}
-
-.saveButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
 }
 
 .toastSuccess,
@@ -398,17 +444,6 @@
   margin: 0.35rem 0 0;
 }
 
-.submissionMeta {
-  margin: 0.35rem 0;
-}
-
-.submissionMeta select {
-  margin-left: 0.35rem;
-  padding: 0.25rem 0.4rem;
-  border-radius: 6px;
-  border: 1px solid var(--admin-border, #e2e8f0);
-}
-
 .section select {
   padding: 0.5rem 0.65rem;
   border: 1px solid var(--admin-border, #e2e8f0);
@@ -460,6 +495,297 @@
   gap: 0.75rem;
   align-items: center;
   margin-top: 1rem;
+}
+
+/* Вкладка «Настройки» — компактная вертикальная сетка */
+.settingsForm {
+  gap: 0.45rem;
+}
+
+.settingsForm h2 {
+  margin: 0.55rem 0 0.2rem;
+  font-size: 0.98rem;
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  padding-bottom: 0.2rem;
+}
+
+.settingsForm h2:first-of-type {
+  margin-top: 0;
+}
+
+.settingsForm .hint {
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.settingsForm label {
+  gap: 0.2rem;
+  font-size: 0.78rem;
+}
+
+.settingsForm input,
+.settingsForm textarea,
+.settingsForm select {
+  padding: 0.32rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.settingsBasicGrid {
+  gap: 0.4rem 0.65rem;
+}
+
+.settingsContentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.4rem 0.65rem;
+}
+
+.settingsNotifyGrid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem 0.65rem;
+}
+
+.settingsFullWidth {
+  grid-column: 1 / -1;
+}
+
+.consentForm .consentFieldLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.65rem;
+}
+
+.consentForm .consentFieldHint {
+  font-size: 0.72rem;
+  font-weight: 400;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.consentForm textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+/* Вкладки «Шаги» и «Заявки» — компактный вид */
+.compactTab {
+  gap: 0.4rem;
+}
+
+.compactTab .hint {
+  margin: 0 0 0.15rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.compactTab label {
+  gap: 0.2rem;
+  font-size: 0.78rem;
+}
+
+.compactTab input,
+.compactTab textarea,
+.compactTab select {
+  padding: 0.32rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.stepsTab .stepCard {
+  padding: 0.5rem 0.6rem;
+  gap: 0.35rem;
+  border-radius: 8px;
+}
+
+.stepsTab .stepHeader strong {
+  font-size: 0.88rem;
+}
+
+.stepsTab .stepType {
+  font-size: 0.68rem;
+}
+
+.stepsTab .optionsList {
+  gap: 0.25rem;
+}
+
+.stepsTab .optionRow {
+  grid-template-columns: 44px 1fr 1fr auto auto;
+  gap: 0.35rem;
+}
+
+.stepsTab .optionThumb,
+.stepsTab .optionThumbEmpty {
+  width: 44px;
+  height: 32px;
+}
+
+.stepsTab .optionThumbEmpty {
+  font-size: 0.58rem;
+}
+
+.stepsTab .optionUrlInput {
+  font-size: 0.76rem;
+}
+
+.stepsTab .uploadBtn {
+  padding: 0.25rem 0.45rem;
+  font-size: 0.72rem;
+}
+
+.stepsTab .optionValue {
+  font-size: 0.68rem;
+}
+
+.submissionsTab .statsRow {
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
+}
+
+.submissionsTab .statChip {
+  font-size: 0.72rem;
+  padding: 0.15rem 0.45rem;
+}
+
+.submissionsTab .filters {
+  display: grid;
+  grid-template-columns: minmax(12rem, 1.5fr) repeat(2, minmax(8rem, 1fr)) auto auto;
+  gap: 0.35rem;
+  align-items: center;
+  margin-bottom: 0.45rem;
+}
+
+.submissionsTab .filters button {
+  padding: 0.32rem 0.55rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--admin-surface, #fff);
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.submissionsTab .filters button:hover {
+  background: var(--admin-surface-soft, #f8fafc);
+}
+
+.submissionsTab .submissionsList {
+  gap: 0.45rem;
+}
+
+.submissionsTab .submissionCard {
+  padding: 0.5rem 0.6rem;
+  border-radius: 8px;
+}
+
+.submissionsTab .submissionHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.submissionsTab .submissionHeaderMain {
+  min-width: 0;
+}
+
+.submissionsTab .submissionHeaderAside {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem 0.65rem;
+  flex-shrink: 0;
+}
+
+.submissionsTab .submissionStatusLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
+.submissionsTab .submissionStatusLabel select {
+  padding: 0.22rem 0.35rem;
+  font-size: 0.78rem;
+}
+
+.submissionsTab .submissionDate {
+  font-size: 0.75rem;
+  color: var(--admin-text-muted, #64748b);
+  white-space: nowrap;
+}
+
+.submissionsTab .furnitureBadge {
+  margin-left: 0.35rem;
+  font-size: 0.68rem;
+  padding: 0.05rem 0.35rem;
+}
+
+.submissionsTab .answersList {
+  margin: 0.2rem 0;
+  padding-left: 1rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.submissionsTab .noteLabel {
+  gap: 0.2rem;
+  font-size: 0.78rem;
+  margin-top: 0.3rem;
+}
+
+.submissionsTab .noteLabel textarea {
+  padding: 0.32rem 0.45rem;
+  font-size: 0.82rem;
+}
+
+.submissionsTab .utmLine {
+  margin: 0.2rem 0 0;
+  font-size: 0.72rem;
+}
+
+.submissionsTab .pagination {
+  margin-top: 0.5rem;
+  gap: 0.5rem;
+  font-size: 0.82rem;
+}
+
+.submissionsTab .pagination button {
+  padding: 0.32rem 0.55rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 6px;
+  background: var(--admin-surface, #fff);
+  font-size: 0.78rem;
+  cursor: pointer;
+}
+
+.submissionsTab .pagination button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+@media (max-width: 960px) {
+  .submissionsTab .filters {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .submissionsTab .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .submissionsTab .submissionHeaderAside {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }
 
 /* Вкладка «Оформление» — компактная сетка 3–4 колонки */
@@ -537,6 +863,10 @@
   .settingsBasicGrid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .settingsNotifyGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 640px) {
@@ -544,7 +874,9 @@
     grid-template-columns: 1fr;
   }
 
-  .settingsBasicGrid {
+  .settingsBasicGrid,
+  .settingsContentGrid,
+  .settingsNotifyGrid {
     grid-template-columns: 1fr;
   }
 

@@ -1,4 +1,11 @@
-import type { CSSProperties, ReactNode } from 'react';
+'use client';
+
+import type { ReactNode } from 'react';
+
+import {
+  AdminStickyPageRoot,
+  AdminStickySaveButtonPlaceholder,
+} from '@/views/admin/ui/AdminStickySaveButton';
 
 import styles from '../ProductEditPage.module.css';
 
@@ -7,14 +14,12 @@ type ProductEditPageRootProps = {
   children: ReactNode;
 };
 
+/** @deprecated Use AdminStickyPageRoot from @/views/admin/ui/AdminStickySaveButton */
 export function ProductEditPageRoot({ stickyTopPx, children }: ProductEditPageRootProps) {
   return (
-    <div
-      className={styles.page}
-      style={{ '--product-edit-sticky-top': `${stickyTopPx}px` } as CSSProperties}
-    >
+    <AdminStickyPageRoot stickyTopPx={stickyTopPx} className={styles.page}>
       {children}
-    </div>
+    </AdminStickyPageRoot>
   );
 }
 
@@ -23,9 +28,10 @@ type ProductEditSaveButtonPlaceholderProps = {
   height: number;
 };
 
+/** @deprecated Use AdminStickySaveButtonPlaceholder from @/views/admin/ui/AdminStickySaveButton */
 export function ProductEditSaveButtonPlaceholder({
   width,
   height,
 }: ProductEditSaveButtonPlaceholderProps) {
-  return <span className={styles.saveButtonPlaceholder} style={{ width, height }} aria-hidden />;
+  return <AdminStickySaveButtonPlaceholder width={width} height={height} />;
 }

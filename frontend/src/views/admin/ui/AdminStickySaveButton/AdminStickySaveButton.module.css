@@ -1,0 +1,97 @@
+.saveButtonAnchor {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.saveButtonPlaceholder {
+  display: block;
+  flex-shrink: 0;
+}
+
+.saveButton {
+  flex-shrink: 0;
+  padding: var(--admin-space-sm, 0.5rem) var(--admin-space-lg, 1rem);
+  border: 1px solid var(--admin-chart-cyan);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: linear-gradient(180deg, var(--admin-info-bg-soft) 0%, var(--admin-info-bg) 100%);
+  color: var(--admin-info-strong);
+  font-weight: 700;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  cursor: pointer;
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.saveButton:hover:not(:disabled) {
+  border-color: var(--admin-info);
+  background: linear-gradient(180deg, var(--admin-info-bg) 0%, var(--admin-info-border-soft) 100%);
+  color: var(--admin-info-text);
+}
+
+.saveButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.headerSaveButton {
+  white-space: nowrap;
+}
+
+.saveButtonFixed {
+  position: fixed;
+  top: var(--admin-sticky-save-top, 4.75rem);
+  z-index: 60;
+  isolation: isolate;
+  filter: drop-shadow(0 2px 15px rgb(0 0 0 / 0.52));
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.15s ease,
+    filter 0.15s ease;
+}
+
+.saveButtonFixed:hover:not(:disabled) {
+  transform: translateY(-1px);
+  filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.16));
+}
+
+.saveButtonTextWrap {
+  display: inline-grid;
+  align-items: center;
+  justify-items: center;
+}
+
+.saveButtonTextWrap > span:first-child {
+  grid-area: 1 / 1;
+}
+
+.saveButtonTextSizer {
+  grid-area: 1 / 1;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton {
+  background: linear-gradient(180deg, var(--admin-info) 0%, var(--admin-info-strong) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButton:hover:not(:disabled) {
+  background: linear-gradient(180deg, var(--admin-info-strong) 0%, var(--admin-info) 100%);
+  border-color: var(--admin-info-bright);
+  color: var(--admin-text-inverse);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButtonFixed {
+  filter: drop-shadow(0 2px 10px rgb(0 0 0 / 0.32));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveButtonFixed:hover:not(:disabled) {
+  filter: drop-shadow(0 4px 14px rgb(0 0 0 / 0.4));
+}

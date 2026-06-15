@@ -1,8 +1,7 @@
 'use client';
 
-import { createPortal } from 'react-dom';
-
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
+import { AdminSaveButton, AdminStickySaveButtonSlot } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { ImageUrlModal } from '../shared/ImageUrlModal';
 import { ProductComponentsSection } from '../shared/ProductComponentsSection';
@@ -18,11 +17,7 @@ import { ProductEditPricingSection } from '../shared/sections/ProductEditPricing
 import { ProductEditSeoSection } from '../shared/sections/ProductEditSeoSection';
 import { ProductEditVariantsSection } from '../shared/sections/ProductEditVariantsSection';
 import { ProductEditVideoSection } from '../shared/sections/ProductEditVideoSection';
-import {
-  ProductEditPageRoot,
-  ProductEditSaveButtonPlaceholder,
-} from '../shared/ui/ProductEditDynamicLayout';
-import { ProductEditSaveButton } from '../shared/ui/ProductEditSaveButton';
+import { ProductEditPageRoot } from '../shared/ui/ProductEditDynamicLayout';
 import type { ProductEditPageModel } from './useProductEditPage';
 
 type ProductEditPageViewProps = {
@@ -76,15 +71,10 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
     badgeDefinitions,
     formRef,
     pageHeaderRef,
-    saveButtonAnchorRef,
-    saveButtonRef,
-    saveButtonFixed,
-    saveButtonFixedLeft,
-    saveButtonPlaceholderSize,
     saveButtonPinnedTopPx,
-    saveButtonPortalRoot,
     handleHeaderSaveClick,
     submitProductForm,
+    saveButtonState,
     imageError,
     showSection,
     flatCategories,
@@ -160,40 +150,14 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
             <CopyIcon />
             Скопировать
           </button>
-          <div ref={saveButtonAnchorRef} className={styles.saveButtonAnchor}>
-            {saveButtonFixed && saveButtonPlaceholderSize ? (
-              <ProductEditSaveButtonPlaceholder
-                width={saveButtonPlaceholderSize.width}
-                height={saveButtonPlaceholderSize.height}
-              />
-            ) : null}
-            {!saveButtonFixed ? (
-              <ProductEditSaveButton
-                buttonRef={saveButtonRef}
-                saving={saving}
-                fixed={false}
-                fixedLeft={saveButtonFixedLeft}
-                pinnedTopPx={saveButtonPinnedTopPx}
-                onClick={handleHeaderSaveClick}
-              />
-            ) : null}
-          </div>
+          <AdminStickySaveButtonSlot
+            state={saveButtonState}
+            saving={saving}
+            label="Сохранить изменения"
+            onClick={handleHeaderSaveClick}
+          />
         </div>
       </div>
-
-      {saveButtonFixed && saveButtonPortalRoot
-        ? createPortal(
-            <ProductEditSaveButton
-              buttonRef={saveButtonRef}
-              saving={saving}
-              fixed
-              fixedLeft={saveButtonFixedLeft}
-              pinnedTopPx={saveButtonPinnedTopPx}
-              onClick={handleHeaderSaveClick}
-            />,
-            saveButtonPortalRoot
-          )
-        : null}
 
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form} noValidate>
         <div className={styles.productMeta}>
@@ -436,17 +400,15 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           >
             Отмена
           </button>
-          <button
-            type="button"
-            className={styles.saveButton}
-            disabled={saving}
+          <AdminSaveButton
+            saving={saving}
+            label="Сохранить изменения"
+            className={styles.footerSaveButton}
             onClick={(e) => {
               e.preventDefault();
               submitProductForm();
             }}
-          >
-            {saving ? 'Сохранение...' : 'Сохранить изменения'}
-          </button>
+          />
         </div>
       </div>
 

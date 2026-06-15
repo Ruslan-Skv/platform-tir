@@ -214,6 +214,28 @@ export class UpdateQuizLandingDto {
   @IsString()
   privacyPolicyUrl?: string | null;
 
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(300)
+  privacyPolicyTitle?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  privacyPolicyContent?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  consentText?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  consentLinkText?: string | null;
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

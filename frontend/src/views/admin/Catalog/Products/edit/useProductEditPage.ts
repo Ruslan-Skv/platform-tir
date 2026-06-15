@@ -377,23 +377,14 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
   // Загрузка изображений
   const formRef = useRef<HTMLFormElement>(null);
   const pageHeaderRef = useRef<HTMLDivElement>(null);
-  const {
-    saveButtonAnchorRef,
-    saveButtonRef,
-    saveButtonFixed,
-    saveButtonFixedLeft,
-    saveButtonPlaceholderSize,
-    saveButtonPinnedTopPx,
-    saveButtonPortalRoot,
-    handleHeaderSaveClick,
-    submitProductForm,
-  } = useProductEditSaveButton({
+  const saveButtonState = useProductEditSaveButton({
     saving,
     loading,
     productNotFound,
     formRef,
     pageHeaderRef,
   });
+  const { saveButtonPinnedTopPx, handleHeaderSaveClick, submitProductForm } = saveButtonState;
   const [imageError, setImageError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -1422,13 +1413,8 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     badgeDefinitions,
     formRef,
     pageHeaderRef,
-    saveButtonAnchorRef,
-    saveButtonRef,
-    saveButtonFixed,
-    saveButtonFixedLeft,
-    saveButtonPlaceholderSize,
+    saveButtonState,
     saveButtonPinnedTopPx,
-    saveButtonPortalRoot,
     handleHeaderSaveClick,
     submitProductForm,
     imageError,

@@ -2,6 +2,10 @@
 
 import { resolveAdminUploadUrl } from '@/shared/api/admin-quiz';
 import { FURNITURE_TYPE_LABELS, QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/api/quiz-theme';
+import {
+  AdminStickyPageRoot,
+  AdminStickySaveButtonSlot,
+} from '@/views/admin/ui/AdminStickySaveButton';
 
 import styles from './MebelQuizPage.module.css';
 import type { useMebelQuizPage } from './hooks/useMebelQuizPage';
@@ -59,7 +63,6 @@ export function MebelQuizPageView({ model }: { model: Model }) {
     handleSaveSettings,
     handleSaveConsent,
     handleSaveTheme,
-    handleSaveSteps,
     handleUploadCatalog,
     handleUploadPrivacyPolicy,
     uploadingPrivacyPolicy,
@@ -71,6 +74,11 @@ export function MebelQuizPageView({ model }: { model: Model }) {
     setSubmissionsPage,
     previewUrl,
     answerLabels,
+    pageHeaderRef,
+    showSaveButton,
+    saveButtonPinnedTopPx,
+    handleSaveClick,
+    saveButtonState,
   } = model;
 
   if (loading || !quiz) {
@@ -82,25 +90,65 @@ export function MebelQuizPageView({ model }: { model: Model }) {
   }
 
   return (
-    <div className={styles.page}>
-      <header className={styles.header}>
-        <div>
-          <h1 className={styles.title}>Квиз — Мебель на заказ</h1>
-          <p className={styles.subtitle}>
-            Лендинг {quiz.domain ? `на домене ${quiz.domain}` : '(домен не задан)'} ·{' '}
-            <a href={previewUrl} target="_blank" rel="noopener noreferrer">
-              Открыть квиз
-            </a>
-          </p>
+    <AdminStickyPageRoot stickyTopPx={saveButtonPinnedTopPx} className={styles.page}>
+      <header ref={pageHeaderRef} className={styles.header}>
+        <div className={styles.headerMain}>
+          <div className={styles.headerTop}>
+            <h1 className={styles.title}>Квиз — Мебель на заказ</h1>
+            <p className={styles.subtitle}>
+              {quiz.domain ? (
+                <>
+                  <span className={styles.subtitleMuted}>Домен:</span> {quiz.domain}
+                  <span className={styles.subtitleSep}>·</span>
+                </>
+              ) : (
+                <>
+                  <span className={styles.subtitleMuted}>Домен не задан</span>
+                  <span className={styles.subtitleSep}>·</span>
+                </>
+              )}
+              <a href={previewUrl} target="_blank" rel="noopener noreferrer">
+                Открыть квиз
+              </a>
+            </p>
+          </div>
+          <div className={styles.tabBar} role="tablist" aria-label="Разделы квиза">
+            {TABS.map((t) => {
+              const count = t.id === 'submissions' ? submissionStats.total : 0;
+              return (
+                <button
+                  key={t.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={tab === t.id}
+                  className={`${styles.tab} ${tab === t.id ? styles.tabActive : ''}`}
+                  onClick={() => setTab(t.id)}
+                >
+                  {t.label}
+                  {count ? <span className={styles.tabCount}>{count}</span> : null}
+                </button>
+              );
+            })}
+          </div>
         </div>
-        <label className={styles.activeToggle}>
-          <input
-            type="checkbox"
-            checked={quiz.isActive}
-            onChange={(e) => setQuizField('isActive', e.target.checked)}
-          />
-          Квиз активен
-        </label>
+        <div className={styles.headerActions}>
+          <label className={styles.activeToggle}>
+            <input
+              type="checkbox"
+              checked={quiz.isActive}
+              onChange={(e) => setQuizField('isActive', e.target.checked)}
+            />
+            Квиз активен
+          </label>
+          {showSaveButton ? (
+            <AdminStickySaveButtonSlot
+              state={saveButtonState}
+              saving={saving}
+              label="Сохранить изменения"
+              onClick={handleSaveClick}
+            />
+          ) : null}
+        </div>
       </header>
 
       {message ? (
@@ -109,66 +157,10 @@ export function MebelQuizPageView({ model }: { model: Model }) {
         </div>
       ) : null}
 
-      <div className={styles.tabsBar}>
-        <div className={styles.tabs}>
-          {TABS.map((t) => (
-            <button
-              key={t.id}
-              type="button"
-              className={`${styles.tab} ${tab === t.id ? styles.tabActive : ''}`}
-              onClick={() => setTab(t.id)}
-            >
-              {t.label}
-              {t.id === 'submissions' && submissionStats.total ? ` (${submissionStats.total})` : ''}
-            </button>
-          ))}
-        </div>
-        {tab === 'settings' ? (
-          <button
-            type="submit"
-            form="quiz-settings-form"
-            className={styles.saveButton}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
-        ) : null}
-        {tab === 'theme' ? (
-          <button
-            type="submit"
-            form="quiz-theme-form"
-            className={styles.saveButton}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
-        ) : null}
-        {tab === 'steps' ? (
-          <button
-            type="button"
-            className={styles.saveButton}
-            disabled={saving}
-            onClick={handleSaveSteps}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
-        ) : null}
-        {tab === 'consent' ? (
-          <button
-            type="submit"
-            form="quiz-consent-form"
-            className={styles.saveButton}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
-        ) : null}
-      </div>
-
       {tab === 'settings' ? (
         <form
           id="quiz-settings-form"
-          className={styles.section}
+          className={`${styles.section} ${styles.settingsForm}`}
           onSubmit={(e) => {
             e.preventDefault();
             handleSaveSettings();
@@ -199,109 +191,115 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               />
             </label>
           </div>
-          <label>
-            Заголовок
-            <input
-              value={quiz.headline ?? ''}
-              onChange={(e) => setQuizField('headline', e.target.value)}
-            />
-          </label>
-          <label>
-            Подзаголовок
-            <textarea
-              value={quiz.subheadline ?? ''}
-              onChange={(e) => setQuizField('subheadline', e.target.value)}
-              rows={2}
-            />
-          </label>
-          <label>
-            Промо-текст
-            <input
-              value={quiz.promoText ?? ''}
-              onChange={(e) => setQuizField('promoText', e.target.value)}
-            />
-          </label>
+          <div className={styles.settingsContentGrid}>
+            <label>
+              Заголовок
+              <input
+                value={quiz.headline ?? ''}
+                onChange={(e) => setQuizField('headline', e.target.value)}
+              />
+            </label>
+            <label>
+              Промо-текст
+              <input
+                value={quiz.promoText ?? ''}
+                onChange={(e) => setQuizField('promoText', e.target.value)}
+              />
+            </label>
+            <label className={styles.settingsFullWidth}>
+              Подзаголовок
+              <textarea
+                value={quiz.subheadline ?? ''}
+                onChange={(e) => setQuizField('subheadline', e.target.value)}
+                rows={2}
+              />
+            </label>
+          </div>
 
           <h2>Экран «Спасибо»</h2>
-          <label>
-            Заголовок
-            <input
-              value={quiz.successTitle ?? ''}
-              onChange={(e) => setQuizField('successTitle', e.target.value)}
-            />
-          </label>
-          <label>
-            Текст
-            <textarea
-              value={quiz.successText ?? ''}
-              onChange={(e) => setQuizField('successText', e.target.value)}
-              rows={3}
-            />
-          </label>
-          <label>
-            Файл каталога
-            <QuizAdminFileUpload
-              url={quiz.catalogFileUrl}
-              onUrlChange={(v) => setQuizField('catalogFileUrl', v)}
-              onFileSelect={handleUploadCatalog}
-              uploading={uploadingCatalog}
-              accept=".pdf,image/*"
-              uploadLabel="Загрузить файл"
-            />
-          </label>
+          <div className={styles.settingsContentGrid}>
+            <label>
+              Заголовок
+              <input
+                value={quiz.successTitle ?? ''}
+                onChange={(e) => setQuizField('successTitle', e.target.value)}
+              />
+            </label>
+            <label>
+              Файл каталога
+              <QuizAdminFileUpload
+                url={quiz.catalogFileUrl}
+                onUrlChange={(v) => setQuizField('catalogFileUrl', v)}
+                onFileSelect={handleUploadCatalog}
+                uploading={uploadingCatalog}
+                accept=".pdf,image/*"
+                uploadLabel="Загрузить файл"
+              />
+            </label>
+            <label className={styles.settingsFullWidth}>
+              Текст
+              <textarea
+                value={quiz.successText ?? ''}
+                onChange={(e) => setQuizField('successText', e.target.value)}
+                rows={2}
+              />
+            </label>
+          </div>
 
           <h2>Уведомления о заявках</h2>
           <p className={styles.hint}>
             Email и Telegram. Номера менеджеров включаются в текст уведомления.
           </p>
-          <label>
-            Email (каждый с новой строки)
-            <textarea
-              value={(quiz.notifyEmails ?? []).join('\n')}
-              onChange={(e) =>
-                setQuizField(
-                  'notifyEmails',
-                  e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                )
-              }
-              rows={3}
-            />
-          </label>
-          <label>
-            Telegram chat ID
-            <textarea
-              value={(quiz.notifyTelegramIds ?? []).join('\n')}
-              onChange={(e) =>
-                setQuizField(
-                  'notifyTelegramIds',
-                  e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                )
-              }
-              rows={2}
-            />
-          </label>
-          <label>
-            Телефоны менеджеров
-            <textarea
-              value={(quiz.notifyPhones ?? []).join('\n')}
-              onChange={(e) =>
-                setQuizField(
-                  'notifyPhones',
-                  e.target.value
-                    .split('\n')
-                    .map((s) => s.trim())
-                    .filter(Boolean)
-                )
-              }
-              rows={2}
-            />
-          </label>
+          <div className={styles.settingsNotifyGrid}>
+            <label>
+              Email (каждый с новой строки)
+              <textarea
+                value={(quiz.notifyEmails ?? []).join('\n')}
+                onChange={(e) =>
+                  setQuizField(
+                    'notifyEmails',
+                    e.target.value
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                rows={2}
+              />
+            </label>
+            <label>
+              Telegram chat ID
+              <textarea
+                value={(quiz.notifyTelegramIds ?? []).join('\n')}
+                onChange={(e) =>
+                  setQuizField(
+                    'notifyTelegramIds',
+                    e.target.value
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                rows={2}
+              />
+            </label>
+            <label>
+              Телефоны менеджеров
+              <textarea
+                value={(quiz.notifyPhones ?? []).join('\n')}
+                onChange={(e) =>
+                  setQuizField(
+                    'notifyPhones',
+                    e.target.value
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                rows={2}
+              />
+            </label>
+          </div>
         </form>
       ) : null}
 
@@ -926,7 +924,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
       ) : null}
 
       {tab === 'steps' ? (
-        <div className={styles.section}>
+        <div className={`${styles.section} ${styles.compactTab} ${styles.stepsTab}`}>
           <p className={styles.hint}>
             Для рекламы на кухни: <code>?type=kitchen</code> — пропускает шаг выбора типа мебели.
           </p>
@@ -1005,7 +1003,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
       ) : null}
 
       {tab === 'submissions' ? (
-        <div className={styles.section}>
+        <div className={`${styles.section} ${styles.compactTab} ${styles.submissionsTab}`}>
           <p className={styles.hint}>
             Учёт обращений с квиза. Статусы помогают отслеживать работу менеджеров. Интеграция с CRM
             (автосоздание заказчика) — отдельный этап.
@@ -1062,7 +1060,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               {submissions.map((s) => (
                 <div key={s.id} className={styles.submissionCard}>
                   <div className={styles.submissionHeader}>
-                    <div>
+                    <div className={styles.submissionHeaderMain}>
                       <strong>{s.name}</strong> — {s.phone}
                       {s.furnitureType ? (
                         <span className={styles.furnitureBadge}>
@@ -1070,22 +1068,24 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                         </span>
                       ) : null}
                     </div>
-                    <span>{new Date(s.createdAt).toLocaleString('ru-RU')}</span>
-                  </div>
-                  <div className={styles.submissionMeta}>
-                    <label>
-                      Статус
-                      <select
-                        value={s.status}
-                        onChange={(e) => handleUpdateSubmission(s.id, { status: e.target.value })}
-                      >
-                        {Object.entries(QUIZ_SUBMISSION_STATUS_LABELS).map(([v, l]) => (
-                          <option key={v} value={v}>
-                            {l}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
+                    <div className={styles.submissionHeaderAside}>
+                      <label className={styles.submissionStatusLabel}>
+                        <span>Статус</span>
+                        <select
+                          value={s.status}
+                          onChange={(e) => handleUpdateSubmission(s.id, { status: e.target.value })}
+                        >
+                          {Object.entries(QUIZ_SUBMISSION_STATUS_LABELS).map(([v, l]) => (
+                            <option key={v} value={v}>
+                              {l}
+                            </option>
+                          ))}
+                        </select>
+                      </label>
+                      <span className={styles.submissionDate}>
+                        {new Date(s.createdAt).toLocaleString('ru-RU')}
+                      </span>
+                    </div>
                   </div>
                   <ul className={styles.answersList}>
                     {Object.entries(s.answers as Record<string, string>).map(([k, v]) => {
@@ -1143,7 +1143,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
       {tab === 'consent' ? (
         <form
           id="quiz-consent-form"
-          className={styles.section}
+          className={`${styles.section} ${styles.settingsForm} ${styles.consentForm}`}
           onSubmit={(e) => {
             e.preventDefault();
             handleSaveConsent();
@@ -1151,12 +1151,10 @@ export function MebelQuizPageView({ model }: { model: Model }) {
         >
           <h2>Согласие на обработку данных</h2>
           <p className={styles.hint}>
-            По клику на «персональных данных» открывается отдельная страница{' '}
-            <code>/quiz/privacy-policy</code>. Если загружен PDF — он показывается на весь экран.
-            Если PDF нет, но есть текст — текст на отдельной странице (можно сохранить как PDF через
-            печать браузера).
+            По клику на «персональных данных» — страница <code>/quiz/privacy-policy</code>. PDF на
+            весь экран; без PDF показывается текст (можно сохранить через печать браузера).
           </p>
-          <label>
+          <label className={styles.settingsFullWidth}>
             PDF политики (рекомендуется)
             <QuizAdminFileUpload
               url={quiz.privacyPolicyUrl}
@@ -1168,44 +1166,48 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               placeholder="https://…/policy.pdf"
             />
           </label>
-          <label>
-            Текст рядом с галочкой
-            <input
-              value={quiz.consentText ?? ''}
-              onChange={(e) => setQuizField('consentText', e.target.value)}
-              placeholder="Я согласен(-на) на обработку персональных данных"
-            />
-          </label>
-          <label>
-            Кликабельная фраза (должна быть в тексте выше)
-            <input
-              value={quiz.consentLinkText ?? ''}
-              onChange={(e) => setQuizField('consentLinkText', e.target.value)}
-              placeholder="персональных данных"
-            />
-          </label>
-          <label>
-            Заголовок окна политики
-            <input
-              value={quiz.privacyPolicyTitle ?? ''}
-              onChange={(e) => setQuizField('privacyPolicyTitle', e.target.value)}
-              placeholder="Политика конфиденциальности персональных данных"
-            />
-          </label>
-          <p className={styles.hint}>
-            Используется, если PDF не загружен. Переносы строк в поле — только для редактирования.
-          </p>
-          <label>
-            Текст политики (если нет PDF)
+          <div className={styles.settingsContentGrid}>
+            <label>
+              Текст рядом с галочкой
+              <input
+                value={quiz.consentText ?? ''}
+                onChange={(e) => setQuizField('consentText', e.target.value)}
+                placeholder="Я согласен(-на) на обработку персональных данных"
+              />
+            </label>
+            <label>
+              Кликабельная фраза (в тексте выше)
+              <input
+                value={quiz.consentLinkText ?? ''}
+                onChange={(e) => setQuizField('consentLinkText', e.target.value)}
+                placeholder="персональных данных"
+              />
+            </label>
+            <label className={styles.settingsFullWidth}>
+              Заголовок окна политики
+              <input
+                value={quiz.privacyPolicyTitle ?? ''}
+                onChange={(e) => setQuizField('privacyPolicyTitle', e.target.value)}
+                placeholder="Политика конфиденциальности персональных данных"
+              />
+            </label>
+          </div>
+          <label className={styles.settingsFullWidth}>
+            <span className={styles.consentFieldLabel}>
+              Текст политики (если нет PDF)
+              <span className={styles.consentFieldHint}>
+                Переносы строк — только для редактирования
+              </span>
+            </span>
             <textarea
               value={quiz.privacyPolicyContent ?? ''}
               onChange={(e) => setQuizField('privacyPolicyContent', e.target.value)}
-              rows={12}
+              rows={8}
               placeholder="Вставьте текст политики конфиденциальности…"
             />
           </label>
         </form>
       ) : null}
-    </div>
+    </AdminStickyPageRoot>
   );
 }

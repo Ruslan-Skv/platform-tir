@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { mergeQuizTheme } from '@/features/quiz/lib/quiz-theme';
@@ -20,6 +20,7 @@ import {
 } from '@/shared/api/admin-quiz';
 import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { DEFAULT_QUIZ_THEME } from '@/shared/api/quiz-theme';
+import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 export type MebelQuizTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'consent';
 
@@ -199,7 +200,7 @@ export function useMebelQuizPage() {
     }
   };
 
-  const handleSaveSteps = async () => {
+  const handleSaveSteps = useCallback(async () => {
     setSaving(true);
     try {
       const payload = stepsDraft.map((s, i) => ({
@@ -221,7 +222,7 @@ export function useMebelQuizPage() {
     } finally {
       setSaving(false);
     }
-  };
+  }, [stepsDraft, getAuthHeaders, applyQuizData, showMessage]);
 
   const handleUploadCatalog = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -306,6 +307,38 @@ export function useMebelQuizPage() {
     return map;
   }, [stepsDraft]);
 
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const showSaveButton = tab !== 'submissions';
+
+  const requestFormSubmit = (formId: string) => {
+    const el = document.getElementById(formId);
+    if (el instanceof HTMLFormElement) {
+      el.requestSubmit();
+    }
+  };
+
+  const saveCurrentTab = useCallback(() => {
+    if (tab === 'settings') {
+      requestFormSubmit('quiz-settings-form');
+    } else if (tab === 'theme') {
+      requestFormSubmit('quiz-theme-form');
+    } else if (tab === 'steps') {
+      void handleSaveSteps();
+    } else if (tab === 'consent') {
+      requestFormSubmit('quiz-consent-form');
+    }
+  }, [tab, handleSaveSteps]);
+
+  const saveButtonState = useAdminStickySaveButton({
+    enabled: showSaveButton,
+    loading,
+    saving,
+    pageHeaderRef,
+    onSave: saveCurrentTab,
+  });
+
+  const { saveButtonPinnedTopPx, handleSaveClick } = saveButtonState;
+
   return {
     tab,
     setTab,
@@ -332,7 +365,6 @@ export function useMebelQuizPage() {
     handleSaveSettings,
     handleSaveConsent,
     handleSaveTheme,
-    handleSaveSteps,
     handleUploadCatalog,
     handleUploadPrivacyPolicy,
     uploadingCatalog,
@@ -344,5 +376,10 @@ export function useMebelQuizPage() {
     setSubmissionsPage,
     previewUrl,
     answerLabels,
+    pageHeaderRef,
+    showSaveButton,
+    saveButtonState,
+    saveButtonPinnedTopPx,
+    handleSaveClick,
   };
 }
