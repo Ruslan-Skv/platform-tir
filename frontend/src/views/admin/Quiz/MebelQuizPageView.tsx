@@ -1,11 +1,11 @@
 'use client';
 
-import { headerBadgePreviewStyle } from '@/features/quiz/lib/quiz-theme';
 import { resolveAdminUploadUrl } from '@/shared/api/admin-quiz';
 import { FURNITURE_TYPE_LABELS, QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/api/quiz-theme';
 
 import styles from './MebelQuizPage.module.css';
 import type { useMebelQuizPage } from './hooks/useMebelQuizPage';
+import { MebelQuizThemePreview } from './ui/MebelQuizThemePreview';
 
 type Model = ReturnType<typeof useMebelQuizPage>;
 
@@ -297,95 +297,13 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             </a>{' '}
             (<code>/images/light-fon.png</code>).
           </p>
-          <div
-            className={styles.themePreview}
-            style={{
-              background: themeDraft.background,
-              color: themeDraft.textColor,
-              fontFamily: themeDraft.fontFamily,
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            {themeDraft.backgroundImageUrl ? (
-              <div
-                className={styles.themePreviewBg}
-                style={{
-                  backgroundImage: `url(${resolveAdminUploadUrl(themeDraft.backgroundImageUrl)})`,
-                  opacity: themeDraft.backgroundImageOpacity / 100,
-                  filter: `brightness(${themeDraft.backgroundImageBrightness}%)`,
-                }}
-                aria-hidden
-              />
-            ) : null}
-            <div className={styles.themePreviewContent}>
-              <div className={styles.themePreviewBadges}>
-                <span
-                  className={styles.themePreviewCityBadge}
-                  style={headerBadgePreviewStyle(themeDraft)}
-                >
-                  <svg
-                    width={themeDraft.cityBadgeIconSize}
-                    height={themeDraft.cityBadgeIconSize}
-                    viewBox="0 0 24 24"
-                    fill={themeDraft.cityBadgeIconColor}
-                    aria-hidden
-                  >
-                    <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5z" />
-                  </svg>
-                  {quiz.city || 'Город'}
-                </span>
-                <span
-                  className={styles.themePreviewCityBadge}
-                  style={headerBadgePreviewStyle(themeDraft)}
-                >
-                  <svg
-                    width={themeDraft.cityBadgeIconSize}
-                    height={themeDraft.cityBadgeIconSize}
-                    viewBox="0 0 24 24"
-                    fill={themeDraft.cityBadgeIconColor}
-                    aria-hidden
-                  >
-                    <path d="M6.62 10.79a15.91 15.91 0 0 0 6.59 6.59l2.2-2.2a1 1 0 0 1 1.01-.24 11.36 11.36 0 0 0 3.56.57 1 1 0 0 1 1 1V20a1 1 0 0 1-1 1A17 17 0 0 1 3 4a1 1 0 0 1 1-1h3.5a1 1 0 0 1 1 1 11.36 11.36 0 0 0 .57 3.56 1 1 0 0 1-.25 1.01l-2.2 2.22z" />
-                  </svg>
-                  {quiz.displayPhone || '+7 (XXX) XXX-XX-XX'}
-                </span>
-              </div>
-              <h3
-                style={{ color: themeDraft.headingColor, fontFamily: themeDraft.headingFontFamily }}
-              >
-                {quiz.headline || 'Заголовок квиза'}
-              </h3>
-              <p style={{ color: themeDraft.mutedTextColor }}>
-                {quiz.subheadline || 'Подзаголовок'}
-              </p>
-              <div
-                style={{
-                  background: themeDraft.cardBackground,
-                  border: `1px solid ${themeDraft.cardBorder}`,
-                  borderRadius: 12,
-                  padding: '0.75rem',
-                  marginTop: '0.5rem',
-                }}
-              >
-                <span style={{ color: themeDraft.accentColor }}>Акцентный элемент</span>
-                <button
-                  type="button"
-                  style={{
-                    display: 'block',
-                    marginTop: 8,
-                    background: themeDraft.accentColor,
-                    color: themeDraft.buttonTextColor,
-                    border: 'none',
-                    borderRadius: 8,
-                    padding: '6px 12px',
-                  }}
-                >
-                  Кнопка
-                </button>
-              </div>
-            </div>
-          </div>
+          <MebelQuizThemePreview
+            theme={themeDraft}
+            headline={quiz.headline}
+            subheadline={quiz.subheadline}
+            city={quiz.city}
+            displayPhone={quiz.displayPhone}
+          />
 
           <h2>Фон страницы</h2>
           <label>

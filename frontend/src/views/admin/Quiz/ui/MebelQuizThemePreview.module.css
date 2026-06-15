@@ -1,0 +1,75 @@
+.themePreview {
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  min-height: 120px;
+  position: relative;
+  overflow: hidden;
+  background: var(--quiz-bg);
+  color: var(--quiz-text);
+  font-family: var(--quiz-font);
+}
+
+.themePreviewBg {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  z-index: 0;
+  background-image: var(--quiz-preview-bg-image);
+  opacity: var(--quiz-bg-image-opacity);
+  filter: brightness(var(--quiz-bg-image-brightness));
+}
+
+.themePreviewContent {
+  position: relative;
+  z-index: 1;
+}
+
+.themePreviewBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.themePreviewCityBadge {
+  display: inline-flex;
+  align-items: center;
+  line-height: 1.3;
+  font-weight: 500;
+}
+
+.themePreviewHeading {
+  color: var(--quiz-heading);
+  font-family: var(--quiz-heading-font);
+  margin: 0;
+}
+
+.themePreviewSubheadline {
+  color: var(--quiz-muted);
+  margin: 0.35rem 0 0;
+}
+
+.themePreviewCard {
+  background: var(--quiz-card-bg);
+  border: 1px solid var(--quiz-card-border);
+  border-radius: 12px;
+  padding: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.themePreviewAccent {
+  color: var(--quiz-accent);
+}
+
+.themePreviewButton {
+  display: block;
+  margin-top: 8px;
+  background: var(--quiz-accent);
+  color: var(--quiz-btn-text);
+  border: none;
+  border-radius: 8px;
+  padding: 6px 12px;
+  cursor: default;
+}
