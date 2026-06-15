@@ -167,15 +167,16 @@ export class QuizService {
       const v = obj[k];
       return typeof v === 'number' && Number.isFinite(v) ? v : (base[k] as number);
     };
-    const optionalUrl =
-      obj.backgroundImageUrl === null || obj.backgroundImageUrl === ''
+    const backgroundImageUrl = !('backgroundImageUrl' in obj)
+      ? base.backgroundImageUrl
+      : obj.backgroundImageUrl === null || obj.backgroundImageUrl === ''
         ? null
         : typeof obj.backgroundImageUrl === 'string'
           ? obj.backgroundImageUrl
           : base.backgroundImageUrl;
     return {
       background: str('background'),
-      backgroundImageUrl: optionalUrl,
+      backgroundImageUrl,
       backgroundImageOpacity: num('backgroundImageOpacity'),
       backgroundImageBrightness: num('backgroundImageBrightness'),
       textColor: str('textColor'),
@@ -183,6 +184,9 @@ export class QuizService {
       mutedTextColor: str('mutedTextColor'),
       cardBackground: str('cardBackground'),
       cardBorder: str('cardBorder'),
+      stepBlockMaxWidth: num('stepBlockMaxWidth'),
+      stepBlockPadding: num('stepBlockPadding'),
+      stepBlockBorderRadius: num('stepBlockBorderRadius'),
       accentColor: str('accentColor'),
       buttonTextColor: str('buttonTextColor'),
       fontFamily: str('fontFamily'),

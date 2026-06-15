@@ -145,12 +145,12 @@
 }
 
 .card {
-  max-width: 720px;
+  max-width: var(--quiz-step-block-max-width, 720px);
   margin: 0 auto;
   background: var(--quiz-card-bg, rgba(255, 255, 255, 0.06));
   border: 1px solid var(--quiz-card-border, rgba(255, 255, 255, 0.1));
-  border-radius: 16px;
-  padding: 1.25rem 1rem 1.5rem;
+  border-radius: var(--quiz-step-block-radius, 16px);
+  padding: var(--quiz-step-block-padding, 1.25rem);
   backdrop-filter: blur(8px);
 }
 
@@ -384,9 +384,5 @@
 @media (min-width: 640px) {
   .wizard {
     padding: 2rem 1.5rem 3rem;
-  }
-
-  .card {
-    padding: 1.5rem 1.75rem 1.75rem;
   }
 }

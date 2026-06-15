@@ -8,6 +8,9 @@ export interface QuizTheme {
   mutedTextColor: string;
   cardBackground: string;
   cardBorder: string;
+  stepBlockMaxWidth: number;
+  stepBlockPadding: number;
+  stepBlockBorderRadius: number;
   accentColor: string;
   buttonTextColor: string;
   fontFamily: string;
@@ -36,6 +39,9 @@ export const DEFAULT_QUIZ_THEME: QuizTheme = {
   mutedTextColor: '#4a5568',
   cardBackground: 'rgba(255, 255, 255, 0.88)',
   cardBorder: 'rgba(0, 0, 0, 0.08)',
+  stepBlockMaxWidth: 720,
+  stepBlockPadding: 20,
+  stepBlockBorderRadius: 16,
   accentColor: '#d90652',
   buttonTextColor: '#ffffff',
   fontFamily: 'system-ui, -apple-system, "Segoe UI", Roboto, sans-serif',

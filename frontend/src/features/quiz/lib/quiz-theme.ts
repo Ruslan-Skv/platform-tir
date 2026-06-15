@@ -26,9 +26,21 @@ export function mergeQuizTheme(
   primaryColor?: string | null
 ): QuizTheme {
   const accent = theme?.accentColor || primaryColor || DEFAULT_QUIZ_THEME.accentColor;
+
+  if (!theme) {
+    return { ...DEFAULT_QUIZ_THEME, accentColor: accent };
+  }
+
+  const backgroundImageUrl = !('backgroundImageUrl' in theme)
+    ? DEFAULT_QUIZ_THEME.backgroundImageUrl
+    : theme.backgroundImageUrl === '' || theme.backgroundImageUrl === null
+      ? null
+      : theme.backgroundImageUrl;
+
   return {
     ...DEFAULT_QUIZ_THEME,
     ...theme,
+    backgroundImageUrl,
     accentColor: accent,
   };
 }
@@ -48,6 +60,9 @@ export function quizThemeToCssVars(theme: QuizTheme): CSSProperties {
     ['--quiz-muted' as string]: theme.mutedTextColor,
     ['--quiz-card-bg' as string]: theme.cardBackground,
     ['--quiz-card-border' as string]: theme.cardBorder,
+    ['--quiz-step-block-max-width' as string]: `${theme.stepBlockMaxWidth}px`,
+    ['--quiz-step-block-padding' as string]: `${theme.stepBlockPadding}px`,
+    ['--quiz-step-block-radius' as string]: `${theme.stepBlockBorderRadius}px`,
     ['--quiz-accent' as string]: theme.accentColor,
     ['--quiz-btn-text' as string]: theme.buttonTextColor,
     ['--quiz-font' as string]: theme.fontFamily,

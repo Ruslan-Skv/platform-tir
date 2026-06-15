@@ -440,6 +440,44 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             </select>
           </label>
 
+          <h2>Блок шагов</h2>
+          <p className={styles.hint}>
+            Размер карточки с вопросами и вариантами ответов на лендинге.
+          </p>
+          <label>
+            Ширина блока: {themeDraft.stepBlockMaxWidth}px
+            <input
+              type="range"
+              min={400}
+              max={1100}
+              step={10}
+              value={themeDraft.stepBlockMaxWidth}
+              onChange={(e) => setThemeField('stepBlockMaxWidth', Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Внутренние отступы: {themeDraft.stepBlockPadding}px
+            <input
+              type="range"
+              min={8}
+              max={48}
+              step={2}
+              value={themeDraft.stepBlockPadding}
+              onChange={(e) => setThemeField('stepBlockPadding', Number(e.target.value))}
+            />
+          </label>
+          <label>
+            Скругление углов: {themeDraft.stepBlockBorderRadius}px
+            <input
+              type="range"
+              min={0}
+              max={32}
+              step={2}
+              value={themeDraft.stepBlockBorderRadius}
+              onChange={(e) => setThemeField('stepBlockBorderRadius', Number(e.target.value))}
+            />
+          </label>
+
           <h2>Бейджи в шапке</h2>
           <p className={styles.hint}>
             Общее оформление бейджей города и телефона в шапке квиза. Название города и номер

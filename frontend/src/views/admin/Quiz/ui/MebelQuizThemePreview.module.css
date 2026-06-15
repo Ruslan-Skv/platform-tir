@@ -54,9 +54,10 @@
 .themePreviewCard {
   background: var(--quiz-card-bg);
   border: 1px solid var(--quiz-card-border);
-  border-radius: 12px;
-  padding: 0.75rem;
+  border-radius: var(--quiz-step-block-radius, 12px);
+  padding: var(--quiz-step-block-padding, 0.75rem);
   margin-top: 0.5rem;
+  max-width: min(var(--quiz-step-block-max-width, 720px), 100%);
 }
 
 .themePreviewAccent {

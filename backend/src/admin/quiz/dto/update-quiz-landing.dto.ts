@@ -45,6 +45,18 @@ export class QuizThemeDto {
   @IsString()
   cardBorder?: string;
 
+  @ApiPropertyOptional({ description: 'Макс. ширина блока шагов, px' })
+  @IsOptional()
+  stepBlockMaxWidth?: number;
+
+  @ApiPropertyOptional({ description: 'Внутренние отступы блока шагов, px' })
+  @IsOptional()
+  stepBlockPadding?: number;
+
+  @ApiPropertyOptional({ description: 'Скругление блока шагов, px' })
+  @IsOptional()
+  stepBlockBorderRadius?: number;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
