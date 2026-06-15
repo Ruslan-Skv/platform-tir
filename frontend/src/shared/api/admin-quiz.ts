@@ -1,5 +1,6 @@
 import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { nestMessageFromBody } from '@/shared/lib/nest-error-message';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -37,6 +38,10 @@ export interface AdminQuizLanding {
   successText?: string | null;
   catalogFileUrl?: string | null;
   privacyPolicyUrl?: string | null;
+  privacyPolicyTitle?: string | null;
+  privacyPolicyContent?: string | null;
+  consentText?: string | null;
+  consentLinkText?: string | null;
   notifyEmails?: string[] | null;
   notifyTelegramIds?: string[] | null;
   notifyPhones?: string[] | null;
@@ -92,7 +97,10 @@ export async function updateAdminQuiz(
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify(data),
   });
-  if (!res.ok) throw new Error('Ошибка сохранения');
+  if (!res.ok) {
+    const body = await res.json().catch(() => null);
+    throw new Error(nestMessageFromBody(body) || 'Ошибка сохранения');
+  }
   return res.json();
 }
 
@@ -175,6 +183,22 @@ export async function uploadQuizCatalog(
     body: formData,
   });
   if (!res.ok) throw new Error('Ошибка загрузки каталога');
+  return res.json();
+}
+
+export async function uploadQuizPrivacyPolicy(
+  slug: string,
+  file: File,
+  getAuthHeaders: () => Record<string, string>
+): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await apiFetch(`${API_URL}/admin/quiz/${slug}/upload-privacy-policy`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Ошибка загрузки PDF политики');
   return res.json();
 }
 

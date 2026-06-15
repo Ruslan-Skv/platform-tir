@@ -16,11 +16,12 @@ import {
   updateQuizSubmission,
   uploadQuizCatalog,
   uploadQuizOptionImage,
+  uploadQuizPrivacyPolicy,
 } from '@/shared/api/admin-quiz';
 import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { DEFAULT_QUIZ_THEME } from '@/shared/api/quiz-theme';
 
-export type MebelQuizTab = 'settings' | 'theme' | 'steps' | 'submissions';
+export type MebelQuizTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'consent';
 
 export function useMebelQuizPage() {
   const { getAuthHeaders } = useAuth();
@@ -39,6 +40,8 @@ export function useMebelQuizPage() {
   const [furnitureFilter, setFurnitureFilter] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [uploadingPrivacyPolicy, setUploadingPrivacyPolicy] = useState(false);
+  const [uploadingCatalog, setUploadingCatalog] = useState(false);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -144,8 +147,32 @@ export function useMebelQuizPage() {
       );
       applyQuizData(updated);
       showMessage('success', 'Настройки сохранены');
-    } catch {
-      showMessage('error', 'Ошибка сохранения');
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Ошибка сохранения');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSaveConsent = async () => {
+    if (!quiz) return;
+    setSaving(true);
+    try {
+      const updated = await updateAdminQuiz(
+        MEBEL_QUIZ_SLUG,
+        {
+          privacyPolicyUrl: quiz.privacyPolicyUrl,
+          privacyPolicyTitle: quiz.privacyPolicyTitle,
+          privacyPolicyContent: quiz.privacyPolicyContent,
+          consentText: quiz.consentText,
+          consentLinkText: quiz.consentLinkText,
+        },
+        getAuthHeaders
+      );
+      applyQuizData(updated);
+      showMessage('success', 'Согласие сохранено');
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Ошибка сохранения');
     } finally {
       setSaving(false);
     }
@@ -199,14 +226,33 @@ export function useMebelQuizPage() {
   const handleUploadCatalog = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    setUploadingCatalog(true);
     try {
       const { url } = await uploadQuizCatalog(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
       setQuizField('catalogFileUrl', url);
       showMessage('success', 'Каталог загружен');
     } catch {
       showMessage('error', 'Ошибка загрузки');
+    } finally {
+      setUploadingCatalog(false);
+      e.target.value = '';
     }
-    e.target.value = '';
+  };
+
+  const handleUploadPrivacyPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingPrivacyPolicy(true);
+    try {
+      const { url } = await uploadQuizPrivacyPolicy(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
+      setQuizField('privacyPolicyUrl', url);
+      showMessage('success', 'PDF политики загружен');
+    } catch {
+      showMessage('error', 'Ошибка загрузки PDF');
+    } finally {
+      setUploadingPrivacyPolicy(false);
+      e.target.value = '';
+    }
   };
 
   const handleUploadOptionImage = async (
@@ -284,9 +330,13 @@ export function useMebelQuizPage() {
     setThemeField,
     setStepsDraft,
     handleSaveSettings,
+    handleSaveConsent,
     handleSaveTheme,
     handleSaveSteps,
     handleUploadCatalog,
+    handleUploadPrivacyPolicy,
+    uploadingCatalog,
+    uploadingPrivacyPolicy,
     handleUploadBackground,
     handleUploadOptionImage,
     handleUpdateSubmission,

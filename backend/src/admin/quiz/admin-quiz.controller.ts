@@ -30,6 +30,7 @@ import { UpdateQuizSubmissionDto } from './dto/update-quiz-submission.dto';
 
 const quizUploadDir = path.join(process.cwd(), 'uploads', 'quiz');
 const quizCatalogDir = path.join(process.cwd(), 'uploads', 'quiz', 'catalog');
+const quizPolicyDir = path.join(process.cwd(), 'uploads', 'quiz', 'policy');
 
 const imageStorage = diskStorage({
   destination: (_req, _file, cb) => {
@@ -48,6 +49,16 @@ const catalogStorage = diskStorage({
   },
   filename: (_req, file, cb) => {
     cb(null, `catalog-${Date.now()}${extname(file.originalname) || '.pdf'}`);
+  },
+});
+
+const policyStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    if (!fs.existsSync(quizPolicyDir)) fs.mkdirSync(quizPolicyDir, { recursive: true });
+    cb(null, quizPolicyDir);
+  },
+  filename: (_req, file, cb) => {
+    cb(null, `policy-${Date.now()}${extname(file.originalname) || '.pdf'}`);
   },
 });
 
@@ -160,5 +171,34 @@ export class AdminQuizController {
     const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
     const uploadsBase = baseUrl.replace(/\/api\/v1\/?$/, '');
     return { url: `${uploadsBase}/uploads/quiz/catalog/${file.filename}` };
+  }
+
+  @Post(':slug/upload-privacy-policy')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: policyStorage,
+      limits: { fileSize: 20 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.pdf$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустим только PDF'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: { type: 'object', properties: { file: { type: 'string', format: 'binary' } } },
+  })
+  @ApiOperation({ summary: 'Загрузить PDF политики конфиденциальности' })
+  uploadPrivacyPolicy(@UploadedFile() file: Express.Multer.File, @Req() req: Request) {
+    if (!file) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    const uploadsBase = baseUrl.replace(/\/api\/v1\/?$/, '');
+    return { url: `${uploadsBase}/uploads/quiz/policy/${file.filename}` };
   }
 }

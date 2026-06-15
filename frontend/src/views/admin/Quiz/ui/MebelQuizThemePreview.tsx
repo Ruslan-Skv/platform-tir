@@ -10,6 +10,7 @@ type MebelQuizThemePreviewProps = {
   theme: QuizTheme;
   headline?: string | null;
   subheadline?: string | null;
+  promoText?: string | null;
   city?: string | null;
   displayPhone?: string | null;
 };
@@ -27,6 +28,7 @@ export function MebelQuizThemePreview({
   theme,
   headline,
   subheadline,
+  promoText,
   city,
   displayPhone,
 }: MebelQuizThemePreviewProps) {
@@ -64,11 +66,33 @@ export function MebelQuizThemePreview({
         </div>
         <h3 className={styles.themePreviewHeading}>{headline || 'Заголовок квиза'}</h3>
         <p className={styles.themePreviewSubheadline}>{subheadline || 'Подзаголовок'}</p>
+        {promoText ? <p className={styles.themePreviewPromo}>{promoText}</p> : null}
         <div className={styles.themePreviewCard}>
-          <span className={styles.themePreviewAccent}>Акцентный элемент</span>
-          <button type="button" className={styles.themePreviewButton}>
-            Кнопка
-          </button>
+          <p className={styles.themePreviewStepText}>Пример вопроса в блоке шагов</p>
+          <div className={styles.themePreviewChoiceGrid}>
+            <div className={styles.themePreviewChoiceCard}>
+              <span className={styles.themePreviewChoiceImage} aria-hidden />
+              <span className={styles.themePreviewChoiceLabel}>Вариант</span>
+            </div>
+            <div
+              className={`${styles.themePreviewChoiceCard} ${styles.themePreviewChoiceCardSelected}`}
+            >
+              <span className={styles.themePreviewChoiceImage} aria-hidden />
+              <span className={styles.themePreviewChoiceLabel}>Выбран</span>
+            </div>
+          </div>
+          <div className={styles.themePreviewActions}>
+            <button type="button" className={styles.themePreviewBackButton}>
+              Назад
+            </button>
+            <button type="button" className={styles.themePreviewButton}>
+              Далее
+            </button>
+          </div>
+        </div>
+        <div className={styles.themePreviewSuccess}>
+          <p className={styles.themePreviewSuccessTitle}>Спасибо!</p>
+          <p className={styles.themePreviewSuccessText}>Текст экрана благодарности</p>
         </div>
       </div>
     </div>

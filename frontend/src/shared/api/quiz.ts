@@ -44,6 +44,10 @@ export interface QuizPublicConfig {
   successText?: string | null;
   catalogFileUrl?: string | null;
   privacyPolicyUrl?: string | null;
+  privacyPolicyTitle?: string | null;
+  privacyPolicyContent?: string | null;
+  consentText?: string | null;
+  consentLinkText?: string | null;
   steps: QuizStepConfig[];
 }
 

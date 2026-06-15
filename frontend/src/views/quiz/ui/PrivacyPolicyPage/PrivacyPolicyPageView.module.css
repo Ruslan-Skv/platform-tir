@@ -1,0 +1,53 @@
+.pdfPage {
+  min-height: 100vh;
+  margin: 0;
+  background: #525659;
+}
+
+.pdfFrame {
+  display: block;
+  width: 100%;
+  height: 100vh;
+  height: 100dvh;
+  border: none;
+}
+
+.textPage {
+  box-sizing: border-box;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  color: #1a202c;
+  font-family:
+    system-ui,
+    -apple-system,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
+}
+
+.title {
+  margin: 0 0 1.5rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.textBody {
+  font-size: 0.95rem;
+  line-height: 1.65;
+  text-align: justify;
+  text-justify: inter-word;
+  hyphens: auto;
+}
+
+.empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 50vh;
+  padding: 2rem;
+  color: #6b7280;
+  font-family: system-ui, sans-serif;
+}

@@ -1,8 +1,8 @@
 .themePreview {
-  border-radius: 12px;
-  padding: 1rem;
-  margin-bottom: 1rem;
-  min-height: 120px;
+  border-radius: 10px;
+  padding: 0.75rem;
+  margin-bottom: 0;
+  min-height: 100px;
   position: relative;
   overflow: hidden;
   background: var(--quiz-bg);
@@ -24,11 +24,16 @@
 .themePreviewContent {
   position: relative;
   z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
 }
 
 .themePreviewBadges {
   display: flex;
   flex-wrap: wrap;
+  justify-content: center;
   gap: 0.75rem;
   margin-bottom: 0.75rem;
 }
@@ -43,12 +48,23 @@
 .themePreviewHeading {
   color: var(--quiz-heading);
   font-family: var(--quiz-heading-font);
+  font-size: var(--quiz-headline-font-size, 30px);
+  font-weight: var(--quiz-headline-font-weight, 700);
   margin: 0;
 }
 
 .themePreviewSubheadline {
   color: var(--quiz-muted);
+  font-size: var(--quiz-subheadline-font-size, 15px);
+  font-weight: var(--quiz-subheadline-font-weight, 400);
   margin: 0.35rem 0 0;
+}
+
+.themePreviewPromo {
+  color: var(--quiz-promo-text, var(--quiz-accent));
+  font-size: var(--quiz-promo-font-size, 14px);
+  font-weight: var(--quiz-promo-font-weight, 600);
+  margin: 0.5rem 0 0;
 }
 
 .themePreviewCard {
@@ -56,8 +72,73 @@
   border: 1px solid var(--quiz-card-border);
   border-radius: var(--quiz-step-block-radius, 12px);
   padding: var(--quiz-step-block-padding, 0.75rem);
-  margin-top: 0.5rem;
+  margin-top: 0.75rem;
+  width: 100%;
   max-width: min(var(--quiz-step-block-max-width, 720px), 100%);
+  color: var(--quiz-step-text, var(--quiz-text));
+  box-sizing: border-box;
+}
+
+.themePreviewStepText {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+}
+
+.themePreviewChoiceGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.themePreviewChoiceCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--quiz-choice-card-gap, 6px);
+  padding: var(--quiz-choice-card-py, 8px) var(--quiz-choice-card-px, 8px);
+  border: var(--quiz-choice-card-border-width, 1px) solid
+    var(--quiz-choice-card-border, rgba(0, 0, 0, 0.12));
+  border-radius: var(--quiz-choice-card-radius, 12px);
+  background: var(--quiz-choice-card-bg, rgba(255, 255, 255, 0.95));
+}
+
+.themePreviewChoiceCardSelected {
+  background: var(--quiz-choice-card-selected-bg, #fff);
+  border-color: var(--quiz-choice-card-selected-border, var(--quiz-accent));
+  box-shadow: 0 0 0 1px var(--quiz-choice-card-selected-border, var(--quiz-accent));
+}
+
+.themePreviewChoiceImage {
+  width: 100%;
+  height: var(--quiz-choice-card-image-height, 64px);
+  border-radius: var(--quiz-choice-card-image-radius, 8px);
+  background: rgba(0, 0, 0, 0.06);
+}
+
+.themePreviewChoiceLabel {
+  font-size: 0.75rem;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.themePreviewActions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.themePreviewBackButton {
+  border: 1px solid var(--quiz-back-btn-border, rgba(0, 0, 0, 0.2));
+  background: var(--quiz-back-btn-bg, rgba(255, 255, 255, 0.85));
+  color: var(--quiz-back-btn-text, #4a5568);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: default;
 }
 
 .themePreviewAccent {
@@ -65,12 +146,34 @@
 }
 
 .themePreviewButton {
-  display: block;
-  margin-top: 8px;
   background: var(--quiz-accent);
   color: var(--quiz-btn-text);
   border: none;
   border-radius: 8px;
   padding: 6px 12px;
+  font-size: 0.85rem;
+  font-weight: 600;
   cursor: default;
+  margin-left: auto;
+}
+
+.themePreviewSuccess {
+  margin-top: 0.75rem;
+  text-align: center;
+  padding: 0.5rem;
+  width: 100%;
+  max-width: min(var(--quiz-step-block-max-width, 720px), 100%);
+  box-sizing: border-box;
+}
+
+.themePreviewSuccessTitle {
+  margin: 0;
+  font-weight: 700;
+  color: var(--quiz-success-title, var(--quiz-heading));
+}
+
+.themePreviewSuccessText {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--quiz-success-text, var(--quiz-muted));
 }

@@ -340,31 +340,35 @@ model QuoteFormBlock {
 
 /// Квиз-лендинг (мебель, ремонт и др. направления)
 model QuizLanding {
-  id                String           @id @default(cuid())
-  slug              String           @unique
-  direction         String           @default("furniture") // furniture | repair | windows | ...
-  title             String
-  domain            String?          @unique
-  isActive          Boolean          @default(true)
-  headline          String?
-  subheadline       String?          @db.Text
-  promoText         String?
-  logoUrl           String?
-  primaryColor      String           @default("#c9a227")
-  theme             Json? // цвета, шрифты, фон — см. QuizTheme
-  displayPhone      String?
-  city              String?
-  successTitle      String?
-  successText       String?          @db.Text
-  catalogFileUrl    String?
-  privacyPolicyUrl  String?
-  notifyEmails      Json? // string[]
-  notifyTelegramIds Json? // string[]
-  notifyPhones      Json? // string[] — для SMS в будущем; дублируется в тексте уведомления
-  createdAt         DateTime         @default(now())
-  updatedAt         DateTime         @updatedAt
-  steps             QuizStep[]
-  submissions       QuizSubmission[]
+  id                   String           @id @default(cuid())
+  slug                 String           @unique
+  direction            String           @default("furniture") // furniture | repair | windows | ...
+  title                String
+  domain               String?          @unique
+  isActive             Boolean          @default(true)
+  headline             String?
+  subheadline          String?          @db.Text
+  promoText            String?
+  logoUrl              String?
+  primaryColor         String           @default("#c9a227")
+  theme                Json? // цвета, шрифты, фон — см. QuizTheme
+  displayPhone         String?
+  city                 String?
+  successTitle         String?
+  successText          String?          @db.Text
+  catalogFileUrl       String?
+  privacyPolicyUrl     String?
+  privacyPolicyTitle   String?
+  privacyPolicyContent String?          @db.Text
+  consentText          String?          @db.Text
+  consentLinkText      String?
+  notifyEmails         Json? // string[]
+  notifyTelegramIds    Json? // string[]
+  notifyPhones         Json? // string[] — для SMS в будущем; дублируется в тексте уведомления
+  createdAt            DateTime         @default(now())
+  updatedAt            DateTime         @updatedAt
+  steps                QuizStep[]
+  submissions          QuizSubmission[]
 
   @@map("quiz_landings")
 }

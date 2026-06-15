@@ -1,7 +1,17 @@
 'use client';
 
-import type { QuizPublicConfig, QuizStepConfig } from '@/shared/api/quiz';
+import { useState } from 'react';
 
+import type { QuizPublicConfig, QuizStepConfig } from '@/shared/api/quiz';
+import {
+  PHONE_PLACEHOLDER,
+  digitsOnlyPhone,
+  formatPhoneInput,
+  getPhoneValidationMessage,
+  isValidPhone,
+} from '@/shared/lib/phone';
+
+import { QuizConsentLabel } from '../QuizConsentLabel';
 import styles from '../QuizWizard.module.css';
 
 type ContactStepProps = {
@@ -25,18 +35,36 @@ export function ContactStep({
   onPhoneChange,
   onConsentChange,
 }: ContactStepProps) {
+  const [phoneTouched, setPhoneTouched] = useState(false);
+  const phoneValidationMessage = getPhoneValidationMessage(phone);
+  const phoneError =
+    phoneValidationMessage &&
+    (phoneTouched || (digitsOnlyPhone(phone).length > 0 && !isValidPhone(phone)))
+      ? phoneValidationMessage
+      : null;
+
   return (
     <div className={styles.contactFields}>
       <label className={styles.fieldLabel}>
         Телефон *
         <input
           type="tel"
-          className={styles.textInput}
+          inputMode="tel"
+          autoComplete="tel"
+          className={`${styles.textInput} ${phoneError ? styles.textInputInvalid : ''}`}
           value={phone}
-          onChange={(e) => onPhoneChange(e.target.value)}
-          placeholder="+7 (___) ___-__-__"
+          onChange={(e) => onPhoneChange(formatPhoneInput(e.target.value))}
+          onBlur={() => setPhoneTouched(true)}
+          placeholder={PHONE_PLACEHOLDER}
+          aria-invalid={phoneError ? true : undefined}
+          aria-describedby={phoneError ? 'quiz-phone-error' : undefined}
           autoFocus
         />
+        {phoneError ? (
+          <span id="quiz-phone-error" className={styles.fieldError} role="alert">
+            {phoneError}
+          </span>
+        ) : null}
       </label>
       <label className={styles.fieldLabel}>
         Имя *
@@ -55,17 +83,7 @@ export function ContactStep({
           onChange={(e) => onConsentChange(e.target.checked)}
         />
         <span>
-          Я согласен(-на) на обработку персональных данных
-          {config.privacyPolicyUrl ? (
-            <>
-              {' '}
-              (
-              <a href={config.privacyPolicyUrl} target="_blank" rel="noopener noreferrer">
-                политика
-              </a>
-              )
-            </>
-          ) : null}
+          <QuizConsentLabel config={config} />
         </span>
       </label>
       {step.subtitle ? <p className={styles.stepHint}>{step.subtitle}</p> : null}

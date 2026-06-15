@@ -17,6 +17,7 @@ export function headerBadgePreviewStyle(theme: QuizTheme): CSSProperties {
     borderRadius: theme.cityBadgeBorderRadius,
     boxShadow: `3px 2px 5px rgba(0, 0, 0, ${theme.cityBadgeShadowOpacity / 100})`,
     fontSize: theme.cityBadgeFontSize,
+    fontWeight: theme.cityBadgeFontWeight,
     color: theme.cityBadgeTextColor,
   };
 }
@@ -42,6 +43,19 @@ export function mergeQuizTheme(
     ...theme,
     backgroundImageUrl,
     accentColor: accent,
+    promoTextColor: theme.promoTextColor ?? accent,
+    stepBlockTextColor:
+      theme.stepBlockTextColor ?? theme.textColor ?? DEFAULT_QUIZ_THEME.stepBlockTextColor,
+    successTitleColor:
+      theme.successTitleColor ?? theme.headingColor ?? DEFAULT_QUIZ_THEME.successTitleColor,
+    successTextColor:
+      theme.successTextColor ?? theme.mutedTextColor ?? DEFAULT_QUIZ_THEME.successTextColor,
+    backButtonTextColor:
+      theme.backButtonTextColor ??
+      theme.stepBlockTextColor ??
+      theme.textColor ??
+      DEFAULT_QUIZ_THEME.backButtonTextColor,
+    choiceCardSelectedBorderColor: theme.choiceCardSelectedBorderColor ?? accent,
   };
 }
 
@@ -57,14 +71,39 @@ export function quizThemeToCssVars(theme: QuizTheme): CSSProperties {
     ),
     ['--quiz-text' as string]: theme.textColor,
     ['--quiz-heading' as string]: theme.headingColor,
+    ['--quiz-headline-font-size' as string]: `${theme.headlineFontSize}px`,
+    ['--quiz-headline-font-weight' as string]: String(theme.headlineFontWeight),
     ['--quiz-muted' as string]: theme.mutedTextColor,
+    ['--quiz-subheadline-font-size' as string]: `${theme.subheadlineFontSize}px`,
+    ['--quiz-subheadline-font-weight' as string]: String(theme.subheadlineFontWeight),
+    ['--quiz-promo-text' as string]: theme.promoTextColor,
+    ['--quiz-promo-font-size' as string]: `${theme.promoFontSize}px`,
+    ['--quiz-promo-font-weight' as string]: String(theme.promoFontWeight),
+    ['--quiz-step-text' as string]: theme.stepBlockTextColor,
+    ['--quiz-success-title' as string]: theme.successTitleColor,
+    ['--quiz-success-text' as string]: theme.successTextColor,
     ['--quiz-card-bg' as string]: theme.cardBackground,
     ['--quiz-card-border' as string]: theme.cardBorder,
     ['--quiz-step-block-max-width' as string]: `${theme.stepBlockMaxWidth}px`,
     ['--quiz-step-block-padding' as string]: `${theme.stepBlockPadding}px`,
     ['--quiz-step-block-radius' as string]: `${theme.stepBlockBorderRadius}px`,
+    ['--quiz-choice-columns' as string]: String(Math.min(6, Math.max(3, theme.stepChoiceColumns))),
+    ['--quiz-choice-card-bg' as string]: theme.choiceCardBackground,
+    ['--quiz-choice-card-border' as string]: theme.choiceCardBorderColor,
+    ['--quiz-choice-card-border-width' as string]: `${theme.choiceCardBorderWidth}px`,
+    ['--quiz-choice-card-radius' as string]: `${theme.choiceCardBorderRadius}px`,
+    ['--quiz-choice-card-px' as string]: `${theme.choiceCardPaddingX}px`,
+    ['--quiz-choice-card-py' as string]: `${theme.choiceCardPaddingY}px`,
+    ['--quiz-choice-card-gap' as string]: `${theme.choiceCardGap}px`,
+    ['--quiz-choice-card-image-height' as string]: `${theme.choiceCardImageHeight}px`,
+    ['--quiz-choice-card-image-radius' as string]: `${theme.choiceCardImageRadius}px`,
+    ['--quiz-choice-card-selected-bg' as string]: theme.choiceCardSelectedBackground,
+    ['--quiz-choice-card-selected-border' as string]: theme.choiceCardSelectedBorderColor,
     ['--quiz-accent' as string]: theme.accentColor,
     ['--quiz-btn-text' as string]: theme.buttonTextColor,
+    ['--quiz-back-btn-text' as string]: theme.backButtonTextColor,
+    ['--quiz-back-btn-border' as string]: theme.backButtonBorderColor,
+    ['--quiz-back-btn-bg' as string]: theme.backButtonBackground,
     ['--quiz-font' as string]: theme.fontFamily,
     ['--quiz-heading-font' as string]: theme.headingFontFamily,
     ['--quiz-header-badge-bg' as string]: theme.cityBadgeBackground,
@@ -75,6 +114,7 @@ export function quizThemeToCssVars(theme: QuizTheme): CSSProperties {
     ['--quiz-header-badge-icon-color' as string]: theme.cityBadgeIconColor,
     ['--quiz-header-badge-border' as string]: theme.cityBadgeBorderColor,
     ['--quiz-header-badge-font-size' as string]: `${theme.cityBadgeFontSize}px`,
+    ['--quiz-header-badge-font-weight' as string]: String(theme.cityBadgeFontWeight),
     ['--quiz-header-badge-px' as string]: `${theme.cityBadgePaddingX}px`,
     ['--quiz-header-badge-py' as string]: `${theme.cityBadgePaddingY}px`,
     ['--quiz-header-badge-radius' as string]: `${theme.cityBadgeBorderRadius}px`,

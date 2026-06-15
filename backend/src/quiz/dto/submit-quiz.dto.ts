@@ -12,7 +12,9 @@ export class SubmitQuizDto {
   @IsString()
   @IsNotEmpty()
   @MaxLength(30)
-  @Matches(/^[\d\s+\-()]+$/, { message: 'Некорректный номер телефона' })
+  @Matches(/^(\+7|8)\(\d{3}\)-\d{3}-\d{2}-\d{2}$/, {
+    message: 'Некорректный номер телефона',
+  })
   phone: string;
 
   @ApiProperty({ description: 'Ответы по ключам шагов' })

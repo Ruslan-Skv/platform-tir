@@ -4,7 +4,7 @@ import { PrismaService } from '../database/prisma.service';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { QuizNotifierService } from './quiz-notifier.service';
 import type { QuizOption, QuizShowWhen, QuizTheme } from './quiz.types';
-import { DEFAULT_QUIZ_THEME, FURNITURE_TYPE_VALUES } from './quiz.types';
+import { DEFAULT_QUIZ_CONSENT, DEFAULT_QUIZ_THEME, FURNITURE_TYPE_VALUES } from './quiz.types';
 
 @Injectable()
 export class QuizService {
@@ -110,7 +110,12 @@ export class QuizService {
       successTitle: quiz.successTitle,
       successText: quiz.successText,
       catalogFileUrl: quiz.catalogFileUrl,
-      privacyPolicyUrl: quiz.privacyPolicyUrl,
+      privacyPolicyUrl: quiz.privacyPolicyUrl?.trim() || null,
+      privacyPolicyTitle:
+        quiz.privacyPolicyTitle?.trim() || DEFAULT_QUIZ_CONSENT.privacyPolicyTitle,
+      privacyPolicyContent: quiz.privacyPolicyContent?.trim() || null,
+      consentText: quiz.consentText?.trim() || DEFAULT_QUIZ_CONSENT.consentText,
+      consentLinkText: quiz.consentLinkText?.trim() || DEFAULT_QUIZ_CONSENT.consentLinkText,
       steps: quiz.steps.map((s) => ({
         id: s.id,
         key: s.key,
@@ -181,14 +186,39 @@ export class QuizService {
       backgroundImageBrightness: num('backgroundImageBrightness'),
       textColor: str('textColor'),
       headingColor: str('headingColor'),
+      headlineFontSize: num('headlineFontSize'),
+      headlineFontWeight: num('headlineFontWeight'),
       mutedTextColor: str('mutedTextColor'),
+      subheadlineFontSize: num('subheadlineFontSize'),
+      subheadlineFontWeight: num('subheadlineFontWeight'),
+      promoTextColor: str('promoTextColor'),
+      promoFontSize: num('promoFontSize'),
+      promoFontWeight: num('promoFontWeight'),
+      stepBlockTextColor: str('stepBlockTextColor'),
+      successTitleColor: str('successTitleColor'),
+      successTextColor: str('successTextColor'),
       cardBackground: str('cardBackground'),
       cardBorder: str('cardBorder'),
       stepBlockMaxWidth: num('stepBlockMaxWidth'),
       stepBlockPadding: num('stepBlockPadding'),
       stepBlockBorderRadius: num('stepBlockBorderRadius'),
+      stepChoiceColumns: num('stepChoiceColumns'),
+      choiceCardBackground: str('choiceCardBackground'),
+      choiceCardBorderColor: str('choiceCardBorderColor'),
+      choiceCardBorderWidth: num('choiceCardBorderWidth'),
+      choiceCardBorderRadius: num('choiceCardBorderRadius'),
+      choiceCardPaddingX: num('choiceCardPaddingX'),
+      choiceCardPaddingY: num('choiceCardPaddingY'),
+      choiceCardGap: num('choiceCardGap'),
+      choiceCardImageHeight: num('choiceCardImageHeight'),
+      choiceCardImageRadius: num('choiceCardImageRadius'),
+      choiceCardSelectedBackground: str('choiceCardSelectedBackground'),
+      choiceCardSelectedBorderColor: str('choiceCardSelectedBorderColor'),
       accentColor: str('accentColor'),
       buttonTextColor: str('buttonTextColor'),
+      backButtonTextColor: str('backButtonTextColor'),
+      backButtonBorderColor: str('backButtonBorderColor'),
+      backButtonBackground: str('backButtonBackground'),
       fontFamily: str('fontFamily'),
       headingFontFamily: str('headingFontFamily'),
       cityBadgeBackground: str('cityBadgeBackground'),
@@ -197,6 +227,7 @@ export class QuizService {
       cityBadgeIconColor: str('cityBadgeIconColor'),
       cityBadgeBorderColor: str('cityBadgeBorderColor'),
       cityBadgeFontSize: num('cityBadgeFontSize'),
+      cityBadgeFontWeight: num('cityBadgeFontWeight'),
       cityBadgePaddingX: num('cityBadgePaddingX'),
       cityBadgePaddingY: num('cityBadgePaddingY'),
       cityBadgeBorderRadius: num('cityBadgeBorderRadius'),

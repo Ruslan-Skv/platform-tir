@@ -6,6 +6,7 @@ import { FURNITURE_TYPE_LABELS, QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/a
 import styles from './MebelQuizPage.module.css';
 import type { useMebelQuizPage } from './hooks/useMebelQuizPage';
 import { MebelQuizThemePreview } from './ui/MebelQuizThemePreview';
+import { QuizAdminFileUpload } from './ui/QuizAdminFileUpload';
 
 type Model = ReturnType<typeof useMebelQuizPage>;
 
@@ -14,6 +15,7 @@ const TABS: { id: Model['tab']; label: string }[] = [
   { id: 'theme', label: 'Оформление' },
   { id: 'steps', label: 'Шаги' },
   { id: 'submissions', label: 'Заявки' },
+  { id: 'consent', label: 'Согласие' },
 ];
 
 const FONT_OPTIONS = [
@@ -22,6 +24,13 @@ const FONT_OPTIONS = [
   '"Oswald", system-ui, sans-serif',
   '"Play", system-ui, sans-serif',
 ];
+
+const FONT_WEIGHT_OPTIONS = [
+  { value: 400, label: 'Обычный' },
+  { value: 500, label: 'Средний' },
+  { value: 600, label: 'Полужирный' },
+  { value: 700, label: 'Жирный' },
+] as const;
 
 export function MebelQuizPageView({ model }: { model: Model }) {
   const {
@@ -48,9 +57,13 @@ export function MebelQuizPageView({ model }: { model: Model }) {
     setThemeField,
     setStepsDraft,
     handleSaveSettings,
+    handleSaveConsent,
     handleSaveTheme,
     handleSaveSteps,
     handleUploadCatalog,
+    handleUploadPrivacyPolicy,
+    uploadingPrivacyPolicy,
+    uploadingCatalog,
     handleUploadBackground,
     handleUploadOptionImage,
     handleUpdateSubmission,
@@ -140,6 +153,16 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             {saving ? 'Сохранение…' : 'Сохранить'}
           </button>
         ) : null}
+        {tab === 'consent' ? (
+          <button
+            type="submit"
+            form="quiz-consent-form"
+            className={styles.saveButton}
+            disabled={saving}
+          >
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+        ) : null}
       </div>
 
       {tab === 'settings' ? (
@@ -152,7 +175,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
           }}
         >
           <h2>Основное</h2>
-          <div className={styles.grid}>
+          <div className={styles.settingsBasicGrid}>
             <label>
               Домен
               <input
@@ -217,13 +240,14 @@ export function MebelQuizPageView({ model }: { model: Model }) {
           </label>
           <label>
             Файл каталога
-            <div className={styles.fileRow}>
-              <input
-                value={quiz.catalogFileUrl ?? ''}
-                onChange={(e) => setQuizField('catalogFileUrl', e.target.value)}
-              />
-              <input type="file" accept=".pdf,image/*" onChange={handleUploadCatalog} />
-            </div>
+            <QuizAdminFileUpload
+              url={quiz.catalogFileUrl}
+              onUrlChange={(v) => setQuizField('catalogFileUrl', v)}
+              onFileSelect={handleUploadCatalog}
+              uploading={uploadingCatalog}
+              accept=".pdf,image/*"
+              uploadLabel="Загрузить файл"
+            />
           </label>
 
           <h2>Уведомления о заявках</h2>
@@ -284,7 +308,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
       {tab === 'theme' ? (
         <form
           id="quiz-theme-form"
-          className={styles.section}
+          className={`${styles.section} ${styles.themeForm}`}
           onSubmit={(e) => {
             e.preventDefault();
             handleSaveTheme();
@@ -297,13 +321,16 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             </a>{' '}
             (<code>/images/light-fon.png</code>).
           </p>
-          <MebelQuizThemePreview
-            theme={themeDraft}
-            headline={quiz.headline}
-            subheadline={quiz.subheadline}
-            city={quiz.city}
-            displayPhone={quiz.displayPhone}
-          />
+          <div className={styles.themePreviewBar}>
+            <MebelQuizThemePreview
+              theme={themeDraft}
+              headline={quiz.headline}
+              subheadline={quiz.subheadline}
+              promoText={quiz.promoText}
+              city={quiz.city}
+              displayPhone={quiz.displayPhone}
+            />
+          </div>
 
           <h2>Фон страницы</h2>
           <label>
@@ -348,35 +375,59 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                 onChange={(e) => setThemeField('backgroundImageBrightness', Number(e.target.value))}
               />
             </label>
+            <label>
+              Цвет подложки
+              <input
+                value={themeDraft.background}
+                onChange={(e) => setThemeField('background', e.target.value)}
+              />
+            </label>
           </div>
-          <label>
-            Цвет подложки (виден при прозрачности или без картинки)
-            <input
-              value={themeDraft.background}
-              onChange={(e) => setThemeField('background', e.target.value)}
-            />
-          </label>
 
-          <h2>Цвета и шрифты</h2>
+          <h2>Основное</h2>
+          <p className={styles.hint}>
+            Цвет, размер и начертание текста в шапке и вводной части лендинга.
+          </p>
+
+          <h3 className={styles.themeSubheading}>Город / телефон</h3>
           <div className={styles.grid}>
             <label>
-              Акцентный цвет
+              Цвет
               <input
                 type="color"
-                value={themeDraft.accentColor}
-                onChange={(e) => setThemeField('accentColor', e.target.value)}
+                value={themeDraft.cityBadgeTextColor}
+                onChange={(e) => setThemeField('cityBadgeTextColor', e.target.value)}
               />
             </label>
             <label>
-              Цвет текста
+              Размер: {themeDraft.cityBadgeFontSize}px
               <input
-                type="color"
-                value={themeDraft.textColor}
-                onChange={(e) => setThemeField('textColor', e.target.value)}
+                type="range"
+                min={10}
+                max={28}
+                value={themeDraft.cityBadgeFontSize}
+                onChange={(e) => setThemeField('cityBadgeFontSize', Number(e.target.value))}
               />
             </label>
             <label>
-              Цвет заголовков
+              Начертание
+              <select
+                value={themeDraft.cityBadgeFontWeight}
+                onChange={(e) => setThemeField('cityBadgeFontWeight', Number(e.target.value))}
+              >
+                {FONT_WEIGHT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <h3 className={styles.themeSubheading}>Заголовок</h3>
+          <div className={styles.grid}>
+            <label>
+              Цвет
               <input
                 type="color"
                 value={themeDraft.headingColor}
@@ -384,7 +435,115 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               />
             </label>
             <label>
-              Фон карточки шага
+              Размер: {themeDraft.headlineFontSize}px
+              <input
+                type="range"
+                min={18}
+                max={48}
+                step={1}
+                value={themeDraft.headlineFontSize}
+                onChange={(e) => setThemeField('headlineFontSize', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Начертание
+              <select
+                value={themeDraft.headlineFontWeight}
+                onChange={(e) => setThemeField('headlineFontWeight', Number(e.target.value))}
+              >
+                {FONT_WEIGHT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <h3 className={styles.themeSubheading}>Подзаголовок</h3>
+          <div className={styles.grid}>
+            <label>
+              Цвет
+              <input
+                type="color"
+                value={themeDraft.mutedTextColor}
+                onChange={(e) => setThemeField('mutedTextColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Размер: {themeDraft.subheadlineFontSize}px
+              <input
+                type="range"
+                min={12}
+                max={28}
+                step={1}
+                value={themeDraft.subheadlineFontSize}
+                onChange={(e) => setThemeField('subheadlineFontSize', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Начертание
+              <select
+                value={themeDraft.subheadlineFontWeight}
+                onChange={(e) => setThemeField('subheadlineFontWeight', Number(e.target.value))}
+              >
+                {FONT_WEIGHT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <h3 className={styles.themeSubheading}>Промо-текст</h3>
+          <div className={styles.grid}>
+            <label>
+              Цвет
+              <input
+                type="color"
+                value={themeDraft.promoTextColor}
+                onChange={(e) => setThemeField('promoTextColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Размер: {themeDraft.promoFontSize}px
+              <input
+                type="range"
+                min={11}
+                max={24}
+                step={1}
+                value={themeDraft.promoFontSize}
+                onChange={(e) => setThemeField('promoFontSize', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Начертание
+              <select
+                value={themeDraft.promoFontWeight}
+                onChange={(e) => setThemeField('promoFontWeight', Number(e.target.value))}
+              >
+                {FONT_WEIGHT_OPTIONS.map((o) => (
+                  <option key={o.value} value={o.value}>
+                    {o.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <h2>Блок вопросов</h2>
+          <div className={styles.grid}>
+            <label>
+              Цвет текста
+              <input
+                type="color"
+                value={themeDraft.stepBlockTextColor}
+                onChange={(e) => setThemeField('stepBlockTextColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Фон карточки
               <input
                 value={themeDraft.cardBackground}
                 onChange={(e) => setThemeField('cardBackground', e.target.value)}
@@ -397,86 +556,276 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                 onChange={(e) => setThemeField('cardBorder', e.target.value)}
               />
             </label>
+          </div>
+
+          <h2>Экран «Спасибо»</h2>
+          <div className={styles.grid}>
             <label>
-              Цвет текста кнопки
+              Заголовок
+              <input
+                type="color"
+                value={themeDraft.successTitleColor}
+                onChange={(e) => setThemeField('successTitleColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Текст
+              <input
+                type="color"
+                value={themeDraft.successTextColor}
+                onChange={(e) => setThemeField('successTextColor', e.target.value)}
+              />
+            </label>
+          </div>
+
+          <h2>Акцент и кнопки</h2>
+          <p className={styles.hint}>
+            «Далее» / «Отправить» — основная кнопка. «Назад» — вторичная кнопка в блоке вопросов.
+          </p>
+
+          <h3 className={styles.themeSubheading}>Кнопка «Далее» / «Отправить»</h3>
+          <div className={styles.grid}>
+            <label>
+              Цвет фона (акцент)
+              <input
+                type="color"
+                value={themeDraft.accentColor}
+                onChange={(e) => setThemeField('accentColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Цвет текста
               <input
                 type="color"
                 value={themeDraft.buttonTextColor}
                 onChange={(e) => setThemeField('buttonTextColor', e.target.value)}
               />
             </label>
+          </div>
+
+          <h3 className={styles.themeSubheading}>Кнопка «Назад»</h3>
+          <div className={styles.grid}>
             <label>
-              Приглушённый текст
+              Цвет текста
               <input
-                value={themeDraft.mutedTextColor}
-                onChange={(e) => setThemeField('mutedTextColor', e.target.value)}
+                type="color"
+                value={themeDraft.backButtonTextColor}
+                onChange={(e) => setThemeField('backButtonTextColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Цвет рамки
+              <input
+                value={themeDraft.backButtonBorderColor}
+                onChange={(e) => setThemeField('backButtonBorderColor', e.target.value)}
+                placeholder="rgba(0, 0, 0, 0.2)"
+              />
+            </label>
+            <label>
+              Фон кнопки
+              <input
+                value={themeDraft.backButtonBackground}
+                onChange={(e) => setThemeField('backButtonBackground', e.target.value)}
+                placeholder="rgba(255, 255, 255, 0.85) или transparent"
               />
             </label>
           </div>
-          <label>
-            Шрифт основного текста
-            <select
-              value={themeDraft.fontFamily}
-              onChange={(e) => setThemeField('fontFamily', e.target.value)}
-            >
-              {FONT_OPTIONS.map((f) => (
-                <option key={f} value={f}>
-                  {f.split(',')[0].replace(/"/g, '')}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label>
-            Шрифт заголовков
-            <select
-              value={themeDraft.headingFontFamily}
-              onChange={(e) => setThemeField('headingFontFamily', e.target.value)}
-            >
-              {FONT_OPTIONS.map((f) => (
-                <option key={f} value={f}>
-                  {f.split(',')[0].replace(/"/g, '')}
-                </option>
-              ))}
-            </select>
-          </label>
+
+          <h2>Шрифты</h2>
+          <div className={styles.grid}>
+            <label>
+              Шрифт основного текста
+              <select
+                value={themeDraft.fontFamily}
+                onChange={(e) => setThemeField('fontFamily', e.target.value)}
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f} value={f}>
+                    {f.split(',')[0].replace(/"/g, '')}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Шрифт заголовков
+              <select
+                value={themeDraft.headingFontFamily}
+                onChange={(e) => setThemeField('headingFontFamily', e.target.value)}
+              >
+                {FONT_OPTIONS.map((f) => (
+                  <option key={f} value={f}>
+                    {f.split(',')[0].replace(/"/g, '')}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
 
           <h2>Блок шагов</h2>
           <p className={styles.hint}>
-            Размер карточки с вопросами и вариантами ответов на лендинге.
+            Размер карточки с вопросами и раскладка вариантов ответов на лендинге.
           </p>
-          <label>
-            Ширина блока: {themeDraft.stepBlockMaxWidth}px
-            <input
-              type="range"
-              min={400}
-              max={1100}
-              step={10}
-              value={themeDraft.stepBlockMaxWidth}
-              onChange={(e) => setThemeField('stepBlockMaxWidth', Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Внутренние отступы: {themeDraft.stepBlockPadding}px
-            <input
-              type="range"
-              min={8}
-              max={48}
-              step={2}
-              value={themeDraft.stepBlockPadding}
-              onChange={(e) => setThemeField('stepBlockPadding', Number(e.target.value))}
-            />
-          </label>
-          <label>
-            Скругление углов: {themeDraft.stepBlockBorderRadius}px
-            <input
-              type="range"
-              min={0}
-              max={32}
-              step={2}
-              value={themeDraft.stepBlockBorderRadius}
-              onChange={(e) => setThemeField('stepBlockBorderRadius', Number(e.target.value))}
-            />
-          </label>
+          <div className={styles.grid}>
+            <label>
+              Карточек в строке: {themeDraft.stepChoiceColumns}
+              <input
+                type="range"
+                min={3}
+                max={6}
+                step={1}
+                value={themeDraft.stepChoiceColumns}
+                onChange={(e) => setThemeField('stepChoiceColumns', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Ширина блока: {themeDraft.stepBlockMaxWidth}px
+              <input
+                type="range"
+                min={400}
+                max={1100}
+                step={10}
+                value={themeDraft.stepBlockMaxWidth}
+                onChange={(e) => setThemeField('stepBlockMaxWidth', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Внутренние отступы: {themeDraft.stepBlockPadding}px
+              <input
+                type="range"
+                min={8}
+                max={48}
+                step={2}
+                value={themeDraft.stepBlockPadding}
+                onChange={(e) => setThemeField('stepBlockPadding', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Скругление углов: {themeDraft.stepBlockBorderRadius}px
+              <input
+                type="range"
+                min={0}
+                max={32}
+                step={2}
+                value={themeDraft.stepBlockBorderRadius}
+                onChange={(e) => setThemeField('stepBlockBorderRadius', Number(e.target.value))}
+              />
+            </label>
+          </div>
+
+          <h3 className={styles.themeSubheading}>Карточки вариантов ответа</h3>
+          <p className={styles.hint}>
+            Внешний вид кнопок с картинкой и подписью на шагах с выбором (кухня, шкаф и т.д.).
+          </p>
+          <div className={styles.grid}>
+            <label>
+              Фон карточки
+              <input
+                value={themeDraft.choiceCardBackground}
+                onChange={(e) => setThemeField('choiceCardBackground', e.target.value)}
+                placeholder="rgba(255, 255, 255, 0.95)"
+              />
+            </label>
+            <label>
+              Цвет рамки
+              <input
+                value={themeDraft.choiceCardBorderColor}
+                onChange={(e) => setThemeField('choiceCardBorderColor', e.target.value)}
+                placeholder="rgba(0, 0, 0, 0.12)"
+              />
+            </label>
+            <label>
+              Толщина рамки: {themeDraft.choiceCardBorderWidth}px
+              <input
+                type="range"
+                min={0}
+                max={4}
+                step={1}
+                value={themeDraft.choiceCardBorderWidth}
+                onChange={(e) => setThemeField('choiceCardBorderWidth', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Скругление карточки: {themeDraft.choiceCardBorderRadius}px
+              <input
+                type="range"
+                min={0}
+                max={24}
+                step={2}
+                value={themeDraft.choiceCardBorderRadius}
+                onChange={(e) => setThemeField('choiceCardBorderRadius', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Отступ слева/справа: {themeDraft.choiceCardPaddingX}px
+              <input
+                type="range"
+                min={0}
+                max={24}
+                step={2}
+                value={themeDraft.choiceCardPaddingX}
+                onChange={(e) => setThemeField('choiceCardPaddingX', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Отступ сверху/снизу: {themeDraft.choiceCardPaddingY}px
+              <input
+                type="range"
+                min={0}
+                max={24}
+                step={2}
+                value={themeDraft.choiceCardPaddingY}
+                onChange={(e) => setThemeField('choiceCardPaddingY', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Отступ до подписи: {themeDraft.choiceCardGap}px
+              <input
+                type="range"
+                min={0}
+                max={20}
+                step={2}
+                value={themeDraft.choiceCardGap}
+                onChange={(e) => setThemeField('choiceCardGap', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Высота картинки: {themeDraft.choiceCardImageHeight}px
+              <input
+                type="range"
+                min={40}
+                max={120}
+                step={4}
+                value={themeDraft.choiceCardImageHeight}
+                onChange={(e) => setThemeField('choiceCardImageHeight', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Скругление картинки: {themeDraft.choiceCardImageRadius}px
+              <input
+                type="range"
+                min={0}
+                max={16}
+                step={2}
+                value={themeDraft.choiceCardImageRadius}
+                onChange={(e) => setThemeField('choiceCardImageRadius', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Фон выбранной карточки
+              <input
+                value={themeDraft.choiceCardSelectedBackground}
+                onChange={(e) => setThemeField('choiceCardSelectedBackground', e.target.value)}
+              />
+            </label>
+            <label>
+              Рамка выбранной карточки
+              <input
+                type="color"
+                value={themeDraft.choiceCardSelectedBorderColor}
+                onChange={(e) => setThemeField('choiceCardSelectedBorderColor', e.target.value)}
+              />
+            </label>
+          </div>
 
           <h2>Бейджи в шапке</h2>
           <p className={styles.hint}>
@@ -505,14 +854,6 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               />
             </label>
             <label>
-              Цвет текста
-              <input
-                type="color"
-                value={themeDraft.cityBadgeTextColor}
-                onChange={(e) => setThemeField('cityBadgeTextColor', e.target.value)}
-              />
-            </label>
-            <label>
               Цвет иконки
               <input
                 type="color"
@@ -526,16 +867,6 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                 type="color"
                 value={themeDraft.cityBadgeBorderColor}
                 onChange={(e) => setThemeField('cityBadgeBorderColor', e.target.value)}
-              />
-            </label>
-            <label>
-              Размер текста: {themeDraft.cityBadgeFontSize}px
-              <input
-                type="range"
-                min={10}
-                max={28}
-                value={themeDraft.cityBadgeFontSize}
-                onChange={(e) => setThemeField('cityBadgeFontSize', Number(e.target.value))}
               />
             </label>
             <label>
@@ -815,6 +1146,73 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {tab === 'consent' ? (
+        <form
+          id="quiz-consent-form"
+          className={styles.section}
+          onSubmit={(e) => {
+            e.preventDefault();
+            handleSaveConsent();
+          }}
+        >
+          <h2>Согласие на обработку данных</h2>
+          <p className={styles.hint}>
+            По клику на «персональных данных» открывается отдельная страница{' '}
+            <code>/quiz/privacy-policy</code>. Если загружен PDF — он показывается на весь экран.
+            Если PDF нет, но есть текст — текст на отдельной странице (можно сохранить как PDF через
+            печать браузера).
+          </p>
+          <label>
+            PDF политики (рекомендуется)
+            <QuizAdminFileUpload
+              url={quiz.privacyPolicyUrl}
+              onUrlChange={(v) => setQuizField('privacyPolicyUrl', v)}
+              onFileSelect={handleUploadPrivacyPolicy}
+              uploading={uploadingPrivacyPolicy}
+              accept=".pdf,application/pdf"
+              uploadLabel="Загрузить PDF"
+              placeholder="https://…/policy.pdf"
+            />
+          </label>
+          <label>
+            Текст рядом с галочкой
+            <input
+              value={quiz.consentText ?? ''}
+              onChange={(e) => setQuizField('consentText', e.target.value)}
+              placeholder="Я согласен(-на) на обработку персональных данных"
+            />
+          </label>
+          <label>
+            Кликабельная фраза (должна быть в тексте выше)
+            <input
+              value={quiz.consentLinkText ?? ''}
+              onChange={(e) => setQuizField('consentLinkText', e.target.value)}
+              placeholder="персональных данных"
+            />
+          </label>
+          <label>
+            Заголовок окна политики
+            <input
+              value={quiz.privacyPolicyTitle ?? ''}
+              onChange={(e) => setQuizField('privacyPolicyTitle', e.target.value)}
+              placeholder="Политика конфиденциальности персональных данных"
+            />
+          </label>
+          <p className={styles.hint}>
+            Используется, если PDF не загружен. Переносы строк в поле — только для редактирования.
+          </p>
+          <label>
+            Текст политики (если нет PDF)
+            <textarea
+              value={quiz.privacyPolicyContent ?? ''}
+              onChange={(e) => setQuizField('privacyPolicyContent', e.target.value)}
+              rows={12}
+              placeholder="Вставьте текст политики конфиденциальности…"
+            />
+          </label>
+        </form>
       ) : null}
     </div>
   );

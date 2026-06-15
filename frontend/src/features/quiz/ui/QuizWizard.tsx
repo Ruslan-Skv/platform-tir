@@ -12,6 +12,7 @@ import {
 } from '@/features/quiz/lib/quiz-theme';
 import type { QuizPublicConfig } from '@/shared/api/quiz';
 import { submitQuiz } from '@/shared/api/quiz';
+import { isValidPhone, normalizePhoneForStorage } from '@/shared/lib/phone';
 import { Logo } from '@/shared/ui/Logo/Logo';
 
 import { QuizProgress } from './QuizProgress';
@@ -130,7 +131,7 @@ export function QuizWizard({ config }: QuizWizardProps) {
   const canProceed = useMemo(() => {
     if (!currentStep) return false;
     if (currentStep.type === 'contact') {
-      return name.trim().length > 0 && phone.trim().length > 5 && consent;
+      return name.trim().length > 0 && isValidPhone(phone) && consent;
     }
     if (!currentStep.required) return true;
     const value = answers[currentStep.key];
@@ -148,7 +149,7 @@ export function QuizWizard({ config }: QuizWizardProps) {
         const params = new URLSearchParams(window.location.search);
         await submitQuiz(config.slug, {
           name: name.trim(),
-          phone: phone.trim(),
+          phone: normalizePhoneForStorage(phone),
           answers: finalAnswers,
           utmSource: params.get('utm_source') ?? undefined,
           utmMedium: params.get('utm_medium') ?? undefined,
@@ -229,11 +230,7 @@ export function QuizWizard({ config }: QuizWizardProps) {
       <section className={styles.hero}>
         <h1 className={styles.headline}>{config.headline}</h1>
         {config.subheadline ? <p className={styles.subheadline}>{config.subheadline}</p> : null}
-        {config.promoText ? (
-          <p className={styles.promo} style={{ color: primaryColor }}>
-            {config.promoText}
-          </p>
-        ) : null}
+        {config.promoText ? <p className={styles.promo}>{config.promoText}</p> : null}
       </section>
 
       {currentStep ? (

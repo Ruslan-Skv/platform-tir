@@ -1,5 +1,9 @@
 import { PrismaClient } from '@prisma/client';
-import { DEFAULT_QUIZ_THEME, FURNITURE_QUIZ_SLUG } from '../src/quiz/quiz.types';
+import {
+  DEFAULT_QUIZ_CONSENT,
+  DEFAULT_QUIZ_THEME,
+  FURNITURE_QUIZ_SLUG,
+} from '../src/quiz/quiz.types';
 import { mebelQuizStepCreateInput, MEBEL_QUIZ_STEPS } from './seed-quiz-mebel-steps';
 
 const MEBEL_DOMAIN = 'mebel-na-zakaz-51.ru';
@@ -29,6 +33,9 @@ export async function seedQuizMebel(prisma: PrismaClient) {
         successTitle: 'Спасибо за уделённое время!',
         successText:
           'Дизайнер уже приступил к расчёту стоимости. Мы перезвоним в течение 1 часа для уточнения деталей.',
+        consentText: DEFAULT_QUIZ_CONSENT.consentText,
+        consentLinkText: DEFAULT_QUIZ_CONSENT.consentLinkText,
+        privacyPolicyTitle: DEFAULT_QUIZ_CONSENT.privacyPolicyTitle,
         notifyEmails: [],
         notifyTelegramIds: [],
         notifyPhones: [],
@@ -67,6 +74,18 @@ export async function seedQuizMebel(prisma: PrismaClient) {
       },
     });
     console.log('✅ Quiz mebel: добавлен фоновый рисунок по умолчанию');
+  }
+
+  if (!existing.consentText || existing.consentText.includes('{link}')) {
+    await prisma.quizLanding.update({
+      where: { id: existing.id },
+      data: {
+        consentText: DEFAULT_QUIZ_CONSENT.consentText,
+        consentLinkText: DEFAULT_QUIZ_CONSENT.consentLinkText,
+        privacyPolicyTitle: DEFAULT_QUIZ_CONSENT.privacyPolicyTitle,
+      },
+    });
+    console.log('✅ Quiz mebel: текст согласия обновлён');
   }
 
   const stepsWithoutImages = existing.steps.some((step) => {
