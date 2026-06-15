@@ -392,7 +392,27 @@ export function MebelQuizPageView({ model }: { model: Model }) {
           <h3 className={styles.themeSubheading}>Город / телефон</h3>
           <div className={styles.grid}>
             <label>
-              Цвет
+              Фон бейджа
+              <input
+                type="color"
+                value={themeDraft.cityBadgeBackground}
+                onChange={(e) => setThemeField('cityBadgeBackground', e.target.value)}
+              />
+            </label>
+            <label>
+              Прозрачность фона: {themeDraft.cityBadgeBackgroundOpacity}%
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={themeDraft.cityBadgeBackgroundOpacity}
+                onChange={(e) =>
+                  setThemeField('cityBadgeBackgroundOpacity', Number(e.target.value))
+                }
+              />
+            </label>
+            <label>
+              Цвет текста
               <input
                 type="color"
                 value={themeDraft.cityBadgeTextColor}
@@ -400,13 +420,39 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               />
             </label>
             <label>
-              Размер: {themeDraft.cityBadgeFontSize}px
+              Цвет иконки
+              <input
+                type="color"
+                value={themeDraft.cityBadgeIconColor}
+                onChange={(e) => setThemeField('cityBadgeIconColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Цвет рамки
+              <input
+                type="color"
+                value={themeDraft.cityBadgeBorderColor}
+                onChange={(e) => setThemeField('cityBadgeBorderColor', e.target.value)}
+              />
+            </label>
+            <label>
+              Размер текста: {themeDraft.cityBadgeFontSize}px
               <input
                 type="range"
                 min={10}
                 max={28}
                 value={themeDraft.cityBadgeFontSize}
                 onChange={(e) => setThemeField('cityBadgeFontSize', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Размер иконки: {themeDraft.cityBadgeIconSize}px
+              <input
+                type="range"
+                min={10}
+                max={28}
+                value={themeDraft.cityBadgeIconSize}
+                onChange={(e) => setThemeField('cityBadgeIconSize', Number(e.target.value))}
               />
             </label>
             <label>
@@ -421,6 +467,56 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                   </option>
                 ))}
               </select>
+            </label>
+            <label>
+              Отступ по горизонтали: {themeDraft.cityBadgePaddingX}px
+              <input
+                type="range"
+                min={4}
+                max={40}
+                value={themeDraft.cityBadgePaddingX}
+                onChange={(e) => setThemeField('cityBadgePaddingX', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Отступ по вертикали: {themeDraft.cityBadgePaddingY}px
+              <input
+                type="range"
+                min={2}
+                max={24}
+                value={themeDraft.cityBadgePaddingY}
+                onChange={(e) => setThemeField('cityBadgePaddingY', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Скругление: {themeDraft.cityBadgeBorderRadius}px
+              <input
+                type="range"
+                min={0}
+                max={50}
+                value={themeDraft.cityBadgeBorderRadius}
+                onChange={(e) => setThemeField('cityBadgeBorderRadius', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Толщина рамки: {themeDraft.cityBadgeBorderWidth}px
+              <input
+                type="range"
+                min={0}
+                max={4}
+                value={themeDraft.cityBadgeBorderWidth}
+                onChange={(e) => setThemeField('cityBadgeBorderWidth', Number(e.target.value))}
+              />
+            </label>
+            <label>
+              Тень: {themeDraft.cityBadgeShadowOpacity}%
+              <input
+                type="range"
+                min={0}
+                max={100}
+                value={themeDraft.cityBadgeShadowOpacity}
+                onChange={(e) => setThemeField('cityBadgeShadowOpacity', Number(e.target.value))}
+              />
             </label>
           </div>
 
@@ -823,110 +919,6 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                 type="color"
                 value={themeDraft.choiceCardSelectedBorderColor}
                 onChange={(e) => setThemeField('choiceCardSelectedBorderColor', e.target.value)}
-              />
-            </label>
-          </div>
-
-          <h2>Бейджи в шапке</h2>
-          <p className={styles.hint}>
-            Общее оформление бейджей города и телефона в шапке квиза. Название города и номер
-            задаются во вкладке «Настройки».
-          </p>
-          <div className={styles.grid}>
-            <label>
-              Фон бейджа
-              <input
-                type="color"
-                value={themeDraft.cityBadgeBackground}
-                onChange={(e) => setThemeField('cityBadgeBackground', e.target.value)}
-              />
-            </label>
-            <label>
-              Прозрачность фона: {themeDraft.cityBadgeBackgroundOpacity}%
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={themeDraft.cityBadgeBackgroundOpacity}
-                onChange={(e) =>
-                  setThemeField('cityBadgeBackgroundOpacity', Number(e.target.value))
-                }
-              />
-            </label>
-            <label>
-              Цвет иконки
-              <input
-                type="color"
-                value={themeDraft.cityBadgeIconColor}
-                onChange={(e) => setThemeField('cityBadgeIconColor', e.target.value)}
-              />
-            </label>
-            <label>
-              Цвет рамки
-              <input
-                type="color"
-                value={themeDraft.cityBadgeBorderColor}
-                onChange={(e) => setThemeField('cityBadgeBorderColor', e.target.value)}
-              />
-            </label>
-            <label>
-              Размер иконки: {themeDraft.cityBadgeIconSize}px
-              <input
-                type="range"
-                min={10}
-                max={28}
-                value={themeDraft.cityBadgeIconSize}
-                onChange={(e) => setThemeField('cityBadgeIconSize', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Отступ по горизонтали: {themeDraft.cityBadgePaddingX}px
-              <input
-                type="range"
-                min={4}
-                max={40}
-                value={themeDraft.cityBadgePaddingX}
-                onChange={(e) => setThemeField('cityBadgePaddingX', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Отступ по вертикали: {themeDraft.cityBadgePaddingY}px
-              <input
-                type="range"
-                min={2}
-                max={24}
-                value={themeDraft.cityBadgePaddingY}
-                onChange={(e) => setThemeField('cityBadgePaddingY', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Скругление: {themeDraft.cityBadgeBorderRadius}px
-              <input
-                type="range"
-                min={0}
-                max={50}
-                value={themeDraft.cityBadgeBorderRadius}
-                onChange={(e) => setThemeField('cityBadgeBorderRadius', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Толщина рамки: {themeDraft.cityBadgeBorderWidth}px
-              <input
-                type="range"
-                min={0}
-                max={4}
-                value={themeDraft.cityBadgeBorderWidth}
-                onChange={(e) => setThemeField('cityBadgeBorderWidth', Number(e.target.value))}
-              />
-            </label>
-            <label>
-              Тень: {themeDraft.cityBadgeShadowOpacity}%
-              <input
-                type="range"
-                min={0}
-                max={100}
-                value={themeDraft.cityBadgeShadowOpacity}
-                onChange={(e) => setThemeField('cityBadgeShadowOpacity', Number(e.target.value))}
               />
             </label>
           </div>
