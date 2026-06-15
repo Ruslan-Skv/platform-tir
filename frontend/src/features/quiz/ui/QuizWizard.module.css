@@ -166,6 +166,7 @@
 }
 
 .progressBar {
+  position: relative;
   height: 6px;
   background: rgba(255, 255, 255, 0.12);
   border-radius: 999px;
@@ -176,6 +177,23 @@
   height: 100%;
   border-radius: 999px;
   transition: width 0.25s ease;
+}
+
+.progressTicks {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+}
+
+.progressTick {
+  position: absolute;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+  background: rgba(255, 255, 255, 0.72);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.18);
 }
 
 .progressLabel {
