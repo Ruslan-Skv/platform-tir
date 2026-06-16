@@ -187,10 +187,10 @@ export class UpdateQuizLandingDto {
   @MaxLength(30)
   displayPhone?: string | null;
 
-  @ApiPropertyOptional()
+  @ApiPropertyOptional({ description: 'Адрес для бейджа в шапке и поиска на карте' })
   @IsOptional()
   @IsString()
-  @MaxLength(100)
+  @MaxLength(500)
   city?: string | null;
 
   @ApiPropertyOptional()

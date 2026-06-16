@@ -184,10 +184,11 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               />
             </label>
             <label>
-              Город
+              Адрес
               <input
                 value={quiz.city ?? ''}
                 onChange={(e) => setQuizField('city', e.target.value)}
+                placeholder="Мурманск, ул. Самойловой, 21"
               />
             </label>
           </div>
@@ -387,7 +388,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
             Цвет, размер и начертание текста в шапке и вводной части лендинга.
           </p>
 
-          <h3 className={styles.themeSubheading}>Город / телефон</h3>
+          <h3 className={styles.themeSubheading}>Адрес / телефон</h3>
           <div className={styles.grid}>
             <label>
               Фон бейджа

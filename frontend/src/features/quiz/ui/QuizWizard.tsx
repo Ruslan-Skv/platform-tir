@@ -4,6 +4,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { buildAddressMapSearchUrl } from '@/features/quiz/lib/address-map-url';
 import { getVisibleSteps, isValidFurnitureType } from '@/features/quiz/lib/quiz-flow';
 import {
   mergeQuizTheme,
@@ -48,10 +49,14 @@ function HeaderBadge({
   icon,
   children,
   href,
+  external,
+  ariaLabel,
 }: {
   icon: React.ReactNode;
   children: React.ReactNode;
   href?: string;
+  external?: boolean;
+  ariaLabel?: string;
 }) {
   const badge = (
     <span className={styles.headerBadge}>
@@ -62,7 +67,12 @@ function HeaderBadge({
 
   if (href) {
     return (
-      <a href={href} className={styles.headerBadgeLink}>
+      <a
+        href={href}
+        className={styles.headerBadgeLink}
+        aria-label={ariaLabel}
+        {...(external ? { target: '_blank', rel: 'noopener noreferrer' } : {})}
+      >
         {badge}
       </a>
     );
@@ -212,7 +222,14 @@ export function QuizWizard({ config }: QuizWizardProps) {
         </div>
         {config.city ? (
           <div className={styles.headerCity}>
-            <HeaderBadge icon={<LocationIcon />}>{config.city}</HeaderBadge>
+            <HeaderBadge
+              icon={<LocationIcon />}
+              href={buildAddressMapSearchUrl(config.city)}
+              external
+              ariaLabel={`Открыть адрес «${config.city}» на карте`}
+            >
+              {config.city}
+            </HeaderBadge>
           </div>
         ) : null}
         <div className={styles.headerEnd}>
