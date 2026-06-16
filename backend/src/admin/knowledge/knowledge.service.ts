@@ -4,13 +4,12 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import * as fs from 'fs';
-import * as path from 'path';
-import { extname } from 'path';
 import { KnowledgeMaterialType, PageStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
-import { uploadsBaseUrl } from '../../common/utils/uploads-url';
+import { KnowledgeStructureService } from './knowledge-structure.service';
+import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
+import { KnowledgeUploadService } from './knowledge-upload.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto';
@@ -18,169 +17,29 @@ import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { KnowledgeAttachmentDto } from './dto/knowledge-attachment.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
-
-function buildMaterialInclude(userId?: string) {
-  return {
-    author: {
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-      },
-    },
-    category: {
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-      },
-    },
-    module: {
-      select: {
-        id: true,
-        name: true,
-        slug: true,
-        order: true,
-      },
-    },
-    attachments: {
-      orderBy: { sortOrder: 'asc' as const },
-    },
-    targetAudiences: {
-      include: {
-        audience: {
-          select: {
-            id: true,
-            label: true,
-            sortOrder: true,
-          },
-        },
-      },
-      orderBy: { audience: { sortOrder: 'asc' } },
-    },
-    ...(userId
-      ? {
-          videoProgress: {
-            where: { userId },
-            take: 1,
-          },
-        }
-      : {}),
-  } satisfies Prisma.KnowledgeMaterialInclude;
-}
-
-type MaterialWithRelations = Prisma.KnowledgeMaterialGetPayload<{
-  include: ReturnType<typeof buildMaterialInclude>;
-}>;
+import {
+  assertMaterialPayload,
+  buildMaterialInclude,
+  mapAttachmentsForCreate,
+  mapMaterialResponse,
+} from './knowledge-material.utils';
 
 @Injectable()
 export class KnowledgeService {
   constructor(
     private prisma: PrismaService,
     private knowledgeQuizService: KnowledgeQuizService,
+    private structureService: KnowledgeStructureService,
+    private targetAudienceService: KnowledgeTargetAudienceService,
+    private uploadService: KnowledgeUploadService,
   ) {}
 
-  private mapMaterialResponse(material: MaterialWithRelations, editorView = false) {
-    const {
-      videoProgress,
-      tutorRecommendation,
-      targetAudiences: targetAudienceLinks,
-      ...rest
-    } = material as MaterialWithRelations & {
-      videoProgress?: Array<{
-        id: string;
-        progressPercent: number;
-        positionSeconds: number;
-        completed: boolean;
-        updatedAt: Date;
-      }>;
-      tutorRecommendation?: string | null;
-      targetAudiences?: Array<{
-        audience: { id: string; label: string; sortOrder: number };
-      }>;
-    };
-    const targetAudiences =
-      targetAudienceLinks
-        ?.map((link) => link.audience)
-        .sort((a, b) => {
-          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
-          return a.label.localeCompare(b.label, 'ru');
-        }) ?? [];
-    return {
-      ...rest,
-      targetAudiences,
-      ...(editorView ? { tutorRecommendation: tutorRecommendation ?? null } : {}),
-      myVideoProgress: videoProgress?.[0] ?? null,
-    };
+  findAllTargetAudiences() {
+    return this.targetAudienceService.findAllTargetAudiences();
   }
 
-  private async syncTargetAudiences(materialId: string, audienceIds: string[]) {
-    const uniqueIds = [...new Set(audienceIds.filter(Boolean))];
-    if (uniqueIds.length) {
-      const found = await this.prisma.knowledgeTargetAudience.findMany({
-        where: { id: { in: uniqueIds } },
-        select: { id: true },
-      });
-      if (found.length !== uniqueIds.length) {
-        throw new BadRequestException('Указана несуществующая целевая аудитория');
-      }
-    }
-    await this.prisma.knowledgeMaterialTargetAudience.deleteMany({ where: { materialId } });
-    if (!uniqueIds.length) return;
-    await this.prisma.knowledgeMaterialTargetAudience.createMany({
-      data: uniqueIds.map((audienceId) => ({ materialId, audienceId })),
-    });
-  }
-
-  async findAllTargetAudiences() {
-    return this.prisma.knowledgeTargetAudience.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
-      select: {
-        id: true,
-        label: true,
-        sortOrder: true,
-      },
-    });
-  }
-
-  async createTargetAudience(dto: CreateKnowledgeTargetAudienceDto) {
-    const label = dto.label.trim();
-    if (!label) {
-      throw new BadRequestException('Укажите название целевой аудитории');
-    }
-    const existing = await this.prisma.knowledgeTargetAudience.findUnique({
-      where: { label },
-    });
-    if (existing) {
-      return existing;
-    }
-    const maxOrder = await this.prisma.knowledgeTargetAudience.aggregate({
-      _max: { sortOrder: true },
-    });
-    return this.prisma.knowledgeTargetAudience.create({
-      data: {
-        label,
-        sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
-      },
-      select: {
-        id: true,
-        label: true,
-        sortOrder: true,
-      },
-    });
-  }
-
-  private mapAttachmentsForCreate(attachments: KnowledgeAttachmentDto[] | undefined) {
-    if (!attachments?.length) return undefined;
-    return {
-      create: attachments.map((a, i) => ({
-        fileName: a.fileName.trim(),
-        fileUrl: a.fileUrl.trim(),
-        fileSize: a.fileSize ?? null,
-        mimeType: a.mimeType?.trim() || null,
-        sortOrder: a.sortOrder ?? i,
-      })),
-    };
+  createTargetAudience(dto: CreateKnowledgeTargetAudienceDto) {
+    return this.targetAudienceService.createTargetAudience(dto);
   }
 
   private async syncAttachments(materialId: string, attachments: KnowledgeAttachmentDto[]) {
@@ -196,42 +55,6 @@ export class KnowledgeService {
         sortOrder: a.sortOrder ?? i,
       })),
     });
-  }
-
-  private assertMaterialPayload(
-    type: KnowledgeMaterialType,
-    data: {
-      content?: string | null;
-      videoUrl?: string | null;
-      externalUrl?: string | null;
-    },
-    status: PageStatus = PageStatus.DRAFT,
-  ) {
-    const content = data.content?.trim() || '';
-    const videoUrl = data.videoUrl?.trim() || '';
-    const externalUrl = data.externalUrl?.trim() || '';
-
-    if (type === KnowledgeMaterialType.VIDEO && !videoUrl) {
-      throw new BadRequestException('Для видеоматериала укажите ссылку на видео');
-    }
-    if (type === KnowledgeMaterialType.LINK && !externalUrl) {
-      throw new BadRequestException('Для ссылки укажите внешний URL');
-    }
-    if (type === KnowledgeMaterialType.ARTICLE && !content && status !== PageStatus.DRAFT) {
-      throw new BadRequestException('Для статьи добавьте текстовое содержание');
-    }
-  }
-
-  private async assertModuleBelongsToCategory(moduleId: string, categoryId: string) {
-    const mod = await this.prisma.knowledgeModule.findUnique({
-      where: { id: moduleId },
-    });
-    if (!mod) {
-      throw new NotFoundException('Модуль не найден');
-    }
-    if (mod.categoryId !== categoryId) {
-      throw new BadRequestException('Модуль не принадлежит выбранной категории');
-    }
   }
 
   async createMaterial(authorId: string, dto: CreateKnowledgeMaterialDto) {
@@ -250,11 +73,11 @@ export class KnowledgeService {
     }
 
     if (dto.moduleId) {
-      await this.assertModuleBelongsToCategory(dto.moduleId, dto.categoryId);
+      await this.structureService.assertModuleBelongsToCategory(dto.moduleId, dto.categoryId);
     }
 
     const status = dto.status ?? PageStatus.DRAFT;
-    this.assertMaterialPayload(dto.type, dto, status);
+    assertMaterialPayload(dto.type, dto, status);
 
     const material = await this.prisma.knowledgeMaterial.create({
       data: {
@@ -275,15 +98,15 @@ export class KnowledgeService {
         status,
         publishedAt: status === PageStatus.PUBLISHED ? new Date() : null,
         authorId,
-        attachments: this.mapAttachmentsForCreate(dto.attachments),
+        attachments: mapAttachmentsForCreate(dto.attachments),
       },
       include: buildMaterialInclude(authorId),
     });
     if (dto.targetAudienceIds?.length) {
-      await this.syncTargetAudiences(material.id, dto.targetAudienceIds);
+      await this.targetAudienceService.syncTargetAudiences(material.id, dto.targetAudienceIds);
       return this.findOneMaterial(material.id, true, authorId);
     }
-    return this.mapMaterialResponse(material, true);
+    return mapMaterialResponse(material, true);
   }
 
   async findAllMaterials(params: {
@@ -358,7 +181,7 @@ export class KnowledgeService {
       this.prisma.knowledgeMaterial.count({ where }),
     ]);
 
-    const mapped = data.map((m) => this.mapMaterialResponse(m, editorView));
+    const mapped = data.map((m) => mapMaterialResponse(m, editorView));
     let enriched = mapped;
 
     if (userId && mapped.length > 0) {
@@ -392,7 +215,7 @@ export class KnowledgeService {
     if (!editorView && material.status !== PageStatus.PUBLISHED) {
       throw new NotFoundException('Материал не найден');
     }
-    return this.mapMaterialResponse(material, editorView);
+    return mapMaterialResponse(material, editorView);
   }
 
   async updateMaterial(id: string, dto: UpdateKnowledgeMaterialDto) {
@@ -419,15 +242,15 @@ export class KnowledgeService {
     const nextCategoryId = dto.categoryId ?? existing.categoryId;
     if (dto.moduleId !== undefined) {
       if (dto.moduleId) {
-        await this.assertModuleBelongsToCategory(dto.moduleId, nextCategoryId);
+        await this.structureService.assertModuleBelongsToCategory(dto.moduleId, nextCategoryId);
       }
     } else if (dto.categoryId && existing.moduleId) {
-      await this.assertModuleBelongsToCategory(existing.moduleId, dto.categoryId);
+      await this.structureService.assertModuleBelongsToCategory(existing.moduleId, dto.categoryId);
     }
 
     const nextType = dto.type ?? existing.type;
     const nextStatus = dto.status ?? existing.status;
-    this.assertMaterialPayload(
+    assertMaterialPayload(
       nextType,
       {
         content: dto.content !== undefined ? dto.content : existing.content,
@@ -445,7 +268,7 @@ export class KnowledgeService {
     }
 
     if (dto.targetAudienceIds !== undefined) {
-      await this.syncTargetAudiences(id, dto.targetAudienceIds);
+      await this.targetAudienceService.syncTargetAudiences(id, dto.targetAudienceIds);
     }
 
     const material = await this.prisma.knowledgeMaterial.update({
@@ -483,7 +306,7 @@ export class KnowledgeService {
       },
       include: buildMaterialInclude(),
     });
-    return this.mapMaterialResponse(material, true);
+    return mapMaterialResponse(material, true);
   }
 
   async togglePin(id: string) {
@@ -493,7 +316,7 @@ export class KnowledgeService {
       data: { isPinned: !material.isPinned },
       include: buildMaterialInclude(),
     });
-    return this.mapMaterialResponse(updated, true);
+    return mapMaterialResponse(updated, true);
   }
 
   async publishMaterial(id: string) {
@@ -506,7 +329,7 @@ export class KnowledgeService {
       },
       include: buildMaterialInclude(),
     });
-    return this.mapMaterialResponse(material, true);
+    return mapMaterialResponse(material, true);
   }
 
   async removeMaterial(id: string) {
@@ -553,149 +376,36 @@ export class KnowledgeService {
     });
   }
 
-  async createCategory(dto: CreateKnowledgeCategoryDto) {
-    const existing = await this.prisma.knowledgeCategory.findUnique({
-      where: { slug: dto.slug },
-    });
-    if (existing) {
-      throw new ConflictException(`Категория со slug "${dto.slug}" уже существует`);
-    }
-    return this.prisma.knowledgeCategory.create({ data: dto });
+  createCategory(dto: CreateKnowledgeCategoryDto) {
+    return this.structureService.createCategory(dto);
   }
 
-  async findAllCategories(editorView = false) {
-    const materialsWhere: Prisma.KnowledgeMaterialWhereInput = editorView
-      ? {}
-      : { status: PageStatus.PUBLISHED };
-
-    return this.prisma.knowledgeCategory.findMany({
-      include: {
-        _count: {
-          select: {
-            materials: { where: materialsWhere },
-          },
-        },
-      },
-      orderBy: { order: 'asc' },
-    });
+  findAllCategories(editorView = false) {
+    return this.structureService.findAllCategories(editorView);
   }
 
-  async updateCategory(id: string, data: Partial<CreateKnowledgeCategoryDto>) {
-    await this.prisma.knowledgeCategory.findUniqueOrThrow({ where: { id } });
-    if (data.slug) {
-      const existing = await this.prisma.knowledgeCategory.findFirst({
-        where: { slug: data.slug, NOT: { id } },
-      });
-      if (existing) {
-        throw new ConflictException(`Категория со slug "${data.slug}" уже существует`);
-      }
-    }
-    return this.prisma.knowledgeCategory.update({ where: { id }, data });
+  updateCategory(id: string, data: Partial<CreateKnowledgeCategoryDto>) {
+    return this.structureService.updateCategory(id, data);
   }
 
-  async removeCategory(id: string) {
-    return this.prisma.knowledgeCategory.delete({ where: { id } });
+  removeCategory(id: string) {
+    return this.structureService.removeCategory(id);
   }
 
-  async createModule(dto: CreateKnowledgeModuleDto) {
-    const category = await this.prisma.knowledgeCategory.findUnique({
-      where: { id: dto.categoryId },
-    });
-    if (!category) {
-      throw new NotFoundException('Категория не найдена');
-    }
-
-    const existing = await this.prisma.knowledgeModule.findUnique({
-      where: {
-        categoryId_slug: { categoryId: dto.categoryId, slug: dto.slug },
-      },
-    });
-    if (existing) {
-      throw new ConflictException(`Модуль со slug "${dto.slug}" уже существует в этой категории`);
-    }
-
-    return this.prisma.knowledgeModule.create({
-      data: {
-        categoryId: dto.categoryId,
-        name: dto.name.trim(),
-        slug: dto.slug.trim(),
-        description: dto.description?.trim() || null,
-        order: dto.order ?? 0,
-      },
-      include: {
-        _count: {
-          select: { materials: true },
-        },
-      },
-    });
+  createModule(dto: CreateKnowledgeModuleDto) {
+    return this.structureService.createModule(dto);
   }
 
-  async findAllModules(categoryId: string, editorView = false) {
-    const materialsWhere: Prisma.KnowledgeMaterialWhereInput = editorView
-      ? {}
-      : { status: PageStatus.PUBLISHED };
-
-    return this.prisma.knowledgeModule.findMany({
-      where: { categoryId },
-      include: {
-        _count: {
-          select: {
-            materials: { where: materialsWhere },
-          },
-        },
-      },
-      orderBy: { order: 'asc' },
-    });
+  findAllModules(categoryId: string, editorView = false) {
+    return this.structureService.findAllModules(categoryId, editorView);
   }
 
-  async updateModule(id: string, data: Partial<CreateKnowledgeModuleDto>) {
-    const existing = await this.prisma.knowledgeModule.findUniqueOrThrow({ where: { id } });
-
-    if (data.slug) {
-      const slugTaken = await this.prisma.knowledgeModule.findFirst({
-        where: {
-          categoryId: existing.categoryId,
-          slug: data.slug,
-          NOT: { id },
-        },
-      });
-      if (slugTaken) {
-        throw new ConflictException(
-          `Модуль со slug "${data.slug}" уже существует в этой категории`,
-        );
-      }
-    }
-
-    if (data.categoryId && data.categoryId !== existing.categoryId) {
-      const category = await this.prisma.knowledgeCategory.findUnique({
-        where: { id: data.categoryId },
-      });
-      if (!category) {
-        throw new NotFoundException('Категория не найдена');
-      }
-    }
-
-    return this.prisma.knowledgeModule.update({
-      where: { id },
-      data: {
-        ...(data.categoryId !== undefined ? { categoryId: data.categoryId } : {}),
-        ...(data.name !== undefined ? { name: data.name.trim() } : {}),
-        ...(data.slug !== undefined ? { slug: data.slug.trim() } : {}),
-        ...(data.description !== undefined
-          ? { description: data.description?.trim() || null }
-          : {}),
-        ...(data.order !== undefined ? { order: data.order } : {}),
-      },
-      include: {
-        _count: {
-          select: { materials: true },
-        },
-      },
-    });
+  updateModule(id: string, data: Partial<CreateKnowledgeModuleDto>) {
+    return this.structureService.updateModule(id, data);
   }
 
-  async removeModule(id: string) {
-    return this.prisma.knowledgeModule.delete({ where: { id } });
+  removeModule(id: string) {
+    return this.structureService.removeModule(id);
   }
 
   async getStats() {
@@ -731,41 +441,11 @@ export class KnowledgeService {
     };
   }
 
-  private saveUploadedFile(
-    file: Express.Multer.File,
-    baseUrl: string,
-    prefix: string,
-  ): { imageUrl: string } {
-    if (!file?.path) {
-      throw new BadRequestException('Файл не загружен');
-    }
-    const uploadsDir = path.join(process.cwd(), 'uploads', 'knowledge');
-    if (!fs.existsSync(uploadsDir)) {
-      fs.mkdirSync(uploadsDir, { recursive: true });
-    }
-    const ext = extname(file.originalname) || '';
-    const filename = `${prefix}-${Date.now()}${ext}`;
-    const destPath = path.join(uploadsDir, filename);
-    fs.renameSync(file.path, destPath);
-    const rel = `/uploads/knowledge/${filename}`;
-    const urlPrefix = uploadsBaseUrl(baseUrl);
-    return { imageUrl: `${urlPrefix}${rel}` };
+  uploadThumbnail(file: Express.Multer.File, baseUrl: string) {
+    return this.uploadService.uploadThumbnail(file, baseUrl);
   }
 
-  async uploadThumbnail(file: Express.Multer.File, baseUrl: string): Promise<{ imageUrl: string }> {
-    return this.saveUploadedFile(file, baseUrl, 'knowledge');
-  }
-
-  async uploadAttachment(
-    file: Express.Multer.File,
-    baseUrl: string,
-  ): Promise<{ fileUrl: string; fileName: string; fileSize: number; mimeType: string }> {
-    const result = this.saveUploadedFile(file, baseUrl, 'attachment');
-    return {
-      fileUrl: result.imageUrl,
-      fileName: file.originalname,
-      fileSize: file.size,
-      mimeType: file.mimetype,
-    };
+  uploadAttachment(file: Express.Multer.File, baseUrl: string) {
+    return this.uploadService.uploadAttachment(file, baseUrl);
   }
 }
