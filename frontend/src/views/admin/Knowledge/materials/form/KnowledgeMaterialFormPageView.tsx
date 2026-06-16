@@ -48,6 +48,8 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     setReadingTimeMinutes,
     tutorRecommendation,
     setTutorRecommendation,
+    managerPracticalAssignment,
+    setManagerPracticalAssignment,
     estimatedReadingTime,
     content,
     setContent,
@@ -250,6 +252,26 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 onSelectedIdsChange={setTargetAudienceIds}
                 onOptionsChange={setTargetAudienceOptions}
                 disabled={saving}
+              />
+            </div>
+          ) : null}
+
+          {type === 'ARTICLE' ? (
+            <div className={styles.field}>
+              <label
+                htmlFor="managerPracticalAssignment"
+                className={styles.label}
+                title="Видно всем читателям статьи"
+              >
+                Практическое задание для менеджера
+              </label>
+              <textarea
+                id="managerPracticalAssignment"
+                value={managerPracticalAssignment}
+                onChange={(e) => setManagerPracticalAssignment(e.target.value)}
+                className={styles.textarea}
+                rows={3}
+                placeholder="Задание для применения материала на практике"
               />
             </div>
           ) : null}

@@ -52,6 +52,10 @@ export class CreateKnowledgeMaterialDto {
 
   @IsString()
   @IsOptional()
+  managerPracticalAssignment?: string;
+
+  @IsString()
+  @IsOptional()
   videoUrl?: string;
 
   @IsString()

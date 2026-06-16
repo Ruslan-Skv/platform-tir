@@ -137,6 +137,13 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         />
       )}
 
+      {material.type === 'ARTICLE' && material.managerPracticalAssignment ? (
+        <aside className={styles.managerBox}>
+          <h2 className={styles.managerTitle}>Практическое задание для менеджера</h2>
+          <p className={styles.managerText}>{material.managerPracticalAssignment}</p>
+        </aside>
+      ) : null}
+
       {canEdit && material.type === 'ARTICLE' && material.tutorRecommendation ? (
         <aside className={styles.tutorBox}>
           <h2 className={styles.tutorTitle}>Рекомендация для тьютора</h2>

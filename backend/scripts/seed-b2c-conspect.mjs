@@ -9,6 +9,8 @@ const prisma = new PrismaClient();
 const htmlPath = path.join(__dirname, '../prisma/data/b2c-prodazhi-conspect.html');
 const content = fs.readFileSync(htmlPath, 'utf8');
 const audienceLabel = 'менеджеры по продажам (новые и действующие)';
+const managerPracticalAssignment =
+  'На ближайших 3 встречах целенаправленно определите психотип клиента и намеренно используйте минимум одну фразу, адаптированную под него. Запишите результат – повысилась ли его вовлеченность. Обсудите на планерке.';
 
 const material = await prisma.knowledgeMaterial.findFirst({
   where: { slug: 'b2c-prodazhi-remont-osteklenie' },
@@ -29,6 +31,7 @@ if (!material) {
     data: {
       content,
       readingTimeMinutes: 6,
+      managerPracticalAssignment,
     },
   });
 

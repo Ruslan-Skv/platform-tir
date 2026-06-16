@@ -52,6 +52,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const [targetAudienceIds, setTargetAudienceIds] = useState<string[]>([]);
   const [readingTimeMinutes, setReadingTimeMinutes] = useState<number | ''>('');
   const [tutorRecommendation, setTutorRecommendation] = useState('');
+  const [managerPracticalAssignment, setManagerPracticalAssignment] = useState('');
   const [content, setContent] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
@@ -132,6 +133,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       });
       setReadingTimeMinutes(m.readingTimeMinutes ?? '');
       setTutorRecommendation(m.tutorRecommendation || '');
+      setManagerPracticalAssignment(m.managerPracticalAssignment || '');
       setContent(m.content || '');
       setVideoUrl(m.videoUrl || '');
       setExternalUrl(m.externalUrl || '');
@@ -224,6 +226,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         targetAudienceIds,
         readingTimeMinutes: readingTimeMinutes === '' ? null : Number(readingTimeMinutes),
         tutorRecommendation: tutorRecommendation.trim() || undefined,
+        managerPracticalAssignment: managerPracticalAssignment.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
         externalUrl: externalUrl.trim() || undefined,
@@ -279,6 +282,8 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     setReadingTimeMinutes,
     tutorRecommendation,
     setTutorRecommendation,
+    managerPracticalAssignment,
+    setManagerPracticalAssignment,
     estimatedReadingTime: computeReadingTimeMinutes(content),
     content,
     setContent,

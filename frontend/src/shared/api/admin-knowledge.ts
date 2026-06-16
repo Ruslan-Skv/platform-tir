@@ -60,6 +60,7 @@ export interface AdminKnowledgeMaterial {
   targetAudiences: KnowledgeTargetAudience[];
   readingTimeMinutes: number | null;
   tutorRecommendation?: string | null;
+  managerPracticalAssignment?: string | null;
   videoUrl: string | null;
   externalUrl: string | null;
   thumbnailUrl: string | null;
@@ -124,6 +125,7 @@ export interface CreateKnowledgeMaterialDto {
   targetAudienceIds?: string[];
   readingTimeMinutes?: number | null;
   tutorRecommendation?: string;
+  managerPracticalAssignment?: string;
   videoUrl?: string;
   externalUrl?: string;
   thumbnailUrl?: string;

@@ -231,6 +231,29 @@
   color: var(--admin-text-muted);
 }
 
+.managerBox {
+  margin: var(--admin-space-2xl) 0 var(--admin-space-4xl);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.managerTitle {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.managerText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.55;
+  color: var(--admin-text-secondary);
+  white-space: pre-wrap;
+}
+
 .description {
   margin-top: var(--admin-space-4xl);
   padding-top: var(--admin-space-4xl);

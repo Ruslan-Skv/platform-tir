@@ -92,6 +92,7 @@ export class KnowledgeService {
         content: dto.content?.trim() || null,
         readingTimeMinutes: dto.readingTimeMinutes ?? null,
         tutorRecommendation: dto.tutorRecommendation?.trim() || null,
+        managerPracticalAssignment: dto.managerPracticalAssignment?.trim() || null,
         videoUrl: dto.videoUrl?.trim() || null,
         externalUrl: dto.externalUrl?.trim() || null,
         thumbnailUrl: dto.thumbnailUrl?.trim() || null,
@@ -307,6 +308,9 @@ export class KnowledgeService {
           : {}),
         ...(dto.tutorRecommendation !== undefined
           ? { tutorRecommendation: dto.tutorRecommendation?.trim() || null }
+          : {}),
+        ...(dto.managerPracticalAssignment !== undefined
+          ? { managerPracticalAssignment: dto.managerPracticalAssignment?.trim() || null }
           : {}),
         ...(dto.videoUrl !== undefined ? { videoUrl: dto.videoUrl?.trim() || null } : {}),
         ...(dto.externalUrl !== undefined ? { externalUrl: dto.externalUrl?.trim() || null } : {}),
