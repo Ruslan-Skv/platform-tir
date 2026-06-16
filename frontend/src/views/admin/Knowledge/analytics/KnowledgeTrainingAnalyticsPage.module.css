@@ -441,6 +441,11 @@
   font-weight: 600;
 }
 
+.tableMeta {
+  color: var(--admin-text-muted);
+  font-size: 0.75rem;
+}
+
 .typePills {
   display: flex;
   flex-wrap: wrap;

@@ -1,10 +1,13 @@
 'use client';
 
-import { type CSSProperties, useMemo } from 'react';
+import { useMemo } from 'react';
 
 import Link from 'next/link';
 
 import styles from './KnowledgeTrainingAnalyticsPage.module.css';
+import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
+import { TrainingAnalyticsDonut } from './components/TrainingAnalyticsDonut';
+import { TrainingAnalyticsTimelineBar } from './components/TrainingAnalyticsTimelineBar';
 import type { KnowledgeTrainingAnalyticsPageModel } from './hooks/useKnowledgeTrainingAnalyticsPage';
 import {
   chartToneClass,
@@ -44,15 +47,6 @@ export function KnowledgeTrainingAnalyticsPageView({
     if (rows.length <= 14) return rows;
     const step = Math.ceil(rows.length / 14);
     return rows.filter((_, index) => index % step === 0 || index === rows.length - 1);
-  }, [data]);
-
-  const donutStyle = useMemo(() => {
-    if (!data) return undefined;
-    const { completedPercent, inProgressPercent } = data.statusDistribution;
-    return {
-      '--completed': `${completedPercent}%`,
-      '--in-progress': `${inProgressPercent}%`,
-    } as CSSProperties;
   }, [data]);
 
   return (
@@ -171,18 +165,14 @@ export function KnowledgeTrainingAnalyticsPageView({
                 {timelineTicks.map((day) => (
                   <div key={day.date} className={styles.timelineGroup}>
                     <div className={styles.timelineBars}>
-                      <div
-                        className={`${styles.timelineBar} ${styles.timelineBarVideo}`}
-                        style={{
-                          height: `${(day.videoProgressUpdates / timelineMax) * 100}%`,
-                        }}
+                      <TrainingAnalyticsTimelineBar
+                        heightPercent={(day.videoProgressUpdates / timelineMax) * 100}
+                        variant="video"
                         title={`Видео: ${day.videoProgressUpdates}`}
                       />
-                      <div
-                        className={`${styles.timelineBar} ${styles.timelineBarQuiz}`}
-                        style={{
-                          height: `${(day.quizAttempts / timelineMax) * 100}%`,
-                        }}
+                      <TrainingAnalyticsTimelineBar
+                        heightPercent={(day.quizAttempts / timelineMax) * 100}
+                        variant="quiz"
                         title={`Тесты: ${day.quizAttempts}`}
                       />
                     </div>
@@ -200,14 +190,17 @@ export function KnowledgeTrainingAnalyticsPageView({
                 Все пары «сотрудник × отслеживаемый материал»: завершено, в процессе или не начато.
               </p>
               <div className={styles.donutWrap}>
-                <div className={styles.donut} style={donutStyle}>
+                <TrainingAnalyticsDonut
+                  completedPercent={data.statusDistribution.completedPercent}
+                  inProgressPercent={data.statusDistribution.inProgressPercent}
+                >
                   <div className={styles.donutCenter}>
                     <span className={styles.donutValue}>
                       {formatPercentWithSymbol(data.statusDistribution.completedPercent)}
                     </span>
                     <span className={styles.donutLabel}>завершено</span>
                   </div>
-                </div>
+                </TrainingAnalyticsDonut>
                 <div className={styles.donutLegend}>
                   <div className={styles.donutLegendItem}>
                     <span className={`${styles.donutSwatch} ${styles.swatchCompleted}`} />
@@ -247,9 +240,9 @@ export function KnowledgeTrainingAnalyticsPageView({
                       {formatEmployeeName(employee)}
                     </span>
                     <div className={styles.barTrack}>
-                      <div
-                        className={`${styles.barFill} ${styles[chartToneClass(index)]}`}
-                        style={{ width: `${employee.completionPercent}%` }}
+                      <TrainingAnalyticsBarFill
+                        percent={employee.completionPercent}
+                        toneClass={chartToneClass(index)}
                       />
                     </div>
                     <span className={styles.barValue}>
@@ -271,9 +264,9 @@ export function KnowledgeTrainingAnalyticsPageView({
                       {formatRoleLabel(row.role)} ({row.employeeCount})
                     </span>
                     <div className={styles.barTrack}>
-                      <div
-                        className={`${styles.barFill} ${styles[chartToneClass(index + 2)]}`}
-                        style={{ width: `${row.avgCompletionPercent}%` }}
+                      <TrainingAnalyticsBarFill
+                        percent={row.avgCompletionPercent}
+                        toneClass={chartToneClass(index + 2)}
                       />
                     </div>
                     <span className={styles.barValue}>
@@ -307,7 +300,7 @@ export function KnowledgeTrainingAnalyticsPageView({
                         <td>
                           <span className={styles.rank}>{index + 1}</span>
                           {material.title}
-                          <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>
+                          <div className={styles.tableMeta}>
                             {getMaterialTypeLabel(material.type)} · {material.categoryName}
                           </div>
                         </td>
@@ -339,7 +332,7 @@ export function KnowledgeTrainingAnalyticsPageView({
                       <td>
                         <span className={styles.rank}>{index + 1}</span>
                         {material.title}
-                        <div style={{ color: 'var(--admin-text-muted)', fontSize: '0.75rem' }}>
+                        <div className={styles.tableMeta}>
                           {getMaterialTypeLabel(material.type)}
                           {material.hasQuiz ? ' · с тестом' : ''}
                         </div>
