@@ -139,12 +139,12 @@ export class KnowledgeQuizService {
       create: {
         materialId,
         title: dto.title?.trim() || 'Проверка знаний',
-        passingScorePercent: dto.passingScorePercent ?? 80,
+        passingScorePercent: dto.passingScorePercent ?? 85,
         timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
       },
       update: {
         title: dto.title?.trim() || 'Проверка знаний',
-        passingScorePercent: dto.passingScorePercent ?? 80,
+        passingScorePercent: dto.passingScorePercent ?? 85,
         timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
       },
     });

@@ -46,7 +46,7 @@ function emptyQuestion(): LocalQuestion {
 
 export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
   const [title, setTitle] = useState('Проверка знаний');
-  const [passingScorePercent, setPassingScorePercent] = useState(80);
+  const [passingScorePercent, setPassingScorePercent] = useState(85);
   const [timePerQuestionMinutes, setTimePerQuestionMinutes] = useState(1);
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [loading, setLoading] = useState(true);
@@ -164,7 +164,7 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
             min={1}
             max={100}
             value={passingScorePercent}
-            onChange={(e) => setPassingScorePercent(parseInt(e.target.value, 10) || 80)}
+            onChange={(e) => setPassingScorePercent(parseInt(e.target.value, 10) || 85)}
             className={styles.input}
           />
         </label>
