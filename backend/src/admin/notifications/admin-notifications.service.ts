@@ -20,6 +20,7 @@ const ADMIN_ROLES: UserRole[] = [
   'SURVEYOR',
   'DRIVER',
   'INSTALLER',
+  'TRAINEE',
 ];
 
 @Injectable()

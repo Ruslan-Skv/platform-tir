@@ -1,22 +1,29 @@
 .page {
-  max-width: 800px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: var(--admin-space-4xl);
+  padding: var(--admin-space-2xl) var(--admin-space-3xl);
   color: var(--admin-text-secondary);
 }
 
 .loading {
-  padding: var(--admin-space-6xl);
+  padding: var(--admin-space-4xl);
   text-align: center;
   color: var(--admin-text-muted);
 }
 
+.pageHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  margin-bottom: var(--admin-space-lg);
+}
+
 .backLink {
   display: inline-block;
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-accent);
   text-decoration: none;
-  margin-bottom: var(--admin-space-2xl);
 }
 
 .backLink:hover {
@@ -24,15 +31,16 @@
 }
 
 .title {
-  font-size: var(--admin-font-size-3xl);
+  font-size: var(--admin-font-size-2xl);
   font-weight: 700;
-  margin: 0 0 var(--admin-space-2xl);
+  margin: 0;
 }
 
 .message {
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
   border-radius: var(--admin-radius-sm);
-  margin-bottom: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
 }
 
 .message.success {
@@ -47,17 +55,17 @@
 
 .typeTabs {
   display: flex;
-  gap: var(--admin-space-sm);
-  margin-bottom: var(--admin-space-4xl);
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-lg);
 }
 
 .typeTab {
   flex: 1;
-  padding: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-base);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
   color: var(--admin-text-muted);
 }
@@ -77,24 +85,60 @@
 .form {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-2xl);
+  gap: var(--admin-space-lg);
+}
+
+.metaSection,
+.settingsSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.settingsSection {
+  padding: var(--admin-space-md) var(--admin-space-lg);
 }
 
 .field {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-xs);
+  gap: 2px;
+  min-width: 0;
+}
+
+.fieldCheckbox {
+  justify-content: flex-end;
 }
 
 .row {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: var(--admin-space-2xl);
+  gap: var(--admin-space-md);
+}
+
+.rowThree {
+  grid-template-columns: 1.2fr 1.2fr 0.7fr;
+}
+
+.rowModuleExcerpt {
+  grid-template-columns: minmax(140px, 0.9fr) 2fr;
+}
+
+.settingsRow {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.4fr) 90px minmax(120px, 0.8fr) minmax(120px, 0.7fr);
+  gap: var(--admin-space-md);
+  align-items: start;
 }
 
 .label {
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
+  color: var(--admin-text-muted);
 }
 
 .checkboxLabel {
@@ -103,15 +147,16 @@
   gap: var(--admin-space-sm);
   font-size: var(--admin-font-size-sm);
   cursor: pointer;
+  min-height: 34px;
 }
 
 .input,
 .select,
 .textarea {
-  padding: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-base);
+  font-size: var(--admin-font-size-sm);
   background: var(--admin-bg);
   color: var(--admin-text-secondary);
 }
@@ -119,6 +164,7 @@
 .textarea {
   resize: vertical;
   font-family: inherit;
+  min-height: 34px;
 }
 
 .hint {
@@ -128,18 +174,19 @@
 }
 
 .preview {
-  margin-top: var(--admin-space-sm);
+  margin-top: var(--admin-space-xs);
 }
 
 .previewLabel {
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
-  margin: 0 0 var(--admin-space-sm);
+  margin: 0 0 var(--admin-space-xs);
 }
 
 .thumbnailRow {
   display: flex;
-  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
   align-items: center;
 }
 
@@ -149,14 +196,14 @@
 
 .uploadBtn,
 .clearBtn {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
+  padding: var(--admin-space-xs) var(--admin-space-md);
   border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
 }
 
 .uploadBtn {
-  background: var(--admin-surface);
+  background: var(--admin-bg);
   border: 1px solid var(--admin-border);
   color: var(--admin-text-secondary);
 }
@@ -167,34 +214,37 @@
   color: var(--admin-text-muted);
 }
 
-.thumbnailPreview {
-  margin-top: var(--admin-space-md);
-  max-width: 320px;
-  border-radius: var(--admin-radius-md);
+.thumbnailPreviewInline {
+  width: 48px;
+  height: 32px;
+  border-radius: var(--admin-radius-sm);
   overflow: hidden;
   border: 1px solid var(--admin-border);
+  flex-shrink: 0;
 }
 
-.thumbnailPreview img {
+.thumbnailPreviewInline img {
   width: 100%;
+  height: 100%;
+  object-fit: cover;
   display: block;
 }
 
 .actions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-sm);
   align-items: center;
-  padding-top: var(--admin-space-2xl);
+  padding-top: var(--admin-space-md);
   border-top: 1px solid var(--admin-border);
 }
 
 .saveBtn,
 .publishBtn {
-  padding: var(--admin-space-md) var(--admin-space-2xl);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   border: none;
   border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-base);
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
@@ -216,7 +266,7 @@
 }
 
 .cancelLink {
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   text-decoration: none;
 }
@@ -225,8 +275,27 @@
   text-decoration: underline;
 }
 
+@media (max-width: 900px) {
+  .rowThree,
+  .rowModuleExcerpt,
+  .settingsRow {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .settingsRow .field:first-child {
+    grid-column: 1 / -1;
+  }
+}
+
 @media (max-width: 600px) {
-  .row {
+  .page {
+    padding: var(--admin-space-lg);
+  }
+
+  .row,
+  .rowThree,
+  .rowModuleExcerpt,
+  .settingsRow {
     grid-template-columns: 1fr;
   }
 }

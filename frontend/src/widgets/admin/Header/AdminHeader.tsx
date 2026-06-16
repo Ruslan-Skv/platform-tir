@@ -44,6 +44,7 @@ const ROLE_NAMES: Record<string, string> = {
   ADMIN: 'Администратор',
   MANAGER: 'Менеджер',
   CONTENT_MANAGER: 'Контент-менеджер',
+  TRAINEE: 'Стажёр',
 };
 
 function formatTimeAgo(dateStr: string): string {

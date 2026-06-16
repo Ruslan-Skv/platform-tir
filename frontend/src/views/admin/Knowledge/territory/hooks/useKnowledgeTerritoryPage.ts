@@ -6,17 +6,22 @@ import { useAuth } from '@/features/auth';
 import {
   type AdminKnowledgeCategory,
   type AdminKnowledgeMaterial,
+  type AdminKnowledgeModule,
   type KnowledgeMaterialType,
   type KnowledgeStats,
   createKnowledgeCategory,
+  createKnowledgeModule,
   deleteKnowledgeCategory,
   deleteKnowledgeMaterial,
+  deleteKnowledgeModule,
   getKnowledgeCategories,
   getKnowledgeMaterials,
+  getKnowledgeModules,
   getKnowledgeStats,
   publishKnowledgeMaterial,
   toggleKnowledgeMaterialPin,
   updateKnowledgeCategory,
+  updateKnowledgeModule,
 } from '@/shared/api/admin-knowledge';
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
@@ -29,6 +34,7 @@ export function useKnowledgeTerritoryPage() {
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
+  const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<PageMessage | null>(null);
@@ -37,6 +43,7 @@ export function useKnowledgeTerritoryPage() {
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
+  const [moduleFilter, setModuleFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<KnowledgeMaterialType | ''>('');
   const [statusFilter, setStatusFilter] = useState('');
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
@@ -47,6 +54,14 @@ export function useKnowledgeTerritoryPage() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategorySlug, setEditCategorySlug] = useState('');
+  const [showNewModule, setShowNewModule] = useState(false);
+  const [newModuleName, setNewModuleName] = useState('');
+  const [newModuleSlug, setNewModuleSlug] = useState('');
+  const [newModuleDescription, setNewModuleDescription] = useState('');
+  const [editingModuleId, setEditingModuleId] = useState<string | null>(null);
+  const [editModuleName, setEditModuleName] = useState('');
+  const [editModuleSlug, setEditModuleSlug] = useState('');
+  const [editModuleDescription, setEditModuleDescription] = useState('');
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -59,6 +74,7 @@ export function useKnowledgeTerritoryPage() {
       const res = await getKnowledgeMaterials({
         search: search || undefined,
         categoryId: categoryFilter || undefined,
+        moduleId: moduleFilter || undefined,
         type: typeFilter || undefined,
         status: canEdit && statusFilter ? statusFilter : undefined,
         page,
@@ -72,7 +88,7 @@ export function useKnowledgeTerritoryPage() {
     } finally {
       setLoading(false);
     }
-  }, [search, categoryFilter, typeFilter, statusFilter, page, canEdit, showMessage]);
+  }, [search, categoryFilter, moduleFilter, typeFilter, statusFilter, page, canEdit, showMessage]);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -82,6 +98,20 @@ export function useKnowledgeTerritoryPage() {
       showMessage('error', 'Ошибка загрузки категорий');
     }
   }, [showMessage]);
+
+  const loadModules = useCallback(async () => {
+    if (!categoryFilter) {
+      setModules([]);
+      return;
+    }
+    try {
+      const data = await getKnowledgeModules(categoryFilter);
+      setModules(data);
+    } catch {
+      setModules([]);
+      showMessage('error', 'Ошибка загрузки модулей');
+    }
+  }, [categoryFilter, showMessage]);
 
   const loadStats = useCallback(async () => {
     try {
@@ -101,10 +131,26 @@ export function useKnowledgeTerritoryPage() {
     loadStats();
   }, [loadCategories, loadStats]);
 
+  useEffect(() => {
+    setModuleFilter('');
+    loadModules();
+  }, [categoryFilter, loadModules]);
+
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setPage(1);
     setSearch(searchInput.trim());
+  };
+
+  const handleCategoryFilterChange = (categoryId: string) => {
+    setCategoryFilter(categoryId);
+    setModuleFilter('');
+    setPage(1);
+  };
+
+  const handleModuleFilterChange = (moduleId: string) => {
+    setModuleFilter(moduleId);
+    setPage(1);
   };
 
   const handleDelete = async () => {
@@ -114,10 +160,21 @@ export function useKnowledgeTerritoryPage() {
       if (deleteTarget.type === 'material') {
         await deleteKnowledgeMaterial(deleteTarget.id);
         showMessage('success', 'Материал удалён');
-      } else {
+      } else if (deleteTarget.type === 'category') {
         await deleteKnowledgeCategory(deleteTarget.id);
         showMessage('success', 'Категория удалена');
+        if (categoryFilter === deleteTarget.id) {
+          setCategoryFilter('');
+          setModuleFilter('');
+        }
         loadCategories();
+      } else {
+        await deleteKnowledgeModule(deleteTarget.id);
+        showMessage('success', 'Модуль удалён');
+        if (moduleFilter === deleteTarget.id) {
+          setModuleFilter('');
+        }
+        loadModules();
       }
       setDeleteTarget(null);
       loadMaterials();
@@ -188,20 +245,72 @@ export function useKnowledgeTerritoryPage() {
     }
   };
 
+  const handleAddModule = async () => {
+    if (!categoryFilter) {
+      showMessage('error', 'Сначала выберите категорию');
+      return;
+    }
+    if (!newModuleName.trim() || !newModuleSlug.trim()) {
+      showMessage('error', 'Заполните название и slug модуля');
+      return;
+    }
+    try {
+      await createKnowledgeModule({
+        categoryId: categoryFilter,
+        name: newModuleName.trim(),
+        slug: newModuleSlug.trim(),
+        description: newModuleDescription.trim() || undefined,
+        order: modules.length + 1,
+      });
+      showMessage('success', 'Модуль создан');
+      setNewModuleName('');
+      setNewModuleSlug('');
+      setNewModuleDescription('');
+      setShowNewModule(false);
+      loadModules();
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Ошибка создания модуля');
+    }
+  };
+
+  const handleUpdateModule = async (id: string) => {
+    if (!editModuleName.trim() || !editModuleSlug.trim()) return;
+    try {
+      await updateKnowledgeModule(id, {
+        name: editModuleName.trim(),
+        slug: editModuleSlug.trim(),
+        description: editModuleDescription.trim() || undefined,
+      });
+      showMessage('success', 'Модуль обновлён');
+      setEditingModuleId(null);
+      loadModules();
+      loadMaterials();
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Ошибка обновления модуля');
+    }
+  };
+
+  const selectedCategory = categories.find((c) => c.id === categoryFilter);
+
   return {
     canEdit,
     materials,
     categories,
+    modules,
+    selectedCategory,
     stats,
     loading,
     message,
     page,
     setPage,
     totalPages,
+    search,
     searchInput,
     setSearchInput,
     categoryFilter,
-    setCategoryFilter,
+    setCategoryFilter: handleCategoryFilterChange,
+    moduleFilter,
+    setModuleFilter: handleModuleFilterChange,
     typeFilter,
     setTypeFilter,
     statusFilter,
@@ -221,12 +330,30 @@ export function useKnowledgeTerritoryPage() {
     setEditCategoryName,
     editCategorySlug,
     setEditCategorySlug,
+    showNewModule,
+    setShowNewModule,
+    newModuleName,
+    setNewModuleName,
+    newModuleSlug,
+    setNewModuleSlug,
+    newModuleDescription,
+    setNewModuleDescription,
+    editingModuleId,
+    setEditingModuleId,
+    editModuleName,
+    setEditModuleName,
+    editModuleSlug,
+    setEditModuleSlug,
+    editModuleDescription,
+    setEditModuleDescription,
     handleSearchSubmit,
     handleDelete,
     handlePublish,
     handleTogglePin,
     handleAddCategory,
     handleUpdateCategory,
+    handleAddModule,
+    handleUpdateModule,
   };
 }
 

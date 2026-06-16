@@ -54,6 +54,7 @@ model User {
   blogPosts                               BlogPost[]
   knowledgeMaterials                      KnowledgeMaterial[]
   knowledgeVideoProgress                  KnowledgeVideoProgress[]
+  knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   cartItems                               CartItem[]
   cartServiceItems                        CartServiceItem[]
   comments                                Comment[]
@@ -889,39 +890,86 @@ model KnowledgeCategory {
   order       Int                 @default(0)
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+  modules     KnowledgeModule[]
   materials   KnowledgeMaterial[]
 
   @@map("knowledge_categories")
 }
 
+model KnowledgeModule {
+  id          String              @id @default(cuid())
+  categoryId  String
+  name        String
+  slug        String
+  description String?
+  order       Int                 @default(0)
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+  category    KnowledgeCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  materials   KnowledgeMaterial[]
+
+  @@unique([categoryId, slug])
+  @@index([categoryId])
+  @@map("knowledge_modules")
+}
+
 model KnowledgeMaterial {
-  id            String                        @id @default(cuid())
-  categoryId    String
-  type          KnowledgeMaterialType
-  title         String
-  slug          String                        @unique
-  excerpt       String?
-  content       String?                       @db.Text
-  videoUrl      String?
-  externalUrl   String?
-  thumbnailUrl  String?
-  sortOrder     Int                           @default(0)
-  isPinned      Boolean                       @default(false)
-  status        PageStatus                    @default(DRAFT)
-  publishedAt   DateTime?
-  authorId      String
-  createdAt     DateTime                      @default(now())
-  updatedAt     DateTime                      @updatedAt
-  category      KnowledgeCategory             @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  author        User                          @relation(fields: [authorId], references: [id])
-  attachments   KnowledgeMaterialAttachment[]
-  videoProgress KnowledgeVideoProgress[]
+  id                  String                            @id @default(cuid())
+  categoryId          String
+  moduleId            String?
+  type                KnowledgeMaterialType
+  title               String
+  slug                String                            @unique
+  excerpt             String?
+  content             String?                           @db.Text
+  readingTimeMinutes  Int?
+  tutorRecommendation String?                           @db.Text
+  videoUrl            String?
+  externalUrl         String?
+  thumbnailUrl        String?
+  sortOrder           Int                               @default(0)
+  isPinned            Boolean                           @default(false)
+  status              PageStatus                        @default(DRAFT)
+  publishedAt         DateTime?
+  authorId            String
+  createdAt           DateTime                          @default(now())
+  updatedAt           DateTime                          @updatedAt
+  category            KnowledgeCategory                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  module              KnowledgeModule?                  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  author              User                              @relation(fields: [authorId], references: [id])
+  attachments         KnowledgeMaterialAttachment[]
+  targetAudiences     KnowledgeMaterialTargetAudience[]
+  videoProgress       KnowledgeVideoProgress[]
+  quiz                KnowledgeMaterialQuiz?
+  quizAttempts        KnowledgeQuizAttempt[]
 
   @@index([categoryId])
+  @@index([moduleId])
   @@index([type])
   @@index([status])
   @@index([isPinned])
   @@map("knowledge_materials")
+}
+
+model KnowledgeTargetAudience {
+  id        String                            @id @default(cuid())
+  label     String                            @unique
+  sortOrder Int                               @default(0)
+  createdAt DateTime                          @default(now())
+  materials KnowledgeMaterialTargetAudience[]
+
+  @@map("knowledge_target_audiences")
+}
+
+model KnowledgeMaterialTargetAudience {
+  materialId String
+  audienceId String
+  material   KnowledgeMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  audience   KnowledgeTargetAudience @relation(fields: [audienceId], references: [id], onDelete: Cascade)
+
+  @@id([materialId, audienceId])
+  @@index([audienceId])
+  @@map("knowledge_material_target_audiences")
 }
 
 model KnowledgeMaterialAttachment {
@@ -954,6 +1002,68 @@ model KnowledgeVideoProgress {
   @@unique([materialId, userId])
   @@index([userId])
   @@map("knowledge_video_progress")
+}
+
+model KnowledgeMaterialQuiz {
+  id                  String                  @id @default(cuid())
+  materialId          String                  @unique
+  title               String                  @default("Проверка знаний")
+  passingScorePercent Int                     @default(80)
+  createdAt           DateTime                @default(now())
+  updatedAt           DateTime                @updatedAt
+  material            KnowledgeMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  questions           KnowledgeQuizQuestion[]
+  attempts            KnowledgeQuizAttempt[]
+
+  @@map("knowledge_material_quizzes")
+}
+
+model KnowledgeQuizQuestion {
+  id          String                @id @default(cuid())
+  quizId      String
+  sortOrder   Int                   @default(0)
+  text        String                @db.Text
+  explanation String?               @db.Text
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  quiz        KnowledgeMaterialQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  options     KnowledgeQuizOption[]
+
+  @@index([quizId])
+  @@map("knowledge_quiz_questions")
+}
+
+model KnowledgeQuizOption {
+  id         String                @id @default(cuid())
+  questionId String
+  sortOrder  Int                   @default(0)
+  text       String                @db.Text
+  isCorrect  Boolean               @default(false)
+  createdAt  DateTime              @default(now())
+  updatedAt  DateTime              @updatedAt
+  question   KnowledgeQuizQuestion @relation(fields: [questionId], references: [id], onDelete: Cascade)
+
+  @@index([questionId])
+  @@map("knowledge_quiz_options")
+}
+
+model KnowledgeQuizAttempt {
+  id           String                @id @default(cuid())
+  quizId       String
+  materialId   String
+  userId       String
+  scorePercent Int
+  passed       Boolean
+  answers      Json
+  createdAt    DateTime              @default(now())
+  quiz         KnowledgeMaterialQuiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+  material     KnowledgeMaterial     @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user         User                  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([materialId, userId])
+  @@index([userId])
+  @@index([quizId])
+  @@map("knowledge_quiz_attempts")
 }
 
 model PhotoCategory {
@@ -2418,6 +2528,7 @@ enum UserRole {
   SURVEYOR
   DRIVER
   INSTALLER
+  TRAINEE
   USER
   GUEST
 }

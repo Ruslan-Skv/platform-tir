@@ -136,3 +136,31 @@
   color: var(--admin-info);
   text-decoration: underline;
 }
+
+.proseMirror :global(table) {
+  width: 100%;
+  border-collapse: collapse;
+  margin: var(--admin-space-md) 0 var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
+}
+
+.proseMirror :global(th),
+.proseMirror :global(td) {
+  border: 1px solid var(--admin-border-strong);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  vertical-align: top;
+  text-align: left;
+}
+
+.proseMirror :global(th) {
+  background: var(--admin-surface-muted);
+  font-weight: 600;
+}
+
+.proseMirror :global(tr:nth-child(even) td) {
+  background: var(--admin-surface-soft, rgba(0, 0, 0, 0.02));
+}
+
+.proseMirror :global(.selectedCell) {
+  background: var(--admin-overlay-color-127);
+}

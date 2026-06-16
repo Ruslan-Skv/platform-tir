@@ -25,6 +25,9 @@ const ADMIN_ROLES = new Set([
   'SURVEYOR',
   'DRIVER',
   'INSTALLER',
+  'MANAGER',
+  'TECHNOLOGIST',
+  'TRAINEE',
 ]);
 
 export type TokenLoginPayload = {

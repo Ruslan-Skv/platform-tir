@@ -2,6 +2,7 @@ import {
   Controller,
   Get,
   Post,
+  Put,
   Body,
   Patch,
   Param,
@@ -21,8 +22,13 @@ import * as path from 'path';
 import { extname } from 'path';
 import type { Request as ExpressRequest } from 'express';
 import { KnowledgeService } from './knowledge.service';
+import { KnowledgeQuizService } from './knowledge-quiz.service';
+import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
+import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
+import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto';
+import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-audience.dto';
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -51,7 +57,10 @@ function isKnowledgeEditor(role: string | undefined): boolean {
 @Controller('admin/knowledge')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeController {
-  constructor(private readonly knowledgeService: KnowledgeService) {}
+  constructor(
+    private readonly knowledgeService: KnowledgeService,
+    private readonly knowledgeQuizService: KnowledgeQuizService,
+  ) {}
 
   @Get('stats')
   getStats(@Request() req: RequestWithUser) {
@@ -75,6 +84,7 @@ export class KnowledgeController {
     @Request() req: RequestWithUser,
     @Query('status') status?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('moduleId') moduleId?: string,
     @Query('type') type?: string,
     @Query('search') search?: string,
     @Query('page') page?: string,
@@ -84,6 +94,7 @@ export class KnowledgeController {
     return this.knowledgeService.findAllMaterials({
       status,
       categoryId,
+      moduleId,
       type,
       search,
       page: page ? parseInt(page, 10) : 1,
@@ -110,6 +121,36 @@ export class KnowledgeController {
     @Request() req: RequestWithUser,
   ) {
     return this.knowledgeService.upsertVideoProgress(req.user.id, id, dto);
+  }
+
+  @Get('materials/:id/quiz')
+  getMaterialQuiz(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeQuizService.getQuizForMaterial(
+      id,
+      req.user.id,
+      isKnowledgeEditor(req.user.role),
+    );
+  }
+
+  @Put('materials/:id/quiz')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  upsertMaterialQuiz(@Param('id') id: string, @Body() dto: UpsertKnowledgeQuizDto) {
+    return this.knowledgeQuizService.upsertQuiz(id, dto);
+  }
+
+  @Post('materials/:id/quiz/submit')
+  submitMaterialQuiz(
+    @Param('id') id: string,
+    @Body() dto: SubmitKnowledgeQuizDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.knowledgeQuizService.submitAttempt(
+      id,
+      req.user.id,
+      dto,
+      isKnowledgeEditor(req.user.role),
+    );
   }
 
   @Patch('materials/:id/pin')
@@ -152,6 +193,18 @@ export class KnowledgeController {
     return this.knowledgeService.findAllCategories(isKnowledgeEditor(req.user.role));
   }
 
+  @Get('target-audiences')
+  findAllTargetAudiences() {
+    return this.knowledgeService.findAllTargetAudiences();
+  }
+
+  @Post('target-audiences')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  createTargetAudience(@Body() dto: CreateKnowledgeTargetAudienceDto) {
+    return this.knowledgeService.createTargetAudience(dto);
+  }
+
   @Post('categories')
   @UseGuards(RolesGuard)
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
@@ -171,6 +224,35 @@ export class KnowledgeController {
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
   removeCategory(@Param('id') id: string) {
     return this.knowledgeService.removeCategory(id);
+  }
+
+  @Get('modules')
+  findAllModules(@Request() req: RequestWithUser, @Query('categoryId') categoryId: string) {
+    if (!categoryId) {
+      throw new BadRequestException('Укажите categoryId');
+    }
+    return this.knowledgeService.findAllModules(categoryId, isKnowledgeEditor(req.user.role));
+  }
+
+  @Post('modules')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  createModule(@Body() dto: CreateKnowledgeModuleDto) {
+    return this.knowledgeService.createModule(dto);
+  }
+
+  @Patch('modules/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  updateModule(@Param('id') id: string, @Body() data: Partial<CreateKnowledgeModuleDto>) {
+    return this.knowledgeService.updateModule(id, data);
+  }
+
+  @Delete('modules/:id')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  removeModule(@Param('id') id: string) {
+    return this.knowledgeService.removeModule(id);
   }
 
   @Post('upload')

@@ -28,8 +28,7 @@ run_capture() {
 run_secretlint() {
   workspace=$1
   echo "🔍 ${workspace} secretlint..."
-  if ! npm run secretlint --prefix "$workspace" >/dev/null 2>&1; then
-    npm run secretlint --prefix "$workspace"
+  if ! npm run secretlint --prefix "$workspace"; then
     echo "❌ ${workspace} secretlint failed"
     exit 1
   fi

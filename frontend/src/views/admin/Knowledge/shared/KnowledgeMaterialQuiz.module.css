@@ -1,0 +1,200 @@
+.section {
+  margin-top: var(--admin-space-4xl);
+  padding-top: var(--admin-space-4xl);
+  border-top: 1px solid var(--admin-border);
+}
+
+.header {
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.title {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-xl);
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+.bestScore {
+  display: inline-block;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+}
+
+.bestScorePassed {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.bestScoreFailed {
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
+}
+
+.loading {
+  padding: var(--admin-space-2xl);
+  text-align: center;
+  color: var(--admin-text-muted);
+}
+
+.error {
+  margin-bottom: var(--admin-space-lg);
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
+  font-size: var(--admin-font-size-sm);
+}
+
+.questions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xl);
+}
+
+.question {
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.questionText {
+  margin: 0 0 var(--admin-space-md);
+  font-weight: 600;
+  line-height: 1.45;
+}
+
+.options {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.option {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.4;
+  cursor: pointer;
+}
+
+.option input {
+  margin-top: 3px;
+  flex-shrink: 0;
+}
+
+.submitBtn,
+.retryBtn {
+  margin-top: var(--admin-space-2xl);
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
+  cursor: pointer;
+}
+
+.submitBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.retryBtn {
+  background: transparent;
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+}
+
+.hint {
+  margin-top: var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.resultSummary {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-lg);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
+}
+
+.resultPassed {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.resultFailed {
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
+}
+
+.resultList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+.resultItem {
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+}
+
+.resultCorrect {
+  border-color: var(--admin-overlay-color-108);
+  background: rgba(34, 139, 34, 0.06);
+}
+
+.resultWrong {
+  border-color: var(--admin-overlay-color-070);
+  background: rgba(200, 60, 60, 0.05);
+}
+
+.resultQuestion {
+  margin: 0 0 var(--admin-space-sm);
+  font-weight: 600;
+  font-size: var(--admin-font-size-sm);
+}
+
+.resultAnswer,
+.resultCorrectAnswer,
+.resultExplanation {
+  margin: 0 0 var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.4;
+}
+
+.resultCorrectAnswer {
+  color: var(--admin-overlay-color-108);
+  font-weight: 500;
+}
+
+.resultExplanation {
+  color: var(--admin-text-muted);
+  font-style: italic;
+}

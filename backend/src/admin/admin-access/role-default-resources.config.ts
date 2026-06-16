@@ -267,4 +267,5 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ],
   DRIVER: ['admin', 'admin.knowledge', 'admin.crm', 'admin.crm.installers'],
   INSTALLER: ['admin', 'admin.knowledge', 'admin.crm', 'admin.crm.installers'],
+  TRAINEE: ['admin', 'admin.knowledge'],
 };

@@ -13,6 +13,7 @@ export type UserRole =
   | 'SURVEYOR'
   | 'DRIVER'
   | 'INSTALLER'
+  | 'TRAINEE'
   | 'USER'
   | 'GUEST';
 

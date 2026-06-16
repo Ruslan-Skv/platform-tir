@@ -2,10 +2,14 @@
 
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
-import { EditorContent, useEditor } from '@tiptap/react';
+import { Table } from '@tiptap/extension-table';
+import { TableCell } from '@tiptap/extension-table-cell';
+import { TableHeader } from '@tiptap/extension-table-header';
+import { TableRow } from '@tiptap/extension-table-row';
+import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
-import React from 'react';
+import React, { useMemo } from 'react';
 
 import styles from './BlogPostEditor.module.css';
 import { BLOG_PARAGRAPH_INDENT_CLASS, BlogParagraph } from './blogParagraphExtension';
@@ -14,17 +18,17 @@ interface BlogPostEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
+  enableTables?: boolean;
 }
 
 export function BlogPostEditor({
   value,
   onChange,
   placeholder = 'Текст статьи: абзацы, списки, ссылки…',
+  enableTables = false,
 }: BlogPostEditorProps) {
-  const editor = useEditor({
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
-    extensions: [
+  const extensions = useMemo((): Extensions => {
+    const base: Extensions = [
       StarterKit.configure({
         paragraph: false,
         heading: { levels: [2, 3, 4, 5, 6] },
@@ -38,7 +42,19 @@ export function BlogPostEditor({
         },
       }),
       Placeholder.configure({ placeholder }),
-    ],
+    ];
+
+    if (enableTables) {
+      return [...base, Table.configure({ resizable: true }), TableRow, TableHeader, TableCell];
+    }
+
+    return base;
+  }, [enableTables, placeholder]);
+
+  const editor = useEditor({
+    immediatelyRender: false,
+    shouldRerenderOnTransaction: true,
+    extensions,
     content: value || '<p></p>',
     editorProps: {
       attributes: {
@@ -186,6 +202,21 @@ export function BlogPostEditor({
           'Цитата'
         )}
         {btn('—', false, () => editor.chain().focus().setHorizontalRule().run(), 'Разделитель')}
+        {enableTables ? (
+          <>
+            <span className={styles.toolbarSep} aria-hidden />
+            {btn(
+              '⊞',
+              editor.isActive('table'),
+              () =>
+                editor.chain().focus().insertTable({ rows: 3, cols: 2, withHeaderRow: true }).run(),
+              'Вставить таблицу'
+            )}
+            {btn('⊕', false, () => editor.chain().focus().addRowAfter().run(), 'Добавить строку')}
+            {btn('⊖', false, () => editor.chain().focus().deleteRow().run(), 'Удалить строку')}
+            {btn('✕', false, () => editor.chain().focus().deleteTable().run(), 'Удалить таблицу')}
+          </>
+        ) : null}
         <span className={styles.toolbarSep} aria-hidden />
         {btn('🔗', editor.isActive('link'), setLink, 'Ссылка')}
         <span className={styles.toolbarSep} aria-hidden />

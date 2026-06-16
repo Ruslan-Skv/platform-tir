@@ -117,7 +117,7 @@
 
 .layout {
   display: grid;
-  grid-template-columns: 240px 1fr;
+  grid-template-columns: 280px 1fr;
   gap: var(--admin-space-4xl);
   align-items: start;
 }
@@ -166,6 +166,67 @@
 .categoryCount {
   font-size: var(--admin-font-size-xs);
   opacity: 0.7;
+}
+
+.modulesSection {
+  margin-top: var(--admin-space-2xl);
+  padding-top: var(--admin-space-2xl);
+  border-top: 1px solid var(--admin-border);
+}
+
+.moduleChip {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  margin-bottom: var(--admin-space-xs);
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  text-align: left;
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.moduleChip:hover {
+  background: var(--admin-surface-hover, rgba(0, 0, 0, 0.04));
+}
+
+.moduleChipActive {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+  font-weight: 600;
+}
+
+.moduleDescription {
+  display: block;
+  margin-top: 2px;
+  font-size: 10px;
+  font-weight: 400;
+  opacity: 0.75;
+  line-height: 1.3;
+}
+
+.moduleGroup {
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.moduleGroupTitle {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.moduleGroupDescription {
+  margin: calc(-1 * var(--admin-space-sm)) 0 var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.4;
 }
 
 .categoryManage {
@@ -468,13 +529,37 @@
 .cardExcerpt {
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
-  margin: 0 0 var(--admin-space-md);
   line-height: 1.4;
+  margin: 0 0 var(--admin-space-sm);
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  flex: 1;
+}
+
+.cardTags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.cardTag {
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-muted, rgba(0, 0, 0, 0.04));
+  padding: 2px 6px;
+  border-radius: var(--admin-radius-sm);
+}
+
+.cardTagSuccess {
+  color: var(--admin-overlay-color-108);
+  background: var(--admin-overlay-color-101);
+}
+
+.cardTagPending {
+  color: var(--admin-text-muted);
 }
 
 .videoProgress {

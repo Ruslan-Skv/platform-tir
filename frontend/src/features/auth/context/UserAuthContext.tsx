@@ -28,6 +28,9 @@ export type UserRole =
   | 'SURVEYOR'
   | 'DRIVER'
   | 'INSTALLER'
+  | 'MANAGER'
+  | 'TECHNOLOGIST'
+  | 'TRAINEE'
   | 'USER'
   | 'GUEST';
 

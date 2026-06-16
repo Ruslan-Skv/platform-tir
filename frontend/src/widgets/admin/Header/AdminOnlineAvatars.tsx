@@ -16,6 +16,7 @@ const ROLE_LABEL: Record<string, string> = {
   MANAGER: 'Менеджер',
   TECHNOLOGIST: 'Технолог',
   PARTNER: 'Партнёр',
+  TRAINEE: 'Стажёр',
 };
 
 const POLL_MS = 20_000;

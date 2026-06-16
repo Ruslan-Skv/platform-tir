@@ -6,16 +6,20 @@ import { useRouter } from 'next/navigation';
 
 import {
   type AdminKnowledgeCategory,
+  type AdminKnowledgeModule,
   type KnowledgeAttachmentInput,
   type KnowledgeMaterialType,
+  type KnowledgeTargetAudience,
   createKnowledgeMaterial,
   getKnowledgeCategories,
   getKnowledgeMaterial,
+  getKnowledgeModules,
+  getKnowledgeTargetAudiences,
   updateKnowledgeMaterial,
   uploadKnowledgeThumbnail,
 } from '@/shared/api/admin-knowledge';
 
-import { slugify } from '../../../shared/knowledge-utils';
+import { computeReadingTimeMinutes, slugify } from '../../../shared/knowledge-utils';
 import type {
   KnowledgeMaterialFormPageMessage,
   KnowledgeMaterialFormStatus,
@@ -35,13 +39,19 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [message, setMessage] = useState<KnowledgeMaterialFormPageMessage | null>(null);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
+  const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
 
   const [type, setType] = useState<KnowledgeMaterialType>('VIDEO');
   const [title, setTitle] = useState('');
   const [slug, setSlug] = useState('');
   const [slugManual, setSlugManual] = useState(false);
   const [categoryId, setCategoryId] = useState('');
+  const [moduleId, setModuleId] = useState('');
   const [excerpt, setExcerpt] = useState('');
+  const [targetAudienceOptions, setTargetAudienceOptions] = useState<KnowledgeTargetAudience[]>([]);
+  const [targetAudienceIds, setTargetAudienceIds] = useState<string[]>([]);
+  const [readingTimeMinutes, setReadingTimeMinutes] = useState<number | ''>('');
+  const [tutorRecommendation, setTutorRecommendation] = useState('');
   const [content, setContent] = useState('');
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
@@ -56,6 +66,26 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     setTimeout(() => setMessage(null), 3000);
   }, []);
 
+  const loadModules = useCallback(async (catId: string, preserveModuleId?: string) => {
+    if (!catId) {
+      setModules([]);
+      setModuleId('');
+      return;
+    }
+    try {
+      const data = await getKnowledgeModules(catId);
+      setModules(data);
+      if (preserveModuleId && data.some((m) => m.id === preserveModuleId)) {
+        setModuleId(preserveModuleId);
+      } else {
+        setModuleId('');
+      }
+    } catch {
+      setModules([]);
+      setModuleId('');
+    }
+  }, []);
+
   const loadCategories = useCallback(async () => {
     try {
       const data = await getKnowledgeCategories();
@@ -68,6 +98,15 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     }
   }, [categoryId, showMessage]);
 
+  const loadTargetAudienceOptions = useCallback(async () => {
+    try {
+      const data = await getKnowledgeTargetAudiences();
+      setTargetAudienceOptions(data);
+    } catch {
+      showMessage('error', 'Ошибка загрузки целевых аудиторий');
+    }
+  }, [showMessage]);
+
   const loadMaterial = useCallback(async () => {
     if (!materialId) return;
     setLoading(true);
@@ -78,7 +117,21 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       setSlug(m.slug);
       setSlugManual(true);
       setCategoryId(m.categoryId);
+      setModuleId(m.moduleId || '');
       setExcerpt(m.excerpt || '');
+      setTargetAudienceIds((m.targetAudiences ?? []).map((a) => a.id));
+      setTargetAudienceOptions((prev) => {
+        const byId = new Map(prev.map((item) => [item.id, item]));
+        for (const item of m.targetAudiences ?? []) {
+          byId.set(item.id, item);
+        }
+        return [...byId.values()].sort((a, b) => {
+          if (a.sortOrder !== b.sortOrder) return a.sortOrder - b.sortOrder;
+          return a.label.localeCompare(b.label, 'ru');
+        });
+      });
+      setReadingTimeMinutes(m.readingTimeMinutes ?? '');
+      setTutorRecommendation(m.tutorRecommendation || '');
       setContent(m.content || '');
       setVideoUrl(m.videoUrl || '');
       setExternalUrl(m.externalUrl || '');
@@ -95,16 +148,24 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         }))
       );
       setStatus(m.status);
+      await loadModules(m.categoryId, m.moduleId || undefined);
     } catch (e) {
       showMessage('error', e instanceof Error ? e.message : 'Материал не найден');
     } finally {
       setLoading(false);
     }
-  }, [materialId, showMessage]);
+  }, [materialId, showMessage, loadModules]);
 
   useEffect(() => {
     void loadCategories();
-  }, [loadCategories]);
+    void loadTargetAudienceOptions();
+  }, [loadCategories, loadTargetAudienceOptions]);
+
+  useEffect(() => {
+    if (!isEdit && categoryId) {
+      void loadModules(categoryId);
+    }
+  }, [categoryId, isEdit, loadModules]);
 
   useEffect(() => {
     if (isEdit) void loadMaterial();
@@ -142,7 +203,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       showMessage('error', 'Укажите ссылку на видео');
       return;
     }
-    if (type === 'ARTICLE' && !content.trim()) {
+    if (type === 'ARTICLE' && !content.trim() && (publishNow || status === 'PUBLISHED')) {
       showMessage('error', 'Добавьте текст статьи');
       return;
     }
@@ -155,10 +216,14 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     try {
       const payload = {
         categoryId,
+        moduleId: moduleId || null,
         type,
         title: title.trim(),
         slug: slug.trim(),
         excerpt: excerpt.trim() || undefined,
+        targetAudienceIds,
+        readingTimeMinutes: readingTimeMinutes === '' ? null : Number(readingTimeMinutes),
+        tutorRecommendation: tutorRecommendation.trim() || undefined,
         content: content.trim() || undefined,
         videoUrl: videoUrl.trim() || undefined,
         externalUrl: externalUrl.trim() || undefined,
@@ -186,12 +251,14 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   };
 
   return {
+    materialId,
     isEdit,
     loading,
     saving,
     uploadingThumbnail,
     message,
     categories,
+    modules,
     type,
     setType,
     title,
@@ -200,8 +267,19 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     setSlugManual,
     categoryId,
     setCategoryId,
+    moduleId,
+    setModuleId,
     excerpt,
     setExcerpt,
+    targetAudienceOptions,
+    setTargetAudienceOptions,
+    targetAudienceIds,
+    setTargetAudienceIds,
+    readingTimeMinutes,
+    setReadingTimeMinutes,
+    tutorRecommendation,
+    setTutorRecommendation,
+    estimatedReadingTime: computeReadingTimeMinutes(content),
     content,
     setContent,
     videoUrl,

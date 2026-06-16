@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import { KnowledgeAttachmentsList } from '../shared/KnowledgeAttachmentsList';
+import { KnowledgeMaterialQuiz } from '../shared/KnowledgeMaterialQuiz';
 import { KnowledgeVideoPlayer } from '../shared/KnowledgeVideoPlayer';
 import {
   formatAuthorName,
   formatDate,
+  formatReadingTime,
+  getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
   getStatusLabel,
+  hasTargetAudiences,
 } from '../shared/knowledge-utils';
 import styles from './KnowledgeMaterialViewPage.module.css';
 import type { KnowledgeMaterialViewPageModel } from './hooks/useKnowledgeMaterialViewPage';
@@ -77,12 +81,31 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             {getMaterialTypeIcon(material.type)} {getMaterialTypeLabel(material.type)}
           </span>
           <span className={styles.categoryBadge}>{material.category.name}</span>
+          {material.module ? (
+            <span className={styles.categoryBadge}>{material.module.name}</span>
+          ) : null}
           {canEdit && material.status !== 'PUBLISHED' && (
             <span className={styles.statusBadge}>{getStatusLabel(material.status)}</span>
           )}
         </div>
         <h1 className={styles.title}>{material.title}</h1>
         {material.excerpt && <p className={styles.excerpt}>{material.excerpt}</p>}
+        {material.type === 'ARTICLE' &&
+        (hasTargetAudiences(material.targetAudiences) || getMaterialReadingTime(material)) ? (
+          <div className={styles.articleMeta}>
+            {material.targetAudiences?.map((audience) => (
+              <span key={audience.id} className={styles.articleMetaItem}>
+                <span className={styles.articleMetaLabel}>Целевая аудитория:</span> {audience.label}
+              </span>
+            ))}
+            {formatReadingTime(getMaterialReadingTime(material)) ? (
+              <span className={styles.articleMetaItem}>
+                <span className={styles.articleMetaLabel}>Время чтения:</span>{' '}
+                {formatReadingTime(getMaterialReadingTime(material))}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
         <div className={styles.meta}>
           <span>{formatAuthorName(material.author)}</span>
           <span>{formatDate(material.publishedAt || material.createdAt)}</span>
@@ -113,6 +136,22 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           dangerouslySetInnerHTML={{ __html: material.content }}
         />
       )}
+
+      {canEdit && material.type === 'ARTICLE' && material.tutorRecommendation ? (
+        <aside className={styles.tutorBox}>
+          <h2 className={styles.tutorTitle}>Рекомендация для тьютора</h2>
+          <p className={styles.tutorText}>{material.tutorRecommendation}</p>
+          <p className={styles.tutorNote}>Видно только редакторам и тьюторам</p>
+        </aside>
+      ) : null}
+
+      {material.type === 'ARTICLE' ? (
+        <KnowledgeMaterialQuiz
+          materialId={material.id}
+          materialStatus={material.status}
+          canEdit={canEdit}
+        />
+      ) : null}
 
       {material.type === 'LINK' && material.externalUrl && (
         <section className={styles.linkSection}>

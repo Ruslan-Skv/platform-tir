@@ -15,6 +15,10 @@ export class CreateKnowledgeMaterialDto {
   @IsString()
   categoryId: string;
 
+  @IsString()
+  @IsOptional()
+  moduleId?: string | null;
+
   @IsEnum(KnowledgeMaterialType)
   type: KnowledgeMaterialType;
 
@@ -31,6 +35,20 @@ export class CreateKnowledgeMaterialDto {
   @IsString()
   @IsOptional()
   content?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  targetAudienceIds?: string[];
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  readingTimeMinutes?: number | null;
+
+  @IsString()
+  @IsOptional()
+  tutorRecommendation?: string;
 
   @IsString()
   @IsOptional()

@@ -1,0 +1,117 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 1px 6px;
+  border-radius: var(--admin-radius-xl);
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.4;
+  flex-shrink: 0;
+}
+
+.chipRemove {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1rem;
+  height: 1rem;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  font-size: 0.85rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.chipRemove:hover:not(:disabled) {
+  background: rgba(0, 0, 0, 0.08);
+}
+
+.chipRemove:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.controlsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  align-items: center;
+}
+
+.select,
+.input {
+  flex: 1 1 140px;
+  min-width: 0;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-bg);
+  color: var(--admin-text-secondary);
+}
+
+.secondaryBtn,
+.primaryBtn {
+  flex-shrink: 0;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--admin-border);
+}
+
+.secondaryBtn {
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+}
+
+.secondaryBtn:hover:not(:disabled) {
+  background: var(--admin-surface-soft);
+}
+
+.primaryBtn {
+  min-width: 2.25rem;
+  background: var(--admin-accent);
+  border-color: var(--admin-accent);
+  color: var(--admin-surface);
+}
+
+.primaryBtn:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.secondaryBtn:disabled,
+.primaryBtn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.error {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-overlay-color-070);
+}
+
+@media (max-width: 720px) {
+  .controlsRow {
+    display: grid;
+    grid-template-columns: 1fr auto;
+  }
+
+  .select,
+  .input {
+    grid-column: 1 / -1;
+  }
+}

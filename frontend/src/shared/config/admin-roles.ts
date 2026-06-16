@@ -18,6 +18,7 @@ export type BackendRole =
   | 'SURVEYOR'
   | 'DRIVER'
   | 'INSTALLER'
+  | 'TRAINEE'
   | 'USER'
   | 'GUEST';
 
@@ -147,6 +148,13 @@ export const ROLES_CONFIG: RoleConfig[] = [
     label: 'Монтажник',
     description: 'Выполнение монтажных работ. Просмотр своих назначений.',
     permissions: ['CRM: просмотр договоров, даты монтажа'],
+  },
+  {
+    id: 'TRAINEE',
+    label: 'Стажёр',
+    description:
+      'Кандидат на работу в компании. Доступ к обучающей платформе: материалы базы знаний и тесты после статей.',
+    permissions: ['База знаний: просмотр материалов и прохождение тестов'],
   },
   {
     id: 'USER',

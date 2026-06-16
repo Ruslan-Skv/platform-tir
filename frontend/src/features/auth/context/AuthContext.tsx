@@ -27,7 +27,10 @@ type AdminRole =
   | 'LEAD_SPECIALIST_WINDOWS_DOORS'
   | 'SURVEYOR'
   | 'DRIVER'
-  | 'INSTALLER';
+  | 'INSTALLER'
+  | 'MANAGER'
+  | 'TECHNOLOGIST'
+  | 'TRAINEE';
 
 interface User {
   id: string;
@@ -70,6 +73,9 @@ const ADMIN_ROLES = [
   'SURVEYOR',
   'DRIVER',
   'INSTALLER',
+  'MANAGER',
+  'TECHNOLOGIST',
+  'TRAINEE',
 ] as const;
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -212,6 +218,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         'SURVEYOR',
         'DRIVER',
         'INSTALLER',
+        'MANAGER',
+        'TECHNOLOGIST',
+        'TRAINEE',
       ];
       if (!allowedRoles.includes(data.user.role)) {
         return {
@@ -351,6 +360,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       'SURVEYOR',
       'DRIVER',
       'INSTALLER',
+      'MANAGER',
+      'TECHNOLOGIST',
+      'TRAINEE',
     ].includes(user?.role ?? ''),
     login,
     logout,

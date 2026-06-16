@@ -42,14 +42,24 @@ export interface KnowledgeVideoProgress {
   updatedAt: string;
 }
 
+export interface KnowledgeTargetAudience {
+  id: string;
+  label: string;
+  sortOrder: number;
+}
+
 export interface AdminKnowledgeMaterial {
   id: string;
   categoryId: string;
+  moduleId: string | null;
   type: KnowledgeMaterialType;
   title: string;
   slug: string;
   excerpt: string | null;
   content: string | null;
+  targetAudiences: KnowledgeTargetAudience[];
+  readingTimeMinutes: number | null;
+  tutorRecommendation?: string | null;
   videoUrl: string | null;
   externalUrl: string | null;
   thumbnailUrl: string | null;
@@ -61,8 +71,10 @@ export interface AdminKnowledgeMaterial {
   updatedAt: string;
   author: { id: string; firstName: string | null; lastName: string | null };
   category: { id: string; name: string; slug: string };
+  module?: { id: string; name: string; slug: string; order: number } | null;
   attachments?: KnowledgeAttachment[];
   myVideoProgress?: KnowledgeVideoProgress | null;
+  myQuizStatus?: KnowledgeQuizStatus | null;
 }
 
 export interface KnowledgeAttachmentInput {
@@ -83,13 +95,35 @@ export interface AdminKnowledgeCategory {
   _count?: { materials: number };
 }
 
+export interface AdminKnowledgeModule {
+  id: string;
+  categoryId: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  order: number;
+  _count?: { materials: number };
+}
+
+export interface CreateKnowledgeModuleDto {
+  categoryId: string;
+  name: string;
+  slug: string;
+  description?: string;
+  order?: number;
+}
+
 export interface CreateKnowledgeMaterialDto {
   categoryId: string;
+  moduleId?: string | null;
   type: KnowledgeMaterialType;
   title: string;
   slug: string;
   excerpt?: string;
   content?: string;
+  targetAudienceIds?: string[];
+  readingTimeMinutes?: number | null;
+  tutorRecommendation?: string;
   videoUrl?: string;
   externalUrl?: string;
   thumbnailUrl?: string;
@@ -121,6 +155,7 @@ export interface KnowledgeStats {
 export async function getKnowledgeMaterials(params?: {
   status?: string;
   categoryId?: string;
+  moduleId?: string;
   type?: string;
   search?: string;
   page?: number;
@@ -129,6 +164,7 @@ export async function getKnowledgeMaterials(params?: {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
   if (params?.categoryId) searchParams.set('categoryId', params.categoryId);
+  if (params?.moduleId) searchParams.set('moduleId', params.moduleId);
   if (params?.type) searchParams.set('type', params.type);
   if (params?.search) searchParams.set('search', params.search);
   if (params?.page) searchParams.set('page', String(params.page));
@@ -201,6 +237,27 @@ export async function deleteKnowledgeMaterial(id: string) {
   if (!res.ok) throw new Error('Не удалось удалить материал');
 }
 
+export async function getKnowledgeTargetAudiences() {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/target-audiences`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить целевые аудитории');
+  return res.json() as Promise<KnowledgeTargetAudience[]>;
+}
+
+export async function createKnowledgeTargetAudience(label: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/target-audiences`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ label }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось добавить целевую аудиторию');
+  }
+  return res.json() as Promise<KnowledgeTargetAudience>;
+}
+
 export async function getKnowledgeCategories() {
   const res = await apiFetch(`${API_URL}/admin/knowledge/categories`, {
     headers: getAuthHeaders(),
@@ -241,6 +298,46 @@ export async function deleteKnowledgeCategory(id: string) {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось удалить категорию');
+}
+
+export async function getKnowledgeModules(categoryId: string) {
+  const res = await apiFetch(
+    `${API_URL}/admin/knowledge/modules?categoryId=${encodeURIComponent(categoryId)}`,
+    { headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить модули');
+  return res.json() as Promise<AdminKnowledgeModule[]>;
+}
+
+export async function createKnowledgeModule(dto: CreateKnowledgeModuleDto) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/modules`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось создать модуль');
+  }
+  return res.json() as Promise<AdminKnowledgeModule>;
+}
+
+export async function updateKnowledgeModule(id: string, dto: Partial<CreateKnowledgeModuleDto>) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/modules/${id}`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) throw new Error('Не удалось обновить модуль');
+  return res.json() as Promise<AdminKnowledgeModule>;
+}
+
+export async function deleteKnowledgeModule(id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/modules/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось удалить модуль');
 }
 
 export async function getKnowledgeStats() {
@@ -310,4 +407,124 @@ export async function getKnowledgeVideoProgress(materialId: string) {
   if (!res.ok) throw new Error('Не удалось загрузить прогресс');
   const data = await res.json();
   return data as KnowledgeVideoProgress | null;
+}
+
+export interface KnowledgeQuizStatus {
+  hasQuiz: boolean;
+  passed: boolean;
+  scorePercent: number | null;
+}
+
+export interface KnowledgeQuizOption {
+  id: string;
+  sortOrder: number;
+  text: string;
+  isCorrect?: boolean;
+}
+
+export interface KnowledgeQuizQuestion {
+  id: string;
+  sortOrder: number;
+  text: string;
+  explanation?: string | null;
+  options: KnowledgeQuizOption[];
+}
+
+export interface KnowledgeQuizData {
+  id: string;
+  materialId: string;
+  title: string;
+  passingScorePercent: number;
+  questions: KnowledgeQuizQuestion[];
+}
+
+export interface KnowledgeQuizAttemptSummary {
+  id: string;
+  scorePercent: number;
+  passed: boolean;
+  createdAt: string;
+}
+
+export interface KnowledgeMaterialQuizResponse {
+  quiz: KnowledgeQuizData;
+  myBestAttempt: KnowledgeQuizAttemptSummary | null;
+  myLatestAttempt: KnowledgeQuizAttemptSummary | null;
+}
+
+export interface KnowledgeQuizResultItem {
+  questionId: string;
+  questionText: string;
+  selectedOptionId: string;
+  selectedOptionText: string | null;
+  correctOptionId: string | null;
+  correctOptionText: string | null;
+  isCorrect: boolean;
+  explanation: string | null;
+}
+
+export interface KnowledgeQuizSubmitResult {
+  attemptId: string;
+  scorePercent: number;
+  passed: boolean;
+  passingScorePercent: number;
+  correctCount: number;
+  totalCount: number;
+  results: KnowledgeQuizResultItem[];
+}
+
+export interface UpsertKnowledgeQuizDto {
+  title?: string;
+  passingScorePercent?: number;
+  questions: Array<{
+    id?: string;
+    text: string;
+    explanation?: string;
+    sortOrder?: number;
+    options: Array<{
+      id?: string;
+      text: string;
+      isCorrect: boolean;
+      sortOrder?: number;
+    }>;
+  }>;
+}
+
+export async function getKnowledgeMaterialQuiz(materialId: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/quiz`, {
+    headers: getAuthHeaders(),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Не удалось загрузить тест');
+  const data = await res.json();
+  return (data as KnowledgeMaterialQuizResponse | null) ?? null;
+}
+
+export async function upsertKnowledgeMaterialQuiz(materialId: string, dto: UpsertKnowledgeQuizDto) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/quiz`, {
+    method: 'PUT',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось сохранить тест');
+  }
+  const data = await res.json();
+  return data as KnowledgeMaterialQuizResponse | null;
+}
+
+export async function submitKnowledgeMaterialQuiz(
+  materialId: string,
+  answers: Record<string, string>
+) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/quiz/submit`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ answers }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить ответы');
+  }
+  return res.json() as Promise<KnowledgeQuizSubmitResult>;
 }

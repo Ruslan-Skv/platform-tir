@@ -116,6 +116,19 @@
   margin: 0 0 var(--admin-space-lg);
 }
 
+.articleMeta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md) var(--admin-space-2xl);
+  margin: 0 0 var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.articleMetaLabel {
+  color: var(--admin-text-muted);
+}
+
 .meta {
   display: flex;
   gap: var(--admin-space-2xl);
@@ -163,6 +176,59 @@
 
 .article a {
   color: var(--admin-accent);
+}
+
+.article table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1em 0 1.5em;
+  font-size: var(--admin-font-size-sm);
+}
+
+.article th,
+.article td {
+  border: 1px solid var(--admin-border);
+  padding: 0.5rem 0.75rem;
+  vertical-align: top;
+  text-align: left;
+}
+
+.article th {
+  background: var(--admin-surface);
+  font-weight: 600;
+}
+
+.article tr:nth-child(even) td {
+  background: var(--admin-surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.tutorBox {
+  margin: var(--admin-space-2xl) 0 var(--admin-space-4xl);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px dashed var(--admin-overlay-color-108);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-overlay-color-101);
+}
+
+.tutorTitle {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-overlay-color-108);
+}
+
+.tutorText {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.55;
+  color: var(--admin-text-secondary);
+  white-space: pre-wrap;
+}
+
+.tutorNote {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
 }
 
 .description {

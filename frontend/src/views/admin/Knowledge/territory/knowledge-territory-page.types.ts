@@ -6,7 +6,7 @@ export type PageMessage = {
 };
 
 export type DeleteTarget = {
-  type: 'material' | 'category';
+  type: 'material' | 'category' | 'module';
   id: string;
   name: string;
 };

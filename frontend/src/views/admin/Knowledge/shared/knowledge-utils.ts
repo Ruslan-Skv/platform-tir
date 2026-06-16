@@ -103,3 +103,59 @@ export function formatDate(dateStr: string): string {
     year: 'numeric',
   });
 }
+
+const READING_WORDS_PER_MINUTE = 200;
+
+export function stripHtml(html: string): string {
+  return html
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function countWords(text: string): number {
+  if (!text.trim()) return 0;
+  return text.split(/\s+/).filter(Boolean).length;
+}
+
+export function computeReadingTimeMinutes(content: string | null | undefined): number | null {
+  if (!content?.trim()) return null;
+  const words = countWords(stripHtml(content));
+  if (words === 0) return null;
+  return Math.max(1, Math.round(words / READING_WORDS_PER_MINUTE));
+}
+
+export function getMaterialReadingTime(material: {
+  readingTimeMinutes?: number | null;
+  content?: string | null;
+}): number | null {
+  if (material.readingTimeMinutes != null && material.readingTimeMinutes > 0) {
+    return material.readingTimeMinutes;
+  }
+  return computeReadingTimeMinutes(material.content);
+}
+
+export function formatReadingTime(minutes: number | null | undefined): string | null {
+  if (!minutes || minutes <= 0) return null;
+  const n = Math.round(minutes);
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  let suffix = 'минут';
+  if (mod100 < 11 || mod100 > 14) {
+    if (mod10 === 1) suffix = 'минута';
+    else if (mod10 >= 2 && mod10 <= 4) suffix = 'минуты';
+  }
+  return `${n} ${suffix} чтения`;
+}
+
+export function formatTargetAudiences(
+  audiences: { label: string }[] | null | undefined
+): string | null {
+  if (!audiences?.length) return null;
+  return audiences.map((a) => a.label).join(', ');
+}
+
+export function hasTargetAudiences(audiences: { label: string }[] | null | undefined): boolean {
+  return Boolean(audiences?.length);
+}

@@ -162,6 +162,11 @@
   color: var(--admin-warning-text);
 }
 
+.roleTRAINEE {
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
+}
+
 .roleUSER {
   background: var(--admin-surface-soft);
   color: var(--admin-text-secondary);
