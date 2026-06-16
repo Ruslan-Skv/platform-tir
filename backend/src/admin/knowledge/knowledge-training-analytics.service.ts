@@ -3,6 +3,8 @@ import { KnowledgeMaterialType, Prisma, UserRole } from '@prisma/client';
 import { ADMIN_ROLES } from '../admin-access/admin-access.service';
 import { PrismaService } from '../../database/prisma.service';
 
+const TRAINING_ANALYTICS_ROLES = ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN');
+
 type MaterialRow = {
   id: string;
   title: string;
@@ -101,7 +103,7 @@ export class KnowledgeTrainingAnalyticsService {
   async getTrainingAnalytics(params: KnowledgeTrainingAnalyticsParams) {
     const period = resolvePeriod(params);
     const employeeWhere: Prisma.UserWhereInput = {
-      role: { in: ADMIN_ROLES },
+      role: { in: TRAINING_ANALYTICS_ROLES },
       isActive: true,
     };
 
