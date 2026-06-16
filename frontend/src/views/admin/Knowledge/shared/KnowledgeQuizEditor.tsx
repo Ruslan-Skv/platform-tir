@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { type MutableRefObject, useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type UpsertKnowledgeQuizDto,
@@ -9,6 +9,9 @@ import {
 } from '@/shared/api/admin-knowledge';
 
 import styles from './KnowledgeQuizEditor.module.css';
+import type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
+
+export type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
 
 type LocalOption = {
   key: string;
@@ -26,6 +29,7 @@ type LocalQuestion = {
 
 type KnowledgeQuizEditorProps = {
   materialId: string;
+  saveRef?: MutableRefObject<KnowledgeQuizEditorHandle | null>;
 };
 
 function newKey() {
@@ -44,38 +48,82 @@ function emptyQuestion(): LocalQuestion {
   };
 }
 
-export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
+function buildSnapshotFromValues(
+  quizTitle: string,
+  passingPercent: number,
+  minutesPerQuestion: number,
+  localQuestions: LocalQuestion[]
+) {
+  return JSON.stringify({
+    title: quizTitle.trim() || 'Проверка знаний',
+    passingScorePercent: passingPercent,
+    timePerQuestionMinutes: minutesPerQuestion,
+    questions: localQuestions.map((q, qIndex) => ({
+      id: q.id,
+      text: q.text,
+      explanation: q.explanation || undefined,
+      sortOrder: qIndex,
+      options: q.options.map((o, oIndex) => ({
+        text: o.text,
+        isCorrect: o.isCorrect,
+        sortOrder: oIndex,
+      })),
+    })),
+  });
+}
+
+export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditorProps) {
   const [title, setTitle] = useState('Проверка знаний');
   const [passingScorePercent, setPassingScorePercent] = useState(85);
   const [timePerQuestionMinutes, setTimePerQuestionMinutes] = useState(1);
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
+  const [quizExists, setQuizExists] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const lastSavedSnapshotRef = useRef('');
+
+  const buildSnapshot = useCallback(() => {
+    return buildSnapshotFromValues(title, passingScorePercent, timePerQuestionMinutes, questions);
+  }, [passingScorePercent, questions, timePerQuestionMinutes, title]);
+
+  const syncSavedSnapshot = useCallback(() => {
+    lastSavedSnapshotRef.current = buildSnapshot();
+  }, [buildSnapshot]);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
       const data = await getKnowledgeMaterialQuiz(materialId);
       if (data?.quiz) {
-        setTitle(data.quiz.title);
-        setPassingScorePercent(data.quiz.passingScorePercent);
-        setTimePerQuestionMinutes(data.quiz.timePerQuestionMinutes ?? 1);
-        setQuestions(
-          data.quiz.questions.map((q) => ({
-            key: q.id,
-            id: q.id,
-            text: q.text,
-            explanation: q.explanation || '',
-            options: q.options.map((o) => ({
-              key: o.id,
-              text: o.text,
-              isCorrect: Boolean(o.isCorrect),
-            })),
-          }))
+        const loadedQuestions = data.quiz.questions.map((q) => ({
+          key: q.id,
+          id: q.id,
+          text: q.text,
+          explanation: q.explanation || '',
+          options: q.options.map((o) => ({
+            key: o.id,
+            text: o.text,
+            isCorrect: Boolean(o.isCorrect),
+          })),
+        }));
+        const loadedTitle = data.quiz.title;
+        const loadedPassingScore = data.quiz.passingScorePercent;
+        const loadedMinutes = data.quiz.timePerQuestionMinutes ?? 1;
+        lastSavedSnapshotRef.current = buildSnapshotFromValues(
+          loadedTitle,
+          loadedPassingScore,
+          loadedMinutes,
+          loadedQuestions
         );
+        setQuizExists(true);
+        setTitle(loadedTitle);
+        setPassingScorePercent(loadedPassingScore);
+        setTimePerQuestionMinutes(loadedMinutes);
+        setQuestions(loadedQuestions);
       } else {
+        setQuizExists(false);
         setQuestions([]);
+        lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, 1, []);
       }
     } catch {
       setMessage({ type: 'error', text: 'Не удалось загрузить тест' });
@@ -88,48 +136,42 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
     void load();
   }, [load]);
 
-  const handleSave = async () => {
-    setSaving(true);
-    setMessage(null);
-    try {
-      const payload: UpsertKnowledgeQuizDto = {
-        title: title.trim() || 'Проверка знаний',
-        passingScorePercent,
-        timePerQuestionMinutes,
-        questions: questions.map((q, qIndex) => ({
-          id: q.id,
-          text: q.text,
-          explanation: q.explanation || undefined,
-          sortOrder: qIndex,
-          options: q.options.map((o, oIndex) => ({
-            text: o.text,
-            isCorrect: o.isCorrect,
-            sortOrder: oIndex,
-          })),
-        })),
-      };
-      await upsertKnowledgeMaterialQuiz(materialId, payload);
-      setMessage({ type: 'success', text: 'Тест сохранён' });
-      await load();
-    } catch (e) {
-      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Ошибка сохранения' });
-    } finally {
-      setSaving(false);
+  const save = useCallback(async () => {
+    if (questions.length === 0 && !quizExists) {
+      syncSavedSnapshot();
+      return;
     }
-  };
 
-  const handleClear = async () => {
-    if (!confirm('Удалить тест для этой статьи?')) return;
-    setSaving(true);
-    try {
-      await upsertKnowledgeMaterialQuiz(materialId, { questions: [] });
-      setQuestions([]);
-      setMessage({ type: 'success', text: 'Тест удалён' });
-    } catch (e) {
-      setMessage({ type: 'error', text: e instanceof Error ? e.message : 'Ошибка удаления' });
-    } finally {
-      setSaving(false);
+    const payload: UpsertKnowledgeQuizDto = JSON.parse(buildSnapshot());
+    await upsertKnowledgeMaterialQuiz(materialId, payload);
+    setQuizExists(questions.length > 0);
+    syncSavedSnapshot();
+  }, [materialId, buildSnapshot, questions.length, quizExists, syncSavedSnapshot]);
+
+  const isDirty = useCallback(
+    () => buildSnapshot() !== lastSavedSnapshotRef.current,
+    [buildSnapshot]
+  );
+
+  useEffect(() => {
+    if (!saveRef) return;
+    if (loading) {
+      saveRef.current = null;
+      return;
     }
+    saveRef.current = { save, isDirty };
+    return () => {
+      saveRef.current = null;
+    };
+  }, [save, isDirty, saveRef, loading]);
+
+  const handleClear = () => {
+    if (
+      !confirm('Удалить тест для этой статьи? Изменения применятся после сохранения материала.')
+    ) {
+      return;
+    }
+    setQuestions([]);
   };
 
   if (loading) {
@@ -141,6 +183,7 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
       <h2 className={styles.heading}>Тест после прочтения</h2>
       <p className={styles.hint}>
         Добавьте вопросы с вариантами ответов. В каждом вопросе отметьте один правильный вариант.
+        Тест сохраняется вместе с материалом — кнопкой «Сохранить» в шапке страницы.
       </p>
 
       {message ? (
@@ -310,21 +353,8 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
         >
           + Вопрос
         </button>
-        <button
-          type="button"
-          className={styles.saveBtn}
-          onClick={() => void handleSave()}
-          disabled={saving}
-        >
-          {saving ? 'Сохранение…' : 'Сохранить тест'}
-        </button>
-        {questions.length > 0 ? (
-          <button
-            type="button"
-            className={styles.dangerBtn}
-            onClick={() => void handleClear()}
-            disabled={saving}
-          >
+        {questions.length > 0 || quizExists ? (
+          <button type="button" className={styles.dangerBtn} onClick={handleClear}>
             Удалить тест
           </button>
         ) : null}

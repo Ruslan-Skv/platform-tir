@@ -5,6 +5,10 @@ import Link from 'next/link';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { VideoPlayer } from '@/shared/ui/VideoPlayer';
 import { BlogPostEditor } from '@/views/admin/Content/Blog';
+import {
+  AdminStickyPageRoot,
+  AdminStickySaveButtonSlot,
+} from '@/views/admin/ui/AdminStickySaveButton';
 
 import { KnowledgeAttachmentsEditor } from '../../shared/KnowledgeAttachmentsEditor';
 import { KnowledgeQuizEditor } from '../../shared/KnowledgeQuizEditor';
@@ -68,29 +72,107 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     status,
     setStatus,
     thumbnailInputRef,
+    quizEditorRef,
+    pageHeaderRef,
+    saveButtonState,
+    saveButtonPinnedTopPx,
+    secondaryButtonLabel,
+    isSecondaryUnpublish,
+    isPublishDisabled,
+    handleHeaderSaveClick,
+    handlePublishClick,
+    handleUnpublishClick,
     handleTitleChange,
     handleThumbnailUpload,
-    handleSubmit,
   } = model;
 
   if (loading) {
     return (
-      <div className={styles.page}>
+      <AdminStickyPageRoot stickyTopPx={saveButtonPinnedTopPx} className={styles.page}>
         <div className={styles.loading}>Загрузка…</div>
-      </div>
+      </AdminStickyPageRoot>
     );
   }
 
+  const isSaveNoticeVisible = message?.type === 'success' && message.text === 'Сохранено';
+
   return (
-    <div className={styles.page}>
-      <div className={styles.pageHeader}>
-        <Link href="/admin/knowledge" className={styles.backLink}>
-          ← Территория знаний
-        </Link>
-        <h1 className={styles.title}>{isEdit ? 'Редактирование материала' : 'Новый материал'}</h1>
+    <AdminStickyPageRoot stickyTopPx={saveButtonPinnedTopPx} className={styles.page}>
+      <div ref={pageHeaderRef} className={styles.pageHeader}>
+        <div className={styles.pageHeaderMain}>
+          <Link href="/admin/knowledge" className={styles.backLink}>
+            ← Территория знаний
+          </Link>
+          <div className={styles.titleWithSaveNotice}>
+            <h1 className={styles.title}>
+              {isEdit ? 'Редактирование материала' : 'Новый материал'}
+            </h1>
+            {isEdit ? (
+              <span
+                className={`${styles.statusBadge} ${
+                  status === 'PUBLISHED'
+                    ? styles.statusBadgePublished
+                    : status === 'ARCHIVED'
+                      ? styles.statusBadgeArchived
+                      : styles.statusBadgeDraft
+                }`}
+              >
+                {status === 'PUBLISHED'
+                  ? 'Опубликован'
+                  : status === 'ARCHIVED'
+                    ? 'Архив'
+                    : 'Черновик'}
+              </span>
+            ) : null}
+            <span
+              className={`${styles.saveNotice} ${isSaveNoticeVisible ? styles.saveNoticeVisible : ''}`}
+              role="status"
+              aria-live="polite"
+            >
+              Сохранено
+            </span>
+          </div>
+        </div>
+        <div className={styles.pageHeaderActions}>
+          {isSecondaryUnpublish ? (
+            <>
+              <button
+                type="button"
+                className={styles.unpublishButton}
+                onClick={handleUnpublishClick}
+                disabled={saving}
+              >
+                {saving ? 'Сохранение...' : secondaryButtonLabel}
+              </button>
+              <AdminStickySaveButtonSlot
+                state={saveButtonState}
+                saving={saving}
+                label="Сохранить"
+                onClick={handleHeaderSaveClick}
+              />
+            </>
+          ) : (
+            <>
+              <button
+                type="button"
+                className={styles.publishButton}
+                onClick={handlePublishClick}
+                disabled={isPublishDisabled}
+              >
+                {secondaryButtonLabel}
+              </button>
+              <AdminStickySaveButtonSlot
+                state={saveButtonState}
+                saving={saving}
+                label="Сохранить"
+                onClick={handleHeaderSaveClick}
+              />
+            </>
+          )}
+        </div>
       </div>
 
-      {message ? (
+      {message && message.text !== 'Сохранено' ? (
         <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>
       ) : null}
 
@@ -368,7 +450,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
         ) : null}
 
         {isEdit && type === 'ARTICLE' && materialId ? (
-          <KnowledgeQuizEditor materialId={materialId} />
+          <KnowledgeQuizEditor materialId={materialId} saveRef={quizEditorRef} />
         ) : null}
 
         <section className={styles.settingsSection}>
@@ -447,29 +529,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
             </div>
           </div>
         </section>
-
-        <div className={styles.actions}>
-          <button
-            type="button"
-            className={styles.saveBtn}
-            onClick={() => void handleSubmit(false)}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить'}
-          </button>
-          <button
-            type="button"
-            className={styles.publishBtn}
-            onClick={() => void handleSubmit(true)}
-            disabled={saving}
-          >
-            {saving ? 'Сохранение…' : 'Сохранить и опубликовать'}
-          </button>
-          <Link href="/admin/knowledge" className={styles.cancelLink}>
-            Отмена
-          </Link>
-        </div>
       </div>
-    </div>
+    </AdminStickyPageRoot>
   );
 }

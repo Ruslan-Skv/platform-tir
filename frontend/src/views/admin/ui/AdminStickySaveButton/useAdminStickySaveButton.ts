@@ -20,7 +20,7 @@ export function useAdminStickySaveButton({
   scrollToTopOnSave = true,
 }: UseAdminStickySaveButtonParams) {
   const saveButtonAnchorRef = useRef<HTMLDivElement>(null);
-  const saveButtonRef = useRef<HTMLButtonElement>(null);
+  const saveButtonRef = useRef<HTMLElement | null>(null);
   const updateSaveButtonPinRef = useRef<(() => void) | null>(null);
   const saveButtonPinSnapshotRef = useRef({
     pinnedTopPx: 72,
@@ -117,6 +117,20 @@ export function useAdminStickySaveButton({
       );
     },
     [scrollPageToTop, onSave, scrollToTopOnSave]
+  );
+
+  const handleActionClick = useCallback(
+    (e: React.MouseEvent<HTMLButtonElement>, action: () => void) => {
+      e.preventDefault();
+      scrollPageToTop();
+      window.setTimeout(
+        () => {
+          action();
+        },
+        scrollToTopOnSave ? 180 : 0
+      );
+    },
+    [scrollPageToTop, scrollToTopOnSave]
   );
 
   useEffect(() => {
@@ -244,6 +258,7 @@ export function useAdminStickySaveButton({
     saveButtonPinnedTopPx,
     saveButtonPortalRoot,
     handleSaveClick,
+    handleActionClick,
   };
 }
 

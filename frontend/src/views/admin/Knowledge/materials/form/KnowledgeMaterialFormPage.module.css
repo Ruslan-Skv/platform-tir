@@ -3,6 +3,7 @@
   margin: 0 auto;
   padding: var(--admin-space-2xl) var(--admin-space-3xl);
   color: var(--admin-text-secondary);
+  --admin-sticky-save-top: 4.75rem;
 }
 
 .loading {
@@ -13,10 +14,80 @@
 
 .pageHeader {
   display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--admin-space-md) var(--admin-space-xl);
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--admin-space-md);
   margin-bottom: var(--admin-space-lg);
+  scroll-margin-top: var(--admin-sticky-save-top, 4.75rem);
+}
+
+.pageHeaderMain {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  min-width: 0;
+  flex: 1;
+}
+
+.pageHeaderActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  flex-shrink: 0;
+}
+
+.unpublishButton {
+  flex-shrink: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-danger-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-danger-bg-soft);
+  color: var(--admin-danger-text);
+  font-weight: 600;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.unpublishButton:hover:not(:disabled) {
+  border-color: var(--admin-danger-border-strong);
+  background: var(--admin-danger-bg);
+  color: var(--admin-error-text-strong);
+}
+
+.unpublishButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.publishButton {
+  flex-shrink: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: var(--admin-overlay-color-135);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: var(--admin-line-height-xs);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease;
+}
+
+.publishButton:hover:not(:disabled) {
+  background: var(--admin-overlay-color-111);
+}
+
+.publishButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .backLink {
@@ -34,6 +105,66 @@
   font-size: var(--admin-font-size-2xl);
   font-weight: 700;
   margin: 0;
+}
+
+.titleWithSaveNotice {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.saveNotice {
+  flex-shrink: 0;
+  align-self: center;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  line-height: var(--admin-line-height-xs);
+  white-space: nowrap;
+  border: 1px solid var(--admin-success-border-soft);
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text-strong);
+}
+
+.saveNoticeVisible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+.statusBadge {
+  display: inline-flex;
+  align-items: center;
+  align-self: center;
+  padding: 2px var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+.statusBadgeDraft {
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  color: var(--admin-text-muted);
+}
+
+.statusBadgePublished {
+  background: var(--admin-overlay-color-101);
+  color: var(--admin-overlay-color-108);
+}
+
+.statusBadgeArchived {
+  background: var(--admin-overlay-color-065);
+  color: var(--admin-overlay-color-070);
 }
 
 .message {
@@ -230,52 +361,16 @@
   display: block;
 }
 
-.actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-sm);
-  align-items: center;
-  padding-top: var(--admin-space-md);
-  border-top: 1px solid var(--admin-border);
-}
-
-.saveBtn,
-.publishBtn {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  border: none;
-  border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-sm);
-  cursor: pointer;
-}
-
-.saveBtn {
-  background: var(--admin-surface);
-  border: 1px solid var(--admin-border);
-  color: var(--admin-text-secondary);
-}
-
-.publishBtn {
-  background: var(--admin-overlay-color-135);
-  color: white;
-}
-
-.saveBtn:disabled,
-.publishBtn:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
-.cancelLink {
-  font-size: var(--admin-font-size-xs);
-  color: var(--admin-text-muted);
-  text-decoration: none;
-}
-
-.cancelLink:hover {
-  text-decoration: underline;
-}
-
 @media (max-width: 900px) {
+  .pageHeader {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .pageHeaderActions {
+    justify-content: flex-end;
+  }
+
   .rowThree,
   .rowModuleExcerpt,
   .settingsRow {
@@ -298,4 +393,22 @@
   .settingsRow {
     grid-template-columns: 1fr;
   }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .saveNotice {
+  border-color: var(--admin-success-border-soft);
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .unpublishButton {
+  border-color: var(--admin-danger-border-strong);
+  background: var(--admin-danger-bg-strong);
+  color: var(--admin-danger-text-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .unpublishButton:hover:not(:disabled) {
+  border-color: var(--admin-danger-text-soft);
+  background: var(--admin-danger-bg-strong);
+  color: var(--admin-text-inverse);
 }

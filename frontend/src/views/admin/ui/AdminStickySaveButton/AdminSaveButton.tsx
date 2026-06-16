@@ -1,11 +1,11 @@
 'use client';
 
-import type { RefObject } from 'react';
+import type { Ref, RefObject } from 'react';
 
 import styles from './AdminStickySaveButton.module.css';
 
 type AdminSaveButtonProps = {
-  buttonRef?: RefObject<HTMLButtonElement | null>;
+  buttonRef?: RefObject<HTMLElement | null>;
   saving: boolean;
   label: string;
   savingLabel?: string;
@@ -32,7 +32,7 @@ export function AdminSaveButton({
 
   return (
     <button
-      ref={buttonRef}
+      ref={buttonRef as Ref<HTMLButtonElement> | undefined}
       type="button"
       className={[
         styles.saveButton,
