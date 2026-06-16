@@ -41,8 +41,9 @@
 
 .row {
   display: grid;
-  grid-template-columns: 1fr 160px;
-  gap: var(--admin-space-lg);
+  grid-template-columns: minmax(0, 1fr) 120px 120px;
+  gap: var(--admin-space-md);
+  align-items: end;
   margin-bottom: var(--admin-space-lg);
 }
 
