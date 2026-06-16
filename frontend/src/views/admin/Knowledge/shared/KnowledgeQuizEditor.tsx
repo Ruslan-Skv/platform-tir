@@ -47,6 +47,7 @@ function emptyQuestion(): LocalQuestion {
 export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
   const [title, setTitle] = useState('Проверка знаний');
   const [passingScorePercent, setPassingScorePercent] = useState(80);
+  const [timePerQuestionMinutes, setTimePerQuestionMinutes] = useState(1);
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -59,6 +60,7 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
       if (data?.quiz) {
         setTitle(data.quiz.title);
         setPassingScorePercent(data.quiz.passingScorePercent);
+        setTimePerQuestionMinutes(data.quiz.timePerQuestionMinutes ?? 1);
         setQuestions(
           data.quiz.questions.map((q) => ({
             key: q.id,
@@ -93,6 +95,7 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
       const payload: UpsertKnowledgeQuizDto = {
         title: title.trim() || 'Проверка знаний',
         passingScorePercent,
+        timePerQuestionMinutes,
         questions: questions.map((q, qIndex) => ({
           id: q.id,
           text: q.text,
@@ -162,6 +165,17 @@ export function KnowledgeQuizEditor({ materialId }: KnowledgeQuizEditorProps) {
             max={100}
             value={passingScorePercent}
             onChange={(e) => setPassingScorePercent(parseInt(e.target.value, 10) || 80)}
+            className={styles.input}
+          />
+        </label>
+        <label className={styles.field}>
+          <span className={styles.label}>Минут на вопрос</span>
+          <input
+            type="number"
+            min={1}
+            max={60}
+            value={timePerQuestionMinutes}
+            onChange={(e) => setTimePerQuestionMinutes(parseInt(e.target.value, 10) || 1)}
             className={styles.input}
           />
         </label>

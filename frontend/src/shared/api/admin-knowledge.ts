@@ -581,6 +581,7 @@ export interface KnowledgeQuizData {
   materialId: string;
   title: string;
   passingScorePercent: number;
+  timePerQuestionMinutes: number;
   questions: KnowledgeQuizQuestion[];
 }
 
@@ -621,6 +622,7 @@ export interface KnowledgeQuizSubmitResult {
 export interface UpsertKnowledgeQuizDto {
   title?: string;
   passingScorePercent?: number;
+  timePerQuestionMinutes?: number;
   questions: Array<{
     id?: string;
     text: string;
@@ -661,12 +663,13 @@ export async function upsertKnowledgeMaterialQuiz(materialId: string, dto: Upser
 
 export async function submitKnowledgeMaterialQuiz(
   materialId: string,
-  answers: Record<string, string>
+  answers: Record<string, string>,
+  options?: { timedOut?: boolean }
 ) {
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/quiz/submit`, {
     method: 'POST',
     headers: getAuthHeaders(),
-    body: JSON.stringify({ answers }),
+    body: JSON.stringify({ answers, timedOut: options?.timedOut ?? false }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

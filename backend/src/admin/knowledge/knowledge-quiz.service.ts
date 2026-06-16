@@ -22,6 +22,7 @@ export class KnowledgeQuizService {
       materialId: quiz.materialId,
       title: quiz.title,
       passingScorePercent: quiz.passingScorePercent,
+      timePerQuestionMinutes: quiz.timePerQuestionMinutes,
       questions: [...quiz.questions]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((q) => ({
@@ -139,10 +140,12 @@ export class KnowledgeQuizService {
         materialId,
         title: dto.title?.trim() || 'Проверка знаний',
         passingScorePercent: dto.passingScorePercent ?? 80,
+        timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
       },
       update: {
         title: dto.title?.trim() || 'Проверка знаний',
         passingScorePercent: dto.passingScorePercent ?? 80,
+        timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
       },
     });
 
@@ -201,7 +204,7 @@ export class KnowledgeQuizService {
     const answers = dto.answers ?? {};
 
     for (const qId of questionIds) {
-      if (!answers[qId]) {
+      if (!answers[qId] && !dto.timedOut) {
         throw new BadRequestException('Ответьте на все вопросы теста');
       }
     }
@@ -209,7 +212,9 @@ export class KnowledgeQuizService {
     let correct = 0;
     const results = quiz.questions.map((question) => {
       const selectedOptionId = answers[question.id];
-      const selected = question.options.find((o) => o.id === selectedOptionId);
+      const selected = selectedOptionId
+        ? question.options.find((o) => o.id === selectedOptionId)
+        : undefined;
       const correctOption = question.options.find((o) => o.isCorrect);
       const isCorrect = Boolean(selected?.isCorrect);
       if (isCorrect) correct += 1;

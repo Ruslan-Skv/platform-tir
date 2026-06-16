@@ -232,11 +232,20 @@
 }
 
 .managerBox {
+  position: relative;
   margin: var(--admin-space-2xl) 0 var(--admin-space-4xl);
   padding: var(--admin-space-lg) var(--admin-space-xl);
+  padding-right: calc(var(--admin-space-xl) + 48px);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   background: var(--admin-surface-muted, rgba(0, 0, 0, 0.02));
+}
+
+.managerIcon {
+  position: absolute;
+  top: var(--admin-space-lg);
+  right: var(--admin-space-lg);
+  line-height: 0;
 }
 
 .managerTitle {

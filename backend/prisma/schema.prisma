@@ -1021,15 +1021,16 @@ model KnowledgeVideoProgress {
 }
 
 model KnowledgeMaterialQuiz {
-  id                  String                  @id @default(cuid())
-  materialId          String                  @unique
-  title               String                  @default("Проверка знаний")
-  passingScorePercent Int                     @default(80)
-  createdAt           DateTime                @default(now())
-  updatedAt           DateTime                @updatedAt
-  material            KnowledgeMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)
-  questions           KnowledgeQuizQuestion[]
-  attempts            KnowledgeQuizAttempt[]
+  id                     String                  @id @default(cuid())
+  materialId             String                  @unique
+  title                  String                  @default("Проверка знаний")
+  passingScorePercent    Int                     @default(80)
+  timePerQuestionMinutes Int                     @default(1)
+  createdAt              DateTime                @default(now())
+  updatedAt              DateTime                @updatedAt
+  material               KnowledgeMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  questions              KnowledgeQuizQuestion[]
+  attempts               KnowledgeQuizAttempt[]
 
   @@map("knowledge_material_quizzes")
 }

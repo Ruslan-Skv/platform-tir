@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type KnowledgeMaterialQuizResponse,
@@ -8,8 +8,15 @@ import {
   getKnowledgeMaterialQuiz,
   submitKnowledgeMaterialQuiz,
 } from '@/shared/api/admin-knowledge';
+import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeMaterialQuiz.module.css';
+import {
+  formatMinutesRu,
+  formatQuizCountdown,
+  getQuizTimeLimitSeconds,
+  useKnowledgeQuizTimer,
+} from './useKnowledgeQuizTimer';
 
 type KnowledgeMaterialQuizProps = {
   materialId: string;
@@ -28,6 +35,9 @@ export function KnowledgeMaterialQuiz({
   const [error, setError] = useState<string | null>(null);
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [result, setResult] = useState<KnowledgeQuizSubmitResult | null>(null);
+  const [expanded, setExpanded] = useState(false);
+  const answersRef = useRef(answers);
+  answersRef.current = answers;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -36,7 +46,7 @@ export function KnowledgeMaterialQuiz({
       const quizData = await getKnowledgeMaterialQuiz(materialId);
       setData(quizData);
       setAnswers({});
-      setResult(null);
+      setExpanded(false);
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки теста');
       setData(null);
@@ -49,49 +59,89 @@ export function KnowledgeMaterialQuiz({
     void load();
   }, [load]);
 
+  const quiz = data?.quiz;
+  const minutesPerQuestion = quiz?.timePerQuestionMinutes ?? 1;
+  const totalSeconds = quiz
+    ? getQuizTimeLimitSeconds(quiz.questions.length, minutesPerQuestion)
+    : 0;
+  const totalMinutes = quiz ? quiz.questions.length * minutesPerQuestion : 0;
+
+  const submitQuiz = useCallback(
+    async (timedOut: boolean) => {
+      if (!quiz) return;
+
+      if (!timedOut && !quiz.questions.every((q) => answersRef.current[q.id])) {
+        setError('Ответьте на все вопросы');
+        return;
+      }
+
+      setSubmitting(true);
+      setError(timedOut ? 'Время вышло. Ответы отправлены автоматически.' : null);
+      try {
+        const submitResult = await submitKnowledgeMaterialQuiz(materialId, answersRef.current, {
+          timedOut,
+        });
+        setResult(submitResult);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Ошибка отправки');
+      } finally {
+        setSubmitting(false);
+      }
+    },
+    [load, materialId, quiz]
+  );
+
+  const onExpire = useCallback(() => {
+    void submitQuiz(true);
+  }, [submitQuiz]);
+
+  const { secondsLeft, start, reset } = useKnowledgeQuizTimer(
+    expanded && !result,
+    totalSeconds,
+    onExpire
+  );
+
   if (loading) {
     return <div className={styles.loading}>Загрузка теста…</div>;
   }
 
-  if (!data?.quiz) {
+  if (!quiz) {
     return null;
   }
 
-  const { quiz, myBestAttempt } = data;
+  const { myBestAttempt } = data;
   const canSubmit = materialStatus === 'PUBLISHED' || canEdit;
   const allAnswered = quiz.questions.every((q) => answers[q.id]);
+  const timerExpired = secondsLeft !== null && secondsLeft <= 0;
 
-  const handleSubmit = async () => {
-    if (!allAnswered) {
-      setError('Ответьте на все вопросы');
-      return;
-    }
-    setSubmitting(true);
+  const handleStart = () => {
+    setExpanded(true);
+    setAnswers({});
+    setResult(null);
     setError(null);
-    try {
-      const submitResult = await submitKnowledgeMaterialQuiz(materialId, answers);
-      setResult(submitResult);
-      await load();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка отправки');
-    } finally {
-      setSubmitting(false);
-    }
+    start();
   };
 
   const handleRetry = () => {
     setResult(null);
     setAnswers({});
     setError(null);
+    setExpanded(false);
+    reset();
   };
 
   return (
     <section className={styles.section} id="knowledge-quiz">
       <div className={styles.header}>
+        <div className={styles.headerIcon}>
+          <KnowledgeSelfCheckQuizIcon size={40} />
+        </div>
         <h2 className={styles.title}>{quiz.title}</h2>
         <p className={styles.subtitle}>
           Пройдите тест после прочтения материала. Для зачёта нужно не менее{' '}
-          {quiz.passingScorePercent}% правильных ответов.
+          {quiz.passingScorePercent}% правильных ответов. На каждый вопрос отводится{' '}
+          {formatMinutesRu(minutesPerQuestion)}.
         </p>
         {myBestAttempt ? (
           <div
@@ -144,8 +194,33 @@ export function KnowledgeMaterialQuiz({
             Пройти ещё раз
           </button>
         </div>
+      ) : !expanded ? (
+        <div className={styles.collapsed}>
+          <p className={styles.collapsedText}>
+            На прохождение теста отведено {formatMinutesRu(totalMinutes)} ({quiz.questions.length}{' '}
+            {quiz.questions.length === 1
+              ? 'вопрос'
+              : quiz.questions.length < 5
+                ? 'вопроса'
+                : 'вопросов'}
+            ). После начала запустится таймер.
+          </p>
+          {materialStatus !== 'PUBLISHED' && !canEdit ? (
+            <p className={styles.hint}>Тест будет доступен после публикации материала.</p>
+          ) : (
+            <button type="button" className={styles.startBtn} onClick={handleStart}>
+              Начать тест
+            </button>
+          )}
+        </div>
       ) : (
         <>
+          <div
+            className={`${styles.timer} ${secondsLeft !== null && secondsLeft <= 60 ? styles.timerWarning : ''}`}
+          >
+            Осталось: {formatQuizCountdown(secondsLeft ?? totalSeconds)}
+          </div>
+
           <ol className={styles.questions}>
             {quiz.questions.map((question, index) => (
               <li key={question.id} className={styles.question}>
@@ -163,7 +238,7 @@ export function KnowledgeMaterialQuiz({
                         onChange={() =>
                           setAnswers((prev) => ({ ...prev, [question.id]: option.id }))
                         }
-                        disabled={!canSubmit || submitting}
+                        disabled={!canSubmit || submitting || timerExpired}
                       />
                       <span>{option.text}</span>
                     </label>
@@ -179,8 +254,8 @@ export function KnowledgeMaterialQuiz({
             <button
               type="button"
               className={styles.submitBtn}
-              onClick={() => void handleSubmit()}
-              disabled={!canSubmit || submitting || !allAnswered}
+              onClick={() => void submitQuiz(false)}
+              disabled={!canSubmit || submitting || !allAnswered || timerExpired}
             >
               {submitting ? 'Проверка…' : 'Проверить ответы'}
             </button>

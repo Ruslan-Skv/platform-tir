@@ -62,6 +62,13 @@ export class UpsertKnowledgeQuizDto {
   @Max(100)
   passingScorePercent?: number;
 
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(60)
+  timePerQuestionMinutes?: number;
+
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => KnowledgeQuizQuestionDto)

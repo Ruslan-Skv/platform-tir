@@ -30,6 +30,16 @@ export {
   type PublishIconProps,
 } from './PublishIcon';
 export {
+  KnowledgeSelfCheckQuizIcon,
+  KNOWLEDGE_SELF_CHECK_QUIZ_ICON_SIZE,
+  type KnowledgeSelfCheckQuizIconProps,
+} from './KnowledgeSelfCheckQuizIcon';
+export {
+  ManagerPracticalAssignmentIcon,
+  MANAGER_PRACTICAL_ASSIGNMENT_ICON_SIZE,
+  type ManagerPracticalAssignmentIconProps,
+} from './ManagerPracticalAssignmentIcon';
+export {
   TrainingStatisticsIcon,
   ADMIN_TRAINING_STATISTICS_ICON_SIZE,
   type TrainingStatisticsIconProps,

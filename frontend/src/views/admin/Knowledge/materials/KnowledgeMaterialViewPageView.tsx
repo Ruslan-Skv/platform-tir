@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { ManagerPracticalAssignmentIcon } from '@/shared/ui/icons';
 
 import { KnowledgeAttachmentsList } from '../shared/KnowledgeAttachmentsList';
 import { KnowledgeMaterialQuiz } from '../shared/KnowledgeMaterialQuiz';
@@ -139,6 +140,9 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
 
       {material.type === 'ARTICLE' && material.managerPracticalAssignment ? (
         <aside className={styles.managerBox}>
+          <div className={styles.managerIcon}>
+            <ManagerPracticalAssignmentIcon size={40} />
+          </div>
           <h2 className={styles.managerTitle}>Практическое задание для менеджера</h2>
           <p className={styles.managerText}>{material.managerPracticalAssignment}</p>
         </aside>

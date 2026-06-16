@@ -57,7 +57,7 @@ if [ $lint_staged_status -ne 0 ]; then
 fi
 append_summary "✅ lint-staged — staged: prettier · eslint · secretlint (backend+frontend code)"
 
-backend_out=$(run_capture "backend validate" npm run validate --prefix backend)
+backend_out=$(run_capture "backend validate" npm run validate:precommit --prefix backend)
 backend_validate_status=$?
 if [ $backend_validate_status -ne 0 ]; then
   printf '%s\n' "$backend_out"
