@@ -1,19 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
-
+import { AdminHelpTooltip, type AdminHelpTooltipContent } from '@/shared/ui/admin/AdminHelpTooltip';
 import {
   TEMPLATE_EDITOR_ZOOM_MAX_PCT,
   TEMPLATE_EDITOR_ZOOM_MIN_PCT,
 } from '@/views/admin/ContractDocuments/packages/platform/templateEditorHistory';
 import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
 
-export type FormatToolHelp = {
-  title: string;
-  steps: readonly string[];
-  note?: string;
-};
+export type FormatToolHelp = AdminHelpTooltipContent;
 
 export type FormatTool = {
   id: string;
@@ -59,77 +53,13 @@ export function FormatToolbarHelpTooltip({
   onClick: () => void;
   children: React.ReactNode;
 }) {
-  const [open, setOpen] = useState(false);
-  const [tooltipPortalReady, setTooltipPortalReady] = useState(false);
-  const wrapRef = useRef<HTMLDivElement>(null);
-  const [tooltipPos, setTooltipPos] = useState<{ top: number; left: number } | null>(null);
-
-  useEffect(() => {
-    setTooltipPortalReady(true);
-  }, []);
-
-  const updateTooltipPosition = useCallback(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
-    setTooltipPos({
-      top: rect.bottom + 8,
-      left: rect.left + rect.width / 2,
-    });
-  }, []);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    updateTooltipPosition();
-    const onScrollOrResize = () => updateTooltipPosition();
-    window.addEventListener('scroll', onScrollOrResize, true);
-    window.addEventListener('resize', onScrollOrResize);
-    return () => {
-      window.removeEventListener('scroll', onScrollOrResize, true);
-      window.removeEventListener('resize', onScrollOrResize);
-    };
-  }, [open, updateTooltipPosition]);
-
-  const showHelp = () => {
-    updateTooltipPosition();
-    setOpen(true);
-  };
-
-  const hideHelp = () => setOpen(false);
-
-  const portalTarget = tooltipPortalReady && typeof document !== 'undefined' ? document.body : null;
-
-  const tooltipPanel =
-    open && tooltipPos && portalTarget
-      ? createPortal(
-          <div
-            role="tooltip"
-            className={cdTemplates.formatToolbarHelpTooltip}
-            style={{
-              top: tooltipPos.top,
-              left: tooltipPos.left,
-            }}
-            onMouseEnter={showHelp}
-            onMouseLeave={hideHelp}
-          >
-            <strong>{title}</strong>
-            <ol>
-              {steps.map((step, index) => (
-                <li key={`${title}-${index}`}>{step}</li>
-              ))}
-            </ol>
-            {note ? <p>{note}</p> : null}
-          </div>,
-          portalTarget
-        )
-      : null;
-
   return (
-    <div
-      ref={wrapRef}
-      className={cdTemplates.formatToolbarHelpWrap}
-      onMouseEnter={showHelp}
-      onMouseLeave={hideHelp}
+    <AdminHelpTooltip
+      title={title}
+      steps={steps}
+      note={note}
+      disabled={disabled}
+      wrapClassName={cdTemplates.formatToolbarHelpWrap}
     >
       <button
         type="button"
@@ -139,13 +69,10 @@ export function FormatToolbarHelpTooltip({
         disabled={disabled}
         onClick={onClick}
         onMouseDown={(e) => e.preventDefault()}
-        onFocus={showHelp}
-        onBlur={hideHelp}
       >
         {children}
       </button>
-      {tooltipPanel}
-    </div>
+    </AdminHelpTooltip>
   );
 }
 

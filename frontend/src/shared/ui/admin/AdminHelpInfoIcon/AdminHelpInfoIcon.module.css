@@ -1,0 +1,15 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.iconImage {
+  display: block;
+  width: 14px;
+  height: 14px;
+  object-fit: contain;
+}

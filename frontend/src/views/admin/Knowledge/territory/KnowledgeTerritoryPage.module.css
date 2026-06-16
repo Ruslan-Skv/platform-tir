@@ -6,6 +6,7 @@
 }
 
 .hero {
+  position: relative;
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
@@ -20,6 +21,13 @@
     var(--admin-bg) 100%
   );
   border: 1px solid var(--admin-border);
+}
+
+.heroInfoTip {
+  position: absolute;
+  top: var(--admin-space-lg);
+  right: var(--admin-space-lg);
+  z-index: 1;
 }
 
 .heroContent {

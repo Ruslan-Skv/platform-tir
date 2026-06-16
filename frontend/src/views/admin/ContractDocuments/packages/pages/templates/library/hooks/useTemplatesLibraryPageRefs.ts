@@ -11,7 +11,6 @@ export function useTemplatesLibraryPageRefs() {
   const isInitialHydrationRef = useRef(true);
   const templateTabSwitchRef = useRef(false);
   const templateArchiveSwitchRef = useRef(false);
-  const createTemplateHelpWrapRef = useRef<HTMLDivElement>(null);
   const titleRenameInputRef = useRef<HTMLInputElement>(null);
   const templateHtmlFileInputRef = useRef<HTMLInputElement>(null);
   const previewPaneRef = useRef<HTMLDivElement>(null);
@@ -20,7 +19,6 @@ export function useTemplatesLibraryPageRefs() {
 
   return {
     autosaveTimerRef,
-    createTemplateHelpWrapRef,
     isInitialHydrationRef,
     lastSavedSnapshotRef,
     preferredTemplateIdsRef,

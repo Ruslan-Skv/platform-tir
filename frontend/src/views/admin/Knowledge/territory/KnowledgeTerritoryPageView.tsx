@@ -9,6 +9,7 @@ import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
 
+import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
 import {
   formatDate,
   formatReadingTime,
@@ -250,6 +251,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
+        <div className={styles.heroInfoTip}>
+          <KnowledgePlatformInfoTip />
+        </div>
         <div className={styles.heroContent}>
           <h1 className={styles.heroHeading}>
             <span className={styles.heroTitle}>Территория знаний</span>

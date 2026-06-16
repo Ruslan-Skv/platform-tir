@@ -1,6 +1,5 @@
 import { useAuth } from '@/features/auth';
 
-import { useTemplatesLibraryCreateTemplateHelp } from './useTemplatesLibraryCreateTemplateHelp';
 import { useTemplatesLibraryDerivedData } from './useTemplatesLibraryDerivedData';
 import { useTemplatesLibraryEditorCore } from './useTemplatesLibraryEditorCore';
 import { useTemplatesLibraryEditorFormat } from './useTemplatesLibraryEditorFormat';
@@ -46,7 +45,6 @@ export function useTemplatesLibraryPage() {
   const refs = useTemplatesLibraryPageRefs();
   const {
     autosaveTimerRef,
-    createTemplateHelpWrapRef,
     isInitialHydrationRef,
     lastSavedSnapshotRef,
     preferredTemplateIdsRef,
@@ -183,14 +181,6 @@ export function useTemplatesLibraryPage() {
     uiPrefsLoadedRef,
   });
 
-  const {
-    createTemplateHelpOpen,
-    createTemplateHelpPortalReady,
-    createTemplateTooltipPos,
-    hideCreateTemplateHelpWithDelay,
-    showCreateTemplateHelp,
-  } = useTemplatesLibraryCreateTemplateHelp({ createTemplateHelpWrapRef });
-
   const derived = useTemplatesLibraryDerivedData({
     items,
     activeTemplateTab,
@@ -293,7 +283,6 @@ export function useTemplatesLibraryPage() {
   return {
     isSuperAdmin,
     ...scope,
-    createTemplateHelpWrapRef,
     titleRenameInputRef,
     templateHtmlFileInputRef,
     trashOpen,
@@ -313,11 +302,6 @@ export function useTemplatesLibraryPage() {
     ...mutations,
     ...editorFormat,
     ...navigation,
-    createTemplateHelpOpen,
-    createTemplateHelpPortalReady,
-    createTemplateTooltipPos,
-    hideCreateTemplateHelpWithDelay,
-    showCreateTemplateHelp,
     previewPaneRef,
   };
 }

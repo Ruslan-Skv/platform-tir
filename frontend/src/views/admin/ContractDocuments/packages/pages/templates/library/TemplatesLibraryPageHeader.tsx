@@ -2,8 +2,7 @@
 
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
 
-import { createPortal } from 'react-dom';
-
+import { AdminHelpTooltip } from '@/shared/ui/admin/AdminHelpTooltip';
 import {
   AdminToolbarArchiveButton,
   AdminToolbarIconButton,
@@ -24,21 +23,15 @@ type TemplatesLibraryPageHeaderProps = Pick<
   | 'archivedTemplatesCount'
   | 'autosaveSavedVisible'
   | 'createNewTemplate'
-  | 'createTemplateHelpOpen'
-  | 'createTemplateHelpPortalReady'
-  | 'createTemplateHelpWrapRef'
-  | 'createTemplateTooltipPos'
   | 'editingId'
   | 'handleExportSeedJson'
   | 'handleRenameTemplateTitle'
-  | 'hideCreateTemplateHelpWithDelay'
   | 'isSuperAdmin'
   | 'saving'
   | 'setTitle'
   | 'setTitleRenameMode'
   | 'setTrashOpen'
   | 'showArchivedTemplates'
-  | 'showCreateTemplateHelp'
   | 'title'
   | 'titleRenameInputRef'
   | 'titleRenameMode'
@@ -59,12 +52,6 @@ export function TemplatesLibraryPageHeader({
   showArchivedTemplates,
   handleRenameTemplateTitle,
   autosaveSavedVisible,
-  createTemplateHelpWrapRef,
-  showCreateTemplateHelp,
-  hideCreateTemplateHelpWithDelay,
-  createTemplateHelpOpen,
-  createTemplateTooltipPos,
-  createTemplateHelpPortalReady,
   createNewTemplate,
   saving,
   handleExportSeedJson,
@@ -137,63 +124,31 @@ export function TemplatesLibraryPageHeader({
       <div className={cdTemplates.templatesLibraryHeaderActions}>
         <div className={cdTemplates.templatesLibraryHeaderButtons}>
           {isSuperAdmin ? (
-            <div
-              ref={createTemplateHelpWrapRef}
-              className={cdTemplates.templatesLibraryAddButtonWithTooltip}
-              onMouseEnter={showCreateTemplateHelp}
-              onMouseLeave={hideCreateTemplateHelpWithDelay}
+            <AdminHelpTooltip
+              title="Как создать шаблон"
+              steps={[
+                'Выберите направление и тип документа.',
+                'Нажмите «+ Новый шаблон».',
+                'При необходимости переименуйте шаблон у заголовка.',
+                'Заполните шаблон (HTML или Визуальный конструктор).',
+                'Нажмите «Сохранить» для первичного создания.',
+                'Дальше изменения сохраняются автоматически.',
+              ]}
+              note={`Сейчас будет создан пустой шаблон для «${PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «${templateLibraryKindLabel(activeLibraryKind)}».`}
+              align="end"
+              disabled={showArchivedTemplates}
+              tooltipId="templates-library-create-help"
+              wrapClassName={cdTemplates.templatesLibraryAddButtonWithTooltip}
             >
               <button
                 type="button"
                 className={cdTemplates.templatesLibraryAddButton}
                 disabled={showArchivedTemplates}
-                aria-describedby={
-                  createTemplateHelpOpen && !showArchivedTemplates
-                    ? 'templates-library-create-help'
-                    : undefined
-                }
-                onFocus={showCreateTemplateHelp}
-                onBlur={hideCreateTemplateHelpWithDelay}
                 onClick={createNewTemplate}
               >
                 + Новый шаблон
               </button>
-              {createTemplateHelpOpen &&
-              !showArchivedTemplates &&
-              createTemplateTooltipPos &&
-              createTemplateHelpPortalReady &&
-              typeof document !== 'undefined'
-                ? createPortal(
-                    <div
-                      id="templates-library-create-help"
-                      role="tooltip"
-                      className={`${cdTemplates.formatToolbarHelpTooltip} ${cdTemplates.formatToolbarHelpTooltipAlignEnd}`}
-                      style={{
-                        top: createTemplateTooltipPos.top,
-                        left: createTemplateTooltipPos.left,
-                      }}
-                      onMouseEnter={showCreateTemplateHelp}
-                      onMouseLeave={hideCreateTemplateHelpWithDelay}
-                    >
-                      <strong>Как создать шаблон</strong>
-                      <ol>
-                        <li>Выберите направление и тип документа.</li>
-                        <li>Нажмите «+ Новый шаблон».</li>
-                        <li>При необходимости переименуйте шаблон у заголовка.</li>
-                        <li>Заполните шаблон (HTML или Визуальный конструктор).</li>
-                        <li>Нажмите «Сохранить» для первичного создания.</li>
-                        <li>Дальше изменения сохраняются автоматически.</li>
-                      </ol>
-                      <p>
-                        Сейчас будет создан пустой шаблон для «
-                        {PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS[activeTemplateTab]}», направление «
-                        {templateLibraryKindLabel(activeLibraryKind)}».
-                      </p>
-                    </div>,
-                    document.body
-                  )
-                : null}
-            </div>
+            </AdminHelpTooltip>
           ) : null}
           {isSuperAdmin ? (
             <AdminToolbarIconButton
