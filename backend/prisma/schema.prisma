@@ -53,6 +53,9 @@ model User {
   addresses                               Address[]
   blogPosts                               BlogPost[]
   knowledgeMaterials                      KnowledgeMaterial[]
+  knowledgeMaterialsDeleted               KnowledgeMaterial[]                      @relation("KnowledgeMaterialDeletedBy")
+  knowledgeCategoriesDeleted              KnowledgeCategory[]                      @relation("KnowledgeCategoryDeletedBy")
+  knowledgeModulesDeleted                 KnowledgeModule[]                        @relation("KnowledgeModuleDeletedBy")
   knowledgeVideoProgress                  KnowledgeVideoProgress[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   cartItems                               CartItem[]
@@ -888,11 +891,15 @@ model KnowledgeCategory {
   description String?
   image       String?
   order       Int                 @default(0)
+  deletedAt   DateTime?           @map("deleted_at")
+  deletedById String?             @map("deleted_by_id")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
+  deletedBy   User?               @relation("KnowledgeCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   modules     KnowledgeModule[]
   materials   KnowledgeMaterial[]
 
+  @@index([deletedAt])
   @@map("knowledge_categories")
 }
 
@@ -903,13 +910,17 @@ model KnowledgeModule {
   slug        String
   description String?
   order       Int                 @default(0)
+  deletedAt   DateTime?           @map("deleted_at")
+  deletedById String?             @map("deleted_by_id")
   createdAt   DateTime            @default(now())
   updatedAt   DateTime            @updatedAt
   category    KnowledgeCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  deletedBy   User?               @relation("KnowledgeModuleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   materials   KnowledgeMaterial[]
 
   @@unique([categoryId, slug])
   @@index([categoryId])
+  @@index([deletedAt])
   @@map("knowledge_modules")
 }
 
@@ -931,12 +942,15 @@ model KnowledgeMaterial {
   isPinned            Boolean                           @default(false)
   status              PageStatus                        @default(DRAFT)
   publishedAt         DateTime?
+  deletedAt           DateTime?                         @map("deleted_at")
+  deletedById         String?                           @map("deleted_by_id")
   authorId            String
   createdAt           DateTime                          @default(now())
   updatedAt           DateTime                          @updatedAt
   category            KnowledgeCategory                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   module              KnowledgeModule?                  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
   author              User                              @relation(fields: [authorId], references: [id])
+  deletedBy           User?                             @relation("KnowledgeMaterialDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   attachments         KnowledgeMaterialAttachment[]
   targetAudiences     KnowledgeMaterialTargetAudience[]
   videoProgress       KnowledgeVideoProgress[]
@@ -948,6 +962,7 @@ model KnowledgeMaterial {
   @@index([type])
   @@index([status])
   @@index([isPinned])
+  @@index([deletedAt])
   @@map("knowledge_materials")
 }
 

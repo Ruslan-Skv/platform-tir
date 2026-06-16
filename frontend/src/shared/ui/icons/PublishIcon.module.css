@@ -1,0 +1,4 @@
+:global(.admin-action-icon-publish) {
+  color: var(--admin-icon-publish);
+  flex-shrink: 0;
+}

@@ -1,0 +1,21 @@
+.icon {
+  display: block;
+  flex-shrink: 0;
+  background-color: var(--admin-icon-pin, #d97706);
+  mask-image: url('/icons/admin-pin-icon.png');
+  mask-size: contain;
+  mask-repeat: no-repeat;
+  mask-position: center;
+  -webkit-mask-image: url('/icons/admin-pin-icon.png');
+  -webkit-mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+}
+
+.iconPinned {
+  opacity: 1;
+}
+
+.iconUnpinned {
+  opacity: 0.42;
+}

@@ -152,6 +152,88 @@ export interface KnowledgeStats {
   pinnedCount: number;
 }
 
+export interface KnowledgeTrainingAnalytics {
+  period: { from: string; to: string };
+  summary: {
+    totalEmployees: number;
+    activeEmployees: number;
+    publishedMaterials: number;
+    trackableMaterials: number;
+    avgCompletionPercent: number;
+    videosCompleted: number;
+    quizzesPassed: number;
+    quizAttempts: number;
+    videoUpdates: number;
+  };
+  statusDistribution: {
+    completed: number;
+    inProgress: number;
+    notStarted: number;
+    completedPercent: number;
+    inProgressPercent: number;
+    notStartedPercent: number;
+  };
+  activityTimeline: Array<{
+    date: string;
+    videoProgressUpdates: number;
+    quizAttempts: number;
+    quizPasses: number;
+  }>;
+  employees: Array<{
+    userId: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+    role: string;
+    completedCount: number;
+    trackableCount: number;
+    completionPercent: number;
+    videosCompleted: number;
+    quizzesPassed: number;
+    lastActivityAt: string | null;
+  }>;
+  topMaterials: Array<{
+    materialId: string;
+    title: string;
+    type: KnowledgeMaterialType;
+    categoryName: string;
+    hasQuiz: boolean;
+    completionPercent: number;
+    completedCount: number;
+    employeeCount: number;
+    avgVideoProgress: number | null;
+    quizPassRate: number | null;
+  }>;
+  roleDistribution: Array<{
+    role: string;
+    employeeCount: number;
+    avgCompletionPercent: number;
+  }>;
+  materialsByType: {
+    VIDEO: { total: number; trackable: number };
+    ARTICLE: { total: number; withQuiz: number };
+    LINK: { total: number; withQuiz: number };
+  };
+}
+
+export async function getKnowledgeTrainingAnalytics(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<KnowledgeTrainingAnalytics> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/knowledge/training-analytics${qs ? `?${qs}` : ''}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить статистику обучения');
+  }
+  return res.json() as Promise<KnowledgeTrainingAnalytics>;
+}
+
 export async function getKnowledgeMaterials(params?: {
   status?: string;
   categoryId?: string;
@@ -338,6 +420,68 @@ export async function deleteKnowledgeModule(id: string) {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось удалить модуль');
+}
+
+export type KnowledgeTrashItemType = 'material' | 'category' | 'module';
+
+export interface KnowledgeTrashUserRef {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}
+
+export interface KnowledgeTrashRow {
+  id: string;
+  type: KnowledgeTrashItemType;
+  title: string;
+  subtitle: string | null;
+  deletedAt: string;
+  permanentDeleteAt: string;
+  deletedBy: KnowledgeTrashUserRef | null;
+}
+
+export async function getKnowledgeTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}) {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  const res = await apiFetch(`${API_URL}/admin/knowledge/trash?${search}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить корзину');
+  return res.json() as Promise<{
+    data: KnowledgeTrashRow[];
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+    trashRetentionDays?: number;
+  }>;
+}
+
+export async function getKnowledgeTrashCount() {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/trash/count`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить корзину');
+  const json = (await res.json()) as { count: number };
+  return { total: json.count ?? 0 };
+}
+
+export async function restoreKnowledgeTrashItem(type: KnowledgeTrashItemType, id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/trash/${type}/${id}/restore`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось восстановить');
+  }
 }
 
 export async function getKnowledgeStats() {

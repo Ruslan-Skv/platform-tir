@@ -1,4 +1,5 @@
 export { KnowledgeTerritoryPage } from './territory/KnowledgeTerritoryPage';
+export { KnowledgeTrainingAnalyticsPage } from './analytics/KnowledgeTrainingAnalyticsPage';
 export { KnowledgeMaterialViewPage } from './materials/KnowledgeMaterialViewPage';
 export { KnowledgeMaterialFormPage } from './materials/form/KnowledgeMaterialFormPage';
 export { KnowledgeVideoPlayer } from './shared/KnowledgeVideoPlayer';

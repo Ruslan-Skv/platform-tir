@@ -3,11 +3,22 @@
 import { useMemo } from 'react';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import type { AdminKnowledgeMaterial, AdminKnowledgeModule } from '@/shared/api/admin-knowledge';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminToolbarTrashButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import toolbarButtonStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarIconButton.module.css';
+import {
+  DeleteIcon,
+  EditIcon,
+  PinIcon,
+  PublishIcon,
+  TrainingStatisticsIcon,
+} from '@/shared/ui/icons';
 
 import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
 import {
@@ -23,6 +34,8 @@ import {
 import styles from './KnowledgeTerritoryPage.module.css';
 import type { KnowledgeTerritoryPageModel } from './hooks/useKnowledgeTerritoryPage';
 import { TYPE_FILTERS } from './knowledge-territory-page.constants';
+import { KnowledgeTrashModal } from './modals/KnowledgeTrashModal';
+import { KNOWLEDGE_TRASH_RETENTION_NOTICE } from './modals/knowledgeTrashRetention';
 
 type KnowledgeTerritoryPageViewProps = {
   model: KnowledgeTerritoryPageModel;
@@ -43,6 +56,8 @@ function MaterialCard({
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
 }) {
+  const router = useRouter();
+
   return (
     <article key={m.id} className={`${s.card} ${m.isPinned ? s.cardPinned : ''}`}>
       <Link href={`/admin/knowledge/materials/${m.id}`} className={s.cardLink}>
@@ -113,29 +128,56 @@ function MaterialCard({
       </Link>
       {canEdit && (
         <div className={s.cardActions}>
-          <button
-            type="button"
-            className={s.actionBtn}
-            onClick={() => onTogglePin(m.id)}
-            title={m.isPinned ? 'Открепить' : 'Закрепить'}
+          <AdminTableIconButton
+            aria-label={m.isPinned ? 'Открепить' : 'Закрепить'}
+            title={
+              m.isPinned
+                ? 'Открепить: убрать материал из начала списка категории'
+                : 'Закрепить: показывать материал первым в списке категории (выше остальных статей)'
+            }
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onTogglePin(m.id);
+            }}
           >
-            {m.isPinned ? 'Открепить' : 'Закрепить'}
-          </button>
-          <Link href={`/admin/knowledge/materials/${m.id}/edit`} className={s.actionLink}>
-            Редактировать
-          </Link>
-          {m.status !== 'PUBLISHED' && (
-            <button type="button" className={s.actionBtn} onClick={() => onPublish(m.id)}>
-              Опубликовать
-            </button>
-          )}
-          <button
-            type="button"
-            className={s.dangerBtn}
-            onClick={() => onDelete({ type: 'material', id: m.id, name: m.title })}
+            <PinIcon pinned={m.isPinned} />
+          </AdminTableIconButton>
+          <AdminTableIconButton
+            aria-label="Редактировать"
+            title="Редактировать материал"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              router.push(`/admin/knowledge/materials/${m.id}/edit`);
+            }}
           >
-            Удалить
-          </button>
+            <EditIcon />
+          </AdminTableIconButton>
+          {m.status !== 'PUBLISHED' ? (
+            <AdminTableIconButton
+              aria-label="Опубликовать"
+              title="Опубликовать: материал станет доступен менеджерам и стажёрам"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onPublish(m.id);
+              }}
+            >
+              <PublishIcon />
+            </AdminTableIconButton>
+          ) : null}
+          <AdminTableIconButton
+            aria-label="В корзину"
+            title="В корзину (восстановить можно из корзины в шапке страницы)"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              onDelete({ type: 'material', id: m.id, name: m.title });
+            }}
+          >
+            <DeleteIcon />
+          </AdminTableIconButton>
         </div>
       )}
     </article>
@@ -205,6 +247,10 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     handleUpdateCategory,
     handleAddModule,
     handleUpdateModule,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    handleTrashRestored,
   } = model;
 
   const showGroupedByModule =
@@ -236,17 +282,17 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
 
   const deleteModalTitle =
     deleteTarget?.type === 'material'
-      ? 'Удалить материал?'
+      ? 'Переместить материал в корзину?'
       : deleteTarget?.type === 'module'
-        ? 'Удалить модуль?'
-        : 'Удалить категорию?';
+        ? 'Переместить модуль в корзину?'
+        : 'Переместить категорию в корзину?';
 
   const deleteModalMessage =
     deleteTarget?.type === 'category'
-      ? `Категория «${deleteTarget?.name}» и все материалы в ней будут удалены.`
+      ? `Категория «${deleteTarget?.name}» будет перемещена в корзину вместе с модулями внутри неё (без материалов). Восстановить можно из корзины в шапке страницы. ${KNOWLEDGE_TRASH_RETENTION_NOTICE}`
       : deleteTarget?.type === 'module'
-        ? `Модуль «${deleteTarget?.name}» будет удалён. Материалы останутся в категории без модуля.`
-        : `Материал «${deleteTarget?.name}» будет удалён безвозвратно.`;
+        ? `Модуль «${deleteTarget?.name}» будет скрыт из списка. Материалы останутся в категории без этого модуля. ${KNOWLEDGE_TRASH_RETENTION_NOTICE}`
+        : `Материал «${deleteTarget?.name}» будет скрыт из списка. ${KNOWLEDGE_TRASH_RETENTION_NOTICE}`;
 
   return (
     <div className={styles.page}>
@@ -264,9 +310,25 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
           </p>
         </div>
         {canEdit && (
-          <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
-            + Добавить материал
-          </Link>
+          <div className={styles.heroActions}>
+            <AdminToolbarTrashButton
+              trashCount={trashCount}
+              onClick={() => setTrashOpen(true)}
+              title="Корзина базы знаний"
+              aria-label="Корзина базы знаний"
+            />
+            <Link
+              href="/admin/knowledge/analytics"
+              className={`${toolbarButtonStyles.button} ${styles.heroToolbarLink}`}
+              title="Статистика обучения"
+              aria-label="Статистика обучения"
+            >
+              <TrainingStatisticsIcon />
+            </Link>
+            <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
+              + Новый материал
+            </Link>
+          </div>
         )}
       </header>
 
@@ -454,9 +516,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                             <div className={styles.categoryEditRow}>
                               <span>{mod.name}</span>
                               <div className={styles.categoryEditActions}>
-                                <button
-                                  type="button"
-                                  className={styles.linkBtn}
+                                <AdminTableIconButton
+                                  aria-label="Изменить модуль"
+                                  title="Изменить название, slug и описание модуля"
                                   onClick={() => {
                                     setEditingModuleId(mod.id);
                                     setEditModuleName(mod.name);
@@ -464,11 +526,11 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                                     setEditModuleDescription(mod.description || '');
                                   }}
                                 >
-                                  Изм.
-                                </button>
-                                <button
-                                  type="button"
-                                  className={styles.dangerBtn}
+                                  <EditIcon />
+                                </AdminTableIconButton>
+                                <AdminTableIconButton
+                                  aria-label="Модуль в корзину"
+                                  title="В корзину: только этот модуль. Материалы останутся в категории без модуля"
                                   onClick={() =>
                                     setDeleteTarget({
                                       type: 'module',
@@ -477,8 +539,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                                     })
                                   }
                                 >
-                                  Удал.
-                                </button>
+                                  <DeleteIcon />
+                                </AdminTableIconButton>
                               </div>
                             </div>
                           )}
@@ -569,20 +631,25 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                         <div className={styles.categoryEditRow}>
                           <span>{cat.name}</span>
                           <div className={styles.categoryEditActions}>
-                            <button
-                              type="button"
-                              className={styles.linkBtn}
+                            <AdminTableIconButton
+                              aria-label="Изменить категорию"
+                              title="Изменить название и адрес (slug) категории"
                               onClick={() => {
                                 setEditingCategoryId(cat.id);
                                 setEditCategoryName(cat.name);
                                 setEditCategorySlug(cat.slug);
                               }}
                             >
-                              Изм.
-                            </button>
-                            <button
-                              type="button"
-                              className={styles.dangerBtn}
+                              <EditIcon />
+                            </AdminTableIconButton>
+                            <AdminTableIconButton
+                              aria-label="Категорию в корзину"
+                              disabled={(cat._count?.materials ?? 0) > 0}
+                              title={
+                                (cat._count?.materials ?? 0) > 0
+                                  ? `Нельзя удалить: в категории есть материалы (${cat._count?.materials ?? 0} шт.). Сначала переместите их в другую категорию или в корзину`
+                                  : `В корзину: категория «${cat.name}» и её модули без материалов. Восстановить можно из корзины в шапке`
+                              }
                               onClick={() =>
                                 setDeleteTarget({
                                   type: 'category',
@@ -591,8 +658,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                                 })
                               }
                             >
-                              Удал.
-                            </button>
+                              <DeleteIcon />
+                            </AdminTableIconButton>
                           </div>
                         </div>
                       )}
@@ -666,9 +733,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                   : 'Пока нет опубликованных материалов в этой категории.'}
               </p>
               {canEdit && (
-                <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
-                  + Добавить материал
-                </Link>
+                <Link href="/admin/knowledge/materials/new" className={styles.createButton}></Link>
               )}
             </div>
           ) : (
@@ -745,11 +810,17 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
         isOpen={!!deleteTarget}
         title={deleteModalTitle}
         message={deleteModalMessage}
-        confirmText={deleting ? 'Удаление…' : 'Удалить'}
+        confirmText={deleting ? 'Подождите…' : 'В корзину'}
         cancelText="Отмена"
         onConfirm={handleDelete}
         onClose={() => !deleting && setDeleteTarget(null)}
         variant="danger"
+      />
+
+      <KnowledgeTrashModal
+        isOpen={trashOpen}
+        onClose={() => setTrashOpen(false)}
+        onRestored={handleTrashRestored}
       />
     </div>
   );

@@ -37,10 +37,15 @@ export class KnowledgeStructureService {
 
   findAllCategories(editorView = false) {
     const materialsWhere: Prisma.KnowledgeMaterialWhereInput = editorView
-      ? {}
-      : { status: PageStatus.PUBLISHED };
+      ? { deletedAt: null }
+      : {
+          deletedAt: null,
+          status: PageStatus.PUBLISHED,
+          OR: [{ moduleId: null }, { module: { deletedAt: null } }],
+        };
 
     return this.prisma.knowledgeCategory.findMany({
+      where: { deletedAt: null },
       include: {
         _count: {
           select: {
@@ -63,10 +68,6 @@ export class KnowledgeStructureService {
       }
     }
     return this.prisma.knowledgeCategory.update({ where: { id }, data });
-  }
-
-  removeCategory(id: string) {
-    return this.prisma.knowledgeCategory.delete({ where: { id } });
   }
 
   async createModule(dto: CreateKnowledgeModuleDto) {
@@ -103,12 +104,13 @@ export class KnowledgeStructureService {
   }
 
   findAllModules(categoryId: string, editorView = false) {
-    const materialsWhere: Prisma.KnowledgeMaterialWhereInput = editorView
-      ? {}
-      : { status: PageStatus.PUBLISHED };
+    const materialsWhere: Prisma.KnowledgeMaterialWhereInput = {
+      deletedAt: null,
+      ...(editorView ? {} : { status: PageStatus.PUBLISHED }),
+    };
 
     return this.prisma.knowledgeModule.findMany({
-      where: { categoryId },
+      where: { categoryId, deletedAt: null },
       include: {
         _count: {
           select: {
@@ -164,9 +166,5 @@ export class KnowledgeStructureService {
         },
       },
     });
-  }
-
-  removeModule(id: string) {
-    return this.prisma.knowledgeModule.delete({ where: { id } });
   }
 }

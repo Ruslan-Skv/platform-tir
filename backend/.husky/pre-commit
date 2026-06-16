@@ -1,6 +1,9 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# husky re-invokes this script with `sh -e`; handle failures explicitly below.
+set +e
+
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT" || exit 1
 
@@ -19,20 +22,11 @@ run_capture() {
   code=$?
   if [ $code -ne 0 ]; then
     printf '%s\n' "$output"
-    echo "❌ $label failed"
-    exit 1
+    echo "❌ $label failed (exit ${code})"
+    return $code
   fi
   printf '%s' "$output"
-}
-
-run_secretlint() {
-  workspace=$1
-  echo "🔍 ${workspace} secretlint..."
-  if ! npm run secretlint --prefix "$workspace"; then
-    echo "❌ ${workspace} secretlint failed"
-    exit 1
-  fi
-  append_summary "✅ secretlint (${workspace}) — no secrets found"
+  return 0
 }
 
 extract_backend_validate_summary() {
@@ -55,13 +49,20 @@ echo "🚀 Pre-commit: platform-tir (backend + frontend)"
 echo ""
 
 echo "🔍 lint-staged (format & fix staged files)..."
-npx lint-staged --quiet || {
-  echo "❌ lint-staged failed"
+npx lint-staged --quiet
+lint_staged_status=$?
+if [ $lint_staged_status -ne 0 ]; then
+  echo "❌ lint-staged failed (exit ${lint_staged_status})"
   exit 1
-}
+fi
 append_summary "✅ lint-staged — staged: prettier · eslint · secretlint (backend+frontend code)"
 
 backend_out=$(run_capture "backend validate" npm run validate --prefix backend)
+backend_validate_status=$?
+if [ $backend_validate_status -ne 0 ]; then
+  printf '%s\n' "$backend_out"
+  exit 1
+fi
 backend_summary=$(extract_backend_validate_summary "$backend_out")
 append_summary ""
 append_summary "── backend ──"
@@ -70,9 +71,12 @@ if [ -n "$backend_summary" ]; then
   append_summary "$backend_summary"
 fi
 
-run_secretlint backend
-
 frontend_out=$(run_capture "frontend validate (precommit)" npm run validate:precommit --prefix frontend)
+frontend_validate_status=$?
+if [ $frontend_validate_status -ne 0 ]; then
+  printf '%s\n' "$frontend_out"
+  exit 1
+fi
 frontend_summary=$(extract_frontend_validate_summary "$frontend_out")
 append_summary ""
 append_summary "── frontend ──"
@@ -81,7 +85,7 @@ if [ -n "$frontend_summary" ]; then
   append_summary "$frontend_summary"
 fi
 
-run_secretlint frontend
+append_summary "✅ secretlint — проверка staged-файлов в lint-staged"
 
 append_summary ""
 append_summary "✅ Pre-commit passed (backend + frontend)."

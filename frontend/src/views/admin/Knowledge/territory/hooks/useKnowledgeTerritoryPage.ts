@@ -18,11 +18,13 @@ import {
   getKnowledgeMaterials,
   getKnowledgeModules,
   getKnowledgeStats,
+  getKnowledgeTrashCount,
   publishKnowledgeMaterial,
   toggleKnowledgeMaterialPin,
   updateKnowledgeCategory,
   updateKnowledgeModule,
 } from '@/shared/api/admin-knowledge';
+import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
@@ -62,6 +64,9 @@ export function useKnowledgeTerritoryPage() {
   const [editModuleName, setEditModuleName] = useState('');
   const [editModuleSlug, setEditModuleSlug] = useState('');
   const [editModuleDescription, setEditModuleDescription] = useState('');
+  const [trashOpen, setTrashOpen] = useState(false);
+
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -159,10 +164,10 @@ export function useKnowledgeTerritoryPage() {
     try {
       if (deleteTarget.type === 'material') {
         await deleteKnowledgeMaterial(deleteTarget.id);
-        showMessage('success', 'Материал удалён');
+        showMessage('success', 'Материал перемещён в корзину');
       } else if (deleteTarget.type === 'category') {
         await deleteKnowledgeCategory(deleteTarget.id);
-        showMessage('success', 'Категория удалена');
+        showMessage('success', 'Категория перемещена в корзину');
         if (categoryFilter === deleteTarget.id) {
           setCategoryFilter('');
           setModuleFilter('');
@@ -170,7 +175,7 @@ export function useKnowledgeTerritoryPage() {
         loadCategories();
       } else {
         await deleteKnowledgeModule(deleteTarget.id);
-        showMessage('success', 'Модуль удалён');
+        showMessage('success', 'Модуль перемещён в корзину');
         if (moduleFilter === deleteTarget.id) {
           setModuleFilter('');
         }
@@ -179,6 +184,7 @@ export function useKnowledgeTerritoryPage() {
       setDeleteTarget(null);
       loadMaterials();
       loadStats();
+      void refreshTrashCount();
     } catch (e) {
       showMessage('error', e instanceof Error ? e.message : 'Ошибка удаления');
     } finally {
@@ -292,6 +298,16 @@ export function useKnowledgeTerritoryPage() {
 
   const selectedCategory = categories.find((c) => c.id === categoryFilter);
 
+  const handleTrashRestored = useCallback(() => {
+    loadMaterials();
+    loadCategories();
+    loadStats();
+    if (categoryFilter) {
+      loadModules();
+    }
+    void refreshTrashCount();
+  }, [categoryFilter, loadCategories, loadMaterials, loadModules, loadStats, refreshTrashCount]);
+
   return {
     canEdit,
     materials,
@@ -354,6 +370,11 @@ export function useKnowledgeTerritoryPage() {
     handleUpdateCategory,
     handleAddModule,
     handleUpdateModule,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
+    handleTrashRestored,
   };
 }
 

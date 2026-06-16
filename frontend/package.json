@@ -14,7 +14,7 @@
     "format:check": "prettier --check .",
     "check-architecture": "node scripts/check-architecture.mjs",
     "validate": "npm run type-check && npm run lint && npm run format:check && npm run check-architecture",
-    "secretlint": "npx secretlint \"src/**/*.{ts,tsx,js,jsx}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,json,mjs}\" --format stylish",
+    "secretlint": "node ./node_modules/secretlint/bin/secretlint.js \"src/**/*.{ts,tsx,js,jsx}\" \"scripts/**/*.{js,mjs,ts}\" \"*.{js,json,mjs}\" --format stylish",
     "validate:precommit": "npm run type-check && npm run check-architecture",
     "test": "jest",
     "test:watch": "jest --watch",

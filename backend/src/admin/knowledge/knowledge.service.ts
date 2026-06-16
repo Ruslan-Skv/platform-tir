@@ -9,6 +9,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
+import { KnowledgeTrashService } from './knowledge-trash.service';
 import { KnowledgeUploadService } from './knowledge-upload.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
@@ -31,6 +32,7 @@ export class KnowledgeService {
     private knowledgeQuizService: KnowledgeQuizService,
     private structureService: KnowledgeStructureService,
     private targetAudienceService: KnowledgeTargetAudienceService,
+    private trashService: KnowledgeTrashService,
     private uploadService: KnowledgeUploadService,
   ) {}
 
@@ -133,7 +135,15 @@ export class KnowledgeService {
     } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.KnowledgeMaterialWhereInput = {};
+    const where: Prisma.KnowledgeMaterialWhereInput = {
+      deletedAt: null,
+      category: { deletedAt: null },
+      AND: [
+        {
+          OR: [{ moduleId: null }, { module: { deletedAt: null } }],
+        },
+      ],
+    };
 
     if (editorView && status) {
       where.status = status as PageStatus;
@@ -157,10 +167,16 @@ export class KnowledgeService {
 
     if (search?.trim()) {
       const term = search.trim();
-      where.OR = [
-        { title: { contains: term, mode: 'insensitive' } },
-        { excerpt: { contains: term, mode: 'insensitive' } },
-        { content: { contains: term, mode: 'insensitive' } },
+      const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+      where.AND = [
+        ...andClauses,
+        {
+          OR: [
+            { title: { contains: term, mode: 'insensitive' } },
+            { excerpt: { contains: term, mode: 'insensitive' } },
+            { content: { contains: term, mode: 'insensitive' } },
+          ],
+        },
       ];
     }
 
@@ -205,8 +221,13 @@ export class KnowledgeService {
   }
 
   async findOneMaterial(id: string, editorView = false, userId?: string) {
-    const material = await this.prisma.knowledgeMaterial.findUnique({
-      where: { id },
+    const material = await this.prisma.knowledgeMaterial.findFirst({
+      where: {
+        id,
+        deletedAt: null,
+        category: { deletedAt: null },
+        OR: [{ moduleId: null }, { module: { deletedAt: null } }],
+      },
       include: buildMaterialInclude(userId),
     });
     if (!material) {
@@ -332,9 +353,22 @@ export class KnowledgeService {
     return mapMaterialResponse(material, true);
   }
 
-  async removeMaterial(id: string) {
-    await this.findOneMaterial(id, true);
-    return this.prisma.knowledgeMaterial.delete({ where: { id } });
+  async removeMaterial(id: string, deletedById: string) {
+    return this.trashService.softDeleteMaterial(id, deletedById);
+  }
+
+  listTrash(params: { search?: string; page?: number; limit?: number }) {
+    return this.trashService.listTrash(params);
+  }
+
+  getTrashCount() {
+    return this.trashService.getTrashCount();
+  }
+
+  restoreTrashItem(type: 'material' | 'category' | 'module', id: string) {
+    if (type === 'material') return this.trashService.restoreMaterial(id);
+    if (type === 'category') return this.trashService.restoreCategory(id);
+    return this.trashService.restoreModule(id);
   }
 
   async upsertVideoProgress(userId: string, materialId: string, dto: UpdateVideoProgressDto) {
@@ -388,8 +422,8 @@ export class KnowledgeService {
     return this.structureService.updateCategory(id, data);
   }
 
-  removeCategory(id: string) {
-    return this.structureService.removeCategory(id);
+  removeCategory(id: string, deletedById: string) {
+    return this.trashService.softDeleteCategory(id, deletedById);
   }
 
   createModule(dto: CreateKnowledgeModuleDto) {
@@ -404,11 +438,17 @@ export class KnowledgeService {
     return this.structureService.updateModule(id, data);
   }
 
-  removeModule(id: string) {
-    return this.structureService.removeModule(id);
+  removeModule(id: string, deletedById: string) {
+    return this.trashService.softDeleteModule(id, deletedById);
   }
 
   async getStats() {
+    const activeMaterialWhere: Prisma.KnowledgeMaterialWhereInput = {
+      deletedAt: null,
+      category: { deletedAt: null },
+      OR: [{ moduleId: null }, { module: { deletedAt: null } }],
+    };
+
     const [
       total,
       published,
@@ -419,14 +459,26 @@ export class KnowledgeService {
       categoryCount,
       pinnedCount,
     ] = await Promise.all([
-      this.prisma.knowledgeMaterial.count(),
-      this.prisma.knowledgeMaterial.count({ where: { status: PageStatus.PUBLISHED } }),
-      this.prisma.knowledgeMaterial.count({ where: { status: PageStatus.DRAFT } }),
-      this.prisma.knowledgeMaterial.count({ where: { type: KnowledgeMaterialType.VIDEO } }),
-      this.prisma.knowledgeMaterial.count({ where: { type: KnowledgeMaterialType.ARTICLE } }),
-      this.prisma.knowledgeMaterial.count({ where: { type: KnowledgeMaterialType.LINK } }),
-      this.prisma.knowledgeCategory.count(),
-      this.prisma.knowledgeMaterial.count({ where: { isPinned: true } }),
+      this.prisma.knowledgeMaterial.count({ where: activeMaterialWhere }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, status: PageStatus.PUBLISHED },
+      }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, status: PageStatus.DRAFT },
+      }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, type: KnowledgeMaterialType.VIDEO },
+      }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, type: KnowledgeMaterialType.ARTICLE },
+      }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, type: KnowledgeMaterialType.LINK },
+      }),
+      this.prisma.knowledgeCategory.count({ where: { deletedAt: null } }),
+      this.prisma.knowledgeMaterial.count({
+        where: { ...activeMaterialWhere, isPinned: true },
+      }),
     ]);
 
     return {

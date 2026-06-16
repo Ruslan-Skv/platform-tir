@@ -55,6 +55,9 @@ pids
 .next/
 out/
 
+# TypeScript incremental build cache
+*.tsbuildinfo
+
 # NestJS
 backend/dist/
 

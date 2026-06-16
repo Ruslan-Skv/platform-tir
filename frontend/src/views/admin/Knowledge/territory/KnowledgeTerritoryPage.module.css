@@ -311,7 +311,9 @@
 
 .categoryEditActions {
   display: flex;
-  gap: var(--admin-space-xs);
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  flex-shrink: 0;
 }
 
 .linkBtn,
@@ -605,10 +607,23 @@
   margin-top: auto;
 }
 
+.heroActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  flex-shrink: 0;
+}
+
+.heroToolbarLink {
+  text-decoration: none;
+  color: inherit;
+}
+
 .cardActions {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--admin-space-md);
+  align-items: center;
+  gap: var(--admin-space-xs);
   padding: var(--admin-space-sm) var(--admin-space-lg) var(--admin-space-lg);
   border-top: 1px solid var(--admin-border);
 }

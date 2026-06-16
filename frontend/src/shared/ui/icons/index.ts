@@ -17,4 +17,21 @@ export {
   ADMIN_EDIT_ICON_SIZE,
   type EditIconProps,
 } from './EditIcon';
+export {
+  PinIcon,
+  ADMIN_ACTION_ICON_PIN_CLASS,
+  ADMIN_PIN_ICON_SIZE,
+  type PinIconProps,
+} from './PinIcon';
+export {
+  PublishIcon,
+  ADMIN_ACTION_ICON_PUBLISH_CLASS,
+  ADMIN_PUBLISH_ICON_SIZE,
+  type PublishIconProps,
+} from './PublishIcon';
+export {
+  TrainingStatisticsIcon,
+  ADMIN_TRAINING_STATISTICS_ICON_SIZE,
+  type TrainingStatisticsIconProps,
+} from './TrainingStatisticsIcon';
 export { VersionsHistoryIcon } from './VersionsHistoryIcon';

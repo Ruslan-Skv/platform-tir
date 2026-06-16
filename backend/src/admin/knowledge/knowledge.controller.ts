@@ -31,6 +31,7 @@ import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto'
 import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-audience.dto';
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
+import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytics.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -60,6 +61,7 @@ export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
+    private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
   ) {}
 
   @Get('stats')
@@ -77,6 +79,13 @@ export class KnowledgeController {
       }));
     }
     return this.knowledgeService.getStats();
+  }
+
+  @Get('training-analytics')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  getTrainingAnalytics(@Query('dateFrom') dateFrom?: string, @Query('dateTo') dateTo?: string) {
+    return this.trainingAnalyticsService.getTrainingAnalytics({ dateFrom, dateTo });
   }
 
   @Get('materials')
@@ -184,8 +193,40 @@ export class KnowledgeController {
   @Delete('materials/:id')
   @UseGuards(RolesGuard)
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
-  removeMaterial(@Param('id') id: string) {
-    return this.knowledgeService.removeMaterial(id);
+  removeMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.removeMaterial(id, req.user.id);
+  }
+
+  @Get('trash')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  listTrash(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.knowledgeService.listTrash({
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
+    });
+  }
+
+  @Get('trash/count')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  getTrashCount() {
+    return this.knowledgeService.getTrashCount().then((count) => ({ count }));
+  }
+
+  @Post('trash/:type/:id/restore')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  restoreTrashItem(
+    @Param('type') type: 'material' | 'category' | 'module',
+    @Param('id') id: string,
+  ) {
+    return this.knowledgeService.restoreTrashItem(type, id);
   }
 
   @Get('categories')
@@ -222,8 +263,8 @@ export class KnowledgeController {
   @Delete('categories/:id')
   @UseGuards(RolesGuard)
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
-  removeCategory(@Param('id') id: string) {
-    return this.knowledgeService.removeCategory(id);
+  removeCategory(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.removeCategory(id, req.user.id);
   }
 
   @Get('modules')
@@ -251,8 +292,8 @@ export class KnowledgeController {
   @Delete('modules/:id')
   @UseGuards(RolesGuard)
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
-  removeModule(@Param('id') id: string) {
-    return this.knowledgeService.removeModule(id);
+  removeModule(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.removeModule(id, req.user.id);
   }
 
   @Post('upload')
