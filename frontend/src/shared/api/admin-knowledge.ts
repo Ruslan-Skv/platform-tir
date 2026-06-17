@@ -592,10 +592,20 @@ export interface KnowledgeQuizAttemptSummary {
   createdAt: string;
 }
 
+export interface KnowledgeQuizAttemptLimits {
+  canStart: boolean;
+  blockedReason: 'cooldown' | 'daily_limit' | null;
+  nextAttemptAt: string | null;
+  attemptsToday: number;
+  maxAttemptsPerDay: number;
+  cooldownMinutes: number;
+}
+
 export interface KnowledgeMaterialQuizResponse {
   quiz: KnowledgeQuizData;
   myBestAttempt: KnowledgeQuizAttemptSummary | null;
   myLatestAttempt: KnowledgeQuizAttemptSummary | null;
+  attemptLimits: KnowledgeQuizAttemptLimits;
 }
 
 export interface KnowledgeQuizResultItem {

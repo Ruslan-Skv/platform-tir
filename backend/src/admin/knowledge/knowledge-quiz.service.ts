@@ -1,4 +1,10 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  HttpException,
+  HttpStatus,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
@@ -12,9 +18,122 @@ type QuizWithQuestions = Prisma.KnowledgeMaterialQuizGetPayload<{
   };
 }>;
 
+const QUIZ_RETRY_COOLDOWN_MS = 30 * 60 * 1000;
+const QUIZ_MAX_ATTEMPTS_PER_DAY = 3;
+
+type QuizAttemptRecord = {
+  passed: boolean;
+  createdAt: Date;
+};
+
+export type KnowledgeQuizAttemptLimits = {
+  canStart: boolean;
+  blockedReason: 'cooldown' | 'daily_limit' | null;
+  nextAttemptAt: string | null;
+  attemptsToday: number;
+  maxAttemptsPerDay: number;
+  cooldownMinutes: number;
+};
+
 @Injectable()
 export class KnowledgeQuizService {
   constructor(private prisma: PrismaService) {}
+
+  private startOfLocalDay(date: Date): Date {
+    const start = new Date(date);
+    start.setHours(0, 0, 0, 0);
+    return start;
+  }
+
+  private startOfNextLocalDay(date: Date): Date {
+    const next = this.startOfLocalDay(date);
+    next.setDate(next.getDate() + 1);
+    return next;
+  }
+
+  private buildAttemptLimits(
+    attempts: QuizAttemptRecord[],
+    now = new Date(),
+  ): KnowledgeQuizAttemptLimits {
+    const base = {
+      maxAttemptsPerDay: QUIZ_MAX_ATTEMPTS_PER_DAY,
+      cooldownMinutes: QUIZ_RETRY_COOLDOWN_MS / 60_000,
+    };
+
+    const hasPassed = attempts.some((attempt) => attempt.passed);
+    if (hasPassed) {
+      const todayStart = this.startOfLocalDay(now);
+      const attemptsToday = attempts.filter((attempt) => attempt.createdAt >= todayStart).length;
+      return {
+        ...base,
+        canStart: true,
+        blockedReason: null,
+        nextAttemptAt: null,
+        attemptsToday,
+      };
+    }
+
+    const todayStart = this.startOfLocalDay(now);
+    const attemptsToday = attempts.filter((attempt) => attempt.createdAt >= todayStart);
+
+    if (attemptsToday.length >= QUIZ_MAX_ATTEMPTS_PER_DAY) {
+      return {
+        ...base,
+        canStart: false,
+        blockedReason: 'daily_limit',
+        nextAttemptAt: this.startOfNextLocalDay(now).toISOString(),
+        attemptsToday: attemptsToday.length,
+      };
+    }
+
+    const latestAttempt = attempts[0];
+    if (latestAttempt && !latestAttempt.passed) {
+      const cooldownEndsAt = new Date(latestAttempt.createdAt.getTime() + QUIZ_RETRY_COOLDOWN_MS);
+      if (now < cooldownEndsAt) {
+        return {
+          ...base,
+          canStart: false,
+          blockedReason: 'cooldown',
+          nextAttemptAt: cooldownEndsAt.toISOString(),
+          attemptsToday: attemptsToday.length,
+        };
+      }
+    }
+
+    return {
+      ...base,
+      canStart: true,
+      blockedReason: null,
+      nextAttemptAt: null,
+      attemptsToday: attemptsToday.length,
+    };
+  }
+
+  private async getUserAttemptsForMaterial(materialId: string, userId: string) {
+    if (!userId) return [];
+
+    return this.prisma.knowledgeQuizAttempt.findMany({
+      where: { materialId, userId },
+      orderBy: { createdAt: 'desc' },
+      select: { passed: true, createdAt: true, scorePercent: true, id: true },
+    });
+  }
+
+  private assertCanStartAttempt(limits: KnowledgeQuizAttemptLimits) {
+    if (limits.canStart) return;
+
+    if (limits.blockedReason === 'daily_limit') {
+      throw new HttpException(
+        'Исчерпан лимит попыток на сегодня. Следующая попытка будет доступна завтра.',
+        HttpStatus.TOO_MANY_REQUESTS,
+      );
+    }
+
+    throw new HttpException(
+      'Повторная попытка будет доступна через 30 минут после неуспешного прохождения.',
+      HttpStatus.TOO_MANY_REQUESTS,
+    );
+  }
 
   private mapQuizForClient(quiz: QuizWithQuestions, editorView: boolean) {
     return {
@@ -68,13 +187,7 @@ export class KnowledgeQuizService {
       return null;
     }
 
-    const attempts = userId
-      ? await this.prisma.knowledgeQuizAttempt.findMany({
-          where: { materialId, userId },
-          orderBy: { createdAt: 'desc' },
-          take: 5,
-        })
-      : [];
+    const attempts = userId ? await this.getUserAttemptsForMaterial(materialId, userId) : [];
 
     const bestAttempt = attempts.reduce<(typeof attempts)[0] | null>((best, current) => {
       if (!best) return current;
@@ -84,6 +197,8 @@ export class KnowledgeQuizService {
       }
       return best;
     }, null);
+
+    const attemptLimits = this.buildAttemptLimits(attempts);
 
     return {
       quiz: this.mapQuizForClient(quiz, editorView),
@@ -103,6 +218,7 @@ export class KnowledgeQuizService {
             createdAt: attempts[0].createdAt,
           }
         : null,
+      attemptLimits,
     };
   }
 
@@ -199,6 +315,9 @@ export class KnowledgeQuizService {
     if (!material || (!editorView && material.status !== 'PUBLISHED')) {
       throw new NotFoundException('Материал не найден');
     }
+
+    const previousAttempts = await this.getUserAttemptsForMaterial(materialId, userId);
+    this.assertCanStartAttempt(this.buildAttemptLimits(previousAttempts));
 
     const questionIds = quiz.questions.map((q) => q.id);
     const answers = dto.answers ?? {};

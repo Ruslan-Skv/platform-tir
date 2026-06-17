@@ -6,6 +6,27 @@ export function formatQuizCountdown(seconds: number): string {
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
 
+export function formatBlockedCountdown(seconds: number): string {
+  if (seconds <= 0) return '0:00';
+
+  const hours = Math.floor(seconds / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = seconds % 60;
+
+  if (hours > 0) {
+    return `${hours} ч ${minutes} мин ${secs.toString().padStart(2, '0')} сек`;
+  }
+
+  return formatQuizCountdown(seconds);
+}
+
+export function getSecondsUntil(isoDate: string | null, nowMs = Date.now()): number | null {
+  if (!isoDate) return null;
+  const targetMs = new Date(isoDate).getTime();
+  if (Number.isNaN(targetMs)) return null;
+  return Math.max(0, Math.ceil((targetMs - nowMs) / 1000));
+}
+
 export function getQuizTimeLimitSeconds(questionCount: number, minutesPerQuestion: number): number {
   return questionCount * minutesPerQuestion * 60;
 }
@@ -58,4 +79,35 @@ export function useKnowledgeQuizTimer(active: boolean, totalSeconds: number, onE
     reset,
     isRunning: active && secondsLeft !== null && secondsLeft > 0,
   };
+}
+
+export function useBlockedCountdown(targetIso: string | null, active: boolean) {
+  const [secondsLeft, setSecondsLeft] = useState<number | null>(() =>
+    active ? getSecondsUntil(targetIso) : null
+  );
+
+  useEffect(() => {
+    if (!active || !targetIso) {
+      setSecondsLeft(null);
+      return;
+    }
+
+    const tick = () => {
+      const next = getSecondsUntil(targetIso);
+      setSecondsLeft(next);
+      return next;
+    };
+
+    tick();
+    const id = window.setInterval(() => {
+      const next = tick();
+      if (next !== null && next <= 0) {
+        clearInterval(id);
+      }
+    }, 1000);
+
+    return () => clearInterval(id);
+  }, [active, targetIso]);
+
+  return secondsLeft;
 }

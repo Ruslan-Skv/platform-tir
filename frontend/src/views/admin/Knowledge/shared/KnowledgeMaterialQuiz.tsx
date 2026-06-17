@@ -12,9 +12,11 @@ import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeMaterialQuiz.module.css';
 import {
+  formatBlockedCountdown,
   formatMinutesRu,
   formatQuizCountdown,
   getQuizTimeLimitSeconds,
+  useBlockedCountdown,
   useKnowledgeQuizTimer,
 } from './useKnowledgeQuizTimer';
 
@@ -102,11 +104,24 @@ export function KnowledgeMaterialQuiz({
     onExpire
   );
 
+  const attemptLimits = data?.attemptLimits;
+  const isAttemptBlocked = Boolean(attemptLimits && !attemptLimits.canStart);
+  const blockedSecondsLeft = useBlockedCountdown(
+    attemptLimits?.nextAttemptAt ?? null,
+    isAttemptBlocked
+  );
+
+  useEffect(() => {
+    if (isAttemptBlocked && blockedSecondsLeft === 0) {
+      void load();
+    }
+  }, [blockedSecondsLeft, isAttemptBlocked, load]);
+
   if (loading) {
     return <div className={styles.loading}>Загрузка теста…</div>;
   }
 
-  if (!quiz) {
+  if (!quiz || !data) {
     return null;
   }
 
@@ -116,6 +131,7 @@ export function KnowledgeMaterialQuiz({
   const timerExpired = secondsLeft !== null && secondsLeft <= 0;
 
   const handleStart = () => {
+    if (isAttemptBlocked) return;
     setExpanded(true);
     setAnswers({});
     setResult(null);
@@ -124,6 +140,7 @@ export function KnowledgeMaterialQuiz({
   };
 
   const handleRetry = () => {
+    if (isAttemptBlocked) return;
     setResult(null);
     setAnswers({});
     setError(null);
@@ -138,11 +155,30 @@ export function KnowledgeMaterialQuiz({
           <KnowledgeSelfCheckQuizIcon size={40} />
         </div>
         <h2 className={styles.title}>{quiz.title}</h2>
-        <p className={styles.subtitle}>
-          Пройдите тест после прочтения материала. Для зачёта нужно не менее{' '}
-          {quiz.passingScorePercent}% правильных ответов. На каждый вопрос отводится{' '}
-          {formatMinutesRu(minutesPerQuestion)}.
-        </p>
+        <div className={styles.rules}>
+          <p className={styles.rulesTitle}>Правила прохождения</p>
+          <ul className={styles.rulesList}>
+            <li>
+              Для зачёта нужно не менее {quiz.passingScorePercent}% правильных ответов. На каждый
+              вопрос отводится {formatMinutesRu(minutesPerQuestion)}.
+            </li>
+            <li>
+              После неуспешной попытки повторное прохождение возможно не ранее чем через{' '}
+              {attemptLimits?.cooldownMinutes ?? 30} минут.
+            </li>
+            <li>
+              В сутки доступно не более {attemptLimits?.maxAttemptsPerDay ?? 3} попыток. Если за
+              день все {attemptLimits?.maxAttemptsPerDay ?? 3} попытки оказались неуспешными,
+              следующая попытка — только на следующий день.
+            </li>
+          </ul>
+          {attemptLimits && !myBestAttempt?.passed ? (
+            <p className={styles.rulesAttempts}>
+              Попыток сегодня: {attemptLimits.attemptsToday} из {attemptLimits.maxAttemptsPerDay}
+            </p>
+          ) : null}
+        </div>
+        <p className={styles.subtitle}>Пройдите тест после прочтения материала.</p>
         {myBestAttempt ? (
           <div
             className={`${styles.bestScore} ${myBestAttempt.passed ? styles.bestScorePassed : styles.bestScoreFailed}`}
@@ -154,6 +190,22 @@ export function KnowledgeMaterialQuiz({
       </div>
 
       {error ? <div className={styles.error}>{error}</div> : null}
+
+      {isAttemptBlocked && blockedSecondsLeft !== null ? (
+        <div className={styles.blockedNotice}>
+          <p className={styles.blockedTitle}>
+            {attemptLimits?.blockedReason === 'daily_limit'
+              ? 'Лимит попыток на сегодня исчерпан'
+              : 'Повторная попытка пока недоступна'}
+          </p>
+          <p className={styles.blockedText}>
+            {attemptLimits?.blockedReason === 'daily_limit'
+              ? 'Все попытки за сегодня оказались неуспешными. Следующая попытка будет доступна:'
+              : 'После неуспешного прохождения нужно подождать 30 минут. Повторная попытка будет доступна через:'}
+          </p>
+          <div className={styles.blockedTimer}>{formatBlockedCountdown(blockedSecondsLeft)}</div>
+        </div>
+      ) : null}
 
       {result ? (
         <div className={styles.results}>
@@ -190,9 +242,19 @@ export function KnowledgeMaterialQuiz({
             ))}
           </ol>
 
-          <button type="button" className={styles.retryBtn} onClick={handleRetry}>
+          <button
+            type="button"
+            className={styles.retryBtn}
+            onClick={handleRetry}
+            disabled={isAttemptBlocked}
+          >
             Пройти ещё раз
           </button>
+          {!result.passed && isAttemptBlocked ? (
+            <p className={styles.hint}>
+              Кнопка станет активной, когда истечёт время ожидания (см. таймер выше).
+            </p>
+          ) : null}
         </div>
       ) : !expanded ? (
         <div className={styles.collapsed}>
@@ -207,6 +269,8 @@ export function KnowledgeMaterialQuiz({
           </p>
           {materialStatus !== 'PUBLISHED' && !canEdit ? (
             <p className={styles.hint}>Тест будет доступен после публикации материала.</p>
+          ) : isAttemptBlocked ? (
+            <p className={styles.hint}>Дождитесь окончания таймера, чтобы начать тест.</p>
           ) : (
             <button type="button" className={styles.startBtn} onClick={handleStart}>
               Начать тест
