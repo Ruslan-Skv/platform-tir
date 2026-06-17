@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import {
@@ -10,6 +10,7 @@ import {
 } from '@/shared/api/admin-knowledge';
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
+import { buildKnowledgeTerritoryBackUrl } from '../../territory/knowledge-territory-filters-storage';
 
 interface UseKnowledgeMaterialViewPageOptions {
   materialId: string;
@@ -23,6 +24,11 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+
+  const backUrl = useMemo(
+    () => buildKnowledgeTerritoryBackUrl(material?.categoryId),
+    [material?.categoryId]
+  );
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +68,7 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     canEdit,
     publishing,
     handlePublish,
+    backUrl,
   };
 }
 

@@ -30,6 +30,8 @@ import {
   getStatusLabel,
   hasTargetAudiences,
   slugify,
+  sortKnowledgeMaterialGroupsDraftsLast,
+  sortKnowledgeMaterialsDraftsLast,
 } from '../shared/knowledge-utils';
 import styles from './KnowledgeTerritoryPage.module.css';
 import type { KnowledgeTerritoryPageModel } from './hooks/useKnowledgeTerritoryPage';
@@ -48,6 +50,7 @@ function MaterialCard({
   onTogglePin,
   onPublish,
   onDelete,
+  onOpenMaterial,
 }: {
   material: AdminKnowledgeMaterial;
   canEdit: boolean;
@@ -55,12 +58,17 @@ function MaterialCard({
   onTogglePin: (id: string) => void;
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
+  onOpenMaterial: () => void;
 }) {
   const router = useRouter();
 
   return (
     <article key={m.id} className={`${s.card} ${m.isPinned ? s.cardPinned : ''}`}>
-      <Link href={`/admin/knowledge/materials/${m.id}`} className={s.cardLink}>
+      <Link
+        href={`/admin/knowledge/materials/${m.id}`}
+        className={s.cardLink}
+        onClick={onOpenMaterial}
+      >
         <div className={s.cardThumb}>
           {m.isPinned && <span className={s.pinBadge}>📌</span>}
           {m.thumbnailUrl ? (
@@ -255,10 +263,16 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setTrashOpen,
     trashCount,
     handleTrashRestored,
+    persistTerritoryFilters,
   } = model;
 
   const showGroupedByModule =
     Boolean(categoryFilter) && !moduleFilter && !search && modules.length > 0;
+
+  const displayMaterials = useMemo(() => {
+    if (!canEdit || statusFilter) return materials;
+    return sortKnowledgeMaterialsDraftsLast(materials);
+  }, [canEdit, statusFilter, materials]);
 
   const groupedMaterials = useMemo(() => {
     if (!showGroupedByModule) return null;
@@ -270,19 +284,24 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     }> = [];
 
     for (const mod of modules) {
-      const items = materials.filter((m) => m.moduleId === mod.id);
+      const items = sortKnowledgeMaterialsDraftsLast(
+        displayMaterials.filter((m) => m.moduleId === mod.id)
+      );
       if (items.length > 0) {
         groups.push({ key: mod.id, module: mod, items });
       }
     }
 
-    const unassigned = materials.filter((m) => !m.moduleId);
+    const unassigned = sortKnowledgeMaterialsDraftsLast(
+      displayMaterials.filter((m) => !m.moduleId)
+    );
     if (unassigned.length > 0) {
       groups.push({ key: 'none', module: null, items: unassigned });
     }
 
-    return groups.length > 0 ? groups : null;
-  }, [showGroupedByModule, modules, materials]);
+    if (groups.length === 0) return null;
+    return sortKnowledgeMaterialGroupsDraftsLast(groups);
+  }, [showGroupedByModule, modules, displayMaterials]);
 
   const deleteModalTitle =
     deleteTarget?.type === 'material'
@@ -788,6 +807,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           onTogglePin={handleTogglePin}
                           onPublish={handlePublish}
                           onDelete={setDeleteTarget}
+                          onOpenMaterial={persistTerritoryFilters}
                         />
                       ))}
                     </div>
@@ -795,7 +815,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                 ))
               ) : (
                 <div className={styles.grid}>
-                  {materials.map((m) => (
+                  {displayMaterials.map((m) => (
                     <MaterialCard
                       key={m.id}
                       material={m}
@@ -804,6 +824,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       onTogglePin={handleTogglePin}
                       onPublish={handlePublish}
                       onDelete={setDeleteTarget}
+                      onOpenMaterial={persistTerritoryFilters}
                     />
                   ))}
                 </div>

@@ -1,6 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import {
@@ -29,12 +31,24 @@ import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/use
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
 import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
+import {
+  type KnowledgeTerritoryFiltersState,
+  buildKnowledgeTerritoryUrl,
+  parseKnowledgeTerritorySearchParams,
+  readKnowledgeTerritoryFilters,
+  writeKnowledgeTerritoryFilters,
+} from '../knowledge-territory-filters-storage';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
 import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.types';
 
 export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
   const canEdit = isKnowledgeEditor(user?.role);
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const filtersHydratedRef = useRef(false);
+  const prevCategoryFilterRef = useRef<string | null>(null);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
@@ -77,6 +91,57 @@ export function useKnowledgeTerritoryPage() {
     setMessage({ type, text });
     setTimeout(() => setMessage(null), 3000);
   }, []);
+
+  useLayoutEffect(() => {
+    if (filtersHydratedRef.current) return;
+    filtersHydratedRef.current = true;
+
+    const fromUrl = parseKnowledgeTerritorySearchParams(searchParams);
+    const hasUrlFilters = Object.keys(fromUrl).length > 0;
+
+    if (hasUrlFilters) {
+      if (fromUrl.categoryFilter !== undefined) setCategoryFilter(fromUrl.categoryFilter);
+      if (fromUrl.moduleFilter !== undefined) setModuleFilter(fromUrl.moduleFilter);
+      if (fromUrl.typeFilter !== undefined) setTypeFilter(fromUrl.typeFilter);
+      if (fromUrl.statusFilter !== undefined) setStatusFilter(fromUrl.statusFilter);
+      if (fromUrl.search !== undefined) setSearch(fromUrl.search);
+      if (fromUrl.searchInput !== undefined) setSearchInput(fromUrl.searchInput);
+      if (fromUrl.page !== undefined) setPage(fromUrl.page);
+      prevCategoryFilterRef.current = fromUrl.categoryFilter ?? '';
+      return;
+    }
+
+    const saved = readKnowledgeTerritoryFilters();
+
+    if (saved) {
+      setCategoryFilter(saved.categoryFilter);
+      setModuleFilter(saved.moduleFilter);
+      setTypeFilter(saved.typeFilter);
+      setStatusFilter(saved.statusFilter);
+      setSearch(saved.search);
+      setSearchInput(saved.searchInput);
+      setPage(saved.page);
+      prevCategoryFilterRef.current = saved.categoryFilter;
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- восстанавливаем один раз при монтировании
+  }, []);
+
+  const filtersSnapshot = useMemo<KnowledgeTerritoryFiltersState>(
+    () => ({
+      categoryFilter,
+      moduleFilter,
+      typeFilter,
+      statusFilter,
+      search,
+      searchInput,
+      page,
+    }),
+    [categoryFilter, moduleFilter, typeFilter, statusFilter, search, searchInput, page]
+  );
+
+  const persistTerritoryFilters = useCallback(() => {
+    writeKnowledgeTerritoryFilters(filtersSnapshot);
+  }, [filtersSnapshot]);
 
   const loadMaterials = useCallback(async () => {
     setLoading(true);
@@ -133,6 +198,7 @@ export function useKnowledgeTerritoryPage() {
   }, []);
 
   useEffect(() => {
+    if (!filtersHydratedRef.current) return;
     loadMaterials();
   }, [loadMaterials]);
 
@@ -142,9 +208,34 @@ export function useKnowledgeTerritoryPage() {
   }, [loadCategories, loadStats]);
 
   useEffect(() => {
-    setModuleFilter('');
+    if (!filtersHydratedRef.current) return;
+
+    if (prevCategoryFilterRef.current !== categoryFilter) {
+      if (prevCategoryFilterRef.current !== null) {
+        setModuleFilter('');
+      }
+      prevCategoryFilterRef.current = categoryFilter;
+    }
+
     loadModules();
   }, [categoryFilter, loadModules]);
+
+  useEffect(() => {
+    if (!filtersHydratedRef.current) return;
+
+    const nextUrl = buildKnowledgeTerritoryUrl(filtersSnapshot);
+    const currentUrl = searchParams.toString()
+      ? `${pathname}?${searchParams.toString()}`
+      : pathname;
+    if (nextUrl !== currentUrl) {
+      router.replace(nextUrl, { scroll: false });
+    }
+  }, [filtersSnapshot, pathname, router, searchParams]);
+
+  useEffect(() => {
+    if (!filtersHydratedRef.current) return;
+    writeKnowledgeTerritoryFilters(filtersSnapshot);
+  }, [filtersSnapshot]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -420,6 +511,7 @@ export function useKnowledgeTerritoryPage() {
     trashCount,
     refreshTrashCount,
     handleTrashRestored,
+    persistTerritoryFilters,
   };
 }
 

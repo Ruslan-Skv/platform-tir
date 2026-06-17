@@ -78,6 +78,77 @@ export function getMaterialTypeIcon(type: KnowledgeMaterialType): string {
   }
 }
 
+/** Порядок статусов в списке редактора: опубликованные → черновики → архив. */
+export function knowledgeMaterialListStatusRank(status: string): number {
+  switch (status) {
+    case 'PUBLISHED':
+      return 0;
+    case 'DRAFT':
+      return 1;
+    case 'ARCHIVED':
+      return 2;
+    default:
+      return 3;
+  }
+}
+
+export function compareKnowledgeMaterialsForAdminList(
+  a: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string },
+  b: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string }
+): number {
+  const statusDiff =
+    knowledgeMaterialListStatusRank(a.status) - knowledgeMaterialListStatusRank(b.status);
+  if (statusDiff !== 0) return statusDiff;
+
+  if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+    return a.isPinned ? -1 : 1;
+  }
+
+  const sortOrderDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
+  if (sortOrderDiff !== 0) return sortOrderDiff;
+
+  if (a.createdAt && b.createdAt) {
+    return b.createdAt.localeCompare(a.createdAt);
+  }
+
+  return 0;
+}
+
+/** Опубликованные материалы в начале, черновики и прочие статусы — в конце. */
+export function sortKnowledgeMaterialsDraftsLast<
+  T extends { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string },
+>(items: T[]): T[] {
+  if (items.length < 2) return items;
+
+  const hasPublished = items.some((m) => m.status === 'PUBLISHED');
+  const hasNonPublished = items.some((m) => m.status !== 'PUBLISHED');
+  if (!hasPublished || !hasNonPublished) return items;
+
+  return [...items].sort(compareKnowledgeMaterialsForAdminList);
+}
+
+/** Группы модулей без опубликованных материалов — в конце списка. */
+export function sortKnowledgeMaterialGroupsDraftsLast<
+  G extends { items: Array<{ status: string }> },
+>(groups: G[]): G[] {
+  if (groups.length < 2) return groups;
+
+  const hasPublished = groups.some((g) => g.items.some((m) => m.status === 'PUBLISHED'));
+  const hasNonPublished = groups.some((g) => g.items.some((m) => m.status !== 'PUBLISHED'));
+  if (!hasPublished || !hasNonPublished) return groups;
+
+  const withPublished: G[] = [];
+  const withoutPublished: G[] = [];
+  for (const group of groups) {
+    if (group.items.some((m) => m.status === 'PUBLISHED')) {
+      withPublished.push(group);
+    } else {
+      withoutPublished.push(group);
+    }
+  }
+  return [...withPublished, ...withoutPublished];
+}
+
 export function getStatusLabel(status: string): string {
   switch (status) {
     case 'DRAFT':

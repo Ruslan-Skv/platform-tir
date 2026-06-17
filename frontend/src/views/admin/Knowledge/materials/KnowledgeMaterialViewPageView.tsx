@@ -28,7 +28,7 @@ type KnowledgeMaterialViewPageViewProps = {
 };
 
 export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPageViewProps) {
-  const { material, loading, error, canEdit, publishing, handlePublish } = model;
+  const { material, loading, error, canEdit, publishing, handlePublish, backUrl } = model;
 
   if (loading) {
     return (
@@ -41,8 +41,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   if (error || !material) {
     return (
       <div className={styles.page}>
-        <Link href="/admin/knowledge" className={styles.backLink}>
-          ← К разделу «Территория знаний»
+        <Link href={backUrl} className={styles.backLink}>
+          ← Назад
         </Link>
         <div className={styles.error}>{error || 'Материал не найден'}</div>
       </div>
@@ -54,8 +54,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
-        <Link href="/admin/knowledge" className={styles.backLink}>
-          ← К разделу «Территория знаний»
+        <Link href={backUrl} className={styles.backLink}>
+          ← Назад
         </Link>
         {canEdit && (
           <div className={styles.topActions}>

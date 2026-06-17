@@ -188,17 +188,27 @@ export class KnowledgeService {
       ];
     }
 
+    const showMixedStatuses = editorView && !status;
+
     const [data, total] = await Promise.all([
       this.prisma.knowledgeMaterial.findMany({
         where,
         include: buildMaterialInclude(userId),
-        orderBy: [
-          { isPinned: 'desc' },
-          { module: { order: 'asc' } },
-          { sortOrder: 'asc' },
-          { publishedAt: 'desc' },
-          { createdAt: 'desc' },
-        ],
+        orderBy: showMixedStatuses
+          ? [
+              { publishedAt: { sort: 'desc', nulls: 'last' } },
+              { isPinned: 'desc' },
+              { module: { order: 'asc' } },
+              { sortOrder: 'asc' },
+              { createdAt: 'desc' },
+            ]
+          : [
+              { isPinned: 'desc' },
+              { module: { order: 'asc' } },
+              { sortOrder: 'asc' },
+              { publishedAt: { sort: 'desc', nulls: 'last' } },
+              { createdAt: 'desc' },
+            ],
         skip,
         take: limit,
       }),
