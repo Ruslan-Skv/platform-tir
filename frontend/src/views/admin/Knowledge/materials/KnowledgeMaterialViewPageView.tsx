@@ -12,6 +12,7 @@ import {
   formatAuthorName,
   formatDate,
   formatReadingTime,
+  formatTargetAudiences,
   getKnowledgeThumbnailDisplayClass,
   getMaterialReadingTime,
   getMaterialTypeIcon,
@@ -47,6 +48,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       </div>
     );
   }
+
+  const targetAudiencesText = formatTargetAudiences(material.targetAudiences);
 
   return (
     <div className={styles.page}>
@@ -95,11 +98,12 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         {material.type === 'ARTICLE' &&
         (hasTargetAudiences(material.targetAudiences) || getMaterialReadingTime(material)) ? (
           <div className={styles.articleMeta}>
-            {material.targetAudiences?.map((audience) => (
-              <span key={audience.id} className={styles.articleMetaItem}>
-                <span className={styles.articleMetaLabel}>Целевая аудитория:</span> {audience.label}
+            {targetAudiencesText ? (
+              <span className={styles.articleMetaItem}>
+                <span className={styles.articleMetaLabel}>Целевая аудитория:</span>{' '}
+                {targetAudiencesText}
               </span>
-            ))}
+            ) : null}
             {formatReadingTime(getMaterialReadingTime(material)) ? (
               <span className={styles.articleMetaItem}>
                 <span className={styles.articleMetaLabel}>Время чтения:</span>{' '}
