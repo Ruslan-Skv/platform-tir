@@ -884,6 +884,12 @@ enum KnowledgeMaterialType {
   LINK
 }
 
+enum KnowledgeThumbnailDisplay {
+  COVER
+  CONTAIN
+  NATURAL
+}
+
 model KnowledgeCategory {
   id          String              @id @default(cuid())
   name        String
@@ -939,6 +945,7 @@ model KnowledgeMaterial {
   videoUrl                   String?
   externalUrl                String?
   thumbnailUrl               String?
+  thumbnailDisplay           KnowledgeThumbnailDisplay         @default(COVER)
   sortOrder                  Int                               @default(0)
   isPinned                   Boolean                           @default(false)
   status                     PageStatus                        @default(DRAFT)

@@ -12,7 +12,10 @@ import {
 
 import { KnowledgeAttachmentsEditor } from '../../shared/KnowledgeAttachmentsEditor';
 import { KnowledgeQuizEditor } from '../../shared/KnowledgeQuizEditor';
-import { getMaterialTypeLabel } from '../../shared/knowledge-utils';
+import {
+  KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS,
+  getMaterialTypeLabel,
+} from '../../shared/knowledge-utils';
 import styles from './KnowledgeMaterialFormPage.module.css';
 import { KnowledgeTargetAudienceField } from './KnowledgeTargetAudienceField';
 import type { KnowledgeMaterialFormPageModel } from './hooks/useKnowledgeMaterialFormPage';
@@ -63,6 +66,8 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     setExternalUrl,
     thumbnailUrl,
     setThumbnailUrl,
+    thumbnailDisplay,
+    setThumbnailDisplay,
     sortOrder,
     setSortOrder,
     isPinned,
@@ -488,6 +493,35 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                   </div>
                 ) : null}
               </div>
+              {thumbnailUrl ? (
+                <div className={styles.thumbnailDisplayField}>
+                  <label htmlFor="thumbnailDisplay" className={styles.subLabel}>
+                    Отображение в конспекте
+                  </label>
+                  <select
+                    id="thumbnailDisplay"
+                    value={thumbnailDisplay}
+                    onChange={(event) =>
+                      setThumbnailDisplay(event.target.value as typeof thumbnailDisplay)
+                    }
+                    className={styles.select}
+                  >
+                    {KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>
+                        {option.label}
+                      </option>
+                    ))}
+                  </select>
+                  <p className={styles.fieldHint}>
+                    {
+                      KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.find(
+                        (option) => option.value === thumbnailDisplay
+                      )?.hint
+                    }{' '}
+                    На странице списка материалов формат обложки не меняется.
+                  </p>
+                </div>
+              ) : null}
             </div>
             <div className={styles.field}>
               <label htmlFor="sortOrder" className={styles.label}>

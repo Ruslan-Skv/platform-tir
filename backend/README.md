@@ -138,9 +138,11 @@ src/
 
 Порядок проверок (без дублирования):
 
-1. **lint-staged** — prettier, eslint, secretlint на staged code (backend + frontend); prisma format для `.prisma`. Через `scripts/lint-staged-workspace.js` (cwd = workspace).
-2. **backend** — полный `npm run validate` + `npm run secretlint`
-3. **frontend** — `npm run validate:precommit` + `npm run secretlint` (eslint/format по staged — в lint-staged; полный `npm run validate` — вручную / CI)
+1. **lint-staged** — prettier, eslint, **secretlint на staged**-файлах (backend + frontend); prisma format для `.prisma`. Через `scripts/lint-staged-workspace.js` (cwd = workspace). Secretlint срабатывает только для файлов, попавших в коммит (staged).
+2. **backend** — `npm run validate:precommit` (`type-check`, `lint`, `format:check`, `check-architecture`; без `prisma generate`)
+3. **frontend** — `npm run validate:precommit` (`type-check`, `check-architecture`; eslint/format по staged — в lint-staged)
+
+Полный `npm run validate` / `npm run secretlint` по всему backend или frontend **на каждый commit не гоняется** (долго). Полный скан секретов — `npm run secretlint` в пакете или `npm run validate:monorepo` из `backend/`.
 
 Коммит из `backend/` или `frontend/`:
 

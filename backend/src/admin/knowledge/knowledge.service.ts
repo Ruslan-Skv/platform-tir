@@ -4,7 +4,12 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
-import { KnowledgeMaterialType, PageStatus, Prisma } from '@prisma/client';
+import {
+  KnowledgeMaterialType,
+  KnowledgeThumbnailDisplay,
+  PageStatus,
+  Prisma,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
@@ -96,6 +101,7 @@ export class KnowledgeService {
         videoUrl: dto.videoUrl?.trim() || null,
         externalUrl: dto.externalUrl?.trim() || null,
         thumbnailUrl: dto.thumbnailUrl?.trim() || null,
+        thumbnailDisplay: dto.thumbnailDisplay ?? KnowledgeThumbnailDisplay.COVER,
         sortOrder: dto.sortOrder ?? 0,
         isPinned: dto.isPinned ?? false,
         status,
@@ -317,6 +323,7 @@ export class KnowledgeService {
         ...(dto.thumbnailUrl !== undefined
           ? { thumbnailUrl: dto.thumbnailUrl?.trim() || null }
           : {}),
+        ...(dto.thumbnailDisplay !== undefined ? { thumbnailDisplay: dto.thumbnailDisplay } : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
         ...(dto.isPinned !== undefined ? { isPinned: dto.isPinned } : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),

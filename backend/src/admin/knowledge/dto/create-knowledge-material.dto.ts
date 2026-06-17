@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { Type } from 'class-transformer';
-import { KnowledgeMaterialType, PageStatus } from '@prisma/client';
+import { KnowledgeMaterialType, KnowledgeThumbnailDisplay, PageStatus } from '@prisma/client';
 import { KnowledgeAttachmentDto } from './knowledge-attachment.dto';
 
 export class CreateKnowledgeMaterialDto {
@@ -65,6 +65,10 @@ export class CreateKnowledgeMaterialDto {
   @IsString()
   @IsOptional()
   thumbnailUrl?: string;
+
+  @IsEnum(KnowledgeThumbnailDisplay)
+  @IsOptional()
+  thumbnailDisplay?: KnowledgeThumbnailDisplay;
 
   @IsOptional()
   @Type(() => Number)

@@ -361,6 +361,25 @@
   display: block;
 }
 
+.thumbnailDisplayField {
+  margin-top: var(--admin-space-sm);
+  width: 100%;
+}
+
+.subLabel {
+  display: block;
+  margin-bottom: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.fieldHint {
+  margin: var(--admin-space-xs) 0 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
 @media (max-width: 900px) {
   .pageHeader {
     flex-direction: column;

@@ -1,4 +1,7 @@
-import type { KnowledgeMaterialType } from '@/shared/api/admin-knowledge';
+import type {
+  KnowledgeMaterialType,
+  KnowledgeThumbnailDisplay,
+} from '@/shared/api/admin-knowledge';
 
 export function slugify(text: string): string {
   return text
@@ -158,4 +161,41 @@ export function formatTargetAudiences(
 
 export function hasTargetAudiences(audiences: { label: string }[] | null | undefined): boolean {
   return Boolean(audiences?.length);
+}
+
+export const KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS: Array<{
+  value: KnowledgeThumbnailDisplay;
+  label: string;
+  hint: string;
+}> = [
+  {
+    value: 'COVER',
+    label: 'Обрезка по высоте',
+    hint: 'Заполняет ширину конспекта, лишнее по высоте обрезается (как сейчас по умолчанию).',
+  },
+  {
+    value: 'CONTAIN',
+    label: 'Вписать целиком',
+    hint: 'Вся картинка видна в рамке, без обрезки; возможны поля сверху и снизу.',
+  },
+  {
+    value: 'NATURAL',
+    label: 'По пропорциям без обрезки',
+    hint: 'На всю ширину, высота по изображению — удобно для вертикальных и инфографик.',
+  },
+];
+
+export function getKnowledgeThumbnailDisplayClass(
+  display: KnowledgeThumbnailDisplay | null | undefined,
+  styles: { readonly [key: string]: string }
+): string {
+  switch (display) {
+    case 'CONTAIN':
+      return styles.thumbnailContain;
+    case 'NATURAL':
+      return styles.thumbnailNatural;
+    case 'COVER':
+    default:
+      return styles.thumbnailCover;
+  }
 }

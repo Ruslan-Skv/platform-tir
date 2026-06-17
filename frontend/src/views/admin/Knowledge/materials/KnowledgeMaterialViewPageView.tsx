@@ -12,6 +12,7 @@ import {
   formatAuthorName,
   formatDate,
   formatReadingTime,
+  getKnowledgeThumbnailDisplayClass,
   getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
@@ -126,8 +127,11 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
 
       {material.thumbnailUrl && material.type !== 'VIDEO' && (
         <div className={styles.thumbnailWrap}>
-          {}
-          <img src={publicUploadUrl(material.thumbnailUrl)} alt="" className={styles.thumbnail} />
+          <img
+            src={publicUploadUrl(material.thumbnailUrl)}
+            alt=""
+            className={`${styles.thumbnail} ${getKnowledgeThumbnailDisplayClass(material.thumbnailDisplay, styles)}`}
+          />
         </div>
       )}
 

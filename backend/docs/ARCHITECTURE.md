@@ -179,13 +179,13 @@ contract-document-packages/
 
 Единый hook для всего репозитория: `backend/.husky/pre-commit` (`git config core.hooksPath` → `backend/.husky`).
 
-| Этап                        | Что делает                                                                                                |
-| --------------------------- | --------------------------------------------------------------------------------------------------------- |
-| lint-staged                 | Prettier · ESLint · secretlint на staged code (backend + frontend); json/md/css — prettier (+ secretlint) |
-| backend validate            | `type-check`, `lint`, `format:check`, `check-architecture`, `prisma generate` (весь backend)              |
-| backend secretlint          | Полный скан секретов (`src/`, `prisma/`, корневые `*.{js,json}`)                                          |
-| frontend validate:precommit | `type-check`, `check-architecture` (весь frontend; eslint/format — lint-staged на staged)                 |
-| frontend secretlint         | Полный скан секретов (`src/`, `scripts/`, корневые `*.{js,json,mjs}`)                                     |
+| Этап                        | Что делает                                                                                                                                                      |
+| --------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| lint-staged                 | Prettier · ESLint · **secretlint только на staged**-файлах (backend + frontend); json/md/css — prettier (+ secretlint где уместно); `.prisma` — `prisma format` |
+| backend validate:precommit  | `type-check`, `lint`, `format:check`, `check-architecture` (весь backend; без `prisma generate`)                                                                |
+| frontend validate:precommit | `type-check`, `check-architecture` (весь frontend; eslint/format — lint-staged на staged)                                                                       |
+
+**secretlint в pre-commit** — только через lint-staged и **только для файлов в индексе** (если в коммите нет backend-файлов, backend secretlint не запускается). Полный скан секретов по всему workspace — **не** в hook; вручную или через `validate:monorepo` / `validate:precommit:monorepo` (см. `backend/package.json`).
 
 Конфиг lint-staged: `.lintstagedrc.cjs` в корне. Команды идут через `scripts/lint-staged-workspace.js` — runner переключает cwd в `backend/` или `frontend/`, иначе Prettier не находит workspace-плагины (например `@trivago/prettier-plugin-sort-imports` во frontend).
 
@@ -198,6 +198,7 @@ contract-document-packages/
 ```bash
 npm run check-architecture
 npm run validate          # + type-check, lint, format, prisma generate
+npm run secretlint        # полный скан секретов (src/, prisma/, корневые *.{js,json})
 npm run commit            # git add + cz; проверки — backend/.husky/pre-commit
-npm run validate:monorepo # ручная проверка backend + frontend без коммита
+npm run validate:monorepo # ручная проверка backend + frontend (включая полный secretlint обоих пакетов)
 ```

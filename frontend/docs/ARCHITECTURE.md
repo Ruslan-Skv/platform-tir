@@ -328,9 +328,11 @@ export default function LoginPage() {
 
 Проверки при коммите общие для backend и frontend: hook `backend/.husky/pre-commit`.
 
-1. **lint-staged** (`.lintstagedrc.cjs` в корне) — на **staged**-файлах: prettier, eslint, secretlint (backend + frontend `*.{ts,tsx,js,jsx}`); json/md/css — prettier (+ secretlint где уместно). Полный `eslint src` / `prettier --check .` по всему frontend **не** гоняется на каждый commit (долго); это — `npm run validate`.
-2. **backend** — полный `validate` (type-check, lint, format:check, architecture) + `secretlint`.
-3. **frontend** — `validate:precommit` (type-check, architecture) + `secretlint`. Полный `npm run validate` — вручную / CI.
+1. **lint-staged** (`.lintstagedrc.cjs` в корне) — на **staged**-файлах: prettier, eslint, **secretlint** (backend + frontend `*.{ts,tsx,js,jsx}` и др. по конфигу); json/md/css — prettier (+ secretlint где уместно). Полный `eslint src` / `prettier --check .` по всему frontend **не** гоняется на каждый commit (долго); это — `npm run validate`.
+2. **backend** — `validate:precommit` (type-check, lint, format:check, architecture по всему backend).
+3. **frontend** — `validate:precommit` (type-check, architecture по всему frontend).
+
+**secretlint:** в pre-commit только на **staged**-файлах (шаг lint-staged). Полный скан `src/` — `npm run secretlint` или `cd backend && npm run validate:monorepo` (backend + frontend). Полный `npm run validate` frontend — вручную / CI.
 
 Коммит: `npm run commit` (из любого пакета). Ручная проверка без коммита: `cd backend && npm run validate:monorepo`.
 
@@ -338,7 +340,7 @@ export default function LoginPage() {
 
 ```bash
 npm run check-architecture   # проверка архитектуры
-npm run secretlint           # проверка секретов (preset-recommend)
+npm run secretlint           # полный скан секретов (preset-recommend); в pre-commit — только staged через lint-staged
 npm run validate             # type-check + lint + format + architecture
 npm run commit               # git add + cz → backend/.husky/pre-commit
 ```

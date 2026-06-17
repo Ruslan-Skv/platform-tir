@@ -10,6 +10,7 @@ import {
   type KnowledgeAttachmentInput,
   type KnowledgeMaterialType,
   type KnowledgeTargetAudience,
+  type KnowledgeThumbnailDisplay,
   createKnowledgeMaterial,
   getKnowledgeCategories,
   getKnowledgeMaterial,
@@ -48,6 +49,7 @@ type MaterialPayloadSnapshot = {
   videoUrl?: string;
   externalUrl?: string;
   thumbnailUrl?: string;
+  thumbnailDisplay: KnowledgeThumbnailDisplay;
   sortOrder: number;
   isPinned: boolean;
   attachments: KnowledgeAttachmentInput[];
@@ -96,6 +98,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const [videoUrl, setVideoUrl] = useState('');
   const [externalUrl, setExternalUrl] = useState('');
   const [thumbnailUrl, setThumbnailUrl] = useState('');
+  const [thumbnailDisplay, setThumbnailDisplay] = useState<KnowledgeThumbnailDisplay>('COVER');
   const [sortOrder, setSortOrder] = useState(0);
   const [isPinned, setIsPinned] = useState(false);
   const [attachments, setAttachments] = useState<KnowledgeAttachmentInput[]>([]);
@@ -122,6 +125,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       videoUrl: videoUrl.trim() || undefined,
       externalUrl: externalUrl.trim() || undefined,
       thumbnailUrl: thumbnailUrl.trim() || undefined,
+      thumbnailDisplay,
       sortOrder,
       isPinned,
       attachments,
@@ -141,6 +145,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     sortOrder,
     status,
     targetAudienceIds,
+    thumbnailDisplay,
     thumbnailUrl,
     title,
     tutorRecommendation,
@@ -241,6 +246,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       setVideoUrl(m.videoUrl || '');
       setExternalUrl(m.externalUrl || '');
       setThumbnailUrl(m.thumbnailUrl || '');
+      setThumbnailDisplay(m.thumbnailDisplay ?? 'COVER');
       setSortOrder(m.sortOrder);
       setIsPinned(m.isPinned);
       setAttachments(
@@ -268,6 +274,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         videoUrl: m.videoUrl || undefined,
         externalUrl: m.externalUrl || undefined,
         thumbnailUrl: m.thumbnailUrl || undefined,
+        thumbnailDisplay: m.thumbnailDisplay ?? 'COVER',
         sortOrder: m.sortOrder,
         isPinned: m.isPinned,
         attachments: (m.attachments ?? []).map((a) => ({
@@ -482,6 +489,8 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     setExternalUrl,
     thumbnailUrl,
     setThumbnailUrl,
+    thumbnailDisplay,
+    setThumbnailDisplay,
     sortOrder,
     setSortOrder,
     isPinned,

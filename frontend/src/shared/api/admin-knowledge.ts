@@ -24,6 +24,7 @@ function getAuthHeadersMultipart(): HeadersInit {
 
 export type KnowledgeMaterialType = 'ARTICLE' | 'VIDEO' | 'LINK';
 export type KnowledgeMaterialStatus = 'DRAFT' | 'PUBLISHED' | 'ARCHIVED';
+export type KnowledgeThumbnailDisplay = 'COVER' | 'CONTAIN' | 'NATURAL';
 
 export interface KnowledgeAttachment {
   id: string;
@@ -64,6 +65,7 @@ export interface AdminKnowledgeMaterial {
   videoUrl: string | null;
   externalUrl: string | null;
   thumbnailUrl: string | null;
+  thumbnailDisplay: KnowledgeThumbnailDisplay;
   sortOrder: number;
   isPinned: boolean;
   status: KnowledgeMaterialStatus;
@@ -129,6 +131,7 @@ export interface CreateKnowledgeMaterialDto {
   videoUrl?: string;
   externalUrl?: string;
   thumbnailUrl?: string;
+  thumbnailDisplay?: KnowledgeThumbnailDisplay;
   sortOrder?: number;
   isPinned?: boolean;
   status?: KnowledgeMaterialStatus;

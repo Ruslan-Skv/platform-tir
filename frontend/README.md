@@ -29,7 +29,7 @@ npm run validate             # type-check + lint + format + architecture
 npm run commit               # git add + cz (hook: backend/.husky/pre-commit)
 ```
 
-Pre-commit для всего монорепозитория: lint-staged → backend validate → frontend validate. Подробнее: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
+Pre-commit для всего монорепозитория: lint-staged (в т.ч. secretlint на staged) → backend validate:precommit → frontend validate:precommit. Подробнее: [docs/ARCHITECTURE.md](./docs/ARCHITECTURE.md).
 
 ## Стили
 

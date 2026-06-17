@@ -148,8 +148,24 @@
 
 .thumbnail {
   width: 100%;
+  display: block;
+}
+
+.thumbnailCover {
   max-height: 400px;
   object-fit: cover;
+}
+
+.thumbnailContain {
+  max-height: min(70vh, 640px);
+  object-fit: contain;
+  background: var(--admin-surface-muted);
+}
+
+.thumbnailNatural {
+  height: auto;
+  max-height: none;
+  object-fit: initial;
 }
 
 .article {
