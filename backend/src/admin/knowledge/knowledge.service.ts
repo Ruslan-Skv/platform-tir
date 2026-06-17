@@ -11,7 +11,7 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { KnowledgeQuizService } from './knowledge-quiz.service';
+import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
 import { KnowledgeTrashService } from './knowledge-trash.service';
@@ -30,17 +30,12 @@ import {
   mapAttachmentsForCreate,
   mapMaterialResponse,
 } from './knowledge-material.utils';
-import { sortKnowledgeMaterialIdsForList } from './knowledge-material-list-order';
-import {
-  buildKnowledgeMaterialListBaseWhere,
-  buildKnowledgeMaterialTitleExcerptSearch,
-} from './knowledge-material-search.utils';
 
 @Injectable()
 export class KnowledgeService {
   constructor(
     private prisma: PrismaService,
-    private knowledgeQuizService: KnowledgeQuizService,
+    private materialListService: KnowledgeMaterialListService,
     private structureService: KnowledgeStructureService,
     private targetAudienceService: KnowledgeTargetAudienceService,
     private trashService: KnowledgeTrashService,
@@ -124,198 +119,14 @@ export class KnowledgeService {
     return mapMaterialResponse(material, true);
   }
 
-  async findAllMaterials(params: {
-    status?: string;
-    categoryId?: string;
-    moduleId?: string;
-    type?: string;
-    search?: string;
-    page?: number;
-    limit?: number;
-    editorView?: boolean;
-    userId?: string;
-  }) {
-    const {
-      status,
-      categoryId,
-      moduleId,
-      type,
-      search,
-      page = 1,
-      limit = 24,
-      editorView = false,
-      userId,
-    } = params;
-    const skip = (page - 1) * limit;
-
-    const where = buildKnowledgeMaterialListBaseWhere({
-      editorView,
-      status,
-      categoryId,
-      moduleId,
-      type,
-    });
-
-    if (search?.trim()) {
-      const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-      where.AND = [...andClauses, buildKnowledgeMaterialTitleExcerptSearch(search)];
-    }
-
-    const showMixedStatuses = editorView && !status;
-    const listMode = categoryId ? 'category' : 'all';
-
-    const totalPromise = this.prisma.knowledgeMaterial.count({ where });
-
-    if (listMode === 'category') {
-      const [allRows, total] = await Promise.all([
-        this.prisma.knowledgeMaterial.findMany({
-          where,
-          select: {
-            id: true,
-            status: true,
-            sortOrder: true,
-            isPinned: true,
-            createdAt: true,
-            publishedAt: true,
-            module: { select: { order: true } },
-          },
-        }),
-        totalPromise,
-      ]);
-
-      const sortedIds = sortKnowledgeMaterialIdsForList(allRows, 'category');
-      const pageIds = sortedIds.slice(skip, skip + limit);
-
-      const pageRows =
-        pageIds.length > 0
-          ? await this.prisma.knowledgeMaterial.findMany({
-              where: { id: { in: pageIds } },
-              include: buildMaterialInclude(userId),
-            })
-          : [];
-
-      const rowsById = new Map(pageRows.map((row) => [row.id, row]));
-      const data = pageIds
-        .map((id) => rowsById.get(id))
-        .filter((row): row is NonNullable<typeof row> => row != null);
-
-      const mapped = data.map((m) => mapMaterialResponse(m, editorView));
-      let enriched = mapped;
-
-      if (userId && mapped.length > 0) {
-        const statusMap = await this.knowledgeQuizService.getUserQuizStatusForMaterials(
-          mapped.map((m) => m.id),
-          userId,
-        );
-        enriched = mapped.map((m) => ({
-          ...m,
-          myQuizStatus: statusMap[m.id] ?? { hasQuiz: false, passed: false, scorePercent: null },
-        }));
-      }
-
-      return {
-        data: enriched,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit) || 1,
-      };
-    }
-
-    const [data, total] = await Promise.all([
-      this.prisma.knowledgeMaterial.findMany({
-        where,
-        include: buildMaterialInclude(userId),
-        orderBy: showMixedStatuses
-          ? [
-              { publishedAt: { sort: 'desc', nulls: 'last' } },
-              { isPinned: 'desc' },
-              { createdAt: 'desc' },
-            ]
-          : [
-              { isPinned: 'desc' },
-              { publishedAt: { sort: 'desc', nulls: 'last' } },
-              { createdAt: 'desc' },
-            ],
-        skip,
-        take: limit,
-      }),
-      totalPromise,
-    ]);
-
-    const mapped = data.map((m) => mapMaterialResponse(m, editorView));
-    let enriched = mapped;
-
-    if (userId && mapped.length > 0) {
-      const statusMap = await this.knowledgeQuizService.getUserQuizStatusForMaterials(
-        mapped.map((m) => m.id),
-        userId,
-      );
-      enriched = mapped.map((m) => ({
-        ...m,
-        myQuizStatus: statusMap[m.id] ?? { hasQuiz: false, passed: false, scorePercent: null },
-      }));
-    }
-
-    return {
-      data: enriched,
-      total,
-      page,
-      limit,
-      totalPages: Math.ceil(total / limit) || 1,
-    };
+  findAllMaterials(params: Parameters<KnowledgeMaterialListService['findAllMaterials']>[0]) {
+    return this.materialListService.findAllMaterials(params);
   }
 
-  async searchMaterialSuggestions(params: {
-    q: string;
-    limit?: number;
-    categoryId?: string;
-    moduleId?: string;
-    type?: string;
-    editorView?: boolean;
-  }) {
-    const query = params.q.trim();
-    if (query.length < 2) {
-      return [];
-    }
-
-    const take = Math.min(Math.max(params.limit ?? 8, 1), 20);
-    const where = buildKnowledgeMaterialListBaseWhere({
-      editorView: params.editorView,
-      categoryId: params.categoryId,
-      moduleId: params.moduleId,
-      type: params.type,
-    });
-
-    const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-    where.AND = [...andClauses, buildKnowledgeMaterialTitleExcerptSearch(query)];
-
-    const rows = await this.prisma.knowledgeMaterial.findMany({
-      where,
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        excerpt: true,
-        thumbnailUrl: true,
-        type: true,
-        category: { select: { name: true } },
-        module: { select: { name: true } },
-      },
-      take,
-      orderBy: [{ title: 'asc' }],
-    });
-
-    return rows.map((row) => ({
-      id: row.id,
-      slug: row.slug,
-      title: row.title,
-      excerpt: row.excerpt,
-      thumbnailUrl: row.thumbnailUrl,
-      type: row.type,
-      categoryName: row.category.name,
-      moduleName: row.module?.name ?? null,
-    }));
+  searchMaterialSuggestions(
+    params: Parameters<KnowledgeMaterialListService['searchMaterialSuggestions']>[0],
+  ) {
+    return this.materialListService.searchMaterialSuggestions(params);
   }
 
   async findOneMaterial(id: string, editorView = false, userId?: string) {

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
 import { KnowledgeController } from './knowledge.controller';
+import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
@@ -14,6 +15,7 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
   controllers: [KnowledgeController],
   providers: [
     KnowledgeService,
+    KnowledgeMaterialListService,
     KnowledgeQuizService,
     KnowledgeStructureService,
     KnowledgeTargetAudienceService,
