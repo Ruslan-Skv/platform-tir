@@ -17,6 +17,82 @@
   color: var(--admin-text-muted);
 }
 
+.importSection {
+  margin-bottom: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+}
+
+.importToggle {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: none;
+  background: transparent;
+  text-align: left;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.importToggleIcon {
+  flex-shrink: 0;
+}
+
+.importFileBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  background: transparent;
+  border: 1px dashed var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+}
+
+.importFileBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.importFileBtnIcon {
+  flex-shrink: 0;
+}
+
+.importBody {
+  padding: 0 var(--admin-space-lg) var(--admin-space-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+.importHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+.importHint code {
+  font-size: 0.92em;
+}
+
+.importActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.fileInput {
+  display: none;
+}
+
 .loading {
   padding: var(--admin-space-lg);
   color: var(--admin-text-muted);

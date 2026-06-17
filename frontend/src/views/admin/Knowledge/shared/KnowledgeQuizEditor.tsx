@@ -7,9 +7,15 @@ import {
   getKnowledgeMaterialQuiz,
   upsertKnowledgeMaterialQuiz,
 } from '@/shared/api/admin-knowledge';
+import { KnowledgeQuizImportFileIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeQuizEditor.module.css';
 import type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
+import {
+  type ParsedImportQuestion,
+  parseKnowledgeQuizImportFile,
+  parseKnowledgeQuizImportText,
+} from './parseKnowledgeQuizImport';
 
 export type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
 
@@ -48,6 +54,25 @@ function emptyQuestion(): LocalQuestion {
   };
 }
 
+function mapImportedQuestions(
+  imported: Array<{
+    text: string;
+    explanation: string;
+    options: Array<{ text: string; isCorrect: boolean }>;
+  }>
+): LocalQuestion[] {
+  return imported.map((question) => ({
+    key: newKey(),
+    text: question.text,
+    explanation: question.explanation,
+    options: question.options.map((option) => ({
+      key: newKey(),
+      text: option.text,
+      isCorrect: option.isCorrect,
+    })),
+  }));
+}
+
 function buildSnapshotFromValues(
   quizTitle: string,
   passingPercent: number,
@@ -80,6 +105,10 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
   const [quizExists, setQuizExists] = useState(false);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
+  const [importText, setImportText] = useState('');
+  const [importing, setImporting] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const lastSavedSnapshotRef = useRef('');
 
   const buildSnapshot = useCallback(() => {
@@ -174,6 +203,67 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
     setQuestions([]);
   };
 
+  const applyImportedQuestions = useCallback(
+    (imported: ParsedImportQuestion[], warnings: string[] = []) => {
+      const mapped = mapImportedQuestions(imported);
+      if (questions.length > 0) {
+        const replace = confirm(
+          `Найдено вопросов: ${mapped.length}. Заменить текущий тест или добавить вопросы в конец?\n\nОК — заменить, Отмена — добавить в конец.`
+        );
+        setQuestions(replace ? mapped : [...questions, ...mapped]);
+      } else {
+        setQuestions(mapped);
+      }
+      setQuizExists(true);
+      setImportOpen(false);
+      setImportText('');
+      const warningText = warnings.length ? ` ${warnings.join(' ')}` : '';
+      setMessage({
+        type: 'success',
+        text: `Импортировано вопросов: ${mapped.length}. Не забудьте сохранить материал.${warningText}`,
+      });
+    },
+    [questions]
+  );
+
+  const handleImportText = useCallback(() => {
+    setImporting(true);
+    setMessage(null);
+    try {
+      const { questions: imported, warnings } = parseKnowledgeQuizImportText(importText);
+      applyImportedQuestions(imported, warnings);
+    } catch (error) {
+      setMessage({
+        type: 'error',
+        text: error instanceof Error ? error.message : 'Не удалось разобрать текст',
+      });
+    } finally {
+      setImporting(false);
+    }
+  }, [applyImportedQuestions, importText]);
+
+  const handleImportFile = useCallback(
+    async (file: File) => {
+      setImporting(true);
+      setMessage(null);
+      try {
+        const { questions: imported, warnings } = await parseKnowledgeQuizImportFile(file);
+        applyImportedQuestions(imported, warnings);
+      } catch (error) {
+        setMessage({
+          type: 'error',
+          text: error instanceof Error ? error.message : 'Не удалось импортировать файл',
+        });
+      } finally {
+        setImporting(false);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = '';
+        }
+      }
+    },
+    [applyImportedQuestions]
+  );
+
   if (loading) {
     return <div className={styles.loading}>Загрузка теста…</div>;
   }
@@ -182,13 +272,78 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
     <div className={styles.wrap}>
       <h2 className={styles.heading}>Тест после прочтения</h2>
       <p className={styles.hint}>
-        Добавьте вопросы с вариантами ответов. В каждом вопросе отметьте один правильный вариант.
-        Тест сохраняется вместе с материалом — кнопкой «Сохранить» в шапке страницы.
+        Добавьте вопросы вручную или импортируйте из файла Word (.docx). В каждом вопросе отметьте
+        один правильный вариант. Тест сохраняется вместе с материалом — кнопкой «Сохранить» в шапке
+        страницы.
       </p>
 
       {message ? (
         <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>
       ) : null}
+
+      <div className={styles.importSection}>
+        <button
+          type="button"
+          className={styles.importToggle}
+          onClick={() => setImportOpen((open) => !open)}
+        >
+          <KnowledgeQuizImportFileIcon size={24} className={styles.importToggleIcon} />
+          <span>{importOpen ? '▼' : '▶'} Импорт вопросов из файла</span>
+        </button>
+
+        {importOpen ? (
+          <div className={styles.importBody}>
+            <p className={styles.importHint}>
+              Поддерживаются файлы <strong>.docx</strong> и <strong>.txt</strong> в формате Word:
+              текст вопроса, варианты <code>a)</code> <code>b)</code> <code>c)</code>…, затем строка{' '}
+              <code>Правильный ответ: b</code>. Пояснение в скобках после буквы правильного ответа
+              попадёт в поле «Пояснение».
+            </p>
+
+            <div className={styles.importActions}>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".docx,.txt"
+                className={styles.fileInput}
+                onChange={(event) => {
+                  const file = event.target.files?.[0];
+                  if (file) void handleImportFile(file);
+                }}
+              />
+              <button
+                type="button"
+                className={styles.importFileBtn}
+                disabled={importing}
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <KnowledgeQuizImportFileIcon size={20} className={styles.importFileBtnIcon} />
+                {importing ? 'Импорт…' : 'Выбрать файл .docx / .txt'}
+              </button>
+            </div>
+
+            <label className={styles.field}>
+              <span className={styles.label}>Или вставьте текст вопросов</span>
+              <textarea
+                value={importText}
+                onChange={(event) => setImportText(event.target.value)}
+                className={styles.textarea}
+                rows={8}
+                placeholder={`Текст вопроса?\na) Первый вариант\nb) Второй вариант\nc) Третий вариант\nПравильный ответ: b`}
+              />
+            </label>
+
+            <button
+              type="button"
+              className={styles.secondaryBtn}
+              disabled={importing || !importText.trim()}
+              onClick={handleImportText}
+            >
+              {importing ? 'Импорт…' : 'Импортировать из текста'}
+            </button>
+          </div>
+        ) : null}
+      </div>
 
       <div className={styles.row}>
         <label className={styles.field}>

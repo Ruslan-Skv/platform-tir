@@ -30,6 +30,11 @@ export {
   type PublishIconProps,
 } from './PublishIcon';
 export {
+  KnowledgeQuizImportFileIcon,
+  KNOWLEDGE_QUIZ_IMPORT_FILE_ICON_SIZE,
+  type KnowledgeQuizImportFileIconProps,
+} from './KnowledgeQuizImportFileIcon';
+export {
   KnowledgeSelfCheckQuizIcon,
   KNOWLEDGE_SELF_CHECK_QUIZ_ICON_SIZE,
   type KnowledgeSelfCheckQuizIconProps,
