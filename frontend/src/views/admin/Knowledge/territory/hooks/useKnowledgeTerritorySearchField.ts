@@ -156,9 +156,15 @@ export function useKnowledgeTerritorySearchField({
   const handleInputChange = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
       skipOpenAfterPickRef.current = false;
-      onSearchInputChange(e.target.value);
+      const value = e.target.value;
+      onSearchInputChange(value);
+      // Сброс применённого поиска и ?q= в URL при очистке поля (иначе значение
+      // восстанавливается из URL/sessionStorage при перезагрузке или «Назад»).
+      if (value === '') {
+        onSearchApply('');
+      }
     },
-    [onSearchInputChange]
+    [onSearchInputChange, onSearchApply]
   );
 
   const handleInputKeyDown = useCallback(
