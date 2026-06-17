@@ -45,8 +45,91 @@ export type TokenLoginPayload = {
 let refreshInFlight: Promise<boolean> | null = null;
 
 const REFRESH_FAIL_KEY = 'auth_refresh_failed_at';
+/** Кросс-вкладочная блокировка: только одна вкладка дергает /auth/refresh одновременно. */
+const REFRESH_LOCK_KEY = 'auth_refresh_lock_until';
+const REFRESH_LOCK_TTL_MS = 15_000;
 /** После 401 на refresh не долбим API, пока пользователь снова не войдёт. */
 const REFRESH_FAIL_COOLDOWN_MS = 10 * 60_000;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+function tryAcquireCrossTabRefreshLock(): boolean {
+  const until = Number(localStorage.getItem(REFRESH_LOCK_KEY) || 0);
+  if (Date.now() < until) return false;
+  localStorage.setItem(REFRESH_LOCK_KEY, String(Date.now() + REFRESH_LOCK_TTL_MS));
+  return true;
+}
+
+function releaseCrossTabRefreshLock(): void {
+  localStorage.removeItem(REFRESH_LOCK_KEY);
+}
+
+/** Ждём, пока другая вкладка обновит access в localStorage. */
+function waitForCrossTabRefresh(timeoutMs: number): Promise<boolean> {
+  return new Promise((resolve) => {
+    const deadline = Date.now() + timeoutMs;
+
+    const checkDone = (): boolean => {
+      const lockUntil = Number(localStorage.getItem(REFRESH_LOCK_KEY) || 0);
+      if (Date.now() >= lockUntil && hasUsableStoredAccessToken(60_000)) {
+        return true;
+      }
+      return hasUsableStoredAccessToken(120_000);
+    };
+
+    const onStorage = (e: StorageEvent) => {
+      if (
+        (e.key === 'user_token' || e.key === 'admin_token') &&
+        e.newValue &&
+        hasUsableStoredAccessToken(60_000)
+      ) {
+        cleanup();
+        resolve(true);
+      }
+    };
+
+    const timer = window.setInterval(() => {
+      if (checkDone()) {
+        cleanup();
+        resolve(true);
+        return;
+      }
+      if (Date.now() >= deadline) {
+        cleanup();
+        resolve(false);
+      }
+    }, 200);
+
+    const cleanup = () => {
+      window.clearInterval(timer);
+      window.removeEventListener('storage', onStorage);
+    };
+
+    window.addEventListener('storage', onStorage);
+    if (checkDone()) {
+      cleanup();
+      resolve(true);
+    }
+  });
+}
+
+async function postRefreshRequest(): Promise<Response> {
+  return apiFetch(`${apiBase()}/auth/refresh`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: '{}',
+  });
+}
+
+async function handleRefreshResponse(res: Response): Promise<boolean> {
+  if (!res.ok) return false;
+  const data = (await res.json()) as TokenLoginPayload;
+  if (!data.access_token || !data.user) return false;
+  persistTokenResponse(data);
+  return true;
+}
 
 function markRefreshFailed(): void {
   sessionStorage.setItem(REFRESH_FAIL_KEY, String(Date.now()));
@@ -119,26 +202,39 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
   if (isRefreshInCooldown()) return false;
   if (refreshInFlight) return refreshInFlight;
   refreshInFlight = (async () => {
+    const hasLock = tryAcquireCrossTabRefreshLock();
     try {
-      const res = await apiFetch(`${apiBase()}/auth/refresh`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{}',
-      });
-      if (!res.ok) {
+      if (!hasLock) {
+        const fromOtherTab = await waitForCrossTabRefresh(REFRESH_LOCK_TTL_MS);
+        if (fromOtherTab) return true;
+        if (!tryAcquireCrossTabRefreshLock()) return false;
+      }
+
+      let res = await postRefreshRequest();
+      if (res.ok) {
+        return handleRefreshResponse(res);
+      }
+
+      if (res.status === 401 || res.status === 403) {
+        // Другая вкладка могла успеть ротировать refresh — подождём и повторим.
+        await sleep(400);
+        if (hasUsableStoredAccessToken(120_000)) return true;
+
+        res = await postRefreshRequest();
+        if (res.ok) {
+          return handleRefreshResponse(res);
+        }
+
         if (res.status === 401 || res.status === 403) {
           markRefreshFailed();
           clearStoredAuthSession();
         }
-        return false;
       }
-      const data = (await res.json()) as TokenLoginPayload;
-      if (!data.access_token || !data.user) return false;
-      persistTokenResponse(data);
-      return true;
+      return false;
     } catch {
       return false;
     } finally {
+      releaseCrossTabRefreshLock();
       refreshInFlight = null;
     }
   })();

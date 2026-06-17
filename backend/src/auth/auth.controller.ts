@@ -87,7 +87,8 @@ export class AuthController {
       this.refreshCookie.attach(res, data.refresh_token);
       return { access_token: data.access_token, user: data.user };
     } catch (e) {
-      this.refreshCookie.clear(res);
+      // Не сбрасываем cookie: параллельный refresh в другой вкладке мог уже выдать новый rt,
+      // а ответ с clearCookie затрёт валидную сессию.
       throw e;
     }
   }
