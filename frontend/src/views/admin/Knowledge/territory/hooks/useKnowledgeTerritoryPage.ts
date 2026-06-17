@@ -237,11 +237,11 @@ export function useKnowledgeTerritoryPage() {
     writeKnowledgeTerritoryFilters(filtersSnapshot);
   }, [filtersSnapshot]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSearchApply = useCallback((query: string) => {
     setPage(1);
-    setSearch(searchInput.trim());
-  };
+    setSearch(query);
+    setSearchInput(query);
+  }, []);
 
   const handleCategoryFilterChange = (categoryId: string) => {
     setCategoryFilter(categoryId);
@@ -498,7 +498,7 @@ export function useKnowledgeTerritoryPage() {
     setEditModuleSlug,
     editModuleDescription,
     setEditModuleDescription,
-    handleSearchSubmit,
+    handleSearchApply,
     handleDelete,
     handlePublish,
     handleTogglePin,

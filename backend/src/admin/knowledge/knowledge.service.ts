@@ -30,6 +30,11 @@ import {
   mapAttachmentsForCreate,
   mapMaterialResponse,
 } from './knowledge-material.utils';
+import { sortKnowledgeMaterialIdsForList } from './knowledge-material-list-order';
+import {
+  buildKnowledgeMaterialListBaseWhere,
+  buildKnowledgeMaterialTitleExcerptSearch,
+} from './knowledge-material-search.utils';
 
 @Injectable()
 export class KnowledgeService {
@@ -143,52 +148,79 @@ export class KnowledgeService {
     } = params;
     const skip = (page - 1) * limit;
 
-    const where: Prisma.KnowledgeMaterialWhereInput = {
-      deletedAt: null,
-      category: { deletedAt: null },
-      AND: [
-        {
-          OR: [{ moduleId: null }, { module: { deletedAt: null } }],
-        },
-      ],
-    };
-
-    if (editorView && status) {
-      where.status = status as PageStatus;
-    } else if (!editorView) {
-      where.status = PageStatus.PUBLISHED;
-    } else if (status) {
-      where.status = status as PageStatus;
-    }
-
-    if (categoryId) {
-      where.categoryId = categoryId;
-    }
-
-    if (moduleId) {
-      where.moduleId = moduleId === 'none' ? null : moduleId;
-    }
-
-    if (type) {
-      where.type = type as KnowledgeMaterialType;
-    }
+    const where = buildKnowledgeMaterialListBaseWhere({
+      editorView,
+      status,
+      categoryId,
+      moduleId,
+      type,
+    });
 
     if (search?.trim()) {
-      const term = search.trim();
       const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
-      where.AND = [
-        ...andClauses,
-        {
-          OR: [
-            { title: { contains: term, mode: 'insensitive' } },
-            { excerpt: { contains: term, mode: 'insensitive' } },
-            { content: { contains: term, mode: 'insensitive' } },
-          ],
-        },
-      ];
+      where.AND = [...andClauses, buildKnowledgeMaterialTitleExcerptSearch(search)];
     }
 
     const showMixedStatuses = editorView && !status;
+    const listMode = categoryId ? 'category' : 'all';
+
+    const totalPromise = this.prisma.knowledgeMaterial.count({ where });
+
+    if (listMode === 'category') {
+      const [allRows, total] = await Promise.all([
+        this.prisma.knowledgeMaterial.findMany({
+          where,
+          select: {
+            id: true,
+            status: true,
+            sortOrder: true,
+            isPinned: true,
+            createdAt: true,
+            publishedAt: true,
+            module: { select: { order: true } },
+          },
+        }),
+        totalPromise,
+      ]);
+
+      const sortedIds = sortKnowledgeMaterialIdsForList(allRows, 'category');
+      const pageIds = sortedIds.slice(skip, skip + limit);
+
+      const pageRows =
+        pageIds.length > 0
+          ? await this.prisma.knowledgeMaterial.findMany({
+              where: { id: { in: pageIds } },
+              include: buildMaterialInclude(userId),
+            })
+          : [];
+
+      const rowsById = new Map(pageRows.map((row) => [row.id, row]));
+      const data = pageIds
+        .map((id) => rowsById.get(id))
+        .filter((row): row is NonNullable<typeof row> => row != null);
+
+      const mapped = data.map((m) => mapMaterialResponse(m, editorView));
+      let enriched = mapped;
+
+      if (userId && mapped.length > 0) {
+        const statusMap = await this.knowledgeQuizService.getUserQuizStatusForMaterials(
+          mapped.map((m) => m.id),
+          userId,
+        );
+        enriched = mapped.map((m) => ({
+          ...m,
+          myQuizStatus: statusMap[m.id] ?? { hasQuiz: false, passed: false, scorePercent: null },
+        }));
+      }
+
+      return {
+        data: enriched,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      };
+    }
 
     const [data, total] = await Promise.all([
       this.prisma.knowledgeMaterial.findMany({
@@ -198,21 +230,17 @@ export class KnowledgeService {
           ? [
               { publishedAt: { sort: 'desc', nulls: 'last' } },
               { isPinned: 'desc' },
-              { module: { order: 'asc' } },
-              { sortOrder: 'asc' },
               { createdAt: 'desc' },
             ]
           : [
               { isPinned: 'desc' },
-              { module: { order: 'asc' } },
-              { sortOrder: 'asc' },
               { publishedAt: { sort: 'desc', nulls: 'last' } },
               { createdAt: 'desc' },
             ],
         skip,
         take: limit,
       }),
-      this.prisma.knowledgeMaterial.count({ where }),
+      totalPromise,
     ]);
 
     const mapped = data.map((m) => mapMaterialResponse(m, editorView));
@@ -238,13 +266,65 @@ export class KnowledgeService {
     };
   }
 
+  async searchMaterialSuggestions(params: {
+    q: string;
+    limit?: number;
+    categoryId?: string;
+    moduleId?: string;
+    type?: string;
+    editorView?: boolean;
+  }) {
+    const query = params.q.trim();
+    if (query.length < 2) {
+      return [];
+    }
+
+    const take = Math.min(Math.max(params.limit ?? 8, 1), 20);
+    const where = buildKnowledgeMaterialListBaseWhere({
+      editorView: params.editorView,
+      categoryId: params.categoryId,
+      moduleId: params.moduleId,
+      type: params.type,
+    });
+
+    const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];
+    where.AND = [...andClauses, buildKnowledgeMaterialTitleExcerptSearch(query)];
+
+    const rows = await this.prisma.knowledgeMaterial.findMany({
+      where,
+      select: {
+        id: true,
+        slug: true,
+        title: true,
+        excerpt: true,
+        thumbnailUrl: true,
+        type: true,
+        category: { select: { name: true } },
+        module: { select: { name: true } },
+      },
+      take,
+      orderBy: [{ title: 'asc' }],
+    });
+
+    return rows.map((row) => ({
+      id: row.id,
+      slug: row.slug,
+      title: row.title,
+      excerpt: row.excerpt,
+      thumbnailUrl: row.thumbnailUrl,
+      type: row.type,
+      categoryName: row.category.name,
+      moduleName: row.module?.name ?? null,
+    }));
+  }
+
   async findOneMaterial(id: string, editorView = false, userId?: string) {
     const material = await this.prisma.knowledgeMaterial.findFirst({
       where: {
-        id,
+        OR: [{ id }, { slug: id }],
         deletedAt: null,
         category: { deletedAt: null },
-        OR: [{ moduleId: null }, { module: { deletedAt: null } }],
+        AND: [{ OR: [{ moduleId: null }, { module: { deletedAt: null } }] }],
       },
       include: buildMaterialInclude(userId),
     });

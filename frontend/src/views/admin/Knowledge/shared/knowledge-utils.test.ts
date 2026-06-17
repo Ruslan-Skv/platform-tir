@@ -2,11 +2,23 @@ import { describe, expect, it } from '@jest/globals';
 
 import {
   compareKnowledgeMaterialsForAdminList,
+  compareKnowledgeMaterialsForCategoryList,
   sortKnowledgeMaterialGroupsDraftsLast,
-  sortKnowledgeMaterialsDraftsLast,
+  sortKnowledgeMaterialsForCategory,
+  sortKnowledgeMaterialsNewestFirst,
 } from './knowledge-utils';
 
-describe('sortKnowledgeMaterialsDraftsLast', () => {
+describe('sortKnowledgeMaterialsForCategory', () => {
+  it('sorts by sortOrder ascending within published materials', () => {
+    const items = [
+      { id: '3', status: 'PUBLISHED', sortOrder: 3 },
+      { id: '1', status: 'PUBLISHED', sortOrder: 1 },
+      { id: '2', status: 'PUBLISHED', sortOrder: 2 },
+    ];
+
+    expect(sortKnowledgeMaterialsForCategory(items).map((m) => m.id)).toEqual(['1', '2', '3']);
+  });
+
   it('moves drafts after published while preserving sortOrder within status', () => {
     const items = [
       { id: '1', status: 'DRAFT', sortOrder: 1 },
@@ -15,7 +27,7 @@ describe('sortKnowledgeMaterialsDraftsLast', () => {
       { id: '4', status: 'PUBLISHED', sortOrder: 1 },
     ];
 
-    expect(sortKnowledgeMaterialsDraftsLast(items).map((m) => m.id)).toEqual(['4', '2', '1', '3']);
+    expect(sortKnowledgeMaterialsForCategory(items).map((m) => m.id)).toEqual(['4', '2', '1', '3']);
   });
 
   it('keeps pinned published before unpublished published', () => {
@@ -25,20 +37,30 @@ describe('sortKnowledgeMaterialsDraftsLast', () => {
       { id: '3', status: 'PUBLISHED', sortOrder: 1, isPinned: true },
     ];
 
-    expect(sortKnowledgeMaterialsDraftsLast(items).map((m) => m.id)).toEqual(['3', '2', '1']);
+    expect(sortKnowledgeMaterialsForCategory(items).map((m) => m.id)).toEqual(['3', '2', '1']);
   });
+});
 
-  it('returns the same array when only one status is present', () => {
-    const published = [{ id: '1', status: 'PUBLISHED' }];
-    const drafts = [{ id: '2', status: 'DRAFT' }];
+describe('sortKnowledgeMaterialsNewestFirst', () => {
+  it('sorts by newest publishedAt first', () => {
+    const items = [
+      { id: 'old', publishedAt: '2026-01-01', createdAt: '2026-01-01' },
+      { id: 'new', publishedAt: '2026-06-01', createdAt: '2026-06-01' },
+    ];
 
-    expect(sortKnowledgeMaterialsDraftsLast(published)).toBe(published);
-    expect(sortKnowledgeMaterialsDraftsLast(drafts)).toBe(drafts);
+    expect(sortKnowledgeMaterialsNewestFirst(items).map((m) => m.id)).toEqual(['new', 'old']);
   });
 });
 
 describe('compareKnowledgeMaterialsForAdminList', () => {
   it('ranks published above pinned drafts', () => {
+    expect(
+      compareKnowledgeMaterialsForCategoryList(
+        { status: 'PUBLISHED', isPinned: false },
+        { status: 'DRAFT', isPinned: true }
+      )
+    ).toBeLessThan(0);
+
     expect(
       compareKnowledgeMaterialsForAdminList(
         { status: 'PUBLISHED', isPinned: false },

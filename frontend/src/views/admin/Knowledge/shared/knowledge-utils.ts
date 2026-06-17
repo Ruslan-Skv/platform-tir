@@ -92,9 +92,21 @@ export function knowledgeMaterialListStatusRank(status: string): number {
   }
 }
 
-export function compareKnowledgeMaterialsForAdminList(
-  a: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string },
-  b: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string }
+export function compareKnowledgeMaterialsForCategoryList(
+  a: {
+    status: string;
+    isPinned?: boolean;
+    sortOrder?: number;
+    createdAt?: string;
+    module?: { order: number } | null;
+  },
+  b: {
+    status: string;
+    isPinned?: boolean;
+    sortOrder?: number;
+    createdAt?: string;
+    module?: { order: number } | null;
+  }
 ): number {
   const statusDiff =
     knowledgeMaterialListStatusRank(a.status) - knowledgeMaterialListStatusRank(b.status);
@@ -104,27 +116,88 @@ export function compareKnowledgeMaterialsForAdminList(
     return a.isPinned ? -1 : 1;
   }
 
+  const moduleOrderA = a.module?.order ?? Number.MAX_SAFE_INTEGER;
+  const moduleOrderB = b.module?.order ?? Number.MAX_SAFE_INTEGER;
+  if (moduleOrderA !== moduleOrderB) {
+    return moduleOrderA - moduleOrderB;
+  }
+
   const sortOrderDiff = (a.sortOrder ?? 0) - (b.sortOrder ?? 0);
   if (sortOrderDiff !== 0) return sortOrderDiff;
 
   if (a.createdAt && b.createdAt) {
-    return b.createdAt.localeCompare(a.createdAt);
+    return a.createdAt.localeCompare(b.createdAt);
   }
 
   return 0;
 }
 
-/** Опубликованные материалы в начале, черновики и прочие статусы — в конце. */
-export function sortKnowledgeMaterialsDraftsLast<
-  T extends { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string },
+export function compareKnowledgeMaterialsForAllList(
+  a: {
+    isPinned?: boolean;
+    publishedAt?: string | null;
+    createdAt?: string;
+  },
+  b: {
+    isPinned?: boolean;
+    publishedAt?: string | null;
+    createdAt?: string;
+  }
+): number {
+  if (Boolean(a.isPinned) !== Boolean(b.isPinned)) {
+    return a.isPinned ? -1 : 1;
+  }
+
+  const dateA = a.publishedAt ?? a.createdAt ?? '';
+  const dateB = b.publishedAt ?? b.createdAt ?? '';
+  if (dateA !== dateB) {
+    return dateB.localeCompare(dateA);
+  }
+
+  return (b.createdAt ?? '').localeCompare(a.createdAt ?? '');
+}
+
+/** @deprecated use compareKnowledgeMaterialsForCategoryList */
+export function compareKnowledgeMaterialsForAdminList(
+  a: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string },
+  b: { status: string; isPinned?: boolean; sortOrder?: number; createdAt?: string }
+): number {
+  return compareKnowledgeMaterialsForCategoryList(a, b);
+}
+
+/** Порядок внутри категории/модуля: темы 1…N, черновики в конце. */
+export function sortKnowledgeMaterialsForCategory<
+  T extends {
+    status: string;
+    isPinned?: boolean;
+    sortOrder?: number;
+    createdAt?: string;
+    module?: { order: number } | null;
+  },
 >(items: T[]): T[] {
   if (items.length < 2) return items;
+  return [...items].sort(compareKnowledgeMaterialsForCategoryList);
+}
 
-  const hasPublished = items.some((m) => m.status === 'PUBLISHED');
-  const hasNonPublished = items.some((m) => m.status !== 'PUBLISHED');
-  if (!hasPublished || !hasNonPublished) return items;
+/** Общий список «Все материалы»: сначала новые. */
+export function sortKnowledgeMaterialsNewestFirst<
+  T extends { isPinned?: boolean; publishedAt?: string | null; createdAt?: string },
+>(items: T[]): T[] {
+  if (items.length < 2) return items;
+  return [...items].sort(compareKnowledgeMaterialsForAllList);
+}
 
-  return [...items].sort(compareKnowledgeMaterialsForAdminList);
+/** Опубликованные материалы в начале, черновики и прочие статусы — в конце. */
+export function sortKnowledgeMaterialsDraftsLast<
+  T extends {
+    status: string;
+    isPinned?: boolean;
+    sortOrder?: number;
+    createdAt?: string;
+    module?: { order: number } | null;
+  },
+>(items: T[]): T[] {
+  return sortKnowledgeMaterialsForCategory(items);
 }
 
 /** Группы модулей без опубликованных материалов — в конце списка. */
@@ -147,6 +220,16 @@ export function sortKnowledgeMaterialGroupsDraftsLast<
     }
   }
   return [...withPublished, ...withoutPublished];
+}
+
+export function getKnowledgeTopicDisplayNumber(
+  material: { sortOrder?: number },
+  indexInGroup: number
+): number {
+  if (material.sortOrder != null && material.sortOrder > 0) {
+    return material.sortOrder;
+  }
+  return indexInGroup + 1;
 }
 
 export function getStatusLabel(status: string): string {

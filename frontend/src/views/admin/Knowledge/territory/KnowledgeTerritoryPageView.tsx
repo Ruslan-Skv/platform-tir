@@ -1,11 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
-import type { AdminKnowledgeMaterial, AdminKnowledgeModule } from '@/shared/api/admin-knowledge';
+import type {
+  AdminKnowledgeMaterial,
+  AdminKnowledgeModule,
+  KnowledgeMaterialSearchSuggestion,
+} from '@/shared/api/admin-knowledge';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
@@ -24,6 +28,7 @@ import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
 import {
   formatDate,
   formatReadingTime,
+  getKnowledgeTopicDisplayNumber,
   getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
@@ -31,9 +36,11 @@ import {
   hasTargetAudiences,
   slugify,
   sortKnowledgeMaterialGroupsDraftsLast,
-  sortKnowledgeMaterialsDraftsLast,
+  sortKnowledgeMaterialsForCategory,
+  sortKnowledgeMaterialsNewestFirst,
 } from '../shared/knowledge-utils';
 import styles from './KnowledgeTerritoryPage.module.css';
+import { KnowledgeTerritorySearchField } from './KnowledgeTerritorySearchField';
 import type { KnowledgeTerritoryPageModel } from './hooks/useKnowledgeTerritoryPage';
 import { TYPE_FILTERS } from './knowledge-territory-page.constants';
 import { KnowledgeTrashModal } from './modals/KnowledgeTrashModal';
@@ -51,6 +58,7 @@ function MaterialCard({
   onPublish,
   onDelete,
   onOpenMaterial,
+  topicNumber,
 }: {
   material: AdminKnowledgeMaterial;
   canEdit: boolean;
@@ -59,6 +67,7 @@ function MaterialCard({
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
   onOpenMaterial: () => void;
+  topicNumber?: number;
 }) {
   const router = useRouter();
 
@@ -84,7 +93,10 @@ function MaterialCard({
           )}
         </div>
         <div className={s.cardBody}>
-          <h3 className={s.cardTitle}>{m.title}</h3>
+          <h3 className={s.cardTitle}>
+            {topicNumber != null ? <span className={s.cardTopicNumber}>{topicNumber}.</span> : null}
+            {m.title}
+          </h3>
           {m.excerpt && <p className={s.cardExcerpt}>{m.excerpt}</p>}
           {m.type === 'ARTICLE' &&
           (hasTargetAudiences(m.targetAudiences) ||
@@ -251,7 +263,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setEditModuleSlug,
     editModuleDescription,
     setEditModuleDescription,
-    handleSearchSubmit,
+    handleSearchApply,
     handleDelete,
     handlePublish,
     handleTogglePin,
@@ -266,13 +278,27 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     persistTerritoryFilters,
   } = model;
 
+  const router = useRouter();
+
+  const handlePickSearchMaterial = useCallback(
+    (suggestion: KnowledgeMaterialSearchSuggestion) => {
+      persistTerritoryFilters();
+      router.push(`/admin/knowledge/materials/${suggestion.slug || suggestion.id}`);
+    },
+    [persistTerritoryFilters, router]
+  );
+
   const showGroupedByModule =
     Boolean(categoryFilter) && !moduleFilter && !search && modules.length > 0;
 
+  const showTopicNumbers = Boolean(categoryFilter);
+
   const displayMaterials = useMemo(() => {
-    if (!canEdit || statusFilter) return materials;
-    return sortKnowledgeMaterialsDraftsLast(materials);
-  }, [canEdit, statusFilter, materials]);
+    if (!categoryFilter) {
+      return sortKnowledgeMaterialsNewestFirst(materials);
+    }
+    return sortKnowledgeMaterialsForCategory(materials);
+  }, [categoryFilter, materials]);
 
   const groupedMaterials = useMemo(() => {
     if (!showGroupedByModule) return null;
@@ -284,7 +310,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     }> = [];
 
     for (const mod of modules) {
-      const items = sortKnowledgeMaterialsDraftsLast(
+      const items = sortKnowledgeMaterialsForCategory(
         displayMaterials.filter((m) => m.moduleId === mod.id)
       );
       if (items.length > 0) {
@@ -292,7 +318,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
       }
     }
 
-    const unassigned = sortKnowledgeMaterialsDraftsLast(
+    const unassigned = sortKnowledgeMaterialsForCategory(
       displayMaterials.filter((m) => !m.moduleId)
     );
     if (unassigned.length > 0) {
@@ -723,18 +749,15 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
 
         <main className={styles.main}>
           <div className={styles.toolbar}>
-            <form onSubmit={handleSearchSubmit} className={styles.searchForm}>
-              <input
-                type="search"
-                placeholder="Поиск по названию и описанию…"
-                value={searchInput}
-                onChange={(e) => setSearchInput(e.target.value)}
-                className={styles.searchInput}
-              />
-              <button type="submit" className={styles.searchBtn}>
-                Найти
-              </button>
-            </form>
+            <KnowledgeTerritorySearchField
+              searchInput={searchInput}
+              onSearchInputChange={setSearchInput}
+              onSearchApply={handleSearchApply}
+              onPickMaterial={handlePickSearchMaterial}
+              categoryId={categoryFilter || undefined}
+              moduleId={moduleFilter || undefined}
+              type={typeFilter || undefined}
+            />
 
             <div className={styles.filters}>
               {TYPE_FILTERS.map((f) => (
@@ -798,7 +821,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       <p className={styles.moduleGroupDescription}>{group.module.description}</p>
                     ) : null}
                     <div className={styles.grid}>
-                      {group.items.map((m) => (
+                      {group.items.map((m, index) => (
                         <MaterialCard
                           key={m.id}
                           material={m}
@@ -808,6 +831,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           onPublish={handlePublish}
                           onDelete={setDeleteTarget}
                           onOpenMaterial={persistTerritoryFilters}
+                          topicNumber={
+                            showTopicNumbers ? getKnowledgeTopicDisplayNumber(m, index) : undefined
+                          }
                         />
                       ))}
                     </div>
@@ -815,7 +841,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                 ))
               ) : (
                 <div className={styles.grid}>
-                  {displayMaterials.map((m) => (
+                  {displayMaterials.map((m, index) => (
                     <MaterialCard
                       key={m.id}
                       material={m}
@@ -825,6 +851,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       onPublish={handlePublish}
                       onDelete={setDeleteTarget}
                       onOpenMaterial={persistTerritoryFilters}
+                      topicNumber={
+                        showTopicNumbers ? getKnowledgeTopicDisplayNumber(m, index) : undefined
+                      }
                     />
                   ))}
                 </div>

@@ -1,0 +1,125 @@
+.searchShell {
+  position: relative;
+  flex: 1;
+  min-width: 200px;
+}
+
+.searchForm {
+  display: flex;
+  gap: var(--admin-space-sm);
+  width: 100%;
+}
+
+.searchInput {
+  flex: 1;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text-secondary);
+}
+
+.searchInput:focus,
+.searchInput:focus-visible {
+  outline: none;
+  border-color: var(--admin-overlay-color-101, #6366f1);
+}
+
+.searchBtn {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  flex-shrink: 0;
+}
+
+.suggestionsList {
+  position: absolute;
+  top: calc(100% + 0.25rem);
+  left: 0;
+  right: 0;
+  z-index: 100;
+  margin: 0;
+  padding: 0.25rem 0;
+  list-style: none;
+  max-height: min(20rem, 50vh);
+  overflow-y: auto;
+  background-color: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  box-shadow: var(--admin-shadow-popover, 0 10px 40px rgb(0 0 0 / 0.15));
+  isolation: isolate;
+}
+
+.suggestionItem {
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+  width: 100%;
+  padding: 0.5rem 0.75rem;
+  border: none;
+  background-color: var(--admin-surface, #ffffff);
+  color: inherit;
+  cursor: pointer;
+  text-align: left;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.25;
+}
+
+.suggestionItem:hover,
+.suggestionItem[data-active='true'] {
+  background-color: var(--admin-surface-muted, #f9fafb);
+}
+
+.suggestionThumb {
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--admin-radius-sm);
+  object-fit: cover;
+  background: var(--admin-surface);
+}
+
+.suggestionThumbPlaceholder {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  font-size: 1.1rem;
+}
+
+.suggestionText {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.suggestionName {
+  color: var(--admin-text-primary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionMeta {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.suggestionsLoading {
+  padding: 0.5rem 0.75rem;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+  background-color: var(--admin-surface, #ffffff);
+}

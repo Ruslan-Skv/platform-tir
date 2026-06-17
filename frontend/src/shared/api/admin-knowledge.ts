@@ -270,6 +270,39 @@ export async function getKnowledgeMaterials(params?: {
   }>;
 }
 
+export interface KnowledgeMaterialSearchSuggestion {
+  id: string;
+  slug: string;
+  title: string;
+  excerpt: string | null;
+  thumbnailUrl: string | null;
+  type: KnowledgeMaterialType;
+  categoryName: string;
+  moduleName: string | null;
+}
+
+export async function getKnowledgeMaterialSearchSuggestions(params: {
+  q: string;
+  limit?: number;
+  categoryId?: string;
+  moduleId?: string;
+  type?: string;
+}) {
+  const searchParams = new URLSearchParams();
+  searchParams.set('q', params.q);
+  if (params.limit) searchParams.set('limit', String(params.limit));
+  if (params.categoryId) searchParams.set('categoryId', params.categoryId);
+  if (params.moduleId) searchParams.set('moduleId', params.moduleId);
+  if (params.type) searchParams.set('type', params.type);
+
+  const res = await apiFetch(
+    `${API_URL}/admin/knowledge/materials/search/suggestions?${searchParams}`,
+    { headers: getAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить подсказки');
+  return res.json() as Promise<{ suggestions: KnowledgeMaterialSearchSuggestion[] }>;
+}
+
 export async function getKnowledgeMaterial(id: string) {
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}`, {
     headers: getAuthHeaders(),

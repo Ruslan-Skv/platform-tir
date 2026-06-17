@@ -89,6 +89,28 @@ export class KnowledgeController {
     return this.trainingAnalyticsService.getTrainingAnalytics({ dateFrom, dateTo });
   }
 
+  @Get('materials/search/suggestions')
+  searchMaterialSuggestions(
+    @Request() req: RequestWithUser,
+    @Query('q') q: string,
+    @Query('limit') limit?: string,
+    @Query('categoryId') categoryId?: string,
+    @Query('moduleId') moduleId?: string,
+    @Query('type') type?: string,
+  ) {
+    const editorView = isKnowledgeEditor(req.user.role);
+    return this.knowledgeService
+      .searchMaterialSuggestions({
+        q,
+        limit: limit ? parseInt(limit, 10) : 8,
+        categoryId,
+        moduleId,
+        type,
+        editorView,
+      })
+      .then((suggestions) => ({ suggestions }));
+  }
+
   @Get('materials')
   findAllMaterials(
     @Request() req: RequestWithUser,
