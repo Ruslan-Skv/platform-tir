@@ -1,3 +1,5 @@
+import { describe, expect, it } from '@jest/globals';
+
 import { parseKnowledgeQuizImportText } from './parseKnowledgeQuizImport';
 
 const SAMPLE = `Что такое эмоциональный интеллект в продажах?
