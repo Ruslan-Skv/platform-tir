@@ -19,6 +19,7 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto';
+import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-audience.dto';
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { KnowledgeAttachmentDto } from './dto/knowledge-attachment.dto';
@@ -423,6 +424,14 @@ export class KnowledgeService {
 
   createCategory(dto: CreateKnowledgeCategoryDto) {
     return this.structureService.createCategory(dto);
+  }
+
+  importCategoryOutline(
+    categoryId: string,
+    authorId: string,
+    dto: ImportKnowledgeCategoryOutlineDto,
+  ) {
+    return this.structureService.importCategoryOutline(categoryId, authorId, dto);
   }
 
   findAllCategories(editorView = false) {

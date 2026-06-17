@@ -217,6 +217,10 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setNewCategoryName,
     newCategorySlug,
     setNewCategorySlug,
+    newCategoryOutlineFile,
+    newCategoryOutlineInputRef,
+    creatingCategory,
+    handleNewCategoryOutlineFileChange,
     editingCategoryId,
     setEditingCategoryId,
     editCategoryName,
@@ -583,12 +587,39 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                     onChange={(e) => setNewCategorySlug(e.target.value)}
                     className={styles.input}
                   />
+                  <div className={styles.outlineImportBlock}>
+                    <input
+                      ref={newCategoryOutlineInputRef}
+                      type="file"
+                      accept=".docx,.txt"
+                      className={styles.hiddenInput}
+                      onChange={(event) =>
+                        handleNewCategoryOutlineFileChange(event.target.files?.[0] ?? null)
+                      }
+                    />
+                    <button
+                      type="button"
+                      className={styles.outlineImportBtn}
+                      onClick={() => newCategoryOutlineInputRef.current?.click()}
+                      disabled={creatingCategory}
+                    >
+                      {newCategoryOutlineFile
+                        ? `Файл: ${newCategoryOutlineFile.name}`
+                        : 'Загрузить план модулей и конспектов (.docx)'}
+                    </button>
+                    <p className={styles.outlineImportHint}>
+                      Формат Word: строки «Модуль 1. Название», опционально описание модуля, затем
+                      темы конспектов «Название (краткое описание)». Все конспекты создаются как
+                      черновики.
+                    </p>
+                  </div>
                   <button
                     type="button"
                     className={styles.saveCategoryBtn}
                     onClick={handleAddCategory}
+                    disabled={creatingCategory}
                   >
-                    Создать
+                    {creatingCategory ? 'Создание…' : 'Создать'}
                   </button>
                 </div>
               )}

@@ -26,6 +26,7 @@ import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
+import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto';
 import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-audience.dto';
@@ -251,6 +252,17 @@ export class KnowledgeController {
   @Roles(...KNOWLEDGE_EDITOR_ROLES)
   createCategory(@Body() dto: CreateKnowledgeCategoryDto) {
     return this.knowledgeService.createCategory(dto);
+  }
+
+  @Post('categories/:id/import-outline')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  importCategoryOutline(
+    @Param('id') id: string,
+    @Body() dto: ImportKnowledgeCategoryOutlineDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.knowledgeService.importCategoryOutline(id, req.user.id, dto);
   }
 
   @Patch('categories/:id')

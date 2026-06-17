@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import {
@@ -19,6 +19,7 @@ import {
   getKnowledgeModules,
   getKnowledgeStats,
   getKnowledgeTrashCount,
+  importKnowledgeCategoryOutline,
   publishKnowledgeMaterial,
   toggleKnowledgeMaterialPin,
   updateKnowledgeCategory,
@@ -27,6 +28,7 @@ import {
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
+import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
 import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.types';
 
@@ -53,6 +55,9 @@ export function useKnowledgeTerritoryPage() {
   const [showNewCategory, setShowNewCategory] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [newCategorySlug, setNewCategorySlug] = useState('');
+  const [newCategoryOutlineFile, setNewCategoryOutlineFile] = useState<File | null>(null);
+  const [creatingCategory, setCreatingCategory] = useState(false);
+  const newCategoryOutlineInputRef = useRef<HTMLInputElement>(null);
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategorySlug, setEditCategorySlug] = useState('');
@@ -219,20 +224,56 @@ export function useKnowledgeTerritoryPage() {
       showMessage('error', 'Заполните название и slug');
       return;
     }
+    setCreatingCategory(true);
     try {
-      await createKnowledgeCategory({
+      const category = await createKnowledgeCategory({
         name: newCategoryName.trim(),
         slug: newCategorySlug.trim(),
       });
-      showMessage('success', 'Категория создана');
+
+      let importSummary = '';
+      if (newCategoryOutlineFile) {
+        const parsed = await parseKnowledgeOutlineImportFile(newCategoryOutlineFile);
+        const result = await importKnowledgeCategoryOutline(category.id, {
+          modules: parsed.modules.map((module) => ({
+            order: module.order,
+            name: module.name,
+            description: module.description,
+            articles: module.articles.map((article, index) => ({
+              title: article.title,
+              excerpt: article.excerpt,
+              sortOrder: index + 1,
+            })),
+          })),
+        });
+        importSummary = ` Создано модулей: ${result.modulesCreated}, черновиков конспектов: ${result.articlesCreated}.`;
+        if (parsed.warnings.length) {
+          importSummary += ` ${parsed.warnings.join(' ')}`;
+        }
+      }
+
+      showMessage('success', `Категория создана.${importSummary}`);
       setNewCategoryName('');
       setNewCategorySlug('');
+      setNewCategoryOutlineFile(null);
+      if (newCategoryOutlineInputRef.current) {
+        newCategoryOutlineInputRef.current.value = '';
+      }
       setShowNewCategory(false);
+      setCategoryFilter(category.id);
+      setModuleFilter('');
+      setPage(1);
       loadCategories();
       loadStats();
     } catch (e) {
       showMessage('error', e instanceof Error ? e.message : 'Ошибка создания');
+    } finally {
+      setCreatingCategory(false);
     }
+  };
+
+  const handleNewCategoryOutlineFileChange = (file: File | null) => {
+    setNewCategoryOutlineFile(file);
   };
 
   const handleUpdateCategory = async (id: string) => {
@@ -340,6 +381,10 @@ export function useKnowledgeTerritoryPage() {
     setNewCategoryName,
     newCategorySlug,
     setNewCategorySlug,
+    newCategoryOutlineFile,
+    newCategoryOutlineInputRef,
+    creatingCategory,
+    handleNewCategoryOutlineFileChange,
     editingCategoryId,
     setEditingCategoryId,
     editCategoryName,

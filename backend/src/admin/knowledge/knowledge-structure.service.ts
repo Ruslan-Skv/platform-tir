@@ -4,10 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { PageStatus, Prisma } from '@prisma/client';
+import { KnowledgeMaterialType, PageStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
+import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 
 @Injectable()
 export class KnowledgeStructureService {
@@ -166,5 +167,92 @@ export class KnowledgeStructureService {
         },
       },
     });
+  }
+
+  private buildModuleSlug(moduleOrder: number): string {
+    return `module-${String(moduleOrder).padStart(2, '0')}`;
+  }
+
+  private buildArticleSlug(
+    categorySlug: string,
+    moduleOrder: number,
+    articleOrder: number,
+  ): string {
+    return `${categorySlug}-m${String(moduleOrder).padStart(2, '0')}-t${String(articleOrder).padStart(2, '0')}`;
+  }
+
+  async importCategoryOutline(
+    categoryId: string,
+    authorId: string,
+    dto: ImportKnowledgeCategoryOutlineDto,
+  ) {
+    const category = await this.prisma.knowledgeCategory.findUnique({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      throw new NotFoundException('Категория не найдена');
+    }
+
+    const [existingModules, existingMaterials] = await Promise.all([
+      this.prisma.knowledgeModule.count({
+        where: { categoryId, deletedAt: null },
+      }),
+      this.prisma.knowledgeMaterial.count({
+        where: { categoryId, deletedAt: null },
+      }),
+    ]);
+
+    if (existingModules > 0 || existingMaterials > 0) {
+      throw new BadRequestException(
+        'Импорт доступен только для пустой категории без модулей и материалов',
+      );
+    }
+
+    let modulesCreated = 0;
+    let articlesCreated = 0;
+
+    await this.prisma.$transaction(async (tx) => {
+      for (const [moduleIndex, moduleDto] of dto.modules.entries()) {
+        const moduleOrder = moduleDto.order ?? moduleIndex + 1;
+        const moduleSlug = this.buildModuleSlug(moduleOrder);
+
+        const createdModule = await tx.knowledgeModule.create({
+          data: {
+            categoryId,
+            name: moduleDto.name.trim(),
+            slug: moduleSlug,
+            description: moduleDto.description?.trim() || null,
+            order: moduleOrder,
+          },
+        });
+        modulesCreated += 1;
+
+        for (const [articleIndex, articleDto] of moduleDto.articles.entries()) {
+          const articleOrder = articleDto.sortOrder ?? articleIndex + 1;
+          const articleSlug = this.buildArticleSlug(category.slug, moduleOrder, articleOrder);
+
+          await tx.knowledgeMaterial.create({
+            data: {
+              categoryId,
+              moduleId: createdModule.id,
+              type: KnowledgeMaterialType.ARTICLE,
+              title: articleDto.title.trim(),
+              slug: articleSlug,
+              excerpt: articleDto.excerpt?.trim() || null,
+              sortOrder: articleOrder,
+              status: PageStatus.DRAFT,
+              authorId,
+            },
+          });
+          articlesCreated += 1;
+        }
+      }
+    });
+
+    return {
+      categoryId,
+      modulesCreated,
+      articlesCreated,
+    };
   }
 }

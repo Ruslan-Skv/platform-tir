@@ -387,6 +387,41 @@ export async function deleteKnowledgeCategory(id: string) {
   if (!res.ok) throw new Error('Не удалось удалить категорию');
 }
 
+export interface ImportKnowledgeCategoryOutlineResult {
+  categoryId: string;
+  modulesCreated: number;
+  articlesCreated: number;
+}
+
+export interface ImportKnowledgeCategoryOutlineDto {
+  modules: Array<{
+    order?: number;
+    name: string;
+    description?: string;
+    articles: Array<{
+      title: string;
+      excerpt?: string;
+      sortOrder?: number;
+    }>;
+  }>;
+}
+
+export async function importKnowledgeCategoryOutline(
+  categoryId: string,
+  dto: ImportKnowledgeCategoryOutlineDto
+) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/categories/${categoryId}/import-outline`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(dto),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось импортировать структуру категории');
+  }
+  return res.json() as Promise<ImportKnowledgeCategoryOutlineResult>;
+}
+
 export async function getKnowledgeModules(categoryId: string) {
   const res = await apiFetch(
     `${API_URL}/admin/knowledge/modules?categoryId=${encodeURIComponent(categoryId)}`,
