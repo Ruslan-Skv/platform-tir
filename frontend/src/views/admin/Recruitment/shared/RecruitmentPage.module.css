@@ -384,3 +384,26 @@
   font-family: inherit;
   resize: vertical;
 }
+
+.emailHint {
+  font-size: 0.85em;
+  color: #666;
+}
+
+.recommendationCell {
+  max-width: 200px;
+  font-size: 0.9em;
+}
+
+.recommendationCellNarrow {
+  font-size: 0.85em;
+  max-width: 180px;
+}
+
+.clickableRow {
+  cursor: pointer;
+}
+
+.recommendationActionBtn {
+  margin-top: 16px;
+}

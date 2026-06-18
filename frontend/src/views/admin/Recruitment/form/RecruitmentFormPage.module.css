@@ -316,6 +316,25 @@
   border-radius: var(--admin-radius-full);
 }
 
+.scoreStrengths {
+  margin-top: 12px;
+  font-size: 0.9em;
+}
+
+.traineeHint {
+  font-size: 0.9em;
+  color: #666;
+  margin-bottom: 12px;
+}
+
+.traineeFieldFlex {
+  flex: 1;
+}
+
+.trainingProgressNote {
+  font-size: 0.85em;
+}
+
 .traineeLink {
   display: flex;
   gap: var(--admin-space-md);

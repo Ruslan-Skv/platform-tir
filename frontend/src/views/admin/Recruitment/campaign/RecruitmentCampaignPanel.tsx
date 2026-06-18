@@ -10,7 +10,7 @@ import {
   fetchRecruitmentCampaigns,
 } from '@/shared/api/admin-recruitment';
 
-import styles from '../Recruitment.module.css';
+import pageStyles from '../shared/RecruitmentPage.module.css';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('ru-RU');
@@ -102,29 +102,29 @@ export function RecruitmentCampaignPanel({
   };
 
   if (loading) {
-    return <div className={styles.campaignPanel}>Загрузка отборов...</div>;
+    return <div className={pageStyles.campaignPanel}>Загрузка отборов...</div>;
   }
 
   return (
-    <div className={styles.campaignPanel}>
-      <div className={styles.campaignPanelHeader}>
+    <div className={pageStyles.campaignPanel}>
+      <div className={pageStyles.campaignPanelHeader}>
         <div>
-          <div className={styles.campaignPanelLabel}>Текущий отбор</div>
+          <div className={pageStyles.campaignPanelLabel}>Текущий отбор</div>
           {selectedCampaign ? (
             <>
-              <div className={styles.campaignPanelTitle}>
+              <div className={pageStyles.campaignPanelTitle}>
                 {selectedCampaign.title}
                 <span
                   className={
                     selectedCampaign.status === 'OPEN'
-                      ? styles.campaignStatusOpen
-                      : styles.campaignStatusClosed
+                      ? pageStyles.campaignStatusOpen
+                      : pageStyles.campaignStatusClosed
                   }
                 >
                   {selectedCampaign.status === 'OPEN' ? 'Открыт' : 'Закрыт'}
                 </span>
               </div>
-              <div className={styles.campaignPanelMeta}>
+              <div className={pageStyles.campaignPanelMeta}>
                 {formatDate(selectedCampaign.startedAt)}
                 {selectedCampaign.closedAt
                   ? ` — ${formatDate(selectedCampaign.closedAt)}`
@@ -140,15 +140,15 @@ export function RecruitmentCampaignPanel({
               </div>
             </>
           ) : (
-            <div className={styles.campaignPanelTitle}>Нет открытого отбора</div>
+            <div className={pageStyles.campaignPanelTitle}>Нет открытого отбора</div>
           )}
         </div>
 
-        <div className={styles.campaignPanelActions}>
+        <div className={pageStyles.campaignPanelActions}>
           <select
             value={campaignId ?? ''}
             onChange={(e) => onCampaignChange(e.target.value || undefined)}
-            className={styles.filterSelect}
+            className={pageStyles.filterSelect}
           >
             <option value="">— выберите отбор —</option>
             {campaigns.map((c) => (
@@ -159,7 +159,7 @@ export function RecruitmentCampaignPanel({
           </select>
 
           {!activeCampaign ? (
-            <button type="button" className={styles.btnPrimary} onClick={handleCreateCampaign}>
+            <button type="button" className={pageStyles.btnPrimary} onClick={handleCreateCampaign}>
               + Новый отбор
             </button>
           ) : null}
@@ -167,7 +167,7 @@ export function RecruitmentCampaignPanel({
           {selectedCampaign?.status === 'OPEN' ? (
             <button
               type="button"
-              className={styles.btnSecondary}
+              className={pageStyles.btnSecondary}
               onClick={() => setShowCloseForm((v) => !v)}
             >
               Закрыть отбор
@@ -176,20 +176,20 @@ export function RecruitmentCampaignPanel({
         </div>
       </div>
 
-      {actionError ? <div className={styles.error}>{actionError}</div> : null}
+      {actionError ? <div className={pageStyles.error}>{actionError}</div> : null}
 
       {showCloseForm && selectedCampaign?.status === 'OPEN' ? (
-        <div className={styles.campaignCloseForm}>
-          <p className={styles.campaignCloseHint}>
+        <div className={pageStyles.campaignCloseForm}>
+          <p className={pageStyles.campaignCloseHint}>
             После закрытия отбора кандидаты этого цикла останутся в архиве. Для следующего поиска
             создайте новый отбор — в аналитике будут учитываться только новые кандидаты.
           </p>
-          <label className={styles.formLabel}>
+          <label className={pageStyles.formLabel}>
             Выбранный кандидат (необязательно)
             <select
               value={selectedWinnerId}
               onChange={(e) => setSelectedWinnerId(e.target.value)}
-              className={styles.filterSelect}
+              className={pageStyles.filterSelect}
             >
               <option value="">— не выбран —</option>
               {candidatesForClose.map((c) => (
@@ -199,20 +199,20 @@ export function RecruitmentCampaignPanel({
               ))}
             </select>
           </label>
-          <label className={styles.formLabel}>
+          <label className={pageStyles.formLabel}>
             Заметки по итогам отбора
             <textarea
               value={closeNotes}
               onChange={(e) => setCloseNotes(e.target.value)}
-              className={styles.textarea}
+              className={pageStyles.textarea}
               rows={2}
               placeholder="Краткий комментарий..."
             />
           </label>
-          <div className={styles.campaignCloseActions}>
+          <div className={pageStyles.campaignCloseActions}>
             <button
               type="button"
-              className={styles.btnPrimary}
+              className={pageStyles.btnPrimary}
               disabled={closing}
               onClick={handleCloseCampaign}
             >
@@ -220,7 +220,7 @@ export function RecruitmentCampaignPanel({
             </button>
             <button
               type="button"
-              className={styles.btnSecondary}
+              className={pageStyles.btnSecondary}
               onClick={() => setShowCloseForm(false)}
             >
               Отмена
