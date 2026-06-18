@@ -1,0 +1,386 @@
+.page {
+  max-width: 1400px;
+  padding: var(--admin-space-4xl);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  margin-bottom: var(--admin-space-4xl);
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-lg) var(--admin-space-lg) 0;
+}
+
+.headerInfoTip {
+  position: absolute;
+  top: calc(-1 * var(--admin-space-xl));
+  right: var(--admin-space-lg);
+  z-index: 1;
+}
+
+.title {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  margin: 0;
+}
+
+.subtitle {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-base);
+  margin: var(--admin-space-sm) 0 0;
+}
+
+.headerActions {
+  display: flex;
+  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+}
+
+.btnPrimary {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: var(--admin-info);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: var(--admin-font-size-md);
+}
+
+.btnPrimary:hover {
+  background: var(--admin-info-strong);
+}
+
+.btnSecondary {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: white;
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  font-size: var(--admin-font-size-md);
+}
+
+.btnSecondary:hover {
+  background: var(--admin-surface-soft);
+}
+
+.toolbar {
+  display: flex;
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-3xl);
+  flex-wrap: wrap;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 200px;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-md);
+}
+
+.filterSelect {
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-md);
+  background: white;
+}
+
+.tableWrap {
+  overflow-x: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: white;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-base);
+}
+
+.table th,
+.table td {
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  text-align: left;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.table th {
+  background: var(--admin-surface-soft);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.table tr:hover td {
+  background: var(--admin-surface-soft);
+}
+
+.candidateName {
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.scoreBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-full);
+  font-weight: 600;
+  font-size: var(--admin-font-size-sm);
+}
+
+.scoreHigh {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.scoreMid {
+  background: #fef9c3;
+  color: #854d0e;
+}
+
+.scoreLow {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.statusBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+}
+
+.emptyState {
+  text-align: center;
+  padding: var(--admin-space-8xl);
+  color: var(--admin-text-muted);
+}
+
+.loading {
+  text-align: center;
+  padding: var(--admin-space-8xl);
+  color: var(--admin-text-muted);
+}
+
+.error {
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
+  color: var(--admin-error-strong);
+  padding: var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
+  margin-bottom: var(--admin-space-3xl);
+}
+
+.rowActions {
+  display: flex;
+  gap: var(--admin-space-sm);
+}
+
+.linkBtn {
+  background: none;
+  border: none;
+  color: var(--admin-info);
+  cursor: pointer;
+  font-size: var(--admin-font-size-base);
+  padding: 0;
+}
+
+.linkBtn:hover {
+  text-decoration: underline;
+}
+
+.linkBtnDanger {
+  composes: linkBtn;
+  color: var(--admin-error-strong);
+}
+
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: var(--admin-space-xl);
+  margin-top: var(--admin-space-3xl);
+}
+
+.rankBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: var(--admin-radius-full);
+  background: var(--admin-info);
+  color: white;
+  font-weight: 700;
+  font-size: var(--admin-font-size-sm);
+}
+
+.rankBadgeTop {
+  composes: rankBadge;
+  background: #eab308;
+}
+
+.recommendationBox {
+  background: linear-gradient(135deg, #eff6ff 0%, #f0fdf4 100%);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-3xl);
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.recommendationTitle {
+  font-size: var(--admin-font-size-lg);
+  font-weight: 700;
+  margin: 0 0 var(--admin-space-md);
+}
+
+.summaryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-4xl);
+}
+
+.summaryCard {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-2xl);
+  text-align: center;
+}
+
+.summaryValue {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 700;
+  color: var(--admin-info);
+}
+
+.summaryLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-top: var(--admin-space-sm);
+}
+
+.strengthsList {
+  margin: var(--admin-space-md) 0 0;
+  padding-left: var(--admin-space-2xl);
+  color: var(--admin-text-secondary);
+}
+
+.strengthsList li {
+  margin-bottom: var(--admin-space-xs);
+}
+
+.campaignPanel {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-3xl);
+}
+
+.campaignPanelHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--admin-space-xl);
+  flex-wrap: wrap;
+}
+
+.campaignPanelLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.campaignPanelTitle {
+  font-size: var(--admin-font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+}
+
+.campaignPanelMeta {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-top: var(--admin-space-xs);
+}
+
+.campaignPanelActions {
+  display: flex;
+  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.campaignStatusOpen {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: #0d7a3e;
+  background: #e6f4ea;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-sm);
+}
+
+.campaignStatusClosed {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-sm);
+}
+
+.campaignCloseForm {
+  margin-top: var(--admin-space-2xl);
+  padding-top: var(--admin-space-2xl);
+  border-top: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.campaignCloseHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.campaignCloseActions {
+  display: flex;
+  gap: var(--admin-space-md);
+}
+
+.formLabel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.textarea {
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-md);
+  font-family: inherit;
+  resize: vertical;
+}

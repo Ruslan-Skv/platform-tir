@@ -148,6 +148,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.orders.shipping', label: 'Доставка', path: '/admin/orders/shipping' },
   { id: 'admin.orders.payments', label: 'Оплаты', path: '/admin/orders/payments' },
   { id: 'admin.knowledge', label: 'Территория знаний', path: '/admin/knowledge' },
+  { id: 'admin.recruitment', label: 'Подбор менеджеров', path: '/admin/recruitment' },
+  {
+    id: 'admin.recruitment.analytics',
+    label: 'Подбор — Аналитика',
+    path: '/admin/recruitment/analytics',
+  },
   { id: 'admin.analytics', label: 'Аналитика', path: '/admin/analytics' },
   { id: 'admin.analytics.sales', label: 'Обзор продаж', path: '/admin/analytics/sales' },
   {

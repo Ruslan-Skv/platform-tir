@@ -1,0 +1,183 @@
+.blankPage {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: var(--admin-space-4xl);
+}
+
+.noPrint {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--admin-space-4xl);
+  gap: var(--admin-space-xl);
+}
+
+.printBtn {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: var(--admin-info);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.printBtn:hover {
+  background: var(--admin-info-strong);
+}
+
+.backLink {
+  color: var(--admin-info);
+  text-decoration: none;
+}
+
+.document {
+  background: white;
+  padding: 24px 32px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+}
+
+.docTitle {
+  text-align: center;
+  font-size: 17px;
+  font-weight: 700;
+  margin: 0 0 4px;
+}
+
+.docSubtitle {
+  text-align: center;
+  color: #555;
+  margin: 0 0 16px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.section {
+  margin-bottom: 14px;
+}
+
+.sectionCompactGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.sectionSkillsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 20px;
+}
+
+.sectionTitle {
+  font-size: 11px;
+  font-weight: 700;
+  margin: 0 0 6px;
+  border-bottom: 1px solid #333;
+  padding-bottom: 2px;
+  grid-column: 1 / -1;
+}
+
+.field {
+  margin-bottom: 6px;
+}
+
+.fieldLabel {
+  font-size: 10px;
+  color: #444;
+  margin-bottom: 1px;
+  line-height: 1.25;
+}
+
+.fieldLine {
+  border-bottom: 1px solid #999;
+  height: 16px;
+  margin-bottom: 2px;
+}
+
+.fieldLineTall {
+  composes: fieldLine;
+  height: 28px;
+}
+
+.signature {
+  margin-top: 20px;
+  display: flex;
+  justify-content: space-between;
+  gap: 32px;
+}
+
+.signatureBlock {
+  flex: 1;
+  font-size: 10px;
+}
+
+.signatureLine {
+  border-bottom: 1px solid #333;
+  height: 18px;
+  margin-top: 12px;
+}
+
+@media print {
+  .noPrint {
+    display: none !important;
+  }
+
+  .blankPage {
+    padding: 0;
+    max-width: none;
+    margin: 0;
+  }
+
+  .document {
+    border: none;
+    padding: 8mm 10mm;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .docTitle {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+
+  .docSubtitle {
+    font-size: 10px;
+    margin-bottom: 10px;
+  }
+
+  .section {
+    margin-bottom: 8px;
+    break-inside: avoid;
+  }
+
+  .sectionTitle {
+    font-size: 10px;
+    margin-bottom: 4px;
+  }
+
+  .field {
+    margin-bottom: 4px;
+  }
+
+  .fieldLabel {
+    font-size: 9px;
+  }
+
+  .fieldLine {
+    height: 14px;
+  }
+
+  .fieldLineTall {
+    height: 22px;
+  }
+
+  .signature {
+    margin-top: 12px;
+  }
+
+  .signatureLine {
+    height: 16px;
+    margin-top: 8px;
+  }
+}

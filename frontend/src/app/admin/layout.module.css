@@ -784,6 +784,28 @@
   }
 }
 
+@media print {
+  .adminLayout > aside,
+  .mainArea > header {
+    display: none !important;
+  }
+
+  .mainArea {
+    margin-left: 0 !important;
+  }
+
+  .content {
+    padding: 0 !important;
+    background: #fff !important;
+    overflow: visible !important;
+  }
+
+  .adminLayout {
+    background: #fff !important;
+    min-height: auto !important;
+  }
+}
+
 /* Тёмная тема админки */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .adminLayout {
   background-color: var(--admin-bg-page, #111827);

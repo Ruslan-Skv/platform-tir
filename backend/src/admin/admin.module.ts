@@ -37,6 +37,7 @@ import { ServiceCatalogModule } from './service-catalog/service-catalog.module';
 import { ContractDocumentObjectsModule } from './contract-document-objects/contract-document-objects.module';
 import { ContractDocumentPackagesModule } from './contract-document-packages/contract-document-packages.module';
 import { InstallersModule } from './installers/installers.module';
+import { RecruitmentModule } from './recruitment/recruitment.module';
 
 @Module({
   imports: [
@@ -81,6 +82,7 @@ import { InstallersModule } from './installers/installers.module';
     ServiceCatalogModule,
     ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
+    RecruitmentModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -120,6 +122,7 @@ import { InstallersModule } from './installers/installers.module';
     ServiceCatalogModule,
     ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
+    RecruitmentModule,
     AnalyticsModule,
   ],
 })

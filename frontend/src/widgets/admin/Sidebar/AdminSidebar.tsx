@@ -307,6 +307,29 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.knowledge',
   },
   {
+    label: 'Подбор менеджеров',
+    href: '/admin/recruitment',
+    icon: '👔',
+    resourceId: 'admin.recruitment',
+    children: [
+      {
+        label: 'Кандидаты',
+        href: '/admin/recruitment',
+        resourceId: 'admin.recruitment',
+      },
+      {
+        label: 'Аналитика',
+        href: '/admin/recruitment/analytics',
+        resourceId: 'admin.recruitment.analytics',
+      },
+      {
+        label: 'Бланк анкеты',
+        href: '/admin/recruitment/blank',
+        resourceId: 'admin.recruitment',
+      },
+    ],
+  },
+  {
     label: 'Аналитика',
     href: '/admin/analytics',
     icon: '📈',

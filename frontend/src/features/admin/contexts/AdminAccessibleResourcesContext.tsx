@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import { getMyAccessibleResources } from '@/shared/api/admin-access';
 
 interface AdminAccessibleResourcesState {
@@ -21,6 +22,7 @@ const defaultValue: AdminAccessibleResourcesState = {
 const AdminAccessibleResourcesContext = createContext<AdminAccessibleResourcesState>(defaultValue);
 
 export function AdminAccessibleResourcesProvider({ children }: { children: React.ReactNode }) {
+  const { user } = useAuth();
   const [resourceIds, setResourceIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
 
@@ -43,10 +45,12 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
   const hasAccess = useCallback(
     (resourceId: string | undefined) => {
       if (!resourceId) return true;
+      // SUPER_ADMIN видит все пункты навигации, в т.ч. новые до обновления API прав
+      if (user?.role === 'SUPER_ADMIN') return true;
       if (isLoading) return true; // Пока грузим — показываем всё, чтобы не было мигания
       return resourceIds.has(resourceId);
     },
-    [resourceIds, isLoading]
+    [resourceIds, isLoading, user?.role]
   );
 
   const value: AdminAccessibleResourcesState = {

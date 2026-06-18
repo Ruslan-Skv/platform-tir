@@ -108,6 +108,9 @@ model User {
   contractDocumentRepairSettingsUpdated   ContractDocumentRepairSettings[]         @relation("ContractDocumentRepairSettingsUpdatedBy")
   contractDocumentPackageVersionsSaved    ContractDocumentPackageVersion[]         @relation("ContractDocumentPackageVersionSavedBy")
   contractDocumentEstimatePresetsHistory  ContractDocumentEstimatePresetsHistory[] @relation("ContractDocumentEstimatePresetsHistoryChangedBy")
+  salesCandidatesCreated                  SalesCandidate[]                         @relation("SalesCandidateCreatedBy")
+  salesCandidateAsTrainee                 SalesCandidate?                          @relation("SalesCandidateTrainee")
+  recruitmentCampaignsCreated             RecruitmentCampaign[]                    @relation("RecruitmentCampaignCreatedBy")
 
   @@map("users")
 }
@@ -2802,4 +2805,102 @@ model CatalogHubPreviewProductPick {
 
   @@unique([sectionId, productId, mode])
   @@map("catalog_hub_preview_product_picks")
+}
+
+/// Волна / кампания подбора менеджеров по продажам
+model RecruitmentCampaign {
+  id                  String                    @id @default(cuid())
+  title               String
+  status              RecruitmentCampaignStatus @default(OPEN)
+  startedAt           DateTime                  @default(now())
+  closedAt            DateTime?
+  notes               String?                   @db.Text
+  selectedCandidateId String?                   @unique
+  createdById         String?
+  createdAt           DateTime                  @default(now())
+  updatedAt           DateTime                  @updatedAt
+  selectedCandidate   SalesCandidate?           @relation("CampaignSelectedCandidate", fields: [selectedCandidateId], references: [id], onDelete: SetNull)
+  candidates          SalesCandidate[]          @relation("CampaignCandidates")
+  createdBy           User?                     @relation("RecruitmentCampaignCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status])
+  @@index([startedAt])
+  @@map("recruitment_campaigns")
+}
+
+enum RecruitmentCampaignStatus {
+  OPEN
+  CLOSED
+}
+
+/// Кандидат на должность менеджера по продажам
+model SalesCandidate {
+  id                   String               @id @default(cuid())
+  campaignId           String
+  lastName             String
+  firstName            String
+  middleName           String?
+  birthDate            DateTime?
+  phone                String
+  email                String?
+  city                 String?
+  address              String?
+  educationLevel       String?
+  educationInstitution String?
+  educationSpecialty   String?
+  educationYear        Int?
+  additionalEducation  String?              @db.Text
+  totalExperienceYears Float?
+  salesExperienceYears Float?
+  workHistory          Json?
+  industryExperience   String[]             @default([])
+  salesAchievements    String?              @db.Text
+  communicationSkill   Int?
+  stressResistance     Int?
+  motivation           Int?
+  teamworkSkill        Int?
+  selfOrganization     Int?
+  pcSkill              Int?
+  presentationSkill    Int?
+  motivationReason     String?              @db.Text
+  salaryExpectation    String?
+  availableFrom        DateTime?
+  hasDriversLicense    Boolean?
+  hasPersonalCar       Boolean?
+  readyForTravel       Boolean?
+  productKnowledge     String?              @db.Text
+  interviewDate        DateTime?
+  interviewScore       Int?
+  interviewNotes       String?              @db.Text
+  adminNotes           String?              @db.Text
+  resumeFileUrl        String?
+  resumeFileName       String?
+  resumeParsedText     String?              @db.Text
+  resumeParsedData     Json?
+  traineeUserId        String?              @unique
+  status               SalesCandidateStatus @default(NEW)
+  overallScore         Float?
+  createdById          String?
+  createdAt            DateTime             @default(now())
+  updatedAt            DateTime             @updatedAt
+  campaign             RecruitmentCampaign  @relation("CampaignCandidates", fields: [campaignId], references: [id], onDelete: Restrict)
+  selectedInCampaign   RecruitmentCampaign? @relation("CampaignSelectedCandidate")
+  traineeUser          User?                @relation("SalesCandidateTrainee", fields: [traineeUserId], references: [id], onDelete: SetNull)
+  createdBy            User?                @relation("SalesCandidateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([campaignId])
+  @@index([status])
+  @@index([overallScore])
+  @@index([createdAt])
+  @@map("sales_candidates")
+}
+
+enum SalesCandidateStatus {
+  NEW
+  QUESTIONNAIRE
+  INTERVIEW
+  TRAINING
+  TEST_TASK
+  REJECTED
+  HIRED
 }

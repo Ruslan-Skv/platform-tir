@@ -1,0 +1,350 @@
+.formPage {
+  max-width: 960px;
+  padding: var(--admin-space-4xl);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--admin-space-4xl);
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl);
+}
+
+.title {
+  font-size: var(--admin-font-size-2xl);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  margin: 0;
+}
+
+.backBtn {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: white;
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-4xl);
+}
+
+.section {
+  background: white;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-3xl);
+}
+
+.sectionTitle {
+  font-size: var(--admin-font-size-lg);
+  font-weight: 700;
+  margin: 0 0 var(--admin-space-2xl);
+  color: var(--admin-text-secondary);
+}
+
+.grid2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--admin-space-xl);
+}
+
+@media (max-width: 640px) {
+  .grid2 {
+    grid-template-columns: 1fr;
+  }
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.fieldFull {
+  composes: field;
+  grid-column: 1 / -1;
+}
+
+.label {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.required {
+  color: var(--admin-error-strong);
+}
+
+.input,
+.select,
+.textarea {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-md);
+  font-family: inherit;
+}
+
+.textarea {
+  min-height: 80px;
+  resize: vertical;
+}
+
+.checkboxGroup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-base);
+  cursor: pointer;
+}
+
+.workHistoryItem {
+  border: 1px dashed var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-xl);
+  margin-bottom: var(--admin-space-xl);
+}
+
+.workHistoryHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: var(--admin-space-md);
+  font-weight: 600;
+}
+
+.removeBtn {
+  background: none;
+  border: none;
+  color: var(--admin-error-strong);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.addBtn {
+  background: none;
+  border: 1px dashed var(--admin-info);
+  color: var(--admin-info);
+  padding: var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  width: 100%;
+}
+
+.actions {
+  display: flex;
+  gap: var(--admin-space-xl);
+  justify-content: flex-end;
+}
+
+.saveBtn {
+  padding: var(--admin-space-md) var(--admin-space-3xl);
+  background: var(--admin-info);
+  color: white;
+  border: none;
+  border-radius: var(--admin-radius-md);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.saveBtn:hover:not(:disabled) {
+  background: var(--admin-info-strong);
+}
+
+.saveBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.error {
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
+  color: var(--admin-error-strong);
+  padding: var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
+}
+
+.success {
+  background: var(--admin-success-bg-soft);
+  border: 1px solid #86efac;
+  color: #166534;
+  padding: var(--admin-space-xl);
+  border-radius: var(--admin-radius-md);
+}
+
+.scorePanel {
+  background: linear-gradient(135deg, #f8fafc 0%, #eff6ff 100%);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  padding: var(--admin-space-2xl);
+  margin-bottom: var(--admin-space-3xl);
+}
+
+.scoreGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
+}
+
+.scoreItem {
+  text-align: center;
+  padding: var(--admin-space-md);
+  background: white;
+  border-radius: var(--admin-radius-md);
+}
+
+.scoreValue {
+  font-size: var(--admin-font-size-xl);
+  font-weight: 700;
+  color: var(--admin-info);
+}
+
+.scoreLabel {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.resumeBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+.resumeHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.resumeFileLink {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+}
+
+.resumeUploadZone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-3xl) var(--admin-space-2xl);
+  background: var(--admin-surface-soft);
+  border: 2px dashed var(--admin-border-strong);
+  border-radius: var(--admin-radius-lg);
+  cursor: pointer;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.resumeUploadZone:hover:not(:disabled) {
+  border-color: var(--admin-info);
+  background: var(--admin-info-bg-soft);
+}
+
+.resumeUploadZone:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.resumeUploadIcon {
+  font-size: 2rem;
+  line-height: 1;
+}
+
+.resumeUploadTitle {
+  font-size: var(--admin-font-size-md);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.resumeUploadFormats {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.fileInput {
+  display: none;
+}
+
+.uploadBtn {
+  align-self: flex-start;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  background: white;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.parsedPreview {
+  background: var(--admin-surface-soft);
+  border-radius: var(--admin-radius-md);
+  padding: var(--admin-space-xl);
+  font-size: var(--admin-font-size-sm);
+}
+
+.trainingBlock {
+  margin-top: var(--admin-space-md);
+}
+
+.trainingProgress {
+  height: 8px;
+  background: var(--admin-border);
+  border-radius: var(--admin-radius-full);
+  overflow: hidden;
+  margin: var(--admin-space-sm) 0;
+}
+
+.trainingProgressBar {
+  height: 100%;
+  background: var(--admin-info);
+  border-radius: var(--admin-radius-full);
+}
+
+.traineeLink {
+  display: flex;
+  gap: var(--admin-space-md);
+  align-items: flex-end;
+}
+
+.loading {
+  text-align: center;
+  padding: var(--admin-space-8xl);
+  color: var(--admin-text-muted);
+}
+
+.skillRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xl);
+}
+
+.skillRow label {
+  flex: 1;
+  min-width: 160px;
+}
+
+.skillRow input[type='range'] {
+  flex: 2;
+}
+
+.skillValue {
+  width: 24px;
+  text-align: center;
+  font-weight: 600;
+}
