@@ -49,7 +49,7 @@ export function slugify(text: string): string {
 }
 
 export function isKnowledgeEditor(role: string | undefined): boolean {
-  return role === 'SUPER_ADMIN' || role === 'ADMIN' || role === 'CONTENT_MANAGER';
+  return role === 'SUPER_ADMIN';
 }
 
 export function getMaterialTypeLabel(type: KnowledgeMaterialType): string {

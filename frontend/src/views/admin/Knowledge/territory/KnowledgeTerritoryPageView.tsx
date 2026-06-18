@@ -146,60 +146,62 @@ function MaterialCard({
           </div>
         </div>
       </Link>
-      {canEdit && (
-        <div className={s.cardActions}>
-          <AdminTableIconButton
-            aria-label={m.isPinned ? 'Открепить' : 'Закрепить'}
-            title={
-              m.isPinned
-                ? 'Открепить: убрать материал из начала списка категории'
-                : 'Закрепить: показывать материал первым в списке категории (выше остальных статей)'
-            }
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onTogglePin(m.id);
-            }}
-          >
-            <PinIcon pinned={m.isPinned} />
-          </AdminTableIconButton>
-          <AdminTableIconButton
-            aria-label="Редактировать"
-            title="Редактировать материал"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              router.push(`/admin/knowledge/materials/${m.id}/edit`);
-            }}
-          >
-            <EditIcon />
-          </AdminTableIconButton>
-          {m.status !== 'PUBLISHED' ? (
+      <div className={s.cardActions}>
+        <AdminTableIconButton
+          aria-label={m.isPinned ? 'Открепить' : 'Закрепить'}
+          title={
+            m.isPinned
+              ? 'Открепить: убрать материал из начала списка категории'
+              : 'Закрепить: показывать материал первым в списке категории (выше остальных статей)'
+          }
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onTogglePin(m.id);
+          }}
+        >
+          <PinIcon pinned={m.isPinned} />
+        </AdminTableIconButton>
+        {canEdit ? (
+          <>
             <AdminTableIconButton
-              aria-label="Опубликовать"
-              title="Опубликовать: материал станет доступен менеджерам и стажёрам"
+              aria-label="Редактировать"
+              title="Редактировать материал"
               onClick={(e) => {
                 e.preventDefault();
                 e.stopPropagation();
-                onPublish(m.id);
+                router.push(`/admin/knowledge/materials/${m.id}/edit`);
               }}
             >
-              <PublishIcon />
+              <EditIcon />
             </AdminTableIconButton>
-          ) : null}
-          <AdminTableIconButton
-            aria-label="В корзину"
-            title="В корзину (восстановить можно из корзины в шапке страницы)"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              onDelete({ type: 'material', id: m.id, name: m.title });
-            }}
-          >
-            <DeleteIcon />
-          </AdminTableIconButton>
-        </div>
-      )}
+            {m.status !== 'PUBLISHED' ? (
+              <AdminTableIconButton
+                aria-label="Опубликовать"
+                title="Опубликовать: материал станет доступен менеджерам и стажёрам"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onPublish(m.id);
+                }}
+              >
+                <PublishIcon />
+              </AdminTableIconButton>
+            ) : null}
+            <AdminTableIconButton
+              aria-label="В корзину"
+              title="В корзину (восстановить можно из корзины в шапке страницы)"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onDelete({ type: 'material', id: m.id, name: m.title });
+              }}
+            >
+              <DeleteIcon />
+            </AdminTableIconButton>
+          </>
+        ) : null}
+      </div>
     </article>
   );
 }
@@ -358,27 +360,29 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             развивать компанию
           </p>
         </div>
-        {canEdit && (
-          <div className={styles.heroActions}>
-            <AdminToolbarTrashButton
-              trashCount={trashCount}
-              onClick={() => setTrashOpen(true)}
-              title="Корзина базы знаний"
-              aria-label="Корзина базы знаний"
-            />
-            <Link
-              href="/admin/knowledge/analytics"
-              className={`${toolbarButtonStyles.button} ${styles.heroToolbarLink}`}
-              title="Статистика обучения"
-              aria-label="Статистика обучения"
-            >
-              <TrainingStatisticsIcon />
-            </Link>
-            <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
-              + Новый материал
-            </Link>
-          </div>
-        )}
+        <div className={styles.heroActions}>
+          <Link
+            href="/admin/knowledge/analytics"
+            className={`${toolbarButtonStyles.button} ${styles.heroToolbarLink}`}
+            title="Статистика обучения"
+            aria-label="Статистика обучения"
+          >
+            <TrainingStatisticsIcon />
+          </Link>
+          {canEdit ? (
+            <>
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина базы знаний"
+                aria-label="Корзина базы знаний"
+              />
+              <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
+                + Новый материал
+              </Link>
+            </>
+          ) : null}
+        </div>
       </header>
 
       {message && <div className={`${styles.message} ${styles[message.type]}`}>{message.text}</div>}

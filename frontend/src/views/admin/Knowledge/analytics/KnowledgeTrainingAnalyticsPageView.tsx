@@ -14,7 +14,6 @@ import {
   formatDateTime,
   formatEmployeeName,
   formatPercentWithSymbol,
-  formatRoleLabel,
   formatShortDate,
   getMaterialTypeLabel,
 } from './knowledge-training-analytics.utils';
@@ -228,55 +227,29 @@ export function KnowledgeTrainingAnalyticsPageView({
             </section>
           </div>
 
-          <div className={styles.tablesRow}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Прогресс по сотрудникам</h2>
-              </div>
-              <div className={styles.barChart}>
-                {data.employees.slice(0, 12).map((employee, index) => (
-                  <div key={employee.userId} className={styles.barRow}>
-                    <span className={styles.barName} title={employee.email}>
-                      {formatEmployeeName(employee)}
-                    </span>
-                    <div className={styles.barTrack}>
-                      <TrainingAnalyticsBarFill
-                        percent={employee.completionPercent}
-                        toneClass={chartToneClass(index)}
-                      />
-                    </div>
-                    <span className={styles.barValue}>
-                      {formatPercentWithSymbol(employee.completionPercent)}
-                    </span>
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>Прогресс по сотрудникам</h2>
+            </div>
+            <div className={styles.barChart}>
+              {data.employees.slice(0, 12).map((employee, index) => (
+                <div key={employee.userId} className={styles.barRow}>
+                  <span className={styles.barName} title={employee.email}>
+                    {formatEmployeeName(employee)}
+                  </span>
+                  <div className={styles.barTrack}>
+                    <TrainingAnalyticsBarFill
+                      percent={employee.completionPercent}
+                      toneClass={chartToneClass(index)}
+                    />
                   </div>
-                ))}
-              </div>
-            </section>
-
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>По ролям</h2>
-              </div>
-              <div className={styles.barChart}>
-                {data.roleDistribution.map((row, index) => (
-                  <div key={row.role} className={styles.barRow}>
-                    <span className={styles.barName}>
-                      {formatRoleLabel(row.role)} ({row.employeeCount})
-                    </span>
-                    <div className={styles.barTrack}>
-                      <TrainingAnalyticsBarFill
-                        percent={row.avgCompletionPercent}
-                        toneClass={chartToneClass(index + 2)}
-                      />
-                    </div>
-                    <span className={styles.barValue}>
-                      {formatPercentWithSymbol(row.avgCompletionPercent)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </section>
-          </div>
+                  <span className={styles.barValue}>
+                    {formatPercentWithSymbol(employee.completionPercent)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </section>
 
           <div className={styles.tablesRow}>
             <section className={styles.card}>
@@ -376,7 +349,7 @@ export function KnowledgeTrainingAnalyticsPageView({
               <thead>
                 <tr>
                   <th>Сотрудник</th>
-                  <th>Роль</th>
+                  <th>Email</th>
                   <th>Прогресс</th>
                   <th>Видео</th>
                   <th>Тесты</th>
@@ -387,7 +360,7 @@ export function KnowledgeTrainingAnalyticsPageView({
                 {data.employees.map((employee) => (
                   <tr key={employee.userId}>
                     <td>{formatEmployeeName(employee)}</td>
-                    <td>{formatRoleLabel(employee.role)}</td>
+                    <td>{employee.email}</td>
                     <td>
                       {employee.completedCount} / {employee.trackableCount} (
                       {formatPercentWithSymbol(employee.completionPercent)})

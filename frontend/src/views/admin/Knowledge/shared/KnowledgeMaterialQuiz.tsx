@@ -11,6 +11,7 @@ import {
 import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeMaterialQuiz.module.css';
+import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
 import {
   formatBlockedCountdown,
   formatMinutesRu,
@@ -221,25 +222,34 @@ export function KnowledgeMaterialQuiz({
           </div>
 
           <ol className={styles.resultList}>
-            {result.results.map((item, index) => (
-              <li
-                key={item.questionId}
-                className={`${styles.resultItem} ${item.isCorrect ? styles.resultCorrect : styles.resultWrong}`}
-              >
-                <p className={styles.resultQuestion}>
-                  {index + 1}. {item.questionText}
-                </p>
-                <p className={styles.resultAnswer}>Ваш ответ: {item.selectedOptionText || '—'}</p>
-                {!item.isCorrect ? (
-                  <p className={styles.resultCorrectAnswer}>
-                    Правильный ответ: {item.correctOptionText}
+            {result.results.map((item, index) => {
+              const additionalExplanation = item.isCorrect
+                ? getQuizResultAdditionalExplanation(item.explanation, [
+                    item.selectedOptionText,
+                    item.correctOptionText,
+                  ])
+                : null;
+
+              return (
+                <li
+                  key={item.questionId}
+                  className={`${styles.resultItem} ${item.isCorrect ? styles.resultCorrect : styles.resultWrong}`}
+                >
+                  <p className={styles.resultQuestion}>
+                    {index + 1}. {item.questionText}
                   </p>
-                ) : null}
-                {item.explanation ? (
-                  <p className={styles.resultExplanation}>{item.explanation}</p>
-                ) : null}
-              </li>
-            ))}
+                  <p className={styles.resultAnswer}>Ваш ответ: {item.selectedOptionText || '—'}</p>
+                  <p
+                    className={`${styles.resultStatus} ${item.isCorrect ? styles.resultStatusCorrect : styles.resultStatusWrong}`}
+                  >
+                    {item.isCorrect ? 'Верно' : 'Ошибка'}
+                  </p>
+                  {additionalExplanation ? (
+                    <p className={styles.resultExplanation}>{additionalExplanation}</p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ol>
 
           <button

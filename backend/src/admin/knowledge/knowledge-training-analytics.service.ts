@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { KnowledgeMaterialType, Prisma, UserRole } from '@prisma/client';
+import { KnowledgeMaterialType, Prisma } from '@prisma/client';
 import { ADMIN_ROLES } from '../admin-access/admin-access.service';
 import { PrismaService } from '../../database/prisma.service';
 
@@ -11,14 +11,6 @@ type MaterialRow = {
   type: KnowledgeMaterialType;
   categoryName: string;
   hasQuiz: boolean;
-};
-
-type EmployeeRow = {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  role: UserRole;
 };
 
 export type KnowledgeTrainingAnalyticsParams = {
@@ -407,8 +399,6 @@ export class KnowledgeTrainingAnalyticsService {
         (a, b) => b.completionPercent - a.completionPercent || a.title.localeCompare(b.title, 'ru'),
       );
 
-    const roleDistribution = this.buildRoleDistribution(employees, employeeStats);
-
     const materialsByType = {
       VIDEO: {
         total: materials.filter((m) => m.type === KnowledgeMaterialType.VIDEO).length,
@@ -461,31 +451,7 @@ export class KnowledgeTrainingAnalyticsService {
         (a, b) => b.completionPercent - a.completionPercent || a.email.localeCompare(b.email, 'ru'),
       ),
       topMaterials: topMaterials.slice(0, 15),
-      roleDistribution,
       materialsByType,
     };
-  }
-
-  private buildRoleDistribution(
-    employees: EmployeeRow[],
-    employeeStats: Array<{ userId: string; completionPercent: number }>,
-  ) {
-    const percentByUser = new Map(employeeStats.map((row) => [row.userId, row.completionPercent]));
-    const byRole = new Map<UserRole, { count: number; completionSum: number }>();
-
-    for (const employee of employees) {
-      const bucket = byRole.get(employee.role) ?? { count: 0, completionSum: 0 };
-      bucket.count += 1;
-      bucket.completionSum += percentByUser.get(employee.id) ?? 0;
-      byRole.set(employee.role, bucket);
-    }
-
-    return Array.from(byRole.entries())
-      .map(([role, data]) => ({
-        role,
-        employeeCount: data.count,
-        avgCompletionPercent: data.count > 0 ? roundPercent(data.completionSum / data.count) : 0,
-      }))
-      .sort((a, b) => b.employeeCount - a.employeeCount);
   }
 }

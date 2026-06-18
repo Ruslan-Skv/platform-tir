@@ -50,10 +50,10 @@ const knowledgeUploadStorage = diskStorage({
   },
 });
 
-const KNOWLEDGE_EDITOR_ROLES = ['ADMIN', 'CONTENT_MANAGER'] as const;
+const KNOWLEDGE_EDITOR_ROLES = ['SUPER_ADMIN'] as const;
 
 function isKnowledgeEditor(role: string | undefined): boolean {
-  return role === 'SUPER_ADMIN' || KNOWLEDGE_EDITOR_ROLES.some((r) => r === role);
+  return role === 'SUPER_ADMIN';
 }
 
 @Controller('admin/knowledge')
@@ -83,8 +83,6 @@ export class KnowledgeController {
   }
 
   @Get('training-analytics')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   getTrainingAnalytics(@Query('dateFrom') dateFrom?: string, @Query('dateTo') dateTo?: string) {
     return this.trainingAnalyticsService.getTrainingAnalytics({ dateFrom, dateTo });
   }
@@ -186,8 +184,6 @@ export class KnowledgeController {
   }
 
   @Patch('materials/:id/pin')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   togglePin(@Param('id') id: string) {
     return this.knowledgeService.togglePin(id);
   }

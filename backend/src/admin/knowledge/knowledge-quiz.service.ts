@@ -343,10 +343,10 @@ export class KnowledgeQuizService {
         questionText: question.text,
         selectedOptionId,
         selectedOptionText: selected?.text ?? null,
-        correctOptionId: correctOption?.id ?? null,
-        correctOptionText: correctOption?.text ?? null,
+        correctOptionId: isCorrect ? (correctOption?.id ?? null) : null,
+        correctOptionText: isCorrect ? (correctOption?.text ?? null) : null,
         isCorrect,
-        explanation: question.explanation,
+        explanation: isCorrect ? question.explanation : null,
       };
     });
 

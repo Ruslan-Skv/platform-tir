@@ -566,7 +566,7 @@ export function AdminSidebar({
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user: currentUser } = useAuth();
-  const { hasAccess } = useAdminAccessibleResources();
+  const { hasAccess, isLoading, resourceIds } = useAdminAccessibleResources();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [accessModal, setAccessModal] = useState<{ resourceId: string; label: string } | null>(
@@ -604,7 +604,12 @@ export function AdminSidebar({
     [width, onWidthChange, onResizeStart, onResizeEnd]
   );
 
-  const navItems = useMemo(() => filterNavByAccess(baseNavItems, hasAccess), [hasAccess]);
+  const navItems = useMemo(() => {
+    if (isLoading && resourceIds.size === 0 && currentUser?.role !== 'SUPER_ADMIN') {
+      return [];
+    }
+    return filterNavByAccess(baseNavItems, hasAccess);
+  }, [hasAccess, isLoading, resourceIds.size, currentUser?.role]);
 
   /** Пункты без подменю (напр. «Договора», «Расчёты») — не дают подсвечивать hub `/admin/contract-documents` в настройках. */
   const topLevelOnlyHrefs = useMemo(

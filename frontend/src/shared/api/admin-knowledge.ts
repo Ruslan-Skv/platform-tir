@@ -209,11 +209,6 @@ export interface KnowledgeTrainingAnalytics {
     avgVideoProgress: number | null;
     quizPassRate: number | null;
   }>;
-  roleDistribution: Array<{
-    role: string;
-    employeeCount: number;
-    avgCompletionPercent: number;
-  }>;
   materialsByType: {
     VIDEO: { total: number; trackable: number };
     ARTICLE: { total: number; withQuiz: number };

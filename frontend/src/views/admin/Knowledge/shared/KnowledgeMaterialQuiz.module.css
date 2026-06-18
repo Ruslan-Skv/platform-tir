@@ -262,16 +262,23 @@
 }
 
 .resultAnswer,
-.resultCorrectAnswer,
+.resultStatus,
 .resultExplanation {
   margin: 0 0 var(--admin-space-xs);
   font-size: var(--admin-font-size-sm);
   line-height: 1.4;
 }
 
-.resultCorrectAnswer {
+.resultStatus {
+  font-weight: 600;
+}
+
+.resultStatusCorrect {
   color: var(--admin-overlay-color-108);
-  font-weight: 500;
+}
+
+.resultStatusWrong {
+  color: var(--admin-overlay-color-070);
 }
 
 .resultExplanation {
