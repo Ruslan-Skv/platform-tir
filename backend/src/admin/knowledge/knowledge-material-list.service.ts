@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
+import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { sortKnowledgeMaterialIdsForList } from './knowledge-material-list-order';
 import { buildMaterialInclude, mapMaterialResponse } from './knowledge-material.utils';
@@ -13,6 +15,8 @@ export class KnowledgeMaterialListService {
   constructor(
     private prisma: PrismaService,
     private knowledgeQuizService: KnowledgeQuizService,
+    private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
+    private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
   ) {}
 
   async findAllMaterials(params: {
@@ -77,7 +81,9 @@ export class KnowledgeMaterialListService {
       const pageIds = sortedIds.slice(skip, skip + limit);
       const rows = await this.loadMaterialsByIds(pageIds, userId);
       const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
-      const enriched = await this.enrichWithQuizStatus(mapped, editorView, userId);
+      const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
+      const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
+      const enriched = await this.knowledgeMaterialCommentsService.attachCommentCounts(withLikes);
 
       return {
         data: enriched,
@@ -110,7 +116,9 @@ export class KnowledgeMaterialListService {
     ]);
 
     const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
-    const enriched = await this.enrichWithQuizStatus(mapped, editorView, userId);
+    const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
+    const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
+    const enriched = await this.knowledgeMaterialCommentsService.attachCommentCounts(withLikes);
 
     return {
       data: enriched,

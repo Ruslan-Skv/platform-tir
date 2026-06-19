@@ -253,6 +253,23 @@ export function formatAuthorName(author: {
   return parts.length > 0 ? parts.join(' ') : '—';
 }
 
+export function formatKnowledgeLikerLabel(user: {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}): string {
+  const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+  return name || user.email;
+}
+
+export function getKnowledgeLikerDisplayName(user: {
+  firstName: string | null;
+  lastName: string | null;
+}): string | null {
+  const name = `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim();
+  return name || null;
+}
+
 export function formatDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
     day: '2-digit',

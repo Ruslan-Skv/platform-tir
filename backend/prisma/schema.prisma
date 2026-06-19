@@ -57,6 +57,8 @@ model User {
   knowledgeCategoriesDeleted              KnowledgeCategory[]                      @relation("KnowledgeCategoryDeletedBy")
   knowledgeModulesDeleted                 KnowledgeModule[]                        @relation("KnowledgeModuleDeletedBy")
   knowledgeVideoProgress                  KnowledgeVideoProgress[]
+  knowledgeMaterialLikes                  KnowledgeMaterialLike[]
+  knowledgeMaterialComments               KnowledgeMaterialComment[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   cartItems                               CartItem[]
   cartServiceItems                        CartServiceItem[]
@@ -967,6 +969,8 @@ model KnowledgeMaterial {
   videoProgress              KnowledgeVideoProgress[]
   quiz                       KnowledgeMaterialQuiz?
   quizAttempts               KnowledgeQuizAttempt[]
+  likes                      KnowledgeMaterialLike[]
+  comments                   KnowledgeMaterialComment[]
 
   @@index([categoryId])
   @@index([moduleId])
@@ -1028,6 +1032,36 @@ model KnowledgeVideoProgress {
   @@unique([materialId, userId])
   @@index([userId])
   @@map("knowledge_video_progress")
+}
+
+model KnowledgeMaterialLike {
+  id         String            @id @default(cuid())
+  materialId String
+  userId     String
+  createdAt  DateTime          @default(now())
+  material   KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, userId])
+  @@index([materialId])
+  @@index([userId])
+  @@map("knowledge_material_likes")
+}
+
+model KnowledgeMaterialComment {
+  id         String            @id @default(cuid())
+  materialId String
+  userId     String
+  text       String            @db.Text
+  createdAt  DateTime          @default(now())
+  updatedAt  DateTime          @updatedAt
+  material   KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([materialId])
+  @@index([userId])
+  @@index([createdAt])
+  @@map("knowledge_material_comments")
 }
 
 model KnowledgeMaterialQuiz {

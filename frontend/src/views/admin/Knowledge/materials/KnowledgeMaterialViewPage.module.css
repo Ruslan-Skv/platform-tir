@@ -61,6 +61,54 @@
   border: none;
 }
 
+.likeBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+  cursor: pointer;
+}
+
+.likeBtn:hover:not(:disabled) {
+  border-color: #f59e0b;
+  color: #b45309;
+}
+
+.likeBtnActive {
+  border-color: #f59e0b;
+  color: #b45309;
+  background: rgba(245, 158, 11, 0.08);
+}
+
+.commentBtn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.commentBtn:hover {
+  border-color: var(--admin-overlay-color-135);
+  color: var(--admin-overlay-color-135);
+}
+
+.likeBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .header {
   margin-bottom: var(--admin-space-4xl);
 }
@@ -73,6 +121,7 @@
 }
 
 .pinnedBadge,
+.interestingBadge,
 .typeBadge,
 .categoryBadge,
 .statusBadge {
@@ -85,6 +134,12 @@
 .pinnedBadge {
   background: #fff3cd;
   color: #856404;
+}
+
+.interestingBadge {
+  background: rgba(245, 158, 11, 0.14);
+  color: #b45309;
+  cursor: help;
 }
 
 .typeBadge {

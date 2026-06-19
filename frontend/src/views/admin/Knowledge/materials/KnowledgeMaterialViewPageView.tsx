@@ -3,11 +3,18 @@
 import Link from 'next/link';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { ManagerPracticalAssignmentIcon } from '@/shared/ui/icons';
+import {
+  CommentIcon,
+  InterestingMaterialIcon,
+  ManagerPracticalAssignmentIcon,
+} from '@/shared/ui/icons';
 
 import { KnowledgeAttachmentsList } from '../shared/KnowledgeAttachmentsList';
+import { KnowledgeMaterialComments } from '../shared/KnowledgeMaterialComments';
+import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
 import { KnowledgeMaterialQuiz } from '../shared/KnowledgeMaterialQuiz';
 import { KnowledgeVideoPlayer } from '../shared/KnowledgeVideoPlayer';
+import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
   formatAuthorName,
   formatDate,
@@ -28,7 +35,18 @@ type KnowledgeMaterialViewPageViewProps = {
 };
 
 export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPageViewProps) {
-  const { material, loading, error, canEdit, publishing, handlePublish, backUrl } = model;
+  const {
+    material,
+    loading,
+    error,
+    canEdit,
+    publishing,
+    togglingLike,
+    handlePublish,
+    handleToggleLike,
+    handleCommentCountChange,
+    backUrl,
+  } = model;
 
   if (loading) {
     return (
@@ -50,6 +68,11 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   }
 
   const targetAudiencesText = formatTargetAudiences(material.targetAudiences);
+  const likeCount = material.likeCount ?? 0;
+  const likedByMe = material.likedByMe ?? false;
+  const commentCount = material.commentCount ?? 0;
+  const canMarkInteresting = material.status === 'PUBLISHED';
+  const canComment = material.status === 'PUBLISHED';
 
   return (
     <div className={styles.page}>
@@ -57,31 +80,74 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         <Link href={backUrl} className={styles.backLink}>
           ← Назад
         </Link>
-        {canEdit && (
-          <div className={styles.topActions}>
-            {material.status !== 'PUBLISHED' && (
-              <button
-                type="button"
-                className={styles.publishBtn}
-                onClick={handlePublish}
-                disabled={publishing}
-              >
-                {publishing ? 'Публикация…' : 'Опубликовать'}
-              </button>
-            )}
-            <Link
-              href={`/admin/knowledge/materials/${material.id}/edit`}
-              className={styles.editBtn}
+        <div className={styles.topActions}>
+          {canMarkInteresting ? (
+            <button
+              type="button"
+              className={`${styles.likeBtn} ${likedByMe ? styles.likeBtnActive : ''}`}
+              onClick={() => void handleToggleLike()}
+              disabled={togglingLike}
+              title={
+                likedByMe
+                  ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
+                  : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
+              }
             >
-              Редактировать
-            </Link>
-          </div>
-        )}
+              <InterestingMaterialIcon marked={likedByMe} size={16} />
+              {likeCount > 0 ? <span>{likeCount}</span> : null}
+              <span>{likedByMe ? 'Интересный' : 'Отметить интересным'}</span>
+            </button>
+          ) : null}
+          {canComment ? (
+            <a
+              href={`#${KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID}`}
+              className={styles.commentBtn}
+              title={
+                commentCount > 0
+                  ? `Комментарии: ${commentCount}. Перейти к обсуждению`
+                  : 'Оставить комментарий под материалом'
+              }
+            >
+              <CommentIcon active={commentCount > 0} size={16} />
+              {commentCount > 0 ? <span>{commentCount}</span> : null}
+              <span>Комментарии</span>
+            </a>
+          ) : null}
+          {canEdit ? (
+            <>
+              {material.status !== 'PUBLISHED' && (
+                <button
+                  type="button"
+                  className={styles.publishBtn}
+                  onClick={handlePublish}
+                  disabled={publishing}
+                >
+                  {publishing ? 'Публикация…' : 'Опубликовать'}
+                </button>
+              )}
+              <Link
+                href={`/admin/knowledge/materials/${material.id}/edit`}
+                className={styles.editBtn}
+              >
+                Редактировать
+              </Link>
+            </>
+          ) : null}
+        </div>
       </div>
 
       <header className={styles.header}>
         <div className={styles.badges}>
           {material.isPinned && <span className={styles.pinnedBadge}>📌 Закреплено</span>}
+          {likeCount > 0 ? (
+            <KnowledgeMaterialInterestingBadge
+              materialId={material.id}
+              likeCount={likeCount}
+              className={styles.interestingBadge}
+            >
+              ★ Интересный · {likeCount}
+            </KnowledgeMaterialInterestingBadge>
+          ) : null}
           <span className={styles.typeBadge}>
             {getMaterialTypeIcon(material.type)} {getMaterialTypeLabel(material.type)}
           </span>
@@ -203,6 +269,13 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       {material.attachments && material.attachments.length > 0 && (
         <KnowledgeAttachmentsList attachments={material.attachments} />
       )}
+
+      <KnowledgeMaterialComments
+        materialId={material.id}
+        materialStatus={material.status}
+        initialCommentCount={commentCount}
+        onCommentCountChange={handleCommentCountChange}
+      />
     </div>
   );
 }

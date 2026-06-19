@@ -23,6 +23,7 @@ import {
   getKnowledgeTrashCount,
   importKnowledgeCategoryOutline,
   publishKnowledgeMaterial,
+  toggleKnowledgeMaterialLike,
   toggleKnowledgeMaterialPin,
   updateKnowledgeCategory,
   updateKnowledgeModule,
@@ -310,6 +311,21 @@ export function useKnowledgeTerritoryPage() {
     }
   };
 
+  const handleToggleLike = async (id: string) => {
+    try {
+      const result = await toggleKnowledgeMaterialLike(id);
+      setMaterials((prev) =>
+        prev.map((material) =>
+          material.id === id
+            ? { ...material, likedByMe: result.likedByMe, likeCount: result.likeCount }
+            : material
+        )
+      );
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Не удалось изменить отметку');
+    }
+  };
+
   const handleAddCategory = async () => {
     if (!newCategoryName.trim() || !newCategorySlug.trim()) {
       showMessage('error', 'Заполните название и slug');
@@ -502,6 +518,7 @@ export function useKnowledgeTerritoryPage() {
     handleDelete,
     handlePublish,
     handleTogglePin,
+    handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,
     handleAddModule,

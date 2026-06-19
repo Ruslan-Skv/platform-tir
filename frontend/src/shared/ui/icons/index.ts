@@ -17,6 +17,12 @@ export {
   ADMIN_EDIT_ICON_SIZE,
   type EditIconProps,
 } from './EditIcon';
+export { CommentIcon, ADMIN_COMMENT_ICON_SIZE, type CommentIconProps } from './CommentIcon';
+export {
+  InterestingMaterialIcon,
+  ADMIN_INTERESTING_MATERIAL_ICON_SIZE,
+  type InterestingMaterialIconProps,
+} from './InterestingMaterialIcon';
 export {
   PinIcon,
   ADMIN_ACTION_ICON_PIN_CLASS,

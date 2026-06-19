@@ -34,6 +34,11 @@
   transform: translateX(-100%);
 }
 
+.panelFitContent {
+  width: max-content;
+  max-width: min(280px, 85vw);
+}
+
 .panel strong {
   display: block;
   margin-bottom: 6px;
@@ -47,6 +52,12 @@
 }
 
 .panel p {
+  margin: 0;
+  color: var(--admin-text-secondary, #374151);
+  font-size: inherit;
+}
+
+.body {
   margin: 0;
   color: var(--admin-text-secondary, #374151);
   font-size: inherit;

@@ -25,6 +25,7 @@ import { KnowledgeService } from './knowledge.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
+import { CreateKnowledgeMaterialCommentDto } from './dto/create-knowledge-material-comment.dto';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
@@ -186,6 +187,30 @@ export class KnowledgeController {
   @Patch('materials/:id/pin')
   togglePin(@Param('id') id: string) {
     return this.knowledgeService.togglePin(id);
+  }
+
+  @Patch('materials/:id/like')
+  toggleMaterialLike(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.toggleLike(id, req.user.id);
+  }
+
+  @Get('materials/:id/likes')
+  getMaterialLikes(@Param('id') id: string) {
+    return this.knowledgeService.getMaterialLikers(id);
+  }
+
+  @Get('materials/:id/comments')
+  getMaterialComments(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.listMaterialComments(id, req.user.id);
+  }
+
+  @Post('materials/:id/comments')
+  createMaterialComment(
+    @Param('id') id: string,
+    @Body() dto: CreateKnowledgeMaterialCommentDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.knowledgeService.createMaterialComment(id, req.user.id, dto.text);
   }
 
   @Post('materials')

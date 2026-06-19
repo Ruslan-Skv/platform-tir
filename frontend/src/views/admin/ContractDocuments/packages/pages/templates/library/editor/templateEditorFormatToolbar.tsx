@@ -34,7 +34,7 @@ export function FormatToolbarGlyph({ children }: { children: React.ReactNode }) 
 
 export function FormatToolbarHelpTooltip({
   title,
-  steps,
+  steps = [],
   note,
   disabled,
   isActive,
@@ -44,7 +44,7 @@ export function FormatToolbarHelpTooltip({
   children,
 }: {
   title: string;
-  steps: readonly string[];
+  steps?: readonly string[];
   note?: string;
   disabled?: boolean;
   isActive?: boolean;

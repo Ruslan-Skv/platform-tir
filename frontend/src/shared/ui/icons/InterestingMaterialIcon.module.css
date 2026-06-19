@@ -1,0 +1,13 @@
+.icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.iconMarked {
+  color: #f59e0b;
+}
+
+.iconUnmarked {
+  color: var(--admin-text-muted, #8b8b8b);
+  opacity: 0.75;
+}

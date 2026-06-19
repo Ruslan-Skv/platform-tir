@@ -78,6 +78,9 @@ export interface AdminKnowledgeMaterial {
   attachments?: KnowledgeAttachment[];
   myVideoProgress?: KnowledgeVideoProgress | null;
   myQuizStatus?: KnowledgeQuizStatus | null;
+  likeCount?: number;
+  likedByMe?: boolean;
+  commentCount?: number;
 }
 
 export interface KnowledgeAttachmentInput {
@@ -596,6 +599,75 @@ export async function toggleKnowledgeMaterialPin(id: string) {
   });
   if (!res.ok) throw new Error('Не удалось изменить закрепление');
   return res.json() as Promise<AdminKnowledgeMaterial>;
+}
+
+export interface KnowledgeMaterialLikeToggleResult {
+  liked: boolean;
+  likeCount: number;
+  likedByMe: boolean;
+}
+
+export async function toggleKnowledgeMaterialLike(id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}/like`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось изменить отметку');
+  return res.json() as Promise<KnowledgeMaterialLikeToggleResult>;
+}
+
+export interface KnowledgeMaterialLiker {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  avatar: string | null;
+}
+
+export async function getKnowledgeMaterialLikers(materialId: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/likes`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список отметок');
+  return res.json() as Promise<{ users: KnowledgeMaterialLiker[] }>;
+}
+
+export interface KnowledgeMaterialCommentAuthor {
+  id: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  avatar: string | null;
+}
+
+export interface KnowledgeMaterialComment {
+  id: string;
+  text: string;
+  createdAt: string;
+  updatedAt: string;
+  author: KnowledgeMaterialCommentAuthor;
+  isMine: boolean;
+}
+
+export async function getKnowledgeMaterialComments(materialId: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/comments`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить комментарии');
+  return res.json() as Promise<{ comments: KnowledgeMaterialComment[] }>;
+}
+
+export async function createKnowledgeMaterialComment(materialId: string, text: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${materialId}/comments`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ text }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить комментарий');
+  }
+  return res.json() as Promise<{ comment: KnowledgeMaterialComment; commentCount: number }>;
 }
 
 export async function updateKnowledgeVideoProgress(

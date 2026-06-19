@@ -7,6 +7,7 @@ import {
   type AdminKnowledgeMaterial,
   getKnowledgeMaterial,
   publishKnowledgeMaterial,
+  toggleKnowledgeMaterialLike,
 } from '@/shared/api/admin-knowledge';
 
 import { isKnowledgeEditor } from '../../shared/knowledge-utils';
@@ -24,6 +25,7 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [publishing, setPublishing] = useState(false);
+  const [togglingLike, setTogglingLike] = useState(false);
 
   const backUrl = useMemo(
     () => buildKnowledgeTerritoryBackUrl(material?.categoryId),
@@ -61,13 +63,35 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     }
   };
 
+  const handleToggleLike = async () => {
+    if (!material) return;
+    setTogglingLike(true);
+    try {
+      const result = await toggleKnowledgeMaterialLike(material.id);
+      setMaterial((prev) =>
+        prev ? { ...prev, likedByMe: result.likedByMe, likeCount: result.likeCount } : prev
+      );
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Не удалось изменить отметку');
+    } finally {
+      setTogglingLike(false);
+    }
+  };
+
+  const handleCommentCountChange = useCallback((count: number) => {
+    setMaterial((prev) => (prev ? { ...prev, commentCount: count } : prev));
+  }, []);
+
   return {
     material,
     loading,
     error,
     canEdit,
     publishing,
+    togglingLike,
     handlePublish,
+    handleToggleLike,
+    handleCommentCountChange,
     backUrl,
   };
 }

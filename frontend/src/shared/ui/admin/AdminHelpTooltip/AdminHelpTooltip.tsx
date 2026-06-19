@@ -7,8 +7,9 @@ import styles from './AdminHelpTooltip.module.css';
 
 export type AdminHelpTooltipContent = {
   title: string;
-  steps: readonly string[];
+  steps?: readonly string[];
   note?: string;
+  body?: ReactNode;
 };
 
 export type AdminHelpTooltipProps = AdminHelpTooltipContent & {
@@ -23,6 +24,10 @@ export type AdminHelpTooltipProps = AdminHelpTooltipContent & {
   showDelayMs?: number;
   /** Задержка перед скрытием, мс — чтобы успеть навести на панель через зазор. */
   hideDelayMs?: number;
+  /** Вызывается при открытии подсказки (например, для подгрузки данных). */
+  onShow?: () => void;
+  /** Дополнительный класс панели подсказки. */
+  panelClassName?: string;
 };
 
 const DEFAULT_SHOW_DELAY_MS = 150;
@@ -39,8 +44,9 @@ function positionsClose(a: TooltipPosition, b: TooltipPosition): boolean {
 
 export function AdminHelpTooltip({
   title,
-  steps,
+  steps = [],
   note,
+  body,
   children,
   align = 'center',
   wrapClassName = styles.wrap,
@@ -48,6 +54,8 @@ export function AdminHelpTooltip({
   disabled = false,
   showDelayMs = DEFAULT_SHOW_DELAY_MS,
   hideDelayMs = DEFAULT_HIDE_DELAY_MS,
+  onShow,
+  panelClassName,
 }: AdminHelpTooltipProps) {
   const [open, setOpen] = useState(false);
   const [tooltipPortalReady, setTooltipPortalReady] = useState(false);
@@ -135,17 +143,21 @@ export function AdminHelpTooltip({
     clearHideTimer();
     if (open) return;
 
-    if (showDelayMs <= 0) {
+    const openTooltip = () => {
+      onShow?.();
       updateTooltipPosition();
       setOpen(true);
+    };
+
+    if (showDelayMs <= 0) {
+      openTooltip();
       return;
     }
 
     clearShowTimer();
     showTimerRef.current = setTimeout(() => {
       showTimerRef.current = null;
-      updateTooltipPosition();
-      setOpen(true);
+      openTooltip();
     }, showDelayMs);
   };
 
@@ -169,7 +181,7 @@ export function AdminHelpTooltip({
             role="tooltip"
             className={`${styles.panel} ${
               align === 'end' ? styles.panelAlignEnd : styles.panelAlignCenter
-            }`}
+            } ${panelClassName ?? ''}`}
             style={{
               top: tooltipPos.top,
               left: tooltipPos.left,
@@ -178,12 +190,20 @@ export function AdminHelpTooltip({
             onMouseLeave={scheduleHide}
           >
             <strong>{title}</strong>
-            <ol>
-              {steps.map((step, index) => (
-                <li key={`${title}-${index}`}>{step}</li>
-              ))}
-            </ol>
-            {note ? <p>{note}</p> : null}
+            {body != null ? (
+              <div className={styles.body}>{body}</div>
+            ) : (
+              <>
+                {steps.length > 0 ? (
+                  <ol>
+                    {steps.map((step, index) => (
+                      <li key={`${title}-${index}`}>{step}</li>
+                    ))}
+                  </ol>
+                ) : null}
+                {note ? <p>{note}</p> : null}
+              </>
+            )}
           </div>,
           portalTarget
         )

@@ -494,6 +494,10 @@
   box-shadow: 0 0 0 1px rgba(240, 198, 116, 0.4);
 }
 
+.cardInteresting {
+  border-color: rgba(245, 158, 11, 0.45);
+}
+
 .pinBadge {
   position: absolute;
   top: var(--admin-space-sm);
@@ -501,6 +505,24 @@
   font-size: 1rem;
   z-index: 1;
   filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.interestingBadge {
+  position: absolute;
+  bottom: var(--admin-space-sm);
+  right: var(--admin-space-sm);
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-sm);
+  background: rgba(0, 0, 0, 0.65);
+  color: #fbbf24;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: help;
 }
 
 .cardLink {

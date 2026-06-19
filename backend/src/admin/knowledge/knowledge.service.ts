@@ -11,6 +11,8 @@ import {
   Prisma,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
+import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
@@ -40,6 +42,8 @@ export class KnowledgeService {
     private targetAudienceService: KnowledgeTargetAudienceService,
     private trashService: KnowledgeTrashService,
     private uploadService: KnowledgeUploadService,
+    private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
+    private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
   ) {}
 
   findAllTargetAudiences() {
@@ -145,7 +149,28 @@ export class KnowledgeService {
     if (!editorView && material.status !== PageStatus.PUBLISHED) {
       throw new NotFoundException('Материал не найден');
     }
-    return mapMaterialResponse(material, editorView);
+    const mapped = mapMaterialResponse(material, editorView);
+    const [withLikes] = await this.knowledgeMaterialLikesService.attachLikeStats([mapped], userId);
+    const [withCounts] = await this.knowledgeMaterialCommentsService.attachCommentCounts([
+      withLikes,
+    ]);
+    return withCounts;
+  }
+
+  toggleLike(materialId: string, userId: string) {
+    return this.knowledgeMaterialLikesService.toggleLike(materialId, userId);
+  }
+
+  getMaterialLikers(materialId: string) {
+    return this.knowledgeMaterialLikesService.getMaterialLikers(materialId);
+  }
+
+  listMaterialComments(materialId: string, userId?: string) {
+    return this.knowledgeMaterialCommentsService.listComments(materialId, userId);
+  }
+
+  createMaterialComment(materialId: string, userId: string, text: string) {
+    return this.knowledgeMaterialCommentsService.createComment(materialId, userId, text);
   }
 
   async updateMaterial(id: string, dto: UpdateKnowledgeMaterialDto) {

@@ -17,14 +17,18 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminToolbarTrashButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import toolbarButtonStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarIconButton.module.css';
 import {
+  CommentIcon,
   DeleteIcon,
   EditIcon,
+  InterestingMaterialIcon,
   PinIcon,
   PublishIcon,
   TrainingStatisticsIcon,
 } from '@/shared/ui/icons';
 
+import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
 import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
+import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
   formatDate,
   formatReadingTime,
@@ -55,6 +59,7 @@ function MaterialCard({
   canEdit,
   styles: s,
   onTogglePin,
+  onToggleLike,
   onPublish,
   onDelete,
   onOpenMaterial,
@@ -64,15 +69,24 @@ function MaterialCard({
   canEdit: boolean;
   styles: typeof styles;
   onTogglePin: (id: string) => void;
+  onToggleLike: (id: string) => void;
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
   onOpenMaterial: () => void;
   topicNumber?: number;
 }) {
   const router = useRouter();
+  const likeCount = m.likeCount ?? 0;
+  const likedByMe = m.likedByMe ?? false;
+  const commentCount = m.commentCount ?? 0;
+  const canMarkInteresting = m.status === 'PUBLISHED';
+  const canComment = m.status === 'PUBLISHED';
 
   return (
-    <article key={m.id} className={`${s.card} ${m.isPinned ? s.cardPinned : ''}`}>
+    <article
+      key={m.id}
+      className={`${s.card} ${m.isPinned ? s.cardPinned : ''} ${likeCount > 0 ? s.cardInteresting : ''}`}
+    >
       <Link
         href={`/admin/knowledge/materials/${m.id}`}
         className={s.cardLink}
@@ -80,6 +94,15 @@ function MaterialCard({
       >
         <div className={s.cardThumb}>
           {m.isPinned && <span className={s.pinBadge}>📌</span>}
+          {likeCount > 0 ? (
+            <KnowledgeMaterialInterestingBadge
+              materialId={m.id}
+              likeCount={likeCount}
+              className={s.interestingBadge}
+            >
+              ★ {likeCount}
+            </KnowledgeMaterialInterestingBadge>
+          ) : null}
           {m.thumbnailUrl ? (
             <img src={publicUploadUrl(m.thumbnailUrl)} alt="" className={s.cardImage} />
           ) : (
@@ -161,6 +184,44 @@ function MaterialCard({
           }}
         >
           <PinIcon pinned={m.isPinned} />
+        </AdminTableIconButton>
+        <AdminTableIconButton
+          aria-label={likedByMe ? 'Снять отметку «интересный»' : 'Отметить как интересный материал'}
+          title={
+            canMarkInteresting
+              ? likedByMe
+                ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
+                : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
+              : 'Отметить можно только опубликованные материалы'
+          }
+          disabled={!canMarkInteresting}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onToggleLike(m.id);
+          }}
+        >
+          <InterestingMaterialIcon marked={likedByMe} />
+        </AdminTableIconButton>
+        <AdminTableIconButton
+          aria-label={commentCount > 0 ? `Комментарии (${commentCount})` : 'Оставить комментарий'}
+          title={
+            canComment
+              ? commentCount > 0
+                ? `Комментарии: ${commentCount}. Перейти к обсуждению материала`
+                : 'Оставить комментарий под материалом'
+              : 'Комментарии доступны только к опубликованным материалам'
+          }
+          disabled={!canComment}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            router.push(
+              `/admin/knowledge/materials/${m.id}#${KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID}`
+            );
+          }}
+        >
+          <CommentIcon active={commentCount > 0} />
         </AdminTableIconButton>
         {canEdit ? (
           <>
@@ -269,6 +330,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     handleDelete,
     handlePublish,
     handleTogglePin,
+    handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,
     handleAddModule,
@@ -832,6 +894,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           canEdit={canEdit}
                           styles={styles}
                           onTogglePin={handleTogglePin}
+                          onToggleLike={handleToggleLike}
                           onPublish={handlePublish}
                           onDelete={setDeleteTarget}
                           onOpenMaterial={persistTerritoryFilters}
@@ -852,6 +915,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       canEdit={canEdit}
                       styles={styles}
                       onTogglePin={handleTogglePin}
+                      onToggleLike={handleToggleLike}
                       onPublish={handlePublish}
                       onDelete={setDeleteTarget}
                       onOpenMaterial={persistTerritoryFilters}
