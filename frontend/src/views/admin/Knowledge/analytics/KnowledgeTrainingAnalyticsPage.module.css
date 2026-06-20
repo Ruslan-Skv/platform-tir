@@ -1,5 +1,8 @@
 .page {
   max-width: 1400px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: var(--admin-space-4xl);
   color: var(--admin-text-secondary);
@@ -486,11 +489,83 @@
 
 @media (max-width: 640px) {
   .page {
-    padding: var(--admin-space-2xl);
+    padding: var(--admin-space-lg);
+  }
+
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-lg);
+    margin-bottom: var(--admin-space-2xl);
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .select,
+  .dateInput {
+    width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
   }
 
   .overviewGrid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--admin-space-md);
+    margin-bottom: var(--admin-space-2xl);
+  }
+
+  .overviewCard {
+    padding: var(--admin-space-lg);
+  }
+
+  .overviewValue {
+    font-size: var(--admin-font-size-xl);
+  }
+
+  .overviewLabel,
+  .overviewHint {
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .card {
+    padding: var(--admin-space-lg);
+    min-width: 0;
+    overflow-x: auto;
+  }
+
+  .timelineChart {
+    min-height: 160px;
+    overflow-x: auto;
+  }
+
+  .timelineGroup {
+    min-width: 36px;
+  }
+
+  .donutWrap {
+    gap: var(--admin-space-xl);
+  }
+
+  .donut {
+    width: 140px;
+    height: 140px;
+  }
+
+  .donut::after {
+    width: 88px;
+    height: 88px;
+  }
+
+  .typePills {
+    flex-direction: column;
+  }
+
+  .typePill {
+    min-width: 0;
   }
 
   .barRow {
@@ -500,5 +575,20 @@
 
   .barValue {
     text-align: left;
+  }
+
+  .table {
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .table th,
+  .table td {
+    padding: var(--admin-space-sm) var(--admin-space-xs);
+  }
+}
+
+@media (max-width: 400px) {
+  .overviewGrid {
+    grid-template-columns: 1fr;
   }
 }

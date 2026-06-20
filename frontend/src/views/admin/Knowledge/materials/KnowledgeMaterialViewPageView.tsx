@@ -95,7 +95,9 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             >
               <InterestingMaterialIcon marked={likedByMe} size={16} />
               {likeCount > 0 ? <span>{likeCount}</span> : null}
-              <span>{likedByMe ? 'Интересный' : 'Отметить интересным'}</span>
+              <span className={styles.actionTextFull}>
+                {likedByMe ? 'Интересный' : 'Отметить интересным'}
+              </span>
             </button>
           ) : null}
           {canComment ? (
@@ -110,7 +112,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             >
               <CommentIcon active={commentCount > 0} size={16} />
               {commentCount > 0 ? <span>{commentCount}</span> : null}
-              <span>Комментарии</span>
+              <span className={styles.actionTextFull}>Комментарии</span>
+              <span className={styles.actionTextShort}>Комм.</span>
             </a>
           ) : null}
           {canEdit ? (

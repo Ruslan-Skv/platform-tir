@@ -224,4 +224,13 @@
   .row {
     grid-template-columns: 1fr;
   }
+
+  .actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .actions button {
+    width: 100%;
+  }
 }

@@ -483,12 +483,18 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
         <div className={styles.stats}>
           <div className={styles.stat}>
             <span className={styles.statValue}>{stats.publishedMaterials}</span>
-            <span className={styles.statLabel}>Опубликовано</span>
+            <span className={styles.statLabel}>
+              <span className={styles.statLabelFull}>Опубликовано</span>
+              <span className={styles.statLabelShort}>Опубл.</span>
+            </span>
           </div>
           {canEdit && (
             <div className={styles.stat}>
               <span className={styles.statValue}>{stats.draftMaterials}</span>
-              <span className={styles.statLabel}>Черновиков</span>
+              <span className={styles.statLabel}>
+                <span className={styles.statLabelFull}>Черновиков</span>
+                <span className={styles.statLabelShort}>Черн.</span>
+              </span>
             </div>
           )}
           <div className={styles.stat}>
@@ -497,16 +503,25 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
           </div>
           <div className={styles.stat}>
             <span className={styles.statValue}>{stats.articleCount}</span>
-            <span className={styles.statLabel}>Статей</span>
+            <span className={styles.statLabel}>
+              <span className={styles.statLabelFull}>Статей</span>
+              <span className={styles.statLabelShort}>Ст.</span>
+            </span>
           </div>
           <div className={styles.stat}>
             <span className={styles.statValue}>{stats.categoryCount}</span>
-            <span className={styles.statLabel}>Категорий</span>
+            <span className={styles.statLabel}>
+              <span className={styles.statLabelFull}>Категорий</span>
+              <span className={styles.statLabelShort}>Кат.</span>
+            </span>
           </div>
           {(stats.pinnedCount ?? 0) > 0 && (
             <div className={styles.stat}>
               <span className={styles.statValue}>{stats.pinnedCount}</span>
-              <span className={styles.statLabel}>Закреплено</span>
+              <span className={styles.statLabel}>
+                <span className={styles.statLabelFull}>Закреплено</span>
+                <span className={styles.statLabelShort}>Закр.</span>
+              </span>
             </div>
           )}
         </div>
@@ -515,24 +530,26 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
           <h2 className={styles.sidebarTitle}>Категории</h2>
-          <button
-            type="button"
-            className={`${styles.categoryChip} ${!categoryFilter ? styles.categoryChipActive : ''}`}
-            onClick={() => setCategoryFilter('')}
-          >
-            Все материалы
-          </button>
-          {categories.map((cat) => (
+          <div className={styles.categoriesList}>
             <button
-              key={cat.id}
               type="button"
-              className={`${styles.categoryChip} ${categoryFilter === cat.id ? styles.categoryChipActive : ''}`}
-              onClick={() => setCategoryFilter(cat.id)}
+              className={`${styles.categoryChip} ${!categoryFilter ? styles.categoryChipActive : ''}`}
+              onClick={() => setCategoryFilter('')}
             >
-              {cat.name}
-              <span className={styles.categoryCount}>{cat._count?.materials ?? 0}</span>
+              Все материалы
             </button>
-          ))}
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                type="button"
+                className={`${styles.categoryChip} ${categoryFilter === cat.id ? styles.categoryChipActive : ''}`}
+                onClick={() => setCategoryFilter(cat.id)}
+              >
+                {cat.name}
+                <span className={styles.categoryCount}>{cat._count?.materials ?? 0}</span>
+              </button>
+            ))}
+          </div>
 
           {categoryFilter && (
             <div className={styles.modulesSection}>

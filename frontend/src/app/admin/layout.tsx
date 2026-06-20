@@ -25,6 +25,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const [isMobileLayout, setIsMobileLayout] = useState(
+    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
+  );
 
   useEffect(() => {
     try {
@@ -40,6 +44,14 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     }
   }, []);
 
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1024px)');
+    const syncMobileLayout = () => setIsMobileLayout(mediaQuery.matches);
+    syncMobileLayout();
+    mediaQuery.addEventListener('change', syncMobileLayout);
+    return () => mediaQuery.removeEventListener('change', syncMobileLayout);
+  }, []);
+
   const handleSidebarWidthChange = (width: number) => {
     const clamped = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, width));
     setSidebarWidth(clamped);
@@ -52,6 +64,16 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const pathname = usePathname();
   const router = useRouter();
+
+  useEffect(() => {
+    setMobileSidebarOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    if (!isMobileLayout) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isMobileLayout]);
 
   const isLoginPage = pathname === '/admin/login';
 
@@ -88,25 +110,37 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   }
 
   const effectiveSidebarWidth = sidebarCollapsed ? 70 : sidebarWidth;
+  const mainAreaMarginLeft = isMobileLayout ? 0 : effectiveSidebarWidth;
+  const sidebarCollapsedForView = isMobileLayout ? false : sidebarCollapsed;
+
+  const handleSidebarToggle = () => {
+    if (isMobileLayout) {
+      setMobileSidebarOpen((open) => !open);
+      return;
+    }
+    setSidebarCollapsed((collapsed) => !collapsed);
+  };
 
   return (
     <AdminAccessibleResourcesProvider>
       <AdminWebPushManager />
       <div className={styles.adminLayout}>
         <AdminSidebar
-          collapsed={sidebarCollapsed}
-          onToggle={() => setSidebarCollapsed(!sidebarCollapsed)}
+          collapsed={sidebarCollapsedForView}
+          onToggle={handleSidebarToggle}
           width={effectiveSidebarWidth}
           onWidthChange={handleSidebarWidthChange}
           onResizeStart={() => setIsResizing(true)}
           onResizeEnd={() => setIsResizing(false)}
+          mobileOpen={mobileSidebarOpen}
+          onMobileClose={() => setMobileSidebarOpen(false)}
         />
         <div
           className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
-          style={{ marginLeft: effectiveSidebarWidth }}
+          style={{ marginLeft: mainAreaMarginLeft }}
         >
           <AdminPresenceHeartbeat />
-          <AdminHeader />
+          <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
           <main className={styles.content}>{children}</main>
         </div>
       </div>

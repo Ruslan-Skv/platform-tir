@@ -76,3 +76,19 @@
 .completeBtn:hover {
   opacity: 0.9;
 }
+
+@media (max-width: 640px) {
+  .progressSection {
+    padding: var(--admin-space-md);
+  }
+
+  .progressHeader {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--admin-space-xs);
+  }
+
+  .completeBtn {
+    width: 100%;
+  }
+}

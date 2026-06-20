@@ -174,3 +174,30 @@
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+@media (max-width: 640px) {
+  .section {
+    margin-top: var(--admin-space-2xl);
+    padding-top: var(--admin-space-2xl);
+    scroll-margin-top: 72px;
+  }
+
+  .title {
+    font-size: var(--admin-font-size-base);
+    font-weight: 700;
+  }
+
+  .formFooter {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+  }
+
+  .submitBtn {
+    width: 100%;
+  }
+
+  .counter {
+    text-align: right;
+  }
+}

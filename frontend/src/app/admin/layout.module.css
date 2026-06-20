@@ -1,6 +1,8 @@
 .adminLayout {
   display: flex;
   min-height: 100vh;
+  min-width: 0;
+  max-width: 100%;
   background-color: var(--admin-bg-page, #f5f7fa);
   color: var(--admin-text-primary, #1f2937);
   --admin-bg-page: #f5f7fa;
@@ -744,6 +746,8 @@
   display: flex;
   flex-direction: column;
   min-height: 100vh;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .mainArea.expanded {
@@ -758,6 +762,9 @@
   flex: 1;
   padding: var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xs);
   overflow-x: hidden;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
   background-color: var(--admin-bg-page, #f5f7fa);
 }
 
@@ -777,6 +784,8 @@
 @media (max-width: 1024px) {
   .mainArea {
     margin-left: 0 !important;
+    width: 100%;
+    max-width: 100%;
   }
 
   .mainArea.expanded {

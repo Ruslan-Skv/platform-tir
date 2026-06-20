@@ -21,6 +21,8 @@ interface AdminSidebarProps {
   onWidthChange: (width: number) => void;
   onResizeStart?: () => void;
   onResizeEnd?: () => void;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 interface NavChild {
@@ -562,6 +564,8 @@ export function AdminSidebar({
   onWidthChange,
   onResizeStart,
   onResizeEnd,
+  mobileOpen = false,
+  onMobileClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -714,96 +718,171 @@ export function AdminSidebar({
   }, [pathname, navItems]);
 
   return (
-    <aside
-      className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${isResizing ? styles.resizing : ''}`}
-      style={{ width: collapsed ? undefined : width }}
-    >
-      {!collapsed && (
-        <div
-          className={styles.resizer}
-          onMouseDown={handleResizeStart}
-          role="separator"
-          aria-orientation="vertical"
-          aria-label="Изменить ширину сайдбара"
+    <>
+      {mobileOpen ? (
+        <button
+          type="button"
+          className={styles.mobileBackdrop}
+          aria-label="Закрыть меню"
+          onClick={onMobileClose}
         />
-      )}
-      <div className={styles.header}>
-        <Link href="/admin" className={styles.logo} aria-label="Цифровая платформа">
-          <AdminPlatformBrand collapsed={collapsed} />
-        </Link>
-        <button className={styles.toggleBtn} onClick={onToggle}>
-          {collapsed ? '→' : '←'}
-        </button>
-      </div>
+      ) : null}
+      <aside
+        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing ? styles.resizing : ''}`}
+        style={{ width: collapsed ? undefined : width }}
+      >
+        {!collapsed && (
+          <div
+            className={styles.resizer}
+            onMouseDown={handleResizeStart}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="Изменить ширину сайдбара"
+          />
+        )}
+        <div className={styles.header}>
+          <Link href="/admin" className={styles.logo} aria-label="Цифровая платформа">
+            <AdminPlatformBrand collapsed={collapsed} />
+          </Link>
+          <button className={styles.toggleBtn} onClick={onToggle}>
+            {collapsed ? '→' : '←'}
+          </button>
+        </div>
 
-      <nav className={styles.nav}>
-        {navItems.map((item) => {
-          const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
-          return (
-            <div key={item.href} className={styles.navItem}>
-              {item.children ? (
-                <>
-                  <div className={styles.navLinkRow}>
-                    <button
-                      className={`${styles.navLink} ${
-                        isActive(item.href) || isChildActive(item.children) ? styles.active : ''
-                      }`}
-                      onClick={() => toggleExpand(item.href)}
-                    >
-                      <span className={styles.icon}>{item.icon}</span>
-                      {!collapsed && (
-                        <>
-                          <span className={styles.label}>{item.label}</span>
-                          <span
-                            className={`${styles.arrow} ${
-                              expandedItems.includes(item.href) ? styles.expanded : ''
-                            }`}
-                          >
-                            ▼
-                          </span>
-                        </>
-                      )}
-                    </button>
-                    {!collapsed && isSuperAdmin && item.resourceId && (
+        <nav className={styles.nav}>
+          {navItems.map((item) => {
+            const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
+            return (
+              <div key={item.href} className={styles.navItem}>
+                {item.children ? (
+                  <>
+                    <div className={styles.navLinkRow}>
                       <button
-                        type="button"
-                        className={styles.accessIcon}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setAccessModal({ resourceId: item.resourceId!, label: item.label });
-                        }}
-                        title="Доступ"
-                        aria-label={`Управление доступом: ${item.label}`}
+                        className={`${styles.navLink} ${
+                          isActive(item.href) || isChildActive(item.children) ? styles.active : ''
+                        }`}
+                        onClick={() => toggleExpand(item.href)}
                       >
-                        <AdminAccessIcon size={16} />
+                        <span className={styles.icon}>{item.icon}</span>
+                        {!collapsed && (
+                          <>
+                            <span className={styles.label}>{item.label}</span>
+                            <span
+                              className={`${styles.arrow} ${
+                                expandedItems.includes(item.href) ? styles.expanded : ''
+                              }`}
+                            >
+                              ▼
+                            </span>
+                          </>
+                        )}
                       </button>
-                    )}
-                  </div>
-                  {!collapsed && expandedItems.includes(item.href) && (
-                    <div className={styles.submenu}>
-                      {item.children.map((child) =>
-                        child.children ? (
-                          <div key={child.label} className={styles.submenuGroup}>
-                            <div className={styles.submenuGroupRowWrap}>
-                              <button
-                                type="button"
-                                className={`${styles.submenuGroupRow} ${
-                                  isChildOrDescendantActive(child) ? styles.active : ''
-                                }`}
-                                onClick={() => toggleExpand(child.href)}
-                                aria-expanded={isNestedExpanded(child)}
-                                aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
-                              >
-                                <span className={styles.submenuGroupLink}>{child.label}</span>
-                                <span
-                                  className={`${styles.arrow} ${
-                                    isNestedExpanded(child) ? styles.expanded : ''
+                      {!collapsed && isSuperAdmin && item.resourceId && (
+                        <button
+                          type="button"
+                          className={styles.accessIcon}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                          }}
+                          title="Доступ"
+                          aria-label={`Управление доступом: ${item.label}`}
+                        >
+                          <AdminAccessIcon size={16} />
+                        </button>
+                      )}
+                    </div>
+                    {!collapsed && expandedItems.includes(item.href) && (
+                      <div className={styles.submenu}>
+                        {item.children.map((child) =>
+                          child.children ? (
+                            <div key={child.label} className={styles.submenuGroup}>
+                              <div className={styles.submenuGroupRowWrap}>
+                                <button
+                                  type="button"
+                                  className={`${styles.submenuGroupRow} ${
+                                    isChildOrDescendantActive(child) ? styles.active : ''
                                   }`}
+                                  onClick={() => toggleExpand(child.href)}
+                                  aria-expanded={isNestedExpanded(child)}
+                                  aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
                                 >
-                                  ▼
-                                </span>
-                              </button>
+                                  <span className={styles.submenuGroupLink}>{child.label}</span>
+                                  <span
+                                    className={`${styles.arrow} ${
+                                      isNestedExpanded(child) ? styles.expanded : ''
+                                    }`}
+                                  >
+                                    ▼
+                                  </span>
+                                </button>
+                                {isSuperAdmin && child.resourceId && (
+                                  <button
+                                    type="button"
+                                    className={styles.accessIconSubmenu}
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      e.stopPropagation();
+                                      setAccessModal({
+                                        resourceId: child.resourceId!,
+                                        label: child.label,
+                                      });
+                                    }}
+                                    title="Доступ"
+                                    aria-label={`Управление доступом: ${child.label}`}
+                                  >
+                                    <AdminAccessIcon size={14} />
+                                  </button>
+                                )}
+                              </div>
+                              {isNestedExpanded(child) && (
+                                <div className={styles.submenuNested}>
+                                  {child.children.map((nested) => (
+                                    <div key={nested.href} className={styles.submenuLinkRow}>
+                                      <Link
+                                        href={getSafeHref(nested.href, '/')}
+                                        className={`${styles.submenuLink} ${
+                                          isPathActive(nested.href, sectionNavHrefs)
+                                            ? styles.active
+                                            : ''
+                                        }`}
+                                      >
+                                        {nested.label}
+                                      </Link>
+                                      {isSuperAdmin && nested.resourceId && (
+                                        <button
+                                          type="button"
+                                          className={styles.accessIconSubmenu}
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setAccessModal({
+                                              resourceId: nested.resourceId!,
+                                              label: nested.label,
+                                            });
+                                          }}
+                                          title="Доступ"
+                                          aria-label={`Управление доступом: ${nested.label}`}
+                                        >
+                                          <AdminAccessIcon size={14} />
+                                        </button>
+                                      )}
+                                    </div>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <div key={child.label} className={styles.submenuLinkRow}>
+                              <Link
+                                href={getSafeHref(child.href, '/')}
+                                className={`${styles.submenuLink} ${
+                                  isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
+                                }`}
+                              >
+                                {child.label}
+                              </Link>
                               {isSuperAdmin && child.resourceId && (
                                 <button
                                   type="button"
@@ -823,121 +902,56 @@ export function AdminSidebar({
                                 </button>
                               )}
                             </div>
-                            {isNestedExpanded(child) && (
-                              <div className={styles.submenuNested}>
-                                {child.children.map((nested) => (
-                                  <div key={nested.href} className={styles.submenuLinkRow}>
-                                    <Link
-                                      href={getSafeHref(nested.href, '/')}
-                                      className={`${styles.submenuLink} ${
-                                        isPathActive(nested.href, sectionNavHrefs)
-                                          ? styles.active
-                                          : ''
-                                      }`}
-                                    >
-                                      {nested.label}
-                                    </Link>
-                                    {isSuperAdmin && nested.resourceId && (
-                                      <button
-                                        type="button"
-                                        className={styles.accessIconSubmenu}
-                                        onClick={(e) => {
-                                          e.preventDefault();
-                                          e.stopPropagation();
-                                          setAccessModal({
-                                            resourceId: nested.resourceId!,
-                                            label: nested.label,
-                                          });
-                                        }}
-                                        title="Доступ"
-                                        aria-label={`Управление доступом: ${nested.label}`}
-                                      >
-                                        <AdminAccessIcon size={14} />
-                                      </button>
-                                    )}
-                                  </div>
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div key={child.label} className={styles.submenuLinkRow}>
-                            <Link
-                              href={getSafeHref(child.href, '/')}
-                              className={`${styles.submenuLink} ${
-                                isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
-                              }`}
-                            >
-                              {child.label}
-                            </Link>
-                            {isSuperAdmin && child.resourceId && (
-                              <button
-                                type="button"
-                                className={styles.accessIconSubmenu}
-                                onClick={(e) => {
-                                  e.preventDefault();
-                                  e.stopPropagation();
-                                  setAccessModal({
-                                    resourceId: child.resourceId!,
-                                    label: child.label,
-                                  });
-                                }}
-                                title="Доступ"
-                                aria-label={`Управление доступом: ${child.label}`}
-                              >
-                                <AdminAccessIcon size={14} />
-                              </button>
-                            )}
-                          </div>
-                        )
-                      )}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <div className={styles.navLinkRow}>
-                  <Link
-                    href={getSafeHref(item.href, '/')}
-                    className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
-                  >
-                    <span className={styles.icon}>{item.icon}</span>
-                    {!collapsed && <span className={styles.label}>{item.label}</span>}
-                  </Link>
-                  {!collapsed && isSuperAdmin && item.resourceId && (
-                    <button
-                      type="button"
-                      className={styles.accessIcon}
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        setAccessModal({ resourceId: item.resourceId!, label: item.label });
-                      }}
-                      title="Доступ"
-                      aria-label={`Управление доступом: ${item.label}`}
+                          )
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <div className={styles.navLinkRow}>
+                    <Link
+                      href={getSafeHref(item.href, '/')}
+                      className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
                     >
-                      <AdminAccessIcon size={16} />
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </nav>
+                      <span className={styles.icon}>{item.icon}</span>
+                      {!collapsed && <span className={styles.label}>{item.label}</span>}
+                    </Link>
+                    {!collapsed && isSuperAdmin && item.resourceId && (
+                      <button
+                        type="button"
+                        className={styles.accessIcon}
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                        }}
+                        title="Доступ"
+                        aria-label={`Управление доступом: ${item.label}`}
+                      >
+                        <AdminAccessIcon size={16} />
+                      </button>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </nav>
 
-      {accessModal && (
-        <AccessModal
-          resourceId={accessModal.resourceId}
-          label={accessModal.label}
-          onClose={() => setAccessModal(null)}
-        />
-      )}
+        {accessModal && (
+          <AccessModal
+            resourceId={accessModal.resourceId}
+            label={accessModal.label}
+            onClose={() => setAccessModal(null)}
+          />
+        )}
 
-      <div className={styles.footer}>
-        <Link href="/" className={styles.backLink}>
-          {collapsed ? '🏠' : '← На сайт'}
-        </Link>
-      </div>
-    </aside>
+        <div className={styles.footer}>
+          <Link href="/" className={styles.backLink}>
+            {collapsed ? '🏠' : '← На сайт'}
+          </Link>
+        </div>
+      </aside>
+    </>
   );
 }

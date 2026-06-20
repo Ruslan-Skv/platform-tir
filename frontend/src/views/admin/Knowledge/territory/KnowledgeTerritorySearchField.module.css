@@ -1,7 +1,8 @@
 .searchShell {
   position: relative;
   flex: 1;
-  min-width: 200px;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .searchForm {
@@ -122,4 +123,20 @@
   color: var(--admin-text-muted);
   font-size: var(--admin-font-size-sm);
   background-color: var(--admin-surface, #ffffff);
+}
+
+@media (max-width: 640px) {
+  .searchShell {
+    min-width: 0;
+    width: 100%;
+  }
+
+  .searchForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchBtn {
+    width: 100%;
+  }
 }

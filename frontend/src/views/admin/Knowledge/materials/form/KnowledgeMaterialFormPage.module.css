@@ -1,5 +1,8 @@
 .page {
   max-width: 1200px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   padding: var(--admin-space-2xl) var(--admin-space-3xl);
   color: var(--admin-text-secondary);
@@ -381,6 +384,10 @@
 }
 
 @media (max-width: 900px) {
+  .page {
+    padding: var(--admin-space-lg) var(--admin-space-2xl);
+  }
+
   .pageHeader {
     flex-direction: column;
     align-items: stretch;
@@ -388,6 +395,23 @@
 
   .pageHeaderActions {
     justify-content: flex-end;
+    flex-wrap: wrap;
+  }
+
+  .typeTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .typeTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .typeTab {
+    flex: 0 0 auto;
+    min-width: 88px;
   }
 
   .rowThree,
@@ -406,11 +430,30 @@
     padding: var(--admin-space-lg);
   }
 
+  .title {
+    font-size: var(--admin-font-size-xl);
+  }
+
+  .pageHeaderActions {
+    width: 100%;
+  }
+
+  .publishButton,
+  .unpublishButton {
+    flex: 1 1 calc(50% - var(--admin-space-xs));
+    text-align: center;
+  }
+
   .row,
   .rowThree,
   .rowModuleExcerpt,
   .settingsRow {
     grid-template-columns: 1fr;
+  }
+
+  .metaSection,
+  .settingsSection {
+    padding: var(--admin-space-md);
   }
 }
 

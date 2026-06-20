@@ -9,6 +9,53 @@
   position: sticky;
   top: 0;
   z-index: 50;
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.headerStart {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+  flex-shrink: 1;
+}
+
+.mobileMenuButton {
+  display: none;
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.2s,
+    color 0.2s;
+}
+
+.mobileMenuButton:hover {
+  background: var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
+.mobileMenuButton:focus {
+  outline: none;
+}
+
+.mobileMenuButton:focus-visible {
+  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
+}
+
+.mobileMenuIcon {
+  width: 1.125rem;
+  height: 1.125rem;
+  flex-shrink: 0;
 }
 
 /* На узких экранах сайдбар уезжает за край — переход на сайт дублируем в шапке */
@@ -51,12 +98,6 @@
 .backToPublicText {
   line-height: var(--admin-line-height-flat);
   white-space: nowrap;
-}
-
-@media (max-width: 1024px) {
-  .backToPublicLink {
-    display: inline-flex;
-  }
 }
 
 .historyNav {
@@ -158,6 +199,8 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-lg);
+  flex-shrink: 0;
+  min-width: 0;
 }
 
 .publicSiteEditToggle {
@@ -726,9 +769,53 @@
   color: var(--admin-text-muted);
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
+  .header {
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    gap: var(--admin-space-sm);
+  }
+
+  .headerStart {
+    gap: var(--admin-space-xs);
+  }
+
+  .mobileMenuButton {
+    display: inline-flex;
+  }
+
+  .backToPublicLink {
+    display: inline-flex;
+    padding: var(--admin-space-sm);
+  }
+
+  .backToPublicText {
+    display: none;
+  }
+
   .searchWrapper {
     display: none;
+  }
+
+  .historyNav {
+    padding: 1px;
+  }
+
+  .historyNavButton {
+    width: 26px;
+    height: 26px;
+  }
+
+  .actions {
+    gap: var(--admin-space-xs);
+  }
+
+  .onlineGroup {
+    display: none;
+  }
+
+  .userButton {
+    padding: var(--admin-space-xs);
+    gap: 0;
   }
 
   .userInfo {
@@ -737,5 +824,49 @@
 
   .userArrow {
     display: none;
+  }
+
+  .dropdown,
+  .notificationsDropdown {
+    min-width: min(320px, calc(100vw - var(--admin-space-2xl)));
+    max-width: calc(100vw - var(--admin-space-2xl));
+  }
+}
+
+@media (max-width: 768px) {
+  .searchWrapper {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .header {
+    padding: var(--admin-space-sm);
+  }
+
+  .historyNav {
+    display: none;
+  }
+
+  .iconButton {
+    width: 30px;
+    height: 30px;
+    font-size: var(--admin-font-size-base);
+  }
+
+  .publicSiteEditToggle {
+    width: 30px;
+    height: 30px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .dropdownHeader {
+    flex-wrap: wrap;
+    gap: var(--admin-space-sm);
+  }
+
+  .dropdownHeaderActions {
+    flex-wrap: wrap;
   }
 }

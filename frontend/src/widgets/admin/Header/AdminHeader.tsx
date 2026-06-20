@@ -2,6 +2,7 @@
 
 import {
   ArrowLeftIcon,
+  Bars3Icon,
   CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -119,7 +120,11 @@ const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] 
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
 ];
 
-export function AdminHeader() {
+type AdminHeaderProps = {
+  onMobileMenuOpen?: () => void;
+};
+
+export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const { user, logout } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
@@ -482,36 +487,49 @@ export function AdminHeader() {
 
   return (
     <header className={styles.header}>
-      <Link
-        href={getSafeHref('/', '/')}
-        className={styles.backToPublicLink}
-        title="Вернуться на публичный сайт"
-        aria-label="Вернуться на публичный сайт"
-      >
-        <ArrowLeftIcon className={styles.backToPublicIcon} aria-hidden />
-        <span className={styles.backToPublicText}>На сайт</span>
-      </Link>
-      <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
-        <button
-          type="button"
-          className={styles.historyNavButton}
-          onClick={goBack}
-          disabled={!canGoBack}
-          title="Назад"
-          aria-label="Назад"
+      <div className={styles.headerStart}>
+        {onMobileMenuOpen ? (
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={onMobileMenuOpen}
+            title="Открыть меню"
+            aria-label="Открыть меню навигации"
+          >
+            <Bars3Icon className={styles.mobileMenuIcon} aria-hidden />
+          </button>
+        ) : null}
+        <Link
+          href={getSafeHref('/', '/')}
+          className={styles.backToPublicLink}
+          title="Вернуться на публичный сайт"
+          aria-label="Вернуться на публичный сайт"
         >
-          <ChevronLeftIcon className={styles.historyNavIcon} aria-hidden />
-        </button>
-        <button
-          type="button"
-          className={styles.historyNavButton}
-          onClick={goForward}
-          disabled={!canGoForward}
-          title="Вперёд"
-          aria-label="Вперёд"
-        >
-          <ChevronRightIcon className={styles.historyNavIcon} aria-hidden />
-        </button>
+          <ArrowLeftIcon className={styles.backToPublicIcon} aria-hidden />
+          <span className={styles.backToPublicText}>На сайт</span>
+        </Link>
+        <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
+          <button
+            type="button"
+            className={styles.historyNavButton}
+            onClick={goBack}
+            disabled={!canGoBack}
+            title="Назад"
+            aria-label="Назад"
+          >
+            <ChevronLeftIcon className={styles.historyNavIcon} aria-hidden />
+          </button>
+          <button
+            type="button"
+            className={styles.historyNavButton}
+            onClick={goForward}
+            disabled={!canGoForward}
+            title="Вперёд"
+            aria-label="Вперёд"
+          >
+            <ChevronRightIcon className={styles.historyNavIcon} aria-hidden />
+          </button>
+        </div>
       </div>
       <div className={styles.searchWrapper}>
         <input

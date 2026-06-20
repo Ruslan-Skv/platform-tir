@@ -1,6 +1,9 @@
 .page {
   padding: var(--admin-space-4xl);
   max-width: 960px;
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
   margin: 0 auto;
   color: var(--admin-text-secondary);
 }
@@ -145,4 +148,43 @@
   line-height: 1.5;
   white-space: pre-wrap;
   word-break: break-word;
+}
+
+@media (max-width: 640px) {
+  .page {
+    padding: var(--admin-space-lg);
+  }
+
+  .header {
+    margin-bottom: var(--admin-space-2xl);
+  }
+
+  .title {
+    font-size: var(--admin-font-size-2xl);
+  }
+
+  .subtitle {
+    font-size: var(--admin-font-size-sm);
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: var(--admin-space-2xl);
+  }
+
+  .select,
+  .refreshButton {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .cardHeader {
+    flex-wrap: wrap;
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .cardBody {
+    padding: var(--admin-space-lg);
+  }
 }

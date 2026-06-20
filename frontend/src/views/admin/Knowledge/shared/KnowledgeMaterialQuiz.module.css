@@ -326,3 +326,35 @@
   background: var(--admin-overlay-color-065);
   color: var(--admin-overlay-color-070);
 }
+
+@media (max-width: 640px) {
+  .section {
+    margin-top: var(--admin-space-2xl);
+    padding-top: var(--admin-space-2xl);
+  }
+
+  .header {
+    padding-right: 40px;
+    margin-bottom: var(--admin-space-lg);
+  }
+
+  .title {
+    font-size: var(--admin-font-size-base);
+    font-weight: 700;
+  }
+
+  .question {
+    padding: var(--admin-space-md);
+  }
+
+  .submitBtn,
+  .retryBtn,
+  .startBtn {
+    width: 100%;
+    text-align: center;
+  }
+
+  .resultSummary {
+    padding: var(--admin-space-md);
+  }
+}

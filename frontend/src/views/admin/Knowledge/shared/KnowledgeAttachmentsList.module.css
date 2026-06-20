@@ -50,3 +50,26 @@
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }
+
+@media (max-width: 640px) {
+  .section {
+    margin-top: var(--admin-space-2xl);
+    padding-top: var(--admin-space-2xl);
+  }
+
+  .title {
+    font-size: var(--admin-font-size-base);
+    font-weight: 700;
+  }
+
+  .link {
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    flex-wrap: wrap;
+  }
+
+  .name {
+    flex: 1 1 100%;
+    min-width: 0;
+    word-break: break-word;
+  }
+}
