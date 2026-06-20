@@ -3,3 +3,34 @@
   min-height: 28px;
   padding: 0;
 }
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note {
+  margin: 0;
+}
+
+.steps,
+.meaningList {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.traineeSection {
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+}
+
+.traineeLead {
+  margin: 0 0 6px;
+}
+
+.meaningTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+}

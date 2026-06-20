@@ -31,7 +31,7 @@ function isPublicAssetPath(pathname: string): boolean {
   );
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const host = request.headers.get('host') ?? '';
   const quizDomains = getQuizDomains();
   const pathname = request.nextUrl.pathname;
