@@ -1,8 +1,10 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { AdminNotificationsModule } from '../notifications/admin-notifications.module';
 import { KnowledgeController } from './knowledge.controller';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
+import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeService } from './knowledge.service';
@@ -13,13 +15,14 @@ import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytic
 import { KnowledgeUploadService } from './knowledge-upload.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AdminNotificationsModule],
   controllers: [KnowledgeController],
   providers: [
     KnowledgeService,
     KnowledgeMaterialListService,
     KnowledgeMaterialLikesService,
     KnowledgeMaterialCommentsService,
+    KnowledgePlatformFeedbackService,
     KnowledgeQuizService,
     KnowledgeStructureService,
     KnowledgeTargetAudienceService,

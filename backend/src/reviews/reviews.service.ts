@@ -5,11 +5,15 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
 export class ReviewsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly adminBellPush: AdminBellPushService,
+  ) {}
 
   /** Получить настройки отзывов */
   async getReviewsBlock() {
@@ -113,7 +117,7 @@ export class ReviewsService {
 
     const isApproved = !block.requireModeration;
 
-    return this.prisma.review.create({
+    const review = await this.prisma.review.create({
       data: {
         productId,
         userId: userId ?? null,
@@ -123,7 +127,21 @@ export class ReviewsService {
         comment: dto.comment?.trim() || null,
         isApproved,
       },
+      include: {
+        product: { select: { id: true, name: true } },
+      },
     });
+
+    if (!isApproved) {
+      void this.adminBellPush.notify('review', {
+        title: 'Новый отзыв',
+        body: `«${review.product?.name || 'Товар'}» от ${review.userName}`,
+        url: `/admin/catalog/products/${review.productId}/edit`,
+        tag: `review-${review.id}`,
+      });
+    }
+
+    return review;
   }
 
   /** Проверить, покупал ли пользователь товар (доставленные заказы) */

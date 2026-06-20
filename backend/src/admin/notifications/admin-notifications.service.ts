@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import * as fs from 'fs';
 import * as path from 'path';
+import { AdminNotificationSettingsReaderService } from '../../bell-push/admin-notification-settings-reader.service';
 import { PrismaService } from '../../database/prisma.service';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
 
@@ -25,51 +26,17 @@ const ADMIN_ROLES: UserRole[] = [
 
 @Injectable()
 export class AdminNotificationsService {
-  constructor(private readonly prisma: PrismaService) {}
-
-  private findBlockByRole(role: string | null) {
-    if (role !== null) {
-      return this.prisma.adminNotificationsBlock.findUnique({
-        where: { role },
-      });
-    }
-    return this.prisma.adminNotificationsBlock.findFirst({
-      where: { role: null },
-    });
-  }
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly settingsReader: AdminNotificationSettingsReaderService,
+  ) {}
 
   getDefaultSettings() {
-    return {
-      id: 'default',
-      role: null as string | null,
-      soundEnabled: true,
-      soundVolume: 70,
-      soundType: 'beep',
-      customSoundUrl: null,
-      desktopNotifications: false,
-      checkIntervalSeconds: 60,
-      notifyOnReviews: true,
-      notifyOnOrders: true,
-      notifyOnSupportChat: true,
-      notifyOnMeasurementForm: true,
-      notifyOnCallbackForm: true,
-    };
+    return this.settingsReader.getDefaultSettings();
   }
 
-  async getSettingsForUser(userId: string | undefined, userRole: string | null) {
-    if (userId) {
-      const override = await this.prisma.userAdminNotificationOverride.findUnique({
-        where: { userId },
-      });
-      if (override) {
-        return { ...override, role: null };
-      }
-    }
-    const block = userRole
-      ? ((await this.findBlockByRole(userRole)) ?? (await this.findBlockByRole(null)))
-      : await this.findBlockByRole(null);
-    if (!block) return this.getDefaultSettings();
-    return block;
+  getSettingsForUser(userId: string | undefined, userRole: string | null) {
+    return this.settingsReader.getSettingsForUser(userId, userRole);
   }
 
   async getSettingsByUser(userId: string) {
@@ -89,8 +56,9 @@ export class AdminNotificationsService {
     });
     const role = user?.role ?? null;
     const block = role
-      ? ((await this.findBlockByRole(role)) ?? (await this.findBlockByRole(null)))
-      : await this.findBlockByRole(null);
+      ? ((await this.settingsReader.findBlockByRole(role)) ??
+        (await this.settingsReader.findBlockByRole(null)))
+      : await this.settingsReader.findBlockByRole(null);
     if (!block) return { ...this.getDefaultSettings(), userId, role };
     return { ...block, userId };
   }
@@ -108,6 +76,7 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
+      notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -123,6 +92,7 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
+      notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -219,7 +189,7 @@ export class AdminNotificationsService {
 
   async getSettingsByRole(role?: string) {
     const roleValue = role === 'default' || role === '' || !role ? null : role;
-    const block = await this.findBlockByRole(roleValue);
+    const block = await this.settingsReader.findBlockByRole(roleValue);
     if (!block) return { ...this.getDefaultSettings(), role: roleValue };
     return block;
   }
@@ -244,6 +214,7 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
+      notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -259,6 +230,7 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
+      notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

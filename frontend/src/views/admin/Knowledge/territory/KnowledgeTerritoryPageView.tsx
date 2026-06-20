@@ -22,11 +22,13 @@ import {
   EditIcon,
   InterestingMaterialIcon,
   PinIcon,
+  PlatformFeedbackIcon,
   PublishIcon,
   TrainingStatisticsIcon,
 } from '@/shared/ui/icons';
 
 import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
+import { KnowledgePlatformFeedbackButton } from '../shared/KnowledgePlatformFeedbackButton';
 import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
@@ -45,6 +47,7 @@ import {
 } from '../shared/knowledge-utils';
 import styles from './KnowledgeTerritoryPage.module.css';
 import { KnowledgeTerritorySearchField } from './KnowledgeTerritorySearchField';
+import { formatKnowledgePlatformFeedbackBadgeCount } from './hooks/useKnowledgePlatformFeedbackUnreadCount';
 import type { KnowledgeTerritoryPageModel } from './hooks/useKnowledgeTerritoryPage';
 import { TYPE_FILTERS } from './knowledge-territory-page.constants';
 import { KnowledgeTrashModal } from './modals/KnowledgeTrashModal';
@@ -338,6 +341,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     trashOpen,
     setTrashOpen,
     trashCount,
+    feedbackUnreadCount,
     handleTrashRestored,
     persistTerritoryFilters,
   } = model;
@@ -411,7 +415,16 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.heroInfoTip}>
-          <KnowledgePlatformInfoTip />
+          <Link
+            href="/admin/knowledge/analytics"
+            className={`${toolbarButtonStyles.button} ${styles.heroInfoTipButton}`}
+            title="Статистика обучения"
+            aria-label="Статистика обучения"
+          >
+            <TrainingStatisticsIcon />
+          </Link>
+          <KnowledgePlatformInfoTip triggerClassName={toolbarButtonStyles.button} />
+          <KnowledgePlatformFeedbackButton triggerClassName={toolbarButtonStyles.button} />
         </div>
         <div className={styles.heroContent}>
           <h1 className={styles.heroHeading}>
@@ -423,14 +436,31 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
           </p>
         </div>
         <div className={styles.heroActions}>
-          <Link
-            href="/admin/knowledge/analytics"
-            className={`${toolbarButtonStyles.button} ${styles.heroToolbarLink}`}
-            title="Статистика обучения"
-            aria-label="Статистика обучения"
-          >
-            <TrainingStatisticsIcon />
-          </Link>
+          {canEdit ? (
+            <span className={styles.feedbackLinkWrap}>
+              <Link
+                href="/admin/knowledge/feedback"
+                className={`${toolbarButtonStyles.button} ${styles.heroToolbarLink}`}
+                title={
+                  feedbackUnreadCount > 0
+                    ? `Обратная связь по платформе (${formatKnowledgePlatformFeedbackBadgeCount(feedbackUnreadCount)} непрочитанных)`
+                    : 'Обратная связь по платформе'
+                }
+                aria-label={
+                  feedbackUnreadCount > 0
+                    ? `Обратная связь по платформе, непрочитанных сообщений: ${feedbackUnreadCount > 99 ? 'более 99' : feedbackUnreadCount}`
+                    : 'Обратная связь по платформе'
+                }
+              >
+                <PlatformFeedbackIcon size={16} />
+              </Link>
+              {feedbackUnreadCount > 0 ? (
+                <span className={styles.feedbackBadge} aria-hidden>
+                  {formatKnowledgePlatformFeedbackBadgeCount(feedbackUnreadCount)}
+                </span>
+              ) : null}
+            </span>
+          ) : null}
           {canEdit ? (
             <>
               <AdminToolbarTrashButton

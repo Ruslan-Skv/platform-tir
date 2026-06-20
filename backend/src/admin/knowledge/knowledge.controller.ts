@@ -21,11 +21,13 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { extname } from 'path';
 import type { Request as ExpressRequest } from 'express';
+import { KnowledgePlatformFeedbackType } from '@prisma/client';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { CreateKnowledgeMaterialCommentDto } from './dto/create-knowledge-material-comment.dto';
+import { CreateKnowledgePlatformFeedbackDto } from './dto/create-knowledge-platform-feedback.dto';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
@@ -211,6 +213,37 @@ export class KnowledgeController {
     @Request() req: RequestWithUser,
   ) {
     return this.knowledgeService.createMaterialComment(id, req.user.id, dto.text);
+  }
+
+  @Post('feedback')
+  createPlatformFeedback(
+    @Body() dto: CreateKnowledgePlatformFeedbackDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.knowledgeService.createPlatformFeedback(req.user.id, dto.type, dto.text);
+  }
+
+  @Get('feedback')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  listPlatformFeedback(
+    @Query('type') type?: KnowledgePlatformFeedbackType,
+    @Query('unreadOnly') unreadOnly?: string,
+    @Query('limit') limit?: string,
+  ) {
+    const parsedLimit = limit ? Number.parseInt(limit, 10) : undefined;
+    return this.knowledgeService.listPlatformFeedback({
+      type,
+      unreadOnly: unreadOnly === 'true' || unreadOnly === '1',
+      limit: Number.isFinite(parsedLimit) ? parsedLimit : undefined,
+    });
+  }
+
+  @Patch('feedback/mark-read')
+  @UseGuards(RolesGuard)
+  @Roles(...KNOWLEDGE_EDITOR_ROLES)
+  markPlatformFeedbackRead() {
+    return this.knowledgeService.markPlatformFeedbackRead();
   }
 
   @Post('materials')

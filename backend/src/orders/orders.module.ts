@@ -12,9 +12,10 @@ import { OrdersDeliveryService } from './services/orders-delivery.service';
 import { OrdersServiceOrdersService } from './services/orders-service-orders.service';
 import { CartModule } from '../cart/cart.module';
 import { UsersModule } from '../users/users.module';
+import { BellPushModule } from '../bell-push/bell-push.module';
 
 @Module({
-  imports: [ConfigModule, CartModule, UsersModule],
+  imports: [ConfigModule, CartModule, UsersModule, BellPushModule],
   controllers: [OrdersController],
   providers: [
     OrdersService,

@@ -24,8 +24,10 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
-import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
+import { AdminPushSubscribeDto } from '../../bell-push/dto/admin-push-subscribe.dto';
+import { AdminPushSubscriptionsService } from '../../bell-push/admin-push-subscriptions.service';
 import { uploadsBaseUrl } from '../../common/utils/uploads-url';
+import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
 import { AdminNotificationsService } from './admin-notifications.service';
 
 const soundsDir = path.join(process.cwd(), 'uploads', 'notification-sounds');
@@ -46,7 +48,33 @@ const soundStorage = diskStorage({
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminNotificationsController {
-  constructor(private readonly notifications: AdminNotificationsService) {}
+  constructor(
+    private readonly notifications: AdminNotificationsService,
+    private readonly pushSubscriptions: AdminPushSubscriptionsService,
+  ) {}
+
+  @Get('push/vapid-public-key')
+  @ApiOperation({ summary: 'Публичный VAPID-ключ для Web Push (PWA)' })
+  getPushVapidPublicKey() {
+    return { publicKey: this.pushSubscriptions.getPublicKey() };
+  }
+
+  @Post('push/subscribe')
+  @ApiOperation({ summary: 'Подписаться на push-уведомления админки (PWA)' })
+  subscribePush(@Req() req: RequestWithUser, @Body() dto: AdminPushSubscribeDto) {
+    const userAgent = req.headers['user-agent'];
+    return this.pushSubscriptions.upsertSubscription(
+      req.user.id,
+      dto,
+      typeof userAgent === 'string' ? userAgent : undefined,
+    );
+  }
+
+  @Delete('push/subscribe')
+  @ApiOperation({ summary: 'Отписаться от push-уведомлений админки' })
+  unsubscribePush(@Req() req: RequestWithUser, @Body() dto: AdminPushSubscribeDto) {
+    return this.pushSubscriptions.removeSubscription(req.user.id, dto.endpoint);
+  }
 
   @Get('settings')
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })

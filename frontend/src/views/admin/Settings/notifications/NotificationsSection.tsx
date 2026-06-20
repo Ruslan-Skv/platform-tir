@@ -212,6 +212,9 @@ export function NotificationsSection() {
         await updateAdminNotificationsSettings(payload);
       }
       showToast('Настройки сохранены', 'success');
+      if (editMode !== 'customer' && formSettings?.desktopNotifications) {
+        window.dispatchEvent(new Event('admin-push-sync'));
+      }
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Ошибка сохранения', 'error');
     } finally {
@@ -284,6 +287,7 @@ export function NotificationsSection() {
       setPermissionStatus(permission);
       if (permission === 'granted') {
         showToast('Разрешение на уведомления получено', 'success');
+        window.dispatchEvent(new Event('admin-push-sync'));
       } else if (permission === 'denied') {
         showToast('Уведомления заблокированы. Разрешите в настройках браузера.', 'error');
       } else {
@@ -311,6 +315,7 @@ export function NotificationsSection() {
     notifyOnSupportChat: true,
     notifyOnMeasurementForm: true,
     notifyOnCallbackForm: true,
+    notifyOnKnowledgeFeedback: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -754,6 +759,23 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnCallbackForm">Заказ обратного звонка</label>
               </div>
+              {isSuperAdmin ? (
+                <div className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    id="notifyOnKnowledgeFeedback"
+                    checked={formSettings.notifyOnKnowledgeFeedback ?? true}
+                    onChange={(e) =>
+                      setSettings((s) =>
+                        s ? { ...s, notifyOnKnowledgeFeedback: e.target.checked } : s
+                      )
+                    }
+                  />
+                  <label htmlFor="notifyOnKnowledgeFeedback">
+                    Ошибки и предложения по обучающей платформе
+                  </label>
+                </div>
+              ) : null}
 
               <h3 className={styles.subsectionTitle}>Звук</h3>
               <div className={styles.checkboxRow}>
@@ -886,12 +908,12 @@ export function NotificationsSection() {
                   }
                 />
                 <label htmlFor="desktopNotifications">
-                  Уведомления на рабочем столе (вне вкладки)
+                  Уведомления на рабочем столе и в приложении (PWA)
                 </label>
               </div>
               <p className={styles.hint}>
-                Показывать уведомление вне вкладки браузера при новом событии (требуется разрешение
-                браузера).
+                Показывать уведомление вне вкладки браузера и на телефоне (если сайт установлен как
+                приложение) при новом событии. Требуется разрешение браузера.
               </p>
               <div className={styles.permissionRow}>
                 {permissionStatus === 'granted' ? (

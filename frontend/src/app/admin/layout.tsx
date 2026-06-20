@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 
 import { usePathname, useRouter } from 'next/navigation';
 
+import { AdminWebPushManager } from '@/features/admin-push';
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { getOrCreateStore } from '@/features/theme';
@@ -90,6 +91,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAccessibleResourcesProvider>
+      <AdminWebPushManager />
       <div className={styles.adminLayout}>
         <AdminSidebar
           collapsed={sidebarCollapsed}

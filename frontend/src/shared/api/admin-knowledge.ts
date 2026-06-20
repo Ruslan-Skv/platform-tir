@@ -670,6 +670,59 @@ export async function createKnowledgeMaterialComment(materialId: string, text: s
   return res.json() as Promise<{ comment: KnowledgeMaterialComment; commentCount: number }>;
 }
 
+export type KnowledgePlatformFeedbackType = 'SUGGESTION' | 'BUG';
+
+export interface KnowledgePlatformFeedback {
+  id: string;
+  type: KnowledgePlatformFeedbackType;
+  text: string;
+  createdAt: string;
+  readAt?: string | null;
+  author?: KnowledgeMaterialCommentAuthor;
+}
+
+export async function getKnowledgePlatformFeedback(options?: {
+  type?: KnowledgePlatformFeedbackType;
+  unreadOnly?: boolean;
+  limit?: number;
+}) {
+  const params = new URLSearchParams();
+  if (options?.type) params.set('type', options.type);
+  if (options?.unreadOnly) params.set('unreadOnly', 'true');
+  if (options?.limit) params.set('limit', String(options.limit));
+  const query = params.toString();
+  const res = await apiFetch(`${API_URL}/admin/knowledge/feedback${query ? `?${query}` : ''}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить обратную связь');
+  return res.json() as Promise<{ items: KnowledgePlatformFeedback[] }>;
+}
+
+export async function markKnowledgePlatformFeedbackRead() {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/feedback/mark-read`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось отметить сообщения прочитанными');
+  return res.json() as Promise<{ marked: number }>;
+}
+
+export async function createKnowledgePlatformFeedback(data: {
+  type: KnowledgePlatformFeedbackType;
+  text: string;
+}) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/feedback`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить сообщение');
+  }
+  return res.json() as Promise<{ feedback: KnowledgePlatformFeedback }>;
+}
+
 export async function updateKnowledgeVideoProgress(
   materialId: string,
   data: { progressPercent: number; positionSeconds?: number; completed?: boolean }

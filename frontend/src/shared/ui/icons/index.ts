@@ -30,6 +30,16 @@ export {
   type PinIconProps,
 } from './PinIcon';
 export {
+  PlatformFeedbackIcon,
+  ADMIN_PLATFORM_FEEDBACK_ICON_SIZE,
+  type PlatformFeedbackIconProps,
+} from './PlatformFeedbackIcon';
+export {
+  PlatformFeedbackSubmitIcon,
+  ADMIN_PLATFORM_FEEDBACK_SUBMIT_ICON_SIZE,
+  type PlatformFeedbackSubmitIconProps,
+} from './PlatformFeedbackSubmitIcon';
+export {
   PublishIcon,
   ADMIN_ACTION_ICON_PUBLISH_CLASS,
   ADMIN_PUBLISH_ICON_SIZE,

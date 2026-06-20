@@ -41,6 +41,7 @@ import {
 } from '../knowledge-territory-filters-storage';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
 import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.types';
+import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformFeedbackUnreadCount';
 
 export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
@@ -87,6 +88,8 @@ export function useKnowledgeTerritoryPage() {
   const [trashOpen, setTrashOpen] = useState(false);
 
   const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount);
+  const { feedbackUnreadCount, refreshFeedbackUnreadCount } =
+    useKnowledgePlatformFeedbackUnreadCount(canEdit);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -527,6 +530,8 @@ export function useKnowledgeTerritoryPage() {
     setTrashOpen,
     trashCount,
     refreshTrashCount,
+    feedbackUnreadCount,
+    refreshFeedbackUnreadCount,
     handleTrashRestored,
     persistTerritoryFilters,
   };

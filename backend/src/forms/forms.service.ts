@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import { PrismaService } from '../database/prisma.service';
+import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
 import { FormNotifierService } from './form-notifier.service';
 import { SubmitCallbackDto } from './dto/submit-callback.dto';
 import { SubmitDirectorMessageDto } from './dto/submit-director-message.dto';
@@ -23,6 +24,7 @@ export class FormsService {
     private readonly mailer: MailerService,
     private readonly config: ConfigService,
     private readonly formNotifier: FormNotifierService,
+    private readonly adminBellPush: AdminBellPushService,
   ) {}
 
   async getQuoteFormOptions(): Promise<{ options: string[] }> {
@@ -55,6 +57,13 @@ export class FormsService {
       html: this.buildMeasurementEmailHtml(dto),
       text: this.buildMeasurementEmailText(dto),
       replyTo: dto.email || undefined,
+    });
+
+    void this.adminBellPush.notify('form_measurement', {
+      title: 'Запись на замер',
+      body: `${dto.name}, ${dto.phone}`,
+      url: '/admin/forms',
+      tag: `form-measurement-${submission.id}`,
     });
 
     return submission;
@@ -114,6 +123,13 @@ ${dto.comments ? `\nКомментарий:\n${dto.comments}` : ''}`;
       html: this.buildCallbackEmailHtml(dto),
       text: this.buildCallbackEmailText(dto),
       replyTo: dto.email || undefined,
+    });
+
+    void this.adminBellPush.notify('form_callback', {
+      title: 'Обратный звонок',
+      body: `${dto.name}, ${dto.phone}`,
+      url: '/admin/forms',
+      tag: `form-callback-${submission.id}`,
     });
 
     return submission;

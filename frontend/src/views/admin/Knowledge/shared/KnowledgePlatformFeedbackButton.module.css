@@ -1,0 +1,38 @@
+.trigger {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.typeFieldset {
+  margin: 0;
+  padding: 0;
+  border: none;
+}
+
+.typeLegend {
+  margin-bottom: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.typeOption {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.typeOption + .typeOption {
+  margin-top: var(--admin-space-xs);
+}
+
+.counter {
+  margin-top: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  text-align: right;
+}

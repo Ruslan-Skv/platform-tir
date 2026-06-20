@@ -28,6 +28,14 @@
   top: var(--admin-space-lg);
   right: var(--admin-space-lg);
   z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.heroInfoTipButton {
+  text-decoration: none;
+  color: inherit;
 }
 
 .heroContent {
@@ -679,6 +687,33 @@
 .heroToolbarLink {
   text-decoration: none;
   color: inherit;
+}
+
+.feedbackLinkWrap {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+}
+
+.feedbackBadge {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--admin-surface);
+  background: var(--admin-chart-teal);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-sizing: border-box;
 }
 
 .cardActions {

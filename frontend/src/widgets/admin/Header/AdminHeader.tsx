@@ -2,6 +2,7 @@
 
 import {
   ArrowLeftIcon,
+  CheckIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   MoonIcon,
@@ -17,6 +18,11 @@ import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { getAdminFormSubmissions } from '@/shared/api/admin-forms';
 import type { AdminFormSubmission } from '@/shared/api/admin-forms';
+import {
+  type KnowledgePlatformFeedback,
+  getKnowledgePlatformFeedback,
+  markKnowledgePlatformFeedbackRead,
+} from '@/shared/api/admin-knowledge';
 import { getAdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import { getAdminOrders } from '@/shared/api/admin-orders';
@@ -66,7 +72,50 @@ type NotificationItem =
   | { type: 'review'; id: string; date: string; link: string; text: string }
   | { type: 'order'; id: string; date: string; link: string; text: string }
   | { type: 'support'; id: string; date: string; link: string; text: string }
-  | { type: 'form'; id: string; date: string; link: string; text: string };
+  | { type: 'form'; id: string; date: string; link: string; text: string }
+  | { type: 'knowledgeFeedback'; id: string; date: string; link: string; text: string };
+
+function formatKnowledgeFeedbackAuthor(author: KnowledgePlatformFeedback['author']): string {
+  if (!author) return 'сотрудника';
+  const name = `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim();
+  return name || author.email;
+}
+
+const NOTIFICATIONS_DISMISSED_PREFIX = 'admin_notifications_dismissed';
+
+function getDismissedNotificationsKey(userId: string) {
+  return `${NOTIFICATIONS_DISMISSED_PREFIX}_${userId}`;
+}
+
+function loadDismissedNotificationIds(userId: string): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(getDismissedNotificationsKey(userId));
+    if (!raw) return new Set();
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed)
+      ? new Set(parsed.filter((value): value is string => typeof value === 'string'))
+      : new Set();
+  } catch {
+    return new Set();
+  }
+}
+
+function saveDismissedNotificationIds(userId: string, ids: Set<string>) {
+  localStorage.setItem(getDismissedNotificationsKey(userId), JSON.stringify([...ids]));
+}
+
+function notificationItemKey(item: NotificationItem) {
+  return `${item.type}:${item.id}`;
+}
+
+const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] = [
+  { href: '/admin/settings/reviews', label: 'Отзывы' },
+  { href: '/admin/orders', label: 'Заказы' },
+  { href: '/admin/support', label: 'Чат' },
+  { href: '/admin/forms', label: 'Заявки' },
+  { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
+];
 
 export function AdminHeader() {
   const { user, logout } = useAuth();
@@ -78,15 +127,22 @@ export function AdminHeader() {
   const [orderNotifications, setOrderNotifications] = useState<AdminOrderSummary[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
   const [formNotifications, setFormNotifications] = useState<AdminFormSubmission[]>([]);
+  const [knowledgeFeedbackNotifications, setKnowledgeFeedbackNotifications] = useState<
+    KnowledgePlatformFeedback[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
+  const [dismissedNotificationIds, setDismissedNotificationIds] = useState<Set<string>>(
+    () => new Set()
+  );
   const prevCountsRef = useRef<{
     reviews: number;
     orders: number;
     support: number;
     measurementForms: number;
     callbackForms: number;
+    knowledgeFeedback: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -105,26 +161,36 @@ export function AdminHeader() {
 
   const loadAllNotifications = useCallback(async () => {
     setNotificationsLoading(true);
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     try {
       await ensureFreshAccessToken();
-      const [reviewsRes, ordersRes, supportRes, formsMeasurementRes, formsCallbackRes] =
-        await Promise.all([
-          notificationSettings?.notifyOnReviews !== false
-            ? getAdminReviews(1, 10, undefined, false)
-            : Promise.resolve({ data: [] as AdminReview[] }),
-          notificationSettings?.notifyOnOrders !== false
-            ? getAdminOrders(1, 10, 'PENDING')
-            : Promise.resolve({ data: [] as AdminOrderSummary[] }),
-          notificationSettings?.notifyOnSupportChat !== false
-            ? getAdminSupportConversations()
-            : Promise.resolve([] as AdminSupportConversation[]),
-          notificationSettings?.notifyOnMeasurementForm !== false
-            ? getAdminFormSubmissions(1, 10, 'measurement')
-            : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-          notificationSettings?.notifyOnCallbackForm !== false
-            ? getAdminFormSubmissions(1, 10, 'callback')
-            : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-        ]);
+      const [
+        reviewsRes,
+        ordersRes,
+        supportRes,
+        formsMeasurementRes,
+        formsCallbackRes,
+        feedbackRes,
+      ] = await Promise.all([
+        notificationSettings?.notifyOnReviews !== false
+          ? getAdminReviews(1, 10, undefined, false)
+          : Promise.resolve({ data: [] as AdminReview[] }),
+        notificationSettings?.notifyOnOrders !== false
+          ? getAdminOrders(1, 10, 'PENDING')
+          : Promise.resolve({ data: [] as AdminOrderSummary[] }),
+        notificationSettings?.notifyOnSupportChat !== false
+          ? getAdminSupportConversations()
+          : Promise.resolve([] as AdminSupportConversation[]),
+        notificationSettings?.notifyOnMeasurementForm !== false
+          ? getAdminFormSubmissions(1, 10, 'measurement')
+          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
+        notificationSettings?.notifyOnCallbackForm !== false
+          ? getAdminFormSubmissions(1, 10, 'callback')
+          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
+        isSuperAdmin && notificationSettings?.notifyOnKnowledgeFeedback !== false
+          ? getKnowledgePlatformFeedback({ unreadOnly: true, limit: 10 })
+          : Promise.resolve({ items: [] as KnowledgePlatformFeedback[] }),
+      ]);
 
       const newReviews = reviewsRes.data ?? [];
       const newOrders = ordersRes.data ?? [];
@@ -137,6 +203,7 @@ export function AdminHeader() {
       const newForms = [...measurementForms, ...callbackForms].sort(
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
+      const unreadKnowledgeFeedback = feedbackRes.items ?? [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -145,6 +212,7 @@ export function AdminHeader() {
         support: activeSupport.length,
         measurementForms: measurementForms.length,
         callbackForms: callbackForms.length,
+        knowledgeFeedback: unreadKnowledgeFeedback.length,
       };
 
       const settings = notificationSettings;
@@ -153,9 +221,15 @@ export function AdminHeader() {
         newOrders.length +
         activeSupport.length +
         measurementForms.length +
-        callbackForms.length;
+        callbackForms.length +
+        unreadKnowledgeFeedback.length;
       const prevTotal = prev
-        ? prev.reviews + prev.orders + prev.support + prev.measurementForms + prev.callbackForms
+        ? prev.reviews +
+          prev.orders +
+          prev.support +
+          prev.measurementForms +
+          prev.callbackForms +
+          prev.knowledgeFeedback
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -177,6 +251,7 @@ export function AdminHeader() {
         const latestOrder = newOrders[0];
         const latestSupport = activeSupport[0];
         const latestForm = newForms[0];
+        const latestKnowledgeFeedback = unreadKnowledgeFeedback[0];
         if (latestReview && settings.notifyOnReviews) {
           new Notification('Новый отзыв', {
             body: `«${latestReview.product?.name || 'Товар'}» от ${latestReview.userName}`,
@@ -211,6 +286,15 @@ export function AdminHeader() {
             body: `${latestForm.name}, ${latestForm.phone}`,
             tag: `form-${latestForm.id}`,
           });
+        } else if (latestKnowledgeFeedback && settings.notifyOnKnowledgeFeedback) {
+          const label =
+            latestKnowledgeFeedback.type === 'BUG'
+              ? 'Ошибка на обучающей платформе'
+              : 'Предложение по обучающей платформе';
+          new Notification(label, {
+            body: `От ${formatKnowledgeFeedbackAuthor(latestKnowledgeFeedback.author)}`,
+            tag: `knowledge-feedback-${latestKnowledgeFeedback.id}`,
+          });
         }
       }
 
@@ -218,19 +302,27 @@ export function AdminHeader() {
       setOrderNotifications(newOrders);
       setSupportNotifications(activeSupport);
       setFormNotifications(newForms);
+      setKnowledgeFeedbackNotifications(unreadKnowledgeFeedback);
     } catch {
       setReviewNotifications([]);
       setOrderNotifications([]);
       setSupportNotifications([]);
       setFormNotifications([]);
+      setKnowledgeFeedbackNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
-  }, [notificationSettings]);
+  }, [notificationSettings, user?.role]);
 
   useEffect(() => {
     loadNotificationSettings();
   }, [loadNotificationSettings]);
+
+  useEffect(() => {
+    if (user?.id) {
+      setDismissedNotificationIds(loadDismissedNotificationIds(user.id));
+    }
+  }, [user?.id]);
 
   useEffect(() => {
     setPublicSiteEditModeState(getPublicSiteEditMode());
@@ -314,10 +406,71 @@ export function AdminHeader() {
       text:
         f.type === 'measurement' ? `Запись на замер от ${f.name}` : `Обратный звонок от ${f.name}`,
     })),
+    ...knowledgeFeedbackNotifications.map((f) => ({
+      type: 'knowledgeFeedback' as const,
+      id: f.id,
+      date: f.createdAt,
+      link: `/admin/knowledge/feedback`,
+      text:
+        f.type === 'BUG'
+          ? `Ошибка на платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`
+          : `Предложение по платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`,
+    })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const unreadCount = notificationItems.length;
+  const visibleNotificationItems = notificationItems.filter(
+    (item) => !dismissedNotificationIds.has(notificationItemKey(item))
+  );
+  const hasDismissedNotifications =
+    notificationItems.length > 0 && visibleNotificationItems.length < notificationItems.length;
+
+  const unreadCount = visibleNotificationItems.length;
   const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
+
+  const dismissNotification = useCallback(
+    (item: NotificationItem) => {
+      if (!user?.id) return;
+      const key = notificationItemKey(item);
+      setDismissedNotificationIds((prev) => {
+        if (prev.has(key)) return prev;
+        const next = new Set(prev);
+        next.add(key);
+        saveDismissedNotificationIds(user.id, next);
+        return next;
+      });
+      if (item.type === 'knowledgeFeedback') {
+        setKnowledgeFeedbackNotifications((prev) => prev.filter((f) => f.id !== item.id));
+      }
+    },
+    [user?.id]
+  );
+
+  const handleMarkAllNotificationsRead = async () => {
+    if (!user?.id) return;
+    const next = new Set(dismissedNotificationIds);
+    for (const item of notificationItems) {
+      next.add(notificationItemKey(item));
+    }
+    saveDismissedNotificationIds(user.id, next);
+    setDismissedNotificationIds(next);
+    if (user.role === 'SUPER_ADMIN' && knowledgeFeedbackNotifications.length > 0) {
+      try {
+        await markKnowledgePlatformFeedbackRead();
+        setKnowledgeFeedbackNotifications([]);
+      } catch {
+        /* ignore */
+      }
+    }
+  };
+
+  const handleDismissNotification = (item: NotificationItem) => {
+    dismissNotification(item);
+  };
+
+  const handleNotificationClick = (item: NotificationItem) => {
+    dismissNotification(item);
+    setShowNotifications(false);
+  };
 
   const togglePublicSiteEditMode = () => {
     const next = !getPublicSiteEditMode();
@@ -417,41 +570,79 @@ export function AdminHeader() {
           </button>
 
           {showNotifications && (
-            <div className={styles.dropdown}>
+            <div className={`${styles.dropdown} ${styles.notificationsDropdown}`}>
               <div className={styles.dropdownHeader}>
                 <span>Уведомления</span>
+                {visibleNotificationItems.length > 0 ? (
+                  <button
+                    type="button"
+                    className={styles.markAllRead}
+                    onClick={() => void handleMarkAllNotificationsRead()}
+                  >
+                    Прочитать все
+                  </button>
+                ) : null}
               </div>
               <div className={styles.notificationList}>
                 {notificationsLoading ? (
                   <div className={styles.notificationItem}>
                     <p className={styles.notificationText}>Загрузка...</p>
                   </div>
-                ) : notificationItems.length === 0 ? (
+                ) : visibleNotificationItems.length === 0 ? (
                   <div className={styles.notificationItem}>
-                    <p className={styles.notificationText}>Нет новых уведомлений</p>
+                    <p className={styles.notificationText}>
+                      {hasDismissedNotifications
+                        ? 'Все уведомления прочитаны'
+                        : 'Нет новых уведомлений'}
+                    </p>
+                    {notificationItems.length > 0 && !hasDismissedNotifications ? (
+                      <span className={styles.notificationHint}>
+                        Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
+                      </span>
+                    ) : null}
                   </div>
                 ) : (
-                  notificationItems.map((item) => (
-                    <Link
+                  visibleNotificationItems.map((item) => (
+                    <div
                       key={`${item.type}-${item.id}`}
-                      href={getSafeHref(item.link, '#')}
-                      className={`${styles.notificationItem} ${styles.unread}`}
-                      onClick={() => setShowNotifications(false)}
+                      className={`${styles.notificationRow} ${styles.unread}`}
                     >
-                      <p className={styles.notificationText}>{item.text}</p>
-                      <span className={styles.notificationTime}>{formatTimeAgo(item.date)}</span>
-                    </Link>
+                      <Link
+                        href={getSafeHref(item.link, '#')}
+                        className={styles.notificationItem}
+                        onClick={() => handleNotificationClick(item)}
+                      >
+                        <p className={styles.notificationText}>{item.text}</p>
+                        <span className={styles.notificationTime}>{formatTimeAgo(item.date)}</span>
+                      </Link>
+                      <button
+                        type="button"
+                        className={styles.dismissNotification}
+                        title="Отметить прочитанным"
+                        aria-label="Отметить прочитанным"
+                        onClick={() => handleDismissNotification(item)}
+                      >
+                        <CheckIcon className={styles.dismissNotificationIcon} aria-hidden />
+                      </button>
+                    </div>
                   ))
                 )}
               </div>
               <div className={styles.dropdownFooter}>
-                <Link href="/admin/settings/reviews">Отзывы</Link>
-                <span className={styles.dropdownFooterSep}>·</span>
-                <Link href="/admin/orders">Заказы</Link>
-                <span className={styles.dropdownFooterSep}>·</span>
-                <Link href="/admin/support">Чат поддержки</Link>
-                <span className={styles.dropdownFooterSep}>·</span>
-                <Link href="/admin/forms">Заявки с форм</Link>
+                <div className={styles.footerChips}>
+                  {FOOTER_LINKS.filter(
+                    (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
+                  ).map((link) => (
+                    <Link
+                      key={link.href}
+                      href={link.href}
+                      className={styles.footerChip}
+                      onClick={() => setShowNotifications(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  ))}
+                </div>
               </div>
             </div>
           )}

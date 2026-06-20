@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
 import { UsersService } from '../../users/users.service';
 import {
   CartProductLine,
@@ -33,6 +34,7 @@ export class OrdersCartSubmitFlowsService {
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
+    private readonly adminBellPush: AdminBellPushService,
   ) {}
 
   async createServicesOnlyOrder(
@@ -321,5 +323,11 @@ export class OrdersCartSubmitFlowsService {
         }),
       ),
     );
+    void this.adminBellPush.notify('order', {
+      title,
+      body: message,
+      url: '/admin/orders?status=PENDING',
+      tag: `order-${Date.now()}`,
+    });
   }
 }

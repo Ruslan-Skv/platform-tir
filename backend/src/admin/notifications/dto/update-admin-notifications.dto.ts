@@ -70,6 +70,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnCallbackForm?: boolean;
 
+  @ApiPropertyOptional({ description: 'Обратная связь по обучающей платформе' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnKnowledgeFeedback?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

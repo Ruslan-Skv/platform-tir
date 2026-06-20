@@ -1,0 +1,6 @@
+.icon {
+  display: block;
+  flex-shrink: 0;
+  color: var(--admin-text-muted, #8b8b8b);
+  opacity: 0.9;
+}

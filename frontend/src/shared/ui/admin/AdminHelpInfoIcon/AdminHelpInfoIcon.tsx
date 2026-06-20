@@ -10,6 +10,8 @@ const DEFAULT_PLAY_INTERVAL_MS = 10_000;
 const DEFAULT_PLAY_DURATION_MS = 1_800;
 
 export type AdminHelpInfoIconProps = HTMLAttributes<HTMLSpanElement> & {
+  /** Размер иконки в px */
+  size?: number;
   /** Пауза между проигрываниями анимации, мс */
   playIntervalMs?: number;
   /** Сколько длится одно проигрывание, мс */
@@ -19,8 +21,10 @@ export type AdminHelpInfoIconProps = HTMLAttributes<HTMLSpanElement> & {
 /** Зелёная «i» с редкой анимацией — для подсказок и информационных кнопок в админке. */
 export function AdminHelpInfoIcon({
   className,
+  size = 14,
   playIntervalMs = DEFAULT_PLAY_INTERVAL_MS,
   playDurationMs = DEFAULT_PLAY_DURATION_MS,
+  style,
   ...props
 }: AdminHelpInfoIconProps) {
   const [playing, setPlaying] = useState(false);
@@ -53,11 +57,27 @@ export function AdminHelpInfoIcon({
   }, [playIntervalMs, playDurationMs]);
 
   return (
-    <span className={[styles.wrap, className].filter(Boolean).join(' ')} aria-hidden {...props}>
+    <span
+      className={[styles.wrap, className].filter(Boolean).join(' ')}
+      style={{ width: size, height: size, ...style }}
+      aria-hidden
+      {...props}
+    >
       {playing ? (
-        <img key={playKey} src={GIF_SRC} alt="" className={styles.iconImage} />
+        <img
+          key={playKey}
+          src={GIF_SRC}
+          alt=""
+          className={styles.iconImage}
+          style={{ width: size, height: size }}
+        />
       ) : (
-        <img src={STATIC_SRC} alt="" className={styles.iconImage} />
+        <img
+          src={STATIC_SRC}
+          alt=""
+          className={styles.iconImage}
+          style={{ width: size, height: size }}
+        />
       )}
     </span>
   );

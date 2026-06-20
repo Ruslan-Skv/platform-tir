@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { UsersService } from '../users/users.service';
+import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
 import { ConversationStatus } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
@@ -12,6 +13,7 @@ export class SupportChatService {
   constructor(
     private prisma: PrismaService,
     private usersService: UsersService,
+    private readonly adminBellPush: AdminBellPushService,
   ) {}
 
   private isSupportRole(role: string): boolean {
@@ -166,6 +168,24 @@ export class SupportChatService {
         type: 'support_chat',
         title: 'Новый ответ в чате поддержки',
         message: preview,
+      });
+    }
+
+    // Push админам, если сообщение от клиента
+    if (!isSupport) {
+      const convUser = await this.prisma.user.findUnique({
+        where: { id: conv.userId },
+        select: { firstName: true, lastName: true, email: true },
+      });
+      const userName =
+        `${convUser?.firstName ?? ''} ${convUser?.lastName ?? ''}`.trim() ||
+        convUser?.email ||
+        'Клиент';
+      void this.adminBellPush.notify('support', {
+        title: 'Сообщение в чате поддержки',
+        body: `Диалог с ${userName}`,
+        url: '/admin/support',
+        tag: `support-${conversationId}`,
       });
     }
 

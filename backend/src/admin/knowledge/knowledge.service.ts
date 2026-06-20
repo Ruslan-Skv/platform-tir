@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import {
   KnowledgeMaterialType,
+  KnowledgePlatformFeedbackType,
   KnowledgeThumbnailDisplay,
   PageStatus,
   Prisma,
@@ -13,6 +14,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
+import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
@@ -44,6 +46,7 @@ export class KnowledgeService {
     private uploadService: KnowledgeUploadService,
     private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
     private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
+    private knowledgePlatformFeedbackService: KnowledgePlatformFeedbackService,
   ) {}
 
   findAllTargetAudiences() {
@@ -171,6 +174,22 @@ export class KnowledgeService {
 
   createMaterialComment(materialId: string, userId: string, text: string) {
     return this.knowledgeMaterialCommentsService.createComment(materialId, userId, text);
+  }
+
+  createPlatformFeedback(userId: string, type: KnowledgePlatformFeedbackType, text: string) {
+    return this.knowledgePlatformFeedbackService.createFeedback(userId, type, text);
+  }
+
+  listPlatformFeedback(options?: {
+    type?: KnowledgePlatformFeedbackType;
+    unreadOnly?: boolean;
+    limit?: number;
+  }) {
+    return this.knowledgePlatformFeedbackService.listFeedback(options);
+  }
+
+  markPlatformFeedbackRead() {
+    return this.knowledgePlatformFeedbackService.markAllAsRead();
   }
 
   async updateMaterial(id: string, dto: UpdateKnowledgeMaterialDto) {

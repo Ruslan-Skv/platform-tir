@@ -59,6 +59,8 @@ model User {
   knowledgeVideoProgress                  KnowledgeVideoProgress[]
   knowledgeMaterialLikes                  KnowledgeMaterialLike[]
   knowledgeMaterialComments               KnowledgeMaterialComment[]
+  knowledgePlatformFeedback               KnowledgePlatformFeedback[]
+  adminPushSubscriptions                  AdminPushSubscription[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   cartItems                               CartItem[]
   cartServiceItems                        CartServiceItem[]
@@ -895,6 +897,11 @@ enum KnowledgeThumbnailDisplay {
   NATURAL
 }
 
+enum KnowledgePlatformFeedbackType {
+  SUGGESTION
+  BUG
+}
+
 model KnowledgeCategory {
   id          String              @id @default(cuid())
   name        String
@@ -1062,6 +1069,22 @@ model KnowledgeMaterialComment {
   @@index([userId])
   @@index([createdAt])
   @@map("knowledge_material_comments")
+}
+
+model KnowledgePlatformFeedback {
+  id        String                        @id @default(cuid())
+  userId    String
+  type      KnowledgePlatformFeedbackType
+  text      String                        @db.Text
+  createdAt DateTime                      @default(now())
+  readAt    DateTime?
+  user      User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([readAt])
+  @@map("knowledge_platform_feedback")
 }
 
 model KnowledgeMaterialQuiz {
@@ -2030,40 +2053,57 @@ model NotificationSound {
 }
 
 model UserAdminNotificationOverride {
-  id                      String   @id @default(cuid())
-  userId                  String   @unique // Персональные настройки для пользователя (переопределяют роль)
-  soundEnabled            Boolean  @default(true)
-  soundVolume             Int      @default(70)
-  soundType               String   @default("beep")
-  customSoundUrl          String?
-  desktopNotifications    Boolean  @default(false)
-  checkIntervalSeconds    Int      @default(60)
-  notifyOnReviews         Boolean  @default(true)
-  notifyOnOrders          Boolean  @default(true)
-  notifyOnSupportChat     Boolean  @default(true)
-  notifyOnMeasurementForm Boolean  @default(true)
-  notifyOnCallbackForm    Boolean  @default(true)
-  updatedAt               DateTime @updatedAt
-  user                    User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                        String   @id @default(cuid())
+  userId                    String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  soundEnabled              Boolean  @default(true)
+  soundVolume               Int      @default(70)
+  soundType                 String   @default("beep")
+  customSoundUrl            String?
+  desktopNotifications      Boolean  @default(false)
+  checkIntervalSeconds      Int      @default(60)
+  notifyOnReviews           Boolean  @default(true)
+  notifyOnOrders            Boolean  @default(true)
+  notifyOnSupportChat       Boolean  @default(true)
+  notifyOnMeasurementForm   Boolean  @default(true)
+  notifyOnCallbackForm      Boolean  @default(true)
+  notifyOnKnowledgeFeedback Boolean  @default(true)
+  updatedAt                 DateTime @updatedAt
+  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_admin_notification_override")
 }
 
+model AdminPushSubscription {
+  id        String   @id @default(cuid())
+  userId    String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  userAgent String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("admin_push_subscriptions")
+}
+
 model AdminNotificationsBlock {
-  id                      String   @id @default(cuid())
-  role                    String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
-  soundEnabled            Boolean  @default(true) // Звук при событиях
-  soundVolume             Int      @default(70) // Громкость 0-100
-  soundType               String   @default("beep") // beep, ding, chime, bell или custom
-  customSoundUrl          String? // URL загруженного звука (при soundType=custom)
-  desktopNotifications    Boolean  @default(false) // Браузерные уведомления
-  checkIntervalSeconds    Int      @default(60) // Интервал проверки (сек)
-  notifyOnReviews         Boolean  @default(true) // Уведомления о новых отзывах
-  notifyOnOrders          Boolean  @default(true) // Уведомления о новых заказах
-  notifyOnSupportChat     Boolean  @default(true) // Уведомления о сообщениях в чате
-  notifyOnMeasurementForm Boolean  @default(true) // Уведомления о записи на замер
-  notifyOnCallbackForm    Boolean  @default(true) // Уведомления о заказе обратного звонка
-  updatedAt               DateTime @updatedAt
+  id                        String   @id @default(cuid())
+  role                      String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
+  soundEnabled              Boolean  @default(true) // Звук при событиях
+  soundVolume               Int      @default(70) // Громкость 0-100
+  soundType                 String   @default("beep") // beep, ding, chime, bell или custom
+  customSoundUrl            String? // URL загруженного звука (при soundType=custom)
+  desktopNotifications      Boolean  @default(false) // Браузерные уведомления
+  checkIntervalSeconds      Int      @default(60) // Интервал проверки (сек)
+  notifyOnReviews           Boolean  @default(true) // Уведомления о новых отзывах
+  notifyOnOrders            Boolean  @default(true) // Уведомления о новых заказах
+  notifyOnSupportChat       Boolean  @default(true) // Уведомления о сообщениях в чате
+  notifyOnMeasurementForm   Boolean  @default(true) // Уведомления о записи на замер
+  notifyOnCallbackForm      Boolean  @default(true) // Уведомления о заказе обратного звонка
+  notifyOnKnowledgeFeedback Boolean  @default(true) // Обратная связь по обучающей платформе
+  updatedAt                 DateTime @updatedAt
 
   @@map("admin_notifications_block")
 }
