@@ -109,6 +109,8 @@ function notificationItemKey(item: NotificationItem) {
   return `${item.type}:${item.id}`;
 }
 
+const NOTIFICATIONS_SETTINGS_HREF = '/admin/settings/notifications';
+
 const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: '/admin/settings/reviews', label: 'Отзывы' },
   { href: '/admin/orders', label: 'Заказы' },
@@ -573,15 +575,24 @@ export function AdminHeader() {
             <div className={`${styles.dropdown} ${styles.notificationsDropdown}`}>
               <div className={styles.dropdownHeader}>
                 <span>Уведомления</span>
-                {visibleNotificationItems.length > 0 ? (
-                  <button
-                    type="button"
-                    className={styles.markAllRead}
-                    onClick={() => void handleMarkAllNotificationsRead()}
+                <div className={styles.dropdownHeaderActions}>
+                  <Link
+                    href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                    className={styles.notificationSettingsLink}
+                    onClick={() => setShowNotifications(false)}
                   >
-                    Прочитать все
-                  </button>
-                ) : null}
+                    Настройки
+                  </Link>
+                  {visibleNotificationItems.length > 0 ? (
+                    <button
+                      type="button"
+                      className={styles.markAllRead}
+                      onClick={() => void handleMarkAllNotificationsRead()}
+                    >
+                      Прочитать все
+                    </button>
+                  ) : null}
+                </div>
               </div>
               <div className={styles.notificationList}>
                 {notificationsLoading ? (
@@ -629,6 +640,13 @@ export function AdminHeader() {
                 )}
               </div>
               <div className={styles.dropdownFooter}>
+                <Link
+                  href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                  className={styles.notificationSettingsButton}
+                  onClick={() => setShowNotifications(false)}
+                >
+                  Настройки уведомлений и push
+                </Link>
                 <div className={styles.footerChips}>
                   {FOOTER_LINKS.filter(
                     (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
