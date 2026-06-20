@@ -27,7 +27,7 @@ const PLATFORM_HELP = {
   title: 'Правила обучающей платформы',
   note: 'Корпоративная обучающая платформа: статьи, видео, ссылки и тесты после материалов.',
   traineeLead:
-    'Уважаемый стажёр, для получения хороших шансов на ваше трудоустройство в компании вам необходимо изучить не менее 30% материалов в каждой категории.',
+    'Уважаемый стажёр, для получения хороших шансов на ваше трудоустройство в компании вам необходимо изучить не менее 30% материалов в каждой категории (кроме категории "Мебель на заказ).',
 } as const;
 
 type KnowledgePlatformInfoTipProps = {
@@ -47,6 +47,7 @@ export function KnowledgePlatformInfoTip({
     <AdminHelpTooltip
       title={PLATFORM_HELP.title}
       align="end"
+      panelClassName={styles.helpPanel}
       body={
         <div className={styles.body}>
           <p className={styles.note}>{PLATFORM_HELP.note}</p>

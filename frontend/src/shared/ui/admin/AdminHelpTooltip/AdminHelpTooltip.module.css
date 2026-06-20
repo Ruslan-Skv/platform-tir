@@ -62,3 +62,30 @@
   color: var(--admin-text-secondary, #374151);
   font-size: inherit;
 }
+
+.backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 10099;
+  border: none;
+  padding: 0;
+  background: rgb(0 0 0 / 0.45);
+  cursor: pointer;
+}
+
+.panelTouch {
+  position: fixed;
+  top: auto !important;
+  bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  left: 12px !important;
+  right: 12px;
+  width: auto !important;
+  max-width: none !important;
+  transform: none !important;
+  max-height: min(78vh, 640px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  padding: 14px 16px;
+  box-shadow: 0 16px 40px rgb(15 23 42 / 22%);
+}

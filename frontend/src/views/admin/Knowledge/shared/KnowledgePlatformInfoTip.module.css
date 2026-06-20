@@ -4,6 +4,12 @@
   padding: 0;
 }
 
+.helpPanel {
+  max-height: min(70vh, 560px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
 .body {
   display: flex;
   flex-direction: column;
@@ -20,6 +26,11 @@
   padding-left: 18px;
 }
 
+.steps li + li,
+.meaningList li + li {
+  margin-top: 4px;
+}
+
 .traineeSection {
   margin: 0;
   padding-top: 8px;
@@ -33,4 +44,23 @@
 .meaningTitle {
   margin: 0 0 4px;
   font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .body {
+    gap: 10px;
+  }
+
+  .note,
+  .traineeLead {
+    font-size: var(--admin-font-size-sm, 0.8125rem);
+    line-height: 1.45;
+  }
+
+  .steps,
+  .meaningList {
+    padding-left: 16px;
+    font-size: var(--admin-font-size-sm, 0.8125rem);
+    line-height: 1.45;
+  }
 }

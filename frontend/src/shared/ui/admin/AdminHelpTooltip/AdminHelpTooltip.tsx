@@ -59,6 +59,7 @@ export function AdminHelpTooltip({
 }: AdminHelpTooltipProps) {
   const [open, setOpen] = useState(false);
   const [tooltipPortalReady, setTooltipPortalReady] = useState(false);
+  const [isTouchLike, setIsTouchLike] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLDivElement>(null);
   const showTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -68,6 +69,14 @@ export function AdminHelpTooltip({
 
   useEffect(() => {
     setTooltipPortalReady(true);
+  }, []);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 640px), (pointer: coarse)');
+    const syncTouchLike = () => setIsTouchLike(mediaQuery.matches);
+    syncTouchLike();
+    mediaQuery.addEventListener('change', syncTouchLike);
+    return () => mediaQuery.removeEventListener('change', syncTouchLike);
   }, []);
 
   useEffect(
@@ -93,10 +102,34 @@ export function AdminHelpTooltip({
     setTooltipPos((prev) => (prev && positionsClose(prev, next) ? prev : next));
 
     const panel = panelRef.current;
-    if (panel) {
-      panel.style.top = `${next.top}px`;
-      panel.style.left = `${next.left}px`;
-    }
+    if (!panel) return;
+
+    panel.style.top = `${next.top}px`;
+    panel.style.left = `${next.left}px`;
+
+    requestAnimationFrame(() => {
+      const margin = 12;
+      const rect = panel.getBoundingClientRect();
+      let shiftX = 0;
+
+      if (rect.right > window.innerWidth - margin) {
+        shiftX -= rect.right - (window.innerWidth - margin);
+      }
+      if (rect.left + shiftX < margin) {
+        shiftX += margin - (rect.left + shiftX);
+      }
+
+      if (shiftX !== 0) {
+        const currentLeft = parseFloat(panel.style.left) || next.left;
+        panel.style.left = `${currentLeft + shiftX}px`;
+      }
+
+      const maxBottom = window.innerHeight - margin;
+      if (rect.bottom > maxBottom) {
+        const currentTop = parseFloat(panel.style.top) || next.top;
+        panel.style.top = `${Math.max(margin, currentTop - (rect.bottom - maxBottom))}px`;
+      }
+    });
   }, []);
 
   const updateTooltipPosition = useCallback(() => {
@@ -113,7 +146,7 @@ export function AdminHelpTooltip({
   }, [updateTooltipPosition]);
 
   useLayoutEffect(() => {
-    if (!open) return;
+    if (!open || isTouchLike) return;
     updateTooltipPosition();
     const onScrollOrResize = () => schedulePositionUpdate();
     window.addEventListener('scroll', onScrollOrResize);
@@ -122,7 +155,7 @@ export function AdminHelpTooltip({
       window.removeEventListener('scroll', onScrollOrResize);
       window.removeEventListener('resize', onScrollOrResize);
     };
-  }, [open, schedulePositionUpdate, updateTooltipPosition]);
+  }, [open, isTouchLike, schedulePositionUpdate, updateTooltipPosition]);
 
   const clearShowTimer = () => {
     if (showTimerRef.current) {
@@ -138,6 +171,12 @@ export function AdminHelpTooltip({
     }
   };
 
+  const hideHelp = useCallback(() => {
+    clearShowTimer();
+    clearHideTimer();
+    setOpen(false);
+  }, []);
+
   const showHelp = () => {
     if (disabled) return;
     clearHideTimer();
@@ -145,6 +184,11 @@ export function AdminHelpTooltip({
 
     const openTooltip = () => {
       onShow?.();
+      if (isTouchLike) {
+        setTooltipPos({ top: 0, left: 0 });
+        setOpen(true);
+        return;
+      }
       updateTooltipPosition();
       setOpen(true);
     };
@@ -161,7 +205,17 @@ export function AdminHelpTooltip({
     }, showDelayMs);
   };
 
+  const toggleHelp = () => {
+    if (disabled) return;
+    if (open) {
+      hideHelp();
+      return;
+    }
+    showHelp();
+  };
+
   const scheduleHide = () => {
+    if (isTouchLike) return;
     clearShowTimer();
     clearHideTimer();
     hideTimerRef.current = setTimeout(() => {
@@ -175,36 +229,54 @@ export function AdminHelpTooltip({
   const tooltipPanel =
     open && tooltipPos && portalTarget
       ? createPortal(
-          <div
-            ref={panelRef}
-            id={tooltipId}
-            role="tooltip"
-            className={`${styles.panel} ${
-              align === 'end' ? styles.panelAlignEnd : styles.panelAlignCenter
-            } ${panelClassName ?? ''}`}
-            style={{
-              top: tooltipPos.top,
-              left: tooltipPos.left,
-            }}
-            onMouseEnter={showHelp}
-            onMouseLeave={scheduleHide}
-          >
-            <strong>{title}</strong>
-            {body != null ? (
-              <div className={styles.body}>{body}</div>
-            ) : (
-              <>
-                {steps.length > 0 ? (
-                  <ol>
-                    {steps.map((step, index) => (
-                      <li key={`${title}-${index}`}>{step}</li>
-                    ))}
-                  </ol>
-                ) : null}
-                {note ? <p>{note}</p> : null}
-              </>
-            )}
-          </div>,
+          <>
+            {isTouchLike ? (
+              <button
+                type="button"
+                className={styles.backdrop}
+                aria-label="Закрыть подсказку"
+                onClick={hideHelp}
+              />
+            ) : null}
+            <div
+              ref={panelRef}
+              id={tooltipId}
+              role="tooltip"
+              className={`${styles.panel} ${
+                isTouchLike
+                  ? styles.panelTouch
+                  : align === 'end'
+                    ? styles.panelAlignEnd
+                    : styles.panelAlignCenter
+              } ${panelClassName ?? ''}`}
+              style={
+                isTouchLike
+                  ? undefined
+                  : {
+                      top: tooltipPos.top,
+                      left: tooltipPos.left,
+                    }
+              }
+              onMouseEnter={isTouchLike ? undefined : showHelp}
+              onMouseLeave={isTouchLike ? undefined : scheduleHide}
+            >
+              <strong>{title}</strong>
+              {body != null ? (
+                <div className={styles.body}>{body}</div>
+              ) : (
+                <>
+                  {steps.length > 0 ? (
+                    <ol>
+                      {steps.map((step, index) => (
+                        <li key={`${title}-${index}`}>{step}</li>
+                      ))}
+                    </ol>
+                  ) : null}
+                  {note ? <p>{note}</p> : null}
+                </>
+              )}
+            </div>
+          </>,
           portalTarget
         )
       : null;
@@ -213,15 +285,20 @@ export function AdminHelpTooltip({
     <div
       ref={wrapRef}
       className={wrapClassName}
-      onMouseEnter={showHelp}
-      onMouseLeave={scheduleHide}
-      onFocusCapture={showHelp}
-      onBlurCapture={(e) => {
-        const next = e.relatedTarget;
-        if (!wrapRef.current?.contains(next as Node | null)) {
-          scheduleHide();
-        }
-      }}
+      onMouseEnter={isTouchLike ? undefined : showHelp}
+      onMouseLeave={isTouchLike ? undefined : scheduleHide}
+      onClick={isTouchLike ? toggleHelp : undefined}
+      onFocusCapture={isTouchLike ? undefined : showHelp}
+      onBlurCapture={
+        isTouchLike
+          ? undefined
+          : (e) => {
+              const next = e.relatedTarget;
+              if (!wrapRef.current?.contains(next as Node | null)) {
+                scheduleHide();
+              }
+            }
+      }
     >
       {children}
       {tooltipPanel}

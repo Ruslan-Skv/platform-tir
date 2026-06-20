@@ -77,7 +77,7 @@ export function KnowledgeTrainingAnalyticsPageView({
             <option value="custom">Свой период</option>
           </select>
           {period === 'custom' && (
-            <>
+            <div className={styles.dateRangeRow}>
               <input
                 type="date"
                 value={dateFrom}
@@ -85,7 +85,7 @@ export function KnowledgeTrainingAnalyticsPageView({
                 className={styles.dateInput}
                 aria-label="Дата начала"
               />
-              <span>—</span>
+              <span className={styles.dateRangeSep}>—</span>
               <input
                 type="date"
                 value={dateTo}
@@ -93,7 +93,7 @@ export function KnowledgeTrainingAnalyticsPageView({
                 className={styles.dateInput}
                 aria-label="Дата окончания"
               />
-            </>
+            </div>
           )}
         </div>
       </header>
@@ -256,25 +256,61 @@ export function KnowledgeTrainingAnalyticsPageView({
               <div className={styles.cardHeader}>
                 <h2 className={styles.cardTitle}>Материалы с наименьшим охватом</h2>
               </div>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Материал</th>
-                    <th>Завершили</th>
-                    <th>Охват</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {[...data.topMaterials]
-                    .reverse()
-                    .slice(0, 8)
-                    .map((material, index) => (
+              <div className={styles.tableScroll}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Материал</th>
+                      <th>Завершили</th>
+                      <th>Охват</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {[...data.topMaterials]
+                      .reverse()
+                      .slice(0, 8)
+                      .map((material, index) => (
+                        <tr key={material.materialId}>
+                          <td>
+                            <span className={styles.rank}>{index + 1}</span>
+                            {material.title}
+                            <div className={styles.tableMeta}>
+                              {getMaterialTypeLabel(material.type)} · {material.categoryName}
+                            </div>
+                          </td>
+                          <td>
+                            {material.completedCount} / {material.employeeCount}
+                          </td>
+                          <td>{formatPercentWithSymbol(material.completionPercent)}</td>
+                        </tr>
+                      ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+
+            <section className={styles.card}>
+              <div className={styles.cardHeader}>
+                <h2 className={styles.cardTitle}>Лидеры по материалам</h2>
+              </div>
+              <div className={styles.tableScroll}>
+                <table className={styles.table}>
+                  <thead>
+                    <tr>
+                      <th>Материал</th>
+                      <th>Завершили</th>
+                      <th>Охват</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.topMaterials.slice(0, 8).map((material, index) => (
                       <tr key={material.materialId}>
                         <td>
                           <span className={styles.rank}>{index + 1}</span>
                           {material.title}
                           <div className={styles.tableMeta}>
-                            {getMaterialTypeLabel(material.type)} · {material.categoryName}
+                            {getMaterialTypeLabel(material.type)}
+                            {material.hasQuiz ? ' · с тестом' : ''}
                           </div>
                         </td>
                         <td>
@@ -283,41 +319,9 @@ export function KnowledgeTrainingAnalyticsPageView({
                         <td>{formatPercentWithSymbol(material.completionPercent)}</td>
                       </tr>
                     ))}
-                </tbody>
-              </table>
-            </section>
-
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Лидеры по материалам</h2>
+                  </tbody>
+                </table>
               </div>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Материал</th>
-                    <th>Завершили</th>
-                    <th>Охват</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.topMaterials.slice(0, 8).map((material, index) => (
-                    <tr key={material.materialId}>
-                      <td>
-                        <span className={styles.rank}>{index + 1}</span>
-                        {material.title}
-                        <div className={styles.tableMeta}>
-                          {getMaterialTypeLabel(material.type)}
-                          {material.hasQuiz ? ' · с тестом' : ''}
-                        </div>
-                      </td>
-                      <td>
-                        {material.completedCount} / {material.employeeCount}
-                      </td>
-                      <td>{formatPercentWithSymbol(material.completionPercent)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
             </section>
           </div>
 
@@ -345,33 +349,35 @@ export function KnowledgeTrainingAnalyticsPageView({
                 </span>
               </div>
             </div>
-            <table className={styles.table}>
-              <thead>
-                <tr>
-                  <th>Сотрудник</th>
-                  <th>Email</th>
-                  <th>Прогресс</th>
-                  <th>Видео</th>
-                  <th>Тесты</th>
-                  <th>Последняя активность</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.employees.map((employee) => (
-                  <tr key={employee.userId}>
-                    <td>{formatEmployeeName(employee)}</td>
-                    <td>{employee.email}</td>
-                    <td>
-                      {employee.completedCount} / {employee.trackableCount} (
-                      {formatPercentWithSymbol(employee.completionPercent)})
-                    </td>
-                    <td>{employee.videosCompleted}</td>
-                    <td>{employee.quizzesPassed}</td>
-                    <td>{formatDateTime(employee.lastActivityAt)}</td>
+            <div className={styles.tableScroll}>
+              <table className={styles.table}>
+                <thead>
+                  <tr>
+                    <th>Сотрудник</th>
+                    <th>Email</th>
+                    <th>Прогресс</th>
+                    <th>Видео</th>
+                    <th>Тесты</th>
+                    <th>Последняя активность</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {data.employees.map((employee) => (
+                    <tr key={employee.userId}>
+                      <td>{formatEmployeeName(employee)}</td>
+                      <td>{employee.email}</td>
+                      <td>
+                        {employee.completedCount} / {employee.trackableCount} (
+                        {formatPercentWithSymbol(employee.completionPercent)})
+                      </td>
+                      <td>{employee.videosCompleted}</td>
+                      <td>{employee.quizzesPassed}</td>
+                      <td>{formatDateTime(employee.lastActivityAt)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
           </section>
         </>
       )}
