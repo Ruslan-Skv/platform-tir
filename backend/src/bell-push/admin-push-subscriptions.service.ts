@@ -1,6 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import webpush from 'web-push';
+import * as webpush from 'web-push';
 import { PrismaService } from '../database/prisma.service';
 import { AdminPushSubscribeDto } from './dto/admin-push-subscribe.dto';
 
@@ -25,8 +25,14 @@ export class AdminPushSubscriptionsService {
     const subject =
       this.config.get<string>('VAPID_SUBJECT')?.trim() || 'mailto:admin@platform-tir.local';
     if (publicKey && privateKey) {
-      webpush.setVapidDetails(subject, publicKey, privateKey);
-      this.configured = true;
+      try {
+        webpush.setVapidDetails(subject, publicKey, privateKey);
+        this.configured = true;
+      } catch (error) {
+        this.logger.warn(
+          `Invalid VAPID keys, push notifications disabled: ${error instanceof Error ? error.message : String(error)}`,
+        );
+      }
     }
   }
 
