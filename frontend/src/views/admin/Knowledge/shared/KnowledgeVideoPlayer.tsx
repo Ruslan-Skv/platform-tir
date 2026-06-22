@@ -6,6 +6,7 @@ import {
   type KnowledgeVideoProgress,
   updateKnowledgeVideoProgress,
 } from '@/shared/api/admin-knowledge';
+import { isNativeVideoFileUrl, parseVideoEmbed } from '@/shared/lib/video-embed';
 
 import styles from './KnowledgeVideoPlayer.module.css';
 
@@ -14,19 +15,6 @@ interface KnowledgeVideoPlayerProps {
   url: string;
   title?: string;
   initialProgress?: KnowledgeVideoProgress | null;
-}
-
-function isNativeVideoUrl(url: string): boolean {
-  const trimmed = url.trim();
-  if (/youtube\.com|youtu\.be|vimeo\.com/i.test(trimmed)) return false;
-  return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(trimmed) || trimmed.startsWith('/uploads/');
-}
-
-function getEmbedType(url: string): 'youtube' | 'vimeo' | 'native' {
-  if (isNativeVideoUrl(url)) return 'native';
-  if (/youtube\.com|youtu\.be/i.test(url)) return 'youtube';
-  if (/vimeo\.com/i.test(url)) return 'vimeo';
-  return 'native';
 }
 
 export function KnowledgeVideoPlayer({
@@ -40,7 +28,8 @@ export function KnowledgeVideoPlayer({
   const [progress, setProgress] = useState<KnowledgeVideoProgress | null>(initialProgress ?? null);
   const [saving, setSaving] = useState(false);
 
-  const embedType = getEmbedType(url);
+  const parsed = parseVideoEmbed(url);
+  const isNative = parsed?.provider === 'native' && isNativeVideoFileUrl(url);
 
   const saveProgress = useCallback(
     async (percent: number, positionSeconds?: number, completed?: boolean) => {
@@ -78,7 +67,7 @@ export function KnowledgeVideoPlayer({
   }, []);
 
   useEffect(() => {
-    if (embedType !== 'native' || !videoRef.current || !initialProgress?.positionSeconds) return;
+    if (!isNative || !videoRef.current || !initialProgress?.positionSeconds) return;
     const video = videoRef.current;
     const setPosition = () => {
       if (initialProgress.positionSeconds > 0 && video.duration > initialProgress.positionSeconds) {
@@ -87,7 +76,7 @@ export function KnowledgeVideoPlayer({
     };
     if (video.readyState >= 1) setPosition();
     else video.addEventListener('loadedmetadata', setPosition, { once: true });
-  }, [embedType, initialProgress?.positionSeconds]);
+  }, [isNative, initialProgress?.positionSeconds]);
 
   const handleNativeTimeUpdate = () => {
     const video = videoRef.current;
@@ -101,51 +90,54 @@ export function KnowledgeVideoPlayer({
     void saveProgress(100, undefined, true);
   };
 
-  const trimmed = url.trim();
-  if (!trimmed) return null;
+  if (!parsed) return null;
 
   const progressPercent = progress?.progressPercent ?? 0;
   const isCompleted = progress?.completed ?? false;
 
   let player: React.ReactNode = null;
 
-  const ytMatch =
-    trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/) ||
-    trimmed.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
-  if (ytMatch) {
+  if (parsed.provider === 'youtube') {
     player = (
       <iframe
-        src={`https://www.youtube.com/embed/${ytMatch[1]}?rel=0`}
+        src={parsed.embedUrl}
         title={title}
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
         className={styles.iframe}
       />
     );
-  } else {
-    const vimeoMatch = trimmed.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-    if (vimeoMatch) {
-      player = (
-        <iframe
-          src={`https://player.vimeo.com/video/${vimeoMatch[1]}`}
-          title={title}
-          allow="fullscreen; picture-in-picture"
-          allowFullScreen
-          className={styles.iframe}
-        />
-      );
-    } else {
-      player = (
-        <video
-          ref={videoRef}
-          src={trimmed}
-          controls
-          className={styles.native}
-          onTimeUpdate={handleNativeTimeUpdate}
-          onEnded={() => void saveProgress(100, videoRef.current?.duration, true)}
-        />
-      );
-    }
+  } else if (parsed.provider === 'vimeo') {
+    player = (
+      <iframe
+        src={parsed.embedUrl}
+        title={title}
+        allow="fullscreen; picture-in-picture"
+        allowFullScreen
+        className={styles.iframe}
+      />
+    );
+  } else if (parsed.provider === 'rutube') {
+    player = (
+      <iframe
+        src={parsed.embedUrl}
+        title={title}
+        allow="clipboard-write; autoplay; fullscreen; picture-in-picture"
+        allowFullScreen
+        className={styles.iframe}
+      />
+    );
+  } else if (parsed.provider === 'native') {
+    player = (
+      <video
+        ref={videoRef}
+        src={parsed.nativeUrl}
+        controls
+        className={styles.native}
+        onTimeUpdate={handleNativeTimeUpdate}
+        onEnded={() => void saveProgress(100, videoRef.current?.duration, true)}
+      />
+    );
   }
 
   return (
@@ -168,7 +160,7 @@ export function KnowledgeVideoPlayer({
         >
           <div className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
         </div>
-        {embedType !== 'native' && !isCompleted && (
+        {!isNative && !isCompleted && (
           <button type="button" className={styles.completeBtn} onClick={handleMarkComplete}>
             Отметить как просмотренное
           </button>
