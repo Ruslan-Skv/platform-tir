@@ -53,7 +53,7 @@ type MaterialPayloadSnapshot = {
   content?: string;
   videoUrl?: string;
   externalUrl?: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   thumbnailDisplay: KnowledgeThumbnailDisplay;
   sortOrder: number;
   isPinned: boolean;
@@ -131,7 +131,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       content: content.trim() || undefined,
       videoUrl: videoUrl.trim() || undefined,
       externalUrl: externalUrl.trim() || undefined,
-      thumbnailUrl: thumbnailUrl.trim() || undefined,
+      thumbnailUrl: thumbnailUrl.trim() || null,
       thumbnailDisplay,
       sortOrder,
       isPinned,
@@ -284,7 +284,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         content: m.content || undefined,
         videoUrl: m.videoUrl || undefined,
         externalUrl: m.externalUrl || undefined,
-        thumbnailUrl: m.thumbnailUrl || undefined,
+        thumbnailUrl: m.thumbnailUrl || null,
         thumbnailDisplay: m.thumbnailDisplay ?? 'COVER',
         sortOrder: m.sortOrder,
         isPinned: m.isPinned,
@@ -341,6 +341,12 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       setUploadingThumbnail(false);
       if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
     }
+  };
+
+  const handleRemoveThumbnail = () => {
+    setThumbnailUrl('');
+    setThumbnailDisplay('COVER');
+    if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
   };
 
   const handleContentImageUpload = useCallback(async (file: File): Promise<string> => {
@@ -533,6 +539,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     handleUnpublishClick,
     handleTitleChange,
     handleThumbnailUpload,
+    handleRemoveThumbnail,
     handleContentImageUpload,
     handleContentImageUploadError,
   };

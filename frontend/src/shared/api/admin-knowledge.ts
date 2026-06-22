@@ -133,7 +133,7 @@ export interface CreateKnowledgeMaterialDto {
   managerPracticalAssignment?: string;
   videoUrl?: string;
   externalUrl?: string;
-  thumbnailUrl?: string;
+  thumbnailUrl?: string | null;
   thumbnailDisplay?: KnowledgeThumbnailDisplay;
   sortOrder?: number;
   isPinned?: boolean;

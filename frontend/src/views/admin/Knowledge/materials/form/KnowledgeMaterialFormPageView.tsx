@@ -65,7 +65,6 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     externalUrl,
     setExternalUrl,
     thumbnailUrl,
-    setThumbnailUrl,
     thumbnailDisplay,
     setThumbnailDisplay,
     sortOrder,
@@ -89,6 +88,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     handleUnpublishClick,
     handleTitleChange,
     handleThumbnailUpload,
+    handleRemoveThumbnail,
     handleContentImageUpload,
     handleContentImageUploadError,
   } = model;
@@ -209,6 +209,77 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
       </div>
 
       <div className={styles.form}>
+        <section className={styles.coverSection}>
+          <div className={styles.field}>
+            <label className={styles.label}>Обложка</label>
+            <div className={styles.thumbnailRow}>
+              <input
+                ref={thumbnailInputRef}
+                type="file"
+                accept="image/jpeg,image/png,image/webp,image/gif"
+                onChange={handleThumbnailUpload}
+                className={styles.hiddenInput}
+              />
+              <button
+                type="button"
+                className={styles.uploadBtn}
+                onClick={() => thumbnailInputRef.current?.click()}
+                disabled={uploadingThumbnail}
+              >
+                {uploadingThumbnail ? '…' : 'Загрузить'}
+              </button>
+              {thumbnailUrl ? (
+                <button type="button" className={styles.clearBtn} onClick={handleRemoveThumbnail}>
+                  Удалить обложку
+                </button>
+              ) : null}
+              {thumbnailUrl ? (
+                <div className={styles.thumbnailPreviewInline}>
+                  <img src={publicUploadUrl(thumbnailUrl)} alt="" />
+                  <button
+                    type="button"
+                    className={styles.thumbnailRemoveBtn}
+                    onClick={handleRemoveThumbnail}
+                    aria-label="Удалить обложку"
+                    title="Удалить обложку"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : null}
+            </div>
+            {thumbnailUrl ? (
+              <div className={styles.thumbnailDisplayField}>
+                <label htmlFor="thumbnailDisplay" className={styles.subLabel}>
+                  Отображение в конспекте
+                </label>
+                <select
+                  id="thumbnailDisplay"
+                  value={thumbnailDisplay}
+                  onChange={(event) =>
+                    setThumbnailDisplay(event.target.value as typeof thumbnailDisplay)
+                  }
+                  className={styles.select}
+                >
+                  {KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <p className={styles.fieldHint}>
+                  {
+                    KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.find(
+                      (option) => option.value === thumbnailDisplay
+                    )?.hint
+                  }{' '}
+                  На странице списка материалов формат обложки не меняется.
+                </p>
+              </div>
+            ) : null}
+          </div>
+        </section>
+
         <section className={styles.metaSection}>
           <div className={styles.field}>
             <label htmlFor="title" className={styles.label}>
@@ -467,69 +538,6 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
 
         <section className={styles.settingsSection}>
           <div className={styles.settingsRow}>
-            <div className={styles.field}>
-              <label className={styles.label}>Обложка</label>
-              <div className={styles.thumbnailRow}>
-                <input
-                  ref={thumbnailInputRef}
-                  type="file"
-                  accept="image/jpeg,image/png,image/webp,image/gif"
-                  onChange={handleThumbnailUpload}
-                  className={styles.hiddenInput}
-                />
-                <button
-                  type="button"
-                  className={styles.uploadBtn}
-                  onClick={() => thumbnailInputRef.current?.click()}
-                  disabled={uploadingThumbnail}
-                >
-                  {uploadingThumbnail ? '…' : 'Загрузить'}
-                </button>
-                {thumbnailUrl ? (
-                  <button
-                    type="button"
-                    className={styles.clearBtn}
-                    onClick={() => setThumbnailUrl('')}
-                  >
-                    Удалить
-                  </button>
-                ) : null}
-                {thumbnailUrl ? (
-                  <div className={styles.thumbnailPreviewInline}>
-                    <img src={publicUploadUrl(thumbnailUrl)} alt="" />
-                  </div>
-                ) : null}
-              </div>
-              {thumbnailUrl ? (
-                <div className={styles.thumbnailDisplayField}>
-                  <label htmlFor="thumbnailDisplay" className={styles.subLabel}>
-                    Отображение в конспекте
-                  </label>
-                  <select
-                    id="thumbnailDisplay"
-                    value={thumbnailDisplay}
-                    onChange={(event) =>
-                      setThumbnailDisplay(event.target.value as typeof thumbnailDisplay)
-                    }
-                    className={styles.select}
-                  >
-                    {KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                  <p className={styles.fieldHint}>
-                    {
-                      KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS.find(
-                        (option) => option.value === thumbnailDisplay
-                      )?.hint
-                    }{' '}
-                    На странице списка материалов формат обложки не меняется.
-                  </p>
-                </div>
-              ) : null}
-            </div>
             <div className={styles.field}>
               <label htmlFor="sortOrder" className={styles.label}>
                 Порядок
