@@ -471,10 +471,10 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 className={styles.input}
-                placeholder="https://www.youtube.com/watch?v=..., Rutube, Vimeo или прямой URL"
+                placeholder="https://www.youtube.com/watch?v=..., Rutube, VK, Vimeo или прямой URL"
               />
               <p className={styles.hint}>
-                Поддерживаются YouTube, Rutube, Vimeo и прямые ссылки на видеофайлы
+                Поддерживаются YouTube, Rutube, VK, Vimeo и прямые ссылки на видеофайлы
               </p>
             </div>
             {videoUrl.trim() ? (

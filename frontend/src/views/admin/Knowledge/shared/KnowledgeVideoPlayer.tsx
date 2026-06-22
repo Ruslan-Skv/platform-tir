@@ -127,6 +127,16 @@ export function KnowledgeVideoPlayer({
         className={styles.iframe}
       />
     );
+  } else if (parsed.provider === 'vk') {
+    player = (
+      <iframe
+        src={parsed.embedUrl}
+        title={title}
+        allow="autoplay; encrypted-media; fullscreen; picture-in-picture"
+        allowFullScreen
+        className={styles.iframe}
+      />
+    );
   } else if (parsed.provider === 'native') {
     player = (
       <video

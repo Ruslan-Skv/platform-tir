@@ -1,10 +1,71 @@
-export type VideoEmbedProvider = 'youtube' | 'vimeo' | 'rutube' | 'native';
+export type VideoEmbedProvider = 'youtube' | 'vimeo' | 'rutube' | 'vk' | 'native';
 
 export type VideoEmbedInfo =
   | { provider: Exclude<VideoEmbedProvider, 'native'>; embedUrl: string }
   | { provider: 'native'; nativeUrl: string };
 
 const RUTUBE_VIDEO_ID = /[a-f0-9]{32}/i;
+const VK_HOST = /(?:^|\/\/)(?:[\w-]+\.)?(?:vk\.com|vkvideo\.ru|vkontakte\.ru)\b/i;
+
+function buildVkEmbedUrl(oid: string, id: string, hash?: string, hd?: string): string {
+  const params = new URLSearchParams({ oid, id });
+  if (hash) params.set('hash', hash);
+  if (hd) params.set('hd', hd);
+  return `https://vk.com/video_ext.php?${params.toString()}`;
+}
+
+function parseVkVideoEmbed(trimmed: string): VideoEmbedInfo | null {
+  if (!VK_HOST.test(trimmed)) return null;
+
+  let url: URL;
+  try {
+    url = new URL(trimmed.startsWith('http') ? trimmed : `https://${trimmed}`);
+  } catch {
+    return null;
+  }
+
+  if (!VK_HOST.test(url.href)) return null;
+
+  const hashFromQuery = url.searchParams.get('hash') ?? undefined;
+  const hdFromQuery = url.searchParams.get('hd') ?? undefined;
+
+  if (url.pathname.includes('video_ext.php')) {
+    const oid = url.searchParams.get('oid');
+    const id = url.searchParams.get('id');
+    if (oid && id) {
+      return {
+        provider: 'vk',
+        embedUrl: buildVkEmbedUrl(oid, id, hashFromQuery ?? undefined, hdFromQuery ?? undefined),
+      };
+    }
+    return null;
+  }
+
+  const pathMatch = url.pathname.match(/\/video(-?\d+)_(\d+)/i);
+  if (pathMatch) {
+    const [, oidRaw, id] = pathMatch;
+    const oid = url.pathname.includes('/video-') && !oidRaw.startsWith('-') ? `-${oidRaw}` : oidRaw;
+    return {
+      provider: 'vk',
+      embedUrl: buildVkEmbedUrl(oid, id, hashFromQuery, hdFromQuery),
+    };
+  }
+
+  const zParam = url.searchParams.get('z');
+  if (zParam) {
+    const zMatch = zParam.match(/video(-?\d+)_(\d+)/i);
+    if (zMatch) {
+      const [, oidRaw, id] = zMatch;
+      const oid = zMatch[0].includes('video-') && !oidRaw.startsWith('-') ? `-${oidRaw}` : oidRaw;
+      return {
+        provider: 'vk',
+        embedUrl: buildVkEmbedUrl(oid, id, hashFromQuery, hdFromQuery),
+      };
+    }
+  }
+
+  return null;
+}
 
 export function parseVideoEmbed(url: string): VideoEmbedInfo | null {
   const trimmed = url.trim();
@@ -47,6 +108,9 @@ export function parseVideoEmbed(url: string): VideoEmbedInfo | null {
       };
     }
   }
+
+  const vkEmbed = parseVkVideoEmbed(trimmed);
+  if (vkEmbed) return vkEmbed;
 
   return { provider: 'native', nativeUrl: trimmed };
 }

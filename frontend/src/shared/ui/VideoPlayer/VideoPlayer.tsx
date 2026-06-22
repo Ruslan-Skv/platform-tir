@@ -10,7 +10,7 @@ interface VideoPlayerProps {
   className?: string;
 }
 
-/** Плеер для YouTube, Vimeo, Rutube или прямого URL видео */
+/** Плеер для YouTube, Vimeo, Rutube, VK или прямого URL видео */
 export function VideoPlayer({ url, title = 'Видео', className }: VideoPlayerProps) {
   const parsed = parseVideoEmbed(url);
   if (!parsed) return null;
@@ -21,7 +21,9 @@ export function VideoPlayer({ url, title = 'Видео', className }: VideoPlaye
         ? 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture'
         : parsed.provider === 'rutube'
           ? 'clipboard-write; autoplay; fullscreen; picture-in-picture'
-          : 'fullscreen; picture-in-picture';
+          : parsed.provider === 'vk'
+            ? 'autoplay; encrypted-media; fullscreen; picture-in-picture'
+            : 'fullscreen; picture-in-picture';
 
     return (
       <div className={`${styles.wrapper} ${className ?? ''}`}>
