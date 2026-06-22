@@ -322,6 +322,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setEditCategoryName,
     editCategorySlug,
     setEditCategorySlug,
+    reorderingCategoryId,
     showNewModule,
     setShowNewModule,
     newModuleName,
@@ -346,6 +347,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,
+    handleMoveCategory,
     handleAddModule,
     handleUpdateModule,
     handleMoveModule,
@@ -698,13 +700,13 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                               <div className={styles.categoryEditActions}>
                                 {modules.length > 1 ? (
                                   <div
-                                    className={styles.moduleReorderGroup}
+                                    className={styles.reorderGroup}
                                     role="group"
                                     aria-label={`Порядок модуля «${mod.name}»`}
                                   >
                                     <button
                                       type="button"
-                                      className={styles.moduleReorderBtn}
+                                      className={styles.reorderBtn}
                                       disabled={
                                         moduleIndex === 0 ||
                                         reorderingModuleId !== null ||
@@ -718,7 +720,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                                     </button>
                                     <button
                                       type="button"
-                                      className={styles.moduleReorderBtn}
+                                      className={styles.reorderBtn}
                                       disabled={
                                         moduleIndex === modules.length - 1 ||
                                         reorderingModuleId !== null ||
@@ -837,7 +839,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
               )}
               {categories.length > 0 && (
                 <ul className={styles.categoryEditList}>
-                  {categories.map((cat) => (
+                  {categories.map((cat, categoryIndex) => (
                     <li key={cat.id} className={styles.categoryEditItem}>
                       {editingCategoryId === cat.id ? (
                         <div className={styles.newCategoryForm}>
@@ -874,6 +876,42 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                         <div className={styles.categoryEditRow}>
                           <span>{cat.name}</span>
                           <div className={styles.categoryEditActions}>
+                            {categories.length > 1 ? (
+                              <div
+                                className={styles.reorderGroup}
+                                role="group"
+                                aria-label={`Порядок категории «${cat.name}»`}
+                              >
+                                <button
+                                  type="button"
+                                  className={styles.reorderBtn}
+                                  disabled={
+                                    categoryIndex === 0 ||
+                                    reorderingCategoryId !== null ||
+                                    editingCategoryId !== null
+                                  }
+                                  title="Переместить выше"
+                                  aria-label="Переместить категорию выше"
+                                  onClick={() => void handleMoveCategory(cat.id, -1)}
+                                >
+                                  ↑
+                                </button>
+                                <button
+                                  type="button"
+                                  className={styles.reorderBtn}
+                                  disabled={
+                                    categoryIndex === categories.length - 1 ||
+                                    reorderingCategoryId !== null ||
+                                    editingCategoryId !== null
+                                  }
+                                  title="Переместить ниже"
+                                  aria-label="Переместить категорию ниже"
+                                  onClick={() => void handleMoveCategory(cat.id, 1)}
+                                >
+                                  ↓
+                                </button>
+                              </div>
+                            ) : null}
                             <AdminTableIconButton
                               aria-label="Изменить категорию"
                               title="Изменить название и адрес (slug) категории"

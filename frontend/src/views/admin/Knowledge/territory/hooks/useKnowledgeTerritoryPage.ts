@@ -78,6 +78,7 @@ export function useKnowledgeTerritoryPage() {
   const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
   const [editCategoryName, setEditCategoryName] = useState('');
   const [editCategorySlug, setEditCategorySlug] = useState('');
+  const [reorderingCategoryId, setReorderingCategoryId] = useState<string | null>(null);
   const [showNewModule, setShowNewModule] = useState(false);
   const [newModuleName, setNewModuleName] = useState('');
   const [newModuleSlug, setNewModuleSlug] = useState('');
@@ -341,6 +342,7 @@ export function useKnowledgeTerritoryPage() {
       const category = await createKnowledgeCategory({
         name: newCategoryName.trim(),
         slug: newCategorySlug.trim(),
+        order: categories.length + 1,
       });
 
       let importSummary = '';
@@ -401,6 +403,38 @@ export function useKnowledgeTerritoryPage() {
       loadMaterials();
     } catch (e) {
       showMessage('error', e instanceof Error ? e.message : 'Ошибка обновления');
+    }
+  };
+
+  const handleMoveCategory = async (categoryId: string, direction: -1 | 1) => {
+    const index = categories.findIndex((cat) => cat.id === categoryId);
+    const newIndex = index + direction;
+    if (index < 0 || newIndex < 0 || newIndex >= categories.length) return;
+
+    setReorderingCategoryId(categoryId);
+    try {
+      const reordered = [...categories];
+      const [moved] = reordered.splice(index, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      const updates = reordered
+        .map((cat, orderIndex) => ({ cat, order: orderIndex + 1 }))
+        .filter(({ cat, order }) => cat.order !== order);
+
+      await Promise.all(
+        updates.map(({ cat, order }) => updateKnowledgeCategory(cat.id, { order }))
+      );
+
+      setCategories(reordered.map((cat, orderIndex) => ({ ...cat, order: orderIndex + 1 })));
+      showMessage('success', 'Порядок категорий обновлён');
+    } catch (e) {
+      showMessage(
+        'error',
+        e instanceof Error ? e.message : 'Не удалось изменить порядок категорий'
+      );
+      loadCategories();
+    } finally {
+      setReorderingCategoryId(null);
     }
   };
 
@@ -532,6 +566,7 @@ export function useKnowledgeTerritoryPage() {
     setEditCategoryName,
     editCategorySlug,
     setEditCategorySlug,
+    reorderingCategoryId,
     showNewModule,
     setShowNewModule,
     newModuleName,
@@ -556,6 +591,7 @@ export function useKnowledgeTerritoryPage() {
     handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,
+    handleMoveCategory,
     handleAddModule,
     handleUpdateModule,
     handleMoveModule,

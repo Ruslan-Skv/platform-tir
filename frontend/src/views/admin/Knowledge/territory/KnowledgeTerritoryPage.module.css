@@ -376,12 +376,12 @@
   flex-shrink: 0;
 }
 
-.moduleReorderGroup {
+.reorderGroup {
   display: flex;
   gap: 2px;
 }
 
-.moduleReorderBtn {
+.reorderBtn {
   min-width: 1.5rem;
   padding: 2px 4px;
   border: 1px solid var(--admin-border);
@@ -393,12 +393,12 @@
   color: var(--admin-text-muted);
 }
 
-.moduleReorderBtn:hover:not(:disabled) {
+.reorderBtn:hover:not(:disabled) {
   border-color: var(--admin-accent);
   color: var(--admin-accent);
 }
 
-.moduleReorderBtn:disabled {
+.reorderBtn:disabled {
   opacity: 0.35;
   cursor: not-allowed;
 }
