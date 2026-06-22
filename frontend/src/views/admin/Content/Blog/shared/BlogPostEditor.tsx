@@ -7,6 +7,7 @@ import { Table } from '@tiptap/extension-table';
 import { TableCell } from '@tiptap/extension-table-cell';
 import { TableHeader } from '@tiptap/extension-table-header';
 import { TableRow } from '@tiptap/extension-table-row';
+import TextAlign from '@tiptap/extension-text-align';
 import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
@@ -28,7 +29,10 @@ interface BlogPostEditorProps {
   onUploadImage?: (file: File) => Promise<string>;
   onImageUploadError?: (message: string) => void;
   compact?: boolean;
+  enableTextAlign?: boolean;
 }
+
+type TextAlignValue = 'left' | 'center' | 'right' | 'justify';
 
 export function BlogPostEditor({
   value,
@@ -39,6 +43,7 @@ export function BlogPostEditor({
   onUploadImage,
   onImageUploadError,
   compact = false,
+  enableTextAlign = true,
 }: BlogPostEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
   const [uploadingImage, setUploadingImage] = useState(false);
@@ -60,6 +65,16 @@ export function BlogPostEditor({
       Placeholder.configure({ placeholder }),
     ];
 
+    if (enableTextAlign) {
+      base.push(
+        TextAlign.configure({
+          types: ['heading', 'paragraph'],
+          alignments: ['left', 'center', 'right', 'justify'],
+          defaultAlignment: 'left',
+        })
+      );
+    }
+
     if (enableImages) {
       base.push(
         Image.configure({
@@ -74,7 +89,7 @@ export function BlogPostEditor({
     }
 
     return base;
-  }, [enableImages, enableTables, placeholder]);
+  }, [enableImages, enableTables, enableTextAlign, placeholder]);
 
   const editor = useEditor(
     {
@@ -165,6 +180,22 @@ export function BlogPostEditor({
     }
   };
 
+  const setTextAlign = (align: TextAlignValue) => {
+    editor.chain().focus().setTextAlign(align).run();
+  };
+
+  const isTextAlignActive = (align: TextAlignValue): boolean => {
+    if (align === 'left') {
+      return (
+        editor.isActive({ textAlign: 'left' }) ||
+        (!editor.isActive({ textAlign: 'center' }) &&
+          !editor.isActive({ textAlign: 'right' }) &&
+          !editor.isActive({ textAlign: 'justify' }))
+      );
+    }
+    return editor.isActive({ textAlign: align });
+  };
+
   const btn = (label: string, active: boolean, onClick: () => void, title: string) => (
     <button
       type="button"
@@ -241,6 +272,15 @@ export function BlogPostEditor({
           toggleFirstLineIndent,
           'Красная строка: отступ первой строки абзаца (повторное нажатие — убрать)'
         )}
+        {enableTextAlign ? (
+          <>
+            <span className={styles.toolbarSep} aria-hidden />
+            {btn('⬅', isTextAlignActive('left'), () => setTextAlign('left'), 'По левому краю')}
+            {btn('⬌', isTextAlignActive('center'), () => setTextAlign('center'), 'По центру')}
+            {btn('➡', isTextAlignActive('right'), () => setTextAlign('right'), 'По правому краю')}
+            {btn('☰', isTextAlignActive('justify'), () => setTextAlign('justify'), 'По ширине')}
+          </>
+        ) : null}
         <span className={styles.toolbarSep} aria-hidden />
         {btn(
           '•',
