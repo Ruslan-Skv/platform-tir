@@ -119,10 +119,10 @@ export function KnowledgeMaterialQuiz({
   }, [blockedSecondsLeft, isAttemptBlocked, load]);
 
   if (loading) {
-    return <div className={styles.loading}>Загрузка теста…</div>;
+    return null;
   }
 
-  if (!quiz || !data) {
+  if (!quiz || !data || quiz.questions.length === 0) {
     return null;
   }
 

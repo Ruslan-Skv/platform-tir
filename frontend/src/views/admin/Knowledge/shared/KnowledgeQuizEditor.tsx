@@ -34,7 +34,7 @@ type LocalQuestion = {
 };
 
 type KnowledgeQuizEditorProps = {
-  materialId: string;
+  materialId?: string;
   saveRef?: MutableRefObject<KnowledgeQuizEditorHandle | null>;
 };
 
@@ -103,7 +103,7 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
   const [timePerQuestionMinutes, setTimePerQuestionMinutes] = useState(1);
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [quizExists, setQuizExists] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(Boolean(materialId));
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [importOpen, setImportOpen] = useState(false);
   const [importText, setImportText] = useState('');
@@ -120,6 +120,14 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
   }, [buildSnapshot]);
 
   const load = useCallback(async () => {
+    if (!materialId) {
+      setQuizExists(false);
+      setQuestions([]);
+      lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, 1, []);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     try {
       const data = await getKnowledgeMaterialQuiz(materialId);
@@ -165,17 +173,23 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
     void load();
   }, [load]);
 
-  const save = useCallback(async () => {
-    if (questions.length === 0 && !quizExists) {
-      syncSavedSnapshot();
-      return;
-    }
+  const save = useCallback(
+    async (overrideMaterialId?: string) => {
+      const targetMaterialId = overrideMaterialId ?? materialId;
+      if (!targetMaterialId) return;
 
-    const payload: UpsertKnowledgeQuizDto = JSON.parse(buildSnapshot());
-    await upsertKnowledgeMaterialQuiz(materialId, payload);
-    setQuizExists(questions.length > 0);
-    syncSavedSnapshot();
-  }, [materialId, buildSnapshot, questions.length, quizExists, syncSavedSnapshot]);
+      if (questions.length === 0 && !quizExists) {
+        syncSavedSnapshot();
+        return;
+      }
+
+      const payload: UpsertKnowledgeQuizDto = JSON.parse(buildSnapshot());
+      await upsertKnowledgeMaterialQuiz(targetMaterialId, payload);
+      setQuizExists(questions.length > 0);
+      syncSavedSnapshot();
+    },
+    [materialId, buildSnapshot, questions.length, quizExists, syncSavedSnapshot]
+  );
 
   const isDirty = useCallback(
     () => buildSnapshot() !== lastSavedSnapshotRef.current,

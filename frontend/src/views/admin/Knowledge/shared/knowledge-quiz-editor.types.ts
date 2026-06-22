@@ -1,4 +1,4 @@
 export type KnowledgeQuizEditorHandle = {
-  save: () => Promise<void>;
+  save: (materialId?: string) => Promise<void>;
   isDirty: () => boolean;
 };

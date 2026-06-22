@@ -409,6 +409,20 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         showMessage('success', successMessage);
       } else {
         const created = await createKnowledgeMaterial(payload);
+        if (type === 'ARTICLE' && quizEditorRef.current?.isDirty()) {
+          try {
+            await quizEditorRef.current.save(created.id);
+          } catch (quizError) {
+            showMessage(
+              'error',
+              quizError instanceof Error
+                ? `Материал создан, но тест не удалось сохранить: ${quizError.message}`
+                : 'Материал создан, но тест не удалось сохранить'
+            );
+            router.push(`/admin/knowledge/materials/${created.id}/edit`);
+            return;
+          }
+        }
         showMessage('success', 'Материал создан');
         router.push(`/admin/knowledge/materials/${created.id}/edit`);
       }

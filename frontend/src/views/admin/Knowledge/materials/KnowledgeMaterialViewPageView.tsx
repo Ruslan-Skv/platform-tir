@@ -262,7 +262,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         </aside>
       ) : null}
 
-      {material.type === 'ARTICLE' ? (
+      {material.type === 'ARTICLE' && material.myQuizStatus?.hasQuiz ? (
         <KnowledgeMaterialQuiz
           materialId={material.id}
           materialStatus={material.status}

@@ -183,7 +183,7 @@ export class KnowledgeQuizService {
       },
     });
 
-    if (!quiz) {
+    if (!quiz || quiz.questions.length === 0) {
       return null;
     }
 
@@ -385,9 +385,14 @@ export class KnowledgeQuizService {
 
     const quizzes = await this.prisma.knowledgeMaterialQuiz.findMany({
       where: { materialId: { in: materialIds } },
-      select: { materialId: true },
+      select: {
+        materialId: true,
+        _count: { select: { questions: true } },
+      },
     });
-    const hasQuiz = new Set(quizzes.map((q) => q.materialId));
+    const hasQuiz = new Set(
+      quizzes.filter((item) => item._count.questions > 0).map((item) => item.materialId),
+    );
 
     const statusMap: Record<
       string,

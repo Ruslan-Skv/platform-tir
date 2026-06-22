@@ -532,7 +532,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
           </div>
         ) : null}
 
-        {isEdit && type === 'ARTICLE' && materialId ? (
+        {type === 'ARTICLE' ? (
           <KnowledgeQuizEditor materialId={materialId} saveRef={quizEditorRef} />
         ) : null}
 

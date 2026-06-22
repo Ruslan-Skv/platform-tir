@@ -118,7 +118,7 @@ export class KnowledgeTrainingAnalyticsService {
           title: true,
           type: true,
           category: { select: { name: true } },
-          quiz: { select: { id: true } },
+          quiz: { select: { id: true, _count: { select: { questions: true } } } },
         },
         orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
       }),
@@ -129,7 +129,7 @@ export class KnowledgeTrainingAnalyticsService {
       title: m.title,
       type: m.type,
       categoryName: m.category.name,
-      hasQuiz: Boolean(m.quiz),
+      hasQuiz: Boolean(m.quiz && m.quiz._count.questions > 0),
     }));
 
     const trackableMaterials = materials.filter(isTrackableMaterial);

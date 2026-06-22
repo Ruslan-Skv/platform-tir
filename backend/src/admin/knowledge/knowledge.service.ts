@@ -16,6 +16,7 @@ import { KnowledgeMaterialCommentsService } from './services/knowledge-material-
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
+import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
 import { KnowledgeTrashService } from './knowledge-trash.service';
@@ -47,6 +48,7 @@ export class KnowledgeService {
     private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
     private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
     private knowledgePlatformFeedbackService: KnowledgePlatformFeedbackService,
+    private knowledgeQuizService: KnowledgeQuizService,
   ) {}
 
   findAllTargetAudiences() {
@@ -157,7 +159,18 @@ export class KnowledgeService {
     const [withCounts] = await this.knowledgeMaterialCommentsService.attachCommentCounts([
       withLikes,
     ]);
-    return withCounts;
+    const quizStatusMap = await this.knowledgeQuizService.getUserQuizStatusForMaterials(
+      [withCounts.id],
+      userId ?? '',
+    );
+    return {
+      ...withCounts,
+      myQuizStatus: quizStatusMap[withCounts.id] ?? {
+        hasQuiz: false,
+        passed: false,
+        scorePercent: null,
+      },
+    };
   }
 
   toggleLike(materialId: string, userId: string) {
