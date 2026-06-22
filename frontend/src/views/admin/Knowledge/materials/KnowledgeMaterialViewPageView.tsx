@@ -20,10 +20,12 @@ import {
   formatDate,
   formatReadingTime,
   formatTargetAudiences,
+  formatVideoDuration,
   getKnowledgeThumbnailDisplayClass,
   getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
+  getMaterialVideoDuration,
   getStatusLabel,
   hasTargetAudiences,
   isKnowledgeRichTextEmpty,
@@ -180,6 +182,23 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
               <span className={styles.articleMetaItem}>
                 <span className={styles.articleMetaLabel}>Время чтения:</span>{' '}
                 {formatReadingTime(getMaterialReadingTime(material))}
+              </span>
+            ) : null}
+          </div>
+        ) : null}
+        {material.type === 'VIDEO' &&
+        (hasTargetAudiences(material.targetAudiences) || getMaterialVideoDuration(material)) ? (
+          <div className={styles.articleMeta}>
+            {targetAudiencesText ? (
+              <span className={styles.articleMetaItem}>
+                <span className={styles.articleMetaLabel}>Целевая аудитория:</span>{' '}
+                {targetAudiencesText}
+              </span>
+            ) : null}
+            {formatVideoDuration(getMaterialVideoDuration(material)) ? (
+              <span className={styles.articleMetaItem}>
+                <span className={styles.articleMetaLabel}>Длительность:</span>{' '}
+                {formatVideoDuration(getMaterialVideoDuration(material))}
               </span>
             ) : null}
           </div>

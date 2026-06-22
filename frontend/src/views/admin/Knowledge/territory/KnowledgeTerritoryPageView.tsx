@@ -35,10 +35,12 @@ import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comm
 import {
   formatDate,
   formatReadingTime,
+  formatVideoDuration,
   getKnowledgeTopicDisplayNumber,
   getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
+  getMaterialVideoDuration,
   getStatusLabel,
   hasTargetAudiences,
   slugify,
@@ -125,20 +127,25 @@ function MaterialCard({
             {m.title}
           </h3>
           {m.excerpt && <p className={s.cardExcerpt}>{m.excerpt}</p>}
-          {m.type === 'ARTICLE' &&
+          {(m.type === 'ARTICLE' || m.type === 'VIDEO') &&
           (hasTargetAudiences(m.targetAudiences) ||
-            getMaterialReadingTime(m) ||
-            m.myQuizStatus?.hasQuiz) ? (
+            (m.type === 'ARTICLE' && (getMaterialReadingTime(m) || m.myQuizStatus?.hasQuiz)) ||
+            (m.type === 'VIDEO' && getMaterialVideoDuration(m))) ? (
             <div className={s.cardTags}>
               {m.targetAudiences?.map((audience) => (
                 <span key={audience.id} className={s.cardTag}>
                   👥 {audience.label}
                 </span>
               ))}
-              {formatReadingTime(getMaterialReadingTime(m)) ? (
+              {m.type === 'ARTICLE' && formatReadingTime(getMaterialReadingTime(m)) ? (
                 <span className={s.cardTag}>⏱ {formatReadingTime(getMaterialReadingTime(m))}</span>
               ) : null}
-              {m.myQuizStatus?.hasQuiz ? (
+              {m.type === 'VIDEO' && formatVideoDuration(getMaterialVideoDuration(m)) ? (
+                <span className={s.cardTag}>
+                  ⏱ {formatVideoDuration(getMaterialVideoDuration(m))}
+                </span>
+              ) : null}
+              {m.type === 'ARTICLE' && m.myQuizStatus?.hasQuiz ? (
                 <span
                   className={`${s.cardTag} ${m.myQuizStatus.passed ? s.cardTagSuccess : s.cardTagPending}`}
                 >

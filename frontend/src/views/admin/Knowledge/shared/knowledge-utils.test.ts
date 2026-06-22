@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   compareKnowledgeMaterialsForAdminList,
   compareKnowledgeMaterialsForCategoryList,
+  formatVideoDuration,
   sortKnowledgeMaterialGroupsDraftsLast,
   sortKnowledgeMaterialsForCategory,
   sortKnowledgeMaterialsNewestFirst,
@@ -58,6 +59,13 @@ describe('sortKnowledgeMaterialsNewestFirst', () => {
     ];
 
     expect(sortKnowledgeMaterialsNewestFirst(items).map((m) => m.id)).toEqual(['video', 'article']);
+  });
+});
+
+describe('formatVideoDuration', () => {
+  it('formats duration with просмотра suffix', () => {
+    expect(formatVideoDuration(5)).toBe('5 минут просмотра');
+    expect(formatVideoDuration(1)).toBe('1 минута просмотра');
   });
 });
 

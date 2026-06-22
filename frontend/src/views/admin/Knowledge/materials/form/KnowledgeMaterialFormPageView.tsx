@@ -224,7 +224,9 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
             />
           </div>
 
-          <div className={`${styles.row} ${type === 'ARTICLE' ? styles.rowThree : ''}`}>
+          <div
+            className={`${styles.row} ${type === 'ARTICLE' || type === 'VIDEO' ? styles.rowThree : ''}`}
+          >
             <div className={styles.field}>
               <label htmlFor="slug" className={styles.label}>
                 Slug *
@@ -258,10 +260,10 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 ))}
               </select>
             </div>
-            {type === 'ARTICLE' ? (
+            {type === 'ARTICLE' || type === 'VIDEO' ? (
               <div className={styles.field}>
                 <label htmlFor="readingTimeMinutes" className={styles.label}>
-                  Время чтения (мин)
+                  {type === 'ARTICLE' ? 'Время чтения (мин)' : 'Длительность (мин)'}
                 </label>
                 <input
                   id="readingTimeMinutes"
@@ -274,11 +276,13 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                     )
                   }
                   className={styles.input}
-                  placeholder="Авто"
+                  placeholder={type === 'ARTICLE' ? 'Авто' : 'Например: 5'}
                   title={
-                    estimatedReadingTime
-                      ? `Автоподсчёт: ~${estimatedReadingTime} мин`
-                      : 'Заполнится после добавления текста'
+                    type === 'ARTICLE'
+                      ? estimatedReadingTime
+                        ? `Автоподсчёт: ~${estimatedReadingTime} мин`
+                        : 'Заполнится после добавления текста'
+                      : 'Длительность ролика для карточки в списке материалов'
                   }
                 />
               </div>
@@ -330,7 +334,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
             </div>
           </div>
 
-          {type === 'ARTICLE' ? (
+          {type === 'ARTICLE' || type === 'VIDEO' ? (
             <div className={styles.field}>
               <label htmlFor="targetAudiencePick" className={styles.label}>
                 Целевая аудитория

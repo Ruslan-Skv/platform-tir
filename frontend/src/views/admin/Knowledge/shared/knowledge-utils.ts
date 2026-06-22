@@ -354,8 +354,18 @@ export function getMaterialReadingTime(material: {
   return computeReadingTimeMinutes(material.content);
 }
 
-export function formatReadingTime(minutes: number | null | undefined): string | null {
-  if (!minutes || minutes <= 0) return null;
+export function getMaterialVideoDuration(material: {
+  type?: string;
+  readingTimeMinutes?: number | null;
+}): number | null {
+  if (material.type !== 'VIDEO') return null;
+  if (material.readingTimeMinutes != null && material.readingTimeMinutes > 0) {
+    return material.readingTimeMinutes;
+  }
+  return null;
+}
+
+function formatMinutesRu(minutes: number, activity: 'чтения' | 'просмотра'): string {
   const n = Math.round(minutes);
   const mod10 = n % 10;
   const mod100 = n % 100;
@@ -364,7 +374,17 @@ export function formatReadingTime(minutes: number | null | undefined): string | 
     if (mod10 === 1) suffix = 'минута';
     else if (mod10 >= 2 && mod10 <= 4) suffix = 'минуты';
   }
-  return `${n} ${suffix} чтения`;
+  return `${n} ${suffix} ${activity}`;
+}
+
+export function formatReadingTime(minutes: number | null | undefined): string | null {
+  if (!minutes || minutes <= 0) return null;
+  return formatMinutesRu(minutes, 'чтения');
+}
+
+export function formatVideoDuration(minutes: number | null | undefined): string | null {
+  if (!minutes || minutes <= 0) return null;
+  return formatMinutesRu(minutes, 'просмотра');
 }
 
 export function formatTargetAudiences(
