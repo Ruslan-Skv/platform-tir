@@ -50,6 +50,15 @@ describe('sortKnowledgeMaterialsNewestFirst', () => {
 
     expect(sortKnowledgeMaterialsNewestFirst(items).map((m) => m.id)).toEqual(['new', 'old']);
   });
+
+  it('uses createdAt when publishedAt is missing', () => {
+    const items = [
+      { id: 'article', publishedAt: '2026-03-01', createdAt: '2026-03-01' },
+      { id: 'video', publishedAt: null, createdAt: '2026-06-15' },
+    ];
+
+    expect(sortKnowledgeMaterialsNewestFirst(items).map((m) => m.id)).toEqual(['video', 'article']);
+  });
 });
 
 describe('compareKnowledgeMaterialsForAdminList', () => {

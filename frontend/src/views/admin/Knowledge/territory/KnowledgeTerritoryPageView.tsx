@@ -10,6 +10,7 @@ import type {
   AdminKnowledgeModule,
   KnowledgeMaterialSearchSuggestion,
 } from '@/shared/api/admin-knowledge';
+import { buildPaginationPageSlots } from '@/shared/lib/pagination-page-slots';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
@@ -397,6 +398,11 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     if (groups.length === 0) return null;
     return sortKnowledgeMaterialGroupsDraftsLast(groups);
   }, [showGroupedByModule, modules, displayMaterials]);
+
+  const paginationSlots = useMemo(
+    () => buildPaginationPageSlots(totalPages, page),
+    [page, totalPages]
+  );
 
   const deleteModalTitle =
     deleteTarget?.type === 'material'
@@ -978,27 +984,48 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
               )}
 
               {totalPages > 1 && (
-                <div className={styles.pagination}>
+                <nav className={styles.pagination} aria-label="Пагинация материалов">
                   <button
                     type="button"
                     disabled={page <= 1}
                     onClick={() => setPage((p) => p - 1)}
                     className={styles.pageBtn}
+                    aria-label="Предыдущая страница"
                   >
                     ← Назад
                   </button>
-                  <span className={styles.pageInfo}>
-                    {page} / {totalPages}
-                  </span>
+                  <div className={styles.pageNumbers}>
+                    {paginationSlots.map((slot, index) =>
+                      slot === 'ellipsis' ? (
+                        <span key={`ellipsis-${index}`} className={styles.pageEllipsis} aria-hidden>
+                          …
+                        </span>
+                      ) : (
+                        <button
+                          key={slot}
+                          type="button"
+                          className={`${styles.pageNumberBtn} ${
+                            slot === page ? styles.pageNumberBtnActive : ''
+                          }`}
+                          onClick={() => setPage(slot)}
+                          aria-label={`Страница ${slot}`}
+                          aria-current={slot === page ? 'page' : undefined}
+                        >
+                          {slot}
+                        </button>
+                      )
+                    )}
+                  </div>
                   <button
                     type="button"
                     disabled={page >= totalPages}
                     onClick={() => setPage((p) => p + 1)}
                     className={styles.pageBtn}
+                    aria-label="Следующая страница"
                   >
                     Вперёд →
                   </button>
-                </div>
+                </nav>
               )}
             </>
           )}

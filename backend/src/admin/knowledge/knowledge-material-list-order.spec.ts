@@ -53,4 +53,12 @@ describe('compareKnowledgeMaterialsForAllList', () => {
     ];
     expect(sortKnowledgeMaterialIdsForList(items, 'all')).toEqual(['new', 'old']);
   });
+
+  it('uses createdAt when publishedAt is missing (e.g. some videos)', () => {
+    const items = [
+      row('article', { publishedAt: d('2026-03-01'), createdAt: d('2026-03-01') }),
+      row('video', { publishedAt: null, createdAt: d('2026-06-15') }),
+    ];
+    expect(sortKnowledgeMaterialIdsForList(items, 'all')).toEqual(['video', 'article']);
+  });
 });

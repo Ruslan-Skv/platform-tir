@@ -56,65 +56,28 @@ export class KnowledgeMaterialListService {
       where.AND = [...andClauses, buildKnowledgeMaterialTitleExcerptSearch(search)];
     }
 
-    const showMixedStatuses = editorView && !status;
     const listMode = categoryId ? 'category' : 'all';
     const totalPromise = this.prisma.knowledgeMaterial.count({ where });
 
-    if (listMode === 'category') {
-      const [allRows, total] = await Promise.all([
-        this.prisma.knowledgeMaterial.findMany({
-          where,
-          select: {
-            id: true,
-            status: true,
-            sortOrder: true,
-            isPinned: true,
-            createdAt: true,
-            publishedAt: true,
-            module: { select: { order: true } },
-          },
-        }),
-        totalPromise,
-      ]);
-
-      const sortedIds = sortKnowledgeMaterialIdsForList(allRows, 'category');
-      const pageIds = sortedIds.slice(skip, skip + limit);
-      const rows = await this.loadMaterialsByIds(pageIds, userId);
-      const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
-      const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
-      const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
-      const enriched = await this.knowledgeMaterialCommentsService.attachCommentCounts(withLikes);
-
-      return {
-        data: enriched,
-        total,
-        page,
-        limit,
-        totalPages: Math.ceil(total / limit) || 1,
-      };
-    }
-
-    const [rows, total] = await Promise.all([
+    const [allRows, total] = await Promise.all([
       this.prisma.knowledgeMaterial.findMany({
         where,
-        include: buildMaterialInclude(userId),
-        orderBy: showMixedStatuses
-          ? [
-              { publishedAt: { sort: 'desc', nulls: 'last' } },
-              { isPinned: 'desc' },
-              { createdAt: 'desc' },
-            ]
-          : [
-              { isPinned: 'desc' },
-              { publishedAt: { sort: 'desc', nulls: 'last' } },
-              { createdAt: 'desc' },
-            ],
-        skip,
-        take: limit,
+        select: {
+          id: true,
+          status: true,
+          sortOrder: true,
+          isPinned: true,
+          createdAt: true,
+          publishedAt: true,
+          module: { select: { order: true } },
+        },
       }),
       totalPromise,
     ]);
 
+    const sortedIds = sortKnowledgeMaterialIdsForList(allRows, listMode);
+    const pageIds = sortedIds.slice(skip, skip + limit);
+    const rows = await this.loadMaterialsByIds(pageIds, userId);
     const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
     const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
     const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
