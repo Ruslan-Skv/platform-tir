@@ -26,6 +26,9 @@ import {
   getMaterialTypeLabel,
   getStatusLabel,
   hasTargetAudiences,
+  isKnowledgeRichTextEmpty,
+  renderKnowledgeRichTextHtml,
+  resolveKnowledgeArticleHtml,
 } from '../shared/knowledge-utils';
 import styles from './KnowledgeMaterialViewPage.module.css';
 import type { KnowledgeMaterialViewPageModel } from './hooks/useKnowledgeMaterialViewPage';
@@ -211,17 +214,24 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       {material.type === 'ARTICLE' && material.content && (
         <article
           className={styles.article}
-          dangerouslySetInnerHTML={{ __html: material.content }}
+          dangerouslySetInnerHTML={{ __html: resolveKnowledgeArticleHtml(material.content) }}
         />
       )}
 
-      {material.type === 'ARTICLE' && material.managerPracticalAssignment ? (
+      {material.type === 'ARTICLE' &&
+      material.managerPracticalAssignment &&
+      !isKnowledgeRichTextEmpty(material.managerPracticalAssignment) ? (
         <aside className={styles.managerBox}>
           <div className={styles.managerIcon}>
             <ManagerPracticalAssignmentIcon size={40} />
           </div>
           <h2 className={styles.managerTitle}>Практическое задание для менеджера</h2>
-          <p className={styles.managerText}>{material.managerPracticalAssignment}</p>
+          <div
+            className={styles.managerText}
+            dangerouslySetInnerHTML={{
+              __html: renderKnowledgeRichTextHtml(material.managerPracticalAssignment),
+            }}
+          />
         </aside>
       ) : null}
 
@@ -265,7 +275,10 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       {material.type === 'VIDEO' && material.content && (
         <article className={styles.description}>
           <h2 className={styles.sectionTitle}>Описание</h2>
-          <div className={styles.article} dangerouslySetInnerHTML={{ __html: material.content }} />
+          <div
+            className={styles.article}
+            dangerouslySetInnerHTML={{ __html: resolveKnowledgeArticleHtml(material.content) }}
+          />
         </article>
       )}
 

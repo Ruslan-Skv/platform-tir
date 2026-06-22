@@ -23,7 +23,12 @@ import {
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import type { KnowledgeQuizEditorHandle } from '../../../shared/knowledge-quiz-editor.types';
-import { computeReadingTimeMinutes, slugify } from '../../../shared/knowledge-utils';
+import {
+  computeReadingTimeMinutes,
+  isKnowledgeRichTextEmpty,
+  slugify,
+  toKnowledgeRichTextEditorHtml,
+} from '../../../shared/knowledge-utils';
 import type {
   KnowledgeMaterialFormPageMessage,
   KnowledgeMaterialFormStatus,
@@ -120,7 +125,9 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       targetAudienceIds,
       readingTimeMinutes: readingTimeMinutes === '' ? null : Number(readingTimeMinutes),
       tutorRecommendation: tutorRecommendation.trim() || undefined,
-      managerPracticalAssignment: managerPracticalAssignment.trim() || undefined,
+      managerPracticalAssignment: isKnowledgeRichTextEmpty(managerPracticalAssignment)
+        ? undefined
+        : managerPracticalAssignment.trim(),
       content: content.trim() || undefined,
       videoUrl: videoUrl.trim() || undefined,
       externalUrl: externalUrl.trim() || undefined,
@@ -241,7 +248,9 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       });
       setReadingTimeMinutes(m.readingTimeMinutes ?? '');
       setTutorRecommendation(m.tutorRecommendation || '');
-      setManagerPracticalAssignment(m.managerPracticalAssignment || '');
+      setManagerPracticalAssignment(
+        toKnowledgeRichTextEditorHtml(m.managerPracticalAssignment || '')
+      );
       setContent(m.content || '');
       setVideoUrl(m.videoUrl || '');
       setExternalUrl(m.externalUrl || '');
@@ -269,7 +278,9 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         targetAudienceIds: (m.targetAudiences ?? []).map((a) => a.id),
         readingTimeMinutes: m.readingTimeMinutes ?? null,
         tutorRecommendation: m.tutorRecommendation || undefined,
-        managerPracticalAssignment: m.managerPracticalAssignment || undefined,
+        managerPracticalAssignment: isKnowledgeRichTextEmpty(m.managerPracticalAssignment)
+          ? undefined
+          : m.managerPracticalAssignment || undefined,
         content: m.content || undefined,
         videoUrl: m.videoUrl || undefined,
         externalUrl: m.externalUrl || undefined,
@@ -331,6 +342,16 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
     }
   };
+
+  const handleContentImageUpload = useCallback(async (file: File): Promise<string> => {
+    const { imageUrl } = await uploadKnowledgeThumbnail(file);
+    return imageUrl;
+  }, []);
+
+  const handleContentImageUploadError = useCallback(
+    (text: string) => showMessage('error', text),
+    [showMessage]
+  );
 
   const handleSubmit = async (action: KnowledgeMaterialSubmitAction = 'save') => {
     if (!title.trim() || !slug.trim() || !categoryId) {
@@ -512,6 +533,8 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     handleUnpublishClick,
     handleTitleChange,
     handleThumbnailUpload,
+    handleContentImageUpload,
+    handleContentImageUploadError,
   };
 }
 

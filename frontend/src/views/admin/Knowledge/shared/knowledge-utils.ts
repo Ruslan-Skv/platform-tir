@@ -2,6 +2,46 @@ import type {
   KnowledgeMaterialType,
   KnowledgeThumbnailDisplay,
 } from '@/shared/api/admin-knowledge';
+import { normalizeUploadsInUrl, publicUploadUrl } from '@/shared/lib/public-upload-url';
+
+export function resolveKnowledgeArticleHtml(html: string): string {
+  return html.replace(
+    /(<img\b[^>]*\bsrc=["'])([^"']+)(["'])/gi,
+    (_match, prefix: string, src: string, suffix: string) =>
+      `${prefix}${publicUploadUrl(normalizeUploadsInUrl(src))}${suffix}`
+  );
+}
+
+function looksLikeHtml(value: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(value.trim());
+}
+
+/** Подготавливает сохранённый plain text или HTML для TipTap-редактора. */
+export function toKnowledgeRichTextEditorHtml(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (looksLikeHtml(trimmed)) return trimmed;
+  return trimmed
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${paragraph.replace(/\n/g, '<br>')}</p>`)
+    .join('');
+}
+
+/** Рендер rich text на странице материала (plain text из старых записей тоже поддерживается). */
+export function renderKnowledgeRichTextHtml(value: string): string {
+  const asHtml = toKnowledgeRichTextEditorHtml(value);
+  if (!asHtml) return '';
+  return resolveKnowledgeArticleHtml(asHtml);
+}
+
+export function isKnowledgeRichTextEmpty(value: string | null | undefined): boolean {
+  if (!value?.trim()) return true;
+  return !value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
 
 export function slugify(text: string): string {
   return text
@@ -50,6 +90,10 @@ export function slugify(text: string): string {
 
 export function isKnowledgeEditor(role: string | undefined): boolean {
   return role === 'SUPER_ADMIN';
+}
+
+export function canViewKnowledgeTrainingAnalytics(role: string | undefined): boolean {
+  return role !== 'TRAINEE';
 }
 
 export function getMaterialTypeLabel(type: KnowledgeMaterialType): string {

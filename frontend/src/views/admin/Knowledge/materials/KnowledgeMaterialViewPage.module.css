@@ -362,7 +362,76 @@
   font-size: var(--admin-font-size-sm);
   line-height: 1.55;
   color: var(--admin-text-secondary);
-  white-space: pre-wrap;
+}
+
+.managerText p {
+  margin: 0 0 0.75em;
+}
+
+.managerText p:last-child {
+  margin-bottom: 0;
+}
+
+.managerText h2,
+.managerText h3,
+.managerText h4,
+.managerText h5,
+.managerText h6 {
+  margin: 1em 0 0.4em;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--admin-text-primary);
+}
+
+.managerText h2 {
+  font-size: 1.0625rem;
+}
+
+.managerText h3 {
+  font-size: 1rem;
+}
+
+.managerText ul,
+.managerText ol {
+  margin: 0 0 0.75em;
+  padding-left: 1.5em;
+}
+
+.managerText blockquote {
+  margin: 0.75em 0;
+  padding-left: 0.75rem;
+  border-left: 3px solid var(--admin-border-strong);
+}
+
+.managerText a {
+  color: var(--admin-accent);
+}
+
+.managerText table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 0.75em 0;
+  font-size: var(--admin-font-size-xs);
+}
+
+.managerText th,
+.managerText td {
+  border: 1px solid var(--admin-border);
+  padding: 0.4rem 0.6rem;
+  vertical-align: top;
+}
+
+.managerText th {
+  background: var(--admin-surface);
+  font-weight: 600;
+}
+
+.managerText img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: 0.75em auto;
+  border-radius: var(--admin-radius-md);
 }
 
 .description {
@@ -413,8 +482,11 @@
 .article img,
 .article video,
 .article iframe {
+  display: block;
   max-width: 100%;
   height: auto;
+  margin: 1.25em auto;
+  border-radius: var(--admin-radius-md);
 }
 
 @media (max-width: 900px) {

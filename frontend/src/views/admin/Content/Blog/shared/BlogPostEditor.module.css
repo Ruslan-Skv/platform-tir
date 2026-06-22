@@ -7,6 +7,15 @@
   overflow: hidden;
 }
 
+.editorWrapCompact .editorContent :global(.ProseMirror) {
+  min-height: 140px;
+  max-height: min(50vh, 480px);
+}
+
+.editorWrapCompact .editorShell {
+  min-height: 140px;
+}
+
 .editorShell {
   min-height: 320px;
   border: 1px solid var(--admin-border);
@@ -163,4 +172,21 @@
 
 .proseMirror :global(.selectedCell) {
   background: var(--admin-overlay-color-127);
+}
+
+.proseMirror :global(img) {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  margin: var(--admin-space-lg) auto;
+  border-radius: var(--admin-radius-md);
+}
+
+.proseMirror :global(img.ProseMirror-selectednode) {
+  outline: 2px solid var(--admin-info);
+  outline-offset: 2px;
+}
+
+.hiddenInput {
+  display: none;
 }

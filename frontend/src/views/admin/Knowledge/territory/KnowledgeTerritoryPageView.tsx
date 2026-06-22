@@ -273,6 +273,7 @@ function MaterialCard({
 export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageViewProps) {
   const {
     canEdit,
+    canViewTrainingAnalytics,
     materials,
     categories,
     modules,
@@ -415,14 +416,16 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     <div className={styles.page}>
       <header className={styles.hero}>
         <div className={styles.heroInfoTip}>
-          <Link
-            href="/admin/knowledge/analytics"
-            className={`${toolbarButtonStyles.button} ${styles.heroInfoTipButton}`}
-            title="Статистика обучения"
-            aria-label="Статистика обучения"
-          >
-            <TrainingStatisticsIcon />
-          </Link>
+          {canViewTrainingAnalytics ? (
+            <Link
+              href="/admin/knowledge/analytics"
+              className={`${toolbarButtonStyles.button} ${styles.heroInfoTipButton}`}
+              title="Статистика обучения"
+              aria-label="Статистика обучения"
+            >
+              <TrainingStatisticsIcon />
+            </Link>
+          ) : null}
           <KnowledgePlatformInfoTip triggerClassName={toolbarButtonStyles.button} />
           <KnowledgePlatformFeedbackButton triggerClassName={toolbarButtonStyles.button} />
         </div>

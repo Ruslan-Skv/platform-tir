@@ -1,5 +1,6 @@
 'use client';
 
+import Image from '@tiptap/extension-image';
 import Link from '@tiptap/extension-link';
 import Placeholder from '@tiptap/extension-placeholder';
 import { Table } from '@tiptap/extension-table';
@@ -9,16 +10,24 @@ import { TableRow } from '@tiptap/extension-table-row';
 import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
-import React, { useMemo } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
+
+import { normalizeUploadsInUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './BlogPostEditor.module.css';
 import { BLOG_PARAGRAPH_INDENT_CLASS, BlogParagraph } from './blogParagraphExtension';
+
+const MAX_INLINE_IMAGE_BYTES = 10 * 1024 * 1024;
 
 interface BlogPostEditorProps {
   value: string;
   onChange: (html: string) => void;
   placeholder?: string;
   enableTables?: boolean;
+  enableImages?: boolean;
+  onUploadImage?: (file: File) => Promise<string>;
+  onImageUploadError?: (message: string) => void;
+  compact?: boolean;
 }
 
 export function BlogPostEditor({
@@ -26,7 +35,14 @@ export function BlogPostEditor({
   onChange,
   placeholder = 'Текст статьи: абзацы, списки, ссылки…',
   enableTables = false,
+  enableImages = false,
+  onUploadImage,
+  onImageUploadError,
+  compact = false,
 }: BlogPostEditorProps) {
+  const imageInputRef = useRef<HTMLInputElement>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+
   const extensions = useMemo((): Extensions => {
     const base: Extensions = [
       StarterKit.configure({
@@ -44,28 +60,40 @@ export function BlogPostEditor({
       Placeholder.configure({ placeholder }),
     ];
 
+    if (enableImages) {
+      base.push(
+        Image.configure({
+          inline: false,
+          allowBase64: false,
+        })
+      );
+    }
+
     if (enableTables) {
       return [...base, Table.configure({ resizable: true }), TableRow, TableHeader, TableCell];
     }
 
     return base;
-  }, [enableTables, placeholder]);
+  }, [enableImages, enableTables, placeholder]);
 
-  const editor = useEditor({
-    immediatelyRender: false,
-    shouldRerenderOnTransaction: true,
-    extensions,
-    content: value || '<p></p>',
-    editorProps: {
-      attributes: {
-        class: styles.proseMirror,
-        spellcheck: 'true',
+  const editor = useEditor(
+    {
+      immediatelyRender: false,
+      shouldRerenderOnTransaction: true,
+      extensions,
+      content: value || '<p></p>',
+      editorProps: {
+        attributes: {
+          class: styles.proseMirror,
+          spellcheck: 'true',
+        },
+      },
+      onUpdate: ({ editor: ed }) => {
+        onChange(ed.getHTML());
       },
     },
-    onUpdate: ({ editor: ed }) => {
-      onChange(ed.getHTML());
-    },
-  });
+    [extensions]
+  );
 
   if (!editor) {
     return <div className={styles.editorShell} aria-hidden />;
@@ -106,6 +134,37 @@ export function BlogPostEditor({
     editor.chain().focus().extendMarkRange('link').setLink({ href: u }).run();
   };
 
+  const insertImage = () => {
+    if (uploadingImage) return;
+    imageInputRef.current?.click();
+  };
+
+  const handleImageFile = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !onUploadImage) return;
+
+    if (!/\.(jpe?g|png|webp|gif)$/i.test(file.name)) {
+      onImageUploadError?.('Допустимы только JPG, PNG, WebP и GIF');
+      return;
+    }
+    if (file.size > MAX_INLINE_IMAGE_BYTES) {
+      onImageUploadError?.('Размер файла не больше 10 МБ');
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const imageUrl = await onUploadImage(file);
+      const src = normalizeUploadsInUrl(imageUrl);
+      editor.chain().focus().setImage({ src, alt: '' }).run();
+    } catch (err) {
+      onImageUploadError?.(err instanceof Error ? err.message : 'Не удалось загрузить изображение');
+    } finally {
+      setUploadingImage(false);
+      if (imageInputRef.current) imageInputRef.current.value = '';
+    }
+  };
+
   const btn = (label: string, active: boolean, onClick: () => void, title: string) => (
     <button
       type="button"
@@ -119,7 +178,7 @@ export function BlogPostEditor({
   );
 
   return (
-    <div className={styles.editorWrap}>
+    <div className={`${styles.editorWrap} ${compact ? styles.editorWrapCompact : ''}`}>
       <div className={styles.toolbar} role="toolbar" aria-label="Форматирование текста">
         {btn(
           'B',
@@ -219,10 +278,29 @@ export function BlogPostEditor({
         ) : null}
         <span className={styles.toolbarSep} aria-hidden />
         {btn('🔗', editor.isActive('link'), setLink, 'Ссылка')}
+        {enableImages && onUploadImage
+          ? btn(
+              uploadingImage ? '…' : '🖼',
+              editor.isActive('image'),
+              insertImage,
+              uploadingImage ? 'Загрузка изображения…' : 'Вставить изображение'
+            )
+          : null}
         <span className={styles.toolbarSep} aria-hidden />
         {btn('↶', false, () => editor.chain().focus().undo().run(), 'Отменить')}
         {btn('↷', false, () => editor.chain().focus().redo().run(), 'Повторить')}
       </div>
+      {enableImages && onUploadImage ? (
+        <input
+          ref={imageInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/gif"
+          onChange={handleImageFile}
+          className={styles.hiddenInput}
+          tabIndex={-1}
+          aria-hidden
+        />
+      ) : null}
       <EditorContent editor={editor} className={styles.editorContent} />
     </div>
   );

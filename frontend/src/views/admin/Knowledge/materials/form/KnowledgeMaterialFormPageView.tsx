@@ -89,6 +89,8 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     handleUnpublishClick,
     handleTitleChange,
     handleThumbnailUpload,
+    handleContentImageUpload,
+    handleContentImageUploadError,
   } = model;
 
   if (loading) {
@@ -345,20 +347,18 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
 
           {type === 'ARTICLE' ? (
             <div className={styles.field}>
-              <label
-                htmlFor="managerPracticalAssignment"
-                className={styles.label}
-                title="Видно всем читателям статьи"
-              >
+              <label className={styles.label} title="Видно всем читателям статьи">
                 Практическое задание для менеджера
               </label>
-              <textarea
-                id="managerPracticalAssignment"
+              <BlogPostEditor
                 value={managerPracticalAssignment}
-                onChange={(e) => setManagerPracticalAssignment(e.target.value)}
-                className={styles.textarea}
-                rows={3}
-                placeholder="Задание для применения материала на практике"
+                onChange={setManagerPracticalAssignment}
+                enableTables
+                enableImages
+                onUploadImage={handleContentImageUpload}
+                onImageUploadError={handleContentImageUploadError}
+                compact
+                placeholder="Задание для применения материала на практике. Для картинок — кнопка 🖼."
               />
             </div>
           ) : null}
@@ -426,7 +426,10 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
               value={content}
               onChange={setContent}
               enableTables
-              placeholder="Инструкция, регламент, пошаговое руководство… Для таблиц используйте кнопку ⊞ на панели."
+              enableImages
+              onUploadImage={handleContentImageUpload}
+              onImageUploadError={handleContentImageUploadError}
+              placeholder="Инструкция, регламент, пошаговое руководство… Для таблиц — кнопка ⊞, для картинок в тексте — 🖼."
             />
           </div>
         ) : null}

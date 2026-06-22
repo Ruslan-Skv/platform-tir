@@ -2,14 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
+import { useAuth } from '@/features/auth';
 import {
   type KnowledgeTrainingAnalytics,
   getKnowledgeTrainingAnalytics,
 } from '@/shared/api/admin-knowledge';
 
+import { canViewKnowledgeTrainingAnalytics } from '../../shared/knowledge-utils';
 import { resolveAnalyticsRange } from '../knowledge-training-analytics.utils';
 
 export function useKnowledgeTrainingAnalyticsPage() {
+  const { user } = useAuth();
+  const router = useRouter();
+  const canView = canViewKnowledgeTrainingAnalytics(user?.role);
   const [period, setPeriod] = useState('month');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
@@ -37,10 +44,15 @@ export function useKnowledgeTrainingAnalyticsPage() {
   }, [range]);
 
   useEffect(() => {
+    if (!canView) {
+      router.replace('/admin/knowledge');
+      return;
+    }
     void load();
-  }, [load]);
+  }, [canView, load, router]);
 
   return {
+    canView,
     period,
     setPeriod,
     dateFrom,

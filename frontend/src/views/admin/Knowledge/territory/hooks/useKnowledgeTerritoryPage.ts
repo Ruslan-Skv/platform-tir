@@ -30,7 +30,7 @@ import {
 } from '@/shared/api/admin-knowledge';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 
-import { isKnowledgeEditor } from '../../shared/knowledge-utils';
+import { canViewKnowledgeTrainingAnalytics, isKnowledgeEditor } from '../../shared/knowledge-utils';
 import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import {
   type KnowledgeTerritoryFiltersState,
@@ -46,6 +46,7 @@ import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformF
 export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
   const canEdit = isKnowledgeEditor(user?.role);
+  const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -461,6 +462,7 @@ export function useKnowledgeTerritoryPage() {
 
   return {
     canEdit,
+    canViewTrainingAnalytics,
     materials,
     categories,
     modules,

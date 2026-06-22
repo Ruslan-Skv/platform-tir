@@ -35,8 +35,18 @@ function maxTimelineValue(
 export function KnowledgeTrainingAnalyticsPageView({
   model,
 }: KnowledgeTrainingAnalyticsPageViewProps) {
-  const { period, setPeriod, dateFrom, setDateFrom, dateTo, setDateTo, data, loading, error } =
-    model;
+  const {
+    canView,
+    period,
+    setPeriod,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    data,
+    loading,
+    error,
+  } = model;
 
   const timelineMax = useMemo(() => (data ? maxTimelineValue(data.activityTimeline) : 1), [data]);
 
@@ -47,6 +57,10 @@ export function KnowledgeTrainingAnalyticsPageView({
     const step = Math.ceil(rows.length / 14);
     return rows.filter((_, index) => index % step === 0 || index === rows.length - 1);
   }, [data]);
+
+  if (!canView) {
+    return null;
+  }
 
   return (
     <div className={styles.page}>

@@ -14,6 +14,7 @@ import {
   UploadedFile,
   Req,
   BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
@@ -86,7 +87,14 @@ export class KnowledgeController {
   }
 
   @Get('training-analytics')
-  getTrainingAnalytics(@Query('dateFrom') dateFrom?: string, @Query('dateTo') dateTo?: string) {
+  getTrainingAnalytics(
+    @Request() req: RequestWithUser,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    if (req.user.role === 'TRAINEE') {
+      throw new ForbiddenException('Статистика обучения недоступна для роли стажёра');
+    }
     return this.trainingAnalyticsService.getTrainingAnalytics({ dateFrom, dateTo });
   }
 
