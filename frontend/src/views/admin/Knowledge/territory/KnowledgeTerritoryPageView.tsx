@@ -338,6 +338,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setEditModuleSlug,
     editModuleDescription,
     setEditModuleDescription,
+    reorderingModuleId,
     handleSearchApply,
     handleDelete,
     handlePublish,
@@ -347,6 +348,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     handleUpdateCategory,
     handleAddModule,
     handleUpdateModule,
+    handleMoveModule,
     trashOpen,
     setTrashOpen,
     trashCount,
@@ -651,7 +653,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                   )}
                   {modules.length > 0 && (
                     <ul className={styles.categoryEditList}>
-                      {modules.map((mod) => (
+                      {modules.map((mod, moduleIndex) => (
                         <li key={mod.id} className={styles.categoryEditItem}>
                           {editingModuleId === mod.id ? (
                             <div className={styles.newCategoryForm}>
@@ -694,6 +696,42 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                             <div className={styles.categoryEditRow}>
                               <span>{mod.name}</span>
                               <div className={styles.categoryEditActions}>
+                                {modules.length > 1 ? (
+                                  <div
+                                    className={styles.moduleReorderGroup}
+                                    role="group"
+                                    aria-label={`Порядок модуля «${mod.name}»`}
+                                  >
+                                    <button
+                                      type="button"
+                                      className={styles.moduleReorderBtn}
+                                      disabled={
+                                        moduleIndex === 0 ||
+                                        reorderingModuleId !== null ||
+                                        editingModuleId !== null
+                                      }
+                                      title="Переместить выше"
+                                      aria-label="Переместить модуль выше"
+                                      onClick={() => void handleMoveModule(mod.id, -1)}
+                                    >
+                                      ↑
+                                    </button>
+                                    <button
+                                      type="button"
+                                      className={styles.moduleReorderBtn}
+                                      disabled={
+                                        moduleIndex === modules.length - 1 ||
+                                        reorderingModuleId !== null ||
+                                        editingModuleId !== null
+                                      }
+                                      title="Переместить ниже"
+                                      aria-label="Переместить модуль ниже"
+                                      onClick={() => void handleMoveModule(mod.id, 1)}
+                                    >
+                                      ↓
+                                    </button>
+                                  </div>
+                                ) : null}
                                 <AdminTableIconButton
                                   aria-label="Изменить модуль"
                                   title="Изменить название, slug и описание модуля"

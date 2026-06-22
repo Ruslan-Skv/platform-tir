@@ -376,6 +376,33 @@
   flex-shrink: 0;
 }
 
+.moduleReorderGroup {
+  display: flex;
+  gap: 2px;
+}
+
+.moduleReorderBtn {
+  min-width: 1.5rem;
+  padding: 2px 4px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  font-size: 12px;
+  line-height: 1.2;
+  cursor: pointer;
+  color: var(--admin-text-muted);
+}
+
+.moduleReorderBtn:hover:not(:disabled) {
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.moduleReorderBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
 .linkBtn,
 .dangerBtn,
 .actionBtn {

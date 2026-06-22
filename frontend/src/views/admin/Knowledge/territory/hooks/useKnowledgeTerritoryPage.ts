@@ -86,6 +86,7 @@ export function useKnowledgeTerritoryPage() {
   const [editModuleName, setEditModuleName] = useState('');
   const [editModuleSlug, setEditModuleSlug] = useState('');
   const [editModuleDescription, setEditModuleDescription] = useState('');
+  const [reorderingModuleId, setReorderingModuleId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
 
   const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount);
@@ -448,6 +449,34 @@ export function useKnowledgeTerritoryPage() {
     }
   };
 
+  const handleMoveModule = async (moduleId: string, direction: -1 | 1) => {
+    const index = modules.findIndex((mod) => mod.id === moduleId);
+    const newIndex = index + direction;
+    if (index < 0 || newIndex < 0 || newIndex >= modules.length) return;
+
+    setReorderingModuleId(moduleId);
+    try {
+      const reordered = [...modules];
+      const [moved] = reordered.splice(index, 1);
+      reordered.splice(newIndex, 0, moved);
+
+      const updates = reordered
+        .map((mod, orderIndex) => ({ mod, order: orderIndex + 1 }))
+        .filter(({ mod, order }) => mod.order !== order);
+
+      await Promise.all(updates.map(({ mod, order }) => updateKnowledgeModule(mod.id, { order })));
+
+      setModules(reordered.map((mod, orderIndex) => ({ ...mod, order: orderIndex + 1 })));
+      showMessage('success', 'Порядок модулей обновлён');
+      loadMaterials();
+    } catch (e) {
+      showMessage('error', e instanceof Error ? e.message : 'Не удалось изменить порядок модулей');
+      loadModules();
+    } finally {
+      setReorderingModuleId(null);
+    }
+  };
+
   const selectedCategory = categories.find((c) => c.id === categoryFilter);
 
   const handleTrashRestored = useCallback(() => {
@@ -519,6 +548,7 @@ export function useKnowledgeTerritoryPage() {
     setEditModuleSlug,
     editModuleDescription,
     setEditModuleDescription,
+    reorderingModuleId,
     handleSearchApply,
     handleDelete,
     handlePublish,
@@ -528,6 +558,7 @@ export function useKnowledgeTerritoryPage() {
     handleUpdateCategory,
     handleAddModule,
     handleUpdateModule,
+    handleMoveModule,
     trashOpen,
     setTrashOpen,
     trashCount,
