@@ -103,7 +103,7 @@ function MaterialCard({
             <span className={s.cardLockIcon} aria-hidden>
               🔒
             </span>
-            <span className={s.cardLockText}>Сначала завершите предыдущий материал</span>
+            <span className={s.cardLockText}>Сначала изучите предыдущий материал</span>
           </div>
         ) : null}
         {favoritedByMe ? <span className={s.favoriteBadge}>🔖</span> : null}
