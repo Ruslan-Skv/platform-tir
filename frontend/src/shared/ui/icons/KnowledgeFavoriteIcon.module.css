@@ -1,0 +1,13 @@
+.icon {
+  display: block;
+  flex-shrink: 0;
+}
+
+.iconFavorited {
+  color: #e11d48;
+}
+
+.iconUnfavorited {
+  color: var(--admin-text-muted, #8b8b8b);
+  opacity: 0.75;
+}

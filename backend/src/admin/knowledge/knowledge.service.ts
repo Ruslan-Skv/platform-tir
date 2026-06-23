@@ -13,8 +13,10 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
+import { KnowledgeMaterialFavoritesService } from './services/knowledge-material-favorites.service';
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
+import { KnowledgeSequentialAccessService } from './services/knowledge-sequential-access.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
@@ -46,9 +48,11 @@ export class KnowledgeService {
     private trashService: KnowledgeTrashService,
     private uploadService: KnowledgeUploadService,
     private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
+    private knowledgeMaterialFavoritesService: KnowledgeMaterialFavoritesService,
     private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
     private knowledgePlatformFeedbackService: KnowledgePlatformFeedbackService,
     private knowledgeQuizService: KnowledgeQuizService,
+    private knowledgeSequentialAccessService: KnowledgeSequentialAccessService,
   ) {}
 
   findAllTargetAudiences() {
@@ -138,7 +142,12 @@ export class KnowledgeService {
     return this.materialListService.searchMaterialSuggestions(params);
   }
 
-  async findOneMaterial(id: string, editorView = false, userId?: string) {
+  async findOneMaterial(
+    id: string,
+    editorView = false,
+    userId?: string,
+    options?: { applySequentialLearning?: boolean },
+  ) {
     const material = await this.prisma.knowledgeMaterial.findFirst({
       where: {
         OR: [{ id }, { slug: id }],
@@ -156,14 +165,18 @@ export class KnowledgeService {
     }
     const mapped = mapMaterialResponse(material, editorView);
     const [withLikes] = await this.knowledgeMaterialLikesService.attachLikeStats([mapped], userId);
+    const [withFavorites] = await this.knowledgeMaterialFavoritesService.attachFavoriteStats(
+      [withLikes],
+      userId,
+    );
     const [withCounts] = await this.knowledgeMaterialCommentsService.attachCommentCounts([
-      withLikes,
+      withFavorites,
     ]);
     const quizStatusMap = await this.knowledgeQuizService.getUserQuizStatusForMaterials(
       [withCounts.id],
       userId ?? '',
     );
-    return {
+    const materialWithQuiz = {
       ...withCounts,
       myQuizStatus: quizStatusMap[withCounts.id] ?? {
         hasQuiz: false,
@@ -171,10 +184,54 @@ export class KnowledgeService {
         scorePercent: null,
       },
     };
+
+    if (!userId) {
+      return { ...materialWithQuiz, sequentialLocked: false, studyCompleted: false };
+    }
+
+    if (options?.applySequentialLearning) {
+      await this.knowledgeSequentialAccessService.assertMaterialUnlockedForParticipant(
+        materialWithQuiz.id,
+        userId,
+        materialWithQuiz.categoryId,
+      );
+      const [enriched] = await this.knowledgeSequentialAccessService.attachSequentialAccess(
+        [materialWithQuiz],
+        materialWithQuiz.categoryId,
+        userId,
+      );
+      return enriched;
+    }
+
+    const [withStudyFlags] = await this.knowledgeSequentialAccessService.attachStudyCompletedFlags(
+      [materialWithQuiz],
+      userId,
+    );
+    return { ...withStudyFlags, sequentialLocked: false };
+  }
+
+  markStudyCompleted(materialId: string, userId: string) {
+    return this.knowledgeSequentialAccessService.markStudyCompleted(materialId, userId);
+  }
+
+  assertMaterialUnlockedForParticipant(materialId: string, userId: string, categoryId: string) {
+    return this.knowledgeSequentialAccessService.assertMaterialUnlockedForParticipant(
+      materialId,
+      userId,
+      categoryId,
+    );
   }
 
   toggleLike(materialId: string, userId: string) {
     return this.knowledgeMaterialLikesService.toggleLike(materialId, userId);
+  }
+
+  toggleFavorite(materialId: string, userId: string) {
+    return this.knowledgeMaterialFavoritesService.toggleFavorite(materialId, userId);
+  }
+
+  getUserFavoritesCount(userId: string) {
+    return this.knowledgeMaterialFavoritesService.getUserFavoritesCount(userId);
   }
 
   getMaterialLikers(materialId: string) {
@@ -341,8 +398,15 @@ export class KnowledgeService {
     return this.trashService.restoreModule(id);
   }
 
-  async upsertVideoProgress(userId: string, materialId: string, dto: UpdateVideoProgressDto) {
-    const material = await this.findOneMaterial(materialId, false, userId);
+  async upsertVideoProgress(
+    userId: string,
+    materialId: string,
+    dto: UpdateVideoProgressDto,
+    options?: { applySequentialLearning?: boolean },
+  ) {
+    const material = await this.findOneMaterial(materialId, false, userId, {
+      applySequentialLearning: options?.applySequentialLearning,
+    });
     if (material.type !== KnowledgeMaterialType.VIDEO) {
       throw new BadRequestException('Прогресс доступен только для видеоматериалов');
     }
@@ -371,8 +435,14 @@ export class KnowledgeService {
     return progress;
   }
 
-  async getVideoProgress(userId: string, materialId: string) {
-    await this.findOneMaterial(materialId, false, userId);
+  async getVideoProgress(
+    userId: string,
+    materialId: string,
+    options?: { applySequentialLearning?: boolean },
+  ) {
+    await this.findOneMaterial(materialId, false, userId, {
+      applySequentialLearning: options?.applySequentialLearning,
+    });
     return this.prisma.knowledgeVideoProgress.findUnique({
       where: {
         materialId_userId: { materialId, userId },

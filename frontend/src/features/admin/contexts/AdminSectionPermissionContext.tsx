@@ -4,6 +4,7 @@ import { createContext, useContext } from 'react';
 
 export type AdminSectionPermissionState = {
   canEdit: boolean;
+  canParticipate: boolean;
   canView: boolean;
   isLoading: boolean;
   resourceId: string | null;
@@ -12,6 +13,7 @@ export type AdminSectionPermissionState = {
 
 const defaultState: AdminSectionPermissionState = {
   canEdit: true,
+  canParticipate: true,
   canView: true,
   isLoading: false,
   resourceId: null,
@@ -23,7 +25,7 @@ export const AdminSectionPermissionContext =
 
 export function useAdminSectionCanEdit(): Pick<
   AdminSectionPermissionState,
-  'canEdit' | 'canView' | 'isLoading' | 'resourceId' | 'sectionLabel'
+  'canEdit' | 'canParticipate' | 'canView' | 'isLoading' | 'resourceId' | 'sectionLabel'
 > {
   return useContext(AdminSectionPermissionContext);
 }

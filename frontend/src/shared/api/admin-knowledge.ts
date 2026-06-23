@@ -80,7 +80,10 @@ export interface AdminKnowledgeMaterial {
   myQuizStatus?: KnowledgeQuizStatus | null;
   likeCount?: number;
   likedByMe?: boolean;
+  favoritedByMe?: boolean;
   commentCount?: number;
+  studyCompleted?: boolean;
+  sequentialLocked?: boolean;
 }
 
 export interface KnowledgeAttachmentInput {
@@ -158,6 +161,7 @@ export interface KnowledgeStats {
   linkCount: number;
   categoryCount: number;
   pinnedCount: number;
+  myFavoritesCount?: number;
 }
 
 export interface KnowledgeTrainingAnalytics {
@@ -245,6 +249,7 @@ export async function getKnowledgeMaterials(params?: {
   search?: string;
   page?: number;
   limit?: number;
+  favoritesOnly?: boolean;
 }) {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
@@ -254,6 +259,7 @@ export async function getKnowledgeMaterials(params?: {
   if (params?.search) searchParams.set('search', params.search);
   if (params?.page) searchParams.set('page', String(params.page));
   if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.favoritesOnly) searchParams.set('favoritesOnly', '1');
 
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials?${searchParams}`, {
     headers: getAuthHeaders(),
@@ -305,7 +311,16 @@ export async function getKnowledgeMaterial(id: string) {
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}`, {
     headers: getAuthHeaders(),
   });
-  if (!res.ok) throw new Error('Материал не найден');
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof err.message === 'string'
+        ? err.message
+        : Array.isArray(err.message)
+          ? err.message.join(', ')
+          : 'Материал не найден'
+    );
+  }
   return res.json() as Promise<AdminKnowledgeMaterial>;
 }
 
@@ -599,6 +614,32 @@ export async function toggleKnowledgeMaterialPin(id: string) {
   });
   if (!res.ok) throw new Error('Не удалось изменить закрепление');
   return res.json() as Promise<AdminKnowledgeMaterial>;
+}
+
+export interface KnowledgeMaterialFavoriteToggleResult {
+  favorited: boolean;
+  favoritedByMe: boolean;
+}
+
+export async function toggleKnowledgeMaterialFavorite(id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}/favorite`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось изменить избранное');
+  return res.json() as Promise<KnowledgeMaterialFavoriteToggleResult>;
+}
+
+export async function markKnowledgeMaterialStudyComplete(id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}/study-complete`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отметить материал как изученный');
+  }
+  return res.json() as Promise<{ studyCompleted: boolean }>;
 }
 
 export interface KnowledgeMaterialLikeToggleResult {

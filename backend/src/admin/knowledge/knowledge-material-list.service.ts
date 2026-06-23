@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import { KnowledgeMaterialFavoritesService } from './services/knowledge-material-favorites.service';
+import { KnowledgeSequentialAccessService } from './services/knowledge-sequential-access.service';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
@@ -16,7 +18,9 @@ export class KnowledgeMaterialListService {
     private prisma: PrismaService,
     private knowledgeQuizService: KnowledgeQuizService,
     private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
+    private knowledgeMaterialFavoritesService: KnowledgeMaterialFavoritesService,
     private knowledgeMaterialCommentsService: KnowledgeMaterialCommentsService,
+    private knowledgeSequentialAccessService: KnowledgeSequentialAccessService,
   ) {}
 
   async findAllMaterials(params: {
@@ -30,6 +34,8 @@ export class KnowledgeMaterialListService {
     editorView?: boolean;
     userId?: string;
     allowedCategoryIds?: string[];
+    favoritesOnly?: boolean;
+    applySequentialLearning?: boolean;
   }) {
     const {
       status,
@@ -42,6 +48,8 @@ export class KnowledgeMaterialListService {
       editorView = false,
       userId,
       allowedCategoryIds,
+      favoritesOnly = false,
+      applySequentialLearning = false,
     } = params;
     const skip = (page - 1) * limit;
 
@@ -52,6 +60,8 @@ export class KnowledgeMaterialListService {
       moduleId,
       type,
       allowedCategoryIds,
+      favoritesOnly,
+      userId,
     });
 
     if (search?.trim()) {
@@ -61,6 +71,53 @@ export class KnowledgeMaterialListService {
 
     const listMode = categoryId ? 'category' : 'all';
     const totalPromise = this.prisma.knowledgeMaterial.count({ where });
+
+    if (favoritesOnly && userId) {
+      const favoriteIds =
+        await this.knowledgeMaterialFavoritesService.listFavoriteMaterialIds(userId);
+      const [allRows, total] = await Promise.all([
+        this.prisma.knowledgeMaterial.findMany({
+          where: { ...where, id: { in: favoriteIds } },
+          select: {
+            id: true,
+            status: true,
+            sortOrder: true,
+            isPinned: true,
+            createdAt: true,
+            publishedAt: true,
+            module: { select: { order: true } },
+          },
+        }),
+        totalPromise,
+      ]);
+      const rowIds = new Set(allRows.map((row) => row.id));
+      const sortedIds = favoriteIds.filter((id) => rowIds.has(id));
+      const pageIds = sortedIds.slice(skip, skip + limit);
+      const rows = await this.loadMaterialsByIds(pageIds, userId);
+      const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
+      const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
+      const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
+      const withFavorites = await this.knowledgeMaterialFavoritesService.attachFavoriteStats(
+        withLikes,
+        userId,
+      );
+      const enriched =
+        await this.knowledgeMaterialCommentsService.attachCommentCounts(withFavorites);
+      const finalized = await this.finalizeMaterialsForViewer(enriched, {
+        editorView,
+        userId,
+        categoryId,
+        applySequentialLearning: applySequentialLearning && Boolean(categoryId),
+      });
+
+      return {
+        data: finalized,
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit) || 1,
+      };
+    }
 
     const [allRows, total] = await Promise.all([
       this.prisma.knowledgeMaterial.findMany({
@@ -84,10 +141,20 @@ export class KnowledgeMaterialListService {
     const mapped = rows.map((m) => mapMaterialResponse(m, editorView));
     const withQuiz = await this.enrichWithQuizStatus(mapped, editorView, userId);
     const withLikes = await this.knowledgeMaterialLikesService.attachLikeStats(withQuiz, userId);
-    const enriched = await this.knowledgeMaterialCommentsService.attachCommentCounts(withLikes);
+    const withFavorites = await this.knowledgeMaterialFavoritesService.attachFavoriteStats(
+      withLikes,
+      userId,
+    );
+    const enriched = await this.knowledgeMaterialCommentsService.attachCommentCounts(withFavorites);
+    const finalized = await this.finalizeMaterialsForViewer(enriched, {
+      editorView,
+      userId,
+      categoryId,
+      applySequentialLearning: applySequentialLearning && Boolean(categoryId),
+    });
 
     return {
-      data: enriched,
+      data: finalized,
       total,
       page,
       limit,
@@ -163,6 +230,41 @@ export class KnowledgeMaterialListService {
     return ids
       .map((id) => rowsById.get(id))
       .filter((row): row is NonNullable<typeof row> => row != null);
+  }
+
+  private async finalizeMaterialsForViewer<T extends { id: string; type: string }>(
+    materials: T[],
+    options: {
+      editorView: boolean;
+      userId?: string;
+      categoryId?: string;
+      applySequentialLearning: boolean;
+    },
+  ) {
+    if (!options.userId || materials.length === 0) {
+      return materials.map((material) => ({
+        ...material,
+        studyCompleted: false,
+        sequentialLocked: false,
+      }));
+    }
+
+    if (options.applySequentialLearning && options.categoryId) {
+      return this.knowledgeSequentialAccessService.attachSequentialAccess(
+        materials,
+        options.categoryId,
+        options.userId,
+      );
+    }
+
+    const withStudyFlags = await this.knowledgeSequentialAccessService.attachStudyCompletedFlags(
+      materials,
+      options.userId,
+    );
+    return withStudyFlags.map((material) => ({
+      ...material,
+      sequentialLocked: false,
+    }));
   }
 
   private async enrichWithQuizStatus<T extends { id: string }>(

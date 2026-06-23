@@ -19,8 +19,19 @@ export function buildKnowledgeMaterialListBaseWhere(params: {
   moduleId?: string;
   type?: string;
   allowedCategoryIds?: string[];
+  favoritesOnly?: boolean;
+  userId?: string;
 }): Prisma.KnowledgeMaterialWhereInput {
-  const { editorView = false, status, categoryId, moduleId, type, allowedCategoryIds } = params;
+  const {
+    editorView = false,
+    status,
+    categoryId,
+    moduleId,
+    type,
+    allowedCategoryIds,
+    favoritesOnly = false,
+    userId,
+  } = params;
 
   const where: Prisma.KnowledgeMaterialWhereInput = {
     deletedAt: null,
@@ -52,6 +63,10 @@ export function buildKnowledgeMaterialListBaseWhere(params: {
 
   if (type) {
     where.type = type as KnowledgeMaterialType;
+  }
+
+  if (favoritesOnly && userId) {
+    where.favorites = { some: { userId } };
   }
 
   return where;

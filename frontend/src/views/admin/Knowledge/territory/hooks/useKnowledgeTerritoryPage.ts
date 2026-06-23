@@ -24,8 +24,8 @@ import {
   getKnowledgeTrashCount,
   importKnowledgeCategoryOutline,
   publishKnowledgeMaterial,
+  toggleKnowledgeMaterialFavorite,
   toggleKnowledgeMaterialLike,
-  toggleKnowledgeMaterialPin,
   updateKnowledgeCategory,
   updateKnowledgeModule,
 } from '@/shared/api/admin-knowledge';
@@ -51,13 +51,14 @@ import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformF
 
 export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
-  const { canView, canEdit } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
+  const { canView, canEdit, canParticipate } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const filtersHydratedRef = useRef(false);
   const prevCategoryFilterRef = useRef<string | null>(null);
+  const materialsLoadSeqRef = useRef(0);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
@@ -73,6 +74,7 @@ export function useKnowledgeTerritoryPage() {
   const [moduleFilter, setModuleFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState<KnowledgeMaterialType | ''>('');
   const [statusFilter, setStatusFilter] = useState('');
+  const [favoritesOnly, setFavoritesOnly] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showNewCategory, setShowNewCategory] = useState(false);
@@ -123,6 +125,7 @@ export function useKnowledgeTerritoryPage() {
       if (fromUrl.moduleFilter !== undefined) setModuleFilter(fromUrl.moduleFilter);
       if (fromUrl.typeFilter !== undefined) setTypeFilter(fromUrl.typeFilter);
       if (fromUrl.statusFilter !== undefined) setStatusFilter(fromUrl.statusFilter);
+      if (fromUrl.favoritesOnly !== undefined) setFavoritesOnly(fromUrl.favoritesOnly);
       if (fromUrl.search !== undefined) setSearch(fromUrl.search);
       if (fromUrl.searchInput !== undefined) setSearchInput(fromUrl.searchInput);
       if (fromUrl.page !== undefined) setPage(fromUrl.page);
@@ -137,6 +140,7 @@ export function useKnowledgeTerritoryPage() {
       setModuleFilter(saved.moduleFilter);
       setTypeFilter(saved.typeFilter);
       setStatusFilter(saved.statusFilter);
+      setFavoritesOnly(saved.favoritesOnly);
       setSearch(saved.search);
       setSearchInput(saved.searchInput);
       setPage(saved.page);
@@ -154,8 +158,18 @@ export function useKnowledgeTerritoryPage() {
       search,
       searchInput,
       page,
+      favoritesOnly,
     }),
-    [categoryFilter, moduleFilter, typeFilter, statusFilter, search, searchInput, page]
+    [
+      categoryFilter,
+      moduleFilter,
+      typeFilter,
+      statusFilter,
+      search,
+      searchInput,
+      page,
+      favoritesOnly,
+    ]
   );
 
   const persistTerritoryFilters = useCallback(() => {
@@ -163,6 +177,7 @@ export function useKnowledgeTerritoryPage() {
   }, [filtersSnapshot]);
 
   const loadMaterials = useCallback(async () => {
+    const seq = ++materialsLoadSeqRef.current;
     setLoading(true);
     try {
       const res = await getKnowledgeMaterials({
@@ -171,18 +186,33 @@ export function useKnowledgeTerritoryPage() {
         moduleId: moduleFilter || undefined,
         type: typeFilter || undefined,
         status: canEdit && statusFilter ? statusFilter : undefined,
+        favoritesOnly: favoritesOnly || undefined,
         page,
         limit: MATERIALS_PAGE_LIMIT,
       });
+      if (seq !== materialsLoadSeqRef.current) return;
       setMaterials(res.data);
       setTotalPages(res.totalPages);
     } catch {
+      if (seq !== materialsLoadSeqRef.current) return;
       setMaterials([]);
       showMessage('error', 'Ошибка загрузки материалов');
     } finally {
-      setLoading(false);
+      if (seq === materialsLoadSeqRef.current) {
+        setLoading(false);
+      }
     }
-  }, [search, categoryFilter, moduleFilter, typeFilter, statusFilter, page, canEdit, showMessage]);
+  }, [
+    search,
+    categoryFilter,
+    moduleFilter,
+    typeFilter,
+    statusFilter,
+    favoritesOnly,
+    page,
+    canEdit,
+    showMessage,
+  ]);
 
   const loadCategories = useCallback(async () => {
     try {
@@ -274,6 +304,16 @@ export function useKnowledgeTerritoryPage() {
   const handleCategoryFilterChange = (categoryId: string) => {
     setCategoryFilter(categoryId);
     setModuleFilter('');
+    setFavoritesOnly(false);
+    setPage(1);
+  };
+
+  const handleFavoritesFilterChange = (active: boolean) => {
+    setFavoritesOnly(active);
+    if (active) {
+      setCategoryFilter('');
+      setModuleFilter('');
+    }
     setPage(1);
   };
 
@@ -334,14 +374,20 @@ export function useKnowledgeTerritoryPage() {
     }
   };
 
-  const handleTogglePin = async (id: string) => {
+  const handleToggleFavorite = async (id: string) => {
     try {
-      await toggleKnowledgeMaterialPin(id);
-      showMessage('success', 'Закрепление обновлено');
-      loadMaterials();
-      loadStats();
+      const result = await toggleKnowledgeMaterialFavorite(id);
+      setMaterials((prev) => {
+        if (favoritesOnly && !result.favoritedByMe) {
+          return prev.filter((material) => material.id !== id);
+        }
+        return prev.map((material) =>
+          material.id === id ? { ...material, favoritedByMe: result.favoritedByMe } : material
+        );
+      });
+      void loadStats();
     } catch (e) {
-      showMessage('error', e instanceof Error ? e.message : 'Ошибка закрепления');
+      showMessage('error', e instanceof Error ? e.message : 'Не удалось изменить избранное');
     }
   };
 
@@ -553,6 +599,7 @@ export function useKnowledgeTerritoryPage() {
 
   return {
     canEdit,
+    canParticipate,
     canViewTrainingAnalytics,
     materials,
     categories,
@@ -569,6 +616,8 @@ export function useKnowledgeTerritoryPage() {
     setSearchInput,
     categoryFilter,
     setCategoryFilter: handleCategoryFilterChange,
+    favoritesOnly,
+    setFavoritesOnly: handleFavoritesFilterChange,
     moduleFilter,
     setModuleFilter: handleModuleFilterChange,
     typeFilter,
@@ -615,7 +664,7 @@ export function useKnowledgeTerritoryPage() {
     handleSearchApply,
     handleDelete,
     handlePublish,
-    handleTogglePin,
+    handleToggleFavorite,
     handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,

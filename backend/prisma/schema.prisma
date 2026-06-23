@@ -58,6 +58,8 @@ model User {
   knowledgeModulesDeleted                 KnowledgeModule[]                        @relation("KnowledgeModuleDeletedBy")
   knowledgeVideoProgress                  KnowledgeVideoProgress[]
   knowledgeMaterialLikes                  KnowledgeMaterialLike[]
+  knowledgeMaterialFavorites              KnowledgeMaterialFavorite[]
+  knowledgeMaterialStudyCompletions       KnowledgeMaterialStudyCompletion[]
   knowledgeMaterialComments               KnowledgeMaterialComment[]
   knowledgePlatformFeedback               KnowledgePlatformFeedback[]
   adminPushSubscriptions                  AdminPushSubscription[]
@@ -154,7 +156,7 @@ model AdminResourcePermission {
   id         String   @id @default(cuid())
   resourceId String
   userId     String
-  permission String // VIEW | EDIT | DENIED
+  permission String // VIEW | PARTICIPATE | EDIT | DENIED
   createdAt  DateTime @default(now())
   user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -169,7 +171,7 @@ model AdminResourceRolePermission {
   id         String   @id @default(cuid())
   resourceId String
   role       String // SUPER_ADMIN, ADMIN, CONTENT_MANAGER и т.д.
-  permission String // VIEW | EDIT | DENIED
+  permission String // VIEW | PARTICIPATE | EDIT | DENIED
   createdAt  DateTime @default(now())
 
   @@unique([resourceId, role])
@@ -943,40 +945,42 @@ model KnowledgeModule {
 }
 
 model KnowledgeMaterial {
-  id                         String                            @id @default(cuid())
+  id                         String                             @id @default(cuid())
   categoryId                 String
   moduleId                   String?
   type                       KnowledgeMaterialType
   title                      String
-  slug                       String                            @unique
+  slug                       String                             @unique
   excerpt                    String?
-  content                    String?                           @db.Text
+  content                    String?                            @db.Text
   readingTimeMinutes         Int?
-  tutorRecommendation        String?                           @db.Text
-  managerPracticalAssignment String?                           @db.Text
+  tutorRecommendation        String?                            @db.Text
+  managerPracticalAssignment String?                            @db.Text
   videoUrl                   String?
   externalUrl                String?
   thumbnailUrl               String?
-  thumbnailDisplay           KnowledgeThumbnailDisplay         @default(COVER)
-  sortOrder                  Int                               @default(0)
-  isPinned                   Boolean                           @default(false)
-  status                     PageStatus                        @default(DRAFT)
+  thumbnailDisplay           KnowledgeThumbnailDisplay          @default(COVER)
+  sortOrder                  Int                                @default(0)
+  isPinned                   Boolean                            @default(false)
+  status                     PageStatus                         @default(DRAFT)
   publishedAt                DateTime?
-  deletedAt                  DateTime?                         @map("deleted_at")
-  deletedById                String?                           @map("deleted_by_id")
+  deletedAt                  DateTime?                          @map("deleted_at")
+  deletedById                String?                            @map("deleted_by_id")
   authorId                   String
-  createdAt                  DateTime                          @default(now())
-  updatedAt                  DateTime                          @updatedAt
-  category                   KnowledgeCategory                 @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  module                     KnowledgeModule?                  @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  author                     User                              @relation(fields: [authorId], references: [id])
-  deletedBy                  User?                             @relation("KnowledgeMaterialDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  createdAt                  DateTime                           @default(now())
+  updatedAt                  DateTime                           @updatedAt
+  category                   KnowledgeCategory                  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  module                     KnowledgeModule?                   @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  author                     User                               @relation(fields: [authorId], references: [id])
+  deletedBy                  User?                              @relation("KnowledgeMaterialDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   attachments                KnowledgeMaterialAttachment[]
   targetAudiences            KnowledgeMaterialTargetAudience[]
   videoProgress              KnowledgeVideoProgress[]
   quiz                       KnowledgeMaterialQuiz?
   quizAttempts               KnowledgeQuizAttempt[]
   likes                      KnowledgeMaterialLike[]
+  favorites                  KnowledgeMaterialFavorite[]
+  studyCompletions           KnowledgeMaterialStudyCompletion[]
   comments                   KnowledgeMaterialComment[]
 
   @@index([categoryId])
@@ -1053,6 +1057,35 @@ model KnowledgeMaterialLike {
   @@index([materialId])
   @@index([userId])
   @@map("knowledge_material_likes")
+}
+
+model KnowledgeMaterialFavorite {
+  id         String            @id @default(cuid())
+  materialId String
+  userId     String
+  createdAt  DateTime          @default(now())
+  material   KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user       User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, userId])
+  @@index([materialId])
+  @@index([userId])
+  @@index([userId, createdAt])
+  @@map("knowledge_material_favorites")
+}
+
+model KnowledgeMaterialStudyCompletion {
+  id          String            @id @default(cuid())
+  materialId  String
+  userId      String
+  completedAt DateTime          @default(now())
+  material    KnowledgeMaterial @relation(fields: [materialId], references: [id], onDelete: Cascade)
+  user        User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([materialId, userId])
+  @@index([materialId])
+  @@index([userId])
+  @@map("knowledge_material_study_completions")
 }
 
 model KnowledgeMaterialComment {

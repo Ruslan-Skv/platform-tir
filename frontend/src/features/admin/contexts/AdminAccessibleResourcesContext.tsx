@@ -31,7 +31,7 @@ function writeCachedResources(userId: string, resources: MyAccessibleResourceIte
   }
 }
 
-export type AdminResourcePermissionLevel = 'VIEW' | 'EDIT';
+export type AdminResourcePermissionLevel = 'VIEW' | 'PARTICIPATE' | 'EDIT';
 
 interface AdminAccessibleResourcesState {
   resources: MyAccessibleResourceItem[];
@@ -39,6 +39,7 @@ interface AdminAccessibleResourcesState {
   isLoading: boolean;
   hasAccess: (resourceId: string | undefined) => boolean;
   canView: (resourceId: string | undefined) => boolean;
+  canParticipate: (resourceId: string | undefined) => boolean;
   canEdit: (resourceId: string | undefined) => boolean;
   getPermission: (resourceId: string | undefined) => AdminResourcePermissionLevel | null;
   refresh: () => Promise<void>;
@@ -50,6 +51,7 @@ const defaultValue: AdminAccessibleResourcesState = {
   isLoading: true,
   hasAccess: () => false,
   canView: () => false,
+  canParticipate: () => false,
   canEdit: () => false,
   getPermission: () => null,
   refresh: async () => {},
@@ -124,7 +126,15 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
   const canView = useCallback(
     (resourceId: string | undefined) => {
       const permission = getPermission(resourceId);
-      return permission === 'VIEW' || permission === 'EDIT';
+      return permission === 'VIEW' || permission === 'PARTICIPATE' || permission === 'EDIT';
+    },
+    [getPermission]
+  );
+
+  const canParticipate = useCallback(
+    (resourceId: string | undefined) => {
+      const permission = getPermission(resourceId);
+      return permission === 'PARTICIPATE' || permission === 'EDIT';
     },
     [getPermission]
   );
@@ -140,6 +150,7 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
     isLoading,
     hasAccess,
     canView,
+    canParticipate,
     canEdit,
     getPermission,
     refresh: load,
@@ -163,9 +174,11 @@ export function useAdminAccessibleResources() {
 }
 
 export function useAdminResourcePermission(resourceId: string) {
-  const { canView, canEdit, getPermission, isLoading } = useAdminAccessibleResources();
+  const { canView, canParticipate, canEdit, getPermission, isLoading } =
+    useAdminAccessibleResources();
   return {
     canView: canView(resourceId),
+    canParticipate: canParticipate(resourceId),
     canEdit: canEdit(resourceId),
     permission: getPermission(resourceId),
     isLoading,

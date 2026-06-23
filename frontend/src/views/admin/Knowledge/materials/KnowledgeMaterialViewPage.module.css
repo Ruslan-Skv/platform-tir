@@ -88,6 +88,12 @@
   background: rgba(245, 158, 11, 0.08);
 }
 
+.favoriteBtnActive {
+  border-color: #e11d48;
+  color: #be123c;
+  background: rgba(225, 29, 72, 0.08);
+}
+
 .commentBtn {
   display: inline-flex;
   align-items: center;

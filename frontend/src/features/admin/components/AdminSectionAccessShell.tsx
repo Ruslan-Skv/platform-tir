@@ -27,7 +27,8 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
   const router = useRouter();
   const { hasAccess } = useAdminAccessibleResources();
   const sectionPermission = useAdminSectionPermission();
-  const { pathname, resourceId, sectionLabel, canView, canEdit, isLoading } = sectionPermission;
+  const { pathname, resourceId, sectionLabel, canView, canParticipate, canEdit, isLoading } =
+    sectionPermission;
 
   const isReadOnly = Boolean(!isLoading && resourceId && canView && !canEdit);
 
@@ -75,7 +76,9 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
 
   return (
     <AdminSectionPermissionContext.Provider value={sectionPermission}>
-      {showReadOnlyBanner ? <AdminResourceReadOnlyBanner sectionLabel={sectionLabel!} /> : null}
+      {showReadOnlyBanner ? (
+        <AdminResourceReadOnlyBanner sectionLabel={sectionLabel!} canParticipate={canParticipate} />
+      ) : null}
       {children}
     </AdminSectionPermissionContext.Provider>
   );

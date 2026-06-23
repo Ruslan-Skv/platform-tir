@@ -8,6 +8,7 @@ export interface KnowledgeTerritoryFiltersState {
   search: string;
   searchInput: string;
   page: number;
+  favoritesOnly: boolean;
 }
 
 const STORAGE_KEY = 'admin_knowledge_territory_filters';
@@ -20,6 +21,7 @@ const DEFAULT_FILTERS: KnowledgeTerritoryFiltersState = {
   search: '',
   searchInput: '',
   page: 1,
+  favoritesOnly: false,
 };
 
 const MATERIAL_TYPES = new Set<KnowledgeMaterialType>(['ARTICLE', 'VIDEO', 'LINK']);
@@ -53,6 +55,7 @@ export function readKnowledgeTerritoryFilters(): KnowledgeTerritoryFiltersState 
         typeof data.page === 'number' && Number.isFinite(data.page) && data.page > 0
           ? data.page
           : DEFAULT_FILTERS.page,
+      favoritesOnly: data.favoritesOnly === true,
     };
   } catch {
     return null;
@@ -74,6 +77,7 @@ export function buildKnowledgeTerritoryUrl(state: Partial<KnowledgeTerritoryFilt
   if (state.moduleFilter) params.set('module', state.moduleFilter);
   if (state.typeFilter) params.set('type', state.typeFilter);
   if (state.statusFilter) params.set('status', state.statusFilter);
+  if (state.favoritesOnly) params.set('favorites', '1');
   if (state.search?.trim()) params.set('q', state.search.trim());
   if (state.page && state.page > 1) params.set('page', String(state.page));
   const qs = params.toString();
@@ -121,6 +125,10 @@ export function parseKnowledgeTerritorySearchParams(
     if (Number.isFinite(pageNum) && pageNum > 0) {
       parsed.page = pageNum;
     }
+  }
+
+  if (searchParams.get('favorites') === '1') {
+    parsed.favoritesOnly = true;
   }
 
   return parsed;

@@ -53,8 +53,12 @@ export class AdminResourceInterceptor implements NestInterceptor {
     );
 
     if (!permissionLevelSatisfies(effective, matched.level)) {
-      const action =
-        matched.level === AdminResourcePermissionLevel.EDIT ? 'редактирования' : 'просмотра';
+      const actionLabels: Record<string, string> = {
+        [AdminResourcePermissionLevel.EDIT]: 'редактирования',
+        [AdminResourcePermissionLevel.PARTICIPATE]: 'участия',
+        [AdminResourcePermissionLevel.VIEW]: 'просмотра',
+      };
+      const action = actionLabels[matched.level] ?? 'доступа';
       throw new ForbiddenException(`Недостаточно прав для ${action} раздела`);
     }
 

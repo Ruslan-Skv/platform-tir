@@ -442,11 +442,15 @@ body[data-admin-readonly] input[type='search'],
 body[data-admin-readonly] input[type='checkbox'],
 body[data-admin-readonly] input[type='radio'],
 body[data-admin-readonly] input[data-admin-filter],
+body[data-admin-readonly] [data-admin-participate],
 body[data-admin-readonly] [data-admin-allow-readonly] {
   pointer-events: auto;
   opacity: 1;
 }
 
+body[data-admin-readonly] [data-admin-participate] textarea,
+body[data-admin-readonly] [data-admin-participate] select,
+body[data-admin-readonly] [data-admin-participate] input,
 body[data-admin-readonly] [data-admin-allow-readonly] textarea,
 body[data-admin-readonly] [data-admin-allow-readonly] select,
 body[data-admin-readonly] [data-admin-allow-readonly] input {

@@ -18,6 +18,8 @@ export interface AdminResourceItem {
   path: string;
 }
 
+export type AdminAccessGrantLevel = 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED';
+
 export interface ResourcePermissionUserItem {
   type: 'user';
   id: string;
@@ -25,7 +27,7 @@ export interface ResourcePermissionUserItem {
   firstName: string | null;
   lastName: string | null;
   role?: string;
-  permission: 'VIEW' | 'EDIT' | 'DENIED';
+  permission: AdminAccessGrantLevel;
   createdAt: string;
 }
 
@@ -33,7 +35,7 @@ export interface ResourcePermissionRoleItem {
   type: 'role';
   id: string;
   role: string;
-  permission: 'VIEW' | 'EDIT' | 'DENIED';
+  permission: AdminAccessGrantLevel;
   createdAt: string;
 }
 
@@ -45,19 +47,19 @@ export type RoleAccessSource =
   | 'inherited_denied'
   | 'none';
 
-export type EffectiveAccess = 'EDIT' | 'VIEW' | 'NONE' | 'DENIED';
+export type EffectiveAccess = 'EDIT' | 'PARTICIPATE' | 'VIEW' | 'NONE' | 'DENIED';
 
 export interface RoleAccessOverviewItem {
   role: string;
   effective: EffectiveAccess;
   source: RoleAccessSource;
-  overridePermission?: 'VIEW' | 'EDIT' | 'DENIED';
+  overridePermission?: AdminAccessGrantLevel;
   hasExplicitOverride: boolean;
 }
 
 export interface MyAccessibleResourceItem {
   id: string;
-  permission: 'VIEW' | 'EDIT';
+  permission: 'VIEW' | 'PARTICIPATE' | 'EDIT';
 }
 
 export interface ResourcePermissionsResponse {
@@ -115,7 +117,7 @@ export async function getMyAccessibleResources(): Promise<MyAccessibleResourceIt
 export async function setResourcePermission(
   resourceId: string,
   userId: string,
-  permission: 'VIEW' | 'EDIT' | 'DENIED'
+  permission: AdminAccessGrantLevel
 ): Promise<ResourcePermissionsResponse> {
   const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/permissions`,
@@ -157,7 +159,7 @@ export async function getAdminAccessRoles(): Promise<AdminRoleItem[]> {
 export async function setRolePermission(
   resourceId: string,
   role: string,
-  permission: 'VIEW' | 'EDIT' | 'DENIED'
+  permission: AdminAccessGrantLevel
 ): Promise<ResourcePermissionsResponse> {
   const res = await apiFetch(
     `${API_URL}/admin/access/resources/${encodeURIComponent(resourceId)}/role-permissions`,

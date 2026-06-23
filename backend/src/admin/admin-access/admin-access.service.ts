@@ -17,7 +17,7 @@ import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
 
 export type MyResourcePermissionItem = {
   id: string;
-  permission: 'VIEW' | 'EDIT';
+  permission: 'VIEW' | 'PARTICIPATE' | 'EDIT';
 };
 
 export { ADMIN_ROLES };
@@ -61,7 +61,7 @@ export class AdminAccessService {
     resourceId: string,
     userRole: UserRole,
     ctx: PermissionContext,
-  ): 'VIEW' | 'EDIT' | 'DENIED' | 'NONE' {
+  ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
     const userExplicit = ctx.userPerms.find((p) => p.resourceId === resourceId)?.permission as
       | AdminResourcePermissionLevel
       | undefined;
@@ -81,26 +81,26 @@ export class AdminAccessService {
     categoryResourceId: string,
     userRole: UserRole,
     ctx: PermissionContext,
-  ): 'VIEW' | 'EDIT' | 'DENIED' | 'NONE' {
+  ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
     const direct = this.computeDirectEffectivePermission(categoryResourceId, userRole, ctx);
     if (direct === 'DENIED') return 'DENIED';
-    if (direct === 'VIEW' || direct === 'EDIT') return direct;
+    if (direct === 'VIEW' || direct === 'PARTICIPATE' || direct === 'EDIT') return direct;
 
     const parent = this.computeDirectEffectivePermission(KNOWLEDGE_RESOURCE_ID, userRole, ctx);
     if (parent === 'DENIED') return 'DENIED';
-    if (parent === 'VIEW' || parent === 'EDIT') return parent;
+    if (parent === 'VIEW' || parent === 'PARTICIPATE' || parent === 'EDIT') return parent;
     return 'NONE';
   }
 
   /**
-   * Итоговый уровень доступа пользователя к ресурсу (VIEW / EDIT / DENIED / NONE).
+   * Итоговый уровень доступа пользователя к ресурсу (VIEW / PARTICIPATE / EDIT / DENIED / NONE).
    */
   async getUserEffectivePermission(
     userId: string,
     userRole: UserRole,
     resourceId: string,
     ctx?: PermissionContext,
-  ): Promise<'VIEW' | 'EDIT' | 'DENIED' | 'NONE'> {
+  ): Promise<'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE'> {
     if (userRole === 'SUPER_ADMIN') {
       return 'EDIT';
     }
@@ -134,7 +134,7 @@ export class AdminAccessService {
         userRole,
         ctx,
       );
-      if (effective === 'VIEW' || effective === 'EDIT') {
+      if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
         accessible.push(category.id);
       }
     }
@@ -143,7 +143,7 @@ export class AdminAccessService {
   }
 
   /**
-   * Ресурсы админки с итоговым уровнем доступа (только VIEW и EDIT).
+   * Ресурсы админки с итоговым уровнем доступа (VIEW, PARTICIPATE и EDIT).
    */
   async getMyResourcePermissions(
     userId: string,
@@ -158,7 +158,7 @@ export class AdminAccessService {
 
     for (const resource of ADMIN_RESOURCES) {
       const effective = this.computeDirectEffectivePermission(resource.id, userRole, ctx);
-      if (effective === 'VIEW' || effective === 'EDIT') {
+      if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
         result.push({ id: resource.id, permission: effective });
       }
     }
@@ -174,7 +174,7 @@ export class AdminAccessService {
       if (result.some((item) => item.id === resourceId)) continue;
 
       const effective = this.computeKnowledgeCategoryEffectivePermission(resourceId, userRole, ctx);
-      if (effective === 'VIEW' || effective === 'EDIT') {
+      if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
         result.push({ id: resourceId, permission: effective });
       }
     }

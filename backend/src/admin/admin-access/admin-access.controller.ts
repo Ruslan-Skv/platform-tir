@@ -23,7 +23,8 @@ export class AdminAccessController {
   @Get('my-resources')
   @Roles(...ADMIN_ROLES)
   @ApiOperation({
-    summary: 'Ресурсы админки с уровнем доступа (VIEW — только просмотр, EDIT — редактирование)',
+    summary:
+      'Ресурсы админки с уровнем доступа (VIEW — только просмотр, PARTICIPATE — участие, EDIT — редактирование)',
   })
   getMyAccessibleResources(@Request() req: RequestWithUser) {
     return this.service.getMyResourcePermissions(req.user.id, req.user.role as UserRole);

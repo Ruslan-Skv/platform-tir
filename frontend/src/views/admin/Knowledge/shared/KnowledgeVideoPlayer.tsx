@@ -15,6 +15,8 @@ interface KnowledgeVideoPlayerProps {
   url: string;
   title?: string;
   initialProgress?: KnowledgeVideoProgress | null;
+  canTrackProgress?: boolean;
+  onCompleted?: () => void;
 }
 
 export function KnowledgeVideoPlayer({
@@ -22,6 +24,8 @@ export function KnowledgeVideoPlayer({
   url,
   title = 'Видео',
   initialProgress,
+  canTrackProgress = true,
+  onCompleted,
 }: KnowledgeVideoPlayerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const saveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -33,6 +37,7 @@ export function KnowledgeVideoPlayer({
 
   const saveProgress = useCallback(
     async (percent: number, positionSeconds?: number, completed?: boolean) => {
+      if (!canTrackProgress) return;
       setSaving(true);
       try {
         const updated = await updateKnowledgeVideoProgress(materialId, {
@@ -41,23 +46,27 @@ export function KnowledgeVideoPlayer({
           completed,
         });
         setProgress(updated);
+        if (completed) {
+          onCompleted?.();
+        }
       } catch {
         // ignore transient save errors
       } finally {
         setSaving(false);
       }
     },
-    [materialId]
+    [canTrackProgress, materialId, onCompleted]
   );
 
   const scheduleSave = useCallback(
     (percent: number, positionSeconds?: number, completed?: boolean) => {
+      if (!canTrackProgress) return;
       if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
       saveTimerRef.current = setTimeout(() => {
         void saveProgress(percent, positionSeconds, completed);
       }, 1500);
     },
-    [saveProgress]
+    [canTrackProgress, saveProgress]
   );
 
   useEffect(() => {
@@ -170,7 +179,7 @@ export function KnowledgeVideoPlayer({
         >
           <div className={styles.progressFill} style={{ width: `${progressPercent}%` }} />
         </div>
-        {!isNative && !isCompleted && (
+        {!isNative && canTrackProgress && !isCompleted && (
           <button type="button" className={styles.completeBtn} onClick={handleMarkComplete}>
             Отметить как просмотренное
           </button>

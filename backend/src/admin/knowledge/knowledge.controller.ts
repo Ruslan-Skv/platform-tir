@@ -76,6 +76,19 @@ export class KnowledgeController {
     );
   }
 
+  /** Последовательное изучение в категории — для «Просмотр» и «Участие», не для редакторов. */
+  private async shouldApplySequentialLearning(req: RequestWithUser): Promise<boolean> {
+    if (await this.canEditKnowledge(req)) {
+      return false;
+    }
+    const permission = await this.adminAccessService.getUserEffectivePermission(
+      req.user.id,
+      req.user.role as UserRole,
+      KNOWLEDGE_RESOURCE_ID,
+    );
+    return permission === 'VIEW' || permission === 'PARTICIPATE';
+  }
+
   private async getViewerCategoryScope(req: RequestWithUser, editorView: boolean) {
     if (editorView) {
       return undefined;
@@ -109,6 +122,7 @@ export class KnowledgeController {
 
   @Get('stats')
   async getStats(@Request() req: RequestWithUser) {
+    const myFavoritesCount = await this.knowledgeService.getUserFavoritesCount(req.user.id);
     if (!(await this.canEditKnowledge(req))) {
       return this.knowledgeService.getStats().then((stats) => ({
         totalMaterials: stats.publishedMaterials,
@@ -119,9 +133,11 @@ export class KnowledgeController {
         linkCount: stats.linkCount,
         categoryCount: stats.categoryCount,
         pinnedCount: stats.pinnedCount,
+        myFavoritesCount,
       }));
     }
-    return this.knowledgeService.getStats();
+    const stats = await this.knowledgeService.getStats();
+    return { ...stats, myFavoritesCount };
   }
 
   @Get('training-analytics')
@@ -173,12 +189,15 @@ export class KnowledgeController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('favoritesOnly') favoritesOnly?: string,
   ) {
     const editorView = await this.canEditKnowledge(req);
     const allowedCategoryIds = await this.getViewerCategoryScope(req, editorView);
     if (categoryId) {
       await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
     }
+    const applySequentialLearning =
+      Boolean(categoryId) && (await this.shouldApplySequentialLearning(req));
     return this.knowledgeService.findAllMaterials({
       status,
       categoryId,
@@ -190,29 +209,38 @@ export class KnowledgeController {
       editorView,
       userId: req.user.id,
       allowedCategoryIds,
+      favoritesOnly: favoritesOnly === '1' || favoritesOnly === 'true',
+      applySequentialLearning,
     });
   }
 
   @Get('materials/:id')
   async findOneMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
     const editorView = await this.canEditKnowledge(req);
-    const material = await this.knowledgeService.findOneMaterial(id, editorView, req.user.id);
+    const applySequentialLearning = await this.shouldApplySequentialLearning(req);
+    const material = await this.knowledgeService.findOneMaterial(id, editorView, req.user.id, {
+      applySequentialLearning,
+    });
     await this.assertMaterialCategoryAccess(req, material.categoryId, editorView);
     return material;
   }
 
   @Get('materials/:id/progress')
-  getVideoProgress(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.getVideoProgress(req.user.id, id);
+  async getVideoProgress(@Param('id') id: string, @Request() req: RequestWithUser) {
+    const applySequentialLearning = await this.shouldApplySequentialLearning(req);
+    return this.knowledgeService.getVideoProgress(req.user.id, id, { applySequentialLearning });
   }
 
   @Patch('materials/:id/progress')
-  updateVideoProgress(
+  async updateVideoProgress(
     @Param('id') id: string,
     @Body() dto: UpdateVideoProgressDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.knowledgeService.upsertVideoProgress(req.user.id, id, dto);
+    const applySequentialLearning = await this.shouldApplySequentialLearning(req);
+    return this.knowledgeService.upsertVideoProgress(req.user.id, id, dto, {
+      applySequentialLearning,
+    });
   }
 
   @Get('materials/:id/quiz')
@@ -235,12 +263,23 @@ export class KnowledgeController {
     @Body() dto: SubmitKnowledgeQuizDto,
     @Request() req: RequestWithUser,
   ) {
-    return this.knowledgeQuizService.submitAttempt(
-      id,
-      req.user.id,
-      dto,
-      await this.canEditKnowledge(req),
-    );
+    const editorView = await this.canEditKnowledge(req);
+    if (!editorView && (await this.shouldApplySequentialLearning(req))) {
+      const material = await this.knowledgeService.findOneMaterial(id, false, req.user.id, {
+        applySequentialLearning: false,
+      });
+      await this.knowledgeService.assertMaterialUnlockedForParticipant(
+        id,
+        req.user.id,
+        material.categoryId,
+      );
+    }
+    return this.knowledgeQuizService.submitAttempt(id, req.user.id, dto, editorView);
+  }
+
+  @Patch('materials/:id/study-complete')
+  async markMaterialStudyComplete(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.markStudyCompleted(id, req.user.id);
   }
 
   @Patch('materials/:id/pin')
@@ -251,6 +290,11 @@ export class KnowledgeController {
   @Patch('materials/:id/like')
   toggleMaterialLike(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.knowledgeService.toggleLike(id, req.user.id);
+  }
+
+  @Patch('materials/:id/favorite')
+  toggleMaterialFavorite(@Param('id') id: string, @Request() req: RequestWithUser) {
+    return this.knowledgeService.toggleFavorite(id, req.user.id);
   }
 
   @Get('materials/:id/likes')

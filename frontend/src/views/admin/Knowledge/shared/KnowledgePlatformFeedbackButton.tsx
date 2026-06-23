@@ -20,11 +20,13 @@ const FEEDBACK_TYPES: Array<{ value: KnowledgePlatformFeedbackType; label: strin
 type KnowledgePlatformFeedbackButtonProps = {
   iconSize?: number;
   triggerClassName?: string;
+  canParticipate?: boolean;
 };
 
 export function KnowledgePlatformFeedbackButton({
   iconSize = ADMIN_TRAINING_STATISTICS_ICON_SIZE,
   triggerClassName,
+  canParticipate = true,
 }: KnowledgePlatformFeedbackButtonProps = {}) {
   const buttonClassName = triggerClassName
     ? triggerClassName
@@ -68,6 +70,10 @@ export function KnowledgePlatformFeedbackButton({
     }
   };
 
+  if (!canParticipate) {
+    return null;
+  }
+
   return (
     <>
       <button
@@ -102,7 +108,11 @@ export function KnowledgePlatformFeedbackButton({
             </div>
           </>
         ) : (
-          <form data-modal-form onSubmit={(event) => void handleSubmit(event)}>
+          <form
+            data-modal-form
+            data-admin-participate
+            onSubmit={(event) => void handleSubmit(event)}
+          >
             <p data-modal-form-hint>
               Расскажите, что можно улучшить, или опишите ошибку, с которой вы столкнулись.
             </p>

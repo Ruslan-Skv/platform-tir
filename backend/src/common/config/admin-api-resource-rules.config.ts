@@ -9,7 +9,10 @@ export type AdminApiResourceRule = {
 
   pathPattern: RegExp;
 
-  level: AdminResourcePermissionLevel.VIEW | AdminResourcePermissionLevel.EDIT;
+  level:
+    | AdminResourcePermissionLevel.VIEW
+    | AdminResourcePermissionLevel.PARTICIPATE
+    | AdminResourcePermissionLevel.EDIT;
 };
 
 /**
@@ -105,7 +108,7 @@ export const ADMIN_API_RESOURCE_EXCEPTIONS: AdminApiResourceRule[] = [
     level: AdminResourcePermissionLevel.VIEW,
   },
 
-  // ——— Территория знаний: социальные действия (достаточно «Просмотр») ———
+  // ——— Территория знаний: социальные действия (нужен уровень «Участие») ———
 
   {
     resourceId: 'admin.knowledge',
@@ -114,7 +117,17 @@ export const ADMIN_API_RESOURCE_EXCEPTIONS: AdminApiResourceRule[] = [
 
     pathPattern: /^\/api\/v1\/admin\/knowledge\/materials\/[^/]+\/like$/,
 
-    level: AdminResourcePermissionLevel.VIEW,
+    level: AdminResourcePermissionLevel.PARTICIPATE,
+  },
+
+  {
+    resourceId: 'admin.knowledge',
+
+    methods: ['PATCH'],
+
+    pathPattern: /^\/api\/v1\/admin\/knowledge\/materials\/[^/]+\/favorite$/,
+
+    level: AdminResourcePermissionLevel.PARTICIPATE,
   },
 
   {
@@ -124,7 +137,7 @@ export const ADMIN_API_RESOURCE_EXCEPTIONS: AdminApiResourceRule[] = [
 
     pathPattern: /^\/api\/v1\/admin\/knowledge\/materials\/[^/]+\/comments$/,
 
-    level: AdminResourcePermissionLevel.VIEW,
+    level: AdminResourcePermissionLevel.PARTICIPATE,
   },
 
   {
@@ -134,15 +147,17 @@ export const ADMIN_API_RESOURCE_EXCEPTIONS: AdminApiResourceRule[] = [
 
     pathPattern: /^\/api\/v1\/admin\/knowledge\/feedback$/,
 
-    level: AdminResourcePermissionLevel.VIEW,
+    level: AdminResourcePermissionLevel.PARTICIPATE,
   },
 
+  // Прогресс обучения (тест, видео, отметка «изучено») — с уровня «Просмотр»
   {
     resourceId: 'admin.knowledge',
 
     methods: ['POST', 'PATCH'],
 
-    pathPattern: /^\/api\/v1\/admin\/knowledge\/materials\/[^/]+\/(quiz\/submit|video-progress)$/,
+    pathPattern:
+      /^\/api\/v1\/admin\/knowledge\/materials\/[^/]+\/(quiz\/submit|progress|study-complete)$/,
 
     level: AdminResourcePermissionLevel.VIEW,
   },
@@ -176,7 +191,10 @@ export function matchAdminApiResourceRule(
   requestPath: string,
 ): {
   resourceId: string;
-  level: AdminResourcePermissionLevel.VIEW | AdminResourcePermissionLevel.EDIT;
+  level:
+    | AdminResourcePermissionLevel.VIEW
+    | AdminResourcePermissionLevel.PARTICIPATE
+    | AdminResourcePermissionLevel.EDIT;
 } | null {
   const pathOnly = requestPath.split('?')[0] ?? requestPath;
 
@@ -202,15 +220,22 @@ export function matchAdminApiResourceRule(
 }
 
 export function permissionLevelSatisfies(
-  effective: 'VIEW' | 'EDIT' | 'DENIED' | 'NONE',
+  effective: 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE',
 
-  required: AdminResourcePermissionLevel.VIEW | AdminResourcePermissionLevel.EDIT,
+  required:
+    | AdminResourcePermissionLevel.VIEW
+    | AdminResourcePermissionLevel.PARTICIPATE
+    | AdminResourcePermissionLevel.EDIT,
 ): boolean {
   if (effective === 'DENIED' || effective === 'NONE') return false;
 
-  if (required === AdminResourcePermissionLevel.VIEW) {
-    return effective === 'VIEW' || effective === 'EDIT';
+  if (required === AdminResourcePermissionLevel.EDIT) {
+    return effective === 'EDIT';
   }
 
-  return effective === 'EDIT';
+  if (required === AdminResourcePermissionLevel.PARTICIPATE) {
+    return effective === 'PARTICIPATE' || effective === 'EDIT';
+  }
+
+  return effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT';
 }

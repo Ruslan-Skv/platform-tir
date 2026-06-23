@@ -15,13 +15,15 @@ import { useAdminAccessibleResources } from '../contexts/AdminAccessibleResource
 export function useAdminSectionPermission() {
   const pathname = usePathname();
   const resourceId = useMemo(() => resolveAdminResourceIdByPathname(pathname), [pathname]);
-  const { canView, canEdit, getPermission, isLoading } = useAdminAccessibleResources();
+  const { canView, canParticipate, canEdit, getPermission, isLoading } =
+    useAdminAccessibleResources();
 
   return {
     pathname,
     resourceId,
     sectionLabel: resourceId ? getAdminResourceLabel(resourceId) : null,
     canView: canView(resourceId ?? undefined),
+    canParticipate: canParticipate(resourceId ?? undefined),
     canEdit: canEdit(resourceId ?? undefined),
     permission: getPermission(resourceId ?? undefined),
     isLoading,

@@ -256,6 +256,18 @@
   padding: 2px var(--admin-space-md, 8px);
 }
 
+.badgeParticipate {
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: var(--admin-radius-pill, 999px);
+  color: #5b21b6;
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.2;
+  padding: 2px var(--admin-space-md, 8px);
+}
+
 .overviewWrap {
   background: var(--admin-surface, #fff);
   border: 1px solid var(--admin-border, #e5e7eb);
@@ -446,6 +458,12 @@
   background: rgb(22 101 52 / 0.28);
   border-color: var(--admin-success-border);
   color: var(--admin-success-bright);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeParticipate {
+  background: rgb(91 33 182 / 0.28);
+  border-color: rgb(167 139 250 / 0.45);
+  color: #c4b5fd;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .overviewWrap {

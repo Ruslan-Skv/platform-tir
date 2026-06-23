@@ -6,6 +6,7 @@ import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import {
   CommentIcon,
   InterestingMaterialIcon,
+  KnowledgeFavoriteIcon,
   ManagerPracticalAssignmentIcon,
 } from '@/shared/ui/icons';
 
@@ -45,11 +46,16 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
     loading,
     error,
     canEdit,
+    canParticipate,
+    canStudy,
     publishing,
     togglingLike,
+    togglingFavorite,
     handlePublish,
     handleToggleLike,
+    handleToggleFavorite,
     handleCommentCountChange,
+    handleStudyProgress,
     backUrl,
   } = model;
 
@@ -75,6 +81,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   const targetAudiencesText = formatTargetAudiences(material.targetAudiences);
   const likeCount = material.likeCount ?? 0;
   const likedByMe = material.likedByMe ?? false;
+  const favoritedByMe = material.favoritedByMe ?? false;
   const commentCount = material.commentCount ?? 0;
   const canMarkInteresting = material.status === 'PUBLISHED';
   const canComment = material.status === 'PUBLISHED';
@@ -86,7 +93,21 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           ← Назад
         </Link>
         <div className={styles.topActions}>
-          {canMarkInteresting ? (
+          {canParticipate ? (
+            <button
+              type="button"
+              className={`${styles.likeBtn} ${favoritedByMe ? styles.favoriteBtnActive : ''}`}
+              onClick={() => void handleToggleFavorite()}
+              disabled={togglingFavorite}
+              title={favoritedByMe ? 'Убрать из избранного' : 'Добавить в избранное'}
+            >
+              <KnowledgeFavoriteIcon favorited={favoritedByMe} size={16} />
+              <span className={styles.actionTextFull}>
+                {favoritedByMe ? 'В избранном' : 'В избранное'}
+              </span>
+            </button>
+          ) : null}
+          {canMarkInteresting && canParticipate ? (
             <button
               type="button"
               className={`${styles.likeBtn} ${likedByMe ? styles.likeBtnActive : ''}`}
@@ -147,7 +168,9 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
 
       <header className={styles.header}>
         <div className={styles.badges}>
-          {material.isPinned && <span className={styles.pinnedBadge}>📌 Закреплено</span>}
+          {material.isPinned && canEdit ? (
+            <span className={styles.pinnedBadge}>📌 Закреплено редактором</span>
+          ) : null}
           {likeCount > 0 ? (
             <KnowledgeMaterialInterestingBadge
               materialId={material.id}
@@ -217,6 +240,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             url={material.videoUrl}
             title={material.title}
             initialProgress={material.myVideoProgress}
+            canTrackProgress={canStudy}
+            onCompleted={handleStudyProgress}
           />
         </section>
       )}
@@ -268,6 +293,8 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           materialId={material.id}
           materialStatus={material.status}
           canEdit={canEdit}
+          canStudy={canStudy}
+          onQuizPassed={handleStudyProgress}
         />
       ) : null}
 
@@ -309,6 +336,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       <KnowledgeMaterialComments
         materialId={material.id}
         materialStatus={material.status}
+        canParticipate={canParticipate}
         initialCommentCount={commentCount}
         onCommentCountChange={handleCommentCountChange}
       />

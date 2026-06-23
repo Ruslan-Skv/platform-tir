@@ -11,7 +11,7 @@ export type RoleAccessSource =
   | 'inherited_denied'
   | 'none';
 
-export type EffectiveAccess = 'EDIT' | 'VIEW' | 'NONE' | 'DENIED';
+export type EffectiveAccess = 'EDIT' | 'PARTICIPATE' | 'VIEW' | 'NONE' | 'DENIED';
 
 export interface RoleAccessOverviewItem {
   role: UserRole;
@@ -62,7 +62,7 @@ export function getRoleEffectiveAccessForResource(
     };
   }
 
-  if (explicitPerm === 'VIEW' || explicitPerm === 'EDIT') {
+  if (explicitPerm === 'VIEW' || explicitPerm === 'PARTICIPATE' || explicitPerm === 'EDIT') {
     return {
       role,
       effective: explicitPerm,
@@ -126,7 +126,11 @@ export function getRoleEffectiveAccessForResourceWithInheritance(
     allRolePermsForRole,
   );
 
-  if (parentItem.effective === 'VIEW' || parentItem.effective === 'EDIT') {
+  if (
+    parentItem.effective === 'VIEW' ||
+    parentItem.effective === 'PARTICIPATE' ||
+    parentItem.effective === 'EDIT'
+  ) {
     return {
       role,
       effective: parentItem.effective,
@@ -155,6 +159,9 @@ export function getUserEffectiveAccessForResource(
   }
   if (userExplicit === AdminResourcePermissionLevel.VIEW) {
     return 'VIEW';
+  }
+  if (userExplicit === AdminResourcePermissionLevel.PARTICIPATE) {
+    return 'PARTICIPATE';
   }
   if (userExplicit === AdminResourcePermissionLevel.EDIT) {
     return 'EDIT';

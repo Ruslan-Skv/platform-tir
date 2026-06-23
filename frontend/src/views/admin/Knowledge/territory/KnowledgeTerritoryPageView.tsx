@@ -23,7 +23,7 @@ import {
   DeleteIcon,
   EditIcon,
   InterestingMaterialIcon,
-  PinIcon,
+  KnowledgeFavoriteIcon,
   PlatformFeedbackIcon,
   PublishIcon,
   TrainingStatisticsIcon,
@@ -66,8 +66,9 @@ type KnowledgeTerritoryPageViewProps = {
 function MaterialCard({
   material: m,
   canEdit,
+  canParticipate,
   styles: s,
-  onTogglePin,
+  onToggleFavorite,
   onToggleLike,
   onPublish,
   onDelete,
@@ -76,8 +77,9 @@ function MaterialCard({
 }: {
   material: AdminKnowledgeMaterial;
   canEdit: boolean;
+  canParticipate: boolean;
   styles: typeof styles;
-  onTogglePin: (id: string) => void;
+  onToggleFavorite: (id: string) => void;
   onToggleLike: (id: string) => void;
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
@@ -87,128 +89,158 @@ function MaterialCard({
   const router = useRouter();
   const likeCount = m.likeCount ?? 0;
   const likedByMe = m.likedByMe ?? false;
+  const favoritedByMe = m.favoritedByMe ?? false;
   const commentCount = m.commentCount ?? 0;
   const canMarkInteresting = m.status === 'PUBLISHED';
   const canComment = m.status === 'PUBLISHED';
+  const isLocked = !canEdit && Boolean(m.sequentialLocked);
+
+  const cardInner = (
+    <>
+      <div className={s.cardThumb}>
+        {isLocked ? (
+          <div className={s.cardLockOverlay}>
+            <span className={s.cardLockIcon} aria-hidden>
+              🔒
+            </span>
+            <span className={s.cardLockText}>Сначала завершите предыдущий материал</span>
+          </div>
+        ) : null}
+        {favoritedByMe ? <span className={s.favoriteBadge}>🔖</span> : null}
+        {likeCount > 0 ? (
+          <KnowledgeMaterialInterestingBadge
+            materialId={m.id}
+            likeCount={likeCount}
+            className={s.interestingBadge}
+          >
+            ★ {likeCount}
+          </KnowledgeMaterialInterestingBadge>
+        ) : null}
+        {m.thumbnailUrl ? (
+          <img src={publicUploadUrl(m.thumbnailUrl)} alt="" className={s.cardImage} />
+        ) : (
+          <div className={s.cardPlaceholder}>
+            <span aria-hidden>{getMaterialTypeIcon(m.type)}</span>
+          </div>
+        )}
+        <span className={s.typeBadge}>{getMaterialTypeLabel(m.type)}</span>
+        {canEdit && m.status !== 'PUBLISHED' && (
+          <span className={s.statusBadge}>{getStatusLabel(m.status)}</span>
+        )}
+      </div>
+      <div className={s.cardBody}>
+        <h3 className={s.cardTitle}>
+          {topicNumber != null ? <span className={s.cardTopicNumber}>{topicNumber}.</span> : null}
+          {m.title}
+        </h3>
+        {m.excerpt && <p className={s.cardExcerpt}>{m.excerpt}</p>}
+        {(m.type === 'ARTICLE' || m.type === 'VIDEO') &&
+        (hasTargetAudiences(m.targetAudiences) ||
+          (m.type === 'ARTICLE' && (getMaterialReadingTime(m) || m.myQuizStatus?.hasQuiz)) ||
+          (m.type === 'VIDEO' && getMaterialVideoDuration(m))) ? (
+          <div className={s.cardTags}>
+            {m.targetAudiences?.map((audience) => (
+              <span key={audience.id} className={s.cardTag}>
+                👥 {audience.label}
+              </span>
+            ))}
+            {m.type === 'ARTICLE' && formatReadingTime(getMaterialReadingTime(m)) ? (
+              <span className={s.cardTag}>⏱ {formatReadingTime(getMaterialReadingTime(m))}</span>
+            ) : null}
+            {m.type === 'VIDEO' && formatVideoDuration(getMaterialVideoDuration(m)) ? (
+              <span className={s.cardTag}>
+                ⏱ {formatVideoDuration(getMaterialVideoDuration(m))}
+              </span>
+            ) : null}
+            {m.type === 'ARTICLE' && m.myQuizStatus?.hasQuiz ? (
+              <span
+                className={`${s.cardTag} ${m.myQuizStatus.passed ? s.cardTagSuccess : s.cardTagPending}`}
+              >
+                {m.myQuizStatus.passed
+                  ? `✓ Тест ${m.myQuizStatus.scorePercent}%`
+                  : '○ Тест не пройден'}
+              </span>
+            ) : null}
+            {!canEdit && m.studyCompleted ? (
+              <span className={`${s.cardTag} ${s.cardTagSuccess}`}>✓ Изучено</span>
+            ) : null}
+          </div>
+        ) : null}
+        {m.type === 'VIDEO' && m.myVideoProgress && (
+          <div className={s.videoProgress}>
+            <div className={s.videoProgressBar}>
+              <VideoProgressFill
+                percent={m.myVideoProgress.progressPercent}
+                className={s.videoProgressFill}
+              />
+            </div>
+            <span className={s.videoProgressText}>
+              {m.myVideoProgress.completed
+                ? 'Просмотрено'
+                : `${m.myVideoProgress.progressPercent}%`}
+            </span>
+          </div>
+        )}
+        <div className={s.cardMeta}>
+          <span>
+            {m.module?.name ?? m.category.name}
+            {m.module ? ` · ${m.category.name}` : ''}
+          </span>
+          <span>{formatDate(m.publishedAt || m.createdAt)}</span>
+        </div>
+      </div>
+    </>
+  );
 
   return (
     <article
       key={m.id}
-      className={`${s.card} ${m.isPinned ? s.cardPinned : ''} ${likeCount > 0 ? s.cardInteresting : ''}`}
+      className={`${s.card} ${favoritedByMe ? s.cardFavorited : ''} ${likeCount > 0 ? s.cardInteresting : ''} ${isLocked ? s.cardLocked : ''}`}
     >
-      <Link
-        href={`/admin/knowledge/materials/${m.id}`}
-        className={s.cardLink}
-        onClick={onOpenMaterial}
-      >
-        <div className={s.cardThumb}>
-          {m.isPinned && <span className={s.pinBadge}>📌</span>}
-          {likeCount > 0 ? (
-            <KnowledgeMaterialInterestingBadge
-              materialId={m.id}
-              likeCount={likeCount}
-              className={s.interestingBadge}
-            >
-              ★ {likeCount}
-            </KnowledgeMaterialInterestingBadge>
-          ) : null}
-          {m.thumbnailUrl ? (
-            <img src={publicUploadUrl(m.thumbnailUrl)} alt="" className={s.cardImage} />
-          ) : (
-            <div className={s.cardPlaceholder}>
-              <span aria-hidden>{getMaterialTypeIcon(m.type)}</span>
-            </div>
-          )}
-          <span className={s.typeBadge}>{getMaterialTypeLabel(m.type)}</span>
-          {canEdit && m.status !== 'PUBLISHED' && (
-            <span className={s.statusBadge}>{getStatusLabel(m.status)}</span>
-          )}
+      {isLocked ? (
+        <div className={`${s.cardLink} ${s.cardLinkDisabled}`} aria-disabled="true">
+          {cardInner}
         </div>
-        <div className={s.cardBody}>
-          <h3 className={s.cardTitle}>
-            {topicNumber != null ? <span className={s.cardTopicNumber}>{topicNumber}.</span> : null}
-            {m.title}
-          </h3>
-          {m.excerpt && <p className={s.cardExcerpt}>{m.excerpt}</p>}
-          {(m.type === 'ARTICLE' || m.type === 'VIDEO') &&
-          (hasTargetAudiences(m.targetAudiences) ||
-            (m.type === 'ARTICLE' && (getMaterialReadingTime(m) || m.myQuizStatus?.hasQuiz)) ||
-            (m.type === 'VIDEO' && getMaterialVideoDuration(m))) ? (
-            <div className={s.cardTags}>
-              {m.targetAudiences?.map((audience) => (
-                <span key={audience.id} className={s.cardTag}>
-                  👥 {audience.label}
-                </span>
-              ))}
-              {m.type === 'ARTICLE' && formatReadingTime(getMaterialReadingTime(m)) ? (
-                <span className={s.cardTag}>⏱ {formatReadingTime(getMaterialReadingTime(m))}</span>
-              ) : null}
-              {m.type === 'VIDEO' && formatVideoDuration(getMaterialVideoDuration(m)) ? (
-                <span className={s.cardTag}>
-                  ⏱ {formatVideoDuration(getMaterialVideoDuration(m))}
-                </span>
-              ) : null}
-              {m.type === 'ARTICLE' && m.myQuizStatus?.hasQuiz ? (
-                <span
-                  className={`${s.cardTag} ${m.myQuizStatus.passed ? s.cardTagSuccess : s.cardTagPending}`}
-                >
-                  {m.myQuizStatus.passed
-                    ? `✓ Тест ${m.myQuizStatus.scorePercent}%`
-                    : '○ Тест не пройден'}
-                </span>
-              ) : null}
-            </div>
-          ) : null}
-          {m.type === 'VIDEO' && m.myVideoProgress && (
-            <div className={s.videoProgress}>
-              <div className={s.videoProgressBar}>
-                <VideoProgressFill
-                  percent={m.myVideoProgress.progressPercent}
-                  className={s.videoProgressFill}
-                />
-              </div>
-              <span className={s.videoProgressText}>
-                {m.myVideoProgress.completed
-                  ? 'Просмотрено'
-                  : `${m.myVideoProgress.progressPercent}%`}
-              </span>
-            </div>
-          )}
-          <div className={s.cardMeta}>
-            <span>
-              {m.module?.name ?? m.category.name}
-              {m.module ? ` · ${m.category.name}` : ''}
-            </span>
-            <span>{formatDate(m.publishedAt || m.createdAt)}</span>
-          </div>
-        </div>
-      </Link>
+      ) : (
+        <Link
+          href={`/admin/knowledge/materials/${m.id}`}
+          className={s.cardLink}
+          onClick={onOpenMaterial}
+        >
+          {cardInner}
+        </Link>
+      )}
       <div className={s.cardActions}>
         <AdminTableIconButton
-          aria-label={m.isPinned ? 'Открепить' : 'Закрепить'}
+          aria-label={favoritedByMe ? 'Убрать из избранного' : 'Добавить в избранное'}
           title={
-            m.isPinned
-              ? 'Открепить: убрать материал из начала списка категории'
-              : 'Закрепить: показывать материал первым в списке категории (выше остальных статей)'
+            canParticipate
+              ? favoritedByMe
+                ? 'Убрать из избранного'
+                : 'Добавить в избранное — быстрый доступ в разделе «Избранное»'
+              : 'Избранное доступно при уровне доступа «Участие»'
           }
+          disabled={!canParticipate}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
-            onTogglePin(m.id);
+            onToggleFavorite(m.id);
           }}
         >
-          <PinIcon pinned={m.isPinned} />
+          <KnowledgeFavoriteIcon favorited={favoritedByMe} />
         </AdminTableIconButton>
         <AdminTableIconButton
           aria-label={likedByMe ? 'Снять отметку «интересный»' : 'Отметить как интересный материал'}
           title={
-            canMarkInteresting
+            canMarkInteresting && canParticipate
               ? likedByMe
                 ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
                 : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
-              : 'Отметить можно только опубликованные материалы'
+              : canMarkInteresting
+                ? 'Отметить можно при уровне доступа «Участие»'
+                : 'Отметить можно только опубликованные материалы'
           }
-          disabled={!canMarkInteresting}
+          disabled={!canMarkInteresting || !canParticipate}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -226,8 +258,9 @@ function MaterialCard({
                 : 'Оставить комментарий под материалом'
               : 'Комментарии доступны только к опубликованным материалам'
           }
-          disabled={!canComment}
+          disabled={!canComment || isLocked}
           onClick={(e) => {
+            if (isLocked) return;
             e.preventDefault();
             e.stopPropagation();
             router.push(
@@ -284,6 +317,7 @@ function MaterialCard({
 export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageViewProps) {
   const {
     canEdit,
+    canParticipate,
     canViewTrainingAnalytics,
     materials,
     categories,
@@ -300,6 +334,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     setSearchInput,
     categoryFilter,
     setCategoryFilter,
+    favoritesOnly,
+    setFavoritesOnly,
     moduleFilter,
     setModuleFilter,
     typeFilter,
@@ -346,7 +382,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     handleSearchApply,
     handleDelete,
     handlePublish,
-    handleTogglePin,
+    handleToggleFavorite,
     handleToggleLike,
     handleAddCategory,
     handleUpdateCategory,
@@ -377,7 +413,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
   );
 
   const showGroupedByModule =
-    Boolean(categoryFilter) && !moduleFilter && !search && modules.length > 0;
+    Boolean(categoryFilter) && !favoritesOnly && !moduleFilter && !search && modules.length > 0;
 
   const showTopicNumbers = Boolean(categoryFilter);
 
@@ -451,7 +487,10 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             </Link>
           ) : null}
           <KnowledgePlatformInfoTip triggerClassName={toolbarButtonStyles.button} />
-          <KnowledgePlatformFeedbackButton triggerClassName={toolbarButtonStyles.button} />
+          <KnowledgePlatformFeedbackButton
+            triggerClassName={toolbarButtonStyles.button}
+            canParticipate={canParticipate}
+          />
         </div>
         <div className={styles.heroContent}>
           <h1 className={styles.heroHeading}>
@@ -546,12 +585,12 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
               <span className={styles.statLabelShort}>Кат.</span>
             </span>
           </div>
-          {(stats.pinnedCount ?? 0) > 0 && (
+          {(stats.myFavoritesCount ?? 0) > 0 && (
             <div className={styles.stat}>
-              <span className={styles.statValue}>{stats.pinnedCount}</span>
+              <span className={styles.statValue}>{stats.myFavoritesCount}</span>
               <span className={styles.statLabel}>
-                <span className={styles.statLabelFull}>Закреплено</span>
-                <span className={styles.statLabelShort}>Закр.</span>
+                <span className={styles.statLabelFull}>В избранном</span>
+                <span className={styles.statLabelShort}>Избр.</span>
               </span>
             </div>
           )}
@@ -560,20 +599,34 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
 
       <div className={styles.layout}>
         <aside className={styles.sidebar}>
-          <h2 className={styles.sidebarTitle}>Категории</h2>
+          <h2 className={styles.sidebarTitle}>Разделы</h2>
           <div className={styles.categoriesList}>
             <button
               type="button"
-              className={`${styles.categoryChip} ${!categoryFilter ? styles.categoryChipActive : ''}`}
+              className={`${styles.categoryChip} ${!categoryFilter && !favoritesOnly ? styles.categoryChipActive : ''}`}
               onClick={() => setCategoryFilter('')}
             >
               Все материалы
             </button>
+            <button
+              type="button"
+              className={`${styles.categoryChip} ${favoritesOnly ? styles.categoryChipActive : ''}`}
+              onClick={() => setFavoritesOnly(true)}
+            >
+              Избранное
+              {(stats?.myFavoritesCount ?? 0) > 0 ? (
+                <span className={styles.categoryCount}>{stats?.myFavoritesCount}</span>
+              ) : null}
+            </button>
+          </div>
+
+          <h2 className={styles.sidebarTitle}>Категории</h2>
+          <div className={styles.categoriesList}>
             {categories.map((cat) => (
               <button
                 key={cat.id}
                 type="button"
-                className={`${styles.categoryChip} ${categoryFilter === cat.id ? styles.categoryChipActive : ''}`}
+                className={`${styles.categoryChip} ${categoryFilter === cat.id && !favoritesOnly ? styles.categoryChipActive : ''}`}
                 onClick={() => setCategoryFilter(cat.id)}
               >
                 {cat.name}
@@ -582,7 +635,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             ))}
           </div>
 
-          {categoryFilter && (
+          {categoryFilter && !favoritesOnly && (
             <div className={styles.modulesSection}>
               <h2 className={styles.sidebarTitle}>
                 Модули{selectedCategory ? `: ${selectedCategory.name}` : ''}
@@ -1028,9 +1081,11 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
               </div>
               <h2 className={styles.emptyTitle}>Материалы не найдены</h2>
               <p className={styles.emptyText}>
-                {canEdit
-                  ? 'Добавьте первый обучающий материал или измените фильтры поиска.'
-                  : 'Пока нет опубликованных материалов в этой категории.'}
+                {favoritesOnly
+                  ? 'Добавляйте материалы в избранное с помощью иконки закладки на карточке.'
+                  : canEdit
+                    ? 'Добавьте первый обучающий материал или измените фильтры поиска.'
+                    : 'Пока нет опубликованных материалов в этой категории.'}
               </p>
               {canEdit && (
                 <Link href="/admin/knowledge/materials/new" className={styles.createButton}></Link>
@@ -1053,8 +1108,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           key={m.id}
                           material={m}
                           canEdit={canEdit}
+                          canParticipate={canParticipate}
                           styles={styles}
-                          onTogglePin={handleTogglePin}
+                          onToggleFavorite={handleToggleFavorite}
                           onToggleLike={handleToggleLike}
                           onPublish={handlePublish}
                           onDelete={setDeleteTarget}
@@ -1074,8 +1130,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       key={m.id}
                       material={m}
                       canEdit={canEdit}
+                      canParticipate={canParticipate}
                       styles={styles}
-                      onTogglePin={handleTogglePin}
+                      onToggleFavorite={handleToggleFavorite}
                       onToggleLike={handleToggleLike}
                       onPublish={handlePublish}
                       onDelete={setDeleteTarget}

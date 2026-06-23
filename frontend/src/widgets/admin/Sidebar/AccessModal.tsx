@@ -3,6 +3,7 @@
 import { type ReactNode, useEffect, useState } from 'react';
 
 import {
+  type AdminAccessGrantLevel,
   type AdminUserItem,
   type ResourcePermissionsResponse,
   type RoleAccessOverviewItem,
@@ -26,7 +27,9 @@ import styles from './AccessModal.module.css';
 import {
   ACCESS_SOURCE_LABELS,
   EFFECTIVE_ACCESS_LABELS,
+  GRANT_LEVEL_LABELS,
   effectiveAccessBadgeClass,
+  grantLevelBadgeClass,
 } from './accessModalDisplay';
 
 interface AccessModalProps {
@@ -61,7 +64,7 @@ function RoleOverviewActions({
 }: {
   row: RoleAccessOverviewItem;
   saving: boolean;
-  onSet: (role: string, permission: 'VIEW' | 'EDIT') => void;
+  onSet: (role: string, permission: Exclude<AdminAccessGrantLevel, 'DENIED'>) => void;
   onRevoke: (role: string) => void;
   onDeny: (role: string) => void;
 }) {
@@ -93,6 +96,16 @@ function RoleOverviewActions({
   if (row.effective === 'EDIT') {
     actions.push(
       <button
+        key="participate"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'PARTICIPATE')}
+        disabled={saving}
+        title="Изучение и взаимодействие без управления материалами"
+      >
+        Участие
+      </button>,
+      <button
         key="view-only"
         type="button"
         data-modal-btn="secondary"
@@ -100,7 +113,49 @@ function RoleOverviewActions({
         disabled={saving}
         title="Раздел виден, но без создания и изменения материалов"
       >
-        Только просмотр
+        Просмотр
+      </button>
+    );
+  } else if (row.effective === 'PARTICIPATE') {
+    actions.push(
+      <button
+        key="edit"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'EDIT')}
+        disabled={saving}
+      >
+        Редактирование
+      </button>,
+      <button
+        key="view-only"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'VIEW')}
+        disabled={saving}
+      >
+        Просмотр
+      </button>
+    );
+  } else if (row.effective === 'VIEW') {
+    actions.push(
+      <button
+        key="participate"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'PARTICIPATE')}
+        disabled={saving}
+      >
+        Участие
+      </button>,
+      <button
+        key="edit"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'EDIT')}
+        disabled={saving}
+      >
+        Редактирование
       </button>
     );
   } else if (row.effective === 'NONE') {
@@ -113,12 +168,16 @@ function RoleOverviewActions({
         disabled={saving}
       >
         Просмотр
-      </button>
-    );
-  }
-
-  if (row.effective === 'VIEW') {
-    actions.push(
+      </button>,
+      <button
+        key="participate"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(row.role, 'PARTICIPATE')}
+        disabled={saving}
+      >
+        Участие
+      </button>,
       <button
         key="edit"
         type="button"
@@ -156,9 +215,9 @@ function UserExceptionActions({
   onRevoke,
 }: {
   userId: string;
-  permission: 'VIEW' | 'EDIT' | 'DENIED';
+  permission: AdminAccessGrantLevel;
   saving: boolean;
-  onSet: (userId: string, permission: 'VIEW' | 'EDIT' | 'DENIED') => void;
+  onSet: (userId: string, permission: AdminAccessGrantLevel) => void;
   onRevoke: (userId: string) => void;
 }) {
   const actions: ReactNode[] = [];
@@ -166,17 +225,56 @@ function UserExceptionActions({
   if (permission === 'EDIT') {
     actions.push(
       <button
+        key="participate"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(userId, 'PARTICIPATE')}
+        disabled={saving}
+      >
+        Участие
+      </button>,
+      <button
         key="view-only"
         type="button"
         data-modal-btn="secondary"
         onClick={() => onSet(userId, 'VIEW')}
         disabled={saving}
       >
-        Только просмотр
+        Просмотр
+      </button>
+    );
+  } else if (permission === 'PARTICIPATE') {
+    actions.push(
+      <button
+        key="edit"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(userId, 'EDIT')}
+        disabled={saving}
+      >
+        Редактирование
+      </button>,
+      <button
+        key="view-only"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(userId, 'VIEW')}
+        disabled={saving}
+      >
+        Просмотр
       </button>
     );
   } else if (permission === 'VIEW') {
     actions.push(
+      <button
+        key="participate"
+        type="button"
+        data-modal-btn="secondary"
+        onClick={() => onSet(userId, 'PARTICIPATE')}
+        disabled={saving}
+      >
+        Участие
+      </button>,
       <button
         key="edit"
         type="button"
@@ -266,7 +364,7 @@ export function AccessModal({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [addUserId, setAddUserId] = useState('');
-  const [addUserPermission, setAddUserPermission] = useState<'VIEW' | 'EDIT' | 'DENIED'>('VIEW');
+  const [addUserPermission, setAddUserPermission] = useState<AdminAccessGrantLevel>('PARTICIPATE');
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -328,7 +426,7 @@ export function AccessModal({
   const availableUsers = users.filter((u) => !assignedUserIds.has(u.id));
 
   const rolesWithAccess = roleOverview.filter(
-    (r) => r.effective === 'VIEW' || r.effective === 'EDIT'
+    (r) => r.effective === 'VIEW' || r.effective === 'PARTICIPATE' || r.effective === 'EDIT'
   );
   const rolesDenied = roleOverview.filter((r) => r.effective === 'DENIED');
   const rolesWithOverrides = roleOverview.filter((r) => r.hasExplicitOverride);
@@ -370,15 +468,17 @@ export function AccessModal({
         <p data-modal-form-hint className={styles.introHint}>
           {isKnowledgeCategory ? (
             <>
-              <strong>Просмотр</strong> — категория и её материалы доступны для изучения.{' '}
-              <strong>Редактирование</strong> — можно управлять материалами категории.{' '}
+              <strong>Просмотр</strong> — категория и материалы только для чтения.{' '}
+              <strong>Участие</strong> — изучение + комментарии, лайки, оценки, тесты.{' '}
+              <strong>Редактирование</strong> — управление материалами категории.{' '}
               <strong>Закрыто</strong> — категория скрыта. Если для категории нет отдельных прав,
               действует доступ к разделу «Территория знаний».
             </>
           ) : (
             <>
-              <strong>Просмотр</strong> — раздел виден в меню, данные только для чтения (без
-              создания и изменений). <strong>Редактирование</strong> — полный доступ к разделу.{' '}
+              <strong>Просмотр</strong> — раздел виден в меню, данные только для чтения.{' '}
+              <strong>Участие</strong> — просмотр + комментарии, лайки, оценки, обратная связь (где
+              применимо к разделу). <strong>Редактирование</strong> — полный доступ.{' '}
               <strong>Закрыто</strong> — раздел скрыт. Персональные исключения пользователя
               перекрывают права роли.
             </>
@@ -483,6 +583,7 @@ export function AccessModal({
                               badgeDenied: styles.badgeDenied,
                               badgeMuted: styles.badgeMuted,
                               badgeEdit: styles.badgeEdit,
+                              badgeParticipate: styles.badgeParticipate,
                             })}
                           >
                             {EFFECTIVE_ACCESS_LABELS[row.effective]}
@@ -540,19 +641,16 @@ export function AccessModal({
                       {ROLE_LABELS[p.role ?? ''] || p.role}
                     </span>
                     <span
-                      className={
-                        p.permission === 'DENIED'
-                          ? styles.badgeDenied
-                          : p.permission === 'EDIT'
-                            ? styles.badgeEdit
-                            : styles.badge
-                      }
+                      className={grantLevelBadgeClass(p.permission, {
+                        badge: styles.badge,
+                        badgeDenied: styles.badgeDenied,
+                        badgeEdit: styles.badgeEdit,
+                        badgeParticipate: styles.badgeParticipate,
+                      })}
                     >
                       {p.permission === 'DENIED'
                         ? 'Доступ закрыт'
-                        : p.permission === 'EDIT'
-                          ? 'Редактирование'
-                          : 'Просмотр'}
+                        : GRANT_LEVEL_LABELS[p.permission]}
                     </span>
                     <div className={styles.itemActions}>
                       <UserExceptionActions
@@ -596,12 +694,11 @@ export function AccessModal({
                 <select
                   id="access-add-user-permission"
                   value={addUserPermission}
-                  onChange={(e) =>
-                    setAddUserPermission(e.target.value as 'VIEW' | 'EDIT' | 'DENIED')
-                  }
+                  onChange={(e) => setAddUserPermission(e.target.value as AdminAccessGrantLevel)}
                   disabled={saving || loading}
                 >
                   <option value="VIEW">Просмотр</option>
+                  <option value="PARTICIPATE">Участие</option>
                   <option value="EDIT">Редактирование</option>
                   <option value="DENIED">Закрыть доступ</option>
                 </select>

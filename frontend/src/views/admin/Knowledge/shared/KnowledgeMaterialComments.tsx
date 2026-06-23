@@ -17,6 +17,7 @@ import { formatDate, formatKnowledgeLikerLabel } from './knowledge-utils';
 type KnowledgeMaterialCommentsProps = {
   materialId: string;
   materialStatus: string;
+  canParticipate: boolean;
   initialCommentCount?: number;
   onCommentCountChange?: (count: number) => void;
 };
@@ -24,10 +25,12 @@ type KnowledgeMaterialCommentsProps = {
 export function KnowledgeMaterialComments({
   materialId,
   materialStatus,
+  canParticipate,
   initialCommentCount = 0,
   onCommentCountChange,
 }: KnowledgeMaterialCommentsProps) {
-  const canComment = materialStatus === 'PUBLISHED';
+  const canShowComments = materialStatus === 'PUBLISHED';
+  const canWriteComments = canShowComments && canParticipate;
   const [comments, setComments] = useState<KnowledgeMaterialComment[]>([]);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -36,7 +39,7 @@ export function KnowledgeMaterialComments({
   const [commentCount, setCommentCount] = useState(initialCommentCount);
 
   const load = useCallback(async () => {
-    if (!canComment) {
+    if (!canShowComments) {
       setComments([]);
       setLoading(false);
       return;
@@ -54,7 +57,7 @@ export function KnowledgeMaterialComments({
     } finally {
       setLoading(false);
     }
-  }, [canComment, materialId, onCommentCountChange]);
+  }, [canShowComments, materialId, onCommentCountChange]);
 
   useEffect(() => {
     void load();
@@ -86,7 +89,7 @@ export function KnowledgeMaterialComments({
     }
   };
 
-  if (!canComment) {
+  if (!canShowComments) {
     return null;
   }
 
@@ -135,33 +138,34 @@ export function KnowledgeMaterialComments({
         </ul>
       ) : null}
 
-      <div className={styles.form}>
-        <label className={styles.label} htmlFor={`knowledge-comment-${materialId}`}>
-          Ваш комментарий
-        </label>
-        <textarea
-          id={`knowledge-comment-${materialId}`}
-          className={styles.textarea}
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Поделитесь впечатлениями или вопросами по материалу…"
-          rows={3}
-          maxLength={2000}
-          disabled={submitting}
-        />
-        <div className={styles.formFooter}>
-          <span className={styles.counter}>{draft.length} / 2000</span>
-          <button
-            data-admin-mutation
-            type="button"
-            className={styles.submitBtn}
-            onClick={() => void handleSubmit()}
-            disabled={submitting || !draft.trim()}
-          >
-            {submitting ? 'Отправка…' : 'Отправить'}
-          </button>
+      {canWriteComments ? (
+        <div className={styles.form} data-admin-participate>
+          <label className={styles.label} htmlFor={`knowledge-comment-${materialId}`}>
+            Ваш комментарий
+          </label>
+          <textarea
+            id={`knowledge-comment-${materialId}`}
+            className={styles.textarea}
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            placeholder="Поделитесь впечатлениями или вопросами по материалу…"
+            rows={3}
+            maxLength={2000}
+            disabled={submitting}
+          />
+          <div className={styles.formFooter}>
+            <span className={styles.counter}>{draft.length} / 2000</span>
+            <button
+              type="button"
+              className={styles.submitBtn}
+              onClick={() => void handleSubmit()}
+              disabled={submitting || !draft.trim()}
+            >
+              {submitting ? 'Отправка…' : 'Отправить'}
+            </button>
+          </div>
         </div>
-      </div>
+      ) : null}
     </section>
   );
 }

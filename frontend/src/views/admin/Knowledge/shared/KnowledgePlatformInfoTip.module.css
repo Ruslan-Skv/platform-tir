@@ -20,6 +20,26 @@
   margin: 0;
 }
 
+.accessSection {
+  margin: 0;
+  padding-top: 4px;
+}
+
+.sectionTitle {
+  margin: 0 0 4px;
+  font-weight: 600;
+}
+
+.accessList {
+  margin: 0;
+  padding-left: 18px;
+  list-style: disc;
+}
+
+.accessList li + li {
+  margin-top: 4px;
+}
+
 .steps,
 .meaningList {
   margin: 0;
@@ -58,7 +78,8 @@
   }
 
   .steps,
-  .meaningList {
+  .meaningList,
+  .accessList {
     padding-left: 16px;
     font-size: var(--admin-font-size-sm, 0.8125rem);
     line-height: 1.45;

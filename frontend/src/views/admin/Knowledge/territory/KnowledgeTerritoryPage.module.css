@@ -547,16 +547,54 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.cardPinned {
-  border-color: #f0c674;
-  box-shadow: 0 0 0 1px rgba(240, 198, 116, 0.4);
+.cardFavorited {
+  border-color: rgba(225, 29, 72, 0.45);
+  box-shadow: 0 0 0 1px rgba(225, 29, 72, 0.15);
 }
 
 .cardInteresting {
   border-color: rgba(245, 158, 11, 0.45);
 }
 
-.pinBadge {
+.cardLocked {
+  opacity: 0.92;
+}
+
+.cardLocked:hover {
+  box-shadow: none;
+}
+
+.cardLinkDisabled {
+  cursor: not-allowed;
+}
+
+.cardLockOverlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-sm);
+  background: rgba(15, 23, 42, 0.72);
+  color: #fff;
+  text-align: center;
+}
+
+.cardLockIcon {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.cardLockText {
+  font-size: 0.75rem;
+  line-height: 1.3;
+  max-width: 12rem;
+}
+
+.favoriteBadge {
   position: absolute;
   top: var(--admin-space-sm);
   right: var(--admin-space-sm);

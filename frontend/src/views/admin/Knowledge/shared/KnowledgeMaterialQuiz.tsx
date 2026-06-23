@@ -25,12 +25,16 @@ type KnowledgeMaterialQuizProps = {
   materialId: string;
   materialStatus: string;
   canEdit: boolean;
+  canStudy?: boolean;
+  onQuizPassed?: () => void;
 };
 
 export function KnowledgeMaterialQuiz({
   materialId,
   materialStatus,
   canEdit,
+  canStudy = false,
+  onQuizPassed,
 }: KnowledgeMaterialQuizProps) {
   const [data, setData] = useState<KnowledgeMaterialQuizResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,6 +89,9 @@ export function KnowledgeMaterialQuiz({
           timedOut,
         });
         setResult(submitResult);
+        if (submitResult.passed) {
+          onQuizPassed?.();
+        }
         await load();
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Ошибка отправки');
@@ -92,7 +99,7 @@ export function KnowledgeMaterialQuiz({
         setSubmitting(false);
       }
     },
-    [load, materialId, quiz]
+    [load, materialId, onQuizPassed, quiz]
   );
 
   const onExpire = useCallback(() => {
@@ -127,7 +134,7 @@ export function KnowledgeMaterialQuiz({
   }
 
   const { myBestAttempt } = data;
-  const canSubmit = materialStatus === 'PUBLISHED' || canEdit;
+  const canSubmit = (materialStatus === 'PUBLISHED' && canStudy) || canEdit;
   const allAnswered = quiz.questions.every((q) => answers[q.id]);
   const timerExpired = secondsLeft !== null && secondsLeft <= 0;
 

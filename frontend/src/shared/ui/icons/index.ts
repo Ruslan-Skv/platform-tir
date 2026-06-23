@@ -24,6 +24,11 @@ export {
   type InterestingMaterialIconProps,
 } from './InterestingMaterialIcon';
 export {
+  KnowledgeFavoriteIcon,
+  ADMIN_KNOWLEDGE_FAVORITE_ICON_SIZE,
+  type KnowledgeFavoriteIconProps,
+} from './KnowledgeFavoriteIcon';
+export {
   PinIcon,
   ADMIN_ACTION_ICON_PIN_CLASS,
   ADMIN_PIN_ICON_SIZE,
