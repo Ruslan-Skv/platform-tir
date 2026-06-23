@@ -158,6 +158,7 @@ export function ProductTemplatesSection() {
             ))}
           </div>
           <button
+            data-admin-mutation
             type="button"
             onClick={saveTableColumns}
             className={`${actionStyles.primaryButton} ${actionStyles.cardActions}`}
@@ -195,6 +196,7 @@ export function ProductTemplatesSection() {
             ))}
           </div>
           <button
+            data-admin-mutation
             type="button"
             onClick={saveCardSections}
             className={`${actionStyles.primaryButton} ${actionStyles.cardActions}`}

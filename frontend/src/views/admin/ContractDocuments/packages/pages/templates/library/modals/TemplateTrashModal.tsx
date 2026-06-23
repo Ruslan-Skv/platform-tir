@@ -162,6 +162,7 @@ export function TemplateTrashModal({ isOpen, onClose, onRestored }: TemplateTras
                     ) : null}
                   </div>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.restoreBtn}
                     disabled={restoringId === row.id}

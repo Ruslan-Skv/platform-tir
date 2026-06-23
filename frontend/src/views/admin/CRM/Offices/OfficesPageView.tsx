@@ -53,6 +53,7 @@ export function OfficesPageView({ model }: OfficesPageViewProps) {
             Показать неактивные
           </label>
           <button
+            data-admin-mutation
             className={styles.addButton}
             onClick={() => setShowAddForm(true)}
             disabled={showAddForm}
@@ -281,6 +282,7 @@ export function OfficesPageView({ model }: OfficesPageViewProps) {
                               ✏️
                             </button>
                             <button
+                              data-admin-mutation
                               className={styles.deleteButton}
                               onClick={() => setDeleteConfirmId(office.id)}
                               title="Удалить"

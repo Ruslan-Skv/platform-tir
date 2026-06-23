@@ -125,6 +125,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             <>
               {material.status !== 'PUBLISHED' && (
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.publishBtn}
                   onClick={handlePublish}

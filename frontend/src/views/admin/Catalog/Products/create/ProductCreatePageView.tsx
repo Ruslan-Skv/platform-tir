@@ -400,7 +400,12 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                 />
                 Активно
               </label>
-              <button type="button" className={styles.addAttrButton} onClick={addDraftComponent}>
+              <button
+                data-admin-mutation
+                type="button"
+                className={styles.addAttrButton}
+                onClick={addDraftComponent}
+              >
                 + Добавить комплектующее
               </button>
             </div>
@@ -521,6 +526,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                             Активно
                           </label>
                           <button
+                            data-admin-mutation
                             type="button"
                             className={componentStyles.saveButton}
                             onClick={saveEditDraftComponent}
@@ -567,6 +573,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
                             <EditIcon size={16} tone="inherit" />
                           </button>
                           <button
+                            data-admin-mutation
                             type="button"
                             className={componentStyles.deleteButton}
                             onClick={() => removeDraftComponent(index)}
@@ -595,7 +602,12 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             >
               Отмена
             </button>
-            <button type="submit" className={styles.saveButton} disabled={saving}>
+            <button
+              data-admin-mutation
+              type="submit"
+              className={styles.saveButton}
+              disabled={saving}
+            >
               {saving ? 'Создание...' : 'Создать товар'}
             </button>
           </div>

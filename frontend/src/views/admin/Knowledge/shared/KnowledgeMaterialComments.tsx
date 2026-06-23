@@ -152,6 +152,7 @@ export function KnowledgeMaterialComments({
         <div className={styles.formFooter}>
           <span className={styles.counter}>{draft.length} / 2000</span>
           <button
+            data-admin-mutation
             type="button"
             className={styles.submitBtn}
             onClick={() => void handleSubmit()}

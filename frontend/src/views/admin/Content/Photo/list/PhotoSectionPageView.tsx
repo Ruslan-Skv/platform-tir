@@ -42,7 +42,11 @@ export function PhotoSectionPageView({ model }: PhotoSectionPageViewProps) {
       <div className={styles.header}>
         <h1 className={styles.title}>Наши работы</h1>
         <div className={styles.headerActions}>
-          <Link href="/admin/content/photo/projects/new" className={styles.createButton}>
+          <Link
+            data-admin-mutation
+            href="/admin/content/photo/projects/new"
+            className={styles.createButton}
+          >
             + Добавить объект
           </Link>
           <Link href="/photo" target="_blank" rel="noreferrer" className={styles.viewLink}>
@@ -68,6 +72,7 @@ export function PhotoSectionPageView({ model }: PhotoSectionPageViewProps) {
               </Link>
               <span className={styles.categoryCount}>({cat._count?.projects ?? 0})</span>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.deleteButton}
                 onClick={() => setDeleteTarget({ type: 'category', id: cat.id, name: cat.name })}
@@ -109,6 +114,7 @@ export function PhotoSectionPageView({ model }: PhotoSectionPageViewProps) {
           </div>
         ) : (
           <button
+            data-admin-mutation
             type="button"
             className={styles.addButton}
             onClick={() => setShowNewCategory(true)}
@@ -175,6 +181,7 @@ export function PhotoSectionPageView({ model }: PhotoSectionPageViewProps) {
                       Редактировать
                     </Link>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.deleteButton}
                       onClick={() =>

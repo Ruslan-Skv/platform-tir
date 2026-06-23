@@ -161,7 +161,12 @@ export function QuoteFormSection() {
             className={formStyles.formTextarea}
           />
         </div>
-        <button type="submit" disabled={saving} className={formStyles.submitButton}>
+        <button
+          data-admin-mutation
+          type="submit"
+          disabled={saving}
+          className={formStyles.submitButton}
+        >
           {saving ? 'Сохранение...' : 'Сохранить'}
         </button>
       </form>

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAuth } from '@/features/auth';
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import {
   type AdminKnowledgeMaterial,
   getKnowledgeMaterial,
@@ -10,7 +10,7 @@ import {
   toggleKnowledgeMaterialLike,
 } from '@/shared/api/admin-knowledge';
 
-import { isKnowledgeEditor } from '../../shared/knowledge-utils';
+import { KNOWLEDGE_RESOURCE_ID } from '../../shared/knowledge-utils';
 import { buildKnowledgeTerritoryBackUrl } from '../../territory/knowledge-territory-filters-storage';
 
 interface UseKnowledgeMaterialViewPageOptions {
@@ -18,9 +18,7 @@ interface UseKnowledgeMaterialViewPageOptions {
 }
 
 export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMaterialViewPageOptions) {
-  const { user } = useAuth();
-  const canEdit = isKnowledgeEditor(user?.role);
-
+  const { canEdit } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
   const [material, setMaterial] = useState<AdminKnowledgeMaterial | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);

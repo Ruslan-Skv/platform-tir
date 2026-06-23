@@ -177,6 +177,7 @@ export function PhotoProjectFormPageView({ model }: PhotoProjectFormPageViewProp
                 <div key={photo.id} className={styles.photoItem}>
                   <img src={publicUploadUrl(photo.imageUrl)} alt="" />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.removePhoto}
                     onClick={() => void handleRemovePhoto(photo.id)}
@@ -191,7 +192,7 @@ export function PhotoProjectFormPageView({ model }: PhotoProjectFormPageViewProp
         </div>
 
         <div className={styles.formActions}>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
+          <button data-admin-mutation type="submit" className={styles.saveButton} disabled={saving}>
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
           <Link href="/admin/content/photo" className={styles.cancelLink}>

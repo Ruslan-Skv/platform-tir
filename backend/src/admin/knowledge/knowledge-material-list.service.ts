@@ -29,6 +29,7 @@ export class KnowledgeMaterialListService {
     limit?: number;
     editorView?: boolean;
     userId?: string;
+    allowedCategoryIds?: string[];
   }) {
     const {
       status,
@@ -40,6 +41,7 @@ export class KnowledgeMaterialListService {
       limit = 24,
       editorView = false,
       userId,
+      allowedCategoryIds,
     } = params;
     const skip = (page - 1) * limit;
 
@@ -49,6 +51,7 @@ export class KnowledgeMaterialListService {
       categoryId,
       moduleId,
       type,
+      allowedCategoryIds,
     });
 
     if (search?.trim()) {
@@ -99,6 +102,7 @@ export class KnowledgeMaterialListService {
     moduleId?: string;
     type?: string;
     editorView?: boolean;
+    allowedCategoryIds?: string[];
   }) {
     const query = params.q.trim();
     if (query.length < 2) {
@@ -111,6 +115,7 @@ export class KnowledgeMaterialListService {
       categoryId: params.categoryId,
       moduleId: params.moduleId,
       type: params.type,
+      allowedCategoryIds: params.allowedCategoryIds,
     });
 
     const andClauses = Array.isArray(where.AND) ? where.AND : where.AND ? [where.AND] : [];

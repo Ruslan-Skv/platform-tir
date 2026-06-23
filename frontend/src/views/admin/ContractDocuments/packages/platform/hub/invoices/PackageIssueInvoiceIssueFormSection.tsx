@@ -176,6 +176,7 @@ export function PackageIssueInvoiceIssueFormSection({
 
           <div className={cdBase.paymentsHubConductActions}>
             <button
+              data-admin-mutation
               type="button"
               className={cdBase.paymentsHubConductBtn}
               disabled={saving || !formComplete}

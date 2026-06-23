@@ -99,6 +99,7 @@ export function EstimateWorkspacePageHeader({
         <div className={cdWorkspace.estimateWorkspaceHeaderControls}>
           <div className={cdDocPreview.estimateWorkspaceActions}>
             <button
+              data-admin-mutation
               type="button"
               className={cdWorkspace.primaryBtn}
               disabled={saving}

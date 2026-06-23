@@ -353,7 +353,13 @@ export function CatalogFilterBlockSection() {
       ) : null}
 
       <div className={styles.toolbar}>
-        <button type="button" className={styles.primaryBtn} onClick={startCreate} disabled={saving}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.primaryBtn}
+          onClick={startCreate}
+          disabled={saving}
+        >
           Добавить блок
         </button>
         {(creating || editingId) && (
@@ -500,6 +506,7 @@ export function CatalogFilterBlockSection() {
                   />
                 </div>
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.dangerBtn}
                   title="Удалить строку"
@@ -548,6 +555,7 @@ export function CatalogFilterBlockSection() {
           ))}
           <div className={styles.addFilterActions}>
             <button
+              data-admin-mutation
               type="button"
               className={styles.secondaryBtn}
               onClick={() => setFormItems((prev) => [...prev, emptyFormItem(prev.length)])}
@@ -558,6 +566,7 @@ export function CatalogFilterBlockSection() {
 
           <div className={styles.saveFormActions}>
             <button
+              data-admin-mutation
               type="button"
               className={styles.primaryBtn}
               onClick={handleSave}
@@ -601,6 +610,7 @@ export function CatalogFilterBlockSection() {
                   <td>{b.items?.length ?? 0}</td>
                   <td>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.secondaryBtn}
                       onClick={() => startEdit(b)}
@@ -609,6 +619,7 @@ export function CatalogFilterBlockSection() {
                       Изменить
                     </button>{' '}
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.dangerBtn}
                       onClick={() => handleDelete(b.id)}

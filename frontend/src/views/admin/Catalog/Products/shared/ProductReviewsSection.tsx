@@ -101,6 +101,7 @@ export function ProductReviewsSection({ productId }: ProductReviewsSectionProps)
                     </button>
                   )}
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.deleteBtn}
                     onClick={() => handleDelete(r.id)}

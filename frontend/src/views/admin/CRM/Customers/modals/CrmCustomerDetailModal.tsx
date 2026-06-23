@@ -11,6 +11,7 @@ import { type FormEvent, useCallback, useEffect, useMemo, useState } from 'react
 
 import Link from 'next/link';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import {
   type CrmCustomerDetail,
   getCrmCustomer,
@@ -162,6 +163,7 @@ export function CrmCustomerDetailModal({
   onUpdated?: () => void;
   onTrashed?: () => void;
 }) {
+  const { canEdit } = useAdminSectionCanEdit();
   const [data, setData] = useState<CrmCustomerDetail | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -212,7 +214,7 @@ export function CrmCustomerDetailModal({
   }, [isOpen, customerId, loadCustomer]);
 
   const handleConfirmTrash = async () => {
-    if (!customerId) return;
+    if (!customerId || !canEdit) return;
     setTrashing(true);
     try {
       await trashCrmCustomer(customerId);
@@ -241,7 +243,7 @@ export function CrmCustomerDetailModal({
   }, []);
 
   const startEdit = useCallback(() => {
-    if (!data) return;
+    if (!data || !canEdit) return;
     const { form: nextForm, lockedPhones: locked } = formFromCrmCustomerDetail(data);
     const snapshot = cloneCrmCustomerForm(nextForm);
     setForm(snapshot);
@@ -250,7 +252,7 @@ export function CrmCustomerDetailModal({
     setSaveError(null);
     setFieldErrors({});
     setIsEditing(true);
-  }, [data]);
+  }, [data, canEdit]);
 
   const initialPersonName = useMemo(
     () =>
@@ -275,7 +277,7 @@ export function CrmCustomerDetailModal({
 
   const handleSave = async (e: FormEvent) => {
     e.preventDefault();
-    if (!data || !form || !customerId || !hasEditChanges) return;
+    if (!data || !form || !customerId || !hasEditChanges || !canEdit) return;
     setSaveError(null);
 
     const validation = validateCrmCustomerForm(form, {
@@ -407,6 +409,7 @@ export function CrmCustomerDetailModal({
             <ClockIcon className={styles.editIcon} aria-hidden />
           </button>
           <button
+            data-admin-mutation
             type="button"
             className={styles.trashBtn}
             onClick={() => setShowDeleteConfirm(true)}
@@ -472,6 +475,7 @@ export function CrmCustomerDetailModal({
                     Отмена
                   </button>
                   <button
+                    data-admin-mutation
                     type="submit"
                     data-modal-btn="primary"
                     disabled={saving || !hasEditChanges}
@@ -705,6 +709,7 @@ export function CrmCustomerDetailModal({
               Отмена
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={`${confirmModalStyles.confirmButton} ${confirmModalStyles.danger}`}
               disabled={trashing}

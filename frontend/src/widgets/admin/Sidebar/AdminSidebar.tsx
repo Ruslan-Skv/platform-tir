@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 import { usePathname, useSearchParams } from 'next/navigation';
@@ -573,9 +574,7 @@ export function AdminSidebar({
   const { hasAccess, isLoading, resourceIds } = useAdminAccessibleResources();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isResizing, setIsResizing] = useState(false);
-  const [accessModal, setAccessModal] = useState<{ resourceId: string; label: string } | null>(
-    null
-  );
+  const [accessModalResourceId, setAccessModalResourceId] = useState<string | null>(null);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
 
@@ -784,7 +783,7 @@ export function AdminSidebar({
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                            setAccessModalResourceId(item.resourceId!);
                           }}
                           title="Доступ"
                           aria-label={`Управление доступом: ${item.label}`}
@@ -824,10 +823,7 @@ export function AdminSidebar({
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
-                                      setAccessModal({
-                                        resourceId: child.resourceId!,
-                                        label: child.label,
-                                      });
+                                      setAccessModalResourceId(child.resourceId!);
                                     }}
                                     title="Доступ"
                                     aria-label={`Управление доступом: ${child.label}`}
@@ -857,10 +853,7 @@ export function AdminSidebar({
                                           onClick={(e) => {
                                             e.preventDefault();
                                             e.stopPropagation();
-                                            setAccessModal({
-                                              resourceId: nested.resourceId!,
-                                              label: nested.label,
-                                            });
+                                            setAccessModalResourceId(nested.resourceId!);
                                           }}
                                           title="Доступ"
                                           aria-label={`Управление доступом: ${nested.label}`}
@@ -890,10 +883,7 @@ export function AdminSidebar({
                                   onClick={(e) => {
                                     e.preventDefault();
                                     e.stopPropagation();
-                                    setAccessModal({
-                                      resourceId: child.resourceId!,
-                                      label: child.label,
-                                    });
+                                    setAccessModalResourceId(child.resourceId!);
                                   }}
                                   title="Доступ"
                                   aria-label={`Управление доступом: ${child.label}`}
@@ -923,7 +913,7 @@ export function AdminSidebar({
                         onClick={(e) => {
                           e.preventDefault();
                           e.stopPropagation();
-                          setAccessModal({ resourceId: item.resourceId!, label: item.label });
+                          setAccessModalResourceId(item.resourceId!);
                         }}
                         title="Доступ"
                         aria-label={`Управление доступом: ${item.label}`}
@@ -938,13 +928,15 @@ export function AdminSidebar({
           })}
         </nav>
 
-        {accessModal && (
-          <AccessModal
-            resourceId={accessModal.resourceId}
-            label={accessModal.label}
-            onClose={() => setAccessModal(null)}
-          />
-        )}
+        {accessModalResourceId && typeof document !== 'undefined'
+          ? createPortal(
+              <AccessModal
+                resourceId={accessModalResourceId}
+                onClose={() => setAccessModalResourceId(null)}
+              />,
+              document.body
+            )
+          : null}
 
         <div className={styles.footer}>
           <Link href="/" className={styles.backLink}>

@@ -145,6 +145,7 @@ export function ProductAddendumSpecificationLinesEditor({
                 </td>
                 <td className={cdProduct.windowsAddendumSpecActionsCell}>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
                     aria-label="Удалить строку"
@@ -162,6 +163,7 @@ export function ProductAddendumSpecificationLinesEditor({
       </div>
       <div className={cdProduct.windowsAddendumSpecActionsRow}>
         <button
+          data-admin-mutation
           type="button"
           className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.windowsAddendumSpecAddBtn}`}
           aria-label="Добавить изделие"

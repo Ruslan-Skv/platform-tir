@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import { mergeQuizTheme } from '@/features/quiz/lib/quiz-theme';
 import {
@@ -26,6 +27,7 @@ export type MebelQuizTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'con
 
 export function useMebelQuizPage() {
   const { getAuthHeaders } = useAuth();
+  const { canEdit } = useAdminSectionCanEdit();
   const [tab, setTab] = useState<MebelQuizTab>('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -110,6 +112,7 @@ export function useMebelQuizPage() {
   };
 
   const handleUploadBackground = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -123,7 +126,7 @@ export function useMebelQuizPage() {
   };
 
   const handleSaveSettings = async () => {
-    if (!quiz) return;
+    if (!quiz || !canEdit) return;
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
@@ -156,7 +159,7 @@ export function useMebelQuizPage() {
   };
 
   const handleSaveConsent = async () => {
-    if (!quiz) return;
+    if (!quiz || !canEdit) return;
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
@@ -180,7 +183,7 @@ export function useMebelQuizPage() {
   };
 
   const handleSaveTheme = async () => {
-    if (!quiz) return;
+    if (!quiz || !canEdit) return;
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
@@ -201,6 +204,7 @@ export function useMebelQuizPage() {
   };
 
   const handleSaveSteps = useCallback(async () => {
+    if (!canEdit) return;
     setSaving(true);
     try {
       const payload = stepsDraft.map((s, i) => ({
@@ -222,9 +226,10 @@ export function useMebelQuizPage() {
     } finally {
       setSaving(false);
     }
-  }, [stepsDraft, getAuthHeaders, applyQuizData, showMessage]);
+  }, [stepsDraft, getAuthHeaders, applyQuizData, showMessage, canEdit]);
 
   const handleUploadCatalog = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingCatalog(true);
@@ -241,6 +246,7 @@ export function useMebelQuizPage() {
   };
 
   const handleUploadPrivacyPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (!file) return;
     setUploadingPrivacyPolicy(true);
@@ -261,6 +267,7 @@ export function useMebelQuizPage() {
     optionIdx: number,
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
+    if (!canEdit) return;
     const file = e.target.files?.[0];
     if (!file) return;
     try {
@@ -282,6 +289,7 @@ export function useMebelQuizPage() {
     id: string,
     data: { status?: string; managerNote?: string | null }
   ) => {
+    if (!canEdit) return;
     try {
       await updateQuizSubmission(MEBEL_QUIZ_SLUG, id, data, getAuthHeaders);
       await loadSubmissions();
@@ -340,6 +348,7 @@ export function useMebelQuizPage() {
   const { saveButtonPinnedTopPx, handleSaveClick } = saveButtonState;
 
   return {
+    canEdit,
     tab,
     setTab,
     loading,

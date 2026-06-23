@@ -165,6 +165,7 @@ export function TemplatesLibraryControlsMetaFields(props: TemplatesLibraryContro
           />
         ) : (
           <button
+            data-admin-mutation
             id="templates-library-template"
             type="button"
             className={cdTemplates.templatesLibraryAddButton}

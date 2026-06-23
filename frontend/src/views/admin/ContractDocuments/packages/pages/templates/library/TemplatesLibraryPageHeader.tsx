@@ -141,6 +141,7 @@ export function TemplatesLibraryPageHeader({
               wrapClassName={cdTemplates.templatesLibraryAddButtonWithTooltip}
             >
               <button
+                data-admin-mutation
                 type="button"
                 className={cdTemplates.templatesLibraryAddButton}
                 disabled={showArchivedTemplates}

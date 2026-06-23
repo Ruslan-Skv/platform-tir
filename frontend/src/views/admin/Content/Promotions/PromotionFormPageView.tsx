@@ -129,6 +129,7 @@ export function PromotionFormPageView({ model }: PromotionFormPageViewProps) {
 
         <div className={styles.actions}>
           <button
+            data-admin-mutation
             type="button"
             className={styles.saveButton}
             onClick={handleSave}

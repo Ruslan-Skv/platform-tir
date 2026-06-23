@@ -272,6 +272,7 @@ export function CanvasTypesSettingsSection() {
                       <td className={styles.num}>{r._count?.products ?? '—'}</td>
                       <td className={styles.actions}>
                         <button
+                          data-admin-mutation
                           type="button"
                           className={`${styles.btn} ${styles.btnPrimary}`}
                           disabled={saving}
@@ -297,6 +298,7 @@ export function CanvasTypesSettingsSection() {
                       <td className={styles.num}>{r._count?.products ?? 0}</td>
                       <td className={styles.actions}>
                         <button
+                          data-admin-mutation
                           type="button"
                           className={styles.btn}
                           disabled={saving}
@@ -305,6 +307,7 @@ export function CanvasTypesSettingsSection() {
                           Изменить
                         </button>
                         <button
+                          data-admin-mutation
                           type="button"
                           className={`${styles.btn} ${styles.btnDanger}`}
                           disabled={saving}

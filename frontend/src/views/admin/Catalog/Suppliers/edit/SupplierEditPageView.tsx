@@ -216,6 +216,7 @@ export function SupplierEditPageView({ model }: SupplierEditPageViewProps) {
                     placeholder="+7 (999) 123-45-67"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     onClick={() => removePhone(index)}
                     className={styles.removeButton}
@@ -225,7 +226,12 @@ export function SupplierEditPageView({ model }: SupplierEditPageViewProps) {
                   </button>
                 </div>
               ))}
-              <button type="button" onClick={addPhone} className={styles.addPhoneButton}>
+              <button
+                data-admin-mutation
+                type="button"
+                onClick={addPhone}
+                className={styles.addPhoneButton}
+              >
                 + Добавить телефон
               </button>
             </div>
@@ -249,7 +255,12 @@ export function SupplierEditPageView({ model }: SupplierEditPageViewProps) {
           <button type="button" className={styles.cancelButton} onClick={goBack} disabled={saving}>
             Отмена
           </button>
-          <button type="submit" className={styles.submitButton} disabled={saving}>
+          <button
+            data-admin-mutation
+            type="submit"
+            className={styles.submitButton}
+            disabled={saving}
+          >
             {saving ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать поставщика'}
           </button>
         </div>

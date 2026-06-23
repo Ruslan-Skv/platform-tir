@@ -61,6 +61,7 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
         </div>
         <div className={cdHub.headerActions}>
           <button
+            data-admin-mutation
             type="button"
             className={cdWorkspace.primaryBtn}
             onClick={() => void openIssueModal()}

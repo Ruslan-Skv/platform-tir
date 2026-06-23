@@ -88,12 +88,24 @@ export function slugify(text: string): string {
     .replace(/^-|-$/g, '');
 }
 
+export {
+  KNOWLEDGE_RESOURCE_ID,
+  KNOWLEDGE_CATEGORY_RESOURCE_PREFIX,
+  buildKnowledgeCategoryResourceId,
+  parseKnowledgeCategoryResourceId,
+  getKnowledgeCategoryResourceLabel,
+} from '@/shared/config/admin-knowledge-resources';
+
 export function isKnowledgeEditor(role: string | undefined): boolean {
+  /** @deprecated Используйте useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID).canEdit */
   return role === 'SUPER_ADMIN';
 }
 
-export function canViewKnowledgeTrainingAnalytics(role: string | undefined): boolean {
-  return role !== 'TRAINEE';
+export function canViewKnowledgeTrainingAnalytics(
+  role: string | undefined,
+  hasKnowledgeAccess = true
+): boolean {
+  return hasKnowledgeAccess && role !== 'TRAINEE';
 }
 
 export function getMaterialTypeLabel(type: KnowledgeMaterialType): string {

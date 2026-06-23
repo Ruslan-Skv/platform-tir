@@ -2,6 +2,7 @@ import { type Dispatch, type SetStateAction, useCallback } from 'react';
 
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { trashContractEstimatePreset } from '@/shared/api/admin-contract-document-estimate-presets-trash';
 import type {
   ContractEstimateGroup,
@@ -88,6 +89,8 @@ export function useEstimatesListMutations({
   setRefreshing,
   fetchEstimatesFromServer,
 }: UseEstimatesListMutationsParams) {
+  const { canEdit } = useAdminSectionCanEdit();
+
   const refreshPackagesFromServer = useCallback(async () => {
     const packagesRes = await getContractDocumentPackages('REPAIR');
     setWorkspacePackages(mapPackagesForEstimatesList(packagesRes));
@@ -99,6 +102,7 @@ export function useEstimatesListMutations({
       nextGroups: ContractEstimateGroup[],
       options?: { suppressSuccessMessage?: boolean }
     ): Promise<boolean> => {
+      if (!canEdit) return false;
       setSaving(true);
       setError(null);
       if (!options?.suppressSuccessMessage) {
@@ -125,7 +129,7 @@ export function useEstimatesListMutations({
         setSaving(false);
       }
     },
-    [clearOkMessage, setError, setGroups, setItems, setSaving, showAutosaveOk]
+    [canEdit, clearOkMessage, setError, setGroups, setItems, setSaving, showAutosaveOk]
   );
 
   const refreshEstimates = useCallback(async () => {
@@ -230,6 +234,7 @@ export function useEstimatesListMutations({
 
   const moveEstimateToTrashById = useCallback(
     async (estimateId: string): Promise<boolean> => {
+      if (!canEdit) return false;
       setSaving(true);
       setError(null);
       try {
@@ -244,7 +249,7 @@ export function useEstimatesListMutations({
         setSaving(false);
       }
     },
-    [refreshTrashCount, setError, setItems, setSaving]
+    [canEdit, refreshTrashCount, setError, setItems, setSaving]
   );
 
   const detachEstimateFromPackages = useCallback(

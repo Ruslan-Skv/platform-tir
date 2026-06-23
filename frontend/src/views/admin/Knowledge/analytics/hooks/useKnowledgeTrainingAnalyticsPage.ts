@@ -4,19 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import {
   type KnowledgeTrainingAnalytics,
   getKnowledgeTrainingAnalytics,
 } from '@/shared/api/admin-knowledge';
 
-import { canViewKnowledgeTrainingAnalytics } from '../../shared/knowledge-utils';
+import {
+  KNOWLEDGE_RESOURCE_ID,
+  canViewKnowledgeTrainingAnalytics,
+} from '../../shared/knowledge-utils';
 import { resolveAnalyticsRange } from '../knowledge-training-analytics.utils';
 
 export function useKnowledgeTrainingAnalyticsPage() {
   const { user } = useAuth();
   const router = useRouter();
-  const canView = canViewKnowledgeTrainingAnalytics(user?.role);
+  const { canView: hasKnowledgeAccess } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
+  const canView = canViewKnowledgeTrainingAnalytics(user?.role, hasKnowledgeAccess);
   const [period, setPeriod] = useState('month');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');

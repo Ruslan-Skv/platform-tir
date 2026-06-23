@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import {
   type AdminOrderSummary,
@@ -25,6 +26,7 @@ import { groupOrderServiceItems } from '../order-detail-page.utils';
 export function useOrderDetailPage(orderId: string) {
   const router = useRouter();
   const { user } = useAuth();
+  const { canEdit } = useAdminSectionCanEdit();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -177,6 +179,7 @@ export function useOrderDetailPage(orderId: string) {
   }, [orderId, order, normalizeOrder]);
 
   const handleStatusChange = async (newStatus: string) => {
+    if (!canEdit) return;
     if (!orderId || !order) return;
     setApprovedNotice(false);
     setStatusUpdating(true);
@@ -203,6 +206,7 @@ export function useOrderDetailPage(orderId: string) {
   };
 
   const handleSendBack = async () => {
+    if (!canEdit) return;
     if (!orderId || !order) return;
     const items = order.items ?? [];
     if (items.length === 0) return;
@@ -233,7 +237,7 @@ export function useOrderDetailPage(orderId: string) {
   };
 
   const handleDeleteOrder = async () => {
-    if (!orderId) return;
+    if (!orderId || !canEdit) return;
     setDeleteSubmitting(true);
     try {
       await deleteAdminOrder(orderId);
@@ -264,6 +268,7 @@ export function useOrderDetailPage(orderId: string) {
   };
 
   const handleSaveCustomer = async () => {
+    if (!canEdit) return;
     if (!orderId) return;
     setCustomerSaving(true);
     setCustomerSaveSuccess(false);
@@ -286,6 +291,7 @@ export function useOrderDetailPage(orderId: string) {
   };
 
   const handleSaveDelivery = async () => {
+    if (!canEdit) return;
     if (!orderId || !order) return;
     const shippingNum =
       deliveryShippingCost.trim() === ''
@@ -328,7 +334,6 @@ export function useOrderDetailPage(orderId: string) {
   }, [order]);
 
   const isManagerRole = ['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(user?.role ?? '');
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return {
     orderId,
@@ -376,7 +381,7 @@ export function useOrderDetailPage(orderId: string) {
     setCommentDraftByItemId,
     orderServiceGroups,
     isManagerRole,
-    isSuperAdmin,
+    canEdit,
     handleRefresh,
     handleStatusChange,
     handleSendBack,

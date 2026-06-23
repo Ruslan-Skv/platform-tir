@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import type { HomeSectionsVisibility } from '@/shared/api/home-sections';
 import {
   getAdminHomeSectionsVisibility,
@@ -21,6 +22,7 @@ export function SectionVisibilityCheckbox({
   sectionKey,
   sectionLabel,
 }: SectionVisibilityCheckboxProps) {
+  const { canEdit } = useAdminSectionCanEdit();
   const [visible, setVisible] = useState(true);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -41,6 +43,7 @@ export function SectionVisibilityCheckbox({
   }, [loadVisibility]);
 
   const handleToggle = async (checked: boolean) => {
+    if (!canEdit) return;
     setVisible(checked);
     setSaving(true);
     try {
@@ -52,7 +55,7 @@ export function SectionVisibilityCheckbox({
     }
   };
 
-  if (loading) return null;
+  if (loading || !canEdit) return null;
 
   return (
     <div className={styles.wrapper}>

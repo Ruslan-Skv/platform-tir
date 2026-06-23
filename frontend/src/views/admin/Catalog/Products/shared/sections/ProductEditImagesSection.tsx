@@ -81,7 +81,12 @@ export function ProductEditImagesSection({
           </div>
         </div>
 
-        <button type="button" className={styles.addUrlButton} onClick={onAddByUrl}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.addUrlButton}
+          onClick={onAddByUrl}
+        >
           🔗 Добавить по URL
         </button>
 
@@ -111,6 +116,7 @@ export function ProductEditImagesSection({
                     →
                   </button>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={`${styles.imageActionBtn} ${styles.imageDeleteBtn}`}
                     onClick={() => onRemoveImage(index)}

@@ -154,9 +154,17 @@
   overflow-y: auto;
   padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
   position: relative;
-  transform: translateY(0);
-  transition: all 0.3s;
+  scrollbar-gutter: stable;
+  transition:
+    box-shadow 0.3s ease,
+    border-color 0.3s ease,
+    opacity 0.3s ease;
   width: calc(100% - 2rem);
+}
+
+.centerAlignTop {
+  align-items: flex-start;
+  padding-top: var(--admin-space-4xl, 24px);
 }
 
 .sizeSm {
@@ -1076,6 +1084,11 @@
     min-height: 100dvh;
     padding: var(--modal-space-sm);
     width: 100%;
+  }
+
+  .center.centerAlignTop {
+    align-items: flex-start;
+    padding-top: var(--admin-space-3xl, 20px);
   }
 
   .panel {

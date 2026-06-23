@@ -85,6 +85,7 @@ export function ProductEditVariantsSection({
                 />
                 {sizes.length > 1 && (
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.removeAttrButton}
                     onClick={() => onSizesChange(sizes.filter((_, i) => i !== index))}
@@ -97,6 +98,7 @@ export function ProductEditVariantsSection({
             ))}
           </div>
           <button
+            data-admin-mutation
             type="button"
             className={styles.addAttrButton}
             onClick={() => onSizesChange([...sizes, ''])}

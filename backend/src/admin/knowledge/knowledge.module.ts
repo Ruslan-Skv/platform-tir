@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { AdminAccessModule } from '../admin-access/admin-access.module';
 import { AdminNotificationsModule } from '../notifications/admin-notifications.module';
 import { KnowledgeController } from './knowledge.controller';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
@@ -15,7 +16,7 @@ import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytic
 import { KnowledgeUploadService } from './knowledge-upload.service';
 
 @Module({
-  imports: [DatabaseModule, AdminNotificationsModule],
+  imports: [DatabaseModule, AdminNotificationsModule, AdminAccessModule],
   controllers: [KnowledgeController],
   providers: [
     KnowledgeService,

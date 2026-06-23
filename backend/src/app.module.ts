@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { APP_FILTER, APP_GUARD, APP_INTERCEPTOR } from '@nestjs/core';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { MailerModule } from '@nestjs-modules/mailer';
@@ -13,6 +13,8 @@ import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { OrdersModule } from './orders/orders.module';
 import { AdminModule } from './admin/admin.module';
+import { AdminAccessModule } from './admin/admin-access/admin-access.module';
+import { AdminResourceInterceptor } from './admin/admin-access/admin-resource.interceptor';
 import { WishlistModule } from './wishlist/wishlist.module';
 import { CompareModule } from './compare/compare.module';
 import { CartModule } from './cart/cart.module';
@@ -96,6 +98,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     HomeSectionsModule,
     ContactFormModule,
     SitePublicModule,
+    AdminAccessModule,
   ],
   controllers: [AppController],
   providers: [
@@ -107,6 +110,10 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: AdminResourceInterceptor,
     },
   ],
 })

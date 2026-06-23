@@ -248,6 +248,7 @@ export function CategoryEditPageView({ model }: CategoryEditPageViewProps) {
             Отмена
           </button>
           <button
+            data-admin-mutation
             type="button"
             className={styles.saveButton}
             onClick={() => void handleSave()}

@@ -281,6 +281,7 @@ export function BlogPostFormPageView({ model }: BlogPostFormPageViewProps) {
                 }}
               />
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.badgeAddButton}
                 disabled={addingBadge || !newBadgeLabel.trim()}
@@ -406,7 +407,12 @@ export function BlogPostFormPageView({ model }: BlogPostFormPageViewProps) {
         </div>
 
         <div className={styles.actions}>
-          <button type="submit" className={styles.submitButton} disabled={saving}>
+          <button
+            data-admin-mutation
+            type="submit"
+            className={styles.submitButton}
+            disabled={saving}
+          >
             {saving ? 'Сохранение...' : postId ? 'Сохранить' : 'Создать'}
           </button>
           <Link href="/admin/content/blog" className={styles.cancelLink}>

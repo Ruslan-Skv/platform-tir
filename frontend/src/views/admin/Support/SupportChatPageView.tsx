@@ -116,7 +116,12 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
                   onChange={(e) => setInput(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey && sendMessage()}
                 />
-                <button type="button" onClick={sendMessage} disabled={sending || !input.trim()}>
+                <button
+                  data-admin-mutation
+                  type="button"
+                  onClick={sendMessage}
+                  disabled={sending || !input.trim()}
+                >
                   Отправить
                 </button>
               </div>

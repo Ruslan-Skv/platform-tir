@@ -142,6 +142,7 @@ export function PartnersPageView({ model }: PartnersPageViewProps) {
               ✏️
             </button>
             <button
+              data-admin-mutation
               className={styles.deleteButton}
               onClick={() => openDeleteModal(partner)}
               title="Удалить"
@@ -178,7 +179,11 @@ export function PartnersPageView({ model }: PartnersPageViewProps) {
       <div className={styles.header}>
         <h1 className={styles.title}>Партнёры</h1>
         <div className={styles.headerActions}>
-          <button className={styles.addButton} onClick={() => router.push('/admin/partners/new')}>
+          <button
+            data-admin-mutation
+            className={styles.addButton}
+            onClick={() => router.push('/admin/partners/new')}
+          >
             + Добавить партнёра
           </button>
         </div>
@@ -197,7 +202,11 @@ export function PartnersPageView({ model }: PartnersPageViewProps) {
       {partners.length === 0 ? (
         <div className={styles.empty}>
           <p>Партнёры не найдены</p>
-          <button className={styles.addButton} onClick={() => router.push('/admin/partners/new')}>
+          <button
+            data-admin-mutation
+            className={styles.addButton}
+            onClick={() => router.push('/admin/partners/new')}
+          >
             Добавить первого партнёра
           </button>
         </div>
@@ -255,6 +264,7 @@ export function PartnersPageView({ model }: PartnersPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 className={styles.dangerButton}
                 onClick={() => void handleDeletePartner()}
                 disabled={deleting}

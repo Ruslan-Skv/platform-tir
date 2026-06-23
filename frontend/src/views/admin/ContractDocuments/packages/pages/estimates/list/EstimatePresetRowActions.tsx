@@ -95,6 +95,7 @@ export function EstimatePresetRowActions({
         ) : null}
         {!archiveView && pipelineTab === 'active' && canPresetArchive ? (
           <button
+            data-admin-mutation
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
             disabled={saving}
@@ -107,6 +108,7 @@ export function EstimatePresetRowActions({
         ) : null}
         {archiveView && canPresetRestoreFromArchive ? (
           <button
+            data-admin-mutation
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
             disabled={saving}

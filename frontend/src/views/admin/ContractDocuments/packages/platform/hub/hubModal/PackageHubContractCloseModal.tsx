@@ -91,6 +91,7 @@ export function PackageHubContractCloseModal({
             Отмена
           </button>
           <button
+            data-admin-mutation
             type="button"
             data-modal-btn="primary"
             disabled={hub.contractCloseModalBusy}

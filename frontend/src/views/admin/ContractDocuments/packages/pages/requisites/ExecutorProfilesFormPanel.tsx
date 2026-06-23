@@ -167,6 +167,7 @@ export function ExecutorProfilesFormPanel({
       </div>
       <div className={cdWorkspace.toolbar} style={{ marginTop: 8, marginBottom: 0 }}>
         <button
+          data-admin-mutation
           type="button"
           className={cdWorkspace.primaryBtn}
           disabled={saving}

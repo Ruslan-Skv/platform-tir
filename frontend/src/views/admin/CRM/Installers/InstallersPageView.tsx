@@ -75,10 +75,16 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       title: 'Действия',
       render: (item: InstallerMaster) => (
         <div className={styles.actions}>
-          <button type="button" className={styles.actionButton} onClick={() => openEditModal(item)}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.actionButton}
+            onClick={() => openEditModal(item)}
+          >
             Изменить
           </button>
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.actionButton} ${styles.actionDanger}`}
             onClick={() => setDeleteItem(item)}
@@ -115,7 +121,12 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
               ))}
             </select>
           </label>
-          <button type="button" className={styles.addButton} onClick={openCreateModal}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addButton}
+            onClick={openCreateModal}
+          >
             + Добавить мастера
           </button>
         </div>
@@ -251,7 +262,7 @@ function ModalActions({ onCancel, submitting }: { onCancel: () => void; submitti
       <button type="button" data-modal-btn="secondary" onClick={onCancel} disabled={submitting}>
         Отмена
       </button>
-      <button type="submit" data-modal-btn="primary" disabled={submitting}>
+      <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={submitting}>
         {submitting ? 'Сохранение…' : 'Сохранить'}
       </button>
     </div>

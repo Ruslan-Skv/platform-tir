@@ -255,6 +255,7 @@ export function ServicesSectionPageView({ model }: ServicesSectionPageViewProps)
                       Редактировать
                     </button>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                       onClick={() => handleDeleteItem(item.id)}
@@ -339,6 +340,7 @@ export function ServicesSectionPageView({ model }: ServicesSectionPageViewProps)
           </div>
           <div className={styles.addFormButtons}>
             <button
+              data-admin-mutation
               type="button"
               className={`${styles.btn} ${styles.btnSuccess}`}
               onClick={handleAddItem}
@@ -354,6 +356,7 @@ export function ServicesSectionPageView({ model }: ServicesSectionPageViewProps)
 
       <div className={styles.saveBlock}>
         <button
+          data-admin-mutation
           type="button"
           className={`${styles.btn} ${styles.btnPrimary}`}
           onClick={handleSaveBlock}

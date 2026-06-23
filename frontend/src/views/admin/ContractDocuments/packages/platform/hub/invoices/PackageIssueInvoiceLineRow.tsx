@@ -84,6 +84,7 @@ export function PackageIssueInvoiceLineRow({
       </td>
       <td>
         <button
+          data-admin-mutation
           type="button"
           className={cdWorkspace.dangerBtn}
           title="Удалить строку"

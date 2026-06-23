@@ -135,7 +135,7 @@ export function CashRegisterPageView({ model }: CashRegisterPageViewProps) {
             <Undo2 size={18} />
             Отменить
           </button>
-          <button type="button" className={styles.addRowBtn} onClick={addRow}>
+          <button data-admin-mutation type="button" className={styles.addRowBtn} onClick={addRow}>
             + Добавить строку
           </button>
         </div>
@@ -316,6 +316,7 @@ export function CashRegisterPageView({ model }: CashRegisterPageViewProps) {
                           <span className={styles.indexCell}>{rowIndex + 1}</span>
                         ) : col.type === 'action' ? (
                           <button
+                            data-admin-mutation
                             type="button"
                             className={styles.deleteRowBtn}
                             onClick={(e) => {

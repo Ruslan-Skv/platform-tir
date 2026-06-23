@@ -1,3 +1,7 @@
+:root {
+  scrollbar-gutter: stable;
+}
+
 /* ===== CSS ПЕРЕМЕННЫЕ ===== */
 :root {
   /* Брейкпойнты (для справки, CSS не поддерживает переменные в media queries) */
@@ -406,4 +410,46 @@ select:focus-visible {
     /* padding-bottom: зазор между контентом страницы и футером (уменьшен для мобильных) */
     padding-bottom: 1.5rem;
   }
+}
+
+/* Админка: режим «только просмотр» (data-admin-readonly на body из AdminSectionAccessShell) */
+body[data-admin-readonly] .admin-save-button,
+body[data-admin-readonly] .admin-mutation-button,
+body[data-admin-readonly] [data-admin-mutation] {
+  display: none !important;
+}
+
+body[data-admin-readonly] a[href*='/new'],
+body[data-admin-readonly] a[href*='/create'],
+body[data-admin-readonly] a[href*='/edit'] {
+  display: none !important;
+}
+
+body[data-admin-readonly] textarea,
+body[data-admin-readonly] select,
+body[data-admin-readonly] input[type='text'],
+body[data-admin-readonly] input[type='number'],
+body[data-admin-readonly] input[type='email'],
+body[data-admin-readonly] input[type='url'],
+body[data-admin-readonly] input[type='tel'],
+body[data-admin-readonly] input[type='password'],
+body[data-admin-readonly] input:not([type]) {
+  pointer-events: none;
+  opacity: 0.78;
+}
+
+body[data-admin-readonly] input[type='search'],
+body[data-admin-readonly] input[type='checkbox'],
+body[data-admin-readonly] input[type='radio'],
+body[data-admin-readonly] input[data-admin-filter],
+body[data-admin-readonly] [data-admin-allow-readonly] {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+body[data-admin-readonly] [data-admin-allow-readonly] textarea,
+body[data-admin-readonly] [data-admin-allow-readonly] select,
+body[data-admin-readonly] [data-admin-allow-readonly] input {
+  pointer-events: auto;
+  opacity: 1;
 }

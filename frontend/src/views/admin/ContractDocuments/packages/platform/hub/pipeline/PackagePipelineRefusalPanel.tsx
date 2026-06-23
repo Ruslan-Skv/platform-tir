@@ -24,6 +24,7 @@ export function PackagePipelineRefusalPanel({ hub, pipeline }: PackagePipelineRe
         </div>
         <div className={hubStyles.pipelineStepActions}>
           <button
+            data-admin-mutation
             type="button"
             data-modal-btn="secondary"
             disabled={hub.savingPackageStatus}

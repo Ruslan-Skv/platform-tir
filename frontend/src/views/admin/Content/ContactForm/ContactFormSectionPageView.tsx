@@ -130,6 +130,7 @@ export function ContactFormSectionPageView({ model }: ContactFormSectionPageView
         </div>
         <div className={styles.saveBlock}>
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.btn} ${styles.btnPrimary}`}
             onClick={handleSave}

@@ -64,6 +64,7 @@ export function EstimateTrashConfirmModal({
               Отмена
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={`${confirmModalStyles.confirmButton} ${confirmModalStyles.danger}`}
               disabled={saving}

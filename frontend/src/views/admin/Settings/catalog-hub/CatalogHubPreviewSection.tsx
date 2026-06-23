@@ -370,6 +370,7 @@ export function CatalogHubPreviewSection() {
 
       <div className={sectionStyles.toolbar}>
         <button
+          data-admin-mutation
           type="button"
           className={sectionStyles.secondaryButton}
           onClick={addSection}
@@ -414,6 +415,7 @@ export function CatalogHubPreviewSection() {
                     ↓
                   </button>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={sectionStyles.secondaryButton}
                     onClick={() => removeSection(section.localKey)}
@@ -478,6 +480,7 @@ export function CatalogHubPreviewSection() {
 
       <div className={sectionStyles.toolbar}>
         <button
+          data-admin-mutation
           type="button"
           className={sectionStyles.saveButton}
           onClick={() => void handleSave()}

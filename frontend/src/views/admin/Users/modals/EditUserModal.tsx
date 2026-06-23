@@ -133,7 +133,12 @@ export function EditUserModal({
           <button type="button" className={styles.cancelBtn} onClick={onClose}>
             Отмена
           </button>
-          <button type="submit" className={styles.submitBtn} disabled={submitting}>
+          <button
+            data-admin-mutation
+            type="submit"
+            className={styles.submitBtn}
+            disabled={submitting}
+          >
             {submitting ? 'Сохранение...' : 'Сохранить'}
           </button>
         </div>

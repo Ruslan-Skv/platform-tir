@@ -47,7 +47,7 @@ export function SupplierSettlementsPageView({ model }: SupplierSettlementsPageVi
       ) : suppliers.length === 0 ? (
         <div className={styles.empty}>
           <p>Поставщики не найдены. Добавьте поставщиков в разделе «Поставщики».</p>
-          <Link href="/admin/catalog/suppliers/new" className={styles.addLink}>
+          <Link data-admin-mutation href="/admin/catalog/suppliers/new" className={styles.addLink}>
             Добавить поставщика
           </Link>
         </div>

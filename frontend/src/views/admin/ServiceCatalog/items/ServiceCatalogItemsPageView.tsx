@@ -351,6 +351,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                   {editingItem === item.id ? (
                                     <>
                                       <button
+                                        data-admin-mutation
                                         type="button"
                                         className={styles.smallButton}
                                         onClick={() => handleUpdateItem(item.id)}
@@ -422,6 +423,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                         ✏️
                                       </button>
                                       <button
+                                        data-admin-mutation
                                         type="button"
                                         className={styles.deleteButton}
                                         onClick={() =>
@@ -514,6 +516,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                       </table>
                       {showNewItem !== cat.id && (
                         <button
+                          data-admin-mutation
                           type="button"
                           className={styles.addItemButton}
                           onClick={() => setShowNewItem(cat.id)}

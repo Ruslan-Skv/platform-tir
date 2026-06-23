@@ -2,11 +2,10 @@
 
 import { useState } from 'react';
 
-import { useAuth } from '@/features/auth';
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 
 export function usePackageSettingsPage() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
   const [error, setError] = useState<string | null>(null);
   const [ok, setOk] = useState<string | null>(null);
 

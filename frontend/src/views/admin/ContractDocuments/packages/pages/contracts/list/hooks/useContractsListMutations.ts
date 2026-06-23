@@ -2,6 +2,7 @@ import { useCallback, useMemo } from 'react';
 
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import type {
   ContractDocumentPackage,
   ContractDocumentPackageKind,
@@ -34,6 +35,7 @@ export function useContractsListMutations({
   setError,
   modals,
 }: UseContractsListMutationsParams) {
+  const { canEdit } = useAdminSectionCanEdit();
   const {
     setCreating,
     setCreateDirectionModalOpen,
@@ -46,6 +48,7 @@ export function useContractsListMutations({
 
   const handleCreate = useCallback(
     async (kind: ContractDocumentPackageKind) => {
+      if (!canEdit) return;
       setCreating(true);
       setCreateDirectionBusyKind(kind);
       setError(null);
@@ -64,11 +67,19 @@ export function useContractsListMutations({
         setCreating(false);
       }
     },
-    [router, setCreating, setCreateDirectionBusyKind, setCreateDirectionModalOpen, setError]
+    [
+      canEdit,
+      router,
+      setCreating,
+      setCreateDirectionBusyKind,
+      setCreateDirectionModalOpen,
+      setError,
+    ]
   );
 
   const handleCopyPackage = useCallback(
     async (packageId: string) => {
+      if (!canEdit) return;
       setCopyingPackageId(packageId);
       setError(null);
       try {
@@ -100,20 +111,20 @@ export function useContractsListMutations({
         setCopyingPackageId(null);
       }
     },
-    [load, router, setCopyingPackageId, setError]
+    [canEdit, load, router, setCopyingPackageId, setError]
   );
 
   const requestDeletePackage = useCallback(
     (pkg: ContractDocumentPackage) => {
-      if (!isPackageDraftDeletionAllowed(pkg)) return;
+      if (!canEdit || !isPackageDraftDeletionAllowed(pkg)) return;
       setPackagePendingDelete(pkg);
     },
-    [setPackagePendingDelete]
+    [canEdit, setPackagePendingDelete]
   );
 
   const handleConfirmDeletePackage = useCallback(() => {
     const pkg = packagePendingDelete;
-    if (!pkg?.id) return;
+    if (!pkg?.id || !canEdit) return;
     const id = pkg.id;
     void (async () => {
       setDeletingPackageId(id);
@@ -128,7 +139,14 @@ export function useContractsListMutations({
         setDeletingPackageId(null);
       }
     })();
-  }, [load, packagePendingDelete, setDeletingPackageId, setError, setPackagePendingDelete]);
+  }, [
+    canEdit,
+    load,
+    packagePendingDelete,
+    setDeletingPackageId,
+    setError,
+    setPackagePendingDelete,
+  ]);
 
   const deleteConfirmMessage = useMemo(
     () =>

@@ -143,6 +143,7 @@ export function ProductEditCardVariantsSection({
           </div>
           {cardVariants.length > 0 && (
             <button
+              data-admin-mutation
               type="button"
               className={styles.cardVariantRemoveButton}
               onClick={() => onCardVariantsChange(cardVariants.filter((_, i) => i !== index))}
@@ -156,6 +157,7 @@ export function ProductEditCardVariantsSection({
       ))}
       {cardVariants.length < 5 && (
         <button
+          data-admin-mutation
           type="button"
           className={styles.addAttrButton}
           onClick={() =>

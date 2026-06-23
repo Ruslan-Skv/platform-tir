@@ -37,10 +37,12 @@ import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytics.service';
+import { AdminAccessService } from '../admin-access/admin-access.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
+import { UserRole } from '@prisma/client';
+
+const KNOWLEDGE_RESOURCE_ID = 'admin.knowledge';
 
 const knowledgeUploadDir = path.join(process.cwd(), 'uploads', 'knowledge');
 
@@ -54,12 +56,6 @@ const knowledgeUploadStorage = diskStorage({
   },
 });
 
-const KNOWLEDGE_EDITOR_ROLES = ['SUPER_ADMIN'] as const;
-
-function isKnowledgeEditor(role: string | undefined): boolean {
-  return role === 'SUPER_ADMIN';
-}
-
 @Controller('admin/knowledge')
 @UseGuards(JwtAuthGuard)
 export class KnowledgeController {
@@ -67,11 +63,53 @@ export class KnowledgeController {
     private readonly knowledgeService: KnowledgeService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
     private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
+    private readonly adminAccessService: AdminAccessService,
   ) {}
 
+  private async canEditKnowledge(req: RequestWithUser): Promise<boolean> {
+    return (
+      (await this.adminAccessService.getUserEffectivePermission(
+        req.user.id,
+        req.user.role as UserRole,
+        KNOWLEDGE_RESOURCE_ID,
+      )) === 'EDIT'
+    );
+  }
+
+  private async getViewerCategoryScope(req: RequestWithUser, editorView: boolean) {
+    if (editorView) {
+      return undefined;
+    }
+    return this.adminAccessService.listAccessibleKnowledgeCategoryIds(
+      req.user.id,
+      req.user.role as UserRole,
+    );
+  }
+
+  private async assertKnowledgeCategoryAccess(
+    req: RequestWithUser,
+    categoryId: string,
+    editorView: boolean,
+  ): Promise<void> {
+    if (editorView) return;
+
+    const allowedCategoryIds = await this.getViewerCategoryScope(req, false);
+    if (!allowedCategoryIds?.includes(categoryId)) {
+      throw new ForbiddenException('Нет доступа к этой категории');
+    }
+  }
+
+  private async assertMaterialCategoryAccess(
+    req: RequestWithUser,
+    categoryId: string,
+    editorView: boolean,
+  ): Promise<void> {
+    await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
+  }
+
   @Get('stats')
-  getStats(@Request() req: RequestWithUser) {
-    if (!isKnowledgeEditor(req.user.role)) {
+  async getStats(@Request() req: RequestWithUser) {
+    if (!(await this.canEditKnowledge(req))) {
       return this.knowledgeService.getStats().then((stats) => ({
         totalMaterials: stats.publishedMaterials,
         publishedMaterials: stats.publishedMaterials,
@@ -99,7 +137,7 @@ export class KnowledgeController {
   }
 
   @Get('materials/search/suggestions')
-  searchMaterialSuggestions(
+  async searchMaterialSuggestions(
     @Request() req: RequestWithUser,
     @Query('q') q: string,
     @Query('limit') limit?: string,
@@ -107,7 +145,11 @@ export class KnowledgeController {
     @Query('moduleId') moduleId?: string,
     @Query('type') type?: string,
   ) {
-    const editorView = isKnowledgeEditor(req.user.role);
+    const editorView = await this.canEditKnowledge(req);
+    const allowedCategoryIds = await this.getViewerCategoryScope(req, editorView);
+    if (categoryId) {
+      await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
+    }
     return this.knowledgeService
       .searchMaterialSuggestions({
         q,
@@ -116,12 +158,13 @@ export class KnowledgeController {
         moduleId,
         type,
         editorView,
+        allowedCategoryIds,
       })
       .then((suggestions) => ({ suggestions }));
   }
 
   @Get('materials')
-  findAllMaterials(
+  async findAllMaterials(
     @Request() req: RequestWithUser,
     @Query('status') status?: string,
     @Query('categoryId') categoryId?: string,
@@ -131,7 +174,11 @@ export class KnowledgeController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    const editorView = isKnowledgeEditor(req.user.role);
+    const editorView = await this.canEditKnowledge(req);
+    const allowedCategoryIds = await this.getViewerCategoryScope(req, editorView);
+    if (categoryId) {
+      await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
+    }
     return this.knowledgeService.findAllMaterials({
       status,
       categoryId,
@@ -142,12 +189,16 @@ export class KnowledgeController {
       limit: limit ? parseInt(limit, 10) : 24,
       editorView,
       userId: req.user.id,
+      allowedCategoryIds,
     });
   }
 
   @Get('materials/:id')
-  findOneMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.findOneMaterial(id, isKnowledgeEditor(req.user.role), req.user.id);
+  async findOneMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
+    const editorView = await this.canEditKnowledge(req);
+    const material = await this.knowledgeService.findOneMaterial(id, editorView, req.user.id);
+    await this.assertMaterialCategoryAccess(req, material.categoryId, editorView);
+    return material;
   }
 
   @Get('materials/:id/progress')
@@ -165,23 +216,21 @@ export class KnowledgeController {
   }
 
   @Get('materials/:id/quiz')
-  getMaterialQuiz(@Param('id') id: string, @Request() req: RequestWithUser) {
+  async getMaterialQuiz(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.knowledgeQuizService.getQuizForMaterial(
       id,
       req.user.id,
-      isKnowledgeEditor(req.user.role),
+      await this.canEditKnowledge(req),
     );
   }
 
   @Put('materials/:id/quiz')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   upsertMaterialQuiz(@Param('id') id: string, @Body() dto: UpsertKnowledgeQuizDto) {
     return this.knowledgeQuizService.upsertQuiz(id, dto);
   }
 
   @Post('materials/:id/quiz/submit')
-  submitMaterialQuiz(
+  async submitMaterialQuiz(
     @Param('id') id: string,
     @Body() dto: SubmitKnowledgeQuizDto,
     @Request() req: RequestWithUser,
@@ -190,7 +239,7 @@ export class KnowledgeController {
       id,
       req.user.id,
       dto,
-      isKnowledgeEditor(req.user.role),
+      await this.canEditKnowledge(req),
     );
   }
 
@@ -232,8 +281,6 @@ export class KnowledgeController {
   }
 
   @Get('feedback')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   listPlatformFeedback(
     @Query('type') type?: KnowledgePlatformFeedbackType,
     @Query('unreadOnly') unreadOnly?: string,
@@ -248,43 +295,31 @@ export class KnowledgeController {
   }
 
   @Patch('feedback/mark-read')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   markPlatformFeedbackRead() {
     return this.knowledgeService.markPlatformFeedbackRead();
   }
 
   @Post('materials')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   createMaterial(@Body() dto: CreateKnowledgeMaterialDto, @Request() req: RequestWithUser) {
     return this.knowledgeService.createMaterial(req.user.id, dto);
   }
 
   @Patch('materials/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   updateMaterial(@Param('id') id: string, @Body() dto: UpdateKnowledgeMaterialDto) {
     return this.knowledgeService.updateMaterial(id, dto);
   }
 
   @Patch('materials/:id/publish')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   publishMaterial(@Param('id') id: string) {
     return this.knowledgeService.publishMaterial(id);
   }
 
   @Delete('materials/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   removeMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.knowledgeService.removeMaterial(id, req.user.id);
   }
 
   @Get('trash')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   listTrash(
     @Query('search') search?: string,
     @Query('page') page?: string,
@@ -298,15 +333,11 @@ export class KnowledgeController {
   }
 
   @Get('trash/count')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   getTrashCount() {
     return this.knowledgeService.getTrashCount().then((count) => ({ count }));
   }
 
   @Post('trash/:type/:id/restore')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   restoreTrashItem(
     @Param('type') type: 'material' | 'category' | 'module',
     @Param('id') id: string,
@@ -315,8 +346,20 @@ export class KnowledgeController {
   }
 
   @Get('categories')
-  findAllCategories(@Request() req: RequestWithUser) {
-    return this.knowledgeService.findAllCategories(isKnowledgeEditor(req.user.role));
+  async findAllCategories(@Request() req: RequestWithUser) {
+    const editorView = await this.canEditKnowledge(req);
+    const categories = await this.knowledgeService.findAllCategories(editorView);
+    if (editorView) {
+      return categories;
+    }
+
+    const allowedCategoryIds = new Set(
+      await this.adminAccessService.listAccessibleKnowledgeCategoryIds(
+        req.user.id,
+        req.user.role as UserRole,
+      ),
+    );
+    return categories.filter((category) => allowedCategoryIds.has(category.id));
   }
 
   @Get('target-audiences')
@@ -325,22 +368,16 @@ export class KnowledgeController {
   }
 
   @Post('target-audiences')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   createTargetAudience(@Body() dto: CreateKnowledgeTargetAudienceDto) {
     return this.knowledgeService.createTargetAudience(dto);
   }
 
   @Post('categories')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   createCategory(@Body() dto: CreateKnowledgeCategoryDto) {
     return this.knowledgeService.createCategory(dto);
   }
 
   @Post('categories/:id/import-outline')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   importCategoryOutline(
     @Param('id') id: string,
     @Body() dto: ImportKnowledgeCategoryOutlineDto,
@@ -350,51 +387,41 @@ export class KnowledgeController {
   }
 
   @Patch('categories/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   updateCategory(@Param('id') id: string, @Body() data: Partial<CreateKnowledgeCategoryDto>) {
     return this.knowledgeService.updateCategory(id, data);
   }
 
   @Delete('categories/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   removeCategory(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.knowledgeService.removeCategory(id, req.user.id);
   }
 
   @Get('modules')
-  findAllModules(@Request() req: RequestWithUser, @Query('categoryId') categoryId: string) {
+  async findAllModules(@Request() req: RequestWithUser, @Query('categoryId') categoryId: string) {
     if (!categoryId) {
       throw new BadRequestException('Укажите categoryId');
     }
-    return this.knowledgeService.findAllModules(categoryId, isKnowledgeEditor(req.user.role));
+    const editorView = await this.canEditKnowledge(req);
+    await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
+    return this.knowledgeService.findAllModules(categoryId, editorView);
   }
 
   @Post('modules')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   createModule(@Body() dto: CreateKnowledgeModuleDto) {
     return this.knowledgeService.createModule(dto);
   }
 
   @Patch('modules/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   updateModule(@Param('id') id: string, @Body() data: Partial<CreateKnowledgeModuleDto>) {
     return this.knowledgeService.updateModule(id, data);
   }
 
   @Delete('modules/:id')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   removeModule(@Param('id') id: string, @Request() req: RequestWithUser) {
     return this.knowledgeService.removeModule(id, req.user.id);
   }
 
   @Post('upload')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: knowledgeUploadStorage,
@@ -415,8 +442,6 @@ export class KnowledgeController {
   }
 
   @Post('upload-attachment')
-  @UseGuards(RolesGuard)
-  @Roles(...KNOWLEDGE_EDITOR_ROLES)
   @UseInterceptors(
     FileInterceptor('file', {
       storage: knowledgeUploadStorage,

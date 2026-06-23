@@ -104,7 +104,12 @@ export function CatalogSection() {
             </select>
           </div>
           <div className={styles.actions}>
-            <button type="submit" className={styles.saveButton} disabled={saving}>
+            <button
+              data-admin-mutation
+              type="submit"
+              className={styles.saveButton}
+              disabled={saving}
+            >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
           </div>

@@ -54,7 +54,7 @@ export function RecruitmentListPageView({ model }: RecruitmentListPageViewProps)
           <Link href="/admin/recruitment/blank" className={pageStyles.btnSecondary}>
             Бланк анкеты
           </Link>
-          <Link href="/admin/recruitment/new" className={pageStyles.btnPrimary}>
+          <Link data-admin-mutation href="/admin/recruitment/new" className={pageStyles.btnPrimary}>
             + Добавить кандидата
           </Link>
         </div>
@@ -102,7 +102,7 @@ export function RecruitmentListPageView({ model }: RecruitmentListPageViewProps)
       ) : items.length === 0 ? (
         <div className={pageStyles.emptyState}>
           <p>Кандидаты в этом отборе не найдены</p>
-          <Link href="/admin/recruitment/new" className={pageStyles.btnPrimary}>
+          <Link data-admin-mutation href="/admin/recruitment/new" className={pageStyles.btnPrimary}>
             Добавить кандидата
           </Link>
         </div>
@@ -169,6 +169,7 @@ export function RecruitmentListPageView({ model }: RecruitmentListPageViewProps)
                           Открыть
                         </button>
                         <button
+                          data-admin-mutation
                           type="button"
                           className={pageStyles.linkBtnDanger}
                           onClick={() => handleDelete(c.id, getFullName(c))}

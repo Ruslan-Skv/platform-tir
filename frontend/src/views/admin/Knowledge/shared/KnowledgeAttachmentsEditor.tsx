@@ -69,6 +69,7 @@ export function KnowledgeAttachmentsEditor({
         className={styles.hiddenInput}
       />
       <button
+        data-admin-mutation
         type="button"
         className={styles.uploadBtn}
         onClick={() => fileInputRef.current?.click()}
@@ -93,6 +94,7 @@ export function KnowledgeAttachmentsEditor({
                 {a.fileSize ? ` (${formatFileSize(a.fileSize)})` : ''}
               </a>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.removeBtn}
                 onClick={() => removeAttachment(i)}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
-import { useAuth } from '@/features/auth';
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import {
   type ContractDocumentPackageKind,
   type ContractDocumentPackageStatus,
@@ -74,8 +74,7 @@ export function usePackageDocumentEditorController({
   onWorkOrdersHubListClose,
   onWorkOrdersHubListUpdated,
 }: UsePackageDocumentEditorControllerOptions) {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
   const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
   const [windowsWorkOrderMarkupPercent, setWindowsWorkOrderMarkupPercent] = useState(
     DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT

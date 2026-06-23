@@ -398,6 +398,7 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
           <div className={styles.questionHeader}>
             <strong>Вопрос {qIndex + 1}</strong>
             <button
+              data-admin-mutation
               type="button"
               className={styles.removeBtn}
               onClick={() => setQuestions((prev) => prev.filter((q) => q.key !== question.key))}
@@ -523,7 +524,12 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
           + Вопрос
         </button>
         {questions.length > 0 || quizExists ? (
-          <button type="button" className={styles.dangerBtn} onClick={handleClear}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.dangerBtn}
+            onClick={handleClear}
+          >
             Удалить тест
           </button>
         ) : null}

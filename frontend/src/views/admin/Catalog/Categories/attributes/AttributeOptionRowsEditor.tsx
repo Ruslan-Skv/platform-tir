@@ -35,6 +35,7 @@ export function AttributeOptionRowsEditor({ rows, onChange, mod }: AttributeOpti
       <div className={mod.optionRowsHeader}>
         <span className={mod.optionRowsTitle}>Варианты списка</span>
         <button
+          data-admin-mutation
           type="button"
           className={mod.addOptionButton}
           onClick={() => onChange([...rows, ''])}
@@ -84,6 +85,7 @@ export function AttributeOptionRowsEditor({ rows, onChange, mod }: AttributeOpti
                   ↓
                 </button>
                 <button
+                  data-admin-mutation
                   type="button"
                   className={mod.optionRowRemoveBtn}
                   onClick={() => onChange(rows.filter((_, i) => i !== index))}

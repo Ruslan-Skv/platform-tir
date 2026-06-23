@@ -156,6 +156,7 @@ export function PackageContractTrashModal({
                     </span>
                   </div>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.restoreBtn}
                     disabled={restoringId === row.id}

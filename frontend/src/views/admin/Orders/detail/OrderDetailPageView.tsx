@@ -66,7 +66,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
     setCommentDraftByItemId,
     orderServiceGroups,
     isManagerRole,
-    isSuperAdmin,
+    canEdit,
     handleRefresh,
     handleStatusChange,
     handleSendBack,
@@ -125,8 +125,9 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
             >
               {refreshing ? 'Обновление…' : 'Обновить'}
             </button>
-            {isSuperAdmin && (
+            {canEdit && (
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.deleteButton}
                 onClick={() => setDeleteConfirmOpen(true)}
@@ -197,6 +198,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.modalConfirmDelete}
                 onClick={handleDeleteOrder}
@@ -275,6 +277,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
           })()}
         {order.status === 'PENDING_REVIEW' && (
           <button
+            data-admin-mutation
             type="button"
             className={styles.approveButton}
             onClick={() => handleStatusChange('APPROVED')}
@@ -285,6 +288,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         )}
         {canSendToEmail && isManagerRole && (
           <button
+            data-admin-mutation
             type="button"
             className={styles.approveButton}
             onClick={handleSendToEmail}
@@ -379,6 +383,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
           </div>
           <div className={styles.clientActions}>
             <button
+              data-admin-mutation
               type="button"
               className={styles.saveButton}
               onClick={handleSaveCustomer}
@@ -512,6 +517,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.modalConfirm}
                 onClick={handleSendBack}
@@ -698,6 +704,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
                 </label>
               </div>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.deliveryCostSaveBtn}
                 disabled={deliverySaving}

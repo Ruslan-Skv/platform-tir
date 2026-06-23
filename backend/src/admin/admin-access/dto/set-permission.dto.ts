@@ -1,12 +1,8 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsEnum, IsString } from 'class-validator';
+import { AdminResourcePermissionLevel } from '../../../common/types/admin-resource-permission-level';
 
-export enum AdminResourcePermissionLevel {
-  VIEW = 'VIEW',
-  EDIT = 'EDIT',
-  /** Явный запрет доступа (перекрывает доступ по роли) */
-  DENIED = 'DENIED',
-}
+export { AdminResourcePermissionLevel };
 
 export class SetPermissionDto {
   @ApiProperty({ description: 'ID пользователя' })

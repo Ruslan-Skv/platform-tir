@@ -77,7 +77,12 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Категории ремонта квартир</h1>
-        <button type="button" className={styles.addButton} onClick={openCreateModal}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.addButton}
+          onClick={openCreateModal}
+        >
           + Добавить категорию
         </button>
       </div>
@@ -318,6 +323,7 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
                           />
                         </label>
                         <button
+                          data-admin-mutation
                           type="button"
                           className={styles.saveButton}
                           onClick={() => handleUpdateCategory(cat.id)}

@@ -159,7 +159,12 @@ export function RecruitmentCampaignPanel({
           </select>
 
           {!activeCampaign ? (
-            <button type="button" className={pageStyles.btnPrimary} onClick={handleCreateCampaign}>
+            <button
+              data-admin-mutation
+              type="button"
+              className={pageStyles.btnPrimary}
+              onClick={handleCreateCampaign}
+            >
               + Новый отбор
             </button>
           ) : null}

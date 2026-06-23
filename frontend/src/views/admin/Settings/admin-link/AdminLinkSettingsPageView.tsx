@@ -183,7 +183,7 @@ export function AdminLinkSettingsPageView() {
         </section>
 
         <div className={styles.actions}>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
+          <button data-admin-mutation type="submit" className={styles.saveButton} disabled={saving}>
             {saving ? 'Сохранение...' : 'Сохранить'}
           </button>
           <Link href="/" target="_blank" rel="noreferrer" className={styles.previewLink}>

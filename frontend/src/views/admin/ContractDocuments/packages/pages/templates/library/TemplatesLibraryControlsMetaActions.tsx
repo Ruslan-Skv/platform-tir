@@ -44,6 +44,7 @@ export function TemplatesLibraryControlsMetaActions(
       className={`${cdTemplates.templatesLibraryMetaActions} ${cdEstimatesList.estimatesCardActions}`}
     >
       <button
+        data-admin-mutation
         type="button"
         className={cdTemplates.templatesLibraryAddButton}
         disabled={saving || showArchivedTemplates}
@@ -58,6 +59,7 @@ export function TemplatesLibraryControlsMetaActions(
       </button>
       {showArchivedTemplates ? (
         <button
+          data-admin-mutation
           type="button"
           className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
           disabled={!editingId || saving}

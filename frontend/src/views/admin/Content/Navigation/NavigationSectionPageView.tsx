@@ -120,6 +120,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 type="button"
                 className={`${styles.btn} ${styles.btnDanger}`}
                 onClick={confirmDelete}
@@ -204,6 +205,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                     </div>
                     <div className={styles.editActions}>
                       <button
+                        data-admin-mutation
                         type="button"
                         className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSmall}`}
                         onClick={saveEdit}
@@ -240,6 +242,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                   )}
                   <div className={styles.itemActions}>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                       onClick={() => startEdit(item)}
@@ -247,6 +250,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                       Изменить
                     </button>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                       onClick={() => handleDelete(item.id)}
@@ -362,6 +366,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                                 placeholder="Иконка (heroicons или URL)"
                               />
                               <button
+                                data-admin-mutation
                                 type="button"
                                 className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSmall}`}
                                 onClick={saveDropdownItem}
@@ -387,6 +392,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                               )}
                               <div className={styles.itemActions}>
                                 <button
+                                  data-admin-mutation
                                   type="button"
                                   className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                                   onClick={() => startEditDropdown(d)}
@@ -394,6 +400,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                                   Изменить
                                 </button>
                                 <button
+                                  data-admin-mutation
                                   type="button"
                                   className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                                   onClick={() => openDeleteDropdownModal(d)}
@@ -472,6 +479,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                                       placeholder="Ссылка"
                                     />
                                     <button
+                                      data-admin-mutation
                                       type="button"
                                       className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSmall}`}
                                       onClick={saveSubItem}
@@ -492,6 +500,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                                     <span className={styles.itemHref}>{s.href}</span>
                                     <div className={styles.itemActions}>
                                       <button
+                                        data-admin-mutation
                                         type="button"
                                         className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                                         onClick={() => startEditSub(s)}
@@ -499,6 +508,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                                         Изменить
                                       </button>
                                       <button
+                                        data-admin-mutation
                                         type="button"
                                         className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                                         onClick={() => openDeleteSubModal(s)}
@@ -615,6 +625,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                             placeholder="Иконка (опционально)"
                           />
                           <button
+                            data-admin-mutation
                             type="button"
                             className={`${styles.btn} ${styles.btnSuccess} ${styles.btnSmall}`}
                             onClick={() => addDropdownItem(item.id)}
@@ -635,6 +646,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
                         </div>
                       ) : (
                         <button
+                          data-admin-mutation
                           type="button"
                           className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall} ${styles.addDropdownTrigger}`}
                           onClick={() => setAddingDropdownForNavId(item.id)}
@@ -703,6 +715,7 @@ export function NavigationSectionPageView({ model }: NavigationSectionPageViewPr
           </div>
         ) : (
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall} ${styles.addNavTrigger}`}
             onClick={() => setAdding(true)}

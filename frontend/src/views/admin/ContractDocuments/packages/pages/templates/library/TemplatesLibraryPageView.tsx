@@ -34,7 +34,7 @@ export function TemplatesLibraryPageView(props: TemplatesLibraryPageModel) {
       </div>
       {!isSuperAdmin ? (
         <p className={cdTemplates.hint}>
-          Изменение библиотеки шаблонов доступно только супер-админу.
+          Режим просмотра: изменение библиотеки шаблонов недоступно без уровня «Редактирование».
         </p>
       ) : null}
 

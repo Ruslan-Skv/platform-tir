@@ -118,6 +118,7 @@ export function EstimateWorkScopeSplitModalView(props: EstimateWorkScopeSplitMod
             Отмена
           </button>
           <button
+            data-admin-mutation
             type="submit"
             data-modal-btn="primary"
             disabled={saving || treeLoading || allLineIds.length === 0}

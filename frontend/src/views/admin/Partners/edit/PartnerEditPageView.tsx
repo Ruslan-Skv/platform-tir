@@ -226,6 +226,7 @@ export function PartnerEditPageView({ model }: PartnerEditPageViewProps) {
                     placeholder="+7 (999) 123-45-67"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     onClick={() => removePhone(index)}
                     className={styles.removeButton}
@@ -235,7 +236,12 @@ export function PartnerEditPageView({ model }: PartnerEditPageViewProps) {
                   </button>
                 </div>
               ))}
-              <button type="button" onClick={addPhone} className={styles.addPhoneButton}>
+              <button
+                data-admin-mutation
+                type="button"
+                onClick={addPhone}
+                className={styles.addPhoneButton}
+              >
                 + Добавить телефон
               </button>
             </div>
@@ -259,7 +265,12 @@ export function PartnerEditPageView({ model }: PartnerEditPageViewProps) {
           <button type="button" className={styles.cancelButton} onClick={goBack} disabled={saving}>
             Отмена
           </button>
-          <button type="submit" className={styles.submitButton} disabled={saving}>
+          <button
+            data-admin-mutation
+            type="submit"
+            className={styles.submitButton}
+            disabled={saving}
+          >
             {saving ? 'Сохранение...' : isEditMode ? 'Сохранить изменения' : 'Создать партнёра'}
           </button>
         </div>

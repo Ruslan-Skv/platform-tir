@@ -106,6 +106,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
             </Link>
             {p.status !== 'PUBLISHED' && (
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.actionButton}
                 onClick={() => handlePublish(p.id)}
@@ -122,6 +123,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
               Просмотр
             </a>
             <button
+              data-admin-mutation
               type="button"
               className={styles.actionButtonDanger}
               onClick={() => setDeleteTarget({ type: 'post', id: p.id, name: p.title })}
@@ -139,7 +141,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
     <div className={styles.blogSectionPage}>
       <div className={styles.header}>
         <h1 className={styles.title}>Полезные статьи</h1>
-        <Link href="/admin/content/blog/new" className={styles.createButton}>
+        <Link data-admin-mutation href="/admin/content/blog/new" className={styles.createButton}>
           + Создать статью
         </Link>
       </div>
@@ -245,6 +247,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
                     className={styles.input}
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.saveButton}
                     onClick={() => handleUpdateCategory(cat.id, newCategoryName, newCategorySlug)}
@@ -273,6 +276,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
                   </span>
                   <div className={styles.categoryActions}>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.actionButton}
                       onClick={() => {
@@ -284,6 +288,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
                       Изменить
                     </button>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.actionButtonDanger}
                       onClick={() =>
@@ -334,6 +339,7 @@ export function BlogSectionPageView({ model }: BlogSectionPageViewProps) {
           </div>
         ) : (
           <button
+            data-admin-mutation
             type="button"
             className={styles.addCategoryButton}
             onClick={() => setShowNewCategory(true)}

@@ -144,6 +144,7 @@ export function EstimatesListPageHeader({
         {!archiveView ? (
           <>
             <button
+              data-admin-mutation
               type="button"
               className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesGenerateFromMeasurementBtn}`}
               disabled={disabled}
@@ -152,6 +153,7 @@ export function EstimatesListPageHeader({
               + Новый расчёт из замера
             </button>
             <Link
+              data-admin-mutation
               className={`${cdEstimatesList.primaryBtn} ${cdEstimatesList.estimatesCompactPrimaryLink}`}
               href="/admin/contract-documents/estimates/workspace"
               style={{ textDecoration: 'none' }}

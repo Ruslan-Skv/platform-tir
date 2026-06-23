@@ -80,6 +80,7 @@ export function PackageContractTemplateEditorPane({
             />
           </label>
           <button
+            data-admin-mutation
             type="button"
             className={cdWorkspace.primaryBtn}
             disabled={templateSaving}

@@ -152,6 +152,7 @@ export function CrmCustomerTrashModal({ isOpen, onClose, onRestored }: CrmCustom
                     </span>
                   </div>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.restoreBtn}
                     disabled={restoringId === row.id}

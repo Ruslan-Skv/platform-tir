@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
@@ -9,11 +10,10 @@ import { API_URL } from '../users-page.constants';
 import type { AdminUser } from '../users-page.types';
 
 export function useUsersPage() {
-  const { getAuthHeaders, user: currentUser } = useAuth();
+  const { getAuthHeaders } = useAuth();
+  const { canEdit: canManageUsers, canView: canViewUsers } = useAdminSectionCanEdit();
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
-
-  const canManageUsers = currentUser?.role === 'SUPER_ADMIN';
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('');
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -24,7 +24,7 @@ export function useUsersPage() {
   const [formError, setFormError] = useState<string | null>(null);
 
   const fetchUsers = useCallback(async () => {
-    if (!canManageUsers) return;
+    if (!canViewUsers) return;
     setLoading(true);
     try {
       const res = await apiFetch(`${API_URL}/users`, {
@@ -39,7 +39,7 @@ export function useUsersPage() {
     } finally {
       setLoading(false);
     }
-  }, [getAuthHeaders, canManageUsers]);
+  }, [getAuthHeaders, canViewUsers]);
 
   useEffect(() => {
     fetchUsers();
@@ -58,7 +58,7 @@ export function useUsersPage() {
   }, [users, searchQuery, roleFilter]);
 
   const handleConfirmDelete = useCallback(async () => {
-    if (!deleteUser) return;
+    if (!deleteUser || !canManageUsers) return;
     try {
       const res = await apiFetch(`${API_URL}/users/${deleteUser.id}`, {
         method: 'DELETE',
@@ -70,7 +70,7 @@ export function useUsersPage() {
     } catch (e) {
       console.error(e);
     }
-  }, [deleteUser, getAuthHeaders, fetchUsers]);
+  }, [deleteUser, getAuthHeaders, fetchUsers, canManageUsers]);
 
   return {
     canManageUsers,

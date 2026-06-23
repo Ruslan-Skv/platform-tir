@@ -305,6 +305,7 @@ export function PackageContractPaymentsConductFormSection({
                     aria-label="Текст нового варианта основания"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={cdBase.paymentsAddBasisIconBtn}
                     onClick={handleAppendBasisOption}
@@ -323,6 +324,7 @@ export function PackageContractPaymentsConductFormSection({
             </div>
             <div className={cdBase.paymentsFormActions}>
               <button
+                data-admin-mutation
                 type="button"
                 className={cdWorkspace.primaryBtn}
                 disabled={saving}

@@ -569,6 +569,7 @@ export function ProductEditAttributesSection<T extends ProductAttributesFormSlic
                     placeholder="Значение"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.removeAttrButton}
                     onClick={() => {

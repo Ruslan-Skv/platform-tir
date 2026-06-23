@@ -92,6 +92,7 @@ export function SignatoriesTable({
                         Редактировать
                       </button>
                       <button
+                        data-admin-mutation
                         type="button"
                         className={cdWorkspace.dangerBtn}
                         disabled={saving}

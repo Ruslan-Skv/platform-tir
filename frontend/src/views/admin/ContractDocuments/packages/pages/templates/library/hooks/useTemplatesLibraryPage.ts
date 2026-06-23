@@ -1,4 +1,4 @@
-import { useAuth } from '@/features/auth';
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 
 import { useTemplatesLibraryDerivedData } from './useTemplatesLibraryDerivedData';
 import { useTemplatesLibraryEditorCore } from './useTemplatesLibraryEditorCore';
@@ -14,8 +14,7 @@ import { useTemplatesLibraryTitleRenameFocus } from './useTemplatesLibraryTitleR
 import { useTemplatesLibraryUiPrefsSync } from './useTemplatesLibraryUiPrefsSync';
 
 export function useTemplatesLibraryPage() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
 
   const scope = useTemplatesLibraryPageScope();
   const {

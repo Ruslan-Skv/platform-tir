@@ -149,7 +149,12 @@ export function KnowledgePlatformFeedbackButton({
               >
                 Отмена
               </button>
-              <button type="submit" data-modal-btn="primary" disabled={submitting || !text.trim()}>
+              <button
+                data-admin-mutation
+                type="submit"
+                data-modal-btn="primary"
+                disabled={submitting || !text.trim()}
+              >
                 {submitting ? 'Отправка…' : 'Отправить'}
               </button>
             </div>

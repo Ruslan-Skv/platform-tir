@@ -54,6 +54,7 @@ export function ExecutorProfilesTable({
                       Редактировать
                     </button>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={cdWorkspace.dangerBtn}
                       disabled={saving}

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { useAuth } from '@/features/auth';
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import {
   getContractDocumentWindowsWorkOrderMarkup,
   putContractDocumentWindowsWorkOrderMarkup,
@@ -12,8 +12,7 @@ import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../../families/pro
 import { formatMarkupPercentInput, parseMarkupPercentInput } from '../markupSettingsUtils';
 
 export function useMarkupSettingsPage() {
-  const { user } = useAuth();
-  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [markupInput, setMarkupInput] = useState(

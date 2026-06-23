@@ -136,6 +136,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
         </div>
         <div className={styles.pageHeaderActions}>
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.cancelButton} ${styles.copyProductButton}`}
             onClick={() =>

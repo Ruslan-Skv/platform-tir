@@ -159,6 +159,7 @@ export function ProductSpecificationTabContent({
                   ) : null}
                   {fileUrl.trim() ? (
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${cdWorkspace.secondaryBtn} ${cdHubModals.windowsSpecFileRemoveBtn}`}
                       disabled={disabled || uploading}

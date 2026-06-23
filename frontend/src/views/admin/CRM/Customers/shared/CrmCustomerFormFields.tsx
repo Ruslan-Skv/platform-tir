@@ -391,6 +391,7 @@ export function CrmCustomerFormFields({
                   ) : null}
                 </div>
                 <button
+                  data-admin-mutation
                   type="button"
                   data-modal-btn="secondary"
                   className={formStyles.phoneRemove}
@@ -404,6 +405,7 @@ export function CrmCustomerFormFields({
             );
           })}
           <button
+            data-admin-mutation
             type="button"
             data-modal-btn="secondary"
             className={formStyles.addPhone}
@@ -453,6 +455,7 @@ export function CrmCustomerFormFields({
                   ) : null}
                 </div>
                 <button
+                  data-admin-mutation
                   type="button"
                   data-modal-btn="secondary"
                   className={formStyles.phoneRemove}
@@ -465,6 +468,7 @@ export function CrmCustomerFormFields({
             );
           })}
           <button
+            data-admin-mutation
             type="button"
             data-modal-btn="secondary"
             className={formStyles.addPhone}

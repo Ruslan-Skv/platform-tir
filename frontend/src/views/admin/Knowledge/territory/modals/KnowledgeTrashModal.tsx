@@ -163,6 +163,7 @@ export function KnowledgeTrashModal({ isOpen, onClose, onRestored }: KnowledgeTr
                       </span>
                     </div>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={styles.restoreBtn}
                       disabled={restoringKey === restoreKey}

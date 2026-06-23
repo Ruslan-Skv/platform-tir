@@ -155,7 +155,12 @@ export function UserCabinetSection() {
             </label>
           </div>
           <div className={styles.actions}>
-            <button type="submit" className={styles.saveButton} disabled={saving}>
+            <button
+              data-admin-mutation
+              type="submit"
+              className={styles.saveButton}
+              disabled={saving}
+            >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
             <Link href="/profile" target="_blank" rel="noreferrer" className={styles.previewLink}>

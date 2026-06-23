@@ -316,6 +316,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                         ))}
                       </select>
                       <button
+                        data-admin-mutation
                         type="button"
                         className={styles.directionRowAdd}
                         onClick={() => insertDirectionRowAfter(rowIndex)}
@@ -327,6 +328,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                       </button>
                       {rowIndex > 0 ? (
                         <button
+                          data-admin-mutation
                           type="button"
                           className={styles.directionRowRemove}
                           onClick={() => removeDirectionRow(rowIndex)}
@@ -486,6 +488,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                     </>
                   ) : (
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.secondaryButton} ${styles.completeMeasurementButton}`}
                       onClick={() => void handleSaveResultTab(activeResultTab)}
@@ -579,6 +582,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                       );
                     })}
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.secondaryButton} ${styles.roomTabsAddButton}`}
                       onClick={addRoom}

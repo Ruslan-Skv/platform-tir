@@ -109,6 +109,7 @@ export function UsersPageView({ model }: UsersPageViewProps) {
               </button>
             )}
             <button
+              data-admin-mutation
               type="button"
               className={styles.actionBtn}
               onClick={(e) => {
@@ -119,6 +120,7 @@ export function UsersPageView({ model }: UsersPageViewProps) {
               Изменить
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={`${styles.actionBtn} ${styles.actionBtnDanger}`}
               onClick={(e) => {
@@ -157,7 +159,11 @@ export function UsersPageView({ model }: UsersPageViewProps) {
           <h1 className={styles.title}>Управление пользователями</h1>
           <span className={styles.count}>{filteredUsers.length} пользователей</span>
         </div>
-        <button className={styles.addButton} onClick={() => setCreateModalOpen(true)}>
+        <button
+          data-admin-mutation
+          className={styles.addButton}
+          onClick={() => setCreateModalOpen(true)}
+        >
           + Добавить пользователя
         </button>
       </div>

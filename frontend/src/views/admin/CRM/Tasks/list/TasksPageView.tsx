@@ -164,6 +164,7 @@ export function TasksPageView({ model }: TasksPageViewProps) {
               ✏️
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={`${styles.smallBtn} ${styles.danger}`}
               onClick={(e) => {
@@ -188,7 +189,12 @@ export function TasksPageView({ model }: TasksPageViewProps) {
           <h1 className={styles.title}>Задачи</h1>
           <span className={styles.count}>{total} задач</span>
         </div>
-        <button type="button" className={styles.addButton} onClick={handleOpenCreate}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.addButton}
+          onClick={handleOpenCreate}
+        >
           + Добавить задачу
         </button>
       </div>
@@ -380,6 +386,7 @@ export function TasksPageView({ model }: TasksPageViewProps) {
               Отмена
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={styles.submitBtn}
               onClick={handleSaveTask}

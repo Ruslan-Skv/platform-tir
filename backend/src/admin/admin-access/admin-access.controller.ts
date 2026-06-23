@@ -22,9 +22,26 @@ export class AdminAccessController {
 
   @Get('my-resources')
   @Roles(...ADMIN_ROLES)
-  @ApiOperation({ summary: 'Ресурсы, к которым имеет доступ текущий пользователь (для сайдбара)' })
+  @ApiOperation({
+    summary: 'Ресурсы админки с уровнем доступа (VIEW — только просмотр, EDIT — редактирование)',
+  })
   getMyAccessibleResources(@Request() req: RequestWithUser) {
-    return this.service.getMyAccessibleResources(req.user.id, req.user.role as UserRole);
+    return this.service.getMyResourcePermissions(req.user.id, req.user.role as UserRole);
+  }
+
+  @Get('my-resources/:resourceId/effective')
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Итоговый уровень доступа текущего пользователя к ресурсу' })
+  async getMyResourceEffective(
+    @Request() req: RequestWithUser,
+    @Param('resourceId') resourceId: string,
+  ) {
+    const permission = await this.service.getUserEffectivePermission(
+      req.user.id,
+      req.user.role as UserRole,
+      resourceId,
+    );
+    return { resourceId, permission };
   }
 
   @Get('users')

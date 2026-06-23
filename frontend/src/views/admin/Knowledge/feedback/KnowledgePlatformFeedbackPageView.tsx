@@ -17,9 +17,9 @@ type KnowledgePlatformFeedbackPageViewProps = {
 export function KnowledgePlatformFeedbackPageView({
   model,
 }: KnowledgePlatformFeedbackPageViewProps) {
-  const { items, loading, error, typeFilter, setTypeFilter, load, canView } = model;
+  const { items, loading, error, typeFilter, setTypeFilter, load, canEdit } = model;
 
-  if (!canView) {
+  if (!canEdit) {
     return null;
   }
 

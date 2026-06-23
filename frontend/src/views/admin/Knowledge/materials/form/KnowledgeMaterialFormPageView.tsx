@@ -144,6 +144,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
           {isSecondaryUnpublish ? (
             <>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.unpublishButton}
                 onClick={handleUnpublishClick}
@@ -229,7 +230,12 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 {uploadingThumbnail ? '…' : 'Загрузить'}
               </button>
               {thumbnailUrl ? (
-                <button type="button" className={styles.clearBtn} onClick={handleRemoveThumbnail}>
+                <button
+                  data-admin-mutation
+                  type="button"
+                  className={styles.clearBtn}
+                  onClick={handleRemoveThumbnail}
+                >
                   Удалить обложку
                 </button>
               ) : null}
@@ -237,6 +243,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 <div className={styles.thumbnailPreviewInline}>
                   <img src={publicUploadUrl(thumbnailUrl)} alt="" />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.thumbnailRemoveBtn}
                     onClick={handleRemoveThumbnail}

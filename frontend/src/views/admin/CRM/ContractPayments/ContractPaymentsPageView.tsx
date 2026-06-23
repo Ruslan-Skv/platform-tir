@@ -328,6 +328,7 @@ export function ContractPaymentsPageView({ model }: ContractPaymentsPageViewProp
               <h3 className={styles.sectionTitle}>Прочие расходы (бытовые нужды)</h3>
               {!isAllOffices && (
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.addBtn}
                   onClick={() => setOtherExpenseModalOpen(true)}
@@ -485,6 +486,7 @@ export function ContractPaymentsPageView({ model }: ContractPaymentsPageViewProp
               Отмена
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={styles.submitBtn}
               onClick={handleAddOtherExpense}
@@ -554,6 +556,7 @@ export function ContractPaymentsPageView({ model }: ContractPaymentsPageViewProp
               Отмена
             </button>
             <button
+              data-admin-mutation
               type="button"
               className={styles.submitBtn}
               onClick={handleAddIncassation}

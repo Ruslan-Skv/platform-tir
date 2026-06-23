@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { useAuth } from '@/features/auth';
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import {
   type KnowledgePlatformFeedback,
   type KnowledgePlatformFeedbackType,
@@ -12,12 +12,11 @@ import {
   markKnowledgePlatformFeedbackRead,
 } from '@/shared/api/admin-knowledge';
 
-import { isKnowledgeEditor } from '../../shared/knowledge-utils';
+import { KNOWLEDGE_RESOURCE_ID } from '../../shared/knowledge-utils';
 
 export function useKnowledgePlatformFeedbackPage() {
-  const { user } = useAuth();
   const router = useRouter();
-  const canView = isKnowledgeEditor(user?.role);
+  const { canEdit } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
 
   const [items, setItems] = useState<KnowledgePlatformFeedback[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,15 +41,15 @@ export function useKnowledgePlatformFeedbackPage() {
   }, [typeFilter]);
 
   useEffect(() => {
-    if (!canView) {
+    if (!canEdit) {
       router.replace('/admin/knowledge');
       return;
     }
     void load();
-  }, [canView, load, router]);
+  }, [canEdit, load, router]);
 
   return {
-    canView,
+    canEdit,
     items,
     loading,
     error,

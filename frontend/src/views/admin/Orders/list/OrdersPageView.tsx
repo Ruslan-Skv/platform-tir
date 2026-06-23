@@ -229,7 +229,9 @@ export function OrdersPageView({ model }: OrdersPageViewProps) {
       {selectedIds.length > 0 && (
         <div className={styles.bulkActions}>
           <span>Выбрано: {selectedIds.length}</span>
-          <button className={styles.bulkButton}>Изменить статус</button>
+          <button data-admin-mutation className={styles.bulkButton}>
+            Изменить статус
+          </button>
           <button className={styles.bulkButton}>Экспорт</button>
         </div>
       )}

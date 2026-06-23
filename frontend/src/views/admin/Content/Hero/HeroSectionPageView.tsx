@@ -151,6 +151,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
             <div key={slide.id} className={styles.slideCard}>
               <img src={imageUrl(slide.imageUrl)} alt="Слайд" className={styles.slidePreview} />
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.deleteBtn}
                 onClick={() => setSlideToDelete(slide.id)}
@@ -168,6 +169,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
               onChange={handleUploadSlide}
             />
             <button
+              data-admin-mutation
               type="button"
               className={styles.uploadBtn}
               disabled={uploading}
@@ -244,6 +246,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
                     placeholder="Текст"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.smallBtn}
                     onClick={() => handleUpdateFeature(f.id, f.icon, f.title)}
@@ -274,6 +277,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
                     Редактировать
                   </button>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.smallBtnDanger}
                     onClick={() => handleDeleteFeature(f.id)}
@@ -340,6 +344,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
 
       <div className={styles.saveBlock}>
         <button
+          data-admin-mutation
           type="button"
           className={styles.saveBtn}
           onClick={handleSaveBlock}
@@ -370,6 +375,7 @@ export function HeroSectionPageView({ model }: HeroSectionPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 type="button"
                 className={styles.dangerBtn}
                 onClick={() => handleDeleteSlide(slideToDelete)}

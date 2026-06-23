@@ -569,6 +569,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Комплектующие</h2>
         <button
+          data-admin-mutation
           type="button"
           className={styles.addButton}
           onClick={() => {
@@ -716,7 +717,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
             </div>
           </div>
           <div className={styles.formActions}>
-            <button type="submit" className={styles.saveButton}>
+            <button data-admin-mutation type="submit" className={styles.saveButton}>
               {editingId ? 'Сохранить изменения' : 'Добавить'}
             </button>
             <button type="button" onClick={handleCancel} className={styles.cancelButton}>
@@ -753,6 +754,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                         <img src={editData.image} alt={editData.type} />
                         {isEditing && (
                           <button
+                            data-admin-mutation
                             type="button"
                             onClick={() => removeImageInline(component.id)}
                             className={styles.removeImageButton}
@@ -932,6 +934,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                     {isEditing ? (
                       <>
                         <button
+                          data-admin-mutation
                           type="button"
                           onClick={() => handleSaveInline(component.id)}
                           className={styles.saveButton}
@@ -958,6 +961,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                           <EditIcon size={16} tone="inherit" />
                         </button>
                         <button
+                          data-admin-mutation
                           type="button"
                           onClick={() => handleDelete(component.id)}
                           className={styles.deleteButton}

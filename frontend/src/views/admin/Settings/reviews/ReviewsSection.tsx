@@ -179,7 +179,7 @@ export function ReviewsSection() {
             />
             <label htmlFor="requireModeration">Требовать модерацию перед публикацией</label>
           </div>
-          <button type="submit" className={styles.saveButton} disabled={saving}>
+          <button data-admin-mutation type="submit" className={styles.saveButton} disabled={saving}>
             {saving ? 'Сохранение...' : 'Сохранить настройки'}
           </button>
         </form>
@@ -233,6 +233,7 @@ export function ReviewsSection() {
                     </button>
                   )}
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.deleteButton}
                     onClick={() => handleDelete(r.id)}

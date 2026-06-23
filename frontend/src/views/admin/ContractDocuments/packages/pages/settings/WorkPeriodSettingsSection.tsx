@@ -54,6 +54,7 @@ export function WorkPeriodSettingsSection(params: UseWorkPeriodSettingsSectionPa
           {isSuperAdmin ? (
             <div className={cdHub.packageSettingsActions}>
               <button
+                data-admin-mutation
                 type="button"
                 className={cdWorkspace.primaryBtn}
                 disabled={saving || parsedDefaultDays === null}

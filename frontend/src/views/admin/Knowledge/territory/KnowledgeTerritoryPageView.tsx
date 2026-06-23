@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -27,6 +28,8 @@ import {
   PublishIcon,
   TrainingStatisticsIcon,
 } from '@/shared/ui/icons';
+import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
+import { AccessModal } from '@/widgets/admin/Sidebar/AccessModal';
 
 import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
 import { KnowledgePlatformFeedbackButton } from '../shared/KnowledgePlatformFeedbackButton';
@@ -357,6 +360,10 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     feedbackUnreadCount,
     handleTrashRestored,
     persistTerritoryFilters,
+    isSuperAdmin,
+    categoryAccessModal,
+    setCategoryAccessModal,
+    openCategoryAccessModal,
   } = model;
 
   const router = useRouter();
@@ -489,7 +496,11 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                 title="Корзина базы знаний"
                 aria-label="Корзина базы знаний"
               />
-              <Link href="/admin/knowledge/materials/new" className={styles.createButton}>
+              <Link
+                data-admin-mutation
+                href="/admin/knowledge/materials/new"
+                className={styles.createButton}
+              >
                 + Новый материал
               </Link>
             </>
@@ -679,6 +690,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                               />
                               <div className={styles.categoryEditActions}>
                                 <button
+                                  data-admin-mutation
                                   type="button"
                                   onClick={() => handleUpdateModule(mod.id)}
                                   className={styles.saveCategoryBtn}
@@ -857,6 +869,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           />
                           <div className={styles.categoryEditActions}>
                             <button
+                              data-admin-mutation
                               type="button"
                               onClick={() => handleUpdateCategory(cat.id)}
                               className={styles.saveCategoryBtn}
@@ -911,6 +924,15 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                                   ↓
                                 </button>
                               </div>
+                            ) : null}
+                            {isSuperAdmin ? (
+                              <AdminTableIconButton
+                                aria-label={`Доступ к категории «${cat.name}»`}
+                                title={`Доступ: настройки видимости категории «${cat.name}» для ролей и пользователей`}
+                                onClick={() => openCategoryAccessModal(cat)}
+                              >
+                                <AdminAccessIcon size={16} />
+                              </AdminTableIconButton>
                             ) : null}
                             <AdminTableIconButton
                               aria-label="Изменить категорию"
@@ -1131,6 +1153,17 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
         onClose={() => setTrashOpen(false)}
         onRestored={handleTrashRestored}
       />
+
+      {categoryAccessModal && typeof document !== 'undefined'
+        ? createPortal(
+            <AccessModal
+              resourceId={categoryAccessModal.resourceId}
+              resourceLabel={categoryAccessModal.label}
+              onClose={() => setCategoryAccessModal(null)}
+            />,
+            document.body
+          )
+        : null}
     </div>
   );
 }

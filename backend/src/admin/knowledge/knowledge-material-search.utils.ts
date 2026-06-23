@@ -18,8 +18,9 @@ export function buildKnowledgeMaterialListBaseWhere(params: {
   categoryId?: string;
   moduleId?: string;
   type?: string;
+  allowedCategoryIds?: string[];
 }): Prisma.KnowledgeMaterialWhereInput {
-  const { editorView = false, status, categoryId, moduleId, type } = params;
+  const { editorView = false, status, categoryId, moduleId, type, allowedCategoryIds } = params;
 
   const where: Prisma.KnowledgeMaterialWhereInput = {
     deletedAt: null,
@@ -41,6 +42,8 @@ export function buildKnowledgeMaterialListBaseWhere(params: {
 
   if (categoryId) {
     where.categoryId = categoryId;
+  } else if (allowedCategoryIds) {
+    where.categoryId = allowedCategoryIds.length > 0 ? { in: allowedCategoryIds } : { in: [] };
   }
 
   if (moduleId) {

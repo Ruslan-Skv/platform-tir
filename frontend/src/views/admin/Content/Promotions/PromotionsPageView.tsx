@@ -21,7 +21,11 @@ export function PromotionsPageView({ model }: PromotionsPageViewProps) {
       <div className={styles.header}>
         <h1 className={styles.title}>Акции</h1>
         <div className={styles.headerActions}>
-          <Link href="/admin/content/promotions/new" className={styles.createButton}>
+          <Link
+            data-admin-mutation
+            href="/admin/content/promotions/new"
+            className={styles.createButton}
+          >
             + Добавить акцию
           </Link>
           <Link href="/promotions" target="_blank" rel="noreferrer" className={styles.viewLink}>
@@ -56,6 +60,7 @@ export function PromotionsPageView({ model }: PromotionsPageViewProps) {
                     Редактировать
                   </Link>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.deleteButton}
                     onClick={() => setDeleteTarget({ id: promo.id, title: promo.title })}

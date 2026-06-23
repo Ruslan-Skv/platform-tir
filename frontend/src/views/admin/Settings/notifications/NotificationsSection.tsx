@@ -861,6 +861,7 @@ export function NotificationsSection() {
                           <li key={s.id} className={styles.soundItem}>
                             <span>{s.name}</span>
                             <button
+                              data-admin-mutation
                               type="button"
                               className={styles.deleteSoundBtn}
                               onClick={() => handleDeleteSound(s.id)}
@@ -958,7 +959,7 @@ export function NotificationsSection() {
             </>
           )}
 
-          <button type="submit" className={styles.saveButton} disabled={saving}>
+          <button data-admin-mutation type="submit" className={styles.saveButton} disabled={saving}>
             {saving ? 'Сохранение...' : 'Сохранить настройки'}
           </button>
         </form>

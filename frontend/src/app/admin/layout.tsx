@@ -6,6 +6,7 @@ import { Provider } from 'react-redux';
 import { usePathname, useRouter } from 'next/navigation';
 
 import { AdminWebPushManager } from '@/features/admin-push';
+import { AdminSectionAccessShell } from '@/features/admin/components/AdminSectionAccessShell';
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { getOrCreateStore } from '@/features/theme';
@@ -141,7 +142,9 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         >
           <AdminPresenceHeartbeat />
           <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
-          <main className={styles.content}>{children}</main>
+          <main className={styles.content}>
+            <AdminSectionAccessShell>{children}</AdminSectionAccessShell>
+          </main>
         </div>
       </div>
     </AdminAccessibleResourcesProvider>

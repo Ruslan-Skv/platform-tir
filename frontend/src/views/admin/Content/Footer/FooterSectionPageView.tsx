@@ -196,6 +196,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
         </div>
         <div className={styles.saveBlock}>
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.btn} ${styles.btnPrimary}`}
             onClick={handleSaveBlock}
@@ -254,6 +255,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                 ) : (
                   <>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                       onClick={() => setEditingSection(section.id)}
@@ -261,6 +263,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                       Изменить
                     </button>
                     <button
+                      data-admin-mutation
                       type="button"
                       className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                       onClick={() => handleDeleteSection(section.id)}
@@ -346,6 +349,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                       <span className={styles.linkName}>{link.name}</span>
                       <span className={styles.linkHref}>{link.href}</span>
                       <button
+                        data-admin-mutation
                         type="button"
                         className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                         onClick={() => setEditingLink(link.id)}
@@ -353,6 +357,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                         Изменить
                       </button>
                       <button
+                        data-admin-mutation
                         type="button"
                         className={`${styles.btn} ${styles.btnDanger} ${styles.btnSmall}`}
                         onClick={() => handleDeleteLink(section.id, link.id)}
@@ -400,6 +405,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
               </div>
             ) : (
               <button
+                data-admin-mutation
                 type="button"
                 className={`${styles.btn} ${styles.btnSecondary} ${styles.btnSmall}`}
                 onClick={() => setAddingLinkToSection(section.id)}
@@ -418,6 +424,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
             placeholder="Название новой секции"
           />
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.btn} ${styles.btnPrimary} ${styles.btnSmall}`}
             onClick={handleAddSection}

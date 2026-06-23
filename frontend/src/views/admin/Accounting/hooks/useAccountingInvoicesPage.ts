@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import {
   type ContractDocumentPackage,
   getContractDocumentPackage,
@@ -31,6 +32,7 @@ import { packagePaymentBasisOptionByKey } from '@/views/admin/ContractDocuments/
 import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageActPrintTabs';
 
 export function useAccountingInvoicesPage() {
+  const { canEdit } = useAdminSectionCanEdit();
   const [rows, setRows] = useState<ContractDocumentPaymentInvoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -124,6 +126,7 @@ export function useAccountingInvoicesPage() {
   }, [issueOpen, selectedPackageId, loadSelectedPackageForIssue]);
 
   const openIssueModal = async () => {
+    if (!canEdit) return;
     setIssueOpen(true);
     setPackagesLoading(true);
     try {
@@ -156,6 +159,7 @@ export function useAccountingInvoicesPage() {
     conduct: PackageInvoiceConductDraft,
     option: NonNullable<ReturnType<typeof packagePaymentBasisOptionByKey>>
   ) => {
+    if (!canEdit) return;
     const amountNum = Number.parseFloat(conduct.amount.replace(',', '.'));
     if (!Number.isFinite(amountNum) || amountNum <= 0) {
       setError('Укажите корректную сумму счёта');
@@ -252,6 +256,7 @@ export function useAccountingInvoicesPage() {
     handleIssueInvoice,
     handlePrintInvoice,
     handleDownloadInvoice,
+    canEdit,
   };
 }
 

@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
@@ -11,6 +12,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 
 export function useSupportChatPage() {
   const { getAuthHeaders, user } = useAuth();
+  const { canEdit } = useAdminSectionCanEdit();
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -77,7 +79,7 @@ export function useSupportChatPage() {
 
   const sendMessage = async () => {
     const text = input.trim();
-    if (!text || !selected || sending) return;
+    if (!text || !selected || sending || !canEdit) return;
     setSending(true);
     setInput('');
     try {
@@ -114,6 +116,7 @@ export function useSupportChatPage() {
     loadingMessages,
     sending,
     sendMessage,
+    canEdit,
   };
 }
 

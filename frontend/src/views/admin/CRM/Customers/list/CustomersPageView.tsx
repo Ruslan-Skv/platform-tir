@@ -161,6 +161,7 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
         </div>
         <div className={styles.headerActions}>
           <button
+            data-admin-mutation
             type="button"
             className={styles.addButton}
             onClick={() => setAddCustomerOpen(true)}

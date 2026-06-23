@@ -92,7 +92,7 @@ export function CheckoutSettingsPageView() {
           <p className={message.error ? styles.msgError : styles.msgSuccess}>{message.text}</p>
         )}
 
-        <button type="submit" className={styles.submit} disabled={saving}>
+        <button data-admin-mutation type="submit" className={styles.submit} disabled={saving}>
           {saving ? 'Сохранение…' : 'Сохранить'}
         </button>
       </form>

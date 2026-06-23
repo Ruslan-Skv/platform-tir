@@ -42,6 +42,7 @@ export function ContractsListPageHeader({
       </div>
       <div className={cdChrome.headerButtonsRow}>
         <button
+          data-admin-mutation
           type="button"
           className={cdChrome.contractsListHeaderAddBtn}
           disabled={actionsBusy || loading}

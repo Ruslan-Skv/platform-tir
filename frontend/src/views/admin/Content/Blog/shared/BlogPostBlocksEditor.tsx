@@ -117,7 +117,12 @@ export function BlogPostBlocksEditor({ blocks, onChange, onError }: BlogPostBloc
   return (
     <div className={styles.root}>
       <div className={styles.toolbar}>
-        <button type="button" className={styles.addBlockButton} onClick={addBlock}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.addBlockButton}
+          onClick={addBlock}
+        >
           + Добавить блок
         </button>
       </div>
@@ -157,6 +162,7 @@ export function BlogPostBlocksEditor({ blocks, onChange, onError }: BlogPostBloc
                   ↓
                 </button>
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.removeBlockButton}
                   onClick={() => removeBlock(block.clientId)}
@@ -180,6 +186,7 @@ export function BlogPostBlocksEditor({ blocks, onChange, onError }: BlogPostBloc
               <div className={styles.imagesHeader}>
                 <span>Фотоматериалы</span>
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.addImageButton}
                   onClick={() => addImageRow(block.clientId)}

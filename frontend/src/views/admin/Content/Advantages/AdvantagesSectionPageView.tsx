@@ -168,6 +168,7 @@ export function AdvantagesSectionPageView({ model }: AdvantagesSectionPageViewPr
                     placeholder="Описание"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.smallBtn}
                     onClick={() =>
@@ -203,6 +204,7 @@ export function AdvantagesSectionPageView({ model }: AdvantagesSectionPageViewPr
                     Редактировать
                   </button>
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.smallBtnDanger}
                     onClick={() => handleDeleteItem(item.id)}
@@ -276,6 +278,7 @@ export function AdvantagesSectionPageView({ model }: AdvantagesSectionPageViewPr
 
       <div className={styles.saveBlock}>
         <button
+          data-admin-mutation
           type="button"
           className={styles.saveBtn}
           onClick={handleSaveBlock}

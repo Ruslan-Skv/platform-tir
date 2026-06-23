@@ -97,6 +97,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
             <div className={styles.sectionActions}>
               {categoryAttributes.length > 1 && (
                 <button
+                  data-admin-mutation
                   className={styles.normalizeOrderButton}
                   onClick={normalizeCategoryAttributesOrder}
                   disabled={reordering}
@@ -107,6 +108,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
               )}
               {category?.parentId && (
                 <button
+                  data-admin-mutation
                   className={styles.inheritButton}
                   onClick={handleInheritFromParent}
                   disabled={inheriting}
@@ -117,10 +119,18 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                     : `📥 Унаследовать от "${category.parent?.name || 'родителя'}"`}
                 </button>
               )}
-              <button className={styles.addButton} onClick={() => setShowAddModal(true)}>
+              <button
+                data-admin-mutation
+                className={styles.addButton}
+                onClick={() => setShowAddModal(true)}
+              >
                 + Добавить существующий
               </button>
-              <button className={styles.createButton} onClick={() => setShowCreateModal(true)}>
+              <button
+                data-admin-mutation
+                className={styles.createButton}
+                onClick={() => setShowCreateModal(true)}
+              >
                 + Создать новый
               </button>
             </div>
@@ -232,6 +242,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                         Убрать
                       </button>
                       <button
+                        data-admin-mutation
                         className={styles.deleteButton}
                         onClick={() => handleDeleteAttribute(ca.attributeId, ca.attribute.name)}
                         title="Удалить атрибут полностью"
@@ -329,6 +340,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                     Отмена
                   </button>
                   <button
+                    data-admin-mutation
                     className={styles.saveButton}
                     onClick={handleAddAttributes}
                     disabled={saving || selectedAttributeIds.length === 0}
@@ -477,6 +489,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 className={styles.saveButton}
                 onClick={handleCreateAttribute}
                 disabled={saving}
@@ -588,7 +601,12 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
               <button className={styles.cancelButton} onClick={() => setShowEditModal(false)}>
                 Отмена
               </button>
-              <button className={styles.saveButton} onClick={handleEditAttribute} disabled={saving}>
+              <button
+                data-admin-mutation
+                className={styles.saveButton}
+                onClick={handleEditAttribute}
+                disabled={saving}
+              >
                 {saving ? 'Сохранение...' : 'Сохранить'}
               </button>
             </div>

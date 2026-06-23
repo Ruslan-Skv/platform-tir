@@ -18,8 +18,12 @@ export interface ModalProps {
   compactOnMobile?: boolean;
   /** Доп. класс для панели (например компактная мобильная модалка) */
   className?: string;
+  /** Доп. класс для области контента под заголовком */
+  contentClassName?: string;
   /** Доп. класс для заголовка */
   titleClassName?: string;
+  /** Не центрировать по вертикали — панель у верхнего края (стабильнее при смене высоты) */
+  alignTop?: boolean;
 }
 
 export const Modal: React.FC<ModalProps> = ({
@@ -32,7 +36,9 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   compactOnMobile = false,
   className,
+  contentClassName,
   titleClassName,
+  alignTop = false,
 }) => {
   const sizeClasses = {
     sm: styles.sizeSm,
@@ -46,7 +52,7 @@ export const Modal: React.FC<ModalProps> = ({
       <div className={styles.backdrop} />
 
       <div className={styles.container}>
-        <div className={styles.center}>
+        <div className={`${styles.center} ${alignTop ? styles.centerAlignTop : ''}`.trim()}>
           <Dialog.Panel
             className={`${styles.panel} ${sizeClasses[size]} ${compactOnMobile ? styles.panelCompactMobile : ''} ${className ?? ''}`.trim()}
           >
@@ -88,7 +94,7 @@ export const Modal: React.FC<ModalProps> = ({
               </div>
             )}
 
-            <div className={styles.content}>{children}</div>
+            <div className={`${styles.content} ${contentClassName ?? ''}`.trim()}>{children}</div>
           </Dialog.Panel>
         </div>
       </div>

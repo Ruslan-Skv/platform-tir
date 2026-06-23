@@ -1,5 +1,6 @@
 'use client';
 
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -16,11 +17,14 @@ import {
   formatDate,
 } from './products-page.constants';
 
+const CATALOG_PRODUCTS_RESOURCE = 'admin.catalog.products';
+
 type ProductsPageViewProps = {
   model: ProductsPageModel;
 };
 
 export function ProductsPageView({ model }: ProductsPageViewProps) {
+  const { canEdit } = useAdminResourcePermission(CATALOG_PRODUCTS_RESOURCE);
   const {
     categoryId,
     router,
@@ -408,45 +412,47 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     })
     .filter((col): col is NonNullable<typeof col> => col !== null);
 
-  const actionColumn = {
-    key: 'actions',
-    title: '',
-    width: '60px',
-    render: (product: Product) => (
-      <div className={styles.actions}>
-        {editMode && hasEdits(product.id) && (
-          <span className={styles.editedIndicator} title="Есть изменения">
-            ●
-          </span>
-        )}
-        <AdminTableIconButton
-          onClick={(e) => {
-            e.stopPropagation();
-            navigateToProductEdit(product.id);
-          }}
-          title="Редактировать"
-          aria-label="Редактировать товар"
-        >
-          <EditIcon />
-        </AdminTableIconButton>
-        <AdminTableIconButton
-          onClick={(e) => {
-            e.stopPropagation();
-            const copyUrl = `/admin/catalog/products/new?copyFrom=${product.id}${
-              persistedCategoryId ? `&fromCategory=${persistedCategoryId}` : ''
-            }`;
-            router.push(copyUrl);
-          }}
-          title="Копировать товар"
-          aria-label="Копировать товар"
-        >
-          <CopyIcon />
-        </AdminTableIconButton>
-      </div>
-    ),
-  };
+  const actionColumn = canEdit
+    ? {
+        key: 'actions',
+        title: '',
+        width: '60px',
+        render: (product: Product) => (
+          <div className={styles.actions}>
+            {editMode && hasEdits(product.id) && (
+              <span className={styles.editedIndicator} title="Есть изменения">
+                ●
+              </span>
+            )}
+            <AdminTableIconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                navigateToProductEdit(product.id);
+              }}
+              title="Редактировать"
+              aria-label="Редактировать товар"
+            >
+              <EditIcon />
+            </AdminTableIconButton>
+            <AdminTableIconButton
+              onClick={(e) => {
+                e.stopPropagation();
+                const copyUrl = `/admin/catalog/products/new?copyFrom=${product.id}${
+                  persistedCategoryId ? `&fromCategory=${persistedCategoryId}` : ''
+                }`;
+                router.push(copyUrl);
+              }}
+              title="Копировать товар"
+              aria-label="Копировать товар"
+            >
+              <CopyIcon />
+            </AdminTableIconButton>
+          </div>
+        ),
+      }
+    : null;
 
-  const columns = [...baseColumns, ...dynamicColumns, actionColumn];
+  const columns = [...baseColumns, ...dynamicColumns, ...(actionColumn ? [actionColumn] : [])];
 
   return (
     <div className={styles.page}>
@@ -578,158 +584,166 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
               </div>
             )}
           </div>
-          <button
-            className={`${styles.secondaryButton} ${!editMode && !hasSelection ? styles.secondaryButtonDisabled : ''} ${editMode ? styles.editModeActive : ''}`}
-            title={!editMode && !hasSelection ? 'Сначала выберите товары в таблице' : undefined}
-            onClick={() => {
-              if (!editMode && !hasSelection) {
-                showSelectionHint();
-                return;
-              }
-              if (editMode && totalEditsCount > 0) {
-                if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) {
-                  cancelEdits();
-                }
-              } else {
-                setEditMode(!editMode);
-                setEditedProducts({});
-              }
-            }}
-          >
-            {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
-          </button>
-
-          <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
-            📥 Импорт
-          </button>
-          <button
-            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
-            title={!hasSelection ? 'Сначала выберите товары в таблице' : undefined}
-            onClick={() => {
-              if (!hasSelection) {
-                showSelectionHint();
-                return;
-              }
-              setShowExportModal(true);
-            }}
-          >
-            📤 Экспорт
-          </button>
-          <button
-            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
-            title={
-              !hasSelection
-                ? 'Сначала выберите товары в таблице'
-                : 'Для выбранных товаров с ссылкой на товар поставщика получить актуальную цену. Строки с изменившейся ценой подсветятся.'
-            }
-            onClick={async () => {
-              if (!hasSelection) {
-                showSelectionHint();
-                return;
-              }
-              setUpdatingSupplierPrices(true);
-              setSyncSupplierPricesMessage(null);
-              try {
-                const response = await apiFetch(
-                  `${API_URL}/products/admin/update-supplier-prices`,
-                  {
-                    method: 'POST',
-                    headers: {
-                      'Content-Type': 'application/json',
-                      ...getAuthHeaders(),
-                    },
-                    body: JSON.stringify({ productIds: selectedIds }),
+          {canEdit ? (
+            <>
+              <button
+                className={`${styles.secondaryButton} ${!editMode && !hasSelection ? styles.secondaryButtonDisabled : ''} ${editMode ? styles.editModeActive : ''}`}
+                title={!editMode && !hasSelection ? 'Сначала выберите товары в таблице' : undefined}
+                onClick={() => {
+                  if (!editMode && !hasSelection) {
+                    showSelectionHint();
+                    return;
                   }
-                );
-                if (!response.ok) {
-                  const err = await response.json().catch(() => ({}));
-                  throw new Error(err.message || 'Ошибка обновления цен');
+                  if (editMode && totalEditsCount > 0) {
+                    if (confirm('Есть несохранённые изменения. Выйти без сохранения?')) {
+                      cancelEdits();
+                    }
+                  } else {
+                    setEditMode(!editMode);
+                    setEditedProducts({});
+                  }
+                }}
+              >
+                {editMode ? '✕ Выйти из редактирования' : '✏️ Быстрое редактирование'}
+              </button>
+
+              <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
+                📥 Импорт
+              </button>
+              <button
+                className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+                title={!hasSelection ? 'Сначала выберите товары в таблице' : undefined}
+                onClick={() => {
+                  if (!hasSelection) {
+                    showSelectionHint();
+                    return;
+                  }
+                  setShowExportModal(true);
+                }}
+              >
+                📤 Экспорт
+              </button>
+              <button
+                className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+                title={
+                  !hasSelection
+                    ? 'Сначала выберите товары в таблице'
+                    : 'Для выбранных товаров с ссылкой на товар поставщика получить актуальную цену. Строки с изменившейся ценой подсветятся.'
                 }
-                const data = await response.json();
-                setPriceChangedIds(data.changedIds ?? []);
-                const msg =
-                  data.total === 0
-                    ? 'Среди выбранных нет товаров с ссылкой на товар поставщика'
-                    : `Обработано: ${data.total}, обновлено: ${data.updated}, цена изменилась: ${data.changed}` +
-                      (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
-                setSyncSupplierPricesMessage(msg);
-                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                invalidateProductsList();
-              } catch (e) {
-                setSyncSupplierPricesMessage(
-                  e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
-                );
-                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-              } finally {
-                setUpdatingSupplierPrices(false);
-              }
-            }}
-          >
-            {updatingSupplierPrices ? '⏳ Обновление...' : '📡 Обновить цены'}
-          </button>
-          <button
-            className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
-            title={
-              !hasSelection
-                ? 'Сначала выберите товары в таблице'
-                : 'Установить цену товара равной цене поставщика для выбранных товаров'
-            }
-            onClick={async () => {
-              if (!hasSelection) {
-                showSelectionHint();
-                return;
-              }
-              setSyncingSupplierPrices(true);
-              setSyncSupplierPricesMessage(null);
-              try {
-                const response = await apiFetch(`${API_URL}/products/admin/apply-supplier-prices`, {
-                  method: 'POST',
-                  headers: {
-                    'Content-Type': 'application/json',
-                    ...getAuthHeaders(),
-                  },
-                  body: JSON.stringify({ productIds: selectedIds }),
-                });
-                if (!response.ok) {
-                  const err = await response.json().catch(() => ({}));
-                  throw new Error(err.message || 'Ошибка синхронизации');
+                onClick={async () => {
+                  if (!hasSelection) {
+                    showSelectionHint();
+                    return;
+                  }
+                  setUpdatingSupplierPrices(true);
+                  setSyncSupplierPricesMessage(null);
+                  try {
+                    const response = await apiFetch(
+                      `${API_URL}/products/admin/update-supplier-prices`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...getAuthHeaders(),
+                        },
+                        body: JSON.stringify({ productIds: selectedIds }),
+                      }
+                    );
+                    if (!response.ok) {
+                      const err = await response.json().catch(() => ({}));
+                      throw new Error(err.message || 'Ошибка обновления цен');
+                    }
+                    const data = await response.json();
+                    setPriceChangedIds(data.changedIds ?? []);
+                    const msg =
+                      data.total === 0
+                        ? 'Среди выбранных нет товаров с ссылкой на товар поставщика'
+                        : `Обработано: ${data.total}, обновлено: ${data.updated}, цена изменилась: ${data.changed}` +
+                          (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
+                    setSyncSupplierPricesMessage(msg);
+                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                    invalidateProductsList();
+                  } catch (e) {
+                    setSyncSupplierPricesMessage(
+                      e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
+                    );
+                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                  } finally {
+                    setUpdatingSupplierPrices(false);
+                  }
+                }}
+              >
+                {updatingSupplierPrices ? '⏳ Обновление...' : '📡 Обновить цены'}
+              </button>
+              <button
+                className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
+                title={
+                  !hasSelection
+                    ? 'Сначала выберите товары в таблице'
+                    : 'Установить цену товара равной цене поставщика для выбранных товаров'
                 }
-                const data = await response.json();
-                setPriceChangedIds((prev) =>
-                  prev.filter((id) => !(data.syncedIds ?? []).includes(id))
-                );
-                const msg =
-                  data.total === 0
-                    ? 'Среди выбранных нет товаров с поставщиком'
-                    : `Синхронизировано: ${data.synced} из ${data.total}` +
-                      (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
-                setSyncSupplierPricesMessage(msg);
-                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                invalidateProductsList();
-              } catch (e) {
-                setSyncSupplierPricesMessage(
-                  e instanceof Error ? e.message : 'Ошибка синхронизации цен'
-                );
-                setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-              } finally {
-                setSyncingSupplierPrices(false);
-              }
-            }}
-          >
-            {syncingSupplierPrices ? '⏳ Синхронизация...' : '🔄 Синхр. цены'}
-          </button>
-          <button
-            type="button"
-            className={styles.addButton}
-            onClick={() => {
-              const url = persistedCategoryId
-                ? `/admin/catalog/products/new?categoryId=${persistedCategoryId}&fromCategory=${persistedCategoryId}`
-                : '/admin/catalog/products/new';
-              router.push(url);
-            }}
-          >
-            + Новый товар
-          </button>
+                onClick={async () => {
+                  if (!hasSelection) {
+                    showSelectionHint();
+                    return;
+                  }
+                  setSyncingSupplierPrices(true);
+                  setSyncSupplierPricesMessage(null);
+                  try {
+                    const response = await apiFetch(
+                      `${API_URL}/products/admin/apply-supplier-prices`,
+                      {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          ...getAuthHeaders(),
+                        },
+                        body: JSON.stringify({ productIds: selectedIds }),
+                      }
+                    );
+                    if (!response.ok) {
+                      const err = await response.json().catch(() => ({}));
+                      throw new Error(err.message || 'Ошибка синхронизации');
+                    }
+                    const data = await response.json();
+                    setPriceChangedIds((prev) =>
+                      prev.filter((id) => !(data.syncedIds ?? []).includes(id))
+                    );
+                    const msg =
+                      data.total === 0
+                        ? 'Среди выбранных нет товаров с поставщиком'
+                        : `Синхронизировано: ${data.synced} из ${data.total}` +
+                          (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
+                    setSyncSupplierPricesMessage(msg);
+                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                    invalidateProductsList();
+                  } catch (e) {
+                    setSyncSupplierPricesMessage(
+                      e instanceof Error ? e.message : 'Ошибка синхронизации цен'
+                    );
+                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                  } finally {
+                    setSyncingSupplierPrices(false);
+                  }
+                }}
+              >
+                {syncingSupplierPrices ? '⏳ Синхронизация...' : '🔄 Синхр. цены'}
+              </button>
+              <button
+                data-admin-mutation
+                type="button"
+                className={styles.addButton}
+                onClick={() => {
+                  const url = persistedCategoryId
+                    ? `/admin/catalog/products/new?categoryId=${persistedCategoryId}&fromCategory=${persistedCategoryId}`
+                    : '/admin/catalog/products/new';
+                  router.push(url);
+                }}
+              >
+                + Новый товар
+              </button>
+            </>
+          ) : null}
         </div>
       </div>
 
@@ -928,7 +942,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         </div>
       )}
 
-      {hasSelection && !editMode && (
+      {canEdit && hasSelection && !editMode && (
         <div className={styles.bulkActions}>
           <span>Выбрано: {selectedIds.length}</span>
           <button className={styles.bulkButton} onClick={() => bulkToggleActive(true)}>
@@ -938,6 +952,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
             ✗ Деактивировать
           </button>
           <button
+            data-admin-mutation
             className={`${styles.bulkButton} ${styles.danger}`}
             onClick={() => setShowDeleteConfirmModal(true)}
           >
@@ -947,7 +962,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
       )}
 
       {/* Edit mode save bar */}
-      {editMode && (
+      {canEdit && editMode && (
         <div className={styles.editModeBar}>
           <div className={styles.editModeInfo}>
             <span className={styles.editModeIcon}>✏️</span>
@@ -963,6 +978,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
               Отмена
             </button>
             <button
+              data-admin-mutation
               className={styles.saveButton}
               onClick={saveAllEdits}
               disabled={savingEdits || totalEditsCount === 0}
@@ -1031,6 +1047,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 className={styles.dangerButton}
                 onClick={performBulkDelete}
                 disabled={deleting}

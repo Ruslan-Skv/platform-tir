@@ -190,6 +190,7 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
               ✏️
             </button>
             <button
+              data-admin-mutation
               className={styles.deleteButton}
               onClick={() => openDeleteModal(supplier)}
               title="Удалить"
@@ -323,6 +324,7 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
             )}
           </div>
           <button
+            data-admin-mutation
             className={styles.addButton}
             onClick={() => router.push('/admin/catalog/suppliers/new')}
           >
@@ -345,6 +347,7 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
         <div className={styles.empty}>
           <p>Поставщики не найдены</p>
           <button
+            data-admin-mutation
             className={styles.addButton}
             onClick={() => router.push('/admin/catalog/suppliers/new')}
           >
@@ -405,6 +408,7 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 className={styles.dangerButton}
                 onClick={handleDeleteSupplier}
                 disabled={deleting}

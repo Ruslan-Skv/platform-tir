@@ -102,6 +102,7 @@ export function FeaturedProductsSectionPageView({ model }: FeaturedProductsSecti
         </div>
         <div className={styles.saveBlock}>
           <button
+            data-admin-mutation
             type="button"
             className={`${styles.btn} ${styles.btnPrimary}`}
             onClick={handleSave}

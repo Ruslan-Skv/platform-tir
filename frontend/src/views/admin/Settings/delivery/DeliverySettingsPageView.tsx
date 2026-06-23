@@ -239,6 +239,7 @@ export function DeliverySettingsPageView() {
                   className={styles.settlementPrice}
                 />
                 <button
+                  data-admin-mutation
                   type="button"
                   onClick={() => removeSettlement(i)}
                   className={styles.removeBtn}
@@ -250,7 +251,12 @@ export function DeliverySettingsPageView() {
               </div>
             ))}
           </div>
-          <button type="button" onClick={addSettlement} className={styles.addBtn}>
+          <button
+            data-admin-mutation
+            type="button"
+            onClick={addSettlement}
+            className={styles.addBtn}
+          >
             + Добавить населённый пункт
           </button>
 
@@ -336,7 +342,7 @@ export function DeliverySettingsPageView() {
           <p className={message.error ? styles.msgError : styles.msgSuccess}>{message.text}</p>
         )}
 
-        <button type="submit" className={styles.submit} disabled={saving}>
+        <button data-admin-mutation type="submit" className={styles.submit} disabled={saving}>
           {saving ? 'Сохранение…' : 'Сохранить'}
         </button>
       </form>

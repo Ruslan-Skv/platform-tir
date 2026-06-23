@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import {
   type AdminKnowledgeCategory,
@@ -30,7 +31,12 @@ import {
 } from '@/shared/api/admin-knowledge';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 
-import { canViewKnowledgeTrainingAnalytics, isKnowledgeEditor } from '../../shared/knowledge-utils';
+import {
+  KNOWLEDGE_RESOURCE_ID,
+  buildKnowledgeCategoryResourceId,
+  canViewKnowledgeTrainingAnalytics,
+  getKnowledgeCategoryResourceLabel,
+} from '../../shared/knowledge-utils';
 import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import {
   type KnowledgeTerritoryFiltersState,
@@ -45,8 +51,8 @@ import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformF
 
 export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
-  const canEdit = isKnowledgeEditor(user?.role);
-  const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role);
+  const { canView, canEdit } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
+  const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -89,6 +95,12 @@ export function useKnowledgeTerritoryPage() {
   const [editModuleDescription, setEditModuleDescription] = useState('');
   const [reorderingModuleId, setReorderingModuleId] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
+  const [categoryAccessModal, setCategoryAccessModal] = useState<{
+    resourceId: string;
+    label: string;
+  } | null>(null);
+
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount);
   const { feedbackUnreadCount, refreshFeedbackUnreadCount } =
@@ -215,6 +227,15 @@ export function useKnowledgeTerritoryPage() {
   }, [loadCategories, loadStats]);
 
   useEffect(() => {
+    if (!categoryFilter) return;
+    if (categories.length > 0 && !categories.some((category) => category.id === categoryFilter)) {
+      setCategoryFilter('');
+      setModuleFilter('');
+      setPage(1);
+    }
+  }, [categories, categoryFilter]);
+
+  useEffect(() => {
     if (!filtersHydratedRef.current) return;
 
     if (prevCategoryFilterRef.current !== categoryFilter) {
@@ -255,6 +276,13 @@ export function useKnowledgeTerritoryPage() {
     setModuleFilter('');
     setPage(1);
   };
+
+  const openCategoryAccessModal = useCallback((category: AdminKnowledgeCategory) => {
+    setCategoryAccessModal({
+      resourceId: buildKnowledgeCategoryResourceId(category.id),
+      label: getKnowledgeCategoryResourceLabel(category.name),
+    });
+  }, []);
 
   const handleModuleFilterChange = (moduleId: string) => {
     setModuleFilter(moduleId);
@@ -603,6 +631,10 @@ export function useKnowledgeTerritoryPage() {
     refreshFeedbackUnreadCount,
     handleTrashRestored,
     persistTerritoryFilters,
+    isSuperAdmin,
+    categoryAccessModal,
+    setCategoryAccessModal,
+    openCategoryAccessModal,
   };
 }
 

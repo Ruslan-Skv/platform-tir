@@ -160,7 +160,7 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
             title="Обновить список замеров"
             aria-label="Обновить список замеров"
           />
-          <Link href="/admin/measurements/new" className={styles.addButton}>
+          <Link data-admin-mutation href="/admin/measurements/new" className={styles.addButton}>
             + Новый замер
           </Link>
         </div>

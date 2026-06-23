@@ -2,6 +2,8 @@
 
 import type { Ref, RefObject } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+
 import styles from './AdminStickySaveButton.module.css';
 
 type AdminSaveButtonProps = {
@@ -27,8 +29,13 @@ export function AdminSaveButton({
   className,
   onClick,
 }: AdminSaveButtonProps) {
+  const { canEdit } = useAdminSectionCanEdit();
   const savingText = savingLabel;
   const idleText = label;
+
+  if (!canEdit) {
+    return null;
+  }
 
   return (
     <button
@@ -37,6 +44,7 @@ export function AdminSaveButton({
       className={[
         styles.saveButton,
         styles.headerSaveButton,
+        'admin-save-button',
         fixed ? styles.saveButtonFixed : '',
         className ?? '',
       ]

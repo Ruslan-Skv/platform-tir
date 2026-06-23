@@ -177,6 +177,7 @@ export function EstimateAddressGroupTableRow({
           ) : null}
           {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
             <button
+              data-admin-mutation
               type="button"
               className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
               disabled={saving}
@@ -189,6 +190,7 @@ export function EstimateAddressGroupTableRow({
           ) : null}
           {archiveView ? (
             <button
+              data-admin-mutation
               type="button"
               className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
               disabled={saving}

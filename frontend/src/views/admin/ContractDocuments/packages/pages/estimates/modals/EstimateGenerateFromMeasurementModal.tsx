@@ -65,6 +65,7 @@ export function EstimateGenerateFromMeasurementModal({
             Отмена
           </button>
           <button
+            data-admin-mutation
             type="button"
             className={cdWorkspace.primaryBtn}
             disabled={!selectedMeasurementId || loading}

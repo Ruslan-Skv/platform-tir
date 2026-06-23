@@ -101,6 +101,7 @@ export function PartnerProductsSection() {
         </div>
 
         <button
+          data-admin-mutation
           type="button"
           onClick={handleSave}
           disabled={saving}

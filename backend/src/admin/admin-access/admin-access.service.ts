@@ -1,42 +1,42 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
+import {
+  getRoleEffectiveAccessForResourceWithInheritance,
+  getUserEffectiveAccessForResource,
+} from './access-effective.util';
+import {
+  buildKnowledgeCategoryResourceId,
+  isKnowledgeCategoryResourceId,
+  KNOWLEDGE_RESOURCE_ID,
+  parseKnowledgeCategoryResourceId,
+} from './knowledge-resources.util';
 import { ADMIN_RESOURCES } from './resources.config';
-import { ROLE_DEFAULT_RESOURCES } from './role-default-resources.config';
 import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
 
-export const ADMIN_ROLES: UserRole[] = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'CONTENT_MANAGER',
-  'MODERATOR',
-  'SUPPORT',
-  'MANAGER',
-  'TECHNOLOGIST',
-  'PARTNER',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-  'SURVEYOR',
-  'DRIVER',
-  'INSTALLER',
-  'TRAINEE',
-];
+export type MyResourcePermissionItem = {
+  id: string;
+  permission: 'VIEW' | 'EDIT';
+};
+
+export { ADMIN_ROLES };
+
+type PermissionContext = {
+  userPerms: Array<{ resourceId: string; permission: string }>;
+  rolePermsForUser: Array<{ resourceId: string; permission: string }>;
+  allRolePermsForRole: Array<{ resourceId: string; permission: AdminResourcePermissionLevel }>;
+};
 
 @Injectable()
 export class AdminAccessService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /**
-   * Список resourceId, к которым имеет доступ текущий пользователь.
-   * SUPER_ADMIN — все. Остальные: дефолты роли + права по роли + права по пользователю, минус запреты.
-   * Запрет (DENIED) по пользователю или по роли исключает ресурс и всех его потомков.
-   */
-  async getMyAccessibleResources(userId: string, userRole: UserRole): Promise<string[]> {
-    if (userRole === 'SUPER_ADMIN') {
-      return ADMIN_RESOURCES.map((r) => r.id);
-    }
-    const [userPerms, rolePerms, roleDefaults] = await Promise.all([
+  private async loadPermissionContext(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<PermissionContext> {
+    const [userPerms, rolePermsForUser] = await Promise.all([
       this.prisma.adminResourcePermission.findMany({
         where: { userId },
         select: { resourceId: true, permission: true },
@@ -45,29 +45,149 @@ export class AdminAccessService {
         where: { role: userRole },
         select: { resourceId: true, permission: true },
       }),
-      Promise.resolve(ROLE_DEFAULT_RESOURCES[userRole] ?? ['admin']),
     ]);
-    const deniedIds = new Set<string>([
-      ...userPerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
-      ...rolePerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
-    ]);
-    /** Исключить id, если он или любой его предок (admin.content для admin.content.blog) в denied */
-    const isDenied = (id: string) =>
-      deniedIds.has(id) || [...deniedIds].some((d) => id.startsWith(d + '.'));
-    const granted = new Set<string>([
-      ...roleDefaults,
-      ...rolePerms
-        .filter((p) => p.permission === 'VIEW' || p.permission === 'EDIT')
-        .map((p) => p.resourceId),
-      ...userPerms
-        .filter((p) => p.permission === 'VIEW' || p.permission === 'EDIT')
-        .map((p) => p.resourceId),
-    ]);
-    const result = new Set<string>();
-    for (const id of granted) {
-      if (!isDenied(id)) result.add(id);
+
+    return {
+      userPerms,
+      rolePermsForUser,
+      allRolePermsForRole: rolePermsForUser.map((p) => ({
+        resourceId: p.resourceId,
+        permission: p.permission as AdminResourcePermissionLevel,
+      })),
+    };
+  }
+
+  private computeDirectEffectivePermission(
+    resourceId: string,
+    userRole: UserRole,
+    ctx: PermissionContext,
+  ): 'VIEW' | 'EDIT' | 'DENIED' | 'NONE' {
+    const userExplicit = ctx.userPerms.find((p) => p.resourceId === resourceId)?.permission as
+      | AdminResourcePermissionLevel
+      | undefined;
+    const roleExplicit = ctx.rolePermsForUser.find((p) => p.resourceId === resourceId)
+      ?.permission as AdminResourcePermissionLevel | undefined;
+
+    return getUserEffectiveAccessForResource(
+      resourceId,
+      userRole,
+      userExplicit,
+      roleExplicit,
+      ctx.allRolePermsForRole,
+    );
+  }
+
+  private computeKnowledgeCategoryEffectivePermission(
+    categoryResourceId: string,
+    userRole: UserRole,
+    ctx: PermissionContext,
+  ): 'VIEW' | 'EDIT' | 'DENIED' | 'NONE' {
+    const direct = this.computeDirectEffectivePermission(categoryResourceId, userRole, ctx);
+    if (direct === 'DENIED') return 'DENIED';
+    if (direct === 'VIEW' || direct === 'EDIT') return direct;
+
+    const parent = this.computeDirectEffectivePermission(KNOWLEDGE_RESOURCE_ID, userRole, ctx);
+    if (parent === 'DENIED') return 'DENIED';
+    if (parent === 'VIEW' || parent === 'EDIT') return parent;
+    return 'NONE';
+  }
+
+  /**
+   * Итоговый уровень доступа пользователя к ресурсу (VIEW / EDIT / DENIED / NONE).
+   */
+  async getUserEffectivePermission(
+    userId: string,
+    userRole: UserRole,
+    resourceId: string,
+    ctx?: PermissionContext,
+  ): Promise<'VIEW' | 'EDIT' | 'DENIED' | 'NONE'> {
+    if (userRole === 'SUPER_ADMIN') {
+      return 'EDIT';
     }
-    return Array.from(result);
+
+    const context = ctx ?? (await this.loadPermissionContext(userId, userRole));
+
+    if (isKnowledgeCategoryResourceId(resourceId)) {
+      return this.computeKnowledgeCategoryEffectivePermission(resourceId, userRole, context);
+    }
+
+    return this.computeDirectEffectivePermission(resourceId, userRole, context);
+  }
+
+  async listAccessibleKnowledgeCategoryIds(userId: string, userRole: UserRole): Promise<string[]> {
+    const categories = await this.prisma.knowledgeCategory.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+
+    if (userRole === 'SUPER_ADMIN') {
+      return categories.map((category) => category.id);
+    }
+
+    const ctx = await this.loadPermissionContext(userId, userRole);
+    const accessible: string[] = [];
+
+    for (const category of categories) {
+      const effective = this.computeKnowledgeCategoryEffectivePermission(
+        buildKnowledgeCategoryResourceId(category.id),
+        userRole,
+        ctx,
+      );
+      if (effective === 'VIEW' || effective === 'EDIT') {
+        accessible.push(category.id);
+      }
+    }
+
+    return accessible;
+  }
+
+  /**
+   * Ресурсы админки с итоговым уровнем доступа (только VIEW и EDIT).
+   */
+  async getMyResourcePermissions(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<MyResourcePermissionItem[]> {
+    if (userRole === 'SUPER_ADMIN') {
+      return ADMIN_RESOURCES.map((r) => ({ id: r.id, permission: 'EDIT' as const }));
+    }
+
+    const ctx = await this.loadPermissionContext(userId, userRole);
+    const result: MyResourcePermissionItem[] = [];
+
+    for (const resource of ADMIN_RESOURCES) {
+      const effective = this.computeDirectEffectivePermission(resource.id, userRole, ctx);
+      if (effective === 'VIEW' || effective === 'EDIT') {
+        result.push({ id: resource.id, permission: effective });
+      }
+    }
+
+    const categories = await this.prisma.knowledgeCategory.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+
+    for (const category of categories) {
+      const resourceId = buildKnowledgeCategoryResourceId(category.id);
+      if (result.some((item) => item.id === resourceId)) continue;
+
+      const effective = this.computeKnowledgeCategoryEffectivePermission(resourceId, userRole, ctx);
+      if (effective === 'VIEW' || effective === 'EDIT') {
+        result.push({ id: resourceId, permission: effective });
+      }
+    }
+
+    return result;
+  }
+
+  /**
+   * Список resourceId, к которым имеет доступ текущий пользователь (просмотр или редактирование).
+   */
+  async getMyAccessibleResources(userId: string, userRole: UserRole): Promise<string[]> {
+    const permissions = await this.getMyResourcePermissions(userId, userRole);
+    return permissions.map((p) => p.id);
   }
 
   getAdminRoles() {
@@ -95,15 +215,33 @@ export class AdminAccessService {
     return ADMIN_RESOURCES;
   }
 
-  getResourceById(resourceId: string) {
-    const resource = ADMIN_RESOURCES.find((r) => r.id === resourceId);
-    if (!resource) throw new NotFoundException(`Ресурс ${resourceId} не найден`);
-    return resource;
+  private async resolveResource(resourceId: string) {
+    const known = ADMIN_RESOURCES.find((r) => r.id === resourceId);
+    if (known) return known;
+
+    const categoryId = parseKnowledgeCategoryResourceId(resourceId);
+    if (!categoryId) {
+      throw new NotFoundException(`Ресурс ${resourceId} не найден`);
+    }
+
+    const category = await this.prisma.knowledgeCategory.findFirst({
+      where: { id: categoryId, deletedAt: null },
+      select: { id: true, name: true },
+    });
+    if (!category) {
+      throw new NotFoundException(`Ресурс ${resourceId} не найден`);
+    }
+
+    return {
+      id: resourceId,
+      label: `Территория знаний — ${category.name}`,
+      path: `/admin/knowledge?category=${category.id}`,
+    };
   }
 
   async getPermissions(resourceId: string) {
-    this.getResourceById(resourceId);
-    const [userList, roleList] = await Promise.all([
+    await this.resolveResource(resourceId);
+    const [userList, roleList, allRolePerms] = await Promise.all([
       this.prisma.adminResourcePermission.findMany({
         where: { resourceId },
         include: {
@@ -117,7 +255,39 @@ export class AdminAccessService {
         where: { resourceId },
         orderBy: { createdAt: 'asc' },
       }),
+      this.prisma.adminResourceRolePermission.findMany({
+        select: { role: true, resourceId: true, permission: true },
+      }),
     ]);
+
+    const explicitByRole = new Map(
+      roleList.map((p) => [p.role, p.permission as AdminResourcePermissionLevel]),
+    );
+    const rolePermsByRole = new Map<
+      UserRole,
+      Array<{ resourceId: string; permission: AdminResourcePermissionLevel }>
+    >();
+    for (const role of ADMIN_ROLES) {
+      rolePermsByRole.set(role, []);
+    }
+    for (const p of allRolePerms) {
+      const role = p.role as UserRole;
+      if (!rolePermsByRole.has(role)) continue;
+      rolePermsByRole.get(role)!.push({
+        resourceId: p.resourceId,
+        permission: p.permission as AdminResourcePermissionLevel,
+      });
+    }
+
+    const roleOverview = ADMIN_ROLES.map((role) =>
+      getRoleEffectiveAccessForResourceWithInheritance(
+        resourceId,
+        role,
+        explicitByRole.get(role),
+        rolePermsByRole.get(role) ?? [],
+      ),
+    );
+
     return {
       users: userList.map((p) => ({
         type: 'user' as const,
@@ -136,6 +306,7 @@ export class AdminAccessService {
         permission: p.permission,
         createdAt: p.createdAt,
       })),
+      roleOverview,
     };
   }
 
@@ -144,7 +315,7 @@ export class AdminAccessService {
     userId: string,
     permission: AdminResourcePermissionLevel,
   ) {
-    this.getResourceById(resourceId);
+    await this.resolveResource(resourceId);
     await this.prisma.adminResourcePermission.upsert({
       where: {
         resourceId_userId: { resourceId, userId },
@@ -156,7 +327,7 @@ export class AdminAccessService {
   }
 
   async revokePermission(resourceId: string, userId: string) {
-    this.getResourceById(resourceId);
+    await this.resolveResource(resourceId);
     await this.prisma.adminResourcePermission.deleteMany({
       where: { resourceId, userId },
     });
@@ -168,7 +339,7 @@ export class AdminAccessService {
     role: string,
     permission: AdminResourcePermissionLevel,
   ) {
-    this.getResourceById(resourceId);
+    await this.resolveResource(resourceId);
     if (!ADMIN_ROLES.includes(role as UserRole)) {
       throw new NotFoundException(`Роль ${role} не найдена`);
     }
@@ -183,7 +354,7 @@ export class AdminAccessService {
   }
 
   async revokeRolePermission(resourceId: string, role: string) {
-    this.getResourceById(resourceId);
+    await this.resolveResource(resourceId);
     await this.prisma.adminResourceRolePermission.deleteMany({
       where: { resourceId, role },
     });

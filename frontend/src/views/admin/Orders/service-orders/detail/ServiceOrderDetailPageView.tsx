@@ -105,6 +105,7 @@ export function ServiceOrderDetailPageView({ model }: ServiceOrderDetailPageView
             />
           </div>
           <button
+            data-admin-mutation
             type="button"
             className={styles.saveButton}
             onClick={handleSaveCustomer}

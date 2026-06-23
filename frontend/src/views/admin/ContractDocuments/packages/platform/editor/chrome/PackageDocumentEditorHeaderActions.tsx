@@ -179,6 +179,7 @@ export function PackageDocumentEditorHeaderActions({
           </button>
         ) : null}
         <button
+          data-admin-mutation
           type="button"
           className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}`}
           disabled={packageRefreshing}

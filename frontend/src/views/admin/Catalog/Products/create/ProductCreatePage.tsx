@@ -1,7 +1,11 @@
 'use client';
 
+import { AdminResourceEditGate } from '@/features/admin/components/AdminResourceEditGate';
+
 import { ProductCreatePageView } from './ProductCreatePageView';
 import { useProductCreatePage } from './useProductCreatePage';
+
+const CATALOG_PRODUCTS_RESOURCE = 'admin.catalog.products';
 
 interface ProductCreatePageProps {
   fromCategory?: string;
@@ -14,5 +18,12 @@ interface ProductCreatePageProps {
 
 export function ProductCreatePage(props: ProductCreatePageProps = {}) {
   const model = useProductCreatePage(props);
-  return <ProductCreatePageView model={model} />;
+  return (
+    <AdminResourceEditGate
+      resourceId={CATALOG_PRODUCTS_RESOURCE}
+      redirectTo="/admin/catalog/products"
+    >
+      <ProductCreatePageView model={model} />
+    </AdminResourceEditGate>
+  );
 }

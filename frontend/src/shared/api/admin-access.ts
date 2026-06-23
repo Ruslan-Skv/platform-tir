@@ -37,9 +37,33 @@ export interface ResourcePermissionRoleItem {
   createdAt: string;
 }
 
+export type RoleAccessSource =
+  | 'super_admin'
+  | 'default'
+  | 'role_override'
+  | 'role_denied'
+  | 'inherited_denied'
+  | 'none';
+
+export type EffectiveAccess = 'EDIT' | 'VIEW' | 'NONE' | 'DENIED';
+
+export interface RoleAccessOverviewItem {
+  role: string;
+  effective: EffectiveAccess;
+  source: RoleAccessSource;
+  overridePermission?: 'VIEW' | 'EDIT' | 'DENIED';
+  hasExplicitOverride: boolean;
+}
+
+export interface MyAccessibleResourceItem {
+  id: string;
+  permission: 'VIEW' | 'EDIT';
+}
+
 export interface ResourcePermissionsResponse {
   users: ResourcePermissionUserItem[];
   roles: ResourcePermissionRoleItem[];
+  roleOverview: RoleAccessOverviewItem[];
 }
 
 /** @deprecated Используйте ResourcePermissionsResponse */
@@ -80,7 +104,7 @@ export async function getResourcePermissions(
   return res.json();
 }
 
-export async function getMyAccessibleResources(): Promise<string[]> {
+export async function getMyAccessibleResources(): Promise<MyAccessibleResourceItem[]> {
   const res = await apiFetch(`${API_URL}/admin/access/my-resources`, {
     headers: getAdminAuthHeaders(),
   });

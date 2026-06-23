@@ -199,6 +199,7 @@ export function ProductCardBadgesSection() {
                     placeholder="Краткий текст для всплывающей подсказки на сайте"
                   />
                   <button
+                    data-admin-mutation
                     type="button"
                     className={styles.saveBtn}
                     onClick={() => void handleSaveDescription(row.id, descDraft[row.id] ?? '')}
@@ -218,6 +219,7 @@ export function ProductCardBadgesSection() {
                     <>
                       <img src={publicUploadUrl(row.imageUrl)} alt="" className={styles.thumbImg} />
                       <button
+                        data-admin-mutation
                         type="button"
                         className={styles.thumbRemoveOverlay}
                         title="Удалить иконку"

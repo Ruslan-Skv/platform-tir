@@ -254,6 +254,7 @@ export function AdminProfilePageView() {
                     {uploadingAvatar ? 'Загрузка...' : 'Выбрать файл'}
                   </button>
                   <button
+                    data-admin-allow-readonly
                     type="button"
                     onClick={handleRemoveAvatar}
                     className={styles.avatarButtonSecondary}
@@ -309,7 +310,12 @@ export function AdminProfilePageView() {
               />
             </div>
 
-            <button type="submit" disabled={savingProfile} className={styles.button}>
+            <button
+              data-admin-allow-readonly
+              type="submit"
+              disabled={savingProfile}
+              className={styles.button}
+            >
               {savingProfile ? 'Сохранение...' : 'Сохранить изменения'}
             </button>
           </form>
@@ -359,7 +365,12 @@ export function AdminProfilePageView() {
               />
             </div>
 
-            <button type="submit" disabled={savingPassword} className={styles.button}>
+            <button
+              data-admin-allow-readonly
+              type="submit"
+              disabled={savingPassword}
+              className={styles.button}
+            >
               {savingPassword ? 'Сохранение...' : 'Сменить пароль'}
             </button>
           </form>

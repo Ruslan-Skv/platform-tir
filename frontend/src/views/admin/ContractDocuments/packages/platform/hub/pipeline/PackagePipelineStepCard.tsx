@@ -64,6 +64,7 @@ export function PackagePipelineStepCard({
               Отказ
             </button>
             <button
+              data-admin-mutation
               type="button"
               data-modal-btn="primary"
               disabled={actionsDisabled}
@@ -84,6 +85,7 @@ export function PackagePipelineStepCard({
               {Math.ceil(pipeline.contractSignedRevertRemainingMs / 1000)} с
             </p>
             <button
+              data-admin-mutation
               type="button"
               data-modal-btn="secondary"
               disabled={hub.savingPackageStatus}
@@ -189,6 +191,7 @@ export function PackagePipelineStepCard({
               ) : null}
               {onScrollToConductPayment && pipeline.packageFlowStatus === 'CONTRACT_CONCLUDED' ? (
                 <button
+                  data-admin-mutation
                   type="button"
                   className={hubStyles.pipelineConductLinkBtn}
                   onClick={onScrollToConductPayment}

@@ -361,6 +361,7 @@ export function RecruitmentFormPageView({ model }: RecruitmentFormPageViewProps)
               <div className={styles.workHistoryHeader}>
                 <span>Место работы {index + 1}</span>
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.removeBtn}
                   onClick={() => removeWorkHistory(index)}
@@ -413,7 +414,12 @@ export function RecruitmentFormPageView({ model }: RecruitmentFormPageViewProps)
               </div>
             </div>
           ))}
-          <button type="button" className={styles.addBtn} onClick={addWorkHistory}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addBtn}
+            onClick={addWorkHistory}
+          >
             + Добавить место работы
           </button>
         </section>
@@ -625,7 +631,7 @@ export function RecruitmentFormPageView({ model }: RecruitmentFormPageViewProps)
           <Link href="/admin/recruitment/blank" className={styles.uploadBtn} target="_blank">
             Бланк для печати
           </Link>
-          <button type="submit" className={styles.saveBtn} disabled={saving}>
+          <button data-admin-mutation type="submit" className={styles.saveBtn} disabled={saving}>
             {saving ? 'Сохранение...' : isEdit ? 'Сохранить' : 'Создать кандидата'}
           </button>
         </div>

@@ -2,6 +2,7 @@
 
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { createCrmCustomer } from '@/shared/api/admin-crm';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { Modal } from '@/shared/ui/Modal';
@@ -89,6 +90,7 @@ export function AddCrmCustomerModal({
   /** Подстановка полей только при открытии модалки (например с формы замера до привязки карточки). */
   initialDraft?: CustomerDraft;
 }) {
+  const { canEdit } = useAdminSectionCanEdit();
   const [form, setForm] = useState<CrmCustomerFormState>(emptyCrmCustomerForm);
   const [fieldErrors, setFieldErrors] = useState<CrmCustomerFormFieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
@@ -139,6 +141,7 @@ export function AddCrmCustomerModal({
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!canEdit) return;
     setError(null);
 
     const validation = validateCrmCustomerForm(form, { mode: 'create', lockedPhones: [] });
@@ -278,7 +281,7 @@ export function AddCrmCustomerModal({
           >
             Отмена
           </button>
-          <button type="submit" data-modal-btn="primary" disabled={submitting}>
+          <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={submitting}>
             {submitting ? 'Сохранение…' : 'Создать'}
           </button>
         </div>

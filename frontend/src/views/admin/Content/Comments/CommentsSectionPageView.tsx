@@ -85,6 +85,7 @@ export function CommentsSectionPageView({ model }: CommentsSectionPageViewProps)
                   rows={3}
                 />
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.replySubmit}
                   onClick={() => handleReviewReply(r.id)}
@@ -110,6 +111,7 @@ export function CommentsSectionPageView({ model }: CommentsSectionPageViewProps)
                   </button>
                 )}
                 <button
+                  data-admin-mutation
                   type="button"
                   className={styles.btnDelete}
                   onClick={() => {

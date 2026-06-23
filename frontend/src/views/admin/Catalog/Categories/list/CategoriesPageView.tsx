@@ -93,6 +93,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
               ✏️
             </button>
             <button
+              data-admin-mutation
               className={styles.deleteButton}
               onClick={() => openDeleteModal(category)}
               title="Удалить категорию"
@@ -125,7 +126,11 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
     <div className={styles.page}>
       <div className={styles.header}>
         <h1 className={styles.title}>Категории</h1>
-        <button className={styles.addButton} onClick={() => setShowCreateModal(true)}>
+        <button
+          data-admin-mutation
+          className={styles.addButton}
+          onClick={() => setShowCreateModal(true)}
+        >
           + Добавить категорию
         </button>
       </div>
@@ -186,6 +191,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
                 Отмена
               </button>
               <button
+                data-admin-mutation
                 className={styles.dangerButton}
                 onClick={handleDeleteCategory}
                 disabled={deleting}

@@ -162,6 +162,7 @@ export function CrmCustomerSearchPanel({
         </div>
         <div className={styles.customerCrmActions}>
           <button
+            data-admin-mutation
             type="button"
             className={styles.customerCrmAddButton}
             disabled={disabled}

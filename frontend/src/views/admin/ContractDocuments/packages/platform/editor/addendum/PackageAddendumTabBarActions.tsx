@@ -36,6 +36,7 @@ export function PackageAddendumTabBarActions({
       {form.addendumSlotCount < 5 ? (
         <span className={cdChrome.packageAddAddendumTabBtnWrap} title={addTitle}>
           <button
+            data-admin-mutation
             type="button"
             className={`${cdWorkspace.secondaryBtn} ${cdChrome.packageAddAddendumTabBtn} ${cdBase.packageAddAddendumTabBtn}`}
             disabled={addDisabled}
