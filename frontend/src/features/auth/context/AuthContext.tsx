@@ -1,6 +1,13 @@
 'use client';
 
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useLayoutEffect,
+  useState,
+} from 'react';
 
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
@@ -78,6 +85,39 @@ const ADMIN_ROLES = [
   'TRAINEE',
 ] as const;
 
+function readStoredAdminAuth(): { token: string | null; user: User | null } {
+  if (typeof window === 'undefined') {
+    return { token: null, user: null };
+  }
+
+  try {
+    let savedToken = localStorage.getItem(TOKEN_KEY);
+    let savedUser = localStorage.getItem(USER_KEY);
+
+    if (!savedToken || !savedUser) {
+      savedToken = localStorage.getItem(USER_TOKEN_KEY);
+      savedUser = localStorage.getItem(USER_DATA_KEY);
+      if (savedToken && savedUser) {
+        const parsed = JSON.parse(savedUser) as User;
+        if (ADMIN_ROLES.includes(parsed.role as (typeof ADMIN_ROLES)[number])) {
+          localStorage.setItem(TOKEN_KEY, savedToken);
+          localStorage.setItem(USER_KEY, savedUser);
+        } else {
+          return { token: null, user: null };
+        }
+      }
+    }
+
+    if (!savedToken || !savedUser) {
+      return { token: null, user: null };
+    }
+
+    return { token: savedToken, user: JSON.parse(savedUser) as User };
+  } catch {
+    return { token: null, user: null };
+  }
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -97,65 +137,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setUser(null);
   }, []);
 
-  // Load auth state from localStorage on mount: admin_token, fallback на user_token (вход в ЛК даёт доступ в админку)
-  useEffect(() => {
-    let savedToken = localStorage.getItem(TOKEN_KEY);
-    let savedUser = localStorage.getItem(USER_KEY);
-
-    if (!savedToken || !savedUser) {
-      savedToken = localStorage.getItem(USER_TOKEN_KEY);
-      savedUser = localStorage.getItem(USER_DATA_KEY);
-      if (savedToken && savedUser) {
-        try {
-          const parsed = JSON.parse(savedUser);
-          if (ADMIN_ROLES.includes(parsed.role)) {
-            localStorage.setItem(TOKEN_KEY, savedToken);
-            localStorage.setItem(USER_KEY, savedUser);
-          } else {
-            savedToken = null;
-            savedUser = null;
-          }
-        } catch {
-          savedToken = null;
-          savedUser = null;
-        }
-      }
+  // Сразу показываем оболочку по кэшу сессии; проверку токена — в фоне.
+  useLayoutEffect(() => {
+    const stored = readStoredAdminAuth();
+    if (!stored.token || !stored.user) {
+      setIsLoading(false);
+      return;
     }
 
-    if (savedToken && savedUser) {
-      void (async () => {
-        try {
-          const parsedUser = JSON.parse(savedUser);
-          let access = savedToken;
-          const exp = getJwtExpMs(access);
-          if (exp && exp <= Date.now() + 5_000) {
-            await refreshAccessTokenSilently();
-            access =
-              localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY) || access;
-          }
+    setToken(stored.token);
+    setUser(stored.user);
+    setIsLoading(false);
+
+    void (async () => {
+      try {
+        let access = stored.token!;
+        const exp = getJwtExpMs(access);
+        if (exp && exp <= Date.now() + 5_000) {
+          await refreshAccessTokenSilently();
+          access =
+            localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY) || access;
           setToken(access);
           const userAfterRefresh =
             localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
-          setUser(userAfterRefresh ? JSON.parse(userAfterRefresh) : parsedUser);
-
-          const isValid = await verifyToken(access);
-          if (!isValid) {
-            logout();
-          } else {
-            const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
-            if (latest && latest !== access) {
-              setToken(latest);
-            }
+          if (userAfterRefresh) {
+            setUser(JSON.parse(userAfterRefresh) as User);
           }
-        } catch {
-          logout();
-        } finally {
-          setIsLoading(false);
         }
-      })();
-      return;
-    }
-    setIsLoading(false);
+
+        const isValid = await verifyToken(access);
+        if (!isValid) {
+          logout();
+          return;
+        }
+
+        const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+        if (latest && latest !== access) {
+          setToken(latest);
+        }
+      } catch {
+        logout();
+      }
+    })();
   }, [logout]);
 
   const verifyToken = async (tokenToVerify: string): Promise<boolean> => {

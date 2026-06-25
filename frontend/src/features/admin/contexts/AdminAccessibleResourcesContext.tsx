@@ -66,7 +66,10 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
   const [resources, setResources] = useState<MyAccessibleResourceItem[]>(() =>
     readCachedResources(userId)
   );
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(() => {
+    if (!userId) return false;
+    return readCachedResources(userId).length === 0;
+  });
 
   useEffect(() => {
     setResources(readCachedResources(userId));
@@ -79,13 +82,21 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
       return;
     }
 
-    setIsLoading(true);
+    const cached = readCachedResources(userId);
+    const hasCache = cached.length > 0;
+    if (hasCache) {
+      setResources(cached);
+      setIsLoading(false);
+    } else {
+      setIsLoading(true);
+    }
+
     try {
       const next = await getMyAccessibleResources();
       setResources(next);
       writeCachedResources(userId, next);
     } catch {
-      setResources((prev) => (prev.length > 0 ? prev : []));
+      setResources((prev) => (prev.length > 0 ? prev : hasCache ? cached : []));
     } finally {
       setIsLoading(false);
     }

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
@@ -45,13 +45,15 @@ import {
   buildKnowledgeTerritoryUrl,
   isKnowledgeTerritoryFiltersSyncedWithUrl,
   knowledgeTerritoryUrlFiltersSignature,
-  parseKnowledgeTerritorySearchParams,
   readKnowledgeTerritoryFilters,
+  readKnowledgeTerritorySearchParamsFromLocation,
   writeKnowledgeTerritoryFilters,
 } from '../knowledge-territory-filters-storage';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
 import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.types';
 import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformFeedbackUnreadCount';
+
+let knowledgeTerritoryFiltersHydrated = false;
 
 export function useKnowledgeTerritoryPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -67,15 +69,17 @@ export function useKnowledgeTerritoryPage() {
   const traineeView = !authLoading && isTrainee;
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
   const filtersHydratedRef = useRef(false);
+  const favoritesFromUrlOnMountRef = useRef(false);
   const prevCategoryFilterRef = useRef<string | null>(null);
   const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
   const categoriesRef = useRef<AdminKnowledgeCategory[]>([]);
+  const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
   const lastUrlSyncSignatureRef = useRef('');
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
+  materialsRef.current = materials;
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
   categoriesRef.current = categories;
   const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
@@ -130,10 +134,14 @@ export function useKnowledgeTerritoryPage() {
   }, []);
 
   useLayoutEffect(() => {
-    if (filtersHydratedRef.current) return;
+    if (knowledgeTerritoryFiltersHydrated) {
+      filtersHydratedRef.current = true;
+      return;
+    }
+    knowledgeTerritoryFiltersHydrated = true;
     filtersHydratedRef.current = true;
 
-    const fromUrl = parseKnowledgeTerritorySearchParams(searchParams);
+    const fromUrl = readKnowledgeTerritorySearchParamsFromLocation();
     const hasUrlFilters = Object.keys(fromUrl).length > 0;
 
     if (hasUrlFilters) {
@@ -145,6 +153,7 @@ export function useKnowledgeTerritoryPage() {
       if (fromUrl.search !== undefined) setSearch(fromUrl.search);
       if (fromUrl.searchInput !== undefined) setSearchInput(fromUrl.searchInput);
       if (fromUrl.page !== undefined) setPage(fromUrl.page);
+      if (fromUrl.favoritesOnly === true) favoritesFromUrlOnMountRef.current = true;
       prevCategoryFilterRef.current = fromUrl.categoryFilter ?? '';
       return;
     }
@@ -216,7 +225,9 @@ export function useKnowledgeTerritoryPage() {
     }
 
     const seq = ++materialsLoadSeqRef.current;
-    setLoading(true);
+    if (materialsRef.current.length === 0) {
+      setLoading(true);
+    }
     try {
       const res = await getKnowledgeMaterials({
         search: search || undefined,
@@ -313,12 +324,11 @@ export function useKnowledgeTerritoryPage() {
   useEffect(() => {
     if (!traineeView || traineeFavoritesNormalizedRef.current) return;
 
-    const favoritesFromUrl = searchParams.get('favorites') === '1';
-    if (!favoritesFromUrl && favoritesOnly) {
+    if (!favoritesFromUrlOnMountRef.current && favoritesOnly) {
       setFavoritesOnly(false);
     }
     traineeFavoritesNormalizedRef.current = true;
-  }, [traineeView, favoritesOnly, searchParams]);
+  }, [traineeView, favoritesOnly]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current || !traineeView || favoritesOnly || categories.length === 0) {

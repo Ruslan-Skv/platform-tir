@@ -191,3 +191,9 @@ export function parseKnowledgeTerritorySearchParams(
 
   return parsed;
 }
+
+/** Читает фильтры из текущего URL без useSearchParams (не триггерит Suspense). */
+export function readKnowledgeTerritorySearchParamsFromLocation(): Partial<KnowledgeTerritoryFiltersState> {
+  if (typeof window === 'undefined') return {};
+  return parseKnowledgeTerritorySearchParams(new URLSearchParams(window.location.search));
+}

@@ -1075,7 +1075,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             )}
           </div>
 
-          {loading ? (
+          {loading && materials.length === 0 ? (
             <div className={styles.loading}>Загрузка…</div>
           ) : materials.length === 0 ? (
             <div className={styles.emptyState}>
