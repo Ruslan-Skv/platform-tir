@@ -13,6 +13,7 @@ import {
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { KnowledgeMaterialCommentsService } from './services/knowledge-material-comments.service';
+import { KnowledgeMaterialEngagementService } from './services/knowledge-material-engagement.service';
 import { KnowledgeMaterialFavoritesService } from './services/knowledge-material-favorites.service';
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
@@ -53,6 +54,7 @@ export class KnowledgeService {
     private knowledgePlatformFeedbackService: KnowledgePlatformFeedbackService,
     private knowledgeQuizService: KnowledgeQuizService,
     private knowledgeSequentialAccessService: KnowledgeSequentialAccessService,
+    private knowledgeMaterialEngagementService: KnowledgeMaterialEngagementService,
   ) {}
 
   findAllTargetAudiences() {
@@ -223,26 +225,7 @@ export class KnowledgeService {
   }
 
   toggleLike(materialId: string, userId: string, options?: { applySequentialLearning?: boolean }) {
-    return this.toggleLikeWithAccessCheck(materialId, userId, options);
-  }
-
-  private async toggleLikeWithAccessCheck(
-    materialId: string,
-    userId: string,
-    options?: { applySequentialLearning?: boolean },
-  ) {
-    if (options?.applySequentialLearning) {
-      const existing = await this.prisma.knowledgeMaterialLike.findUnique({
-        where: { materialId_userId: { materialId, userId } },
-      });
-      if (!existing) {
-        await this.knowledgeSequentialAccessService.assertMaterialStudyCompletedForParticipant(
-          materialId,
-          userId,
-        );
-      }
-    }
-    return this.knowledgeMaterialLikesService.toggleLike(materialId, userId);
+    return this.knowledgeMaterialEngagementService.toggleLike(materialId, userId, options);
   }
 
   toggleFavorite(
@@ -250,39 +233,7 @@ export class KnowledgeService {
     userId: string,
     options?: { applySequentialLearning?: boolean },
   ) {
-    return this.toggleFavoriteWithAccessCheck(materialId, userId, options);
-  }
-
-  private async toggleFavoriteWithAccessCheck(
-    materialId: string,
-    userId: string,
-    options?: { applySequentialLearning?: boolean },
-  ) {
-    if (options?.applySequentialLearning) {
-      const existing = await this.prisma.knowledgeMaterialFavorite.findUnique({
-        where: { materialId_userId: { materialId, userId } },
-      });
-      if (!existing) {
-        const material = await this.prisma.knowledgeMaterial.findFirst({
-          where: {
-            id: materialId,
-            deletedAt: null,
-            status: PageStatus.PUBLISHED,
-            category: { deletedAt: null },
-          },
-          select: { categoryId: true },
-        });
-        if (!material) {
-          throw new NotFoundException('Материал не найден');
-        }
-        await this.knowledgeSequentialAccessService.assertMaterialUnlockedForParticipant(
-          materialId,
-          userId,
-          material.categoryId,
-        );
-      }
-    }
-    return this.knowledgeMaterialFavoritesService.toggleFavorite(materialId, userId);
+    return this.knowledgeMaterialEngagementService.toggleFavorite(materialId, userId, options);
   }
 
   getUserFavoritesCount(userId: string) {
