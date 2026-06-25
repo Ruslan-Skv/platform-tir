@@ -126,6 +126,31 @@ export class AdminAccessService {
     }
 
     const ctx = await this.loadPermissionContext(userId, userRole);
+
+    // Стажёр видит все категории раздела, кроме явно закрытых (DENIED).
+    if (userRole === 'TRAINEE') {
+      const parent = await this.getUserEffectivePermission(
+        userId,
+        userRole,
+        KNOWLEDGE_RESOURCE_ID,
+        ctx,
+      );
+      if (parent === 'DENIED' || parent === 'NONE') {
+        return [];
+      }
+
+      return categories
+        .filter((category) => {
+          const effective = this.computeKnowledgeCategoryEffectivePermission(
+            buildKnowledgeCategoryResourceId(category.id),
+            userRole,
+            ctx,
+          );
+          return effective !== 'DENIED';
+        })
+        .map((category) => category.id);
+    }
+
     const accessible: string[] = [];
 
     for (const category of categories) {

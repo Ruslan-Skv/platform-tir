@@ -197,6 +197,19 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
 
+    if (traineeView && categoryFilter && categories.length === 0) {
+      return;
+    }
+
+    if (
+      traineeView &&
+      categoryFilter &&
+      categories.length > 0 &&
+      !categories.some((category) => category.id === categoryFilter)
+    ) {
+      return;
+    }
+
     const seq = ++materialsLoadSeqRef.current;
     setLoading(true);
     try {
@@ -232,6 +245,7 @@ export function useKnowledgeTerritoryPage() {
     page,
     canEdit,
     traineeView,
+    categories,
     knowledgeAccessReady,
     showMessage,
   ]);
@@ -251,6 +265,18 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       return;
     }
+    if (traineeView && categoryFilter && categories.length === 0) {
+      return;
+    }
+    if (
+      traineeView &&
+      categoryFilter &&
+      categories.length > 0 &&
+      !categories.some((category) => category.id === categoryFilter)
+    ) {
+      setModules([]);
+      return;
+    }
     try {
       const data = await getKnowledgeModules(categoryFilter);
       setModules(data);
@@ -258,7 +284,7 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       showMessage('error', 'Ошибка загрузки модулей');
     }
-  }, [categoryFilter, showMessage]);
+  }, [categoryFilter, traineeView, categories, showMessage]);
 
   const loadStats = useCallback(async () => {
     if (!knowledgeAccessReady) return;
