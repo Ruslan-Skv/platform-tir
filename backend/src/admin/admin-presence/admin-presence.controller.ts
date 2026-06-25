@@ -1,5 +1,6 @@
 import { Controller, Get, HttpCode, Post, Request, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -11,6 +12,7 @@ import { AdminPresenceService } from './admin-presence.service';
 @Controller('admin/presence')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @ApiBearerAuth()
+@SkipThrottle()
 export class AdminPresenceController {
   constructor(private readonly adminPresenceService: AdminPresenceService) {}
 

@@ -353,11 +353,17 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
 
   useEffect(() => {
     if (!notificationSettings) return;
-    loadAllNotifications();
+
     const intervalMs = (notificationSettings.checkIntervalSeconds ?? 60) * 1000;
-    const interval = setInterval(loadAllNotifications, intervalMs);
+    const run = () => {
+      void loadAllNotifications();
+    };
+
+    run();
+    const interval = setInterval(run, intervalMs);
     return () => clearInterval(interval);
-  }, [loadAllNotifications, notificationSettings]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- интервал только при смене настроек, не при каждом пересоздании loadAllNotifications
+  }, [notificationSettings]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {

@@ -1,10 +1,8 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { usePathname } from 'next/navigation';
-
-import { getKnowledgePlatformFeedback } from '@/shared/api/admin-knowledge';
+import { getKnowledgePlatformFeedbackUnreadCount } from '@/shared/api/admin-knowledge';
 
 export function formatKnowledgePlatformFeedbackBadgeCount(count: number): string {
   if (count > 99) return '99+';
@@ -12,25 +10,26 @@ export function formatKnowledgePlatformFeedbackBadgeCount(count: number): string
 }
 
 export function useKnowledgePlatformFeedbackUnreadCount(enabled: boolean) {
-  const pathname = usePathname();
   const [feedbackUnreadCount, setFeedbackUnreadCount] = useState(0);
+  const enabledRef = useRef(enabled);
+  enabledRef.current = enabled;
 
   const refreshFeedbackUnreadCount = useCallback(async () => {
-    if (!enabled) {
+    if (!enabledRef.current) {
       setFeedbackUnreadCount(0);
       return;
     }
     try {
-      const data = await getKnowledgePlatformFeedback({ unreadOnly: true, limit: 100 });
-      setFeedbackUnreadCount(data.items?.length ?? 0);
+      const count = await getKnowledgePlatformFeedbackUnreadCount();
+      setFeedbackUnreadCount(count);
     } catch {
       setFeedbackUnreadCount(0);
     }
-  }, [enabled]);
+  }, []);
 
   useEffect(() => {
     void refreshFeedbackUnreadCount();
-  }, [refreshFeedbackUnreadCount, pathname]);
+  }, [enabled, refreshFeedbackUnreadCount]);
 
   useEffect(() => {
     if (!enabled) return;

@@ -806,12 +806,47 @@ export async function getKnowledgePlatformFeedback(options?: {
   return res.json() as Promise<{ items: KnowledgePlatformFeedback[] }>;
 }
 
+const FEEDBACK_UNREAD_COUNT_CACHE_TTL_MS = 30_000;
+let feedbackUnreadCountCache: { count: number; at: number } | null = null;
+let feedbackUnreadCountInFlight: Promise<number> | null = null;
+
+export function invalidateKnowledgePlatformFeedbackUnreadCountCache(): void {
+  feedbackUnreadCountCache = null;
+}
+
+/** Счётчик непрочитанной обратной связи с дедупликацией параллельных запросов. */
+export async function getKnowledgePlatformFeedbackUnreadCount(): Promise<number> {
+  const now = Date.now();
+  if (
+    feedbackUnreadCountCache &&
+    now - feedbackUnreadCountCache.at < FEEDBACK_UNREAD_COUNT_CACHE_TTL_MS
+  ) {
+    return feedbackUnreadCountCache.count;
+  }
+  if (feedbackUnreadCountInFlight) {
+    return feedbackUnreadCountInFlight;
+  }
+
+  feedbackUnreadCountInFlight = getKnowledgePlatformFeedback({ unreadOnly: true, limit: 100 })
+    .then((data) => {
+      const count = data.items?.length ?? 0;
+      feedbackUnreadCountCache = { count, at: Date.now() };
+      return count;
+    })
+    .finally(() => {
+      feedbackUnreadCountInFlight = null;
+    });
+
+  return feedbackUnreadCountInFlight;
+}
+
 export async function markKnowledgePlatformFeedbackRead() {
   const res = await apiFetch(`${API_URL}/admin/knowledge/feedback/mark-read`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось отметить сообщения прочитанными');
+  invalidateKnowledgePlatformFeedbackUnreadCountCache();
   return res.json() as Promise<{ marked: number }>;
 }
 

@@ -22,6 +22,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { extname } from 'path';
 import type { Request as ExpressRequest } from 'express';
+import { SkipThrottle } from '@nestjs/throttler';
 import { KnowledgePlatformFeedbackType } from '@prisma/client';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
@@ -59,6 +60,7 @@ const knowledgeUploadStorage = diskStorage({
 
 @Controller('admin/knowledge')
 @UseGuards(JwtAuthGuard)
+@SkipThrottle()
 export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,

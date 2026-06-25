@@ -129,6 +129,13 @@ function knowledgeTerritoryUrlFiltersFromSearchParams(
   return normalizeKnowledgeTerritoryUrlFilters(parsed);
 }
 
+/** Стабильная подпись фильтров для URL (без searchInput). */
+export function knowledgeTerritoryUrlFiltersSignature(
+  state: Partial<KnowledgeTerritoryFiltersState>
+): string {
+  return JSON.stringify(normalizeKnowledgeTerritoryUrlFilters(state));
+}
+
 /** Семантическое сравнение фильтров с query string (порядок параметров не важен). */
 export function isKnowledgeTerritoryFiltersSyncedWithUrl(
   searchParams: URLSearchParams,

@@ -44,6 +44,7 @@ import {
   type KnowledgeTerritoryFiltersState,
   buildKnowledgeTerritoryUrl,
   isKnowledgeTerritoryFiltersSyncedWithUrl,
+  knowledgeTerritoryUrlFiltersSignature,
   parseKnowledgeTerritorySearchParams,
   readKnowledgeTerritoryFilters,
   writeKnowledgeTerritoryFilters,
@@ -71,9 +72,12 @@ export function useKnowledgeTerritoryPage() {
   const prevCategoryFilterRef = useRef<string | null>(null);
   const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
+  const categoriesRef = useRef<AdminKnowledgeCategory[]>([]);
+  const lastUrlSyncSignatureRef = useRef('');
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
+  categoriesRef.current = categories;
   const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -198,15 +202,15 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
 
-    if (traineeView && categoryFilter && categories.length === 0) {
+    if (traineeView && categoryFilter && categoriesRef.current.length === 0) {
       return;
     }
 
     if (
       traineeView &&
       categoryFilter &&
-      categories.length > 0 &&
-      !categories.some((category) => category.id === categoryFilter)
+      categoriesRef.current.length > 0 &&
+      !categoriesRef.current.some((category) => category.id === categoryFilter)
     ) {
       return;
     }
@@ -246,7 +250,6 @@ export function useKnowledgeTerritoryPage() {
     page,
     canEdit,
     traineeView,
-    categories,
     knowledgeAccessReady,
     showMessage,
   ]);
@@ -266,14 +269,14 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       return;
     }
-    if (traineeView && categoryFilter && categories.length === 0) {
+    if (traineeView && categoryFilter && categoriesRef.current.length === 0) {
       return;
     }
     if (
       traineeView &&
       categoryFilter &&
-      categories.length > 0 &&
-      !categories.some((category) => category.id === categoryFilter)
+      categoriesRef.current.length > 0 &&
+      !categoriesRef.current.some((category) => category.id === categoryFilter)
     ) {
       setModules([]);
       return;
@@ -285,7 +288,7 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       showMessage('error', 'Ошибка загрузки модулей');
     }
-  }, [categoryFilter, traineeView, categories, showMessage]);
+  }, [categoryFilter, traineeView, showMessage]);
 
   const loadStats = useCallback(async () => {
     if (!knowledgeAccessReady) return;
@@ -347,9 +350,16 @@ export function useKnowledgeTerritoryPage() {
     (snapshot: KnowledgeTerritoryFiltersState) => {
       if (pathname !== '/admin/knowledge') return;
 
-      const liveParams = newURLSearchParamsLive(pathname, '');
-      if (isKnowledgeTerritoryFiltersSyncedWithUrl(liveParams, snapshot)) return;
+      const signature = knowledgeTerritoryUrlFiltersSignature(snapshot);
+      if (lastUrlSyncSignatureRef.current === signature) return;
 
+      const liveParams = newURLSearchParamsLive(pathname, '');
+      if (isKnowledgeTerritoryFiltersSyncedWithUrl(liveParams, snapshot)) {
+        lastUrlSyncSignatureRef.current = signature;
+        return;
+      }
+
+      lastUrlSyncSignatureRef.current = signature;
       router.replace(buildKnowledgeTerritoryUrl(snapshot), { scroll: false });
     },
     [pathname, router]

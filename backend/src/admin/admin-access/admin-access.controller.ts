@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Delete, Param, Body, UseGuards, Request } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { UserRole } from '@prisma/client';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -21,6 +22,7 @@ export class AdminAccessController {
   constructor(private readonly service: AdminAccessService) {}
 
   @Get('my-resources')
+  @SkipThrottle()
   @Roles(...ADMIN_ROLES)
   @ApiOperation({
     summary:
