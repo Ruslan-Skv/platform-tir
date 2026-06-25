@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
-import { usePathname, useSearchParams } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
@@ -570,7 +570,7 @@ export function AdminSidebar({
   onMobileClose,
 }: AdminSidebarProps) {
   const pathname = usePathname();
-  const searchParams = useSearchParams();
+  const [fromCategory, setFromCategory] = useState<string | null>(null);
   const { user: currentUser } = useAuth();
   const { hasAccess, isLoading, resourceIds } = useAdminAccessibleResources();
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
@@ -677,7 +677,14 @@ export function AdminSidebar({
     [pathname, topLevelOnlyHrefs]
   );
 
-  const fromCategory = searchParams?.get('fromCategory');
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setFromCategory(null);
+      return;
+    }
+    setFromCategory(new URLSearchParams(window.location.search).get('fromCategory'));
+  }, [pathname]);
+
   const isProductEditPage = pathname?.match(/^\/admin\/catalog\/products\/[^/]+\/edit/);
 
   const isChildActive = (children: NavChild[] | undefined): boolean => {

@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 type HistoryState = {
   entries: string[];
@@ -27,8 +27,18 @@ function buildHistoryKey(pathname: string, search: string): string {
 export function useBrowserHistoryNavigation() {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const historyKey = buildHistoryKey(pathname, searchParams.toString());
+  const [searchString, setSearchString] = useState('');
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      setSearchString('');
+      return;
+    }
+    const raw = window.location.search;
+    setSearchString(raw.startsWith('?') ? raw.slice(1) : raw);
+  }, [pathname]);
+
+  const historyKey = buildHistoryKey(pathname, searchString);
 
   const historyRef = useRef<HistoryState>({ entries: [], index: -1 });
   const [canGoBack, setCanGoBack] = useState(false);
