@@ -1,7 +1,6 @@
 'use client';
 
-import Link from 'next/link';
-
+import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
 import styles from './KnowledgePlatformFeedbackPage.module.css';
 import type { KnowledgePlatformFeedbackPageModel } from './hooks/useKnowledgePlatformFeedbackPage';
 import {
@@ -26,9 +25,9 @@ export function KnowledgePlatformFeedbackPageView({
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <Link href="/admin/knowledge" className={styles.backLink}>
+        <KnowledgeBackLink href="/admin/knowledge" className={styles.backLinkSlot}>
           ← Территория знаний
-        </Link>
+        </KnowledgeBackLink>
         <h1 className={styles.title}>Обратная связь по платформе</h1>
         <p className={styles.subtitle}>
           Предложения по улучшению и сообщения об ошибках от сотрудников. Данные хранятся в таблице{' '}

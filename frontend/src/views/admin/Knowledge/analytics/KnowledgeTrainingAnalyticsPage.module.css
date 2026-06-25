@@ -21,18 +21,11 @@
   min-width: 0;
 }
 
-.backLink {
+.backLinkSlot {
   display: inline-flex;
   align-items: center;
   gap: var(--admin-space-sm);
   margin-bottom: var(--admin-space-lg);
-  color: var(--admin-text-muted);
-  text-decoration: none;
-  font-size: var(--admin-font-size-sm);
-}
-
-.backLink:hover {
-  color: var(--admin-text-secondary);
 }
 
 .title {

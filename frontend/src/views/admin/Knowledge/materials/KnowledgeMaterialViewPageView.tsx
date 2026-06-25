@@ -11,6 +11,7 @@ import {
 } from '@/shared/ui/icons';
 
 import { KnowledgeAttachmentsList } from '../shared/KnowledgeAttachmentsList';
+import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
 import { KnowledgeMaterialComments } from '../shared/KnowledgeMaterialComments';
 import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
 import { KnowledgeMaterialQuiz } from '../shared/KnowledgeMaterialQuiz';
@@ -71,9 +72,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   if (error || !material) {
     return (
       <div className={styles.page}>
-        <Link href={backUrl} className={styles.backLink}>
-          ← Назад
-        </Link>
+        <KnowledgeBackLink href={backUrl}>← Назад</KnowledgeBackLink>
         <div className={styles.error}>{error || 'Материал не найден'}</div>
       </div>
     );
@@ -91,9 +90,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   return (
     <div className={styles.page}>
       <div className={styles.topBar}>
-        <Link href={backUrl} className={styles.backLink}>
-          ← Назад
-        </Link>
+        <KnowledgeBackLink href={backUrl}>← Назад</KnowledgeBackLink>
         <div className={styles.topActions}>
           {canParticipate ? (
             <button
@@ -342,17 +339,15 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       )}
 
       <footer className={styles.materialFooter}>
-        <Link href={backUrl} className={styles.footerBackLink}>
-          ← Назад
-        </Link>
+        <KnowledgeBackLink href={backUrl}>← Назад</KnowledgeBackLink>
         {showNextMaterial ? (
-          <Link
+          <KnowledgeBackLink
             href={`/admin/knowledge/materials/${nextMaterial.id}`}
             className={styles.footerNextLink}
             title={nextMaterial.title}
           >
             Следующий материал →
-          </Link>
+          </KnowledgeBackLink>
         ) : null}
       </footer>
 

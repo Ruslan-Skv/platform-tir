@@ -1,7 +1,5 @@
 'use client';
 
-import Link from 'next/link';
-
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { VideoPlayer } from '@/shared/ui/VideoPlayer';
 import { BlogPostEditor } from '@/views/admin/Content/Blog';
@@ -11,6 +9,7 @@ import {
 } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { KnowledgeAttachmentsEditor } from '../../shared/KnowledgeAttachmentsEditor';
+import { KnowledgeBackLink } from '../../shared/KnowledgeBackLink';
 import { KnowledgeQuizEditor } from '../../shared/KnowledgeQuizEditor';
 import {
   KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS,
@@ -107,9 +106,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     <AdminStickyPageRoot stickyTopPx={saveButtonPinnedTopPx} className={styles.page}>
       <div ref={pageHeaderRef} className={styles.pageHeader}>
         <div className={styles.pageHeaderMain}>
-          <Link href="/admin/knowledge" className={styles.backLink}>
-            ← Территория знаний
-          </Link>
+          <KnowledgeBackLink href="/admin/knowledge">← Территория знаний</KnowledgeBackLink>
           <div className={styles.titleWithSaveNotice}>
             <h1 className={styles.title}>
               {isEdit ? 'Редактирование материала' : 'Новый материал'}
@@ -187,10 +184,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
       {categories.length === 0 ? (
         <div className={`${styles.message} ${styles.error}`}>
           Сначала создайте категорию на{' '}
-          <Link href="/admin/knowledge" className={styles.backLink}>
-            главной странице раздела
-          </Link>
-          .
+          <KnowledgeBackLink href="/admin/knowledge">главной странице раздела</KnowledgeBackLink>.
         </div>
       ) : null}
 

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/features/auth';
 import {
   adminEditRouteRedirectTarget,
   isAdminEditRoute,
@@ -29,6 +30,7 @@ type AdminSectionAccessShellProps = {
  */
 export function AdminSectionAccessShell({ children }: AdminSectionAccessShellProps) {
   const router = useRouter();
+  const { user } = useAuth();
   const { hasAccess } = useAdminAccessibleResources();
   const sectionPermission = useAdminSectionPermission();
   const { pathname, resourceId, sectionLabel, canView, canParticipate, canEdit, isLoading } =
@@ -82,7 +84,7 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     return null;
   }
 
-  const showReadOnlyBanner = isReadOnly && Boolean(sectionLabel);
+  const showReadOnlyBanner = isReadOnly && Boolean(sectionLabel) && user?.role !== 'TRAINEE';
 
   return (
     <AdminSectionPermissionContext.Provider value={sectionPermission}>

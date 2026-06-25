@@ -93,17 +93,6 @@
   cursor: not-allowed;
 }
 
-.backLink {
-  display: inline-block;
-  font-size: var(--admin-font-size-xs);
-  color: var(--admin-accent);
-  text-decoration: none;
-}
-
-.backLink:hover {
-  text-decoration: underline;
-}
-
 .title {
   font-size: var(--admin-font-size-2xl);
   font-weight: 700;

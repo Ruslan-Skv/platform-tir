@@ -746,7 +746,13 @@ export function AdminSidebar({
           <Link href={homePath} className={styles.logo} aria-label="Цифровая платформа">
             <AdminPlatformBrand collapsed={collapsed} />
           </Link>
-          <button className={styles.toggleBtn} onClick={onToggle}>
+          <button
+            type="button"
+            className={styles.toggleBtn}
+            onClick={onToggle}
+            title={collapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'}
+            aria-label={collapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'}
+          >
             {collapsed ? '→' : '←'}
           </button>
         </div>

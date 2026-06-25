@@ -28,16 +28,6 @@
   margin-bottom: var(--admin-space-2xl);
 }
 
-.backLink {
-  font-size: var(--admin-font-size-sm);
-  color: var(--admin-accent);
-  text-decoration: none;
-}
-
-.backLink:hover {
-  text-decoration: underline;
-}
-
 .topActions {
   display: flex;
   gap: var(--admin-space-md);
@@ -498,18 +488,6 @@
   margin: var(--admin-space-4xl) 0;
   padding-top: var(--admin-space-2xl);
   border-top: 1px solid var(--admin-border);
-}
-
-.footerBackLink,
-.footerNextLink {
-  font-size: var(--admin-font-size-sm);
-  color: var(--admin-accent);
-  text-decoration: none;
-}
-
-.footerBackLink:hover,
-.footerNextLink:hover {
-  text-decoration: underline;
 }
 
 .footerNextLink {

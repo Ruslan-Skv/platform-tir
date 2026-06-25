@@ -70,7 +70,6 @@ export function useKnowledgeTerritoryPage() {
   const filtersHydratedRef = useRef(false);
   const prevCategoryFilterRef = useRef<string | null>(null);
   const materialsLoadSeqRef = useRef(0);
-  const lastTerritoryUrlReplaceRef = useRef<string | null>(null);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
@@ -307,21 +306,22 @@ export function useKnowledgeTerritoryPage() {
     loadModules();
   }, [categoryFilter, loadModules]);
 
+  const syncFiltersToUrl = useCallback(
+    (snapshot: KnowledgeTerritoryFiltersState) => {
+      if (pathname !== '/admin/knowledge') return;
+
+      const liveParams = newURLSearchParamsLive(pathname, '');
+      if (isKnowledgeTerritoryFiltersSyncedWithUrl(liveParams, snapshot)) return;
+
+      router.replace(buildKnowledgeTerritoryUrl(snapshot), { scroll: false });
+    },
+    [pathname, router]
+  );
+
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
-
-    const liveParams = newURLSearchParamsLive(pathname, searchParams.toString());
-    if (isKnowledgeTerritoryFiltersSyncedWithUrl(liveParams, filtersSnapshot)) {
-      lastTerritoryUrlReplaceRef.current = buildKnowledgeTerritoryUrl(filtersSnapshot);
-      return;
-    }
-
-    const nextUrl = buildKnowledgeTerritoryUrl(filtersSnapshot);
-    if (lastTerritoryUrlReplaceRef.current === nextUrl) return;
-
-    lastTerritoryUrlReplaceRef.current = nextUrl;
-    router.replace(nextUrl, { scroll: false });
-  }, [filtersSnapshot, pathname, router, searchParams]);
+    syncFiltersToUrl(filtersSnapshot);
+  }, [filtersSnapshot, syncFiltersToUrl]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;

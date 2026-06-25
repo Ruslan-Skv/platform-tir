@@ -2,8 +2,7 @@
 
 import { useMemo } from 'react';
 
-import Link from 'next/link';
-
+import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
 import styles from './KnowledgeTrainingAnalyticsPage.module.css';
 import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
 import { TrainingAnalyticsCategoryProgress } from './components/TrainingAnalyticsCategoryProgress';
@@ -82,9 +81,9 @@ export function KnowledgeTrainingAnalyticsPageView({
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerMain}>
-          <Link href="/admin/knowledge" className={styles.backLink}>
+          <KnowledgeBackLink href="/admin/knowledge" className={styles.backLinkSlot}>
             ← Территория знаний
-          </Link>
+          </KnowledgeBackLink>
           <h1 className={styles.title}>
             {isTrainee ? 'Мой прогресс обучения' : 'Статистика обучения'}
           </h1>
