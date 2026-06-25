@@ -12,6 +12,7 @@ import {
   KNOWLEDGE_RESOURCE_ID,
   parseKnowledgeCategoryResourceId,
 } from './knowledge-resources.util';
+import { isKnowledgeCategoryExplicitlyDenied } from './knowledge-trainee-category-access.util';
 import { ADMIN_RESOURCES } from './resources.config';
 import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
 
@@ -77,6 +78,17 @@ export class AdminAccessService {
     );
   }
 
+  private isKnowledgeCategoryExplicitlyDenied(
+    categoryResourceId: string,
+    ctx: PermissionContext,
+  ): boolean {
+    return isKnowledgeCategoryExplicitlyDenied(
+      categoryResourceId,
+      ctx.userPerms,
+      ctx.rolePermsForUser,
+    );
+  }
+
   private computeKnowledgeCategoryEffectivePermission(
     categoryResourceId: string,
     userRole: UserRole,
@@ -127,7 +139,9 @@ export class AdminAccessService {
 
     const ctx = await this.loadPermissionContext(userId, userRole);
 
-    // Стажёр видит все категории раздела, кроме явно закрытых (DENIED).
+    // Стажёр видит все категории раздела, кроме явно закрытых на самой категории.
+    // Не учитываем унаследованный DENIED от родителя admin.knowledge — иначе при
+    // пользовательском доступе к разделу и ролевом DENIED на родителе список пустой.
     if (userRole === 'TRAINEE') {
       const parent = await this.getUserEffectivePermission(
         userId,
@@ -140,14 +154,13 @@ export class AdminAccessService {
       }
 
       return categories
-        .filter((category) => {
-          const effective = this.computeKnowledgeCategoryEffectivePermission(
-            buildKnowledgeCategoryResourceId(category.id),
-            userRole,
-            ctx,
-          );
-          return effective !== 'DENIED';
-        })
+        .filter(
+          (category) =>
+            !this.isKnowledgeCategoryExplicitlyDenied(
+              buildKnowledgeCategoryResourceId(category.id),
+              ctx,
+            ),
+        )
         .map((category) => category.id);
     }
 

@@ -25,6 +25,7 @@ export class AdminResourceInterceptor implements NestInterceptor {
       method: string;
       path: string;
       url: string;
+      query?: Record<string, unknown>;
     }>();
 
     const user = request.user;
@@ -35,6 +36,18 @@ export class AdminResourceInterceptor implements NestInterceptor {
     const requestPath = request.path ?? request.url?.split('?')[0] ?? '';
     const isAdminApiPath = requestPath.startsWith('/api/v1/admin/');
     const isAdminUser = ADMIN_ROLES.includes(user.role as UserRole);
+
+    // Личный кабинет на публичке (в т.ч. стажёры с ролью TRAINEE в админке).
+    if (requestPath.startsWith('/api/v1/users/me/')) {
+      return next.handle();
+    }
+
+    // Чат поддержки для клиента; панель поддержки — ?asSupport=true (проверяется ниже).
+    const asSupport =
+      typeof request.query?.asSupport === 'string' ? request.query.asSupport === 'true' : false;
+    if (requestPath.startsWith('/api/v1/support/') && !asSupport) {
+      return next.handle();
+    }
 
     const matched = matchAdminApiResourceRule(request.method, requestPath);
     if (!matched) {

@@ -69,6 +69,7 @@ export function useKnowledgeTerritoryPage() {
   const searchParams = useSearchParams();
   const filtersHydratedRef = useRef(false);
   const prevCategoryFilterRef = useRef<string | null>(null);
+  const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
@@ -151,7 +152,7 @@ export function useKnowledgeTerritoryPage() {
       setModuleFilter(saved.moduleFilter);
       setTypeFilter(saved.typeFilter);
       setStatusFilter(saved.statusFilter);
-      setFavoritesOnly(saved.favoritesOnly);
+      setFavoritesOnly(isKnowledgeTraineeRole(user?.role) ? false : saved.favoritesOnly);
       setSearch(saved.search);
       setSearchInput(saved.searchInput);
       setPage(saved.page);
@@ -305,6 +306,16 @@ export function useKnowledgeTerritoryPage() {
     loadCategories();
     loadStats();
   }, [loadCategories, loadStats]);
+
+  useEffect(() => {
+    if (!traineeView || traineeFavoritesNormalizedRef.current) return;
+
+    const favoritesFromUrl = searchParams.get('favorites') === '1';
+    if (!favoritesFromUrl && favoritesOnly) {
+      setFavoritesOnly(false);
+    }
+    traineeFavoritesNormalizedRef.current = true;
+  }, [traineeView, favoritesOnly, searchParams]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current || !traineeView || favoritesOnly || categories.length === 0) {
