@@ -51,10 +51,11 @@ import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.type
 import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformFeedbackUnreadCount';
 
 export function useKnowledgeTerritoryPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const { canView, canEdit, canParticipate } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const isTrainee = isKnowledgeTraineeRole(user?.role);
+  const traineeView = !authLoading && isTrainee;
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -179,7 +180,7 @@ export function useKnowledgeTerritoryPage() {
   }, [filtersSnapshot]);
 
   const loadMaterials = useCallback(async () => {
-    if (isTrainee && !categoryFilter && !favoritesOnly) {
+    if (traineeView && !categoryFilter && !favoritesOnly) {
       setMaterials([]);
       setTotalPages(1);
       setLoading(false);
@@ -220,7 +221,7 @@ export function useKnowledgeTerritoryPage() {
     favoritesOnly,
     page,
     canEdit,
-    isTrainee,
+    traineeView,
     showMessage,
   ]);
 
@@ -267,21 +268,17 @@ export function useKnowledgeTerritoryPage() {
   }, [loadCategories, loadStats]);
 
   useEffect(() => {
-    if (!categoryFilter) return;
-    if (categories.length > 0 && !categories.some((category) => category.id === categoryFilter)) {
-      setCategoryFilter(isTrainee && categories[0] ? categories[0].id : '');
-      setModuleFilter('');
-      setPage(1);
+    if (!filtersHydratedRef.current || !traineeView || favoritesOnly || categories.length === 0) {
+      return;
     }
-  }, [categories, categoryFilter, isTrainee]);
 
-  useEffect(() => {
-    if (!filtersHydratedRef.current || !isTrainee || favoritesOnly || search) return;
-    if (!categoryFilter && categories.length > 0) {
-      setCategoryFilter(categories[0].id);
-      setPage(1);
-    }
-  }, [isTrainee, favoritesOnly, search, categoryFilter, categories]);
+    setCategoryFilter((prev) => {
+      if (prev && categories.some((category) => category.id === prev)) {
+        return prev;
+      }
+      return categories[0]?.id ?? '';
+    });
+  }, [traineeView, favoritesOnly, categories]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
