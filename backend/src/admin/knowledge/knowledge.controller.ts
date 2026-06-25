@@ -37,6 +37,7 @@ import { CreateKnowledgeTargetAudienceDto } from './dto/create-knowledge-target-
 import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto';
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytics.service';
+import { KnowledgeMyTrainingProgressService } from './services/knowledge-my-training-progress.service';
 import { AdminAccessService } from '../admin-access/admin-access.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
@@ -63,6 +64,7 @@ export class KnowledgeController {
     private readonly knowledgeService: KnowledgeService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
     private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
+    private readonly myTrainingProgressService: KnowledgeMyTrainingProgressService,
     private readonly adminAccessService: AdminAccessService,
   ) {}
 
@@ -158,7 +160,7 @@ export class KnowledgeController {
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    return this.trainingAnalyticsService.getMyTrainingProgress(req.user.id, { dateFrom, dateTo });
+    return this.myTrainingProgressService.getMyTrainingProgress(req.user.id, { dateFrom, dateTo });
   }
 
   @Get('materials/search/suggestions')
