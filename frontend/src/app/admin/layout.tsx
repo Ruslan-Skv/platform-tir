@@ -94,18 +94,15 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show loading while checking auth (spinner only — текст «Загрузка» показывают страницы контента)
-  if (isLoading) {
+  const authReady = !isLoading && isAuthenticated && isAdmin;
+
+  // Не авторизован — короткий спиннер до редиректа на login (без оболочки)
+  if (!isLoading && (!isAuthenticated || !isAdmin)) {
     return (
       <div className={styles.loadingContainer} aria-busy="true" aria-label="Загрузка">
         <div className={styles.loadingSpinner} />
       </div>
     );
-  }
-
-  // Don't render admin layout if not authenticated
-  if (!isAuthenticated || !isAdmin) {
-    return null;
   }
 
   const effectiveSidebarWidth = sidebarCollapsed ? 70 : sidebarWidth;
@@ -141,7 +138,13 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
           <AdminPresenceHeartbeat />
           <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
           <main className={styles.content}>
-            <AdminSectionAccessShell>{children}</AdminSectionAccessShell>
+            {authReady ? (
+              <AdminSectionAccessShell>{children}</AdminSectionAccessShell>
+            ) : (
+              <div className={styles.contentLoading} aria-busy="true" aria-label="Загрузка">
+                <div className={styles.loadingSpinner} />
+              </div>
+            )}
           </main>
         </div>
       </div>

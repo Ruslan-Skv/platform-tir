@@ -82,10 +82,13 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
       return;
     }
 
+    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     const cached = readCachedResources(userId);
     const hasCache = cached.length > 0;
-    if (hasCache) {
-      setResources(cached);
+    if (isSuperAdmin || hasCache) {
+      if (hasCache) {
+        setResources(cached);
+      }
       setIsLoading(false);
     } else {
       setIsLoading(true);
@@ -100,7 +103,7 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
     } finally {
       setIsLoading(false);
     }
-  }, [userId]);
+  }, [userId, user?.role]);
 
   useEffect(() => {
     void load();

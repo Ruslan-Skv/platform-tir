@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { ReviewsService } from '../../reviews/reviews.service';
 import { UpdateReviewsBlockDto } from './dto/update-reviews-block.dto';
@@ -7,6 +8,7 @@ import { AdminReviewsService } from './admin-reviews.service';
 
 @ApiTags('admin/reviews')
 @Controller('admin/reviews')
+@SkipThrottle()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminReviewsController {

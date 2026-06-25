@@ -768,6 +768,13 @@
   background-color: var(--admin-bg-page, #f5f7fa);
 }
 
+.contentLoading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 12rem;
+}
+
 .loadingContainer {
   min-height: 100vh;
   display: flex;

@@ -10,6 +10,7 @@ import {
   UseGuards,
   Request,
 } from '@nestjs/common';
+import { SkipThrottle } from '@nestjs/throttler';
 import { AdminOrdersService } from './admin-orders.service';
 import { OrdersService } from '../../orders/orders.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -21,6 +22,7 @@ import { UpdateServiceOrderCustomerDto } from '../../orders/dto/update-service-o
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 
 @Controller('admin/orders')
+@SkipThrottle()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'CONTENT_MANAGER', 'MODERATOR', 'SUPPORT', 'MANAGER')
 export class AdminOrdersController {

@@ -165,6 +165,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        const expAfterRefresh = getJwtExpMs(access);
+        if (expAfterRefresh && expAfterRefresh > Date.now() + 5 * 60_000) {
+          return;
+        }
+
         const isValid = await verifyToken(access);
         if (!isValid) {
           logout();

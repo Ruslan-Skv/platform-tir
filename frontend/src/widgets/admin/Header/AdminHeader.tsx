@@ -359,9 +359,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       void loadAllNotifications();
     };
 
-    run();
-    const interval = setInterval(run, intervalMs);
-    return () => clearInterval(interval);
+    const startDelay = window.setTimeout(run, 2_000);
+    const interval = window.setInterval(run, intervalMs);
+    return () => {
+      window.clearTimeout(startDelay);
+      window.clearInterval(interval);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- интервал только при смене настроек, не при каждом пересоздании loadAllNotifications
   }, [notificationSettings]);
 

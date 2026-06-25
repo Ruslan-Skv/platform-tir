@@ -10,6 +10,7 @@ import {
   Request,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { SupportChatService } from './support-chat.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
@@ -18,6 +19,7 @@ import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('support-chat')
 @Controller('support')
+@SkipThrottle()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class SupportChatController {

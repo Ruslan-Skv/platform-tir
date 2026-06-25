@@ -1,5 +1,6 @@
 import { Controller, Get, Query, BadRequestException, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -8,6 +9,7 @@ import { AdminDashboardService } from './admin-dashboard.service';
 
 @ApiTags('admin-dashboard')
 @Controller('admin/dashboard')
+@SkipThrottle()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ADMIN_ROLES)
 @ApiBearerAuth()

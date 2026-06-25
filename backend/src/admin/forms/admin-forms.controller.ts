@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { UpdateCallbackFormBlockDto } from './dto/update-callback-form-block.dto';
 import { UpdateDirectorMessageBlockDto } from './dto/update-director-message-block.dto';
@@ -9,6 +10,7 @@ import { AdminFormsService } from './admin-forms.service';
 
 @ApiTags('admin/forms')
 @Controller('admin/forms')
+@SkipThrottle()
 @UseGuards(JwtAuthGuard)
 @ApiBearerAuth()
 export class AdminFormsController {
