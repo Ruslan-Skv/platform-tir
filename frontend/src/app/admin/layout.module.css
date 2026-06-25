@@ -781,6 +781,21 @@
   color: var(--admin-text-muted, #6b7280);
 }
 
+.loadingSpinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--admin-border, #e5e7eb);
+  border-top-color: var(--admin-accent, rgb(var(--color-accent-rgb)));
+  border-radius: 50%;
+  animation: adminLayoutSpin 0.8s linear infinite;
+}
+
+@keyframes adminLayoutSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 1024px) {
   .mainArea {
     margin-left: 0 !important;

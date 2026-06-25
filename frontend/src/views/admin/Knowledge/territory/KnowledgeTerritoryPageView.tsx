@@ -94,6 +94,10 @@ function MaterialCard({
   const canMarkInteresting = m.status === 'PUBLISHED';
   const canComment = m.status === 'PUBLISHED';
   const isLocked = !canEdit && Boolean(m.sequentialLocked);
+  const studyCompleted = Boolean(m.studyCompleted);
+  const canToggleFavorite = canParticipate && (canEdit || !isLocked || favoritedByMe);
+  const canToggleInteresting =
+    canParticipate && canMarkInteresting && (canEdit || studyCompleted || likedByMe);
 
   const cardInner = (
     <>
@@ -214,13 +218,15 @@ function MaterialCard({
         <AdminTableIconButton
           aria-label={favoritedByMe ? 'Убрать из избранного' : 'Добавить в избранное'}
           title={
-            canParticipate
-              ? favoritedByMe
-                ? 'Убрать из избранного'
-                : 'Добавить в избранное — быстрый доступ в разделе «Избранное»'
-              : 'Избранное доступно при уровне доступа «Участие»'
+            !canParticipate
+              ? 'Избранное доступно при уровне доступа «Участие»'
+              : !canToggleFavorite
+                ? 'Добавить в избранное можно после разблокировки материала'
+                : favoritedByMe
+                  ? 'Убрать из избранного'
+                  : 'Добавить в избранное — быстрый доступ в разделе «Избранное»'
           }
-          disabled={!canParticipate}
+          disabled={!canToggleFavorite}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();
@@ -232,15 +238,17 @@ function MaterialCard({
         <AdminTableIconButton
           aria-label={likedByMe ? 'Снять отметку «интересный»' : 'Отметить как интересный материал'}
           title={
-            canMarkInteresting && canParticipate
-              ? likedByMe
-                ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
-                : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
-              : canMarkInteresting
-                ? 'Отметить можно при уровне доступа «Участие»'
-                : 'Отметить можно только опубликованные материалы'
+            !canParticipate
+              ? 'Отметить можно при уровне доступа «Участие»'
+              : !canMarkInteresting
+                ? 'Отметить можно только опубликованные материалы'
+                : !canToggleInteresting
+                  ? 'Отметить как интересный можно после изучения материала'
+                  : likedByMe
+                    ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
+                    : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
           }
-          disabled={!canMarkInteresting || !canParticipate}
+          disabled={!canToggleInteresting}
           onClick={(e) => {
             e.preventDefault();
             e.stopPropagation();

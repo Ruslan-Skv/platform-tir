@@ -222,11 +222,66 @@ export class KnowledgeService {
     );
   }
 
-  toggleLike(materialId: string, userId: string) {
+  toggleLike(materialId: string, userId: string, options?: { applySequentialLearning?: boolean }) {
+    return this.toggleLikeWithAccessCheck(materialId, userId, options);
+  }
+
+  private async toggleLikeWithAccessCheck(
+    materialId: string,
+    userId: string,
+    options?: { applySequentialLearning?: boolean },
+  ) {
+    if (options?.applySequentialLearning) {
+      const existing = await this.prisma.knowledgeMaterialLike.findUnique({
+        where: { materialId_userId: { materialId, userId } },
+      });
+      if (!existing) {
+        await this.knowledgeSequentialAccessService.assertMaterialStudyCompletedForParticipant(
+          materialId,
+          userId,
+        );
+      }
+    }
     return this.knowledgeMaterialLikesService.toggleLike(materialId, userId);
   }
 
-  toggleFavorite(materialId: string, userId: string) {
+  toggleFavorite(
+    materialId: string,
+    userId: string,
+    options?: { applySequentialLearning?: boolean },
+  ) {
+    return this.toggleFavoriteWithAccessCheck(materialId, userId, options);
+  }
+
+  private async toggleFavoriteWithAccessCheck(
+    materialId: string,
+    userId: string,
+    options?: { applySequentialLearning?: boolean },
+  ) {
+    if (options?.applySequentialLearning) {
+      const existing = await this.prisma.knowledgeMaterialFavorite.findUnique({
+        where: { materialId_userId: { materialId, userId } },
+      });
+      if (!existing) {
+        const material = await this.prisma.knowledgeMaterial.findFirst({
+          where: {
+            id: materialId,
+            deletedAt: null,
+            status: PageStatus.PUBLISHED,
+            category: { deletedAt: null },
+          },
+          select: { categoryId: true },
+        });
+        if (!material) {
+          throw new NotFoundException('Материал не найден');
+        }
+        await this.knowledgeSequentialAccessService.assertMaterialUnlockedForParticipant(
+          materialId,
+          userId,
+          material.categoryId,
+        );
+      }
+    }
     return this.knowledgeMaterialFavoritesService.toggleFavorite(materialId, userId);
   }
 

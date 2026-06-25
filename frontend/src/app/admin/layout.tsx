@@ -27,9 +27,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-  const [isMobileLayout, setIsMobileLayout] = useState(
-    () => typeof window !== 'undefined' && window.matchMedia('(max-width: 1024px)').matches
-  );
+  const [isMobileLayout, setIsMobileLayout] = useState(false);
 
   useEffect(() => {
     try {
@@ -96,11 +94,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  // Show loading while checking auth
+  // Show loading while checking auth (spinner only — текст «Загрузка» показывают страницы контента)
   if (isLoading) {
     return (
-      <div className={styles.loadingContainer}>
-        <div className={styles.loading}>Загрузка...</div>
+      <div className={styles.loadingContainer} aria-busy="true" aria-label="Загрузка">
+        <div className={styles.loadingSpinner} />
       </div>
     );
   }

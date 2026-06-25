@@ -143,6 +143,31 @@ export class KnowledgeSequentialAccessService {
     }
   }
 
+  async assertMaterialStudyCompletedForParticipant(
+    materialId: string,
+    userId: string,
+  ): Promise<void> {
+    const material = await this.prisma.knowledgeMaterial.findFirst({
+      where: {
+        id: materialId,
+        deletedAt: null,
+        status: PageStatus.PUBLISHED,
+        category: { deletedAt: null },
+      },
+      select: { id: true, type: true },
+    });
+    if (!material) {
+      throw new NotFoundException('Материал не найден');
+    }
+
+    const completionById = await this.loadCompletionByMaterialId(userId, [material]);
+    if (completionById.get(materialId) !== true) {
+      throw new ForbiddenException(
+        'Отметить материал как интересный можно только после его изучения.',
+      );
+    }
+  }
+
   async attachSequentialAccess<T extends KnowledgeMaterialCompletionInput & { id: string }>(
     materials: T[],
     categoryId: string,

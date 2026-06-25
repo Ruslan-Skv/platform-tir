@@ -74,17 +74,15 @@ export function useKnowledgeTerritoryPage() {
   const prevCategoryFilterRef = useRef<string | null>(null);
   const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
-  const categoriesRef = useRef<AdminKnowledgeCategory[]>([]);
   const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
   const lastUrlSyncSignatureRef = useRef('');
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   materialsRef.current = materials;
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
-  categoriesRef.current = categories;
   const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<PageMessage | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -211,15 +209,15 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
 
-    if (traineeView && categoryFilter && categoriesRef.current.length === 0) {
+    if (traineeView && categoryFilter && categories.length === 0) {
       return;
     }
 
     if (
       traineeView &&
       categoryFilter &&
-      categoriesRef.current.length > 0 &&
-      !categoriesRef.current.some((category) => category.id === categoryFilter)
+      categories.length > 0 &&
+      !categories.some((category) => category.id === categoryFilter)
     ) {
       return;
     }
@@ -262,6 +260,7 @@ export function useKnowledgeTerritoryPage() {
     canEdit,
     traineeView,
     knowledgeAccessReady,
+    categories,
     showMessage,
   ]);
 
@@ -280,14 +279,14 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       return;
     }
-    if (traineeView && categoryFilter && categoriesRef.current.length === 0) {
+    if (traineeView && categoryFilter && categories.length === 0) {
       return;
     }
     if (
       traineeView &&
       categoryFilter &&
-      categoriesRef.current.length > 0 &&
-      !categoriesRef.current.some((category) => category.id === categoryFilter)
+      categories.length > 0 &&
+      !categories.some((category) => category.id === categoryFilter)
     ) {
       setModules([]);
       return;
@@ -299,7 +298,7 @@ export function useKnowledgeTerritoryPage() {
       setModules([]);
       showMessage('error', 'Ошибка загрузки модулей');
     }
-  }, [categoryFilter, traineeView, showMessage]);
+  }, [categoryFilter, traineeView, categories, showMessage]);
 
   const loadStats = useCallback(async () => {
     if (!knowledgeAccessReady) return;

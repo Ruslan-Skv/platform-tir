@@ -301,13 +301,15 @@ export class KnowledgeController {
   }
 
   @Patch('materials/:id/like')
-  toggleMaterialLike(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.toggleLike(id, req.user.id);
+  async toggleMaterialLike(@Param('id') id: string, @Request() req: RequestWithUser) {
+    const applySequentialLearning = await this.shouldApplySequentialLearning(req);
+    return this.knowledgeService.toggleLike(id, req.user.id, { applySequentialLearning });
   }
 
   @Patch('materials/:id/favorite')
-  toggleMaterialFavorite(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.toggleFavorite(id, req.user.id);
+  async toggleMaterialFavorite(@Param('id') id: string, @Request() req: RequestWithUser) {
+    const applySequentialLearning = await this.shouldApplySequentialLearning(req);
+    return this.knowledgeService.toggleFavorite(id, req.user.id, { applySequentialLearning });
   }
 
   @Get('materials/:id/likes')

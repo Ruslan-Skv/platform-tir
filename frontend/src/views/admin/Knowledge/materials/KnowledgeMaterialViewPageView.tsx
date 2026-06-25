@@ -85,6 +85,11 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   const commentCount = material.commentCount ?? 0;
   const canMarkInteresting = material.status === 'PUBLISHED';
   const canComment = material.status === 'PUBLISHED';
+  const isLocked = canStudy && Boolean(material.sequentialLocked);
+  const studyCompleted = Boolean(material.studyCompleted);
+  const canToggleFavorite = canParticipate && (!canStudy || !isLocked || favoritedByMe);
+  const canToggleInteresting =
+    canParticipate && canMarkInteresting && (!canStudy || studyCompleted || likedByMe);
   const showNextMaterial = canStudy && material.studyCompleted && nextMaterial;
 
   return (
@@ -97,8 +102,14 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
               type="button"
               className={`${styles.likeBtn} ${favoritedByMe ? styles.favoriteBtnActive : ''}`}
               onClick={() => void handleToggleFavorite()}
-              disabled={togglingFavorite}
-              title={favoritedByMe ? 'Убрать из избранного' : 'Добавить в избранное'}
+              disabled={togglingFavorite || !canToggleFavorite}
+              title={
+                !canToggleFavorite
+                  ? 'Добавить в избранное можно после разблокировки материала'
+                  : favoritedByMe
+                    ? 'Убрать из избранного'
+                    : 'Добавить в избранное'
+              }
             >
               <KnowledgeFavoriteIcon favorited={favoritedByMe} size={16} />
               <span className={styles.actionTextFull}>
@@ -111,11 +122,13 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
               type="button"
               className={`${styles.likeBtn} ${likedByMe ? styles.likeBtnActive : ''}`}
               onClick={() => void handleToggleLike()}
-              disabled={togglingLike}
+              disabled={togglingLike || !canToggleInteresting}
               title={
-                likedByMe
-                  ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
-                  : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
+                !canToggleInteresting
+                  ? 'Отметить как интересный можно после изучения материала'
+                  : likedByMe
+                    ? `Снять отметку «интересный»${likeCount > 0 ? ` (${likeCount})` : ''}`
+                    : `Отметить как интересный${likeCount > 0 ? ` — уже отметили: ${likeCount}` : ''}`
               }
             >
               <InterestingMaterialIcon marked={likedByMe} size={16} />
