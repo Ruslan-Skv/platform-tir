@@ -319,6 +319,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     canEdit,
     canParticipate,
     canViewTrainingAnalytics,
+    isTrainee,
     materials,
     categories,
     modules,
@@ -480,8 +481,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             <Link
               href="/admin/knowledge/analytics"
               className={`${toolbarButtonStyles.button} ${styles.heroInfoTipButton}`}
-              title="Статистика обучения"
-              aria-label="Статистика обучения"
+              title={isTrainee ? 'Мой прогресс обучения' : 'Статистика обучения'}
+              aria-label={isTrainee ? 'Мой прогресс обучения' : 'Статистика обучения'}
             >
               <TrainingStatisticsIcon />
             </Link>
@@ -601,13 +602,15 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
         <aside className={styles.sidebar}>
           <h2 className={styles.sidebarTitle}>Разделы</h2>
           <div className={styles.categoriesList}>
-            <button
-              type="button"
-              className={`${styles.categoryChip} ${!categoryFilter && !favoritesOnly ? styles.categoryChipActive : ''}`}
-              onClick={() => setCategoryFilter('')}
-            >
-              Все материалы
-            </button>
+            {!isTrainee ? (
+              <button
+                type="button"
+                className={`${styles.categoryChip} ${!categoryFilter && !favoritesOnly ? styles.categoryChipActive : ''}`}
+                onClick={() => setCategoryFilter('')}
+              >
+                Все материалы
+              </button>
+            ) : null}
             <button
               type="button"
               className={`${styles.categoryChip} ${favoritesOnly ? styles.categoryChipActive : ''}`}

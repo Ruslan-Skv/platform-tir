@@ -57,6 +57,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
     handleCommentCountChange,
     handleStudyProgress,
     backUrl,
+    nextMaterial,
   } = model;
 
   if (loading) {
@@ -85,6 +86,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   const commentCount = material.commentCount ?? 0;
   const canMarkInteresting = material.status === 'PUBLISHED';
   const canComment = material.status === 'PUBLISHED';
+  const showNextMaterial = canStudy && material.studyCompleted && nextMaterial;
 
   return (
     <div className={styles.page}>
@@ -277,6 +279,12 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
               __html: renderKnowledgeRichTextHtml(material.managerPracticalAssignment),
             }}
           />
+          {canStudy ? (
+            <p className={styles.managerLearnerNote}>
+              На встрече с вашим тьютором вам необходимо будет рассказать о результатах выполнения
+              практического задания
+            </p>
+          ) : null}
         </aside>
       ) : null}
 
@@ -332,6 +340,21 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
       {material.attachments && material.attachments.length > 0 && (
         <KnowledgeAttachmentsList attachments={material.attachments} />
       )}
+
+      <footer className={styles.materialFooter}>
+        <Link href={backUrl} className={styles.footerBackLink}>
+          ← Назад
+        </Link>
+        {showNextMaterial ? (
+          <Link
+            href={`/admin/knowledge/materials/${nextMaterial.id}`}
+            className={styles.footerNextLink}
+            title={nextMaterial.title}
+          >
+            Следующий материал →
+          </Link>
+        ) : null}
+      </footer>
 
       <KnowledgeMaterialComments
         materialId={material.id}

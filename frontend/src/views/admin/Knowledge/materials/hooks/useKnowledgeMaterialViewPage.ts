@@ -6,18 +6,27 @@ import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAcces
 import {
   type AdminKnowledgeMaterial,
   getKnowledgeMaterial,
+  getKnowledgeMaterials,
   markKnowledgeMaterialStudyComplete,
   publishKnowledgeMaterial,
   toggleKnowledgeMaterialFavorite,
   toggleKnowledgeMaterialLike,
 } from '@/shared/api/admin-knowledge';
 
-import { KNOWLEDGE_RESOURCE_ID } from '../../shared/knowledge-utils';
+import {
+  KNOWLEDGE_RESOURCE_ID,
+  sortKnowledgeMaterialsForCategory,
+} from '../../shared/knowledge-utils';
 import { buildKnowledgeTerritoryBackUrl } from '../../territory/knowledge-territory-filters-storage';
 
 interface UseKnowledgeMaterialViewPageOptions {
   materialId: string;
 }
+
+export type KnowledgeNextMaterial = {
+  id: string;
+  title: string;
+};
 
 export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMaterialViewPageOptions) {
   const { canView, canEdit, canParticipate } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
@@ -28,6 +37,7 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   const [publishing, setPublishing] = useState(false);
   const [togglingLike, setTogglingLike] = useState(false);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
+  const [nextMaterial, setNextMaterial] = useState<KnowledgeNextMaterial | null>(null);
 
   const backUrl = useMemo(
     () => buildKnowledgeTerritoryBackUrl(material?.categoryId),
@@ -51,6 +61,40 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   useEffect(() => {
     load();
   }, [load]);
+
+  useEffect(() => {
+    if (!material?.categoryId) {
+      setNextMaterial(null);
+      return;
+    }
+
+    let cancelled = false;
+    void getKnowledgeMaterials({
+      categoryId: material.categoryId,
+      status: 'PUBLISHED',
+      limit: 500,
+    })
+      .then((result) => {
+        if (cancelled) return;
+        const sorted = sortKnowledgeMaterialsForCategory(result.data);
+        const currentIndex = sorted.findIndex((item) => item.id === material.id);
+        if (currentIndex >= 0 && currentIndex < sorted.length - 1) {
+          const next = sorted[currentIndex + 1];
+          setNextMaterial({ id: next.id, title: next.title });
+        } else {
+          setNextMaterial(null);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setNextMaterial(null);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [material?.categoryId, material?.id]);
 
   useEffect(() => {
     if (!material || !canStudy || material.studyCompleted) {
@@ -145,6 +189,7 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     handleCommentCountChange,
     handleStudyProgress,
     backUrl,
+    nextMaterial,
   };
 }
 

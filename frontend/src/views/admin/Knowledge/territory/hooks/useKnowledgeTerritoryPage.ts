@@ -36,6 +36,7 @@ import {
   buildKnowledgeCategoryResourceId,
   canViewKnowledgeTrainingAnalytics,
   getKnowledgeCategoryResourceLabel,
+  isKnowledgeTraineeRole,
 } from '../../shared/knowledge-utils';
 import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import {
@@ -53,6 +54,7 @@ export function useKnowledgeTerritoryPage() {
   const { user } = useAuth();
   const { canView, canEdit, canParticipate } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
+  const isTrainee = isKnowledgeTraineeRole(user?.role);
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -177,6 +179,13 @@ export function useKnowledgeTerritoryPage() {
   }, [filtersSnapshot]);
 
   const loadMaterials = useCallback(async () => {
+    if (isTrainee && !categoryFilter && !favoritesOnly) {
+      setMaterials([]);
+      setTotalPages(1);
+      setLoading(false);
+      return;
+    }
+
     const seq = ++materialsLoadSeqRef.current;
     setLoading(true);
     try {
@@ -211,6 +220,7 @@ export function useKnowledgeTerritoryPage() {
     favoritesOnly,
     page,
     canEdit,
+    isTrainee,
     showMessage,
   ]);
 
@@ -259,11 +269,19 @@ export function useKnowledgeTerritoryPage() {
   useEffect(() => {
     if (!categoryFilter) return;
     if (categories.length > 0 && !categories.some((category) => category.id === categoryFilter)) {
-      setCategoryFilter('');
+      setCategoryFilter(isTrainee && categories[0] ? categories[0].id : '');
       setModuleFilter('');
       setPage(1);
     }
-  }, [categories, categoryFilter]);
+  }, [categories, categoryFilter, isTrainee]);
+
+  useEffect(() => {
+    if (!filtersHydratedRef.current || !isTrainee || favoritesOnly || search) return;
+    if (!categoryFilter && categories.length > 0) {
+      setCategoryFilter(categories[0].id);
+      setPage(1);
+    }
+  }, [isTrainee, favoritesOnly, search, categoryFilter, categories]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
@@ -601,6 +619,7 @@ export function useKnowledgeTerritoryPage() {
     canEdit,
     canParticipate,
     canViewTrainingAnalytics,
+    isTrainee,
     materials,
     categories,
     modules,

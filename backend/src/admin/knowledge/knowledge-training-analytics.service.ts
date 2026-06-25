@@ -9,8 +9,22 @@ type MaterialRow = {
   id: string;
   title: string;
   type: KnowledgeMaterialType;
+  categoryId: string;
   categoryName: string;
+  categoryOrder: number;
   hasQuiz: boolean;
+};
+
+type CategoryMeta = {
+  categoryId: string;
+  categoryName: string;
+  categoryOrder: number;
+  trackableCount: number;
+};
+
+type CategoryTimelineDay = {
+  date: string;
+  categories: Array<{ categoryId: string; completionPercent: number }>;
 };
 
 export type KnowledgeTrainingAnalyticsParams = {
@@ -81,6 +95,58 @@ function roundPercent(value: number): number {
   return Math.round(value * 10) / 10;
 }
 
+function endOfDay(date: Date): Date {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function buildCategoryMetaMap(materials: MaterialRow[]): Map<string, CategoryMeta> {
+  const map = new Map<string, CategoryMeta>();
+  for (const material of materials) {
+    if (!isTrackableMaterial(material)) continue;
+    const existing = map.get(material.categoryId);
+    if (existing) {
+      existing.trackableCount += 1;
+    } else {
+      map.set(material.categoryId, {
+        categoryId: material.categoryId,
+        categoryName: material.categoryName,
+        categoryOrder: material.categoryOrder,
+        trackableCount: 1,
+      });
+    }
+  }
+  return map;
+}
+
+function sortCategorySnapshots<T extends { categoryOrder: number; categoryName: string }>(
+  items: T[],
+): T[] {
+  return [...items].sort(
+    (a, b) =>
+      a.categoryOrder - b.categoryOrder || a.categoryName.localeCompare(b.categoryName, 'ru'),
+  );
+}
+
+function buildCategoryTimeline(
+  days: string[],
+  categoryMeta: Map<string, CategoryMeta>,
+  completionPercentByDay: Map<string, Map<string, number>>,
+): CategoryTimelineDay[] {
+  return days.map((date) => ({
+    date,
+    categories: sortCategorySnapshots(
+      [...categoryMeta.values()].map((category) => ({
+        categoryId: category.categoryId,
+        categoryName: category.categoryName,
+        categoryOrder: category.categoryOrder,
+        completionPercent: completionPercentByDay.get(date)?.get(category.categoryId) ?? 0,
+      })),
+    ).map(({ categoryId, completionPercent }) => ({ categoryId, completionPercent })),
+  }));
+}
+
 @Injectable()
 export class KnowledgeTrainingAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -117,7 +183,7 @@ export class KnowledgeTrainingAnalyticsService {
           id: true,
           title: true,
           type: true,
-          category: { select: { name: true } },
+          category: { select: { id: true, name: true, order: true } },
           quiz: { select: { id: true, _count: { select: { questions: true } } } },
         },
         orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
@@ -128,7 +194,9 @@ export class KnowledgeTrainingAnalyticsService {
       id: m.id,
       title: m.title,
       type: m.type,
+      categoryId: m.category.id,
       categoryName: m.category.name,
+      categoryOrder: m.category.order,
       hasQuiz: Boolean(m.quiz && m.quiz._count.questions > 0),
     }));
 
@@ -201,6 +269,7 @@ export class KnowledgeTrainingAnalyticsService {
 
     const quizPassedByUserMaterial = new Set<string>();
     const quizAttemptedByUserMaterial = new Set<string>();
+    const quizPassedAtByUserMaterial = new Map<string, Date>();
     const lastQuizActivityByUser = new Map<string, Date>();
 
     for (const attempt of quizAttempts) {
@@ -208,6 +277,10 @@ export class KnowledgeTrainingAnalyticsService {
       quizAttemptedByUserMaterial.add(key);
       if (attempt.passed) {
         quizPassedByUserMaterial.add(key);
+        const prev = quizPassedAtByUserMaterial.get(key);
+        if (!prev || attempt.createdAt < prev) {
+          quizPassedAtByUserMaterial.set(key, attempt.createdAt);
+        }
       }
       const prev = lastQuizActivityByUser.get(attempt.userId);
       if (!prev || attempt.createdAt > prev) {
@@ -420,6 +493,82 @@ export class KnowledgeTrainingAnalyticsService {
 
     const statusTotal = statusCompleted + statusInProgress + statusNotStarted;
 
+    const categoryMeta = buildCategoryMetaMap(trackableMaterials);
+    const categoryCompletionByEmployee = new Map<string, Map<string, number>>();
+    for (const employee of employees) {
+      const byCategory = new Map<string, number>();
+      for (const material of trackableMaterials) {
+        if (isMaterialCompleted(employee.id, material)) {
+          byCategory.set(material.categoryId, (byCategory.get(material.categoryId) ?? 0) + 1);
+        }
+      }
+      categoryCompletionByEmployee.set(employee.id, byCategory);
+    }
+
+    const categories = sortCategorySnapshots(
+      [...categoryMeta.values()].map((category) => {
+        let completionSum = 0;
+        for (const employee of employees) {
+          const completedInCategory =
+            categoryCompletionByEmployee.get(employee.id)?.get(category.categoryId) ?? 0;
+          completionSum +=
+            category.trackableCount > 0 ? (completedInCategory / category.trackableCount) * 100 : 0;
+        }
+        return {
+          ...category,
+          completedCount: 0,
+          completionPercent:
+            employees.length > 0 ? roundPercent(completionSum / employees.length) : 0,
+          employeeCount: employees.length,
+        };
+      }),
+    ).map(({ employeeCount, ...category }) => ({
+      categoryId: category.categoryId,
+      categoryName: category.categoryName,
+      categoryOrder: category.categoryOrder,
+      trackableCount: category.trackableCount,
+      avgCompletionPercent: category.completionPercent,
+      employeeCount,
+    }));
+
+    const companyCategoryPercentByDay = new Map<string, Map<string, number>>();
+    for (const day of timelineDays) {
+      const dayEnd = endOfDay(new Date(day));
+      const percentByCategory = new Map<string, number>();
+      for (const category of categoryMeta.values()) {
+        let completionSum = 0;
+        for (const employee of employees) {
+          let completedByDay = 0;
+          for (const material of trackableMaterials) {
+            if (material.categoryId !== category.categoryId) continue;
+            const completedAt = this.resolveMaterialCompletionDate(
+              employee.id,
+              material,
+              videoByUserMaterial,
+              quizPassedByUserMaterial,
+              quizPassedAtByUserMaterial,
+            );
+            if (completedAt && completedAt <= dayEnd) {
+              completedByDay += 1;
+            }
+          }
+          completionSum +=
+            category.trackableCount > 0 ? (completedByDay / category.trackableCount) * 100 : 0;
+        }
+        percentByCategory.set(
+          category.categoryId,
+          employees.length > 0 ? roundPercent(completionSum / employees.length) : 0,
+        );
+      }
+      companyCategoryPercentByDay.set(day, percentByCategory);
+    }
+
+    const categoryTimeline = buildCategoryTimeline(
+      timelineDays,
+      categoryMeta,
+      companyCategoryPercentByDay,
+    );
+
     return {
       period: {
         from: period.from.toISOString(),
@@ -452,6 +601,313 @@ export class KnowledgeTrainingAnalyticsService {
       ),
       topMaterials: topMaterials.slice(0, 15),
       materialsByType,
+      categories,
+      categoryTimeline,
+    };
+  }
+
+  private resolveMaterialCompletionDate(
+    employeeId: string,
+    material: MaterialRow,
+    videoByUserMaterial: Map<string, { updatedAt: Date; completed: boolean }>,
+    quizPassedByUserMaterial: Set<string>,
+    quizPassedAtByUserMaterial?: Map<string, Date>,
+  ): Date | null {
+    const key = `${employeeId}:${material.id}`;
+    if (material.hasQuiz) {
+      if (!quizPassedByUserMaterial.has(key)) return null;
+      return quizPassedAtByUserMaterial?.get(key) ?? null;
+    }
+    if (material.type === KnowledgeMaterialType.VIDEO) {
+      const progress = videoByUserMaterial.get(key);
+      if (!progress?.completed) return null;
+      return progress.updatedAt;
+    }
+    return null;
+  }
+
+  async getMyTrainingProgress(userId: string, params: KnowledgeTrainingAnalyticsParams) {
+    const period = resolvePeriod(params);
+
+    const materialsRaw = await this.prisma.knowledgeMaterial.findMany({
+      where: this.publishedMaterialWhere,
+      select: {
+        id: true,
+        title: true,
+        type: true,
+        category: { select: { id: true, name: true, order: true } },
+        quiz: { select: { id: true, _count: { select: { questions: true } } } },
+      },
+      orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
+    });
+
+    const materials: MaterialRow[] = materialsRaw.map((m) => ({
+      id: m.id,
+      title: m.title,
+      type: m.type,
+      categoryId: m.category.id,
+      categoryName: m.category.name,
+      categoryOrder: m.category.order,
+      hasQuiz: Boolean(m.quiz && m.quiz._count.questions > 0),
+    }));
+
+    const trackableMaterials = materials.filter(isTrackableMaterial);
+    const trackableIds = trackableMaterials.map((m) => m.id);
+    const quizIds = trackableMaterials.filter((m) => m.hasQuiz).map((m) => m.id);
+
+    const [
+      videoProgressRows,
+      quizPassedAttempts,
+      quizAllAttempts,
+      videoUpdatesInPeriod,
+      quizAttemptsInPeriod,
+    ] = await Promise.all([
+      trackableIds.length
+        ? this.prisma.knowledgeVideoProgress.findMany({
+            where: { userId, materialId: { in: trackableIds } },
+            select: {
+              materialId: true,
+              progressPercent: true,
+              completed: true,
+              updatedAt: true,
+            },
+          })
+        : Promise.resolve([]),
+      quizIds.length
+        ? this.prisma.knowledgeQuizAttempt.findMany({
+            where: { userId, materialId: { in: quizIds }, passed: true },
+            select: {
+              materialId: true,
+              passed: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'asc' },
+          })
+        : Promise.resolve([]),
+      quizIds.length
+        ? this.prisma.knowledgeQuizAttempt.findMany({
+            where: { userId, materialId: { in: quizIds } },
+            select: {
+              materialId: true,
+              passed: true,
+              createdAt: true,
+            },
+            orderBy: { createdAt: 'desc' },
+          })
+        : Promise.resolve([]),
+      this.prisma.knowledgeVideoProgress.findMany({
+        where: {
+          userId,
+          updatedAt: { gte: period.from, lte: period.to },
+        },
+        select: { updatedAt: true },
+      }),
+      this.prisma.knowledgeQuizAttempt.findMany({
+        where: {
+          userId,
+          createdAt: { gte: period.from, lte: period.to },
+        },
+        select: { createdAt: true, passed: true },
+      }),
+    ]);
+
+    const videoByMaterial = new Map(
+      videoProgressRows.map((row) => [`${userId}:${row.materialId}`, row]),
+    );
+    const quizPassedByUserMaterial = new Set<string>();
+    const quizPassedAtByUserMaterial = new Map<string, Date>();
+    const latestQuizAttemptByMaterial = new Map<string, (typeof quizAllAttempts)[0]>();
+    for (const attempt of quizAllAttempts) {
+      if (!latestQuizAttemptByMaterial.has(attempt.materialId)) {
+        latestQuizAttemptByMaterial.set(attempt.materialId, attempt);
+      }
+    }
+    for (const attempt of quizPassedAttempts) {
+      const key = `${userId}:${attempt.materialId}`;
+      quizPassedByUserMaterial.add(key);
+      const prev = quizPassedAtByUserMaterial.get(key);
+      if (!prev || attempt.createdAt < prev) {
+        quizPassedAtByUserMaterial.set(key, attempt.createdAt);
+      }
+    }
+
+    const isMaterialCompleted = (material: MaterialRow): boolean => {
+      const key = `${userId}:${material.id}`;
+      if (material.hasQuiz) return quizPassedByUserMaterial.has(key);
+      if (material.type === KnowledgeMaterialType.VIDEO) {
+        return Boolean(videoByMaterial.get(key)?.completed);
+      }
+      return false;
+    };
+
+    const isMaterialInProgress = (material: MaterialRow): boolean => {
+      if (isMaterialCompleted(material)) return false;
+      const key = `${userId}:${material.id}`;
+      if (material.hasQuiz) {
+        const latest = latestQuizAttemptByMaterial.get(material.id);
+        return Boolean(latest && !latest.passed);
+      }
+      if (material.type === KnowledgeMaterialType.VIDEO) {
+        const progress = videoByMaterial.get(key);
+        return Boolean(progress && progress.progressPercent > 0);
+      }
+      return false;
+    };
+
+    let completedCount = 0;
+    let videosCompleted = 0;
+    let quizzesPassed = 0;
+    let lastActivityAt: Date | null = null;
+
+    for (const row of videoProgressRows) {
+      if (!lastActivityAt || row.updatedAt > lastActivityAt) {
+        lastActivityAt = row.updatedAt;
+      }
+    }
+    for (const attempt of quizAllAttempts) {
+      if (!lastActivityAt || attempt.createdAt > lastActivityAt) {
+        lastActivityAt = attempt.createdAt;
+      }
+    }
+
+    const categoryMeta = buildCategoryMetaMap(trackableMaterials);
+    const categoryProgress = new Map<
+      string,
+      { completedCount: number; inProgressCount: number; notStartedCount: number }
+    >();
+
+    for (const category of categoryMeta.values()) {
+      categoryProgress.set(category.categoryId, {
+        completedCount: 0,
+        inProgressCount: 0,
+        notStartedCount: 0,
+      });
+    }
+
+    for (const material of trackableMaterials) {
+      const bucket = categoryProgress.get(material.categoryId);
+      if (!bucket) continue;
+
+      if (isMaterialCompleted(material)) {
+        bucket.completedCount += 1;
+        completedCount += 1;
+        if (material.hasQuiz) {
+          quizzesPassed += 1;
+        } else if (material.type === KnowledgeMaterialType.VIDEO) {
+          videosCompleted += 1;
+        }
+      } else if (isMaterialInProgress(material)) {
+        bucket.inProgressCount += 1;
+      } else {
+        bucket.notStartedCount += 1;
+      }
+    }
+
+    const trackableCount = trackableMaterials.length;
+    const categories = sortCategorySnapshots(
+      [...categoryMeta.values()].map((category) => {
+        const progress = categoryProgress.get(category.categoryId) ?? {
+          completedCount: 0,
+          inProgressCount: 0,
+          notStartedCount: 0,
+        };
+        return {
+          ...category,
+          ...progress,
+          completionPercent:
+            category.trackableCount > 0
+              ? roundPercent((progress.completedCount / category.trackableCount) * 100)
+              : 0,
+        };
+      }),
+    );
+
+    const timelineDays = eachDayIso(period.from, period.to);
+    const personalCategoryPercentByDay = new Map<string, Map<string, number>>();
+    for (const day of timelineDays) {
+      const dayEnd = endOfDay(new Date(day));
+      const percentByCategory = new Map<string, number>();
+      for (const category of categoryMeta.values()) {
+        let completedByDay = 0;
+        for (const material of trackableMaterials) {
+          if (material.categoryId !== category.categoryId) continue;
+          const completedAt = this.resolveMaterialCompletionDate(
+            userId,
+            material,
+            videoByMaterial,
+            quizPassedByUserMaterial,
+            quizPassedAtByUserMaterial,
+          );
+          if (completedAt && completedAt <= dayEnd) {
+            completedByDay += 1;
+          }
+        }
+        percentByCategory.set(
+          category.categoryId,
+          category.trackableCount > 0
+            ? roundPercent((completedByDay / category.trackableCount) * 100)
+            : 0,
+        );
+      }
+      personalCategoryPercentByDay.set(day, percentByCategory);
+    }
+
+    const categoryTimeline = buildCategoryTimeline(
+      timelineDays,
+      categoryMeta,
+      personalCategoryPercentByDay,
+    );
+
+    const videoUpdatesByDay = new Map<string, number>();
+    const quizAttemptsByDay = new Map<string, number>();
+    const quizPassesByDay = new Map<string, number>();
+    for (const day of timelineDays) {
+      videoUpdatesByDay.set(day, 0);
+      quizAttemptsByDay.set(day, 0);
+      quizPassesByDay.set(day, 0);
+    }
+    for (const row of videoUpdatesInPeriod) {
+      const day = toDayKey(row.updatedAt);
+      if (videoUpdatesByDay.has(day)) {
+        videoUpdatesByDay.set(day, (videoUpdatesByDay.get(day) ?? 0) + 1);
+      }
+    }
+    for (const row of quizAttemptsInPeriod) {
+      const day = toDayKey(row.createdAt);
+      if (quizAttemptsByDay.has(day)) {
+        quizAttemptsByDay.set(day, (quizAttemptsByDay.get(day) ?? 0) + 1);
+      }
+      if (row.passed && quizPassesByDay.has(day)) {
+        quizPassesByDay.set(day, (quizPassesByDay.get(day) ?? 0) + 1);
+      }
+    }
+
+    const activityTimeline = timelineDays.map((date) => ({
+      date,
+      videoProgressUpdates: videoUpdatesByDay.get(date) ?? 0,
+      quizAttempts: quizAttemptsByDay.get(date) ?? 0,
+      quizPasses: quizPassesByDay.get(date) ?? 0,
+    }));
+
+    return {
+      period: {
+        from: period.from.toISOString(),
+        to: period.to.toISOString(),
+      },
+      summary: {
+        trackableCount,
+        completedCount,
+        completionPercent:
+          trackableCount > 0 ? roundPercent((completedCount / trackableCount) * 100) : 0,
+        videosCompleted,
+        quizzesPassed,
+        quizAttempts: quizAttemptsInPeriod.length,
+        videoUpdates: videoUpdatesInPeriod.length,
+        lastActivityAt: lastActivityAt?.toISOString() ?? null,
+      },
+      categories,
+      categoryTimeline,
+      activityTimeline,
     };
   }
 }

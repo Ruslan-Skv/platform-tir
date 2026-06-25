@@ -152,6 +152,15 @@ export class KnowledgeController {
     return this.trainingAnalyticsService.getTrainingAnalytics({ dateFrom, dateTo });
   }
 
+  @Get('my-training-progress')
+  getMyTrainingProgress(
+    @Request() req: RequestWithUser,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    return this.trainingAnalyticsService.getMyTrainingProgress(req.user.id, { dateFrom, dateTo });
+  }
+
   @Get('materials/search/suggestions')
   async searchMaterialSuggestions(
     @Request() req: RequestWithUser,

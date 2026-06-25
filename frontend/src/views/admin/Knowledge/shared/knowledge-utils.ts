@@ -105,7 +105,18 @@ export function canViewKnowledgeTrainingAnalytics(
   role: string | undefined,
   hasKnowledgeAccess = true
 ): boolean {
+  return hasKnowledgeAccess;
+}
+
+export function canViewCompanyKnowledgeTrainingAnalytics(
+  role: string | undefined,
+  hasKnowledgeAccess = true
+): boolean {
   return hasKnowledgeAccess && role !== 'TRAINEE';
+}
+
+export function isKnowledgeTraineeRole(role: string | undefined): boolean {
+  return role === 'TRAINEE';
 }
 
 export function getMaterialTypeLabel(type: KnowledgeMaterialType): string {

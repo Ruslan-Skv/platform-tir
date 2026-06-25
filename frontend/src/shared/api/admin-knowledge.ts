@@ -221,6 +221,52 @@ export interface KnowledgeTrainingAnalytics {
     ARTICLE: { total: number; withQuiz: number };
     LINK: { total: number; withQuiz: number };
   };
+  categories: Array<{
+    categoryId: string;
+    categoryName: string;
+    categoryOrder: number;
+    trackableCount: number;
+    avgCompletionPercent: number;
+    employeeCount: number;
+  }>;
+  categoryTimeline: Array<{
+    date: string;
+    categories: Array<{ categoryId: string; completionPercent: number }>;
+  }>;
+}
+
+export interface KnowledgeMyTrainingProgress {
+  period: { from: string; to: string };
+  summary: {
+    trackableCount: number;
+    completedCount: number;
+    completionPercent: number;
+    videosCompleted: number;
+    quizzesPassed: number;
+    quizAttempts: number;
+    videoUpdates: number;
+    lastActivityAt: string | null;
+  };
+  categories: Array<{
+    categoryId: string;
+    categoryName: string;
+    categoryOrder: number;
+    trackableCount: number;
+    completedCount: number;
+    completionPercent: number;
+    inProgressCount: number;
+    notStartedCount: number;
+  }>;
+  categoryTimeline: Array<{
+    date: string;
+    categories: Array<{ categoryId: string; completionPercent: number }>;
+  }>;
+  activityTimeline: Array<{
+    date: string;
+    videoProgressUpdates: number;
+    quizAttempts: number;
+    quizPasses: number;
+  }>;
 }
 
 export async function getKnowledgeTrainingAnalytics(params?: {
@@ -239,6 +285,27 @@ export async function getKnowledgeTrainingAnalytics(params?: {
     throw new Error(err.message || 'Не удалось загрузить статистику обучения');
   }
   return res.json() as Promise<KnowledgeTrainingAnalytics>;
+}
+
+export async function getKnowledgeMyTrainingProgress(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<KnowledgeMyTrainingProgress> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  const qs = search.toString();
+  const res = await apiFetch(
+    `${API_URL}/admin/knowledge/my-training-progress${qs ? `?${qs}` : ''}`,
+    {
+      headers: getAuthHeaders(),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить статистику обучения');
+  }
+  return res.json() as Promise<KnowledgeMyTrainingProgress>;
 }
 
 export async function getKnowledgeMaterials(params?: {

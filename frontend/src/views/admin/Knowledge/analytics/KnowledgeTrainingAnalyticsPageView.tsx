@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import styles from './KnowledgeTrainingAnalyticsPage.module.css';
 import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
+import { TrainingAnalyticsCategoryProgress } from './components/TrainingAnalyticsCategoryProgress';
 import { TrainingAnalyticsDonut } from './components/TrainingAnalyticsDonut';
 import { TrainingAnalyticsTimelineBar } from './components/TrainingAnalyticsTimelineBar';
 import type { KnowledgeTrainingAnalyticsPageModel } from './hooks/useKnowledgeTrainingAnalyticsPage';
@@ -37,6 +38,7 @@ export function KnowledgeTrainingAnalyticsPageView({
 }: KnowledgeTrainingAnalyticsPageViewProps) {
   const {
     canView,
+    isTrainee,
     period,
     setPeriod,
     dateFrom,
@@ -44,11 +46,17 @@ export function KnowledgeTrainingAnalyticsPageView({
     dateTo,
     setDateTo,
     data,
+    personalData,
     loading,
     error,
   } = model;
 
   const timelineMax = useMemo(() => (data ? maxTimelineValue(data.activityTimeline) : 1), [data]);
+
+  const personalTimelineMax = useMemo(
+    () => (personalData ? maxTimelineValue(personalData.activityTimeline) : 1),
+    [personalData]
+  );
 
   const timelineTicks = useMemo(() => {
     if (!data?.activityTimeline.length) return [];
@@ -57,6 +65,14 @@ export function KnowledgeTrainingAnalyticsPageView({
     const step = Math.ceil(rows.length / 14);
     return rows.filter((_, index) => index % step === 0 || index === rows.length - 1);
   }, [data]);
+
+  const personalTimelineTicks = useMemo(() => {
+    if (!personalData?.activityTimeline.length) return [];
+    const rows = personalData.activityTimeline;
+    if (rows.length <= 14) return rows;
+    const step = Math.ceil(rows.length / 14);
+    return rows.filter((_, index) => index % step === 0 || index === rows.length - 1);
+  }, [personalData]);
 
   if (!canView) {
     return null;
@@ -69,11 +85,13 @@ export function KnowledgeTrainingAnalyticsPageView({
           <Link href="/admin/knowledge" className={styles.backLink}>
             ← Территория знаний
           </Link>
-          <h1 className={styles.title}>Статистика обучения</h1>
+          <h1 className={styles.title}>
+            {isTrainee ? 'Мой прогресс обучения' : 'Статистика обучения'}
+          </h1>
           <p className={styles.subtitle}>
-            Динамика прохождения материалов всеми сотрудниками компании: просмотр видео, попытки
-            тестов и общий прогресс. Учитываются опубликованные материалы с отслеживаемым прогрессом
-            (видео и материалы с тестом).
+            {isTrainee
+              ? 'Ваш личный прогресс по опубликованным материалам с отслеживаемым результатом: видео и материалы с тестом. Динамика показана отдельно по каждой категории.'
+              : 'Динамика прохождения материалов всеми сотрудниками компании: просмотр видео, попытки тестов и общий прогресс. Учитываются опубликованные материалы с отслеживаемым прогрессом (видео и материалы с тестом).'}
           </p>
         </div>
 
@@ -115,7 +133,102 @@ export function KnowledgeTrainingAnalyticsPageView({
       {loading && <div className={styles.message}>Загрузка статистики…</div>}
       {error && <div className={styles.error}>{error}</div>}
 
-      {!loading && !error && data && (
+      {!loading && !error && isTrainee && personalData && (
+        <>
+          <div className={styles.overviewGrid}>
+            <div className={styles.overviewCard}>
+              <span className={styles.overviewValue}>
+                {formatPercentWithSymbol(personalData.summary.completionPercent)}
+              </span>
+              <span className={styles.overviewLabel}>Общий прогресс</span>
+              <span className={styles.overviewHint}>
+                {personalData.summary.completedCount} из {personalData.summary.trackableCount}{' '}
+                отслеживаемых материалов
+              </span>
+            </div>
+            <div className={styles.overviewCard}>
+              <span className={styles.overviewValue}>{personalData.summary.videosCompleted}</span>
+              <span className={styles.overviewLabel}>Видео завершено</span>
+              <span className={styles.overviewHint}>
+                {personalData.summary.videoUpdates} обновлений прогресса за период
+              </span>
+            </div>
+            <div className={styles.overviewCard}>
+              <span className={styles.overviewValue}>{personalData.summary.quizzesPassed}</span>
+              <span className={styles.overviewLabel}>Тестов пройдено</span>
+              <span className={styles.overviewHint}>
+                {personalData.summary.quizAttempts} попыток за период
+              </span>
+            </div>
+            <div className={styles.overviewCard}>
+              <span className={styles.overviewValue}>
+                {formatDateTime(personalData.summary.lastActivityAt)}
+              </span>
+              <span className={styles.overviewLabel}>Последняя активность</span>
+              <span className={styles.overviewHint}>Просмотр видео или попытка теста</span>
+            </div>
+          </div>
+
+          <TrainingAnalyticsCategoryProgress
+            categories={personalData.categories.map((category) => ({
+              categoryId: category.categoryId,
+              categoryName: category.categoryName,
+              completionPercent: category.completionPercent,
+              trackableCount: category.trackableCount,
+              completedCount: category.completedCount,
+            }))}
+            categoryTimeline={personalData.categoryTimeline}
+            periodFrom={personalData.period.from}
+            periodTo={personalData.period.to}
+            percentLabel="Ваш прогресс"
+          />
+
+          <section className={styles.card}>
+            <div className={styles.cardHeader}>
+              <h2 className={styles.cardTitle}>Ваша активность по дням</h2>
+              <div className={styles.legend}>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.legendDot} ${styles.legendDotVideo}`} />
+                  Просмотр видео
+                </span>
+                <span className={styles.legendItem}>
+                  <span className={`${styles.legendDot} ${styles.legendDotQuiz}`} />
+                  Попытки тестов
+                </span>
+              </div>
+            </div>
+            <p className={styles.cardHint}>
+              Период: {formatShortDate(personalData.period.from)} —{' '}
+              {formatShortDate(personalData.period.to)}
+            </p>
+            <div
+              className={styles.timelineChart}
+              role="img"
+              aria-label="График вашей активности обучения"
+            >
+              {personalTimelineTicks.map((day) => (
+                <div key={day.date} className={styles.timelineGroup}>
+                  <div className={styles.timelineBars}>
+                    <TrainingAnalyticsTimelineBar
+                      heightPercent={(day.videoProgressUpdates / personalTimelineMax) * 100}
+                      variant="video"
+                      title={`Видео: ${day.videoProgressUpdates}`}
+                    />
+                    <TrainingAnalyticsTimelineBar
+                      heightPercent={(day.quizAttempts / personalTimelineMax) * 100}
+                      variant="quiz"
+                      title={`Тесты: ${day.quizAttempts}`}
+                    />
+                  </div>
+                  <span className={styles.timelineLabel}>{formatShortDate(day.date)}</span>
+                </div>
+              ))}
+            </div>
+          </section>
+        </>
+      )}
+
+      {!loading && !error && !isTrainee && data && (
         <>
           <div className={styles.overviewGrid}>
             <div className={styles.overviewCard}>
@@ -151,6 +264,19 @@ export function KnowledgeTrainingAnalyticsPageView({
               </span>
             </div>
           </div>
+
+          <TrainingAnalyticsCategoryProgress
+            categories={data.categories.map((category) => ({
+              categoryId: category.categoryId,
+              categoryName: category.categoryName,
+              completionPercent: category.avgCompletionPercent,
+              trackableCount: category.trackableCount,
+            }))}
+            categoryTimeline={data.categoryTimeline}
+            periodFrom={data.period.from}
+            periodTo={data.period.to}
+            percentLabel="Средний прогресс"
+          />
 
           <div className={styles.chartsRow}>
             <section className={styles.card}>
