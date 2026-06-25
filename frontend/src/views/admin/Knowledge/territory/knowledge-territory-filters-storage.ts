@@ -96,6 +96,57 @@ export function buildKnowledgeTerritoryBackUrl(fallbackCategoryId?: string): str
   return '/admin/knowledge';
 }
 
+/** Поля фильтров, которые отражаются в query string (без searchInput). */
+type KnowledgeTerritoryUrlFiltersState = Pick<
+  KnowledgeTerritoryFiltersState,
+  | 'categoryFilter'
+  | 'moduleFilter'
+  | 'typeFilter'
+  | 'statusFilter'
+  | 'search'
+  | 'page'
+  | 'favoritesOnly'
+>;
+
+function normalizeKnowledgeTerritoryUrlFilters(
+  state: Partial<KnowledgeTerritoryFiltersState>
+): KnowledgeTerritoryUrlFiltersState {
+  return {
+    categoryFilter: state.categoryFilter || '',
+    moduleFilter: state.moduleFilter || '',
+    typeFilter: state.typeFilter || '',
+    statusFilter: state.statusFilter || '',
+    search: state.search?.trim() || '',
+    page: state.page && state.page > 1 ? state.page : 1,
+    favoritesOnly: state.favoritesOnly === true,
+  };
+}
+
+function knowledgeTerritoryUrlFiltersFromSearchParams(
+  searchParams: URLSearchParams
+): KnowledgeTerritoryUrlFiltersState {
+  const parsed = parseKnowledgeTerritorySearchParams(searchParams);
+  return normalizeKnowledgeTerritoryUrlFilters(parsed);
+}
+
+/** Семантическое сравнение фильтров с query string (порядок параметров не важен). */
+export function isKnowledgeTerritoryFiltersSyncedWithUrl(
+  searchParams: URLSearchParams,
+  state: Partial<KnowledgeTerritoryFiltersState>
+): boolean {
+  const fromUrl = knowledgeTerritoryUrlFiltersFromSearchParams(searchParams);
+  const expected = normalizeKnowledgeTerritoryUrlFilters(state);
+  return (
+    fromUrl.categoryFilter === expected.categoryFilter &&
+    fromUrl.moduleFilter === expected.moduleFilter &&
+    fromUrl.typeFilter === expected.typeFilter &&
+    fromUrl.statusFilter === expected.statusFilter &&
+    fromUrl.search === expected.search &&
+    fromUrl.page === expected.page &&
+    fromUrl.favoritesOnly === expected.favoritesOnly
+  );
+}
+
 export function parseKnowledgeTerritorySearchParams(
   searchParams: URLSearchParams
 ): Partial<KnowledgeTerritoryFiltersState> {

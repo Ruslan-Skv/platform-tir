@@ -161,14 +161,18 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
           const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
             headers: { Authorization: `Bearer ${next}` },
           });
-          if (!retry.ok) return false;
-          const userData = (await retry.json()) as User;
-          persistProfileUser(userData, next);
-          return true;
+          if (retry.ok) {
+            const userData = (await retry.json()) as User;
+            persistProfileUser(userData, next);
+            return true;
+          }
+          if (retry.status === 429 || retry.status >= 500) return true;
+          return false;
         }
+        if (response.status === 429 || response.status >= 500) return true;
         return false;
       } catch {
-        return false;
+        return true;
       }
     },
     [persistProfileUser]

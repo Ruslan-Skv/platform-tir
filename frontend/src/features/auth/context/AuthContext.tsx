@@ -174,11 +174,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
           headers: { Authorization: `Bearer ${next}` },
         });
-        return retry.ok;
+        if (retry.ok) return true;
+        if (retry.status === 429 || retry.status >= 500) return true;
+        return false;
       }
+      // Временные ошибки сервера / rate limit — не сбрасываем локальную сессию.
+      if (response.status === 429 || response.status >= 500) return true;
       return false;
     } catch {
-      return false;
+      return true;
     }
   };
 

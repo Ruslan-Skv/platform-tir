@@ -125,6 +125,15 @@ export class AdminAccessService {
       return categories.map((category) => category.id);
     }
 
+    // Стажёр видит все категории раздела при доступе к «Территории знаний» (без точечных DENIED на категорию).
+    if (userRole === 'TRAINEE') {
+      const parent = await this.getUserEffectivePermission(userId, userRole, KNOWLEDGE_RESOURCE_ID);
+      if (parent === 'VIEW' || parent === 'PARTICIPATE' || parent === 'EDIT') {
+        return categories.map((category) => category.id);
+      }
+      return [];
+    }
+
     const ctx = await this.loadPermissionContext(userId, userRole);
     const accessible: string[] = [];
 

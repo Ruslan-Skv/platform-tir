@@ -3,6 +3,7 @@ import { describe, expect, it } from '@jest/globals';
 import {
   buildKnowledgeTerritoryBackUrl,
   buildKnowledgeTerritoryUrl,
+  isKnowledgeTerritoryFiltersSyncedWithUrl,
   parseKnowledgeTerritorySearchParams,
 } from './knowledge-territory-filters-storage';
 
@@ -33,6 +34,37 @@ describe('parseKnowledgeTerritorySearchParams', () => {
       searchInput: 'окна',
       page: 3,
     });
+  });
+});
+
+describe('isKnowledgeTerritoryFiltersSyncedWithUrl', () => {
+  it('matches filters regardless of query param order', () => {
+    const params = new URLSearchParams('module=mod-1&category=cat-1');
+    expect(
+      isKnowledgeTerritoryFiltersSyncedWithUrl(params, {
+        categoryFilter: 'cat-1',
+        moduleFilter: 'mod-1',
+      })
+    ).toBe(true);
+  });
+
+  it('returns false when category differs', () => {
+    const params = new URLSearchParams('category=cat-1');
+    expect(
+      isKnowledgeTerritoryFiltersSyncedWithUrl(params, {
+        categoryFilter: 'cat-2',
+      })
+    ).toBe(false);
+  });
+
+  it('treats missing page as page 1', () => {
+    const params = new URLSearchParams('category=cat-1');
+    expect(
+      isKnowledgeTerritoryFiltersSyncedWithUrl(params, {
+        categoryFilter: 'cat-1',
+        page: 1,
+      })
+    ).toBe(true);
   });
 });
 

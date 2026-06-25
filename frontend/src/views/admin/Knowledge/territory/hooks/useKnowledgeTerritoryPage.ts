@@ -30,6 +30,7 @@ import {
   updateKnowledgeModule,
 } from '@/shared/api/admin-knowledge';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
+import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
 import {
   KNOWLEDGE_RESOURCE_ID,
@@ -42,6 +43,7 @@ import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutl
 import {
   type KnowledgeTerritoryFiltersState,
   buildKnowledgeTerritoryUrl,
+  isKnowledgeTerritoryFiltersSyncedWithUrl,
   parseKnowledgeTerritorySearchParams,
   readKnowledgeTerritoryFilters,
   writeKnowledgeTerritoryFilters,
@@ -52,7 +54,13 @@ import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformF
 
 export function useKnowledgeTerritoryPage() {
   const { user, isLoading: authLoading } = useAuth();
-  const { canView, canEdit, canParticipate } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
+  const {
+    canView,
+    canEdit,
+    canParticipate,
+    isLoading: permissionsLoading,
+  } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
+  const knowledgeAccessReady = !authLoading && !permissionsLoading && canView;
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const isTrainee = isKnowledgeTraineeRole(user?.role);
   const traineeView = !authLoading && isTrainee;
@@ -62,6 +70,7 @@ export function useKnowledgeTerritoryPage() {
   const filtersHydratedRef = useRef(false);
   const prevCategoryFilterRef = useRef<string | null>(null);
   const materialsLoadSeqRef = useRef(0);
+  const lastTerritoryUrlReplaceRef = useRef<string | null>(null);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
@@ -107,7 +116,7 @@ export function useKnowledgeTerritoryPage() {
 
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
-  const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount);
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(getKnowledgeTrashCount, 0, canEdit);
   const { feedbackUnreadCount, refreshFeedbackUnreadCount } =
     useKnowledgePlatformFeedbackUnreadCount(canEdit);
 
@@ -180,6 +189,8 @@ export function useKnowledgeTerritoryPage() {
   }, [filtersSnapshot]);
 
   const loadMaterials = useCallback(async () => {
+    if (!knowledgeAccessReady) return;
+
     if (traineeView && !categoryFilter && !favoritesOnly) {
       setMaterials([]);
       setTotalPages(1);
@@ -222,17 +233,19 @@ export function useKnowledgeTerritoryPage() {
     page,
     canEdit,
     traineeView,
+    knowledgeAccessReady,
     showMessage,
   ]);
 
   const loadCategories = useCallback(async () => {
+    if (!knowledgeAccessReady) return;
     try {
       const data = await getKnowledgeCategories();
       setCategories(data);
     } catch {
       showMessage('error', 'Ошибка загрузки категорий');
     }
-  }, [showMessage]);
+  }, [knowledgeAccessReady, showMessage]);
 
   const loadModules = useCallback(async () => {
     if (!categoryFilter) {
@@ -249,13 +262,14 @@ export function useKnowledgeTerritoryPage() {
   }, [categoryFilter, showMessage]);
 
   const loadStats = useCallback(async () => {
+    if (!knowledgeAccessReady) return;
     try {
       const data = await getKnowledgeStats();
       setStats(data);
     } catch {
       // ignore
     }
-  }, []);
+  }, [knowledgeAccessReady]);
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
@@ -296,13 +310,17 @@ export function useKnowledgeTerritoryPage() {
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
 
-    const nextUrl = buildKnowledgeTerritoryUrl(filtersSnapshot);
-    const currentUrl = searchParams.toString()
-      ? `${pathname}?${searchParams.toString()}`
-      : pathname;
-    if (nextUrl !== currentUrl) {
-      router.replace(nextUrl, { scroll: false });
+    const liveParams = newURLSearchParamsLive(pathname, searchParams.toString());
+    if (isKnowledgeTerritoryFiltersSyncedWithUrl(liveParams, filtersSnapshot)) {
+      lastTerritoryUrlReplaceRef.current = buildKnowledgeTerritoryUrl(filtersSnapshot);
+      return;
     }
+
+    const nextUrl = buildKnowledgeTerritoryUrl(filtersSnapshot);
+    if (lastTerritoryUrlReplaceRef.current === nextUrl) return;
+
+    lastTerritoryUrlReplaceRef.current = nextUrl;
+    router.replace(nextUrl, { scroll: false });
   }, [filtersSnapshot, pathname, router, searchParams]);
 
   useEffect(() => {

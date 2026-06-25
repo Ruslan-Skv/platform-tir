@@ -10,7 +10,7 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
-import { Throttle } from '@nestjs/throttler';
+import { SkipThrottle, Throttle } from '@nestjs/throttler';
 import type { Request as ExpressRequest, Response } from 'express';
 import { OriginGuard } from '../common/guards/origin.guard';
 import { AuthService } from './auth.service';
@@ -64,6 +64,7 @@ export class AuthController {
     return { access_token: data.access_token, user: data.user };
   }
 
+  @SkipThrottle()
   @UseGuards(JwtAuthGuard)
   @Get('profile')
   @ApiBearerAuth()

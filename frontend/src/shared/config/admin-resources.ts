@@ -351,6 +351,34 @@ export function isAdminEditRoute(pathname: string): boolean {
   return false;
 }
 
+/** Стартовая страница админки по доступным разделам (без дашборда, если он закрыт). */
+export function resolveAdminHomePath(
+  hasAccess: (resourceId: string | undefined) => boolean
+): string {
+  if (hasAccess('admin')) {
+    return '/admin';
+  }
+
+  const seenPaths = new Set<string>();
+  for (const resource of ADMIN_RESOURCES) {
+    if (resource.id.startsWith('admin.knowledge.category.')) continue;
+    if (seenPaths.has(resource.path)) continue;
+    if (!hasAccess(resource.id)) continue;
+    seenPaths.add(resource.path);
+    return resource.path;
+  }
+
+  return '/admin/knowledge';
+}
+
+/** Стартовая страница сразу после входа (до загрузки списка доступов). */
+export function resolveAdminHomePathForRole(role: string | undefined): string {
+  if (role === 'TRAINEE') {
+    return '/admin/knowledge';
+  }
+  return '/admin';
+}
+
 /** Куда вернуть пользователя с edit-маршрута при режиме «только просмотр». */
 export function adminEditRouteRedirectTarget(pathname: string): string | null {
   if (pathname.endsWith('/new') || pathname.endsWith('/create')) {

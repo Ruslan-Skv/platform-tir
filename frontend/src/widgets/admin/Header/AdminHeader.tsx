@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { getAdminFormSubmissions } from '@/shared/api/admin-forms';
@@ -46,6 +47,8 @@ import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './AdminHeader.module.css';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
+
+const ADMIN_NOTIFICATIONS_RESOURCE_ID = 'admin.settings.notifications';
 
 const ROLE_NAMES: Record<string, string> = {
   ADMIN: 'Администратор',
@@ -126,6 +129,8 @@ type AdminHeaderProps = {
 
 export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const { user, logout } = useAuth();
+  const { hasAccess, isLoading: accessLoading } = useAdminAccessibleResources();
+  const canLoadAdminNotifications = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
   const { isDarkTheme, toggleTheme } = useTheme();
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -322,8 +327,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   }, [notificationSettings, user?.role]);
 
   useEffect(() => {
+    if (!canLoadAdminNotifications) {
+      setNotificationSettings(null);
+      return;
+    }
     loadNotificationSettings();
-  }, [loadNotificationSettings]);
+  }, [canLoadAdminNotifications, loadNotificationSettings]);
 
   useEffect(() => {
     if (user?.id) {
@@ -577,112 +586,116 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           )}
         </button>
 
-        <div className={styles.notificationWrapper} ref={notificationRef}>
-          <button
-            className={styles.iconButton}
-            onClick={() => {
-              setShowNotifications(!showNotifications);
-              if (!showNotifications) loadAllNotifications();
-            }}
-          >
-            🔔
-            {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
-          </button>
+        {canLoadAdminNotifications ? (
+          <div className={styles.notificationWrapper} ref={notificationRef}>
+            <button
+              className={styles.iconButton}
+              onClick={() => {
+                setShowNotifications(!showNotifications);
+                if (!showNotifications) loadAllNotifications();
+              }}
+            >
+              🔔
+              {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
+            </button>
 
-          {showNotifications && (
-            <div className={`${styles.dropdown} ${styles.notificationsDropdown}`}>
-              <div className={styles.dropdownHeader}>
-                <span>Уведомления</span>
-                <div className={styles.dropdownHeaderActions}>
-                  <Link
-                    href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                    className={styles.notificationSettingsLink}
-                    onClick={() => setShowNotifications(false)}
-                  >
-                    Настройки
-                  </Link>
-                  {visibleNotificationItems.length > 0 ? (
-                    <button
-                      type="button"
-                      className={styles.markAllRead}
-                      onClick={() => void handleMarkAllNotificationsRead()}
-                    >
-                      Прочитать все
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-              <div className={styles.notificationList}>
-                {notificationsLoading ? (
-                  <div className={styles.notificationItem}>
-                    <p className={styles.notificationText}>Загрузка...</p>
-                  </div>
-                ) : visibleNotificationItems.length === 0 ? (
-                  <div className={styles.notificationItem}>
-                    <p className={styles.notificationText}>
-                      {hasDismissedNotifications
-                        ? 'Все уведомления прочитаны'
-                        : 'Нет новых уведомлений'}
-                    </p>
-                    {notificationItems.length > 0 && !hasDismissedNotifications ? (
-                      <span className={styles.notificationHint}>
-                        Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
-                      </span>
-                    ) : null}
-                  </div>
-                ) : (
-                  visibleNotificationItems.map((item) => (
-                    <div
-                      key={`${item.type}-${item.id}`}
-                      className={`${styles.notificationRow} ${styles.unread}`}
-                    >
-                      <Link
-                        href={getSafeHref(item.link, '#')}
-                        className={styles.notificationItem}
-                        onClick={() => handleNotificationClick(item)}
-                      >
-                        <p className={styles.notificationText}>{item.text}</p>
-                        <span className={styles.notificationTime}>{formatTimeAgo(item.date)}</span>
-                      </Link>
-                      <button
-                        type="button"
-                        className={styles.dismissNotification}
-                        title="Отметить прочитанным"
-                        aria-label="Отметить прочитанным"
-                        onClick={() => handleDismissNotification(item)}
-                      >
-                        <CheckIcon className={styles.dismissNotificationIcon} aria-hidden />
-                      </button>
-                    </div>
-                  ))
-                )}
-              </div>
-              <div className={styles.dropdownFooter}>
-                <Link
-                  href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                  className={styles.notificationSettingsButton}
-                  onClick={() => setShowNotifications(false)}
-                >
-                  Настройки уведомлений и push
-                </Link>
-                <div className={styles.footerChips}>
-                  {FOOTER_LINKS.filter(
-                    (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
-                  ).map((link) => (
+            {showNotifications && (
+              <div className={`${styles.dropdown} ${styles.notificationsDropdown}`}>
+                <div className={styles.dropdownHeader}>
+                  <span>Уведомления</span>
+                  <div className={styles.dropdownHeaderActions}>
                     <Link
-                      key={link.href}
-                      href={link.href}
-                      className={styles.footerChip}
+                      href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                      className={styles.notificationSettingsLink}
                       onClick={() => setShowNotifications(false)}
                     >
-                      {link.label}
+                      Настройки
                     </Link>
-                  ))}
+                    {visibleNotificationItems.length > 0 ? (
+                      <button
+                        type="button"
+                        className={styles.markAllRead}
+                        onClick={() => void handleMarkAllNotificationsRead()}
+                      >
+                        Прочитать все
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+                <div className={styles.notificationList}>
+                  {notificationsLoading ? (
+                    <div className={styles.notificationItem}>
+                      <p className={styles.notificationText}>Загрузка...</p>
+                    </div>
+                  ) : visibleNotificationItems.length === 0 ? (
+                    <div className={styles.notificationItem}>
+                      <p className={styles.notificationText}>
+                        {hasDismissedNotifications
+                          ? 'Все уведомления прочитаны'
+                          : 'Нет новых уведомлений'}
+                      </p>
+                      {notificationItems.length > 0 && !hasDismissedNotifications ? (
+                        <span className={styles.notificationHint}>
+                          Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
+                        </span>
+                      ) : null}
+                    </div>
+                  ) : (
+                    visibleNotificationItems.map((item) => (
+                      <div
+                        key={`${item.type}-${item.id}`}
+                        className={`${styles.notificationRow} ${styles.unread}`}
+                      >
+                        <Link
+                          href={getSafeHref(item.link, '#')}
+                          className={styles.notificationItem}
+                          onClick={() => handleNotificationClick(item)}
+                        >
+                          <p className={styles.notificationText}>{item.text}</p>
+                          <span className={styles.notificationTime}>
+                            {formatTimeAgo(item.date)}
+                          </span>
+                        </Link>
+                        <button
+                          type="button"
+                          className={styles.dismissNotification}
+                          title="Отметить прочитанным"
+                          aria-label="Отметить прочитанным"
+                          onClick={() => handleDismissNotification(item)}
+                        >
+                          <CheckIcon className={styles.dismissNotificationIcon} aria-hidden />
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
+                <div className={styles.dropdownFooter}>
+                  <Link
+                    href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                    className={styles.notificationSettingsButton}
+                    onClick={() => setShowNotifications(false)}
+                  >
+                    Настройки уведомлений и push
+                  </Link>
+                  <div className={styles.footerChips}>
+                    {FOOTER_LINKS.filter(
+                      (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
+                    ).map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        className={styles.footerChip}
+                        onClick={() => setShowNotifications(false)}
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </div>
+            )}
+          </div>
+        ) : null}
 
         <div className={styles.userWrapper} ref={userMenuRef}>
           <button className={styles.userButton} onClick={() => setShowUserMenu(!showUserMenu)}>

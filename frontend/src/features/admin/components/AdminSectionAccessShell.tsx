@@ -4,7 +4,11 @@ import { useEffect } from 'react';
 
 import { useRouter } from 'next/navigation';
 
-import { adminEditRouteRedirectTarget, isAdminEditRoute } from '@/shared/config/admin-resources';
+import {
+  adminEditRouteRedirectTarget,
+  isAdminEditRoute,
+  resolveAdminHomePath,
+} from '@/shared/config/admin-resources';
 
 import { useAdminAccessibleResources } from '../contexts/AdminAccessibleResourcesContext';
 import { AdminSectionPermissionContext } from '../contexts/AdminSectionPermissionContext';
@@ -31,6 +35,8 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     sectionPermission;
 
   const isReadOnly = Boolean(!isLoading && resourceId && canView && !canEdit);
+  const isDashboardRoute = pathname === '/admin';
+  const homePath = resolveAdminHomePath(hasAccess);
 
   useEffect(() => {
     if (typeof document === 'undefined') return undefined;
@@ -46,15 +52,19 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     if (isLoading || !resourceId) return;
 
     if (!hasAccess(resourceId)) {
-      router.replace('/admin');
+      router.replace(homePath);
       return;
     }
 
     if (!canEdit && isAdminEditRoute(pathname)) {
-      const target = adminEditRouteRedirectTarget(pathname) ?? '/admin';
+      const target = adminEditRouteRedirectTarget(pathname) ?? homePath;
       router.replace(target);
     }
-  }, [canEdit, hasAccess, isLoading, pathname, resourceId, router]);
+  }, [canEdit, hasAccess, homePath, isLoading, pathname, resourceId, router]);
+
+  if (isDashboardRoute && !hasAccess('admin')) {
+    return null;
+  }
 
   if (isLoading) {
     return (

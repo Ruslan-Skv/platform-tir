@@ -15,6 +15,7 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { ApiBearerAuth, ApiBody, ApiConsumes, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { SkipThrottle } from '@nestjs/throttler';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -76,6 +77,7 @@ export class AdminNotificationsController {
     return this.pushSubscriptions.removeSubscription(req.user.id, dto.endpoint);
   }
 
+  @SkipThrottle()
   @Get('settings')
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })
   getSettings(@Req() req: RequestWithUser) {

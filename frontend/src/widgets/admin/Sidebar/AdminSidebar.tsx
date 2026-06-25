@@ -8,6 +8,7 @@ import { usePathname, useSearchParams } from 'next/navigation';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
+import { resolveAdminHomePath } from '@/shared/config/admin-resources';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
@@ -614,6 +615,8 @@ export function AdminSidebar({
     return filterNavByAccess(baseNavItems, hasAccess);
   }, [hasAccess, isLoading, resourceIds.size, currentUser?.role]);
 
+  const homePath = useMemo(() => resolveAdminHomePath(hasAccess), [hasAccess]);
+
   /** Пункты без подменю (напр. «Договора», «Расчёты») — не дают подсвечивать hub `/admin/contract-documents` в настройках. */
   const topLevelOnlyHrefs = useMemo(
     () => navItems.filter((item) => !item.children).map((item) => item.href),
@@ -740,7 +743,7 @@ export function AdminSidebar({
           />
         )}
         <div className={styles.header}>
-          <Link href="/admin" className={styles.logo} aria-label="Цифровая платформа">
+          <Link href={homePath} className={styles.logo} aria-label="Цифровая платформа">
             <AdminPlatformBrand collapsed={collapsed} />
           </Link>
           <button className={styles.toggleBtn} onClick={onToggle}>

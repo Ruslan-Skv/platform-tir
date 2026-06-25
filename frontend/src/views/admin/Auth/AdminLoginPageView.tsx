@@ -9,6 +9,7 @@ import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
+import { resolveAdminHomePathForRole } from '@/shared/config/admin-resources';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { Modal } from '@/shared/ui/Modal';
 
@@ -16,7 +17,7 @@ import styles from './AdminLoginPage.module.css';
 
 export function AdminLoginPageView() {
   const router = useRouter();
-  const { login, isAuthenticated, isLoading } = useAuth();
+  const { login, isAuthenticated, isLoading, user } = useAuth();
   const { isDarkTheme, toggleTheme } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -26,9 +27,9 @@ export function AdminLoginPageView() {
   // Redirect if already authenticated
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
-      router.push('/admin');
+      router.replace(resolveAdminHomePathForRole(user?.role));
     }
-  }, [isAuthenticated, isLoading, router]);
+  }, [isAuthenticated, isLoading, router, user?.role]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -38,7 +39,16 @@ export function AdminLoginPageView() {
     const result = await login(email, password);
 
     if (result.success) {
-      router.push('/admin');
+      const savedUser = localStorage.getItem('admin_user');
+      let role = user?.role;
+      if (savedUser) {
+        try {
+          role = JSON.parse(savedUser).role ?? role;
+        } catch {
+          // ignore
+        }
+      }
+      router.replace(resolveAdminHomePathForRole(role));
     } else {
       setError(result.error || 'Ошибка входа');
     }
