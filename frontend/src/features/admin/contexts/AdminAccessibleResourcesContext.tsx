@@ -11,6 +11,23 @@ function getStorageKey(userId: string): string {
   return `${STORAGE_KEY_PREFIX}${userId}`;
 }
 
+export function readCachedAdminAccessibleResources(
+  userId: string | undefined
+): MyAccessibleResourceItem[] {
+  return readCachedResources(userId);
+}
+
+export function createHasAccessChecker(
+  resourceIds: Set<string>,
+  role: string | undefined
+): (resourceId: string | undefined) => boolean {
+  return (resourceId: string | undefined) => {
+    if (!resourceId) return true;
+    if (role === 'SUPER_ADMIN') return true;
+    return resourceIds.has(resourceId);
+  };
+}
+
 function readCachedResources(userId: string | undefined): MyAccessibleResourceItem[] {
   if (typeof window === 'undefined' || !userId) return [];
   try {
@@ -72,12 +89,15 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
   });
 
   useEffect(() => {
-    setResources(readCachedResources(userId));
+    if (!userId) return;
+    const cached = readCachedResources(userId);
+    if (cached.length > 0) {
+      setResources(cached);
+    }
   }, [userId]);
 
   const load = useCallback(async () => {
     if (!userId) {
-      setResources([]);
       setIsLoading(false);
       return;
     }

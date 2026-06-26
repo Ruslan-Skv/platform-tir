@@ -107,6 +107,7 @@ export function useKnowledgeTerritoryPage() {
   const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
   const materialsScopeKeyRef = useRef<string | null>(initialTerritory.materialsScopeKey);
   const lastUrlSyncSignatureRef = useRef('');
+  const urlSyncTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>(
     () => initialTerritory.cachedMaterials?.data ?? []
@@ -470,11 +471,37 @@ export function useKnowledgeTerritoryPage() {
         return;
       }
 
-      lastUrlSyncSignatureRef.current = signature;
-      router.replace(buildKnowledgeTerritoryUrl(snapshot), { scroll: false });
+      if (urlSyncTimerRef.current) {
+        clearTimeout(urlSyncTimerRef.current);
+      }
+
+      urlSyncTimerRef.current = setTimeout(() => {
+        urlSyncTimerRef.current = null;
+        if (pathname !== '/admin/knowledge') return;
+
+        const nextSignature = knowledgeTerritoryUrlFiltersSignature(snapshot);
+        if (lastUrlSyncSignatureRef.current === nextSignature) return;
+
+        const nextParams = newURLSearchParamsLive(pathname, '');
+        if (isKnowledgeTerritoryFiltersSyncedWithUrl(nextParams, snapshot)) {
+          lastUrlSyncSignatureRef.current = nextSignature;
+          return;
+        }
+
+        lastUrlSyncSignatureRef.current = nextSignature;
+        router.replace(buildKnowledgeTerritoryUrl(snapshot), { scroll: false });
+      }, 50);
     },
     [pathname, router]
   );
+
+  useEffect(() => {
+    return () => {
+      if (urlSyncTimerRef.current) {
+        clearTimeout(urlSyncTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;

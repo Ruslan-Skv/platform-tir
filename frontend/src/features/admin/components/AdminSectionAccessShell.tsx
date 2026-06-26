@@ -31,7 +31,7 @@ type AdminSectionAccessShellProps = {
 export function AdminSectionAccessShell({ children }: AdminSectionAccessShellProps) {
   const router = useRouter();
   const { user } = useAuth();
-  const { hasAccess } = useAdminAccessibleResources();
+  const { hasAccess, resourceIds } = useAdminAccessibleResources();
   const sectionPermission = useAdminSectionPermission();
   const { pathname, resourceId, sectionLabel, canView, canParticipate, canEdit, isLoading } =
     sectionPermission;
@@ -54,7 +54,15 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     if (isLoading || !resourceId) return;
 
     if (!hasAccess(resourceId)) {
-      router.replace(homePath);
+      if (resourceIds.size === 0) return;
+
+      const target = homePath;
+      const currentPath = pathname ?? '';
+      if (currentPath === target || currentPath.startsWith(`${target}/`)) {
+        return;
+      }
+
+      router.replace(target);
       return;
     }
 
@@ -62,7 +70,7 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
       const target = adminEditRouteRedirectTarget(pathname) ?? homePath;
       router.replace(target);
     }
-  }, [canEdit, hasAccess, homePath, isLoading, pathname, resourceId, router]);
+  }, [canEdit, hasAccess, homePath, isLoading, pathname, resourceId, resourceIds.size, router]);
 
   if (isDashboardRoute && !hasAccess('admin')) {
     return null;

@@ -6,7 +6,11 @@ import { createPortal } from 'react-dom';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
+import {
+  createHasAccessChecker,
+  readCachedAdminAccessibleResources,
+  useAdminAccessibleResources,
+} from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { resolveAdminHomePath } from '@/shared/config/admin-resources';
 import { getSafeHref } from '@/shared/lib/sanitize';
@@ -609,11 +613,27 @@ export function AdminSidebar({
   );
 
   const navItems = useMemo(() => {
-    if (isLoading && resourceIds.size === 0 && currentUser?.role !== 'SUPER_ADMIN') {
+    const filtered = filterNavByAccess(baseNavItems, hasAccess);
+    if (filtered.length > 0 || currentUser?.role === 'SUPER_ADMIN') {
+      return filtered;
+    }
+
+    const cached = readCachedAdminAccessibleResources(currentUser?.id);
+    if (cached.length > 0) {
+      const cachedIds = new Set(cached.map((resource) => resource.id));
+      const cachedHasAccess = createHasAccessChecker(cachedIds, currentUser?.role);
+      const fromCache = filterNavByAccess(baseNavItems, cachedHasAccess);
+      if (fromCache.length > 0) {
+        return fromCache;
+      }
+    }
+
+    if (isLoading && resourceIds.size === 0) {
       return [];
     }
-    return filterNavByAccess(baseNavItems, hasAccess);
-  }, [hasAccess, isLoading, resourceIds.size, currentUser?.role]);
+
+    return filtered;
+  }, [hasAccess, isLoading, resourceIds.size, currentUser?.role, currentUser?.id]);
 
   const homePath = useMemo(() => resolveAdminHomePath(hasAccess), [hasAccess]);
 
