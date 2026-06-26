@@ -28,6 +28,15 @@ export interface UserCabinetSettings {
   updatedAt: string;
 }
 
+export type UserCabinetSettingsUpdate = Omit<UserCabinetSettings, 'id' | 'updatedAt'>;
+
+function toUserCabinetSettingsUpdate(
+  data: Partial<UserCabinetSettings>
+): Partial<UserCabinetSettingsUpdate> {
+  const { id: _id, updatedAt: _updatedAt, ...rest } = data;
+  return rest;
+}
+
 export async function getAdminUserCabinetSettings(): Promise<UserCabinetSettings> {
   const res = await apiFetch(`${API_URL}/admin/user-cabinet/settings`, {
     headers: getAuthHeaders(),
@@ -80,11 +89,12 @@ export async function updateAdminUserCabinetSettings(data: Partial<UserCabinetSe
   const res = await apiFetch(`${API_URL}/admin/user-cabinet/settings`, {
     method: 'PATCH',
     headers: getAuthHeaders(),
-    body: JSON.stringify(data),
+    body: JSON.stringify(toUserCabinetSettingsUpdate(data)),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Ошибка сохранения');
+    const message = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    throw new Error(message || 'Ошибка сохранения');
   }
   return res.json();
 }
