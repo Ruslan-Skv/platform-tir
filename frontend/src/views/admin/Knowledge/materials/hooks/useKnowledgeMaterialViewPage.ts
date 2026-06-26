@@ -17,7 +17,10 @@ import {
   KNOWLEDGE_RESOURCE_ID,
   sortKnowledgeMaterialsForCategory,
 } from '../../shared/knowledge-utils';
-import { buildKnowledgeTerritoryBackUrl } from '../../territory/knowledge-territory-filters-storage';
+import {
+  buildKnowledgeTerritoryBackUrl,
+  readKnowledgeMaterialListContextFromSearchParams,
+} from '../../territory/knowledge-territory-filters-storage';
 
 interface UseKnowledgeMaterialViewPageOptions {
   materialId: string;
@@ -39,9 +42,19 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   const [togglingFavorite, setTogglingFavorite] = useState(false);
   const [nextMaterial, setNextMaterial] = useState<KnowledgeNextMaterial | null>(null);
 
+  const listContext = useMemo(
+    () =>
+      typeof window !== 'undefined'
+        ? readKnowledgeMaterialListContextFromSearchParams(
+            new URLSearchParams(window.location.search)
+          )
+        : {},
+    []
+  );
+
   const backUrl = useMemo(
-    () => buildKnowledgeTerritoryBackUrl(material?.categoryId),
-    [material?.categoryId]
+    () => buildKnowledgeTerritoryBackUrl(material?.categoryId, listContext),
+    [material?.categoryId, listContext]
   );
 
   const load = useCallback(async () => {
@@ -190,6 +203,7 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     handleStudyProgress,
     backUrl,
     nextMaterial,
+    listContext,
   };
 }
 

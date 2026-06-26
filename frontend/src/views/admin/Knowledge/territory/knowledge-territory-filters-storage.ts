@@ -12,6 +12,8 @@ export interface KnowledgeTerritoryFiltersState {
 }
 
 const STORAGE_KEY = 'admin_knowledge_territory_filters';
+const LIST_CATEGORY_QUERY = 'listCategory';
+const LIST_FAVORITES_QUERY = 'listFavorites';
 
 const DEFAULT_FILTERS: KnowledgeTerritoryFiltersState = {
   categoryFilter: '',
@@ -84,8 +86,67 @@ export function buildKnowledgeTerritoryUrl(state: Partial<KnowledgeTerritoryFilt
   return qs ? `/admin/knowledge?${qs}` : '/admin/knowledge';
 }
 
+export type KnowledgeMaterialListContext = Pick<
+  KnowledgeTerritoryFiltersState,
+  'categoryFilter' | 'favoritesOnly'
+>;
+
+/** Контекст списка в query string страницы материала (для кнопки «Назад»). */
+export function buildKnowledgeMaterialViewUrl(
+  materialId: string,
+  listContext?: Partial<KnowledgeMaterialListContext>
+): string {
+  const params = new URLSearchParams();
+  if (listContext?.favoritesOnly) {
+    params.set(LIST_FAVORITES_QUERY, '1');
+  } else if (listContext?.categoryFilter) {
+    params.set(LIST_CATEGORY_QUERY, listContext.categoryFilter);
+  }
+  const qs = params.toString();
+  const path = `/admin/knowledge/materials/${materialId}`;
+  return qs ? `${path}?${qs}` : path;
+}
+
+export function readKnowledgeMaterialListContextFromSearchParams(
+  searchParams: URLSearchParams
+): Partial<KnowledgeMaterialListContext> {
+  const context: Partial<KnowledgeMaterialListContext> = {};
+  const listCategory = searchParams.get(LIST_CATEGORY_QUERY);
+  if (listCategory) {
+    context.categoryFilter = listCategory;
+  }
+  if (searchParams.get(LIST_FAVORITES_QUERY) === '1') {
+    context.favoritesOnly = true;
+  }
+  return context;
+}
+
 /** URL списка «Территория знаний» с сохранёнными фильтрами (для кнопки «Назад»). */
-export function buildKnowledgeTerritoryBackUrl(fallbackCategoryId?: string): string {
+export function buildKnowledgeTerritoryBackUrl(
+  fallbackCategoryId?: string,
+  listContext?: Partial<KnowledgeMaterialListContext>
+): string {
+  const effectiveListContext =
+    listContext ??
+    (typeof window !== 'undefined'
+      ? readKnowledgeMaterialListContextFromSearchParams(
+          new URLSearchParams(window.location.search)
+        )
+      : {});
+
+  if (effectiveListContext.favoritesOnly || effectiveListContext.categoryFilter) {
+    const saved = readKnowledgeTerritoryFilters();
+    const base = saved ?? DEFAULT_FILTERS;
+    return buildKnowledgeTerritoryUrl({
+      ...base,
+      categoryFilter: effectiveListContext.favoritesOnly
+        ? ''
+        : (effectiveListContext.categoryFilter ?? base.categoryFilter),
+      favoritesOnly: effectiveListContext.favoritesOnly === true,
+      moduleFilter: effectiveListContext.favoritesOnly ? '' : base.moduleFilter,
+    });
+  }
+
   const saved = readKnowledgeTerritoryFilters();
   if (saved) {
     return buildKnowledgeTerritoryUrl(saved);

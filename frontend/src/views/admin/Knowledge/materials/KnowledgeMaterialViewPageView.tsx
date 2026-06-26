@@ -34,6 +34,7 @@ import {
   renderKnowledgeRichTextHtml,
   resolveKnowledgeArticleHtml,
 } from '../shared/knowledge-utils';
+import { buildKnowledgeMaterialViewUrl } from '../territory/knowledge-territory-filters-storage';
 import styles from './KnowledgeMaterialViewPage.module.css';
 import type { KnowledgeMaterialViewPageModel } from './hooks/useKnowledgeMaterialViewPage';
 
@@ -59,6 +60,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
     handleStudyProgress,
     backUrl,
     nextMaterial,
+    listContext,
   } = model;
 
   if (loading) {
@@ -355,7 +357,10 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         <KnowledgeBackLink href={backUrl}>← Назад</KnowledgeBackLink>
         {showNextMaterial ? (
           <KnowledgeBackLink
-            href={`/admin/knowledge/materials/${nextMaterial.id}`}
+            href={buildKnowledgeMaterialViewUrl(nextMaterial.id, {
+              categoryFilter: listContext.categoryFilter || material.categoryId,
+              favoritesOnly: listContext.favoritesOnly,
+            })}
             className={styles.footerNextLink}
             title={nextMaterial.title}
           >

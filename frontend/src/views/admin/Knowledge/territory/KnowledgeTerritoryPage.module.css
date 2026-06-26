@@ -496,6 +496,29 @@
   padding: var(--admin-space-6xl);
   text-align: center;
   color: var(--admin-text-muted);
+  min-height: 240px;
+}
+
+.materialsContent {
+  animation: knowledgeMaterialsReveal 0.22s ease-out;
+}
+
+.materialsContentRefreshing {
+  opacity: 0.55;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+@keyframes knowledgeMaterialsReveal {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .emptyState {
@@ -637,6 +660,7 @@
 }
 
 .cardImage {
+  display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;

@@ -55,6 +55,10 @@ import styles from './KnowledgeTerritoryPage.module.css';
 import { KnowledgeTerritorySearchField } from './KnowledgeTerritorySearchField';
 import { formatKnowledgePlatformFeedbackBadgeCount } from './hooks/useKnowledgePlatformFeedbackUnreadCount';
 import type { KnowledgeTerritoryPageModel } from './hooks/useKnowledgeTerritoryPage';
+import {
+  type KnowledgeMaterialListContext,
+  buildKnowledgeMaterialViewUrl,
+} from './knowledge-territory-filters-storage';
 import { TYPE_FILTERS } from './knowledge-territory-page.constants';
 import { KnowledgeTrashModal } from './modals/KnowledgeTrashModal';
 import { KNOWLEDGE_TRASH_RETENTION_NOTICE } from './modals/knowledgeTrashRetention';
@@ -73,6 +77,7 @@ function MaterialCard({
   onPublish,
   onDelete,
   onOpenMaterial,
+  listContext,
   topicNumber,
 }: {
   material: AdminKnowledgeMaterial;
@@ -84,9 +89,11 @@ function MaterialCard({
   onPublish: (id: string) => void;
   onDelete: (target: { type: 'material'; id: string; name: string }) => void;
   onOpenMaterial: () => void;
+  listContext: Partial<KnowledgeMaterialListContext>;
   topicNumber?: number;
 }) {
   const router = useRouter();
+  const materialHref = buildKnowledgeMaterialViewUrl(m.id, listContext);
   const likeCount = m.likeCount ?? 0;
   const likedByMe = m.likedByMe ?? false;
   const favoritedByMe = m.favoritedByMe ?? false;
@@ -206,11 +213,7 @@ function MaterialCard({
           {cardInner}
         </div>
       ) : (
-        <Link
-          href={`/admin/knowledge/materials/${m.id}`}
-          className={s.cardLink}
-          onClick={onOpenMaterial}
-        >
+        <Link href={materialHref} className={s.cardLink} onClick={onOpenMaterial}>
           {cardInner}
         </Link>
       )}
@@ -271,9 +274,8 @@ function MaterialCard({
             if (isLocked) return;
             e.preventDefault();
             e.stopPropagation();
-            router.push(
-              `/admin/knowledge/materials/${m.id}#${KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID}`
-            );
+            onOpenMaterial();
+            router.push(`${materialHref}#${KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID}`);
           }}
         >
           <CommentIcon active={commentCount > 0} />
@@ -334,6 +336,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     selectedCategory,
     stats,
     loading,
+    listLayoutReady,
+    materialsScopeKey,
     message,
     page,
     setPage,
@@ -416,9 +420,22 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
   const handlePickSearchMaterial = useCallback(
     (suggestion: KnowledgeMaterialSearchSuggestion) => {
       persistTerritoryFilters();
-      router.push(`/admin/knowledge/materials/${suggestion.slug || suggestion.id}`);
+      router.push(
+        buildKnowledgeMaterialViewUrl(suggestion.slug || suggestion.id, {
+          categoryFilter,
+          favoritesOnly,
+        })
+      );
     },
-    [persistTerritoryFilters, router]
+    [categoryFilter, favoritesOnly, persistTerritoryFilters, router]
+  );
+
+  const materialListContext = useMemo<Partial<KnowledgeMaterialListContext>>(
+    () => ({
+      categoryFilter: favoritesOnly ? '' : categoryFilter,
+      favoritesOnly,
+    }),
+    [categoryFilter, favoritesOnly]
   );
 
   const showGroupedByModule =
@@ -1083,8 +1100,10 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             )}
           </div>
 
-          {loading && materials.length === 0 ? (
-            <div className={styles.loading}>Загрузка…</div>
+          {!listLayoutReady ? (
+            <div className={styles.loading} aria-busy="true">
+              Загрузка…
+            </div>
           ) : materials.length === 0 ? (
             <div className={styles.emptyState}>
               <div className={styles.emptyIcon} aria-hidden>
@@ -1103,7 +1122,11 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
               )}
             </div>
           ) : (
-            <>
+            <div
+              key={materialsScopeKey}
+              className={`${styles.materialsContent} ${loading ? styles.materialsContentRefreshing : ''}`}
+              aria-busy={loading || undefined}
+            >
               {groupedMaterials ? (
                 groupedMaterials.map((group) => (
                   <section key={group.key} className={styles.moduleGroup}>
@@ -1126,6 +1149,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                           onPublish={handlePublish}
                           onDelete={setDeleteTarget}
                           onOpenMaterial={persistTerritoryFilters}
+                          listContext={materialListContext}
                           topicNumber={
                             showTopicNumbers ? getKnowledgeTopicDisplayNumber(m, index) : undefined
                           }
@@ -1148,6 +1172,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                       onPublish={handlePublish}
                       onDelete={setDeleteTarget}
                       onOpenMaterial={persistTerritoryFilters}
+                      listContext={materialListContext}
                       topicNumber={
                         showTopicNumbers ? getKnowledgeTopicDisplayNumber(m, index) : undefined
                       }
@@ -1160,7 +1185,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                 <nav className={styles.pagination} aria-label="Пагинация материалов">
                   <button
                     type="button"
-                    disabled={page <= 1}
+                    disabled={page <= 1 || loading}
                     onClick={() => setPage((p) => p - 1)}
                     className={styles.pageBtn}
                     aria-label="Предыдущая страница"
@@ -1181,6 +1206,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                             slot === page ? styles.pageNumberBtnActive : ''
                           }`}
                           onClick={() => setPage(slot)}
+                          disabled={loading}
                           aria-label={`Страница ${slot}`}
                           aria-current={slot === page ? 'page' : undefined}
                         >
@@ -1191,7 +1217,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                   </div>
                   <button
                     type="button"
-                    disabled={page >= totalPages}
+                    disabled={page >= totalPages || loading}
                     onClick={() => setPage((p) => p + 1)}
                     className={styles.pageBtn}
                     aria-label="Следующая страница"
@@ -1200,7 +1226,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                   </button>
                 </nav>
               )}
-            </>
+            </div>
           )}
         </main>
       </div>

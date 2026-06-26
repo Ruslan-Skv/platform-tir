@@ -1,10 +1,12 @@
 import { describe, expect, it } from '@jest/globals';
 
 import {
+  buildKnowledgeMaterialViewUrl,
   buildKnowledgeTerritoryBackUrl,
   buildKnowledgeTerritoryUrl,
   isKnowledgeTerritoryFiltersSyncedWithUrl,
   parseKnowledgeTerritorySearchParams,
+  readKnowledgeMaterialListContextFromSearchParams,
 } from './knowledge-territory-filters-storage';
 
 describe('buildKnowledgeTerritoryUrl', () => {
@@ -73,5 +75,41 @@ describe('buildKnowledgeTerritoryBackUrl', () => {
     expect(buildKnowledgeTerritoryBackUrl('cat-fallback')).toBe(
       '/admin/knowledge?category=cat-fallback'
     );
+  });
+
+  it('prefers explicit list context over saved filters', () => {
+    expect(
+      buildKnowledgeTerritoryBackUrl('cat-fallback', { categoryFilter: 'cat-from-list' })
+    ).toBe('/admin/knowledge?category=cat-from-list');
+  });
+
+  it('builds favorites list back url from list context', () => {
+    expect(buildKnowledgeTerritoryBackUrl(undefined, { favoritesOnly: true })).toBe(
+      '/admin/knowledge?favorites=1'
+    );
+  });
+});
+
+describe('buildKnowledgeMaterialViewUrl', () => {
+  it('includes list category in material url', () => {
+    expect(buildKnowledgeMaterialViewUrl('mat-1', { categoryFilter: 'cat-1' })).toBe(
+      '/admin/knowledge/materials/mat-1?listCategory=cat-1'
+    );
+  });
+
+  it('includes favorites list marker in material url', () => {
+    expect(buildKnowledgeMaterialViewUrl('mat-1', { favoritesOnly: true })).toBe(
+      '/admin/knowledge/materials/mat-1?listFavorites=1'
+    );
+  });
+});
+
+describe('readKnowledgeMaterialListContextFromSearchParams', () => {
+  it('reads list context from material page query', () => {
+    const params = new URLSearchParams('listCategory=cat-1&listFavorites=1');
+    expect(readKnowledgeMaterialListContextFromSearchParams(params)).toEqual({
+      categoryFilter: 'cat-1',
+      favoritesOnly: true,
+    });
   });
 });
