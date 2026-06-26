@@ -185,7 +185,7 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 3. **QUIZ_DOMAINS** и **NEXT_PUBLIC_QUIZ_DOMAINS** — через запятую с доменом мебели: `mebel-na-zakaz-51.ru,remont-kvartir-51.ru`.
 4. **SSL:** certbot `-d remont-kvartir-51.ru` или `scripts/expand-ssl-domains.sh`.
 5. **nginx:** `server_name remont-kvartir-51.ru` в `nginx/nginx-ssl.conf`.
-6. **Seed:** `npm run prisma:seed` (создаёт квиз `remont` с шагами и ветвлением по направлениям).
+6. **Seed:** `docker compose … exec backend node prisma/seed-quiz-remont.cjs`
 7. **Админка:** «Квизы → Ремонт» (`/admin/quiz/remont`) — направления, шаги, заявки.
 8. **Реклама по направлению:** `?type=repair|windows|doors|ceilings|blinds|furniture` пропускает первый шаг.
 

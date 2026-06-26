@@ -62,6 +62,7 @@ COPY prisma/migrations ./prisma/migrations
 COPY prisma/data ./prisma/data
 COPY prisma/create-super-admin.cjs ./prisma/create-super-admin.cjs
 COPY prisma/seed-product-card-badges.cjs ./prisma/seed-product-card-badges.cjs
+COPY prisma/seed-quiz-remont.cjs ./prisma/seed-quiz-remont.cjs
 RUN npx prisma generate
 
 # Copy built application

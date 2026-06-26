@@ -1,0 +1,229 @@
+[
+  {
+    "key": "service_direction",
+    "sortOrder": 0,
+    "type": "choice",
+    "title": "Что вам нужно?",
+    "subtitle": "Выберите направление",
+    "required": true,
+    "options": [
+      { "value": "repair", "label": "Ремонт квартир", "imageUrl": "/quiz/defaults/repair.svg" },
+      { "value": "windows", "label": "Окна", "imageUrl": "/quiz/defaults/windows.svg" },
+      { "value": "doors", "label": "Двери", "imageUrl": "/quiz/defaults/doors.svg" },
+      {
+        "value": "ceilings",
+        "label": "Натяжные потолки",
+        "imageUrl": "/quiz/defaults/ceilings.svg"
+      },
+      { "value": "blinds", "label": "Жалюзи", "imageUrl": "/quiz/defaults/blinds.svg" },
+      {
+        "value": "furniture",
+        "label": "Мебель на заказ",
+        "imageUrl": "/quiz/defaults/furniture.svg"
+      }
+    ]
+  },
+  {
+    "key": "repair_type",
+    "sortOrder": 1,
+    "type": "choice",
+    "title": "Какой ремонт планируете?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["repair"] },
+    "options": [
+      { "value": "cosmetic", "label": "Косметический", "imageUrl": "/quiz/defaults/cosmetic.svg" },
+      { "value": "capital", "label": "Капитальный", "imageUrl": "/quiz/defaults/capital.svg" },
+      { "value": "design", "label": "Дизайнерский", "imageUrl": "/quiz/defaults/design.svg" },
+      { "value": "turnkey", "label": "Под ключ", "imageUrl": "/quiz/defaults/turnkey.svg" }
+    ]
+  },
+  {
+    "key": "repair_scope",
+    "sortOrder": 2,
+    "type": "choice",
+    "title": "Что нужно отремонтировать?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["repair"] },
+    "options": [
+      { "value": "full", "label": "Вся квартира", "imageUrl": "/quiz/defaults/full.svg" },
+      {
+        "value": "single_room",
+        "label": "Одна комната",
+        "imageUrl": "/quiz/defaults/single_room.svg"
+      },
+      { "value": "bathroom", "label": "Санузел", "imageUrl": "/quiz/defaults/bathroom.svg" },
+      { "value": "kitchen_repair", "label": "Кухня", "imageUrl": "/quiz/defaults/kitchen.svg" }
+    ]
+  },
+  {
+    "key": "windows_type",
+    "sortOrder": 3,
+    "type": "choice",
+    "title": "Какие окна вас интересуют?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["windows"] },
+    "options": [
+      {
+        "value": "plastic_windows",
+        "label": "Пластиковые",
+        "imageUrl": "/quiz/defaults/plastic_windows.svg"
+      },
+      {
+        "value": "wood_windows",
+        "label": "Деревянные",
+        "imageUrl": "/quiz/defaults/wood_windows.svg"
+      },
+      {
+        "value": "balcony",
+        "label": "Балконное остекление",
+        "imageUrl": "/quiz/defaults/balcony.svg"
+      },
+      { "value": "windows_other", "label": "Другое", "imageUrl": "/quiz/defaults/other.svg" }
+    ]
+  },
+  {
+    "key": "doors_type",
+    "sortOrder": 4,
+    "type": "choice",
+    "title": "Какие двери вам нужны?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["doors"] },
+    "options": [
+      {
+        "value": "interior_doors",
+        "label": "Межкомнатные",
+        "imageUrl": "/quiz/defaults/interior_doors.svg"
+      },
+      {
+        "value": "entrance_doors",
+        "label": "Входные",
+        "imageUrl": "/quiz/defaults/entrance_doors.svg"
+      },
+      { "value": "doors_other", "label": "Другое", "imageUrl": "/quiz/defaults/other.svg" }
+    ]
+  },
+  {
+    "key": "ceilings_type",
+    "sortOrder": 5,
+    "type": "choice",
+    "title": "Какой потолок вас интересует?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["ceilings"] },
+    "options": [
+      { "value": "matte", "label": "Матовый", "imageUrl": "/quiz/defaults/matte.svg" },
+      { "value": "glossy", "label": "Глянцевый", "imageUrl": "/quiz/defaults/glossy.svg" },
+      { "value": "satin", "label": "Сатиновый", "imageUrl": "/quiz/defaults/satin.svg" },
+      { "value": "two_level", "label": "Двухуровневый", "imageUrl": "/quiz/defaults/two_level.svg" }
+    ]
+  },
+  {
+    "key": "blinds_type",
+    "sortOrder": 6,
+    "type": "choice",
+    "title": "Какие жалюзи вам нужны?",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["blinds"] },
+    "options": [
+      {
+        "value": "horizontal",
+        "label": "Горизонтальные",
+        "imageUrl": "/quiz/defaults/horizontal.svg"
+      },
+      { "value": "vertical", "label": "Вертикальные", "imageUrl": "/quiz/defaults/vertical.svg" },
+      { "value": "roller", "label": "Рулонные", "imageUrl": "/quiz/defaults/roller.svg" },
+      { "value": "blinds_other", "label": "Другое", "imageUrl": "/quiz/defaults/other.svg" }
+    ]
+  },
+  {
+    "key": "furniture_type",
+    "sortOrder": 7,
+    "type": "choice",
+    "title": "Что из мебели вам нужно?",
+    "subtitle": "Выберите тип мебели",
+    "required": true,
+    "showWhen": { "branchKey": "service_direction", "values": ["furniture"] },
+    "options": [
+      { "value": "kitchen", "label": "Кухня", "imageUrl": "/quiz/defaults/kitchen.svg" },
+      { "value": "wardrobe", "label": "Шкаф", "imageUrl": "/quiz/defaults/wardrobe.svg" },
+      {
+        "value": "dressing_room",
+        "label": "Гардеробная",
+        "imageUrl": "/quiz/defaults/dressing_room.svg"
+      },
+      { "value": "bedroom", "label": "Спальня", "imageUrl": "/quiz/defaults/bedroom.svg" },
+      { "value": "other", "label": "Другое", "imageUrl": "/quiz/defaults/other.svg" }
+    ]
+  },
+  {
+    "key": "furniture_layout",
+    "sortOrder": 8,
+    "type": "choice",
+    "title": "Выберите планировку кухни",
+    "required": true,
+    "showWhen": { "branchKey": "furniture_type", "values": ["kitchen"] },
+    "options": [
+      { "value": "straight", "label": "Прямая", "imageUrl": "/quiz/defaults/straight.svg" },
+      { "value": "corner", "label": "Угловая", "imageUrl": "/quiz/defaults/corner.svg" },
+      { "value": "u_shape", "label": "П-образная", "imageUrl": "/quiz/defaults/u_shape.svg" },
+      { "value": "island", "label": "С островом", "imageUrl": "/quiz/defaults/island.svg" }
+    ]
+  },
+  {
+    "key": "details",
+    "sortOrder": 9,
+    "type": "text",
+    "title": "Опишите объект или размеры",
+    "subtitle": "Площадь, количество окон, пожелания. Если не знаете — поставьте «-»",
+    "placeholder": "Например: 2-комнатная квартира, 54 м²",
+    "required": true
+  },
+  {
+    "key": "urgency",
+    "sortOrder": 10,
+    "type": "choice",
+    "title": "Как срочно нужна услуга?",
+    "required": true,
+    "options": [
+      { "value": "urgent", "label": "Срочно", "imageUrl": "/quiz/defaults/urgent.svg" },
+      {
+        "value": "this_month",
+        "label": "В этом месяце",
+        "imageUrl": "/quiz/defaults/this_month.svg"
+      },
+      {
+        "value": "next_month",
+        "label": "На след. месяц",
+        "imageUrl": "/quiz/defaults/next_month.svg"
+      },
+      {
+        "value": "two_months",
+        "label": "В течение двух месяцев",
+        "imageUrl": "/quiz/defaults/two_months.svg"
+      }
+    ]
+  },
+  {
+    "key": "contact_channel",
+    "sortOrder": 11,
+    "type": "choice",
+    "title": "Куда отправить расчёт стоимости?",
+    "required": true,
+    "options": [
+      { "value": "telegram", "label": "Telegram", "imageUrl": "/quiz/defaults/telegram.svg" },
+      {
+        "value": "phone",
+        "label": "Бесплатная консультация по телефону",
+        "imageUrl": "/quiz/defaults/phone.svg"
+      },
+      { "value": "max", "label": "MAX", "imageUrl": "/quiz/defaults/max.svg" }
+    ]
+  },
+  {
+    "key": "contact",
+    "sortOrder": 12,
+    "type": "contact",
+    "title": "Введите номер телефона",
+    "subtitle": "За этим номером мы закрепим подарок по акции",
+    "required": true
+  }
+]
