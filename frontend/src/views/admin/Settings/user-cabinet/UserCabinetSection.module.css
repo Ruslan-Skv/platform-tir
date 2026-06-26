@@ -112,6 +112,81 @@
   text-decoration: underline;
 }
 
+.consentSection {
+  margin-top: var(--admin-space-4xl);
+  padding-top: var(--admin-space-3xl);
+  border-top: 1px solid var(--admin-border);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.consentTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-xl);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.consentHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-lg);
+}
+
+.consentHint code {
+  font-size: 0.85em;
+}
+
+.consentGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--admin-space-lg);
+}
+
+.consentField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.consentFieldFull {
+  grid-column: 1 / -1;
+}
+
+.consentField input,
+.consentField textarea {
+  padding: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  font-weight: 400;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+}
+
+.consentField textarea {
+  min-height: 9rem;
+  resize: vertical;
+}
+
+.consentFieldLabel {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+}
+
+.consentFieldHint {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 400;
+  color: var(--admin-text-muted);
+}
+
 /* Тёмная тема — личный кабинет */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
   color: var(--admin-text-muted);

@@ -53,7 +53,8 @@ interface UserAuthContextType {
     email: string,
     password: string,
     firstName?: string,
-    lastName?: string
+    lastName?: string,
+    consentAccepted?: boolean
   ) => Promise<{ success: boolean; error?: string }>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -315,14 +316,26 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const register = useCallback(
-    async (email: string, password: string, firstName?: string, lastName?: string) => {
+    async (
+      email: string,
+      password: string,
+      firstName?: string,
+      lastName?: string,
+      consentAccepted = false
+    ) => {
       try {
         const response = await apiFetch(`${getApiBaseUrl()}/auth/register`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
-          body: JSON.stringify({ email, password, firstName, lastName }),
+          body: JSON.stringify({
+            email,
+            password,
+            firstName,
+            lastName,
+            consentAccepted,
+          }),
         });
 
         if (!response.ok) {

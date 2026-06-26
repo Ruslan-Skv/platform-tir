@@ -16,7 +16,12 @@ export function resolveQuizUploadUrl(url: string | null | undefined): string {
 export function isPrivacyPolicyPdfUrl(url: string | null | undefined): boolean {
   if (!url) return false;
   const normalized = url.split('?')[0]?.toLowerCase() ?? '';
-  return normalized.endsWith('.pdf') || normalized.includes('/uploads/quiz/policy/');
+  return (
+    normalized.endsWith('.pdf') ||
+    normalized.includes('/uploads/quiz/policy/') ||
+    normalized.includes('/uploads/auth/policy/')
+  );
 }
 
 export const QUIZ_PRIVACY_POLICY_PATH = '/quiz/privacy-policy';
+export const REGISTRATION_PRIVACY_POLICY_PATH = '/auth/privacy-policy';

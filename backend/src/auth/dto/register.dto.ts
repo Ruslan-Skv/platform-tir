@@ -1,5 +1,5 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsString, MinLength, IsOptional, IsBoolean, Equals } from 'class-validator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'user@example.com' })
@@ -20,4 +20,9 @@ export class RegisterDto {
   @IsOptional()
   @IsString()
   lastName?: string;
+
+  @ApiProperty({ example: true, description: 'Согласие на обработку персональных данных' })
+  @IsBoolean()
+  @Equals(true, { message: 'Необходимо согласие на обработку персональных данных' })
+  consentAccepted: boolean;
 }

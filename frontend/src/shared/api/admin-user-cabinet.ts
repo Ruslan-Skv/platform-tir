@@ -20,6 +20,11 @@ export interface UserCabinetSettings {
   showNotificationHistory?: boolean;
   showPasswordSection: boolean;
   showQuickLinks: boolean;
+  privacyPolicyUrl?: string | null;
+  privacyPolicyTitle?: string | null;
+  privacyPolicyContent?: string | null;
+  consentText?: string | null;
+  consentLinkText?: string | null;
   updatedAt: string;
 }
 
@@ -81,5 +86,19 @@ export async function updateAdminUserCabinetSettings(data: Partial<UserCabinetSe
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Ошибка сохранения');
   }
+  return res.json();
+}
+
+export async function uploadRegistrationPrivacyPolicy(file: File): Promise<{ url: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const headers = getAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(`${API_URL}/admin/user-cabinet/upload-privacy-policy`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) throw new Error('Ошибка загрузки PDF политики');
   return res.json();
 }

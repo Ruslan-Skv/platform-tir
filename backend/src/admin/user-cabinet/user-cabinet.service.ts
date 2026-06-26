@@ -106,6 +106,19 @@ export class UserCabinetService {
           showPasswordSection: dto.showPasswordSection,
         }),
         ...(dto.showQuickLinks !== undefined && { showQuickLinks: dto.showQuickLinks }),
+        ...(dto.privacyPolicyUrl !== undefined && {
+          privacyPolicyUrl: dto.privacyPolicyUrl?.trim() || null,
+        }),
+        ...(dto.privacyPolicyTitle !== undefined && {
+          privacyPolicyTitle: dto.privacyPolicyTitle?.trim() || null,
+        }),
+        ...(dto.privacyPolicyContent !== undefined && {
+          privacyPolicyContent: dto.privacyPolicyContent?.trim() || null,
+        }),
+        ...(dto.consentText !== undefined && { consentText: dto.consentText?.trim() || null }),
+        ...(dto.consentLinkText !== undefined && {
+          consentLinkText: dto.consentLinkText?.trim() || null,
+        }),
       },
       create: {
         id: 'main',
@@ -115,6 +128,11 @@ export class UserCabinetService {
         showNotificationHistory: dto.showNotificationHistory ?? true,
         showPasswordSection: dto.showPasswordSection ?? true,
         showQuickLinks: dto.showQuickLinks ?? true,
+        privacyPolicyUrl: dto.privacyPolicyUrl?.trim() || null,
+        privacyPolicyTitle: dto.privacyPolicyTitle?.trim() || null,
+        privacyPolicyContent: dto.privacyPolicyContent?.trim() || null,
+        consentText: dto.consentText?.trim() || null,
+        consentLinkText: dto.consentLinkText?.trim() || null,
       },
     });
   }

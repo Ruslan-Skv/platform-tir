@@ -9,7 +9,9 @@ import type { UserCabinetSettings } from '@/shared/api/admin-user-cabinet';
 import {
   getAdminUserCabinetSettings,
   updateAdminUserCabinetSettings,
+  uploadRegistrationPrivacyPolicy,
 } from '@/shared/api/admin-user-cabinet';
+import { QuizAdminFileUpload } from '@/views/admin/Quiz/ui/QuizAdminFileUpload';
 
 import styles from './UserCabinetSection.module.css';
 
@@ -18,6 +20,7 @@ export function UserCabinetSection() {
   const [settings, setSettings] = useState<UserCabinetSettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [uploadingPrivacyPolicy, setUploadingPrivacyPolicy] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
   const showToast = useCallback((message: string, type: 'success' | 'error') => {
@@ -40,6 +43,29 @@ export function UserCabinetSection() {
   useEffect(() => {
     loadSettings();
   }, [loadSettings]);
+
+  const setConsentField = <K extends keyof UserCabinetSettings>(
+    key: K,
+    value: UserCabinetSettings[K]
+  ) => {
+    setSettings((s) => (s ? { ...s, [key]: value } : s));
+  };
+
+  const handleUploadPrivacyPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file || !settings) return;
+    setUploadingPrivacyPolicy(true);
+    try {
+      const { url } = await uploadRegistrationPrivacyPolicy(file);
+      setConsentField('privacyPolicyUrl', url);
+      showToast('PDF политики загружен', 'success');
+    } catch (err) {
+      showToast(err instanceof Error ? err.message : 'Ошибка загрузки PDF', 'error');
+    } finally {
+      setUploadingPrivacyPolicy(false);
+    }
+  };
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -154,6 +180,67 @@ export function UserCabinetSection() {
               Показывать быстрые ссылки (Избранное, Корзина и др.)
             </label>
           </div>
+
+          <div className={styles.consentSection}>
+            <h3 className={styles.consentTitle}>Согласие на обработку данных (регистрация)</h3>
+            <p className={styles.consentHint}>
+              По клику на «персональных данных» — страница <code>/auth/privacy-policy</code>. PDF на
+              весь экран; без PDF показывается текст (можно сохранить через печать браузера).
+            </p>
+            <label className={styles.consentField}>
+              PDF политики (рекомендуется)
+              <QuizAdminFileUpload
+                url={settings.privacyPolicyUrl}
+                onUrlChange={(v) => setConsentField('privacyPolicyUrl', v)}
+                onFileSelect={handleUploadPrivacyPolicy}
+                uploading={uploadingPrivacyPolicy}
+                accept=".pdf,application/pdf"
+                uploadLabel="Загрузить PDF"
+                placeholder="https://…/policy.pdf"
+              />
+            </label>
+            <div className={styles.consentGrid}>
+              <label className={styles.consentField}>
+                Текст рядом с галочкой
+                <input
+                  value={settings.consentText ?? ''}
+                  onChange={(e) => setConsentField('consentText', e.target.value)}
+                  placeholder="Я согласен(-на) на обработку персональных данных"
+                />
+              </label>
+              <label className={styles.consentField}>
+                Кликабельная фраза (в тексте выше)
+                <input
+                  value={settings.consentLinkText ?? ''}
+                  onChange={(e) => setConsentField('consentLinkText', e.target.value)}
+                  placeholder="персональных данных"
+                />
+              </label>
+              <label className={`${styles.consentField} ${styles.consentFieldFull}`}>
+                Заголовок окна политики
+                <input
+                  value={settings.privacyPolicyTitle ?? ''}
+                  onChange={(e) => setConsentField('privacyPolicyTitle', e.target.value)}
+                  placeholder="Политика конфиденциальности персональных данных"
+                />
+              </label>
+            </div>
+            <label className={`${styles.consentField} ${styles.consentFieldFull}`}>
+              <span className={styles.consentFieldLabel}>
+                Текст политики (если нет PDF)
+                <span className={styles.consentFieldHint}>
+                  Переносы строк — только для редактирования
+                </span>
+              </span>
+              <textarea
+                value={settings.privacyPolicyContent ?? ''}
+                onChange={(e) => setConsentField('privacyPolicyContent', e.target.value)}
+                rows={8}
+                placeholder="Вставьте текст политики конфиденциальности…"
+              />
+            </label>
+          </div>
+
           <div className={styles.actions}>
             <button
               data-admin-mutation
@@ -163,8 +250,11 @@ export function UserCabinetSection() {
             >
               {saving ? 'Сохранение...' : 'Сохранить'}
             </button>
+            <Link href="/login" target="_blank" rel="noreferrer" className={styles.previewLink}>
+              Форма регистрации →
+            </Link>
             <Link href="/profile" target="_blank" rel="noreferrer" className={styles.previewLink}>
-              Просмотр на сайте →
+              Личный кабинет →
             </Link>
           </div>
         </form>

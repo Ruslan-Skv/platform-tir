@@ -2041,6 +2041,11 @@ model UserCabinetBlock {
   showNotificationHistory  Boolean  @default(true) // История уведомлений (только чтение)
   showPasswordSection      Boolean  @default(true) // Смена пароля
   showQuickLinks           Boolean  @default(true) // Быстрые ссылки
+  privacyPolicyUrl         String? // PDF политики для регистрации
+  privacyPolicyTitle       String?
+  privacyPolicyContent     String?  @db.Text
+  consentText              String?
+  consentLinkText          String?
   updatedAt                DateTime @updatedAt
 
   @@map("user_cabinet_block")

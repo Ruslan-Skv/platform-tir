@@ -2,12 +2,16 @@
 
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
+import { REGISTRATION_PRIVACY_POLICY_PATH } from '@/features/quiz/lib/quiz-upload-url';
+import { QuizConsentLabel } from '@/features/quiz/ui/QuizConsentLabel';
+import { getUserCabinetSettings } from '@/shared/api/user-cabinet';
+import type { UserCabinetSettings } from '@/shared/api/user-cabinet';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
@@ -27,6 +31,14 @@ export function LoginPageView() {
   const [yandexLoading, setYandexLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [consent, setConsent] = useState(false);
+  const [consentConfig, setConsentConfig] = useState<Partial<UserCabinetSettings> | null>(null);
+
+  useEffect(() => {
+    getUserCabinetSettings()
+      .then(setConsentConfig)
+      .catch(() => setConsentConfig({}));
+  }, []);
 
   const handleYandexLogin = async () => {
     setYandexLoading(true);
@@ -70,11 +82,17 @@ export function LoginPageView() {
           setIsLoading(false);
           return;
         }
+        if (!consent) {
+          setError('Необходимо согласие на обработку персональных данных');
+          setIsLoading(false);
+          return;
+        }
         const result = await register(
           email,
           password,
           firstName || undefined,
-          lastName || undefined
+          lastName || undefined,
+          true
         );
         if (result.success) {
           router.push('/profile');
@@ -257,6 +275,24 @@ export function LoginPageView() {
             </div>
           )}
 
+          {!isLogin && consentConfig ? (
+            <label className={styles.consentLabel}>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(e) => setConsent(e.target.checked)}
+                required
+              />
+              <span>
+                <QuizConsentLabel
+                  config={consentConfig}
+                  privacyPolicyPath={REGISTRATION_PRIVACY_POLICY_PATH}
+                  linkClassName={styles.consentLink}
+                />
+              </span>
+            </label>
+          ) : null}
+
           {error && <div className={styles.error}>{error}</div>}
 
           {isLogin && (
@@ -297,6 +333,7 @@ export function LoginPageView() {
               setError('');
               setPassword('');
               setConfirmPassword('');
+              setConsent(false);
               setShowPassword(false);
               setShowConfirmPassword(false);
             }}

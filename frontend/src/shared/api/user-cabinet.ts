@@ -10,6 +10,11 @@ export interface UserCabinetSettings {
   showNotificationHistory?: boolean;
   showPasswordSection: boolean;
   showQuickLinks: boolean;
+  privacyPolicyUrl?: string | null;
+  privacyPolicyTitle?: string | null;
+  privacyPolicyContent?: string | null;
+  consentText?: string | null;
+  consentLinkText?: string | null;
   updatedAt?: string;
 }
 

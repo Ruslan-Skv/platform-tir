@@ -1,14 +1,14 @@
+import type { QuizConsentConfig } from '@/features/quiz/lib/quiz-consent';
 import {
   formatPrivacyPolicyForDisplay,
   resolveQuizConsent,
 } from '@/features/quiz/lib/quiz-consent';
 import { isPrivacyPolicyPdfUrl, resolveQuizUploadUrl } from '@/features/quiz/lib/quiz-upload-url';
-import type { QuizPublicConfig } from '@/shared/api/quiz';
 
 import styles from './PrivacyPolicyPageView.module.css';
 
 type PrivacyPolicyPageViewProps = {
-  config: QuizPublicConfig;
+  config: Partial<QuizConsentConfig>;
 };
 
 export function PrivacyPolicyPageView({ config }: PrivacyPolicyPageViewProps) {

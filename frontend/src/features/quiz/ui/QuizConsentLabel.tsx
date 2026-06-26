@@ -12,9 +12,15 @@ import styles from './QuizWizard.module.css';
 
 type QuizConsentLabelProps = {
   config: Partial<QuizConsentConfig>;
+  privacyPolicyPath?: string;
+  linkClassName?: string;
 };
 
-export function QuizConsentLabel({ config }: QuizConsentLabelProps) {
+export function QuizConsentLabel({
+  config,
+  privacyPolicyPath = QUIZ_PRIVACY_POLICY_PATH,
+  linkClassName,
+}: QuizConsentLabelProps) {
   const consent = resolveQuizConsent(config);
   const parts = splitConsentByLinkText(consent.consentText, consent.consentLinkText);
   const canOpenPolicy = hasPrivacyPolicyView(consent);
@@ -23,7 +29,7 @@ export function QuizConsentLabel({ config }: QuizConsentLabelProps) {
     e.preventDefault();
     e.stopPropagation();
     if (!canOpenPolicy) return;
-    window.open(QUIZ_PRIVACY_POLICY_PATH, '_blank', 'noopener,noreferrer');
+    window.open(privacyPolicyPath, '_blank', 'noopener,noreferrer');
   };
 
   if (!parts) {
@@ -31,7 +37,7 @@ export function QuizConsentLabel({ config }: QuizConsentLabelProps) {
   }
 
   const linkNode = canOpenPolicy ? (
-    <button type="button" className={styles.consentLink} onClick={openPolicy}>
+    <button type="button" className={linkClassName ?? styles.consentLink} onClick={openPolicy}>
       {consent.consentLinkText}
     </button>
   ) : (

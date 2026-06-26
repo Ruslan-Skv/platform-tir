@@ -1,5 +1,5 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBoolean, IsOptional } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class UpdateUserCabinetDto {
   @ApiPropertyOptional({ description: 'Показывать раздел «Личные данные»' })
@@ -31,4 +31,29 @@ export class UpdateUserCabinetDto {
   @IsOptional()
   @IsBoolean()
   showQuickLinks?: boolean;
+
+  @ApiPropertyOptional({ description: 'URL PDF политики конфиденциальности (регистрация)' })
+  @IsOptional()
+  @IsString()
+  privacyPolicyUrl?: string | null;
+
+  @ApiPropertyOptional({ description: 'Заголовок политики конфиденциальности' })
+  @IsOptional()
+  @IsString()
+  privacyPolicyTitle?: string | null;
+
+  @ApiPropertyOptional({ description: 'Текст политики конфиденциальности (если нет PDF)' })
+  @IsOptional()
+  @IsString()
+  privacyPolicyContent?: string | null;
+
+  @ApiPropertyOptional({ description: 'Текст согласия рядом с галочкой' })
+  @IsOptional()
+  @IsString()
+  consentText?: string | null;
+
+  @ApiPropertyOptional({ description: 'Кликабельная фраза в тексте согласия' })
+  @IsOptional()
+  @IsString()
+  consentLinkText?: string | null;
 }
