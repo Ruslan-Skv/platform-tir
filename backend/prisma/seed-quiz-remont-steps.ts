@@ -1,0 +1,193 @@
+import { Prisma } from '@prisma/client';
+import { quizDefaultImage } from '../src/quiz/quiz.types';
+
+export const REMONT_QUIZ_STEPS = [
+  {
+    key: 'service_direction',
+    sortOrder: 0,
+    type: 'choice',
+    title: 'Что вам нужно?',
+    subtitle: 'Выберите направление',
+    required: true,
+    options: [
+      { value: 'repair', label: 'Ремонт квартир', imageUrl: quizDefaultImage('repair') },
+      { value: 'windows', label: 'Окна', imageUrl: quizDefaultImage('windows') },
+      { value: 'doors', label: 'Двери', imageUrl: quizDefaultImage('doors') },
+      { value: 'ceilings', label: 'Натяжные потолки', imageUrl: quizDefaultImage('ceilings') },
+      { value: 'blinds', label: 'Жалюзи', imageUrl: quizDefaultImage('blinds') },
+      { value: 'furniture', label: 'Мебель на заказ', imageUrl: quizDefaultImage('furniture') },
+    ],
+  },
+  {
+    key: 'repair_type',
+    sortOrder: 1,
+    type: 'choice',
+    title: 'Какой ремонт планируете?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['repair'] },
+    options: [
+      { value: 'cosmetic', label: 'Косметический', imageUrl: quizDefaultImage('cosmetic') },
+      { value: 'capital', label: 'Капитальный', imageUrl: quizDefaultImage('capital') },
+      { value: 'design', label: 'Дизайнерский', imageUrl: quizDefaultImage('design') },
+      { value: 'turnkey', label: 'Под ключ', imageUrl: quizDefaultImage('turnkey') },
+    ],
+  },
+  {
+    key: 'repair_scope',
+    sortOrder: 2,
+    type: 'choice',
+    title: 'Что нужно отремонтировать?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['repair'] },
+    options: [
+      { value: 'full', label: 'Вся квартира', imageUrl: quizDefaultImage('full') },
+      { value: 'single_room', label: 'Одна комната', imageUrl: quizDefaultImage('single_room') },
+      { value: 'bathroom', label: 'Санузел', imageUrl: quizDefaultImage('bathroom') },
+      { value: 'kitchen_repair', label: 'Кухня', imageUrl: quizDefaultImage('kitchen') },
+    ],
+  },
+  {
+    key: 'windows_type',
+    sortOrder: 3,
+    type: 'choice',
+    title: 'Какие окна вас интересуют?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['windows'] },
+    options: [
+      { value: 'plastic_windows', label: 'Пластиковые', imageUrl: quizDefaultImage('plastic_windows') },
+      { value: 'wood_windows', label: 'Деревянные', imageUrl: quizDefaultImage('wood_windows') },
+      { value: 'balcony', label: 'Балконное остекление', imageUrl: quizDefaultImage('balcony') },
+      { value: 'windows_other', label: 'Другое', imageUrl: quizDefaultImage('other') },
+    ],
+  },
+  {
+    key: 'doors_type',
+    sortOrder: 4,
+    type: 'choice',
+    title: 'Какие двери вам нужны?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['doors'] },
+    options: [
+      { value: 'interior_doors', label: 'Межкомнатные', imageUrl: quizDefaultImage('interior_doors') },
+      { value: 'entrance_doors', label: 'Входные', imageUrl: quizDefaultImage('entrance_doors') },
+      { value: 'doors_other', label: 'Другое', imageUrl: quizDefaultImage('other') },
+    ],
+  },
+  {
+    key: 'ceilings_type',
+    sortOrder: 5,
+    type: 'choice',
+    title: 'Какой потолок вас интересует?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['ceilings'] },
+    options: [
+      { value: 'matte', label: 'Матовый', imageUrl: quizDefaultImage('matte') },
+      { value: 'glossy', label: 'Глянцевый', imageUrl: quizDefaultImage('glossy') },
+      { value: 'satin', label: 'Сатиновый', imageUrl: quizDefaultImage('satin') },
+      { value: 'two_level', label: 'Двухуровневый', imageUrl: quizDefaultImage('two_level') },
+    ],
+  },
+  {
+    key: 'blinds_type',
+    sortOrder: 6,
+    type: 'choice',
+    title: 'Какие жалюзи вам нужны?',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['blinds'] },
+    options: [
+      { value: 'horizontal', label: 'Горизонтальные', imageUrl: quizDefaultImage('horizontal') },
+      { value: 'vertical', label: 'Вертикальные', imageUrl: quizDefaultImage('vertical') },
+      { value: 'roller', label: 'Рулонные', imageUrl: quizDefaultImage('roller') },
+      { value: 'blinds_other', label: 'Другое', imageUrl: quizDefaultImage('other') },
+    ],
+  },
+  {
+    key: 'furniture_type',
+    sortOrder: 7,
+    type: 'choice',
+    title: 'Что из мебели вам нужно?',
+    subtitle: 'Выберите тип мебели',
+    required: true,
+    showWhen: { branchKey: 'service_direction', values: ['furniture'] },
+    options: [
+      { value: 'kitchen', label: 'Кухня', imageUrl: quizDefaultImage('kitchen') },
+      { value: 'wardrobe', label: 'Шкаф', imageUrl: quizDefaultImage('wardrobe') },
+      { value: 'dressing_room', label: 'Гардеробная', imageUrl: quizDefaultImage('dressing_room') },
+      { value: 'bedroom', label: 'Спальня', imageUrl: quizDefaultImage('bedroom') },
+      { value: 'other', label: 'Другое', imageUrl: quizDefaultImage('other') },
+    ],
+  },
+  {
+    key: 'furniture_layout',
+    sortOrder: 8,
+    type: 'choice',
+    title: 'Выберите планировку кухни',
+    required: true,
+    showWhen: { branchKey: 'furniture_type', values: ['kitchen'] },
+    options: [
+      { value: 'straight', label: 'Прямая', imageUrl: quizDefaultImage('straight') },
+      { value: 'corner', label: 'Угловая', imageUrl: quizDefaultImage('corner') },
+      { value: 'u_shape', label: 'П-образная', imageUrl: quizDefaultImage('u_shape') },
+      { value: 'island', label: 'С островом', imageUrl: quizDefaultImage('island') },
+    ],
+  },
+  {
+    key: 'details',
+    sortOrder: 9,
+    type: 'text',
+    title: 'Опишите объект или размеры',
+    subtitle: 'Площадь, количество окон, пожелания. Если не знаете — поставьте «-»',
+    placeholder: 'Например: 2-комнатная квартира, 54 м²',
+    required: true,
+  },
+  {
+    key: 'urgency',
+    sortOrder: 10,
+    type: 'choice',
+    title: 'Как срочно нужна услуга?',
+    required: true,
+    options: [
+      { value: 'urgent', label: 'Срочно', imageUrl: quizDefaultImage('urgent') },
+      { value: 'this_month', label: 'В этом месяце', imageUrl: quizDefaultImage('this_month') },
+      { value: 'next_month', label: 'На след. месяц', imageUrl: quizDefaultImage('next_month') },
+      { value: 'two_months', label: 'В течение двух месяцев', imageUrl: quizDefaultImage('two_months') },
+    ],
+  },
+  {
+    key: 'contact_channel',
+    sortOrder: 11,
+    type: 'choice',
+    title: 'Куда отправить расчёт стоимости?',
+    required: true,
+    options: [
+      { value: 'telegram', label: 'Telegram', imageUrl: quizDefaultImage('telegram') },
+      { value: 'phone', label: 'Бесплатная консультация по телефону', imageUrl: quizDefaultImage('phone') },
+      { value: 'max', label: 'MAX', imageUrl: quizDefaultImage('max') },
+    ],
+  },
+  {
+    key: 'contact',
+    sortOrder: 12,
+    type: 'contact',
+    title: 'Введите номер телефона',
+    subtitle: 'За этим номером мы закрепим подарок по акции',
+    required: true,
+  },
+] as const;
+
+export function remontQuizStepCreateInput() {
+  return REMONT_QUIZ_STEPS.map((step) => ({
+    key: step.key,
+    sortOrder: step.sortOrder,
+    type: step.type,
+    title: step.title,
+    subtitle: 'subtitle' in step ? step.subtitle : null,
+    placeholder: 'placeholder' in step ? step.placeholder : null,
+    required: step.required,
+    options: 'options' in step ? (step.options as unknown as Prisma.InputJsonValue) : Prisma.JsonNull,
+    showWhen:
+      'showWhen' in step && step.showWhen
+        ? (step.showWhen as unknown as Prisma.InputJsonValue)
+        : Prisma.JsonNull,
+  }));
+}

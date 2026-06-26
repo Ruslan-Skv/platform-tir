@@ -3,7 +3,9 @@ import type { NextRequest } from 'next/server';
 
 function getQuizDomains(): string[] {
   const raw =
-    process.env.QUIZ_DOMAINS || process.env.NEXT_PUBLIC_QUIZ_DOMAINS || 'mebel-na-zakaz-51.ru';
+    process.env.QUIZ_DOMAINS ||
+    process.env.NEXT_PUBLIC_QUIZ_DOMAINS ||
+    'mebel-na-zakaz-51.ru,remont-kvartir-51.ru';
   return raw
     .split(',')
     .map((d) => d.trim().toLowerCase().split(':')[0])

@@ -3,7 +3,9 @@ import { MOBILE_CATALOG_COLUMNS_STORAGE_KEY } from '@/shared/lib/mobile-catalog-
 
 function buildQuizHostMatchers(): string {
   const raw =
-    process.env.NEXT_PUBLIC_QUIZ_DOMAINS || process.env.QUIZ_DOMAINS || 'mebel-na-zakaz-51.ru';
+    process.env.NEXT_PUBLIC_QUIZ_DOMAINS ||
+    process.env.QUIZ_DOMAINS ||
+    'mebel-na-zakaz-51.ru,remont-kvartir-51.ru';
   const domains = raw
     .split(',')
     .map((d) => d.trim().toLowerCase().split(':')[0])

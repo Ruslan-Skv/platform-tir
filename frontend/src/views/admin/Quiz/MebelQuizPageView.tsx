@@ -1,18 +1,19 @@
 'use client';
 
 import { resolveAdminUploadUrl } from '@/shared/api/admin-quiz';
-import { FURNITURE_TYPE_LABELS, QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/api/quiz-theme';
+import { QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/api/quiz-theme';
 import {
   AdminStickyPageRoot,
   AdminStickySaveButtonSlot,
 } from '@/views/admin/ui/AdminStickySaveButton';
 
 import styles from './MebelQuizPage.module.css';
-import type { useMebelQuizPage } from './hooks/useMebelQuizPage';
+import type { useQuizAdminPage } from './hooks/useQuizAdminPage';
+import { slugifyQuizOptionValue } from './quiz-admin.config';
 import { MebelQuizThemePreview } from './ui/MebelQuizThemePreview';
 import { QuizAdminFileUpload } from './ui/QuizAdminFileUpload';
 
-type Model = ReturnType<typeof useMebelQuizPage>;
+type Model = ReturnType<typeof useQuizAdminPage>;
 
 const TABS: { id: Model['tab']; label: string }[] = [
   { id: 'settings', label: 'Настройки' },
@@ -36,8 +37,9 @@ const FONT_WEIGHT_OPTIONS = [
   { value: 700, label: 'Жирный' },
 ] as const;
 
-export function MebelQuizPageView({ model }: { model: Model }) {
+export function QuizAdminPageView({ model }: { model: Model }) {
   const {
+    config,
     tab,
     setTab,
     loading,
@@ -52,8 +54,8 @@ export function MebelQuizPageView({ model }: { model: Model }) {
     submissionStats,
     statusFilter,
     setStatusFilter,
-    furnitureFilter,
-    setFurnitureFilter,
+    primaryFilter,
+    setPrimaryFilter,
     searchFilter,
     setSearchFilter,
     message,
@@ -77,9 +79,12 @@ export function MebelQuizPageView({ model }: { model: Model }) {
     pageHeaderRef,
     showSaveButton,
     saveButtonPinnedTopPx,
+    primaryFilterOptions,
     handleSaveClick,
     saveButtonState,
   } = model;
+
+  const editableOptionStepKeys = new Set(config.editableOptionsStepKeys ?? []);
 
   if (loading || !quiz) {
     return (
@@ -94,7 +99,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
       <header ref={pageHeaderRef} className={styles.header}>
         <div className={styles.headerMain}>
           <div className={styles.headerTop}>
-            <h1 className={styles.title}>Квиз — Мебель на заказ</h1>
+            <h1 className={styles.title}>{config.pageTitle}</h1>
             <p className={styles.subtitle}>
               {quiz.domain ? (
                 <>
@@ -173,7 +178,7 @@ export function MebelQuizPageView({ model }: { model: Model }) {
               <input
                 value={quiz.domain ?? ''}
                 onChange={(e) => setQuizField('domain', e.target.value)}
-                placeholder="mebel-na-zakaz-51.ru"
+                placeholder={config.domainPlaceholder}
               />
             </label>
             <label>
@@ -926,14 +931,15 @@ export function MebelQuizPageView({ model }: { model: Model }) {
 
       {tab === 'steps' ? (
         <div className={`${styles.section} ${styles.compactTab} ${styles.stepsTab}`}>
-          <p className={styles.hint}>
-            Для рекламы на кухни: <code>?type=kitchen</code> — пропускает шаг выбора типа мебели.
-          </p>
+          <p className={styles.hint}>{config.prefillHint}</p>
           {stepsDraft.map((step, idx) => (
             <div key={step.key} className={styles.stepCard}>
               <div className={styles.stepHeader}>
                 <strong>
                   {idx + 1}. {step.key}
+                  {editableOptionStepKeys.has(step.key) ? (
+                    <span className={styles.stepType}> — направления</span>
+                  ) : null}
                 </strong>
                 <span className={styles.stepType}>{step.type}</span>
               </div>
@@ -994,8 +1000,41 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                         />
                       </label>
                       <span className={styles.optionValue}>{opt.value}</span>
+                      {editableOptionStepKeys.has(step.key) ? (
+                        <button
+                          type="button"
+                          className={styles.removeOptionBtn}
+                          onClick={() => {
+                            const next = [...stepsDraft];
+                            const options = (step.options ?? []).filter((_, i) => i !== oi);
+                            next[idx] = { ...step, options };
+                            setStepsDraft(next);
+                          }}
+                        >
+                          Удалить
+                        </button>
+                      ) : null}
                     </div>
                   ))}
+                  {editableOptionStepKeys.has(step.key) ? (
+                    <button
+                      type="button"
+                      className={styles.addOptionBtn}
+                      onClick={() => {
+                        const label = 'Новое направление';
+                        const value = slugifyQuizOptionValue(label);
+                        const next = [...stepsDraft];
+                        const options = [
+                          ...(step.options ?? []),
+                          { value, label, imageUrl: `/quiz/defaults/other.svg` },
+                        ];
+                        next[idx] = { ...step, options };
+                        setStepsDraft(next);
+                      }}
+                    >
+                      + Добавить направление
+                    </button>
+                  ) : null}
                 </div>
               ) : null}
             </div>
@@ -1033,11 +1072,11 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                 </option>
               ))}
             </select>
-            <select value={furnitureFilter} onChange={(e) => setFurnitureFilter(e.target.value)}>
-              <option value="">Все типы мебели</option>
-              {Object.entries(FURNITURE_TYPE_LABELS).map(([v, l]) => (
-                <option key={v} value={v}>
-                  {l}
+            <select value={primaryFilter} onChange={(e) => setPrimaryFilter(e.target.value)}>
+              <option value="">{config.primaryFilterLabel}</option>
+              {primaryFilterOptions.map((o) => (
+                <option key={o.value} value={o.value}>
+                  {o.label}
                 </option>
               ))}
             </select>
@@ -1065,7 +1104,8 @@ export function MebelQuizPageView({ model }: { model: Model }) {
                       <strong>{s.name}</strong> — {s.phone}
                       {s.furnitureType ? (
                         <span className={styles.furnitureBadge}>
-                          {FURNITURE_TYPE_LABELS[s.furnitureType] ?? s.furnitureType}
+                          {answerLabels.get(config.primaryStepKey)?.get(s.furnitureType) ??
+                            s.furnitureType}
                         </span>
                       ) : null}
                     </div>

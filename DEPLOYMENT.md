@@ -176,6 +176,19 @@ Access-токен хранится в `localStorage`, refresh — в httpOnly co
 
 Локальная проверка: `http://localhost:3000/quiz` или `http://localhost:3000/quiz?type=kitchen`.
 
+### Квиз «Ремонт и отделка» (отдельный домен)
+
+**Домен лендинга:** remont-kvartir-51.ru.
+
+1. **DNS:** A-запись `remont-kvartir-51.ru` → IP сервера.
+2. **CORS_ORIGIN** — добавьте `https://remont-kvartir-51.ru`.
+3. **QUIZ_DOMAINS** и **NEXT_PUBLIC_QUIZ_DOMAINS** — через запятую с доменом мебели: `mebel-na-zakaz-51.ru,remont-kvartir-51.ru`.
+4. **SSL:** certbot `-d remont-kvartir-51.ru` или `scripts/expand-ssl-domains.sh`.
+5. **nginx:** `server_name remont-kvartir-51.ru` в `nginx/nginx-ssl.conf`.
+6. **Seed:** `npm run prisma:seed` (создаёт квиз `remont` с шагами и ветвлением по направлениям).
+7. **Админка:** «Квизы → Ремонт» (`/admin/quiz/remont`) — направления, шаги, заявки.
+8. **Реклама по направлению:** `?type=repair|windows|doors|ceilings|blinds|furniture` пропускает первый шаг.
+
 ---
 
 ## SSL (HTTPS)

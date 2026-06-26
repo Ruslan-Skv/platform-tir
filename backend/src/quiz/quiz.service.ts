@@ -4,7 +4,12 @@ import { PrismaService } from '../database/prisma.service';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { QuizNotifierService } from './quiz-notifier.service';
 import type { QuizOption, QuizShowWhen, QuizTheme } from './quiz.types';
-import { DEFAULT_QUIZ_CONSENT, DEFAULT_QUIZ_THEME, FURNITURE_TYPE_VALUES } from './quiz.types';
+import {
+  DEFAULT_QUIZ_CONSENT,
+  DEFAULT_QUIZ_THEME,
+  FURNITURE_QUIZ_SLUG,
+  FURNITURE_TYPE_VALUES,
+} from './quiz.types';
 
 @Injectable()
 export class QuizService {
@@ -49,10 +54,13 @@ export class QuizService {
       throw new BadRequestException('Укажите имя и телефон');
     }
 
-    const furnitureType = dto.answers.furniture_type;
+    const primaryAnswerKey = this.getPrimaryAnswerKey(quiz.steps);
+    const primaryAnswer = primaryAnswerKey ? dto.answers[primaryAnswerKey] : undefined;
+
     if (
-      furnitureType &&
-      !FURNITURE_TYPE_VALUES.includes(furnitureType as (typeof FURNITURE_TYPE_VALUES)[number])
+      quiz.slug === FURNITURE_QUIZ_SLUG &&
+      primaryAnswer &&
+      !FURNITURE_TYPE_VALUES.includes(primaryAnswer as (typeof FURNITURE_TYPE_VALUES)[number])
     ) {
       throw new BadRequestException('Некорректный тип мебели');
     }
@@ -63,7 +71,7 @@ export class QuizService {
         name: dto.name.trim(),
         phone: dto.phone.trim(),
         answers: dto.answers as Prisma.InputJsonValue,
-        furnitureType: furnitureType || null,
+        furnitureType: primaryAnswer || null,
         utmSource: dto.utmSource?.trim() || null,
         utmMedium: dto.utmMedium?.trim() || null,
         utmCampaign: dto.utmCampaign?.trim() || null,
@@ -91,6 +99,16 @@ export class QuizService {
     });
 
     return { id: submission.id, success: true };
+  }
+
+  /** Первый шаг choice без ветвления — основной фильтр заявок */
+  private getPrimaryAnswerKey(
+    steps: { type: string; key: string; showWhen: Prisma.JsonValue | null; sortOrder: number }[],
+  ): string | undefined {
+    const primary = [...steps]
+      .sort((a, b) => a.sortOrder - b.sortOrder)
+      .find((s) => s.type === 'choice' && !s.showWhen);
+    return primary?.key;
   }
 
   private mapQuizPublic(quiz: Prisma.QuizLandingGetPayload<{ include: { steps: true } }>) {

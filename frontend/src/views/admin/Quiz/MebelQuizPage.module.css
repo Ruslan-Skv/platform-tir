@@ -611,8 +611,27 @@
 }
 
 .stepsTab .optionRow {
-  grid-template-columns: 44px 1fr 1fr auto auto;
+  grid-template-columns: 44px 1fr 1fr auto auto auto;
   gap: 0.35rem;
+}
+
+.addOptionBtn,
+.removeOptionBtn {
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  background: #fff;
+  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.addOptionBtn {
+  margin-top: 0.35rem;
+  color: #1a202c;
+}
+
+.removeOptionBtn {
+  color: #b42318;
 }
 
 .stepsTab .optionThumb,

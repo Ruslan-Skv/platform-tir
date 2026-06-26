@@ -2,9 +2,9 @@
 
 import { QuizAdminPageView } from '@/views/admin/Quiz/MebelQuizPageView';
 import { useQuizAdminPage } from '@/views/admin/Quiz/hooks/useQuizAdminPage';
-import { MEBEL_QUIZ_ADMIN_CONFIG } from '@/views/admin/Quiz/quiz-admin.config';
+import { REMONT_QUIZ_ADMIN_CONFIG } from '@/views/admin/Quiz/quiz-admin.config';
 
-export function MebelQuizPage() {
-  const model = useQuizAdminPage(MEBEL_QUIZ_ADMIN_CONFIG);
+export function RemontQuizPage() {
+  const model = useQuizAdminPage(REMONT_QUIZ_ADMIN_CONFIG);
   return <QuizAdminPageView model={model} />;
 }

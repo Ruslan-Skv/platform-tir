@@ -5,6 +5,7 @@ import { nestMessageFromBody } from '@/shared/lib/nest-error-message';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export const MEBEL_QUIZ_SLUG = 'mebel';
+export const REMONT_QUIZ_SLUG = 'remont';
 
 export interface AdminQuizStep {
   id: string;

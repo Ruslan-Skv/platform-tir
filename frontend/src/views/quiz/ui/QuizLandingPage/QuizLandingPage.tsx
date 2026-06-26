@@ -3,7 +3,6 @@ import { Suspense } from 'react';
 import { headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 
-import { FURNITURE_QUIZ_SLUG } from '@/features/quiz/lib/quiz-flow';
 import { QuizWizard } from '@/features/quiz/ui/QuizWizard';
 import { fetchQuizConfig } from '@/shared/api/quiz';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
@@ -16,7 +15,6 @@ async function loadQuizConfig() {
   try {
     return await fetchQuizConfig({
       host: host?.split(':')[0],
-      slug: FURNITURE_QUIZ_SLUG,
       apiBase: getServerApiBaseUrl(),
     });
   } catch {

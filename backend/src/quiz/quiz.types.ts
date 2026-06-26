@@ -12,8 +12,10 @@ export interface QuizShowWhen {
 export type QuizStepType = 'choice' | 'text' | 'contact';
 
 export const FURNITURE_QUIZ_SLUG = 'mebel';
+export const REMONT_QUIZ_SLUG = 'remont';
 
 export const FURNITURE_TYPE_PARAM = 'type';
+export const QUIZ_PREFILL_PARAM = 'type';
 
 /** Допустимые значения ?type= для пропуска первого шага */
 export const FURNITURE_TYPE_VALUES = [
@@ -25,6 +27,18 @@ export const FURNITURE_TYPE_VALUES = [
 ] as const;
 
 export type FurnitureTypeValue = (typeof FURNITURE_TYPE_VALUES)[number];
+
+/** Направления квиза remont-kvartir-51.ru (первый шаг service_direction) */
+export const SERVICE_DIRECTION_VALUES = [
+  'repair',
+  'windows',
+  'doors',
+  'ceilings',
+  'blinds',
+  'furniture',
+] as const;
+
+export type ServiceDirectionValue = (typeof SERVICE_DIRECTION_VALUES)[number];
 
 export interface QuizTheme {
   background: string;

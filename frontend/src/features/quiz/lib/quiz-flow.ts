@@ -1,6 +1,8 @@
 import type { QuizStepConfig } from '@/shared/api/quiz';
 
 export const FURNITURE_QUIZ_SLUG = 'mebel';
+export const REMONT_QUIZ_SLUG = 'remont';
+export const QUIZ_PREFILL_PARAM = 'type';
 
 export const FURNITURE_TYPE_VALUES = [
   'kitchen',
@@ -16,6 +18,31 @@ export function isValidFurnitureType(
   value: string | null | undefined
 ): value is FurnitureTypeValue {
   return !!value && (FURNITURE_TYPE_VALUES as readonly string[]).includes(value);
+}
+
+/** Первый шаг choice без ветвления */
+export function getPrimaryChoiceStep(steps: QuizStepConfig[]): QuizStepConfig | undefined {
+  return [...steps]
+    .sort((a, b) => a.sortOrder - b.sortOrder)
+    .find((step) => step.type === 'choice' && !step.showWhen);
+}
+
+export function getQuizPrefillFromParam(
+  steps: QuizStepConfig[],
+  paramValue: string | null | undefined
+): { skipKeys: string[]; initialAnswers: Record<string, string> } {
+  const primaryStep = getPrimaryChoiceStep(steps);
+  if (!primaryStep?.options || !paramValue) {
+    return { skipKeys: [], initialAnswers: {} };
+  }
+  const isValid = primaryStep.options.some((o) => o.value === paramValue);
+  if (!isValid) {
+    return { skipKeys: [], initialAnswers: {} };
+  }
+  return {
+    skipKeys: [primaryStep.key],
+    initialAnswers: { [primaryStep.key]: paramValue },
+  };
 }
 
 export function isStepVisible(step: QuizStepConfig, answers: Record<string, string>): boolean {

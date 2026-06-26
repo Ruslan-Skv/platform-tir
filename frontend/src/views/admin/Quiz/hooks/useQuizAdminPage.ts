@@ -8,7 +8,6 @@ import { mergeQuizTheme } from '@/features/quiz/lib/quiz-theme';
 import {
   type AdminQuizLanding,
   type AdminQuizStep,
-  MEBEL_QUIZ_SLUG,
   type QuizSubmissionItem,
   getAdminQuiz,
   getAdminQuizSubmissions,
@@ -23,12 +22,15 @@ import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { DEFAULT_QUIZ_THEME } from '@/shared/api/quiz-theme';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
-export type MebelQuizTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'consent';
+import type { QuizAdminConfig } from '../quiz-admin.config';
 
-export function useMebelQuizPage() {
+export type QuizAdminTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'consent';
+
+export function useQuizAdminPage(config: QuizAdminConfig) {
+  const { slug, primaryStepKey } = config;
   const { getAuthHeaders } = useAuth();
   const { canEdit } = useAdminSectionCanEdit();
-  const [tab, setTab] = useState<MebelQuizTab>('settings');
+  const [tab, setTab] = useState<QuizAdminTab>('settings');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [quiz, setQuiz] = useState<AdminQuizLanding | null>(null);
@@ -40,7 +42,7 @@ export function useMebelQuizPage() {
   const [submissionsTotal, setSubmissionsTotal] = useState(0);
   const [submissionStats, setSubmissionStats] = useState<Record<string, number>>({});
   const [statusFilter, setStatusFilter] = useState('');
-  const [furnitureFilter, setFurnitureFilter] = useState('');
+  const [primaryFilter, setPrimaryFilter] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
   const [uploadingPrivacyPolicy, setUploadingPrivacyPolicy] = useState(false);
@@ -60,23 +62,23 @@ export function useMebelQuizPage() {
   const loadQuiz = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getAdminQuiz(MEBEL_QUIZ_SLUG, getAuthHeaders);
+      const data = await getAdminQuiz(slug, getAuthHeaders);
       applyQuizData(data);
     } catch {
       showMessage('error', 'Не удалось загрузить квиз. Запустите seed или миграцию.');
     } finally {
       setLoading(false);
     }
-  }, [applyQuizData, getAuthHeaders, showMessage]);
+  }, [applyQuizData, getAuthHeaders, showMessage, slug]);
 
   const loadSubmissions = useCallback(async () => {
     try {
       const res = await getAdminQuizSubmissions(
-        MEBEL_QUIZ_SLUG,
+        slug,
         {
           page: submissionsPage,
           status: statusFilter || undefined,
-          furnitureType: furnitureFilter || undefined,
+          furnitureType: primaryFilter || undefined,
           search: searchFilter || undefined,
         },
         getAuthHeaders
@@ -88,7 +90,15 @@ export function useMebelQuizPage() {
     } catch {
       showMessage('error', 'Не удалось загрузить заявки');
     }
-  }, [furnitureFilter, getAuthHeaders, searchFilter, showMessage, statusFilter, submissionsPage]);
+  }, [
+    primaryFilter,
+    getAuthHeaders,
+    searchFilter,
+    showMessage,
+    slug,
+    statusFilter,
+    submissionsPage,
+  ]);
 
   useEffect(() => {
     loadQuiz();
@@ -116,7 +126,7 @@ export function useMebelQuizPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { url } = await uploadQuizOptionImage(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
+      const { url } = await uploadQuizOptionImage(slug, file, getAuthHeaders);
       setThemeField('backgroundImageUrl', url);
       showMessage('success', 'Фоновое изображение загружено');
     } catch {
@@ -130,7 +140,7 @@ export function useMebelQuizPage() {
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
-        MEBEL_QUIZ_SLUG,
+        slug,
         {
           domain: quiz.domain,
           isActive: quiz.isActive,
@@ -163,7 +173,7 @@ export function useMebelQuizPage() {
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
-        MEBEL_QUIZ_SLUG,
+        slug,
         {
           privacyPolicyUrl: quiz.privacyPolicyUrl,
           privacyPolicyTitle: quiz.privacyPolicyTitle,
@@ -187,7 +197,7 @@ export function useMebelQuizPage() {
     setSaving(true);
     try {
       const updated = await updateAdminQuiz(
-        MEBEL_QUIZ_SLUG,
+        slug,
         {
           primaryColor: themeDraft.accentColor,
           theme: themeDraft,
@@ -218,7 +228,7 @@ export function useMebelQuizPage() {
         options: s.options ?? undefined,
         showWhen: s.showWhen ?? undefined,
       }));
-      const updated = await replaceAdminQuizSteps(MEBEL_QUIZ_SLUG, payload, getAuthHeaders);
+      const updated = await replaceAdminQuizSteps(slug, payload, getAuthHeaders);
       applyQuizData(updated);
       showMessage('success', 'Шаги сохранены');
     } catch {
@@ -226,7 +236,7 @@ export function useMebelQuizPage() {
     } finally {
       setSaving(false);
     }
-  }, [stepsDraft, getAuthHeaders, applyQuizData, showMessage, canEdit]);
+  }, [stepsDraft, getAuthHeaders, applyQuizData, showMessage, canEdit, slug]);
 
   const handleUploadCatalog = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!canEdit) return;
@@ -234,7 +244,7 @@ export function useMebelQuizPage() {
     if (!file) return;
     setUploadingCatalog(true);
     try {
-      const { url } = await uploadQuizCatalog(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
+      const { url } = await uploadQuizCatalog(slug, file, getAuthHeaders);
       setQuizField('catalogFileUrl', url);
       showMessage('success', 'Каталог загружен');
     } catch {
@@ -251,7 +261,7 @@ export function useMebelQuizPage() {
     if (!file) return;
     setUploadingPrivacyPolicy(true);
     try {
-      const { url } = await uploadQuizPrivacyPolicy(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
+      const { url } = await uploadQuizPrivacyPolicy(slug, file, getAuthHeaders);
       setQuizField('privacyPolicyUrl', url);
       showMessage('success', 'PDF политики загружен');
     } catch {
@@ -271,7 +281,7 @@ export function useMebelQuizPage() {
     const file = e.target.files?.[0];
     if (!file) return;
     try {
-      const { url } = await uploadQuizOptionImage(MEBEL_QUIZ_SLUG, file, getAuthHeaders);
+      const { url } = await uploadQuizOptionImage(slug, file, getAuthHeaders);
       const next = [...stepsDraft];
       const step = next[stepIdx];
       const options = [...(step.options ?? [])];
@@ -291,7 +301,7 @@ export function useMebelQuizPage() {
   ) => {
     if (!canEdit) return;
     try {
-      await updateQuizSubmission(MEBEL_QUIZ_SLUG, id, data, getAuthHeaders);
+      await updateQuizSubmission(slug, id, data, getAuthHeaders);
       await loadSubmissions();
       showMessage('success', 'Заявка обновлена');
     } catch {
@@ -314,6 +324,11 @@ export function useMebelQuizPage() {
     }
     return map;
   }, [stepsDraft]);
+
+  const primaryFilterOptions = useMemo(() => {
+    const step = stepsDraft.find((s) => s.key === primaryStepKey);
+    return step?.options ?? [];
+  }, [stepsDraft, primaryStepKey]);
 
   const pageHeaderRef = useRef<HTMLDivElement>(null);
   const showSaveButton = tab !== 'submissions';
@@ -348,6 +363,7 @@ export function useMebelQuizPage() {
   const { saveButtonPinnedTopPx, handleSaveClick } = saveButtonState;
 
   return {
+    config,
     canEdit,
     tab,
     setTab,
@@ -363,8 +379,8 @@ export function useMebelQuizPage() {
     submissionStats,
     statusFilter,
     setStatusFilter,
-    furnitureFilter,
-    setFurnitureFilter,
+    primaryFilter,
+    setPrimaryFilter,
     searchFilter,
     setSearchFilter,
     message,
@@ -385,6 +401,7 @@ export function useMebelQuizPage() {
     setSubmissionsPage,
     previewUrl,
     answerLabels,
+    primaryFilterOptions,
     pageHeaderRef,
     showSaveButton,
     saveButtonState,
@@ -392,3 +409,5 @@ export function useMebelQuizPage() {
     handleSaveClick,
   };
 }
+
+export type UseQuizAdminPageReturn = ReturnType<typeof useQuizAdminPage>;

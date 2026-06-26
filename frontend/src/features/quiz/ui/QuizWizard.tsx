@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 
 import { buildAddressMapSearchUrl } from '@/features/quiz/lib/address-map-url';
-import { getVisibleSteps, isValidFurnitureType } from '@/features/quiz/lib/quiz-flow';
+import { getQuizPrefillFromParam, getVisibleSteps } from '@/features/quiz/lib/quiz-flow';
 import {
   mergeQuizTheme,
   quizThemeToCssVars,
@@ -99,16 +99,10 @@ function QuizHeaderLogo({ logoUrl }: { logoUrl?: string | null }) {
 export function QuizWizard({ config }: QuizWizardProps) {
   const searchParams = useSearchParams();
   const typeParam = searchParams.get('type');
-  const prefilledType = isValidFurnitureType(typeParam) ? typeParam : undefined;
 
-  const initialAnswers = useMemo((): Record<string, string> => {
-    if (!prefilledType) return {};
-    return { furniture_type: prefilledType };
-  }, [prefilledType]);
-
-  const skipKeys = useMemo(
-    (): string[] => (prefilledType ? ['furniture_type'] : []),
-    [prefilledType]
+  const { skipKeys, initialAnswers } = useMemo(
+    () => getQuizPrefillFromParam(config.steps, typeParam),
+    [config.steps, typeParam]
   );
 
   const [answers, setAnswers] = useState<Record<string, string>>(initialAnswers);

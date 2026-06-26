@@ -251,7 +251,10 @@ const baseNavItems: NavItem[] = [
     href: '/admin/quiz/mebel',
     icon: '🎯',
     resourceId: 'admin.quiz',
-    children: [{ label: 'Мебель', href: '/admin/quiz/mebel', resourceId: 'admin.quiz.mebel' }],
+    children: [
+      { label: 'Мебель', href: '/admin/quiz/mebel', resourceId: 'admin.quiz.mebel' },
+      { label: 'Ремонт', href: '/admin/quiz/remont', resourceId: 'admin.quiz.remont' },
+    ],
   },
   {
     label: 'Каталог',

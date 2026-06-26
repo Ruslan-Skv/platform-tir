@@ -2,6 +2,7 @@ import { PrismaClient } from '@prisma/client';
 import { seedRemontKvartirCatalog } from './seed-remont-kvartir-catalog';
 import { seedProductCardBadges } from './seed-product-card-badges';
 import { seedQuizMebel } from './seed-quiz-mebel';
+import { seedQuizRemont } from './seed-quiz-remont';
 import { hashPassword } from '../src/auth/password-crypto';
 import { config } from 'dotenv';
 import * as path from 'path';
@@ -943,6 +944,7 @@ async function main() {
   console.log('✅ ProductCardBadge: справочник бэйджей карточки товара');
 
   await seedQuizMebel(prisma);
+  await seedQuizRemont(prisma);
 
   console.log('🎉 Seeding completed!');
 }
