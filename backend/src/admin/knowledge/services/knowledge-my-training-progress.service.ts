@@ -20,12 +20,21 @@ import {
   type TrainingAnalyticsMaterialRow,
 } from './knowledge-training-analytics.util';
 
+export type KnowledgeMyTrainingProgressScope = {
+  allowedCategoryIds: string[];
+};
+
 @Injectable()
 export class KnowledgeMyTrainingProgressService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getMyTrainingProgress(userId: string, params: KnowledgeTrainingAnalyticsParams) {
+  async getMyTrainingProgress(
+    userId: string,
+    params: KnowledgeTrainingAnalyticsParams,
+    scope: KnowledgeMyTrainingProgressScope,
+  ) {
     const period = resolveTrainingAnalyticsPeriod(params);
+    const allowedCategoryIds = new Set(scope.allowedCategoryIds);
 
     const materialsRaw = await this.prisma.knowledgeMaterial.findMany({
       where: PUBLISHED_KNOWLEDGE_MATERIAL_WHERE,
@@ -33,7 +42,9 @@ export class KnowledgeMyTrainingProgressService {
       orderBy: [{ sortOrder: 'asc' }, { title: 'asc' }],
     });
 
-    const materials = mapTrainingAnalyticsMaterials(materialsRaw);
+    const materials = mapTrainingAnalyticsMaterials(materialsRaw).filter((material) =>
+      allowedCategoryIds.has(material.categoryId),
+    );
     const trackableMaterials = materials.filter(isTrainingAnalyticsTrackableMaterial);
     const trackableIds = trackableMaterials.map((m) => m.id);
     const quizIds = trackableMaterials.filter((m) => m.hasQuiz).map((m) => m.id);
@@ -78,20 +89,26 @@ export class KnowledgeMyTrainingProgressService {
             orderBy: { createdAt: 'desc' },
           })
         : Promise.resolve([]),
-      this.prisma.knowledgeVideoProgress.findMany({
-        where: {
-          userId,
-          updatedAt: { gte: period.from, lte: period.to },
-        },
-        select: { updatedAt: true },
-      }),
-      this.prisma.knowledgeQuizAttempt.findMany({
-        where: {
-          userId,
-          createdAt: { gte: period.from, lte: period.to },
-        },
-        select: { createdAt: true, passed: true },
-      }),
+      trackableIds.length
+        ? this.prisma.knowledgeVideoProgress.findMany({
+            where: {
+              userId,
+              materialId: { in: trackableIds },
+              updatedAt: { gte: period.from, lte: period.to },
+            },
+            select: { updatedAt: true },
+          })
+        : Promise.resolve([]),
+      trackableIds.length
+        ? this.prisma.knowledgeQuizAttempt.findMany({
+            where: {
+              userId,
+              materialId: { in: trackableIds },
+              createdAt: { gte: period.from, lte: period.to },
+            },
+            select: { createdAt: true, passed: true },
+          })
+        : Promise.resolve([]),
     ]);
 
     const videoByMaterial = new Map<string, TrainingAnalyticsVideoProgressRow>(

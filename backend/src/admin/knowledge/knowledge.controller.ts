@@ -157,12 +157,22 @@ export class KnowledgeController {
   }
 
   @Get('my-training-progress')
-  getMyTrainingProgress(
+  async getMyTrainingProgress(
     @Request() req: RequestWithUser,
     @Query('dateFrom') dateFrom?: string,
     @Query('dateTo') dateTo?: string,
   ) {
-    return this.myTrainingProgressService.getMyTrainingProgress(req.user.id, { dateFrom, dateTo });
+    const allowedCategoryIds = await this.adminAccessService.listAccessibleKnowledgeCategoryIds(
+      req.user.id,
+      req.user.role as UserRole,
+    );
+    return this.myTrainingProgressService.getMyTrainingProgress(
+      req.user.id,
+      { dateFrom, dateTo },
+      {
+        allowedCategoryIds,
+      },
+    );
   }
 
   @Get('materials/search/suggestions')
