@@ -113,3 +113,10 @@ describe('readKnowledgeMaterialListContextFromSearchParams', () => {
     });
   });
 });
+
+describe('readInitialKnowledgeTerritoryFilters', () => {
+  it('parses category from url search params helper', () => {
+    const params = new URLSearchParams('category=cat-url&page=2');
+    expect(parseKnowledgeTerritorySearchParams(params).categoryFilter).toBe('cat-url');
+  });
+});

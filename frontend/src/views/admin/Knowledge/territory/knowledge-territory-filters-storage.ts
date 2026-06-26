@@ -258,3 +258,19 @@ export function readKnowledgeTerritorySearchParamsFromLocation(): Partial<Knowle
   if (typeof window === 'undefined') return {};
   return parseKnowledgeTerritorySearchParams(new URLSearchParams(window.location.search));
 }
+
+/** Синхронное восстановление фильтров при монтировании (URL → sessionStorage). */
+export function readInitialKnowledgeTerritoryFilters(): KnowledgeTerritoryFiltersState {
+  if (typeof window === 'undefined') return DEFAULT_FILTERS;
+
+  const fromUrl = readKnowledgeTerritorySearchParamsFromLocation();
+  if (Object.keys(fromUrl).length > 0) {
+    return {
+      ...DEFAULT_FILTERS,
+      ...fromUrl,
+      searchInput: fromUrl.searchInput ?? fromUrl.search ?? DEFAULT_FILTERS.searchInput,
+    };
+  }
+
+  return readKnowledgeTerritoryFilters() ?? DEFAULT_FILTERS;
+}

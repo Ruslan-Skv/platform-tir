@@ -41,17 +41,43 @@ import {
 } from '../../shared/knowledge-utils';
 import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import {
+  buildKnowledgeTerritoryMaterialsScopeKey,
+  readCachedKnowledgeCategories,
+  readCachedKnowledgeMaterials,
+  readCachedKnowledgeModules,
+  writeCachedKnowledgeCategories,
+  writeCachedKnowledgeMaterials,
+  writeCachedKnowledgeModules,
+} from '../knowledge-territory-data-cache';
+import {
   type KnowledgeTerritoryFiltersState,
   buildKnowledgeTerritoryUrl,
   isKnowledgeTerritoryFiltersSyncedWithUrl,
   knowledgeTerritoryUrlFiltersSignature,
-  readKnowledgeTerritoryFilters,
-  readKnowledgeTerritorySearchParamsFromLocation,
+  readInitialKnowledgeTerritoryFilters,
   writeKnowledgeTerritoryFilters,
 } from '../knowledge-territory-filters-storage';
 import { MATERIALS_PAGE_LIMIT } from '../knowledge-territory-page.constants';
 import type { DeleteTarget, PageMessage } from '../knowledge-territory-page.types';
 import { useKnowledgePlatformFeedbackUnreadCount } from './useKnowledgePlatformFeedbackUnreadCount';
+
+function createInitialTerritoryState() {
+  const initialFilters = readInitialKnowledgeTerritoryFilters();
+  const materialsScopeKey = buildKnowledgeTerritoryMaterialsScopeKey(initialFilters);
+  const cachedMaterials = readCachedKnowledgeMaterials(materialsScopeKey);
+  const cachedCategories = readCachedKnowledgeCategories();
+  const cachedModules = initialFilters.categoryFilter
+    ? readCachedKnowledgeModules(initialFilters.categoryFilter)
+    : null;
+
+  return {
+    initialFilters,
+    materialsScopeKey,
+    cachedMaterials,
+    cachedCategories,
+    cachedModules,
+  };
+}
 
 export function useKnowledgeTerritoryPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -67,33 +93,59 @@ export function useKnowledgeTerritoryPage() {
   const traineeView = !authLoading && isTrainee;
   const router = useRouter();
   const pathname = usePathname();
+  const [initialTerritory] = useState(createInitialTerritoryState);
   const filtersHydratedRef = useRef(false);
-  const favoritesFromUrlOnMountRef = useRef(false);
-  const prevCategoryFilterRef = useRef<string | null>(null);
+  const favoritesFromUrlOnMountRef = useRef(initialTerritory.initialFilters.favoritesOnly);
+  const prevCategoryFilterRef = useRef<string | null>(
+    initialTerritory.initialFilters.categoryFilter
+  );
   const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
+  const categoriesLoadSeqRef = useRef(0);
+  const modulesLoadSeqRef = useRef(0);
+  const categoryErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
-  const materialsScopeKeyRef = useRef<string | null>(null);
+  const materialsScopeKeyRef = useRef<string | null>(initialTerritory.materialsScopeKey);
   const lastUrlSyncSignatureRef = useRef('');
 
-  const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>([]);
+  const [materials, setMaterials] = useState<AdminKnowledgeMaterial[]>(
+    () => initialTerritory.cachedMaterials?.data ?? []
+  );
   materialsRef.current = materials;
-  const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
-  const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
+  const [categories, setCategories] = useState<AdminKnowledgeCategory[]>(
+    () => initialTerritory.cachedCategories ?? []
+  );
+  const [modules, setModules] = useState<AdminKnowledgeModule[]>(
+    () => initialTerritory.cachedModules ?? []
+  );
   const [stats, setStats] = useState<KnowledgeStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(() => initialTerritory.cachedMaterials === null);
   const [message, setMessage] = useState<PageMessage | null>(null);
-  const [page, setPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [categoryFilter, setCategoryFilter] = useState('');
-  const [moduleFilter, setModuleFilter] = useState('');
-  const [typeFilter, setTypeFilter] = useState<KnowledgeMaterialType | ''>('');
-  const [statusFilter, setStatusFilter] = useState('');
-  const [favoritesOnly, setFavoritesOnly] = useState(false);
-  const [modulesLoading, setModulesLoading] = useState(false);
-  const [loadedModulesCategoryId, setLoadedModulesCategoryId] = useState<string | null>(null);
+  const [page, setPage] = useState(initialTerritory.initialFilters.page);
+  const [totalPages, setTotalPages] = useState(
+    () => initialTerritory.cachedMaterials?.totalPages ?? 1
+  );
+  const [search, setSearch] = useState(initialTerritory.initialFilters.search);
+  const [searchInput, setSearchInput] = useState(initialTerritory.initialFilters.searchInput);
+  const [categoryFilter, setCategoryFilter] = useState(
+    initialTerritory.initialFilters.categoryFilter
+  );
+  const [moduleFilter, setModuleFilter] = useState(initialTerritory.initialFilters.moduleFilter);
+  const [typeFilter, setTypeFilter] = useState<KnowledgeMaterialType | ''>(
+    initialTerritory.initialFilters.typeFilter
+  );
+  const [statusFilter, setStatusFilter] = useState(initialTerritory.initialFilters.statusFilter);
+  const [favoritesOnly, setFavoritesOnly] = useState(initialTerritory.initialFilters.favoritesOnly);
+  const [modulesLoading, setModulesLoading] = useState(
+    () =>
+      Boolean(initialTerritory.initialFilters.categoryFilter) &&
+      initialTerritory.cachedModules === null
+  );
+  const [loadedModulesCategoryId, setLoadedModulesCategoryId] = useState<string | null>(() =>
+    initialTerritory.initialFilters.categoryFilter && initialTerritory.cachedModules !== null
+      ? initialTerritory.initialFilters.categoryFilter
+      : null
+  );
   const [deleteTarget, setDeleteTarget] = useState<DeleteTarget | null>(null);
   const [deleting, setDeleting] = useState(false);
   const [showNewCategory, setShowNewCategory] = useState(false);
@@ -135,38 +187,6 @@ export function useKnowledgeTerritoryPage() {
   useLayoutEffect(() => {
     if (filtersHydratedRef.current) return;
     filtersHydratedRef.current = true;
-
-    const fromUrl = readKnowledgeTerritorySearchParamsFromLocation();
-    const hasUrlFilters = Object.keys(fromUrl).length > 0;
-
-    if (hasUrlFilters) {
-      if (fromUrl.categoryFilter !== undefined) setCategoryFilter(fromUrl.categoryFilter);
-      if (fromUrl.moduleFilter !== undefined) setModuleFilter(fromUrl.moduleFilter);
-      if (fromUrl.typeFilter !== undefined) setTypeFilter(fromUrl.typeFilter);
-      if (fromUrl.statusFilter !== undefined) setStatusFilter(fromUrl.statusFilter);
-      if (fromUrl.favoritesOnly !== undefined) setFavoritesOnly(fromUrl.favoritesOnly);
-      if (fromUrl.search !== undefined) setSearch(fromUrl.search);
-      if (fromUrl.searchInput !== undefined) setSearchInput(fromUrl.searchInput);
-      if (fromUrl.page !== undefined) setPage(fromUrl.page);
-      if (fromUrl.favoritesOnly === true) favoritesFromUrlOnMountRef.current = true;
-      prevCategoryFilterRef.current = fromUrl.categoryFilter ?? '';
-      return;
-    }
-
-    const saved = readKnowledgeTerritoryFilters();
-
-    if (saved) {
-      setCategoryFilter(saved.categoryFilter);
-      setModuleFilter(saved.moduleFilter);
-      setTypeFilter(saved.typeFilter);
-      setStatusFilter(saved.statusFilter);
-      setFavoritesOnly(isKnowledgeTraineeRole(user?.role) ? false : saved.favoritesOnly);
-      setSearch(saved.search);
-      setSearchInput(saved.searchInput);
-      setPage(saved.page);
-      prevCategoryFilterRef.current = saved.categoryFilter;
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- восстанавливаем один раз при монтировании
   }, []);
 
   const filtersSnapshot = useMemo<KnowledgeTerritoryFiltersState>(
@@ -194,7 +214,7 @@ export function useKnowledgeTerritoryPage() {
 
   const materialsScopeKey = useMemo(
     () =>
-      JSON.stringify({
+      buildKnowledgeTerritoryMaterialsScopeKey({
         categoryFilter,
         moduleFilter,
         favoritesOnly,
@@ -233,7 +253,10 @@ export function useKnowledgeTerritoryPage() {
     }
 
     const seq = ++materialsLoadSeqRef.current;
-    setLoading(true);
+    const hasCachedMaterials = readCachedKnowledgeMaterials(materialsScopeKey) !== null;
+    if (!hasCachedMaterials) {
+      setLoading(true);
+    }
     try {
       const res = await getKnowledgeMaterials({
         search: search || undefined,
@@ -246,12 +269,15 @@ export function useKnowledgeTerritoryPage() {
         limit: MATERIALS_PAGE_LIMIT,
       });
       if (seq !== materialsLoadSeqRef.current) return;
+      writeCachedKnowledgeMaterials(materialsScopeKey, res.data, res.totalPages);
       setMaterials(res.data);
       setTotalPages(res.totalPages);
     } catch {
       if (seq !== materialsLoadSeqRef.current) return;
-      setMaterials([]);
-      showMessage('error', 'Ошибка загрузки материалов');
+      if (!hasCachedMaterials) {
+        setMaterials([]);
+        showMessage('error', 'Ошибка загрузки материалов');
+      }
     } finally {
       if (seq === materialsLoadSeqRef.current) {
         setLoading(false);
@@ -265,6 +291,7 @@ export function useKnowledgeTerritoryPage() {
     statusFilter,
     favoritesOnly,
     page,
+    materialsScopeKey,
     canEdit,
     traineeView,
     knowledgeAccessReady,
@@ -274,11 +301,26 @@ export function useKnowledgeTerritoryPage() {
 
   const loadCategories = useCallback(async () => {
     if (!knowledgeAccessReady) return;
+    const seq = ++categoriesLoadSeqRef.current;
     try {
       const data = await getKnowledgeCategories();
+      if (seq !== categoriesLoadSeqRef.current) return;
+      if (categoryErrorTimerRef.current) {
+        clearTimeout(categoryErrorTimerRef.current);
+        categoryErrorTimerRef.current = null;
+      }
+      writeCachedKnowledgeCategories(data);
       setCategories(data);
     } catch {
-      showMessage('error', 'Ошибка загрузки категорий');
+      if (seq !== categoriesLoadSeqRef.current) return;
+      if (readCachedKnowledgeCategories()?.length) return;
+      if (categoryErrorTimerRef.current) {
+        clearTimeout(categoryErrorTimerRef.current);
+      }
+      categoryErrorTimerRef.current = setTimeout(() => {
+        if (seq !== categoriesLoadSeqRef.current) return;
+        showMessage('error', 'Ошибка загрузки категорий');
+      }, 500);
     }
   }, [knowledgeAccessReady, showMessage]);
 
@@ -290,7 +332,10 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
     if (traineeView && categoryFilter && categories.length === 0) {
-      setModulesLoading(true);
+      const cached = readCachedKnowledgeModules(categoryFilter);
+      if (cached === null) {
+        setModulesLoading(true);
+      }
       return;
     }
     if (
@@ -305,20 +350,33 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
 
-    setModulesLoading(true);
-    setModules([]);
-    setLoadedModulesCategoryId(null);
+    const seq = ++modulesLoadSeqRef.current;
+    const cached = readCachedKnowledgeModules(categoryFilter);
+    const hasCached = cached !== null;
+
+    if (!hasCached) {
+      setModulesLoading(true);
+      setModules([]);
+      setLoadedModulesCategoryId(null);
+    }
 
     try {
       const data = await getKnowledgeModules(categoryFilter);
+      if (seq !== modulesLoadSeqRef.current) return;
+      writeCachedKnowledgeModules(categoryFilter, data);
       setModules(data);
       setLoadedModulesCategoryId(categoryFilter);
     } catch {
-      setModules([]);
+      if (seq !== modulesLoadSeqRef.current) return;
+      if (!hasCached) {
+        setModules([]);
+        showMessage('error', 'Ошибка загрузки модулей');
+      }
       setLoadedModulesCategoryId(categoryFilter);
-      showMessage('error', 'Ошибка загрузки модулей');
     } finally {
-      setModulesLoading(false);
+      if (seq === modulesLoadSeqRef.current) {
+        setModulesLoading(false);
+      }
     }
   }, [categoryFilter, traineeView, categories, showMessage]);
 
@@ -339,14 +397,25 @@ export function useKnowledgeTerritoryPage() {
 
   useEffect(() => {
     if (!filtersHydratedRef.current) return;
-    if (materialsScopeKeyRef.current === null) {
-      materialsScopeKeyRef.current = materialsScopeKey;
-      return;
-    }
     if (materialsScopeKeyRef.current === materialsScopeKey) return;
     materialsScopeKeyRef.current = materialsScopeKey;
+    const cached = readCachedKnowledgeMaterials(materialsScopeKey);
+    if (cached) {
+      setMaterials(cached.data);
+      setTotalPages(cached.totalPages);
+      setLoading(false);
+      return;
+    }
     setMaterials([]);
   }, [materialsScopeKey]);
+
+  useEffect(() => {
+    return () => {
+      if (categoryErrorTimerRef.current) {
+        clearTimeout(categoryErrorTimerRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     loadCategories();
@@ -713,7 +782,11 @@ export function useKnowledgeTerritoryPage() {
 
   const listLayoutReady =
     (!needsModuleLayout || (!modulesLoading && loadedModulesCategoryId === categoryFilter)) &&
-    !(loading && materials.length === 0);
+    !(
+      loading &&
+      materials.length === 0 &&
+      readCachedKnowledgeMaterials(materialsScopeKey) === null
+    );
 
   const handleTrashRestored = useCallback(() => {
     loadMaterials();
