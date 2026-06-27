@@ -21,6 +21,8 @@ export interface AdminNotificationsSettings {
   notifyOnCallbackForm: boolean;
   notifyOnDirectorForm: boolean;
   notifyOnQuoteForm: boolean;
+  notifyOnQuizMebel: boolean;
+  notifyOnQuizRemont: boolean;
   notifyOnKnowledgeFeedback: boolean;
   notifyOnSiteFeedback: boolean;
 }
@@ -166,6 +168,8 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnCallbackForm: data.notifyOnCallbackForm,
     notifyOnDirectorForm: data.notifyOnDirectorForm,
     notifyOnQuoteForm: data.notifyOnQuoteForm,
+    notifyOnQuizMebel: data.notifyOnQuizMebel,
+    notifyOnQuizRemont: data.notifyOnQuizRemont,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };
@@ -211,6 +215,8 @@ export async function updateAdminNotificationsSettings(
     notifyOnCallbackForm: data.notifyOnCallbackForm,
     notifyOnDirectorForm: data.notifyOnDirectorForm,
     notifyOnQuoteForm: data.notifyOnQuoteForm,
+    notifyOnQuizMebel: data.notifyOnQuizMebel,
+    notifyOnQuizRemont: data.notifyOnQuizRemont,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };

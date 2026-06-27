@@ -15,6 +15,8 @@ export type AdminBellPushEvent =
   | 'form_callback'
   | 'form_director'
   | 'form_quote'
+  | 'quiz_mebel'
+  | 'quiz_remont'
   | 'knowledge_feedback'
   | 'site_feedback';
 
@@ -75,15 +77,17 @@ export class AdminBellPushService {
   private isEventEnabled(
     event: AdminBellPushEvent,
     settings: {
-      notifyOnReviews: boolean;
-      notifyOnOrders: boolean;
-      notifyOnSupportChat: boolean;
-      notifyOnMeasurementForm: boolean;
-      notifyOnCallbackForm: boolean;
-      notifyOnDirectorForm: boolean;
-      notifyOnQuoteForm: boolean;
-      notifyOnKnowledgeFeedback: boolean;
-      notifyOnSiteFeedback: boolean;
+      notifyOnReviews?: boolean;
+      notifyOnOrders?: boolean;
+      notifyOnSupportChat?: boolean;
+      notifyOnMeasurementForm?: boolean;
+      notifyOnCallbackForm?: boolean;
+      notifyOnDirectorForm?: boolean;
+      notifyOnQuoteForm?: boolean;
+      notifyOnQuizMebel?: boolean;
+      notifyOnQuizRemont?: boolean;
+      notifyOnKnowledgeFeedback?: boolean;
+      notifyOnSiteFeedback?: boolean;
     },
     role: string,
   ) {
@@ -102,6 +106,10 @@ export class AdminBellPushService {
         return settings.notifyOnDirectorForm !== false;
       case 'form_quote':
         return settings.notifyOnQuoteForm !== false;
+      case 'quiz_mebel':
+        return settings.notifyOnQuizMebel !== false;
+      case 'quiz_remont':
+        return settings.notifyOnQuizRemont !== false;
       case 'knowledge_feedback':
         return role === 'SUPER_ADMIN' && settings.notifyOnKnowledgeFeedback !== false;
       case 'site_feedback':

@@ -80,6 +80,16 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnQuoteForm?: boolean;
 
+  @ApiPropertyOptional({ description: 'Заявки с квиза mebel-na-zakaz-51.ru' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnQuizMebel?: boolean;
+
+  @ApiPropertyOptional({ description: 'Заявки с квиза remont-kvartir-51.ru' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnQuizRemont?: boolean;
+
   @ApiPropertyOptional({ description: 'Обратная связь по обучающей платформе' })
   @IsOptional()
   @IsBoolean()

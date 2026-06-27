@@ -1,5 +1,6 @@
 import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
 import { PrismaService } from '../database/prisma.service';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { QuizNotifierService } from './quiz-notifier.service';
@@ -9,6 +10,7 @@ import {
   DEFAULT_QUIZ_THEME,
   FURNITURE_QUIZ_SLUG,
   FURNITURE_TYPE_VALUES,
+  REMONT_QUIZ_SLUG,
 } from './quiz.types';
 
 @Injectable()
@@ -16,6 +18,7 @@ export class QuizService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly notifier: QuizNotifierService,
+    private readonly adminBellPush: AdminBellPushService,
   ) {}
 
   async getPublicConfig(params: { slug?: string; host?: string }) {
@@ -100,6 +103,25 @@ export class QuizService {
       answers: dto.answers,
       stepLabels,
     });
+
+    const pushEvent =
+      quiz.slug === FURNITURE_QUIZ_SLUG
+        ? ('quiz_mebel' as const)
+        : quiz.slug === REMONT_QUIZ_SLUG
+          ? ('quiz_remont' as const)
+          : null;
+    if (pushEvent) {
+      const pushMeta =
+        quiz.slug === FURNITURE_QUIZ_SLUG
+          ? { title: 'Квиз — Мебель на заказ', url: '/admin/quiz/mebel' }
+          : { title: 'Квиз — Ремонт и отделка', url: '/admin/quiz/remont' };
+      void this.adminBellPush.notify(pushEvent, {
+        title: pushMeta.title,
+        body: `${submission.name}, ${submission.phone}`,
+        url: pushMeta.url,
+        tag: `quiz-${quiz.slug}-${submission.id}`,
+      });
+    }
 
     return { id: submission.id, success: true };
   }

@@ -2127,6 +2127,8 @@ model UserAdminNotificationOverride {
   notifyOnCallbackForm      Boolean  @default(true)
   notifyOnDirectorForm      Boolean  @default(true)
   notifyOnQuoteForm         Boolean  @default(true)
+  notifyOnQuizMebel         Boolean  @default(true)
+  notifyOnQuizRemont        Boolean  @default(true)
   notifyOnKnowledgeFeedback Boolean  @default(true)
   notifyOnSiteFeedback      Boolean  @default(true)
   updatedAt                 DateTime @updatedAt
@@ -2166,6 +2168,8 @@ model AdminNotificationsBlock {
   notifyOnCallbackForm      Boolean  @default(true) // Уведомления о заказе обратного звонка
   notifyOnDirectorForm      Boolean  @default(true) // Уведомления о письме директору
   notifyOnQuoteForm         Boolean  @default(true) // Уведомления о заявке на расчёт стоимости
+  notifyOnQuizMebel         Boolean  @default(true) // Заявки с квиза mebel-na-zakaz-51.ru
+  notifyOnQuizRemont        Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
   notifyOnKnowledgeFeedback Boolean  @default(true) // Обратная связь по обучающей платформе
   notifyOnSiteFeedback      Boolean  @default(true) // Обратная связь по публичному сайту
   updatedAt                 DateTime @updatedAt

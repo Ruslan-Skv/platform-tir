@@ -140,6 +140,30 @@ export async function getAdminQuizSubmissions(
   return res.json();
 }
 
+function getAdminAuthHeaders(): Record<string, string> {
+  if (typeof window === 'undefined') return {};
+  const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token');
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+/** Новые заявки квиза для колокольчика уведомлений админки */
+export async function getAdminQuizNewSubmissions(
+  slug: string,
+  limit = 10
+): Promise<QuizSubmissionItem[]> {
+  const search = new URLSearchParams({
+    page: '1',
+    limit: String(limit),
+    status: 'new',
+  });
+  const res = await apiFetch(`${API_URL}/admin/quiz/${slug}/submissions?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as QuizSubmissionsResponse;
+  return Array.isArray(data.data) ? data.data : [];
+}
+
 export async function updateQuizSubmission(
   slug: string,
   submissionId: string,

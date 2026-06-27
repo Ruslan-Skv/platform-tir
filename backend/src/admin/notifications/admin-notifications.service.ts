@@ -78,6 +78,8 @@ export class AdminNotificationsService {
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
       notifyOnDirectorForm: dto.notifyOnDirectorForm,
       notifyOnQuoteForm: dto.notifyOnQuoteForm,
+      notifyOnQuizMebel: dto.notifyOnQuizMebel,
+      notifyOnQuizRemont: dto.notifyOnQuizRemont,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
@@ -97,6 +99,8 @@ export class AdminNotificationsService {
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
       notifyOnDirectorForm: dto.notifyOnDirectorForm ?? true,
       notifyOnQuoteForm: dto.notifyOnQuoteForm ?? true,
+      notifyOnQuizMebel: dto.notifyOnQuizMebel ?? true,
+      notifyOnQuizRemont: dto.notifyOnQuizRemont ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };
@@ -222,6 +226,8 @@ export class AdminNotificationsService {
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
       notifyOnDirectorForm: dto.notifyOnDirectorForm,
       notifyOnQuoteForm: dto.notifyOnQuoteForm,
+      notifyOnQuizMebel: dto.notifyOnQuizMebel,
+      notifyOnQuizRemont: dto.notifyOnQuizRemont,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
@@ -241,6 +247,8 @@ export class AdminNotificationsService {
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
       notifyOnDirectorForm: dto.notifyOnDirectorForm ?? true,
       notifyOnQuoteForm: dto.notifyOnQuoteForm ?? true,
+      notifyOnQuizMebel: dto.notifyOnQuizMebel ?? true,
+      notifyOnQuizRemont: dto.notifyOnQuizRemont ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };

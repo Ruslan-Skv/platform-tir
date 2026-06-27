@@ -29,6 +29,12 @@ import { getAdminNotificationsSettings } from '@/shared/api/admin-notifications'
 import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import { getAdminOrders } from '@/shared/api/admin-orders';
 import type { AdminOrderSummary } from '@/shared/api/admin-orders';
+import {
+  MEBEL_QUIZ_SLUG,
+  type QuizSubmissionItem,
+  REMONT_QUIZ_SLUG,
+  getAdminQuizNewSubmissions,
+} from '@/shared/api/admin-quiz';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import {
@@ -82,8 +88,14 @@ type NotificationItem =
   | { type: 'order'; id: string; date: string; link: string; text: string }
   | { type: 'support'; id: string; date: string; link: string; text: string }
   | { type: 'form'; id: string; date: string; link: string; text: string }
+  | { type: 'quizMebel'; id: string; date: string; link: string; text: string }
+  | { type: 'quizRemont'; id: string; date: string; link: string; text: string }
   | { type: 'knowledgeFeedback'; id: string; date: string; link: string; text: string }
   | { type: 'siteFeedback'; id: string; date: string; link: string; text: string };
+
+type QuizBellNotification = QuizSubmissionItem & {
+  quizSlug: typeof MEBEL_QUIZ_SLUG | typeof REMONT_QUIZ_SLUG;
+};
 
 function formatKnowledgeFeedbackAuthor(author: KnowledgePlatformFeedback['author']): string {
   if (!author) return 'сотрудника';
@@ -166,6 +178,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [orderNotifications, setOrderNotifications] = useState<AdminOrderSummary[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
   const [formNotifications, setFormNotifications] = useState<AdminFormSubmission[]>([]);
+  const [quizNotifications, setQuizNotifications] = useState<QuizBellNotification[]>([]);
   const [knowledgeFeedbackNotifications, setKnowledgeFeedbackNotifications] = useState<
     KnowledgePlatformFeedback[]
   >([]);
@@ -186,6 +199,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     callbackForms: number;
     directorForms: number;
     quoteForms: number;
+    quizMebelSubmissions: number;
+    quizRemontSubmissions: number;
     knowledgeFeedback: number;
     siteFeedback: number;
   } | null>(null);
@@ -217,6 +232,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         formsCallbackRes,
         formsDirectorRes,
         formsQuoteRes,
+        quizMebelRes,
+        quizRemontRes,
         feedbackRes,
         siteFeedbackRes,
       ] = await Promise.all([
@@ -241,6 +258,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         notificationSettings?.notifyOnQuoteForm !== false
           ? getAdminFormSubmissions(1, 10, 'quote')
           : Promise.resolve({ data: [] as AdminFormSubmission[] }),
+        hasAccess('admin.quiz.mebel') && notificationSettings?.notifyOnQuizMebel !== false
+          ? getAdminQuizNewSubmissions(MEBEL_QUIZ_SLUG, 10)
+          : Promise.resolve([] as QuizSubmissionItem[]),
+        hasAccess('admin.quiz.remont') && notificationSettings?.notifyOnQuizRemont !== false
+          ? getAdminQuizNewSubmissions(REMONT_QUIZ_SLUG, 10)
+          : Promise.resolve([] as QuizSubmissionItem[]),
         isSuperAdmin && notificationSettings?.notifyOnKnowledgeFeedback !== false
           ? getKnowledgePlatformFeedback({ unreadOnly: true, limit: 10 })
           : Promise.resolve({ items: [] as KnowledgePlatformFeedback[] }),
@@ -259,11 +282,21 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       const callbackForms = (formsCallbackRes?.data ?? []) as AdminFormSubmission[];
       const directorForms = (formsDirectorRes?.data ?? []) as AdminFormSubmission[];
       const quoteForms = (formsQuoteRes?.data ?? []) as AdminFormSubmission[];
+      const quizMebelSubmissions = Array.isArray(quizMebelRes) ? quizMebelRes : [];
+      const quizRemontSubmissions = Array.isArray(quizRemontRes) ? quizRemontRes : [];
       const newForms = [
         ...measurementForms,
         ...callbackForms,
         ...directorForms,
         ...quoteForms,
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      const newQuizSubmissions: QuizBellNotification[] = [
+        ...quizMebelSubmissions.map(
+          (s): QuizBellNotification => ({ ...s, quizSlug: MEBEL_QUIZ_SLUG })
+        ),
+        ...quizRemontSubmissions.map(
+          (s): QuizBellNotification => ({ ...s, quizSlug: REMONT_QUIZ_SLUG })
+        ),
       ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const unreadKnowledgeFeedback = feedbackRes.items ?? [];
       const unreadSiteFeedback = siteFeedbackRes.items ?? [];
@@ -277,6 +310,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         callbackForms: callbackForms.length,
         directorForms: directorForms.length,
         quoteForms: quoteForms.length,
+        quizMebelSubmissions: quizMebelSubmissions.length,
+        quizRemontSubmissions: quizRemontSubmissions.length,
         knowledgeFeedback: unreadKnowledgeFeedback.length,
         siteFeedback: unreadSiteFeedback.length,
       };
@@ -290,6 +325,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         callbackForms.length +
         directorForms.length +
         quoteForms.length +
+        quizMebelSubmissions.length +
+        quizRemontSubmissions.length +
         unreadKnowledgeFeedback.length +
         unreadSiteFeedback.length;
       const prevTotal = prev
@@ -300,6 +337,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           prev.callbackForms +
           prev.directorForms +
           prev.quoteForms +
+          prev.quizMebelSubmissions +
+          prev.quizRemontSubmissions +
           prev.knowledgeFeedback +
           prev.siteFeedback
         : totalNew;
@@ -323,6 +362,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         const latestOrder = newOrders[0];
         const latestSupport = activeSupport[0];
         const latestForm = newForms[0];
+        const latestQuiz = newQuizSubmissions[0];
         const latestKnowledgeFeedback = unreadKnowledgeFeedback[0];
         const latestSiteFeedback = unreadSiteFeedback[0];
         if (latestReview && settings.notifyOnReviews) {
@@ -360,6 +400,19 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             body: getFormNotificationBody(latestForm),
             tag: `form-${latestForm.id}`,
           });
+        } else if (
+          latestQuiz &&
+          ((latestQuiz.quizSlug === MEBEL_QUIZ_SLUG && settings.notifyOnQuizMebel) ||
+            (latestQuiz.quizSlug === REMONT_QUIZ_SLUG && settings.notifyOnQuizRemont))
+        ) {
+          const quizLabel =
+            latestQuiz.quizSlug === MEBEL_QUIZ_SLUG
+              ? 'Квиз — Мебель на заказ'
+              : 'Квиз — Ремонт и отделка';
+          new Notification(quizLabel, {
+            body: `${latestQuiz.name}, ${latestQuiz.phone}`,
+            tag: `quiz-${latestQuiz.quizSlug}-${latestQuiz.id}`,
+          });
         } else if (latestKnowledgeFeedback && settings.notifyOnKnowledgeFeedback) {
           const label =
             latestKnowledgeFeedback.type === 'BUG'
@@ -383,6 +436,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setOrderNotifications(newOrders);
       setSupportNotifications(activeSupport);
       setFormNotifications(newForms);
+      setQuizNotifications(newQuizSubmissions);
       setKnowledgeFeedbackNotifications(unreadKnowledgeFeedback);
       setSiteFeedbackNotifications(unreadSiteFeedback);
     } catch {
@@ -390,12 +444,13 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setOrderNotifications([]);
       setSupportNotifications([]);
       setFormNotifications([]);
+      setQuizNotifications([]);
       setKnowledgeFeedbackNotifications([]);
       setSiteFeedbackNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
-  }, [notificationSettings, user?.role]);
+  }, [notificationSettings, user?.role, hasAccess]);
 
   useEffect(() => {
     if (!canLoadAdminNotifications) {
@@ -500,6 +555,17 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       date: f.createdAt,
       link: `/admin/forms`,
       text: `${FORM_NOTIFICATION_LABELS[f.type] ?? 'Заявка'} от ${f.name}`,
+    })),
+    ...quizNotifications.map((q) => ({
+      type: (q.quizSlug === MEBEL_QUIZ_SLUG ? 'quizMebel' : 'quizRemont') as
+        | 'quizMebel'
+        | 'quizRemont',
+      id: q.id,
+      date: q.createdAt,
+      link: q.quizSlug === MEBEL_QUIZ_SLUG ? '/admin/quiz/mebel' : '/admin/quiz/remont',
+      text: `${
+        q.quizSlug === MEBEL_QUIZ_SLUG ? 'Квиз — Мебель на заказ' : 'Квиз — Ремонт и отделка'
+      } от ${q.name}`,
     })),
     ...knowledgeFeedbackNotifications.map((f) => ({
       type: 'knowledgeFeedback' as const,

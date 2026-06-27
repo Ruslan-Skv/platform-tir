@@ -33,6 +33,8 @@ export class AdminNotificationSettingsReaderService {
       notifyOnCallbackForm: true,
       notifyOnDirectorForm: true,
       notifyOnQuoteForm: true,
+      notifyOnQuizMebel: true,
+      notifyOnQuizRemont: true,
       notifyOnKnowledgeFeedback: true,
       notifyOnSiteFeedback: true,
     };

@@ -317,6 +317,8 @@ export function NotificationsSection() {
     notifyOnCallbackForm: true,
     notifyOnDirectorForm: true,
     notifyOnQuoteForm: true,
+    notifyOnQuizMebel: true,
+    notifyOnQuizRemont: true,
     notifyOnKnowledgeFeedback: true,
     notifyOnSiteFeedback: true,
   };
@@ -783,6 +785,32 @@ export function NotificationsSection() {
                   }
                 />
                 <label htmlFor="notifyOnQuoteForm">Рассчитать стоимость</label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnQuizMebel"
+                  checked={formSettings.notifyOnQuizMebel}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnQuizMebel: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnQuizMebel">
+                  Квиз — Мебель на заказ (mebel-na-zakaz-51.ru)
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnQuizRemont"
+                  checked={formSettings.notifyOnQuizRemont}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnQuizRemont: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnQuizRemont">
+                  Квиз — Ремонт и отделка (remont-kvartir-51.ru)
+                </label>
               </div>
               {isSuperAdmin ? (
                 <div className={styles.checkboxRow}>
