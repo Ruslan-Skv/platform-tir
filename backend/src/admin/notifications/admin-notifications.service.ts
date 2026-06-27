@@ -76,6 +76,8 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
+      notifyOnDirectorForm: dto.notifyOnDirectorForm,
+      notifyOnQuoteForm: dto.notifyOnQuoteForm,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
@@ -93,6 +95,8 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
+      notifyOnDirectorForm: dto.notifyOnDirectorForm ?? true,
+      notifyOnQuoteForm: dto.notifyOnQuoteForm ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };
@@ -216,6 +220,8 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
+      notifyOnDirectorForm: dto.notifyOnDirectorForm,
+      notifyOnQuoteForm: dto.notifyOnQuoteForm,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
@@ -233,6 +239,8 @@ export class AdminNotificationsService {
       notifyOnSupportChat: dto.notifyOnSupportChat ?? true,
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
+      notifyOnDirectorForm: dto.notifyOnDirectorForm ?? true,
+      notifyOnQuoteForm: dto.notifyOnQuoteForm ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };

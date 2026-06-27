@@ -197,6 +197,13 @@ ${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
       replyTo: dto.email,
     });
 
+    void this.adminBellPush.notify('form_director', {
+      title: 'Письмо директору',
+      body: `${dto.name}, ${dto.email}`,
+      url: '/admin/forms',
+      tag: `form-director-${submission.id}`,
+    });
+
     return submission;
   }
 
@@ -250,6 +257,13 @@ ${dto.message}`;
       html: this.buildQuoteEmailHtml(dto),
       text: this.buildQuoteEmailText(dto),
       replyTo: dto.email || undefined,
+    });
+
+    void this.adminBellPush.notify('form_quote', {
+      title: 'Рассчитать стоимость',
+      body: `${dto.name}, ${dto.phone}`,
+      url: '/admin/forms',
+      tag: `form-quote-${submission.id}`,
     });
 
     return submission;

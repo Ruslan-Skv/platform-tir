@@ -13,6 +13,8 @@ export type AdminBellPushEvent =
   | 'support'
   | 'form_measurement'
   | 'form_callback'
+  | 'form_director'
+  | 'form_quote'
   | 'knowledge_feedback'
   | 'site_feedback';
 
@@ -78,6 +80,8 @@ export class AdminBellPushService {
       notifyOnSupportChat: boolean;
       notifyOnMeasurementForm: boolean;
       notifyOnCallbackForm: boolean;
+      notifyOnDirectorForm: boolean;
+      notifyOnQuoteForm: boolean;
       notifyOnKnowledgeFeedback: boolean;
       notifyOnSiteFeedback: boolean;
     },
@@ -94,6 +98,10 @@ export class AdminBellPushService {
         return settings.notifyOnMeasurementForm !== false;
       case 'form_callback':
         return settings.notifyOnCallbackForm !== false;
+      case 'form_director':
+        return settings.notifyOnDirectorForm !== false;
+      case 'form_quote':
+        return settings.notifyOnQuoteForm !== false;
       case 'knowledge_feedback':
         return role === 'SUPER_ADMIN' && settings.notifyOnKnowledgeFeedback !== false;
       case 'site_feedback':

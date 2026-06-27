@@ -136,6 +136,20 @@ const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] 
   { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
 
+const FORM_NOTIFICATION_LABELS: Record<string, string> = {
+  measurement: 'Запись на замер',
+  callback: 'Обратный звонок',
+  director: 'Письмо директору',
+  quote: 'Рассчитать стоимость',
+};
+
+function getFormNotificationBody(form: AdminFormSubmission): string {
+  if (form.type === 'director') {
+    return `${form.name}, ${form.email || form.phone || ''}`.replace(/,\s*$/, '');
+  }
+  return `${form.name}, ${form.phone}`;
+}
+
 type AdminHeaderProps = {
   onMobileMenuOpen?: () => void;
 };
@@ -170,6 +184,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     support: number;
     measurementForms: number;
     callbackForms: number;
+    directorForms: number;
+    quoteForms: number;
     knowledgeFeedback: number;
     siteFeedback: number;
   } | null>(null);
@@ -199,6 +215,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         supportRes,
         formsMeasurementRes,
         formsCallbackRes,
+        formsDirectorRes,
+        formsQuoteRes,
         feedbackRes,
         siteFeedbackRes,
       ] = await Promise.all([
@@ -217,6 +235,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         notificationSettings?.notifyOnCallbackForm !== false
           ? getAdminFormSubmissions(1, 10, 'callback')
           : Promise.resolve({ data: [] as AdminFormSubmission[] }),
+        notificationSettings?.notifyOnDirectorForm !== false
+          ? getAdminFormSubmissions(1, 10, 'director')
+          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
+        notificationSettings?.notifyOnQuoteForm !== false
+          ? getAdminFormSubmissions(1, 10, 'quote')
+          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
         isSuperAdmin && notificationSettings?.notifyOnKnowledgeFeedback !== false
           ? getKnowledgePlatformFeedback({ unreadOnly: true, limit: 10 })
           : Promise.resolve({ items: [] as KnowledgePlatformFeedback[] }),
@@ -233,9 +257,14 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       );
       const measurementForms = (formsMeasurementRes?.data ?? []) as AdminFormSubmission[];
       const callbackForms = (formsCallbackRes?.data ?? []) as AdminFormSubmission[];
-      const newForms = [...measurementForms, ...callbackForms].sort(
-        (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-      );
+      const directorForms = (formsDirectorRes?.data ?? []) as AdminFormSubmission[];
+      const quoteForms = (formsQuoteRes?.data ?? []) as AdminFormSubmission[];
+      const newForms = [
+        ...measurementForms,
+        ...callbackForms,
+        ...directorForms,
+        ...quoteForms,
+      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
       const unreadKnowledgeFeedback = feedbackRes.items ?? [];
       const unreadSiteFeedback = siteFeedbackRes.items ?? [];
 
@@ -246,6 +275,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         support: activeSupport.length,
         measurementForms: measurementForms.length,
         callbackForms: callbackForms.length,
+        directorForms: directorForms.length,
+        quoteForms: quoteForms.length,
         knowledgeFeedback: unreadKnowledgeFeedback.length,
         siteFeedback: unreadSiteFeedback.length,
       };
@@ -257,6 +288,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         activeSupport.length +
         measurementForms.length +
         callbackForms.length +
+        directorForms.length +
+        quoteForms.length +
         unreadKnowledgeFeedback.length +
         unreadSiteFeedback.length;
       const prevTotal = prev
@@ -265,6 +298,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           prev.support +
           prev.measurementForms +
           prev.callbackForms +
+          prev.directorForms +
+          prev.quoteForms +
           prev.knowledgeFeedback +
           prev.siteFeedback
         : totalNew;
@@ -316,12 +351,13 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         } else if (
           latestForm &&
           ((latestForm.type === 'measurement' && settings.notifyOnMeasurementForm) ||
-            (latestForm.type === 'callback' && settings.notifyOnCallbackForm))
+            (latestForm.type === 'callback' && settings.notifyOnCallbackForm) ||
+            (latestForm.type === 'director' && settings.notifyOnDirectorForm) ||
+            (latestForm.type === 'quote' && settings.notifyOnQuoteForm))
         ) {
-          const formLabel =
-            latestForm.type === 'measurement' ? 'Запись на замер' : 'Обратный звонок';
+          const formLabel = FORM_NOTIFICATION_LABELS[latestForm.type] ?? 'Новая заявка';
           new Notification(formLabel, {
-            body: `${latestForm.name}, ${latestForm.phone}`,
+            body: getFormNotificationBody(latestForm),
             tag: `form-${latestForm.id}`,
           });
         } else if (latestKnowledgeFeedback && settings.notifyOnKnowledgeFeedback) {
@@ -463,8 +499,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       id: f.id,
       date: f.createdAt,
       link: `/admin/forms`,
-      text:
-        f.type === 'measurement' ? `Запись на замер от ${f.name}` : `Обратный звонок от ${f.name}`,
+      text: `${FORM_NOTIFICATION_LABELS[f.type] ?? 'Заявка'} от ${f.name}`,
     })),
     ...knowledgeFeedbackNotifications.map((f) => ({
       type: 'knowledgeFeedback' as const,

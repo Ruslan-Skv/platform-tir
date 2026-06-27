@@ -70,6 +70,16 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnCallbackForm?: boolean;
 
+  @ApiPropertyOptional({ description: 'Уведомления о письме директору' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnDirectorForm?: boolean;
+
+  @ApiPropertyOptional({ description: 'Уведомления о заявке на расчёт стоимости' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnQuoteForm?: boolean;
+
   @ApiPropertyOptional({ description: 'Обратная связь по обучающей платформе' })
   @IsOptional()
   @IsBoolean()

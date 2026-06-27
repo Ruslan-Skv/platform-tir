@@ -31,6 +31,8 @@ export class AdminNotificationSettingsReaderService {
       notifyOnSupportChat: true,
       notifyOnMeasurementForm: true,
       notifyOnCallbackForm: true,
+      notifyOnDirectorForm: true,
+      notifyOnQuoteForm: true,
       notifyOnKnowledgeFeedback: true,
       notifyOnSiteFeedback: true,
     };

@@ -315,6 +315,8 @@ export function NotificationsSection() {
     notifyOnSupportChat: true,
     notifyOnMeasurementForm: true,
     notifyOnCallbackForm: true,
+    notifyOnDirectorForm: true,
+    notifyOnQuoteForm: true,
     notifyOnKnowledgeFeedback: true,
     notifyOnSiteFeedback: true,
   };
@@ -759,6 +761,28 @@ export function NotificationsSection() {
                   }
                 />
                 <label htmlFor="notifyOnCallbackForm">Заказ обратного звонка</label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnDirectorForm"
+                  checked={formSettings.notifyOnDirectorForm}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnDirectorForm: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnDirectorForm">Письмо директору</label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnQuoteForm"
+                  checked={formSettings.notifyOnQuoteForm}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnQuoteForm: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnQuoteForm">Рассчитать стоимость</label>
               </div>
               {isSuperAdmin ? (
                 <div className={styles.checkboxRow}>

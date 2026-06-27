@@ -19,6 +19,8 @@ export interface AdminNotificationsSettings {
   notifyOnSupportChat: boolean;
   notifyOnMeasurementForm: boolean;
   notifyOnCallbackForm: boolean;
+  notifyOnDirectorForm: boolean;
+  notifyOnQuoteForm: boolean;
   notifyOnKnowledgeFeedback: boolean;
   notifyOnSiteFeedback: boolean;
 }
@@ -162,6 +164,8 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnSupportChat: data.notifyOnSupportChat,
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
+    notifyOnDirectorForm: data.notifyOnDirectorForm,
+    notifyOnQuoteForm: data.notifyOnQuoteForm,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };
@@ -205,6 +209,8 @@ export async function updateAdminNotificationsSettings(
     notifyOnSupportChat: data.notifyOnSupportChat,
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
+    notifyOnDirectorForm: data.notifyOnDirectorForm,
+    notifyOnQuoteForm: data.notifyOnQuoteForm,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };
