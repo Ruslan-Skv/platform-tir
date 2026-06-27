@@ -6,6 +6,7 @@ import { UserAuthProvider } from '@/features/auth/context/UserAuthContext';
 import { MobileCatalogColumnsSync } from '@/features/catalog';
 import { FormModals, FormProvider } from '@/features/forms';
 import { PWAUpdatePrompt } from '@/features/pwa';
+import { SitePlatformFeedbackButton } from '@/features/site-feedback';
 import { useTheme } from '@/features/theme';
 import { ApprovedOrderGuardProvider } from '@/shared/lib/contexts/ApprovedOrderGuardContext';
 import { CompareProvider } from '@/shared/lib/contexts/CompareContext';
@@ -45,6 +46,7 @@ export const SiteLayout: React.FC<SiteLayoutProps> = ({ children }) => {
                   <Footer />
                   <MobileBottomNav />
                   <ChatSupportWidget />
+                  <SitePlatformFeedbackButton />
                   <FormModals />
                   <PWAUpdatePrompt />
                 </div>

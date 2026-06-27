@@ -13,7 +13,8 @@ export type AdminBellPushEvent =
   | 'support'
   | 'form_measurement'
   | 'form_callback'
-  | 'knowledge_feedback';
+  | 'knowledge_feedback'
+  | 'site_feedback';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -78,6 +79,7 @@ export class AdminBellPushService {
       notifyOnMeasurementForm: boolean;
       notifyOnCallbackForm: boolean;
       notifyOnKnowledgeFeedback: boolean;
+      notifyOnSiteFeedback: boolean;
     },
     role: string,
   ) {
@@ -94,6 +96,8 @@ export class AdminBellPushService {
         return settings.notifyOnCallbackForm !== false;
       case 'knowledge_feedback':
         return role === 'SUPER_ADMIN' && settings.notifyOnKnowledgeFeedback !== false;
+      case 'site_feedback':
+        return role === 'SUPER_ADMIN' && settings.notifyOnSiteFeedback !== false;
       default:
         return false;
     }

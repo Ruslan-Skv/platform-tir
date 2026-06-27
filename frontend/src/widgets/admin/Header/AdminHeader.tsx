@@ -31,6 +31,11 @@ import { getAdminOrders } from '@/shared/api/admin-orders';
 import type { AdminOrderSummary } from '@/shared/api/admin-orders';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
+import {
+  type SitePlatformFeedback,
+  getSitePlatformFeedback,
+  markSitePlatformFeedbackRead,
+} from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
@@ -77,10 +82,17 @@ type NotificationItem =
   | { type: 'order'; id: string; date: string; link: string; text: string }
   | { type: 'support'; id: string; date: string; link: string; text: string }
   | { type: 'form'; id: string; date: string; link: string; text: string }
-  | { type: 'knowledgeFeedback'; id: string; date: string; link: string; text: string };
+  | { type: 'knowledgeFeedback'; id: string; date: string; link: string; text: string }
+  | { type: 'siteFeedback'; id: string; date: string; link: string; text: string };
 
 function formatKnowledgeFeedbackAuthor(author: KnowledgePlatformFeedback['author']): string {
   if (!author) return 'сотрудника';
+  const name = `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim();
+  return name || author.email;
+}
+
+function formatSiteFeedbackAuthor(author: SitePlatformFeedback['author']): string {
+  if (!author) return 'посетителя сайта';
   const name = `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim();
   return name || author.email;
 }
@@ -121,6 +133,7 @@ const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] 
   { href: '/admin/support', label: 'Чат' },
   { href: '/admin/forms', label: 'Заявки' },
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
+  { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
 
 type AdminHeaderProps = {
@@ -142,6 +155,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [knowledgeFeedbackNotifications, setKnowledgeFeedbackNotifications] = useState<
     KnowledgePlatformFeedback[]
   >([]);
+  const [siteFeedbackNotifications, setSiteFeedbackNotifications] = useState<
+    SitePlatformFeedback[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -155,6 +171,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     measurementForms: number;
     callbackForms: number;
     knowledgeFeedback: number;
+    siteFeedback: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -183,6 +200,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         formsMeasurementRes,
         formsCallbackRes,
         feedbackRes,
+        siteFeedbackRes,
       ] = await Promise.all([
         notificationSettings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -202,6 +220,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         isSuperAdmin && notificationSettings?.notifyOnKnowledgeFeedback !== false
           ? getKnowledgePlatformFeedback({ unreadOnly: true, limit: 10 })
           : Promise.resolve({ items: [] as KnowledgePlatformFeedback[] }),
+        isSuperAdmin && notificationSettings?.notifyOnSiteFeedback !== false
+          ? getSitePlatformFeedback({ unreadOnly: true, limit: 10 })
+          : Promise.resolve({ items: [] as SitePlatformFeedback[] }),
       ]);
 
       const newReviews = reviewsRes.data ?? [];
@@ -216,6 +237,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
       const unreadKnowledgeFeedback = feedbackRes.items ?? [];
+      const unreadSiteFeedback = siteFeedbackRes.items ?? [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -225,6 +247,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         measurementForms: measurementForms.length,
         callbackForms: callbackForms.length,
         knowledgeFeedback: unreadKnowledgeFeedback.length,
+        siteFeedback: unreadSiteFeedback.length,
       };
 
       const settings = notificationSettings;
@@ -234,14 +257,16 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         activeSupport.length +
         measurementForms.length +
         callbackForms.length +
-        unreadKnowledgeFeedback.length;
+        unreadKnowledgeFeedback.length +
+        unreadSiteFeedback.length;
       const prevTotal = prev
         ? prev.reviews +
           prev.orders +
           prev.support +
           prev.measurementForms +
           prev.callbackForms +
-          prev.knowledgeFeedback
+          prev.knowledgeFeedback +
+          prev.siteFeedback
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -264,6 +289,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         const latestSupport = activeSupport[0];
         const latestForm = newForms[0];
         const latestKnowledgeFeedback = unreadKnowledgeFeedback[0];
+        const latestSiteFeedback = unreadSiteFeedback[0];
         if (latestReview && settings.notifyOnReviews) {
           new Notification('Новый отзыв', {
             body: `«${latestReview.product?.name || 'Товар'}» от ${latestReview.userName}`,
@@ -307,6 +333,13 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             body: `От ${formatKnowledgeFeedbackAuthor(latestKnowledgeFeedback.author)}`,
             tag: `knowledge-feedback-${latestKnowledgeFeedback.id}`,
           });
+        } else if (latestSiteFeedback && settings.notifyOnSiteFeedback) {
+          const label =
+            latestSiteFeedback.type === 'BUG' ? 'Ошибка на сайте' : 'Предложение по сайту';
+          new Notification(label, {
+            body: `От ${formatSiteFeedbackAuthor(latestSiteFeedback.author)}`,
+            tag: `site-feedback-${latestSiteFeedback.id}`,
+          });
         }
       }
 
@@ -315,12 +348,14 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setSupportNotifications(activeSupport);
       setFormNotifications(newForms);
       setKnowledgeFeedbackNotifications(unreadKnowledgeFeedback);
+      setSiteFeedbackNotifications(unreadSiteFeedback);
     } catch {
       setReviewNotifications([]);
       setOrderNotifications([]);
       setSupportNotifications([]);
       setFormNotifications([]);
       setKnowledgeFeedbackNotifications([]);
+      setSiteFeedbackNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
@@ -441,6 +476,16 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ? `Ошибка на платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`
           : `Предложение по платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`,
     })),
+    ...siteFeedbackNotifications.map((f) => ({
+      type: 'siteFeedback' as const,
+      id: f.id,
+      date: f.createdAt,
+      link: `/admin/content/site-feedback`,
+      text:
+        f.type === 'BUG'
+          ? `Ошибка на сайте от ${formatSiteFeedbackAuthor(f.author)}`
+          : `Предложение по сайту от ${formatSiteFeedbackAuthor(f.author)}`,
+    })),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const visibleNotificationItems = notificationItems.filter(
@@ -466,6 +511,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       if (item.type === 'knowledgeFeedback') {
         setKnowledgeFeedbackNotifications((prev) => prev.filter((f) => f.id !== item.id));
       }
+      if (item.type === 'siteFeedback') {
+        setSiteFeedbackNotifications((prev) => prev.filter((f) => f.id !== item.id));
+      }
     },
     [user?.id]
   );
@@ -482,6 +530,14 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       try {
         await markKnowledgePlatformFeedbackRead();
         setKnowledgeFeedbackNotifications([]);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (user.role === 'SUPER_ADMIN' && siteFeedbackNotifications.length > 0) {
+      try {
+        await markSitePlatformFeedbackRead();
+        setSiteFeedbackNotifications([]);
       } catch {
         /* ignore */
       }

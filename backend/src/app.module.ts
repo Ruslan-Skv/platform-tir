@@ -36,6 +36,7 @@ import { QuizModule } from './quiz/quiz.module';
 import { HomeSectionsModule } from './home-sections/home-sections.module';
 import { ContactFormModule } from './contact-form/contact-form.module';
 import { SitePublicModule } from './site-public/site-public.module';
+import { SitePlatformFeedbackModule } from './site-platform-feedback/site-platform-feedback.module';
 import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
 
 @Module({
@@ -98,6 +99,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     HomeSectionsModule,
     ContactFormModule,
     SitePublicModule,
+    SitePlatformFeedbackModule,
     AdminAccessModule,
   ],
   controllers: [AppController],

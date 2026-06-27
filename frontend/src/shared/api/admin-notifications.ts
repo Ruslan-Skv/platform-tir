@@ -20,6 +20,7 @@ export interface AdminNotificationsSettings {
   notifyOnMeasurementForm: boolean;
   notifyOnCallbackForm: boolean;
   notifyOnKnowledgeFeedback: boolean;
+  notifyOnSiteFeedback: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -162,6 +163,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
+    notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -204,6 +206,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnMeasurementForm: data.notifyOnMeasurementForm,
     notifyOnCallbackForm: data.notifyOnCallbackForm,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
+    notifyOnSiteFeedback: data.notifyOnSiteFeedback,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',

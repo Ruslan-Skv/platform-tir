@@ -316,6 +316,7 @@ export function NotificationsSection() {
     notifyOnMeasurementForm: true,
     notifyOnCallbackForm: true,
     notifyOnKnowledgeFeedback: true,
+    notifyOnSiteFeedback: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -773,6 +774,21 @@ export function NotificationsSection() {
                   />
                   <label htmlFor="notifyOnKnowledgeFeedback">
                     Ошибки и предложения по обучающей платформе
+                  </label>
+                </div>
+              ) : null}
+              {isSuperAdmin ? (
+                <div className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    id="notifyOnSiteFeedback"
+                    checked={formSettings.notifyOnSiteFeedback ?? true}
+                    onChange={(e) =>
+                      setSettings((s) => (s ? { ...s, notifyOnSiteFeedback: e.target.checked } : s))
+                    }
+                  />
+                  <label htmlFor="notifyOnSiteFeedback">
+                    Ошибки и предложения по публичному сайту
                   </label>
                 </div>
               ) : null}

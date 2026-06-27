@@ -244,6 +244,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.content.navigation',
       },
       { label: 'Футер', href: '/admin/content/footer', resourceId: 'admin.content.footer' },
+      {
+        label: 'Обратная связь по сайту',
+        href: '/admin/content/site-feedback',
+        resourceId: 'admin.settings',
+      },
     ],
   },
   {

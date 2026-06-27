@@ -77,6 +77,7 @@ export class AdminNotificationsService {
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
+      notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -93,6 +94,7 @@ export class AdminNotificationsService {
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
+      notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -215,6 +217,7 @@ export class AdminNotificationsService {
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm,
       notifyOnCallbackForm: dto.notifyOnCallbackForm,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
+      notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -231,6 +234,7 @@ export class AdminNotificationsService {
       notifyOnMeasurementForm: dto.notifyOnMeasurementForm ?? true,
       notifyOnCallbackForm: dto.notifyOnCallbackForm ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
+      notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

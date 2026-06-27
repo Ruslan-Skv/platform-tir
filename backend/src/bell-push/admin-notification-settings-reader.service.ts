@@ -32,6 +32,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnMeasurementForm: true,
       notifyOnCallbackForm: true,
       notifyOnKnowledgeFeedback: true,
+      notifyOnSiteFeedback: true,
     };
   }
 

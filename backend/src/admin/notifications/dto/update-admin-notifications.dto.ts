@@ -75,6 +75,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnKnowledgeFeedback?: boolean;
 
+  @ApiPropertyOptional({ description: 'Обратная связь по публичному сайту' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnSiteFeedback?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })
