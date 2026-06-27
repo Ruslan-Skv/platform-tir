@@ -187,22 +187,6 @@ export async function uploadQuizCatalog(
   return res.json();
 }
 
-export async function uploadQuizPrivacyPolicy(
-  slug: string,
-  file: File,
-  getAuthHeaders: () => Record<string, string>
-): Promise<{ url: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const res = await apiFetch(`${API_URL}/admin/quiz/${slug}/upload-privacy-policy`, {
-    method: 'POST',
-    headers: getAuthHeaders(),
-    body: formData,
-  });
-  if (!res.ok) throw new Error('Ошибка загрузки PDF политики');
-  return res.json();
-}
-
 export function resolveAdminUploadUrl(url: string): string {
   if (!url) return '';
   if (url.startsWith('http') || url.startsWith('/quiz/') || url.startsWith('/images/')) return url;

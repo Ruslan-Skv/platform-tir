@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import { resolveAdminUploadUrl } from '@/shared/api/admin-quiz';
 import { QUIZ_SUBMISSION_STATUS_LABELS } from '@/shared/api/quiz-theme';
 import {
@@ -20,7 +22,6 @@ const TABS: { id: Model['tab']; label: string }[] = [
   { id: 'theme', label: 'Оформление' },
   { id: 'steps', label: 'Шаги' },
   { id: 'submissions', label: 'Заявки' },
-  { id: 'consent', label: 'Согласие' },
 ];
 
 const FONT_OPTIONS = [
@@ -63,11 +64,8 @@ export function QuizAdminPageView({ model }: { model: Model }) {
     setThemeField,
     setStepsDraft,
     handleSaveSettings,
-    handleSaveConsent,
     handleSaveTheme,
     handleUploadCatalog,
-    handleUploadPrivacyPolicy,
-    uploadingPrivacyPolicy,
     uploadingCatalog,
     handleUploadBackground,
     handleUploadOptionImage,
@@ -172,6 +170,11 @@ export function QuizAdminPageView({ model }: { model: Model }) {
           }}
         >
           <h2>Основное</h2>
+          <p className={styles.hint}>
+            Согласие на обработку данных и политика конфиденциальности — единые для всего сайта и
+            квизов. Настраиваются в{' '}
+            <Link href="/admin/settings/user-cabinet">Личный кабинет → Согласие</Link>.
+          </p>
           <div className={styles.settingsBasicGrid}>
             <label>
               Домен
@@ -1179,75 +1182,6 @@ export function QuizAdminPageView({ model }: { model: Model }) {
             </div>
           ) : null}
         </div>
-      ) : null}
-
-      {tab === 'consent' ? (
-        <form
-          id="quiz-consent-form"
-          className={`${styles.section} ${styles.settingsForm} ${styles.consentForm}`}
-          onSubmit={(e) => {
-            e.preventDefault();
-            handleSaveConsent();
-          }}
-        >
-          <h2>Согласие на обработку данных</h2>
-          <p className={styles.hint}>
-            По клику на «персональных данных» — страница <code>/quiz/privacy-policy</code>. PDF на
-            весь экран; без PDF показывается текст (можно сохранить через печать браузера).
-          </p>
-          <label className={styles.settingsFullWidth}>
-            PDF политики (рекомендуется)
-            <QuizAdminFileUpload
-              url={quiz.privacyPolicyUrl}
-              onUrlChange={(v) => setQuizField('privacyPolicyUrl', v)}
-              onFileSelect={handleUploadPrivacyPolicy}
-              uploading={uploadingPrivacyPolicy}
-              accept=".pdf,application/pdf"
-              uploadLabel="Загрузить PDF"
-              placeholder="https://…/policy.pdf"
-            />
-          </label>
-          <div className={styles.settingsContentGrid}>
-            <label>
-              Текст рядом с галочкой
-              <input
-                value={quiz.consentText ?? ''}
-                onChange={(e) => setQuizField('consentText', e.target.value)}
-                placeholder="Я согласен(-на) на обработку персональных данных"
-              />
-            </label>
-            <label>
-              Кликабельная фраза (в тексте выше)
-              <input
-                value={quiz.consentLinkText ?? ''}
-                onChange={(e) => setQuizField('consentLinkText', e.target.value)}
-                placeholder="персональных данных"
-              />
-            </label>
-            <label className={styles.settingsFullWidth}>
-              Заголовок окна политики
-              <input
-                value={quiz.privacyPolicyTitle ?? ''}
-                onChange={(e) => setQuizField('privacyPolicyTitle', e.target.value)}
-                placeholder="Политика конфиденциальности персональных данных"
-              />
-            </label>
-          </div>
-          <label className={styles.settingsFullWidth}>
-            <span className={styles.consentFieldLabel}>
-              Текст политики (если нет PDF)
-              <span className={styles.consentFieldHint}>
-                Переносы строк — только для редактирования
-              </span>
-            </span>
-            <textarea
-              value={quiz.privacyPolicyContent ?? ''}
-              onChange={(e) => setQuizField('privacyPolicyContent', e.target.value)}
-              rows={8}
-              placeholder="Вставьте текст политики конфиденциальности…"
-            />
-          </label>
-        </form>
       ) : null}
     </AdminStickyPageRoot>
   );

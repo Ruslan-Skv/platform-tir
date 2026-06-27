@@ -32,7 +32,9 @@ export class UpdateUserCabinetDto {
   @IsBoolean()
   showQuickLinks?: boolean;
 
-  @ApiPropertyOptional({ description: 'URL PDF политики конфиденциальности (регистрация)' })
+  @ApiPropertyOptional({
+    description: 'URL PDF политики конфиденциальности (единая для сайта и квизов)',
+  })
   @IsOptional()
   @IsString()
   privacyPolicyUrl?: string | null;

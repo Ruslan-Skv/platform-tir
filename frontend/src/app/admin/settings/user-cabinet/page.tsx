@@ -5,7 +5,7 @@ export default function AdminUserCabinetPage() {
   return (
     <SettingsSubPageView
       title="Личный кабинет пользователя"
-      subtitle="Настройки разделов личного кабинета и политики конфиденциальности для форм основного сайта."
+      subtitle="Настройки разделов личного кабинета и единой политики конфиденциальности для сайта и квизов."
     >
       <UserCabinetSection />
     </SettingsSubPageView>

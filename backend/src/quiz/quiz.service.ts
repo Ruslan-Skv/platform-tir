@@ -38,7 +38,8 @@ export class QuizService {
       throw new NotFoundException('Квиз не найден');
     }
 
-    return this.mapQuizPublic(quiz);
+    const consent = await this.getSiteConsentSettings();
+    return this.mapQuizPublic(quiz, consent);
   }
 
   async submit(slug: string, dto: SubmitQuizDto) {
@@ -134,7 +135,24 @@ export class QuizService {
     return primary?.key;
   }
 
-  private mapQuizPublic(quiz: Prisma.QuizLandingGetPayload<{ include: { steps: true } }>) {
+  private async getSiteConsentSettings() {
+    const block = await this.prisma.userCabinetBlock.findUnique({
+      where: { id: 'main' },
+    });
+    return {
+      privacyPolicyUrl: block?.privacyPolicyUrl?.trim() || null,
+      privacyPolicyTitle:
+        block?.privacyPolicyTitle?.trim() || DEFAULT_QUIZ_CONSENT.privacyPolicyTitle,
+      privacyPolicyContent: block?.privacyPolicyContent?.trim() || null,
+      consentText: block?.consentText?.trim() || DEFAULT_QUIZ_CONSENT.consentText,
+      consentLinkText: block?.consentLinkText?.trim() || DEFAULT_QUIZ_CONSENT.consentLinkText,
+    };
+  }
+
+  private mapQuizPublic(
+    quiz: Prisma.QuizLandingGetPayload<{ include: { steps: true } }>,
+    consent: Awaited<ReturnType<QuizService['getSiteConsentSettings']>>,
+  ) {
     return {
       id: quiz.id,
       slug: quiz.slug,
@@ -151,12 +169,11 @@ export class QuizService {
       successTitle: quiz.successTitle,
       successText: quiz.successText,
       catalogFileUrl: quiz.catalogFileUrl,
-      privacyPolicyUrl: quiz.privacyPolicyUrl?.trim() || null,
-      privacyPolicyTitle:
-        quiz.privacyPolicyTitle?.trim() || DEFAULT_QUIZ_CONSENT.privacyPolicyTitle,
-      privacyPolicyContent: quiz.privacyPolicyContent?.trim() || null,
-      consentText: quiz.consentText?.trim() || DEFAULT_QUIZ_CONSENT.consentText,
-      consentLinkText: quiz.consentLinkText?.trim() || DEFAULT_QUIZ_CONSENT.consentLinkText,
+      privacyPolicyUrl: consent.privacyPolicyUrl,
+      privacyPolicyTitle: consent.privacyPolicyTitle,
+      privacyPolicyContent: consent.privacyPolicyContent,
+      consentText: consent.consentText,
+      consentLinkText: consent.consentLinkText,
       steps: quiz.steps.map((s) => ({
         id: s.id,
         key: s.key,

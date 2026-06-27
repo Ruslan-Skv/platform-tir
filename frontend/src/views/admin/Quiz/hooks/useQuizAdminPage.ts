@@ -16,7 +16,6 @@ import {
   updateQuizSubmission,
   uploadQuizCatalog,
   uploadQuizOptionImage,
-  uploadQuizPrivacyPolicy,
 } from '@/shared/api/admin-quiz';
 import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { DEFAULT_QUIZ_THEME } from '@/shared/api/quiz-theme';
@@ -24,7 +23,7 @@ import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton
 
 import type { QuizAdminConfig } from '../quiz-admin.config';
 
-export type QuizAdminTab = 'settings' | 'theme' | 'steps' | 'submissions' | 'consent';
+export type QuizAdminTab = 'settings' | 'theme' | 'steps' | 'submissions';
 
 export function useQuizAdminPage(config: QuizAdminConfig) {
   const { slug, primaryStepKey } = config;
@@ -45,7 +44,6 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
   const [primaryFilter, setPrimaryFilter] = useState('');
   const [searchFilter, setSearchFilter] = useState('');
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-  const [uploadingPrivacyPolicy, setUploadingPrivacyPolicy] = useState(false);
   const [uploadingCatalog, setUploadingCatalog] = useState(false);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
@@ -168,30 +166,6 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
     }
   };
 
-  const handleSaveConsent = async () => {
-    if (!quiz || !canEdit) return;
-    setSaving(true);
-    try {
-      const updated = await updateAdminQuiz(
-        slug,
-        {
-          privacyPolicyUrl: quiz.privacyPolicyUrl,
-          privacyPolicyTitle: quiz.privacyPolicyTitle,
-          privacyPolicyContent: quiz.privacyPolicyContent,
-          consentText: quiz.consentText,
-          consentLinkText: quiz.consentLinkText,
-        },
-        getAuthHeaders
-      );
-      applyQuizData(updated);
-      showMessage('success', 'Согласие сохранено');
-    } catch (e) {
-      showMessage('error', e instanceof Error ? e.message : 'Ошибка сохранения');
-    } finally {
-      setSaving(false);
-    }
-  };
-
   const handleSaveTheme = async () => {
     if (!quiz || !canEdit) return;
     setSaving(true);
@@ -251,23 +225,6 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
       showMessage('error', 'Ошибка загрузки');
     } finally {
       setUploadingCatalog(false);
-      e.target.value = '';
-    }
-  };
-
-  const handleUploadPrivacyPolicy = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (!canEdit) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setUploadingPrivacyPolicy(true);
-    try {
-      const { url } = await uploadQuizPrivacyPolicy(slug, file, getAuthHeaders);
-      setQuizField('privacyPolicyUrl', url);
-      showMessage('success', 'PDF политики загружен');
-    } catch {
-      showMessage('error', 'Ошибка загрузки PDF');
-    } finally {
-      setUploadingPrivacyPolicy(false);
       e.target.value = '';
     }
   };
@@ -347,8 +304,6 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
       requestFormSubmit('quiz-theme-form');
     } else if (tab === 'steps') {
       void handleSaveSteps();
-    } else if (tab === 'consent') {
-      requestFormSubmit('quiz-consent-form');
     }
   }, [tab, handleSaveSteps]);
 
@@ -388,12 +343,9 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
     setThemeField,
     setStepsDraft,
     handleSaveSettings,
-    handleSaveConsent,
     handleSaveTheme,
     handleUploadCatalog,
-    handleUploadPrivacyPolicy,
     uploadingCatalog,
-    uploadingPrivacyPolicy,
     handleUploadBackground,
     handleUploadOptionImage,
     handleUpdateSubmission,
