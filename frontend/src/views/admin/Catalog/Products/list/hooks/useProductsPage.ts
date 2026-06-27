@@ -50,7 +50,7 @@ interface ProductsPageProps {
 export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
   const router = useRouter();
   const queryClient = useQueryClient();
-  const { getAuthHeaders } = useAuth();
+  const { getAuthHeaders, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [categories, setCategories] = useState<CategoriesResponse[]>([]);
   const [suppliers, setSuppliers] = useState<
     Array<{ id: string; legalName: string; commercialName?: string | null }>
@@ -260,9 +260,13 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
 
   // Fetch categories (в админке — все категории, включая неактивные, для корректной фильтрации)
   useEffect(() => {
+    if (isAuthLoading || !isAuthenticated) return;
+
     const fetchCategories = async () => {
       try {
-        const response = await apiFetch(`${API_URL}/categories?includeInactive=true`);
+        const response = await apiFetch(`${API_URL}/categories?includeInactive=true`, {
+          headers: getAuthHeaders(),
+        });
         if (response.ok) {
           const data = await response.json();
           setCategories(data);
@@ -272,7 +276,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
       }
     };
     fetchCategories();
-  }, []);
+  }, [getAuthHeaders, isAuthenticated, isAuthLoading]);
 
   // Fetch suppliers
   useEffect(() => {

@@ -22,7 +22,7 @@ const EMPTY_NEW_CATEGORY: NewCategoryForm = {
 
 export function useCategoriesPage() {
   const router = useRouter();
-  const { getAuthHeaders } = useAuth();
+  const { getAuthHeaders, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
@@ -43,7 +43,9 @@ export function useCategoriesPage() {
   const fetchCategories = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await apiFetch(`${API_URL}/categories?includeInactive=true`);
+      const response = await apiFetch(`${API_URL}/categories?includeInactive=true`, {
+        headers: getAuthHeaders(),
+      });
       if (response.ok) {
         const data: Category[] = await response.json();
         setCategories(data);
@@ -54,11 +56,12 @@ export function useCategoriesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [getAuthHeaders]);
 
   useEffect(() => {
-    fetchCategories();
-  }, [fetchCategories]);
+    if (isAuthLoading || !isAuthenticated) return;
+    void fetchCategories();
+  }, [fetchCategories, isAuthenticated, isAuthLoading]);
 
   const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
 
