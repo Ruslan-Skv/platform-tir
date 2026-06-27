@@ -6,8 +6,10 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
   bindAuthRefreshOnPageVisible,
+  clearStoredAuthSession,
   getApiBaseUrl,
   getJwtExpMs,
+  getStoredAccessToken,
   persistTokenResponse,
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
@@ -84,11 +86,10 @@ function loadAuthFromStorage(): {
   if (typeof window === 'undefined') {
     return { token: null, user: null, source: 'user' };
   }
-  let token = localStorage.getItem(USER_TOKEN_KEY);
+  const token = getStoredAccessToken();
   let userJson = localStorage.getItem(USER_DATA_KEY);
   let source: 'user' | 'admin' = 'user';
-  if (!token || !userJson) {
-    token = localStorage.getItem(ADMIN_TOKEN_KEY);
+  if (!userJson) {
     userJson = localStorage.getItem(ADMIN_USER_KEY);
     source = 'admin';
   }
@@ -111,12 +112,8 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
       void revokeRefreshOnServer();
-      localStorage.removeItem(USER_TOKEN_KEY);
-      localStorage.removeItem(USER_DATA_KEY);
-      localStorage.removeItem(ADMIN_TOKEN_KEY);
-      localStorage.removeItem(ADMIN_USER_KEY);
+      clearStoredAuthSession();
       setPublicSiteEditMode(false);
-      window.dispatchEvent(new Event('auth-token-changed'));
     }
     setToken(null);
     setUser(null);
@@ -156,8 +153,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
         if (response.status === 401) {
           const refreshed = await refreshAccessTokenSilently();
           if (!refreshed) return false;
-          const next =
-            localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+          const next = getStoredAccessToken();
           if (!next) return false;
           const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
             headers: { Authorization: `Bearer ${next}` },
@@ -179,54 +175,74 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
     [persistProfileUser]
   );
 
-  // Load auth state on mount: user_token first, fallback to admin_token (админ в публичке)
+  // Load auth state on mount: user_token first, fallback на admin_token (админ в публичке)
   useEffect(() => {
+    let cancelled = false;
+
     void (async () => {
       applyAuthFromStorage();
-      let access = localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+      let access = getStoredAccessToken();
       const userJson = localStorage.getItem(USER_DATA_KEY) || localStorage.getItem(ADMIN_USER_KEY);
 
+      if (!access && userJson) {
+        const refreshed = await refreshAccessTokenSilently();
+        if (cancelled) return;
+        if (refreshed) {
+          applyAuthFromStorage();
+          access = getStoredAccessToken();
+        }
+      }
+
       if (access && userJson) {
+        const sessionToken = access;
         try {
           const exp = getJwtExpMs(access);
           if (exp && exp <= Date.now() + 5_000) {
             await refreshAccessTokenSilently();
+            if (cancelled) return;
             applyAuthFromStorage();
-            access =
-              localStorage.getItem(USER_TOKEN_KEY) ||
-              localStorage.getItem(ADMIN_TOKEN_KEY) ||
-              access;
+            access = getStoredAccessToken() || access;
           }
           setToken(access);
           setUser(JSON.parse(userJson) as User);
 
+          if (cancelled || getStoredAccessToken() !== sessionToken) {
+            setIsLoading(false);
+            return;
+          }
+
           const isValid = await verifyToken(access);
+          if (cancelled || getStoredAccessToken() !== sessionToken) {
+            setIsLoading(false);
+            return;
+          }
           if (!isValid) {
-            const current =
-              localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+            const current = getStoredAccessToken();
             if (current === access) {
               setToken(null);
               setUser(null);
-              localStorage.removeItem(USER_TOKEN_KEY);
-              localStorage.removeItem(USER_DATA_KEY);
-              localStorage.removeItem(ADMIN_TOKEN_KEY);
-              localStorage.removeItem(ADMIN_USER_KEY);
+              clearStoredAuthSession();
             }
           } else {
-            const latest =
-              localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+            const latest = getStoredAccessToken();
             if (latest && latest !== access) {
               setToken(latest);
               applyAuthFromStorage();
             }
           }
         } catch {
-          setToken(null);
-          setUser(null);
+          if (!cancelled && getStoredAccessToken() === sessionToken) {
+            setToken(null);
+            setUser(null);
+          }
         }
       }
       setIsLoading(false);
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [applyAuthFromStorage, verifyToken]);
 
   // Синхронизация при смене токена (вход/выход в админке или другой вкладке)
@@ -251,8 +267,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
   }, [applyAuthFromStorage]);
 
   const refreshUser = useCallback(async () => {
-    const savedToken =
-      localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+    const savedToken = getStoredAccessToken();
     if (!savedToken) return;
     try {
       const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
@@ -492,18 +507,14 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const tick = () => {
-      const t =
-        typeof window !== 'undefined'
-          ? localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY)
-          : null;
+      const t = typeof window !== 'undefined' ? getStoredAccessToken() : null;
       if (!t) return;
       const exp = getJwtExpMs(t);
       if (!exp) return;
       if (exp - Date.now() < 120_000) {
         void refreshAccessTokenSilently().then((ok) => {
           if (!ok) return;
-          const latest =
-            localStorage.getItem(USER_TOKEN_KEY) || localStorage.getItem(ADMIN_TOKEN_KEY);
+          const latest = getStoredAccessToken();
           if (latest) setToken(latest);
         });
       }

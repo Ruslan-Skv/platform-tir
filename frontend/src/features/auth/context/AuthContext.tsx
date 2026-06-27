@@ -13,8 +13,10 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
   bindAuthRefreshOnPageVisible,
+  clearStoredAuthSession,
   getApiBaseUrl,
   getJwtExpMs,
+  getStoredAccessToken,
   persistTokenResponse,
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
@@ -91,28 +93,23 @@ function readStoredAdminAuth(): { token: string | null; user: User | null } {
   }
 
   try {
-    let savedToken = localStorage.getItem(TOKEN_KEY);
-    let savedUser = localStorage.getItem(USER_KEY);
-
-    if (!savedToken || !savedUser) {
-      savedToken = localStorage.getItem(USER_TOKEN_KEY);
-      savedUser = localStorage.getItem(USER_DATA_KEY);
-      if (savedToken && savedUser) {
-        const parsed = JSON.parse(savedUser) as User;
-        if (ADMIN_ROLES.includes(parsed.role as (typeof ADMIN_ROLES)[number])) {
-          localStorage.setItem(TOKEN_KEY, savedToken);
-          localStorage.setItem(USER_KEY, savedUser);
-        } else {
-          return { token: null, user: null };
-        }
-      }
-    }
+    const savedToken = getStoredAccessToken();
+    const savedUser = localStorage.getItem(USER_KEY) ?? localStorage.getItem(USER_DATA_KEY);
 
     if (!savedToken || !savedUser) {
       return { token: null, user: null };
     }
 
-    return { token: savedToken, user: JSON.parse(savedUser) as User };
+    const parsed = JSON.parse(savedUser) as User;
+    if (!ADMIN_ROLES.includes(parsed.role as (typeof ADMIN_ROLES)[number])) {
+      return { token: null, user: null };
+    }
+
+    if (!localStorage.getItem(USER_KEY)) {
+      localStorage.setItem(USER_KEY, savedUser);
+    }
+
+    return { token: savedToken, user: parsed };
   } catch {
     return { token: null, user: null };
   }
@@ -126,12 +123,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(() => {
     if (typeof window !== 'undefined') {
       void revokeRefreshOnServer();
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(USER_KEY);
-      localStorage.removeItem(USER_TOKEN_KEY);
-      localStorage.removeItem(USER_DATA_KEY);
+      clearStoredAuthSession();
       setPublicSiteEditMode(false);
-      window.dispatchEvent(new Event('auth-token-changed'));
     }
     setToken(null);
     setUser(null);
@@ -139,24 +132,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // Сразу показываем оболочку по кэшу сессии; проверку токена — в фоне.
   useLayoutEffect(() => {
-    const stored = readStoredAdminAuth();
-    if (!stored.token || !stored.user) {
-      setIsLoading(false);
-      return;
-    }
-
-    setToken(stored.token);
-    setUser(stored.user);
-    setIsLoading(false);
+    let cancelled = false;
 
     void (async () => {
+      let stored = readStoredAdminAuth();
+
+      if (!stored.token) {
+        const savedUser = localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
+        if (savedUser) {
+          const refreshed = await refreshAccessTokenSilently();
+          if (cancelled) return;
+          if (refreshed) {
+            stored = readStoredAdminAuth();
+          }
+        }
+      }
+
+      if (!stored.token || !stored.user) {
+        setIsLoading(false);
+        return;
+      }
+
+      const sessionToken = stored.token;
+      setToken(stored.token);
+      setUser(stored.user);
+      setIsLoading(false);
+
       try {
-        let access = stored.token!;
+        let access = sessionToken;
         const exp = getJwtExpMs(access);
         if (exp && exp <= Date.now() + 5_000) {
           await refreshAccessTokenSilently();
-          access =
-            localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY) || access;
+          if (cancelled) return;
+          access = getStoredAccessToken() || access;
           setToken(access);
           const userAfterRefresh =
             localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
@@ -165,25 +173,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
         }
 
+        if (cancelled || getStoredAccessToken() !== sessionToken) return;
+
         const expAfterRefresh = getJwtExpMs(access);
         if (expAfterRefresh && expAfterRefresh > Date.now() + 5 * 60_000) {
           return;
         }
 
         const isValid = await verifyToken(access);
+        if (cancelled || getStoredAccessToken() !== sessionToken) return;
         if (!isValid) {
           logout();
           return;
         }
 
-        const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+        const latest = getStoredAccessToken();
         if (latest && latest !== access) {
           setToken(latest);
         }
       } catch {
-        logout();
+        if (!cancelled && getStoredAccessToken() === sessionToken) {
+          logout();
+        }
       }
     })();
+
+    return () => {
+      cancelled = true;
+    };
   }, [logout]);
 
   const verifyToken = async (tokenToVerify: string): Promise<boolean> => {
@@ -197,7 +214,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (response.status === 401) {
         const refreshed = await refreshAccessTokenSilently();
         if (!refreshed) return false;
-        const next = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+        const next = getStoredAccessToken();
         if (!next) return false;
         const retry = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
           headers: { Authorization: `Bearer ${next}` },
@@ -281,7 +298,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const refreshUser = useCallback(async () => {
-    const savedToken = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+    const savedToken = getStoredAccessToken();
     if (!savedToken) return;
     try {
       const response = await apiFetch(`${getApiBaseUrl()}/auth/profile`, {
@@ -308,7 +325,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Синхронизация при обновлении профиля (публичка или другая вкладка)
   useEffect(() => {
     const handleUserUpdate = () => {
-      const savedToken = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+      const savedToken = getStoredAccessToken();
       const savedUser = localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
       if (savedUser && savedToken) {
         try {
@@ -324,7 +341,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           setUser(null);
           setToken(null);
         }
-      } else {
+      } else if (!savedUser && !savedToken) {
         setUser(null);
         setToken(null);
       }
@@ -350,17 +367,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Продление access по refresh до истечения JWT (access короткоживущий).
   useEffect(() => {
     const tick = () => {
-      const t =
-        typeof window !== 'undefined'
-          ? localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY)
-          : null;
+      const t = typeof window !== 'undefined' ? getStoredAccessToken() : null;
       if (!t) return;
       const exp = getJwtExpMs(t);
       if (!exp) return;
       if (exp - Date.now() < 120_000) {
         void refreshAccessTokenSilently().then((ok) => {
           if (!ok) return;
-          const latest = localStorage.getItem(TOKEN_KEY) || localStorage.getItem(USER_TOKEN_KEY);
+          const latest = getStoredAccessToken();
           if (latest) setToken(latest);
         });
       }

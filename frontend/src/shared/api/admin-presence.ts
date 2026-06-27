@@ -1,17 +1,10 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-function getAdminAuthHeaders(): HeadersInit {
-  if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
-  const token = localStorage.getItem('admin_token') || localStorage.getItem('user_token');
-  const headers: HeadersInit = { 'Content-Type': 'application/json' };
-  if (token) {
-    (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
-  }
-  return headers;
-}
+import {
+  ensureFreshAccessToken,
+  getApiBaseUrl,
+  getAuthHeaders,
+  getStoredAccessToken,
+} from '@/shared/lib/auth-session';
 
 export interface AdminOnlineUser {
   id: string;
@@ -24,9 +17,10 @@ export interface AdminOnlineUser {
 
 export async function postAdminPresenceHeartbeat(): Promise<void> {
   await ensureFreshAccessToken();
-  const res = await apiFetch(`${API_URL}/admin/presence/heartbeat`, {
+  if (!getStoredAccessToken()) return;
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/presence/heartbeat`, {
     method: 'POST',
-    headers: getAdminAuthHeaders(),
+    headers: getAuthHeaders(),
   });
   if (!res.ok && res.status !== 204) {
     throw new Error('presence heartbeat failed');
@@ -35,8 +29,9 @@ export async function postAdminPresenceHeartbeat(): Promise<void> {
 
 export async function getAdminOnlineAdmins(): Promise<AdminOnlineUser[]> {
   await ensureFreshAccessToken();
-  const res = await apiFetch(`${API_URL}/admin/presence/online`, {
-    headers: getAdminAuthHeaders(),
+  if (!getStoredAccessToken()) return [];
+  const res = await apiFetch(`${getApiBaseUrl()}/admin/presence/online`, {
+    headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить список онлайн');
   return res.json();

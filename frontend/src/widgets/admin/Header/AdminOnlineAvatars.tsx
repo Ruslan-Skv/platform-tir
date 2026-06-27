@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import { type AdminOnlineUser, getAdminOnlineAdmins } from '@/shared/api/admin-presence';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 
@@ -32,6 +33,7 @@ function roleLabel(role: string): string {
 }
 
 export function AdminOnlineAvatars() {
+  const { isAuthenticated, isLoading } = useAuth();
   const [online, setOnline] = useState<AdminOnlineUser[]>([]);
 
   const load = useCallback(async () => {
@@ -44,14 +46,15 @@ export function AdminOnlineAvatars() {
   }, []);
 
   useEffect(() => {
-    // Небольшая задержка: сначала успевает уйти heartbeat из layout (тот же сеанс).
+    if (isLoading || !isAuthenticated) return;
+
     const first = window.setTimeout(() => load(), 400);
     const id = window.setInterval(load, POLL_MS);
     return () => {
       window.clearTimeout(first);
       window.clearInterval(id);
     };
-  }, [load]);
+  }, [isAuthenticated, isLoading, load]);
 
   if (online.length === 0) {
     return null;

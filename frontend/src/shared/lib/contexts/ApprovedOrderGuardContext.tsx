@@ -9,6 +9,7 @@ import {
   getApprovalRemainingMs,
   getUserOrders,
 } from '@/shared/api/user-orders';
+import { ensureFreshAccessToken, getStoredAccessToken } from '@/shared/lib/auth-session';
 
 type PendingAction = {
   action: () => Promise<void>;
@@ -46,7 +47,28 @@ export function ApprovedOrderGuardProvider({ children }: { children: React.React
   }, []);
 
   useEffect(() => {
-    refreshOrders();
+    let cancelled = false;
+
+    const loadIfAuthed = async () => {
+      await ensureFreshAccessToken();
+      if (cancelled) return;
+      if (!getStoredAccessToken()) {
+        setUserOrders([]);
+        return;
+      }
+      await refreshOrders();
+    };
+
+    void loadIfAuthed();
+
+    const onAuthChange = () => {
+      void loadIfAuthed();
+    };
+    window.addEventListener('auth-token-changed', onAuthChange);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('auth-token-changed', onAuthChange);
+    };
   }, [refreshOrders]);
 
   const approvedOrder = useMemo(() => {

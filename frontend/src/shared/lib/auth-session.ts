@@ -1,7 +1,21 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 
-let memoryUserToken: string | null = null;
-let memoryAdminToken: string | null = null;
+type AccessTokenStore = {
+  user: string | null;
+  admin: string | null;
+};
+
+/** Общее хранилище access-токенов (один экземпляр на вкладку, в т.ч. при duplicate chunks). */
+function getAccessTokenStore(): AccessTokenStore {
+  if (typeof window === 'undefined') {
+    return { user: null, admin: null };
+  }
+  const w = window as Window & { __platformTirAccessTokens?: AccessTokenStore };
+  if (!w.__platformTirAccessTokens) {
+    w.__platformTirAccessTokens = { user: null, admin: null };
+  }
+  return w.__platformTirAccessTokens;
+}
 
 /** Access-токены только в памяти; localStorage shim для совместимости с существующим кодом. */
 function installInMemoryTokenStorageShim(): void {
@@ -10,6 +24,7 @@ function installInMemoryTokenStorageShim(): void {
   if (w.__authTokenShimInstalled) return;
   w.__authTokenShimInstalled = true;
 
+  const store = getAccessTokenStore();
   const origGet = localStorage.getItem.bind(localStorage);
   const origSet = localStorage.setItem.bind(localStorage);
   const origRemove = localStorage.removeItem.bind(localStorage);
@@ -17,37 +32,37 @@ function installInMemoryTokenStorageShim(): void {
   const legacyUser = origGet('user_token');
   const legacyAdmin = origGet('admin_token');
   if (legacyUser) {
-    memoryUserToken = legacyUser;
+    store.user = legacyUser;
     origRemove('user_token');
   }
   if (legacyAdmin) {
-    memoryAdminToken = legacyAdmin;
+    store.admin = legacyAdmin;
     origRemove('admin_token');
   }
 
   localStorage.getItem = (key: string) => {
-    if (key === 'user_token') return memoryUserToken;
-    if (key === 'admin_token') return memoryAdminToken;
+    if (key === 'user_token') return store.user;
+    if (key === 'admin_token') return store.admin;
     return origGet(key);
   };
   localStorage.setItem = (key: string, value: string) => {
     if (key === 'user_token') {
-      memoryUserToken = value;
+      store.user = value;
       return;
     }
     if (key === 'admin_token') {
-      memoryAdminToken = value;
+      store.admin = value;
       return;
     }
     origSet(key, value);
   };
   localStorage.removeItem = (key: string) => {
     if (key === 'user_token') {
-      memoryUserToken = null;
+      store.user = null;
       return;
     }
     if (key === 'admin_token') {
-      memoryAdminToken = null;
+      store.admin = null;
       return;
     }
     origRemove(key);
@@ -220,8 +235,9 @@ function isRefreshInCooldown(): boolean {
 /** Сброс access в памяти (refresh только в httpOnly cookie). */
 export function clearStoredAuthSession(): void {
   if (typeof window === 'undefined') return;
-  memoryUserToken = null;
-  memoryAdminToken = null;
+  const store = getAccessTokenStore();
+  store.user = null;
+  store.admin = null;
   localStorage.removeItem('user_token');
   localStorage.removeItem('user_data');
   localStorage.removeItem('admin_token');
@@ -255,8 +271,6 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
   if (typeof window === 'undefined') return;
   clearRefreshCooldown();
   const isAdmin = ADMIN_ROLES.has(data.user.role);
-  memoryUserToken = data.access_token;
-  memoryAdminToken = isAdmin ? data.access_token : null;
   sessionStorage.setItem('user_data', JSON.stringify(data.user));
   if (isAdmin) {
     sessionStorage.setItem('admin_user', JSON.stringify(data.user));
@@ -266,11 +280,13 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
   localStorage.setItem('user_data', JSON.stringify(data.user));
   if (isAdmin) {
     localStorage.setItem('admin_user', JSON.stringify(data.user));
+    localStorage.setItem('admin_token', data.access_token);
+    localStorage.removeItem('user_token');
   } else {
     localStorage.removeItem('admin_user');
+    localStorage.setItem('user_token', data.access_token);
     localStorage.removeItem('admin_token');
   }
-  localStorage.removeItem('user_token');
   window.dispatchEvent(new Event('auth-token-changed'));
 }
 
@@ -318,22 +334,11 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
   return refreshInFlight;
 }
 
-/** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
-export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
-  if (typeof window === 'undefined') return false;
-  if (isRefreshInCooldown()) return false;
-  const current = getStoredAccessToken();
-  if (!current) return false;
-  const expMs = getJwtExpMs(current);
-  if (!expMs) return true;
-  if (expMs - Date.now() > minTtlMs) return true;
-  return refreshAccessTokenSilently();
-}
-
 /** Токен из памяти (user или admin). */
 export function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return memoryUserToken || memoryAdminToken;
+  const store = getAccessTokenStore();
+  return store.user || store.admin;
 }
 
 /** Есть bearer и он не истёк (с запасом minTtlMs). */
@@ -343,6 +348,26 @@ export function hasUsableStoredAccessToken(minTtlMs = 0): boolean {
   const expMs = getJwtExpMs(token);
   if (!expMs) return true;
   return expMs - Date.now() > minTtlMs;
+}
+
+function hasPersistedUserSessionHint(): boolean {
+  if (typeof window === 'undefined') return false;
+  return Boolean(localStorage.getItem('admin_user') || localStorage.getItem('user_data'));
+}
+
+/** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
+export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
+  if (typeof window === 'undefined') return false;
+  if (isRefreshInCooldown()) return false;
+  const current = getStoredAccessToken();
+  if (!current) {
+    if (!hasPersistedUserSessionHint()) return false;
+    return refreshAccessTokenSilently();
+  }
+  const expMs = getJwtExpMs(current);
+  if (!expMs) return true;
+  if (expMs - Date.now() > minTtlMs) return true;
+  return refreshAccessTokenSilently();
 }
 
 /**
