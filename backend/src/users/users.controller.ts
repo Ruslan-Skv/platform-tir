@@ -28,6 +28,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
+import { assertImageUploadMagicBytes } from '../common/utils/upload-magic-bytes.util';
 
 const avatarUploadDir = path.join(process.cwd(), 'uploads', 'avatars');
 
@@ -108,6 +109,7 @@ export class UsersController {
     if (!file) {
       throw new BadRequestException('Файл не загружен');
     }
+    assertImageUploadMagicBytes(fs.readFileSync(file.path), file.originalname);
     const relativeUrl = `/uploads/avatars/${file.filename}`;
     const updated = await this.usersService.update(req.user.id, { avatar: relativeUrl });
     return { avatar: relativeUrl, user: updated };

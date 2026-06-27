@@ -1,3 +1,4 @@
+import { safeJsonLdStringify } from '@/shared/lib/sanitize';
 import type { CatalogApiProduct } from '@/shared/types/catalog';
 import { buildCatalogItemListJsonLd } from '@/views/catalog/lib/catalog-seo';
 
@@ -13,7 +14,7 @@ export function CatalogItemListJsonLd({
   return (
     <script
       type="application/ld+json"
-      dangerouslySetInnerHTML={{ __html: JSON.stringify(schema) }}
+      dangerouslySetInnerHTML={{ __html: safeJsonLdStringify(schema) }}
     />
   );
 }

@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Param, Post, Query, Req, UseGuards } from '@nestjs/common';
 import { ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 import { OriginGuard } from '../../common/guards/origin.guard';
 import { BlogService } from './blog.service';
 import { ToggleLikeDto } from './dto/toggle-like.dto';
@@ -50,6 +51,7 @@ export class BlogPublicController {
 
   @Post('posts/:postId/like')
   @UseGuards(OriginGuard, OptionalJwtAuthGuard)
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
   @ApiOperation({ summary: 'Поставить/снять лайк посту' })
   toggleLike(
     @Param('postId') postId: string,

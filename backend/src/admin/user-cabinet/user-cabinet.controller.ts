@@ -23,6 +23,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { UpdateUserCabinetDto } from './dto/update-user-cabinet.dto';
 import { UserCabinetService } from './user-cabinet.service';
+import { assertPdfUploadMagicBytes } from '../../common/utils/upload-magic-bytes.util';
 
 const authPolicyDir = path.join(process.cwd(), 'uploads', 'auth', 'policy');
 
@@ -86,6 +87,7 @@ export class UserCabinetController {
     if (!file) {
       throw new BadRequestException('Файл не загружен');
     }
+    assertPdfUploadMagicBytes(fs.readFileSync(file.path), file.originalname);
     const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
     const uploadsBase = baseUrl.replace(/\/api\/v1\/?$/, '');
     return { url: `${uploadsBase}/uploads/auth/policy/${file.filename}` };

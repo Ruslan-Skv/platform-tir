@@ -14,6 +14,15 @@ import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
 import styles from './LoginPage.module.css';
 
+function isAllowedYandexOAuthUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return parsed.protocol === 'https:' && parsed.hostname === 'oauth.yandex.ru';
+  } catch {
+    return false;
+  }
+}
+
 export function LoginPageView() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -36,8 +45,11 @@ export function LoginPageView() {
       const res = await apiFetch(`${getApiBaseUrl()}/auth/yandex`);
       if (res.ok) {
         const { url } = await res.json();
-        if (url) window.location.href = url;
-        else setError('Вход через Яндекс временно недоступен');
+        if (url && isAllowedYandexOAuthUrl(url)) {
+          window.location.href = url;
+        } else {
+          setError('Вход через Яндекс временно недоступен');
+        }
       } else {
         setError('Вход через Яндекс временно недоступен');
       }

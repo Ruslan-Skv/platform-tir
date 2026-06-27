@@ -1,6 +1,7 @@
 import { Injectable, HttpException, HttpStatus } from '@nestjs/common';
 import * as cheerio from 'cheerio';
 import { PrismaService } from '../database/prisma.service';
+import { assertSafeFetchUrl } from '../common/utils/safe-fetch-url.util';
 
 @Injectable()
 export class PriceScraperService {
@@ -42,31 +43,7 @@ export class PriceScraperService {
         categoryId: options?.categoryId,
       });
 
-      // Получаем HTML страницы используя fetch
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 секунд таймаут
-
-      const response = await fetch(url, {
-        headers: {
-          'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        },
-        signal: controller.signal,
-      });
-
-      clearTimeout(timeoutId);
-
-      if (!response.ok) {
-        if (response.status === 404) {
-          throw new HttpException('Страница не найдена', HttpStatus.NOT_FOUND);
-        }
-        throw new HttpException(
-          `Ошибка при получении страницы: ${response.statusText}`,
-          HttpStatus.BAD_GATEWAY,
-        );
-      }
-
-      const html = await response.text();
+      const html = await this.fetchHtmlSafely(url);
       const $ = cheerio.load(html);
 
       // Доменно- / поставщико- / категорийно-специфичные парсеры
@@ -512,6 +489,54 @@ export class PriceScraperService {
 
     const price = parseFloat(normalized);
     return isNaN(price) ? null : price;
+  }
+
+  /**
+   * Безопасный fetch HTML с проверкой SSRF и редиректов.
+   */
+  private async fetchHtmlSafely(url: string, redirectCount = 0): Promise<string> {
+    if (redirectCount > 3) {
+      throw new HttpException('Слишком много перенаправлений', HttpStatus.BAD_REQUEST);
+    }
+
+    await assertSafeFetchUrl(url);
+
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+      const response = await fetch(url, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        },
+        signal: controller.signal,
+        redirect: 'manual',
+      });
+
+      if (response.status >= 300 && response.status < 400) {
+        const location = response.headers.get('location');
+        if (!location) {
+          throw new HttpException('Некорректное перенаправление', HttpStatus.BAD_GATEWAY);
+        }
+        const nextUrl = new URL(location, url).href;
+        return this.fetchHtmlSafely(nextUrl, redirectCount + 1);
+      }
+
+      if (!response.ok) {
+        if (response.status === 404) {
+          throw new HttpException('Страница не найдена', HttpStatus.NOT_FOUND);
+        }
+        throw new HttpException(
+          `Ошибка при получении страницы: ${response.statusText}`,
+          HttpStatus.BAD_GATEWAY,
+        );
+      }
+
+      return response.text();
+    } finally {
+      clearTimeout(timeoutId);
+    }
   }
 
   /**

@@ -1,6 +1,7 @@
 'use client';
 
 import type { QuizPublicConfig } from '@/shared/api/quiz';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './QuizWizard.module.css';
 
@@ -19,7 +20,7 @@ export function SuccessScreen({ config, primaryColor }: SuccessScreenProps) {
       {config.successText ? <p className={styles.successText}>{config.successText}</p> : null}
       {config.catalogFileUrl ? (
         <a
-          href={config.catalogFileUrl}
+          href={getSafeHref(config.catalogFileUrl, '#')}
           className={styles.catalogButton}
           style={{ backgroundColor: primaryColor }}
           target="_blank"

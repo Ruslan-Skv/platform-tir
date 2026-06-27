@@ -1,5 +1,71 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+let memoryUserToken: string | null = null;
+let memoryAdminToken: string | null = null;
+
+/** Access-токены только в памяти; localStorage shim для совместимости с существующим кодом. */
+function installInMemoryTokenStorageShim(): void {
+  if (typeof window === 'undefined') return;
+  const w = window as Window & { __authTokenShimInstalled?: boolean };
+  if (w.__authTokenShimInstalled) return;
+  w.__authTokenShimInstalled = true;
+
+  const origGet = localStorage.getItem.bind(localStorage);
+  const origSet = localStorage.setItem.bind(localStorage);
+  const origRemove = localStorage.removeItem.bind(localStorage);
+
+  const legacyUser = origGet('user_token');
+  const legacyAdmin = origGet('admin_token');
+  if (legacyUser) {
+    memoryUserToken = legacyUser;
+    origRemove('user_token');
+  }
+  if (legacyAdmin) {
+    memoryAdminToken = legacyAdmin;
+    origRemove('admin_token');
+  }
+
+  localStorage.getItem = (key: string) => {
+    if (key === 'user_token') return memoryUserToken;
+    if (key === 'admin_token') return memoryAdminToken;
+    return origGet(key);
+  };
+  localStorage.setItem = (key: string, value: string) => {
+    if (key === 'user_token') {
+      memoryUserToken = value;
+      return;
+    }
+    if (key === 'admin_token') {
+      memoryAdminToken = value;
+      return;
+    }
+    origSet(key, value);
+  };
+  localStorage.removeItem = (key: string) => {
+    if (key === 'user_token') {
+      memoryUserToken = null;
+      return;
+    }
+    if (key === 'admin_token') {
+      memoryAdminToken = null;
+      return;
+    }
+    origRemove(key);
+  };
+}
+
+installInMemoryTokenStorageShim();
+
+/** Заголовки Authorization для API-запросов. */
+export function getAuthHeaders(extra?: HeadersInit): HeadersInit {
+  const token = getStoredAccessToken();
+  return {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(extra as Record<string, string>),
+  };
+}
+
 function apiBase(): string {
   const fromEnv = process.env.NEXT_PUBLIC_API_URL?.trim();
   if (fromEnv) return fromEnv.replace(/\/$/, '');
@@ -151,13 +217,17 @@ function isRefreshInCooldown(): boolean {
   return true;
 }
 
-/** Сброс access в localStorage (refresh только в httpOnly cookie). */
+/** Сброс access в памяти (refresh только в httpOnly cookie). */
 export function clearStoredAuthSession(): void {
   if (typeof window === 'undefined') return;
+  memoryUserToken = null;
+  memoryAdminToken = null;
   localStorage.removeItem('user_token');
   localStorage.removeItem('user_data');
   localStorage.removeItem('admin_token');
   localStorage.removeItem('admin_user');
+  sessionStorage.removeItem('user_data');
+  sessionStorage.removeItem('admin_user');
   window.dispatchEvent(new Event('auth-token-changed'));
 }
 
@@ -180,20 +250,27 @@ export function getJwtExpMs(token: string): number | null {
   }
 }
 
-/** Сохранить access и user в localStorage (refresh только в httpOnly cookie у API origin). */
+/** Сохранить access в памяти (refresh только в httpOnly cookie у API origin). */
 export function persistTokenResponse(data: TokenLoginPayload): void {
   if (typeof window === 'undefined') return;
   clearRefreshCooldown();
   const isAdmin = ADMIN_ROLES.has(data.user.role);
-  localStorage.setItem('user_token', data.access_token);
+  memoryUserToken = data.access_token;
+  memoryAdminToken = isAdmin ? data.access_token : null;
+  sessionStorage.setItem('user_data', JSON.stringify(data.user));
+  if (isAdmin) {
+    sessionStorage.setItem('admin_user', JSON.stringify(data.user));
+  } else {
+    sessionStorage.removeItem('admin_user');
+  }
   localStorage.setItem('user_data', JSON.stringify(data.user));
   if (isAdmin) {
-    localStorage.setItem('admin_token', data.access_token);
     localStorage.setItem('admin_user', JSON.stringify(data.user));
   } else {
-    localStorage.removeItem('admin_token');
     localStorage.removeItem('admin_user');
+    localStorage.removeItem('admin_token');
   }
+  localStorage.removeItem('user_token');
   window.dispatchEvent(new Event('auth-token-changed'));
 }
 
@@ -245,7 +322,7 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
 export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (isRefreshInCooldown()) return false;
-  const current = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  const current = getStoredAccessToken();
   if (!current) return false;
   const expMs = getJwtExpMs(current);
   if (!expMs) return true;
@@ -253,10 +330,10 @@ export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean
   return refreshAccessTokenSilently();
 }
 
-/** Токен из localStorage (user или admin). */
+/** Токен из памяти (user или admin). */
 export function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  return memoryUserToken || memoryAdminToken;
 }
 
 /** Есть bearer и он не истёк (с запасом minTtlMs). */

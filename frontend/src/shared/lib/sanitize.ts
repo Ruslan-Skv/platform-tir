@@ -114,6 +114,7 @@ export function getSafeHref(href: string | null | undefined, fallback = '#'): st
   // BOM и прочие невидимые символы ломают startsWith('/') — в проде иногда приходят из API/БД
   const trimmed = href.trim().replace(/^\uFEFF/, '');
   if (!trimmed) return fallback;
+  if (trimmed.startsWith('//')) return fallback;
   if (trimmed.startsWith('/') || trimmed.startsWith('#')) return trimmed;
   if (UNSAFE_HREF_PROTOCOLS.test(trimmed)) return fallback;
   if (
@@ -125,6 +126,11 @@ export function getSafeHref(href: string | null | undefined, fallback = '#'): st
     return trimmed;
   }
   return fallback;
+}
+
+/** Безопасная сериализация JSON-LD (защита от breakout из script). */
+export function safeJsonLdStringify(data: unknown): string {
+  return JSON.stringify(data).replace(/</g, '\\u003c');
 }
 
 /**

@@ -9,14 +9,17 @@ import {
   UseGuards,
   Query,
   Request,
+  ForbiddenException,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
+import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { CategoriesService } from './categories.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
+import { CatalogAdminAuth } from '../auth/decorators/catalog-admin.decorator';
+import { ADMIN_ROLES } from '../common/config/admin-roles.config';
 
 @ApiTags('categories')
 @Controller('categories')
@@ -24,16 +27,22 @@ export class CategoriesController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Создать категорию' })
   create(@Body() createCategoryDto: CreateCategoryDto, @Request() req: RequestWithUser) {
     return this.categoriesService.create(createCategoryDto, req.user?.id);
   }
 
   @Get()
+  @UseGuards(OptionalJwtAuthGuard)
   @ApiOperation({ summary: 'Получить все категории' })
-  findAll(@Query('includeInactive') includeInactive?: string) {
+  findAll(@Query('includeInactive') includeInactive?: string, @Request() req?: RequestWithUser) {
+    if (includeInactive === 'true') {
+      const role = req?.user?.role;
+      if (!role || !ADMIN_ROLES.includes(role as (typeof ADMIN_ROLES)[number])) {
+        throw new ForbiddenException('Недостаточно прав');
+      }
+    }
     return this.categoriesService.findAll(includeInactive === 'true');
   }
 
@@ -70,8 +79,7 @@ export class CategoriesController {
   }
 
   @Post('attributes')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Создать новый атрибут' })
   createAttribute(
     @Body()
@@ -100,16 +108,14 @@ export class CategoriesController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Обновить категорию' })
   update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(id, updateCategoryDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Удалить категорию' })
   remove(@Param('id') id: string) {
     return this.categoriesService.remove(id);
@@ -125,8 +131,7 @@ export class CategoriesController {
   }
 
   @Post(':id/attributes')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Добавить атрибут к категории' })
   addAttributeToCategory(
     @Param('id') id: string,
@@ -136,8 +141,7 @@ export class CategoriesController {
   }
 
   @Post(':id/attributes/bulk')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Массовое добавление атрибутов к категории' })
   bulkAddAttributes(
     @Param('id') id: string,
@@ -147,8 +151,7 @@ export class CategoriesController {
   }
 
   @Patch(':id/attributes/:attributeId')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Обновить настройки атрибута в категории' })
   updateCategoryAttribute(
     @Param('id') id: string,
@@ -159,16 +162,14 @@ export class CategoriesController {
   }
 
   @Delete(':id/attributes/:attributeId')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Удалить атрибут из категории' })
   removeAttributeFromCategory(@Param('id') id: string, @Param('attributeId') attributeId: string) {
     return this.categoriesService.removeAttributeFromCategory(id, attributeId);
   }
 
   @Post(':id/attributes/apply')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Применить атрибуты категории ко всем её товарам' })
   applyAttributesToProducts(
     @Param('id') id: string,
@@ -178,8 +179,7 @@ export class CategoriesController {
   }
 
   @Post(':id/attributes/inherit')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Унаследовать атрибуты от родительской категории' })
   inheritAttributesFromParent(@Param('id') id: string) {
     return this.categoriesService.inheritAttributesFromParentPublic(id);
@@ -193,8 +193,7 @@ export class AttributesPublicController {
   constructor(private readonly categoriesService: CategoriesService) {}
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Обновить атрибут' })
   updateAttribute(
     @Param('id') id: string,
@@ -212,8 +211,7 @@ export class AttributesPublicController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Удалить атрибут' })
   deleteAttribute(@Param('id') id: string) {
     return this.categoriesService.deleteAttribute(id);

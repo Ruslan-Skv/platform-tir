@@ -3,13 +3,15 @@ import type {
   KnowledgeThumbnailDisplay,
 } from '@/shared/api/admin-knowledge';
 import { normalizeUploadsInUrl, publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { sanitizeHtml } from '@/shared/lib/sanitize';
 
 export function resolveKnowledgeArticleHtml(html: string): string {
-  return html.replace(
+  const withUrls = html.replace(
     /(<img\b[^>]*\bsrc=["'])([^"']+)(["'])/gi,
     (_match, prefix: string, src: string, suffix: string) =>
       `${prefix}${publicUploadUrl(normalizeUploadsInUrl(src))}${suffix}`
   );
+  return sanitizeHtml(withUrls);
 }
 
 function looksLikeHtml(value: string): boolean {

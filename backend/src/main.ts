@@ -1,8 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { NestExpressApplication } from '@nestjs/platform-express';
-import { json, urlencoded } from 'express';
+import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import * as express from 'express';
 import cookieParser = require('cookie-parser');
 import { join } from 'path';
@@ -14,13 +13,22 @@ async function bootstrap() {
   // Trust proxy (nginx) — корректный IP и протокол из X-Forwarded-*
   app.set('trust proxy', 1);
 
-  // Раздача загруженных файлов (картинки «Наши направления» и др.)
-  app.use('/uploads', express.static(join(process.cwd(), 'uploads')));
+  // Раздача загруженных файлов; резюме — только через API админки
+  app.use('/uploads/recruitment', (_req: Request, res: Response) => {
+    res.status(403).json({ message: 'Forbidden' });
+  });
+  app.use(
+    '/uploads',
+    (_req: Request, res: Response, next: NextFunction) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+      next();
+    },
+    express.static(join(process.cwd(), 'uploads')),
+  );
 
-  // Лимит body: 20MB (защита от переполнения памяти при разборе JSON)
-  // Для base64-изображений в JSON; увеличение — только при явной необходимости
-  app.use(json({ limit: '20mb' }));
-  app.use(urlencoded({ limit: '20mb', extended: true }));
+  // Лимит body: 5MB (защита от DoS); крупные загрузки — через multipart
+  app.use(json({ limit: '5mb' }));
+  app.use(urlencoded({ limit: '5mb', extended: true }));
   app.use(cookieParser());
 
   // Global prefix
@@ -46,26 +54,10 @@ async function bootstrap() {
     }),
   );
 
-  // Swagger documentation
-  const config = new DocumentBuilder()
-    .setTitle('Platform TIR API')
-    .setDescription('API для платформы интерьерных решений')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .addTag('auth', 'Аутентификация')
-    .addTag('products', 'Товары')
-    .addTag('categories', 'Категории')
-    .addTag('orders', 'Заказы')
-    .addTag('users', 'Пользователи')
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup(`${apiPrefix}/docs`, app, document);
-
   const port = process.env.PORT || 3001;
   await app.listen(port);
 
   console.log(`🚀 Application is running on: http://localhost:${port}/${apiPrefix}`);
-  console.log(`📚 Swagger documentation: http://localhost:${port}/${apiPrefix}/docs`);
 }
 
 bootstrap();

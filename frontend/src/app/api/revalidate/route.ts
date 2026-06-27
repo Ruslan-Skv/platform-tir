@@ -16,6 +16,9 @@ export async function POST(request: NextRequest) {
     const secret = request.headers.get('x-revalidate-secret') ?? body.secret;
 
     const expectedSecret = process.env.REVALIDATE_SECRET;
+    if (process.env.NODE_ENV === 'production' && !expectedSecret) {
+      return NextResponse.json({ error: 'Revalidate is not configured' }, { status: 503 });
+    }
     if (expectedSecret && secret !== expectedSecret) {
       return NextResponse.json({ error: 'Invalid secret' }, { status: 401 });
     }

@@ -22,8 +22,12 @@ export class OriginGuard implements CanActivate {
     const origin = request.headers.origin;
     const referer = request.headers.referer;
 
-    // Если заголовков нет (Swagger, Postman, серверные вызовы) — пропускаем
+    // Без Origin/Referer state-changing запросы отклоняем (кроме dev)
     if (!origin && !referer) {
+      const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method.toUpperCase());
+      if (isMutation && process.env.NODE_ENV === 'production') {
+        throw new ForbiddenException('Invalid request origin');
+      }
       return true;
     }
 

@@ -445,8 +445,12 @@ export class OrdersService {
     return this.ordersServiceOrders.updateServiceOrderCustomer(serviceOrderId, data);
   }
 
-  async update(id: string, updateOrderDto: UpdateOrderDto) {
-    await this.findOne(id);
+  async update(id: string, updateOrderDto: UpdateOrderDto, userId: string, role: string) {
+    await this.findOne(id, userId, role);
+    const canMutate = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!canMutate) {
+      throw new ForbiddenException('Access denied');
+    }
     return this.prisma.order.update({
       where: { id },
       data: updateOrderDto,
@@ -461,8 +465,12 @@ export class OrdersService {
     });
   }
 
-  async remove(id: string) {
-    await this.findOne(id);
+  async remove(id: string, userId: string, role: string) {
+    await this.findOne(id, userId, role);
+    const canMutate = role === 'ADMIN' || role === 'SUPER_ADMIN';
+    if (!canMutate) {
+      throw new ForbiddenException('Access denied');
+    }
     return this.prisma.order.delete({
       where: { id },
     });

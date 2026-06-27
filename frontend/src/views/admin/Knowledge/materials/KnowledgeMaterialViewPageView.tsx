@@ -3,6 +3,7 @@
 import Link from 'next/link';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { getSafeHref } from '@/shared/lib/sanitize';
 import {
   CommentIcon,
   InterestingMaterialIcon,
@@ -322,7 +323,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         <section className={styles.linkSection}>
           <p className={styles.linkHint}>Внешний ресурс:</p>
           <a
-            href={material.externalUrl}
+            href={getSafeHref(material.externalUrl, '#')}
             target="_blank"
             rel="noopener noreferrer"
             className={styles.externalLink}
@@ -332,7 +333,10 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           <button
             type="button"
             className={styles.openLinkBtn}
-            onClick={() => window.open(material.externalUrl!, '_blank', 'noopener,noreferrer')}
+            onClick={() => {
+              const safe = getSafeHref(material.externalUrl!, '#');
+              if (safe !== '#') window.open(safe, '_blank', 'noopener,noreferrer');
+            }}
           >
             Открыть ссылку ↗
           </button>

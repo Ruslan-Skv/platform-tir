@@ -7,11 +7,10 @@ import {
   Param,
   Delete,
   Query,
-  UseGuards,
   Request,
   Header,
 } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiBearerAuth, ApiQuery } from '@nestjs/swagger';
+import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { ProductsService } from './products.service';
 import { PriceScraperService } from './price-scraper.service';
 import { CreateProductDto } from './dto/create-product.dto';
@@ -20,10 +19,10 @@ import { SearchProductsDto } from './dto/search-products.dto';
 import { ProductIdsDto } from './dto/product-ids.dto';
 import { CompareProductIdsDto } from './dto/compare-product-ids.dto';
 import { WishlistProductIdsDto } from './dto/wishlist-product-ids.dto';
-import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import type { RequestWithUser } from '../common/types/request-with-user.types';
 import { PublicCatalogService } from './public-catalog/public-catalog.service';
 import { parsePublicCatalogListQuery } from './dto/public-catalog-list.dto';
+import { CatalogAdminAuth } from '../auth/decorators/catalog-admin.decorator';
+import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('products')
 @Controller('products')
@@ -35,8 +34,7 @@ export class ProductsController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Создать товар' })
   create(@Body() createProductDto: CreateProductDto, @Request() req: RequestWithUser) {
     return this.productsService.create(createProductDto, req.user?.id);
@@ -49,16 +47,14 @@ export class ProductsController {
   }
 
   @Get('admin/all')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Получить все товары для админки (включая неактивные)' })
   findAllAdmin() {
     return this.productsService.findAllAdmin();
   }
 
   @Get('admin/sizes-by-category')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Список размеров из товаров категории (подсказки для формы)' })
   @ApiQuery({ name: 'categoryId', required: true, description: 'ID категории' })
   getSizesByCategory(@Query('categoryId') categoryId: string) {
@@ -66,16 +62,14 @@ export class ProductsController {
   }
 
   @Post('admin/sync-supplier-prices')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Массовая синхронизация цен поставщика по ссылкам (все товары)' })
   async syncSupplierPrices() {
     return this.productsService.syncSupplierPrices();
   }
 
   @Post('admin/update-supplier-prices')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({
     summary: 'Обновить цены поставщика по ссылкам для выбранных товаров',
   })
@@ -84,8 +78,7 @@ export class ProductsController {
   }
 
   @Post('admin/apply-supplier-prices')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({
     summary: 'Синхронизация: установить цену товара = цена поставщика для выбранных',
   })
@@ -200,8 +193,7 @@ export class ProductsController {
   }
 
   @Get('scrape/price')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Получить цену товара по ссылке поставщика' })
   @ApiQuery({ name: 'url', required: true, description: 'URL товара у поставщика' })
   @ApiQuery({ name: 'supplierId', required: false, description: 'ID поставщика' })
@@ -215,8 +207,7 @@ export class ProductsController {
   }
 
   @Get('scrape/parser')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({
     summary: 'Определить, какой парсер будет использован для поставщика/категории/ссылки',
   })
@@ -266,8 +257,7 @@ export class ProductsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Обновить товар' })
   update(
     @Param('id') id: string,
@@ -278,8 +268,7 @@ export class ProductsController {
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
-  @ApiBearerAuth()
+  @CatalogAdminAuth()
   @ApiOperation({ summary: 'Удалить товар' })
   remove(@Param('id') id: string) {
     return this.productsService.remove(id);

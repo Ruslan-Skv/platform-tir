@@ -113,6 +113,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/site-feedback', resourceId: 'admin.settings' },
   // Маршруты вне admin/, используемые UI админки
   { prefix: '/api/v1/categories', resourceId: 'admin.catalog.categories' },
+  { prefix: '/api/v1/attributes', resourceId: 'admin.catalog.attributes' },
   { prefix: '/api/v1/users', resourceId: 'admin.users' },
   { prefix: '/api/v1/products', resourceId: 'admin.catalog.products' },
   { prefix: '/api/v1/product-components', resourceId: 'admin.catalog.products' },

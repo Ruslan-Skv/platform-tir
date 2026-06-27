@@ -54,6 +54,8 @@ export class QuizService {
       throw new BadRequestException('Укажите имя и телефон');
     }
 
+    this.validateQuizAnswers(quiz.steps, dto.answers);
+
     const primaryAnswerKey = this.getPrimaryAnswerKey(quiz.steps);
     const primaryAnswer = primaryAnswerKey ? dto.answers[primaryAnswerKey] : undefined;
 
@@ -99,6 +101,27 @@ export class QuizService {
     });
 
     return { id: submission.id, success: true };
+  }
+
+  /** Первый шаг choice без ветвления — основной фильтр заявок */
+  private validateQuizAnswers(steps: { key: string }[], answers: Record<string, string>): void {
+    const allowedKeys = new Set(steps.map((s) => s.key));
+    const keys = Object.keys(answers ?? {});
+    if (keys.length > steps.length + 2) {
+      throw new BadRequestException('Слишком много ответов');
+    }
+    if (JSON.stringify(answers).length > 10_000) {
+      throw new BadRequestException('Слишком большой объём ответов');
+    }
+    for (const key of keys) {
+      if (!allowedKeys.has(key)) {
+        throw new BadRequestException(`Неизвестный ключ ответа: ${key}`);
+      }
+      const value = answers[key];
+      if (typeof value !== 'string' || value.length > 500) {
+        throw new BadRequestException('Некорректный ответ');
+      }
+    }
   }
 
   /** Первый шаг choice без ветвления — основной фильтр заявок */

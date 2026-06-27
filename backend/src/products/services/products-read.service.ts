@@ -6,6 +6,7 @@ import {
   productCardVariantsInclude,
   productCreatedByUpdatedByInclude,
 } from './products-includes';
+import { stripProductForPublic, stripProductsForPublic } from '../utils/product-public.util';
 
 @Injectable()
 export class ProductsReadService {
@@ -15,13 +16,14 @@ export class ProductsReadService {
   ) {}
 
   async findAll() {
-    return this.prisma.product.findMany({
+    const rows = await this.prisma.product.findMany({
       where: { isActive: true },
       include: {
         category: true,
       },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'desc' }],
     });
+    return stripProductsForPublic(rows);
   }
 
   async findAllAdmin() {
@@ -124,7 +126,7 @@ export class ProductsReadService {
     }
 
     const [enriched] = await this.catalogQuery.enrichProductsWithRating([product]);
-    return enriched ?? product;
+    return stripProductForPublic((enriched ?? product) as Record<string, unknown>);
   }
 
   async findManyActiveByIdsForCompare(ids: string[]) {
@@ -138,7 +140,7 @@ export class ProductsReadService {
     });
     const map = new Map(rows.map((p) => [p.id, p]));
     const ordered = unique.map((id) => map.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
-    return this.catalogQuery.enrichProductsWithRating(ordered);
+    return stripProductsForPublic(await this.catalogQuery.enrichProductsWithRating(ordered));
   }
 
   async findManyActiveByIdsForWishlist(ids: string[]) {
@@ -152,7 +154,7 @@ export class ProductsReadService {
     });
     const map = new Map(rows.map((p) => [p.id, p]));
     const ordered = unique.map((id) => map.get(id)).filter((p): p is NonNullable<typeof p> => !!p);
-    return this.catalogQuery.enrichProductsWithRating(ordered);
+    return stripProductsForPublic(await this.catalogQuery.enrichProductsWithRating(ordered));
   }
 
   async findBySlug(slug: string) {
@@ -178,6 +180,6 @@ export class ProductsReadService {
     }
 
     const [enriched] = await this.catalogQuery.enrichProductsWithRating([product]);
-    return enriched ?? product;
+    return stripProductForPublic((enriched ?? product) as Record<string, unknown>);
   }
 }

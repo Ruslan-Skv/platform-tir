@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 
+import { getSafeHref } from '@/shared/lib/sanitize';
+
 import styles from './SitePlatformFeedbackPage.module.css';
 import type { SitePlatformFeedbackPageModel } from './hooks/useSitePlatformFeedbackPage';
 import {
@@ -87,7 +89,11 @@ export function SitePlatformFeedbackPageView({ model }: SitePlatformFeedbackPage
                 {item.pageUrl ? (
                   <p className={styles.pageUrl}>
                     Страница:{' '}
-                    <a href={item.pageUrl} target="_blank" rel="noopener noreferrer">
+                    <a
+                      href={getSafeHref(item.pageUrl, '#')}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
                       {item.pageUrl}
                     </a>
                   </p>

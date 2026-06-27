@@ -28,11 +28,12 @@ async function proactiveRefreshBearerIfStale(headers: Headers): Promise<void> {
   const token = raw.slice(7).trim();
   if (!token) return;
   try {
-    const { getJwtExpMs, ensureFreshAccessToken } = await import('./auth-session');
+    const { getJwtExpMs, ensureFreshAccessToken, getStoredAccessToken } =
+      await import('./auth-session');
     const exp = getJwtExpMs(token);
     if (exp && exp - Date.now() > PROACTIVE_REFRESH_SKEW_MS) return;
     await ensureFreshAccessToken(PROACTIVE_REFRESH_SKEW_MS);
-    const next = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+    const next = getStoredAccessToken();
     if (next) headers.set('authorization', `Bearer ${next}`);
   } catch {
     /* оставляем исходный Bearer — сработает ретрай по 401 */
@@ -51,7 +52,12 @@ async function tryRefreshAccessToken(): Promise<boolean> {
 
 function latestAccessTokenFromStorage(): string | null {
   if (typeof window === 'undefined') return null;
-  return localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  try {
+    const mod = require('./auth-session') as typeof import('./auth-session');
+    return mod.getStoredAccessToken();
+  } catch {
+    return null;
+  }
 }
 
 function canRetry401(

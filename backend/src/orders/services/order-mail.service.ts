@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, InternalServerErrorException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import * as crypto from 'crypto';
@@ -18,9 +18,18 @@ export class OrderMailService {
     private mailer: MailerService,
   ) {}
 
+  private getOrderViewSecret(): string {
+    const secret =
+      this.config.get<string>('ORDER_VIEW_SECRET') || this.config.get<string>('JWT_SECRET');
+    if (!secret) {
+      throw new InternalServerErrorException('ORDER_VIEW_SECRET is not configured');
+    }
+    return secret;
+  }
+
   /** Генерирует подписанный токен для просмотра заказа по ссылке из письма. */
   generateOrderViewToken(orderId: string, customerEmail: string, expiresInDays = 30): string {
-    const secret = this.config.get<string>('JWT_SECRET') || 'order-view-secret';
+    const secret = this.getOrderViewSecret();
     const payload = `${orderId}:${customerEmail}:${Date.now() + expiresInDays * 24 * 60 * 60 * 1000}`;
     const signature = crypto.createHmac('sha256', secret).update(payload).digest('hex');
     return Buffer.from(`${payload}:${signature}`).toString('base64url');
@@ -34,7 +43,7 @@ export class OrderMailService {
       if (!orderId || !email || !expiryStr || !signature) return null;
       const expiry = parseInt(expiryStr, 10);
       if (Date.now() > expiry) return null;
-      const secret = this.config.get<string>('JWT_SECRET') || 'order-view-secret';
+      const secret = this.getOrderViewSecret();
       const payload = `${orderId}:${email}:${expiryStr}`;
       const expected = crypto.createHmac('sha256', secret).update(payload).digest('hex');
       if (signature !== expected) return null;

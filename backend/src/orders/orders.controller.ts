@@ -19,6 +19,8 @@ import { AddCartItemToOrderDto } from './dto/add-cart-item-to-order.dto';
 import { SubmitFromCartDto } from './dto/submit-from-cart.dto';
 import { CalculateDeliveryDto } from './dto/calculate-delivery.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../common/guards/roles.guard';
+import { Roles } from '../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
 @ApiTags('orders')
@@ -117,14 +119,22 @@ export class OrdersController {
   }
 
   @Patch(':id')
-  @ApiOperation({ summary: 'Обновить заказ' })
-  update(@Param('id') id: string, @Body() updateOrderDto: UpdateOrderDto) {
-    return this.ordersService.update(id, updateOrderDto);
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Обновить заказ (только администратор)' })
+  update(
+    @Request() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() updateOrderDto: UpdateOrderDto,
+  ) {
+    return this.ordersService.update(id, updateOrderDto, req.user.id, req.user.role);
   }
 
   @Delete(':id')
-  @ApiOperation({ summary: 'Удалить заказ' })
-  remove(@Param('id') id: string) {
-    return this.ordersService.remove(id);
+  @UseGuards(RolesGuard)
+  @Roles('ADMIN', 'SUPER_ADMIN')
+  @ApiOperation({ summary: 'Удалить заказ (только администратор)' })
+  remove(@Request() req: RequestWithUser, @Param('id') id: string) {
+    return this.ordersService.remove(id, req.user.id, req.user.role);
   }
 }

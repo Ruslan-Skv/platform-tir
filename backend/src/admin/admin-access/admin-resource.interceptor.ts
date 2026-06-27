@@ -13,6 +13,7 @@ import {
   permissionLevelSatisfies,
 } from '../../common/config/admin-api-resource-rules.config';
 import { AdminResourcePermissionLevel } from '../../common/types/admin-resource-permission-level';
+import { isPublicLegacyCatalogReadRequest } from '../../common/utils/public-catalog-read-path.util';
 import { AdminAccessService } from './admin-access.service';
 
 @Injectable()
@@ -54,9 +55,12 @@ export class AdminResourceInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // Маршруты вне /admin/ (products, categories, …) — только для ролей админки
+    // Legacy /products, /categories — публичное чтение без прав админки; остальное только для админки
     if (!isAdminApiPath && !isAdminUser) {
-      return next.handle();
+      if (isPublicLegacyCatalogReadRequest(request.method, requestPath)) {
+        return next.handle();
+      }
+      throw new ForbiddenException('Недостаточно прав для доступа к разделу');
     }
 
     const effective = await this.adminAccessService.getUserEffectivePermission(

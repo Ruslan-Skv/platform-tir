@@ -6,6 +6,7 @@ import { ElasticsearchService } from '../elasticsearch/elasticsearch.service';
 import { CatalogFilterBlocksService } from '../catalog-filter-blocks/catalog-filter-blocks.service';
 import type { CatalogFiltersResponseDto } from '../catalog-filter-blocks/dto/public-filters.dto';
 import { SearchProductsDto } from './dto/search-products.dto';
+import { stripProductsForPublic } from './utils/product-public.util';
 
 type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
 
@@ -77,7 +78,7 @@ export class ProductsCatalogQueryService {
         slug: category.slug,
         description: category.description,
       },
-      products: enrichedProducts,
+      products: stripProductsForPublic(enrichedProducts),
       total: products.length,
     };
   }
@@ -359,7 +360,7 @@ export class ProductsCatalogQueryService {
           take: limit,
         });
         const enriched = await this.enrichProductsWithRating(all);
-        return { products: enriched };
+        return { products: stripProductsForPublic(enriched) };
     }
 
     const partnerInclude = {
@@ -385,7 +386,7 @@ export class ProductsCatalogQueryService {
 
     if (primary.length >= limit) {
       const enriched = await this.enrichProductsWithRating(primary);
-      return { products: enriched };
+      return { products: stripProductsForPublic(enriched) };
     }
 
     const primaryIds = primary.map((p) => p.id);
@@ -401,7 +402,7 @@ export class ProductsCatalogQueryService {
 
     const combined = [...primary, ...additional];
     const enriched = await this.enrichProductsWithRating(combined);
-    return { products: enriched };
+    return { products: stripProductsForPublic(enriched) };
   }
 
   async search(searchDto: SearchProductsDto) {
@@ -464,7 +465,7 @@ export class ProductsCatalogQueryService {
     );
 
     return {
-      products: enrichedProducts,
+      products: stripProductsForPublic(enrichedProducts),
       total,
       page,
       limit,
