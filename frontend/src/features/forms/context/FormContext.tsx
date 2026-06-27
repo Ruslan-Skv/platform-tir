@@ -72,6 +72,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         preferredTime: data.preferredTime,
         productType: data.productType,
         comments: data.comments,
+        consentAccepted: true,
       });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
@@ -92,6 +93,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         email: data.email,
         preferredTime: data.preferredTime,
         comment: data.comment,
+        consentAccepted: true,
       });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
@@ -112,6 +114,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         phone: data.phone || undefined,
         subject: data.subject,
         message: data.message,
+        consentAccepted: true,
       });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {
@@ -138,6 +141,7 @@ export const FormProvider: React.FC<{ children: React.ReactNode }> = ({ children
         serviceType,
         address: data.address || undefined,
         comment: data.comment || undefined,
+        consentAccepted: true,
       });
       setFormSubmission({ loading: false, success: true, error: null });
     } catch (error) {

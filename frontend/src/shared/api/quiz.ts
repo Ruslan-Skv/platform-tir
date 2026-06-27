@@ -60,6 +60,7 @@ export interface SubmitQuizPayload {
   utmCampaign?: string;
   referrer?: string;
   landingUrl?: string;
+  consentAccepted: boolean;
 }
 
 export async function fetchQuizConfig(params: {

@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
+import { SiteConsentField } from '@/features/site-consent';
 import { getQuoteFormOptions } from '@/shared/api/forms';
 import { Button } from '@/shared/ui/Button';
 
@@ -39,6 +40,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
       comment: '',
     }
   );
+  const [consent, setConsent] = useState(false);
 
   const displayOptions = options.length > 0 ? options : DEFAULT_OPTIONS;
 
@@ -70,6 +72,7 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consent) return;
     onSubmit({
       selectedOptions: Array.from(selectedOptions),
       customOption: customOption.trim() || undefined,
@@ -223,11 +226,13 @@ export const QuoteForm: React.FC<QuoteFormProps> = ({
         </div>
       </div>
 
+      <SiteConsentField checked={consent} onChange={setConsent} />
+
       <div className={styles.actions}>
         <Button type="button" variant="outline" onClick={handleBackToStep1} disabled={loading}>
           Назад
         </Button>
-        <Button type="submit" variant="primary" disabled={loading}>
+        <Button type="submit" variant="primary" disabled={loading || !consent}>
           {loading ? 'Отправка...' : 'Отправить заявку'}
         </Button>
       </div>

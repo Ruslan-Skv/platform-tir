@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ConsentAcceptedDto } from '../../common/dto/consent-accepted.dto';
 
-export class SubmitDirectorMessageDto {
+export class SubmitDirectorMessageDto extends ConsentAcceptedDto {
   @ApiProperty({ example: 'Иванов Иван' })
   @IsString()
   @IsNotEmpty()

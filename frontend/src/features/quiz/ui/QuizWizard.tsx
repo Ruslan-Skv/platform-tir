@@ -160,6 +160,7 @@ export function QuizWizard({ config }: QuizWizardProps) {
           utmCampaign: params.get('utm_campaign') ?? undefined,
           referrer: document.referrer || undefined,
           landingUrl: window.location.href,
+          consentAccepted: true,
         });
         setDone(true);
       } catch (e) {

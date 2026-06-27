@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 
+import { SiteConsentField } from '@/features/site-consent';
 import { Button } from '@/shared/ui/Button';
 
 import type { DirectorMessageFormData } from '../../types/forms';
@@ -25,9 +26,11 @@ export const DirectorMessageForm: React.FC<DirectorMessageFormProps> = ({
     subject: '',
     message: '',
   });
+  const [consent, setConsent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consent) return;
     onSubmit(formData);
   };
 
@@ -125,11 +128,13 @@ export const DirectorMessageForm: React.FC<DirectorMessageFormProps> = ({
         </div>
       </div>
 
+      <SiteConsentField checked={consent} onChange={setConsent} />
+
       <div className={styles.actions}>
         <Button type="button" variant="outline" onClick={onCancel} disabled={loading}>
           Отмена
         </Button>
-        <Button type="submit" variant="primary" disabled={loading}>
+        <Button type="submit" variant="primary" disabled={loading || !consent}>
           {loading ? 'Отправка...' : 'Отправить письмо'}
         </Button>
       </div>

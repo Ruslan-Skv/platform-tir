@@ -2,16 +2,13 @@
 
 import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
-import { REGISTRATION_PRIVACY_POLICY_PATH } from '@/features/quiz/lib/quiz-upload-url';
-import { QuizConsentLabel } from '@/features/quiz/ui/QuizConsentLabel';
-import { getUserCabinetSettings } from '@/shared/api/user-cabinet';
-import type { UserCabinetSettings } from '@/shared/api/user-cabinet';
+import { SiteConsentField } from '@/features/site-consent';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
@@ -32,13 +29,6 @@ export function LoginPageView() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consent, setConsent] = useState(false);
-  const [consentConfig, setConsentConfig] = useState<Partial<UserCabinetSettings> | null>(null);
-
-  useEffect(() => {
-    getUserCabinetSettings()
-      .then(setConsentConfig)
-      .catch(() => setConsentConfig({}));
-  }, []);
 
   const handleYandexLogin = async () => {
     setYandexLoading(true);
@@ -275,23 +265,7 @@ export function LoginPageView() {
             </div>
           )}
 
-          {!isLogin && consentConfig ? (
-            <label className={styles.consentLabel}>
-              <input
-                type="checkbox"
-                checked={consent}
-                onChange={(e) => setConsent(e.target.checked)}
-                required
-              />
-              <span>
-                <QuizConsentLabel
-                  config={consentConfig}
-                  privacyPolicyPath={REGISTRATION_PRIVACY_POLICY_PATH}
-                  linkClassName={styles.consentLink}
-                />
-              </span>
-            </label>
-          ) : null}
+          {!isLogin ? <SiteConsentField checked={consent} onChange={setConsent} /> : null}
 
           {error && <div className={styles.error}>{error}</div>}
 
@@ -320,7 +294,11 @@ export function LoginPageView() {
             </>
           )}
 
-          <button type="submit" className={styles.submitButton} disabled={isLoading}>
+          <button
+            type="submit"
+            className={styles.submitButton}
+            disabled={isLoading || (!isLogin && !consent)}
+          >
             {isLoading ? 'Загрузка...' : isLogin ? 'Войти' : 'Зарегистрироваться'}
           </button>
         </form>

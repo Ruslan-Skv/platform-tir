@@ -1,7 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import { ConsentAcceptedDto } from '../../common/dto/consent-accepted.dto';
 
-export class SubmitCallbackDto {
+export class SubmitCallbackDto extends ConsentAcceptedDto {
   @ApiProperty({ description: 'Имя' })
   @IsString()
   @IsNotEmpty()

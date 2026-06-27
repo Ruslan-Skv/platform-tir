@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 
+import { SiteConsentField } from '@/features/site-consent';
 import { Button } from '@/shared/ui/Button';
 
 import type { MeasurementFormData } from '../../types/forms';
@@ -28,9 +29,11 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
     productType: '',
     comments: '',
   });
+  const [consent, setConsent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consent) return;
     onSubmit(formData);
   };
 
@@ -188,6 +191,8 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
         </div>
       </div>
 
+      <SiteConsentField checked={consent} onChange={setConsent} />
+
       <div className={styles.actions}>
         <Button
           type="button"
@@ -199,7 +204,12 @@ export const MeasurementForm: React.FC<MeasurementFormProps> = ({
         >
           Отмена
         </Button>
-        <Button type="submit" variant="primary" className={styles.actionButton} disabled={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          className={styles.actionButton}
+          disabled={loading || !consent}
+        >
           {loading ? 'Отправка...' : 'Записаться на замер'}
         </Button>
       </div>

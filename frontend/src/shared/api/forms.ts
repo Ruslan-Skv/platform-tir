@@ -18,6 +18,7 @@ export interface MeasurementFormPayload {
   preferredTime?: string;
   productType: string;
   comments?: string;
+  consentAccepted: boolean;
 }
 
 export interface CallbackFormPayload {
@@ -26,6 +27,7 @@ export interface CallbackFormPayload {
   email?: string;
   preferredTime: string;
   comment?: string;
+  consentAccepted: boolean;
 }
 
 export interface DirectorMessageFormPayload {
@@ -34,6 +36,7 @@ export interface DirectorMessageFormPayload {
   phone?: string;
   subject: string;
   message: string;
+  consentAccepted: boolean;
 }
 
 export interface QuoteFormPayload {
@@ -44,6 +47,7 @@ export interface QuoteFormPayload {
   serviceType: string;
   address?: string;
   comment?: string;
+  consentAccepted: boolean;
 }
 
 export async function submitMeasurementForm(data: MeasurementFormPayload): Promise<void> {

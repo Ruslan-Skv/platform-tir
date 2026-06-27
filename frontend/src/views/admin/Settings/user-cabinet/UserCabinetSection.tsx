@@ -182,10 +182,11 @@ export function UserCabinetSection() {
           </div>
 
           <div className={styles.consentSection}>
-            <h3 className={styles.consentTitle}>Согласие на обработку данных (регистрация)</h3>
+            <h3 className={styles.consentTitle}>Согласие на обработку данных (формы сайта)</h3>
             <p className={styles.consentHint}>
-              По клику на «персональных данных» — страница <code>/auth/privacy-policy</code>. PDF на
-              весь экран; без PDF показывается текст (можно сохранить через печать браузера).
+              Единая политика для регистрации, «Заказать звонок», «Записаться на замер», «Рассчитать
+              стоимость» и «Письмо директору». Квизы на отдельных доменах настраиваются в админке
+              квиза. По клику на «персональных данных» — <code>/auth/privacy-policy</code>.
             </p>
             <label className={styles.consentField}>
               PDF политики (рекомендуется)

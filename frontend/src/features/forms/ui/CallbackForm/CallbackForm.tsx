@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 
+import { SiteConsentField } from '@/features/site-consent';
 import { Button } from '@/shared/ui/Button';
 
 import type { CallbackFormData } from '../../types/forms';
@@ -20,9 +21,11 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
     preferredTime: '',
     comment: '',
   });
+  const [consent, setConsent] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!consent) return;
     onSubmit(formData);
   };
 
@@ -125,6 +128,8 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
         </div>
       </div>
 
+      <SiteConsentField checked={consent} onChange={setConsent} />
+
       <div className={styles.actions}>
         <Button
           type="button"
@@ -136,7 +141,12 @@ export const CallbackForm: React.FC<CallbackFormProps> = ({
         >
           Отмена
         </Button>
-        <Button type="submit" variant="primary" className={styles.actionButton} disabled={loading}>
+        <Button
+          type="submit"
+          variant="primary"
+          className={styles.actionButton}
+          disabled={loading || !consent}
+        >
           {loading ? 'Отправка...' : 'Заказать звонок'}
         </Button>
       </div>
