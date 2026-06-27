@@ -23,5 +23,26 @@ export function isPrivacyPolicyPdfUrl(url: string | null | undefined): boolean {
   );
 }
 
+/**
+ * URL для встраивания PDF политики в iframe на текущем домене.
+ * Абсолютные ссылки на /uploads/… с основного сайта ломаются на доменах квизов
+ * из‑за CSP frame-src 'self'.
+ */
+export function resolvePrivacyPolicyEmbedUrl(url: string | null | undefined): string {
+  if (!url) return '';
+  const trimmed = url.trim();
+  if (trimmed.startsWith('/uploads/')) return trimmed;
+  if (trimmed.startsWith('http://') || trimmed.startsWith('https://')) {
+    try {
+      const { pathname } = new URL(trimmed);
+      if (pathname.startsWith('/uploads/')) return pathname;
+    } catch {
+      /* ignore invalid URL */
+    }
+    return trimmed;
+  }
+  return trimmed;
+}
+
 export const QUIZ_PRIVACY_POLICY_PATH = '/quiz/privacy-policy';
 export const REGISTRATION_PRIVACY_POLICY_PATH = '/auth/privacy-policy';

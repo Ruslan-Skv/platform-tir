@@ -3,7 +3,10 @@ import {
   formatPrivacyPolicyForDisplay,
   resolveQuizConsent,
 } from '@/features/quiz/lib/quiz-consent';
-import { isPrivacyPolicyPdfUrl, resolveQuizUploadUrl } from '@/features/quiz/lib/quiz-upload-url';
+import {
+  isPrivacyPolicyPdfUrl,
+  resolvePrivacyPolicyEmbedUrl,
+} from '@/features/quiz/lib/quiz-upload-url';
 
 import styles from './PrivacyPolicyPageView.module.css';
 
@@ -14,7 +17,7 @@ type PrivacyPolicyPageViewProps = {
 export function PrivacyPolicyPageView({ config }: PrivacyPolicyPageViewProps) {
   const consent = resolveQuizConsent(config);
   const pdfUrl = isPrivacyPolicyPdfUrl(consent.privacyPolicyUrl)
-    ? resolveQuizUploadUrl(consent.privacyPolicyUrl)
+    ? resolvePrivacyPolicyEmbedUrl(consent.privacyPolicyUrl)
     : null;
   const text = consent.privacyPolicyContent
     ? formatPrivacyPolicyForDisplay(consent.privacyPolicyContent)
