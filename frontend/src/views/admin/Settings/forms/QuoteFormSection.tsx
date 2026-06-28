@@ -80,7 +80,7 @@ export function QuoteFormSection() {
           Каналы уведомлений о заявках
         </Link>
         . Заявки сохраняются в{' '}
-        <Link href="/admin/forms?type=quote" className={styles.infoBlockLink}>
+        <Link href="/admin/leads?source=form_quote" className={styles.infoBlockLink}>
           Заявки с форм
         </Link>
         .

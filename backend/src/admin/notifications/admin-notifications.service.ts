@@ -82,6 +82,7 @@ export class AdminNotificationsService {
       notifyOnQuizRemont: dto.notifyOnQuizRemont,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
+      notifyOnKnowledgeTraining: dto.notifyOnKnowledgeTraining,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -103,6 +104,7 @@ export class AdminNotificationsService {
       notifyOnQuizRemont: dto.notifyOnQuizRemont ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
+      notifyOnKnowledgeTraining: dto.notifyOnKnowledgeTraining ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -230,6 +232,7 @@ export class AdminNotificationsService {
       notifyOnQuizRemont: dto.notifyOnQuizRemont,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback,
+      notifyOnKnowledgeTraining: dto.notifyOnKnowledgeTraining,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -251,6 +254,7 @@ export class AdminNotificationsService {
       notifyOnQuizRemont: dto.notifyOnQuizRemont ?? true,
       notifyOnKnowledgeFeedback: dto.notifyOnKnowledgeFeedback ?? true,
       notifyOnSiteFeedback: dto.notifyOnSiteFeedback ?? true,
+      notifyOnKnowledgeTraining: dto.notifyOnKnowledgeTraining ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

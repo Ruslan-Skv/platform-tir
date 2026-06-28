@@ -2,7 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { parseStringArray } from './external-notify.util';
 
-export type ExternalNotifyEvent = 'order' | 'knowledge_feedback' | 'site_feedback';
+export type ExternalNotifyEvent =
+  | 'order'
+  | 'knowledge_feedback'
+  | 'site_feedback'
+  | 'support_chat'
+  | 'review'
+  | 'comment'
+  | 'knowledge_training';
 
 @Injectable()
 export class ExternalNotifySettingsService {
@@ -33,6 +40,30 @@ export class ExternalNotifySettingsService {
           emails: parseStringArray(block.siteFeedbackNotifyEmails),
           telegramIds: parseStringArray(block.siteFeedbackNotifyTelegramIds),
           maxIds: parseStringArray(block.siteFeedbackNotifyMaxIds),
+        };
+      case 'support_chat':
+        return {
+          emails: parseStringArray(block.supportNotifyEmails),
+          telegramIds: parseStringArray(block.supportNotifyTelegramIds),
+          maxIds: parseStringArray(block.supportNotifyMaxIds),
+        };
+      case 'review':
+        return {
+          emails: parseStringArray(block.reviewNotifyEmails),
+          telegramIds: parseStringArray(block.reviewNotifyTelegramIds),
+          maxIds: parseStringArray(block.reviewNotifyMaxIds),
+        };
+      case 'comment':
+        return {
+          emails: parseStringArray(block.commentNotifyEmails),
+          telegramIds: parseStringArray(block.commentNotifyTelegramIds),
+          maxIds: parseStringArray(block.commentNotifyMaxIds),
+        };
+      case 'knowledge_training':
+        return {
+          emails: parseStringArray(block.knowledgeTrainingNotifyEmails),
+          telegramIds: parseStringArray(block.knowledgeTrainingNotifyTelegramIds),
+          maxIds: parseStringArray(block.knowledgeTrainingNotifyMaxIds),
         };
     }
   }

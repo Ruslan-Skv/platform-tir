@@ -20,6 +20,18 @@ export interface ExternalNotifyChannelsSettings {
   siteFeedbackNotifyEmails: string[];
   siteFeedbackNotifyTelegramIds: string[];
   siteFeedbackNotifyMaxIds: string[];
+  supportNotifyEmails: string[];
+  supportNotifyTelegramIds: string[];
+  supportNotifyMaxIds: string[];
+  reviewNotifyEmails: string[];
+  reviewNotifyTelegramIds: string[];
+  reviewNotifyMaxIds: string[];
+  commentNotifyEmails: string[];
+  commentNotifyTelegramIds: string[];
+  commentNotifyMaxIds: string[];
+  knowledgeTrainingNotifyEmails: string[];
+  knowledgeTrainingNotifyTelegramIds: string[];
+  knowledgeTrainingNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -44,6 +56,18 @@ export async function updateAdminExternalNotifyChannels(
       | 'siteFeedbackNotifyEmails'
       | 'siteFeedbackNotifyTelegramIds'
       | 'siteFeedbackNotifyMaxIds'
+      | 'supportNotifyEmails'
+      | 'supportNotifyTelegramIds'
+      | 'supportNotifyMaxIds'
+      | 'reviewNotifyEmails'
+      | 'reviewNotifyTelegramIds'
+      | 'reviewNotifyMaxIds'
+      | 'commentNotifyEmails'
+      | 'commentNotifyTelegramIds'
+      | 'commentNotifyMaxIds'
+      | 'knowledgeTrainingNotifyEmails'
+      | 'knowledgeTrainingNotifyTelegramIds'
+      | 'knowledgeTrainingNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

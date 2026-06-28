@@ -6,6 +6,8 @@ import {
 } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../external-notify/external-notify-settings.service';
 import { CreateReviewDto } from './dto/create-review.dto';
 
 @Injectable()
@@ -13,6 +15,8 @@ export class ReviewsService {
   constructor(
     private prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
 
   /** Получить настройки отзывов */
@@ -146,12 +150,42 @@ export class ReviewsService {
     });
 
     if (!isApproved) {
+      const productName = review.product?.name || 'Товар';
       void this.adminBellPush.notify('review', {
         title: 'Новый отзыв',
-        body: `«${review.product?.name || 'Товар'}» от ${review.userName}`,
+        body: `«${productName}» от ${review.userName}`,
         url: `/admin/catalog/products/${review.productId}/edit`,
         tag: `review-${review.id}`,
       });
+
+      const commentPreview = review.comment
+        ? review.comment.length > 500
+          ? `${review.comment.slice(0, 500)}...`
+          : review.comment
+        : null;
+      const contactLines = [
+        review.userEmail ? `Email: ${review.userEmail}` : null,
+        `Оценка: ${review.rating}/5`,
+      ]
+        .filter(Boolean)
+        .join('\n');
+
+      void this.externalNotifySettings.getChannelsForEvent('review').then((channels) =>
+        this.externalNotify.send(channels, {
+          subject: `Новый отзыв на «${productName}»`,
+          text: [
+            `Новый отзыв на «${productName}»`,
+            '',
+            `От: ${review.userName}`,
+            contactLines,
+            commentPreview ? `\n${commentPreview}` : null,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          replyTo: review.userEmail ?? undefined,
+          fromLabel: 'Отзывы',
+        }),
+      );
     }
 
     return review;

@@ -7,6 +7,7 @@ import {
 } from './knowledge-material-completion.util';
 import { sortKnowledgeMaterialIdsForList } from '../knowledge-material-list-order';
 import { KnowledgeQuizService } from '../knowledge-quiz.service';
+import { KnowledgeTrainingNotifyService } from './knowledge-training-notify.service';
 
 type CategoryMaterialRow = {
   id: string;
@@ -24,6 +25,7 @@ export class KnowledgeSequentialAccessService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
+    private readonly knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
   ) {}
 
   async getCategoryPublishedMaterialIds(categoryId: string): Promise<string[]> {
@@ -199,6 +201,10 @@ export class KnowledgeSequentialAccessService {
 
     await this.assertMaterialUnlockedForParticipant(materialId, userId, material.categoryId);
 
+    const existing = await this.prisma.knowledgeMaterialStudyCompletion.findUnique({
+      where: { materialId_userId: { materialId, userId } },
+    });
+
     await this.prisma.knowledgeMaterialStudyCompletion.upsert({
       where: {
         materialId_userId: { materialId, userId },
@@ -206,6 +212,10 @@ export class KnowledgeSequentialAccessService {
       create: { materialId, userId },
       update: {},
     });
+
+    if (!existing) {
+      this.knowledgeTrainingNotify.notifyProgress('study_completed', userId, materialId);
+    }
 
     return { studyCompleted: true };
   }

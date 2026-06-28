@@ -2,6 +2,8 @@
  * Все запросы к нашему API с cookies (httpOnly refresh).
  * Не подменяет credentials, если в init уже задано явно.
  */
+import { fetchWithTimeout } from './fetch-with-timeout';
+
 const RETRY_HEADER = 'x-auth-retry';
 
 /** За сколько до exp обновлять access до первого fetch (избегает лишних 401 в консоли). */
@@ -79,7 +81,7 @@ function canRetry401(
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const baseHeaders = normalizeHeaders(input, init);
   await proactiveRefreshBearerIfStale(baseHeaders);
-  const response = await fetch(input, {
+  const response = await fetchWithTimeout(input, {
     ...init,
     headers: baseHeaders,
     credentials: init?.credentials ?? 'include',
@@ -99,7 +101,7 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     retryHeaders.set('authorization', `Bearer ${nextToken}`);
   }
 
-  return fetch(input, {
+  return fetchWithTimeout(input, {
     ...init,
     headers: retryHeaders,
     credentials: init?.credentials ?? 'include',

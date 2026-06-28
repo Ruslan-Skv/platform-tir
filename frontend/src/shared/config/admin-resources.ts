@@ -31,7 +31,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
   { id: 'admin.crm.customers', label: 'Заказчики', path: '/admin/customers' },
-  { id: 'admin.forms', label: 'Заявки с форм', path: '/admin/forms' },
+  { id: 'admin.forms', label: 'Входящие заявки', path: '/admin/leads' },
   { id: 'admin.quiz', label: 'Квизы', path: '/admin/quiz' },
   { id: 'admin.quiz.mebel', label: 'Квиз — Мебель', path: '/admin/quiz/mebel' },
   { id: 'admin.quiz.remont', label: 'Квиз — Ремонт', path: '/admin/quiz/remont' },

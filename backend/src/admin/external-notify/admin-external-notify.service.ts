@@ -4,7 +4,14 @@ import { PrismaService } from '../../database/prisma.service';
 import { normalizeStringArray, parseStringArray } from '../../external-notify/external-notify.util';
 import { UpdateExternalNotifySettingsDto } from './dto/update-external-notify-settings.dto';
 
-export type ExternalNotifyEvent = 'order' | 'knowledge_feedback' | 'site_feedback';
+export type ExternalNotifyEvent =
+  | 'order'
+  | 'knowledge_feedback'
+  | 'site_feedback'
+  | 'support_chat'
+  | 'review'
+  | 'comment'
+  | 'knowledge_training';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -47,6 +54,44 @@ export class AdminExternalNotifyService {
     if (dto.siteFeedbackNotifyMaxIds !== undefined) {
       data.siteFeedbackNotifyMaxIds = normalizeStringArray(dto.siteFeedbackNotifyMaxIds);
     }
+    if (dto.supportNotifyEmails !== undefined) {
+      data.supportNotifyEmails = normalizeStringArray(dto.supportNotifyEmails);
+    }
+    if (dto.supportNotifyTelegramIds !== undefined) {
+      data.supportNotifyTelegramIds = normalizeStringArray(dto.supportNotifyTelegramIds);
+    }
+    if (dto.supportNotifyMaxIds !== undefined) {
+      data.supportNotifyMaxIds = normalizeStringArray(dto.supportNotifyMaxIds);
+    }
+    if (dto.reviewNotifyEmails !== undefined) {
+      data.reviewNotifyEmails = normalizeStringArray(dto.reviewNotifyEmails);
+    }
+    if (dto.reviewNotifyTelegramIds !== undefined) {
+      data.reviewNotifyTelegramIds = normalizeStringArray(dto.reviewNotifyTelegramIds);
+    }
+    if (dto.reviewNotifyMaxIds !== undefined) {
+      data.reviewNotifyMaxIds = normalizeStringArray(dto.reviewNotifyMaxIds);
+    }
+    if (dto.commentNotifyEmails !== undefined) {
+      data.commentNotifyEmails = normalizeStringArray(dto.commentNotifyEmails);
+    }
+    if (dto.commentNotifyTelegramIds !== undefined) {
+      data.commentNotifyTelegramIds = normalizeStringArray(dto.commentNotifyTelegramIds);
+    }
+    if (dto.commentNotifyMaxIds !== undefined) {
+      data.commentNotifyMaxIds = normalizeStringArray(dto.commentNotifyMaxIds);
+    }
+    if (dto.knowledgeTrainingNotifyEmails !== undefined) {
+      data.knowledgeTrainingNotifyEmails = normalizeStringArray(dto.knowledgeTrainingNotifyEmails);
+    }
+    if (dto.knowledgeTrainingNotifyTelegramIds !== undefined) {
+      data.knowledgeTrainingNotifyTelegramIds = normalizeStringArray(
+        dto.knowledgeTrainingNotifyTelegramIds,
+      );
+    }
+    if (dto.knowledgeTrainingNotifyMaxIds !== undefined) {
+      data.knowledgeTrainingNotifyMaxIds = normalizeStringArray(dto.knowledgeTrainingNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -76,6 +121,30 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.siteFeedbackNotifyTelegramIds),
           maxIds: parseStringArray(block.siteFeedbackNotifyMaxIds),
         };
+      case 'support_chat':
+        return {
+          emails: parseStringArray(block.supportNotifyEmails),
+          telegramIds: parseStringArray(block.supportNotifyTelegramIds),
+          maxIds: parseStringArray(block.supportNotifyMaxIds),
+        };
+      case 'review':
+        return {
+          emails: parseStringArray(block.reviewNotifyEmails),
+          telegramIds: parseStringArray(block.reviewNotifyTelegramIds),
+          maxIds: parseStringArray(block.reviewNotifyMaxIds),
+        };
+      case 'comment':
+        return {
+          emails: parseStringArray(block.commentNotifyEmails),
+          telegramIds: parseStringArray(block.commentNotifyTelegramIds),
+          maxIds: parseStringArray(block.commentNotifyMaxIds),
+        };
+      case 'knowledge_training':
+        return {
+          emails: parseStringArray(block.knowledgeTrainingNotifyEmails),
+          telegramIds: parseStringArray(block.knowledgeTrainingNotifyTelegramIds),
+          maxIds: parseStringArray(block.knowledgeTrainingNotifyMaxIds),
+        };
     }
   }
 
@@ -97,6 +166,18 @@ export class AdminExternalNotifyService {
     siteFeedbackNotifyEmails: Prisma.JsonValue | null;
     siteFeedbackNotifyTelegramIds: Prisma.JsonValue | null;
     siteFeedbackNotifyMaxIds: Prisma.JsonValue | null;
+    supportNotifyEmails: Prisma.JsonValue | null;
+    supportNotifyTelegramIds: Prisma.JsonValue | null;
+    supportNotifyMaxIds: Prisma.JsonValue | null;
+    reviewNotifyEmails: Prisma.JsonValue | null;
+    reviewNotifyTelegramIds: Prisma.JsonValue | null;
+    reviewNotifyMaxIds: Prisma.JsonValue | null;
+    commentNotifyEmails: Prisma.JsonValue | null;
+    commentNotifyTelegramIds: Prisma.JsonValue | null;
+    commentNotifyMaxIds: Prisma.JsonValue | null;
+    knowledgeTrainingNotifyEmails: Prisma.JsonValue | null;
+    knowledgeTrainingNotifyTelegramIds: Prisma.JsonValue | null;
+    knowledgeTrainingNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -111,6 +192,20 @@ export class AdminExternalNotifyService {
       siteFeedbackNotifyEmails: parseStringArray(block.siteFeedbackNotifyEmails),
       siteFeedbackNotifyTelegramIds: parseStringArray(block.siteFeedbackNotifyTelegramIds),
       siteFeedbackNotifyMaxIds: parseStringArray(block.siteFeedbackNotifyMaxIds),
+      supportNotifyEmails: parseStringArray(block.supportNotifyEmails),
+      supportNotifyTelegramIds: parseStringArray(block.supportNotifyTelegramIds),
+      supportNotifyMaxIds: parseStringArray(block.supportNotifyMaxIds),
+      reviewNotifyEmails: parseStringArray(block.reviewNotifyEmails),
+      reviewNotifyTelegramIds: parseStringArray(block.reviewNotifyTelegramIds),
+      reviewNotifyMaxIds: parseStringArray(block.reviewNotifyMaxIds),
+      commentNotifyEmails: parseStringArray(block.commentNotifyEmails),
+      commentNotifyTelegramIds: parseStringArray(block.commentNotifyTelegramIds),
+      commentNotifyMaxIds: parseStringArray(block.commentNotifyMaxIds),
+      knowledgeTrainingNotifyEmails: parseStringArray(block.knowledgeTrainingNotifyEmails),
+      knowledgeTrainingNotifyTelegramIds: parseStringArray(
+        block.knowledgeTrainingNotifyTelegramIds,
+      ),
+      knowledgeTrainingNotifyMaxIds: parseStringArray(block.knowledgeTrainingNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

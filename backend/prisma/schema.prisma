@@ -372,6 +372,22 @@ model ExternalNotifySettings {
   siteFeedbackNotifyTelegramIds Json? // string[]
   siteFeedbackNotifyMaxIds      Json? // string[]
 
+  supportNotifyEmails      Json? // string[]
+  supportNotifyTelegramIds Json? // string[]
+  supportNotifyMaxIds      Json? // string[]
+
+  reviewNotifyEmails      Json? // string[]
+  reviewNotifyTelegramIds Json? // string[]
+  reviewNotifyMaxIds      Json? // string[]
+
+  commentNotifyEmails      Json? // string[]
+  commentNotifyTelegramIds Json? // string[]
+  commentNotifyMaxIds      Json? // string[]
+
+  knowledgeTrainingNotifyEmails      Json? // string[]
+  knowledgeTrainingNotifyTelegramIds Json? // string[]
+  knowledgeTrainingNotifyMaxIds      Json? // string[]
+
   updatedAt DateTime @updatedAt
 
   @@map("external_notify_settings")
@@ -1132,18 +1148,21 @@ model KnowledgeMaterialComment {
 }
 
 model KnowledgePlatformFeedback {
-  id        String                        @id @default(cuid())
-  userId    String
-  type      KnowledgePlatformFeedbackType
-  text      String                        @db.Text
-  createdAt DateTime                      @default(now())
-  readAt    DateTime?
-  user      User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id          String                        @id @default(cuid())
+  userId      String
+  type        KnowledgePlatformFeedbackType
+  text        String                        @db.Text
+  status      String                        @default("new")
+  managerNote String?                       @db.Text
+  createdAt   DateTime                      @default(now())
+  readAt      DateTime?
+  user        User                          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([userId])
   @@index([type])
   @@index([createdAt])
   @@index([readAt])
+  @@index([status])
   @@map("knowledge_platform_feedback")
 }
 
@@ -1156,6 +1175,8 @@ model SitePlatformFeedback {
   type        KnowledgePlatformFeedbackType
   text        String                        @db.Text
   pageUrl     String?
+  status      String                        @default("new")
+  managerNote String?                       @db.Text
   createdAt   DateTime                      @default(now())
   readAt      DateTime?
   user        User?                         @relation(fields: [userId], references: [id], onDelete: SetNull)
@@ -1164,6 +1185,7 @@ model SitePlatformFeedback {
   @@index([type])
   @@index([createdAt])
   @@index([readAt])
+  @@index([status])
   @@map("site_platform_feedback")
 }
 
@@ -2157,6 +2179,7 @@ model UserAdminNotificationOverride {
   notifyOnQuizRemont        Boolean  @default(true)
   notifyOnKnowledgeFeedback Boolean  @default(true)
   notifyOnSiteFeedback      Boolean  @default(true)
+  notifyOnKnowledgeTraining Boolean  @default(true)
   updatedAt                 DateTime @updatedAt
   user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2198,6 +2221,7 @@ model AdminNotificationsBlock {
   notifyOnQuizRemont        Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
   notifyOnKnowledgeFeedback Boolean  @default(true) // Обратная связь по обучающей платформе
   notifyOnSiteFeedback      Boolean  @default(true) // Обратная связь по публичному сайту
+  notifyOnKnowledgeTraining Boolean  @default(true) // Динамика изучения материалов обучения
   updatedAt                 DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -2205,7 +2229,7 @@ model AdminNotificationsBlock {
 
 model FormSubmission {
   id            String   @id @default(cuid())
-  type          String // "measurement" | "callback" | "director"
+  type          String // "measurement" | "callback" | "director" | "quote"
   name          String
   phone         String
   email         String?
@@ -2215,8 +2239,13 @@ model FormSubmission {
   productType   String? // для director — тема (subject)
   comment       String?  @db.Text
   subject       String? // тема письма для type=director
+  status        String   @default("new") // new | contacted | in_progress | completed | cancelled
+  managerNote   String?  @db.Text
   createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
+  @@index([type, createdAt])
+  @@index([status])
   @@map("form_submissions")
 }
 

@@ -4,9 +4,10 @@ import { SupportChatService } from './support-chat.service';
 import { DatabaseModule } from '../database/database.module';
 import { UsersModule } from '../users/users.module';
 import { BellPushModule } from '../bell-push/bell-push.module';
+import { ExternalNotifyModule } from '../external-notify/external-notify.module';
 
 @Module({
-  imports: [DatabaseModule, UsersModule, BellPushModule],
+  imports: [DatabaseModule, UsersModule, BellPushModule, ExternalNotifyModule],
   controllers: [SupportChatController],
   providers: [SupportChatService],
   exports: [SupportChatService],

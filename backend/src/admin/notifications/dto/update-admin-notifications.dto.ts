@@ -100,6 +100,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnSiteFeedback?: boolean;
 
+  @ApiPropertyOptional({ description: 'Динамика изучения материалов обучающей платформы' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnKnowledgeTraining?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

@@ -94,6 +94,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   // Прочие разделы админки
   { prefix: '/api/v1/admin/knowledge', resourceId: 'admin.knowledge' },
   { prefix: '/api/v1/admin/forms', resourceId: 'admin.forms' },
+  { prefix: '/api/v1/admin/leads', resourceId: 'admin.forms' },
   { prefix: '/api/v1/admin/quiz', resourceId: 'admin.quiz' },
   { prefix: '/api/v1/admin/blog', resourceId: 'admin.content.blog' },
   { prefix: '/api/v1/admin/promotions', resourceId: 'admin.content.promotions' },

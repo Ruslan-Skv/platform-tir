@@ -18,7 +18,8 @@ export type AdminBellPushEvent =
   | 'quiz_mebel'
   | 'quiz_remont'
   | 'knowledge_feedback'
-  | 'site_feedback';
+  | 'site_feedback'
+  | 'knowledge_training';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -88,6 +89,7 @@ export class AdminBellPushService {
       notifyOnQuizRemont?: boolean;
       notifyOnKnowledgeFeedback?: boolean;
       notifyOnSiteFeedback?: boolean;
+      notifyOnKnowledgeTraining?: boolean;
     },
     role: string,
   ) {
@@ -114,6 +116,8 @@ export class AdminBellPushService {
         return role === 'SUPER_ADMIN' && settings.notifyOnKnowledgeFeedback !== false;
       case 'site_feedback':
         return role === 'SUPER_ADMIN' && settings.notifyOnSiteFeedback !== false;
+      case 'knowledge_training':
+        return settings.notifyOnKnowledgeTraining !== false;
       default:
         return false;
     }

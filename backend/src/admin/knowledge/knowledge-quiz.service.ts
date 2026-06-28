@@ -9,6 +9,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
+import { KnowledgeTrainingNotifyService } from './services/knowledge-training-notify.service';
 
 type QuizWithQuestions = Prisma.KnowledgeMaterialQuizGetPayload<{
   include: {
@@ -37,7 +38,10 @@ export type KnowledgeQuizAttemptLimits = {
 
 @Injectable()
 export class KnowledgeQuizService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
+  ) {}
 
   private startOfLocalDay(date: Date): Date {
     const start = new Date(date);
@@ -317,6 +321,7 @@ export class KnowledgeQuizService {
     }
 
     const previousAttempts = await this.getUserAttemptsForMaterial(materialId, userId);
+    const hadPassedBefore = previousAttempts.some((attempt) => attempt.passed);
     this.assertCanStartAttempt(this.buildAttemptLimits(previousAttempts));
 
     const questionIds = quiz.questions.map((q) => q.id);
@@ -363,6 +368,12 @@ export class KnowledgeQuizService {
         answers: answers as Prisma.InputJsonValue,
       },
     });
+
+    if (passed && !hadPassedBefore && !editorView) {
+      this.knowledgeTrainingNotify.notifyProgress('quiz_passed', userId, materialId, {
+        scorePercent,
+      });
+    }
 
     return {
       attemptId: attempt.id,

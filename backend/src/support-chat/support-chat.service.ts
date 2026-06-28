@@ -2,6 +2,8 @@ import { Injectable, NotFoundException, ForbiddenException } from '@nestjs/commo
 import { PrismaService } from '../database/prisma.service';
 import { UsersService } from '../users/users.service';
 import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../external-notify/external-notify-settings.service';
 import { ConversationStatus } from '@prisma/client';
 import { SendMessageDto } from './dto/send-message.dto';
 import { UpdateConversationDto } from './dto/update-conversation.dto';
@@ -14,6 +16,8 @@ export class SupportChatService {
     private prisma: PrismaService,
     private usersService: UsersService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
 
   private isSupportRole(role: string): boolean {
@@ -187,6 +191,26 @@ export class SupportChatService {
         url: '/admin/support',
         tag: `support-${conversationId}`,
       });
+
+      const preview = dto.content.length > 500 ? `${dto.content.slice(0, 500)}...` : dto.content;
+      const contactLines = convUser?.email ? `Email: ${convUser.email}` : '';
+      void this.externalNotifySettings.getChannelsForEvent('support_chat').then((channels) =>
+        this.externalNotify.send(channels, {
+          subject: 'Новое сообщение в чате поддержки',
+          text: [
+            'Новое сообщение в чате поддержки',
+            '',
+            `От: ${userName}`,
+            contactLines,
+            '',
+            preview,
+          ]
+            .filter(Boolean)
+            .join('\n'),
+          replyTo: convUser?.email ?? undefined,
+          fromLabel: 'Чат поддержки',
+        }),
+      );
     }
 
     return message;

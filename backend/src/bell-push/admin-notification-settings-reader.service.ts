@@ -37,6 +37,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnQuizRemont: true,
       notifyOnKnowledgeFeedback: true,
       notifyOnSiteFeedback: true,
+      notifyOnKnowledgeTraining: true,
     };
   }
 

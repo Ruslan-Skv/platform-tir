@@ -1,3 +1,4 @@
+import { serverFetch } from '@/shared/lib/fetch-with-timeout';
 import type { NavigationItem } from '@/shared/types/navigation';
 
 /** Формат пункта навигации с бэкенда (GET /navigation) */
@@ -32,7 +33,7 @@ export function mapApiItemToNavItem(item: NavItemFromApi): NavigationItem {
  */
 export async function fetchNavigation(apiUrl: string): Promise<NavigationItem[] | null> {
   try {
-    const res = await fetch(`${apiUrl}/navigation`, { cache: 'no-store' });
+    const res = await serverFetch(`${apiUrl}/navigation`, { cache: 'no-store' });
     if (!res.ok) return null;
     const data: NavItemFromApi[] = await res.json();
     if (!Array.isArray(data) || data.length === 0) return null;

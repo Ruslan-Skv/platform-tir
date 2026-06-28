@@ -18,6 +18,7 @@ import { KnowledgeMaterialFavoritesService } from './services/knowledge-material
 import { KnowledgeMaterialLikesService } from './services/knowledge-material-likes.service';
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeSequentialAccessService } from './services/knowledge-sequential-access.service';
+import { KnowledgeTrainingNotifyService } from './services/knowledge-training-notify.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
@@ -55,6 +56,7 @@ export class KnowledgeService {
     private knowledgeQuizService: KnowledgeQuizService,
     private knowledgeSequentialAccessService: KnowledgeSequentialAccessService,
     private knowledgeMaterialEngagementService: KnowledgeMaterialEngagementService,
+    private knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
   ) {}
 
   findAllTargetAudiences() {
@@ -420,6 +422,11 @@ export class KnowledgeService {
     const progressPercent = Math.min(100, Math.max(0, dto.progressPercent));
     const completed = dto.completed ?? progressPercent >= 90;
 
+    const previous = await this.prisma.knowledgeVideoProgress.findUnique({
+      where: { materialId_userId: { materialId, userId } },
+      select: { completed: true },
+    });
+
     const progress = await this.prisma.knowledgeVideoProgress.upsert({
       where: {
         materialId_userId: { materialId, userId },
@@ -437,6 +444,10 @@ export class KnowledgeService {
         completed,
       },
     });
+
+    if (completed && !previous?.completed) {
+      this.knowledgeTrainingNotify.notifyProgress('video_completed', userId, materialId);
+    }
 
     return progress;
   }

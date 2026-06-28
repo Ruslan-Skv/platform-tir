@@ -67,4 +67,106 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   siteFeedbackNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Email для сообщений в чате поддержки' })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  supportNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для сообщений в чате поддержки',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  supportNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для сообщений в чате поддержки',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  supportNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Email для новых отзывов на модерации' })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  reviewNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для новых отзывов на модерации',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  reviewNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для новых отзывов на модерации',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  reviewNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Email для новых комментариев пользователей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  commentNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для новых комментариев пользователей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  commentNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для новых комментариев пользователей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  commentNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Email для динамики изучения материалов обучающей платформы',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  knowledgeTrainingNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для динамики изучения материалов обучающей платформы',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  knowledgeTrainingNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для динамики изучения материалов обучающей платформы',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  knowledgeTrainingNotifyMaxIds?: string[];
 }

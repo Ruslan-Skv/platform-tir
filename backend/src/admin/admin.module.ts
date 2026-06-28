@@ -24,6 +24,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminFormsModule } from './forms/admin-forms.module';
+import { AdminLeadsModule } from './leads/admin-leads.module';
 import { AdminQuizModule } from './quiz/admin-quiz.module';
 import { PhotoModule } from './photo/photo.module';
 import { PromotionModule } from './promotions/promotion.module';
@@ -74,6 +75,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    AdminLeadsModule,
     AdminQuizModule,
     PhotoModule,
     PromotionModule,
@@ -114,6 +116,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     AdminReviewsModule,
     AdminNotificationsModule,
     AdminFormsModule,
+    AdminLeadsModule,
     AdminQuizModule,
     PhotoModule,
     PromotionModule,

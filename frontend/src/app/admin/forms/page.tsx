@@ -1,7 +1,5 @@
-'use client';
+import { redirect } from 'next/navigation';
 
-import { FormSubmissionsPage } from '@/views/admin/Forms/FormSubmissionsPage';
-
-export default function AdminFormsPage() {
-  return <FormSubmissionsPage />;
+export default function AdminFormsRedirectPage() {
+  redirect('/admin/leads');
 }

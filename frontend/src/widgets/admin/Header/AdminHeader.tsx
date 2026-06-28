@@ -18,30 +18,14 @@ import Link from 'next/link';
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
-import { getAdminFormSubmissions } from '@/shared/api/admin-forms';
-import type { AdminFormSubmission } from '@/shared/api/admin-forms';
-import {
-  type KnowledgePlatformFeedback,
-  getKnowledgePlatformFeedback,
-  markKnowledgePlatformFeedbackRead,
-} from '@/shared/api/admin-knowledge';
+import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge';
+import { getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
+import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import { getAdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
-import { getAdminOrders } from '@/shared/api/admin-orders';
-import type { AdminOrderSummary } from '@/shared/api/admin-orders';
-import {
-  MEBEL_QUIZ_SLUG,
-  type QuizSubmissionItem,
-  REMONT_QUIZ_SLUG,
-  getAdminQuizNewSubmissions,
-} from '@/shared/api/admin-quiz';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
-import {
-  type SitePlatformFeedback,
-  getSitePlatformFeedback,
-  markSitePlatformFeedbackRead,
-} from '@/shared/api/admin-site-feedback';
+import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
@@ -58,6 +42,15 @@ import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './AdminHeader.module.css';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
+import {
+  type AdminBellNotificationItem,
+  buildDesktopNotification,
+  filterNotifiableLeads,
+  isBellTypeEnabled,
+  leadsToBellNotificationItems,
+  reviewToBellNotificationItem,
+  supportToBellNotificationItem,
+} from './admin-header-notifications.utils';
 
 const ADMIN_NOTIFICATIONS_RESOURCE_ID = 'admin.settings.notifications';
 
@@ -83,33 +76,11 @@ function formatTimeAgo(dateStr: string): string {
   return date.toLocaleDateString('ru-RU');
 }
 
-type NotificationItem =
-  | { type: 'review'; id: string; date: string; link: string; text: string }
-  | { type: 'order'; id: string; date: string; link: string; text: string }
-  | { type: 'support'; id: string; date: string; link: string; text: string }
-  | { type: 'form'; id: string; date: string; link: string; text: string }
-  | { type: 'quizMebel'; id: string; date: string; link: string; text: string }
-  | { type: 'quizRemont'; id: string; date: string; link: string; text: string }
-  | { type: 'knowledgeFeedback'; id: string; date: string; link: string; text: string }
-  | { type: 'siteFeedback'; id: string; date: string; link: string; text: string };
+type NotificationItem = AdminBellNotificationItem;
 
-type QuizBellNotification = QuizSubmissionItem & {
-  quizSlug: typeof MEBEL_QUIZ_SLUG | typeof REMONT_QUIZ_SLUG;
-};
-
-function formatKnowledgeFeedbackAuthor(author: KnowledgePlatformFeedback['author']): string {
-  if (!author) return 'сотрудника';
-  const name = `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim();
-  return name || author.email;
+function notificationItemKey(item: NotificationItem) {
+  return `${item.type}:${item.id}`;
 }
-
-function formatSiteFeedbackAuthor(author: SitePlatformFeedback['author']): string {
-  if (!author) return 'посетителя сайта';
-  const name = `${author.firstName ?? ''} ${author.lastName ?? ''}`.trim();
-  return name || author.email;
-}
-
-const NOTIFICATIONS_DISMISSED_PREFIX = 'admin_notifications_dismissed';
 
 function getDismissedNotificationsKey(userId: string) {
   return `${NOTIFICATIONS_DISMISSED_PREFIX}_${userId}`;
@@ -133,34 +104,18 @@ function saveDismissedNotificationIds(userId: string, ids: Set<string>) {
   localStorage.setItem(getDismissedNotificationsKey(userId), JSON.stringify([...ids]));
 }
 
-function notificationItemKey(item: NotificationItem) {
-  return `${item.type}:${item.id}`;
-}
-
-const NOTIFICATIONS_SETTINGS_HREF = '/admin/settings/notifications';
+const NOTIFICATIONS_DISMISSED_PREFIX = 'admin_notifications_dismissed';
 
 const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: '/admin/settings/reviews', label: 'Отзывы' },
   { href: '/admin/orders', label: 'Заказы' },
   { href: '/admin/support', label: 'Чат' },
-  { href: '/admin/forms', label: 'Заявки' },
+  { href: '/admin/leads', label: 'Заявки' },
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
   { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
 
-const FORM_NOTIFICATION_LABELS: Record<string, string> = {
-  measurement: 'Запись на замер',
-  callback: 'Обратный звонок',
-  director: 'Письмо директору',
-  quote: 'Рассчитать стоимость',
-};
-
-function getFormNotificationBody(form: AdminFormSubmission): string {
-  if (form.type === 'director') {
-    return `${form.name}, ${form.email || form.phone || ''}`.replace(/,\s*$/, '');
-  }
-  return `${form.name}, ${form.phone}`;
-}
+const NOTIFICATIONS_SETTINGS_HREF = '/admin/settings/notifications';
 
 type AdminHeaderProps = {
   onMobileMenuOpen?: () => void;
@@ -175,35 +130,15 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
-  const [orderNotifications, setOrderNotifications] = useState<AdminOrderSummary[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
-  const [formNotifications, setFormNotifications] = useState<AdminFormSubmission[]>([]);
-  const [quizNotifications, setQuizNotifications] = useState<QuizBellNotification[]>([]);
-  const [knowledgeFeedbackNotifications, setKnowledgeFeedbackNotifications] = useState<
-    KnowledgePlatformFeedback[]
-  >([]);
-  const [siteFeedbackNotifications, setSiteFeedbackNotifications] = useState<
-    SitePlatformFeedback[]
-  >([]);
+  const [leadNotifications, setLeadNotifications] = useState<UnifiedLeadItem[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<Set<string>>(
     () => new Set()
   );
-  const prevCountsRef = useRef<{
-    reviews: number;
-    orders: number;
-    support: number;
-    measurementForms: number;
-    callbackForms: number;
-    directorForms: number;
-    quoteForms: number;
-    quizMebelSubmissions: number;
-    quizRemontSubmissions: number;
-    knowledgeFeedback: number;
-    siteFeedback: number;
-  } | null>(null);
+  const prevCountsRef = useRef<{ reviews: number; support: number; leads: number } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
 
@@ -221,127 +156,36 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
 
   const loadAllNotifications = useCallback(async () => {
     setNotificationsLoading(true);
-    const isSuperAdmin = user?.role === 'SUPER_ADMIN';
     try {
       await ensureFreshAccessToken();
-      const [
-        reviewsRes,
-        ordersRes,
-        supportRes,
-        formsMeasurementRes,
-        formsCallbackRes,
-        formsDirectorRes,
-        formsQuoteRes,
-        quizMebelRes,
-        quizRemontRes,
-        feedbackRes,
-        siteFeedbackRes,
-      ] = await Promise.all([
-        notificationSettings?.notifyOnReviews !== false
+      const settings = notificationSettings;
+
+      const [reviewsRes, supportRes, leadsRes] = await Promise.all([
+        settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
           : Promise.resolve({ data: [] as AdminReview[] }),
-        notificationSettings?.notifyOnOrders !== false
-          ? getAdminOrders(1, 10, 'PENDING')
-          : Promise.resolve({ data: [] as AdminOrderSummary[] }),
-        notificationSettings?.notifyOnSupportChat !== false
+        settings?.notifyOnSupportChat !== false
           ? getAdminSupportConversations()
           : Promise.resolve([] as AdminSupportConversation[]),
-        notificationSettings?.notifyOnMeasurementForm !== false
-          ? getAdminFormSubmissions(1, 10, 'measurement')
-          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-        notificationSettings?.notifyOnCallbackForm !== false
-          ? getAdminFormSubmissions(1, 10, 'callback')
-          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-        notificationSettings?.notifyOnDirectorForm !== false
-          ? getAdminFormSubmissions(1, 10, 'director')
-          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-        notificationSettings?.notifyOnQuoteForm !== false
-          ? getAdminFormSubmissions(1, 10, 'quote')
-          : Promise.resolve({ data: [] as AdminFormSubmission[] }),
-        hasAccess('admin.quiz.mebel') && notificationSettings?.notifyOnQuizMebel !== false
-          ? getAdminQuizNewSubmissions(MEBEL_QUIZ_SLUG, 10)
-          : Promise.resolve([] as QuizSubmissionItem[]),
-        hasAccess('admin.quiz.remont') && notificationSettings?.notifyOnQuizRemont !== false
-          ? getAdminQuizNewSubmissions(REMONT_QUIZ_SLUG, 10)
-          : Promise.resolve([] as QuizSubmissionItem[]),
-        isSuperAdmin && notificationSettings?.notifyOnKnowledgeFeedback !== false
-          ? getKnowledgePlatformFeedback({ unreadOnly: true, limit: 10 })
-          : Promise.resolve({ items: [] as KnowledgePlatformFeedback[] }),
-        isSuperAdmin && notificationSettings?.notifyOnSiteFeedback !== false
-          ? getSitePlatformFeedback({ unreadOnly: true, limit: 10 })
-          : Promise.resolve({ items: [] as SitePlatformFeedback[] }),
+        getAdminLeads({ page: 1, limit: 30, status: 'new' }),
       ]);
 
       const newReviews = reviewsRes.data ?? [];
-      const newOrders = ordersRes.data ?? [];
       const supportConvs = Array.isArray(supportRes) ? supportRes : [];
       const activeSupport = supportConvs.filter(
         (c) => c.status === 'OPEN' || c.status === 'IN_PROGRESS'
       );
-      const measurementForms = (formsMeasurementRes?.data ?? []) as AdminFormSubmission[];
-      const callbackForms = (formsCallbackRes?.data ?? []) as AdminFormSubmission[];
-      const directorForms = (formsDirectorRes?.data ?? []) as AdminFormSubmission[];
-      const quoteForms = (formsQuoteRes?.data ?? []) as AdminFormSubmission[];
-      const quizMebelSubmissions = Array.isArray(quizMebelRes) ? quizMebelRes : [];
-      const quizRemontSubmissions = Array.isArray(quizRemontRes) ? quizRemontRes : [];
-      const newForms = [
-        ...measurementForms,
-        ...callbackForms,
-        ...directorForms,
-        ...quoteForms,
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      const newQuizSubmissions: QuizBellNotification[] = [
-        ...quizMebelSubmissions.map(
-          (s): QuizBellNotification => ({ ...s, quizSlug: MEBEL_QUIZ_SLUG })
-        ),
-        ...quizRemontSubmissions.map(
-          (s): QuizBellNotification => ({ ...s, quizSlug: REMONT_QUIZ_SLUG })
-        ),
-      ].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      const unreadKnowledgeFeedback = feedbackRes.items ?? [];
-      const unreadSiteFeedback = siteFeedbackRes.items ?? [];
+      const newLeads = filterNotifiableLeads(leadsRes.data ?? [], settings, hasAccess);
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
         reviews: newReviews.length,
-        orders: newOrders.length,
         support: activeSupport.length,
-        measurementForms: measurementForms.length,
-        callbackForms: callbackForms.length,
-        directorForms: directorForms.length,
-        quoteForms: quoteForms.length,
-        quizMebelSubmissions: quizMebelSubmissions.length,
-        quizRemontSubmissions: quizRemontSubmissions.length,
-        knowledgeFeedback: unreadKnowledgeFeedback.length,
-        siteFeedback: unreadSiteFeedback.length,
+        leads: newLeads.length,
       };
 
-      const settings = notificationSettings;
-      const totalNew =
-        newReviews.length +
-        newOrders.length +
-        activeSupport.length +
-        measurementForms.length +
-        callbackForms.length +
-        directorForms.length +
-        quoteForms.length +
-        quizMebelSubmissions.length +
-        quizRemontSubmissions.length +
-        unreadKnowledgeFeedback.length +
-        unreadSiteFeedback.length;
-      const prevTotal = prev
-        ? prev.reviews +
-          prev.orders +
-          prev.support +
-          prev.measurementForms +
-          prev.callbackForms +
-          prev.directorForms +
-          prev.quoteForms +
-          prev.quizMebelSubmissions +
-          prev.quizRemontSubmissions +
-          prev.knowledgeFeedback +
-          prev.siteFeedback
-        : totalNew;
+      const totalNew = newReviews.length + activeSupport.length + newLeads.length;
+      const prevTotal = prev ? prev.reviews + prev.support + prev.leads : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
         playNotificationSound(
@@ -358,99 +202,31 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         'Notification' in window &&
         Notification.permission === 'granted'
       ) {
-        const latestReview = newReviews[0];
-        const latestOrder = newOrders[0];
-        const latestSupport = activeSupport[0];
-        const latestForm = newForms[0];
-        const latestQuiz = newQuizSubmissions[0];
-        const latestKnowledgeFeedback = unreadKnowledgeFeedback[0];
-        const latestSiteFeedback = unreadSiteFeedback[0];
-        if (latestReview && settings.notifyOnReviews) {
-          new Notification('Новый отзыв', {
-            body: `«${latestReview.product?.name || 'Товар'}» от ${latestReview.userName}`,
-            tag: `review-${latestReview.id}`,
-          });
-        } else if (latestOrder && settings.notifyOnOrders) {
-          const customer =
-            latestOrder.user?.firstName || latestOrder.user?.lastName
-              ? `${latestOrder.user.firstName || ''} ${latestOrder.user.lastName || ''}`.trim()
-              : latestOrder.user?.email || 'Клиент';
-          new Notification('Новый заказ', {
-            body: `${latestOrder.orderNumber} от ${customer}`,
-            tag: `order-${latestOrder.id}`,
-          });
-        } else if (latestSupport && settings.notifyOnSupportChat) {
-          const userName =
-            latestSupport.user?.firstName || latestSupport.user?.lastName
-              ? `${latestSupport.user.firstName || ''} ${latestSupport.user.lastName || ''}`.trim()
-              : latestSupport.user?.email || 'Клиент';
-          new Notification('Сообщение в чате', {
-            body: `Диалог с ${userName}`,
-            tag: `support-${latestSupport.id}`,
-          });
-        } else if (
-          latestForm &&
-          ((latestForm.type === 'measurement' && settings.notifyOnMeasurementForm) ||
-            (latestForm.type === 'callback' && settings.notifyOnCallbackForm) ||
-            (latestForm.type === 'director' && settings.notifyOnDirectorForm) ||
-            (latestForm.type === 'quote' && settings.notifyOnQuoteForm))
-        ) {
-          const formLabel = FORM_NOTIFICATION_LABELS[latestForm.type] ?? 'Новая заявка';
-          new Notification(formLabel, {
-            body: getFormNotificationBody(latestForm),
-            tag: `form-${latestForm.id}`,
-          });
-        } else if (
-          latestQuiz &&
-          ((latestQuiz.quizSlug === MEBEL_QUIZ_SLUG && settings.notifyOnQuizMebel) ||
-            (latestQuiz.quizSlug === REMONT_QUIZ_SLUG && settings.notifyOnQuizRemont))
-        ) {
-          const quizLabel =
-            latestQuiz.quizSlug === MEBEL_QUIZ_SLUG
-              ? 'Квиз — Мебель на заказ'
-              : 'Квиз — Ремонт и отделка';
-          new Notification(quizLabel, {
-            body: `${latestQuiz.name}, ${latestQuiz.phone}`,
-            tag: `quiz-${latestQuiz.quizSlug}-${latestQuiz.id}`,
-          });
-        } else if (latestKnowledgeFeedback && settings.notifyOnKnowledgeFeedback) {
-          const label =
-            latestKnowledgeFeedback.type === 'BUG'
-              ? 'Ошибка на обучающей платформе'
-              : 'Предложение по обучающей платформе';
-          new Notification(label, {
-            body: `От ${formatKnowledgeFeedbackAuthor(latestKnowledgeFeedback.author)}`,
-            tag: `knowledge-feedback-${latestKnowledgeFeedback.id}`,
-          });
-        } else if (latestSiteFeedback && settings.notifyOnSiteFeedback) {
-          const label =
-            latestSiteFeedback.type === 'BUG' ? 'Ошибка на сайте' : 'Предложение по сайту';
-          new Notification(label, {
-            body: `От ${formatSiteFeedbackAuthor(latestSiteFeedback.author)}`,
-            tag: `site-feedback-${latestSiteFeedback.id}`,
-          });
+        const latestItem = [
+          ...newReviews.map(reviewToBellNotificationItem),
+          ...activeSupport.map(supportToBellNotificationItem),
+          ...leadsToBellNotificationItems(newLeads),
+        ]
+          .filter((item) => isBellTypeEnabled(item.type, settings))
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+        if (latestItem) {
+          const { title, body, tag } = buildDesktopNotification(latestItem);
+          new Notification(title, { body, tag });
         }
       }
 
       setReviewNotifications(newReviews);
-      setOrderNotifications(newOrders);
       setSupportNotifications(activeSupport);
-      setFormNotifications(newForms);
-      setQuizNotifications(newQuizSubmissions);
-      setKnowledgeFeedbackNotifications(unreadKnowledgeFeedback);
-      setSiteFeedbackNotifications(unreadSiteFeedback);
+      setLeadNotifications(newLeads);
     } catch {
       setReviewNotifications([]);
-      setOrderNotifications([]);
       setSupportNotifications([]);
-      setFormNotifications([]);
-      setQuizNotifications([]);
-      setKnowledgeFeedbackNotifications([]);
-      setSiteFeedbackNotifications([]);
+      setLeadNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
-  }, [notificationSettings, user?.role, hasAccess]);
+  }, [notificationSettings, hasAccess]);
 
   useEffect(() => {
     if (!canLoadAdminNotifications) {
@@ -520,73 +296,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   };
 
   const notificationItems: NotificationItem[] = [
-    ...reviewNotifications.map((r) => ({
-      type: 'review' as const,
-      id: r.id,
-      date: r.createdAt,
-      link: `/admin/catalog/products/${r.productId}/edit`,
-      text: `Новый отзыв на «${r.product?.name || 'Товар'}» от ${r.userName}`,
-    })),
-    ...orderNotifications.map((o) => ({
-      type: 'order' as const,
-      id: o.id,
-      date: o.createdAt,
-      link: `/admin/orders?status=PENDING`,
-      text: `Новый заказ ${o.orderNumber} от ${
-        o.user?.firstName || o.user?.lastName
-          ? `${o.user.firstName || ''} ${o.user.lastName || ''}`.trim()
-          : o.user?.email || 'клиента'
-      }`,
-    })),
-    ...supportNotifications.map((s) => ({
-      type: 'support' as const,
-      id: s.id,
-      date: s.updatedAt,
-      link: `/admin/support`,
-      text: `Сообщение в чате от ${
-        s.user?.firstName || s.user?.lastName
-          ? `${s.user.firstName || ''} ${s.user.lastName || ''}`.trim()
-          : s.user?.email || 'клиента'
-      }`,
-    })),
-    ...formNotifications.map((f) => ({
-      type: 'form' as const,
-      id: f.id,
-      date: f.createdAt,
-      link: `/admin/forms`,
-      text: `${FORM_NOTIFICATION_LABELS[f.type] ?? 'Заявка'} от ${f.name}`,
-    })),
-    ...quizNotifications.map((q) => ({
-      type: (q.quizSlug === MEBEL_QUIZ_SLUG ? 'quizMebel' : 'quizRemont') as
-        | 'quizMebel'
-        | 'quizRemont',
-      id: q.id,
-      date: q.createdAt,
-      link: q.quizSlug === MEBEL_QUIZ_SLUG ? '/admin/quiz/mebel' : '/admin/quiz/remont',
-      text: `${
-        q.quizSlug === MEBEL_QUIZ_SLUG ? 'Квиз — Мебель на заказ' : 'Квиз — Ремонт и отделка'
-      } от ${q.name}`,
-    })),
-    ...knowledgeFeedbackNotifications.map((f) => ({
-      type: 'knowledgeFeedback' as const,
-      id: f.id,
-      date: f.createdAt,
-      link: `/admin/knowledge/feedback`,
-      text:
-        f.type === 'BUG'
-          ? `Ошибка на платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`
-          : `Предложение по платформе от ${formatKnowledgeFeedbackAuthor(f.author)}`,
-    })),
-    ...siteFeedbackNotifications.map((f) => ({
-      type: 'siteFeedback' as const,
-      id: f.id,
-      date: f.createdAt,
-      link: `/admin/content/site-feedback`,
-      text:
-        f.type === 'BUG'
-          ? `Ошибка на сайте от ${formatSiteFeedbackAuthor(f.author)}`
-          : `Предложение по сайту от ${formatSiteFeedbackAuthor(f.author)}`,
-    })),
+    ...reviewNotifications.map(reviewToBellNotificationItem),
+    ...supportNotifications.map(supportToBellNotificationItem),
+    ...leadsToBellNotificationItems(leadNotifications),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const visibleNotificationItems = notificationItems.filter(
@@ -609,11 +321,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         saveDismissedNotificationIds(user.id, next);
         return next;
       });
-      if (item.type === 'knowledgeFeedback') {
-        setKnowledgeFeedbackNotifications((prev) => prev.filter((f) => f.id !== item.id));
-      }
-      if (item.type === 'siteFeedback') {
-        setSiteFeedbackNotifications((prev) => prev.filter((f) => f.id !== item.id));
+      if (item.type === 'knowledgeFeedback' || item.type === 'siteFeedback') {
+        setLeadNotifications((prev) => prev.filter((lead) => lead.id !== item.id));
+        void updateAdminLead(item.id, { status: 'completed' }).catch(() => undefined);
       }
     },
     [user?.id]
@@ -627,22 +337,29 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     }
     saveDismissedNotificationIds(user.id, next);
     setDismissedNotificationIds(next);
-    if (user.role === 'SUPER_ADMIN' && knowledgeFeedbackNotifications.length > 0) {
+
+    const hasKnowledgeFeedback = leadNotifications.some(
+      (lead) => lead.source === 'knowledge_feedback'
+    );
+    const hasSiteFeedback = leadNotifications.some((lead) => lead.source === 'site_feedback');
+
+    if (user.role === 'SUPER_ADMIN' && hasKnowledgeFeedback) {
       try {
         await markKnowledgePlatformFeedbackRead();
-        setKnowledgeFeedbackNotifications([]);
       } catch {
         /* ignore */
       }
     }
-    if (user.role === 'SUPER_ADMIN' && siteFeedbackNotifications.length > 0) {
+    if (user.role === 'SUPER_ADMIN' && hasSiteFeedback) {
       try {
         await markSitePlatformFeedbackRead();
-        setSiteFeedbackNotifications([]);
       } catch {
         /* ignore */
       }
     }
+    setLeadNotifications((prev) =>
+      prev.filter((lead) => lead.source !== 'knowledge_feedback' && lead.source !== 'site_feedback')
+    );
   };
 
   const handleDismissNotification = (item: NotificationItem) => {

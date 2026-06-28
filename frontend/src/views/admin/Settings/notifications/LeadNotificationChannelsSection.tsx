@@ -55,6 +55,10 @@ type ChannelKey =
   | 'quizMebel'
   | 'quizRemont'
   | 'order'
+  | 'supportChat'
+  | 'review'
+  | 'comment'
+  | 'knowledgeTraining'
   | 'knowledgeFeedback'
   | 'siteFeedback';
 
@@ -77,6 +81,10 @@ const INITIAL: ChannelsState = {
   quizMebel: { ...EMPTY, notifyPhones: [] },
   quizRemont: { ...EMPTY, notifyPhones: [] },
   order: { ...EMPTY },
+  supportChat: { ...EMPTY },
+  review: { ...EMPTY },
+  comment: { ...EMPTY },
+  knowledgeTraining: { ...EMPTY },
   knowledgeFeedback: { ...EMPTY },
   siteFeedback: { ...EMPTY },
 };
@@ -84,7 +92,11 @@ const INITIAL: ChannelsState = {
 const TABS: { id: TabId; label: string; hint: string }[] = [
   { id: 'forms', label: 'Формы сайта', hint: 'territory-interior.ru' },
   { id: 'quizzes', label: 'Квизы', hint: 'mebel-na-zakaz-51.ru · remont-kvartir-51.ru' },
-  { id: 'other', label: 'Заказы и обратная связь', hint: 'Заказы и сообщения от пользователей' },
+  {
+    id: 'other',
+    label: 'Заказы и обратная связь',
+    hint: 'Заказы, чат, отзывы, комментарии и обратная связь',
+  },
 ];
 
 const EVENTS_BY_TAB: Record<
@@ -141,6 +153,32 @@ const EVENTS_BY_TAB: Record<
       description: 'Уведомления при отправке заказа на проверку.',
     },
     {
+      key: 'supportChat',
+      label: 'Чат поддержки',
+      title: 'Чат поддержки',
+      description: 'Сообщения от клиентов в чате поддержки на сайте.',
+    },
+    {
+      key: 'review',
+      label: 'Отзывы',
+      title: 'Новые отзывы',
+      description: 'Отзывы на товары, ожидающие модерации.',
+    },
+    {
+      key: 'comment',
+      label: 'Комментарии',
+      title: 'Комментарии пользователей',
+      description:
+        'Комментарии к материалам обучающей платформы (/admin/knowledge) и другим разделам приложения.',
+    },
+    {
+      key: 'knowledgeTraining',
+      label: 'Динамика обучения',
+      title: 'Динамика изучения материалов',
+      description:
+        'Завершение видео, текстовых материалов и успешная сдача тестов сотрудниками на обучающей платформе.',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -163,7 +201,14 @@ const DEFAULT_EVENT: Record<TabId, ChannelKey> = {
 
 function pickExternal(
   settings: ExternalNotifyChannelsSettings,
-  key: 'order' | 'knowledgeFeedback' | 'siteFeedback'
+  key:
+    | 'order'
+    | 'supportChat'
+    | 'review'
+    | 'comment'
+    | 'knowledgeTraining'
+    | 'knowledgeFeedback'
+    | 'siteFeedback'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -171,6 +216,30 @@ function pickExternal(
         notifyEmails: settings.orderNotifyEmails,
         notifyTelegramIds: settings.orderNotifyTelegramIds,
         notifyMaxIds: settings.orderNotifyMaxIds,
+      };
+    case 'supportChat':
+      return {
+        notifyEmails: settings.supportNotifyEmails,
+        notifyTelegramIds: settings.supportNotifyTelegramIds,
+        notifyMaxIds: settings.supportNotifyMaxIds,
+      };
+    case 'review':
+      return {
+        notifyEmails: settings.reviewNotifyEmails,
+        notifyTelegramIds: settings.reviewNotifyTelegramIds,
+        notifyMaxIds: settings.reviewNotifyMaxIds,
+      };
+    case 'comment':
+      return {
+        notifyEmails: settings.commentNotifyEmails,
+        notifyTelegramIds: settings.commentNotifyTelegramIds,
+        notifyMaxIds: settings.commentNotifyMaxIds,
+      };
+    case 'knowledgeTraining':
+      return {
+        notifyEmails: settings.knowledgeTrainingNotifyEmails,
+        notifyTelegramIds: settings.knowledgeTrainingNotifyTelegramIds,
+        notifyMaxIds: settings.knowledgeTrainingNotifyMaxIds,
       };
     case 'knowledgeFeedback':
       return {
@@ -192,6 +261,18 @@ function buildExternalPatch(channels: ChannelsState) {
     orderNotifyEmails: channels.order.notifyEmails,
     orderNotifyTelegramIds: channels.order.notifyTelegramIds,
     orderNotifyMaxIds: channels.order.notifyMaxIds,
+    supportNotifyEmails: channels.supportChat.notifyEmails,
+    supportNotifyTelegramIds: channels.supportChat.notifyTelegramIds,
+    supportNotifyMaxIds: channels.supportChat.notifyMaxIds,
+    reviewNotifyEmails: channels.review.notifyEmails,
+    reviewNotifyTelegramIds: channels.review.notifyTelegramIds,
+    reviewNotifyMaxIds: channels.review.notifyMaxIds,
+    commentNotifyEmails: channels.comment.notifyEmails,
+    commentNotifyTelegramIds: channels.comment.notifyTelegramIds,
+    commentNotifyMaxIds: channels.comment.notifyMaxIds,
+    knowledgeTrainingNotifyEmails: channels.knowledgeTraining.notifyEmails,
+    knowledgeTrainingNotifyTelegramIds: channels.knowledgeTraining.notifyTelegramIds,
+    knowledgeTrainingNotifyMaxIds: channels.knowledgeTraining.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -270,6 +351,10 @@ export function LeadNotificationChannelsSection() {
           notifyPhones: quizRemont?.notifyPhones ?? [],
         },
         order: pickExternal(external, 'order'),
+        supportChat: pickExternal(external, 'supportChat'),
+        review: pickExternal(external, 'review'),
+        comment: pickExternal(external, 'comment'),
+        knowledgeTraining: pickExternal(external, 'knowledgeTraining'),
         knowledgeFeedback: pickExternal(external, 'knowledgeFeedback'),
         siteFeedback: pickExternal(external, 'siteFeedback'),
       });
@@ -418,7 +503,7 @@ export function LeadNotificationChannelsSection() {
     return (
       <SettingsSubPageView
         title="Каналы уведомлений о заявках"
-        subtitle="Email, Telegram и MAX для всех типов заявок: формы сайта, квизы, заказы и обратная связь."
+        subtitle="Email, Telegram и MAX для всех типов заявок: формы, квизы, заказы, чат, отзывы, комментарии, обучение и обратная связь."
         headerActions={
           <button type="button" disabled className={formStyles.submitButton}>
             Сохранить все каналы
@@ -435,7 +520,7 @@ export function LeadNotificationChannelsSection() {
   return (
     <SettingsSubPageView
       title="Каналы уведомлений о заявках"
-      subtitle="Email, Telegram и MAX для всех типов заявок: формы сайта, квизы, заказы и обратная связь."
+      subtitle="Email, Telegram и MAX для всех типов заявок: формы, квизы, заказы, чат, отзывы, комментарии, обучение и обратная связь."
       saveNoticeVisible={saveNoticeVisible}
       headerActions={
         <button

@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PageStatus } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
+import { ExternalNotifyService } from '../../../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../../../external-notify/external-notify-settings.service';
 
 const COMMENT_AUTHOR_SELECT = {
   id: true,
@@ -37,9 +39,21 @@ function mapComment(
   };
 }
 
+function formatAuthorName(user: {
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+}): string {
+  return [user.firstName, user.lastName].filter(Boolean).join(' ').trim() || user.email;
+}
+
 @Injectable()
 export class KnowledgeMaterialCommentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
+  ) {}
 
   async attachCommentCounts<T extends { id: string }>(
     materials: T[],
@@ -68,7 +82,7 @@ export class KnowledgeMaterialCommentsService {
         status: PageStatus.PUBLISHED,
         category: { deletedAt: null },
       },
-      select: { id: true },
+      select: { id: true, title: true },
     });
     if (!material) {
       throw new NotFoundException('Материал не найден');
@@ -98,7 +112,7 @@ export class KnowledgeMaterialCommentsService {
   }
 
   async createComment(materialId: string, userId: string, text: string) {
-    await this.assertPublishedMaterial(materialId);
+    const material = await this.assertPublishedMaterial(materialId);
 
     const trimmed = text.trim();
     if (!trimmed) {
@@ -124,6 +138,26 @@ export class KnowledgeMaterialCommentsService {
     const commentCount = await this.prisma.knowledgeMaterialComment.count({
       where: { materialId },
     });
+
+    const authorName = formatAuthorName(comment.user);
+    const preview = trimmed.length > 500 ? `${trimmed.slice(0, 500)}...` : trimmed;
+    void this.externalNotifySettings.getChannelsForEvent('comment').then((channels) =>
+      this.externalNotify.send(channels, {
+        subject: `Комментарий к материалу «${material.title}»`,
+        text: [
+          'Новый комментарий на обучающей платформе',
+          '',
+          `Материал: ${material.title}`,
+          `Раздел: /admin/knowledge/materials/${materialId}`,
+          `От: ${authorName}`,
+          `Email: ${comment.user.email}`,
+          '',
+          preview,
+        ].join('\n'),
+        replyTo: comment.user.email,
+        fromLabel: 'Комментарии',
+      }),
+    );
 
     return {
       comment: mapComment(comment, userId),

@@ -25,6 +25,7 @@ export interface AdminNotificationsSettings {
   notifyOnQuizRemont: boolean;
   notifyOnKnowledgeFeedback: boolean;
   notifyOnSiteFeedback: boolean;
+  notifyOnKnowledgeTraining: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -172,6 +173,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnQuizRemont: data.notifyOnQuizRemont,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
+    notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -219,6 +221,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnQuizRemont: data.notifyOnQuizRemont,
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
+    notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',

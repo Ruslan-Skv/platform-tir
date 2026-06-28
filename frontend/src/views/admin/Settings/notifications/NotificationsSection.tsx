@@ -321,6 +321,7 @@ export function NotificationsSection() {
     notifyOnQuizRemont: true,
     notifyOnKnowledgeFeedback: true,
     notifyOnSiteFeedback: true,
+    notifyOnKnowledgeTraining: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -810,6 +811,21 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnQuizRemont">
                   Квиз — Ремонт и отделка (remont-kvartir-51.ru)
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnKnowledgeTraining"
+                  checked={formSettings.notifyOnKnowledgeTraining ?? true}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, notifyOnKnowledgeTraining: e.target.checked } : s
+                    )
+                  }
+                />
+                <label htmlFor="notifyOnKnowledgeTraining">
+                  Динамика изучения материалов на обучающей платформе
                 </label>
               </div>
               {isSuperAdmin ? (
