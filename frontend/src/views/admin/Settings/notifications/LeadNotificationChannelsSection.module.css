@@ -1,0 +1,129 @@
+.form {
+  max-width: 720px;
+}
+
+.tabShell {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: 10px;
+  background: var(--admin-surface, #fff);
+  overflow: hidden;
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0;
+  padding: 0;
+  margin: 0;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f8fafc);
+}
+
+.tab {
+  flex: 1 1 auto;
+  min-width: 140px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  text-align: center;
+  border: none;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  cursor: pointer;
+  color: var(--admin-text-muted, #64748b);
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+}
+
+.tab:hover {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #334155);
+}
+
+.tabActive {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-accent, #2563eb);
+  border-bottom-color: var(--admin-accent, #2563eb);
+  font-weight: 600;
+}
+
+.subTabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+}
+
+.subTab {
+  padding: 6px 14px;
+  font-size: 0.8125rem;
+  border-radius: 999px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f8fafc);
+  cursor: pointer;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.subTab:hover {
+  border-color: var(--admin-border-strong, #cbd5e1);
+  color: var(--admin-text-secondary, #334155);
+}
+
+.subTabActive {
+  border-color: var(--admin-accent, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-accent, #2563eb);
+  font-weight: 600;
+}
+
+.tabPanel {
+  padding: 20px 16px 8px;
+}
+
+.panelHeader {
+  margin-bottom: 20px;
+}
+
+.panelTitle {
+  margin: 0 0 6px;
+  font-size: 1.0625rem;
+  font-weight: 600;
+}
+
+.panelDescription {
+  margin: 0;
+  font-size: 0.875rem;
+  color: var(--admin-text-muted, #6b7280);
+  line-height: 1.45;
+}
+
+.envHint {
+  margin: 0 0 20px;
+  padding: 12px 16px;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+}
+
+.envHint code {
+  font-size: 0.8125rem;
+}
+
+.quizMissing {
+  margin: 0;
+  padding: 12px 14px;
+  font-size: 0.875rem;
+  border-radius: 6px;
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.quizMissing code {
+  font-size: 0.8125rem;
+}

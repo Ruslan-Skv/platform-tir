@@ -2,6 +2,7 @@
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { VideoPlayer } from '@/shared/ui/VideoPlayer';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { BlogPostEditor } from '@/views/admin/Content/Blog';
 import {
   AdminStickyPageRoot,
@@ -128,13 +129,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                     : 'Черновик'}
               </span>
             ) : null}
-            <span
-              className={`${styles.saveNotice} ${isSaveNoticeVisible ? styles.saveNoticeVisible : ''}`}
-              role="status"
-              aria-live="polite"
-            >
-              Сохранено
-            </span>
+            <AdminSaveNotice visible={isSaveNoticeVisible} />
           </div>
         </div>
         <div className={styles.pageHeaderActions}>

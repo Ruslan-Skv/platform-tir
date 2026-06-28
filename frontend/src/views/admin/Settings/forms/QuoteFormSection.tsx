@@ -12,17 +12,9 @@ import {
 
 import styles from '../shared/SettingsPage.module.css';
 import formStyles from './FormsSettingsSection.module.css';
-import { NotifyChannelsFields, type NotifyChannelsValue } from './NotifyChannelsFields';
-
-const EMPTY_CHANNELS: NotifyChannelsValue = {
-  notifyEmails: [],
-  notifyTelegramIds: [],
-  notifyMaxIds: [],
-};
 
 export function QuoteFormSection() {
   const { getAuthHeaders } = useAuth();
-  const [channels, setChannels] = useState<NotifyChannelsValue>(EMPTY_CHANNELS);
   const [serviceTypeOptions, setServiceTypeOptions] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -36,11 +28,6 @@ export function QuoteFormSection() {
   const fetchSettings = useCallback(async () => {
     try {
       const data = await getAdminQuoteFormSettings(getAuthHeaders);
-      setChannels({
-        notifyEmails: data.notifyEmails ?? [],
-        notifyTelegramIds: data.notifyTelegramIds ?? [],
-        notifyMaxIds: data.notifyMaxIds ?? [],
-      });
       setServiceTypeOptions((data.serviceTypeOptions ?? []).join('\n'));
     } catch (err) {
       console.error('Failed to fetch quote form settings:', err);
@@ -63,13 +50,7 @@ export function QuoteFormSection() {
       .map((s) => s.trim())
       .filter(Boolean);
     try {
-      await updateAdminQuoteFormSettings(
-        {
-          ...channels,
-          serviceTypeOptions: options,
-        },
-        getAuthHeaders
-      );
+      await updateAdminQuoteFormSettings({ serviceTypeOptions: options }, getAuthHeaders);
       showToast('Настройки сохранены', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Ошибка сохранения', 'error');
@@ -88,17 +69,17 @@ export function QuoteFormSection() {
 
   return (
     <section className={styles.section}>
-      <h2 className={styles.sectionTitle}>Рассчитать стоимость</h2>
+      <h2 className={styles.sectionTitle}>Виды работ и товаров</h2>
       <p className={styles.sectionDescription}>
-        Укажите каналы уведомлений: email, Telegram и/или MAX. Можно указать несколько адресов и
-        чатов в каждом канале.
+        Каждая строка станет отдельным чекбоксом в форме «Рассчитать стоимость». Пользователь также
+        может написать свой вариант.
       </p>
       <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
-        Укажите виды работ и товаров для выбора в форме — каждая строка станет отдельным чекбоксом.
-        Пользователь также может написать свой вариант.
-      </p>
-      <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
-        Заявки также сохраняются в разделе{' '}
+        Каналы уведомлений (email, Telegram, MAX) — в разделе{' '}
+        <Link href="/admin/settings/notification-channels" className={styles.infoBlockLink}>
+          Каналы уведомлений о заявках
+        </Link>
+        . Заявки сохраняются в{' '}
         <Link href="/admin/forms?type=quote" className={styles.infoBlockLink}>
           Заявки с форм
         </Link>
@@ -115,7 +96,6 @@ export function QuoteFormSection() {
             {toast.message}
           </div>
         )}
-        <NotifyChannelsFields idPrefix="quote" value={channels} onChange={setChannels} />
         <div className={formStyles.formGroup}>
           <label htmlFor="serviceTypeOptions" className={formStyles.formLabel}>
             Виды работ и товаров (каждая строка — отдельный чекбокс)

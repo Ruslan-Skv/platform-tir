@@ -5,7 +5,7 @@ export default function AdminQuoteFormPage() {
   return (
     <SettingsSubPageView
       title="Рассчитать стоимость"
-      subtitle="Настройка формы «Рассчитать стоимость» / «Отправить заявку»: email для получения уведомлений."
+      subtitle="Список видов работ и товаров для формы «Рассчитать стоимость»."
     >
       <QuoteFormSection />
     </SettingsSubPageView>

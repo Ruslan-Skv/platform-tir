@@ -255,76 +255,11 @@ export function QuizAdminPageView({ model }: { model: Model }) {
             </label>
           </div>
 
-          <h2>Уведомления о заявках</h2>
           <p className={styles.hint}>
-            Email, Telegram и MAX. Номера менеджеров включаются в текст уведомления.
+            Каналы уведомлений о заявках (email, Telegram, MAX) — в{' '}
+            <Link href="/admin/settings/notification-channels">настройках каналов уведомлений</Link>
+            .
           </p>
-          <div className={styles.settingsNotifyGrid}>
-            <label>
-              Email (каждый с новой строки)
-              <textarea
-                value={(quiz.notifyEmails ?? []).join('\n')}
-                onChange={(e) =>
-                  setQuizField(
-                    'notifyEmails',
-                    e.target.value
-                      .split('\n')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                rows={2}
-              />
-            </label>
-            <label>
-              Telegram chat ID
-              <textarea
-                value={(quiz.notifyTelegramIds ?? []).join('\n')}
-                onChange={(e) =>
-                  setQuizField(
-                    'notifyTelegramIds',
-                    e.target.value
-                      .split('\n')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                rows={2}
-              />
-            </label>
-            <label>
-              MAX chat ID
-              <textarea
-                value={(quiz.notifyMaxIds ?? []).join('\n')}
-                onChange={(e) =>
-                  setQuizField(
-                    'notifyMaxIds',
-                    e.target.value
-                      .split('\n')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                rows={2}
-              />
-            </label>
-            <label>
-              Телефоны менеджеров
-              <textarea
-                value={(quiz.notifyPhones ?? []).join('\n')}
-                onChange={(e) =>
-                  setQuizField(
-                    'notifyPhones',
-                    e.target.value
-                      .split('\n')
-                      .map((s) => s.trim())
-                      .filter(Boolean)
-                  )
-                }
-                rows={2}
-              />
-            </label>
-          </div>
         </form>
       ) : null}
 

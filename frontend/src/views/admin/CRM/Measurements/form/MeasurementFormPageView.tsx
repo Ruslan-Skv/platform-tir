@@ -3,6 +3,8 @@
 import Link from 'next/link';
 
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
+import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
@@ -116,15 +118,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
             <h1 className={styles.title}>
               {measurementId ? 'Редактирование замера' : 'Новый замер'}
             </h1>
-            <span
-              className={`${styles.autosaveNotice} ${
-                isAutosaveMessage ? styles.autosaveNoticeVisible : ''
-              }`}
-              role="status"
-              aria-live="polite"
-            >
-              Сохранено
-            </span>
+            <AdminSaveNotice visible={isAutosaveMessage} />
           </div>
           <div className={styles.titleControls}>
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
@@ -164,11 +158,9 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
         </div>
       </div>
 
-      {message && !isAutosaveMessage && (
-        <div className={`${styles.message} ${styles[`message${message.type}`]}`}>
-          {message.text}
-        </div>
-      )}
+      {message && !isAutosaveMessage ? (
+        <AdminFormMessage type={message.type}>{message.text}</AdminFormMessage>
+      ) : null}
 
       <div className={styles.form}>
         <section className={styles.formBlockSection}>

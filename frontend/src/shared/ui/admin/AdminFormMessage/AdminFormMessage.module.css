@@ -1,0 +1,26 @@
+.root {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border-radius: var(--admin-radius-sm);
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
+}
+
+.success {
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
+}
+
+.error {
+  background: var(--admin-error-bg-soft);
+  color: var(--admin-error-text-strong);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .success {
+  background: var(--admin-overlay-color-034);
+  color: var(--admin-success-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .error {
+  background: var(--admin-overlay-color-059);
+  color: var(--admin-danger-border-strong);
+}

@@ -2,9 +2,9 @@
 
 import Link from 'next/link';
 
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminToolbarTrashButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import toolbarBadgeStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarTrashButton.module.css';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
@@ -68,7 +68,7 @@ export function EstimatesListPageHeader({
         <div className={cdEstimatesList.estimatesEditorHeaderStack}>
           <div className={cdEstimatesList.contractsListHeaderLeft}>
             <h1 className={cdEstimatesList.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
-            <div className={measurementFormStyles.titleWithAutosave}>
+            <div className={cdEstimatesList.titleWithAutosave}>
               <span
                 className={cdEstimatesList.contractsListCount}
                 title={
@@ -96,15 +96,7 @@ export function EstimatesListPageHeader({
                   </>
                 )}
               </span>
-              <span
-                className={`${measurementFormStyles.autosaveNotice} ${
-                  autosaveVisible ? measurementFormStyles.autosaveNoticeVisible : ''
-                }`}
-                role="status"
-                aria-live="polite"
-              >
-                Сохранено.
-              </span>
+              <AdminSaveNotice visible={autosaveVisible}>Сохранено.</AdminSaveNotice>
             </div>
           </div>
           {!archiveView ? (

@@ -2,6 +2,8 @@ import type { ReactNode } from 'react';
 
 import Link from 'next/link';
 
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+
 import styles from './SettingsPage.module.css';
 
 type SettingsSubPageViewProps = {
@@ -11,6 +13,9 @@ type SettingsSubPageViewProps = {
   /** Специальный header для страницы бэйджей каталога */
   headerVariant?: 'default' | 'badges';
   backLink?: { href: string; label: string };
+  headerActions?: ReactNode;
+  /** Бейдж «Сохранено» справа от заголовка (как на странице замера). */
+  saveNoticeVisible?: boolean;
   children: ReactNode;
 };
 
@@ -20,6 +25,8 @@ export function SettingsSubPageView({
   wide = false,
   headerVariant = 'default',
   backLink,
+  headerActions,
+  saveNoticeVisible = false,
   children,
 }: SettingsSubPageViewProps) {
   const pageClassName = wide ? `${styles.page} ${styles.pageWide}` : styles.page;
@@ -40,7 +47,13 @@ export function SettingsSubPageView({
         </header>
       ) : (
         <header className={styles.header}>
-          <h1 className={styles.title}>{title}</h1>
+          <div className={styles.headerTop}>
+            <div className={styles.headerTitleGroup}>
+              <h1 className={styles.title}>{title}</h1>
+              <AdminSaveNotice visible={saveNoticeVisible} />
+            </div>
+            {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}
+          </div>
           {subtitle && <p className={styles.subtitle}>{subtitle}</p>}
           {backLink && (
             <p className={styles.backNav}>

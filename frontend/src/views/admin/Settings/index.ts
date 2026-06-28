@@ -10,10 +10,7 @@ export {
   ProductCardBadgesSection,
   WeatherstripSettingsSection,
 } from './catalog';
-export { CallbackFormSection } from './forms/CallbackFormSection';
 export { QuoteFormSection } from './forms/QuoteFormSection';
-export { MeasurementFormSection } from './forms/MeasurementFormSection';
-export { DirectorMessageSection } from './forms/DirectorMessageSection';
 export { CatalogFilterBlockSection } from './catalog-filters/CatalogFilterBlockSection';
 export { CatalogHubPreviewSection } from './catalog-hub/CatalogHubPreviewSection';
 export { ReviewsSection } from './reviews/ReviewsSection';

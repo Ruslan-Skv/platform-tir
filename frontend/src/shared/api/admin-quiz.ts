@@ -77,9 +77,19 @@ export async function getAdminQuiz(
   slug: string,
   getAuthHeaders: () => Record<string, string>
 ): Promise<AdminQuizLanding> {
+  const quiz = await getAdminQuizOptional(slug, getAuthHeaders);
+  if (!quiz) throw new Error('Не удалось загрузить квиз');
+  return quiz;
+}
+
+export async function getAdminQuizOptional(
+  slug: string,
+  getAuthHeaders: () => Record<string, string>
+): Promise<AdminQuizLanding | null> {
   const res = await apiFetch(`${API_URL}/admin/quiz/${slug}`, {
     headers: getAuthHeaders(),
   });
+  if (res.status === 404) return null;
   if (!res.ok) throw new Error('Не удалось загрузить квиз');
   return res.json();
 }

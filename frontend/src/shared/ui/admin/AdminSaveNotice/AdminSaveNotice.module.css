@@ -1,0 +1,28 @@
+.root {
+  flex-shrink: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateX(-4px);
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
+  line-height: var(--admin-line-height-xs);
+  white-space: nowrap;
+  border: 1px solid var(--admin-success-border-soft);
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text-strong);
+}
+
+.visible {
+  opacity: 1;
+  transform: translateX(0);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .root {
+  background: var(--admin-overlay-color-059);
+  color: var(--admin-success-border);
+}

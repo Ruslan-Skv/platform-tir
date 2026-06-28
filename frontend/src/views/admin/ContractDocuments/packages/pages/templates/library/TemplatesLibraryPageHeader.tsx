@@ -3,12 +3,12 @@
 import { PencilSquareIcon } from '@heroicons/react/24/outline';
 
 import { AdminHelpTooltip } from '@/shared/ui/admin/AdminHelpTooltip';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import {
   AdminToolbarArchiveButton,
   AdminToolbarIconButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
-import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 import { PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
 import cdTemplates from '../../../../styles/templates-library.module.css';
@@ -109,17 +109,7 @@ export function TemplatesLibraryPageHeader({
             сохраняются автоматически.
           </p>
         </div>
-        {isSuperAdmin ? (
-          <span
-            className={`${measurementFormStyles.autosaveNotice} ${
-              autosaveSavedVisible ? measurementFormStyles.autosaveNoticeVisible : ''
-            }`}
-            role="status"
-            aria-live="polite"
-          >
-            Сохранено
-          </span>
-        ) : null}
+        {isSuperAdmin ? <AdminSaveNotice visible={autosaveSavedVisible} /> : null}
       </div>
       <div className={cdTemplates.templatesLibraryHeaderActions}>
         <div className={cdTemplates.templatesLibraryHeaderButtons}>

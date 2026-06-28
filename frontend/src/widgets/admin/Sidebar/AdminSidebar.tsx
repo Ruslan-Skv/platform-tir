@@ -452,9 +452,14 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.user-cabinet',
       },
       {
-        label: 'Уведомления',
+        label: 'Уведомления в админке',
         href: '/admin/settings/notifications',
         resourceId: 'admin.settings.notifications',
+      },
+      {
+        label: 'Каналы уведомлений о заявках',
+        href: '/admin/settings/notification-channels',
+        resourceId: 'admin.settings.notification-channels',
       },
       {
         label: 'Оформление заказов',
@@ -472,22 +477,7 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.admin-link',
       },
       {
-        label: 'Письмо директору',
-        href: '/admin/settings/director-message',
-        resourceId: 'admin.settings.director-message',
-      },
-      {
-        label: 'Записаться на замер',
-        href: '/admin/settings/measurement-form',
-        resourceId: 'admin.settings.measurement-form',
-      },
-      {
-        label: 'Заказать звонок',
-        href: '/admin/settings/callback-form',
-        resourceId: 'admin.settings.callback-form',
-      },
-      {
-        label: 'Рассчитать стоимость',
+        label: 'Рассчитать стоимость (виды работ)',
         href: '/admin/settings/quote-form',
         resourceId: 'admin.settings.quote-form',
       },

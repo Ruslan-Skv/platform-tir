@@ -44,6 +44,14 @@
   gap: var(--admin-space-2xl);
 }
 
+.titleWithAutosave {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
 .contractsListCount {
   background: var(--admin-border);
   padding: var(--admin-space-xs) var(--admin-space-xl);

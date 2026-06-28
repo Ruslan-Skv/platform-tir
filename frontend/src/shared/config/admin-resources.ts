@@ -232,8 +232,13 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   {
     id: 'admin.settings.notifications',
-    label: 'Уведомления',
+    label: 'Уведомления в админке',
     path: '/admin/settings/notifications',
+  },
+  {
+    id: 'admin.settings.notification-channels',
+    label: 'Каналы уведомлений о заявках',
+    path: '/admin/settings/notification-channels',
   },
   {
     id: 'admin.settings.checkout',
@@ -251,23 +256,8 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/admin-link',
   },
   {
-    id: 'admin.settings.director-message',
-    label: 'Письмо директору',
-    path: '/admin/settings/director-message',
-  },
-  {
-    id: 'admin.settings.measurement-form',
-    label: 'Записаться на замер',
-    path: '/admin/settings/measurement-form',
-  },
-  {
-    id: 'admin.settings.callback-form',
-    label: 'Заказать звонок',
-    path: '/admin/settings/callback-form',
-  },
-  {
     id: 'admin.settings.quote-form',
-    label: 'Рассчитать стоимость',
+    label: 'Рассчитать стоимость (виды работ)',
     path: '/admin/settings/quote-form',
   },
   {
