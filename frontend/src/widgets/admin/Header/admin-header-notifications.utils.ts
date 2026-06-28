@@ -1,4 +1,5 @@
 import type { LeadSource, UnifiedLeadItem } from '@/shared/api/admin-leads';
+import { LEAD_SOURCES } from '@/shared/api/admin-leads';
 import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
@@ -11,7 +12,20 @@ export type AdminBellNotificationType =
   | 'quizMebel'
   | 'quizRemont'
   | 'knowledgeFeedback'
-  | 'siteFeedback';
+  | 'siteFeedback'
+  | 'knowledgeTraining';
+
+export type AdminBellTrainingNotification = {
+  id: string;
+  kind: 'video_completed' | 'study_completed' | 'quiz_passed';
+  kindLabel: string;
+  materialId: string;
+  materialTitle: string;
+  userId: string;
+  userName: string;
+  scorePercent: number | null;
+  occurredAt: string;
+};
 
 export type AdminBellNotificationItem = {
   type: AdminBellNotificationType;
@@ -124,6 +138,20 @@ export function leadToBellNotificationItem(
   };
 }
 
+export function trainingToBellNotificationItem(
+  item: AdminBellTrainingNotification
+): AdminBellNotificationItem {
+  const scoreSuffix =
+    item.kind === 'quiz_passed' && item.scorePercent != null ? ` (${item.scorePercent}%)` : '';
+  return {
+    type: 'knowledgeTraining',
+    id: item.id,
+    date: item.occurredAt,
+    link: `/admin/knowledge/materials/${item.materialId}`,
+    text: `${item.kindLabel}${scoreSuffix}: ${item.userName} — «${item.materialTitle}»`,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -149,6 +177,37 @@ export function supportToBellNotificationItem(
     link: '/admin/support',
     text: `Сообщение в чате от ${userName}`,
   };
+}
+
+export function parseLeadSourceFromBellId(id: string): LeadSource | null {
+  const colonIdx = id.indexOf(':');
+  if (colonIdx <= 0) return null;
+  const prefix = id.slice(0, colonIdx);
+  return (LEAD_SOURCES as readonly string[]).includes(prefix) ? (prefix as LeadSource) : null;
+}
+
+export function isNotificationItemEnabled(
+  item: AdminBellNotificationItem,
+  settings: AdminNotificationsSettings | null,
+  hasAccess: (resourceId: string) => boolean,
+  userRole?: string | null
+): boolean {
+  const leadSource = parseLeadSourceFromBellId(item.id);
+  if (leadSource) {
+    if (
+      (leadSource === 'knowledge_feedback' || leadSource === 'site_feedback') &&
+      userRole !== 'SUPER_ADMIN'
+    ) {
+      return false;
+    }
+    return isLeadSourceNotifiable(leadSource, settings, hasAccess);
+  }
+
+  if (item.type === 'knowledgeTraining') {
+    return hasAccess('admin.knowledge') && isBellTypeEnabled(item.type, settings);
+  }
+
+  return isBellTypeEnabled(item.type, settings);
 }
 
 export function isBellTypeEnabled(
@@ -178,6 +237,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnKnowledgeFeedback !== false;
     case 'siteFeedback':
       return settings.notifyOnSiteFeedback !== false;
+    case 'knowledgeTraining':
+      return settings.notifyOnKnowledgeTraining !== false;
     default:
       return false;
   }
@@ -226,6 +287,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
       return {
         title: item.text.startsWith('Ошибка') ? 'Ошибка на сайте' : 'Предложение по сайту',
         body: item.text.replace(/^(Ошибка на сайте|Предложение по сайту) от /, ''),
+        tag,
+      };
+    case 'knowledgeTraining':
+      return {
+        title: 'Динамика обучения',
+        body: item.text,
         tag,
       };
     default:

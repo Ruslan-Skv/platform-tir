@@ -296,3 +296,51 @@ export async function deleteAdminNotificationSound(id: string): Promise<void> {
   });
   if (!res.ok) throw new Error('Не удалось удалить звук');
 }
+
+const BELL_DISMISS_BATCH_SIZE = 200;
+
+export async function getAdminBellDismissedKeys(): Promise<string[]> {
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/dismissed`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить прочитанные уведомления');
+  const data = (await res.json()) as { keys?: string[] };
+  return Array.isArray(data.keys) ? data.keys : [];
+}
+
+export async function dismissAdminBellNotifications(keys: string[]): Promise<void> {
+  const unique = [...new Set(keys.filter(Boolean))];
+  for (let i = 0; i < unique.length; i += BELL_DISMISS_BATCH_SIZE) {
+    const chunk = unique.slice(i, i + BELL_DISMISS_BATCH_SIZE);
+    const res = await apiFetch(`${API_URL}/admin/notifications/bell/dismissed`, {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ keys: chunk }),
+    });
+    if (!res.ok) throw new Error('Не удалось сохранить прочитанные уведомления');
+  }
+}
+
+export type AdminBellTrainingNotification = {
+  id: string;
+  kind: 'video_completed' | 'study_completed' | 'quiz_passed';
+  kindLabel: string;
+  materialId: string;
+  materialTitle: string;
+  userId: string;
+  userName: string;
+  scorePercent: number | null;
+  occurredAt: string;
+};
+
+export async function getAdminBellTrainingNotifications(
+  limit = 20
+): Promise<AdminBellTrainingNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/training?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления об обучении');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}

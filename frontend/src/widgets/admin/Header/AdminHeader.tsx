@@ -21,8 +21,14 @@ import { useTheme } from '@/features/theme';
 import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge';
 import { getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
-import { getAdminNotificationsSettings } from '@/shared/api/admin-notifications';
-import type { AdminNotificationsSettings } from '@/shared/api/admin-notifications';
+import {
+  getAdminBellTrainingNotifications,
+  getAdminNotificationsSettings,
+} from '@/shared/api/admin-notifications';
+import type {
+  AdminBellTrainingNotification,
+  AdminNotificationsSettings,
+} from '@/shared/api/admin-notifications';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
 import type { AdminReview } from '@/shared/api/admin-reviews';
 import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
@@ -43,13 +49,20 @@ import { getSafeHref } from '@/shared/lib/sanitize';
 import styles from './AdminHeader.module.css';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
 import {
+  addDismissedNotificationKeys,
+  notificationItemKey,
+  syncDismissedNotificationIds,
+} from './admin-bell-dismissed.storage';
+import {
   type AdminBellNotificationItem,
   buildDesktopNotification,
   filterNotifiableLeads,
   isBellTypeEnabled,
+  isNotificationItemEnabled,
   leadsToBellNotificationItems,
   reviewToBellNotificationItem,
   supportToBellNotificationItem,
+  trainingToBellNotificationItem,
 } from './admin-header-notifications.utils';
 
 const ADMIN_NOTIFICATIONS_RESOURCE_ID = 'admin.settings.notifications';
@@ -78,39 +91,12 @@ function formatTimeAgo(dateStr: string): string {
 
 type NotificationItem = AdminBellNotificationItem;
 
-function notificationItemKey(item: NotificationItem) {
-  return `${item.type}:${item.id}`;
-}
-
-function getDismissedNotificationsKey(userId: string) {
-  return `${NOTIFICATIONS_DISMISSED_PREFIX}_${userId}`;
-}
-
-function loadDismissedNotificationIds(userId: string): Set<string> {
-  if (typeof window === 'undefined') return new Set();
-  try {
-    const raw = localStorage.getItem(getDismissedNotificationsKey(userId));
-    if (!raw) return new Set();
-    const parsed: unknown = JSON.parse(raw);
-    return Array.isArray(parsed)
-      ? new Set(parsed.filter((value): value is string => typeof value === 'string'))
-      : new Set();
-  } catch {
-    return new Set();
-  }
-}
-
-function saveDismissedNotificationIds(userId: string, ids: Set<string>) {
-  localStorage.setItem(getDismissedNotificationsKey(userId), JSON.stringify([...ids]));
-}
-
-const NOTIFICATIONS_DISMISSED_PREFIX = 'admin_notifications_dismissed';
-
 const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] = [
   { href: '/admin/settings/reviews', label: 'Отзывы' },
   { href: '/admin/orders', label: 'Заказы' },
   { href: '/admin/support', label: 'Чат' },
   { href: '/admin/leads', label: 'Заявки' },
+  { href: '/admin/knowledge/analytics', label: 'Динамика обучения' },
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
   { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
@@ -132,13 +118,21 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
   const [leadNotifications, setLeadNotifications] = useState<UnifiedLeadItem[]>([]);
+  const [trainingNotifications, setTrainingNotifications] = useState<
+    AdminBellTrainingNotification[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<Set<string>>(
     () => new Set()
   );
-  const prevCountsRef = useRef<{ reviews: number; support: number; leads: number } | null>(null);
+  const prevCountsRef = useRef<{
+    reviews: number;
+    support: number;
+    leads: number;
+    training: number;
+  } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
 
@@ -160,7 +154,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       await ensureFreshAccessToken();
       const settings = notificationSettings;
 
-      const [reviewsRes, supportRes, leadsRes] = await Promise.all([
+      const loadTraining =
+        settings?.notifyOnKnowledgeTraining !== false && hasAccess('admin.knowledge')
+          ? getAdminBellTrainingNotifications(20)
+          : Promise.resolve([] as AdminBellTrainingNotification[]);
+
+      const [reviewsRes, supportRes, leadsRes, trainingRes] = await Promise.all([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
           : Promise.resolve({ data: [] as AdminReview[] }),
@@ -168,6 +167,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ? getAdminSupportConversations()
           : Promise.resolve([] as AdminSupportConversation[]),
         getAdminLeads({ page: 1, limit: 30, status: 'new' }),
+        loadTraining,
       ]);
 
       const newReviews = reviewsRes.data ?? [];
@@ -176,16 +176,19 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         (c) => c.status === 'OPEN' || c.status === 'IN_PROGRESS'
       );
       const newLeads = filterNotifiableLeads(leadsRes.data ?? [], settings, hasAccess);
+      const newTraining = trainingRes ?? [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
         reviews: newReviews.length,
         support: activeSupport.length,
         leads: newLeads.length,
+        training: newTraining.length,
       };
 
-      const totalNew = newReviews.length + activeSupport.length + newLeads.length;
-      const prevTotal = prev ? prev.reviews + prev.support + prev.leads : totalNew;
+      const totalNew =
+        newReviews.length + activeSupport.length + newLeads.length + newTraining.length;
+      const prevTotal = prev ? prev.reviews + prev.support + prev.leads + prev.training : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
         playNotificationSound(
@@ -206,6 +209,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ...newReviews.map(reviewToBellNotificationItem),
           ...activeSupport.map(supportToBellNotificationItem),
           ...leadsToBellNotificationItems(newLeads),
+          ...newTraining.map(trainingToBellNotificationItem),
         ]
           .filter((item) => isBellTypeEnabled(item.type, settings))
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -219,10 +223,12 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setReviewNotifications(newReviews);
       setSupportNotifications(activeSupport);
       setLeadNotifications(newLeads);
+      setTrainingNotifications(newTraining);
     } catch {
       setReviewNotifications([]);
       setSupportNotifications([]);
       setLeadNotifications([]);
+      setTrainingNotifications([]);
     } finally {
       setNotificationsLoading(false);
     }
@@ -237,9 +243,17 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   }, [canLoadAdminNotifications, loadNotificationSettings]);
 
   useEffect(() => {
-    if (user?.id) {
-      setDismissedNotificationIds(loadDismissedNotificationIds(user.id));
+    if (!user?.id) {
+      setDismissedNotificationIds(new Set());
+      return;
     }
+    let cancelled = false;
+    void syncDismissedNotificationIds(user.id).then((ids) => {
+      if (!cancelled) setDismissedNotificationIds(ids);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, [user?.id]);
 
   useEffect(() => {
@@ -299,13 +313,19 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     ...reviewNotifications.map(reviewToBellNotificationItem),
     ...supportNotifications.map(supportToBellNotificationItem),
     ...leadsToBellNotificationItems(leadNotifications),
+    ...trainingNotifications.map(trainingToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
-  const visibleNotificationItems = notificationItems.filter(
-    (item) => !dismissedNotificationIds.has(notificationItemKey(item))
+  const enabledNotificationItems = notificationItems.filter((item) =>
+    isNotificationItemEnabled(item, notificationSettings, hasAccess, user?.role)
+  );
+
+  const visibleNotificationItems = enabledNotificationItems.filter(
+    (item) => !dismissedNotificationIds.has(notificationItemKey(item.type, item.id))
   );
   const hasDismissedNotifications =
-    notificationItems.length > 0 && visibleNotificationItems.length < notificationItems.length;
+    enabledNotificationItems.length > 0 &&
+    visibleNotificationItems.length < enabledNotificationItems.length;
 
   const unreadCount = visibleNotificationItems.length;
   const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
@@ -313,13 +333,13 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const dismissNotification = useCallback(
     (item: NotificationItem) => {
       if (!user?.id) return;
-      const key = notificationItemKey(item);
+      const key = notificationItemKey(item.type, item.id);
       setDismissedNotificationIds((prev) => {
         if (prev.has(key)) return prev;
-        const next = new Set(prev);
-        next.add(key);
-        saveDismissedNotificationIds(user.id, next);
-        return next;
+        void addDismissedNotificationKeys(user.id, prev, [key]).then(setDismissedNotificationIds);
+        const optimistic = new Set(prev);
+        optimistic.add(key);
+        return optimistic;
       });
       if (item.type === 'knowledgeFeedback' || item.type === 'siteFeedback') {
         setLeadNotifications((prev) => prev.filter((lead) => lead.id !== item.id));
@@ -331,11 +351,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
 
   const handleMarkAllNotificationsRead = async () => {
     if (!user?.id) return;
-    const next = new Set(dismissedNotificationIds);
-    for (const item of notificationItems) {
-      next.add(notificationItemKey(item));
-    }
-    saveDismissedNotificationIds(user.id, next);
+    const keys = enabledNotificationItems.map((item) => notificationItemKey(item.type, item.id));
+    const next = await addDismissedNotificationKeys(user.id, dismissedNotificationIds, keys);
     setDismissedNotificationIds(next);
 
     const hasKnowledgeFeedback = leadNotifications.some(
@@ -517,7 +534,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
                           ? 'Все уведомления прочитаны'
                           : 'Нет новых уведомлений'}
                       </p>
-                      {notificationItems.length > 0 && !hasDismissedNotifications ? (
+                      {enabledNotificationItems.length > 0 && !hasDismissedNotifications ? (
                         <span className={styles.notificationHint}>
                           Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
                         </span>

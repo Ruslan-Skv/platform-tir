@@ -64,6 +64,7 @@ model User {
   knowledgePlatformFeedback               KnowledgePlatformFeedback[]
   sitePlatformFeedback                    SitePlatformFeedback[]
   adminPushSubscriptions                  AdminPushSubscription[]
+  adminBellDismissed                      AdminBellDismissedNotification[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   cartItems                               CartItem[]
   cartServiceItems                        CartServiceItem[]
@@ -2199,6 +2200,18 @@ model AdminPushSubscription {
 
   @@index([userId])
   @@map("admin_push_subscriptions")
+}
+
+model AdminBellDismissedNotification {
+  id          String   @id @default(cuid())
+  userId      String
+  key         String
+  dismissedAt DateTime @default(now())
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId, dismissedAt])
+  @@map("admin_bell_dismissed")
 }
 
 model AdminNotificationsBlock {

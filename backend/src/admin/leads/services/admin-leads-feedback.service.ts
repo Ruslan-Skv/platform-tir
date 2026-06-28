@@ -110,7 +110,10 @@ export class AdminLeadsFeedbackService {
     search?: string;
   }): Prisma.SitePlatformFeedbackWhereInput {
     const where: Prisma.SitePlatformFeedbackWhereInput = {};
-    if (opts.status) where.status = opts.status;
+    if (opts.status) {
+      where.status = opts.status;
+      if (opts.status === 'new') where.readAt = null;
+    }
     if (opts.search?.trim()) {
       const q = opts.search.trim();
       where.OR = [
@@ -128,7 +131,10 @@ export class AdminLeadsFeedbackService {
     search?: string;
   }): Prisma.KnowledgePlatformFeedbackWhereInput {
     const where: Prisma.KnowledgePlatformFeedbackWhereInput = {};
-    if (opts.status) where.status = opts.status;
+    if (opts.status) {
+      where.status = opts.status;
+      if (opts.status === 'new') where.readAt = null;
+    }
     if (opts.search?.trim()) {
       const q = opts.search.trim();
       where.OR = [

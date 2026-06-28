@@ -31,7 +31,10 @@ import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
 import { UpdateExternalNotifySettingsDto } from '../external-notify/dto/update-external-notify-settings.dto';
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
+import { AdminBellDismissedService } from './admin-bell-dismissed.service';
+import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
+import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
 const soundsDir = path.join(process.cwd(), 'uploads', 'notification-sounds');
 
@@ -55,6 +58,8 @@ export class AdminNotificationsController {
     private readonly notifications: AdminNotificationsService,
     private readonly pushSubscriptions: AdminPushSubscriptionsService,
     private readonly externalNotifySettings: AdminExternalNotifyService,
+    private readonly bellDismissed: AdminBellDismissedService,
+    private readonly bellTrainingFeed: AdminBellTrainingFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -85,6 +90,30 @@ export class AdminNotificationsController {
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })
   getSettings(@Req() req: RequestWithUser) {
     return this.notifications.getSettingsForUser(req.user?.id, req.user?.role ?? null);
+  }
+
+  @SkipThrottle()
+  @Get('bell/dismissed')
+  @ApiOperation({ summary: 'Ключи уведомлений колокольчика, отмеченных прочитанными' })
+  getBellDismissed(@Req() req: RequestWithUser) {
+    return this.bellDismissed.listKeys(req.user.id).then((keys) => ({ keys }));
+  }
+
+  @Post('bell/dismissed')
+  @ApiOperation({ summary: 'Отметить уведомления колокольчика прочитанными' })
+  dismissBellNotifications(
+    @Req() req: RequestWithUser,
+    @Body() dto: DismissAdminBellNotificationsDto,
+  ) {
+    return this.bellDismissed.dismiss(req.user.id, dto.keys);
+  }
+
+  @SkipThrottle()
+  @Get('bell/training')
+  @ApiOperation({ summary: 'События динамики обучения для колокольчика админки' })
+  getBellTrainingFeed(@Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellTrainingFeed.listRecent(take);
   }
 
   @Get('settings/by-user/:userId')

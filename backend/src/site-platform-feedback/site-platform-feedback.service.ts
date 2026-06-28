@@ -90,7 +90,7 @@ export class SitePlatformFeedbackService {
   async markAllAsRead() {
     const result = await this.prisma.sitePlatformFeedback.updateMany({
       where: { readAt: null },
-      data: { readAt: new Date() },
+      data: { readAt: new Date(), status: 'completed' },
     });
     return { marked: result.count };
   }
