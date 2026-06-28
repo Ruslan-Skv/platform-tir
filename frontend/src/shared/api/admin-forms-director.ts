@@ -12,7 +12,7 @@ export interface NotifyChannelsSettings {
 export async function getAdminDirectorMessageSettings(
   getAuthHeaders: () => Record<string, string>
 ): Promise<NotifyChannelsSettings> {
-  const res = await apiFetch(`${API_URL}/admin/forms/director-message-settings`, {
+  const res = await apiFetch(`${API_URL}/admin/forms/director-settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -27,7 +27,7 @@ export async function updateAdminDirectorMessageSettings(
   },
   getAuthHeaders: () => Record<string, string>
 ): Promise<NotifyChannelsSettings> {
-  const res = await apiFetch(`${API_URL}/admin/forms/director-message-settings`, {
+  const res = await apiFetch(`${API_URL}/admin/forms/director-settings`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',
