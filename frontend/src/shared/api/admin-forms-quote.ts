@@ -3,8 +3,9 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 export interface QuoteFormSettings {
-  recipientEmail: string | null;
-  telegramChatId: string | null;
+  notifyEmails: string[];
+  notifyTelegramIds: string[];
+  notifyMaxIds: string[];
   serviceTypeOptions: string[];
   updatedAt: string | null;
 }
@@ -21,8 +22,9 @@ export async function getAdminQuoteFormSettings(
 
 export async function updateAdminQuoteFormSettings(
   data: {
-    recipientEmail?: string | null;
-    telegramChatId?: string | null;
+    notifyEmails?: string[];
+    notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
     serviceTypeOptions?: string[] | null;
   },
   getAuthHeaders: () => Record<string, string>

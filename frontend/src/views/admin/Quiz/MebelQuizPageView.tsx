@@ -257,7 +257,7 @@ export function QuizAdminPageView({ model }: { model: Model }) {
 
           <h2>Уведомления о заявках</h2>
           <p className={styles.hint}>
-            Email и Telegram. Номера менеджеров включаются в текст уведомления.
+            Email, Telegram и MAX. Номера менеджеров включаются в текст уведомления.
           </p>
           <div className={styles.settingsNotifyGrid}>
             <label>
@@ -283,6 +283,22 @@ export function QuizAdminPageView({ model }: { model: Model }) {
                 onChange={(e) =>
                   setQuizField(
                     'notifyTelegramIds',
+                    e.target.value
+                      .split('\n')
+                      .map((s) => s.trim())
+                      .filter(Boolean)
+                  )
+                }
+                rows={2}
+              />
+            </label>
+            <label>
+              MAX chat ID
+              <textarea
+                value={(quiz.notifyMaxIds ?? []).join('\n')}
+                onChange={(e) =>
+                  setQuizField(
+                    'notifyMaxIds',
                     e.target.value
                       .split('\n')
                       .map((s) => s.trim())

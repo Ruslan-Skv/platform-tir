@@ -1,7 +1,9 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { KnowledgePlatformFeedbackType, Prisma } from '@prisma/client';
-import { PrismaService } from '../../../database/prisma.service';
 import { AdminBellPushService } from '../../../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../../../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../../../external-notify/external-notify-settings.service';
+import { PrismaService } from '../../../database/prisma.service';
 
 const FEEDBACK_AUTHOR_SELECT = {
   id: true,
@@ -47,6 +49,8 @@ export class KnowledgePlatformFeedbackService {
   constructor(
     private prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
 
   async listFeedback(options?: {
@@ -110,6 +114,14 @@ export class KnowledgePlatformFeedbackService {
       url: '/admin/knowledge/feedback',
       tag: `knowledge-feedback-${feedback.id}`,
     });
+
+    void this.externalNotifySettings.getChannelsForEvent('knowledge_feedback').then((channels) =>
+      this.externalNotify.send(channels, {
+        subject: title,
+        text: `${title}\n\nОт: ${authorName}\nEmail: ${feedback.user.email}\n\n${trimmed}`,
+        fromLabel: 'Обучающая платформа',
+      }),
+    );
 
     return {
       feedback: mapFeedbackItem(feedback),

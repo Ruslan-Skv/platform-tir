@@ -45,6 +45,7 @@ export interface AdminQuizLanding {
   consentLinkText?: string | null;
   notifyEmails?: string[] | null;
   notifyTelegramIds?: string[] | null;
+  notifyMaxIds?: string[] | null;
   notifyPhones?: string[] | null;
   steps: AdminQuizStep[];
 }
@@ -89,6 +90,7 @@ export async function updateAdminQuiz(
     theme?: Partial<QuizTheme>;
     notifyEmails?: string[];
     notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
     notifyPhones?: string[];
   },
   getAuthHeaders: () => Record<string, string>

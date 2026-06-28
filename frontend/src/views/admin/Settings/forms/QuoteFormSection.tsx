@@ -12,11 +12,17 @@ import {
 
 import styles from '../shared/SettingsPage.module.css';
 import formStyles from './FormsSettingsSection.module.css';
+import { NotifyChannelsFields, type NotifyChannelsValue } from './NotifyChannelsFields';
+
+const EMPTY_CHANNELS: NotifyChannelsValue = {
+  notifyEmails: [],
+  notifyTelegramIds: [],
+  notifyMaxIds: [],
+};
 
 export function QuoteFormSection() {
   const { getAuthHeaders } = useAuth();
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [telegramChatId, setTelegramChatId] = useState('');
+  const [channels, setChannels] = useState<NotifyChannelsValue>(EMPTY_CHANNELS);
   const [serviceTypeOptions, setServiceTypeOptions] = useState<string>('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -30,8 +36,11 @@ export function QuoteFormSection() {
   const fetchSettings = useCallback(async () => {
     try {
       const data = await getAdminQuoteFormSettings(getAuthHeaders);
-      setRecipientEmail(data.recipientEmail ?? '');
-      setTelegramChatId(data.telegramChatId ?? '');
+      setChannels({
+        notifyEmails: data.notifyEmails ?? [],
+        notifyTelegramIds: data.notifyTelegramIds ?? [],
+        notifyMaxIds: data.notifyMaxIds ?? [],
+      });
       setServiceTypeOptions((data.serviceTypeOptions ?? []).join('\n'));
     } catch (err) {
       console.error('Failed to fetch quote form settings:', err);
@@ -56,8 +65,7 @@ export function QuoteFormSection() {
     try {
       await updateAdminQuoteFormSettings(
         {
-          recipientEmail: recipientEmail.trim() || null,
-          telegramChatId: telegramChatId.trim() || null,
+          ...channels,
           serviceTypeOptions: options,
         },
         getAuthHeaders
@@ -82,8 +90,8 @@ export function QuoteFormSection() {
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Рассчитать стоимость</h2>
       <p className={styles.sectionDescription}>
-        Укажите каналы уведомлений: email и/или Telegram (ID чата). Для Telegram добавьте
-        TELEGRAM_BOT_TOKEN в .env.
+        Укажите каналы уведомлений: email, Telegram и/или MAX. Можно указать несколько адресов и
+        чатов в каждом канале.
       </p>
       <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
         Укажите виды работ и товаров для выбора в форме — каждая строка станет отдельным чекбоксом.
@@ -107,56 +115,16 @@ export function QuoteFormSection() {
             {toast.message}
           </div>
         )}
+        <NotifyChannelsFields idPrefix="quote" value={channels} onChange={setChannels} />
         <div className={formStyles.formGroup}>
-          <label
-            htmlFor="recipientEmail"
-            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
-          >
-            Email для уведомлений
-          </label>
-          <input
-            id="recipientEmail"
-            type="email"
-            value={recipientEmail}
-            onChange={(e) => setRecipientEmail(e.target.value)}
-            placeholder="manager@company.ru"
-            className={formStyles.formInput}
-          />
-        </div>
-        <div className={formStyles.formGroup}>
-          <label
-            htmlFor="telegramChatId"
-            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
-          >
-            ID чата Telegram
-          </label>
-          <input
-            id="telegramChatId"
-            type="text"
-            value={telegramChatId}
-            onChange={(e) => setTelegramChatId(e.target.value)}
-            placeholder="-1001234567890 или 123456789"
-            className={formStyles.formInput}
-          />
-        </div>
-        <div className={formStyles.formGroup}>
-          <label
-            htmlFor="serviceTypeOptions"
-            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
-          >
+          <label htmlFor="serviceTypeOptions" className={formStyles.formLabel}>
             Виды работ и товаров (каждая строка — отдельный чекбокс)
           </label>
           <textarea
             id="serviceTypeOptions"
             value={serviceTypeOptions}
             onChange={(e) => setServiceTypeOptions(e.target.value)}
-            placeholder="Межкомнатные двери
-Входные двери
-Окна
-Потолки
-Жалюзи
-Мебель
-Ремонт квартир"
+            placeholder={'Межкомнатные двери\nВходные двери\nОкна'}
             rows={8}
             className={formStyles.formTextarea}
           />

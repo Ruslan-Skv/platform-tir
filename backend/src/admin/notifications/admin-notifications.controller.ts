@@ -29,6 +29,8 @@ import { AdminPushSubscribeDto } from '../../bell-push/dto/admin-push-subscribe.
 import { AdminPushSubscriptionsService } from '../../bell-push/admin-push-subscriptions.service';
 import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
+import { UpdateExternalNotifySettingsDto } from '../external-notify/dto/update-external-notify-settings.dto';
+import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 
 const soundsDir = path.join(process.cwd(), 'uploads', 'notification-sounds');
@@ -52,6 +54,7 @@ export class AdminNotificationsController {
   constructor(
     private readonly notifications: AdminNotificationsService,
     private readonly pushSubscriptions: AdminPushSubscriptionsService,
+    private readonly externalNotifySettings: AdminExternalNotifyService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -217,5 +220,21 @@ export class AdminNotificationsController {
   @ApiOperation({ summary: 'Удалить звук' })
   deleteSound(@Param('id') id: string) {
     return this.notifications.deleteSound(id);
+  }
+
+  @Get('external-channels')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Каналы внешних уведомлений (email, Telegram, MAX)' })
+  getExternalChannels() {
+    return this.externalNotifySettings.getSettings();
+  }
+
+  @Patch('external-channels')
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @UseGuards(RolesGuard)
+  @ApiOperation({ summary: 'Обновить каналы внешних уведомлений' })
+  updateExternalChannels(@Body() dto: UpdateExternalNotifySettingsDto) {
+    return this.externalNotifySettings.updateSettings(dto);
   }
 }

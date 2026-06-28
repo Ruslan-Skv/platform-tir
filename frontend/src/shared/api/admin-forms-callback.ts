@@ -2,15 +2,16 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export interface CallbackFormSettings {
-  recipientEmail: string | null;
-  telegramChatId: string | null;
+export interface NotifyChannelsSettings {
+  notifyEmails: string[];
+  notifyTelegramIds: string[];
+  notifyMaxIds: string[];
   updatedAt: string | null;
 }
 
 export async function getAdminCallbackFormSettings(
   getAuthHeaders: () => Record<string, string>
-): Promise<CallbackFormSettings> {
+): Promise<NotifyChannelsSettings> {
   const res = await apiFetch(`${API_URL}/admin/forms/callback-form-settings`, {
     headers: getAuthHeaders(),
   });
@@ -19,9 +20,13 @@ export async function getAdminCallbackFormSettings(
 }
 
 export async function updateAdminCallbackFormSettings(
-  data: { recipientEmail?: string | null; telegramChatId?: string | null },
+  data: {
+    notifyEmails?: string[];
+    notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
+  },
   getAuthHeaders: () => Record<string, string>
-): Promise<CallbackFormSettings> {
+): Promise<NotifyChannelsSettings> {
   const res = await apiFetch(`${API_URL}/admin/forms/callback-form-settings`, {
     method: 'PATCH',
     headers: {

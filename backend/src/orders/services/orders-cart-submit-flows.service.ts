@@ -3,6 +3,8 @@ import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../../external-notify/external-notify-settings.service';
 import { UsersService } from '../../users/users.service';
 import {
   CartProductLine,
@@ -35,6 +37,8 @@ export class OrdersCartSubmitFlowsService {
     private prisma: PrismaService,
     private usersService: UsersService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
 
   async createServicesOnlyOrder(
@@ -329,5 +333,12 @@ export class OrdersCartSubmitFlowsService {
       url: '/admin/orders?status=PENDING',
       tag: `order-${Date.now()}`,
     });
+    void this.externalNotifySettings.getChannelsForEvent('order').then((channels) =>
+      this.externalNotify.send(channels, {
+        subject: title,
+        text: message,
+        fromLabel: 'Новый заказ',
+      }),
+    );
   }
 }

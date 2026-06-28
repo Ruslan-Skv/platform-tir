@@ -153,6 +153,7 @@ export function useQuizAdminPage(config: QuizAdminConfig) {
           catalogFileUrl: quiz.catalogFileUrl,
           notifyEmails: quiz.notifyEmails ?? [],
           notifyTelegramIds: quiz.notifyTelegramIds ?? [],
+          notifyMaxIds: quiz.notifyMaxIds ?? [],
           notifyPhones: quiz.notifyPhones ?? [],
         },
         getAuthHeaders

@@ -13,9 +13,10 @@ import { OrdersServiceOrdersService } from './services/orders-service-orders.ser
 import { CartModule } from '../cart/cart.module';
 import { UsersModule } from '../users/users.module';
 import { BellPushModule } from '../bell-push/bell-push.module';
+import { ExternalNotifyModule } from '../external-notify/external-notify.module';
 
 @Module({
-  imports: [ConfigModule, CartModule, UsersModule, BellPushModule],
+  imports: [ConfigModule, CartModule, UsersModule, BellPushModule, ExternalNotifyModule],
   controllers: [OrdersController],
   providers: [
     OrdersService,

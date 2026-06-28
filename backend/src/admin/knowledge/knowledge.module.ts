@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
+import { ExternalNotifyModule } from '../../external-notify/external-notify.module';
 import { AdminAccessModule } from '../admin-access/admin-access.module';
 import { AdminNotificationsModule } from '../notifications/admin-notifications.module';
 import { KnowledgeController } from './knowledge.controller';
@@ -20,7 +21,7 @@ import { KnowledgeMyTrainingProgressService } from './services/knowledge-my-trai
 import { KnowledgeUploadService } from './knowledge-upload.service';
 
 @Module({
-  imports: [DatabaseModule, AdminNotificationsModule, AdminAccessModule],
+  imports: [DatabaseModule, AdminNotificationsModule, AdminAccessModule, ExternalNotifyModule],
   controllers: [KnowledgeController],
   providers: [
     KnowledgeService,

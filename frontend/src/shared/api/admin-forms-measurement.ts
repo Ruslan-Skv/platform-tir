@@ -2,15 +2,16 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export interface MeasurementFormSettings {
-  recipientEmail: string | null;
-  telegramChatId: string | null;
+export interface NotifyChannelsSettings {
+  notifyEmails: string[];
+  notifyTelegramIds: string[];
+  notifyMaxIds: string[];
   updatedAt: string | null;
 }
 
 export async function getAdminMeasurementFormSettings(
   getAuthHeaders: () => Record<string, string>
-): Promise<MeasurementFormSettings> {
+): Promise<NotifyChannelsSettings> {
   const res = await apiFetch(`${API_URL}/admin/forms/measurement-form-settings`, {
     headers: getAuthHeaders(),
   });
@@ -19,9 +20,13 @@ export async function getAdminMeasurementFormSettings(
 }
 
 export async function updateAdminMeasurementFormSettings(
-  data: { recipientEmail?: string | null; telegramChatId?: string | null },
+  data: {
+    notifyEmails?: string[];
+    notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
+  },
   getAuthHeaders: () => Record<string, string>
-): Promise<MeasurementFormSettings> {
+): Promise<NotifyChannelsSettings> {
   const res = await apiFetch(`${API_URL}/admin/forms/measurement-form-settings`, {
     method: 'PATCH',
     headers: {

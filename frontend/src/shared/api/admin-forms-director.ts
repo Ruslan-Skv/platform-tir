@@ -2,16 +2,17 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export interface DirectorMessageSettings {
-  directorEmail: string | null;
-  telegramChatId: string | null;
+export interface NotifyChannelsSettings {
+  notifyEmails: string[];
+  notifyTelegramIds: string[];
+  notifyMaxIds: string[];
   updatedAt: string | null;
 }
 
 export async function getAdminDirectorMessageSettings(
   getAuthHeaders: () => Record<string, string>
-): Promise<DirectorMessageSettings> {
-  const res = await apiFetch(`${API_URL}/admin/forms/director-settings`, {
+): Promise<NotifyChannelsSettings> {
+  const res = await apiFetch(`${API_URL}/admin/forms/director-message-settings`, {
     headers: getAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить настройки');
@@ -19,10 +20,14 @@ export async function getAdminDirectorMessageSettings(
 }
 
 export async function updateAdminDirectorMessageSettings(
-  data: { directorEmail?: string | null; telegramChatId?: string | null },
+  data: {
+    notifyEmails?: string[];
+    notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
+  },
   getAuthHeaders: () => Record<string, string>
-): Promise<DirectorMessageSettings> {
-  const res = await apiFetch(`${API_URL}/admin/forms/director-settings`, {
+): Promise<NotifyChannelsSettings> {
+  const res = await apiFetch(`${API_URL}/admin/forms/director-message-settings`, {
     method: 'PATCH',
     headers: {
       'Content-Type': 'application/json',

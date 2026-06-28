@@ -248,6 +248,12 @@ export class UpdateQuizLandingDto {
   @IsString({ each: true })
   notifyTelegramIds?: string[];
 
+  @ApiPropertyOptional({ type: [String], description: 'ID чатов MAX (нужен MAX_BOT_TOKEN в .env)' })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  notifyMaxIds?: string[];
+
   @ApiPropertyOptional({ type: [String] })
   @IsOptional()
   @IsArray()

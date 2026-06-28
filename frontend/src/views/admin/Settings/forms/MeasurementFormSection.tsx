@@ -12,11 +12,17 @@ import {
 
 import styles from '../shared/SettingsPage.module.css';
 import formStyles from './FormsSettingsSection.module.css';
+import { NotifyChannelsFields, type NotifyChannelsValue } from './NotifyChannelsFields';
+
+const EMPTY_CHANNELS: NotifyChannelsValue = {
+  notifyEmails: [],
+  notifyTelegramIds: [],
+  notifyMaxIds: [],
+};
 
 export function MeasurementFormSection() {
   const { getAuthHeaders } = useAuth();
-  const [recipientEmail, setRecipientEmail] = useState('');
-  const [telegramChatId, setTelegramChatId] = useState('');
+  const [channels, setChannels] = useState<NotifyChannelsValue>(EMPTY_CHANNELS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -29,8 +35,11 @@ export function MeasurementFormSection() {
   const fetchSettings = useCallback(async () => {
     try {
       const data = await getAdminMeasurementFormSettings(getAuthHeaders);
-      setRecipientEmail(data.recipientEmail ?? '');
-      setTelegramChatId(data.telegramChatId ?? '');
+      setChannels({
+        notifyEmails: data.notifyEmails ?? [],
+        notifyTelegramIds: data.notifyTelegramIds ?? [],
+        notifyMaxIds: data.notifyMaxIds ?? [],
+      });
     } catch (err) {
       console.error('Failed to fetch measurement form settings:', err);
       showToast('Не удалось загрузить настройки', 'error');
@@ -48,13 +57,7 @@ export function MeasurementFormSection() {
     setSaving(true);
     setToast(null);
     try {
-      await updateAdminMeasurementFormSettings(
-        {
-          recipientEmail: recipientEmail.trim() || null,
-          telegramChatId: telegramChatId.trim() || null,
-        },
-        getAuthHeaders
-      );
+      await updateAdminMeasurementFormSettings(channels, getAuthHeaders);
       showToast('Настройки сохранены', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Ошибка сохранения', 'error');
@@ -75,8 +78,8 @@ export function MeasurementFormSection() {
     <section className={styles.section}>
       <h2 className={styles.sectionTitle}>Записаться на замер</h2>
       <p className={styles.sectionDescription}>
-        Укажите каналы уведомлений: email и/или Telegram (ID чата). Заявки сохраняются в базе и
-        отправляются во все настроенные каналы. Для Telegram добавьте TELEGRAM_BOT_TOKEN в .env.
+        Укажите каналы уведомлений: email, Telegram и/или MAX. Можно указать несколько адресов и
+        чатов в каждом канале.
       </p>
       <p className={`${styles.sectionDescription} ${formStyles.sectionDescriptionTight}`}>
         Заявки также сохраняются в разделе{' '}
@@ -86,7 +89,7 @@ export function MeasurementFormSection() {
         .
       </p>
 
-      <form onSubmit={handleSave} className={formStyles.form}>
+      <form onSubmit={handleSave} className={formStyles.formWide}>
         {toast && (
           <div
             className={`${styles.infoBlock} ${formStyles.toast} ${
@@ -96,38 +99,7 @@ export function MeasurementFormSection() {
             {toast.message}
           </div>
         )}
-        <div className={formStyles.formGroup}>
-          <label
-            htmlFor="recipientEmail"
-            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
-          >
-            Email для уведомлений
-          </label>
-          <input
-            id="recipientEmail"
-            type="email"
-            value={recipientEmail}
-            onChange={(e) => setRecipientEmail(e.target.value)}
-            placeholder="manager@company.ru"
-            className={formStyles.formInput}
-          />
-        </div>
-        <div className={formStyles.formGroup}>
-          <label
-            htmlFor="telegramChatId"
-            className={`${styles.templateCheckboxLabel} ${formStyles.formLabel}`}
-          >
-            ID чата Telegram
-          </label>
-          <input
-            id="telegramChatId"
-            type="text"
-            value={telegramChatId}
-            onChange={(e) => setTelegramChatId(e.target.value)}
-            placeholder="-1001234567890 или 123456789"
-            className={formStyles.formInput}
-          />
-        </div>
+        <NotifyChannelsFields idPrefix="measurement" value={channels} onChange={setChannels} />
         <button
           data-admin-mutation
           type="submit"

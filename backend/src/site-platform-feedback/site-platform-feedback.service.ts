@@ -1,6 +1,8 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { KnowledgePlatformFeedbackType, Prisma } from '@prisma/client';
 import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
+import { ExternalNotifyService } from '../external-notify/external-notify.service';
+import { ExternalNotifySettingsService } from '../external-notify/external-notify-settings.service';
 import { PrismaService } from '../database/prisma.service';
 import { CreateSitePlatformFeedbackDto } from './dto/create-site-platform-feedback.dto';
 
@@ -60,6 +62,8 @@ export class SitePlatformFeedbackService {
   constructor(
     private prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly externalNotify: ExternalNotifyService,
+    private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
 
   async listFeedback(options?: {
@@ -136,6 +140,21 @@ export class SitePlatformFeedbackService {
       url: '/admin/content/site-feedback',
       tag: `site-feedback-${feedback.id}`,
     });
+
+    const contactLines = [
+      senderEmail ? `Email: ${senderEmail}` : null,
+      senderPhone ? `Телефон: ${senderPhone}` : null,
+      pageUrl ? `Страница: ${pageUrl}` : null,
+    ]
+      .filter(Boolean)
+      .join('\n');
+    void this.externalNotifySettings.getChannelsForEvent('site_feedback').then((channels) =>
+      this.externalNotify.send(channels, {
+        subject: title,
+        text: `${title}\n\nОт: ${authorName}\n${contactLines}\n\n${trimmed}`,
+        fromLabel: 'Обратная связь по сайту',
+      }),
+    );
 
     return {
       feedback: mapFeedbackItem(feedback),

@@ -78,6 +78,9 @@ export class AdminQuizService {
     if (dto.notifyTelegramIds !== undefined) {
       data.notifyTelegramIds = dto.notifyTelegramIds.map((e) => e.trim()).filter(Boolean);
     }
+    if (dto.notifyMaxIds !== undefined) {
+      data.notifyMaxIds = dto.notifyMaxIds.map((e) => e.trim()).filter(Boolean);
+    }
     if (dto.notifyPhones !== undefined) {
       data.notifyPhones = dto.notifyPhones.map((e) => e.trim()).filter(Boolean);
     }

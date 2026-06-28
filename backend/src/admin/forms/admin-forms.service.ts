@@ -1,10 +1,51 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { normalizeStringArray, parseStringArray } from '../../external-notify/external-notify.util';
 import { UpdateCallbackFormBlockDto } from './dto/update-callback-form-block.dto';
 import { UpdateDirectorMessageBlockDto } from './dto/update-director-message-block.dto';
 import { UpdateMeasurementFormBlockDto } from './dto/update-measurement-form-block.dto';
 import { UpdateQuoteFormBlockDto } from './dto/update-quote-form-block.dto';
+
+function mapNotifyChannels(block: {
+  notifyEmails: Prisma.JsonValue | null;
+  notifyTelegramIds: Prisma.JsonValue | null;
+  notifyMaxIds: Prisma.JsonValue | null;
+  updatedAt: Date;
+}) {
+  return {
+    notifyEmails: parseStringArray(block.notifyEmails),
+    notifyTelegramIds: parseStringArray(block.notifyTelegramIds),
+    notifyMaxIds: parseStringArray(block.notifyMaxIds),
+    updatedAt: block.updatedAt,
+  };
+}
+
+function buildNotifyChannelsUpdate(dto: {
+  notifyEmails?: string[];
+  notifyTelegramIds?: string[];
+  notifyMaxIds?: string[];
+}): {
+  notifyEmails?: string[];
+  notifyTelegramIds?: string[];
+  notifyMaxIds?: string[];
+} {
+  const data: {
+    notifyEmails?: string[];
+    notifyTelegramIds?: string[];
+    notifyMaxIds?: string[];
+  } = {};
+  if (dto.notifyEmails !== undefined) {
+    data.notifyEmails = normalizeStringArray(dto.notifyEmails);
+  }
+  if (dto.notifyTelegramIds !== undefined) {
+    data.notifyTelegramIds = normalizeStringArray(dto.notifyTelegramIds);
+  }
+  if (dto.notifyMaxIds !== undefined) {
+    data.notifyMaxIds = normalizeStringArray(dto.notifyMaxIds);
+  }
+  return data;
+}
 
 @Injectable()
 export class AdminFormsService {
@@ -38,111 +79,96 @@ export class AdminFormsService {
     const block = await this.prisma.directorMessageBlock.findUnique({
       where: { id: 'main' },
     });
-    return {
-      directorEmail: block?.directorEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+    if (!block) {
+      return {
+        notifyEmails: [],
+        notifyTelegramIds: [],
+        notifyMaxIds: [],
+        updatedAt: null,
+      };
+    }
+    return mapNotifyChannels(block);
   }
 
   async updateDirectorSettings(dto: UpdateDirectorMessageBlockDto) {
+    const notifyData = buildNotifyChannelsUpdate(dto);
     const block = await this.prisma.directorMessageBlock.upsert({
       where: { id: 'main' },
       create: {
         id: 'main',
-        directorEmail: dto.directorEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
+        ...notifyData,
         updatedAt: new Date(),
       },
       update: {
-        ...(dto.directorEmail !== undefined && {
-          directorEmail: dto.directorEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
+        ...notifyData,
         updatedAt: new Date(),
       },
     });
-    return {
-      directorEmail: block.directorEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+    return mapNotifyChannels(block);
   }
 
   async getMeasurementFormSettings() {
     const block = await this.prisma.measurementFormBlock.findUnique({
       where: { id: 'main' },
     });
-    return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+    if (!block) {
+      return {
+        notifyEmails: [],
+        notifyTelegramIds: [],
+        notifyMaxIds: [],
+        updatedAt: null,
+      };
+    }
+    return mapNotifyChannels(block);
   }
 
   async updateMeasurementFormSettings(dto: UpdateMeasurementFormBlockDto) {
+    const notifyData = buildNotifyChannelsUpdate(dto);
     const block = await this.prisma.measurementFormBlock.upsert({
       where: { id: 'main' },
       create: {
         id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
+        ...notifyData,
         updatedAt: new Date(),
       },
       update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
+        ...notifyData,
         updatedAt: new Date(),
       },
     });
-    return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+    return mapNotifyChannels(block);
   }
 
   async getCallbackFormSettings() {
     const block = await this.prisma.callbackFormBlock.findUnique({
       where: { id: 'main' },
     });
-    return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
-      updatedAt: block?.updatedAt ?? null,
-    };
+    if (!block) {
+      return {
+        notifyEmails: [],
+        notifyTelegramIds: [],
+        notifyMaxIds: [],
+        updatedAt: null,
+      };
+    }
+    return mapNotifyChannels(block);
   }
 
   async updateCallbackFormSettings(dto: UpdateCallbackFormBlockDto) {
+    const notifyData = buildNotifyChannelsUpdate(dto);
     const block = await this.prisma.callbackFormBlock.upsert({
       where: { id: 'main' },
       create: {
         id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
+        ...notifyData,
         updatedAt: new Date(),
       },
       update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
+        ...notifyData,
         updatedAt: new Date(),
       },
     });
-    return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
-      updatedAt: block.updatedAt,
-    };
+    return mapNotifyChannels(block);
   }
 
   async getQuoteFormSettings() {
@@ -151,15 +177,23 @@ export class AdminFormsService {
     });
     const opts = block?.serviceTypeOptions;
     const options = Array.isArray(opts) ? opts : [];
+    if (!block) {
+      return {
+        notifyEmails: [],
+        notifyTelegramIds: [],
+        notifyMaxIds: [],
+        serviceTypeOptions: options,
+        updatedAt: null,
+      };
+    }
     return {
-      recipientEmail: block?.recipientEmail ?? null,
-      telegramChatId: block?.telegramChatId ?? null,
+      ...mapNotifyChannels(block),
       serviceTypeOptions: options,
-      updatedAt: block?.updatedAt ?? null,
     };
   }
 
   async updateQuoteFormSettings(dto: UpdateQuoteFormBlockDto) {
+    const notifyData = buildNotifyChannelsUpdate(dto);
     const serviceTypeOptionsValue: Prisma.InputJsonValue | typeof Prisma.JsonNull | undefined =
       dto.serviceTypeOptions === undefined
         ? undefined
@@ -171,18 +205,12 @@ export class AdminFormsService {
       where: { id: 'main' },
       create: {
         id: 'main',
-        recipientEmail: dto.recipientEmail?.trim() || null,
-        telegramChatId: dto.telegramChatId?.trim() || null,
+        ...notifyData,
         serviceTypeOptions: dto.serviceTypeOptions ?? undefined,
         updatedAt: new Date(),
       },
       update: {
-        ...(dto.recipientEmail !== undefined && {
-          recipientEmail: dto.recipientEmail?.trim() || null,
-        }),
-        ...(dto.telegramChatId !== undefined && {
-          telegramChatId: dto.telegramChatId?.trim() || null,
-        }),
+        ...notifyData,
         ...(serviceTypeOptionsValue !== undefined && {
           serviceTypeOptions: serviceTypeOptionsValue,
         }),
@@ -192,10 +220,8 @@ export class AdminFormsService {
     const opts = block.serviceTypeOptions;
     const options = Array.isArray(opts) ? opts : [];
     return {
-      recipientEmail: block.recipientEmail,
-      telegramChatId: block.telegramChatId,
+      ...mapNotifyChannels(block),
       serviceTypeOptions: options,
-      updatedAt: block.updatedAt,
     };
   }
 }

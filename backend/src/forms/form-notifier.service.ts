@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
-import { MailerService } from '@nestjs-modules/mailer';
 import { PrismaService } from '../database/prisma.service';
+import { ExternalNotifyService } from '../external-notify/external-notify.service';
+import { parseStringArray } from '../external-notify/external-notify.util';
 
 export type FormType = 'measurement' | 'callback' | 'director' | 'quote';
 
@@ -12,116 +12,71 @@ export interface FormNotificationPayload {
   replyTo?: string;
 }
 
+const FROM_LABELS: Record<FormType, string> = {
+  measurement: 'Заявка на замер',
+  callback: 'Обратный звонок',
+  director: 'Письмо директору',
+  quote: 'Рассчитать стоимость',
+};
+
 @Injectable()
 export class FormNotifierService {
-  private readonly telegramBotToken: string | undefined;
-  private readonly mailFrom: string;
-
   constructor(
     private readonly prisma: PrismaService,
-    private readonly mailer: MailerService,
-    private readonly config: ConfigService,
-  ) {
-    this.telegramBotToken = this.config.get<string>('TELEGRAM_BOT_TOKEN')?.trim();
-    this.mailFrom = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
-  }
+    private readonly externalNotify: ExternalNotifyService,
+  ) {}
 
-  /**
-   * Отправляет уведомление о заявке во все настроенные каналы (email, Telegram и др.)
-   */
   async notify(formType: FormType, payload: FormNotificationPayload): Promise<void> {
     const channels = await this.getChannelsForForm(formType);
-    const hasTelegram = !!channels.telegramChatId && !!this.telegramBotToken;
-    await Promise.allSettled([
-      ...(channels.email ? [this.sendEmail(channels.email, formType, payload)] : []),
-      ...(hasTelegram ? [this.sendTelegram(channels.telegramChatId!, payload)] : []),
-    ]);
+    await this.externalNotify.send(channels, {
+      subject: payload.subject,
+      html: payload.html,
+      text: payload.text,
+      replyTo: payload.replyTo,
+      fromLabel: `Сайт: ${FROM_LABELS[formType]}`,
+    });
   }
 
-  private async getChannelsForForm(
-    formType: FormType,
-  ): Promise<{ email?: string; telegramChatId?: string }> {
+  async getChannelsForForm(formType: FormType) {
     switch (formType) {
       case 'measurement': {
         const block = await this.prisma.measurementFormBlock.findUnique({
           where: { id: 'main' },
         });
-        return {
-          email: block?.recipientEmail?.trim() || undefined,
-          telegramChatId: block?.telegramChatId?.trim() || undefined,
-        };
+        return this.mapBlockChannels(block);
       }
       case 'callback': {
         const block = await this.prisma.callbackFormBlock.findUnique({
           where: { id: 'main' },
         });
-        return {
-          email: block?.recipientEmail?.trim() || undefined,
-          telegramChatId: block?.telegramChatId?.trim() || undefined,
-        };
+        return this.mapBlockChannels(block);
       }
       case 'director': {
         const block = await this.prisma.directorMessageBlock.findUnique({
           where: { id: 'main' },
         });
-        return {
-          email: block?.directorEmail?.trim() || undefined,
-          telegramChatId: block?.telegramChatId?.trim() || undefined,
-        };
+        return this.mapBlockChannels(block);
       }
       case 'quote': {
         const block = await this.prisma.quoteFormBlock.findUnique({
           where: { id: 'main' },
         });
-        return {
-          email: block?.recipientEmail?.trim() || undefined,
-          telegramChatId: block?.telegramChatId?.trim() || undefined,
-        };
+        return this.mapBlockChannels(block);
       }
     }
   }
 
-  private async sendEmail(
-    to: string,
-    formType: FormType,
-    payload: FormNotificationPayload,
-  ): Promise<void> {
-    const fromLabels: Record<FormType, string> = {
-      measurement: 'Заявка на замер',
-      callback: 'Обратный звонок',
-      director: 'Письмо директору',
-      quote: 'Рассчитать стоимость',
+  private mapBlockChannels(
+    block: {
+      notifyEmails?: unknown;
+      notifyTelegramIds?: unknown;
+      notifyMaxIds?: unknown;
+    } | null,
+  ) {
+    return {
+      emails: parseStringArray(block?.notifyEmails as never),
+      telegramIds: parseStringArray(block?.notifyTelegramIds as never),
+      maxIds: parseStringArray(block?.notifyMaxIds as never),
     };
-    await this.mailer.sendMail({
-      from: `"Сайт: ${fromLabels[formType]}" <${this.mailFrom}>`,
-      to,
-      replyTo: payload.replyTo,
-      subject: payload.subject,
-      html: payload.html,
-      text: payload.text,
-    });
-  }
-
-  private async sendTelegram(chatId: string, payload: FormNotificationPayload): Promise<void> {
-    if (!this.telegramBotToken) return;
-    const url = `https://api.telegram.org/bot${this.telegramBotToken}/sendMessage`;
-    const text = payload.text.length > 4096 ? payload.text.slice(0, 4093) + '...' : payload.text;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text }),
-    });
-    const data = (await response.json()) as {
-      ok?: boolean;
-      description?: string;
-    };
-    if (!response.ok) {
-      throw new Error(
-        `Telegram API ${response.status}: ${data.description || response.statusText}`,
-      );
-    }
-    if (!data.ok) {
-      throw new Error(`Telegram: ${data.description || 'unknown error'}`);
-    }
   }
 }

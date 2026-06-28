@@ -166,14 +166,14 @@ ${dto.comment ? `\nКомментарий:\n${dto.comment}` : ''}`;
   }
 
   async submitDirectorMessage(dto: SubmitDirectorMessageDto) {
-    const block = await this.prisma.directorMessageBlock.findUnique({
-      where: { id: 'main' },
-    });
-    const hasEmail = !!block?.directorEmail?.trim();
-    const hasTelegram = !!block?.telegramChatId?.trim() && !!this.config.get('TELEGRAM_BOT_TOKEN');
-    if (!hasEmail && !hasTelegram) {
+    const channels = await this.formNotifier.getChannelsForForm('director');
+    const canNotifyEmail = channels.emails.length > 0;
+    const canNotifyTelegram =
+      channels.telegramIds.length > 0 && !!this.config.get('TELEGRAM_BOT_TOKEN')?.trim();
+    const canNotifyMax = channels.maxIds.length > 0 && !!this.config.get('MAX_BOT_TOKEN')?.trim();
+    if (!canNotifyEmail && !canNotifyTelegram && !canNotifyMax) {
       throw new BadRequestException(
-        'Форма «Письмо директору» временно недоступна. Укажите email директора или Telegram в настройках админки.',
+        'Форма «Письмо директору» временно недоступна. Укажите email, Telegram или MAX в настройках админки.',
       );
     }
 

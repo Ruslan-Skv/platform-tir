@@ -313,43 +313,68 @@ model ContactFormBlock {
 }
 
 model DirectorMessageBlock {
-  id             String   @id @default("main")
-  directorEmail  String? // Email директора для формы «Письмо директору» (если пусто — письма не отправляются)
-  telegramChatId String? // ID чата Telegram для уведомлений (если пусто — уведомления в Telegram не отправляются)
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default("main")
+  notifyEmails      Json? // string[] — email для уведомлений
+  notifyTelegramIds Json? // string[] — ID чатов Telegram
+  notifyMaxIds      Json? // string[] — ID чатов MAX
+  updatedAt         DateTime @updatedAt
 
   @@map("director_message_block")
 }
 
-/// Настройки формы «Записаться на замер»: email и Telegram для уведомлений при подаче заявки
+/// Настройки формы «Записаться на замер»: каналы уведомлений при подаче заявки
 model MeasurementFormBlock {
-  id             String   @id @default("main")
-  recipientEmail String? // Email для получения уведомлений о новых заявках (если пусто — только сохранение в БД)
-  telegramChatId String? // ID чата Telegram для уведомлений
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default("main")
+  notifyEmails      Json? // string[]
+  notifyTelegramIds Json? // string[]
+  notifyMaxIds      Json? // string[]
+  updatedAt         DateTime @updatedAt
 
   @@map("measurement_form_block")
 }
 
-/// Настройки формы «Заказать звонок»: email и Telegram для уведомлений при подаче заявки
+/// Настройки формы «Заказать звонок»: каналы уведомлений при подаче заявки
 model CallbackFormBlock {
-  id             String   @id @default("main")
-  recipientEmail String? // Email для получения уведомлений (если пусто — только сохранение в БД)
-  telegramChatId String? // ID чата Telegram для уведомлений
-  updatedAt      DateTime @updatedAt
+  id                String   @id @default("main")
+  notifyEmails      Json? // string[]
+  notifyTelegramIds Json? // string[]
+  notifyMaxIds      Json? // string[]
+  updatedAt         DateTime @updatedAt
 
   @@map("callback_form_block")
 }
 
-/// Настройки формы «Рассчитать стоимость» / «Отправить заявку»: email, Telegram и список позиций
+/// Настройки формы «Рассчитать стоимость» / «Отправить заявку»: каналы уведомлений и список позиций
 model QuoteFormBlock {
   id                 String   @id @default("main")
-  recipientEmail     String? // Email для получения уведомлений (если пусто — только сохранение в БД)
-  telegramChatId     String? // ID чата Telegram для уведомлений
+  notifyEmails       Json? // string[]
+  notifyTelegramIds  Json? // string[]
+  notifyMaxIds       Json? // string[]
   serviceTypeOptions Json? // Массив строк — виды работ/товаров для выбора (настраивается в админке)
   updatedAt          DateTime @updatedAt
 
   @@map("quote_form_block")
+}
+
+/// Каналы внешних уведомлений для заказов и обратной связи (email, Telegram, MAX)
+model ExternalNotifySettings {
+  id String @id @default("main")
+
+  orderNotifyEmails      Json? // string[]
+  orderNotifyTelegramIds Json? // string[]
+  orderNotifyMaxIds      Json? // string[]
+
+  knowledgeFeedbackNotifyEmails      Json? // string[]
+  knowledgeFeedbackNotifyTelegramIds Json? // string[]
+  knowledgeFeedbackNotifyMaxIds      Json? // string[]
+
+  siteFeedbackNotifyEmails      Json? // string[]
+  siteFeedbackNotifyTelegramIds Json? // string[]
+  siteFeedbackNotifyMaxIds      Json? // string[]
+
+  updatedAt DateTime @updatedAt
+
+  @@map("external_notify_settings")
 }
 
 /// Квиз-лендинг (мебель, ремонт и др. направления)
@@ -378,6 +403,7 @@ model QuizLanding {
   consentLinkText      String?
   notifyEmails         Json? // string[]
   notifyTelegramIds    Json? // string[]
+  notifyMaxIds         Json? // string[]
   notifyPhones         Json? // string[] — для SMS в будущем; дублируется в тексте уведомления
   createdAt            DateTime         @default(now())
   updatedAt            DateTime         @updatedAt
