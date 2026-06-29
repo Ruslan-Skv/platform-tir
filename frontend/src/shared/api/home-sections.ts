@@ -1,4 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
+import type { HomeSectionsVisibility } from '@/shared/lib/home-sections-visibility';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -12,14 +13,7 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
-export interface HomeSectionsVisibility {
-  heroVisible: boolean;
-  directionsVisible: boolean;
-  advantagesVisible: boolean;
-  servicesVisible: boolean;
-  featuredProductsVisible: boolean;
-  contactFormVisible: boolean;
-}
+export type { HomeSectionsVisibility } from '@/shared/lib/home-sections-visibility';
 
 export async function getHomeSectionsVisibility(): Promise<HomeSectionsVisibility> {
   const res = await apiFetch(`${API_URL}/home/sections`);

@@ -12,8 +12,9 @@ import {
   getHomeServices,
   getPartnerProductsCardSettings,
 } from '@/shared/api/home';
-import type { HomeSectionsVisibility } from '@/shared/api/home-sections';
 import { getHomeSectionsVisibility } from '@/shared/api/home-sections';
+import type { HomeSectionsVisibility } from '@/shared/lib/home-sections-visibility';
+import { normalizeHomeSectionsVisibility } from '@/shared/lib/home-sections-visibility';
 
 export const HOME_SECTIONS_VISIBILITY_QUERY_KEY = ['home', 'sections-visibility'] as const;
 export const HOME_SERVICES_QUERY_KEY = ['home', 'services'] as const;
@@ -31,7 +32,7 @@ const HOME_GC_TIME = 5 * 60_000;
 export function useHomeSectionsVisibility(initialData?: HomeSectionsVisibility) {
   return useQuery({
     queryKey: HOME_SECTIONS_VISIBILITY_QUERY_KEY,
-    queryFn: getHomeSectionsVisibility,
+    queryFn: async () => normalizeHomeSectionsVisibility(await getHomeSectionsVisibility()),
     initialData,
     staleTime: HOME_STALE_TIME,
     gcTime: HOME_GC_TIME,

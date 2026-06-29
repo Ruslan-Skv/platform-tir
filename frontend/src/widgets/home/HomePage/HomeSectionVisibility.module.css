@@ -1,0 +1,19 @@
+.hiddenDesktop {
+  display: contents;
+}
+
+.hiddenMobile {
+  display: contents;
+}
+
+@media (width >= 769px) {
+  .hiddenDesktop {
+    display: none;
+  }
+}
+
+@media (width <= 768px) {
+  .hiddenMobile {
+    display: none;
+  }
+}

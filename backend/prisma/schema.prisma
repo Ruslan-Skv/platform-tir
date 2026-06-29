@@ -290,14 +290,20 @@ model FeaturedProductsBlock {
 }
 
 model HomePageSectionsBlock {
-  id                      String   @id @default("main")
-  heroVisible             Boolean  @default(true)
-  directionsVisible       Boolean  @default(true)
-  advantagesVisible       Boolean  @default(true)
-  servicesVisible         Boolean  @default(true)
-  featuredProductsVisible Boolean  @default(true)
-  contactFormVisible      Boolean  @default(true)
-  updatedAt               DateTime @updatedAt
+  id                            String   @id @default("main")
+  heroVisible                   Boolean  @default(true)
+  heroMobileVisible             Boolean  @default(true)
+  directionsVisible             Boolean  @default(true)
+  directionsMobileVisible       Boolean  @default(true)
+  advantagesVisible             Boolean  @default(true)
+  advantagesMobileVisible       Boolean  @default(true)
+  servicesVisible               Boolean  @default(true)
+  servicesMobileVisible         Boolean  @default(true)
+  featuredProductsVisible       Boolean  @default(true)
+  featuredProductsMobileVisible Boolean  @default(true)
+  contactFormVisible            Boolean  @default(true)
+  contactFormMobileVisible      Boolean  @default(true)
+  updatedAt                     DateTime @updatedAt
 
   @@map("home_page_sections_block")
 }

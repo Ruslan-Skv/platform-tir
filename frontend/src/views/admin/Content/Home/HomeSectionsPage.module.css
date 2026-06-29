@@ -8,6 +8,22 @@
   margin-bottom: var(--admin-space-5xl);
 }
 
+.headerTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-2xl);
+  flex-wrap: wrap;
+}
+
+.headerTitleGroup {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
 .title {
   font-size: var(--admin-font-size-3xl);
   font-weight: 700;

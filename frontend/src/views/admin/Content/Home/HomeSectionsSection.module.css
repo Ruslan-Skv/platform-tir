@@ -22,23 +22,6 @@
   line-height: var(--admin-line-height-lg);
 }
 
-.toast {
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  border-radius: var(--admin-radius-md);
-  margin-bottom: var(--admin-space-2xl);
-  font-size: var(--admin-font-size-base);
-}
-
-.toast.success {
-  background: var(--admin-overlay-color-101);
-  color: var(--admin-overlay-color-052);
-}
-
-.toast.error {
-  background: var(--admin-overlay-color-065);
-  color: var(--admin-overlay-color-037);
-}
-
 .grid {
   display: grid;
   gap: var(--admin-space-2xl);
@@ -62,11 +45,25 @@
 
 .cardHeader {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
+  gap: var(--admin-space-xl);
   padding: var(--admin-space-xl) var(--admin-space-2xl);
   background: var(--admin-surface-muted);
   border-bottom: 1px solid var(--admin-border);
+}
+
+.toggles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-lg) var(--admin-space-2xl);
+}
+
+.statusText {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-muted);
 }
 
 .toggleLabel {
