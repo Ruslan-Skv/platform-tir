@@ -567,6 +567,68 @@ model SiteDisclaimerBlock {
   @@map("site_disclaimer_block")
 }
 
+model CareersPageBlock {
+  id          String   @id @default("main")
+  pageTitle   String   @default("Вакансии")
+  introText   String?  @db.Text
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("careers_page_block")
+}
+
+model CareerVacancy {
+  id           String   @id @default(cuid())
+  title        String
+  description  String   @db.Text
+  requirements String?  @db.Text
+  conditions   String?  @db.Text
+  contactEmail String?
+  sortOrder    Int      @default(0)
+  isPublished  Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("career_vacancies")
+}
+
+model ContactsPageBlock {
+  id          String   @id @default("main")
+  pageTitle   String   @default("Контакты")
+  introText   String?  @db.Text
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("contacts_page_block")
+}
+
+model ContactSalon {
+  id          String                @id @default(cuid())
+  name        String
+  address     String                @db.Text
+  phone       String?
+  imageUrl    String?
+  sortOrder   Int                   @default(0)
+  isPublished Boolean               @default(true)
+  createdAt   DateTime              @default(now())
+  updatedAt   DateTime              @updatedAt
+  managers    ContactSalonManager[]
+
+  @@map("contact_salons")
+}
+
+model ContactSalonManager {
+  id        String       @id @default(cuid())
+  salonId   String
+  name      String
+  phone     String?
+  email     String?
+  sortOrder Int          @default(0)
+  salon     ContactSalon @relation(fields: [salonId], references: [id], onDelete: Cascade)
+
+  @@map("contact_salon_managers")
+}
+
 model PublicOffer {
   id           String             @id @default(cuid())
   slug         String             @unique

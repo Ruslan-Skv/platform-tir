@@ -1,0 +1,182 @@
+.page {
+  box-sizing: border-box;
+  max-width: 52rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  color: #1a202c;
+}
+
+.breadcrumbs {
+  margin-bottom: 1.5rem;
+}
+
+.breadcrumbsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.breadcrumbsList a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.breadcrumbsList a:hover {
+  text-decoration: underline;
+}
+
+.separator {
+  color: #9ca3af;
+}
+
+.current {
+  color: #374151;
+}
+
+.header {
+  margin-bottom: 2rem;
+  text-align: center;
+}
+
+.title {
+  margin: 0 0 1rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.intro {
+  margin: 0;
+  font-size: 0.95rem;
+  line-height: 1.6;
+  color: #4b5563;
+}
+
+.empty {
+  text-align: center;
+  color: #6b7280;
+  line-height: 1.6;
+}
+
+.empty a {
+  color: #d90652;
+}
+
+.list {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.card {
+  display: grid;
+  gap: 1rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.75rem;
+  background: #fff;
+}
+
+@media (min-width: 640px) {
+  .card:has(.imageWrap) {
+    grid-template-columns: 12rem 1fr;
+    align-items: start;
+  }
+}
+
+.imageWrap {
+  overflow: hidden;
+  border-radius: 0.5rem;
+  background: #f3f4f6;
+}
+
+.image {
+  display: block;
+  width: 100%;
+  height: auto;
+  object-fit: cover;
+  aspect-ratio: 4 / 3;
+}
+
+.cardTitle {
+  margin: 0 0 0.5rem;
+  font-size: 1.2rem;
+}
+
+.address {
+  margin: 0 0 0.5rem;
+  font-size: 0.9375rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+.phone {
+  margin: 0;
+  font-size: 0.9375rem;
+}
+
+.phone a,
+.managerContacts a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.phone a:hover,
+.managerContacts a:hover {
+  text-decoration: underline;
+}
+
+.managers {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid #e5e7eb;
+}
+
+.managersTitle {
+  margin: 0 0 0.75rem;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.managersList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.managerItem {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.managerName {
+  font-weight: 600;
+  font-size: 0.9375rem;
+}
+
+.managerContacts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .managers {
+  border-top-color: #374151;
+}

@@ -1,0 +1,155 @@
+.loading,
+.empty {
+  color: var(--admin-text-muted);
+}
+
+.previewHint {
+  margin: 0 0 var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+}
+
+.previewHint a {
+  color: var(--admin-accent);
+}
+
+.createButton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-accent);
+  color: #fff;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.section {
+  margin-bottom: var(--admin-space-3xl);
+}
+
+.sectionTitle {
+  margin: 0 0 var(--admin-space-xl);
+  font-size: 1.1rem;
+}
+
+.form {
+  display: grid;
+  gap: var(--admin-space-xl);
+  max-width: 42rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font: inherit;
+  color: inherit;
+  background: var(--admin-surface);
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+}
+
+.submitButton {
+  justify-self: start;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.list {
+  display: grid;
+  gap: var(--admin-space-md);
+}
+
+.card {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.cardTitle {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: 1rem;
+}
+
+.badge,
+.badgeMuted {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+}
+
+.badge {
+  background: rgba(217, 6, 82, 0.12);
+  color: var(--admin-accent);
+}
+
+.badgeMuted {
+  background: var(--admin-surface-muted, #f3f4f6);
+  color: var(--admin-text-muted);
+}
+
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--admin-space-sm);
+  flex-shrink: 0;
+}
+
+.editLink,
+.deleteButton {
+  font-size: var(--admin-font-size-sm);
+}
+
+.editLink {
+  color: var(--admin-accent);
+  text-decoration: none;
+}
+
+.deleteButton {
+  border: none;
+  background: none;
+  color: var(--admin-danger, #dc2626);
+  cursor: pointer;
+  padding: 0;
+}
+
+@media (max-width: 720px) {
+  .card {
+    flex-direction: column;
+  }
+
+  .cardActions {
+    flex-direction: row;
+  }
+}

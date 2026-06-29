@@ -25,6 +25,8 @@ import { AdvantagesModule } from './advantages/advantages.module';
 import { HomeServicesModule } from './home-services/home-services.module';
 import { FeaturedProductsModule } from './featured-products/featured-products.module';
 import { PartnerProductsModule } from './partner-products/partner-products.module';
+import { CareersModule } from './careers/careers.module';
+import { ContactsModule } from './contacts/contacts.module';
 import { FooterModule } from './footer/footer.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -92,6 +94,8 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     FeaturedProductsModule,
     PartnerProductsModule,
     FooterModule,
+    CareersModule,
+    ContactsModule,
     NavigationModule,
     ReviewsModule,
     CatalogBlockModule,

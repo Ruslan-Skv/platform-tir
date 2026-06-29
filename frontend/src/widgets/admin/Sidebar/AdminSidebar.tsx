@@ -232,6 +232,8 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.content.blog',
       },
       { label: 'Акции', href: '/admin/content/promotions', resourceId: 'admin.content.promotions' },
+      { label: 'Вакансии', href: '/admin/content/careers', resourceId: 'admin.content.careers' },
+      { label: 'Контакты', href: '/admin/content/contacts', resourceId: 'admin.content.contacts' },
       { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
       {
         label: 'Отзывы',
