@@ -2,12 +2,14 @@
 
 import Link from 'next/link';
 
+import { PublicOfferAcceptFields } from '@/features/public-offer/ui/PublicOfferAcceptField';
 import type { CartServiceItem } from '@/shared/api/cart';
 import {
   type CalculateDeliveryResult,
   type UserOrder,
   formatApprovalCountdown,
 } from '@/shared/api/user-orders';
+import type { PublicOfferInfo } from '@/shared/lib/public-offer';
 import type { CartSection } from '@/views/cart/lib/build-cart-sections';
 import { pluralizeRu } from '@/views/cart/lib/pluralize-ru';
 
@@ -35,6 +37,11 @@ type CartSectionSummaryProps = {
   onSubmitForReview: () => void;
   onCancelReview: () => void;
   onOpenSendToEmailModal: () => void;
+  offerRequired: boolean;
+  applicableOffers: PublicOfferInfo[];
+  acceptedOfferIds: Set<string>;
+  onOfferToggle: (offerId: string, accepted: boolean) => void;
+  allOffersAccepted: boolean;
 };
 
 export function CartSectionSummary({
@@ -59,6 +66,11 @@ export function CartSectionSummary({
   onSubmitForReview,
   onCancelReview,
   onOpenSendToEmailModal,
+  offerRequired,
+  applicableOffers,
+  acceptedOfferIds,
+  onOfferToggle,
+  allOffersAccepted,
 }: CartSectionSummaryProps) {
   const fallbackToReview =
     section.id === 'section1' &&
@@ -156,11 +168,19 @@ export function CartSectionSummary({
 
       {section.id === 'section1' && canSubmitForReview && (
         <div className={styles.cartSectionActions}>
+          <PublicOfferAcceptFields
+            offers={applicableOffers}
+            acceptedIds={acceptedOfferIds}
+            onToggle={onOfferToggle}
+            className={styles.offerAcceptField}
+          />
           <button
             type="button"
             className={styles.checkoutButton}
             onClick={onSubmitForReview}
-            disabled={submitInProgress || !canSubmitForReview}
+            disabled={
+              submitInProgress || !canSubmitForReview || (offerRequired && !allOffersAccepted)
+            }
           >
             {submitInProgress
               ? 'Отправка...'
@@ -206,9 +226,21 @@ export function CartSectionSummary({
               {formatApprovalCountdown(approvalRemainingMs)}
             </span>
           </p>
-          <Link href={`/checkout?orderId=${approvedOrder.id}`} className={styles.checkoutButton}>
-            Оформить заказ
-          </Link>
+          <PublicOfferAcceptFields
+            offers={applicableOffers}
+            acceptedIds={acceptedOfferIds}
+            onToggle={onOfferToggle}
+            className={styles.offerAcceptField}
+          />
+          {offerRequired && !allOffersAccepted ? (
+            <span className={`${styles.checkoutButton} ${styles.checkoutButtonDisabled}`}>
+              Оформить заказ
+            </span>
+          ) : (
+            <Link href={`/checkout?orderId=${approvedOrder.id}`} className={styles.checkoutButton}>
+              Оформить заказ
+            </Link>
+          )}
           {canSendToEmail && (
             <button
               type="button"

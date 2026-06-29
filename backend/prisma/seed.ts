@@ -582,6 +582,8 @@ async function main() {
     { name: 'Контакты', href: '/contacts' },
     { name: 'Наши работы', href: '/photo' },
     { name: 'Вакансии', href: '/careers' },
+    { name: 'Реквизиты', href: '/legal' },
+    { name: 'Публичная оферта', href: '/offer' },
   ];
   const catalogLinks = [
     { name: 'Ремонт квартир', href: '/repair' },
@@ -623,6 +625,62 @@ async function main() {
   }
 
   console.log('✅ Footer seeded');
+
+  await prisma.sellerLegalBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      pageTitle: 'Информация о продавце',
+      legalName: 'ИП Сквиря Р.В.',
+      entityType: 'IP',
+      inn: '',
+      ogrn: '',
+      legalAddress: '',
+      phone: '8 (8152) 60-12-70',
+      email: 'skvirya@mail.ru',
+      isPublished: true,
+    },
+  });
+
+  console.log('✅ Seller legal block seeded');
+
+  await prisma.siteDisclaimerBlock.upsert({
+    where: { id: 'main' },
+    update: {},
+    create: {
+      id: 'main',
+      content:
+        'Информация на сайте предоставлена для ознакомления и не является публичной офертой. Магазин оставляет за собой право вносить конструктивные изменения в продукцию. Для получения точной информации о конструктивных особенностях дверей обращайтесь к продавцам-консультантам. Цветовые оттенки продукции могут незначительно отличаться в зависимости от цветопередачи вашего монитора и могут не полностью соответствовать образцам в салонах',
+      isPublished: true,
+    },
+  });
+
+  console.log('✅ Site disclaimer block seeded');
+
+  const existingOffer = await prisma.publicOffer.findUnique({ where: { slug: 'general' } });
+  if (!existingOffer) {
+    const offer = await prisma.publicOffer.create({
+      data: {
+        id: 'seed-general-offer',
+        slug: 'general',
+        title: 'Публичная оферта',
+        name: 'Публичная оферта',
+        acceptText: 'Я принимаю условия публичной оферты',
+        isPublished: false,
+        isDefault: true,
+        scopes: {
+          create: [
+            { scopeType: 'ALL_PRODUCTS', scopeId: '' },
+            { scopeType: 'ALL_SERVICES', scopeId: '' },
+          ],
+        },
+      },
+    });
+    void offer;
+  }
+
+  console.log('✅ Public offers seeded');
 
   await prisma.footerSectionLink.updateMany({
     where: { href: '/photo', name: 'Фото' },

@@ -246,6 +246,21 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/checkout',
   },
   {
+    id: 'admin.settings.seller-legal',
+    label: 'Информация о продавце',
+    path: '/admin/settings/seller-legal',
+  },
+  {
+    id: 'admin.settings.site-disclaimer',
+    label: 'Информация на сайте (не оферта)',
+    path: '/admin/settings/site-disclaimer',
+  },
+  {
+    id: 'admin.settings.public-offer',
+    label: 'Публичные оферты',
+    path: '/admin/settings/public-offers',
+  },
+  {
     id: 'admin.settings.delivery',
     label: 'Доставка',
     path: '/admin/settings/delivery',

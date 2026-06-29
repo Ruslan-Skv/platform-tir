@@ -28,6 +28,11 @@ export const ContactSection: React.FC<ContactSectionProps> = ({ companyInfo, soc
 
       <div className={styles.contactInfo}>
         <p className={styles.phone}>{companyInfo.phone}</p>
+        <p className={styles.email}>
+          <a href={`mailto:${companyInfo.email}`} className={styles.emailLink}>
+            {companyInfo.email}
+          </a>
+        </p>
         <h4 className={styles.subtitle}>Режим работы</h4>
         <p className={styles.text}>{companyInfo.workingHours.weekdays}</p>
         <p className={styles.text}>{companyInfo.workingHours.saturday}</p>

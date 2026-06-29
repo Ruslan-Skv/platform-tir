@@ -1,0 +1,17 @@
+.notice {
+  margin: 0;
+  font-size: 0.75rem;
+  line-height: 1.5;
+  color: #9ca3af;
+  text-align: center;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notice {
+  color: #9ca3af;
+}
+
+@media (width <= 768px) {
+  .notice {
+    font-size: 0.6875rem;
+  }
+}

@@ -2,7 +2,11 @@
 
 import React, { useEffect, useState } from 'react';
 
+import { getSellerLegal } from '@/shared/api/seller-legal';
+import { getSiteDisclaimer } from '@/shared/api/site-disclaimer';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import type { SellerLegalInfo } from '@/shared/lib/seller-legal';
+import type { SiteDisclaimerInfo } from '@/shared/lib/site-disclaimer';
 
 import styles from './Footer.module.css';
 import { FooterBottom } from './FooterBottom';
@@ -65,6 +69,8 @@ const defaultData: FooterData = {
         { id: '1', name: 'Контакты', href: '/contacts', sortOrder: 0 },
         { id: '2', name: 'Наши работы', href: '/portfolio', sortOrder: 1 },
         { id: '3', name: 'Вакансии', href: '/careers', sortOrder: 2 },
+        { id: '11', name: 'Реквизиты', href: '/legal', sortOrder: 3 },
+        { id: '12', name: 'Публичная оферта', href: '/offer', sortOrder: 4 },
       ],
     },
     {
@@ -86,20 +92,34 @@ const defaultData: FooterData = {
 
 export const Footer: React.FC = () => {
   const [data, setData] = useState<FooterData | null>(null);
+  const [sellerLegal, setSellerLegal] = useState<SellerLegalInfo | null>(null);
+  const [siteDisclaimer, setSiteDisclaimer] = useState<SiteDisclaimerInfo | null>(null);
 
   useEffect(() => {
     let cancelled = false;
     const fetchData = async () => {
       try {
-        const res = await apiFetch(`${API_URL}/home/footer`);
-        if (!cancelled && res.ok) {
-          const d = await res.json();
+        const [footerRes, sellerLegalData, siteDisclaimerData] = await Promise.all([
+          apiFetch(`${API_URL}/home/footer`),
+          getSellerLegal().catch(() => null),
+          getSiteDisclaimer().catch(() => null),
+        ]);
+        if (!cancelled && footerRes.ok) {
+          const d = await footerRes.json();
           setData(d);
         } else if (!cancelled) {
           setData(defaultData);
         }
+        if (!cancelled) {
+          setSellerLegal(sellerLegalData);
+          setSiteDisclaimer(siteDisclaimerData);
+        }
       } catch {
-        if (!cancelled) setData(defaultData);
+        if (!cancelled) {
+          setData(defaultData);
+          setSellerLegal(null);
+          setSiteDisclaimer(null);
+        }
       }
     };
     fetchData();
@@ -129,6 +149,8 @@ export const Footer: React.FC = () => {
         copyrightCompanyName={footerData.block.copyrightCompanyName}
         developer={footerData.block.developer}
         email={footerData.block.email}
+        sellerLegal={sellerLegal}
+        siteDisclaimer={siteDisclaimer}
       />
     </footer>
   );

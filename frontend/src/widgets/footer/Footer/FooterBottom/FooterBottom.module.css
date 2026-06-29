@@ -26,20 +26,36 @@
   text-align: center;
 }
 
+.siteDisclaimer {
+  max-width: 56rem;
+  margin: 0 auto 1rem;
+}
+
+.legalNotice {
+  margin-bottom: 0.75rem;
+}
+
 .copyright {
   color: #6b7280;
   font-size: 0.875rem;
   margin: 0;
 }
 
-.developer {
-  color: #6b7280;
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
+.legalLinkWrap {
+  margin: 0.5rem 0 0;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .copyright,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .developer {
+.legalLink {
+  color: #d90652;
+  font-size: 0.8125rem;
+  text-decoration: none;
+}
+
+.legalLink:hover {
+  text-decoration: underline;
+}
+
+.legalSeparator {
   color: #9ca3af;
 }
 
@@ -53,11 +69,7 @@
   }
 
   .copyright,
-  .developer {
+  .legalLink {
     font-size: 0.75rem;
-  }
-
-  .developer {
-    margin-top: 0.125rem;
   }
 }

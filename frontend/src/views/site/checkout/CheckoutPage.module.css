@@ -184,6 +184,20 @@
   border-top-color: #374151;
 }
 
+.sellerLegalNotice {
+  margin-top: 1.5rem;
+}
+
+.offerAcceptField {
+  margin-top: 1.25rem;
+}
+
+.offerHint {
+  margin: 0.75rem 0 0;
+  font-size: 0.875rem;
+  color: #9a3412;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .hint {
   color: #9ca3af;
 }

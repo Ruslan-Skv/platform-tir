@@ -467,6 +467,21 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.settings.checkout',
       },
       {
+        label: 'Информация о продавце',
+        href: '/admin/settings/seller-legal',
+        resourceId: 'admin.settings.seller-legal',
+      },
+      {
+        label: 'Информация на сайте (не оферта)',
+        href: '/admin/settings/site-disclaimer',
+        resourceId: 'admin.settings.site-disclaimer',
+      },
+      {
+        label: 'Публичные оферты',
+        href: '/admin/settings/public-offers',
+        resourceId: 'admin.settings.public-offer',
+      },
+      {
         label: 'Доставка',
         href: '/admin/settings/delivery',
         resourceId: 'admin.settings.delivery',

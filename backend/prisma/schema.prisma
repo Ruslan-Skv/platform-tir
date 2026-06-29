@@ -542,6 +542,61 @@ model FooterSectionLink {
   @@map("footer_section_links")
 }
 
+model SellerLegalBlock {
+  id           String   @id @default("main")
+  pageTitle    String   @default("Информация о продавце")
+  legalName    String   @default("")
+  entityType   String   @default("IP") // IP | UL
+  inn          String   @default("")
+  ogrn         String   @default("")
+  legalAddress String   @default("")
+  phone        String   @default("8 (8152) 60-12-70")
+  email        String   @default("skvirya@mail.ru")
+  isPublished  Boolean  @default(true)
+  updatedAt    DateTime @updatedAt
+
+  @@map("seller_legal_block")
+}
+
+model SiteDisclaimerBlock {
+  id          String   @id @default("main")
+  content     String   @db.Text
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("site_disclaimer_block")
+}
+
+model PublicOffer {
+  id           String             @id @default(cuid())
+  slug         String             @unique
+  title        String             @default("Публичная оферта")
+  name         String             @default("Публичная оферта")
+  offerUrl     String?
+  offerContent String?            @db.Text
+  acceptText   String             @default("Я принимаю условия публичной оферты")
+  isPublished  Boolean            @default(false)
+  isDefault    Boolean            @default(false)
+  sortOrder    Int                @default(0)
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  scopes       PublicOfferScope[]
+
+  @@map("public_offers")
+}
+
+model PublicOfferScope {
+  id        String      @id @default(cuid())
+  offerId   String
+  scopeType String
+  scopeId   String      @default("")
+  offer     PublicOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, scopeType, scopeId])
+  @@index([scopeType, scopeId])
+  @@map("public_offer_scopes")
+}
+
 model NavigationItem {
   id            String                   @id @default(cuid())
   name          String

@@ -5,6 +5,12 @@ import React, { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
+import { PublicOfferAcceptFields } from '@/features/public-offer/ui/PublicOfferAcceptField';
+import {
+  useApplicablePublicOffers,
+  usePublicOfferAcceptance,
+} from '@/features/public-offer/useApplicablePublicOffers';
+import { SellerLegalNoticeBlock } from '@/features/seller-legal/ui/SellerLegalNoticeBlock';
 import {
   type UserOrder,
   formatApprovalCountdown,
@@ -17,6 +23,16 @@ import styles from './CheckoutPage.module.css';
 function CheckoutContent() {
   const searchParams = useSearchParams();
   const orderId = searchParams.get('orderId');
+  const { data: applicableOffers = [] } = useApplicablePublicOffers(
+    { orderId },
+    { enabled: Boolean(orderId) }
+  );
+  const offerRequired = applicableOffers.length > 0;
+  const {
+    acceptedIds: acceptedOfferIds,
+    toggleOffer,
+    allAccepted: allOffersAccepted,
+  } = usePublicOfferAcceptance(applicableOffers);
   const [order, setOrder] = useState<UserOrder | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -171,6 +187,18 @@ function CheckoutContent() {
       <p className={styles.hint}>
         Укажите адрес доставки и способ оплаты. Раздел оплаты можно подключить позже.
       </p>
+      <SellerLegalNoticeBlock variant="card" className={styles.sellerLegalNotice} />
+      <PublicOfferAcceptFields
+        offers={applicableOffers}
+        acceptedIds={acceptedOfferIds}
+        onToggle={toggleOffer}
+        className={styles.offerAcceptField}
+      />
+      {offerRequired && !allOffersAccepted ? (
+        <p className={styles.offerHint}>
+          Для продолжения оформления примите условия всех применимых договоров оферты.
+        </p>
+      ) : null}
       <Link href="/cart" className={styles.backLink}>
         ← Вернуться в корзину
       </Link>

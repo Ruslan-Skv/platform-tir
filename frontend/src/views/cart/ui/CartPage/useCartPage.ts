@@ -1,5 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
+import {
+  useApplicablePublicOffers,
+  usePublicOfferAcceptance,
+} from '@/features/public-offer/useApplicablePublicOffers';
 import { useCart } from '@/shared/lib/hooks';
 
 import { useCartDelivery } from './hooks/useCartDelivery';
@@ -22,6 +28,39 @@ export function useCartPage() {
     getTotalPrice,
     addServiceToCart,
   } = useCart();
+
+  const productCategoryIds = useMemo(
+    () => [
+      ...new Set(
+        cart.map((item) => item.product?.category?.id).filter((id): id is string => Boolean(id))
+      ),
+    ],
+    [cart]
+  );
+
+  const serviceCategoryIds = useMemo(
+    () => [...new Set(cartServiceItems.map((item) => item.serviceCatalogCategoryId))],
+    [cartServiceItems]
+  );
+
+  const hasCartContent = cart.length > 0 || cartServiceItems.length > 0;
+
+  const { data: applicableOffers = [] } = useApplicablePublicOffers(
+    {
+      productCategoryIds,
+      serviceCategoryIds,
+      hasProducts: cart.length > 0,
+      hasServices: cartServiceItems.length > 0,
+    },
+    { enabled: hasCartContent }
+  );
+
+  const offerRequired = applicableOffers.length > 0;
+  const {
+    acceptedIds: acceptedOfferIds,
+    toggleOffer,
+    allAccepted: allOffersAccepted,
+  } = usePublicOfferAcceptance(applicableOffers);
 
   const {
     setUserOrders,
@@ -110,6 +149,11 @@ export function useCartPage() {
     showInitialLoading,
     removeCartServiceItemById,
     refreshCart,
+    applicableOffers,
+    offerRequired,
+    acceptedOfferIds,
+    toggleOffer,
+    allOffersAccepted,
   };
 }
 

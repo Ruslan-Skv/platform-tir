@@ -1,0 +1,61 @@
+.loading {
+  color: var(--admin-text-muted);
+}
+
+.previewHint {
+  margin: 0 0 var(--admin-space-3xl);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-muted);
+}
+
+.previewHint a {
+  color: var(--admin-accent);
+}
+
+.form {
+  display: grid;
+  gap: var(--admin-space-2xl);
+  max-width: 42rem;
+}
+
+.field {
+  display: grid;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+}
+
+.field input,
+.field textarea {
+  width: 100%;
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font: inherit;
+  color: inherit;
+  background: var(--admin-surface);
+}
+
+.checkboxField {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-secondary);
+}
+
+.submitButton {
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-accent);
+  color: #fff;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.submitButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}

@@ -71,6 +71,12 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/home/hero', resourceId: 'admin.content.hero' },
   { prefix: '/api/v1/admin/home/footer', resourceId: 'admin.content.footer' },
   { prefix: '/api/v1/admin/home/sections', resourceId: 'admin.content.home' },
+  { prefix: '/api/v1/admin/settings/seller-legal', resourceId: 'admin.settings.seller-legal' },
+  {
+    prefix: '/api/v1/admin/settings/site-disclaimer',
+    resourceId: 'admin.settings.site-disclaimer',
+  },
+  { prefix: '/api/v1/admin/settings/public-offers', resourceId: 'admin.settings.public-offer' },
   // Договоры и оформление
   {
     prefix: '/api/v1/admin/contract-document-packages',

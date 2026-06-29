@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 
+import { SellerLegalNoticeBlock } from '@/features/seller-legal/ui/SellerLegalNoticeBlock';
 import { pluralizeRu } from '@/views/cart/lib/pluralize-ru';
 
 import styles from './CartPage.module.css';
@@ -85,6 +86,8 @@ export function CartPageView({ model }: CartPageViewProps) {
                 Продолжить покупки
               </Link>
             </div>
+
+            <SellerLegalNoticeBlock variant="card" className={styles.sellerLegalNotice} />
           </div>
         </div>
       )}

@@ -1,0 +1,108 @@
+.root {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.compact {
+  text-align: center;
+}
+
+.compactLabel {
+  color: #4b5563;
+  font-weight: 500;
+}
+
+.compactLink {
+  color: #d90652;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.compactLink:hover {
+  text-decoration: underline;
+}
+
+.card {
+  margin-top: 1.5rem;
+  padding: 1.25rem 1.5rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  background: #f9fafb;
+  color: #374151;
+}
+
+.cardTitle {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.list {
+  display: grid;
+  gap: 0.75rem;
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  gap: 0.25rem;
+}
+
+.row dt {
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: #6b7280;
+}
+
+.row dd {
+  margin: 0;
+  font-size: 0.9375rem;
+  line-height: 1.45;
+}
+
+.row a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.row a:hover {
+  text-decoration: underline;
+}
+
+.moreLink {
+  display: inline-block;
+  margin-top: 1rem;
+  color: #d90652;
+  font-size: 0.875rem;
+  text-decoration: none;
+}
+
+.moreLink:hover {
+  text-decoration: underline;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .root {
+  color: #9ca3af;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .compactLabel {
+  color: #d1d5db;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .card {
+  border-color: #374151;
+  background: #111827;
+  color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .cardTitle {
+  color: #f9fafb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row dt {
+  color: #9ca3af;
+}

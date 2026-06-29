@@ -1,0 +1,86 @@
+.page {
+  box-sizing: border-box;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+  color: #1a202c;
+}
+
+.title {
+  margin: 0 0 1.5rem;
+  font-size: 1.75rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+
+.list {
+  display: grid;
+  gap: 1rem;
+  margin: 0;
+}
+
+.row {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.row dt {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #6b7280;
+}
+
+.row dd {
+  margin: 0;
+  font-size: 1rem;
+  line-height: 1.55;
+}
+
+.row a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.row a:hover {
+  text-decoration: underline;
+}
+
+.back {
+  margin: 2rem 0 0;
+  font-size: 0.9375rem;
+}
+
+.back a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.back a:hover {
+  text-decoration: underline;
+}
+
+.empty {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 3rem 1.25rem;
+  text-align: center;
+  color: #6b7280;
+}
+
+.incomplete {
+  margin: 0 0 1.25rem;
+  padding: 0.875rem 1rem;
+  border-radius: 8px;
+  background: #fff7ed;
+  color: #9a3412;
+  font-size: 0.9375rem;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .page {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row dt {
+  color: #9ca3af;
+}

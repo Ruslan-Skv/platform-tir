@@ -59,6 +59,11 @@ export function CartSection({ section, model }: CartSectionProps) {
     handleRemoveComponent,
     openSendToEmailModal,
     removeCartServiceItemById,
+    offerRequired,
+    applicableOffers,
+    acceptedOfferIds,
+    toggleOffer,
+    allOffersAccepted,
   } = model;
 
   const orderIdForSection2 = (pendingReviewOrder ?? returnedForCorrectionOrder)?.id;
@@ -164,6 +169,11 @@ export function CartSection({ section, model }: CartSectionProps) {
         onSubmitForReview={handleSubmitForReview}
         onCancelReview={handleCancelReview}
         onOpenSendToEmailModal={openSendToEmailModal}
+        offerRequired={offerRequired}
+        applicableOffers={applicableOffers}
+        acceptedOfferIds={acceptedOfferIds}
+        onOfferToggle={toggleOffer}
+        allOffersAccepted={allOffersAccepted}
       />
     </div>
   );
