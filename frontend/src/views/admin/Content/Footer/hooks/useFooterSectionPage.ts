@@ -6,7 +6,21 @@ import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { API_URL, EMPTY_NEW_LINK } from '../footer-section-page.constants';
-import type { FooterData, PageMessage } from '../footer-section-page.types';
+import type { FooterData, FooterSectionData, PageMessage } from '../footer-section-page.types';
+
+function normalizeFooterSection(section: FooterSectionData): FooterSectionData {
+  return {
+    ...section,
+    links: section.links ?? [],
+  };
+}
+
+function normalizeFooterData(data: FooterData): FooterData {
+  return {
+    ...data,
+    sections: data.sections.map(normalizeFooterSection),
+  };
+}
 
 export function useFooterSectionPage() {
   const { getAuthHeaders } = useAuth();
@@ -37,7 +51,7 @@ export function useFooterSectionPage() {
         });
         if (!cancelled && res.ok) {
           const d = await res.json();
-          setData(d);
+          setData(normalizeFooterData(d));
         }
       } catch (e) {
         if (!cancelled) {
@@ -163,7 +177,7 @@ export function useFooterSectionPage() {
         body: JSON.stringify({ title: newSectionTitle.trim() }),
       });
       if (res.ok) {
-        const section = await res.json();
+        const section = normalizeFooterSection(await res.json());
         setData((prev) =>
           prev
             ? {
@@ -246,7 +260,7 @@ export function useFooterSectionPage() {
                   s.id === sectionId
                     ? {
                         ...s,
-                        links: [...s.links, link].sort((a, b) => a.sortOrder - b.sortOrder),
+                        links: [...(s.links ?? []), link].sort((a, b) => a.sortOrder - b.sortOrder),
                       }
                     : s
                 ),
@@ -288,7 +302,9 @@ export function useFooterSectionPage() {
                   s.id === sectionId
                     ? {
                         ...s,
-                        links: s.links.map((l) => (l.id === linkId ? { ...l, name, href } : l)),
+                        links: (s.links ?? []).map((l) =>
+                          l.id === linkId ? { ...l, name, href } : l
+                        ),
                       }
                     : s
                 ),
@@ -321,7 +337,9 @@ export function useFooterSectionPage() {
             ? {
                 ...prev,
                 sections: prev.sections.map((s) =>
-                  s.id === sectionId ? { ...s, links: s.links.filter((l) => l.id !== linkId) } : s
+                  s.id === sectionId
+                    ? { ...s, links: (s.links ?? []).filter((l) => l.id !== linkId) }
+                    : s
                 ),
               }
             : prev

@@ -275,7 +275,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
               </div>
             </div>
             <ul className={styles.linksList}>
-              {section.links.map((link) => (
+              {(section.links ?? []).map((link) => (
                 <li key={link.id} className={styles.linkRow}>
                   {editingLink === link.id ? (
                     <>
@@ -291,7 +291,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                                     s.id === section.id
                                       ? {
                                           ...s,
-                                          links: s.links.map((l) =>
+                                          links: (s.links ?? []).map((l) =>
                                             l.id === link.id ? { ...l, name: e.target.value } : l
                                           ),
                                         }
@@ -316,7 +316,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
                                     s.id === section.id
                                       ? {
                                           ...s,
-                                          links: s.links.map((l) =>
+                                          links: (s.links ?? []).map((l) =>
                                             l.id === link.id ? { ...l, href: e.target.value } : l
                                           ),
                                         }

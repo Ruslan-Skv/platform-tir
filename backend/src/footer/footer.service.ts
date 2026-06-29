@@ -191,9 +191,15 @@ export class FooterService {
 
   async createSection(title: string) {
     const count = await this.prisma.footerSection.count();
-    return this.prisma.footerSection.create({
+    const section = await this.prisma.footerSection.create({
       data: { title, sortOrder: count },
     });
+    return {
+      id: section.id,
+      title: section.title,
+      sortOrder: section.sortOrder,
+      links: [] as FooterLink[],
+    };
   }
 
   async updateSection(id: string, data: { title?: string }) {
