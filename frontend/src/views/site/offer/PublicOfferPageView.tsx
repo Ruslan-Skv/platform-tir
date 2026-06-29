@@ -6,7 +6,7 @@ import {
   formatPublicOfferContent,
   isPublicOfferPdfUrl,
   resolvePublicOfferEmbedUrl,
-} from '@/shared/lib/public-offer';
+} from '@/shared/lib/legal/public-offer';
 
 import styles from './PublicOfferPageView.module.css';
 

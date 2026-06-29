@@ -1,5 +1,5 @@
-import type { SiteDisclaimerInfo } from '@/shared/lib/site-disclaimer';
-import { isSiteDisclaimerActive } from '@/shared/lib/site-disclaimer';
+import type { SiteDisclaimerInfo } from '@/shared/lib/legal/site-disclaimer';
+import { isSiteDisclaimerActive } from '@/shared/lib/legal/site-disclaimer';
 
 import styles from './SiteDisclaimerNotice.module.css';
 

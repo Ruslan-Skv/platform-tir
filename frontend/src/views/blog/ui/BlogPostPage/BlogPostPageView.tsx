@@ -5,7 +5,7 @@ import clsx from 'clsx';
 import Link from 'next/link';
 
 import { useFormContext } from '@/features/forms';
-import { plainTextToBlogHtml } from '@/shared/lib/blog-content';
+import { plainTextToBlogHtml } from '@/shared/lib/blog/blog-content';
 import { sanitizeHtml } from '@/shared/lib/sanitize';
 
 import styles from './BlogPostPage.module.css';

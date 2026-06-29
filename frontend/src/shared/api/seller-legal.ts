@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { SellerLegalInfo } from '@/shared/lib/seller-legal';
+import type { SellerLegalInfo } from '@/shared/lib/legal/seller-legal';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 

@@ -7,7 +7,7 @@ import {
   areAllOffersAccepted,
   isPublicOfferActive,
   publicOfferPath,
-} from '@/shared/lib/public-offer';
+} from '@/shared/lib/legal/public-offer';
 
 import styles from './PublicOfferAcceptField.module.css';
 

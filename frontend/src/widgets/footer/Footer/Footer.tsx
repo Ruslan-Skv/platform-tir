@@ -5,8 +5,8 @@ import React, { useEffect, useState } from 'react';
 import { getSellerLegal } from '@/shared/api/seller-legal';
 import { getSiteDisclaimer } from '@/shared/api/site-disclaimer';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { SellerLegalInfo } from '@/shared/lib/seller-legal';
-import type { SiteDisclaimerInfo } from '@/shared/lib/site-disclaimer';
+import type { SellerLegalInfo } from '@/shared/lib/legal/seller-legal';
+import type { SiteDisclaimerInfo } from '@/shared/lib/legal/site-disclaimer';
 
 import styles from './Footer.module.css';
 import { FooterBottom } from './FooterBottom';

@@ -3,7 +3,7 @@
 import React, { useRef, useState } from 'react';
 
 import { uploadBlogFeaturedImage } from '@/shared/api/admin-blog';
-import { blockHasTextOrImages } from '@/shared/lib/blog-content';
+import { blockHasTextOrImages } from '@/shared/lib/blog/blog-content';
 
 import styles from './BlogPostBlocksEditor.module.css';
 import { BlogPostEditor } from './BlogPostEditor';

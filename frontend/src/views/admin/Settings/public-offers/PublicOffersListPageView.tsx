@@ -5,7 +5,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { deleteAdminPublicOffer, listAdminPublicOffers } from '@/shared/api/public-offer';
-import { SITE_PUBLIC_OFFERS_PATH, publicOfferPath } from '@/shared/lib/public-offer';
+import { SITE_PUBLIC_OFFERS_PATH, publicOfferPath } from '@/shared/lib/legal/public-offer';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 

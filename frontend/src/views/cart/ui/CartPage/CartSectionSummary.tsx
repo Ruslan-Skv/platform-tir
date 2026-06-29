@@ -9,7 +9,7 @@ import {
   type UserOrder,
   formatApprovalCountdown,
 } from '@/shared/api/user-orders';
-import type { PublicOfferInfo } from '@/shared/lib/public-offer';
+import type { PublicOfferInfo } from '@/shared/lib/legal/public-offer';
 import type { CartSection } from '@/views/cart/lib/build-cart-sections';
 import { pluralizeRu } from '@/views/cart/lib/pluralize-ru';
 

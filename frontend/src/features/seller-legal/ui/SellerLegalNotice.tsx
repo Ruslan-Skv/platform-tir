@@ -7,7 +7,7 @@ import {
   type SellerLegalInfo,
   formatSellerLegalCompactLine,
   isSellerLegalConfigured,
-} from '@/shared/lib/seller-legal';
+} from '@/shared/lib/legal/seller-legal';
 
 import styles from './SellerLegalNotice.module.css';
 

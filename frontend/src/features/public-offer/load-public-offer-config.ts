@@ -1,5 +1,5 @@
 import { serverFetch } from '@/shared/lib/fetch-with-timeout';
-import type { PublicOfferInfo, PublicOfferListItem } from '@/shared/lib/public-offer';
+import type { PublicOfferInfo, PublicOfferListItem } from '@/shared/lib/legal/public-offer';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 
 export async function loadPublicOffersList(): Promise<PublicOfferListItem[]> {

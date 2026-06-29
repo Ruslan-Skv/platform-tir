@@ -16,14 +16,13 @@ import {
   type PublicOfferScopeInfo,
   type PublicOfferScopeType,
   publicOfferPath,
-} from '@/shared/lib/public-offer';
+} from '@/shared/lib/legal/public-offer';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 import { QuizAdminFileUpload } from '@/views/admin/Quiz/ui/QuizAdminFileUpload';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
-import styles from '../public-offer/PublicOfferSettingsPage.module.css';
-import scopeStyles from './PublicOfferEditPage.module.css';
+import styles from './PublicOfferEditPageView.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -326,9 +325,9 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
           />
         </label>
 
-        <div className={scopeStyles.scopesSection}>
-          <h3 className={scopeStyles.scopesTitle}>Область применения</h3>
-          <p className={scopeStyles.scopesHint}>
+        <div className={styles.scopesSection}>
+          <h3 className={styles.scopesTitle}>Область применения</h3>
+          <p className={styles.scopesHint}>
             Оферта показывается в корзине и при оформлении, если в заказе есть товары или услуги из
             выбранных областей. Если совпадений нет — применяется оферта «по умолчанию».
           </p>
@@ -352,11 +351,11 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
           </label>
 
           {productCategories.length > 0 ? (
-            <div className={scopeStyles.categoryGroup}>
-              <span className={scopeStyles.categoryGroupTitle}>Категории товаров</span>
-              <div className={scopeStyles.categoryList}>
+            <div className={styles.categoryGroup}>
+              <span className={styles.categoryGroupTitle}>Категории товаров</span>
+              <div className={styles.categoryList}>
                 {productCategories.map((category) => (
-                  <label key={category.id} className={scopeStyles.categoryItem}>
+                  <label key={category.id} className={styles.categoryItem}>
                     <input
                       type="checkbox"
                       checked={form.productCategoryIds.includes(category.id)}
@@ -370,11 +369,11 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
           ) : null}
 
           {serviceCategories.length > 0 ? (
-            <div className={scopeStyles.categoryGroup}>
-              <span className={scopeStyles.categoryGroupTitle}>Категории услуг</span>
-              <div className={scopeStyles.categoryList}>
+            <div className={styles.categoryGroup}>
+              <span className={styles.categoryGroupTitle}>Категории услуг</span>
+              <div className={styles.categoryList}>
                 {serviceCategories.map((category) => (
-                  <label key={category.id} className={scopeStyles.categoryItem}>
+                  <label key={category.id} className={styles.categoryItem}>
                     <input
                       type="checkbox"
                       checked={form.serviceCategoryIds.includes(category.id)}
@@ -391,7 +390,7 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
         <label className={styles.field}>
           <span>PDF оферты (рекомендуется)</span>
           {isNew ? (
-            <p className={scopeStyles.uploadHint}>Сохраните оферту, затем загрузите PDF.</p>
+            <p className={styles.uploadHint}>Сохраните оферту, затем загрузите PDF.</p>
           ) : (
             <QuizAdminFileUpload
               url={form.offerUrl || null}

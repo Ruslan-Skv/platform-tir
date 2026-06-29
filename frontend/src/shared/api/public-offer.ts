@@ -4,7 +4,7 @@ import type {
   PublicOfferInfo,
   PublicOfferListItem,
   PublicOfferScopeInfo,
-} from '@/shared/lib/public-offer';
+} from '@/shared/lib/legal/public-offer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 

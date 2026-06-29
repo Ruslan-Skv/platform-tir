@@ -17,9 +17,9 @@ import {
   uploadBlogFeaturedImage,
 } from '@/shared/api/admin-blog';
 import type { BlogContentAlign } from '@/shared/api/blog';
-import { blockHasTextOrImages, isTrivialEmptyBlogHtml } from '@/shared/lib/blog-content';
-import { computeBlogReadingTimeMinutes } from '@/shared/lib/blog-reading-time';
-import { computeBlogSeoPreview } from '@/shared/lib/blog-seo';
+import { blockHasTextOrImages, isTrivialEmptyBlogHtml } from '@/shared/lib/blog/blog-content';
+import { computeBlogReadingTimeMinutes } from '@/shared/lib/blog/blog-reading-time';
+import { computeBlogSeoPreview } from '@/shared/lib/blog/blog-seo';
 
 import type { LocalBlock } from '../../shared/BlogPostBlocksEditor';
 import { MAX_FEATURED_BYTES } from '../blog-post-form-page.constants';

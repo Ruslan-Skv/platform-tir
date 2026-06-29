@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { type PublicOfferListItem, publicOfferPath } from '@/shared/lib/public-offer';
+import { type PublicOfferListItem, publicOfferPath } from '@/shared/lib/legal/public-offer';
 
 import styles from './PublicOfferIndexPageView.module.css';
 

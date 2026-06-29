@@ -1,6 +1,6 @@
 import Link from 'next/link';
 
-import { type SellerLegalInfo, isSellerLegalConfigured } from '@/shared/lib/seller-legal';
+import { type SellerLegalInfo, isSellerLegalConfigured } from '@/shared/lib/legal/seller-legal';
 
 import styles from './SellerLegalPageView.module.css';
 

@@ -1,5 +1,5 @@
 import { serverFetch } from '@/shared/lib/fetch-with-timeout';
-import type { SellerLegalInfo } from '@/shared/lib/seller-legal';
+import type { SellerLegalInfo } from '@/shared/lib/legal/seller-legal';
 import { getServerApiBaseUrl } from '@/shared/lib/server-api-base-url';
 
 export async function loadSellerLegalConfig(): Promise<SellerLegalInfo | null> {

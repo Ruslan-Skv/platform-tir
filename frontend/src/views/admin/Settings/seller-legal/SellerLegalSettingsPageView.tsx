@@ -5,7 +5,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 
 import { getAdminSellerLegal, updateAdminSellerLegal } from '@/shared/api/seller-legal';
-import { SITE_SELLER_LEGAL_PATH, type SellerLegalEntityType } from '@/shared/lib/seller-legal';
+import {
+  SITE_SELLER_LEGAL_PATH,
+  type SellerLegalEntityType,
+} from '@/shared/lib/legal/seller-legal';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';

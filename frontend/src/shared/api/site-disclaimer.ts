@@ -1,5 +1,5 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { SiteDisclaimerInfo } from '@/shared/lib/site-disclaimer';
+import type { SiteDisclaimerInfo } from '@/shared/lib/legal/site-disclaimer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 

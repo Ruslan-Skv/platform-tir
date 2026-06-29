@@ -2,8 +2,8 @@ import Link from 'next/link';
 
 import { SellerLegalNotice } from '@/features/seller-legal/ui/SellerLegalNotice';
 import { SiteDisclaimerNotice } from '@/features/site-disclaimer/ui/SiteDisclaimerNotice';
-import type { SellerLegalInfo } from '@/shared/lib/seller-legal';
-import type { SiteDisclaimerInfo } from '@/shared/lib/site-disclaimer';
+import type { SellerLegalInfo } from '@/shared/lib/legal/seller-legal';
+import type { SiteDisclaimerInfo } from '@/shared/lib/legal/site-disclaimer';
 
 import styles from './FooterBottom.module.css';
 
