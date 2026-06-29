@@ -36,6 +36,13 @@
   background: var(--admin-surface);
 }
 
+.fieldHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
 .checkboxField {
   display: flex;
   align-items: center;

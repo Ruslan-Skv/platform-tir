@@ -23,6 +23,7 @@ import { QuizAdminFileUpload } from '@/views/admin/Quiz/ui/QuizAdminFileUpload';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
 import styles from './PublicOfferEditPageView.module.css';
+import { slugifyPublicOfferName } from './public-offer-form.utils';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -117,6 +118,7 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
   const [saving, setSaving] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
   const [currentOfferId, setCurrentOfferId] = useState(offerId ?? '');
+  const [autoSlug, setAutoSlug] = useState(isNew);
   const { saveNoticeVisible, errorMessage, showSaveSuccess, showSaveError, resetSaveFeedback } =
     useAdminSaveFeedback();
 
@@ -172,6 +174,26 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
 
   const updateField = <K extends keyof FormState>(key: K, value: FormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleNameChange = (value: string) => {
+    setForm((prev) => {
+      const next = { ...prev, name: value };
+      if (autoSlug) {
+        next.slug = slugifyPublicOfferName(value);
+      }
+      const pageTitleFollowsName =
+        !prev.pageTitle || prev.pageTitle === EMPTY_FORM.pageTitle || prev.pageTitle === prev.name;
+      if (pageTitleFollowsName) {
+        next.pageTitle = value;
+      }
+      return next;
+    });
+  };
+
+  const handleSlugChange = (value: string) => {
+    setAutoSlug(false);
+    updateField('slug', value.toLowerCase());
   };
 
   const toggleCategory = (key: 'productCategoryIds' | 'serviceCategoryIds', id: string) => {
@@ -304,35 +326,48 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
 
       <form id="public-offer-form" onSubmit={handleSubmit} className={styles.form}>
         <label className={styles.field}>
-          <span>Slug (URL)</span>
+          <span>Название документа *</span>
           <input
             type="text"
-            value={form.slug}
-            onChange={(e) => updateField('slug', e.target.value.toLowerCase())}
-            placeholder="doors-installation"
+            value={form.name}
+            onChange={(e) => handleNameChange(e.target.value)}
+            placeholder="Договор оферты на установку дверей"
             required
-            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
           />
+          <p className={styles.fieldHint}>
+            Название оферты в списке на /offer и в чекбоксе при оформлении заказа.
+          </p>
         </label>
 
         <label className={styles.field}>
-          <span>Заголовок страницы</span>
+          <span>URL (slug) *</span>
+          <input
+            type="text"
+            value={form.slug}
+            onChange={(e) => handleSlugChange(e.target.value)}
+            placeholder="dogovor-oferty-na-ustanovku-dverey"
+            required
+            pattern="[a-z0-9]+(?:-[a-z0-9]+)*"
+          />
+          <p className={styles.fieldHint}>
+            Адрес страницы оферты: /offer/slug. Генерируется автоматически при изменении названия
+            документа.
+          </p>
+        </label>
+
+        <label className={styles.field}>
+          <span>Заголовок на странице оферты *</span>
           <input
             type="text"
             value={form.pageTitle}
             onChange={(e) => updateField('pageTitle', e.target.value)}
+            placeholder="Публичная оферта на установку дверей"
             required
           />
-        </label>
-
-        <label className={styles.field}>
-          <span>Краткое название (для списка и чекбокса)</span>
-          <input
-            type="text"
-            value={form.name}
-            onChange={(e) => updateField('name', e.target.value)}
-            required
-          />
+          <p className={styles.fieldHint}>
+            Крупный заголовок (H1) на публичной странице документа. Обычно совпадает с названием
+            документа, но можно сформулировать подробнее.
+          </p>
         </label>
 
         <label className={styles.field}>
@@ -445,9 +480,12 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
             type="text"
             value={form.acceptText}
             onChange={(e) => updateField('acceptText', e.target.value)}
-            placeholder="Я принимаю условия оферты на установку дверей"
+            placeholder="Я принимаю условия договора оферты на установку дверей"
             required
           />
+          <p className={styles.fieldHint}>
+            В тексте можно использовать название документа — оно станет ссылкой на страницу оферты.
+          </p>
         </label>
 
         <label className={styles.checkboxField}>
