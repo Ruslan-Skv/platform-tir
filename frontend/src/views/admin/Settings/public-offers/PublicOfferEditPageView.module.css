@@ -60,6 +60,27 @@
   cursor: not-allowed;
 }
 
+.documentSection {
+  display: grid;
+  gap: var(--admin-space-lg);
+  padding: var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.documentTitle {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.documentHint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
 .scopesSection {
   display: grid;
   gap: var(--admin-space-lg);

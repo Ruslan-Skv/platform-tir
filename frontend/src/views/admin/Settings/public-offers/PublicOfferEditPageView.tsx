@@ -191,32 +191,51 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
     return publicOfferPath(form.slug.trim());
   }, [form.slug]);
 
+  const buildPayload = () => ({
+    slug: form.slug.trim(),
+    pageTitle: form.pageTitle.trim(),
+    name: form.name.trim(),
+    offerUrl: form.offerUrl.trim() || null,
+    offerContent: form.offerContent.trim() || null,
+    acceptText: form.acceptText.trim(),
+    isPublished: form.isPublished,
+    isDefault: form.isDefault,
+    sortOrder: form.sortOrder,
+    scopes: formToScopes(form),
+  });
+
+  const ensureOfferSaved = async (): Promise<string> => {
+    if (!form.slug.trim() || !form.pageTitle.trim() || !form.name.trim()) {
+      throw new Error('Заполните slug, заголовок и название перед загрузкой PDF');
+    }
+
+    const payload = buildPayload();
+
+    if (currentOfferId) {
+      await updateAdminPublicOffer(currentOfferId, payload);
+      return currentOfferId;
+    }
+
+    const created = await createAdminPublicOffer(payload);
+    setCurrentOfferId(created.id);
+    router.replace(`/admin/settings/public-offers/${created.id}`);
+    return created.id;
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
     resetSaveFeedback();
     try {
-      const payload = {
-        slug: form.slug.trim(),
-        pageTitle: form.pageTitle.trim(),
-        name: form.name.trim(),
-        offerUrl: form.offerUrl.trim() || null,
-        offerContent: form.offerContent.trim() || null,
-        acceptText: form.acceptText.trim(),
-        isPublished: form.isPublished,
-        isDefault: form.isDefault,
-        sortOrder: form.sortOrder,
-        scopes: formToScopes(form),
-      };
-
-      if (isNew) {
-        const created = await createAdminPublicOffer(payload);
+      if (isNew && !currentOfferId) {
+        const created = await createAdminPublicOffer(buildPayload());
+        setCurrentOfferId(created.id);
         showSaveSuccess();
         router.replace(`/admin/settings/public-offers/${created.id}`);
         return;
       }
 
-      await updateAdminPublicOffer(currentOfferId, payload);
+      await updateAdminPublicOffer(currentOfferId, buildPayload());
       showSaveSuccess();
       await loadOffer();
     } catch (err) {
@@ -229,11 +248,12 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
   const handleUploadPdf = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     event.target.value = '';
-    if (!file || !currentOfferId) return;
+    if (!file) return;
     setUploadingPdf(true);
     resetSaveFeedback();
     try {
-      const { offerUrl } = await uploadAdminPublicOfferPdf(currentOfferId, file);
+      const id = await ensureOfferSaved();
+      const { offerUrl } = await uploadAdminPublicOfferPdf(id, file);
       updateField('offerUrl', offerUrl);
       showSaveSuccess();
     } catch (err) {
@@ -254,7 +274,7 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
   return (
     <SettingsSubPageView
       title={isNew ? 'Новая оферта' : 'Редактирование оферты'}
-      subtitle="Договор оферты для дистанционной продажи. Назначьте области применения и загрузите текст или PDF."
+      subtitle="Загрузите PDF договора или вставьте текст. Назначьте области применения по категориям товаров и услуг."
       saveNoticeVisible={saveNoticeVisible}
       headerActions={
         <button
@@ -325,6 +345,38 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
           />
         </label>
 
+        <div className={styles.documentSection}>
+          <h3 className={styles.documentTitle}>Документ оферты</h3>
+          <p className={styles.documentHint}>
+            Рекомендуется загрузить PDF. Если оферта ещё не сохранена, она будет создана
+            автоматически при загрузке файла.
+          </p>
+
+          <label className={styles.field}>
+            <span>PDF оферты</span>
+            <QuizAdminFileUpload
+              url={form.offerUrl || null}
+              onUrlChange={(value) => updateField('offerUrl', value)}
+              onFileSelect={handleUploadPdf}
+              uploading={uploadingPdf}
+              accept=".pdf,application/pdf"
+              uploadLabel="Загрузить PDF"
+              placeholder="/uploads/offer/offer-….pdf"
+              emptyHint="PDF не загружен"
+            />
+          </label>
+
+          <label className={styles.field}>
+            <span>Текст оферты (если без PDF)</span>
+            <textarea
+              value={form.offerContent}
+              onChange={(e) => updateField('offerContent', e.target.value)}
+              rows={12}
+              placeholder="Вставьте текст публичной оферты…"
+            />
+          </label>
+        </div>
+
         <div className={styles.scopesSection}>
           <h3 className={styles.scopesTitle}>Область применения</h3>
           <p className={styles.scopesHint}>
@@ -386,33 +438,6 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
             </div>
           ) : null}
         </div>
-
-        <label className={styles.field}>
-          <span>PDF оферты (рекомендуется)</span>
-          {isNew ? (
-            <p className={styles.uploadHint}>Сохраните оферту, затем загрузите PDF.</p>
-          ) : (
-            <QuizAdminFileUpload
-              url={form.offerUrl || null}
-              onUrlChange={(value) => updateField('offerUrl', value)}
-              onFileSelect={handleUploadPdf}
-              uploading={uploadingPdf}
-              accept=".pdf,application/pdf"
-              uploadLabel="Загрузить PDF"
-              placeholder="/uploads/offer/offer-….pdf"
-            />
-          )}
-        </label>
-
-        <label className={styles.field}>
-          <span>Текст оферты (если без PDF)</span>
-          <textarea
-            value={form.offerContent}
-            onChange={(e) => updateField('offerContent', e.target.value)}
-            rows={12}
-            placeholder="Вставьте текст публичной оферты…"
-          />
-        </label>
 
         <label className={styles.field}>
           <span>Текст чекбокса в корзине и при оформлении</span>

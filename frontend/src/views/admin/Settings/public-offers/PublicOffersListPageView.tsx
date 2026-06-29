@@ -53,7 +53,7 @@ export function PublicOffersListPageView() {
   return (
     <SettingsSubPageView
       title="Публичные оферты"
-      subtitle="Договоры оферты для разных товаров и услуг. Назначайте области применения по категориям каталога."
+      subtitle="Договоры оферты для разных товаров и услуг. Откройте оферту для редактирования — в блоке «Документ оферты» можно загрузить PDF."
       headerActions={
         <Link
           data-admin-mutation
