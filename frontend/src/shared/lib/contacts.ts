@@ -1,3 +1,5 @@
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+
 export interface ContactsPageInfo {
   pageTitle: string;
   introText: string | null;
@@ -45,18 +47,10 @@ export type ContactSalonInput = {
   managers?: ContactSalonManagerInput[];
 };
 
-const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
-  /\/api\/v1\/?$/,
-  ''
-);
-
 export function getContactImageUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  if (url.startsWith('http')) return url;
-  if (url.startsWith('/uploads/')) {
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  }
-  return url;
+  const resolved = publicUploadUrl(url);
+  return resolved || null;
 }
 
 export function formatContactPhoneHref(phone: string): string {
