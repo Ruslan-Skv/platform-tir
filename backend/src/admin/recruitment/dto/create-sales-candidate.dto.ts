@@ -178,6 +178,18 @@ export class CreateSalesCandidateDto {
 
   @IsOptional()
   @IsString()
+  plannedTenure?: string;
+
+  @IsOptional()
+  @IsBoolean()
+  readyToStudyWorkInfo?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  readyForContinuousLearning?: boolean;
+
+  @IsOptional()
+  @IsString()
   productKnowledge?: string;
 
   @IsOptional()

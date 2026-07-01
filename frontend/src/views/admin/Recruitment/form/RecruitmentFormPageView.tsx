@@ -456,6 +456,15 @@ export function RecruitmentFormPageView({ model }: RecruitmentFormPageViewProps)
               />
             </div>
             <div className={styles.field}>
+              <label className={styles.label}>Сколько планирует проработать в компании</label>
+              <input
+                className={styles.input}
+                value={form.plannedTenure ?? ''}
+                onChange={(e) => setField('plannedTenure', e.target.value)}
+                placeholder="например, от 2 лет"
+              />
+            </div>
+            <div className={styles.field}>
               <label className={styles.label}>Ожидания по з/п</label>
               <input
                 className={styles.input}
@@ -496,10 +505,20 @@ export function RecruitmentFormPageView({ model }: RecruitmentFormPageViewProps)
               <label className={styles.checkboxLabel}>
                 <input
                   type="checkbox"
-                  checked={form.readyForTravel ?? false}
-                  onChange={(e) => setField('readyForTravel', e.target.checked)}
+                  checked={form.readyToStudyWorkInfo ?? false}
+                  onChange={(e) => setField('readyToStudyWorkInfo', e.target.checked)}
                 />
-                Готов к командировкам
+                Готов изучить необходимую для работы информацию
+              </label>
+            </div>
+            <div className={styles.field}>
+              <label className={styles.checkboxLabel}>
+                <input
+                  type="checkbox"
+                  checked={form.readyForContinuousLearning ?? false}
+                  onChange={(e) => setField('readyForContinuousLearning', e.target.checked)}
+                />
+                Готов постоянно совершенствоваться, обучаясь
               </label>
             </div>
             <div className={styles.fieldFull}>

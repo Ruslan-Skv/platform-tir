@@ -287,6 +287,9 @@ export class RecruitmentService {
       hasDriversLicense: dto.hasDriversLicense ?? null,
       hasPersonalCar: dto.hasPersonalCar ?? null,
       readyForTravel: dto.readyForTravel ?? null,
+      plannedTenure: dto.plannedTenure?.trim() || null,
+      readyToStudyWorkInfo: dto.readyToStudyWorkInfo ?? null,
+      readyForContinuousLearning: dto.readyForContinuousLearning ?? null,
       productKnowledge: dto.productKnowledge?.trim() || null,
       interviewDate: dto.interviewDate ? new Date(dto.interviewDate) : null,
       interviewScore: dto.interviewScore ?? null,
@@ -349,6 +352,11 @@ export class RecruitmentService {
     if (dto.hasDriversLicense !== undefined) data.hasDriversLicense = dto.hasDriversLicense;
     if (dto.hasPersonalCar !== undefined) data.hasPersonalCar = dto.hasPersonalCar;
     if (dto.readyForTravel !== undefined) data.readyForTravel = dto.readyForTravel;
+    if (dto.plannedTenure !== undefined) data.plannedTenure = dto.plannedTenure?.trim() || null;
+    if (dto.readyToStudyWorkInfo !== undefined)
+      data.readyToStudyWorkInfo = dto.readyToStudyWorkInfo;
+    if (dto.readyForContinuousLearning !== undefined)
+      data.readyForContinuousLearning = dto.readyForContinuousLearning;
     if (dto.productKnowledge !== undefined)
       data.productKnowledge = dto.productKnowledge?.trim() || null;
     if (dto.interviewDate !== undefined)

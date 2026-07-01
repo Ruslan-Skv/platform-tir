@@ -159,6 +159,9 @@ export interface SalesCandidate {
   hasDriversLicense: boolean | null;
   hasPersonalCar: boolean | null;
   readyForTravel: boolean | null;
+  plannedTenure: string | null;
+  readyToStudyWorkInfo: boolean | null;
+  readyForContinuousLearning: boolean | null;
   productKnowledge: string | null;
   interviewDate: string | null;
   interviewScore: number | null;
@@ -430,6 +433,9 @@ export type RecruitmentFormState = {
   hasDriversLicense: boolean | undefined;
   hasPersonalCar: boolean | undefined;
   readyForTravel: boolean | undefined;
+  plannedTenure: string;
+  readyToStudyWorkInfo: boolean | undefined;
+  readyForContinuousLearning: boolean | undefined;
   productKnowledge: string;
   interviewDate: string;
   interviewScore: number | undefined;
@@ -474,6 +480,9 @@ export function emptyCandidateForm(): RecruitmentFormState {
     hasDriversLicense: undefined,
     hasPersonalCar: undefined,
     readyForTravel: undefined,
+    plannedTenure: '',
+    readyToStudyWorkInfo: undefined,
+    readyForContinuousLearning: undefined,
     productKnowledge: '',
     interviewDate: '',
     interviewScore: undefined,
@@ -519,6 +528,9 @@ export function candidateToFormData(c: SalesCandidate): RecruitmentFormState {
     hasDriversLicense: c.hasDriversLicense ?? undefined,
     hasPersonalCar: c.hasPersonalCar ?? undefined,
     readyForTravel: c.readyForTravel ?? undefined,
+    plannedTenure: c.plannedTenure ?? '',
+    readyToStudyWorkInfo: c.readyToStudyWorkInfo ?? undefined,
+    readyForContinuousLearning: c.readyForContinuousLearning ?? undefined,
     productKnowledge: c.productKnowledge ?? '',
     interviewDate: c.interviewDate ? c.interviewDate.slice(0, 10) : '',
     interviewScore: c.interviewScore ?? undefined,

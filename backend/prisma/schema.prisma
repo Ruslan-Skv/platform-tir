@@ -3169,58 +3169,61 @@ enum RecruitmentCampaignStatus {
 
 /// Кандидат на должность менеджера по продажам
 model SalesCandidate {
-  id                   String               @id @default(cuid())
-  campaignId           String
-  lastName             String
-  firstName            String
-  middleName           String?
-  birthDate            DateTime?
-  phone                String
-  email                String?
-  city                 String?
-  address              String?
-  educationLevel       String?
-  educationInstitution String?
-  educationSpecialty   String?
-  educationYear        Int?
-  additionalEducation  String?              @db.Text
-  totalExperienceYears Float?
-  salesExperienceYears Float?
-  workHistory          Json?
-  industryExperience   String[]             @default([])
-  salesAchievements    String?              @db.Text
-  communicationSkill   Int?
-  stressResistance     Int?
-  motivation           Int?
-  teamworkSkill        Int?
-  selfOrganization     Int?
-  pcSkill              Int?
-  presentationSkill    Int?
-  motivationReason     String?              @db.Text
-  salaryExpectation    String?
-  availableFrom        DateTime?
-  hasDriversLicense    Boolean?
-  hasPersonalCar       Boolean?
-  readyForTravel       Boolean?
-  productKnowledge     String?              @db.Text
-  interviewDate        DateTime?
-  interviewScore       Int?
-  interviewNotes       String?              @db.Text
-  adminNotes           String?              @db.Text
-  resumeFileUrl        String?
-  resumeFileName       String?
-  resumeParsedText     String?              @db.Text
-  resumeParsedData     Json?
-  traineeUserId        String?              @unique
-  status               SalesCandidateStatus @default(NEW)
-  overallScore         Float?
-  createdById          String?
-  createdAt            DateTime             @default(now())
-  updatedAt            DateTime             @updatedAt
-  campaign             RecruitmentCampaign  @relation("CampaignCandidates", fields: [campaignId], references: [id], onDelete: Restrict)
-  selectedInCampaign   RecruitmentCampaign? @relation("CampaignSelectedCandidate")
-  traineeUser          User?                @relation("SalesCandidateTrainee", fields: [traineeUserId], references: [id], onDelete: SetNull)
-  createdBy            User?                @relation("SalesCandidateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  id                         String               @id @default(cuid())
+  campaignId                 String
+  lastName                   String
+  firstName                  String
+  middleName                 String?
+  birthDate                  DateTime?
+  phone                      String
+  email                      String?
+  city                       String?
+  address                    String?
+  educationLevel             String?
+  educationInstitution       String?
+  educationSpecialty         String?
+  educationYear              Int?
+  additionalEducation        String?              @db.Text
+  totalExperienceYears       Float?
+  salesExperienceYears       Float?
+  workHistory                Json?
+  industryExperience         String[]             @default([])
+  salesAchievements          String?              @db.Text
+  communicationSkill         Int?
+  stressResistance           Int?
+  motivation                 Int?
+  teamworkSkill              Int?
+  selfOrganization           Int?
+  pcSkill                    Int?
+  presentationSkill          Int?
+  motivationReason           String?              @db.Text
+  salaryExpectation          String?
+  availableFrom              DateTime?
+  hasDriversLicense          Boolean?
+  hasPersonalCar             Boolean?
+  readyForTravel             Boolean?
+  plannedTenure              String?
+  readyToStudyWorkInfo       Boolean?
+  readyForContinuousLearning Boolean?
+  productKnowledge           String?              @db.Text
+  interviewDate              DateTime?
+  interviewScore             Int?
+  interviewNotes             String?              @db.Text
+  adminNotes                 String?              @db.Text
+  resumeFileUrl              String?
+  resumeFileName             String?
+  resumeParsedText           String?              @db.Text
+  resumeParsedData           Json?
+  traineeUserId              String?              @unique
+  status                     SalesCandidateStatus @default(NEW)
+  overallScore               Float?
+  createdById                String?
+  createdAt                  DateTime             @default(now())
+  updatedAt                  DateTime             @updatedAt
+  campaign                   RecruitmentCampaign  @relation("CampaignCandidates", fields: [campaignId], references: [id], onDelete: Restrict)
+  selectedInCampaign         RecruitmentCampaign? @relation("CampaignSelectedCandidate")
+  traineeUser                User?                @relation("SalesCandidateTrainee", fields: [traineeUserId], references: [id], onDelete: SetNull)
+  createdBy                  User?                @relation("SalesCandidateCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
 
   @@index([campaignId])
   @@index([status])
