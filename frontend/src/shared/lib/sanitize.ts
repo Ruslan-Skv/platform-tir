@@ -33,10 +33,32 @@ const ALLOWED_BLOG_TAGS = [
   'hr',
   'span',
   'div',
+  'table',
+  'thead',
+  'tbody',
+  'tfoot',
+  'tr',
+  'th',
+  'td',
+  'caption',
+  'colgroup',
+  'col',
 ];
 
-/** Разрешённые атрибуты для ссылок и изображений */
-const ALLOWED_ATTR = ['href', 'src', 'alt', 'title', 'class', 'target', 'rel'];
+/** Разрешённые атрибуты для rich text (ссылки, изображения, таблицы TipTap). */
+const ALLOWED_ATTR = [
+  'href',
+  'src',
+  'alt',
+  'title',
+  'class',
+  'target',
+  'rel',
+  'colspan',
+  'rowspan',
+  'colwidth',
+  'scope',
+];
 
 /**
  * Лёгкая санитизация на сервере (без jsdom, без ReDoS).
