@@ -11,11 +11,14 @@ import {
 import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeMaterialQuiz.module.css';
+import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
+import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
+import { useKnowledgeQuizPlatformSettings } from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
-  formatMinutesRu,
   formatQuizCountdown,
+  formatQuizDurationRu,
   getQuizTimeLimitSeconds,
   useBlockedCountdown,
   useKnowledgeQuizTimer,
@@ -51,6 +54,9 @@ export function KnowledgeMaterialQuiz({
     setError(null);
     try {
       const quizData = await getKnowledgeMaterialQuiz(materialId);
+      if (quizData?.quiz?.timePerQuestionSeconds != null) {
+        seedKnowledgeQuizPlatformSettingsCache(quizData.quiz.timePerQuestionSeconds);
+      }
       setData(quizData);
       setAnswers({});
       setExpanded(false);
@@ -66,12 +72,12 @@ export function KnowledgeMaterialQuiz({
     void load();
   }, [load]);
 
+  const platformSeconds = useKnowledgeQuizPlatformSettings();
   const quiz = data?.quiz;
-  const minutesPerQuestion = quiz?.timePerQuestionMinutes ?? 1;
+  const secondsPerQuestion = platformSeconds ?? quiz?.timePerQuestionSeconds ?? 60;
   const totalSeconds = quiz
-    ? getQuizTimeLimitSeconds(quiz.questions.length, minutesPerQuestion)
+    ? getQuizTimeLimitSeconds(quiz.questions.length, secondsPerQuestion)
     : 0;
-  const totalMinutes = quiz ? quiz.questions.length * minutesPerQuestion : 0;
 
   const submitQuiz = useCallback(
     async (timedOut: boolean) => {
@@ -163,29 +169,12 @@ export function KnowledgeMaterialQuiz({
           <KnowledgeSelfCheckQuizIcon size={40} />
         </div>
         <h2 className={styles.title}>{quiz.title}</h2>
-        <div className={styles.rules}>
-          <p className={styles.rulesTitle}>Правила прохождения</p>
-          <ul className={styles.rulesList}>
-            <li>
-              Для зачёта нужно не менее {quiz.passingScorePercent}% правильных ответов. На каждый
-              вопрос отводится {formatMinutesRu(minutesPerQuestion)}.
-            </li>
-            <li>
-              После неуспешной попытки повторное прохождение возможно не ранее чем через{' '}
-              {attemptLimits?.cooldownMinutes ?? 30} минут.
-            </li>
-            <li>
-              В сутки доступно не более {attemptLimits?.maxAttemptsPerDay ?? 3} попыток. Если за
-              день все {attemptLimits?.maxAttemptsPerDay ?? 3} попытки оказались неуспешными,
-              следующая попытка — только на следующий день.
-            </li>
-          </ul>
-          {attemptLimits && !myBestAttempt?.passed ? (
-            <p className={styles.rulesAttempts}>
-              Попыток сегодня: {attemptLimits.attemptsToday} из {attemptLimits.maxAttemptsPerDay}
-            </p>
-          ) : null}
-        </div>
+        <KnowledgeQuizPassingRules
+          passingScorePercent={quiz.passingScorePercent}
+          secondsPerQuestion={secondsPerQuestion}
+          attemptLimits={attemptLimits}
+          showAttemptsToday={Boolean(attemptLimits && !myBestAttempt?.passed)}
+        />
         <p className={styles.subtitle}>Пройдите тест после прочтения материала.</p>
         {myBestAttempt ? (
           <div
@@ -209,7 +198,7 @@ export function KnowledgeMaterialQuiz({
           <p className={styles.blockedText}>
             {attemptLimits?.blockedReason === 'daily_limit'
               ? 'Все попытки за сегодня оказались неуспешными. Следующая попытка будет доступна:'
-              : 'После неуспешного прохождения нужно подождать 30 минут. Повторная попытка будет доступна через:'}
+              : `После неуспешного прохождения нужно подождать ${attemptLimits?.cooldownMinutes ?? 30} минут. Повторная попытка будет доступна через:`}
           </p>
           <div className={styles.blockedTimer}>{formatBlockedCountdown(blockedSecondsLeft)}</div>
         </div>
@@ -276,7 +265,8 @@ export function KnowledgeMaterialQuiz({
       ) : !expanded ? (
         <div className={styles.collapsed}>
           <p className={styles.collapsedText}>
-            На прохождение теста отведено {formatMinutesRu(totalMinutes)} ({quiz.questions.length}{' '}
+            На прохождение теста отведено {formatQuizDurationRu(totalSeconds)} (
+            {quiz.questions.length}{' '}
             {quiz.questions.length === 1
               ? 'вопрос'
               : quiz.questions.length < 5

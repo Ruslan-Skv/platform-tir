@@ -11,11 +11,14 @@ import {
 import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeCategoryQuiz.module.css';
+import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
+import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
+import { useKnowledgeQuizPlatformSettings } from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
-  formatMinutesRu,
   formatQuizCountdown,
+  formatQuizDurationRu,
   getQuizTimeLimitSeconds,
   useBlockedCountdown,
   useKnowledgeQuizTimer,
@@ -68,6 +71,9 @@ export function KnowledgeCategoryQuiz({
       if (categoryIdRef.current !== requestedCategoryId) return;
 
       setData(quizData);
+      if (quizData?.quiz?.timePerQuestionSeconds != null) {
+        seedKnowledgeQuizPlatformSettingsCache(quizData.quiz.timePerQuestionSeconds);
+      }
       setAnswers({});
       setExpanded(false);
       setResult(null);
@@ -86,13 +92,13 @@ export function KnowledgeCategoryQuiz({
     void load();
   }, [load]);
 
+  const platformSeconds = useKnowledgeQuizPlatformSettings();
   const isReady = !loading && data?.category.id === categoryId;
   const quiz = isReady ? (data?.quiz ?? null) : null;
   const displayQuestionCount = quiz?.questionCount ?? questionCountHint;
   const displayTitle = quiz?.title ?? `Итоговый тест: ${categoryName}`;
   const displayPassingScore = quiz?.passingScorePercent ?? 85;
-  const displayMinutesPerQuestion = quiz?.timePerQuestionMinutes ?? 1;
-  const displayTotalMinutes = displayQuestionCount * displayMinutesPerQuestion;
+  const displaySecondsPerQuestion = platformSeconds ?? quiz?.timePerQuestionSeconds ?? 60;
   const myBestAttempt = isReady ? (data?.myBestAttempt ?? null) : null;
   const attemptLimits = isReady ? data?.attemptLimits : null;
   const isAttemptBlocked = Boolean(isReady && attemptLimits && !attemptLimits.canStart);
@@ -102,8 +108,8 @@ export function KnowledgeCategoryQuiz({
   );
 
   const totalSeconds = quiz
-    ? getQuizTimeLimitSeconds(quiz.questionCount, displayMinutesPerQuestion)
-    : getQuizTimeLimitSeconds(displayQuestionCount, displayMinutesPerQuestion);
+    ? getQuizTimeLimitSeconds(quiz.questionCount, displaySecondsPerQuestion)
+    : getQuizTimeLimitSeconds(displayQuestionCount, displaySecondsPerQuestion);
   const allQuestions = quiz?.sections.flatMap((section) => section.questions) ?? [];
 
   const submitQuiz = useCallback(
@@ -190,32 +196,20 @@ export function KnowledgeCategoryQuiz({
               <KnowledgeSelfCheckQuizIcon size={40} />
             </div>
             <h2 className={styles.title}>{displayTitle}</h2>
-            <div className={styles.rules}>
-              <p className={styles.rulesTitle}>Правила прохождения</p>
-              <ul className={styles.rulesList}>
+            <KnowledgeQuizPassingRules
+              passingScorePercent={displayPassingScore}
+              secondsPerQuestion={displaySecondsPerQuestion}
+              attemptLimits={attemptLimits}
+              showAttemptsToday={Boolean(isReady && attemptLimits && !myBestAttempt?.passed)}
+              attemptsPlaceholder
+              dailyLimitVariant="category"
+              extraRules={
                 <li>
                   Итоговый тест объединяет все вопросы из материалов категории (
                   {formatQuestionCount(displayQuestionCount)}).
                 </li>
-                <li>
-                  Для зачёта нужно не менее {displayPassingScore}% правильных ответов. На каждый
-                  вопрос отводится {formatMinutesRu(displayMinutesPerQuestion)}.
-                </li>
-                <li>
-                  После неуспешной попытки повторное прохождение возможно не ранее чем через{' '}
-                  {attemptLimits?.cooldownMinutes ?? 30} минут.
-                </li>
-                <li>В сутки доступно не более {attemptLimits?.maxAttemptsPerDay ?? 3} попыток.</li>
-              </ul>
-              {isReady && attemptLimits && !myBestAttempt?.passed ? (
-                <p className={styles.rulesAttempts}>
-                  Попыток сегодня: {attemptLimits.attemptsToday} из{' '}
-                  {attemptLimits.maxAttemptsPerDay}
-                </p>
-              ) : (
-                <p className={styles.rulesAttemptsPlaceholder} aria-hidden />
-              )}
-            </div>
+              }
+            />
             <div className={styles.bestScoreSlot}>
               {myBestAttempt ? (
                 <div
@@ -240,7 +234,7 @@ export function KnowledgeCategoryQuiz({
               <p className={styles.blockedText}>
                 {attemptLimits?.blockedReason === 'daily_limit'
                   ? 'Все попытки за сегодня оказались неуспешными. Следующая попытка будет доступна:'
-                  : 'После неуспешного прохождения нужно подождать 30 минут. Повторная попытка будет доступна через:'}
+                  : `После неуспешного прохождения нужно подождать ${attemptLimits?.cooldownMinutes ?? 30} минут. Повторная попытка будет доступна через:`}
               </p>
               <div className={styles.blockedTimer}>
                 {formatBlockedCountdown(blockedSecondsLeft)}
@@ -250,8 +244,11 @@ export function KnowledgeCategoryQuiz({
 
           <div className={styles.collapsed}>
             <p className={styles.collapsedText}>
-              На прохождение отведено {formatMinutesRu(displayTotalMinutes)} (
-              {formatQuestionCount(displayQuestionCount)}). После начала запустится таймер. Вопросы
+              На прохождение отведено{' '}
+              {formatQuizDurationRu(
+                getQuizTimeLimitSeconds(displayQuestionCount, displaySecondsPerQuestion)
+              )}{' '}
+              ({formatQuestionCount(displayQuestionCount)}). После начала запустится таймер. Вопросы
               сгруппированы по материалам категории.
             </p>
             {isReady && isAttemptBlocked ? (

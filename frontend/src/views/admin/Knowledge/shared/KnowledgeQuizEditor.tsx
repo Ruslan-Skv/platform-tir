@@ -76,13 +76,11 @@ function mapImportedQuestions(
 function buildSnapshotFromValues(
   quizTitle: string,
   passingPercent: number,
-  minutesPerQuestion: number,
   localQuestions: LocalQuestion[]
 ) {
   return JSON.stringify({
     title: quizTitle.trim() || 'Проверка знаний',
     passingScorePercent: passingPercent,
-    timePerQuestionMinutes: minutesPerQuestion,
     questions: localQuestions.map((q, qIndex) => ({
       id: q.id,
       text: q.text,
@@ -100,7 +98,6 @@ function buildSnapshotFromValues(
 export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditorProps) {
   const [title, setTitle] = useState('Проверка знаний');
   const [passingScorePercent, setPassingScorePercent] = useState(85);
-  const [timePerQuestionMinutes, setTimePerQuestionMinutes] = useState(1);
   const [questions, setQuestions] = useState<LocalQuestion[]>([]);
   const [quizExists, setQuizExists] = useState(false);
   const [loading, setLoading] = useState(Boolean(materialId));
@@ -112,8 +109,8 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
   const lastSavedSnapshotRef = useRef('');
 
   const buildSnapshot = useCallback(() => {
-    return buildSnapshotFromValues(title, passingScorePercent, timePerQuestionMinutes, questions);
-  }, [passingScorePercent, questions, timePerQuestionMinutes, title]);
+    return buildSnapshotFromValues(title, passingScorePercent, questions);
+  }, [passingScorePercent, questions, title]);
 
   const syncSavedSnapshot = useCallback(() => {
     lastSavedSnapshotRef.current = buildSnapshot();
@@ -123,7 +120,7 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
     if (!materialId) {
       setQuizExists(false);
       setQuestions([]);
-      lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, 1, []);
+      lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, []);
       setLoading(false);
       return;
     }
@@ -145,22 +142,19 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
         }));
         const loadedTitle = data.quiz.title;
         const loadedPassingScore = data.quiz.passingScorePercent;
-        const loadedMinutes = data.quiz.timePerQuestionMinutes ?? 1;
         lastSavedSnapshotRef.current = buildSnapshotFromValues(
           loadedTitle,
           loadedPassingScore,
-          loadedMinutes,
           loadedQuestions
         );
         setQuizExists(true);
         setTitle(loadedTitle);
         setPassingScorePercent(loadedPassingScore);
-        setTimePerQuestionMinutes(loadedMinutes);
         setQuestions(loadedQuestions);
       } else {
         setQuizExists(false);
         setQuestions([]);
-        lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, 1, []);
+        lastSavedSnapshotRef.current = buildSnapshotFromValues('Проверка знаний', 85, []);
       }
     } catch {
       setMessage({ type: 'error', text: 'Не удалось загрузить тест' });
@@ -377,17 +371,6 @@ export function KnowledgeQuizEditor({ materialId, saveRef }: KnowledgeQuizEditor
             max={100}
             value={passingScorePercent}
             onChange={(e) => setPassingScorePercent(parseInt(e.target.value, 10) || 85)}
-            className={styles.input}
-          />
-        </label>
-        <label className={styles.field}>
-          <span className={styles.label}>Минут на вопрос</span>
-          <input
-            type="number"
-            min={1}
-            max={60}
-            value={timePerQuestionMinutes}
-            onChange={(e) => setTimePerQuestionMinutes(parseInt(e.target.value, 10) || 1)}
             className={styles.input}
           />
         </label>

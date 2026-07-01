@@ -866,6 +866,36 @@ export async function createKnowledgePlatformFeedback(data: {
   return res.json() as Promise<{ feedback: KnowledgePlatformFeedback }>;
 }
 
+export interface KnowledgePlatformSettings {
+  id: string;
+  quizTimePerQuestionSeconds: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export async function getKnowledgePlatformSettings(): Promise<KnowledgePlatformSettings> {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/platform-settings`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить настройки платформы');
+  return res.json();
+}
+
+export async function updateKnowledgePlatformSettings(data: {
+  quizTimePerQuestionSeconds: number;
+}): Promise<KnowledgePlatformSettings> {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/platform-settings`, {
+    method: 'PATCH',
+    headers: getAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось сохранить настройки');
+  }
+  return res.json();
+}
+
 export async function updateKnowledgeVideoProgress(
   materialId: string,
   data: { progressPercent: number; positionSeconds?: number; completed?: boolean }
@@ -915,7 +945,7 @@ export interface KnowledgeQuizData {
   materialId: string;
   title: string;
   passingScorePercent: number;
-  timePerQuestionMinutes: number;
+  timePerQuestionSeconds: number;
   questions: KnowledgeQuizQuestion[];
 }
 
@@ -966,7 +996,7 @@ export interface KnowledgeQuizSubmitResult {
 export interface UpsertKnowledgeQuizDto {
   title?: string;
   passingScorePercent?: number;
-  timePerQuestionMinutes?: number;
+  timePerQuestionSeconds?: number;
   questions: Array<{
     id?: string;
     text: string;
@@ -1033,7 +1063,7 @@ export interface KnowledgeCategoryQuizData {
   categoryId: string;
   title: string;
   passingScorePercent: number;
-  timePerQuestionMinutes: number;
+  timePerQuestionSeconds: number;
   questionCount: number;
   sections: KnowledgeCategoryQuizSection[];
 }

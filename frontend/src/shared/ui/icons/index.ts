@@ -66,6 +66,11 @@ export {
   type ManagerPracticalAssignmentIconProps,
 } from './ManagerPracticalAssignmentIcon';
 export {
+  KnowledgePlatformSettingsIcon,
+  ADMIN_KNOWLEDGE_PLATFORM_SETTINGS_ICON_SIZE,
+  type KnowledgePlatformSettingsIconProps,
+} from './KnowledgePlatformSettingsIcon';
+export {
   TrainingStatisticsIcon,
   ADMIN_TRAINING_STATISTICS_ICON_SIZE,
   type TrainingStatisticsIconProps,

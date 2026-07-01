@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { KnowledgeTrainingNotifyService } from './services/knowledge-training-notify.service';
+import { KnowledgePlatformSettingsService } from './services/knowledge-platform-settings.service';
 
 type QuizWithQuestions = Prisma.KnowledgeMaterialQuizGetPayload<{
   include: {
@@ -41,6 +42,7 @@ export class KnowledgeQuizService {
   constructor(
     private prisma: PrismaService,
     private readonly knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
+    private readonly platformSettings: KnowledgePlatformSettingsService,
   ) {}
 
   private startOfLocalDay(date: Date): Date {
@@ -139,13 +141,17 @@ export class KnowledgeQuizService {
     );
   }
 
-  private mapQuizForClient(quiz: QuizWithQuestions, editorView: boolean) {
+  private mapQuizForClient(
+    quiz: QuizWithQuestions,
+    editorView: boolean,
+    timePerQuestionSeconds: number,
+  ) {
     return {
       id: quiz.id,
       materialId: quiz.materialId,
       title: quiz.title,
       passingScorePercent: quiz.passingScorePercent,
-      timePerQuestionMinutes: quiz.timePerQuestionMinutes,
+      timePerQuestionSeconds,
       questions: [...quiz.questions]
         .sort((a, b) => a.sortOrder - b.sortOrder)
         .map((q) => ({
@@ -203,9 +209,10 @@ export class KnowledgeQuizService {
     }, null);
 
     const attemptLimits = this.buildAttemptLimits(attempts);
+    const timePerQuestionSeconds = await this.platformSettings.getQuizTimePerQuestionSeconds();
 
     return {
-      quiz: this.mapQuizForClient(quiz, editorView),
+      quiz: this.mapQuizForClient(quiz, editorView, timePerQuestionSeconds),
       myBestAttempt: bestAttempt
         ? {
             id: bestAttempt.id,
@@ -254,18 +261,21 @@ export class KnowledgeQuizService {
       }
     }
 
+    const defaultTimePerQuestionSeconds =
+      dto.timePerQuestionSeconds ?? (await this.platformSettings.getQuizTimePerQuestionSeconds());
+
     const quiz = await this.prisma.knowledgeMaterialQuiz.upsert({
       where: { materialId },
       create: {
         materialId,
         title: dto.title?.trim() || 'Проверка знаний',
         passingScorePercent: dto.passingScorePercent ?? 85,
-        timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
+        timePerQuestionSeconds: defaultTimePerQuestionSeconds,
       },
       update: {
         title: dto.title?.trim() || 'Проверка знаний',
         passingScorePercent: dto.passingScorePercent ?? 85,
-        timePerQuestionMinutes: dto.timePerQuestionMinutes ?? 1,
+        timePerQuestionSeconds: defaultTimePerQuestionSeconds,
       },
     });
 

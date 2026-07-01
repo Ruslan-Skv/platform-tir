@@ -1,0 +1,17 @@
+.trigger {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.hint {
+  margin: 0 0 var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
+  color: var(--admin-text-muted);
+}
+
+.numberInput {
+  width: 100%;
+  max-width: 8rem;
+}

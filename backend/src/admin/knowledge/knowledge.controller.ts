@@ -27,11 +27,13 @@ import { KnowledgePlatformFeedbackType } from '@prisma/client';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeCategoryQuizService } from './services/knowledge-category-quiz.service';
+import { KnowledgePlatformSettingsService } from './services/knowledge-platform-settings.service';
 import { KNOWLEDGE_TESTS_RESOURCE_ID } from '../admin-access/knowledge-resources.util';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { CreateKnowledgeMaterialCommentDto } from './dto/create-knowledge-material-comment.dto';
 import { CreateKnowledgePlatformFeedbackDto } from './dto/create-knowledge-platform-feedback.dto';
+import { UpdateKnowledgePlatformSettingsDto } from './dto/update-knowledge-platform-settings.dto';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { ImportKnowledgeCategoryOutlineDto } from './dto/import-knowledge-category-outline.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
@@ -68,10 +70,17 @@ export class KnowledgeController {
     private readonly knowledgeService: KnowledgeService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
     private readonly knowledgeCategoryQuizService: KnowledgeCategoryQuizService,
+    private readonly knowledgePlatformSettingsService: KnowledgePlatformSettingsService,
     private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
     private readonly myTrainingProgressService: KnowledgeMyTrainingProgressService,
     private readonly adminAccessService: AdminAccessService,
   ) {}
+
+  private assertSuperAdmin(req: RequestWithUser): void {
+    if (req.user.role !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Только для супер-администратора');
+    }
+  }
 
   private async canEditKnowledge(req: RequestWithUser): Promise<boolean> {
     return (
@@ -418,6 +427,26 @@ export class KnowledgeController {
     @Request() req: RequestWithUser,
   ) {
     return this.knowledgeService.createMaterialComment(id, req.user.id, dto.text);
+  }
+
+  @Get('quiz-settings')
+  getQuizSettings() {
+    return this.knowledgePlatformSettingsService.getClientQuizSettings();
+  }
+
+  @Get('platform-settings')
+  getPlatformSettings(@Request() req: RequestWithUser) {
+    this.assertSuperAdmin(req);
+    return this.knowledgePlatformSettingsService.getSettings();
+  }
+
+  @Patch('platform-settings')
+  updatePlatformSettings(
+    @Body() dto: UpdateKnowledgePlatformSettingsDto,
+    @Request() req: RequestWithUser,
+  ) {
+    this.assertSuperAdmin(req);
+    return this.knowledgePlatformSettingsService.updateSettings(dto);
   }
 
   @Post('feedback')

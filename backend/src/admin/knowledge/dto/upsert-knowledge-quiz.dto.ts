@@ -67,7 +67,7 @@ export class UpsertKnowledgeQuizDto {
   @IsInt()
   @Min(1)
   @Max(60)
-  timePerQuestionMinutes?: number;
+  timePerQuestionSeconds?: number;
 
   @IsArray()
   @ValidateNested({ each: true })

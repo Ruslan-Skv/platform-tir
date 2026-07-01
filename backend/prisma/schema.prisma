@@ -1292,6 +1292,15 @@ model KnowledgePlatformFeedback {
   @@map("knowledge_platform_feedback")
 }
 
+model KnowledgePlatformSettings {
+  id                         String   @id @default("main")
+  quizTimePerQuestionSeconds Int      @default(60)
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+
+  @@map("knowledge_platform_settings")
+}
+
 model SitePlatformFeedback {
   id          String                        @id @default(cuid())
   userId      String?
@@ -1320,7 +1329,7 @@ model KnowledgeMaterialQuiz {
   materialId             String                  @unique
   title                  String                  @default("Проверка знаний")
   passingScorePercent    Int                     @default(80)
-  timePerQuestionMinutes Int                     @default(1)
+  timePerQuestionSeconds Int                     @default(60)
   createdAt              DateTime                @default(now())
   updatedAt              DateTime                @updatedAt
   material               KnowledgeMaterial       @relation(fields: [materialId], references: [id], onDelete: Cascade)

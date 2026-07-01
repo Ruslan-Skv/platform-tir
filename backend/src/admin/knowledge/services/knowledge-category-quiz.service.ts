@@ -10,6 +10,7 @@ import { PrismaService } from '../../../database/prisma.service';
 import { SubmitKnowledgeQuizDto } from '../dto/submit-knowledge-quiz.dto';
 import { compareKnowledgeMaterialsForCategoryList } from '../knowledge-material-list-order';
 import { KnowledgeQuizAttemptLimits } from '../knowledge-quiz.service';
+import { KnowledgePlatformSettingsService } from './knowledge-platform-settings.service';
 
 const QUIZ_RETRY_COOLDOWN_MS = 30 * 60 * 1000;
 const QUIZ_MAX_ATTEMPTS_PER_DAY = 3;
@@ -40,7 +41,10 @@ type CategoryQuizAttemptRecord = Pick<CategoryQuizAttemptRow, 'passed' | 'create
 
 @Injectable()
 export class KnowledgeCategoryQuizService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly platformSettings: KnowledgePlatformSettingsService,
+  ) {}
 
   private startOfLocalDay(date: Date): Date {
     const start = new Date(date);
@@ -210,6 +214,7 @@ export class KnowledgeCategoryQuizService {
     category: { id: string; name: string; slug: string },
     materials: CategoryQuizMaterial[],
     editorView: boolean,
+    timePerQuestionSeconds: number,
   ) {
     const sections = materials.map((material) => ({
       materialId: material.id,
@@ -224,16 +229,12 @@ export class KnowledgeCategoryQuizService {
     const passingScores = materials
       .map((material) => material.quiz?.passingScorePercent)
       .filter((value): value is number => typeof value === 'number');
-    const timePerQuestionValues = materials
-      .map((material) => material.quiz?.timePerQuestionMinutes)
-      .filter((value): value is number => typeof value === 'number');
 
     return {
       categoryId: category.id,
       title: `Итоговый тест: ${category.name}`,
       passingScorePercent: passingScores.length > 0 ? Math.max(...passingScores) : 80,
-      timePerQuestionMinutes:
-        timePerQuestionValues.length > 0 ? Math.max(...timePerQuestionValues) : 1,
+      timePerQuestionSeconds,
       questionCount,
       sections,
     };
@@ -308,7 +309,13 @@ export class KnowledgeCategoryQuizService {
       return null;
     }
 
-    const quiz = this.buildCategoryQuizPayload(category, materials, editorView);
+    const timePerQuestionSeconds = await this.platformSettings.getQuizTimePerQuestionSeconds();
+    const quiz = this.buildCategoryQuizPayload(
+      category,
+      materials,
+      editorView,
+      timePerQuestionSeconds,
+    );
     if (quiz.questionCount === 0) {
       return null;
     }

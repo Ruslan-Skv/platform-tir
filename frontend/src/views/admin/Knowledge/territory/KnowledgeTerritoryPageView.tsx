@@ -34,6 +34,7 @@ import { AccessModal } from '@/widgets/admin/Sidebar/AccessModal';
 import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
 import { KnowledgePlatformFeedbackButton } from '../shared/KnowledgePlatformFeedbackButton';
 import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
+import { KnowledgePlatformSettingsButton } from '../shared/KnowledgePlatformSettingsButton';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
   formatDate,
@@ -512,6 +513,9 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
             >
               <TrainingStatisticsIcon />
             </Link>
+          ) : null}
+          {isSuperAdmin ? (
+            <KnowledgePlatformSettingsButton triggerClassName={toolbarButtonStyles.button} />
           ) : null}
           <KnowledgePlatformInfoTip triggerClassName={toolbarButtonStyles.button} />
           <KnowledgePlatformFeedbackButton

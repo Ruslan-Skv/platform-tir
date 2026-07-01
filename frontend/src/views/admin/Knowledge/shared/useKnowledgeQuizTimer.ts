@@ -27,8 +27,8 @@ export function getSecondsUntil(isoDate: string | null, nowMs = Date.now()): num
   return Math.max(0, Math.ceil((targetMs - nowMs) / 1000));
 }
 
-export function getQuizTimeLimitSeconds(questionCount: number, minutesPerQuestion: number): number {
-  return questionCount * minutesPerQuestion * 60;
+export function getQuizTimeLimitSeconds(questionCount: number, secondsPerQuestion: number): number {
+  return questionCount * secondsPerQuestion;
 }
 
 export function formatMinutesRu(totalMinutes: number): string {
@@ -39,6 +39,28 @@ export function formatMinutesRu(totalMinutes: number): string {
     return `${totalMinutes} минуты`;
   }
   return `${totalMinutes} минут`;
+}
+
+export function formatSecondsRu(totalSeconds: number): string {
+  const mod10 = totalSeconds % 10;
+  const mod100 = totalSeconds % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${totalSeconds} секунда`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return `${totalSeconds} секунды`;
+  }
+  return `${totalSeconds} секунд`;
+}
+
+export function formatQuizDurationRu(totalSeconds: number): string {
+  if (totalSeconds >= 60) {
+    if (totalSeconds % 60 === 0) {
+      return formatMinutesRu(totalSeconds / 60);
+    }
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${formatMinutesRu(minutes)} ${formatSecondsRu(seconds)}`;
+  }
+  return formatSecondsRu(totalSeconds);
 }
 
 export function useKnowledgeQuizTimer(active: boolean, totalSeconds: number, onExpire: () => void) {
