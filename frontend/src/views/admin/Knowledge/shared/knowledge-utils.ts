@@ -92,6 +92,7 @@ export function slugify(text: string): string {
 
 export {
   KNOWLEDGE_RESOURCE_ID,
+  KNOWLEDGE_TESTS_RESOURCE_ID,
   KNOWLEDGE_CATEGORY_RESOURCE_PREFIX,
   buildKnowledgeCategoryResourceId,
   parseKnowledgeCategoryResourceId,

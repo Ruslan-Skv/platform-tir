@@ -183,15 +183,19 @@
   border-radius: var(--admin-radius-sm);
   text-align: left;
   font-size: var(--admin-font-size-sm);
+  font-weight: 400;
   color: var(--admin-text-secondary);
   cursor: pointer;
+  text-decoration: none;
 }
 
 .categoryChip:hover {
   background: var(--admin-surface-hover, rgba(0, 0, 0, 0.04));
+  color: var(--admin-text-secondary);
 }
 
-.categoryChipActive {
+.categoryChipActive,
+.categoryChipActive:hover {
   background: var(--admin-overlay-color-101);
   color: var(--admin-overlay-color-108);
   font-weight: 600;

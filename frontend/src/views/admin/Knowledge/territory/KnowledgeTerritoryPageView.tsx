@@ -328,6 +328,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
   const {
     canEdit,
     canParticipate,
+    canViewTestsBlock,
     canViewTrainingAnalytics,
     isTrainee,
     materials,
@@ -646,6 +647,15 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
                 <span className={styles.categoryCount}>{stats?.myFavoritesCount}</span>
               ) : null}
             </button>
+            {canViewTestsBlock ? (
+              <Link
+                href="/admin/knowledge/tests"
+                className={styles.categoryChip}
+                title="Итоговые тесты по категориям"
+              >
+                Тесты
+              </Link>
+            ) : null}
           </div>
 
           <h2 className={styles.sidebarTitle}>Категории</h2>

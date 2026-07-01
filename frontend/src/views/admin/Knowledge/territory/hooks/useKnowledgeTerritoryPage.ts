@@ -34,6 +34,7 @@ import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLi
 
 import {
   KNOWLEDGE_RESOURCE_ID,
+  KNOWLEDGE_TESTS_RESOURCE_ID,
   buildKnowledgeCategoryResourceId,
   canViewKnowledgeTrainingAnalytics,
   getKnowledgeCategoryResourceLabel,
@@ -87,7 +88,10 @@ export function useKnowledgeTerritoryPage() {
     canParticipate,
     isLoading: permissionsLoading,
   } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
-  const knowledgeAccessReady = !authLoading && !permissionsLoading && canView;
+  const { canView: canViewTestsBlock, isLoading: testsPermissionsLoading } =
+    useAdminResourcePermission(KNOWLEDGE_TESTS_RESOURCE_ID);
+  const knowledgeAccessReady =
+    !authLoading && !permissionsLoading && !testsPermissionsLoading && canView;
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const isTrainee = isKnowledgeTraineeRole(user?.role);
   const traineeView = !authLoading && isTrainee;
@@ -828,6 +832,7 @@ export function useKnowledgeTerritoryPage() {
   return {
     canEdit,
     canParticipate,
+    canViewTestsBlock,
     canViewTrainingAnalytics,
     isTrainee,
     materials,

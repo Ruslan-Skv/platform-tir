@@ -1021,3 +1021,69 @@ export async function submitKnowledgeMaterialQuiz(
   }
   return res.json() as Promise<KnowledgeQuizSubmitResult>;
 }
+
+export interface KnowledgeCategoryQuizSection {
+  materialId: string;
+  materialTitle: string;
+  moduleName: string | null;
+  questions: KnowledgeQuizQuestion[];
+}
+
+export interface KnowledgeCategoryQuizData {
+  categoryId: string;
+  title: string;
+  passingScorePercent: number;
+  timePerQuestionMinutes: number;
+  questionCount: number;
+  sections: KnowledgeCategoryQuizSection[];
+}
+
+export interface KnowledgeCategoryTestSummary {
+  category: { id: string; name: string; slug: string };
+  materialCount: number;
+  questionCount: number;
+  myBestAttempt: KnowledgeQuizAttemptSummary | null;
+}
+
+export interface KnowledgeCategoryQuizResponse {
+  category: { id: string; name: string; slug: string };
+  quiz: KnowledgeCategoryQuizData;
+  myBestAttempt: KnowledgeQuizAttemptSummary | null;
+  myLatestAttempt: KnowledgeQuizAttemptSummary | null;
+  attemptLimits: KnowledgeQuizAttemptLimits;
+}
+
+export async function getKnowledgeCategoryTests() {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/category-tests`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список тестов');
+  return res.json() as Promise<KnowledgeCategoryTestSummary[]>;
+}
+
+export async function getKnowledgeCategoryQuiz(categoryId: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/category-tests/${categoryId}`, {
+    headers: getAuthHeaders(),
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Не удалось загрузить тест категории');
+  const data = await res.json();
+  return (data as KnowledgeCategoryQuizResponse | null) ?? null;
+}
+
+export async function submitKnowledgeCategoryQuiz(
+  categoryId: string,
+  answers: Record<string, string>,
+  options?: { timedOut?: boolean }
+) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/category-tests/${categoryId}/submit`, {
+    method: 'POST',
+    headers: getAuthHeaders(),
+    body: JSON.stringify({ answers, timedOut: options?.timedOut ?? false }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить ответы');
+  }
+  return res.json() as Promise<KnowledgeQuizSubmitResult>;
+}

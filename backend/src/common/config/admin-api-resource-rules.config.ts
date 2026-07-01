@@ -162,6 +162,16 @@ export const ADMIN_API_RESOURCE_EXCEPTIONS: AdminApiResourceRule[] = [
     level: AdminResourcePermissionLevel.VIEW,
   },
 
+  {
+    resourceId: 'admin.knowledge',
+
+    methods: ['POST'],
+
+    pathPattern: /^\/api\/v1\/admin\/knowledge\/category-tests\/[^/]+\/submit$/,
+
+    level: AdminResourcePermissionLevel.VIEW,
+  },
+
   // Модерация обратной связи и корзина — только при «Редактирование»
 
   {

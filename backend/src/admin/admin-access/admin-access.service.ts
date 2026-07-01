@@ -8,11 +8,19 @@ import {
 } from './access-effective.util';
 import {
   buildKnowledgeCategoryResourceId,
+  buildKnowledgeCategoryTestsResourceId,
   isKnowledgeCategoryResourceId,
+  isKnowledgeCategoryTestsResourceId,
+  KNOWLEDGE_CATEGORY_TESTS_RESOURCE_PREFIX,
   KNOWLEDGE_RESOURCE_ID,
+  KNOWLEDGE_TESTS_RESOURCE_ID,
   parseKnowledgeCategoryResourceId,
+  parseKnowledgeCategoryTestsResourceId,
 } from './knowledge-resources.util';
-import { isKnowledgeCategoryExplicitlyDenied } from './knowledge-trainee-category-access.util';
+import {
+  isKnowledgeCategoryExplicitlyDenied,
+  isKnowledgeSubResourceExplicitlyDenied,
+} from './knowledge-trainee-category-access.util';
 import { ADMIN_RESOURCES } from './resources.config';
 import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
 
@@ -94,7 +102,54 @@ export class AdminAccessService {
     userRole: UserRole,
     ctx: PermissionContext,
   ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
-    const direct = this.computeDirectEffectivePermission(categoryResourceId, userRole, ctx);
+    return this.computeKnowledgeSubResourceEffectivePermission(categoryResourceId, userRole, ctx);
+  }
+
+  private computeKnowledgeCategoryTestsEffectivePermission(
+    categoryTestsResourceId: string,
+    userRole: UserRole,
+    ctx: PermissionContext,
+  ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
+    const direct = this.computeDirectEffectivePermission(categoryTestsResourceId, userRole, ctx);
+    if (direct === 'DENIED') return 'DENIED';
+    if (direct === 'VIEW' || direct === 'PARTICIPATE' || direct === 'EDIT') return direct;
+
+    const testsBlock = this.computeKnowledgeTestsBlockEffectivePermission(userRole, ctx);
+    if (testsBlock === 'DENIED') return 'DENIED';
+    if (testsBlock === 'VIEW' || testsBlock === 'PARTICIPATE' || testsBlock === 'EDIT') {
+      return testsBlock;
+    }
+
+    const parent = this.computeDirectEffectivePermission(KNOWLEDGE_RESOURCE_ID, userRole, ctx);
+    if (parent === 'DENIED') return 'DENIED';
+    if (parent === 'VIEW' || parent === 'PARTICIPATE' || parent === 'EDIT') return parent;
+    return 'NONE';
+  }
+
+  private computeKnowledgeTestsBlockEffectivePermission(
+    userRole: UserRole,
+    ctx: PermissionContext,
+  ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
+    const direct = this.computeDirectEffectivePermission(
+      KNOWLEDGE_TESTS_RESOURCE_ID,
+      userRole,
+      ctx,
+    );
+    if (direct === 'DENIED') return 'DENIED';
+    if (direct === 'VIEW' || direct === 'PARTICIPATE' || direct === 'EDIT') return direct;
+
+    const parent = this.computeDirectEffectivePermission(KNOWLEDGE_RESOURCE_ID, userRole, ctx);
+    if (parent === 'DENIED') return 'DENIED';
+    if (parent === 'VIEW' || parent === 'PARTICIPATE' || parent === 'EDIT') return parent;
+    return 'NONE';
+  }
+
+  private computeKnowledgeSubResourceEffectivePermission(
+    resourceId: string,
+    userRole: UserRole,
+    ctx: PermissionContext,
+  ): 'VIEW' | 'PARTICIPATE' | 'EDIT' | 'DENIED' | 'NONE' {
+    const direct = this.computeDirectEffectivePermission(resourceId, userRole, ctx);
     if (direct === 'DENIED') return 'DENIED';
     if (direct === 'VIEW' || direct === 'PARTICIPATE' || direct === 'EDIT') return direct;
 
@@ -121,6 +176,14 @@ export class AdminAccessService {
 
     if (isKnowledgeCategoryResourceId(resourceId)) {
       return this.computeKnowledgeCategoryEffectivePermission(resourceId, userRole, context);
+    }
+
+    if (isKnowledgeCategoryTestsResourceId(resourceId)) {
+      return this.computeKnowledgeCategoryTestsEffectivePermission(resourceId, userRole, context);
+    }
+
+    if (resourceId === KNOWLEDGE_TESTS_RESOURCE_ID) {
+      return this.computeKnowledgeTestsBlockEffectivePermission(userRole, context);
     }
 
     return this.computeDirectEffectivePermission(resourceId, userRole, context);
@@ -180,6 +243,78 @@ export class AdminAccessService {
     return accessible;
   }
 
+  async listAccessibleKnowledgeCategoryTestsIds(
+    userId: string,
+    userRole: UserRole,
+  ): Promise<string[]> {
+    const categories = await this.prisma.knowledgeCategory.findMany({
+      where: { deletedAt: null },
+      select: { id: true },
+      orderBy: { order: 'asc' },
+    });
+
+    if (userRole === 'SUPER_ADMIN') {
+      return categories.map((category) => category.id);
+    }
+
+    const ctx = await this.loadPermissionContext(userId, userRole);
+
+    const testsBlock = this.computeKnowledgeTestsBlockEffectivePermission(userRole, ctx);
+    if (testsBlock !== 'VIEW' && testsBlock !== 'PARTICIPATE' && testsBlock !== 'EDIT') {
+      return [];
+    }
+
+    if (userRole === 'TRAINEE') {
+      const parent = await this.getUserEffectivePermission(
+        userId,
+        userRole,
+        KNOWLEDGE_RESOURCE_ID,
+        ctx,
+      );
+      if (parent === 'DENIED' || parent === 'NONE') {
+        return [];
+      }
+
+      if (
+        isKnowledgeSubResourceExplicitlyDenied(
+          KNOWLEDGE_TESTS_RESOURCE_ID,
+          KNOWLEDGE_TESTS_RESOURCE_ID,
+          ctx.userPerms,
+          ctx.rolePermsForUser,
+        )
+      ) {
+        return [];
+      }
+
+      return categories
+        .filter(
+          (category) =>
+            !isKnowledgeSubResourceExplicitlyDenied(
+              buildKnowledgeCategoryTestsResourceId(category.id),
+              KNOWLEDGE_CATEGORY_TESTS_RESOURCE_PREFIX,
+              ctx.userPerms,
+              ctx.rolePermsForUser,
+            ),
+        )
+        .map((category) => category.id);
+    }
+
+    const accessible: string[] = [];
+
+    for (const category of categories) {
+      const effective = this.computeKnowledgeCategoryTestsEffectivePermission(
+        buildKnowledgeCategoryTestsResourceId(category.id),
+        userRole,
+        ctx,
+      );
+      if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
+        accessible.push(category.id);
+      }
+    }
+
+    return accessible;
+  }
+
   /**
    * Ресурсы админки с итоговым уровнем доступа (VIEW, PARTICIPATE и EDIT).
    */
@@ -195,7 +330,10 @@ export class AdminAccessService {
     const result: MyResourcePermissionItem[] = [];
 
     for (const resource of ADMIN_RESOURCES) {
-      const effective = this.computeDirectEffectivePermission(resource.id, userRole, ctx);
+      const effective =
+        resource.id === KNOWLEDGE_TESTS_RESOURCE_ID
+          ? this.computeKnowledgeTestsBlockEffectivePermission(userRole, ctx)
+          : this.computeDirectEffectivePermission(resource.id, userRole, ctx);
       if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
         result.push({ id: resource.id, permission: effective });
       }
@@ -214,6 +352,31 @@ export class AdminAccessService {
       const effective = this.computeKnowledgeCategoryEffectivePermission(resourceId, userRole, ctx);
       if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
         result.push({ id: resourceId, permission: effective });
+      }
+    }
+
+    for (const category of categories) {
+      const resourceId = buildKnowledgeCategoryTestsResourceId(category.id);
+      if (result.some((item) => item.id === resourceId)) continue;
+
+      const effective = this.computeKnowledgeCategoryTestsEffectivePermission(
+        resourceId,
+        userRole,
+        ctx,
+      );
+      if (effective === 'VIEW' || effective === 'PARTICIPATE' || effective === 'EDIT') {
+        result.push({ id: resourceId, permission: effective });
+      }
+    }
+
+    if (!result.some((item) => item.id === KNOWLEDGE_TESTS_RESOURCE_ID)) {
+      const testsEffective = this.computeKnowledgeTestsBlockEffectivePermission(userRole, ctx);
+      if (
+        testsEffective === 'VIEW' ||
+        testsEffective === 'PARTICIPATE' ||
+        testsEffective === 'EDIT'
+      ) {
+        result.push({ id: KNOWLEDGE_TESTS_RESOURCE_ID, permission: testsEffective });
       }
     }
 
@@ -257,7 +420,17 @@ export class AdminAccessService {
     const known = ADMIN_RESOURCES.find((r) => r.id === resourceId);
     if (known) return known;
 
-    const categoryId = parseKnowledgeCategoryResourceId(resourceId);
+    if (resourceId === KNOWLEDGE_TESTS_RESOURCE_ID) {
+      return {
+        id: resourceId,
+        label: 'Территория знаний — итоговые тесты',
+        path: '/admin/knowledge/tests',
+      };
+    }
+
+    const categoryId =
+      parseKnowledgeCategoryResourceId(resourceId) ??
+      parseKnowledgeCategoryTestsResourceId(resourceId);
     if (!categoryId) {
       throw new NotFoundException(`Ресурс ${resourceId} не найден`);
     }
@@ -270,10 +443,16 @@ export class AdminAccessService {
       throw new NotFoundException(`Ресурс ${resourceId} не найден`);
     }
 
+    const isTestsResource = isKnowledgeCategoryTestsResourceId(resourceId);
+
     return {
       id: resourceId,
-      label: `Территория знаний — ${category.name}`,
-      path: `/admin/knowledge?category=${category.id}`,
+      label: isTestsResource
+        ? `Территория знаний — тесты: ${category.name}`
+        : `Территория знаний — ${category.name}`,
+      path: isTestsResource
+        ? `/admin/knowledge/tests?category=${category.id}`
+        : `/admin/knowledge?category=${category.id}`,
     };
   }
 

@@ -1,6 +1,11 @@
 import { UserRole } from '@prisma/client';
 import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
-import { isKnowledgeCategoryResourceId, KNOWLEDGE_RESOURCE_ID } from './knowledge-resources.util';
+import {
+  isKnowledgeCategoryResourceId,
+  isKnowledgeCategoryTestsResourceId,
+  KNOWLEDGE_RESOURCE_ID,
+  KNOWLEDGE_TESTS_RESOURCE_ID,
+} from './knowledge-resources.util';
 import { ROLE_DEFAULT_RESOURCES } from './role-default-resources.config';
 
 export type RoleAccessSource =
@@ -112,7 +117,12 @@ export function getRoleEffectiveAccessForResourceWithInheritance(
     allRolePermsForRole,
   );
 
-  if (!isKnowledgeCategoryResourceId(resourceId) || item.effective !== 'NONE') {
+  if (
+    (!isKnowledgeCategoryResourceId(resourceId) &&
+      !isKnowledgeCategoryTestsResourceId(resourceId) &&
+      resourceId !== KNOWLEDGE_TESTS_RESOURCE_ID) ||
+    item.effective !== 'NONE'
+  ) {
     return item;
   }
 

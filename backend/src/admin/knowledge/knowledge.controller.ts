@@ -26,6 +26,8 @@ import { SkipThrottle } from '@nestjs/throttler';
 import { KnowledgePlatformFeedbackType } from '@prisma/client';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
+import { KnowledgeCategoryQuizService } from './services/knowledge-category-quiz.service';
+import { KNOWLEDGE_TESTS_RESOURCE_ID } from '../admin-access/knowledge-resources.util';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { CreateKnowledgeMaterialCommentDto } from './dto/create-knowledge-material-comment.dto';
@@ -65,6 +67,7 @@ export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
+    private readonly knowledgeCategoryQuizService: KnowledgeCategoryQuizService,
     private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
     private readonly myTrainingProgressService: KnowledgeMyTrainingProgressService,
     private readonly adminAccessService: AdminAccessService,
@@ -122,6 +125,45 @@ export class KnowledgeController {
     editorView: boolean,
   ): Promise<void> {
     await this.assertKnowledgeCategoryAccess(req, categoryId, editorView);
+  }
+
+  private async getViewerCategoryTestsScope(req: RequestWithUser, editorView: boolean) {
+    if (editorView) {
+      return undefined;
+    }
+    return this.adminAccessService.listAccessibleKnowledgeCategoryTestsIds(
+      req.user.id,
+      req.user.role as UserRole,
+    );
+  }
+
+  private async assertKnowledgeCategoryTestsAccess(
+    req: RequestWithUser,
+    categoryId: string,
+    editorView: boolean,
+  ): Promise<void> {
+    if (editorView) return;
+
+    const allowedCategoryIds = await this.getViewerCategoryTestsScope(req, false);
+    if (!allowedCategoryIds?.includes(categoryId)) {
+      throw new ForbiddenException('Нет доступа к тестам этой категории');
+    }
+  }
+
+  private async assertKnowledgeTestsBlockAccess(
+    req: RequestWithUser,
+    editorView: boolean,
+  ): Promise<void> {
+    if (editorView) return;
+
+    const permission = await this.adminAccessService.getUserEffectivePermission(
+      req.user.id,
+      req.user.role as UserRole,
+      KNOWLEDGE_TESTS_RESOURCE_ID,
+    );
+    if (permission !== 'VIEW' && permission !== 'PARTICIPATE' && permission !== 'EDIT') {
+      throw new ForbiddenException('Нет доступа к разделу «Тесты»');
+    }
   }
 
   @Get('stats')
@@ -298,6 +340,43 @@ export class KnowledgeController {
       );
     }
     return this.knowledgeQuizService.submitAttempt(id, req.user.id, dto, editorView);
+  }
+
+  @Get('category-tests')
+  async listCategoryTests(@Request() req: RequestWithUser) {
+    const editorView = await this.canEditKnowledge(req);
+    await this.assertKnowledgeTestsBlockAccess(req, editorView);
+    const allowedCategoryIds = await this.getViewerCategoryTestsScope(req, editorView);
+    return this.knowledgeCategoryQuizService.listCategoryTestsSummary(
+      allowedCategoryIds,
+      req.user.id,
+      editorView,
+    );
+  }
+
+  @Get('category-tests/:categoryId')
+  async getCategoryTest(@Param('categoryId') categoryId: string, @Request() req: RequestWithUser) {
+    const editorView = await this.canEditKnowledge(req);
+    await this.assertKnowledgeTestsBlockAccess(req, editorView);
+    await this.assertKnowledgeCategoryTestsAccess(req, categoryId, editorView);
+    return this.knowledgeCategoryQuizService.getCategoryQuiz(categoryId, req.user.id, editorView);
+  }
+
+  @Post('category-tests/:categoryId/submit')
+  async submitCategoryTest(
+    @Param('categoryId') categoryId: string,
+    @Body() dto: SubmitKnowledgeQuizDto,
+    @Request() req: RequestWithUser,
+  ) {
+    const editorView = await this.canEditKnowledge(req);
+    await this.assertKnowledgeTestsBlockAccess(req, editorView);
+    await this.assertKnowledgeCategoryTestsAccess(req, categoryId, editorView);
+    return this.knowledgeCategoryQuizService.submitAttempt(
+      categoryId,
+      req.user.id,
+      dto,
+      editorView,
+    );
   }
 
   @Patch('materials/:id/study-complete')

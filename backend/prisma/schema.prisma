@@ -66,6 +66,7 @@ model User {
   adminPushSubscriptions                  AdminPushSubscription[]
   adminBellDismissed                      AdminBellDismissedNotification[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
+  knowledgeCategoryQuizAttempts           KnowledgeCategoryQuizAttempt[]
   cartItems                               CartItem[]
   cartServiceItems                        CartServiceItem[]
   comments                                Comment[]
@@ -1072,19 +1073,20 @@ enum KnowledgePlatformFeedbackType {
 }
 
 model KnowledgeCategory {
-  id          String              @id @default(cuid())
-  name        String
-  slug        String              @unique
-  description String?
-  image       String?
-  order       Int                 @default(0)
-  deletedAt   DateTime?           @map("deleted_at")
-  deletedById String?             @map("deleted_by_id")
-  createdAt   DateTime            @default(now())
-  updatedAt   DateTime            @updatedAt
-  deletedBy   User?               @relation("KnowledgeCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
-  modules     KnowledgeModule[]
-  materials   KnowledgeMaterial[]
+  id                   String                         @id @default(cuid())
+  name                 String
+  slug                 String                         @unique
+  description          String?
+  image                String?
+  order                Int                            @default(0)
+  deletedAt            DateTime?                      @map("deleted_at")
+  deletedById          String?                        @map("deleted_by_id")
+  createdAt            DateTime                       @default(now())
+  updatedAt            DateTime                       @updatedAt
+  deletedBy            User?                          @relation("KnowledgeCategoryDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  modules              KnowledgeModule[]
+  materials            KnowledgeMaterial[]
+  categoryQuizAttempts KnowledgeCategoryQuizAttempt[]
 
   @@index([deletedAt])
   @@map("knowledge_categories")
@@ -1374,6 +1376,22 @@ model KnowledgeQuizAttempt {
   @@index([userId])
   @@index([quizId])
   @@map("knowledge_quiz_attempts")
+}
+
+model KnowledgeCategoryQuizAttempt {
+  id           String            @id @default(cuid())
+  categoryId   String
+  userId       String
+  scorePercent Int
+  passed       Boolean
+  answers      Json
+  createdAt    DateTime          @default(now())
+  category     KnowledgeCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  user         User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([categoryId, userId])
+  @@index([userId])
+  @@map("knowledge_category_quiz_attempts")
 }
 
 model PhotoCategory {

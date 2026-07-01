@@ -13,6 +13,7 @@ import { KnowledgeMaterialLikesService } from './services/knowledge-material-lik
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
+import { KnowledgeCategoryQuizService } from './services/knowledge-category-quiz.service';
 import { KnowledgeService } from './knowledge.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
@@ -35,6 +36,7 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
     KnowledgeTrainingNotifyService,
     KnowledgePlatformFeedbackService,
     KnowledgeQuizService,
+    KnowledgeCategoryQuizService,
     KnowledgeStructureService,
     KnowledgeTargetAudienceService,
     KnowledgeTrashService,

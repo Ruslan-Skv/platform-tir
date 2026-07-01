@@ -150,6 +150,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.orders.shipping', label: 'Доставка', path: '/admin/orders/shipping' },
   { id: 'admin.orders.payments', label: 'Оплаты', path: '/admin/orders/payments' },
   { id: 'admin.knowledge', label: 'Территория знаний', path: '/admin/knowledge' },
+  {
+    id: 'admin.knowledge.tests',
+    label: 'Территория знаний — итоговые тесты',
+    path: '/admin/knowledge/tests',
+  },
   { id: 'admin.recruitment', label: 'Подбор менеджеров', path: '/admin/recruitment' },
   {
     id: 'admin.recruitment.analytics',
@@ -312,6 +317,14 @@ export function getAdminResourceLabel(resourceId: string): string {
     return 'Территория знаний — категория';
   }
 
+  if (resourceId === 'admin.knowledge.tests') {
+    return 'Территория знаний — итоговые тесты';
+  }
+
+  if (resourceId.startsWith('admin.knowledge.category-tests.')) {
+    return 'Территория знаний — тесты категории';
+  }
+
   return resourceId;
 }
 
@@ -370,6 +383,7 @@ export function resolveAdminHomePath(
   const seenPaths = new Set<string>();
   for (const resource of ADMIN_RESOURCES) {
     if (resource.id.startsWith('admin.knowledge.category.')) continue;
+    if (resource.id.startsWith('admin.knowledge.category-tests.')) continue;
     if (seenPaths.has(resource.path)) continue;
     if (!hasAccess(resource.id)) continue;
     seenPaths.add(resource.path);
