@@ -4,11 +4,9 @@ import React from 'react';
 
 import type { HomeServicesData } from '@/shared/api/home';
 import { useHomeServices } from '@/shared/lib/hooks/useHomePageData';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './ServicesSection.module.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
 
 const DEFAULT_DATA: HomeServicesData = {
   block: {
@@ -22,11 +20,7 @@ export const ServicesSection: React.FC = () => {
   const { data } = useHomeServices();
   const resolved = data?.block ? data : DEFAULT_DATA;
 
-  const imageUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  };
+  const imageUrl = (url: string) => publicUploadUrl(url);
 
   return (
     <section className={styles.services}>

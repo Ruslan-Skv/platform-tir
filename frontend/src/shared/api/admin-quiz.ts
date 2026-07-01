@@ -1,6 +1,7 @@
 import type { QuizTheme } from '@/shared/api/quiz-theme';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { nestMessageFromBody } from '@/shared/lib/nest-error-message';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
@@ -225,10 +226,6 @@ export async function uploadQuizCatalog(
 
 export function resolveAdminUploadUrl(url: string): string {
   if (!url) return '';
-  if (url.startsWith('http') || url.startsWith('/quiz/') || url.startsWith('/images/')) return url;
-  if (url.startsWith('/uploads/')) {
-    const base = API_URL.replace(/\/api\/v1\/?$/, '');
-    return `${base}${url}`;
-  }
-  return url;
+  if (url.startsWith('/quiz/') || url.startsWith('/images/')) return url;
+  return publicUploadUrl(url);
 }

@@ -4,11 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import type { Promotion } from '@/shared/api/promotions';
 import { getPromotions } from '@/shared/api/promotions';
-
-const UPLOADS_BASE = (process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1').replace(
-  /\/api\/v1\/?$/,
-  ''
-);
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 export function usePromotionsPage() {
   const [promotions, setPromotions] = useState<Promotion[]>([]);
@@ -30,13 +26,7 @@ export function usePromotionsPage() {
     loadPromotions();
   }, [loadPromotions]);
 
-  const getImageUrl = (url: string) => {
-    if (url.startsWith('http')) return url;
-    if (url.startsWith('/uploads/')) {
-      return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-    }
-    return url;
-  };
+  const getImageUrl = (url: string) => publicUploadUrl(url);
 
   return {
     promotions,

@@ -4,8 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
-import { API_URL, EMPTY_NEW_FEATURE, UPLOADS_BASE } from '../hero-section-page.constants';
+import { API_URL, EMPTY_NEW_FEATURE } from '../hero-section-page.constants';
 import type { HeroData, HeroSlideShowMode, PageMessage } from '../hero-section-page.types';
 
 export function useHeroSectionPage() {
@@ -56,11 +57,7 @@ export function useHeroSectionPage() {
     };
   }, [getAuthHeaders, showMessage]);
 
-  const imageUrl = useCallback((url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  }, []);
+  const imageUrl = useCallback((url: string) => publicUploadUrl(url), []);
 
   const isIconImageUrl = useCallback(
     (icon: string) => !!(icon && typeof icon === 'string' && icon.includes('/uploads/')),

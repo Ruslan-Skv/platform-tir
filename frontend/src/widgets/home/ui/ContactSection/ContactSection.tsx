@@ -5,11 +5,9 @@ import React, { useMemo } from 'react';
 import { ActionButton, useFormContext } from '@/features/forms';
 import type { ContactFormBlock } from '@/shared/api/contact-form';
 import { useContactFormBlock } from '@/shared/lib/hooks/useHomePageData';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './ContactSection.module.css';
-
-const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-const UPLOADS_BASE = API_URL.replace(/\/api\/v1\/?$/, '');
 
 const DEFAULT_BLOCK: ContactFormBlock = {
   title: 'Готовы начать проект?',
@@ -18,8 +16,7 @@ const DEFAULT_BLOCK: ContactFormBlock = {
 
 function resolveBackgroundImageUrl(url: string | null | undefined): string | null {
   if (!url?.trim()) return null;
-  if (url.startsWith('http')) return url;
-  return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+  return publicUploadUrl(url) || null;
 }
 
 export const ContactSection: React.FC = () => {

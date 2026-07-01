@@ -1,7 +1,9 @@
 'use client';
 
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+
 import styles from './FooterSectionPage.module.css';
-import { EMPTY_NEW_LINK, UPLOADS_BASE } from './footer-section-page.constants';
+import { EMPTY_NEW_LINK } from './footer-section-page.constants';
 import type { FooterSectionPageModel } from './hooks/useFooterSectionPage';
 
 type FooterSectionPageViewProps = {
@@ -172,13 +174,7 @@ export function FooterSectionPageView({ model }: FooterSectionPageViewProps) {
               {data.block.socialLinks.vk.icon && (
                 <div className={styles.iconPreview}>
                   <img
-                    src={
-                      data.block.socialLinks.vk.icon.startsWith('http')
-                        ? data.block.socialLinks.vk.icon
-                        : data.block.socialLinks.vk.icon.startsWith('/uploads/')
-                          ? `${UPLOADS_BASE}${data.block.socialLinks.vk.icon}`
-                          : data.block.socialLinks.vk.icon
-                    }
+                    src={publicUploadUrl(data.block.socialLinks.vk.icon)}
                     alt="Иконка ВК"
                     className={styles.iconPreviewImg}
                   />

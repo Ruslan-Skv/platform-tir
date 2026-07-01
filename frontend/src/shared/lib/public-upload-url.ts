@@ -25,11 +25,5 @@ export function publicUploadUrl(path: string | null | undefined): string {
   if (path == null || path === '') return '';
   const p = normalizeUploadsInUrl(path.trim());
   if (/^https?:\/\//i.test(p)) return p;
-  const normalized = p.startsWith('/') ? p : `/${p}`;
-  if (normalized.startsWith('/uploads/')) {
-    return normalized;
-  }
-  const api = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-  const base = api.replace(/\/api\/v1\/?$/, '') || 'http://localhost:3001';
-  return `${base}${normalized}`;
+  return p.startsWith('/') ? p : `/${p}`;
 }

@@ -1,4 +1,4 @@
-import { UPLOADS_BASE } from './partner-edit-page.constants';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 export function parsePartnerPhones(phone: unknown): string[] {
   if (Array.isArray(phone)) {
@@ -11,7 +11,5 @@ export function parsePartnerPhones(phone: unknown): string[] {
 }
 
 export function logoPreviewUrl(url: string) {
-  if (!url) return '';
-  if (url.startsWith('http')) return url;
-  return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
+  return publicUploadUrl(url);
 }

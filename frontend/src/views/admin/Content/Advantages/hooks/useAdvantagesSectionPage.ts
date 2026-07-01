@@ -4,12 +4,9 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
-import {
-  API_URL,
-  EMPTY_NEW_ADVANTAGE_ITEM,
-  UPLOADS_BASE,
-} from '../advantages-section-page.constants';
+import { API_URL, EMPTY_NEW_ADVANTAGE_ITEM } from '../advantages-section-page.constants';
 import type {
   AdvantagesBlock,
   AdvantagesData,
@@ -60,11 +57,7 @@ export function useAdvantagesSectionPage() {
     };
   }, [getAuthHeaders, showMessage]);
 
-  const imageUrl = useCallback((url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http')) return url;
-    return `${UPLOADS_BASE}${url.startsWith('/') ? '' : '/'}${url}`;
-  }, []);
+  const imageUrl = useCallback((url: string) => publicUploadUrl(url), []);
 
   const isIconImageUrl = useCallback(
     (icon: string) => !!(icon && typeof icon === 'string' && icon.includes('/uploads/')),

@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useFormContext } from '@/features/forms/context/FormContext';
 import actionButtonStyles from '@/features/forms/ui/ActionButtons/ActionButton.module.css';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { Button } from '@/shared/ui/Button';
 
 import styles from './HeroSection.module.css';
@@ -69,12 +70,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ initialData }) => {
     }
   }, [slideIndex, count]);
 
-  // URL изображений: / — public, http(s) — внешние или с бэкенда (/uploads/)
-  const imageUrl = (url: string) => {
-    if (!url) return '';
-    if (url.startsWith('http') || url.startsWith('/')) return url;
-    return `/${url}`;
-  };
+  const imageUrl = (url: string) => publicUploadUrl(url);
 
   const SLIDE_GAP_PX = data.block.slideGap ?? 16;
   const SLIDE_WIDTH_RATIO = 0.75;

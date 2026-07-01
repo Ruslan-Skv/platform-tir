@@ -18,16 +18,15 @@ describe('getAvatarUrl', () => {
     expect(getAvatarUrl('http://example.com/avatar.jpg')).toBe('http://example.com/avatar.jpg');
   });
 
-  it('добавляет базовый URL к относительному пути', () => {
-    const original = process.env.NEXT_PUBLIC_API_URL;
-    process.env.NEXT_PUBLIC_API_URL = 'http://localhost:3001/api/v1';
-    expect(getAvatarUrl('/uploads/avatars/x.jpg')).toBe(
-      'http://localhost:3001/uploads/avatars/x.jpg'
+  it('возвращает относительный путь для uploads', () => {
+    expect(getAvatarUrl('/uploads/avatars/x.jpg')).toBe('/uploads/avatars/x.jpg');
+    expect(getAvatarUrl('uploads/avatars/x.jpg')).toBe('/uploads/avatars/x.jpg');
+  });
+
+  it('нормализует абсолютный URL uploads в относительный путь', () => {
+    expect(getAvatarUrl('http://localhost:3001/uploads/avatars/x.jpg')).toBe(
+      '/uploads/avatars/x.jpg'
     );
-    expect(getAvatarUrl('uploads/avatars/x.jpg')).toBe(
-      'http://localhost:3001/uploads/avatars/x.jpg'
-    );
-    if (original !== undefined) process.env.NEXT_PUBLIC_API_URL = original;
   });
 });
 
