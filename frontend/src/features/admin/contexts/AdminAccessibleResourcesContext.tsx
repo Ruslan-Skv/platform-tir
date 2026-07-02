@@ -4,6 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useMemo, useS
 
 import { useAuth } from '@/features/auth';
 import { type MyAccessibleResourceItem, getMyAccessibleResources } from '@/shared/api/admin-access';
+import { ensureFreshAccessToken, hasUsableStoredAccessToken } from '@/shared/lib/auth-session';
 
 const STORAGE_KEY_PREFIX = 'admin-accessible-resources:';
 
@@ -77,7 +78,7 @@ const defaultValue: AdminAccessibleResourcesState = {
 const AdminAccessibleResourcesContext = createContext<AdminAccessibleResourcesState>(defaultValue);
 
 export function AdminAccessibleResourcesProvider({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const userId = user?.id;
 
   const [resources, setResources] = useState<MyAccessibleResourceItem[]>(() =>
@@ -97,7 +98,15 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
   }, [userId]);
 
   const load = useCallback(async () => {
+    if (authLoading) return;
+
     if (!userId) {
+      setIsLoading(false);
+      return;
+    }
+
+    await ensureFreshAccessToken(0);
+    if (!hasUsableStoredAccessToken()) {
       setIsLoading(false);
       return;
     }
@@ -123,7 +132,7 @@ export function AdminAccessibleResourcesProvider({ children }: { children: React
     } finally {
       setIsLoading(false);
     }
-  }, [userId, user?.role]);
+  }, [authLoading, userId, user?.role]);
 
   useEffect(() => {
     void load();

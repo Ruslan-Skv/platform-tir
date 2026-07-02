@@ -81,6 +81,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   const displayPrice = selectedVariant ? selectedVariant.price : product.price;
   const displayOldPrice = selectedVariant ? undefined : product.oldPrice;
   const displayImage = selectedVariant?.image || (product.images?.[0] ?? product.image);
+  const partnerLogoSrc = publicUploadUrl(product.partnerLogoUrl ?? partnerLogoUrl);
 
   const productImages =
     cardVariants.length > 0
@@ -327,7 +328,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
             {product.isPartnerProduct &&
               showPartnerIconOnCards &&
               product.partnerShowLogoOnCards !== false &&
-              (product.partnerLogoUrl ?? partnerLogoUrl) && (
+              partnerLogoSrc && (
                 <div
                   className={styles.partnerBadge}
                   title={
@@ -337,11 +338,7 @@ export const ProductCard: React.FC<ProductCardProps> = ({
                       : undefined
                   }
                 >
-                  <img
-                    src={product.partnerLogoUrl ?? partnerLogoUrl ?? ''}
-                    alt="Партнёр"
-                    className={styles.partnerLogo}
-                  />
+                  <img src={partnerLogoSrc} alt="Партнёр" className={styles.partnerLogo} />
                 </div>
               )}
           </div>

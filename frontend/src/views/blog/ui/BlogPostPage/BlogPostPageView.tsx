@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { useFormContext } from '@/features/forms';
 import { plainTextToBlogHtml } from '@/shared/lib/blog/blog-content';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { sanitizeHtml } from '@/shared/lib/sanitize';
 
 import styles from './BlogPostPage.module.css';
@@ -108,7 +109,10 @@ export function BlogPostPageView({ model }: BlogPostPageViewProps) {
 
         {post.featuredImage && (
           <div className={styles.featuredImage}>
-            <img src={post.featuredImage} alt={post.featuredImageAlt?.trim() || post.title} />
+            <img
+              src={publicUploadUrl(post.featuredImage)}
+              alt={post.featuredImageAlt?.trim() || post.title}
+            />
           </div>
         )}
 
@@ -127,7 +131,7 @@ export function BlogPostPageView({ model }: BlogPostPageViewProps) {
                     {block.images.map((img) => (
                       <figure key={img.id} className={styles.blockFigure}>
                         <img
-                          src={img.url}
+                          src={publicUploadUrl(img.url)}
                           alt={img.alt?.trim() || ''}
                           loading="lazy"
                           decoding="async"

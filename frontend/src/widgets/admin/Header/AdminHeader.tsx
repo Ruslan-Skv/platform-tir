@@ -108,7 +108,7 @@ type AdminHeaderProps = {
 };
 
 export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
-  const { user, logout } = useAuth();
+  const { user, logout, isLoading: authLoading } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useAdminAccessibleResources();
   const canLoadAdminNotifications = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
   const { isDarkTheme, toggleTheme } = useTheme();
@@ -243,8 +243,8 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   }, [canLoadAdminNotifications, loadNotificationSettings]);
 
   useEffect(() => {
-    if (!user?.id) {
-      setDismissedNotificationIds(new Set());
+    if (authLoading || !user?.id) {
+      if (!user?.id) setDismissedNotificationIds(new Set());
       return;
     }
     let cancelled = false;
@@ -254,7 +254,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [user?.id]);
+  }, [authLoading, user?.id]);
 
   useEffect(() => {
     setPublicSiteEditModeState(getPublicSiteEditMode());

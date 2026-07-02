@@ -22,6 +22,38 @@ function normalizeHeaders(input: RequestInfo | URL, init?: RequestInit): Headers
   return h;
 }
 
+function resolveRequestUrl(input: RequestInfo | URL): string {
+  if (typeof input === 'string') return input;
+  if (input instanceof URL) return input.href;
+  return input.url;
+}
+
+/** Эндпоинты, для которых нельзя вызывать silent refresh до запроса (иначе deadlock с refreshInFlight). */
+function isAuthBootstrapRequest(input: RequestInfo | URL): boolean {
+  const url = resolveRequestUrl(input);
+  return /\/auth\/(login|refresh|logout|register)(?:\?|$|\/)/.test(url);
+}
+
+/** Access только в памяти — перед запросом восстанавливаем из refresh-cookie, если есть профиль в storage. */
+async function attachSessionBearerIfNeeded(
+  headers: Headers,
+  input: RequestInfo | URL
+): Promise<void> {
+  if (typeof window === 'undefined') return;
+  if (isAuthBootstrapRequest(input)) return;
+  if (headers.get('authorization')) return;
+
+  try {
+    const { restoreAccessTokenFromSession } = await import('./auth-session');
+    const token = await restoreAccessTokenFromSession();
+    if (token) {
+      headers.set('authorization', `Bearer ${token}`);
+    }
+  } catch {
+    /* запрос пойдёт без Bearer — ниже сработает refresh по 401 */
+  }
+}
+
 /** Если в заголовках уже Bearer и JWT скоро истечёт — тихо обновить access до запроса. */
 async function proactiveRefreshBearerIfStale(headers: Headers): Promise<void> {
   if (typeof window === 'undefined') return;
@@ -62,6 +94,16 @@ function latestAccessTokenFromStorage(): string | null {
   }
 }
 
+function hasPersistedAuthSessionHint(): boolean {
+  if (typeof window === 'undefined') return false;
+  try {
+    const mod = require('./auth-session') as typeof import('./auth-session');
+    return mod.hasPersistedAuthSession();
+  } catch {
+    return Boolean(localStorage.getItem('admin_user') || localStorage.getItem('user_data'));
+  }
+}
+
 function canRetry401(
   input: RequestInfo | URL,
   init: RequestInit | undefined,
@@ -69,7 +111,7 @@ function canRetry401(
 ): boolean {
   if (typeof window === 'undefined') return false;
   if (headers.get(RETRY_HEADER) === '1') return false;
-  if (!headers.get('authorization')) return false;
+  if (!headers.get('authorization') && !hasPersistedAuthSessionHint()) return false;
   // Повтор небезопасен для не-GET с телом из Request (stream уже прочитан).
   if (input instanceof Request) {
     const method = (init?.method ?? input.method ?? 'GET').toUpperCase();
@@ -80,6 +122,7 @@ function canRetry401(
 
 export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
   const baseHeaders = normalizeHeaders(input, init);
+  await attachSessionBearerIfNeeded(baseHeaders, input);
   await proactiveRefreshBearerIfStale(baseHeaders);
   const response = await fetchWithTimeout(input, {
     ...init,

@@ -19,7 +19,7 @@ export interface UserNotificationSettings {
 
 function getUserAuthHeaders(): HeadersInit {
   if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
-  const token = localStorage.getItem('user_token') || localStorage.getItem('admin_token');
+  const token = getStoredAccessToken();
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;

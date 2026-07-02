@@ -2,6 +2,8 @@
 
 import Link from 'next/link';
 
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+
 import styles from './BlogPage.module.css';
 import type { BlogPageModel } from './hooks/useBlogPage';
 
@@ -156,7 +158,7 @@ export function BlogPageView({ model }: BlogPageViewProps) {
                       {post.featuredImage ? (
                         <div className={styles.cardImage}>
                           <img
-                            src={post.featuredImage}
+                            src={publicUploadUrl(post.featuredImage)}
                             alt={post.featuredImageAlt?.trim() || post.title}
                           />
                         </div>

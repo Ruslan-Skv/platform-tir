@@ -1,4 +1,4 @@
-import { apiFetch } from '@/shared/lib/api-fetch';
+import { fetchWithTimeout } from '@/shared/lib/fetch-with-timeout';
 
 type AccessTokenStore = {
   user: string | null;
@@ -197,10 +197,12 @@ function waitForCrossTabRefresh(timeoutMs: number): Promise<boolean> {
 }
 
 async function postRefreshRequest(): Promise<Response> {
-  return apiFetch(`${apiBase()}/auth/refresh`, {
+  // Не через apiFetch: иначе attachSessionBearerIfNeeded ждёт тот же refreshInFlight → deadlock.
+  return fetchWithTimeout(`${apiBase()}/auth/refresh`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: '{}',
+    credentials: 'include',
   });
 }
 
@@ -355,6 +357,11 @@ function hasPersistedUserSessionHint(): boolean {
   return Boolean(localStorage.getItem('admin_user') || localStorage.getItem('user_data'));
 }
 
+/** Есть сохранённый профиль (access может быть только в памяти до silent refresh). */
+export function hasPersistedAuthSession(): boolean {
+  return hasPersistedUserSessionHint();
+}
+
 /** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
 export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
   if (typeof window === 'undefined') return false;
@@ -368,6 +375,15 @@ export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean
   if (!expMs) return true;
   if (expMs - Date.now() > minTtlMs) return true;
   return refreshAccessTokenSilently();
+}
+
+/** Восстановить access из httpOnly refresh перед API-запросом. */
+export async function restoreAccessTokenFromSession(): Promise<string | null> {
+  if (typeof window === 'undefined') return null;
+  if (!getStoredAccessToken() && hasPersistedUserSessionHint()) {
+    await ensureFreshAccessToken(0);
+  }
+  return getStoredAccessToken();
 }
 
 /**
@@ -393,10 +409,11 @@ export function bindAuthRefreshOnPageVisible(minTtlMs = 120_000): () => void {
 export async function revokeRefreshOnServer(): Promise<void> {
   if (typeof window === 'undefined') return;
   try {
-    await apiFetch(`${apiBase()}/auth/logout`, {
+    await fetchWithTimeout(`${apiBase()}/auth/logout`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: '{}',
+      credentials: 'include',
     });
   } catch {
     // игнорируем сеть при выходе
