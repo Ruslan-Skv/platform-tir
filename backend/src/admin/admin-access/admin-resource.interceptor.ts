@@ -55,11 +55,13 @@ export class AdminResourceInterceptor implements NestInterceptor {
       return next.handle();
     }
 
-    // Legacy /products, /categories — публичное чтение без прав админки; остальное только для админки
+    // Legacy /products, /categories — публичное чтение (в т.ч. стажёр/админ на публичке).
+    if (!isAdminApiPath && isPublicLegacyCatalogReadRequest(request.method, requestPath)) {
+      return next.handle();
+    }
+
+    // Мутации и прочие legacy-маршруты с resourceId — только для админки с правами.
     if (!isAdminApiPath && !isAdminUser) {
-      if (isPublicLegacyCatalogReadRequest(request.method, requestPath)) {
-        return next.handle();
-      }
       throw new ForbiddenException('Недостаточно прав для доступа к разделу');
     }
 
