@@ -12,9 +12,6 @@ import { compareKnowledgeMaterialsForCategoryList } from '../knowledge-material-
 import { KnowledgeQuizAttemptLimits } from '../knowledge-quiz.service';
 import { KnowledgePlatformSettingsService } from './knowledge-platform-settings.service';
 
-const QUIZ_RETRY_COOLDOWN_MS = 30 * 60 * 1000;
-const QUIZ_MAX_ATTEMPTS_PER_DAY = 3;
-
 type CategoryQuizMaterial = Prisma.KnowledgeMaterialGetPayload<{
   include: {
     module: { select: { id: true; name: true; order: true } };
@@ -60,11 +57,14 @@ export class KnowledgeCategoryQuizService {
 
   private buildAttemptLimits(
     attempts: CategoryQuizAttemptRecord[],
+    maxAttemptsPerDay: number,
+    cooldownMinutes: number,
     now = new Date(),
   ): KnowledgeQuizAttemptLimits {
+    const cooldownMs = cooldownMinutes * 60_000;
     const base = {
-      maxAttemptsPerDay: QUIZ_MAX_ATTEMPTS_PER_DAY,
-      cooldownMinutes: QUIZ_RETRY_COOLDOWN_MS / 60_000,
+      maxAttemptsPerDay,
+      cooldownMinutes,
     };
 
     const hasPassed = attempts.some((attempt) => attempt.passed);
@@ -83,7 +83,7 @@ export class KnowledgeCategoryQuizService {
     const todayStart = this.startOfLocalDay(now);
     const attemptsToday = attempts.filter((attempt) => attempt.createdAt >= todayStart);
 
-    if (attemptsToday.length >= QUIZ_MAX_ATTEMPTS_PER_DAY) {
+    if (attemptsToday.length >= maxAttemptsPerDay) {
       return {
         ...base,
         canStart: false,
@@ -95,7 +95,7 @@ export class KnowledgeCategoryQuizService {
 
     const latestAttempt = attempts[0];
     if (latestAttempt && !latestAttempt.passed) {
-      const cooldownEndsAt = new Date(latestAttempt.createdAt.getTime() + QUIZ_RETRY_COOLDOWN_MS);
+      const cooldownEndsAt = new Date(latestAttempt.createdAt.getTime() + cooldownMs);
       if (now < cooldownEndsAt) {
         return {
           ...base,
@@ -137,7 +137,7 @@ export class KnowledgeCategoryQuizService {
     }
 
     throw new HttpException(
-      'Повторная попытка будет доступна через 30 минут после неуспешного прохождения.',
+      `Повторная попытка будет доступна через ${limits.cooldownMinutes} минут после неуспешного прохождения.`,
       HttpStatus.TOO_MANY_REQUESTS,
     );
   }
@@ -309,7 +309,8 @@ export class KnowledgeCategoryQuizService {
       return null;
     }
 
-    const timePerQuestionSeconds = await this.platformSettings.getQuizTimePerQuestionSeconds();
+    const timePerQuestionSeconds =
+      await this.platformSettings.getCategoryQuizTimePerQuestionSeconds();
     const quiz = this.buildCategoryQuizPayload(
       category,
       materials,
@@ -330,6 +331,11 @@ export class KnowledgeCategoryQuizService {
       return best;
     }, null);
 
+    const [maxAttemptsPerDay, cooldownMinutes] = await Promise.all([
+      this.platformSettings.getCategoryQuizMaxAttemptsPerDay(),
+      this.platformSettings.getCategoryQuizRetryCooldownMinutes(),
+    ]);
+
     return {
       category,
       quiz,
@@ -349,7 +355,7 @@ export class KnowledgeCategoryQuizService {
             createdAt: attempts[0].createdAt,
           }
         : null,
-      attemptLimits: this.buildAttemptLimits(attempts),
+      attemptLimits: this.buildAttemptLimits(attempts, maxAttemptsPerDay, cooldownMinutes),
     };
   }
 
@@ -365,7 +371,13 @@ export class KnowledgeCategoryQuizService {
     }
 
     const previousAttempts = await this.getUserAttemptsForCategory(categoryId, userId);
-    this.assertCanStartAttempt(this.buildAttemptLimits(previousAttempts));
+    const [maxAttemptsPerDay, cooldownMinutes] = await Promise.all([
+      this.platformSettings.getCategoryQuizMaxAttemptsPerDay(),
+      this.platformSettings.getCategoryQuizRetryCooldownMinutes(),
+    ]);
+    this.assertCanStartAttempt(
+      this.buildAttemptLimits(previousAttempts, maxAttemptsPerDay, cooldownMinutes),
+    );
 
     const allQuestions = quizData.quiz.sections.flatMap((section) => section.questions);
     const questionIds = allQuestions.map((question) => question.id);

@@ -4,6 +4,24 @@
   padding: 0;
 }
 
+.modalPanel :global([class*='titleRow']) {
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.modalPanel :global([class*='titleRow'] [class*='title']) {
+  flex: 0 1 auto;
+}
+
+.modalPanel :global([class*='titleAside']) {
+  color: inherit;
+  flex-shrink: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  max-width: none;
+  text-align: left;
+}
+
 .typeFieldset {
   margin: 0;
   padding: 0;

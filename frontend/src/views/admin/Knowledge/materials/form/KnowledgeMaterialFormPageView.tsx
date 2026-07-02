@@ -9,13 +9,13 @@ import {
   AdminStickySaveButtonSlot,
 } from '@/views/admin/ui/AdminStickySaveButton';
 
-import { KnowledgeAttachmentsEditor } from '../../shared/KnowledgeAttachmentsEditor';
-import { KnowledgeBackLink } from '../../shared/KnowledgeBackLink';
-import { KnowledgeQuizEditor } from '../../shared/KnowledgeQuizEditor';
 import {
   KNOWLEDGE_THUMBNAIL_DISPLAY_OPTIONS,
   getMaterialTypeLabel,
 } from '../../shared/knowledge-utils';
+import { KnowledgeAttachmentsEditor } from '../../shared/material/KnowledgeAttachmentsEditor';
+import { KnowledgeQuizEditor } from '../../shared/quiz/KnowledgeQuizEditor';
+import { KnowledgeBackLink } from '../../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgeMaterialFormPage.module.css';
 import { KnowledgeTargetAudienceField } from './KnowledgeTargetAudienceField';
 import type { KnowledgeMaterialFormPageModel } from './hooks/useKnowledgeMaterialFormPage';

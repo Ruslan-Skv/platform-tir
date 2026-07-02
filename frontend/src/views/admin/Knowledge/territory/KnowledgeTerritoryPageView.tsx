@@ -31,11 +31,6 @@ import {
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
 import { AccessModal } from '@/widgets/admin/Sidebar/AccessModal';
 
-import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
-import { KnowledgePlatformFeedbackButton } from '../shared/KnowledgePlatformFeedbackButton';
-import { KnowledgePlatformInfoTip } from '../shared/KnowledgePlatformInfoTip';
-import { KnowledgePlatformSettingsButton } from '../shared/KnowledgePlatformSettingsButton';
-import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
   formatDate,
   formatReadingTime,
@@ -52,6 +47,11 @@ import {
   sortKnowledgeMaterialsForCategory,
   sortKnowledgeMaterialsNewestFirst,
 } from '../shared/knowledge-utils';
+import { KnowledgeMaterialInterestingBadge } from '../shared/material/KnowledgeMaterialInterestingBadge';
+import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/material/knowledge-comments.constants';
+import { KnowledgePlatformFeedbackButton } from '../shared/platform/KnowledgePlatformFeedbackButton';
+import { KnowledgePlatformInfoTip } from '../shared/platform/KnowledgePlatformInfoTip';
+import { KnowledgePlatformSettingsButton } from '../shared/platform/KnowledgePlatformSettingsButton';
 import styles from './KnowledgeTerritoryPage.module.css';
 import { KnowledgeTerritorySearchField } from './KnowledgeTerritorySearchField';
 import { formatKnowledgePlatformFeedbackBadgeCount } from './hooks/useKnowledgePlatformFeedbackUnreadCount';

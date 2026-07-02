@@ -9,6 +9,8 @@ type KnowledgeQuizPassingRulesProps = {
   passingScorePercent: number;
   secondsPerQuestion: number;
   attemptLimits?: KnowledgeQuizAttemptLimits | null;
+  maxAttemptsPerDayFallback?: number;
+  cooldownMinutesFallback?: number;
   showAttemptsToday?: boolean;
   attemptsPlaceholder?: boolean;
   extraRules?: ReactNode;
@@ -19,13 +21,15 @@ export function KnowledgeQuizPassingRules({
   passingScorePercent,
   secondsPerQuestion,
   attemptLimits,
+  maxAttemptsPerDayFallback,
+  cooldownMinutesFallback,
   showAttemptsToday = false,
   attemptsPlaceholder = false,
   extraRules,
   dailyLimitVariant = 'material',
 }: KnowledgeQuizPassingRulesProps) {
-  const maxAttemptsPerDay = attemptLimits?.maxAttemptsPerDay ?? 3;
-  const cooldownMinutes = attemptLimits?.cooldownMinutes ?? 30;
+  const maxAttemptsPerDay = attemptLimits?.maxAttemptsPerDay ?? maxAttemptsPerDayFallback ?? 3;
+  const cooldownMinutes = attemptLimits?.cooldownMinutes ?? cooldownMinutesFallback ?? 30;
 
   return (
     <div className={styles.rules}>

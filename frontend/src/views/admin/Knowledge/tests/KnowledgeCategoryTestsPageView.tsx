@@ -10,8 +10,8 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
 import { AccessModal } from '@/widgets/admin/Sidebar/AccessModal';
 
-import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
-import { KnowledgeCategoryQuiz } from '../shared/KnowledgeCategoryQuiz';
+import { KnowledgeCategoryQuiz } from '../shared/quiz/KnowledgeCategoryQuiz';
+import { KnowledgeBackLink } from '../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgeCategoryTestsPage.module.css';
 import type { KnowledgeCategoryTestsPageModel } from './hooks/useKnowledgeCategoryTestsPage';
 

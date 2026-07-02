@@ -14,7 +14,11 @@ import styles from './KnowledgeMaterialQuiz.module.css';
 import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
 import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
-import { useKnowledgeQuizPlatformSettings } from './useKnowledgeQuizPlatformSettings';
+import {
+  useKnowledgeQuizMaxAttemptsPerDay,
+  useKnowledgeQuizRetryCooldownMinutes,
+  useKnowledgeQuizTimePerQuestionSeconds,
+} from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
   formatQuizCountdown,
@@ -55,7 +59,9 @@ export function KnowledgeMaterialQuiz({
     try {
       const quizData = await getKnowledgeMaterialQuiz(materialId);
       if (quizData?.quiz?.timePerQuestionSeconds != null) {
-        seedKnowledgeQuizPlatformSettingsCache(quizData.quiz.timePerQuestionSeconds);
+        seedKnowledgeQuizPlatformSettingsCache({
+          materialQuizTimePerQuestionSeconds: quizData.quiz.timePerQuestionSeconds,
+        });
       }
       setData(quizData);
       setAnswers({});
@@ -72,7 +78,9 @@ export function KnowledgeMaterialQuiz({
     void load();
   }, [load]);
 
-  const platformSeconds = useKnowledgeQuizPlatformSettings();
+  const platformSeconds = useKnowledgeQuizTimePerQuestionSeconds('material');
+  const maxAttemptsFallback = useKnowledgeQuizMaxAttemptsPerDay('material');
+  const cooldownFallback = useKnowledgeQuizRetryCooldownMinutes('material');
   const quiz = data?.quiz;
   const secondsPerQuestion = platformSeconds ?? quiz?.timePerQuestionSeconds ?? 60;
   const totalSeconds = quiz
@@ -173,6 +181,8 @@ export function KnowledgeMaterialQuiz({
           passingScorePercent={quiz.passingScorePercent}
           secondsPerQuestion={secondsPerQuestion}
           attemptLimits={attemptLimits}
+          maxAttemptsPerDayFallback={maxAttemptsFallback ?? undefined}
+          cooldownMinutesFallback={cooldownFallback ?? undefined}
           showAttemptsToday={Boolean(attemptLimits && !myBestAttempt?.passed)}
         />
         <p className={styles.subtitle}>Пройдите тест после прочтения материала.</p>

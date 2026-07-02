@@ -14,7 +14,11 @@ import styles from './KnowledgeCategoryQuiz.module.css';
 import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
 import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
-import { useKnowledgeQuizPlatformSettings } from './useKnowledgeQuizPlatformSettings';
+import {
+  useKnowledgeQuizMaxAttemptsPerDay,
+  useKnowledgeQuizRetryCooldownMinutes,
+  useKnowledgeQuizTimePerQuestionSeconds,
+} from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
   formatQuizCountdown,
@@ -72,7 +76,9 @@ export function KnowledgeCategoryQuiz({
 
       setData(quizData);
       if (quizData?.quiz?.timePerQuestionSeconds != null) {
-        seedKnowledgeQuizPlatformSettingsCache(quizData.quiz.timePerQuestionSeconds);
+        seedKnowledgeQuizPlatformSettingsCache({
+          categoryQuizTimePerQuestionSeconds: quizData.quiz.timePerQuestionSeconds,
+        });
       }
       setAnswers({});
       setExpanded(false);
@@ -92,7 +98,9 @@ export function KnowledgeCategoryQuiz({
     void load();
   }, [load]);
 
-  const platformSeconds = useKnowledgeQuizPlatformSettings();
+  const platformSeconds = useKnowledgeQuizTimePerQuestionSeconds('category');
+  const maxAttemptsFallback = useKnowledgeQuizMaxAttemptsPerDay('category');
+  const cooldownFallback = useKnowledgeQuizRetryCooldownMinutes('category');
   const isReady = !loading && data?.category.id === categoryId;
   const quiz = isReady ? (data?.quiz ?? null) : null;
   const displayQuestionCount = quiz?.questionCount ?? questionCountHint;
@@ -200,6 +208,8 @@ export function KnowledgeCategoryQuiz({
               passingScorePercent={displayPassingScore}
               secondsPerQuestion={displaySecondsPerQuestion}
               attemptLimits={attemptLimits}
+              maxAttemptsPerDayFallback={maxAttemptsFallback ?? undefined}
+              cooldownMinutesFallback={cooldownFallback ?? undefined}
               showAttemptsToday={Boolean(isReady && attemptLimits && !myBestAttempt?.passed)}
               attemptsPlaceholder
               dailyLimitVariant="category"

@@ -10,9 +10,9 @@ import {
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { CommentIcon } from '@/shared/ui/icons';
 
+import { formatDate, formatKnowledgeLikerLabel } from '../knowledge-utils';
 import styles from './KnowledgeMaterialComments.module.css';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from './knowledge-comments.constants';
-import { formatDate, formatKnowledgeLikerLabel } from './knowledge-utils';
 
 type KnowledgeMaterialCommentsProps = {
   materialId: string;

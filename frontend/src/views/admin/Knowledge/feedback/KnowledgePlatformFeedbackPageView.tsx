@@ -1,6 +1,6 @@
 'use client';
 
-import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
+import { KnowledgeBackLink } from '../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgePlatformFeedbackPage.module.css';
 import type { KnowledgePlatformFeedbackPageModel } from './hooks/useKnowledgePlatformFeedbackPage';
 import {

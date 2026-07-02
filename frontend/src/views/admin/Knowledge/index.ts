@@ -3,6 +3,6 @@ export { KnowledgeTrainingAnalyticsPage } from './analytics/KnowledgeTrainingAna
 export { KnowledgeCategoryTestsPage } from './tests/KnowledgeCategoryTestsPage';
 export { KnowledgeMaterialViewPage } from './materials/KnowledgeMaterialViewPage';
 export { KnowledgeMaterialFormPage } from './materials/form/KnowledgeMaterialFormPage';
-export { KnowledgeVideoPlayer } from './shared/KnowledgeVideoPlayer';
-export { KnowledgeAttachmentsEditor } from './shared/KnowledgeAttachmentsEditor';
-export { KnowledgeAttachmentsList } from './shared/KnowledgeAttachmentsList';
+export { KnowledgeVideoPlayer } from './shared/material/KnowledgeVideoPlayer';
+export { KnowledgeAttachmentsEditor } from './shared/material/KnowledgeAttachmentsEditor';
+export { KnowledgeAttachmentsList } from './shared/material/KnowledgeAttachmentsList';

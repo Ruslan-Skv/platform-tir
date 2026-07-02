@@ -1293,10 +1293,15 @@ model KnowledgePlatformFeedback {
 }
 
 model KnowledgePlatformSettings {
-  id                         String   @id @default("main")
-  quizTimePerQuestionSeconds Int      @default(60)
-  createdAt                  DateTime @default(now())
-  updatedAt                  DateTime @updatedAt
+  id                                 String   @id @default("main")
+  materialQuizTimePerQuestionSeconds Int      @default(60)
+  categoryQuizTimePerQuestionSeconds Int      @default(60)
+  materialQuizMaxAttemptsPerDay      Int      @default(3)
+  categoryQuizMaxAttemptsPerDay      Int      @default(3)
+  materialQuizRetryCooldownMinutes   Int      @default(30)
+  categoryQuizRetryCooldownMinutes   Int      @default(30)
+  createdAt                          DateTime @default(now())
+  updatedAt                          DateTime @updatedAt
 
   @@map("knowledge_platform_settings")
 }

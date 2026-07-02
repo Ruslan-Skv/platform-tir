@@ -9,13 +9,13 @@ import {
 } from '@/shared/api/admin-knowledge';
 import { KnowledgeQuizImportFileIcon } from '@/shared/ui/icons';
 
-import styles from './KnowledgeQuizEditor.module.css';
-import type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
 import {
   type ParsedImportQuestion,
   parseKnowledgeQuizImportFile,
   parseKnowledgeQuizImportText,
-} from './parseKnowledgeQuizImport';
+} from '../import/parseKnowledgeQuizImport';
+import styles from './KnowledgeQuizEditor.module.css';
+import type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
 
 export type { KnowledgeQuizEditorHandle } from './knowledge-quiz-editor.types';
 

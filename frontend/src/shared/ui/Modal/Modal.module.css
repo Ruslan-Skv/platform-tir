@@ -18,7 +18,11 @@
   background: rgb(0 0 0 / 50%);
   inset: 0;
   position: fixed;
-  transition: opacity 0.3s;
+  transition: opacity 0.28s ease-out;
+}
+
+.backdrop[data-closed] {
+  opacity: 0;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backdrop {
@@ -155,11 +159,29 @@
   padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
   position: relative;
   scrollbar-gutter: stable;
+  transform: scale(1) translateY(0);
   transition:
-    box-shadow 0.3s ease,
-    border-color 0.3s ease,
-    opacity 0.3s ease;
+    box-shadow 0.28s ease-out,
+    border-color 0.28s ease-out,
+    opacity 0.28s ease-out,
+    transform 0.28s ease-out;
   width: calc(100% - 2rem);
+}
+
+.panel[data-closed] {
+  opacity: 0;
+  transform: scale(0.97) translateY(10px);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .backdrop,
+  .panel {
+    transition: none;
+  }
+
+  .panel[data-closed] {
+    transform: none;
+  }
 }
 
 .centerAlignTop {

@@ -1,4 +1,4 @@
-import { Dialog } from '@headlessui/react';
+import { Dialog, DialogBackdrop, DialogPanel, DialogTitle } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import React from 'react';
@@ -48,12 +48,13 @@ export const Modal: React.FC<ModalProps> = ({
   };
 
   return (
-    <Dialog as="div" className={styles.dialog} open={isOpen} onClose={onClose}>
-      <div className={styles.backdrop} />
+    <Dialog open={isOpen} onClose={onClose} className={styles.dialog}>
+      <DialogBackdrop transition className={styles.backdrop} />
 
       <div className={styles.container}>
         <div className={`${styles.center} ${alignTop ? styles.centerAlignTop : ''}`.trim()}>
-          <Dialog.Panel
+          <DialogPanel
+            transition
             className={`${styles.panel} ${sizeClasses[size]} ${compactOnMobile ? styles.panelCompactMobile : ''} ${className ?? ''}`.trim()}
           >
             {(title || showCloseButton) && (
@@ -64,19 +65,19 @@ export const Modal: React.FC<ModalProps> = ({
                   <>
                     {titleAside != null ? (
                       <div className={styles.titleRow}>
-                        <Dialog.Title
+                        <DialogTitle
                           className={`${styles.title} ${compactOnMobile ? styles.titleCompactMobile : ''} ${titleClassName ?? ''}`.trim()}
                         >
                           {title}
-                        </Dialog.Title>
+                        </DialogTitle>
                         <div className={styles.titleAside}>{titleAside}</div>
                       </div>
                     ) : (
-                      <Dialog.Title
+                      <DialogTitle
                         className={`${styles.title} ${compactOnMobile ? styles.titleCompactMobile : ''} ${titleClassName ?? ''}`.trim()}
                       >
                         {title}
-                      </Dialog.Title>
+                      </DialogTitle>
                     )}
                   </>
                 )}
@@ -95,7 +96,7 @@ export const Modal: React.FC<ModalProps> = ({
             )}
 
             <div className={`${styles.content} ${contentClassName ?? ''}`.trim()}>{children}</div>
-          </Dialog.Panel>
+          </DialogPanel>
         </div>
       </div>
     </Dialog>

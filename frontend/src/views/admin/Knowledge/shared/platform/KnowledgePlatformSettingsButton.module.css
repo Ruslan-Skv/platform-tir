@@ -1,0 +1,89 @@
+.trigger {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.modalContent {
+  padding-top: 0;
+}
+
+.modalPanel :global([class*='titleRow']) {
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.modalPanel :global([class*='titleRow'] [class*='title']) {
+  flex: 0 1 auto;
+}
+
+.modalPanel :global([class*='titleAside']) {
+  color: inherit;
+  flex-shrink: 0;
+  font-size: inherit;
+  font-weight: inherit;
+  max-width: none;
+  text-align: left;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-md);
+  color: var(--admin-text-muted);
+}
+
+.columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--admin-space-md);
+}
+
+.column {
+  min-width: 0;
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+}
+
+.columnTitle {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--admin-text-secondary);
+}
+
+.columnFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.numberInput {
+  box-sizing: border-box;
+  width: 4.25rem;
+  min-width: 4.25rem;
+  max-width: 4.25rem;
+  text-align: right;
+  -moz-appearance: textfield;
+}
+
+.numberInput::-webkit-outer-spin-button,
+.numberInput::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+@media (max-width: 720px) {
+  .columns {
+    grid-template-columns: 1fr;
+  }
+}

@@ -81,7 +81,7 @@ views/
 
 - **Content:** одна папка = пункт меню (`Blog/`, `Promotions/`, `Home/`, …), общие блоки — `shared/`.
 - **Products:** `list/` (журнал), `edit/`, `create/`, `shared/` (форма, секции, модалки, утилиты). Публичный API — `Products/index.ts`.
-- **Knowledge:** `territory/` (список), `materials/` (просмотр), `materials/form/`, `shared/` (вложения, плеер, утилиты). API — `Knowledge/index.ts`.
+- **Knowledge:** `territory/` (список), `materials/` (просмотр), `materials/form/`, `shared/` с подпапками `platform/` (настройки и обратная связь), `quiz/`, `material/`, `import/`, `ui/`, плюс `knowledge-utils.ts` в корне `shared/`. API — `Knowledge/index.ts`.
 - **Settings:** подпапки по разделам настроек (`catalog/`, `forms/`, `roles/`, …), `shared/` (`SettingsSubPageView`, `SettingsPage.module.css`, `rolesConfig`), `hub/` (обзорная страница). API — `Settings/index.ts`.
 
 Лимит check-architecture: не более 25 `.ts`/`.tsx` в одной папке.

@@ -10,8 +10,8 @@ import { getAvatarUrl } from '@/shared/lib/avatar';
 import { AdminHelpTooltip } from '@/shared/ui/admin/AdminHelpTooltip';
 import helpStyles from '@/shared/ui/admin/AdminHelpTooltip/AdminHelpTooltip.module.css';
 
+import { getKnowledgeLikerDisplayName } from '../knowledge-utils';
 import styles from './KnowledgeMaterialInterestingBadge.module.css';
-import { getKnowledgeLikerDisplayName } from './knowledge-utils';
 
 type KnowledgeMaterialInterestingBadgeProps = {
   materialId: string;

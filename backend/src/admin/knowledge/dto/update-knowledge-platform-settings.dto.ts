@@ -6,5 +6,35 @@ export class UpdateKnowledgePlatformSettingsDto {
   @IsInt()
   @Min(1)
   @Max(3600)
-  quizTimePerQuestionSeconds: number;
+  materialQuizTimePerQuestionSeconds: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(3600)
+  categoryQuizTimePerQuestionSeconds: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  materialQuizMaxAttemptsPerDay: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(20)
+  categoryQuizMaxAttemptsPerDay: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  materialQuizRetryCooldownMinutes: number;
+
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(1440)
+  categoryQuizRetryCooldownMinutes: number;
 }

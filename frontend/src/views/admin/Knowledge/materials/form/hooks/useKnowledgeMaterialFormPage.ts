@@ -22,13 +22,13 @@ import {
 } from '@/shared/api/admin-knowledge';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
-import type { KnowledgeQuizEditorHandle } from '../../../shared/knowledge-quiz-editor.types';
 import {
   computeReadingTimeMinutes,
   isKnowledgeRichTextEmpty,
   slugify,
   toKnowledgeRichTextEditorHtml,
 } from '../../../shared/knowledge-utils';
+import type { KnowledgeQuizEditorHandle } from '../../../shared/quiz/knowledge-quiz-editor.types';
 import type {
   KnowledgeMaterialFormPageMessage,
   KnowledgeMaterialFormStatus,

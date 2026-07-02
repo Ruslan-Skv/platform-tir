@@ -11,13 +11,6 @@ import {
   ManagerPracticalAssignmentIcon,
 } from '@/shared/ui/icons';
 
-import { KnowledgeAttachmentsList } from '../shared/KnowledgeAttachmentsList';
-import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
-import { KnowledgeMaterialComments } from '../shared/KnowledgeMaterialComments';
-import { KnowledgeMaterialInterestingBadge } from '../shared/KnowledgeMaterialInterestingBadge';
-import { KnowledgeMaterialQuiz } from '../shared/KnowledgeMaterialQuiz';
-import { KnowledgeVideoPlayer } from '../shared/KnowledgeVideoPlayer';
-import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/knowledge-comments.constants';
 import {
   formatAuthorName,
   formatDate,
@@ -35,6 +28,13 @@ import {
   renderKnowledgeRichTextHtml,
   resolveKnowledgeArticleHtml,
 } from '../shared/knowledge-utils';
+import { KnowledgeAttachmentsList } from '../shared/material/KnowledgeAttachmentsList';
+import { KnowledgeMaterialComments } from '../shared/material/KnowledgeMaterialComments';
+import { KnowledgeMaterialInterestingBadge } from '../shared/material/KnowledgeMaterialInterestingBadge';
+import { KnowledgeVideoPlayer } from '../shared/material/KnowledgeVideoPlayer';
+import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/material/knowledge-comments.constants';
+import { KnowledgeMaterialQuiz } from '../shared/quiz/KnowledgeMaterialQuiz';
+import { KnowledgeBackLink } from '../shared/ui/KnowledgeBackLink';
 import { buildKnowledgeMaterialViewUrl } from '../territory/knowledge-territory-filters-storage';
 import styles from './KnowledgeMaterialViewPage.module.css';
 import type { KnowledgeMaterialViewPageModel } from './hooks/useKnowledgeMaterialViewPage';

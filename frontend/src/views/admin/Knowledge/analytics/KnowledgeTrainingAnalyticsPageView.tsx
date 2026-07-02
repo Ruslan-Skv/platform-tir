@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import { KnowledgeBackLink } from '../shared/KnowledgeBackLink';
+import { KnowledgeBackLink } from '../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgeTrainingAnalyticsPage.module.css';
 import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
 import { TrainingAnalyticsCategoryProgress } from './components/TrainingAnalyticsCategoryProgress';

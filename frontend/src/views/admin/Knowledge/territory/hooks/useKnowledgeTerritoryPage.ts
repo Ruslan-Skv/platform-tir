@@ -32,6 +32,7 @@ import {
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
+import { parseKnowledgeOutlineImportFile } from '../../shared/import/parseKnowledgeOutlineImport';
 import {
   KNOWLEDGE_RESOURCE_ID,
   KNOWLEDGE_TESTS_RESOURCE_ID,
@@ -40,7 +41,6 @@ import {
   getKnowledgeCategoryResourceLabel,
   isKnowledgeTraineeRole,
 } from '../../shared/knowledge-utils';
-import { parseKnowledgeOutlineImportFile } from '../../shared/parseKnowledgeOutlineImport';
 import {
   buildKnowledgeTerritoryMaterialsScopeKey,
   readCachedKnowledgeCategories,

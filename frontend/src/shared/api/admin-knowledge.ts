@@ -868,9 +868,23 @@ export async function createKnowledgePlatformFeedback(data: {
 
 export interface KnowledgePlatformSettings {
   id: string;
-  quizTimePerQuestionSeconds: number;
+  materialQuizTimePerQuestionSeconds: number;
+  categoryQuizTimePerQuestionSeconds: number;
+  materialQuizMaxAttemptsPerDay: number;
+  categoryQuizMaxAttemptsPerDay: number;
+  materialQuizRetryCooldownMinutes: number;
+  categoryQuizRetryCooldownMinutes: number;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface KnowledgeQuizPlatformSettings {
+  materialQuizTimePerQuestionSeconds: number;
+  categoryQuizTimePerQuestionSeconds: number;
+  materialQuizMaxAttemptsPerDay: number;
+  categoryQuizMaxAttemptsPerDay: number;
+  materialQuizRetryCooldownMinutes: number;
+  categoryQuizRetryCooldownMinutes: number;
 }
 
 export async function getKnowledgePlatformSettings(): Promise<KnowledgePlatformSettings> {
@@ -882,7 +896,12 @@ export async function getKnowledgePlatformSettings(): Promise<KnowledgePlatformS
 }
 
 export async function updateKnowledgePlatformSettings(data: {
-  quizTimePerQuestionSeconds: number;
+  materialQuizTimePerQuestionSeconds: number;
+  categoryQuizTimePerQuestionSeconds: number;
+  materialQuizMaxAttemptsPerDay: number;
+  categoryQuizMaxAttemptsPerDay: number;
+  materialQuizRetryCooldownMinutes: number;
+  categoryQuizRetryCooldownMinutes: number;
 }): Promise<KnowledgePlatformSettings> {
   const res = await apiFetch(`${API_URL}/admin/knowledge/platform-settings`, {
     method: 'PATCH',

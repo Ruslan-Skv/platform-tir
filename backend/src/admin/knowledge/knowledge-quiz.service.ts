@@ -20,9 +20,6 @@ type QuizWithQuestions = Prisma.KnowledgeMaterialQuizGetPayload<{
   };
 }>;
 
-const QUIZ_RETRY_COOLDOWN_MS = 30 * 60 * 1000;
-const QUIZ_MAX_ATTEMPTS_PER_DAY = 3;
-
 type QuizAttemptRecord = {
   passed: boolean;
   createdAt: Date;
@@ -59,11 +56,14 @@ export class KnowledgeQuizService {
 
   private buildAttemptLimits(
     attempts: QuizAttemptRecord[],
+    maxAttemptsPerDay: number,
+    cooldownMinutes: number,
     now = new Date(),
   ): KnowledgeQuizAttemptLimits {
+    const cooldownMs = cooldownMinutes * 60_000;
     const base = {
-      maxAttemptsPerDay: QUIZ_MAX_ATTEMPTS_PER_DAY,
-      cooldownMinutes: QUIZ_RETRY_COOLDOWN_MS / 60_000,
+      maxAttemptsPerDay,
+      cooldownMinutes,
     };
 
     const hasPassed = attempts.some((attempt) => attempt.passed);
@@ -82,7 +82,7 @@ export class KnowledgeQuizService {
     const todayStart = this.startOfLocalDay(now);
     const attemptsToday = attempts.filter((attempt) => attempt.createdAt >= todayStart);
 
-    if (attemptsToday.length >= QUIZ_MAX_ATTEMPTS_PER_DAY) {
+    if (attemptsToday.length >= maxAttemptsPerDay) {
       return {
         ...base,
         canStart: false,
@@ -94,7 +94,7 @@ export class KnowledgeQuizService {
 
     const latestAttempt = attempts[0];
     if (latestAttempt && !latestAttempt.passed) {
-      const cooldownEndsAt = new Date(latestAttempt.createdAt.getTime() + QUIZ_RETRY_COOLDOWN_MS);
+      const cooldownEndsAt = new Date(latestAttempt.createdAt.getTime() + cooldownMs);
       if (now < cooldownEndsAt) {
         return {
           ...base,
@@ -136,7 +136,7 @@ export class KnowledgeQuizService {
     }
 
     throw new HttpException(
-      'Повторная попытка будет доступна через 30 минут после неуспешного прохождения.',
+      `Повторная попытка будет доступна через ${limits.cooldownMinutes} минут после неуспешного прохождения.`,
       HttpStatus.TOO_MANY_REQUESTS,
     );
   }
@@ -208,8 +208,13 @@ export class KnowledgeQuizService {
       return best;
     }, null);
 
-    const attemptLimits = this.buildAttemptLimits(attempts);
-    const timePerQuestionSeconds = await this.platformSettings.getQuizTimePerQuestionSeconds();
+    const [timePerQuestionSeconds, maxAttemptsPerDay, cooldownMinutes] = await Promise.all([
+      this.platformSettings.getMaterialQuizTimePerQuestionSeconds(),
+      this.platformSettings.getMaterialQuizMaxAttemptsPerDay(),
+      this.platformSettings.getMaterialQuizRetryCooldownMinutes(),
+    ]);
+
+    const attemptLimits = this.buildAttemptLimits(attempts, maxAttemptsPerDay, cooldownMinutes);
 
     return {
       quiz: this.mapQuizForClient(quiz, editorView, timePerQuestionSeconds),
@@ -262,7 +267,8 @@ export class KnowledgeQuizService {
     }
 
     const defaultTimePerQuestionSeconds =
-      dto.timePerQuestionSeconds ?? (await this.platformSettings.getQuizTimePerQuestionSeconds());
+      dto.timePerQuestionSeconds ??
+      (await this.platformSettings.getMaterialQuizTimePerQuestionSeconds());
 
     const quiz = await this.prisma.knowledgeMaterialQuiz.upsert({
       where: { materialId },
@@ -332,7 +338,13 @@ export class KnowledgeQuizService {
 
     const previousAttempts = await this.getUserAttemptsForMaterial(materialId, userId);
     const hadPassedBefore = previousAttempts.some((attempt) => attempt.passed);
-    this.assertCanStartAttempt(this.buildAttemptLimits(previousAttempts));
+    const [maxAttemptsPerDay, cooldownMinutes] = await Promise.all([
+      this.platformSettings.getMaterialQuizMaxAttemptsPerDay(),
+      this.platformSettings.getMaterialQuizRetryCooldownMinutes(),
+    ]);
+    this.assertCanStartAttempt(
+      this.buildAttemptLimits(previousAttempts, maxAttemptsPerDay, cooldownMinutes),
+    );
 
     const questionIds = quiz.questions.map((q) => q.id);
     const answers = dto.answers ?? {};
