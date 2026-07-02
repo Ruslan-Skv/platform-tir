@@ -13,6 +13,7 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
   bindAuthRefreshOnPageVisible,
+  canAttemptSilentRefresh,
   clearStoredAuthSession,
   getApiBaseUrl,
   getJwtExpMs,
@@ -139,7 +140,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!stored.token) {
         const savedUser = localStorage.getItem(USER_KEY) || localStorage.getItem(USER_DATA_KEY);
-        if (savedUser) {
+        if (savedUser && canAttemptSilentRefresh()) {
           const refreshed = await Promise.race([
             refreshAccessTokenSilently(),
             new Promise<false>((resolve) => window.setTimeout(() => resolve(false), 8_000)),

@@ -6,6 +6,7 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
   bindAuthRefreshOnPageVisible,
+  canAttemptSilentRefresh,
   clearStoredAuthSession,
   getApiBaseUrl,
   getJwtExpMs,
@@ -185,11 +186,13 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       const userJson = localStorage.getItem(USER_DATA_KEY) || localStorage.getItem(ADMIN_USER_KEY);
 
       if (!access && userJson) {
-        const refreshed = await refreshAccessTokenSilently();
-        if (cancelled) return;
-        if (refreshed) {
-          applyAuthFromStorage();
-          access = getStoredAccessToken();
+        if (canAttemptSilentRefresh()) {
+          const refreshed = await refreshAccessTokenSilently();
+          if (cancelled) return;
+          if (refreshed) {
+            applyAuthFromStorage();
+            access = getStoredAccessToken();
+          }
         }
       }
 

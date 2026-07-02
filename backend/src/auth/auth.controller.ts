@@ -73,7 +73,7 @@ export class AuthController {
     return req.user;
   }
 
-  @Throttle({ default: { limit: 30, ttl: 60_000 } })
+  @SkipThrottle()
   @UseGuards(OriginGuard)
   @Post('refresh')
   @ApiOperation({ summary: 'Обновить access по refresh из httpOnly cookie' })

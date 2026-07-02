@@ -125,16 +125,27 @@ export type TokenLoginPayload = {
 
 let refreshInFlight: Promise<boolean> | null = null;
 
+const GLOBAL_REFRESH_IN_FLIGHT_KEY = '__platformTirRefreshInFlight';
+
+function getGlobalRefreshInFlight(): Promise<boolean> | null {
+  if (typeof window === 'undefined') return refreshInFlight;
+  const w = window as Window & { [GLOBAL_REFRESH_IN_FLIGHT_KEY]?: Promise<boolean> | null };
+  return w[GLOBAL_REFRESH_IN_FLIGHT_KEY] ?? refreshInFlight ?? null;
+}
+
+function setGlobalRefreshInFlight(promise: Promise<boolean> | null): void {
+  refreshInFlight = promise;
+  if (typeof window === 'undefined') return;
+  const w = window as Window & { [GLOBAL_REFRESH_IN_FLIGHT_KEY]?: Promise<boolean> | null };
+  w[GLOBAL_REFRESH_IN_FLIGHT_KEY] = promise;
+}
+
 const REFRESH_FAIL_KEY = 'auth_refresh_failed_at';
 /** Кросс-вкладочная блокировка: только одна вкладка дергает /auth/refresh одновременно. */
 const REFRESH_LOCK_KEY = 'auth_refresh_lock_until';
 const REFRESH_LOCK_TTL_MS = 15_000;
 /** После 401 на refresh не долбим API, пока пользователь снова не войдёт. */
 const REFRESH_FAIL_COOLDOWN_MS = 10 * 60_000;
-
-function sleep(ms: number): Promise<void> {
-  return new Promise((resolve) => setTimeout(resolve, ms));
-}
 
 function tryAcquireCrossTabRefreshLock(): boolean {
   const until = Number(localStorage.getItem(REFRESH_LOCK_KEY) || 0);
@@ -234,6 +245,22 @@ function isRefreshInCooldown(): boolean {
   return true;
 }
 
+/** Страницы входа/регистрации — не пытаемся silent refresh по старому профилю в storage. */
+export function isAuthEntryPath(pathname?: string): boolean {
+  if (typeof window === 'undefined' && !pathname) return false;
+  const p = pathname ?? (typeof window !== 'undefined' ? window.location.pathname : '');
+  return (
+    p === '/login' || p === '/admin/login' || p === '/register' || p.startsWith('/reset-password')
+  );
+}
+
+export function canAttemptSilentRefresh(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (isRefreshInCooldown()) return false;
+  if (isAuthEntryPath()) return false;
+  return true;
+}
+
 /** Сброс access в памяти (refresh только в httpOnly cookie). */
 export function clearStoredAuthSession(): void {
   if (typeof window === 'undefined') return;
@@ -294,9 +321,12 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
 
 export async function refreshAccessTokenSilently(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  if (isRefreshInCooldown()) return false;
-  if (refreshInFlight) return refreshInFlight;
-  refreshInFlight = (async () => {
+  if (!canAttemptSilentRefresh()) return false;
+
+  const inFlight = getGlobalRefreshInFlight();
+  if (inFlight) return inFlight;
+
+  const refreshPromise = (async () => {
     const hasLock = tryAcquireCrossTabRefreshLock();
     try {
       if (!hasLock) {
@@ -305,35 +335,36 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
         if (!tryAcquireCrossTabRefreshLock()) return false;
       }
 
-      let res = await postRefreshRequest();
+      const res = await postRefreshRequest();
       if (res.ok) {
         return handleRefreshResponse(res);
       }
 
-      if (res.status === 401 || res.status === 403) {
-        // Другая вкладка могла успеть ротировать refresh — подождём и повторим.
-        await sleep(400);
-        if (hasUsableStoredAccessToken(120_000)) return true;
-
-        res = await postRefreshRequest();
-        if (res.ok) {
-          return handleRefreshResponse(res);
-        }
-
-        if (res.status === 401 || res.status === 403) {
-          markRefreshFailed();
-          clearStoredAuthSession();
-        }
+      if (res.status === 429) {
+        markRefreshFailed();
+        return false;
       }
+
+      if (res.status === 401 || res.status === 403) {
+        const fromOtherTab = await waitForCrossTabRefresh(2_000);
+        if (fromOtherTab && hasUsableStoredAccessToken(0)) return true;
+
+        markRefreshFailed();
+        clearStoredAuthSession();
+        return false;
+      }
+
       return false;
     } catch {
       return false;
     } finally {
       releaseCrossTabRefreshLock();
-      refreshInFlight = null;
+      setGlobalRefreshInFlight(null);
     }
   })();
-  return refreshInFlight;
+
+  setGlobalRefreshInFlight(refreshPromise);
+  return refreshPromise;
 }
 
 /** Токен из памяти (user или admin). */
@@ -365,7 +396,7 @@ export function hasPersistedAuthSession(): boolean {
 /** Актуализирует access заранее, чтобы фоновые поллеры не ловили 401 в момент экспирации. */
 export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean> {
   if (typeof window === 'undefined') return false;
-  if (isRefreshInCooldown()) return false;
+  if (!canAttemptSilentRefresh()) return false;
   const current = getStoredAccessToken();
   if (!current) {
     if (!hasPersistedUserSessionHint()) return false;
@@ -380,6 +411,7 @@ export async function ensureFreshAccessToken(minTtlMs = 60_000): Promise<boolean
 /** Восстановить access из httpOnly refresh перед API-запросом. */
 export async function restoreAccessTokenFromSession(): Promise<string | null> {
   if (typeof window === 'undefined') return null;
+  if (!canAttemptSilentRefresh()) return getStoredAccessToken();
   if (!getStoredAccessToken() && hasPersistedUserSessionHint()) {
     await ensureFreshAccessToken(0);
   }

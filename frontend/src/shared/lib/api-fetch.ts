@@ -44,7 +44,9 @@ async function attachSessionBearerIfNeeded(
   if (headers.get('authorization')) return;
 
   try {
-    const { restoreAccessTokenFromSession } = await import('./auth-session');
+    const { restoreAccessTokenFromSession, canAttemptSilentRefresh } =
+      await import('./auth-session');
+    if (!canAttemptSilentRefresh()) return;
     const token = await restoreAccessTokenFromSession();
     if (token) {
       headers.set('authorization', `Bearer ${token}`);
@@ -111,6 +113,12 @@ function canRetry401(
 ): boolean {
   if (typeof window === 'undefined') return false;
   if (headers.get(RETRY_HEADER) === '1') return false;
+  try {
+    const mod = require('./auth-session') as typeof import('./auth-session');
+    if (!mod.canAttemptSilentRefresh()) return false;
+  } catch {
+    if (!hasPersistedAuthSessionHint()) return false;
+  }
   if (!headers.get('authorization') && !hasPersistedAuthSessionHint()) return false;
   // Повтор небезопасен для не-GET с телом из Request (stream уже прочитан).
   if (input instanceof Request) {
