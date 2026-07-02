@@ -33,7 +33,8 @@ function roleLabel(role: string): string {
 }
 
 export function AdminOnlineAvatars() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
+  const shouldLoadPresence = user?.role === 'SUPER_ADMIN';
   const [online, setOnline] = useState<AdminOnlineUser[]>([]);
 
   const load = useCallback(async () => {
@@ -46,7 +47,7 @@ export function AdminOnlineAvatars() {
   }, []);
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated) return;
+    if (isLoading || !isAuthenticated || !shouldLoadPresence) return;
 
     const first = window.setTimeout(() => load(), 400);
     const id = window.setInterval(load, POLL_MS);
@@ -54,7 +55,7 @@ export function AdminOnlineAvatars() {
       window.clearTimeout(first);
       window.clearInterval(id);
     };
-  }, [isAuthenticated, isLoading, load]);
+  }, [isAuthenticated, isLoading, load, shouldLoadPresence]);
 
   if (online.length === 0) {
     return null;

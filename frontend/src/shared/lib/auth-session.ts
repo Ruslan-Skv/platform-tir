@@ -295,11 +295,29 @@ export function getJwtExpMs(token: string): number | null {
   }
 }
 
+function prefersAdminTokenContext(): boolean {
+  if (typeof window === 'undefined') return false;
+  if (localStorage.getItem('admin_user')) return true;
+  const path = window.location.pathname;
+  return path.startsWith('/admin') && !isAuthEntryPath(path);
+}
+
+function pickStoredAccessToken(store: AccessTokenStore): string | null {
+  const preferAdmin = prefersAdminTokenContext();
+  const primary = preferAdmin ? store.admin : store.user;
+  const secondary = preferAdmin ? store.user : store.admin;
+
+  if (hasUsableStoredAccessToken(0, primary)) return primary;
+  if (hasUsableStoredAccessToken(0, secondary)) return secondary;
+  return primary ?? secondary;
+}
+
 /** Сохранить access в памяти (refresh только в httpOnly cookie у API origin). */
 export function persistTokenResponse(data: TokenLoginPayload): void {
   if (typeof window === 'undefined') return;
   clearRefreshCooldown();
   const isAdmin = ADMIN_ROLES.has(data.user.role);
+  const store = getAccessTokenStore();
   sessionStorage.setItem('user_data', JSON.stringify(data.user));
   if (isAdmin) {
     sessionStorage.setItem('admin_user', JSON.stringify(data.user));
@@ -308,10 +326,14 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
   }
   localStorage.setItem('user_data', JSON.stringify(data.user));
   if (isAdmin) {
+    store.admin = data.access_token;
+    store.user = null;
     localStorage.setItem('admin_user', JSON.stringify(data.user));
     localStorage.setItem('admin_token', data.access_token);
     localStorage.removeItem('user_token');
   } else {
+    store.user = data.access_token;
+    store.admin = null;
     localStorage.removeItem('admin_user');
     localStorage.setItem('user_token', data.access_token);
     localStorage.removeItem('admin_token');
@@ -370,13 +392,11 @@ export async function refreshAccessTokenSilently(): Promise<boolean> {
 /** Токен из памяти (user или admin). */
 export function getStoredAccessToken(): string | null {
   if (typeof window === 'undefined') return null;
-  const store = getAccessTokenStore();
-  return store.user || store.admin;
+  return pickStoredAccessToken(getAccessTokenStore());
 }
 
 /** Есть bearer и он не истёк (с запасом minTtlMs). */
-export function hasUsableStoredAccessToken(minTtlMs = 0): boolean {
-  const token = getStoredAccessToken();
+export function hasUsableStoredAccessToken(minTtlMs = 0, token = getStoredAccessToken()): boolean {
   if (!token) return false;
   const expMs = getJwtExpMs(token);
   if (!expMs) return true;

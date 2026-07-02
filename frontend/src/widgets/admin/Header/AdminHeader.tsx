@@ -243,7 +243,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   }, [canLoadAdminNotifications, loadNotificationSettings]);
 
   useEffect(() => {
-    if (authLoading || !user?.id) {
+    if (authLoading || !user?.id || !canLoadAdminNotifications) {
       if (!user?.id) setDismissedNotificationIds(new Set());
       return;
     }
@@ -254,7 +254,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     return () => {
       cancelled = true;
     };
-  }, [authLoading, user?.id]);
+  }, [authLoading, canLoadAdminNotifications, user?.id]);
 
   useEffect(() => {
     setPublicSiteEditModeState(getPublicSiteEditMode());

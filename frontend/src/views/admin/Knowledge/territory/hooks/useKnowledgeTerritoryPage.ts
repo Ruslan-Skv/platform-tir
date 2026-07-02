@@ -29,6 +29,7 @@ import {
   updateKnowledgeCategory,
   updateKnowledgeModule,
 } from '@/shared/api/admin-knowledge';
+import { ensureFreshAccessToken, hasUsableStoredAccessToken } from '@/shared/lib/auth-session';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton/useAdminTrashCount';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
 
@@ -81,7 +82,7 @@ function createInitialTerritoryState() {
 }
 
 export function useKnowledgeTerritoryPage() {
-  const { user, isLoading: authLoading } = useAuth();
+  const { user, isLoading: authLoading, token: authToken } = useAuth();
   const {
     canView,
     canEdit,
@@ -90,8 +91,9 @@ export function useKnowledgeTerritoryPage() {
   } = useAdminResourcePermission(KNOWLEDGE_RESOURCE_ID);
   const { canView: canViewTestsBlock, isLoading: testsPermissionsLoading } =
     useAdminResourcePermission(KNOWLEDGE_TESTS_RESOURCE_ID);
+  const sessionReady = Boolean(authToken) || hasUsableStoredAccessToken(0);
   const knowledgeAccessReady =
-    !authLoading && !permissionsLoading && !testsPermissionsLoading && canView;
+    !authLoading && !permissionsLoading && !testsPermissionsLoading && canView && sessionReady;
   const canViewTrainingAnalytics = canViewKnowledgeTrainingAnalytics(user?.role, canView);
   const isTrainee = isKnowledgeTraineeRole(user?.role);
   const traineeView = !authLoading && isTrainee;
@@ -107,6 +109,7 @@ export function useKnowledgeTerritoryPage() {
   const materialsLoadSeqRef = useRef(0);
   const categoriesLoadSeqRef = useRef(0);
   const categoriesLoadedRef = useRef(false);
+  const [categoriesSettled, setCategoriesSettled] = useState(false);
   const modulesLoadSeqRef = useRef(0);
   const categoryErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
@@ -271,6 +274,8 @@ export function useKnowledgeTerritoryPage() {
       setLoading(true);
     }
     try {
+      await ensureFreshAccessToken(0);
+      if (!hasUsableStoredAccessToken(0)) return;
       const res = await getKnowledgeMaterials({
         search: search || undefined,
         categoryId: categoryFilter || undefined,
@@ -316,6 +321,8 @@ export function useKnowledgeTerritoryPage() {
     if (!knowledgeAccessReady) return;
     const seq = ++categoriesLoadSeqRef.current;
     try {
+      await ensureFreshAccessToken(0);
+      if (!hasUsableStoredAccessToken(0)) return;
       const data = await getKnowledgeCategories();
       if (seq !== categoriesLoadSeqRef.current) return;
       if (categoryErrorTimerRef.current) {
@@ -337,6 +344,7 @@ export function useKnowledgeTerritoryPage() {
     } finally {
       if (seq === categoriesLoadSeqRef.current) {
         categoriesLoadedRef.current = true;
+        setCategoriesSettled(true);
         if (traineeView) {
           setLoading(false);
           setModulesLoading(false);
@@ -410,6 +418,8 @@ export function useKnowledgeTerritoryPage() {
   const loadStats = useCallback(async () => {
     if (!knowledgeAccessReady) return;
     try {
+      await ensureFreshAccessToken(0);
+      if (!hasUsableStoredAccessToken(0)) return;
       const data = await getKnowledgeStats();
       setStats(data);
     } catch {
@@ -842,7 +852,11 @@ export function useKnowledgeTerritoryPage() {
   const needsModuleLayout = Boolean(categoryFilter) && !favoritesOnly && !moduleFilter && !search;
 
   const listLayoutReady =
-    (!needsModuleLayout || (!modulesLoading && loadedModulesCategoryId === categoryFilter)) &&
+    (!needsModuleLayout ||
+      (!modulesLoading &&
+        (loadedModulesCategoryId === categoryFilter ||
+          !categoryFilter ||
+          (categoriesSettled && categories.length === 0)))) &&
     !(
       loading &&
       materials.length === 0 &&
