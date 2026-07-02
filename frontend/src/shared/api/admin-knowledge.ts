@@ -1,10 +1,11 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { getStoredAccessToken } from '@/shared/lib/auth-session';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
 function getAuthHeaders(): HeadersInit {
   if (typeof window === 'undefined') return { 'Content-Type': 'application/json' };
-  const token = localStorage.getItem('admin_token');
+  const token = getStoredAccessToken();
   const headers: HeadersInit = { 'Content-Type': 'application/json' };
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
@@ -14,7 +15,7 @@ function getAuthHeaders(): HeadersInit {
 
 function getAuthHeadersMultipart(): HeadersInit {
   if (typeof window === 'undefined') return {};
-  const token = localStorage.getItem('admin_token');
+  const token = getStoredAccessToken();
   const headers: HeadersInit = {};
   if (token) {
     (headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;

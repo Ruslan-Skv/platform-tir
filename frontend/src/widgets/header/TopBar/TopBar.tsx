@@ -17,6 +17,7 @@ import { useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useTheme } from '@/features/theme';
+import { resolveAdminHomePathForRole } from '@/shared/config/admin-resources';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
@@ -139,6 +140,7 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
     !!user?.role &&
     rolesShowAdminLinkDesktop.length > 0 &&
     rolesShowAdminLinkDesktop.includes(user.role);
+  const adminEntryPath = resolveAdminHomePathForRole(user?.role);
   const { count: wishlistCount } = useWishlist();
   const { count: compareCount } = useCompare();
   const { count: cartCount } = useCart();
@@ -239,7 +241,7 @@ export const TopBar: React.FC<TopBarProps> = ({ catalogSearch }) => {
           {/* Админка (только для админов) */}
           {isAdmin && (
             <Link
-              href="/admin"
+              href={adminEntryPath}
               className={styles.utilityButton}
               aria-label="Админка"
               data-tooltip="Перейти в админку"

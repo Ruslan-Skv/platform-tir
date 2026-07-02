@@ -9,6 +9,7 @@ import {
   adminEditRouteRedirectTarget,
   isAdminEditRoute,
   resolveAdminHomePath,
+  resolveAdminHomePathForRole,
 } from '@/shared/config/admin-resources';
 
 import { useAdminAccessibleResources } from '../contexts/AdminAccessibleResourcesContext';
@@ -54,9 +55,12 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     if (isLoading || !resourceId) return;
 
     if (!hasAccess(resourceId)) {
-      if (resourceIds.size === 0) return;
+      if (resourceIds.size === 0 && !isDashboardRoute) return;
 
-      const target = homePath;
+      const target =
+        resourceIds.size === 0 && isDashboardRoute
+          ? resolveAdminHomePathForRole(user?.role)
+          : homePath;
       const currentPath = pathname ?? '';
       if (currentPath === target || currentPath.startsWith(`${target}/`)) {
         return;
@@ -70,7 +74,18 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
       const target = adminEditRouteRedirectTarget(pathname) ?? homePath;
       router.replace(target);
     }
-  }, [canEdit, hasAccess, homePath, isLoading, pathname, resourceId, resourceIds.size, router]);
+  }, [
+    canEdit,
+    hasAccess,
+    homePath,
+    isDashboardRoute,
+    isLoading,
+    pathname,
+    resourceId,
+    resourceIds.size,
+    router,
+    user?.role,
+  ]);
 
   if (isDashboardRoute && !hasAccess('admin')) {
     return null;

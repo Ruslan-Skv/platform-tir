@@ -106,6 +106,7 @@ export function useKnowledgeTerritoryPage() {
   const traineeFavoritesNormalizedRef = useRef(false);
   const materialsLoadSeqRef = useRef(0);
   const categoriesLoadSeqRef = useRef(0);
+  const categoriesLoadedRef = useRef(false);
   const modulesLoadSeqRef = useRef(0);
   const categoryErrorTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const materialsRef = useRef<AdminKnowledgeMaterial[]>([]);
@@ -245,6 +246,13 @@ export function useKnowledgeTerritoryPage() {
     }
 
     if (traineeView && categoryFilter && categories.length === 0) {
+      if (!categoriesLoadedRef.current) {
+        return;
+      }
+      setMaterials([]);
+      setTotalPages(1);
+      setLoading(false);
+      setModulesLoading(false);
       return;
     }
 
@@ -326,8 +334,16 @@ export function useKnowledgeTerritoryPage() {
         if (seq !== categoriesLoadSeqRef.current) return;
         showMessage('error', 'Ошибка загрузки категорий');
       }, 500);
+    } finally {
+      if (seq === categoriesLoadSeqRef.current) {
+        categoriesLoadedRef.current = true;
+        if (traineeView) {
+          setLoading(false);
+          setModulesLoading(false);
+        }
+      }
     }
-  }, [knowledgeAccessReady, showMessage]);
+  }, [knowledgeAccessReady, showMessage, traineeView]);
 
   const loadModules = useCallback(async () => {
     if (!categoryFilter) {
@@ -337,10 +353,16 @@ export function useKnowledgeTerritoryPage() {
       return;
     }
     if (traineeView && categoryFilter && categories.length === 0) {
-      const cached = readCachedKnowledgeModules(categoryFilter);
-      if (cached === null) {
-        setModulesLoading(true);
+      if (!categoriesLoadedRef.current) {
+        const cached = readCachedKnowledgeModules(categoryFilter);
+        if (cached === null) {
+          setModulesLoading(true);
+        }
+        return;
       }
+      setModules([]);
+      setLoadedModulesCategoryId(categoryFilter);
+      setModulesLoading(false);
       return;
     }
     if (
@@ -426,6 +448,14 @@ export function useKnowledgeTerritoryPage() {
     loadCategories();
     loadStats();
   }, [loadCategories, loadStats]);
+
+  useEffect(() => {
+    if (authLoading || permissionsLoading || testsPermissionsLoading) return;
+    if (!canView) {
+      setLoading(false);
+      setModulesLoading(false);
+    }
+  }, [authLoading, canView, permissionsLoading, testsPermissionsLoading]);
 
   useEffect(() => {
     if (!traineeView || traineeFavoritesNormalizedRef.current) return;

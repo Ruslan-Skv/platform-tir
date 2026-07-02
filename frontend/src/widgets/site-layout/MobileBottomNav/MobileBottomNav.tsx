@@ -21,6 +21,7 @@ import { usePathname } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useFormContext } from '@/features/forms';
+import { resolveAdminHomePathForRole } from '@/shared/config/admin-resources';
 import { useSitePublicConfig } from '@/shared/lib/contexts/SitePublicConfigContext';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useChatSupportOpen } from '@/widgets/chat-support';
@@ -72,6 +73,7 @@ export function MobileBottomNav() {
     !!user?.role &&
     rolesShowAdminLinkMobile.length > 0 &&
     rolesShowAdminLinkMobile.includes(user.role);
+  const adminEntryPath = resolveAdminHomePathForRole(user?.role);
   const { count: cartCount } = useCart();
   const { count: compareCount } = useCompare();
   const { count: wishlistCount } = useWishlist();
@@ -105,7 +107,14 @@ export function MobileBottomNav() {
       onSelect: () => callbackModal.open(),
     },
     ...(isAdmin
-      ? [{ kind: 'link' as const, href: '/admin', label: 'Админка', Icon: Cog6ToothIcon }]
+      ? [
+          {
+            kind: 'link' as const,
+            href: adminEntryPath,
+            label: 'Админка',
+            Icon: Cog6ToothIcon,
+          },
+        ]
       : []),
   ];
 
