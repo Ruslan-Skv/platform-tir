@@ -62,6 +62,16 @@ export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
   })),
 };
 
+export interface DashboardTrainingEmployeeRow {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  completedCount: number;
+  trackableCount: number;
+  completionPercent: number;
+}
+
 export interface DashboardTrainingDynamicsResponse {
   period: { from: string; to: string };
   summary: {
@@ -70,6 +80,7 @@ export interface DashboardTrainingDynamicsResponse {
     trackableMaterials: number;
   };
   timeline: Array<{ date: string; completionPercent: number }>;
+  employees: DashboardTrainingEmployeeRow[];
 }
 
 function normalizeAdminDashboardSettings(

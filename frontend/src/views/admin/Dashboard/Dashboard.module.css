@@ -472,6 +472,25 @@
   padding: var(--admin-space-2xl) var(--admin-space-18) var(--admin-space-3xl);
 }
 
+.trainingEmployeesWrap {
+  padding: var(--admin-space-2xl) var(--admin-space-18) var(--admin-space-3xl);
+  border-top: 1px solid var(--admin-surface-soft);
+  max-height: 28rem;
+  overflow-y: auto;
+}
+
+.trainingEmployeeRank {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.25rem;
+  margin-right: var(--admin-space-sm);
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
 .trainingTimelineChart {
   display: flex;
   align-items: flex-end;
@@ -531,6 +550,11 @@
 
   .trainingChartWrap {
     padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
+  }
+
+  .trainingEmployeesWrap {
+    padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
+    max-height: 20rem;
   }
 
   .trainingChartWrap .chartTitle {

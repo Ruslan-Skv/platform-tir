@@ -2,16 +2,13 @@
 
 import Link from 'next/link';
 
-import type { DashboardTrainingDynamicsResponse } from '@/shared/api/admin-dashboard';
+import type {
+  DashboardTrainingDynamicsResponse,
+  DashboardTrainingEmployeeRow,
+} from '@/shared/api/admin-dashboard';
+import { formatEmployeeName } from '@/views/admin/Knowledge/analytics/knowledge-training-analytics.utils';
 
 import styles from '../Dashboard.module.css';
-
-function formatShortDate(iso: string): string {
-  return new Date(iso).toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-  });
-}
 
 function formatPercent(value: number): string {
   return new Intl.NumberFormat('ru-RU', {
@@ -21,22 +18,83 @@ function formatPercent(value: number): string {
   }).format(value / 100);
 }
 
+function chartFillToneClass(index: number): string {
+  switch (index % 8) {
+    case 0:
+      return styles.chartFillTone0;
+    case 1:
+      return styles.chartFillTone1;
+    case 2:
+      return styles.chartFillTone2;
+    case 3:
+      return styles.chartFillTone3;
+    case 4:
+      return styles.chartFillTone4;
+    case 5:
+      return styles.chartFillTone5;
+    case 6:
+      return styles.chartFillTone6;
+    default:
+      return styles.chartFillTone7;
+  }
+}
+
 type TrainingDynamicsWidgetProps = {
   data: DashboardTrainingDynamicsResponse | null;
   loading: boolean;
 };
 
-export function TrainingDynamicsWidget({ data, loading }: TrainingDynamicsWidgetProps) {
-  const timeline = data?.timeline ?? [];
-  const timelineMax = Math.max(1, ...timeline.map((row) => row.completionPercent));
+function EmployeeProgressChart({
+  employees,
+  trackableMaterials,
+}: {
+  employees: DashboardTrainingEmployeeRow[];
+  trackableMaterials: number;
+}) {
+  if (employees.length === 0) {
+    return (
+      <p className={styles.empty}>
+        Нет сотрудников для статистики (или не назначены материалы для отслеживания).
+      </p>
+    );
+  }
 
-  const timelineTicks =
-    timeline.length <= 14
-      ? timeline
-      : timeline.filter((_, index) => {
-          const step = Math.ceil(timeline.length / 14);
-          return index % step === 0 || index === timeline.length - 1;
-        });
+  return (
+    <div className={styles.trainingEmployeesWrap}>
+      <h3 className={styles.chartTitle}>Прогресс по сотрудникам</h3>
+      <p className={styles.chartHint}>
+        Сортировка по проценту завершения материалов ({trackableMaterials} шт.): лучшие сверху,
+        отстающие внизу.
+      </p>
+      <ul className={styles.chartList}>
+        {employees.map((employee, index) => (
+          <li key={employee.userId} className={styles.chartRow}>
+            <span className={styles.chartName} title={employee.email}>
+              <span className={styles.trainingEmployeeRank}>{index + 1}</span>
+              {formatEmployeeName(employee)}
+            </span>
+            <div className={styles.chartTrack}>
+              <div
+                className={`${styles.chartFill} ${chartFillToneClass(index)}`}
+                style={{ width: `${employee.completionPercent}%` }}
+              />
+            </div>
+            <span className={styles.chartNum}>
+              <span className={styles.chartCount}>{formatPercent(employee.completionPercent)}</span>
+              <span className={styles.chartPct}>
+                {employee.completedCount}/{employee.trackableCount}
+              </span>
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+export function TrainingDynamicsWidget({ data, loading }: TrainingDynamicsWidgetProps) {
+  const employees = data?.employees ?? [];
+  const hasData = employees.length > 0;
 
   return (
     <section className={`${styles.panel} ${styles.trainingPanel}`}>
@@ -57,7 +115,7 @@ export function TrainingDynamicsWidget({ data, loading }: TrainingDynamicsWidget
 
       {loading ? (
         <p className={styles.empty}>Загрузка…</p>
-      ) : !data || timeline.length === 0 ? (
+      ) : !data || !hasData ? (
         <p className={styles.empty}>Нет данных за выбранный период.</p>
       ) : (
         <>
@@ -78,30 +136,10 @@ export function TrainingDynamicsWidget({ data, loading }: TrainingDynamicsWidget
             </div>
           </div>
 
-          <div className={styles.trainingChartWrap}>
-            <h3 className={styles.chartTitle}>Общий прогресс по дням</h3>
-            <p className={styles.chartHint}>
-              Период: {formatShortDate(data.period.from)} — {formatShortDate(data.period.to)}
-            </p>
-            <div
-              className={styles.trainingTimelineChart}
-              role="img"
-              aria-label="График динамики прохождения обучения сотрудниками"
-            >
-              {timelineTicks.map((day) => (
-                <div key={day.date} className={styles.trainingTimelineGroup}>
-                  <div className={styles.trainingTimelineBars}>
-                    <div
-                      className={styles.trainingTimelineBar}
-                      style={{ height: `${(day.completionPercent / timelineMax) * 100}%` }}
-                      title={`${formatShortDate(day.date)}: ${formatPercent(day.completionPercent)}`}
-                    />
-                  </div>
-                  <span className={styles.trainingTimelineLabel}>{formatShortDate(day.date)}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <EmployeeProgressChart
+            employees={employees}
+            trackableMaterials={data.summary.trackableMaterials}
+          />
         </>
       )}
     </section>

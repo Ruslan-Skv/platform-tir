@@ -482,6 +482,15 @@ export class KnowledgeTrainingAnalyticsService {
         trackableMaterials: data.summary.trackableMaterials,
       },
       timeline: data.overallTimeline,
+      employees: data.employees.map((employee) => ({
+        userId: employee.userId,
+        firstName: employee.firstName,
+        lastName: employee.lastName,
+        email: employee.email,
+        completedCount: employee.completedCount,
+        trackableCount: employee.trackableCount,
+        completionPercent: employee.completionPercent,
+      })),
     };
   }
 }
