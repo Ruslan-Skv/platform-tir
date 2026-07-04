@@ -6,9 +6,11 @@ import {
   PUBLISHED_KNOWLEDGE_MATERIAL_WHERE,
   TRAINING_ANALYTICS_MATERIAL_SELECT,
   TRAINING_ANALYTICS_ROLES,
+  DASHBOARD_TRAINING_ANALYTICS_ROLES,
   buildTrainingActivityTimeline,
   buildTrainingAnalyticsCategoryMetaMap,
   buildTrainingAnalyticsCategoryTimeline,
+  buildTrainingOverallCompletionTimeline,
   eachTrainingAnalyticsDayIso,
   isTrainingAnalyticsTrackableMaterial,
   mapTrainingAnalyticsMaterials,
@@ -26,10 +28,14 @@ export type { KnowledgeTrainingAnalyticsParams } from './services/knowledge-trai
 export class KnowledgeTrainingAnalyticsService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async getTrainingAnalytics(params: KnowledgeTrainingAnalyticsParams) {
+  async getTrainingAnalytics(
+    params: KnowledgeTrainingAnalyticsParams,
+    options?: { employeeRoles?: typeof TRAINING_ANALYTICS_ROLES },
+  ) {
     const period = resolveTrainingAnalyticsPeriod(params);
+    const employeeRoles = options?.employeeRoles ?? TRAINING_ANALYTICS_ROLES;
     const employeeWhere: Prisma.UserWhereInput = {
-      role: { in: TRAINING_ANALYTICS_ROLES },
+      role: { in: employeeRoles },
       isActive: true,
     };
 
@@ -409,6 +415,15 @@ export class KnowledgeTrainingAnalyticsService {
       companyCategoryPercentByDay,
     );
 
+    const overallTimeline = buildTrainingOverallCompletionTimeline(
+      timelineDays,
+      employees,
+      trackableMaterials,
+      videoByUserMaterial,
+      quizPassedByUserMaterial,
+      quizPassedAtByUserMaterial,
+    );
+
     return {
       period: {
         from: period.from.toISOString(),
@@ -450,6 +465,23 @@ export class KnowledgeTrainingAnalyticsService {
       materialsByType,
       categories,
       categoryTimeline,
+      overallTimeline,
+    };
+  }
+
+  async getDashboardTrainingDynamics(params: KnowledgeTrainingAnalyticsParams) {
+    const data = await this.getTrainingAnalytics(params, {
+      employeeRoles: DASHBOARD_TRAINING_ANALYTICS_ROLES,
+    });
+
+    return {
+      period: data.period,
+      summary: {
+        avgCompletionPercent: data.summary.avgCompletionPercent,
+        totalEmployees: data.summary.totalEmployees,
+        trackableMaterials: data.summary.trackableMaterials,
+      },
+      timeline: data.overallTimeline,
     };
   }
 }

@@ -57,6 +57,13 @@
   width: auto;
 }
 
+/* Выше специфичность, чем у .logo из публичного Logo (2.875rem на десктопе) */
+.sidebar .logoWrap svg {
+  height: 1.625rem;
+  max-width: 100%;
+  width: auto;
+}
+
 .logoLogin {
   height: 2.5rem;
   max-width: min(100%, 18rem);

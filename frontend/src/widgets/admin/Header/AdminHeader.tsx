@@ -1,7 +1,6 @@
 'use client';
 
 import {
-  ArrowLeftIcon,
   Bars3Icon,
   CheckIcon,
   ChevronLeftIcon,
@@ -408,15 +407,6 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             <Bars3Icon className={styles.mobileMenuIcon} aria-hidden />
           </button>
         ) : null}
-        <Link
-          href={getSafeHref('/', '/')}
-          className={styles.backToPublicLink}
-          title="Вернуться на публичный сайт"
-          aria-label="Вернуться на публичный сайт"
-        >
-          <ArrowLeftIcon className={styles.backToPublicIcon} aria-hidden />
-          <span className={styles.backToPublicText}>На сайт</span>
-        </Link>
         <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
           <button
             type="button"

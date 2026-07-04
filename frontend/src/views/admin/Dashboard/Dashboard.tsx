@@ -4,21 +4,29 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAuth } from '@/features/auth';
 import {
+  type AdminDashboardSettings,
   type CatalogActivityResponse,
   type CatalogActivityRow,
+  DEFAULT_ADMIN_DASHBOARD_SETTINGS,
+  type DashboardTrainingDynamicsResponse,
+  getAdminDashboardSettings,
   getCatalogActivity,
+  getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
 import { getInitials } from '@/shared/lib/avatar';
+import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './Dashboard.module.css';
+import { DashboardSettingsButton } from './components/DashboardSettingsButton';
+import { TrainingDynamicsWidget } from './components/TrainingDynamicsWidget';
 
 function formatPerson(row: CatalogActivityRow): string {
   const n = `${row.firstName || ''} ${row.lastName || ''}`.trim();
   return n || row.email;
 }
 
-/** Доля `part` от `total` в процентах (для отображения в UI). */
 function formatSharePercent(part: number, total: number): string {
   if (total <= 0) return '0%';
   return new Intl.NumberFormat('ru-RU', {
@@ -104,9 +112,7 @@ function ActivityBarChart({
               <div className={styles.chartTrack}>
                 <div
                   className={`${styles.chartFill} ${chartFillToneClass(index)}`}
-                  style={{
-                    width: `${widthPct}%`,
-                  }}
+                  style={{ width: `${widthPct}%` }}
                 />
               </div>
               <span className={styles.chartNum}>
@@ -123,18 +129,12 @@ function ActivityBarChart({
   );
 }
 
-function ActivityTable({
-  title,
-  icon,
-  rows,
-  emptyHint,
+function CatalogActivityWidget({
   loading,
+  rows,
 }: {
-  title: string;
-  icon: string;
-  rows: CatalogActivityRow[];
-  emptyHint: string;
   loading: boolean;
+  rows: CatalogActivityRow[];
 }) {
   const sumInPeriod = rows.reduce((s, r) => s + r.countInPeriod, 0);
   const sumTotalCreated = rows.reduce((s, r) => s + r.totalCreated, 0);
@@ -143,14 +143,16 @@ function ActivityTable({
     <section className={styles.panel}>
       <div className={styles.panelHead}>
         <span className={styles.panelIcon} aria-hidden>
-          {icon}
+          📦
         </span>
-        <h2 className={styles.panelTitle}>{title}</h2>
+        <h2 className={styles.panelTitle}>Товары</h2>
       </div>
       {loading ? (
         <p className={styles.empty}>Загрузка…</p>
       ) : rows.length === 0 ? (
-        <p className={styles.empty}>{emptyHint}</p>
+        <p className={styles.empty}>
+          Нет данных: за период никто не создавал товары (или у карточек не указан автор).
+        </p>
       ) : (
         <>
           <div className={styles.chartsWrap}>
@@ -159,7 +161,7 @@ function ActivityTable({
               <ActivityBarChart
                 rows={rows}
                 valueKey="countInPeriod"
-                aria-label={`${title}: сравнение по числу созданных записей за период`}
+                aria-label="Товары: сравнение по числу созданных записей за период"
               />
             </div>
             <div className={styles.chartBlock}>
@@ -167,7 +169,7 @@ function ActivityTable({
               <ActivityBarChart
                 rows={rows}
                 valueKey="totalCreated"
-                aria-label={`${title}: сравнение по всем созданным записям за всё время`}
+                aria-label="Товары: сравнение по всем созданным записям за всё время"
               />
             </div>
           </div>
@@ -234,19 +236,41 @@ function ActivityTable({
 }
 
 export function Dashboard() {
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const isTrainee = user?.role === 'TRAINEE';
+
   const defaultRange = useMemo(() => {
-    const to = new Date();
-    const from = new Date(to.getTime() - 30 * 24 * 60 * 60 * 1000);
-    return { from: startOfDayLocal(from), to: endOfDayLocal(to) };
+    const now = new Date();
+    const from = startOfDayLocal(new Date(now.getFullYear(), now.getMonth(), 1));
+    const to = endOfDayLocal(now);
+    return { from, to };
   }, []);
 
+  const [settings, setSettings] = useState<AdminDashboardSettings>(
+    DEFAULT_ADMIN_DASHBOARD_SETTINGS
+  );
+  const [settingsLoaded, setSettingsLoaded] = useState(false);
   const [fromInput, setFromInput] = useState(() => toDateInputValue(defaultRange.from));
   const [toInput, setToInput] = useState(() => toDateInputValue(defaultRange.to));
-  const [data, setData] = useState<CatalogActivityResponse | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [catalogData, setCatalogData] = useState<CatalogActivityResponse | null>(null);
+  const [trainingData, setTrainingData] = useState<DashboardTrainingDynamicsResponse | null>(null);
+  const [catalogLoading, setCatalogLoading] = useState(false);
+  const [trainingLoading, setTrainingLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const load = useCallback(async () => {
+  const showCatalogWidget = settings.catalogActivityVisible;
+  const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
+  const showDateToolbar = showCatalogWidget || showTrainingWidget;
+
+  useEffect(() => {
+    void getAdminDashboardSettings()
+      .then(setSettings)
+      .catch(() => setSettings(DEFAULT_ADMIN_DASHBOARD_SETTINGS))
+      .finally(() => setSettingsLoaded(true));
+  }, []);
+
+  const loadWidgets = useCallback(async () => {
     const fromD = parseDateInput(fromInput);
     const toD = parseDateInput(toInput);
     if (!fromD || !toD) {
@@ -259,123 +283,148 @@ export function Dashboard() {
       setError('Дата «с» не может быть позже «по»');
       return;
     }
+
     setError(null);
-    setLoading(true);
-    try {
-      const res = await getCatalogActivity(from, to);
-      setData(res);
-    } catch (e) {
-      setData(null);
-      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
-    } finally {
-      setLoading(false);
+
+    const tasks: Promise<void>[] = [];
+
+    if (showCatalogWidget) {
+      setCatalogLoading(true);
+      tasks.push(
+        getCatalogActivity(from, to)
+          .then(setCatalogData)
+          .catch((e) => {
+            setCatalogData(null);
+            throw e;
+          })
+          .finally(() => setCatalogLoading(false))
+      );
+    } else {
+      setCatalogData(null);
     }
-  }, [fromInput, toInput]);
+
+    if (showTrainingWidget) {
+      setTrainingLoading(true);
+      tasks.push(
+        getDashboardTrainingDynamics(fromInput, toInput)
+          .then(setTrainingData)
+          .catch((e) => {
+            setTrainingData(null);
+            throw e;
+          })
+          .finally(() => setTrainingLoading(false))
+      );
+    } else {
+      setTrainingData(null);
+    }
+
+    if (tasks.length === 0) return;
+
+    try {
+      await Promise.all(tasks);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+    }
+  }, [fromInput, toInput, showCatalogWidget, showTrainingWidget]);
 
   useEffect(() => {
-    void load();
-    // Только начальная загрузка; дальше — кнопка «Показать» и пресеты
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  const fetchRange = useCallback((from: Date, to: Date) => {
-    setFromInput(toDateInputValue(from));
-    setToInput(toDateInputValue(to));
-    setLoading(true);
-    setError(null);
-    getCatalogActivity(from, to)
-      .then(setData)
-      .catch((e) => {
-        setData(null);
-        setError(e instanceof Error ? e.message : 'Ошибка загрузки');
-      })
-      .finally(() => setLoading(false));
-  }, []);
+    if (!settingsLoaded) return;
+    void loadWidgets();
+  }, [settingsLoaded, settings, isTrainee, fromInput, toInput, loadWidgets]);
 
   const applyPreset = (days: number) => {
     const to = endOfDayLocal(new Date());
     const from = startOfDayLocal(new Date(to.getTime() - days * 24 * 60 * 60 * 1000));
-    fetchRange(from, to);
+    setFromInput(toDateInputValue(from));
+    setToInput(toDateInputValue(to));
   };
 
   const thisMonth = () => {
     const now = new Date();
     const from = startOfDayLocal(new Date(now.getFullYear(), now.getMonth(), 1));
     const to = endOfDayLocal(now);
-    fetchRange(from, to);
+    setFromInput(toDateInputValue(from));
+    setToInput(toDateInputValue(to));
   };
+
+  const rangeFrom = catalogData?.from ?? trainingData?.period.from;
+  const rangeTo = catalogData?.to ?? trainingData?.period.to;
+
+  const enabledQuickLinks = useMemo(
+    () => settings.quickLinks.filter((link) => link.isEnabled),
+    [settings.quickLinks]
+  );
 
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
-        <div className={styles.heroText}>
+        <div className={styles.heroRow}>
           <h1 className={styles.title}>Дашборд</h1>
-          {/* <p className={styles.subtitle}>
-            Активность по каталогу: диаграммы и таблица показывают, кто сколько карточек товаров
-            создал за выбранный период и за всё время.
-          </p> */}
+          {isSuperAdmin ? <DashboardSettingsButton onSettingsChange={setSettings} /> : null}
         </div>
       </header>
 
-      <div className={styles.toolbar}>
-        <div className={styles.toolbarRow}>
-          <div className={styles.dateRow}>
-            <label className={styles.dateField}>
-              <span className={styles.dateLabel}>С</span>
-              <input
-                type="date"
-                className={styles.dateInput}
-                value={fromInput}
-                onChange={(e) => setFromInput(e.target.value)}
-              />
-            </label>
-            <span className={styles.dateSep}>—</span>
-            <label className={styles.dateField}>
-              <span className={styles.dateLabel}>По</span>
-              <input
-                type="date"
-                className={styles.dateInput}
-                value={toInput}
-                onChange={(e) => setToInput(e.target.value)}
-              />
-            </label>
-            <button
-              type="button"
-              className={styles.primaryBtn}
-              onClick={() => load()}
-              disabled={loading}
-            >
-              {loading ? 'Загрузка…' : 'Показать'}
-            </button>
-          </div>
-          <div className={styles.presets}>
-            <span className={styles.presetsLabel}>Быстро:</span>
-            <button type="button" className={styles.chip} onClick={() => applyPreset(7)}>
-              7 дней
-            </button>
-            <button type="button" className={styles.chip} onClick={() => applyPreset(30)}>
-              30 дней
-            </button>
-            <button type="button" className={styles.chip} onClick={thisMonth}>
-              С начала месяца
-            </button>
+      {showDateToolbar ? (
+        <div className={styles.toolbar}>
+          <div className={styles.toolbarRow}>
+            <div className={styles.dateRow}>
+              <label className={styles.dateField}>
+                <span className={styles.dateLabel}>С</span>
+                <input
+                  type="date"
+                  className={styles.dateInput}
+                  value={fromInput}
+                  onChange={(e) => setFromInput(e.target.value)}
+                />
+              </label>
+              <span className={styles.dateSep}>—</span>
+              <label className={styles.dateField}>
+                <span className={styles.dateLabel}>По</span>
+                <input
+                  type="date"
+                  className={styles.dateInput}
+                  value={toInput}
+                  onChange={(e) => setToInput(e.target.value)}
+                />
+              </label>
+              <button
+                type="button"
+                className={styles.primaryBtn}
+                onClick={() => void loadWidgets()}
+                disabled={catalogLoading || trainingLoading}
+              >
+                {catalogLoading || trainingLoading ? 'Загрузка…' : 'Показать'}
+              </button>
+            </div>
+            <div className={styles.presets}>
+              <span className={styles.presetsLabel}>Быстро:</span>
+              <button type="button" className={styles.chip} onClick={() => applyPreset(7)}>
+                7 дней
+              </button>
+              <button type="button" className={styles.chip} onClick={() => applyPreset(30)}>
+                30 дней
+              </button>
+              <button type="button" className={styles.chip} onClick={thisMonth}>
+                С начала месяца
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      ) : null}
 
       {error && <div className={styles.errorBanner}>{error}</div>}
 
-      {data && (
+      {rangeFrom && rangeTo && showDateToolbar && (
         <p className={styles.rangeHint}>
           Период:{' '}
           <strong>
-            {new Date(data.from).toLocaleString('ru-RU', {
+            {new Date(rangeFrom).toLocaleString('ru-RU', {
               day: '2-digit',
               month: 'long',
               year: 'numeric',
             })}{' '}
             —{' '}
-            {new Date(data.to).toLocaleString('ru-RU', {
+            {new Date(rangeTo).toLocaleString('ru-RU', {
               day: '2-digit',
               month: 'long',
               year: 'numeric',
@@ -386,33 +435,38 @@ export function Dashboard() {
         </p>
       )}
 
+      {!showCatalogWidget && !showTrainingWidget && settingsLoaded && (
+        <p className={styles.emptyState}>
+          На дашборде не включено ни одного блока.
+          {isSuperAdmin ? ' Откройте «Настройки» и выберите нужные виджеты.' : null}
+        </p>
+      )}
+
       <div className={styles.grid}>
-        <ActivityTable
-          title="Товары"
-          icon="📦"
-          loading={loading}
-          rows={data?.products ?? []}
-          emptyHint="Нет данных: за период никто не создавал товары (или у карточек не указан автор)."
-        />
+        {showTrainingWidget ? (
+          <TrainingDynamicsWidget data={trainingData} loading={trainingLoading} />
+        ) : null}
+        {showCatalogWidget ? (
+          <CatalogActivityWidget loading={catalogLoading} rows={catalogData?.products ?? []} />
+        ) : null}
       </div>
 
-      <section className={styles.quickLinks}>
-        <h2 className={styles.quickTitle}>Быстрые ссылки</h2>
-        <div className={styles.quickGrid}>
-          <Link href="/admin/catalog/products" className={styles.quickLink}>
-            Каталог товаров
-          </Link>
-          <Link href="/admin/catalog/categories" className={styles.quickLink}>
-            Категории
-          </Link>
-          <Link href="/admin/catalog/products/new" className={styles.quickLink}>
-            Новый товар
-          </Link>
-          <Link href="/admin/orders" className={styles.quickLink}>
-            Заказы
-          </Link>
-        </div>
-      </section>
+      {enabledQuickLinks.length > 0 ? (
+        <section className={styles.quickLinks}>
+          <h2 className={styles.quickTitle}>Быстрые ссылки</h2>
+          <div className={styles.quickGrid}>
+            {enabledQuickLinks.map((link) => (
+              <Link
+                key={link.id}
+                href={getSafeHref(link.href, '/admin')}
+                className={styles.quickLink}
+              >
+                {link.label}
+              </Link>
+            ))}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

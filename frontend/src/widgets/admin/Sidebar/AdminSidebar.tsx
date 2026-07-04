@@ -12,7 +12,6 @@ import {
   useAdminAccessibleResources,
 } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
-import { resolveAdminHomePath } from '@/shared/config/admin-resources';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
@@ -595,10 +594,19 @@ export function AdminSidebar({
   const [expandedItems, setExpandedItems] = useState<string[]>([]);
   const [isResizing, setIsResizing] = useState(false);
   const [accessModalResourceId, setAccessModalResourceId] = useState<string | null>(null);
+  const [isMobileViewport, setIsMobileViewport] = useState(false);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(max-width: 1024px)');
+    const syncMobileViewport = () => setIsMobileViewport(mediaQuery.matches);
+    syncMobileViewport();
+    mediaQuery.addEventListener('change', syncMobileViewport);
+    return () => mediaQuery.removeEventListener('change', syncMobileViewport);
+  }, []);
 
   const handleResizeStart = useCallback(
     (e: React.MouseEvent) => {
@@ -649,8 +657,6 @@ export function AdminSidebar({
 
     return filtered;
   }, [hasAccess, isLoading, resourceIds.size, currentUser?.role, currentUser?.id]);
-
-  const homePath = useMemo(() => resolveAdminHomePath(hasAccess), [hasAccess]);
 
   /** Пункты без подменю (напр. «Договора», «Расчёты») — не дают подсвечивать hub `/admin/contract-documents` в настройках. */
   const topLevelOnlyHrefs = useMemo(
@@ -773,7 +779,7 @@ export function AdminSidebar({
       ) : null}
       <aside
         className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing ? styles.resizing : ''}`}
-        style={{ width: collapsed ? undefined : width }}
+        style={isMobileViewport ? undefined : { width: collapsed ? undefined : width }}
       >
         {!collapsed && (
           <div
@@ -785,17 +791,34 @@ export function AdminSidebar({
           />
         )}
         <div className={styles.header}>
-          <Link href={homePath} className={styles.logo} aria-label="Цифровая платформа">
+          <Link
+            href={getSafeHref('/', '/')}
+            className={styles.logo}
+            title="Вернуться на публичный сайт"
+            aria-label="Вернуться на публичный сайт"
+          >
             <AdminPlatformBrand collapsed={collapsed} />
           </Link>
           <button
             type="button"
             className={styles.toggleBtn}
-            onClick={onToggle}
-            title={collapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'}
-            aria-label={collapsed ? 'Развернуть боковое меню' : 'Свернуть боковое меню'}
+            onClick={isMobileViewport ? (onMobileClose ?? onToggle) : onToggle}
+            title={
+              isMobileViewport
+                ? 'Закрыть меню'
+                : collapsed
+                  ? 'Развернуть боковое меню'
+                  : 'Свернуть боковое меню'
+            }
+            aria-label={
+              isMobileViewport
+                ? 'Закрыть меню'
+                : collapsed
+                  ? 'Развернуть боковое меню'
+                  : 'Свернуть боковое меню'
+            }
           >
-            {collapsed ? '→' : '←'}
+            {isMobileViewport ? '✕' : collapsed ? '→' : '←'}
           </button>
         </div>
 
@@ -988,12 +1011,6 @@ export function AdminSidebar({
               document.body
             )
           : null}
-
-        <div className={styles.footer}>
-          <Link href="/" className={styles.backLink}>
-            {collapsed ? '🏠' : '← На сайт'}
-          </Link>
-        </div>
       </aside>
     </>
   );

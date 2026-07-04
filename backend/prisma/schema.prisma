@@ -2258,6 +2258,30 @@ model Review {
   @@map("reviews")
 }
 
+model AdminDashboardBlock {
+  id                      String                    @id @default("main")
+  catalogActivityVisible  Boolean                   @default(false)
+  trainingDynamicsVisible Boolean                   @default(true)
+  updatedAt               DateTime                  @updatedAt
+  quickLinks              AdminDashboardQuickLink[]
+
+  @@map("admin_dashboard_block")
+}
+
+model AdminDashboardQuickLink {
+  id        String              @id @default(cuid())
+  blockId   String              @default("main")
+  label     String
+  href      String
+  isEnabled Boolean             @default(true)
+  sortOrder Int                 @default(0)
+  updatedAt DateTime            @updatedAt
+  block     AdminDashboardBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+
+  @@index([blockId, sortOrder])
+  @@map("admin_dashboard_quick_links")
+}
+
 model UserCabinetBlock {
   id                       String   @id @default("main")
   showProfileSection       Boolean  @default(true) // Личные данные

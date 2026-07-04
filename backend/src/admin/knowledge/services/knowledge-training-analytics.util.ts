@@ -3,6 +3,11 @@ import { ADMIN_ROLES } from '../../admin-access/admin-access.service';
 
 export const TRAINING_ANALYTICS_ROLES = ADMIN_ROLES.filter((role) => role !== 'SUPER_ADMIN');
 
+/** Сотрудники для графика обучения на дашборде (без стажёров). */
+export const DASHBOARD_TRAINING_ANALYTICS_ROLES = TRAINING_ANALYTICS_ROLES.filter(
+  (role) => role !== 'TRAINEE',
+);
+
 export type TrainingAnalyticsMaterialRow = {
   id: string;
   title: string;
@@ -251,4 +256,43 @@ export function buildTrainingActivityTimeline(
     quizAttempts: quizAttemptsByDay.get(date) ?? 0,
     quizPasses: quizPassesByDay.get(date) ?? 0,
   }));
+}
+
+export function buildTrainingOverallCompletionTimeline(
+  days: string[],
+  employees: Array<{ id: string }>,
+  trackableMaterials: TrainingAnalyticsMaterialRow[],
+  videoByUserMaterial: Map<string, { updatedAt: Date; completed: boolean }>,
+  quizPassedByUserMaterial: Set<string>,
+  quizPassedAtByUserMaterial?: Map<string, Date>,
+): Array<{ date: string; completionPercent: number }> {
+  const trackableCount = trackableMaterials.length;
+
+  return days.map((date) => {
+    const dayEnd = trainingAnalyticsEndOfDay(new Date(date));
+    let completionSum = 0;
+
+    for (const employee of employees) {
+      let completedByDay = 0;
+      for (const material of trackableMaterials) {
+        const completedAt = resolveTrainingMaterialCompletionDate(
+          employee.id,
+          material,
+          videoByUserMaterial,
+          quizPassedByUserMaterial,
+          quizPassedAtByUserMaterial,
+        );
+        if (completedAt && completedAt <= dayEnd) {
+          completedByDay += 1;
+        }
+      }
+      completionSum += trackableCount > 0 ? (completedByDay / trackableCount) * 100 : 0;
+    }
+
+    return {
+      date,
+      completionPercent:
+        employees.length > 0 ? roundTrainingAnalyticsPercent(completionSum / employees.length) : 0,
+    };
+  });
 }

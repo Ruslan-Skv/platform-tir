@@ -58,48 +58,6 @@
   flex-shrink: 0;
 }
 
-/* На узких экранах сайдбар уезжает за край — переход на сайт дублируем в шапке */
-.backToPublicLink {
-  display: none;
-  flex-shrink: 0;
-  align-items: center;
-  gap: var(--admin-space-sm);
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  border-radius: var(--admin-radius-md);
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-secondary);
-  text-decoration: none;
-  font-size: var(--admin-font-size-sm);
-  font-weight: 600;
-  transition:
-    background 0.2s,
-    color 0.2s;
-}
-
-.backToPublicLink:hover {
-  background: var(--admin-border);
-  color: var(--admin-text-primary);
-}
-
-.backToPublicLink:focus {
-  outline: none;
-}
-
-.backToPublicLink:focus-visible {
-  box-shadow: 0 0 0 2px rgb(var(--color-accent-rgb) / 0.2);
-}
-
-.backToPublicIcon {
-  width: 1.125rem;
-  height: 1.125rem;
-  flex-shrink: 0;
-}
-
-.backToPublicText {
-  line-height: var(--admin-line-height-flat);
-  white-space: nowrap;
-}
-
 .historyNav {
   display: flex;
   align-items: center;
@@ -781,15 +739,6 @@
 
   .mobileMenuButton {
     display: inline-flex;
-  }
-
-  .backToPublicLink {
-    display: inline-flex;
-    padding: var(--admin-space-sm);
-  }
-
-  .backToPublicText {
-    display: none;
   }
 
   .searchWrapper {

@@ -46,6 +46,6 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
     KnowledgeTrainingAnalyticsService,
     KnowledgeMyTrainingProgressService,
   ],
-  exports: [KnowledgeService, KnowledgeQuizService],
+  exports: [KnowledgeService, KnowledgeQuizService, KnowledgeTrainingAnalyticsService],
 })
 export class KnowledgeModule {}
