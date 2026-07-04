@@ -1,6 +1,7 @@
 export interface MissionPageInfo {
   pageTitle: string;
   introText: string | null;
+  footerLinkName: string | null;
   content: string;
   isPublished: boolean;
 }

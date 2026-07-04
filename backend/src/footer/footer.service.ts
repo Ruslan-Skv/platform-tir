@@ -35,6 +35,62 @@ export interface FooterData {
 export class FooterService {
   constructor(private prisma: PrismaService) {}
 
+  private mergeFooterSections(
+    sections: Array<{
+      id: string;
+      title: string;
+      sortOrder: number;
+      links: Array<{ id: string; name: string; href: string; sortOrder: number }>;
+    }>,
+  ): FooterSectionData[] {
+    const merged = new Map<
+      string,
+      {
+        id: string;
+        title: string;
+        sortOrder: number;
+        linksByHref: Map<string, FooterLink>;
+      }
+    >();
+
+    for (const section of sections) {
+      const existing = merged.get(section.title);
+      if (!existing) {
+        merged.set(section.title, {
+          id: section.id,
+          title: section.title,
+          sortOrder: section.sortOrder,
+          linksByHref: new Map(),
+        });
+      }
+
+      const entry = merged.get(section.title)!;
+      if (section.sortOrder < entry.sortOrder) {
+        entry.sortOrder = section.sortOrder;
+      }
+
+      for (const link of section.links) {
+        entry.linksByHref.set(link.href, {
+          id: link.id,
+          name: link.name,
+          href: link.href,
+          sortOrder: link.sortOrder,
+        });
+      }
+    }
+
+    return Array.from(merged.values())
+      .map((section) => ({
+        id: section.id,
+        title: section.title,
+        sortOrder: section.sortOrder,
+        links: Array.from(section.linksByHref.values()).sort(
+          (a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'ru'),
+        ),
+      }))
+      .sort((a, b) => a.sortOrder - b.sortOrder);
+  }
+
   async getData(baseUrl?: string): Promise<FooterData> {
     const [block, sections] = await Promise.all([
       this.prisma.footerBlock.findFirst({ where: { id: 'main' } }),
@@ -97,19 +153,7 @@ export class FooterService {
               },
             },
           },
-      sections: sections
-        .filter((s, i, arr) => arr.findIndex((x) => x.title === s.title) === i)
-        .map((s) => ({
-          id: s.id,
-          title: s.title,
-          sortOrder: s.sortOrder,
-          links: s.links.map((l) => ({
-            id: l.id,
-            name: l.name,
-            href: l.href,
-            sortOrder: l.sortOrder,
-          })),
-        })),
+      sections: this.mergeFooterSections(sections),
     };
   }
 
@@ -245,13 +289,23 @@ export class FooterService {
   async updateLink(id: string, data: { name?: string; href?: string }) {
     const link = await this.prisma.footerSectionLink.findUnique({ where: { id } });
     if (!link) throw new NotFoundException('Ссылка не найдена');
-    return this.prisma.footerSectionLink.update({
+
+    const updated = await this.prisma.footerSectionLink.update({
       where: { id },
       data: {
         ...(data.name !== undefined && { name: data.name }),
         ...(data.href !== undefined && { href: data.href }),
       },
     });
+
+    if (data.name !== undefined && link.href === '/mission') {
+      await this.prisma.footerSectionLink.updateMany({
+        where: { href: '/mission', NOT: { id } },
+        data: { name: data.name },
+      });
+    }
+
+    return updated;
   }
 
   async deleteLink(id: string) {

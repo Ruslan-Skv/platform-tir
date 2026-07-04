@@ -16,6 +16,12 @@ export class UpdateMissionPageDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
+  @MaxLength(200)
+  footerLinkName?: string | null;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
   content?: string;
 
   @ApiPropertyOptional()

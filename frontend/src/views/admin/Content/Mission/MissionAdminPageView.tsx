@@ -61,7 +61,7 @@ export function MissionAdminPageView() {
   return (
     <SettingsSubPageView
       title="Миссия компании"
-      subtitle="Страница /mission на сайте. Текст отображается в разделе «О нас» в футере."
+      subtitle="Страница /mission на сайте. Заголовок — на самой странице, название ссылки — в футере."
       saveNoticeVisible={saveNoticeVisible}
     >
       {errorMessage ? <AdminFormMessage type="error">{errorMessage}</AdminFormMessage> : null}
@@ -71,7 +71,7 @@ export function MissionAdminPageView() {
         <Link href="/mission" target="_blank" rel="noopener noreferrer">
           /mission
         </Link>
-        . Ссылку в футере можно добавить или изменить в{' '}
+        . Название ссылки в футере можно также править в{' '}
         <Link href="/admin/content/footer">настройках футера</Link>.
       </p>
 
@@ -85,6 +85,15 @@ export function MissionAdminPageView() {
               value={form.pageTitle}
               onChange={(e) => setForm({ ...form, pageTitle: e.target.value })}
               required
+            />
+          </label>
+          <label className={styles.field}>
+            <span>Название ссылки в футере</span>
+            <input
+              type="text"
+              value={form.footerLinkName ?? ''}
+              onChange={(e) => setForm({ ...form, footerLinkName: e.target.value })}
+              placeholder="Например: Наша миссия"
             />
           </label>
           <label className={styles.field}>
