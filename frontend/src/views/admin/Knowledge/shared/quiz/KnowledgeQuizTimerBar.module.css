@@ -1,0 +1,64 @@
+.timerAnchor {
+  width: 100%;
+}
+
+.timerSpacer {
+  height: 3.25rem;
+  margin-bottom: var(--admin-space-lg);
+  pointer-events: none;
+}
+
+.timerBar {
+  --knowledge-quiz-timer-sticky-top: 57px;
+
+  position: fixed;
+  top: var(--knowledge-quiz-timer-sticky-top);
+  left: var(--admin-main-offset-left, 0);
+  right: 0;
+  z-index: 45;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-sm);
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: none;
+  border-bottom: 1px solid rgb(34 139 34 / 22%);
+  background: rgb(240 253 244 / 96%);
+  box-shadow: 0 4px 16px rgb(15 23 42 / 8%);
+  backdrop-filter: blur(8px);
+  font-variant-numeric: tabular-nums;
+}
+
+.timerBarWarning {
+  border-bottom-color: rgb(200 60 60 / 24%);
+  background: rgb(254 242 242 / 96%);
+}
+
+.timerLabel {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.timerValue {
+  font-size: var(--admin-font-size-lg);
+  font-weight: 700;
+  color: var(--admin-overlay-color-108);
+}
+
+.timerBarWarning .timerValue {
+  color: var(--admin-overlay-color-070);
+}
+
+@media (max-width: 1024px) {
+  .timerBar {
+    --knowledge-quiz-timer-sticky-top: 49px;
+    padding-inline: var(--admin-space-md);
+  }
+
+  .timerValue {
+    font-size: var(--admin-font-size-base);
+  }
+}

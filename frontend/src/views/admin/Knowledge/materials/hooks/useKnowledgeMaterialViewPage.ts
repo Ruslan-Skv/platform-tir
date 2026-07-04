@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import {
   type AdminKnowledgeMaterial,
+  type KnowledgeTrainingCelebration,
   getKnowledgeMaterial,
   getKnowledgeMaterials,
   markKnowledgeMaterialStudyComplete,
@@ -13,6 +14,7 @@ import {
   toggleKnowledgeMaterialLike,
 } from '@/shared/api/admin-knowledge';
 
+import { useKnowledgeTrainingCelebration } from '../../shared/celebration/useKnowledgeTrainingCelebration';
 import {
   KNOWLEDGE_RESOURCE_ID,
   sortKnowledgeMaterialsForCategory,
@@ -41,6 +43,8 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
   const [togglingLike, setTogglingLike] = useState(false);
   const [togglingFavorite, setTogglingFavorite] = useState(false);
   const [nextMaterial, setNextMaterial] = useState<KnowledgeNextMaterial | null>(null);
+  const { celebration, dismissCelebration, handleMaterialCompleted } =
+    useKnowledgeTrainingCelebration();
 
   const listContext = useMemo(
     () =>
@@ -141,6 +145,14 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     setMaterial((prev) => (prev ? { ...prev, studyCompleted: true } : prev));
   }, []);
 
+  const handleStudyProgressWithCelebration = useCallback(
+    (payload?: KnowledgeTrainingCelebration | null) => {
+      setMaterial((prev) => (prev ? { ...prev, studyCompleted: true } : prev));
+      handleMaterialCompleted(payload);
+    },
+    [handleMaterialCompleted]
+  );
+
   const handlePublish = async () => {
     if (!material) return;
     setPublishing(true);
@@ -201,6 +213,9 @@ export function useKnowledgeMaterialViewPage({ materialId }: UseKnowledgeMateria
     handleToggleFavorite,
     handleCommentCountChange,
     handleStudyProgress,
+    handleStudyProgressWithCelebration,
+    celebration,
+    dismissCelebration,
     backUrl,
     nextMaterial,
     listContext,

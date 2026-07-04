@@ -10,6 +10,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { SubmitKnowledgeQuizDto } from './dto/submit-knowledge-quiz.dto';
 import { UpsertKnowledgeQuizDto } from './dto/upsert-knowledge-quiz.dto';
 import { KnowledgeTrainingNotifyService } from './services/knowledge-training-notify.service';
+import { KnowledgeTrainingCelebrationService } from './services/knowledge-training-celebration.service';
 import { KnowledgePlatformSettingsService } from './services/knowledge-platform-settings.service';
 
 type QuizWithQuestions = Prisma.KnowledgeMaterialQuizGetPayload<{
@@ -40,6 +41,7 @@ export class KnowledgeQuizService {
     private prisma: PrismaService,
     private readonly knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
     private readonly platformSettings: KnowledgePlatformSettingsService,
+    private readonly knowledgeTrainingCelebration: KnowledgeTrainingCelebrationService,
   ) {}
 
   private startOfLocalDay(date: Date): Date {
@@ -397,6 +399,11 @@ export class KnowledgeQuizService {
       });
     }
 
+    const celebration =
+      passed && !hadPassedBefore
+        ? await this.knowledgeTrainingCelebration.buildForMaterialCompletion(userId, materialId)
+        : null;
+
     return {
       attemptId: attempt.id,
       scorePercent,
@@ -405,6 +412,7 @@ export class KnowledgeQuizService {
       correctCount: correct,
       totalCount: questionIds.length,
       results,
+      celebration,
     };
   }
 

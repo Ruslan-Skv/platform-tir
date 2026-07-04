@@ -133,7 +133,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
         />
         <div
           className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
-          style={{ marginLeft: mainAreaMarginLeft }}
+          style={{
+            marginLeft: mainAreaMarginLeft,
+            ['--admin-main-offset-left' as string]: `${mainAreaMarginLeft}px`,
+          }}
         >
           <AdminPresenceHeartbeat />
           <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />

@@ -42,6 +42,20 @@ export interface KnowledgeVideoProgress {
   positionSeconds: number;
   completed: boolean;
   updatedAt: string;
+  celebration?: KnowledgeTrainingCelebration | null;
+}
+
+export type KnowledgeTrainingCelebrationLevel = 'material' | 'module' | 'category';
+
+export interface KnowledgeTrainingCelebration {
+  level: KnowledgeTrainingCelebrationLevel;
+  learnerName: string;
+  materialTitle: string;
+  moduleName: string | null;
+  categoryName: string;
+  moduleProgress: { completed: number; total: number } | null;
+  categoryProgress: { completed: number; total: number };
+  nextMaterialId: string | null;
 }
 
 export interface KnowledgeTargetAudience {
@@ -1011,6 +1025,7 @@ export interface KnowledgeQuizSubmitResult {
   correctCount: number;
   totalCount: number;
   results: KnowledgeQuizResultItem[];
+  celebration?: KnowledgeTrainingCelebration | null;
 }
 
 export interface UpsertKnowledgeQuizDto {

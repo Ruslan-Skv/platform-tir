@@ -11,6 +11,7 @@ import {
   ManagerPracticalAssignmentIcon,
 } from '@/shared/ui/icons';
 
+import { KnowledgeTrainingCelebrationModal } from '../shared/celebration/KnowledgeTrainingCelebrationModal';
 import {
   formatAuthorName,
   formatDate,
@@ -58,7 +59,9 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
     handleToggleLike,
     handleToggleFavorite,
     handleCommentCountChange,
-    handleStudyProgress,
+    handleStudyProgressWithCelebration,
+    celebration,
+    dismissCelebration,
     backUrl,
     nextMaterial,
     listContext,
@@ -94,6 +97,17 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
   const canToggleInteresting =
     canParticipate && canMarkInteresting && (!canStudy || studyCompleted || likedByMe);
   const showNextMaterial = canStudy && material.studyCompleted && nextMaterial;
+  const celebrationNextMaterialId = celebration?.nextMaterialId ?? null;
+  const celebrationNextMaterialHref = celebrationNextMaterialId
+    ? buildKnowledgeMaterialViewUrl(celebrationNextMaterialId, {
+        categoryFilter: listContext.categoryFilter || material.categoryId,
+        favoritesOnly: listContext.favoritesOnly,
+      })
+    : null;
+  const celebrationNextMaterialTitle =
+    celebrationNextMaterialId && nextMaterial?.id === celebrationNextMaterialId
+      ? nextMaterial.title
+      : null;
 
   return (
     <div className={styles.page}>
@@ -256,7 +270,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
             title={material.title}
             initialProgress={material.myVideoProgress}
             canTrackProgress={canStudy}
-            onCompleted={handleStudyProgress}
+            onCompleted={handleStudyProgressWithCelebration}
           />
         </section>
       )}
@@ -315,7 +329,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           materialStatus={material.status}
           canEdit={canEdit}
           canStudy={canStudy}
-          onQuizPassed={handleStudyProgress}
+          onQuizPassed={handleStudyProgressWithCelebration}
         />
       ) : null}
 
@@ -379,6 +393,14 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
         canParticipate={canParticipate}
         initialCommentCount={commentCount}
         onCommentCountChange={handleCommentCountChange}
+      />
+
+      <KnowledgeTrainingCelebrationModal
+        celebration={celebration}
+        onClose={dismissCelebration}
+        nextMaterialHref={celebrationNextMaterialHref}
+        nextMaterialTitle={celebrationNextMaterialTitle}
+        backHref={backUrl}
       />
     </div>
   );

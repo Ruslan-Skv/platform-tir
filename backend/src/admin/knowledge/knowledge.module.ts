@@ -21,6 +21,7 @@ import { KnowledgeTargetAudienceService } from './knowledge-target-audience.serv
 import { KnowledgeTrashService } from './knowledge-trash.service';
 import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytics.service';
 import { KnowledgeMyTrainingProgressService } from './services/knowledge-my-training-progress.service';
+import { KnowledgeTrainingCelebrationService } from './services/knowledge-training-celebration.service';
 import { KnowledgeUploadService } from './knowledge-upload.service';
 
 @Module({
@@ -45,6 +46,7 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
     KnowledgeUploadService,
     KnowledgeTrainingAnalyticsService,
     KnowledgeMyTrainingProgressService,
+    KnowledgeTrainingCelebrationService,
   ],
   exports: [KnowledgeService, KnowledgeQuizService, KnowledgeTrainingAnalyticsService],
 })

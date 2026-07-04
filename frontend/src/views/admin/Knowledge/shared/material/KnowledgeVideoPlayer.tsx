@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  type KnowledgeTrainingCelebration,
   type KnowledgeVideoProgress,
   updateKnowledgeVideoProgress,
 } from '@/shared/api/admin-knowledge';
@@ -16,7 +17,7 @@ interface KnowledgeVideoPlayerProps {
   title?: string;
   initialProgress?: KnowledgeVideoProgress | null;
   canTrackProgress?: boolean;
-  onCompleted?: () => void;
+  onCompleted?: (celebration?: KnowledgeTrainingCelebration | null) => void;
 }
 
 export function KnowledgeVideoPlayer({
@@ -38,6 +39,7 @@ export function KnowledgeVideoPlayer({
   const saveProgress = useCallback(
     async (percent: number, positionSeconds?: number, completed?: boolean) => {
       if (!canTrackProgress) return;
+      const wasCompleted = progress?.completed ?? initialProgress?.completed ?? false;
       setSaving(true);
       try {
         const updated = await updateKnowledgeVideoProgress(materialId, {
@@ -46,8 +48,8 @@ export function KnowledgeVideoPlayer({
           completed,
         });
         setProgress(updated);
-        if (completed) {
-          onCompleted?.();
+        if (completed && !wasCompleted) {
+          onCompleted?.(updated.celebration ?? null);
         }
       } catch {
         // ignore transient save errors
@@ -55,7 +57,7 @@ export function KnowledgeVideoPlayer({
         setSaving(false);
       }
     },
-    [canTrackProgress, materialId, onCompleted]
+    [canTrackProgress, initialProgress?.completed, materialId, onCompleted, progress?.completed]
   );
 
   const scheduleSave = useCallback(

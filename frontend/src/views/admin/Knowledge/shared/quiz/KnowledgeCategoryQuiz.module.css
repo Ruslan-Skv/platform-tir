@@ -186,25 +186,6 @@
   cursor: not-allowed;
 }
 
-.timer {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  display: inline-block;
-  margin-bottom: var(--admin-space-lg);
-  padding: var(--admin-space-sm) var(--admin-space-md);
-  border-radius: var(--admin-radius-sm);
-  background: var(--admin-overlay-color-101);
-  color: var(--admin-overlay-color-108);
-  font-weight: 600;
-  font-variant-numeric: tabular-nums;
-}
-
-.timerWarning {
-  background: var(--admin-overlay-color-065);
-  color: var(--admin-overlay-color-070);
-}
-
 .sections {
   display: flex;
   flex-direction: column;

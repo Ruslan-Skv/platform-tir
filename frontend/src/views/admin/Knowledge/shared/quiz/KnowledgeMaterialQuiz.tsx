@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type KnowledgeMaterialQuizResponse,
   type KnowledgeQuizSubmitResult,
+  type KnowledgeTrainingCelebration,
   getKnowledgeMaterialQuiz,
   submitKnowledgeMaterialQuiz,
 } from '@/shared/api/admin-knowledge';
@@ -12,6 +13,7 @@ import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeMaterialQuiz.module.css';
 import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
+import { KnowledgeQuizTimerBar } from './KnowledgeQuizTimerBar';
 import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
 import {
@@ -21,7 +23,6 @@ import {
 } from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
-  formatQuizCountdown,
   formatQuizDurationRu,
   getQuizTimeLimitSeconds,
   useBlockedCountdown,
@@ -33,7 +34,7 @@ type KnowledgeMaterialQuizProps = {
   materialStatus: string;
   canEdit: boolean;
   canStudy?: boolean;
-  onQuizPassed?: () => void;
+  onQuizPassed?: (celebration?: KnowledgeTrainingCelebration | null) => void;
 };
 
 export function KnowledgeMaterialQuiz({
@@ -104,7 +105,7 @@ export function KnowledgeMaterialQuiz({
         });
         setResult(submitResult);
         if (submitResult.passed) {
-          onQuizPassed?.();
+          onQuizPassed?.(submitResult.celebration ?? null);
         }
         await load();
       } catch (e) {
@@ -296,11 +297,7 @@ export function KnowledgeMaterialQuiz({
         </div>
       ) : (
         <>
-          <div
-            className={`${styles.timer} ${secondsLeft !== null && secondsLeft <= 60 ? styles.timerWarning : ''}`}
-          >
-            Осталось: {formatQuizCountdown(secondsLeft ?? totalSeconds)}
-          </div>
+          <KnowledgeQuizTimerBar secondsLeft={secondsLeft} totalSeconds={totalSeconds} />
 
           <ol className={styles.questions}>
             {quiz.questions.map((question, index) => (

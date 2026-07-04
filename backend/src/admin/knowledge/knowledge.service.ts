@@ -19,6 +19,7 @@ import { KnowledgeMaterialLikesService } from './services/knowledge-material-lik
 import { KnowledgePlatformFeedbackService } from './services/knowledge-platform-feedback.service';
 import { KnowledgeSequentialAccessService } from './services/knowledge-sequential-access.service';
 import { KnowledgeTrainingNotifyService } from './services/knowledge-training-notify.service';
+import { KnowledgeTrainingCelebrationService } from './services/knowledge-training-celebration.service';
 import { KnowledgeMaterialListService } from './knowledge-material-list.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
@@ -57,6 +58,7 @@ export class KnowledgeService {
     private knowledgeSequentialAccessService: KnowledgeSequentialAccessService,
     private knowledgeMaterialEngagementService: KnowledgeMaterialEngagementService,
     private knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
+    private knowledgeTrainingCelebration: KnowledgeTrainingCelebrationService,
   ) {}
 
   findAllTargetAudiences() {
@@ -449,7 +451,12 @@ export class KnowledgeService {
       this.knowledgeTrainingNotify.notifyProgress('video_completed', userId, materialId);
     }
 
-    return progress;
+    const celebration =
+      completed && !previous?.completed
+        ? await this.knowledgeTrainingCelebration.buildForMaterialCompletion(userId, materialId)
+        : null;
+
+    return { ...progress, celebration };
   }
 
   async getVideoProgress(

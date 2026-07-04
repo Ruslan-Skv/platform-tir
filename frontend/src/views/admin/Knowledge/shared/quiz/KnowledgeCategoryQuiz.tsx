@@ -12,6 +12,7 @@ import { KnowledgeSelfCheckQuizIcon } from '@/shared/ui/icons';
 
 import styles from './KnowledgeCategoryQuiz.module.css';
 import { KnowledgeQuizPassingRules } from './KnowledgeQuizPassingRules';
+import { KnowledgeQuizTimerBar } from './KnowledgeQuizTimerBar';
 import { seedKnowledgeQuizPlatformSettingsCache } from './knowledge-quiz-platform-settings';
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
 import {
@@ -21,7 +22,6 @@ import {
 } from './useKnowledgeQuizPlatformSettings';
 import {
   formatBlockedCountdown,
-  formatQuizCountdown,
   formatQuizDurationRu,
   getQuizTimeLimitSeconds,
   useBlockedCountdown,
@@ -350,11 +350,7 @@ export function KnowledgeCategoryQuiz({
 
           {error ? <div className={styles.error}>{error}</div> : null}
 
-          <div
-            className={`${styles.timer} ${secondsLeft !== null && secondsLeft <= 60 ? styles.timerWarning : ''}`}
-          >
-            Осталось: {formatQuizCountdown(secondsLeft ?? totalSeconds)}
-          </div>
+          <KnowledgeQuizTimerBar secondsLeft={secondsLeft} totalSeconds={totalSeconds} />
 
           <div className={styles.sections}>
             {quiz.sections.map((section) => (
