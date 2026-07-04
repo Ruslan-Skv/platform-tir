@@ -106,6 +106,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/promotions', resourceId: 'admin.content.promotions' },
   { prefix: '/api/v1/admin/content/careers', resourceId: 'admin.content.careers' },
   { prefix: '/api/v1/admin/content/contacts', resourceId: 'admin.content.contacts' },
+  { prefix: '/api/v1/admin/content/mission', resourceId: 'admin.content.mission' },
   { prefix: '/api/v1/admin/photo', resourceId: 'admin.content.photo' },
   { prefix: '/api/v1/admin/pages', resourceId: 'admin.content.pages' },
   { prefix: '/api/v1/admin/navigation', resourceId: 'admin.content.navigation' },

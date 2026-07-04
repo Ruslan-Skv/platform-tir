@@ -579,6 +579,7 @@ async function main() {
   }
 
   const aboutLinks = [
+    { name: 'Миссия компании', href: '/mission' },
     { name: 'Контакты', href: '/contacts' },
     { name: 'Наши работы', href: '/photo' },
     { name: 'Вакансии', href: '/careers' },

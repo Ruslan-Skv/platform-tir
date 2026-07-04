@@ -233,6 +233,11 @@ const baseNavItems: NavItem[] = [
       { label: 'Акции', href: '/admin/content/promotions', resourceId: 'admin.content.promotions' },
       { label: 'Вакансии', href: '/admin/content/careers', resourceId: 'admin.content.careers' },
       { label: 'Контакты', href: '/admin/content/contacts', resourceId: 'admin.content.contacts' },
+      {
+        label: 'Миссия компании',
+        href: '/admin/content/mission',
+        resourceId: 'admin.content.mission',
+      },
       { label: 'Наши работы', href: '/admin/content/photo', resourceId: 'admin.content.photo' },
       {
         label: 'Отзывы',

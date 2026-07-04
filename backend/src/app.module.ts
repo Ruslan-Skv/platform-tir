@@ -27,6 +27,7 @@ import { FeaturedProductsModule } from './featured-products/featured-products.mo
 import { PartnerProductsModule } from './partner-products/partner-products.module';
 import { CareersModule } from './careers/careers.module';
 import { ContactsModule } from './contacts/contacts.module';
+import { MissionModule } from './mission/mission.module';
 import { FooterModule } from './footer/footer.module';
 import { NavigationModule } from './navigation/navigation.module';
 import { ReviewsModule } from './reviews/reviews.module';
@@ -96,6 +97,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     FooterModule,
     CareersModule,
     ContactsModule,
+    MissionModule,
     NavigationModule,
     ReviewsModule,
     CatalogBlockModule,

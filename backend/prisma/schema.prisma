@@ -603,6 +603,17 @@ model ContactsPageBlock {
   @@map("contacts_page_block")
 }
 
+model MissionPageBlock {
+  id          String   @id @default("main")
+  pageTitle   String   @default("Миссия компании")
+  introText   String?  @db.Text
+  content     String   @db.Text
+  isPublished Boolean  @default(true)
+  updatedAt   DateTime @updatedAt
+
+  @@map("mission_page_block")
+}
+
 model ContactSalon {
   id          String                @id @default(cuid())
   name        String
