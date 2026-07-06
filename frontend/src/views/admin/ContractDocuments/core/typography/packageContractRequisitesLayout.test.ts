@@ -44,6 +44,26 @@ describe('packageContractRequisitesLayout', () => {
     expect(sigRow).toContain('Пупкин');
   });
 
+  it('centers requisites body paragraphs and removes contract indent', () => {
+    const html = `<table class="contractRequisitesBlock">
+      <tr class="contractRequisitesRequisitesRow">
+        <td><div class="contractRequisitesColBody">
+          <p style="text-align: center;">ИСПОЛНИТЕЛЬ</p>
+          <p style="text-align: justify; text-indent: 1.25cm;">{{executor.companyName}}</p>
+          <p style="text-align: justify; text-indent: 1.25cm;">ИНН 123</p>
+        </div></td>
+        <td><div class="contractRequisitesColBody">
+          <p style="text-align: center;">ЗАКАЗЧИК</p>
+          <p style="text-align: justify; text-indent: 1.25cm;">Пупкин</p>
+        </div></td>
+      </tr>
+    </table>`;
+    const out = normalizeRequisitesBlockTypography(html);
+    expect(out).toContain('{{executor.companyName}}');
+    expect(out).not.toMatch(/text-align:\s*justify/i);
+    expect(out).toMatch(/text-align:\s*center/i);
+  });
+
   it('strips bold markup inside requisites block (customer column)', () => {
     const html = `<p>Договор</p><strong><em><table class="contractRequisitesBlock">
       <tr class="contractRequisitesRequisitesRow">

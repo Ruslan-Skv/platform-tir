@@ -925,6 +925,8 @@ function buildPrintStylesheet(
   .contractRequisitesBlock .contractRequisitesColBody div {
     font-weight: normal !important;
     font-style: normal !important;
+    text-align: center !important;
+    text-indent: 0 !important;
   }
   ${CONTRACT_REQUISITES_LAYOUT_CSS}
   .contractPageSignatures {

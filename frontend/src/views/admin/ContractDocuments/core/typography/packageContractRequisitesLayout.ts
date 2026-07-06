@@ -682,6 +682,31 @@ function stripBoldFromElementStyle(el: HTMLElement): void {
   else el.removeAttribute('style');
 }
 
+function syncElementStyleAttribute(el: HTMLElement): void {
+  const cssText = el.style.cssText.trim().replace(/;;+/g, ';');
+  if (cssText) el.setAttribute('style', cssText);
+  else el.removeAttribute('style');
+}
+
+/** Реквизиты обеих сторон — по центру колонки (без красной строки договора). */
+function normalizeRequisitesColBodyParagraphAlign(block: ParentNode): void {
+  for (const body of block.querySelectorAll('.contractRequisitesColBody')) {
+    if (!(body instanceof HTMLElement)) continue;
+    for (const el of body.querySelectorAll<HTMLElement>('p, div')) {
+      const text = (el.textContent ?? '').replace(/\s+/g, ' ').trim();
+      if (!text) continue;
+      const isHeader =
+        blockTextIsPartyHeader(text, 'contractor') || blockTextIsPartyHeader(text, 'customer');
+      el.style.textAlign = 'center';
+      el.style.removeProperty('text-indent');
+      if (isHeader) {
+        el.style.marginBottom = '8pt';
+      }
+      syncElementStyleAttribute(el);
+    }
+  }
+}
+
 function normalizeRequisitesBlockTypographyDom(root: ParentNode): void {
   for (const block of root.querySelectorAll(`.${REQUISITES_TABLE_CLASS}`)) {
     for (const el of block.querySelectorAll('strong, b, em, i')) {
@@ -697,6 +722,7 @@ function normalizeRequisitesBlockTypographyDom(root: ParentNode): void {
         body.style.fontWeight = 'normal';
       }
     }
+    normalizeRequisitesColBodyParagraphAlign(block);
   }
 }
 
@@ -805,6 +831,8 @@ export const CONTRACT_REQUISITES_LAYOUT_CSS = `
   .contractRequisitesBlock .contractRequisitesColBody p,
   .contractRequisitesBlock .contractRequisitesColBody div {
     font-weight: normal !important;
+    text-align: center !important;
+    text-indent: 0 !important;
   }
 `.trim();
 
@@ -812,7 +840,8 @@ const REQUISITES_COL_TD_BASE =
   'width: 50%; vertical-align: top; padding: 8px 10px 8px 0; border-right: 1px solid var(--admin-border-strong)';
 const REQUISITES_COL_TD_CUSTOMER = 'width: 50%; vertical-align: top; padding: 8px 0 8px 10px';
 
-const REQUISITES_BODY_P_STYLE = 'margin: 0 0 4pt; font-weight: normal;';
+const REQUISITES_BODY_P_STYLE =
+  'margin: 0 0 4pt; font-weight: normal; text-align: center; text-indent: 0;';
 const REQUISITES_HEADER_P_STYLE = 'text-align: center; margin: 0 0 8pt; font-weight: normal;';
 
 /** Готовая таблица «Реквизиты и подписи» для вставки в редактор / библиотеку. */

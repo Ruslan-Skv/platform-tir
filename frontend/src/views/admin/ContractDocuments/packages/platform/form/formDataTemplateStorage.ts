@@ -13,6 +13,7 @@ const TEMPLATE_TAB_IDS: PackageDocumentTemplateTabId[] = [
   'consent',
   'actStart',
   'actAcceptance',
+  'deliveryNote',
   'memo',
   'cashOrder',
   'paymentInvoice',

@@ -5,6 +5,8 @@ export type ParagraphTextAlign = 'left' | 'center' | 'right' | 'justify';
 
 const VISUAL_BLOCK_SELECTOR = 'p, li, h1, h2, h3, h4, h5, h6, td, th, blockquote';
 
+const WRAPPER_DIV_CLASS = 'docPrint';
+
 function normalizeTextAlignKeyword(raw: string): ParagraphTextAlign | null {
   const value = raw.toLowerCase();
   if (value === 'center') return 'center';
@@ -89,16 +91,43 @@ export function applyTextAlignToBlockElement(block: HTMLElement, align: Paragrap
   syncBlockElementStyleAttribute(block);
 }
 
+function isAlignableVisualBlock(el: HTMLElement): boolean {
+  const tag = el.tagName;
+  if (
+    tag === 'P' ||
+    tag === 'LI' ||
+    tag === 'H1' ||
+    tag === 'H2' ||
+    tag === 'H3' ||
+    tag === 'H4' ||
+    tag === 'H5' ||
+    tag === 'H6' ||
+    tag === 'TD' ||
+    tag === 'TH' ||
+    tag === 'BLOCKQUOTE'
+  ) {
+    return !el.classList.contains(WRAPPER_DIV_CLASS);
+  }
+  return false;
+}
+
 function findVisualBlockElement(editor: HTMLElement, node: Node | null): HTMLElement | null {
-  const tags = new Set(['P', 'LI', 'H1', 'H2', 'H3', 'H4', 'H5', 'H6', 'TD', 'TH', 'BLOCKQUOTE']);
   let current: Node | null = node;
   while (current && current !== editor) {
-    if (current instanceof HTMLElement && tags.has(current.tagName)) {
+    if (current instanceof HTMLElement && isAlignableVisualBlock(current)) {
       return current;
     }
     current = current.parentNode;
   }
   return null;
+}
+
+/** Оставляет только вложенные блоки, без родительских td/li и обёртки .docPrint. */
+function filterLeafVisualBlocks(blocks: HTMLElement[]): HTMLElement[] {
+  if (blocks.length <= 1) return blocks;
+  return blocks.filter(
+    (block) => !blocks.some((other) => other !== block && block.contains(other))
+  );
 }
 
 function findVisualBlockAtCollapsedCaret(editor: HTMLElement, range: Range): HTMLElement | null {
@@ -107,9 +136,9 @@ function findVisualBlockAtCollapsedCaret(editor: HTMLElement, range: Range): HTM
 
   if (range.startContainer === editor) {
     const next = editor.children[range.startOffset];
-    if (next instanceof HTMLElement) return findVisualBlockElement(editor, next) ?? next;
+    if (next instanceof HTMLElement) return findVisualBlockElement(editor, next);
     const prev = editor.children[range.startOffset - 1];
-    if (prev instanceof HTMLElement) return findVisualBlockElement(editor, prev) ?? prev;
+    if (prev instanceof HTMLElement) return findVisualBlockElement(editor, prev);
   }
 
   return null;
@@ -133,7 +162,7 @@ export function collectVisualBlocksInRange(editor: HTMLElement, range: Range): H
     if (block) blocks.add(block);
   }
 
-  return [...blocks];
+  return filterLeafVisualBlocks([...blocks]);
 }
 
 export function applyVisualParagraphAlign(editor: HTMLElement, align: ParagraphTextAlign): void {
@@ -245,8 +274,22 @@ function collectHtmlBlockOpenTagRefsIntersectingRange(
     (block) => block.contentStart < rangeEnd && block.contentEnd > rangeStart
   );
   if (hits.length > 0) {
-    hits.sort((a, b) => b.openTagStart - a.openTagStart);
-    return hits.map(({ openTagStart, openTagEnd, attrs }) => ({ openTagStart, openTagEnd, attrs }));
+    const leafHits = hits.filter(
+      (block) =>
+        !hits.some(
+          (other) =>
+            other !== block &&
+            other.contentStart >= block.contentStart &&
+            other.contentEnd <= block.contentEnd &&
+            (other.contentStart > block.contentStart || other.contentEnd < block.contentEnd)
+        )
+    );
+    leafHits.sort((a, b) => b.openTagStart - a.openTagStart);
+    return leafHits.map(({ openTagStart, openTagEnd, attrs }) => ({
+      openTagStart,
+      openTagEnd,
+      attrs,
+    }));
   }
 
   const caretBlock = findHtmlBlockOpenTagRefAtOffset(source, rangeStart);

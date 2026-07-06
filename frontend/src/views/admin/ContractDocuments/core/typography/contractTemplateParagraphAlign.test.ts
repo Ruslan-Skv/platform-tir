@@ -1,5 +1,7 @@
 import {
   applyHtmlParagraphAlign,
+  applyVisualParagraphAlign,
+  collectVisualBlocksInRange,
   fixParagraphTextAlignInDom,
   patchHtmlOpenTagTextAlign,
 } from './contractTemplateParagraphAlign';
@@ -36,5 +38,61 @@ describe('contractTemplateParagraphAlign', () => {
     expect(p.style.textIndent).toBe('1.25cm');
     const span = p.querySelector('span');
     expect(span?.getAttribute('style') ?? '').not.toMatch(/text-align/i);
+  });
+
+  it('collectVisualBlocksInRange keeps inner paragraph inside table cell', () => {
+    document.body.innerHTML = `
+      <div id="editor">
+        <div class="docPrint">
+          <table><tbody><tr><td>
+            <p>3. СРОКИ</p>
+            <p>Текст раздела</p>
+          </td></tr></tbody></table>
+        </div>
+      </div>
+    `;
+    const editor = document.getElementById('editor') as HTMLElement;
+    const heading = editor.querySelector('p') as HTMLParagraphElement;
+    const range = document.createRange();
+    range.selectNodeContents(heading);
+    const blocks = collectVisualBlocksInRange(editor, range);
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0]?.tagName).toBe('P');
+    expect(blocks[0]?.textContent).toContain('3. СРОКИ');
+  });
+
+  it('applyVisualParagraphAlign centers only selected heading inside table cell', () => {
+    document.body.innerHTML = `
+      <div id="editor">
+        <div class="docPrint">
+          <table><tbody><tr><td>
+            <p>3. СРОКИ</p>
+            <p style="text-align: justify;">Текст раздела</p>
+          </td></tr></tbody></table>
+        </div>
+      </div>
+    `;
+    const editor = document.getElementById('editor') as HTMLElement;
+    const heading = editor.querySelector('p') as HTMLParagraphElement;
+    const range = document.createRange();
+    range.selectNodeContents(heading);
+    const sel = window.getSelection();
+    sel?.removeAllRanges();
+    sel?.addRange(range);
+    applyVisualParagraphAlign(editor, 'center');
+    const paragraphs = editor.querySelectorAll('p');
+    expect((paragraphs[0] as HTMLParagraphElement).style.textAlign).toBe('center');
+    expect((paragraphs[1] as HTMLParagraphElement).style.textAlign).toBe('justify');
+    expect((editor.querySelector('td') as HTMLTableCellElement).style.textAlign).not.toBe('center');
+  });
+
+  it('applyHtmlParagraphAlign patches inner p inside td, not the cell', () => {
+    const html =
+      '<div class="docPrint"><table><tr><td><p>3. СРОКИ</p><p>Текст</p></td></tr></table></div>';
+    const start = html.indexOf('3. СРОКИ');
+    const end = start + '3. СРОКИ'.length;
+    const out = applyHtmlParagraphAlign(html, start, end, 'center');
+    expect(out).toMatch(/<p[^>]*text-align:\s*center[^>]*>3\. СРОКИ<\/p>/i);
+    expect(out).not.toMatch(/<td[^>]*text-align:\s*center/i);
   });
 });

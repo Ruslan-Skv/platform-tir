@@ -128,7 +128,8 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
     activeTab === 'consent' ||
     isPackageActA4PreviewTab(activeTab) ||
     activeTab === 'productionLog' ||
-    activeTab === 'memo';
+    activeTab === 'memo' ||
+    activeTab === 'deliveryNote';
 
   printDocumentHtml(
     printBody,

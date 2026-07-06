@@ -13,6 +13,7 @@ export const PACKAGE_EDITOR_TEMPLATE_TAB_IDS = [
   'consent',
   'actStart',
   'actAcceptance',
+  'deliveryNote',
   'memo',
   'cashOrder',
   'paymentInvoice',

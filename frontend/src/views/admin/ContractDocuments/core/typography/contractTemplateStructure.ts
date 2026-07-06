@@ -9,7 +9,9 @@ import {
   fixBrokenMemoHeadingNestingInDom,
   fixBrokenMemoHeadingNestingInHtml,
 } from './contractTemplateMemoStructure';
+import { removeEmptyNoteBlockquotesInHtml } from './contractTemplateNoteBlock';
 import { fixParagraphTextAlignInDom } from './contractTemplateParagraphAlign';
+import { normalizeContractSectionHeadingsInDom } from './contractTemplateSectionHeadings';
 import { repairOrphanAppendixListRowsInDom } from './contractTemplateTableEditor';
 import {
   applyStandardHeadingTitleStyle,
@@ -169,6 +171,7 @@ export function packageContractTemplateStructureInDom(root: ParentNode): void {
   repairOrphanAppendixListRowsInDom(docPrint);
   packageContractAppendixRefInDom(docPrint);
   fixParagraphTextAlignInDom(docPrint);
+  normalizeContractSectionHeadingsInDom(docPrint);
   packageContractTitleBlock(docPrint);
   normalizeContractActHandwrittenSignaturesInDom(docPrint);
 }
@@ -183,5 +186,5 @@ export function packageContractTemplateStructureInHtml(html: string): string {
   packageContractTemplateStructureInDom(container);
   const aligned = alignContractRequisitesBlockSignatures(container.innerHTML);
   const requisites = normalizeRequisitesBlockTypography(aligned);
-  return normalizeContractHeaderCustomerTypography(requisites);
+  return removeEmptyNoteBlockquotesInHtml(normalizeContractHeaderCustomerTypography(requisites));
 }

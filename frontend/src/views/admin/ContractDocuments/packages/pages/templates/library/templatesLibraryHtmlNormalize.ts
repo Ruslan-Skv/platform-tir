@@ -24,7 +24,13 @@ export function normalizeTemplateEditorHtml(raw: string): string {
   );
 }
 
+/** Нормализация целого фрагмента (абзац, ячейка): схлопывает пробелы и обрезает края. */
 function normalizeTextWhitespace(input: string): string {
+  return normalizeInlineTextWhitespace(input).trim();
+}
+
+/** Нормализация текстового узла в DOM: краевые пробелы сохраняются (между соседними span). */
+function normalizeInlineTextWhitespace(input: string): string {
   return input
     .replace(/\u00A0/g, ' ')
     .replace(/[ \t\r\f\v]+/g, ' ')
@@ -32,8 +38,7 @@ function normalizeTextWhitespace(input: string): string {
     .replace(/\s+([,.;:!?])/g, '$1')
     .replace(/\(\s+/g, '(')
     .replace(/\s+\)/g, ')')
-    .replace(/\s{2,}/g, ' ')
-    .trim();
+    .replace(/\s{2,}/g, ' ');
 }
 
 export function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: NormalizeMode): string {
@@ -49,7 +54,7 @@ export function normalizeTemplateHtmlWhitespace(sourceHtml: string, mode: Normal
     node = walker.nextNode();
   }
   for (const textNode of textNodes) {
-    const normalized = normalizeTextWhitespace(textNode.nodeValue ?? '');
+    const normalized = normalizeInlineTextWhitespace(textNode.nodeValue ?? '');
     textNode.nodeValue = normalized;
   }
 

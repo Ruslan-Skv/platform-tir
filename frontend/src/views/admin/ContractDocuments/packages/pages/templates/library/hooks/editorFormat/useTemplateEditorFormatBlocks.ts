@@ -12,6 +12,7 @@ import {
   buildContractPartySignaturesHtml,
   buildSimpleContractTableHtml,
 } from '@/views/admin/ContractDocuments/core/typography/contractTemplateInsertBlocks';
+import { removeNoteBlockquoteAtSelection } from '@/views/admin/ContractDocuments/core/typography/contractTemplateNoteBlock';
 import { buildContractTemplatePageBreakHtml } from '@/views/admin/ContractDocuments/core/typography/contractTemplatePageBreak';
 import { collectVisualBlocksInRange } from '@/views/admin/ContractDocuments/core/typography/contractTemplateParagraphAlign';
 import {
@@ -249,12 +250,24 @@ export function useTemplateEditorFormatBlocks(deps: TemplateEditorFormatDeps) {
       content: buildPackageContractRequisitesInsertHtmlForToolbar(),
     }));
 
-  const insertQuoteBlock = () =>
+  const insertQuoteBlock = () => {
+    if (editorMode === 'visual') {
+      const el = visualEditorRef.current;
+      if (el) {
+        el.focus();
+        restoreVisualSelection();
+        if (removeNoteBlockquoteAtSelection(el)) {
+          syncVisualEditorFromDom();
+          return;
+        }
+      }
+    }
     updateHtmlBySelection(() => ({
       content: `<blockquote style="margin: 8pt 0; padding: 8pt 10pt; border-left: 3px solid var(--admin-border-strong); background: var(--admin-surface-muted);">
   <p style="margin: 0; font-style: italic;">Текст примечания / важного условия.</p>
 </blockquote>`,
     }));
+  };
 
   const insertSimpleTable = () => {
     updateHtmlBySelection(() => ({

@@ -20,9 +20,13 @@ const PRODUCT_LIKE_HIDDEN_EDITOR_TABS: readonly PackageDocumentTabId[] = [
 const PRODUCT_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = [
   'actStart',
   'productionLog',
+  'deliveryNote',
 ];
 
-const REPAIR_DIRECTION_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = ['memo'];
+const REPAIR_DIRECTION_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = [
+  'memo',
+  'deliveryNote',
+];
 
 const PRODUCT_TAB_LABEL_OVERRIDES: PackageDirectionConfig['tabLabelOverrides'] = {
   estimate: { full: 'Счёт-заказ', short: 'Счёт-заказ' },
@@ -40,6 +44,7 @@ function repairLikeConfig(
     createEnabled,
     hiddenEditorTabs: ['specification'],
     memoTabVisible: false,
+    deliveryNoteTabVisible: false,
     tabLabelOverrides: {},
     profilesKind: kind,
     settingsKind: 'REPAIR',
@@ -60,6 +65,7 @@ function productLikeConfig(
     createEnabled: true,
     hiddenEditorTabs: PRODUCT_LIKE_HIDDEN_EDITOR_TABS,
     memoTabVisible: true,
+    deliveryNoteTabVisible: false,
     tabLabelOverrides: PRODUCT_TAB_LABEL_OVERRIDES,
     profilesKind: 'REPAIR',
     settingsKind: 'WINDOWS',
@@ -80,6 +86,7 @@ function unimplementedConfig(
     createEnabled: false,
     hiddenEditorTabs: [...PRODUCT_LIKE_HIDDEN_EDITOR_TABS, 'specification'],
     memoTabVisible: false,
+    deliveryNoteTabVisible: false,
     tabLabelOverrides: {},
     profilesKind: 'REPAIR',
     settingsKind: 'REPAIR',
@@ -92,7 +99,11 @@ function unimplementedConfig(
 const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDirectionConfig> = {
   REPAIR: repairLikeConfig('REPAIR', 'Ремонт', true),
   WINDOWS: productLikeConfig('WINDOWS', 'Окна'),
-  DOORS: productLikeConfig('DOORS', 'Двери'),
+  DOORS: {
+    ...productLikeConfig('DOORS', 'Двери'),
+    deliveryNoteTabVisible: true,
+    excludedLibraryTemplateTabs: ['actStart', 'productionLog'],
+  },
   CEILINGS: unimplementedConfig('CEILINGS', 'Потолки'),
   BLINDS: unimplementedConfig('BLINDS', 'Жалюзи'),
   FURNITURE: unimplementedConfig('FURNITURE', 'Мебель'),

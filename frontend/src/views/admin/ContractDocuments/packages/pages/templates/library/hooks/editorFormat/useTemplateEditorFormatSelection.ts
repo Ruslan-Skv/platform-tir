@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { pruneEmptyNoteBlockquotesInEditor } from '@/views/admin/ContractDocuments/core/typography/contractTemplateNoteBlock';
 import {
   findTableCellInEditor,
   isCursorInsideHtmlTable,
@@ -237,6 +238,7 @@ export function useTemplateEditorFormatSelection({
     cancelPendingTemplateHistoryDebounce();
     const el = visualEditorRef.current;
     if (!el) return;
+    pruneEmptyNoteBlockquotesInEditor(el);
     const next = el.innerHTML;
     setVisualDraftHtml(next);
     setHtml(next);

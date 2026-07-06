@@ -35,6 +35,23 @@ function reorderProductLikeEditorTabs(tabs: PackageDocumentTabId[]): PackageDocu
     next.splice(memoInsertAt, 0, 'memo');
   }
 
+  const deliveryNoteIndex = next.indexOf('deliveryNote');
+
+  if (deliveryNoteIndex >= 0) {
+    next.splice(deliveryNoteIndex, 1);
+
+    const memoIdx = next.indexOf('memo');
+
+    const deliveryInsertAt =
+      memoIdx >= 0
+        ? memoIdx
+        : next.indexOf('actAcceptance') >= 0
+          ? next.indexOf('actAcceptance') + 1
+          : next.length;
+
+    next.splice(deliveryInsertAt, 0, 'deliveryNote');
+  }
+
   return next;
 }
 
@@ -67,6 +84,8 @@ export function resolvePackageEditorVisibleTabs(input: {
     if (!isPackageEditorTabBarTab(id)) return false;
 
     if (id === 'memo' && !config.memoTabVisible) return false;
+
+    if (id === 'deliveryNote' && !config.deliveryNoteTabVisible) return false;
 
     if (hidden.has(id)) return false;
 

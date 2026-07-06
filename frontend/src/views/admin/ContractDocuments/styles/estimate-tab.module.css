@@ -496,6 +496,8 @@
 .docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) :global(p),
 .docPane :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) :global(div) {
   font-weight: normal !important;
+  text-align: center !important;
+  text-indent: 0 !important;
 }
 
 .templatesLibraryPage
@@ -523,6 +525,11 @@
   :global(.contractRequisitesColBody)
   :global(p),
 .templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody)
+  :global(div),
+.templatesLibraryPage
   .docPane
   :global(.contractRequisitesBlock)
   :global(.contractRequisitesColBody),
@@ -530,8 +537,15 @@
   .docPane
   :global(.contractRequisitesBlock)
   :global(.contractRequisitesColBody)
-  :global(p) {
+  :global(p),
+.templatesLibraryPage
+  .docPane
+  :global(.contractRequisitesBlock)
+  :global(.contractRequisitesColBody)
+  :global(div) {
   font-weight: normal !important;
+  text-align: center !important;
+  text-indent: 0 !important;
 }
 
 .docPane :global(.contractRequisitesBlock) {

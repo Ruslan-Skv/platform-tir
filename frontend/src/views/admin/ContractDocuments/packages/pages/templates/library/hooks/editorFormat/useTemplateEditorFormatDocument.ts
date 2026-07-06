@@ -7,6 +7,7 @@ import {
   handleContractLegalListShiftEnter,
   isNodeInsideContractLegalList,
 } from '@/views/admin/ContractDocuments/core/typography/contractLegalList';
+import { handleNoteBlockquoteBackspaceOrDelete } from '@/views/admin/ContractDocuments/core/typography/contractTemplateNoteBlock';
 import {
   focusEditorCaret,
   insertTableRowOrListItemBelowCell,
@@ -88,8 +89,13 @@ function useTemplateEditorFormatKeyDown(
       }
     }
 
-    if (e.key === 'Backspace') {
-      if (handleContractLegalListBackspace(el)) {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      if (handleNoteBlockquoteBackspaceOrDelete(el)) {
+        e.preventDefault();
+        syncVisualEditorFromDom();
+        return;
+      }
+      if (e.key === 'Backspace' && handleContractLegalListBackspace(el)) {
         e.preventDefault();
         syncVisualEditorFromDom();
       }

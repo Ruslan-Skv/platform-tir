@@ -40,6 +40,7 @@ export function shouldUseWindowsPackageCompactPrint(
     tab === 'specification' ||
     tab === 'finalWorkOrder' ||
     tab === 'memo' ||
+    tab === 'deliveryNote' ||
     tab === 'productionLog' ||
     isPackageActA4PreviewTab(tab) ||
     isPackageAddendumTab(tab) ||

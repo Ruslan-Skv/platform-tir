@@ -125,6 +125,7 @@ export function isPackageTemplateA4SheetTab(activeTab: PackageDocumentTabId): bo
     isPackageActA4PreviewTab(activeTab) ||
     activeTab === 'productionLog' ||
     activeTab === 'memo' ||
+    activeTab === 'deliveryNote' ||
     isPackageAddendumTab(activeTab) ||
     isPackageWorkOrderAddendumTab(activeTab)
   );

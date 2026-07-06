@@ -687,6 +687,73 @@
   margin: 0 0 6pt;
 }
 
+/* Маркированный список: тире вместо буллета */
+.templatesLibraryPage .templatesLibraryVisualEditor :global(ul.contractTemplateBulletDash),
+.docPane :global(ul.contractTemplateBulletDash),
+.contractA4Preview :global(ul.contractTemplateBulletDash) {
+  list-style: none;
+  padding-left: 0;
+}
+
+.templatesLibraryPage .templatesLibraryVisualEditor :global(ul.contractTemplateBulletDash > li),
+.docPane :global(ul.contractTemplateBulletDash > li),
+.contractA4Preview :global(ul.contractTemplateBulletDash > li) {
+  position: relative;
+  padding-left: 1.1em;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(ul.contractTemplateBulletDash > li::before),
+.docPane :global(ul.contractTemplateBulletDash > li::before),
+.contractA4Preview :global(ul.contractTemplateBulletDash > li::before) {
+  content: '–\00a0';
+  position: absolute;
+  left: 0;
+}
+
+/* Обычный нумерованный список (не договорный) */
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(ol:not(.contractLegalList)),
+.docPane :global(.docPrint) :global(ol:not(.contractLegalList)),
+.contractA4Preview :global(.docPrint) :global(ol:not(.contractLegalList)) {
+  margin: 0 0 8pt 22px;
+  padding: 0 0 0 1.2em;
+  list-style-type: decimal;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(ol:not(.contractLegalList) > li),
+.docPane :global(.docPrint) :global(ol:not(.contractLegalList) > li),
+.contractA4Preview :global(.docPrint) :global(ol:not(.contractLegalList) > li) {
+  margin: 0 0 4pt;
+  text-align: justify;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(ul:not(.contractTemplateBulletDash)),
+.docPane :global(.docPrint) :global(ul:not(.contractTemplateBulletDash)),
+.contractA4Preview :global(.docPrint) :global(ul:not(.contractTemplateBulletDash)) {
+  margin: 0 0 8pt 22px;
+  padding: 0 0 0 1.2em;
+}
+
+.templatesLibraryPage
+  .templatesLibraryVisualEditor
+  :global(.docPrint)
+  :global(ul:not(.contractTemplateBulletDash) > li),
+.docPane :global(.docPrint) :global(ul:not(.contractTemplateBulletDash) > li),
+.contractA4Preview :global(.docPrint) :global(ul:not(.contractTemplateBulletDash) > li) {
+  margin: 0 0 4pt;
+  text-align: justify;
+}
+
 /* Договорный список: пункты 1, 2, 3…; подпункты 1.1, 1.2… (data-numbering=clause). */
 .docPane :global(ol.contractLegalList[data-section]),
 .contractA4Preview :global(ol.contractLegalList[data-section]),
@@ -907,11 +974,14 @@
 }
 
 .contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesColBody),
+.contractA4Preview :global(.contractRequisitesBlock) :global(.contractRequisitesColBody) :global(p),
 .contractA4Preview
   :global(.contractRequisitesBlock)
   :global(.contractRequisitesColBody)
-  :global(p) {
+  :global(div) {
   font-weight: normal !important;
+  text-align: center !important;
+  text-indent: 0 !important;
 }
 
 .contractA4Preview :global(em),

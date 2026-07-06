@@ -168,6 +168,7 @@ export class ContractDocumentPackageGlobalLibraryService {
       consent: 'Согласие',
       actStart: 'Акт начала работ',
       actAcceptance: 'Акт сдачи-приёмки',
+      deliveryNote: 'Накладная',
       memo: 'Памятка',
       cashOrder: 'ПКО',
       paymentInvoice: 'Счёт на оплату',

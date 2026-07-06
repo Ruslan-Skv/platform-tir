@@ -18,6 +18,12 @@ describe('libraryTemplateTabIdsForPackageKind', () => {
     expect(libraryTemplateTabIdsForPackageKind('REPAIR')).not.toContain('memo');
   });
 
+  it('includes deliveryNote only for DOORS library', () => {
+    expect(libraryTemplateTabIdsForPackageKind('DOORS')).toContain('deliveryNote');
+    expect(libraryTemplateTabIdsForPackageKind('WINDOWS')).not.toContain('deliveryNote');
+    expect(libraryTemplateTabIdsForPackageKind('REPAIR')).not.toContain('deliveryNote');
+  });
+
   it('excludes repair-only tabs for WINDOWS and DOORS', () => {
     for (const kind of ['WINDOWS', 'DOORS'] as const) {
       const tabs = libraryTemplateTabIdsForPackageKind(kind);
@@ -35,5 +41,11 @@ describe('normalizeLibraryTemplateTabForPackageKind', () => {
 
   it('maps memo to contract for REPAIR where tab is unavailable', () => {
     expect(normalizeLibraryTemplateTabForPackageKind('memo', 'REPAIR')).toBe('contract');
+  });
+
+  it('maps deliveryNote to contract for non-DOORS directions', () => {
+    expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'WINDOWS')).toBe('contract');
+    expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'REPAIR')).toBe('contract');
+    expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'DOORS')).toBe('deliveryNote');
   });
 });

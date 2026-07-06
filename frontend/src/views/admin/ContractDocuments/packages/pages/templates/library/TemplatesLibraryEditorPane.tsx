@@ -1,6 +1,7 @@
 'use client';
 
 import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
+import { pruneEmptyNoteBlockquotesInEditor } from '@/views/admin/ContractDocuments/core/typography/contractTemplateNoteBlock';
 
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { TemplateEditorZoomControl } from './editor/templateEditorFormatToolbar';
@@ -213,7 +214,9 @@ export function TemplatesLibraryEditorPane(props: TemplatesLibraryEditorPaneProp
                 onKeyDown={handleVisualEditorKeyDown}
                 onInput={(e) => {
                   ensureTemplateDraftForEditing();
-                  const next = (e.currentTarget as HTMLDivElement).innerHTML;
+                  const editor = e.currentTarget as HTMLDivElement;
+                  pruneEmptyNoteBlockquotesInEditor(editor);
+                  const next = editor.innerHTML;
                   setVisualDraftHtml(next);
                   setHtml(next);
                   schedulePushTemplateHistoryFromHtml(next);

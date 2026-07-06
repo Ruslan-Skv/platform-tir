@@ -17,7 +17,7 @@ export function packageCustomerTemplateContextFromTab(
   if (templateTab === 'cashOrder') return 'cashOrder';
   if (templateTab === 'paymentInvoice') return 'paymentInvoice';
   if (templateTab === 'productionLog') return 'productionLog';
-  if (templateTab === 'memo') return 'general';
+  if (templateTab === 'memo' || templateTab === 'deliveryNote') return 'general';
   return 'general';
 }
 
@@ -103,17 +103,25 @@ export function buildPackageCustomerTemplateFields(
       ', '
     );
     const requisitesHtml = [
-      `<p style="margin: 0 0 6pt; font-weight: normal;">${org || '—'}</p>`,
-      innLine ? `<p style="margin: 0 0 4pt; font-weight: normal;">${innLine}</p>` : '',
+      `<p style="margin: 0 0 6pt; font-weight: normal; text-align: center;">${org || '—'}</p>`,
+      innLine
+        ? `<p style="margin: 0 0 4pt; font-weight: normal; text-align: center;">${innLine}</p>`
+        : '',
       customer.address
-        ? `<p style="margin: 0 0 4pt;">Юридический адрес: ${customer.address}</p>`
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Юридический адрес: ${customer.address}</p>`
         : '',
-      customer.phone ? `<p style="margin: 0 0 4pt;">Тел.: ${customer.phone}</p>` : '',
-      customer.email ? `<p style="margin: 0 0 4pt;">E-mail: ${customer.email}</p>` : '',
+      customer.phone
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Тел.: ${customer.phone}</p>`
+        : '',
+      customer.email
+        ? `<p style="margin: 0 0 4pt; text-align: center;">E-mail: ${customer.email}</p>`
+        : '',
       customer.bankDetails
-        ? `<p style="margin: 0 0 4pt;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap;">${customer.bankDetails}</p>`
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap; text-align: center;">${customer.bankDetails}</p>`
         : '',
-      repRequisitesLine ? `<p style="margin: 0 0 4pt;">${repRequisitesLine}</p>` : '',
+      repRequisitesLine
+        ? `<p style="margin: 0 0 4pt; text-align: center;">${repRequisitesLine}</p>`
+        : '',
     ]
       .filter(Boolean)
       .join('\n');
@@ -142,13 +150,19 @@ export function buildPackageCustomerTemplateFields(
     );
     const contractPartyLine = joinParts([preambleLabel, regLine], ', ');
     const requisitesHtml = [
-      `<p style="margin: 0 0 6pt;">${preambleLabel || '—'}</p>`,
-      regLine ? `<p style="margin: 0 0 4pt;">${regLine}</p>` : '',
-      customer.address ? `<p style="margin: 0 0 4pt;">Адрес: ${customer.address}</p>` : '',
-      customer.phone ? `<p style="margin: 0 0 4pt;">Тел.: ${customer.phone}</p>` : '',
-      customer.email ? `<p style="margin: 0 0 4pt;">E-mail: ${customer.email}</p>` : '',
+      `<p style="margin: 0 0 6pt; text-align: center;">${preambleLabel || '—'}</p>`,
+      regLine ? `<p style="margin: 0 0 4pt; text-align: center;">${regLine}</p>` : '',
+      customer.address
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Адрес: ${customer.address}</p>`
+        : '',
+      customer.phone
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Тел.: ${customer.phone}</p>`
+        : '',
+      customer.email
+        ? `<p style="margin: 0 0 4pt; text-align: center;">E-mail: ${customer.email}</p>`
+        : '',
       customer.bankDetails
-        ? `<p style="margin: 0 0 4pt;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap;">${customer.bankDetails}</p>`
+        ? `<p style="margin: 0 0 4pt; text-align: center;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap; text-align: center;">${customer.bankDetails}</p>`
         : '',
     ]
       .filter(Boolean)
@@ -168,16 +182,24 @@ export function buildPackageCustomerTemplateFields(
   const fio = pick(customer.fullName);
   const passportLine = pick(customer.passportSeriesNumber);
   const requisitesHtml = [
-    `<p style="margin: 0 0 6pt;">${fio || '—'}</p>`,
-    customer.address ? `<p style="margin: 0 0 4pt;">Адрес: ${customer.address}</p>` : '',
-    customer.phone ? `<p style="margin: 0 0 4pt;">Тел.: ${customer.phone}</p>` : '',
-    customer.email ? `<p style="margin: 0 0 4pt;">E-mail: ${customer.email}</p>` : '',
-    customer.bankDetails
-      ? `<p style="margin: 0 0 4pt;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap;">${customer.bankDetails}</p>`
+    `<p style="margin: 0 0 6pt; text-align: center;">${fio || '—'}</p>`,
+    customer.address
+      ? `<p style="margin: 0 0 4pt; text-align: center;">Адрес: ${customer.address}</p>`
       : '',
-    passportLine ? `<p style="margin: 0 0 4pt;">Паспорт: ${passportLine}</p>` : '',
+    customer.phone
+      ? `<p style="margin: 0 0 4pt; text-align: center;">Тел.: ${customer.phone}</p>`
+      : '',
+    customer.email
+      ? `<p style="margin: 0 0 4pt; text-align: center;">E-mail: ${customer.email}</p>`
+      : '',
+    customer.bankDetails
+      ? `<p style="margin: 0 0 4pt; text-align: center;">Банковские реквизиты:</p><p style="margin: 0 0 4pt; white-space: pre-wrap; text-align: center;">${customer.bankDetails}</p>`
+      : '',
+    passportLine
+      ? `<p style="margin: 0 0 4pt; text-align: center;">Паспорт: ${passportLine}</p>`
+      : '',
     customer.passportIssuedBy || customer.passportIssueDate
-      ? `<p style="margin: 0 0 4pt;">Выдан: ${joinParts([customer.passportIssuedBy, customer.passportIssueDate], ', ')}</p>`
+      ? `<p style="margin: 0 0 4pt; text-align: center;">Выдан: ${joinParts([customer.passportIssuedBy, customer.passportIssueDate], ', ')}</p>`
       : '',
   ]
     .filter(Boolean)

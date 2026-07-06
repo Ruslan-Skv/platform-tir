@@ -21,6 +21,8 @@ export type PackageDirectionConfig = {
   hiddenEditorTabs: readonly PackageDocumentTabId[];
   /** Памятка в строке вкладок (только PRODUCT_LIKE). */
   memoTabVisible: boolean;
+  /** Накладная в строке вкладок (только «Двери»). */
+  deliveryNoteTabVisible: boolean;
   /** Переопределения подписей вкладок (счёт-заказ, …). */
   tabLabelOverrides: Partial<Record<PackageDocumentTabId, PackageTabLabelOverride>>;
   profilesKind: ContractDocumentPackageKind;

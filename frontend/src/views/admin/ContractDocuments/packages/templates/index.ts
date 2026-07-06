@@ -10,6 +10,7 @@ import { packageTemplateConsent } from './consent';
 import { packageTemplateContract } from './contract';
 import { doorsTemplateActAcceptance } from './doorsActAcceptance';
 import { doorsTemplateContract } from './doorsTemplateContract';
+import { doorsTemplateDeliveryNote } from './doorsTemplateDeliveryNote';
 import { doorsTemplateMemo } from './doorsTemplateMemo';
 import { packageLibraryFallbackStub } from './libraryFallbackStub';
 import { windowsTemplateMemo } from './memo';
@@ -30,6 +31,7 @@ export const PACKAGE_LIBRARY_TEMPLATE_HTML: Record<PackageLibraryTemplateTabId, 
   consent: packageTemplateConsent,
   actStart: packageTemplateActStart,
   actAcceptance: packageTemplateActAcceptance,
+  deliveryNote: stub('Накладная'),
   memo: windowsTemplateMemo,
   cashOrder: packageTemplateCashOrder,
   paymentInvoice: packageTemplatePaymentInvoice,
@@ -44,6 +46,7 @@ const WINDOWS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateT
 const DOORS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
   contract: doorsTemplateContract,
   actAcceptance: doorsTemplateActAcceptance,
+  deliveryNote: doorsTemplateDeliveryNote,
   memo: doorsTemplateMemo,
 };
 
