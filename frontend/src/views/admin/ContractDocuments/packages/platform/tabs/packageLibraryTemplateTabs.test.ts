@@ -6,6 +6,12 @@ import {
 } from './packageLibraryTemplateTabs';
 
 describe('libraryTemplateTabIdsForPackageKind', () => {
+  it('includes consent for all directions', () => {
+    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS'] as const) {
+      expect(libraryTemplateTabIdsForPackageKind(kind)).toContain('consent');
+    }
+  });
+
   it('includes memo for WINDOWS and DOORS product directions', () => {
     expect(libraryTemplateTabIdsForPackageKind('WINDOWS')).toContain('memo');
     expect(libraryTemplateTabIdsForPackageKind('DOORS')).toContain('memo');

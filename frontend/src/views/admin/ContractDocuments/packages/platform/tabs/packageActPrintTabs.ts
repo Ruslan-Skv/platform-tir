@@ -28,7 +28,10 @@ export function isPackageCashOrderTemplateTab(tab: string): boolean {
 /** Договор, ПКО и акты: `customer.*` без авто-обёртки в жирный/курсив в `applyTemplate`. */
 export function isPackagePlainCustomerTab(tab: string): boolean {
   return (
-    tab === 'contract' || isPackageActTwinOneSheetTab(tab) || isPackageCashOrderTemplateTab(tab)
+    tab === 'contract' ||
+    isPackageActTwinOneSheetTab(tab) ||
+    isPackageCashOrderTemplateTab(tab) ||
+    tab === 'consent'
   );
 }
 

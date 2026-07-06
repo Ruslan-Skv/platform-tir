@@ -10,6 +10,7 @@ import {
 /** Вкладки пакета, для которых может быть HTML-пресет (без data / payments / estimate). */
 export const PACKAGE_EDITOR_TEMPLATE_TAB_IDS = [
   'contract',
+  'consent',
   'actStart',
   'actAcceptance',
   'memo',

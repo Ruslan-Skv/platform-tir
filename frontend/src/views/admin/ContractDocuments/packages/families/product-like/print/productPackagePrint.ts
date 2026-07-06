@@ -35,6 +35,7 @@ export function shouldUseWindowsPackageCompactPrint(
   if (tab === 'questionnaire1' || tab === 'questionnaire2') return false;
   return (
     tab === 'contract' ||
+    tab === 'consent' ||
     tab === 'estimate' ||
     tab === 'specification' ||
     tab === 'finalWorkOrder' ||

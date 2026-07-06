@@ -6,7 +6,6 @@ import type { PackageDocumentEditorTabContentProps } from '../../editor/chrome/P
 import { resolvePackageEditorVisibleTabs } from '../../tabs';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
 import type { usePackageAddendumEditor } from '../addendum/usePackageAddendumEditor';
-import type { useContractTemplateEditor } from '../document/useContractTemplateEditor';
 import type { usePackageDocumentEditorTabProps } from './usePackageDocumentEditorTabProps';
 
 export type UsePackageDocumentEditorTabContentShellPropsOptions = {
@@ -20,8 +19,6 @@ export type UsePackageDocumentEditorTabContentShellPropsOptions = {
   isProductDirectionPackage: boolean;
   onOpenPackageHub: () => void;
   addendumEditor: ReturnType<typeof usePackageAddendumEditor>;
-  excelMessage: string | null;
-  contractTemplateEditor: ReturnType<typeof useContractTemplateEditor>;
   editorTabProps: ReturnType<typeof usePackageDocumentEditorTabProps>;
   editorTabOrder: PackageDocumentTabId[];
   addendumSlotCount: number;
@@ -38,8 +35,6 @@ export function usePackageDocumentEditorTabContentShellProps({
   isProductDirectionPackage,
   onOpenPackageHub,
   addendumEditor,
-  excelMessage,
-  contractTemplateEditor,
   editorTabProps,
   editorTabOrder,
   addendumSlotCount,
@@ -66,8 +61,6 @@ export function usePackageDocumentEditorTabContentShellProps({
       isProductDirectionPackage,
       onOpenPackageHub,
       addendumEditor,
-      excelMessage,
-      contractTemplateEditor,
       ...editorTabProps,
     }),
     [
@@ -81,8 +74,6 @@ export function usePackageDocumentEditorTabContentShellProps({
       isProductDirectionPackage,
       onOpenPackageHub,
       addendumEditor,
-      excelMessage,
-      contractTemplateEditor,
       editorTabProps,
     ]
   );

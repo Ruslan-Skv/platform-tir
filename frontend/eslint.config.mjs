@@ -7,7 +7,14 @@ import tseslint from 'typescript-eslint';
 
 export default [
   {
-    ignores: ['node_modules/**', '.next/**', 'out/**', 'dist/**', 'build/**'],
+    ignores: [
+      'node_modules/**',
+      '.next/**',
+      'out/**',
+      'dist/**',
+      'build/**',
+      'public/workbox/**',
+    ],
   },
   ...tseslint.configs.recommended,
   {

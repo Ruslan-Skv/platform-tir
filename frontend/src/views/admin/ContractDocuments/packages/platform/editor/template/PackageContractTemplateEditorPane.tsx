@@ -7,6 +7,7 @@ import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { PACKAGE_CONTRACT_PLACEHOLDER_GROUPS } from '../../form/contractPlaceholders';
 import type { useContractTemplateEditor } from '../../hooks/document/useContractTemplateEditor';
+import { PackageContractA4SheetPreview } from './PackageContractA4SheetPreview';
 
 export type PackageContractTemplateEditorPaneProps = {
   editor: ReturnType<typeof useContractTemplateEditor>;
@@ -269,18 +270,14 @@ export function PackageContractTemplateEditorPane({
             </div>
             <div className={cdDocPreview.contractPreviewColumn}>
               <h3 className={cdDocPreview.previewBlockTitle}>Предпросмотр с подстановкой данных</h3>
-              <div
-                className={`${cdDocPreview.docPane} ${cdEstimateTab.docPane} ${cdEstimateTab.previewResizable}`}
-              >
-                <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
+              <div className={cdEstimateTab.previewResizable}>
+                <PackageContractA4SheetPreview html={renderedDoc} />
               </div>
             </div>
           </div>
         </>
       ) : (
-        <div className={`${cdDocPreview.docPane} ${cdEstimateTab.docPane}`}>
-          <div dangerouslySetInnerHTML={{ __html: renderedDoc }} />
-        </div>
+        <PackageContractA4SheetPreview html={renderedDoc} />
       )}
     </>
   );

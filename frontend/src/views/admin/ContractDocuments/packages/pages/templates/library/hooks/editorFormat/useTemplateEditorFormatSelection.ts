@@ -36,6 +36,7 @@ export function useTemplateEditorFormatSelection({
   htmlTextareaRef,
   visualSelectionRangeRef,
   pushTemplateHistory,
+  cancelPendingTemplateHistoryDebounce,
   setTableEditActive,
 }: UseTemplatesLibraryEditorFormatParams) {
   const [inlineFormatActive, setInlineFormatActive] = useState<Record<InlineFormatKind, boolean>>(
@@ -109,19 +110,7 @@ export function useTemplateEditorFormatSelection({
     setTableEditActive(isCursorInsideHtmlTable(html, start));
   }, [editorMode, html, htmlTextareaRef, setTableEditActive, visualEditorRef]);
 
-  useEffect(() => {
-    const onSelectionChange = () => {
-      refreshInlineFormatActiveState();
-    };
-    document.addEventListener('selectionchange', onSelectionChange);
-    return () => document.removeEventListener('selectionchange', onSelectionChange);
-  }, [refreshInlineFormatActiveState]);
-
-  useEffect(() => {
-    refreshInlineFormatActiveState();
-  }, [editorMode, refreshInlineFormatActiveState]);
-
-  const captureVisualSelection = () => {
+  const captureVisualSelection = useCallback(() => {
     const editor = visualEditorRef.current;
     if (!editor) return;
     const sel = window.getSelection();
@@ -129,27 +118,52 @@ export function useTemplateEditorFormatSelection({
     const range = sel.getRangeAt(0);
     if (!editor.contains(range.commonAncestorContainer)) return;
     visualSelectionRangeRef.current = range.cloneRange();
-    refreshInlineFormatActiveState();
-  };
+  }, [visualEditorRef, visualSelectionRangeRef]);
 
-  const restoreVisualSelection = (): Range | null => {
+  const restoreVisualSelection = useCallback((): Range | null => {
     const editor = visualEditorRef.current;
     if (!editor) return null;
     const sel = window.getSelection();
     if (!sel) return null;
+
+    if (sel.rangeCount > 0) {
+      const live = sel.getRangeAt(0);
+      if (editor.contains(live.commonAncestorContainer)) {
+        visualSelectionRangeRef.current = live.cloneRange();
+        return live;
+      }
+    }
+
     const saved = visualSelectionRangeRef.current;
     if (saved && editor.contains(saved.commonAncestorContainer)) {
       sel.removeAllRanges();
       sel.addRange(saved);
       return saved;
     }
+
     const range = document.createRange();
     range.selectNodeContents(editor);
     range.collapse(false);
     sel.removeAllRanges();
     sel.addRange(range);
+    visualSelectionRangeRef.current = range.cloneRange();
     return range;
-  };
+  }, [visualEditorRef, visualSelectionRangeRef]);
+
+  useEffect(() => {
+    const onSelectionChange = () => {
+      if (editorMode === 'visual') {
+        captureVisualSelection();
+      }
+      refreshInlineFormatActiveState();
+    };
+    document.addEventListener('selectionchange', onSelectionChange);
+    return () => document.removeEventListener('selectionchange', onSelectionChange);
+  }, [captureVisualSelection, editorMode, refreshInlineFormatActiveState]);
+
+  useEffect(() => {
+    refreshInlineFormatActiveState();
+  }, [editorMode, refreshInlineFormatActiveState]);
 
   const updateHtmlBySelection = (
     transform: (
@@ -160,7 +174,6 @@ export function useTemplateEditorFormatSelection({
     if (editorMode === 'visual') {
       const el = visualEditorRef.current;
       if (!el) return;
-      el.focus();
       const sel = window.getSelection();
       if (!sel) return;
 
@@ -173,6 +186,7 @@ export function useTemplateEditorFormatSelection({
         hasSelection = !range.collapsed;
         selected = range.toString();
       } else {
+        el.focus({ preventScroll: true });
         range = restoreVisualSelection() ?? document.createRange();
         hasSelection = !range.collapsed;
         selected = range.toString();
@@ -220,6 +234,7 @@ export function useTemplateEditorFormatSelection({
   };
 
   const syncVisualEditorFromDom = () => {
+    cancelPendingTemplateHistoryDebounce();
     const el = visualEditorRef.current;
     if (!el) return;
     const next = el.innerHTML;

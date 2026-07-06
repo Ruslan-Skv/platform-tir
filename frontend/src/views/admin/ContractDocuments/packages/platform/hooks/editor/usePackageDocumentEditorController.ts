@@ -247,18 +247,7 @@ export function usePackageDocumentEditorController({
     selectedTemplateIds,
   });
 
-  const { contractTemplateEditor, templateLoadSetters } = usePackageTemplateEditorState({
-    activeTab,
-    isSuperAdmin,
-    contractAndEstimateLocked,
-    contractTemplatePresets,
-    setContractTemplatePresets,
-    selectedTemplateIds,
-    setSelectedTemplateIds,
-    resolveTemplateHtml,
-    setError,
-    setExcelMessage,
-  });
+  const { templateLoadSetters } = usePackageTemplateEditorState();
 
   const { load, refreshPackageFromServer } = usePackageDocumentLoad({
     packageId,
@@ -668,8 +657,6 @@ export function usePackageDocumentEditorController({
         isProductDirectionPackage,
         onOpenPackageHub: openPackageHub,
         addendumEditor,
-        excelMessage,
-        contractTemplateEditor,
         editorTabOrder,
         addendumSlotCount: form.addendumSlotCount,
       },

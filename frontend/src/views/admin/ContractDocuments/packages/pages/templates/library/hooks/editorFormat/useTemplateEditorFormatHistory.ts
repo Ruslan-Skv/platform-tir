@@ -122,16 +122,41 @@ export function useTemplateEditorFormatHistory(deps: TemplateEditorFormatDeps) {
   const handleVisualEditorPaste = (e: React.ClipboardEvent<HTMLDivElement>) => {
     if (!isSuperAdmin || editorMode !== 'visual') return;
     e.preventDefault();
+    const el = visualEditorRef.current;
+    if (!el) return;
+
     const pastedHtml = e.clipboardData.getData('text/html');
     const pastedText = e.clipboardData.getData('text/plain');
     const sanitized = pastedHtml.trim()
       ? sanitizePastedContractHtml(pastedHtml)
       : pastedText.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    visualEditorRef.current?.focus();
-    restoreVisualSelection();
-    document.execCommand('insertHTML', false, sanitized || '');
-    const el = visualEditorRef.current;
-    if (!el) return;
+    if (!sanitized) return;
+
+    const sel = window.getSelection();
+    if (!sel) return;
+    let range: Range | null = null;
+    if (sel.rangeCount > 0) {
+      const live = sel.getRangeAt(0);
+      if (el.contains(live.commonAncestorContainer)) {
+        range = live;
+      }
+    }
+    if (!range) {
+      range = restoreVisualSelection();
+    }
+    if (!range) return;
+
+    range.deleteContents();
+    const fragment = range.createContextualFragment(sanitized);
+    const lastNode = fragment.lastChild;
+    range.insertNode(fragment);
+    if (lastNode) {
+      range.setStartAfter(lastNode);
+      range.collapse(true);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    }
+
     const next = el.innerHTML;
     setVisualDraftHtml(next);
     setHtml(next);

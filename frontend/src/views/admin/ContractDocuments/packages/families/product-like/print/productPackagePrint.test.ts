@@ -14,6 +14,7 @@ describe('productPackagePrint', () => {
       expect(shouldUseWindowsPackageCompactPrint(kind, 'specification')).toBe(true);
       expect(shouldUseWindowsPackageCompactPrint(kind, 'estimate')).toBe(true);
     }
+    expect(shouldUseWindowsPackageCompactPrint('WINDOWS', 'consent')).toBe(true);
     expect(shouldUseWindowsPackageCompactPrint('WINDOWS', 'actAcceptance')).toBe(true);
     expect(shouldUseWindowsPackageCompactPrint('WINDOWS', 'memo')).toBe(true);
     expect(shouldUseWindowsPackageCompactPrint('WINDOWS', 'addendum1')).toBe(true);

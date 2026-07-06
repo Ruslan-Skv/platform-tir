@@ -8,6 +8,7 @@ import { getPackageDirectionConfig } from '../../config';
  */
 export const PACKAGE_LIBRARY_TEMPLATE_TAB_IDS = [
   'contract',
+  'consent',
   'actStart',
   'actAcceptance',
   'memo',
@@ -20,6 +21,7 @@ export type PackageLibraryTemplateTabId = (typeof PACKAGE_LIBRARY_TEMPLATE_TAB_I
 
 export const PACKAGE_LIBRARY_TEMPLATE_TAB_LABELS: Record<PackageLibraryTemplateTabId, string> = {
   contract: 'Договор',
+  consent: 'Согласие',
   actStart: 'Акт начала работ',
   actAcceptance: 'Акт сдачи-приёмки',
   memo: 'Памятка',

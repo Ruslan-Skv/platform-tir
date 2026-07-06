@@ -6,6 +6,7 @@ import { packageTemplateActAcceptance } from './actAcceptance';
 import { packageTemplateActStart } from './actStart';
 import { packageTemplateAddendum } from './addendum';
 import { packageTemplateCashOrder } from './cashOrder';
+import { packageTemplateConsent } from './consent';
 import { packageTemplateContract } from './contract';
 import { doorsTemplateActAcceptance } from './doorsActAcceptance';
 import { doorsTemplateContract } from './doorsTemplateContract';
@@ -26,6 +27,7 @@ const stub = (title: string) => packageLibraryFallbackStub(title);
 /** Резервный HTML, если в библиотеке нет пресета (вкладки библиотеки + заглушки для прочих вкладок пакета). */
 export const PACKAGE_LIBRARY_TEMPLATE_HTML: Record<PackageLibraryTemplateTabId, string> = {
   contract: packageTemplateContract,
+  consent: packageTemplateConsent,
   actStart: packageTemplateActStart,
   actAcceptance: packageTemplateActAcceptance,
   memo: windowsTemplateMemo,

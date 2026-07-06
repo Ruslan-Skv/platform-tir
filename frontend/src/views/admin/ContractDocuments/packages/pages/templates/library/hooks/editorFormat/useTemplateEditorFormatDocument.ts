@@ -7,6 +7,11 @@ import {
   handleContractLegalListShiftEnter,
   isNodeInsideContractLegalList,
 } from '@/views/admin/ContractDocuments/core/typography/contractLegalList';
+import {
+  focusEditorCaret,
+  insertTableRowOrListItemBelowCell,
+  resolveTableCellForEditorAction,
+} from '@/views/admin/ContractDocuments/core/typography/contractTemplateTableEditor';
 
 import { pickTemplateEditorFormatDeps } from './templateEditorFormatDeps';
 import type { UseTemplatesLibraryEditorFormatParams } from './templateEditorFormatTypes';
@@ -28,6 +33,9 @@ function useTemplateEditorFormatKeyDown(
     templateHistoryIndexRef,
     templateHistoryRef,
     visualEditorRef,
+    visualSelectionRangeRef,
+    cancelPendingTemplateHistoryDebounce,
+    pushTemplateHistory,
   } = deps;
   const { handleTemplateRedo, handleTemplateUndo } = history;
 
@@ -50,6 +58,23 @@ function useTemplateEditorFormatKeyDown(
     if (e.key === 'Enter' && e.shiftKey) {
       if (handleContractLegalListShiftEnter(el)) {
         e.preventDefault();
+        syncVisualEditorFromDom();
+        return;
+      }
+    }
+
+    if (e.key === 'Enter' && !e.shiftKey && (e.ctrlKey || e.metaKey)) {
+      const cell = resolveTableCellForEditorAction(
+        el,
+        window.getSelection(),
+        visualSelectionRangeRef.current
+      );
+      if (cell) {
+        e.preventDefault();
+        cancelPendingTemplateHistoryDebounce();
+        pushTemplateHistory(el.innerHTML);
+        const next = insertTableRowOrListItemBelowCell(cell, window.getSelection());
+        focusEditorCaret(el, next);
         syncVisualEditorFromDom();
         return;
       }

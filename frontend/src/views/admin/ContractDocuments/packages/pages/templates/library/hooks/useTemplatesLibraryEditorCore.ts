@@ -15,6 +15,7 @@ import {
   readWordHtmlExportFileAsString,
 } from '@/views/admin/ContractDocuments/packages/platform/wordHtmlImport';
 
+import { setTemplateEditorInnerHtmlPreservingSelection } from '../editor/templateEditorSelectionBookmark';
 import {
   ensureDocPrintRootWrapper,
   normalizeTemplateEditorHtml,
@@ -138,6 +139,13 @@ export function useTemplatesLibraryEditorCore({
     [pushTemplateHistory]
   );
 
+  const cancelPendingTemplateHistoryDebounce = useCallback(() => {
+    if (htmlHistoryDebounceRef.current) {
+      clearTimeout(htmlHistoryDebounceRef.current);
+      htmlHistoryDebounceRef.current = null;
+    }
+  }, []);
+
   const resetTemplateHistory = useCallback((htmlSnapshot: string) => {
     if (htmlHistoryDebounceRef.current) {
       clearTimeout(htmlHistoryDebounceRef.current);
@@ -222,14 +230,13 @@ export function useTemplatesLibraryEditorCore({
 
   const applyTemplateHistorySnapshot = useCallback((htmlSnapshot: string) => {
     skipNextTemplateHistoryPushRef.current = true;
-    const normalized = normalizeTemplateEditorHtml(htmlSnapshot);
-    setVisualDraftHtml(normalized);
-    setHtml(normalized);
+    setVisualDraftHtml(htmlSnapshot);
+    setHtml(htmlSnapshot);
     const editor = visualEditorRef.current;
     if (!editor) return;
     const prevScrollTop = editor.scrollTop;
     const wasFocused = window.document.activeElement === editor;
-    editor.innerHTML = normalized;
+    setTemplateEditorInnerHtmlPreservingSelection(editor, htmlSnapshot);
     window.requestAnimationFrame(() => {
       editor.scrollTop = prevScrollTop;
       if (wasFocused) {
@@ -240,14 +247,9 @@ export function useTemplatesLibraryEditorCore({
 
   const syncVisualEditorToHtmlState = useCallback(() => {
     const raw = readVisualEditorHtml();
-    const next = normalizeTemplateEditorHtml(raw);
-    const editor = visualEditorRef.current;
-    if (editor && editor.innerHTML !== next) {
-      editor.innerHTML = next;
-    }
-    setVisualDraftHtml(next);
-    setHtml(next);
-    return next;
+    setVisualDraftHtml(raw);
+    setHtml(raw);
+    return raw;
   }, [readVisualEditorHtml]);
 
   const switchEditorMode = useCallback(
@@ -288,7 +290,7 @@ export function useTemplatesLibraryEditorCore({
     if (editor.innerHTML === source) return;
     const prevScrollTop = editor.scrollTop;
     const wasFocused = window.document.activeElement === editor;
-    editor.innerHTML = source;
+    setTemplateEditorInnerHtmlPreservingSelection(editor, source);
     window.requestAnimationFrame(() => {
       editor.scrollTop = prevScrollTop;
       if (wasFocused) {
@@ -321,6 +323,7 @@ export function useTemplatesLibraryEditorCore({
   return {
     applyLibraryTemplateSelection,
     applyTemplateHistorySnapshot,
+    cancelPendingTemplateHistoryDebounce,
     commitTemplateHtmlToState,
     editorMode,
     ensureTemplateDraftForEditing,

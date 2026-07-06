@@ -17,10 +17,11 @@ import { collectVisualBlocksInRange } from '@/views/admin/ContractDocuments/core
 import {
   addTableColumnAfterCell,
   addTableColumnInHtml,
-  addTableRowBelowCell,
   addTableRowInHtml,
-  findTableCellInEditor,
+  focusEditorCaret,
   focusTableCell,
+  insertTableRowOrListItemBelowCell,
+  resolveTableCellForEditorAction,
 } from '@/views/admin/ContractDocuments/core/typography/contractTemplateTableEditor';
 import { buildPackageContractRequisitesInsertHtmlForToolbar } from '@/views/admin/ContractDocuments/core/typography/packageContractRequisitesLayout';
 
@@ -51,6 +52,7 @@ export function useTemplateEditorFormatBlocks(deps: TemplateEditorFormatDeps) {
     setOk,
     setVisualDraftHtml,
     syncVisualEditorFromDom,
+    cancelPendingTemplateHistoryDebounce,
     updateHtmlBySelection,
     visualEditorRef,
     visualSelectionRangeRef,
@@ -276,15 +278,19 @@ export function useTemplateEditorFormatBlocks(deps: TemplateEditorFormatDeps) {
     if (editorMode === 'visual') {
       const editor = visualEditorRef.current;
       if (!editor) return;
-      editor.focus();
-      restoreVisualSelection();
-      const cell = findTableCellInEditor(editor, window.getSelection());
+      const cell = resolveTableCellForEditorAction(
+        editor,
+        window.getSelection(),
+        visualSelectionRangeRef.current
+      );
       if (!cell) {
-        setError('Поставьте курсор в ячейку таблицы, затем нажмите «+стр».');
+        setError('Поставьте курсор в ячейку таблицы, затем нажмите «+стр» или Ctrl+Enter.');
         return;
       }
-      const nextCell = addTableRowBelowCell(cell);
-      focusTableCell(editor, nextCell);
+      cancelPendingTemplateHistoryDebounce();
+      pushTemplateHistory(editor.innerHTML);
+      const next = insertTableRowOrListItemBelowCell(cell, window.getSelection());
+      focusEditorCaret(editor, next);
       syncVisualEditorFromDom();
       setError(null);
       return;
@@ -292,12 +298,16 @@ export function useTemplateEditorFormatBlocks(deps: TemplateEditorFormatDeps) {
     const textarea = htmlTextareaRef.current;
     if (!textarea) return;
     const cursor = textarea.selectionStart ?? 0;
+    cancelPendingTemplateHistoryDebounce();
+    pushTemplateHistory(html);
     const next = addTableRowInHtml(html, cursor);
     if (!next) {
       setError('Поставьте курсор внутрь таблицы (<table>…</table>), затем нажмите «+стр».');
       return;
     }
     setHtml(next);
+    setVisualDraftHtml(next);
+    pushTemplateHistory(next);
     setError(null);
     window.requestAnimationFrame(() => {
       textarea.focus();
@@ -311,9 +321,11 @@ export function useTemplateEditorFormatBlocks(deps: TemplateEditorFormatDeps) {
     if (editorMode === 'visual') {
       const editor = visualEditorRef.current;
       if (!editor) return;
-      editor.focus();
-      restoreVisualSelection();
-      const cell = findTableCellInEditor(editor, window.getSelection());
+      const cell = resolveTableCellForEditorAction(
+        editor,
+        window.getSelection(),
+        visualSelectionRangeRef.current
+      );
       if (!cell) {
         setError('Поставьте курсор в ячейку таблицы, затем нажмите «+стб».');
         return;

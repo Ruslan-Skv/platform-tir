@@ -12,6 +12,7 @@ export type UseTemplatesLibraryEditorFormatParams = {
   htmlTextareaRef: React.RefObject<HTMLTextAreaElement | null>;
   visualSelectionRangeRef: React.MutableRefObject<Range | null>;
   pushTemplateHistory: (nextHtml: string) => void;
+  cancelPendingTemplateHistoryDebounce: () => void;
   switchEditorMode: (mode: 'html' | 'visual') => void;
   syncVisualEditorToHtmlState: () => string;
   applyTemplateHistorySnapshot: (htmlSnapshot: string) => void;

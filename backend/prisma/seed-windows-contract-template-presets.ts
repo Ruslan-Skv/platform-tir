@@ -15,15 +15,17 @@ config({ path: path.join(__dirname, '..', '..', '.env') });
 const CONTRACT_TEMPLATES_TAB = 'contract_templates';
 const KIND = 'WINDOWS' as const;
 
-const LIBRARY_TABS = ['actAcceptance', 'memo'] as const;
+const LIBRARY_TABS = ['actAcceptance', 'consent', 'memo'] as const;
 
 const TAB_TITLES: Record<(typeof LIBRARY_TABS)[number], string> = {
   actAcceptance: 'Акт сдачи-приёмки',
+  consent: 'Согласие на обработку персональных данных',
   memo: 'Памятка',
 };
 
 const TAB_TEMPLATE_FILES: Record<(typeof LIBRARY_TABS)[number], string> = {
   actAcceptance: 'windowsActAcceptance.ts',
+  consent: 'consent.ts',
   memo: 'memo.ts',
 };
 

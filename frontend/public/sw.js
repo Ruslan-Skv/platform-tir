@@ -8,14 +8,20 @@
  */
 'use strict';
 
-importScripts('https://storage.googleapis.com/workbox-cdn/releases/7.0.0/workbox-sw.js');
+importScripts('/workbox/workbox-sw.js');
 
-workbox.setConfig({ debug: false });
+workbox.setConfig({ debug: false, modulePathPrefix: '/workbox/' });
 
-// Кэш для API товаров и каталога — StaleWhileRevalidate: сразу отдаём из кэша, обновляем в фоне
+// Кэш только для same-origin API (в prod: /api/v1 через nginx; в dev API часто на :3001 — не перехватываем).
+function isCachedPublicApiRoute({ url, request }) {
+  if (request.method !== 'GET') return false;
+  if (url.origin !== self.location.origin) return false;
+  return url.pathname.startsWith('/api/v1/products') || url.pathname.startsWith('/api/v1/home/');
+}
+
+// StaleWhileRevalidate: сразу отдаём из кэша, обновляем в фоне
 workbox.routing.registerRoute(
-  ({ url }) =>
-    url.pathname.startsWith('/api/v1/products') || url.pathname.startsWith('/api/v1/home/'),
+  isCachedPublicApiRoute,
   new workbox.strategies.StaleWhileRevalidate({
     cacheName: 'tir-api-products',
     plugins: [
@@ -23,9 +29,13 @@ workbox.routing.registerRoute(
         maxEntries: 100,
         maxAgeSeconds: 60 * 60 * 24, // 24 часа
       }),
+      {
+        // Прерванные fetch (напр. при client-side навигации с главной) не должны сыпать no-response в консоль.
+        handlerDidError: async ({ request }) =>
+          (await caches.open('tir-api-products')).match(request),
+      },
     ],
-  }),
-  'GET'
+  })
 );
 
 // При получении команды — немедленно активировать новую версию (для попапа «Обновить»)

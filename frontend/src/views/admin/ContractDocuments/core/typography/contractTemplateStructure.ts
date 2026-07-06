@@ -10,6 +10,7 @@ import {
   fixBrokenMemoHeadingNestingInHtml,
 } from './contractTemplateMemoStructure';
 import { fixParagraphTextAlignInDom } from './contractTemplateParagraphAlign';
+import { repairOrphanAppendixListRowsInDom } from './contractTemplateTableEditor';
 import {
   applyStandardHeadingTitleStyle,
   isLikelyContractTitleText,
@@ -165,6 +166,7 @@ export function packageContractTemplateStructureInDom(root: ParentNode): void {
   if (!docPrint) return;
 
   fixBrokenMemoHeadingNestingInDom(docPrint);
+  repairOrphanAppendixListRowsInDom(docPrint);
   packageContractAppendixRefInDom(docPrint);
   fixParagraphTextAlignInDom(docPrint);
   packageContractTitleBlock(docPrint);

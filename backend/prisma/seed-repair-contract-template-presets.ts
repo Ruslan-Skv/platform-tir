@@ -23,6 +23,7 @@ const KIND = 'REPAIR' as const;
 
 const LIBRARY_TABS = [
   'contract',
+  'consent',
   'actStart',
   'actAcceptance',
   'cashOrder',
@@ -31,6 +32,7 @@ const LIBRARY_TABS = [
 
 const TAB_TITLES: Record<(typeof LIBRARY_TABS)[number], string> = {
   contract: 'Договор',
+  consent: 'Согласие на обработку персональных данных',
   actStart: 'Акт начала работ',
   actAcceptance: 'Акт сдачи-приёмки',
   cashOrder: 'ПКО',
@@ -64,6 +66,7 @@ function loadDefaultsFromFrontendRepo(): PresetItem[] {
   );
   const files: Record<(typeof LIBRARY_TABS)[number], string> = {
     contract: 'contract.ts',
+    consent: 'consent.ts',
     actStart: 'actStart.ts',
     actAcceptance: 'actAcceptance.ts',
     cashOrder: 'cashOrder.ts',
@@ -98,7 +101,16 @@ function loadDefaultsFromSeedJson(): PresetItem[] | null {
 }
 
 function loadSeedDefaults(): PresetItem[] {
-  return loadDefaultsFromSeedJson() ?? loadDefaultsFromFrontendRepo();
+  const fromFrontend = loadDefaultsFromFrontendRepo();
+  const fromJson = loadDefaultsFromSeedJson();
+  if (!fromJson) return fromFrontend;
+
+  const merged = [...fromJson];
+  const jsonTabIds = new Set(fromJson.map((item) => item.tabId));
+  for (const def of fromFrontend) {
+    if (!jsonTabIds.has(def.tabId)) merged.push(def);
+  }
+  return merged;
 }
 
 function isLibraryTabId(tabId: string | undefined): boolean {

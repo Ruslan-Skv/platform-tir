@@ -89,10 +89,7 @@ export {
   usePackageProductSpecificationHandlers,
   type UsePackageProductSpecificationHandlersOptions,
 } from './product-spec/usePackageProductSpecificationHandlers';
-export {
-  usePackageTemplateEditorState,
-  type UsePackageTemplateEditorStateOptions,
-} from './editor/usePackageTemplateEditorState';
+export { usePackageTemplateEditorState } from './editor/usePackageTemplateEditorState';
 export {
   usePackageEditorHeaderState,
   type UsePackageEditorHeaderStateOptions,

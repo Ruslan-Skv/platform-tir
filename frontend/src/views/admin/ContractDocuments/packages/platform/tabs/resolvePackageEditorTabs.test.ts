@@ -4,6 +4,17 @@ import { PACKAGE_DOCUMENT_TAB_IDS } from './packageDocumentTabs';
 import { resolvePackageEditorVisibleTabs } from './resolvePackageEditorTabs';
 
 describe('resolvePackageEditorVisibleTabs', () => {
+  it('shows consent tab for REPAIR, WINDOWS and DOORS', () => {
+    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS'] as const) {
+      const tabs = resolvePackageEditorVisibleTabs({
+        tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+        packageKind: kind,
+        addendumSlotCount: 0,
+      });
+      expect(tabs).toContain('consent');
+    }
+  });
+
   it('hides memo for REPAIR and shows it for DOORS', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,

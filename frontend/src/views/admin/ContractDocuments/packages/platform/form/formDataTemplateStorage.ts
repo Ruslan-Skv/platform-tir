@@ -10,6 +10,7 @@ export type PackageDocumentTemplateTabId =
 
 const TEMPLATE_TAB_IDS: PackageDocumentTemplateTabId[] = [
   'contract',
+  'consent',
   'actStart',
   'actAcceptance',
   'memo',

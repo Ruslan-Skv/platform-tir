@@ -121,6 +121,7 @@ export function usePackageFormForTemplate(
 export function isPackageTemplateA4SheetTab(activeTab: PackageDocumentTabId): boolean {
   return (
     activeTab === 'contract' ||
+    activeTab === 'consent' ||
     isPackageActA4PreviewTab(activeTab) ||
     activeTab === 'productionLog' ||
     activeTab === 'memo' ||

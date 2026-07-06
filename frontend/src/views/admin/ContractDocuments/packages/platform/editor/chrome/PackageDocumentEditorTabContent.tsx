@@ -4,7 +4,6 @@ import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-do
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAddendumEditor';
-import type { useContractTemplateEditor } from '../../hooks/document/useContractTemplateEditor';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
 import { PackageAddendumEditorPane } from '../addendum/PackageAddendumEditorPane';
 import { PackageDataTab, type PackageDataTabProps } from '../dataTab/PackageDataTab';
@@ -37,8 +36,6 @@ export type PackageDocumentEditorTabContentProps = {
   finalEstimateTabProps: PackageFinalEstimateTabProps;
   specificationTabProps: Omit<ProductSpecificationTabProps, 'packageKind' | 'packageId'>;
   addendumEditor: ReturnType<typeof usePackageAddendumEditor>;
-  excelMessage: string | null;
-  contractTemplateEditor: ReturnType<typeof useContractTemplateEditor> | null;
 };
 
 /** Контент активной вкладки редактора пакета документов. */
@@ -57,8 +54,6 @@ export function PackageDocumentEditorTabContent({
   finalEstimateTabProps,
   specificationTabProps,
   addendumEditor,
-  excelMessage,
-  contractTemplateEditor,
 }: PackageDocumentEditorTabContentProps) {
   if (activeTab === 'data') {
     return <PackageDataTab {...dataTabProps} />;
@@ -89,8 +84,6 @@ export function PackageDocumentEditorTabContent({
       packageKind={packageKind}
       contractAndEstimateLocked={contractAndEstimateLocked}
       renderedDoc={renderedDoc ?? ''}
-      excelMessage={excelMessage}
-      contractTemplateEditor={contractTemplateEditor}
       unsignedAddendumBanner={
         activeAddendumSlot !== null && unsignedAddendumOrdinals.includes(activeAddendumSlot) ? (
           <div className={cdDataTab.packageAddendumUnsignedBanner} role="status">

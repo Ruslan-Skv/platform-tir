@@ -117,8 +117,14 @@ export function useTemplatesLibraryMutationsPersist(
         if (savedCurrent?.html) {
           setHtml(savedCurrent.html);
           setVisualDraftHtml(savedCurrent.html);
-          if (visualEditorRef.current) {
-            visualEditorRef.current.innerHTML = savedCurrent.html;
+          const editor = visualEditorRef.current;
+          if (
+            editor &&
+            editorMode === 'visual' &&
+            document.activeElement !== editor &&
+            editor.innerHTML !== savedCurrent.html
+          ) {
+            editor.innerHTML = savedCurrent.html;
           }
         }
         setAutosaveSavedVisible(true);
@@ -132,6 +138,7 @@ export function useTemplatesLibraryMutationsPersist(
     [
       activeLibraryKind,
       editingId,
+      editorMode,
       lastSavedSnapshotRef,
       setAutosaveSavedVisible,
       setError,

@@ -30,6 +30,7 @@ export class ContractDocumentPackageGlobalLibraryService {
   private assertGlobalTab(tab: string) {
     const allowed = new Set([
       'contract',
+      'consent',
       'actStart',
       'actAcceptance',
       'cashOrder',
@@ -164,6 +165,7 @@ export class ContractDocumentPackageGlobalLibraryService {
   private contractTemplateTabLabel(tabId: string | undefined): string {
     const labels: Record<string, string> = {
       contract: 'Договор',
+      consent: 'Согласие',
       actStart: 'Акт начала работ',
       actAcceptance: 'Акт сдачи-приёмки',
       memo: 'Памятка',

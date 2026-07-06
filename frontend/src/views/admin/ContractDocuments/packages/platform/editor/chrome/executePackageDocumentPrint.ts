@@ -125,6 +125,7 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
   const contractCompactPrint =
     windowsPrintOptions != null ||
     activeTab === 'contract' ||
+    activeTab === 'consent' ||
     isPackageActA4PreviewTab(activeTab) ||
     activeTab === 'productionLog' ||
     activeTab === 'memo';
