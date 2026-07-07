@@ -2,6 +2,11 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../../database/prisma.service';
 import {
+  productCardBadgeSelectionsInclude,
+  productCardVariantsInclude,
+  productCreatedByUpdatedByInclude,
+} from '../../../../products/services/products-includes';
+import {
   ADMIN_PRODUCT_LIST_SELECT,
   ADMIN_PRODUCT_SORT_FIELDS,
   AdminProductListSortOrder,
@@ -161,31 +166,40 @@ export class AdminProductsQueryService {
     const product = await this.prisma.product.findUnique({
       where: { id },
       include: {
-        category: true,
-        manufacturer: true,
+        category: {
+          include: {
+            parent: true,
+          },
+        },
         suppliers: {
           include: {
             supplier: {
               select: {
                 id: true,
-                name: true,
                 legalName: true,
+                commercialName: true,
               },
             },
           },
         },
-        reviews: {
-          orderBy: { createdAt: 'desc' },
-          take: 10,
+        manufacturer: {
+          select: { id: true, name: true, slug: true },
         },
-        _count: {
-          select: {
-            orderItems: true,
-            reviews: true,
-            cartItems: true,
-            wishlist: true,
-          },
+        coatingMaterial: {
+          select: { id: true, name: true, slug: true },
         },
+        canvasType: {
+          select: { id: true, name: true, slug: true },
+        },
+        doorThickness: {
+          select: { id: true, name: true, slug: true },
+        },
+        weatherstrip: {
+          select: { id: true, name: true, slug: true },
+        },
+        ...productCardVariantsInclude,
+        ...productCardBadgeSelectionsInclude,
+        ...productCreatedByUpdatedByInclude,
       },
     });
 

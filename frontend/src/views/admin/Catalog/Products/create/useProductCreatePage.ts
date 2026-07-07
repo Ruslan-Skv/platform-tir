@@ -387,9 +387,13 @@ export function useProductCreatePage({
     let cancelled = false;
     const load = async () => {
       try {
-        const productRes = await apiFetch(`${PRODUCT_FORM_API_URL}/products/${copyFromProductId}`, {
-          cache: 'no-store',
-        });
+        const productRes = await apiFetch(
+          `${PRODUCT_FORM_API_URL}/admin/catalog/products/${copyFromProductId}`,
+          {
+            cache: 'no-store',
+            headers: getAuthHeaders(),
+          }
+        );
         if (!productRes.ok) {
           if (!cancelled) {
             setError('Не удалось загрузить товар для копирования');

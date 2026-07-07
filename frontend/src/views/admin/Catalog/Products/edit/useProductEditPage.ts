@@ -547,10 +547,11 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
 
     const run = async () => {
       try {
-        const productUrl = `${PRODUCT_FORM_API_URL}/products/${encodeURIComponent(productId)}?t=${Date.now()}`;
+        const productUrl = `${PRODUCT_FORM_API_URL}/admin/catalog/products/${encodeURIComponent(productId)}?t=${Date.now()}`;
         const response = await apiFetch(productUrl, {
           cache: 'no-store',
           signal: ac.signal,
+          headers: getAuthHeadersRef.current(),
         });
 
         if (!active) return;
