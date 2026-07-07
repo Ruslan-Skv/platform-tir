@@ -35,9 +35,8 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setCategoryFilter,
     sortStorageKey,
     listSortBy,
-    setListSortBy,
     listSortOrder,
-    setListSortOrder,
+    handleListSortChange,
     stockFilter,
     setStockFilter,
     authorFilter,
@@ -1002,11 +1001,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         serverSidePagination
         controlledSortBy={listSortBy}
         controlledSortOrder={listSortOrder}
-        onSortChange={(sortBy, sortOrder) => {
-          setListSortBy(sortBy);
-          setListSortOrder(sortOrder);
-          setPage(1);
-        }}
+        onSortChange={handleListSortChange}
         onRowClick={(product) => {
           navigateToProductEdit(product.id);
         }}

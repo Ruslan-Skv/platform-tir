@@ -200,16 +200,6 @@ export function DataTable<T>({
     setSortOrder(next.sortOrder);
   }, [sortStorageKey, defaultSortBy, defaultSortOrder]);
 
-  // Persist sorting
-  useEffect(() => {
-    if (!sortStorageKey || typeof window === 'undefined') return;
-    try {
-      localStorage.setItem(sortStorageKey, JSON.stringify({ sortBy, sortOrder }));
-    } catch {
-      // ignore
-    }
-  }, [sortStorageKey, sortBy, sortOrder]);
-
   const handleSelectAll = () => {
     if (selectedIds.length === displayData.length && displayData.length > 0) {
       if (!isControlled) setInternalSelectedIds([]);
@@ -232,6 +222,22 @@ export function DataTable<T>({
   const isServerSort = Boolean(serverSideSort && onSortChange);
   const activeSortBy = isServerSort ? controlledSortBy : sortBy;
   const activeSortOrder = isServerSort ? controlledSortOrder : sortOrder;
+
+  // Persist sorting (server-side mode: controlled sort from parent)
+  useEffect(() => {
+    if (!sortStorageKey || typeof window === 'undefined') return;
+    const sortByToSave = isServerSort ? activeSortBy : sortBy;
+    const sortOrderToSave = isServerSort ? activeSortOrder : sortOrder;
+    if (!sortByToSave) return;
+    try {
+      localStorage.setItem(
+        sortStorageKey,
+        JSON.stringify({ sortBy: sortByToSave, sortOrder: sortOrderToSave })
+      );
+    } catch {
+      // ignore
+    }
+  }, [sortStorageKey, sortBy, sortOrder, isServerSort, activeSortBy, activeSortOrder]);
 
   const handleSort = (key: string) => {
     if (isServerSort && onSortChange) {
