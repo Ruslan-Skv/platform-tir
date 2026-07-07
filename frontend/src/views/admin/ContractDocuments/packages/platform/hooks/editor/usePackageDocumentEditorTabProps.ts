@@ -34,7 +34,6 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   signatoryProfiles: ContractSignatoryProfile[];
   contractDateFieldHelp: FieldHelp;
   workPeriodFieldHelp: FieldHelp;
-  discountFieldHelp: FieldHelp;
   linkedCrmCustomerId: string | null;
   onCrmCustomerApplied: (detail: CrmCustomerDetail) => void;
   onCrmCustomerClear: () => void;
@@ -89,7 +88,6 @@ export function usePackageDocumentEditorTabProps({
   signatoryProfiles,
   contractDateFieldHelp,
   workPeriodFieldHelp,
-  discountFieldHelp,
   linkedCrmCustomerId,
   onCrmCustomerApplied,
   onCrmCustomerClear,
@@ -142,7 +140,6 @@ export function usePackageDocumentEditorTabProps({
       signatoryProfiles,
       contractDateFieldHelp,
       workPeriodFieldHelp,
-      discountFieldHelp,
       linkedCrmCustomerId,
       onCrmCustomerApplied,
       onCrmCustomerClear,
@@ -173,7 +170,6 @@ export function usePackageDocumentEditorTabProps({
       signatoryProfiles,
       contractDateFieldHelp,
       workPeriodFieldHelp,
-      discountFieldHelp,
       linkedCrmCustomerId,
       onCrmCustomerApplied,
       onCrmCustomerClear,

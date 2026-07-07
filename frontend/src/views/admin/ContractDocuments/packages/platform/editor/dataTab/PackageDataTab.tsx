@@ -26,7 +26,6 @@ export type PackageDataTabProps = {
   signatoryProfiles: ContractSignatoryProfile[];
   contractDateFieldHelp: { title: string; steps: readonly string[]; note?: string };
   workPeriodFieldHelp: { title: string; steps: readonly string[]; note?: string };
-  discountFieldHelp: { title: string; steps: readonly string[]; note?: string };
   linkedCrmCustomerId: string | null;
   onCrmCustomerApplied: (detail: import('@/shared/api/admin-crm').CrmCustomerDetail) => void;
   onCrmCustomerClear: () => void;

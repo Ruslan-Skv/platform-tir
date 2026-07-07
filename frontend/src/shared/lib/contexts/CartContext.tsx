@@ -3,7 +3,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 
 import * as cartApi from '@/shared/api/cart';
-import type { CartItem, CartServiceItem } from '@/shared/api/cart';
+import { type CartItem, type CartServiceItem, parseCartPrice } from '@/shared/api/cart';
 import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
 import { AuthRequiredForCartError, emitCartAuthRequired } from '@/shared/lib/cart-auth-required';
 
@@ -493,10 +493,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const getTotalPrice = useCallback((): number => {
     const productTotal = cart.reduce((total, item) => {
       if (item.product) {
-        return total + item.product.price * item.quantity;
+        return total + parseCartPrice(item.product.price) * item.quantity;
       }
       if (item.component) {
-        return total + item.component.price * item.quantity;
+        return total + parseCartPrice(item.component.price) * item.quantity;
       }
       return total;
     }, 0);

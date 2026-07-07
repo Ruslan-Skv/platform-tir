@@ -78,6 +78,9 @@ export class CartService {
         product: {
           include: {
             category: true,
+            coatingMaterial: {
+              select: { id: true, name: true, slug: true },
+            },
           },
         },
         component: true,
@@ -179,6 +182,9 @@ export class CartService {
         product: {
           include: {
             category: true,
+            coatingMaterial: {
+              select: { id: true, name: true, slug: true },
+            },
           },
         },
         component: true,
@@ -212,6 +218,9 @@ export class CartService {
         product: {
           include: {
             category: true,
+            coatingMaterial: {
+              select: { id: true, name: true, slug: true },
+            },
           },
         },
         component: true,
@@ -319,6 +328,9 @@ export class CartService {
         product: {
           include: {
             category: true,
+            coatingMaterial: {
+              select: { id: true, name: true, slug: true },
+            },
           },
         },
         component: {
@@ -567,6 +579,9 @@ export class CartService {
         product: {
           include: {
             category: true,
+            coatingMaterial: {
+              select: { id: true, name: true, slug: true },
+            },
           },
         },
         component: {

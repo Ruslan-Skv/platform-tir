@@ -1,7 +1,9 @@
 'use client';
 
-import cdBase from '../../../../styles/base.module.css';
+import cdDocPreview from '../../../../styles/documents-preview.module.css';
+import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import cdTemplates from '../../../../styles/templates-library.module.css';
 
 export type EstimateWorkspaceCategoryPickerProps = {
   categories: Array<{ slug: string; name: string }>;
@@ -15,9 +17,9 @@ export function EstimateWorkspaceCategoryPicker({
   onToggleCategory,
 }: EstimateWorkspaceCategoryPickerProps) {
   return (
-    <div className={`${cdBase.sectionCard} ${cdWorkspace.estimateWorkspaceCategoriesCard}`}>
-      <h3 className={cdBase.sectionTitle}>Категории работ</h3>
-      <p className={cdBase.hint} style={{ marginTop: 4, marginBottom: 10 }}>
+    <div className={`${cdTemplates.sectionCard} ${cdWorkspace.estimateWorkspaceCategoriesCard}`}>
+      <h3 className={cdEstimateTab.sectionTitle}>Категории работ</h3>
+      <p className={cdDocPreview.hint} style={{ marginTop: 4, marginBottom: 10 }}>
         Можно выбрать несколько — для каждой откроется вкладка калькулятора ниже.
       </p>
       <div className={cdWorkspace.estimateWorkspaceCategoryChips}>

@@ -17,7 +17,7 @@ import type { EstimateWorkspacePageModel } from './hooks/useEstimateWorkspacePag
 export function EstimateWorkspaceLoadingState() {
   return (
     <div className={cdBase.page}>
-      <p className={cdBase.hint}>Загрузка…</p>
+      <p className={cdDocPreview.hint}>Загрузка…</p>
     </div>
   );
 }
@@ -45,7 +45,7 @@ export function EstimateWorkspacePageView({
   save,
 }: EstimateWorkspacePageViewProps) {
   return (
-    <div className={`${cdBase.page} ${cdBase.pageWide} ${cdWorkspace.estimateWorkspacePage}`}>
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdWorkspace.estimateWorkspacePage}`}>
       <EstimateWorkspacePageHeader
         estimateIdFromUrl={url.estimateIdFromUrl}
         copyFromId={url.copyFromId}

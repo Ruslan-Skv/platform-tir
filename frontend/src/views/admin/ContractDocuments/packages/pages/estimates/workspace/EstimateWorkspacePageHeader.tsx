@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 
-import cdBase from '../../../../styles/base.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { ESTIMATES_LIST_HREF } from './estimateWorkspaceUtils';
@@ -96,7 +95,7 @@ export function EstimateWorkspacePageHeader({
         ) : null}
       </div>
       {dirty ? (
-        <div className={cdWorkspace.estimateWorkspaceHeaderControls}>
+        <div className={cdDocPreview.estimateWorkspaceHeaderControls}>
           <div className={cdDocPreview.estimateWorkspaceActions}>
             <button
               data-admin-mutation
@@ -113,7 +112,7 @@ export function EstimateWorkspacePageHeader({
             </button>
             <button
               type="button"
-              className={`${cdBase.secondaryBtn} ${cdDocPreview.estimateWorkspaceExitBtn}`}
+              className={`${cdWorkspace.secondaryBtn} ${cdDocPreview.estimateWorkspaceExitBtn}`}
               disabled={saving}
               onClick={onRequestExit}
             >

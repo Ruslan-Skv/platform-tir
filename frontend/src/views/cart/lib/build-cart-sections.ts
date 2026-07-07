@@ -1,4 +1,5 @@
 import type { CartItem } from '@/shared/api/cart';
+import { parseCartPrice } from '@/shared/api/cart';
 import type { UserOrder } from '@/shared/api/user-orders';
 
 import { type OrderServiceGroup, groupOrderServiceItems } from './cart-order-service-groups';
@@ -31,11 +32,11 @@ function sumItems(products: CartProductItem[], components: CartComponentItem[]):
   let total = 0;
   for (const p of products) {
     const q = Math.max(1, Math.round(Number(p.quantity)));
-    total += (p.product?.price ?? 0) * q;
+    total += parseCartPrice(p.product?.price) * q;
   }
   for (const c of components) {
     const q = Math.max(0.5, Number(c.quantity));
-    total += (c.component?.price ?? 0) * q;
+    total += parseCartPrice(c.component?.price) * q;
   }
   return total;
 }

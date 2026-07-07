@@ -7,8 +7,8 @@ import {
 } from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
 import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
-import cdBase from '../../../../styles/base.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import cdTemplates from '../../../../styles/templates-library.module.css';
 
 export type EstimateWorkspaceCustomerCardProps = {
   estimateNameDraft: string;
@@ -38,7 +38,7 @@ export function EstimateWorkspaceCustomerCard({
   onCrmError,
 }: EstimateWorkspaceCustomerCardProps) {
   return (
-    <div className={`${cdBase.sectionCard} ${cdWorkspace.estimateWorkspaceCustomerCard}`}>
+    <div className={`${cdTemplates.sectionCard} ${cdWorkspace.estimateWorkspaceCustomerCard}`}>
       <div
         className={`${measurementFormStyles.blankSheet} ${cdWorkspace.estimateWorkspaceCustomerBlankSheet}`}
       >

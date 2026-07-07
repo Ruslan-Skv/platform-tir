@@ -813,6 +813,25 @@
   margin-bottom: var(--admin-space-sm);
 }
 
+.doorsSpecificationImportRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.doorsSpecificationImportBtn {
+  flex-shrink: 0;
+}
+
+.doorsSpecificationImportHint {
+  margin: 0;
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-secondary);
+}
+
 .estimateTabCompact.windowsContractTabTypography
   .windowsContractFormSection
   .doorsSpecificationDiscountField {

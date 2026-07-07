@@ -17,11 +17,16 @@ export interface CartItem {
     id: string;
     name: string;
     slug: string;
-    price: number;
-    comparePrice?: number;
+    price: number | string;
+    comparePrice?: number | string;
     images: string[];
     stock?: number;
     onOrder?: boolean;
+    attributes?:
+      | Record<string, unknown>
+      | Array<{ name?: string; value?: string; slug?: string }>
+      | null;
+    coatingMaterial?: { id: string; name: string; slug?: string } | null;
     category: {
       id: string;
       name: string;
@@ -31,7 +36,7 @@ export interface CartItem {
   cardVariant?: {
     id: string;
     name: string;
-    price: number;
+    price: number | string;
     image?: string | null;
     size?: string | null;
     color?: string | null;
@@ -41,7 +46,7 @@ export interface CartItem {
     id: string;
     name: string;
     type: string;
-    price: number;
+    price: number | string;
     image?: string | null;
     product: {
       id: string;
@@ -49,6 +54,20 @@ export interface CartItem {
       slug: string;
     };
   } | null;
+}
+
+/** Prisma Decimal в JSON часто приходит строкой. */
+export function parseCartPrice(value: number | string | null | undefined): number {
+  if (typeof value === 'number') {
+    return Number.isFinite(value) ? value : 0;
+  }
+  if (typeof value === 'string') {
+    const normalized = value.trim().replace(/\s/g, '').replace(',', '.');
+    if (!normalized) return 0;
+    const parsed = Number.parseFloat(normalized);
+    return Number.isFinite(parsed) ? parsed : 0;
+  }
+  return 0;
 }
 
 function getAuthToken(): string | null {

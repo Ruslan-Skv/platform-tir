@@ -34,7 +34,6 @@ export type PackageDataContractObjectSectionProps = Pick<
   | 'signatoryProfiles'
   | 'contractDateFieldHelp'
   | 'workPeriodFieldHelp'
-  | 'discountFieldHelp'
 >;
 
 export function PackageDataContractObjectSection({
@@ -51,7 +50,6 @@ export function PackageDataContractObjectSection({
   signatoryProfiles,
   contractDateFieldHelp,
   workPeriodFieldHelp,
-  discountFieldHelp,
 }: PackageDataContractObjectSectionProps) {
   return (
     <div className={DATA_TOP_BLOCK}>
@@ -128,33 +126,26 @@ export function PackageDataContractObjectSection({
                 />
               </div>
             </ContractDocumentsHelpTooltip>
-            <ContractDocumentsHelpTooltip
-              title={discountFieldHelp.title}
-              steps={discountFieldHelp.steps}
-              note={discountFieldHelp.note}
-              align="end"
+            <div
+              className={`${DATA_FIELD} ${cdDataTab.contractInlineField} ${cdDataTab.contractDiscountFieldCell}`}
             >
-              <div
-                className={`${DATA_FIELD} ${cdDataTab.contractInlineField} ${cdDataTab.contractDiscountFieldCell}`}
-              >
-                <label htmlFor="contract_discount_pct">Скидка (%)</label>
-                <input
-                  id="contract_discount_pct"
-                  inputMode="decimal"
-                  value={form.contract.discountPercent}
-                  onChange={(e) => updateContract('discountPercent', e.target.value)}
-                  placeholder="0"
-                  autoComplete="off"
-                  disabled={contractAndEstimateLocked}
-                  readOnly={contractAndEstimateLocked}
-                  className={
-                    contractAndEstimateLocked
-                      ? DATA_AUTO_FILLED
-                      : contractObjectBlockFieldClassName('contract.discountPercent')
-                  }
-                />
-              </div>
-            </ContractDocumentsHelpTooltip>
+              <label htmlFor="contract_discount_pct">Скидка на работы</label>
+              <input
+                id="contract_discount_pct"
+                inputMode="decimal"
+                value={form.contract.discountPercent}
+                onChange={(e) => updateContract('discountPercent', e.target.value)}
+                placeholder="0"
+                autoComplete="off"
+                disabled={contractAndEstimateLocked}
+                readOnly={contractAndEstimateLocked}
+                className={
+                  contractAndEstimateLocked
+                    ? DATA_AUTO_FILLED
+                    : contractObjectBlockFieldClassName('contract.discountPercent')
+                }
+              />
+            </div>
           </div>
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractObjectAddressRow}`}>
             <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>

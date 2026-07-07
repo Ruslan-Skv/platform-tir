@@ -7,6 +7,7 @@ import type { Dispatch, SetStateAction } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { parseCartPrice } from '@/shared/api/cart';
 import type { UserOrder } from '@/shared/api/user-orders';
 import {
   PRODUCT_AVAILABILITY_LABEL,
@@ -64,7 +65,7 @@ export function CartProductItemCard({
   onRemove,
 }: CartProductItemCardProps) {
   const quantity = parseProductQuantity(item.quantity);
-  const itemTotal = item.product.price * quantity;
+  const itemTotal = parseCartPrice(item.product.price) * quantity;
 
   return (
     <div className={styles.cartItem}>

@@ -10,6 +10,7 @@ import {
   PackageLockNotice,
   packageLockNoticeMessage,
 } from '../../../platform/editor/shared/packageLockNoticeUi';
+import { DoorsSpecificationCartImportButton } from './DoorsSpecificationCartImportButton';
 import { DoorsSpecificationLinesEditor } from './DoorsSpecificationLinesEditor';
 import { DoorsSpecificationPreviewSheet } from './DoorsSpecificationPreviewSheet';
 import {
@@ -85,6 +86,11 @@ export function DoorsSpecificationTabContent({
               />
             </div>
           </div>
+          <DoorsSpecificationCartImportButton
+            lines={editorLines}
+            disabled={disabled}
+            onLinesChange={onLinesChange}
+          />
           <DoorsSpecificationLinesEditor
             lines={editorLines}
             readOnly={disabled}

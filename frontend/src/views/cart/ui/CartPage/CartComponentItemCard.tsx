@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 
+import { parseCartPrice } from '@/shared/api/cart';
 import type { UserOrder } from '@/shared/api/user-orders';
 import type { CartComponentItem, CartSectionId } from '@/views/cart/lib/build-cart-sections';
 
@@ -64,7 +65,7 @@ export function CartComponentItemCard({
   const displayQty = step === 0.5 && quantity % 1 !== 0 ? quantity.toFixed(1) : String(quantity);
   const newQtyDown = Math.round((quantity - step) * 2) / 2;
   const newQtyUp = Math.round((quantity + step) * 2) / 2;
-  const itemTotal = item.component.price * quantity;
+  const itemTotal = parseCartPrice(item.component.price) * quantity;
   const componentId = item.componentId!;
 
   return (

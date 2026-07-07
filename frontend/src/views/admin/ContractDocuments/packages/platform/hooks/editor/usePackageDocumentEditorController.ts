@@ -398,14 +398,13 @@ export function usePackageDocumentEditorController({
     isProductDirectionPackage,
   });
 
-  const { workPeriodFieldHelp, discountFieldHelp, contractDateFieldHelp } =
-    usePackageDataTabFieldHelp({
-      packageKind,
-      isProductDirectionPackage,
-      contractAndEstimateLocked,
-      isSuperAdmin,
-      form,
-    });
+  const { workPeriodFieldHelp, contractDateFieldHelp } = usePackageDataTabFieldHelp({
+    packageKind,
+    isProductDirectionPackage,
+    contractAndEstimateLocked,
+    isSuperAdmin,
+    form,
+  });
 
   const {
     workOrderHubContextValue,
@@ -567,7 +566,6 @@ export function usePackageDocumentEditorController({
         signatoryProfiles,
         contractDateFieldHelp,
         workPeriodFieldHelp,
-        discountFieldHelp,
         linkedCrmCustomerId,
         onCrmCustomerApplied: handleCrmCustomerApplied,
         onCrmCustomerClear: handleCrmCustomerClear,

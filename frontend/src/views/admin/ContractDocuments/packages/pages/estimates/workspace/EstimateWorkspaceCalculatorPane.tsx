@@ -5,7 +5,7 @@ import { CartProvider } from '@/shared/lib/contexts/CartContext';
 import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 import { ServiceCategoryPage } from '@/views/services/ui/ServiceCategoryPage/ServiceCategoryPage';
 
-import cdBase from '../../../../styles/base.module.css';
+import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 
@@ -42,7 +42,9 @@ export function EstimateWorkspaceCalculatorPane({
                 key={slug}
                 type="button"
                 className={
-                  slug === activeCategorySlug ? `${cdBase.tab} ${cdBase.tabActive}` : cdBase.tab
+                  slug === activeCategorySlug
+                    ? `${cdChrome.tab} ${cdChrome.tabActive}`
+                    : cdChrome.tab
                 }
                 onClick={() => onActiveCategoryChange(slug)}
               >
@@ -66,7 +68,9 @@ export function EstimateWorkspaceCalculatorPane({
           ) : null}
         </CartProvider>
       ) : (
-        <p className={cdBase.hint}>Выберите минимум одну категорию для работы с калькулятором.</p>
+        <p className={cdDocPreview.hint}>
+          Выберите минимум одну категорию для работы с калькулятором.
+        </p>
       )}
     </div>
   );

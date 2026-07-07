@@ -5,7 +5,6 @@ import { useMemo } from 'react';
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
 import { packageKindUiLabel } from '../../../config';
-import { packageDiscountFieldHelp } from '../../estimates/packageDiscountFieldHelp';
 import { contractDateFieldHelp as buildContractDateFieldHelp } from '../../form/contractDateFieldHelp';
 import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
@@ -52,15 +51,6 @@ export function usePackageDataTabFieldHelp({
     ]
   );
 
-  const discountFieldHelp = useMemo(
-    () =>
-      packageDiscountFieldHelp({
-        isWindowsPackage: isProductDirectionPackage,
-        contractLocked: contractAndEstimateLocked,
-      }),
-    [isProductDirectionPackage, contractAndEstimateLocked]
-  );
-
   const contractDateFieldHelp = useMemo(
     () =>
       buildContractDateFieldHelp({
@@ -72,7 +62,6 @@ export function usePackageDataTabFieldHelp({
 
   return {
     workPeriodFieldHelp,
-    discountFieldHelp,
     contractDateFieldHelp,
   };
 }
