@@ -73,6 +73,8 @@ export function validateRequiredCategoryAttributes(
 
 /** Снимок полей карточки товара в админке для проверки обязательных значений и подсветки. */
 export interface AdminProductFormSnapshot {
+  /** Если false — карточку можно сохранить без заполнения обязательных полей (скрытие с витрины). */
+  isActive?: boolean;
   name: string;
   categoryId: string;
   supplierId: string;
@@ -101,6 +103,10 @@ export function validateAdminProductRequiredFields(
   s: AdminProductFormSnapshot,
   categoryAttributes?: CategoryAttrRowForValidation[]
 ): string[] {
+  if (s.isActive === false) {
+    return [];
+  }
+
   const missing: string[] = [];
   if (!s.name.trim()) missing.push('Название');
   if (!s.categoryId.trim()) missing.push('Категория');

@@ -1116,6 +1116,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
 
     const missing = validateAdminProductRequiredFields(
       {
+        isActive: formData.isActive,
         name: formData.name,
         categoryId: formData.categoryId,
         supplierId: formData.supplierId,
