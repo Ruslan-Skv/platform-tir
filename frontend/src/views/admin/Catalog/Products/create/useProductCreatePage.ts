@@ -13,6 +13,7 @@ import { fetchAdminWeatherstripsList } from '@/shared/api/admin-weatherstrips';
 import { getApiErrorMessage, isNetworkFetchError } from '@/shared/lib/api-error';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+import { useProductEditSaveButton } from '../edit/hooks/useProductEditSaveButton';
 import {
   isCanvasTypeFkCategorySlug,
   isCoatingMaterialFkCategorySlug,
@@ -243,6 +244,15 @@ export function useProductCreatePage({
   const [autoSeoDescription, setAutoSeoDescription] = useState(!initialCopyData);
 
   const formRef = useRef<HTMLFormElement>(null);
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const { saveButtonState, saveButtonPinnedTopPx, handleHeaderSaveClick, submitProductForm } =
+    useProductEditSaveButton({
+      saving,
+      loading: false,
+      productNotFound: false,
+      formRef,
+      pageHeaderRef,
+    });
   const [imageError, setImageError] = useState<string | null>(null);
   const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
   const [suggestedComponentNames, setSuggestedComponentNames] = useState<string[]>([]);
@@ -1278,6 +1288,11 @@ export function useProductCreatePage({
     newAttrValue,
     setNewAttrValue,
     formRef,
+    pageHeaderRef,
+    saveButtonState,
+    saveButtonPinnedTopPx,
+    handleHeaderSaveClick,
+    submitProductForm,
     imageError,
     suggestedSizes,
     suggestedComponentNames,

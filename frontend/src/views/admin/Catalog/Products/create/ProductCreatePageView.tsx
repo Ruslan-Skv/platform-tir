@@ -2,6 +2,7 @@
 
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
+import { AdminSaveButton, AdminStickySaveButtonSlot } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { ImageUrlModal } from '../shared/ImageUrlModal';
 import componentStyles from '../shared/ProductComponentsSection.module.css';
@@ -14,6 +15,7 @@ import { ProductEditMainSection } from '../shared/sections/ProductEditMainSectio
 import { ProductEditPricingSection } from '../shared/sections/ProductEditPricingSection';
 import { ProductEditSeoSection } from '../shared/sections/ProductEditSeoSection';
 import { ProductEditVariantsSection } from '../shared/sections/ProductEditVariantsSection';
+import { ProductEditPageRoot } from '../shared/ui/ProductEditDynamicLayout';
 import type { ProductCreatePageModel } from './useProductCreatePage';
 
 type ProductCreatePageViewProps = {
@@ -27,6 +29,11 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
     isCopyMode,
     saving,
     formRef,
+    pageHeaderRef,
+    saveButtonState,
+    saveButtonPinnedTopPx,
+    handleHeaderSaveClick,
+    submitProductForm,
     handleSubmit,
     formData,
     setFormData,
@@ -96,9 +103,9 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
   } = model;
 
   return (
-    <div className={styles.page}>
-      <div className={`${styles.header} ${styles.headerRow}`}>
-        <div className={styles.headerLeft}>
+    <ProductEditPageRoot stickyTopPx={saveButtonPinnedTopPx}>
+      <div ref={pageHeaderRef} className={styles.pageHeader}>
+        <div className={styles.pageHeaderMain}>
           <button
             className={styles.backButton}
             onClick={() => {
@@ -111,19 +118,15 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             {isCopyMode ? 'Добавление товара (копия)' : 'Добавление товара'}
           </h1>
         </div>
-        <button
-          type="button"
-          className={styles.saveButton}
-          disabled={saving}
-          onClick={(e) => {
-            e.preventDefault();
-            if (formRef.current) {
-              formRef.current.requestSubmit();
-            }
-          }}
-        >
-          {saving ? 'Создание...' : 'Создать товар'}
-        </button>
+        <div className={styles.pageHeaderActions}>
+          <AdminStickySaveButtonSlot
+            state={saveButtonState}
+            saving={saving}
+            label="Создать товар"
+            savingLabel="Создание..."
+            onClick={handleHeaderSaveClick}
+          />
+        </div>
       </div>
 
       <form ref={formRef} onSubmit={handleSubmit} className={styles.form}>
@@ -602,14 +605,16 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             >
               Отмена
             </button>
-            <button
-              data-admin-mutation
-              type="submit"
-              className={styles.saveButton}
-              disabled={saving}
-            >
-              {saving ? 'Создание...' : 'Создать товар'}
-            </button>
+            <AdminSaveButton
+              saving={saving}
+              label="Создать товар"
+              savingLabel="Создание..."
+              className={styles.footerSaveButton}
+              onClick={(e) => {
+                e.preventDefault();
+                submitProductForm();
+              }}
+            />
           </div>
         </div>
       </form>
@@ -667,6 +672,6 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
           </button>
         </div>
       )}
-    </div>
+    </ProductEditPageRoot>
   );
 }
