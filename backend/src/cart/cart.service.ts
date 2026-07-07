@@ -6,6 +6,12 @@ import {
   loadServiceCatalogCategoryMarkupMap,
 } from '../common/utils/service-catalog-markup-effective';
 import { PrismaService } from '../database/prisma.service';
+import {
+  cartComponentItemInclude,
+  cartItemListInclude,
+  cartItemProductInclude,
+  cartItemProductOnlyInclude,
+} from './cart-item-includes';
 
 @Injectable()
 export class CartService {
@@ -53,15 +59,7 @@ export class CartService {
         data: {
           quantity: existingItem.quantity + quantity,
         },
-        include: {
-          product: {
-            include: {
-              category: true,
-            },
-          },
-          component: true,
-          cardVariant: true,
-        },
+        include: cartItemProductInclude,
       });
     }
 
@@ -74,23 +72,11 @@ export class CartService {
         openingSide: openingSide || null,
         cardVariantId: cardVariantId || null,
       },
-      include: {
-        product: {
-          include: {
-            category: true,
-            coatingMaterial: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-        },
-        component: true,
-        cardVariant: true,
-      },
+      include: cartItemProductInclude,
     });
   }
 
   async addComponentToCart(userId: string, componentId: string, quantity: number = 1) {
-    // Проверяем, существует ли комплектующее
     const component = await this.prisma.productComponent.findUnique({
       where: { id: componentId },
     });
@@ -99,7 +85,6 @@ export class CartService {
       throw new NotFoundException(`ProductComponent with ID ${componentId} not found`);
     }
 
-    // Проверяем, есть ли уже комплектующее в корзине
     const existingItem = await this.prisma.cartItem.findFirst({
       where: {
         userId,
@@ -109,50 +94,22 @@ export class CartService {
     });
 
     if (existingItem) {
-      // Если комплектующее уже в корзине, увеличиваем количество
       return this.prisma.cartItem.update({
         where: { id: existingItem.id },
         data: {
           quantity: existingItem.quantity + quantity,
         },
-        include: {
-          component: {
-            include: {
-              product: {
-                select: {
-                  id: true,
-                  name: true,
-                  slug: true,
-                },
-              },
-            },
-          },
-          product: true,
-        },
+        include: cartComponentItemInclude,
       });
     }
 
-    // Если комплектующего нет в корзине, создаем новый элемент
     return this.prisma.cartItem.create({
       data: {
         userId,
         componentId,
         quantity,
       },
-      include: {
-        component: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        product: true,
-      },
+      include: cartComponentItemInclude,
     });
   }
 
@@ -161,7 +118,6 @@ export class CartService {
       return this.removeCartItemById(userId, itemId);
     }
 
-    // Проверяем, что элемент корзины принадлежит пользователю
     const item = await this.prisma.cartItem.findFirst({
       where: {
         id: itemId,
@@ -178,17 +134,7 @@ export class CartService {
       data: {
         quantity,
       },
-      include: {
-        product: {
-          include: {
-            category: true,
-            coatingMaterial: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-        },
-        component: true,
-      },
+      include: cartItemProductOnlyInclude,
     });
   }
 
@@ -214,17 +160,7 @@ export class CartService {
       data: {
         quantity,
       },
-      include: {
-        product: {
-          include: {
-            category: true,
-            coatingMaterial: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-        },
-        component: true,
-      },
+      include: cartItemProductOnlyInclude,
     });
   }
 
@@ -250,25 +186,11 @@ export class CartService {
       data: {
         quantity,
       },
-      include: {
-        component: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        product: true,
-      },
+      include: cartComponentItemInclude,
     });
   }
 
   async removeCartItemById(userId: string, itemId: string) {
-    // Проверяем, что элемент корзины принадлежит пользователю
     const item = await this.prisma.cartItem.findFirst({
       where: {
         id: itemId,
@@ -324,28 +246,7 @@ export class CartService {
   async getCart(userId: string) {
     const items = await this.prisma.cartItem.findMany({
       where: { userId },
-      include: {
-        product: {
-          include: {
-            category: true,
-            coatingMaterial: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-        },
-        component: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        cardVariant: true,
-      },
+      include: cartItemListInclude,
       orderBy: { createdAt: 'desc' },
     });
 
@@ -575,28 +476,7 @@ export class CartService {
   async getCartItems(userId: string) {
     return this.prisma.cartItem.findMany({
       where: { userId },
-      include: {
-        product: {
-          include: {
-            category: true,
-            coatingMaterial: {
-              select: { id: true, name: true, slug: true },
-            },
-          },
-        },
-        component: {
-          include: {
-            product: {
-              select: {
-                id: true,
-                name: true,
-                slug: true,
-              },
-            },
-          },
-        },
-        cardVariant: true,
-      },
+      include: cartItemListInclude,
       orderBy: { createdAt: 'desc' },
     });
   }
