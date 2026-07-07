@@ -1,6 +1,7 @@
 import type { ProductAddendumSpecificationLine } from '../../families/product-like/addendum/addendumSpecification';
+import type { DoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 
-export type { ProductAddendumSpecificationLine };
+export type { ProductAddendumSpecificationLine, DoorsSpecificationLine };
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type PackageExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -313,6 +314,10 @@ export interface PackageFormData {
   productSpecificationFileUrl: string;
   /** Исходное имя прикреплённого файла для отображения. */
   productSpecificationFileName: string;
+  /** Позиции спецификации дверей (направление «Двери»). */
+  doorsSpecificationLines: DoorsSpecificationLine[];
+  /** Скидка на спецификацию дверей, % (только направление «Двери»). */
+  doorsSpecificationDiscountPercent: string;
   /**
    * Номер договора на момент создания копии пакета (из поля «Номер договора»).
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».

@@ -264,17 +264,25 @@ export function usePackageDocumentEditorTabProps({
     (): Omit<ProductSpecificationTabProps, 'packageKind' | 'packageId'> => ({
       contractNumberLabel: estimateAppendixContractRef.num,
       contractDateLabel: estimateAppendixContractRef.date,
+      directorName: form.executor.directorName,
+      customerFullName: form.customer.fullName,
       productSpecificationAmount: form.productSpecificationAmount,
       productSpecificationFileUrl: form.productSpecificationFileUrl,
       productSpecificationFileName: form.productSpecificationFileName,
+      doorsSpecificationLines: form.doorsSpecificationLines,
+      doorsSpecificationDiscountPercent: form.doorsSpecificationDiscountPercent,
       ...productSpecificationHandlers,
     }),
     [
       estimateAppendixContractRef.num,
       estimateAppendixContractRef.date,
+      form.executor.directorName,
+      form.customer.fullName,
       form.productSpecificationAmount,
       form.productSpecificationFileUrl,
       form.productSpecificationFileName,
+      form.doorsSpecificationLines,
+      form.doorsSpecificationDiscountPercent,
       productSpecificationHandlers,
     ]
   );

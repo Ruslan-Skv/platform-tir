@@ -335,9 +335,21 @@ export async function addServiceToCart(
     const err = await response.json().catch(() => ({}));
     const msg = (err as { message?: string | string[] }).message;
     const text = Array.isArray(msg) ? msg.join('; ') : msg || 'Ошибка при добавлении в корзину';
+    if (response.status === 409) {
+      const existing = (await getCartServiceItems()).find(
+        (item) => item.serviceCatalogCategoryId === categoryId
+      );
+      if (existing) return existing;
+      throw new CartDuplicateError(text);
+    }
     throw new Error(text);
   }
   return response.json();
+}
+
+/** Услуга этой категории уже есть в корзине (гонка при параллельных POST). */
+export class CartDuplicateError extends Error {
+  readonly name = 'CartDuplicateError';
 }
 
 export async function removeCartServiceItemById(itemId: string): Promise<void> {

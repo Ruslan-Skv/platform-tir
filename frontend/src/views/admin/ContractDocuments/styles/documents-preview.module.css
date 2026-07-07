@@ -1380,6 +1380,86 @@
   padding-bottom: 3px;
 }
 
+/* Спецификация «Двери»: 8 колонок (не путать с 6-колоночной сметой). */
+.doorsSpecificationA4Table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  margin: 6pt 0 8pt;
+}
+
+.doorsSpecificationA4Table th,
+.doorsSpecificationA4Table td {
+  border: 1px solid var(--admin-text-muted);
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  text-align: left;
+  vertical-align: top;
+  line-height: var(--admin-line-height-sm);
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.doorsSpecificationA4Table th:nth-child(1),
+.doorsSpecificationA4Table td:nth-child(1) {
+  width: 4%;
+  white-space: nowrap;
+}
+
+.doorsSpecificationA4Table td:nth-child(1) {
+  text-align: center;
+}
+
+.doorsSpecificationA4Table th:nth-child(2),
+.doorsSpecificationA4Table td:nth-child(2) {
+  width: 24%;
+}
+
+.doorsSpecificationA4Table th:nth-child(3),
+.doorsSpecificationA4Table td:nth-child(3) {
+  width: 11%;
+}
+
+.doorsSpecificationA4Table th:nth-child(4),
+.doorsSpecificationA4Table td:nth-child(4) {
+  width: 10%;
+}
+
+.doorsSpecificationA4Table th:nth-child(5),
+.doorsSpecificationA4Table td:nth-child(5) {
+  width: 14%;
+}
+
+.doorsSpecificationA4Table th:nth-child(6),
+.doorsSpecificationA4Table td:nth-child(6) {
+  width: 7%;
+  white-space: nowrap;
+}
+
+.doorsSpecificationA4Table td:nth-child(6) {
+  text-align: right;
+}
+
+.doorsSpecificationA4Table th:nth-child(7),
+.doorsSpecificationA4Table td:nth-child(7),
+.doorsSpecificationA4Table th:nth-child(8),
+.doorsSpecificationA4Table td:nth-child(8) {
+  width: 15%;
+  white-space: nowrap;
+}
+
+.doorsSpecificationA4Table td:nth-child(7),
+.doorsSpecificationA4Table td:nth-child(8) {
+  text-align: right;
+}
+
+.doorsSpecificationA4Table th {
+  background: var(--admin-surface-muted);
+  font-weight: 700;
+  padding-top: 3px;
+  padding-bottom: 3px;
+  text-align: center;
+}
+
 .estimateA4Total {
   margin: 10px 0 0;
   font-size: var(--admin-print-font-size-12px);

@@ -32,7 +32,9 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
       className={`${ESTIMATE_BLOCK} ${ESTIMATE_DATA_COMPACT} ${ESTIMATE_TAB_COMPACT}${isProductDirectionPackage ? ` ${cdProduct.windowsContractTabTypography}` : ''}`}
     >
       <div className={ESTIMATE_FORM_GRID}>
-        <div className={ESTIMATE_SECTION_CARD}>
+        <div
+          className={`${ESTIMATE_SECTION_CARD}${isProductDirectionPackage ? ` ${cdProduct.windowsContractFormSection}` : ''}`}
+        >
           {contractAndEstimateLocked ? (
             <PackageLockNotice>
               {packageLockNoticeMessage('estimate', {

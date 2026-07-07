@@ -54,10 +54,14 @@ export function PackageEstimateAttachPanel({
 }: PackageEstimateAttachPanelProps) {
   return (
     <>
-      <div className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll}`}>
+      <div
+        className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
+      >
         <div className={attachStyles.estimatePickColumn}>
           <div className={attachStyles.estimateSelectsRow}>
-            <div className={cdEstimateTab.field}>
+            <div
+              className={`${cdEstimateTab.field}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsField}` : ''}`}
+            >
               <label htmlFor="estimate_group_select">Объект</label>
               <select
                 id="estimate_group_select"
@@ -92,7 +96,9 @@ export function PackageEstimateAttachPanel({
                 ))}
               </select>
             </div>
-            <div className={cdEstimateTab.field}>
+            <div
+              className={`${cdEstimateTab.field}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsField}` : ''}`}
+            >
               <label htmlFor="estimate_select">Расчёт</label>
               <select
                 id="estimate_select"
@@ -213,7 +219,9 @@ export function PackageEstimateAttachPanel({
       !(form.estimate.selectedPresetIds ?? []).every(
         (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
       ) ? (
-        <p className={`${ESTIMATE_TAB_HINT} ${attachStyles.estimateTabHintFullWidth}`}>
+        <p
+          className={`${ESTIMATE_TAB_HINT} ${attachStyles.estimateTabHintFullWidth}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
+        >
           Часть расчётов уже прикреплена в других пакетах:{' '}
           {[
             ...new Set(

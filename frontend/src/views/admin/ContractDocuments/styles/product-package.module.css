@@ -344,6 +344,8 @@
 .estimateTabCompact.windowsContractTabTypography .windowsAddendumMajorHeading,
 .estimateTabCompact.windowsContractTabTypography .windowsAddendumSubsectionHeading,
 .estimateTabCompact.windowsContractTabTypography .windowsAddendumSpecTable,
+.estimateTabCompact.windowsContractTabTypography .doorsSpecificationTable,
+.estimateTabCompact.windowsContractTabTypography .doorsSpecificationSectionTotal,
 .estimateTabCompact.windowsContractTabTypography .windowsAddendumGrandTotalsFinal {
   font-size: var(--windows-contract-tab-font-size);
 }
@@ -355,6 +357,7 @@
 .windowsContractTabTypography .estimateA4Category,
 .windowsContractTabTypography .estimateA4RoomHeader,
 .windowsContractTabTypography .estimateA4Table,
+.windowsContractTabTypography .doorsSpecificationA4Table,
 .windowsContractTabTypography .estimateA4Total,
 .windowsContractTabTypography .estimateA4DiscountMeta,
 .windowsContractTabTypography .estimateA4Empty,
@@ -686,4 +689,319 @@
   border-left-color: var(--admin-warning, #f59e0b);
   color: var(--admin-warning-text, #fcd34d);
   box-shadow: 0 1px 3px rgb(0 0 0 / 0.25);
+}
+
+.doorsSpecificationEditor {
+  margin-top: var(--admin-space-sm);
+}
+
+/* Блок ввода «Окна»/«Двери»: единый компактный шрифт (Спецификация, Счёт-заказ, Д/с). */
+.windowsSpecFieldCaption {
+  display: block;
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-weight: 600 !important;
+  color: var(--admin-text-secondary) !important;
+  line-height: var(--admin-line-height-sm) !important;
+}
+
+.windowsSpecificationAmountField {
+  gap: var(--admin-space-2xs);
+  margin-bottom: 0;
+}
+
+.windowsSpecificationAmountField > label {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-weight: 600 !important;
+  color: var(--admin-text-secondary) !important;
+  line-height: var(--admin-line-height-sm) !important;
+}
+
+.windowsSpecificationAmountField input {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  line-height: var(--admin-line-height-sm) !important;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.doorsSpecificationDiscountField > label {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-weight: 600 !important;
+  color: var(--admin-text-secondary) !important;
+  line-height: var(--admin-line-height-sm) !important;
+}
+
+.doorsSpecificationDiscountField input {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  line-height: var(--admin-line-height-sm) !important;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact
+  .windowsContractFormSection
+  .windowsSpecificationAmountField
+  > label,
+.estimateTabCompact.windowsContractTabTypography.dataCompact
+  .windowsContractFormSection
+  .windowsSpecFieldCaption {
+  font-size: var(--windows-contract-tab-font-size);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact
+  .windowsContractFormSection
+  .windowsSpecificationAmountField
+  input {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  :where(h1, h2, h3, h4, h5) {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection h3.sectionTitle,
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection .estimateSectionTitle {
+  font-weight: 600;
+  margin: 0 0 var(--admin-space-2xs);
+  padding-top: 0;
+  border-top: none;
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact .windowsContractFormSection p,
+.estimateTabCompact.windowsContractTabTypography.dataCompact .windowsContractFormSection label {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography.dataCompact .windowsContractFormSection label {
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection select,
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection input[type='text'],
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection input[type='tel'],
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection input[type='email'] {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography .windowsContractFormSection > p {
+  margin-top: 0;
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  :is(
+    .doorsSpecificationTable,
+    .doorsSpecificationTable th,
+    .doorsSpecificationTable td,
+    .doorsSpecificationTable input,
+    .doorsSpecificationSectionTotal,
+    .doorsSpecificationActionsRow .secondaryBtn
+  ) {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.doorsSpecificationFieldsRow {
+  margin-bottom: var(--admin-space-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  .doorsSpecificationDiscountField {
+  gap: var(--admin-space-2xs);
+  margin-bottom: 0;
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  .doorsSpecificationDiscountField
+  label {
+  font-size: var(--windows-contract-tab-font-size);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  .doorsSpecificationDiscountField
+  input {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  .doorsSpecificationTable
+  .estimateAttachedRemoveBtn {
+  font-size: var(--windows-contract-tab-font-size);
+  line-height: 1;
+}
+
+.doorsSpecificationTableWrap {
+  overflow-x: auto;
+}
+
+.doorsSpecificationTable {
+  width: 100%;
+  min-width: 920px;
+  table-layout: fixed;
+  border-collapse: collapse;
+  font-size: inherit;
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 45%, transparent);
+}
+
+.doorsSpecificationColIndex {
+  width: 2.25rem;
+}
+
+.doorsSpecificationColName {
+  width: 22%;
+}
+
+.doorsSpecificationColSize,
+.doorsSpecificationColColor,
+.doorsSpecificationColOpening {
+  width: 10%;
+}
+
+.doorsSpecificationColQty {
+  width: 3.5rem;
+}
+
+.doorsSpecificationColPrice,
+.doorsSpecificationColAmount {
+  width: 5.5rem;
+}
+
+.doorsSpecificationColActions {
+  width: 2.25rem;
+}
+
+.doorsSpecificationTable th,
+.doorsSpecificationTable td {
+  padding: 4px 5px;
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 45%, transparent);
+  vertical-align: top;
+}
+
+.doorsSpecificationTable th {
+  font-weight: normal;
+  text-align: center;
+  background: color-mix(in srgb, var(--admin-surface-muted, #f8fafc) 80%, transparent);
+}
+
+.doorsSpecificationTable tbody td {
+  background: var(--admin-surface, #fff);
+}
+
+.doorsSpecificationTable input {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 28px;
+  padding: 4px 6px;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: var(--admin-radius-sm, 4px);
+  font: inherit;
+  background: var(--admin-surface, #fff);
+  color: inherit;
+}
+
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly) {
+  outline: none;
+}
+
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+}
+
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus-visible {
+  outline: none;
+}
+
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.doorsSpecificationIndexCell {
+  text-align: center;
+}
+
+.doorsSpecificationAmountCell {
+  text-align: right;
+}
+
+.doorsSpecificationAmountReadonly {
+  border-color: transparent !important;
+  background: transparent !important;
+  text-align: right;
+  cursor: default;
+}
+
+.doorsSpecificationAmountReadonly:focus {
+  box-shadow: none !important;
+}
+
+.doorsSpecificationActionsCell {
+  text-align: center;
+  vertical-align: middle;
+}
+
+.doorsSpecificationActionsRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+}
+
+.doorsSpecificationAddBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  min-width: 24px;
+  min-height: 24px;
+  flex-shrink: 0;
+}
+
+.doorsSpecificationAddBtnIcon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.doorsSpecificationSectionTotal {
+  margin: 0;
+  font-size: inherit;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .doorsSpecificationTable {
+  border-color: color-mix(in srgb, var(--admin-border) 55%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .doorsSpecificationTable th,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .doorsSpecificationTable td {
+  border-color: color-mix(in srgb, var(--admin-border) 55%, transparent);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .doorsSpecificationTable tbody td {
+  background: var(--admin-surface);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .doorsSpecificationTable
+  input:not(.doorsSpecificationAmountReadonly) {
+  background: var(--admin-surface);
+  border-color: color-mix(in srgb, var(--admin-border) 70%, transparent);
 }

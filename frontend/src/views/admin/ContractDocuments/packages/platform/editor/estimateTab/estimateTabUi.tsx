@@ -9,9 +9,11 @@ export function formatPackageMoneyValue(value: number): string {
 export function PackageEstimateSignaturesBlock({
   directorName,
   customerFullName,
+  executorPartyLabel = 'Подрядчик',
 }: {
   directorName: string;
   customerFullName: string;
+  executorPartyLabel?: 'Подрядчик' | 'Исполнитель';
 }) {
   return (
     <div className={cdDocPreview.estimateA4Signatures}>
@@ -20,7 +22,7 @@ export function PackageEstimateSignaturesBlock({
           <tr>
             <td className={cdDocPreview.estimateA4SignaturesCellLeft}>
               <p className={cdDocPreview.estimateA4SignaturePartyLine}>
-                Подрядчик _____________________ / {directorName}
+                {executorPartyLabel} _____________________ / {directorName}
               </p>
               <p className={cdDocPreview.estimateA4SignNote}>м.п.</p>
             </td>

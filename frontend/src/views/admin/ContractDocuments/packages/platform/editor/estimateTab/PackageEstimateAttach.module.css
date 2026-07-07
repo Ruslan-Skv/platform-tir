@@ -149,3 +149,54 @@
 .estimateSheetField > label {
   font-size: var(--admin-font-size-2xs);
 }
+
+/* Товарные пакеты («Окна»/«Двери»): единый шрифт блока прикрепления и превью сметы. */
+.estimateAttachWindowsTypography.estimateTabHint,
+.estimateAttachWindowsTypography .estimateAttachedColumnTitle {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: normal;
+  letter-spacing: normal;
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateAttachWindowsTypography.estimateTabHint,
+.estimateAttachWindowsTypography .estimateAttachedEmpty,
+.estimateAttachWindowsTypography .estimateAttachedPresetMeta,
+.estimateAttachWindowsTypography .estimateTabHint {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateAttachWindowsTypography .estimateAttachedPresetMain strong {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+}
+
+.estimateAttachWindowsTypography .estimateAttachedRemoveBtn {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  line-height: 1;
+}
+
+.estimateAttachWindowsTypography.estimateSheetField > label,
+.estimateAttachWindowsTypography .estimateSheetField > label {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+}
+
+.estimateAttachWindowsTypography .estimateAttachPrimaryBtn {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  line-height: var(--admin-line-height-sm);
+}
+
+/* Перебивает .estimateTabCompact.dataCompact .field label (2xs) в товарных пакетах. */
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachWindowsField > label {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachWindowsField select {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  line-height: var(--admin-line-height-sm);
+}

@@ -3,6 +3,10 @@ import {
   packageEstimateTotalToContractFields,
 } from '../../../platform/form/packageContractDiscount';
 import type { PackageFormData } from '../../../platform/form/packageForm';
+import {
+  computeDoorsSpecificationNetTotal,
+  sumDoorsSpecificationLinesTotal,
+} from '../specification/doorsSpecification';
 
 export function parseContractMoneyAmount(raw: string | undefined | null): number {
   const normalized = (raw ?? '').replace(/\s+/g, '').replace(',', '.');
@@ -34,7 +38,14 @@ export function computeProductContractCostBreakdown(
     form.contract.discountPercent
   );
   const worksAmount = discountedWorks ?? 0;
-  const productsAmount = parseContractMoneyAmount(form.productSpecificationAmount);
+  const doorsProductsTotal = sumDoorsSpecificationLinesTotal(form.doorsSpecificationLines);
+  const productsAmount =
+    doorsProductsTotal > 0
+      ? computeDoorsSpecificationNetTotal(
+          form.doorsSpecificationLines,
+          form.doorsSpecificationDiscountPercent
+        ).netTotal
+      : parseContractMoneyAmount(form.productSpecificationAmount);
   const totalAmount = worksAmount + productsAmount;
 
   return {

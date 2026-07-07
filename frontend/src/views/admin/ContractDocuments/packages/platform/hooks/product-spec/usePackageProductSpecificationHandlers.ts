@@ -42,10 +42,28 @@ export function usePackageProductSpecificationHandlers({
     touchPackageData();
   }, [setForm, touchPackageData]);
 
+  const onDoorsSpecificationLinesChange = useCallback(
+    (lines: PackageFormData['doorsSpecificationLines']) => {
+      setForm((p) => ({ ...p, doorsSpecificationLines: lines }));
+      touchPackageData();
+    },
+    [setForm, touchPackageData]
+  );
+
+  const onDoorsSpecificationDiscountPercentChange = useCallback(
+    (value: string) => {
+      setForm((p) => ({ ...p, doorsSpecificationDiscountPercent: value }));
+      touchPackageData();
+    },
+    [setForm, touchPackageData]
+  );
+
   return {
     onProductSpecificationAmountChange,
     onProductSpecificationFileAttached,
     onProductSpecificationFileClear,
+    onDoorsSpecificationLinesChange,
+    onDoorsSpecificationDiscountPercentChange,
     onError: setError,
   };
 }

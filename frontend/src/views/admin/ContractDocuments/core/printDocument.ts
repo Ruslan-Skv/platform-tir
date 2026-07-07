@@ -488,6 +488,67 @@ const WINDOWS_PACKAGE_UNIFIED_PRINT_CSS = `
     font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
     line-height: 1.32 !important;
   }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    table-layout: fixed !important;
+    margin: 6pt 0 8pt !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th,
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td {
+    border: 1px solid #9ca3af !important;
+    padding: 2pt 4pt !important;
+    font-size: ${CONTRACT_COMPACT_BODY_PT} !important;
+    line-height: 1.28 !important;
+    vertical-align: top !important;
+    overflow-wrap: break-word !important;
+    word-break: break-word !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(1),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(1) {
+    width: 4% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(1) {
+    text-align: center !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(2) {
+    width: 24% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(3),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(3) {
+    width: 11% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(4),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(4) {
+    width: 10% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(5),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(5) {
+    width: 14% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(6),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(6) {
+    width: 7% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(6) {
+    text-align: right !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(7),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(7),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(8),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(8) {
+    width: 15% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(7),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(8) {
+    text-align: right !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th {
+    background: #f9fafb !important;
+    font-weight: normal !important;
+    text-align: center !important;
+  }
 `;
 
 function stripTypographyFromInlineStyle(style: string, keepFontSize = false): string {
@@ -792,6 +853,58 @@ function buildPrintStylesheet(
   .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder th:nth-child(4),
   .docPrint .estimateA4DocPrintEmbed .estimateA4TableWorkOrder td:nth-child(4) {
     width: 29%; text-align: right;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table {
+    width: 100%; border-collapse: collapse; table-layout: fixed; margin: 6pt 0 8pt;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th,
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td {
+    border: 1px solid #9ca3af; padding: 2pt 4pt; vertical-align: top;
+    overflow-wrap: break-word; word-break: break-word; line-height: 1.28;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(1),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(1) {
+    width: 4%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(1) {
+    text-align: center;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(2) {
+    width: 24%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(3),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(3) {
+    width: 11%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(4),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(4) {
+    width: 10%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(5),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(5) {
+    width: 14%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(6),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(6) {
+    width: 7%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(6) {
+    text-align: right;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(7),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(7),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(8),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(8) {
+    width: 15%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(7),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(8) {
+    text-align: right;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th {
+    background: #f9fafb; font-weight: 700; padding-top: 3pt; padding-bottom: 3pt;
+    text-align: center;
   }
   /* Итоговый заказ-наряд: плотность как на вкладке (≈11px), не общий docPrint 12pt */
   .docPrint .packageFinalWorkOrderPrint {

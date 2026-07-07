@@ -27,7 +27,7 @@ export function PackageEstimateMergedSheet({
 }: PackageEstimateMergedSheetProps) {
   return (
     <div
-      className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField}`}
+      className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
     >
       <label>Содержимое объединённой сметы</label>
       <div className={`${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`}>
@@ -158,6 +158,7 @@ export function PackageEstimateMergedSheet({
               <PackageEstimateSignaturesBlock
                 directorName={form.executor.directorName}
                 customerFullName={form.customer.fullName}
+                executorPartyLabel={isProductDirectionPackage ? 'Исполнитель' : 'Подрядчик'}
               />
               <div className={cdDocPreview.estimateA4HandwritingNote}>
                 <p className={cdDocPreview.estimateA4HandwritingNoteLabel}>Примечание:</p>
@@ -170,6 +171,7 @@ export function PackageEstimateMergedSheet({
               <PackageEstimateSignaturesBlock
                 directorName={form.executor.directorName}
                 customerFullName={form.customer.fullName}
+                executorPartyLabel={isProductDirectionPackage ? 'Исполнитель' : 'Подрядчик'}
               />
             </>
           ) : (

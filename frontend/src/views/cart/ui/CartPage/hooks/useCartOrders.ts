@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CartServiceItem } from '@/shared/api/cart';
+import { type CartServiceItem, getCartServiceItems } from '@/shared/api/cart';
 import { type UserOrder, getApprovalRemainingMs, getUserOrders } from '@/shared/api/user-orders';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
@@ -21,6 +21,12 @@ type UseCartOrdersParams = {
   ) => Promise<void>;
 };
 
+function isCategoryInCart(items: CartServiceItem[], slug: string, categoryName: string): boolean {
+  return items.some(
+    (cartItem) => cartItem.category?.slug === slug || cartItem.category?.name === categoryName
+  );
+}
+
 export function useCartOrders({
   cartLength,
   cartServiceItems,
@@ -29,6 +35,7 @@ export function useCartOrders({
   const [userOrders, setUserOrders] = useState<UserOrder[] | null>(null);
   const [, setTick] = useState(0);
   const restoringServiceOrdersRef = useRef<Set<string>>(new Set());
+  const restoringCategorySlugsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 1000);
@@ -54,9 +61,9 @@ export function useCartOrders({
       (order) => order.status === 'CANCELLED' && (order.orderServiceItems?.length ?? 0) > 0
     );
     if (cancelledOrders.length === 0) return;
-    const restoredIds = getRestoredServiceOrderIds();
 
     const restoreOrderServices = async (order: UserOrder) => {
+      const restoredIds = getRestoredServiceOrderIds();
       if (restoredIds.has(order.id) || restoringServiceOrdersRef.current.has(order.id)) return;
       restoringServiceOrdersRef.current.add(order.id);
       try {
@@ -82,12 +89,16 @@ export function useCartOrders({
 
         if (byCategory.size === 0) return;
 
+        let currentCartItems = await getCartServiceItems().catch(() => cartServiceItems);
+
         for (const [slug, category] of byCategory.entries()) {
-          const alreadyInCart = cartServiceItems.some(
-            (cartItem) =>
-              cartItem.category?.slug === slug || cartItem.category?.name === category.categoryName
-          );
-          if (alreadyInCart) continue;
+          if (
+            isCategoryInCart(currentCartItems, slug, category.categoryName) ||
+            restoringCategorySlugsRef.current.has(slug)
+          ) {
+            continue;
+          }
+
           const res = await apiFetch(
             `${API_URL}/service-catalog/categories/${encodeURIComponent(slug)}`
           );
@@ -100,7 +111,21 @@ export function useCartOrders({
               quantity,
             })),
           }));
-          await addServiceToCart(data.id, { rooms });
+
+          restoringCategorySlugsRef.current.add(slug);
+          try {
+            await addServiceToCart(data.id, { rooms });
+            currentCartItems = await getCartServiceItems().catch(() => currentCartItems);
+          } catch {
+            currentCartItems = await getCartServiceItems().catch(() => currentCartItems);
+            if (!isCategoryInCart(currentCartItems, slug, category.categoryName)) {
+              throw new Error(
+                `Не удалось восстановить услуги категории «${category.categoryName}»`
+              );
+            }
+          } finally {
+            restoringCategorySlugsRef.current.delete(slug);
+          }
         }
 
         markServiceOrderRestored(order.id);
@@ -109,9 +134,13 @@ export function useCartOrders({
       }
     };
 
-    cancelledOrders.forEach((order) => {
-      void restoreOrderServices(order);
-    });
+    const runRestores = async () => {
+      for (const order of cancelledOrders) {
+        await restoreOrderServices(order);
+      }
+    };
+
+    void runRestores();
   }, [userOrders, cartServiceItems, addServiceToCart]);
 
   const sortedOrders = useMemo(() => {

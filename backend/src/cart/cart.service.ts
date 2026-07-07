@@ -494,7 +494,7 @@ export class CartService {
     }
 
     const payload = hasRooms ? { rooms } : (items as unknown as object);
-    return this.prisma.cartServiceItem.upsert({
+    const upsertArgs = {
       where: {
         userId_serviceCatalogCategoryId: { userId, serviceCatalogCategoryId },
       },
@@ -509,7 +509,24 @@ export class CartService {
       include: {
         category: { select: { id: true, name: true, slug: true } },
       },
-    });
+    } as const;
+
+    try {
+      return await this.prisma.cartServiceItem.upsert(upsertArgs);
+    } catch (error) {
+      if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === 'P2002') {
+        return this.prisma.cartServiceItem.update({
+          where: {
+            userId_serviceCatalogCategoryId: { userId, serviceCatalogCategoryId },
+          },
+          data: { items: payload as unknown as object },
+          include: {
+            category: { select: { id: true, name: true, slug: true } },
+          },
+        });
+      }
+      throw error;
+    }
   }
 
   async removeCartServiceItemById(userId: string, itemId: string) {

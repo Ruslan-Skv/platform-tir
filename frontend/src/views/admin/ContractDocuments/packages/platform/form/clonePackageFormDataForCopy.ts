@@ -28,6 +28,8 @@ export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknow
     productSpecificationAmount: '',
     productSpecificationFileUrl: '',
     productSpecificationFileName: '',
+    doorsSpecificationLines: defaultPackageFormData().doorsSpecificationLines,
+    doorsSpecificationDiscountPercent: '',
     estimate: {
       ...form.estimate,
       selectedPresetIds: [],

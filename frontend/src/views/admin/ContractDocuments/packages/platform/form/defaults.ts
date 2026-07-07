@@ -1,3 +1,4 @@
+import { newDoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 import type {
   PackageAddendumSlotEstimateBlock,
   PackageAddendumSlotsTuple,
@@ -154,6 +155,8 @@ export function defaultPackageFormData(): PackageFormData {
     productSpecificationAmount: '',
     productSpecificationFileUrl: '',
     productSpecificationFileName: '',
+    doorsSpecificationLines: [newDoorsSpecificationLine()],
+    doorsSpecificationDiscountPercent: '',
     issuedInvoices: [],
   };
 }

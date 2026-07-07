@@ -126,6 +126,20 @@
   font-size: var(--admin-font-size-2xs);
 }
 
+/* Товарные пакеты: подписи полей спецификации «Окна» (перебивает .field label 2xs). */
+.windowsSpecMainRow.windowsSpecWindowsTypography .windowsSpecAmountField > label,
+.windowsSpecMainRow.windowsSpecWindowsTypography .windowsSpecFieldCaption {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-weight: 600 !important;
+  color: var(--admin-text-secondary) !important;
+  line-height: var(--admin-line-height-sm) !important;
+}
+
+.windowsSpecMainRow.windowsSpecWindowsTypography .windowsSpecAmountField input {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  line-height: var(--admin-line-height-sm) !important;
+}
+
 .windowsSpecFileControlRow {
   display: flex;
   flex-wrap: wrap;

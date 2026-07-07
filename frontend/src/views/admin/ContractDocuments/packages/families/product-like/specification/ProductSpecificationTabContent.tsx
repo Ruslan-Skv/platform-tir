@@ -15,6 +15,7 @@ import cdHubModals from '../../../../styles/hub-modals.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { PackageEstimateSignaturesBlock } from '../../../platform/editor/estimateTab/estimateTabUi';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
@@ -49,6 +50,8 @@ type ProductSpecificationTabContentProps = {
   fileName: string;
   contractNumberLabel: string;
   contractDateLabel: string;
+  directorName: string;
+  customerFullName: string;
   disabled?: boolean;
   onAmountChange: (value: string) => void;
   onFileAttached: (payload: { fileUrl: string; fileName: string }) => void;
@@ -64,6 +67,8 @@ export function ProductSpecificationTabContent({
   fileName,
   contractNumberLabel,
   contractDateLabel,
+  directorName,
+  customerFullName,
   disabled = false,
   onAmountChange,
   onFileAttached,
@@ -100,7 +105,7 @@ export function ProductSpecificationTabContent({
   return (
     <div className={SPEC_ROOT}>
       <div className={SPEC_FORM_GRID}>
-        <div className={SPEC_SECTION_CARD}>
+        <div className={`${SPEC_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
           {disabled ? (
             <PackageLockNotice>{packageLockNoticeMessage('specification')}</PackageLockNotice>
           ) : null}
@@ -110,8 +115,12 @@ export function ProductSpecificationTabContent({
             прикрепите файл с эскизом и расчётом (PDF, Office, изображения, архивы, DWG и др.).
           </p>
           <div className={SPEC_SECTION_FIELDS}>
-            <div className={`${cdHubModals.windowsSpecMainRow} ${cdEstimateTab.fieldSpanAll}`}>
-              <div className={`${SPEC_FIELD} ${cdHubModals.windowsSpecAmountField}`}>
+            <div
+              className={`${cdHubModals.windowsSpecMainRow} ${cdEstimateTab.fieldSpanAll} ${cdHubModals.windowsSpecWindowsTypography}`}
+            >
+              <div
+                className={`${SPEC_FIELD} ${cdHubModals.windowsSpecAmountField} ${cdProduct.windowsSpecificationAmountField}`}
+              >
                 <label htmlFor="windows-specification-amount">Стоимость спецификации, руб.</label>
                 <input
                   id="windows-specification-amount"
@@ -221,6 +230,11 @@ export function ProductSpecificationTabContent({
               ) : (
                 <p className={cdDocPreview.estimateA4Empty}>Файл не прикреплён.</p>
               )}
+              <PackageEstimateSignaturesBlock
+                directorName={directorName}
+                customerFullName={customerFullName}
+                executorPartyLabel="Исполнитель"
+              />
             </article>
           </div>
         </div>

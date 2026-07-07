@@ -264,6 +264,10 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
         await cartApi.addServiceToCart(categoryId, payload);
         await refreshCart();
       } catch (error) {
+        if (error instanceof cartApi.CartDuplicateError) {
+          await refreshCart();
+          return;
+        }
         if (error instanceof Error && error.message === 'Необходима авторизация') {
           emitCartAuthRequired('add_service');
           throw new AuthRequiredForCartError('add_service');
