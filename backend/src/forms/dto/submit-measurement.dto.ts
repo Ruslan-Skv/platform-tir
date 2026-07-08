@@ -1,6 +1,10 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { Transform } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
 import { ConsentAcceptedDto } from '../../common/dto/consent-accepted.dto';
+
+const emptyToUndefined = ({ value }: { value: unknown }) =>
+  typeof value === 'string' && value.trim() === '' ? undefined : value;
 
 export class SubmitMeasurementDto extends ConsentAcceptedDto {
   @ApiProperty({ description: 'Имя' })
@@ -15,10 +19,12 @@ export class SubmitMeasurementDto extends ConsentAcceptedDto {
   @MaxLength(50)
   phone: string;
 
-  @ApiProperty({ description: 'Email' })
+  @ApiPropertyOptional({ description: 'Email' })
+  @Transform(emptyToUndefined)
+  @IsOptional()
   @IsEmail()
   @MaxLength(200)
-  email: string;
+  email?: string;
 
   @ApiProperty({ description: 'Адрес' })
   @IsString()
@@ -40,11 +46,12 @@ export class SubmitMeasurementDto extends ConsentAcceptedDto {
   @MaxLength(50)
   preferredTime?: string;
 
-  @ApiProperty({ description: 'Тип продукта' })
+  @ApiPropertyOptional({ description: 'Интересующий товар' })
+  @Transform(emptyToUndefined)
+  @IsOptional()
   @IsString()
-  @IsNotEmpty()
   @MaxLength(200)
-  productType: string;
+  productType?: string;
 
   @ApiPropertyOptional({ description: 'Комментарий' })
   @IsOptional()

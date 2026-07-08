@@ -43,11 +43,11 @@ export class FormsService {
         type: 'measurement',
         name: dto.name,
         phone: dto.phone,
-        email: dto.email,
+        email: dto.email?.trim() || null,
         address: dto.address,
         preferredDate: dto.preferredDate,
         preferredTime: dto.preferredTime ?? '',
-        productType: dto.productType,
+        productType: dto.productType?.trim() || null,
         comment: dto.comments,
       },
     });
@@ -83,11 +83,11 @@ export class FormsService {
   <h1>Новая заявка на бесплатный замер</h1>
   <p><strong>Имя:</strong> ${escaped(dto.name)}</p>
   <p><strong>Телефон:</strong> ${escaped(dto.phone)}</p>
-  <p><strong>Email:</strong> ${escaped(dto.email)}</p>
+  <p><strong>Email:</strong> ${escaped(dto.email ?? '—')}</p>
   <p><strong>Адрес:</strong> ${escaped(dto.address)}</p>
   <p><strong>Желаемая дата:</strong> ${escaped(dto.preferredDate)}</p>
   <p><strong>Желаемое время:</strong> ${escaped(dto.preferredTime ?? '')}</p>
-  <p><strong>Тип продукта:</strong> ${escaped(dto.productType)}</p>
+  ${dto.productType ? `<p><strong>Интересующий товар:</strong> ${escaped(dto.productType)}</p>` : ''}
   ${dto.comments ? `<hr style="margin: 16px 0; border: none; border-top: 1px solid #e5e7eb;"><p><strong>Комментарий:</strong></p><div style="white-space: pre-wrap;">${escaped(dto.comments)}</div>` : ''}
 </body>
 </html>`;
@@ -98,11 +98,11 @@ export class FormsService {
 
 Имя: ${dto.name}
 Телефон: ${dto.phone}
-Email: ${dto.email}
+Email: ${dto.email ?? '—'}
 Адрес: ${dto.address}
 Желаемая дата: ${dto.preferredDate}
 Желаемое время: ${dto.preferredTime}
-Тип продукта: ${dto.productType}
+${dto.productType ? `Интересующий товар: ${dto.productType}\n` : ''}
 ${dto.comments ? `\nКомментарий:\n${dto.comments}` : ''}`;
   }
 

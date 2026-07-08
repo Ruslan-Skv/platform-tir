@@ -9,11 +9,11 @@ export interface CallbackFormData {
 export interface MeasurementFormData {
   name: string;
   phone: string;
-  email: string;
+  email?: string;
   address: string;
   preferredDate: string;
   preferredTime?: string;
-  productType: string;
+  productType?: string;
   comments?: string;
 }
 

@@ -12,11 +12,11 @@ export async function getQuoteFormOptions(): Promise<{ options: string[] }> {
 export interface MeasurementFormPayload {
   name: string;
   phone: string;
-  email: string;
+  email?: string;
   address: string;
   preferredDate: string;
   preferredTime?: string;
-  productType: string;
+  productType?: string;
   comments?: string;
   consentAccepted: boolean;
 }
