@@ -49,6 +49,8 @@ services:
     cpus: '2'
     volumes:
       - backend_uploads:/app/uploads
+      # CA с хоста (НУЦ Минцифры) — TLS к platform-api2.max.ru
+      - /etc/ssl/certs:/etc/ssl/certs:ro
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required for production}
       ELASTICSEARCH_NODE: http://elasticsearch:9200
@@ -80,6 +82,8 @@ services:
       # MAX (уведомления в мессенджер MAX). Без токена — только email/Telegram
       MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
       MAX_API_BASE_URL: ${MAX_API_BASE_URL:-https://platform-api2.max.ru}
+      # Сброс битого bundle из старых образов; доверяем /etc/ssl/certs (mount с хоста)
+      NODE_EXTRA_CA_CERTS: ''
       # Web Push (уведомления админки в установленном PWA на телефоне)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
