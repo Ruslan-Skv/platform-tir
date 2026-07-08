@@ -10,6 +10,7 @@ import {
   getProductComponents,
 } from '@/shared/api/product-components';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
+import { getComponentQuantityStep } from '@/shared/lib/component-kit';
 import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ProductComponents.module.css';
@@ -81,13 +82,8 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
     fetchComponents();
   }, [productId, initialComponents]);
 
-  // «Стойка коробки» продаётся половинками (шаг 0,5), остальные — целыми
   const getQuantityStep = (component: ProductComponent): number =>
-    /стойка\s+коробки/i.test(component.name) ||
-    /стойка\s+коробки/i.test(component.type) ||
-    (component.name === 'Коробка' && !/стойки/i.test(component.type))
-      ? 0.5
-      : 1;
+    getComponentQuantityStep(component);
 
   const getMinQuantity = (component: ProductComponent): number =>
     getQuantityStep(component) === 0.5 ? 0.5 : 1;

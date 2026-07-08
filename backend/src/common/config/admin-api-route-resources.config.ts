@@ -19,6 +19,14 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   },
   // Настройки каталога (справочники)
   {
+    prefix: '/api/v1/admin/catalog/component-catalog-groups',
+    resourceId: 'admin.catalog.components',
+  },
+  {
+    prefix: '/api/v1/admin/catalog/component-catalog',
+    resourceId: 'admin.catalog.components',
+  },
+  {
     prefix: '/api/v1/admin/catalog/coating-materials',
     resourceId: 'admin.settings.catalog-coating-materials',
   },

@@ -7,6 +7,7 @@ export const cartProductWithCategoryInclude = {
 
 export const cartComponentWithProductInclude = {
   product: { select: { id: true, name: true, slug: true } },
+  catalogItem: true,
 } as const;
 
 export const cartItemProductInclude = {

@@ -5,6 +5,10 @@ import type { SubmitFromCartDto } from '../dto/submit-from-cart.dto';
 import { DEFAULT_APPROVAL_VALID_MINUTES, OrdersDeliveryService } from './orders-delivery.service';
 import { OrdersCartServiceLinesService } from './orders-cart-service-lines.service';
 import type { CartProductLine, CartServiceLine } from './orders-cart-submit-shared';
+import {
+  resolveCartComponentLabel,
+  resolveCartComponentPrice,
+} from '../../cart/cart-component-resolve.util';
 import { OrdersCartSubmitFlowsService } from './orders-cart-submit-flows.service';
 
 @Injectable()
@@ -166,11 +170,13 @@ export class OrdersCartSubmitService {
     let subtotal = 0;
 
     for (const item of cartItems) {
-      const qty = Math.max(1, Math.round(Number(item.quantity)));
+      const qty = Math.max(0.5, Number(item.quantity) || 1);
       if (item.productId && item.product) {
         const price = parseFloat(item.product.price.toString());
         orderItems.push({
           productId: item.product.id,
+          componentId: null,
+          componentLabel: null,
           quantity: qty,
           price,
           size: item.size ?? null,
@@ -179,9 +185,11 @@ export class OrdersCartSubmitService {
         });
         subtotal += price * qty;
       } else if (item.componentId && item.component) {
-        const price = parseFloat(item.component.price.toString());
+        const price = resolveCartComponentPrice(item.component);
         orderItems.push({
           productId: item.component.productId,
+          componentId: item.component.id,
+          componentLabel: resolveCartComponentLabel(item.component),
           quantity: qty,
           price,
           size: null,

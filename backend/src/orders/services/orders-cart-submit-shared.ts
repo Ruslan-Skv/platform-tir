@@ -3,7 +3,9 @@ import { UserRole } from '@prisma/client';
 import type { PrismaService } from '../../database/prisma.service';
 
 export type CartProductLine = {
-  productId: string;
+  productId: string | null;
+  componentId: string | null;
+  componentLabel: string | null;
   quantity: number;
   price: number;
   size: string | null;
@@ -54,11 +56,12 @@ export function isOrderManagerRole(role?: string): boolean {
 }
 
 function orderItemMergeKey(oi: {
-  productId: string;
+  productId: string | null;
+  componentId: string | null;
   size: string | null;
   openingSide: string | null;
 }): string {
-  return `${oi.productId}|${oi.size ?? ''}|${oi.openingSide ?? ''}`;
+  return `${oi.productId ?? ''}|${oi.componentId ?? ''}|${oi.size ?? ''}|${oi.openingSide ?? ''}`;
 }
 
 export async function mergeCartProductLinesIntoOrder(
@@ -85,12 +88,12 @@ export async function mergeCartProductLinesIntoOrder(
   }
 
   const usedExistingIds = new Set<string>();
-  for (const [k, g] of grouped) {
-    const [productId] = k.split('|');
+  for (const g of grouped.values()) {
     const existing = existingItems.find(
       (e) =>
         !usedExistingIds.has(e.id) &&
-        e.productId === productId &&
+        (e.productId ?? null) === (g.productId ?? null) &&
+        (e.componentId ?? null) === (g.componentId ?? null) &&
         (e.size ?? '') === (g.size ?? '') &&
         (e.openingSide ?? '') === (g.openingSide ?? ''),
     );
@@ -101,7 +104,11 @@ export async function mergeCartProductLinesIntoOrder(
         (parseFloat(existing.price.toString()) * oldQty + g.price * g.quantity) / newQty;
       await prisma.orderItem.update({
         where: { id: existing.id },
-        data: { quantity: newQty, price: newPrice },
+        data: {
+          quantity: newQty,
+          price: newPrice,
+          componentLabel: g.componentLabel ?? existing.componentLabel,
+        },
       });
       usedExistingIds.add(existing.id);
     } else {
@@ -109,6 +116,8 @@ export async function mergeCartProductLinesIntoOrder(
         data: {
           orderId,
           productId: g.productId,
+          componentId: g.componentId,
+          componentLabel: g.componentLabel,
           quantity: g.quantity,
           price: g.price,
           size: g.size,

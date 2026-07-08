@@ -401,7 +401,7 @@ export function useProductCreatePage({
           `${PRODUCT_FORM_API_URL}/admin/catalog/products/${copyFromProductId}`,
           {
             cache: 'no-store',
-            headers: getAuthHeaders(),
+            headers: getAuthHeadersRef.current(),
           }
         );
         if (!productRes.ok) {
@@ -1160,15 +1160,21 @@ export function useProductCreatePage({
       let componentsCopyErrors = 0;
       if (componentsToCopy.length > 0) {
         for (const comp of componentsToCopy) {
-          const payload: Record<string, unknown> = {
-            name: comp.name,
-            type: comp.type,
-            price: comp.price,
-            stock: comp.stock,
-            isActive: comp.isActive,
-            sortOrder: comp.sortOrder,
-          };
-          if (comp.image) payload.image = comp.image;
+          const payload: Record<string, unknown> = comp.catalogItemId
+            ? {
+                catalogItemId: comp.catalogItemId,
+                sortOrder: comp.sortOrder,
+                isActive: comp.isActive,
+              }
+            : {
+                name: comp.name,
+                type: comp.type,
+                price: comp.price,
+                stock: comp.stock,
+                isActive: comp.isActive,
+                sortOrder: comp.sortOrder,
+                ...(comp.image ? { image: comp.image } : {}),
+              };
           try {
             const compRes = await apiFetch(
               `${PRODUCT_FORM_API_URL}/product-components/product/${createdProduct.id}`,

@@ -1,0 +1,18 @@
+/* Как бланк счёта на оплату (MeasurementFormPage.blankSheet) */
+.formBlueShell:global([data-modal-form]) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface-soft, #f8fafc) 100%
+  );
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formBlueShell:global([data-modal-form]) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136, rgb(37 99 235 / 0.14)) 0%,
+    var(--admin-overlay-color-021, rgb(37 99 235 / 0.06)) 100%
+  );
+  border-color: var(--admin-info-light, #60a5fa);
+}

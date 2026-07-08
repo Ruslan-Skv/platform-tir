@@ -3,6 +3,11 @@ import { ApiTags, ApiOperation } from '@nestjs/swagger';
 import { ProductComponentsService } from './product-components.service';
 import { CreateProductComponentDto } from './dto/create-product-component.dto';
 import { UpdateProductComponentDto } from './dto/update-product-component.dto';
+import {
+  LinkProductComponentDto,
+  LinkProductComponentsBatchDto,
+} from './dto/link-product-component.dto';
+import { LinkProductComponentGroupDto } from './dto/link-product-component-group.dto';
 import { CatalogAdminAuth } from '../auth/decorators/catalog-admin.decorator';
 
 @ApiTags('product-components')
@@ -15,6 +20,40 @@ export class ProductComponentsController {
   @ApiOperation({ summary: 'Создать комплектующее для товара' })
   create(@Param('productId') productId: string, @Body() createDto: CreateProductComponentDto) {
     return this.componentsService.create(productId, createDto);
+  }
+
+  @Post('product/:productId/link')
+  @CatalogAdminAuth()
+  @ApiOperation({ summary: 'Привязать комплектующую из справочника к товару' })
+  linkCatalogItem(@Param('productId') productId: string, @Body() dto: LinkProductComponentDto) {
+    return this.componentsService.linkCatalogItem(productId, dto);
+  }
+
+  @Post('product/:productId/link-group')
+  @CatalogAdminAuth()
+  @ApiOperation({ summary: 'Привязать все комплектующие из группы справочника' })
+  linkCatalogGroup(
+    @Param('productId') productId: string,
+    @Body() dto: LinkProductComponentGroupDto,
+  ) {
+    return this.componentsService.linkCatalogGroup(productId, dto.groupId);
+  }
+
+  @Post('product/:productId/link-batch')
+  @CatalogAdminAuth()
+  @ApiOperation({ summary: 'Привязать несколько комплектующих из справочника' })
+  linkCatalogItemsBatch(
+    @Param('productId') productId: string,
+    @Body() dto: LinkProductComponentsBatchDto,
+  ) {
+    return this.componentsService.linkCatalogItemsBatch(productId, dto.catalogItemIds);
+  }
+
+  @Get('product/:productId/kit-price')
+  @ApiOperation({ summary: 'Рассчитать стоимость комплекта для товара' })
+  getKitPrice(@Param('productId') productId: string, @Query('canvasPrice') canvasPrice?: string) {
+    const override = canvasPrice != null ? parseFloat(canvasPrice) : undefined;
+    return this.componentsService.getKitPriceForProduct(productId, override);
   }
 
   @Get()

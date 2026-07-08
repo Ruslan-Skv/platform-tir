@@ -15,6 +15,7 @@ export type { CategoryAttributeForCopy, ProductForCopy };
 
 /** Поля для POST /product-components/product/:newProductId при копировании товара */
 export interface CopyProductComponentPayload {
+  catalogItemId?: string;
   name: string;
   type: string;
   price: number;
@@ -33,20 +34,37 @@ export function mapRawComponentsToCopyPayload(raw: unknown): CopyProductComponen
     const name = typeof o.name === 'string' ? o.name.trim() : '';
     const type = typeof o.type === 'string' ? o.type.trim() : '';
     const priceRaw = o.price;
-    let price: number;
+    let price = 0;
     if (typeof priceRaw === 'number') {
       price = priceRaw;
     } else if (typeof priceRaw === 'string') {
       price = parseFloat(priceRaw.replace(',', '.'));
-    } else {
-      continue;
     }
-    if (!name || !type || !Number.isFinite(price) || price < 0) continue;
+    const catalogItemId =
+      typeof o.catalogItemId === 'string' && o.catalogItemId.trim()
+        ? o.catalogItemId.trim()
+        : undefined;
     const image =
       typeof o.image === 'string' && o.image.trim().length > 0 ? o.image.trim() : undefined;
     const stock = typeof o.stock === 'number' && o.stock >= 0 ? o.stock : 0;
     const isActive = typeof o.isActive === 'boolean' ? o.isActive : true;
     const sortOrder = typeof o.sortOrder === 'number' ? o.sortOrder : 0;
+
+    if (catalogItemId) {
+      out.push({
+        catalogItemId,
+        name: name || 'Из справочника',
+        type: type || '',
+        price: Number.isFinite(price) ? price : 0,
+        image,
+        stock,
+        isActive,
+        sortOrder,
+      });
+      continue;
+    }
+
+    if (!name || !type || !Number.isFinite(price) || price < 0) continue;
     out.push({ name, type, price, image, stock, isActive, sortOrder });
   }
   out.sort((a, b) => a.sortOrder - b.sortOrder);

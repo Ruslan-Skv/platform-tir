@@ -1899,6 +1899,7 @@ model Category {
   children                  Category[]                 @relation("CategoryTree")
   attributes                CategoryAttribute[]
   products                  Product[]
+  componentCatalogGroups    ComponentCatalogGroup[]
   catalogFilterBlock        CatalogFilterBlock?
   catalogHubPreviewSections CatalogHubPreviewSection[]
   createdBy                 User?                      @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -2034,20 +2035,90 @@ model ProductCardVariant {
   @@map("product_card_variants")
 }
 
+/// Вид комплектующей — для расчёта «Комплекта» и шага количества
+enum ComponentKind {
+  STOIKA_KOROBKI
+  NALICHNIK
+  DOBOR
+  PRITVORNAYA_PLANKA
+  KOROBKA
+  OTHER
+}
+
+/// Справочник комплектующих — единая цена для всех товаров
+model ComponentCatalogItem {
+  id                String                      @id @default(cuid())
+  kind              ComponentKind               @default(OTHER)
+  name              String // Название: Наличник, Добор, Стойка коробки
+  size              String? // Размер: 70мм, 2000x800
+  color             String? // Цвет
+  material          String? // Материал изготовления
+  price             Decimal                     @db.Decimal(10, 2)
+  slug              String                      @unique
+  image             String?
+  stock             Int                         @default(0)
+  isActive          Boolean                     @default(true)
+  sortOrder         Int                         @default(0)
+  /// Количество в «Комплекте» (2.5 стойки, 5 наличников; null — не входит)
+  kitQuantity       Float?
+  /// Шаг при покупке поштучно (0.5 для стойки коробки)
+  quantityStep      Float                       @default(1)
+  createdAt         DateTime                    @default(now())
+  updatedAt         DateTime                    @updatedAt
+  productComponents ProductComponent[]
+  groupItems        ComponentCatalogGroupItem[]
+
+  @@map("component_catalog_items")
+}
+
+/// Группа комплектующих для серии/цвета дверей (например «ЛОФТ Белый телескопический»)
+model ComponentCatalogGroup {
+  id         String                      @id @default(cuid())
+  name       String
+  /// Серия / описание набора, напр. «Погонаж для дверей Экошпон, серии ЛОФТ»
+  series     String?
+  categoryId String?
+  slug       String                      @unique
+  isActive   Boolean                     @default(true)
+  sortOrder  Int                         @default(0)
+  createdAt  DateTime                    @default(now())
+  updatedAt  DateTime                    @updatedAt
+  category   Category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  items      ComponentCatalogGroupItem[]
+
+  @@map("component_catalog_groups")
+}
+
+model ComponentCatalogGroupItem {
+  id            String                @id @default(cuid())
+  groupId       String
+  catalogItemId String
+  sortOrder     Int                   @default(0)
+  group         ComponentCatalogGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  catalogItem   ComponentCatalogItem  @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([groupId, catalogItemId])
+  @@map("component_catalog_group_items")
+}
+
 model ProductComponent {
-  id        String     @id @default(cuid())
-  productId String
-  name      String // Наименование: коробка, наличник, добор, притворная планка
-  type      String // Конкретный тип комплектующей
-  price     Decimal    @db.Decimal(10, 2) // Стоимость за 1 шт.
-  image     String? // Иконка/изображение комплектующего (base64 или URL)
-  stock     Int        @default(0)
-  isActive  Boolean    @default(true)
-  sortOrder Int        @default(0)
-  createdAt DateTime   @default(now())
-  updatedAt DateTime   @updatedAt
-  product   Product    @relation(fields: [productId], references: [id], onDelete: Cascade)
-  cartItems CartItem[]
+  id            String                @id @default(cuid())
+  productId     String
+  catalogItemId String?
+  /// Legacy-поля (для строк без справочника или снимок при создании)
+  name          String // Наименование: коробка, наличник, добор, притворная планка
+  type          String // Конкретный тип комплектующей (размер)
+  price         Decimal               @db.Decimal(10, 2) // Стоимость за 1 шт.
+  image         String? // Иконка/изображение комплектующего (base64 или URL)
+  stock         Int                   @default(0)
+  isActive      Boolean               @default(true)
+  sortOrder     Int                   @default(0)
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  product       Product               @relation(fields: [productId], references: [id], onDelete: Cascade)
+  catalogItem   ComponentCatalogItem? @relation(fields: [catalogItemId], references: [id], onDelete: SetNull)
+  cartItems     CartItem[]
+  orderItems    OrderItem[]
 
   @@map("product_components")
 }
@@ -2127,22 +2198,27 @@ model OrderEvent {
 }
 
 model OrderItem {
-  id                    String   @id @default(cuid())
+  id                    String            @id @default(cuid())
   orderId               String
   /// Обнуляется при удалении товара из каталога (позиция заказа и цена остаются в истории)
   productId             String?
+  /// Комплектующее (наличник, добор и т.д.) — отдельно от полотна
+  componentId           String?
   cardVariantId         String? // Вариант из «схожих товаров в карточке» (для истории)
-  quantity              Int
-  price                 Decimal  @db.Decimal(10, 2)
+  quantity              Float
+  price                 Decimal           @db.Decimal(10, 2)
   size                  String?
   openingSide           String?
-  managerComment        String?  @db.Text // Комментарий менеджера по пункту (для доработки покупателем)
+  /// Снимок наименования комплектующей для истории заказа
+  componentLabel        String?
+  managerComment        String?           @db.Text // Комментарий менеджера по пункту (для доработки покупателем)
   replacedFromProductId String? // Если менеджер заменил товар — ID исходного товара (для пометки покупателю)
-  replacementNote       String?  @db.Text // Пометка о замене для покупателя
-  createdAt             DateTime @default(now())
-  order                 Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  product               Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
-  replacedFromProduct   Product? @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id], onDelete: SetNull)
+  replacementNote       String?           @db.Text // Пометка о замене для покупателя
+  createdAt             DateTime          @default(now())
+  order                 Order             @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product               Product?          @relation(fields: [productId], references: [id], onDelete: SetNull)
+  component             ProductComponent? @relation(fields: [componentId], references: [id], onDelete: SetNull)
+  replacedFromProduct   Product?          @relation("OrderItemReplacedFrom", fields: [replacedFromProductId], references: [id], onDelete: SetNull)
 
   @@map("order_items")
 }

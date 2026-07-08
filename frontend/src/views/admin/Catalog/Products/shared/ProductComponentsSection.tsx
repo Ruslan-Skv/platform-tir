@@ -2,28 +2,28 @@
 
 import React, { useCallback, useEffect, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useAuth } from '@/features/auth';
+import {
+  type AdminComponentCatalogGroup,
+  type AdminComponentCatalogItem,
+} from '@/shared/api/admin-component-catalog';
+import {
+  type ProductComponent,
+  linkProductComponentGroupFromCatalog,
+  linkProductComponentsBatchFromCatalog,
+} from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { getKitComponents } from '@/shared/lib/component-kit';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
+import { ComponentCatalogPickerModal } from './ComponentCatalogPickerModal';
 import { ImageUrlModal } from './ImageUrlModal';
 import styles from './ProductComponentsSection.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
-
-interface ProductComponent {
-  id: string;
-  productId: string;
-  name: string;
-  type: string;
-  price: string | number; // Prisma Decimal может быть строкой или числом
-  image?: string | null;
-  stock: number;
-  isActive: boolean;
-  sortOrder: number;
-  createdAt?: string;
-}
 
 interface ProductComponentsSectionProps {
   productId: string;
@@ -49,6 +49,8 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const [loading, setLoading] = useState(true);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [showAddForm, setShowAddForm] = useState(false);
+  const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
+  const [linkingCatalog, setLinkingCatalog] = useState(false);
 
   // Состояние для inline редактирования
   const [editingData, setEditingData] = useState<
@@ -299,12 +301,40 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     }
   };
 
+  const handleLinkFromCatalog = async (items: AdminComponentCatalogItem[]) => {
+    setLinkingCatalog(true);
+    try {
+      await linkProductComponentsBatchFromCatalog(
+        productId,
+        items.map((i) => i.id),
+        getAuthHeaders()
+      );
+      await fetchComponents();
+      setCatalogPickerOpen(false);
+    } catch {
+      // Error handled silently
+    } finally {
+      setLinkingCatalog(false);
+    }
+  };
+
+  const handleLinkGroupFromCatalog = async (group: AdminComponentCatalogGroup) => {
+    setLinkingCatalog(true);
+    try {
+      await linkProductComponentGroupFromCatalog(productId, group.id, getAuthHeaders());
+      await fetchComponents();
+      setCatalogPickerOpen(false);
+    } catch {
+      // Error handled silently
+    } finally {
+      setLinkingCatalog(false);
+    }
+  };
+
   const handleEdit = (component: ProductComponent) => {
+    if (component.isFromCatalog) return;
     // Преобразуем цену в строку
-    const priceString =
-      typeof component.price === 'number'
-        ? component.price.toString()
-        : String(component.price || '');
+    const priceString = String(component.price || '');
 
     setEditingId(component.id);
     setEditingData({
@@ -553,32 +583,53 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     {} as Record<string, ProductComponent[]>
   );
 
-  // Состав комплекта на публичке (для справки в админке)
-  const kitComposition = (() => {
-    const stoikaKorobka = components.find(
-      (c) =>
-        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
-        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
-    );
-    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
-    return stoikaKorobka && nalichnik ? { stoikaKorobka, nalichnik } : null;
-  })();
+  const kitComposition = getKitComponents(components);
+
+  const linkedCatalogIds = components
+    .map((c) => c.catalogItemId)
+    .filter((id): id is string => Boolean(id));
 
   return (
     <div className={styles.section}>
+      <ComponentCatalogPickerModal
+        open={catalogPickerOpen}
+        onClose={() => setCatalogPickerOpen(false)}
+        onSelect={handleLinkFromCatalog}
+        onSelectGroup={handleLinkGroupFromCatalog}
+        excludeCatalogIds={linkedCatalogIds}
+        saving={linkingCatalog}
+      />
+
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Комплектующие</h2>
-        <button
-          data-admin-mutation
-          type="button"
-          className={styles.addButton}
-          onClick={() => {
-            resetForm();
-            setShowAddForm(true);
-          }}
-        >
-          + Добавить комплектующее
-        </button>
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addButton}
+            onClick={() => setCatalogPickerOpen(true)}
+          >
+            + Из справочника / группы
+          </button>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addButton}
+            onClick={() => {
+              resetForm();
+              setShowAddForm(true);
+            }}
+          >
+            + Вручную
+          </button>
+          <Link
+            href="/admin/catalog/components"
+            className={styles.addButton}
+            style={{ textDecoration: 'none' }}
+          >
+            Справочник
+          </Link>
+        </div>
       </div>
 
       {kitComposition && (
@@ -736,10 +787,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
               const editData = editingData[component.id] || {
                 name: component.name || '',
                 type: component.type || '',
-                price:
-                  typeof component.price === 'number'
-                    ? component.price.toString()
-                    : String(component.price || ''),
+                price: String(component.price || ''),
                 image: component.image || '',
                 stock: component.stock ?? 0,
                 isActive: component.isActive ?? true,
@@ -912,10 +960,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                         <>
                           <span className={styles.componentType}>{component.type}</span>
                           <span className={styles.componentPrice}>
-                            {typeof component.price === 'number'
-                              ? component.price.toLocaleString()
-                              : parseFloat(String(component.price)).toLocaleString()}{' '}
-                            ₽
+                            {parseFloat(String(component.price)).toLocaleString('ru-RU')} ₽
                           </span>
                           <span className={styles.componentStock}>
                             Склад: {component.stock} шт.

@@ -6,6 +6,10 @@ import { UserRole } from '@prisma/client';
 import type { SubmitFromCartForCustomerDto } from '../dto/submit-from-cart-for-customer.dto';
 import { OrdersDeliveryService } from './orders-delivery.service';
 import { OrdersCartServiceLinesService } from './orders-cart-service-lines.service';
+import {
+  resolveCartComponentLabel,
+  resolveCartComponentPrice,
+} from '../../cart/cart-component-resolve.util';
 
 @Injectable()
 export class OrdersCartSubmitForCustomerService {
@@ -48,6 +52,8 @@ export class OrdersCartSubmitForCustomerService {
 
     const orderItems: Array<{
       productId: string;
+      componentId: string | null;
+      componentLabel: string | null;
       quantity: number;
       price: number;
       size: string | null;
@@ -57,11 +63,13 @@ export class OrdersCartSubmitForCustomerService {
     let subtotal = 0;
 
     for (const item of cartItems) {
-      const qty = Math.max(1, Math.round(Number(item.quantity)));
+      const qty = Math.max(0.5, Number(item.quantity) || 1);
       if (item.productId && item.product) {
         const price = parseFloat(item.product.price.toString());
         orderItems.push({
           productId: item.product.id,
+          componentId: null,
+          componentLabel: null,
           quantity: qty,
           price,
           size: item.size ?? null,
@@ -70,9 +78,11 @@ export class OrdersCartSubmitForCustomerService {
         });
         subtotal += price * qty;
       } else if (item.componentId && item.component) {
-        const price = parseFloat(item.component.price.toString());
+        const price = resolveCartComponentPrice(item.component);
         orderItems.push({
           productId: item.component.productId,
+          componentId: item.component.id,
+          componentLabel: resolveCartComponentLabel(item.component),
           quantity: qty,
           price,
           size: null,
@@ -273,6 +283,8 @@ export class OrdersCartSubmitForCustomerService {
         items: {
           create: orderItems.map((oi) => ({
             productId: oi.productId,
+            componentId: oi.componentId,
+            componentLabel: oi.componentLabel,
             quantity: oi.quantity,
             price: oi.price,
             size: oi.size,

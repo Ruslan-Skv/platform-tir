@@ -1,19 +1,35 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsString, IsNumber, IsBoolean, IsOptional, Min, IsNotEmpty } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsBoolean,
+  IsOptional,
+  Min,
+  IsNotEmpty,
+  ValidateIf,
+} from 'class-validator';
 import { Type, Transform } from 'class-transformer';
 
 export class CreateProductComponentDto {
-  @ApiProperty({ example: 'Коробка', description: 'Наименование комплектующего' })
+  @ApiProperty({ example: 'catalog-item-id', required: false })
   @IsString()
-  @IsNotEmpty()
-  name: string;
+  @IsOptional()
+  catalogItemId?: string;
 
-  @ApiProperty({ example: 'Коробка 2000x800', description: 'Конкретный тип комплектующей' })
+  @ApiProperty({ example: 'Коробка', description: 'Наименование комплектующего' })
+  @ValidateIf((o) => !o.catalogItemId)
   @IsString()
   @IsNotEmpty()
-  type: string;
+  name?: string;
+
+  @ApiProperty({ example: 'Коробка 2000x800', description: 'Размер / тип комплектующей' })
+  @ValidateIf((o) => !o.catalogItemId)
+  @IsString()
+  @IsNotEmpty()
+  type?: string;
 
   @ApiProperty({ example: 1500.0, description: 'Стоимость за 1 шт.' })
+  @ValidateIf((o) => !o.catalogItemId)
   @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Type(() => Number)
@@ -23,7 +39,7 @@ export class CreateProductComponentDto {
     }
     return value;
   })
-  price: number;
+  price?: number;
 
   @ApiProperty({
     example: 'data:image/png;base64,...',

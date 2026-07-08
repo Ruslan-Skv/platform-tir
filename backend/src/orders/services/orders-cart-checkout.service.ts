@@ -12,6 +12,10 @@ import type { SubmitFromCartForCustomerDto } from '../dto/submit-from-cart-for-c
 import { OrdersDeliveryService } from './orders-delivery.service';
 import { OrdersCartSubmitService } from './orders-cart-submit.service';
 import { OrdersCartSubmitForCustomerService } from './orders-cart-submit-for-customer.service';
+import {
+  resolveCartComponentLabel,
+  resolveCartComponentPrice,
+} from '../../cart/cart-component-resolve.util';
 
 @Injectable()
 export class OrdersCartCheckoutService {
@@ -60,23 +64,27 @@ export class OrdersCartCheckoutService {
       where: { id: cartItemId, userId },
       include: {
         product: true,
-        component: { include: { product: true } },
+        component: { include: { product: true, catalogItem: true } },
       },
     });
     if (!cartItem) {
       throw new NotFoundException('Позиция в корзине не найдена');
     }
 
-    let productId: string;
+    let productId: string | null;
+    let componentId: string | null = null;
+    let componentLabel: string | null = null;
     let price: number;
-    const qty = Math.max(1, Math.round(Number(cartItem.quantity)));
+    const qty = Math.max(0.5, Number(cartItem.quantity) || 1);
 
     if (cartItem.productId && cartItem.product) {
       productId = cartItem.product.id;
       price = parseFloat(cartItem.product.price.toString());
     } else if (cartItem.componentId && cartItem.component) {
       productId = cartItem.component.productId;
-      price = parseFloat(cartItem.component.price.toString());
+      componentId = cartItem.component.id;
+      componentLabel = resolveCartComponentLabel(cartItem.component);
+      price = resolveCartComponentPrice(cartItem.component);
     } else {
       throw new BadRequestException('Невозможно добавить эту позицию в заказ');
     }
@@ -85,6 +93,8 @@ export class OrdersCartCheckoutService {
       data: {
         orderId,
         productId,
+        componentId,
+        componentLabel,
         quantity: qty,
         price,
         size: cartItem.size ?? null,

@@ -19,6 +19,7 @@ import {
 } from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
+import { calculateKitPrice, getKitComponents } from '@/shared/lib/component-kit';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
 import { usePublicSiteEditMode } from '@/shared/lib/hooks/usePublicSiteEditMode';
@@ -155,16 +156,7 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
   );
 
   // Компоненты комплекта для добавления в корзину при выборе «Комплект»
-  const kitComponentsForCart = useMemo(() => {
-    if (components.length === 0) return null;
-    const stoikaKorobka = components.find(
-      (c) =>
-        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
-        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
-    );
-    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
-    return stoikaKorobka && nalichnik ? { stoikaKorobka, nalichnik } : null;
-  }, [components]);
+  const kitComponentsForCart = useMemo(() => getKitComponents(components), [components]);
 
   // Автоскрытие уведомления о выборе параметров варианта
   useEffect(() => {
@@ -454,18 +446,7 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
           ? parseFloat(selectedCardVariant.price)
           : selectedCardVariant.price
         : parseFloat(product.price);
-    // Стойка коробки — 2,5 шт. (название/тип содержит «стойк» и «коробк»: «стойка коробки» или «стойки коробки»)
-    const stoikaKorobka = components.find(
-      (c) =>
-        (/стойк/i.test(c.name) && /коробк/i.test(c.name)) ||
-        (/стойк/i.test(c.type) && /коробк/i.test(c.type))
-    );
-    // Наличники — 5 шт.
-    const nalichnik = components.find((c) => /наличник/i.test(c.name) || /наличник/i.test(c.type));
-    let total = canvasPrice; // полотно 1 шт.
-    if (stoikaKorobka) total += 2.5 * parseFloat(stoikaKorobka.price);
-    if (nalichnik) total += 5 * parseFloat(nalichnik.price);
-    return Math.round(total);
+    return calculateKitPrice(canvasPrice, components);
   }, [product, components, selectedCardVariant, isEditingPublicPrice, draftPrice]);
 
   // Хуки атрибутов — строго до любых return, иначе нарушается порядок Hooks при loading → loaded

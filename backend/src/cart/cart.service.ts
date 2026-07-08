@@ -6,16 +6,30 @@ import {
   loadServiceCatalogCategoryMarkupMap,
 } from '../common/utils/service-catalog-markup-effective';
 import { PrismaService } from '../database/prisma.service';
+import type { ProductComponentWithCatalog } from '../products/utils/component-catalog-resolve.util';
 import {
   cartComponentItemInclude,
   cartItemListInclude,
   cartItemProductInclude,
   cartItemProductOnlyInclude,
 } from './cart-item-includes';
+import { mapCartComponent } from './cart-component-resolve.util';
 
 @Injectable()
 export class CartService {
   constructor(private prisma: PrismaService) {}
+
+  private mapCartItem<T extends { component?: ProductComponentWithCatalog | null }>(item: T) {
+    if (!item.component) return item;
+    return {
+      ...item,
+      component: mapCartComponent(item.component),
+    };
+  }
+
+  private mapCartItems<T extends { component?: ProductComponentWithCatalog | null }>(items: T[]) {
+    return items.map((item) => this.mapCartItem(item));
+  }
 
   async addToCart(
     userId: string,
@@ -250,7 +264,7 @@ export class CartService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return items;
+    return this.mapCartItems(items);
   }
 
   async getCartServiceItems(userId: string) {
@@ -474,10 +488,11 @@ export class CartService {
   }
 
   async getCartItems(userId: string) {
-    return this.prisma.cartItem.findMany({
+    const items = await this.prisma.cartItem.findMany({
       where: { userId },
       include: cartItemListInclude,
       orderBy: { createdAt: 'desc' },
     });
+    return this.mapCartItems(items);
   }
 }

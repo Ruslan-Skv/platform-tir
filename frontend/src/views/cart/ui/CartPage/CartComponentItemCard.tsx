@@ -38,12 +38,10 @@ function parseComponentQuantity(quantity: unknown): number {
   return parsed;
 }
 
-function isStoikaKorobka(component: CartComponentItem['component']): boolean {
-  return (
-    /стойка\s+коробки/i.test(component.name) ||
-    /стойка\s+коробки/i.test(component.type) ||
-    (component.name === 'Коробка' && !/стойки/i.test(component.type ?? ''))
-  );
+function getComponentStep(component: CartComponentItem['component']): number {
+  if (component.quantityStep && component.quantityStep > 0) return component.quantityStep;
+  if (component.kind === 'STOIKA_KOROBKI') return 0.5;
+  return 1;
 }
 
 export function CartComponentItemCard({
@@ -59,9 +57,8 @@ export function CartComponentItemCard({
   onRemove,
 }: CartComponentItemCardProps) {
   const quantity = parseComponentQuantity(item.quantity);
-  const stoika = isStoikaKorobka(item.component);
-  const step = stoika ? 0.5 : 1;
-  const minQty = stoika ? 0.5 : 1;
+  const step = getComponentStep(item.component);
+  const minQty = step < 1 ? step : 1;
   const displayQty = step === 0.5 && quantity % 1 !== 0 ? quantity.toFixed(1) : String(quantity);
   const newQtyDown = Math.round((quantity - step) * 2) / 2;
   const newQtyUp = Math.round((quantity + step) * 2) / 2;

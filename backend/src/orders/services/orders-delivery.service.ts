@@ -125,7 +125,7 @@ export class OrdersDeliveryService {
       let totalWeight = 0;
       let totalVolume = 0;
       for (const item of cartItems) {
-        const qty = Math.max(1, Math.round(Number(item.quantity)));
+        const qty = Math.max(0.5, Number(item.quantity) || 1);
         const productId =
           item.productId ?? (item.component as { productId?: string } | null)?.productId;
         const p = productId ? products.find((x) => x.id === productId) : null;

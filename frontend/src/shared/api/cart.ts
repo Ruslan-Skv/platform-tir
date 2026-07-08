@@ -48,6 +48,11 @@ export interface CartItem {
     type: string;
     price: number | string;
     image?: string | null;
+    kind?: string;
+    quantityStep?: number;
+    size?: string | null;
+    color?: string | null;
+    material?: string | null;
     product: {
       id: string;
       name: string;

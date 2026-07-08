@@ -868,13 +868,18 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
                                               kitComponentsForCart
                                             ) {
                                               const qty = variant.quantity;
+                                              const stoikaQty =
+                                                kitComponentsForCart.stoikaKorobka.kitQuantity ??
+                                                2.5;
+                                              const nalichnikQty =
+                                                kitComponentsForCart.nalichnik.kitQuantity ?? 5;
                                               await addComponentToCart(
                                                 kitComponentsForCart.stoikaKorobka.id,
-                                                2.5 * qty
+                                                stoikaQty * qty
                                               );
                                               await addComponentToCart(
                                                 kitComponentsForCart.nalichnik.id,
-                                                5 * qty
+                                                nalichnikQty * qty
                                               );
                                             }
                                             await new Promise((resolve) =>
