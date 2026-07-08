@@ -155,7 +155,7 @@ export function ComponentCatalogPickerModal({
         <div className={styles.filters}>
           <input
             className={styles.input}
-            placeholder={mode === 'groups' ? 'Поиск группы или серии…' : 'Поиск позиции…'}
+            placeholder={mode === 'groups' ? 'Поиск подгруппы…' : 'Поиск позиции…'}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -186,7 +186,7 @@ export function ComponentCatalogPickerModal({
             <p className={styles.empty}>Загрузка…</p>
           ) : mode === 'groups' ? (
             groups.length === 0 ? (
-              <p className={styles.empty}>Группы не найдены</p>
+              <p className={styles.empty}>Подгруппы не найдены</p>
             ) : (
               groups.map((group) => (
                 <label key={group.id} className={styles.row}>
@@ -197,9 +197,12 @@ export function ComponentCatalogPickerModal({
                     onChange={() => setSelectedGroupId(group.id)}
                   />
                   <span className={styles.rowMain}>
-                    <span className={styles.rowTitle}>{group.name}</span>
+                    <span className={styles.rowTitle}>
+                      {group.seriesRef?.name ? `${group.seriesRef.name} · ` : ''}
+                      {group.name}
+                    </span>
                     <span className={styles.rowMeta}>
-                      {group.series || 'Без описания серии'} ·{' '}
+                      {group.series || group.seriesRef?.name || 'Без примечания'} ·{' '}
                       {group._count?.items ?? group.items.length} поз.
                     </span>
                   </span>
@@ -242,7 +245,7 @@ export function ComponentCatalogPickerModal({
             {saving
               ? 'Добавление…'
               : mode === 'groups'
-                ? 'Добавить группу'
+                ? 'Добавить подгруппу'
                 : `Добавить (${selected.size})`}
           </button>
         </div>

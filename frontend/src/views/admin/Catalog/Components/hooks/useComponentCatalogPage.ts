@@ -10,10 +10,12 @@ import {
   deleteAdminComponentCatalogItem,
   fetchAdminComponentCatalogGroupsList,
   fetchAdminComponentCatalogList,
+  fetchAdminComponentCatalogSeriesList,
 } from '@/shared/api/admin-component-catalog';
 
 export const COMPONENT_CATALOG_LIST_KEY = 'admin-component-catalog-list';
 export const COMPONENT_CATALOG_GROUPS_KEY = 'admin-component-catalog-groups';
+export const COMPONENT_CATALOG_SERIES_KEY = 'admin-component-catalog-series';
 
 const LIMIT_STORAGE_KEY = 'admin_component_catalog_page_limit';
 
@@ -25,6 +27,7 @@ export function useComponentCatalogPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [kindFilter, setKindFilter] = useState<ComponentKind | ''>('');
+  const [seriesFilter, setSeriesFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState<'' | 'true' | 'false'>('');
   const [page, setPage] = useState(1);
@@ -49,7 +52,7 @@ export function useComponentCatalogPage() {
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, kindFilter, groupFilter, activeFilter, limit, tab]);
+  }, [debouncedSearch, kindFilter, seriesFilter, groupFilter, activeFilter, limit, tab]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -66,6 +69,7 @@ export function useComponentCatalogPage() {
     () => ({
       search: debouncedSearch || undefined,
       kind: kindFilter || undefined,
+      seriesId: seriesFilter || undefined,
       groupId: groupFilter || undefined,
       isActive: activeFilter === '' ? undefined : activeFilter === 'true',
       page,
@@ -73,7 +77,17 @@ export function useComponentCatalogPage() {
       sortBy,
       sortOrder,
     }),
-    [debouncedSearch, kindFilter, groupFilter, activeFilter, page, limit, sortBy, sortOrder]
+    [
+      debouncedSearch,
+      kindFilter,
+      seriesFilter,
+      groupFilter,
+      activeFilter,
+      page,
+      limit,
+      sortBy,
+      sortOrder,
+    ]
   );
 
   const {
@@ -88,12 +102,28 @@ export function useComponentCatalogPage() {
     enabled: tab === 'items',
   });
 
-  const { data: groupsForFilter } = useQuery({
-    queryKey: [COMPONENT_CATALOG_GROUPS_KEY, 'filter-options'],
-    queryFn: () => fetchAdminComponentCatalogGroupsList({ limit: 500 }),
+  const { data: seriesForFilter } = useQuery({
+    queryKey: [COMPONENT_CATALOG_SERIES_KEY, 'filter-options'],
+    queryFn: () => fetchAdminComponentCatalogSeriesList({ limit: 500 }),
   });
 
+  const { data: groupsForFilter } = useQuery({
+    queryKey: [COMPONENT_CATALOG_GROUPS_KEY, 'filter-options', seriesFilter],
+    queryFn: () =>
+      fetchAdminComponentCatalogGroupsList({
+        limit: 500,
+        seriesId: seriesFilter || undefined,
+      }),
+  });
+
+  const seriesFilterOptions = useMemo(() => seriesForFilter?.data ?? [], [seriesForFilter?.data]);
   const groupFilterOptions = useMemo(() => groupsForFilter?.data ?? [], [groupsForFilter?.data]);
+
+  useEffect(() => {
+    if (groupFilter && !groupFilterOptions.some((g) => g.id === groupFilter)) {
+      setGroupFilter('');
+    }
+  }, [groupFilter, groupFilterOptions]);
 
   const items = listResponse?.data ?? [];
   const totalItems = listResponse?.total ?? 0;
@@ -151,6 +181,7 @@ export function useComponentCatalogPage() {
   const handleItemSaved = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
   }, [queryClient]);
 
   const handleDeleteItem = useCallback(
@@ -177,6 +208,7 @@ export function useComponentCatalogPage() {
   const invalidateAll = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
   }, [queryClient]);
 
   return {
@@ -186,6 +218,8 @@ export function useComponentCatalogPage() {
     setSearchQuery,
     kindFilter,
     setKindFilter,
+    seriesFilter,
+    setSeriesFilter,
     groupFilter,
     setGroupFilter,
     activeFilter,
@@ -203,6 +237,7 @@ export function useComponentCatalogPage() {
     itemsFetching,
     refetchItems,
     groupFilterOptions,
+    seriesFilterOptions,
     itemModalOpen,
     editItem,
     copyFromItem,

@@ -1900,6 +1900,7 @@ model Category {
   attributes                CategoryAttribute[]
   products                  Product[]
   componentCatalogGroups    ComponentCatalogGroup[]
+  componentCatalogSeries    ComponentCatalogSeries[]
   catalogFilterBlock        CatalogFilterBlock?
   catalogHubPreviewSections CatalogHubPreviewSection[]
   createdBy                 User?                      @relation("CategoryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
@@ -2045,6 +2046,23 @@ enum ComponentKind {
   OTHER
 }
 
+/// Группа моделей дверей (серия), к которой относятся подгруппы комплектующих
+model ComponentCatalogSeries {
+  id          String                  @id @default(cuid())
+  name        String
+  description String?
+  categoryId  String?
+  slug        String                  @unique
+  isActive    Boolean                 @default(true)
+  sortOrder   Int                     @default(0)
+  createdAt   DateTime                @default(now())
+  updatedAt   DateTime                @updatedAt
+  category    Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  subgroups   ComponentCatalogGroup[]
+
+  @@map("component_catalog_series")
+}
+
 /// Справочник комплектующих — единая цена для всех товаров
 model ComponentCatalogItem {
   id                String                      @id @default(cuid())
@@ -2071,11 +2089,12 @@ model ComponentCatalogItem {
   @@map("component_catalog_items")
 }
 
-/// Группа комплектующих для серии/цвета дверей (например «ЛОФТ Белый телескопический»)
+/// Подгруппа комплектующих (цвет/вариант): стойка, наличник, добор одного цвета
 model ComponentCatalogGroup {
   id         String                      @id @default(cuid())
+  seriesId   String
   name       String
-  /// Серия / описание набора, напр. «Погонаж для дверей Экошпон, серии ЛОФТ»
+  /// Доп. описание подгруппы (оттенок, тип погонажа)
   series     String?
   categoryId String?
   slug       String                      @unique
@@ -2083,9 +2102,11 @@ model ComponentCatalogGroup {
   sortOrder  Int                         @default(0)
   createdAt  DateTime                    @default(now())
   updatedAt  DateTime                    @updatedAt
+  seriesRef  ComponentCatalogSeries      @relation(fields: [seriesId], references: [id], onDelete: Cascade)
   category   Category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   items      ComponentCatalogGroupItem[]
 
+  @@index([seriesId])
   @@map("component_catalog_groups")
 }
 

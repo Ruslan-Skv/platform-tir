@@ -40,6 +40,7 @@ export class ComponentCatalogService {
     search?: string;
     kind?: ComponentKind;
     groupId?: string;
+    seriesId?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
@@ -50,6 +51,7 @@ export class ComponentCatalogService {
       search,
       kind,
       groupId,
+      seriesId,
       isActive,
       page = 1,
       limit = 50,
@@ -63,6 +65,9 @@ export class ComponentCatalogService {
     if (kind) where.kind = kind;
     if (groupId) {
       where.groupItems = { some: { groupId } };
+    }
+    if (seriesId) {
+      where.groupItems = { some: { group: { seriesId } } };
     }
     if (search?.trim()) {
       const q = search.trim();
@@ -84,7 +89,14 @@ export class ComponentCatalogService {
           ...this.usageCountInclude(),
           groupItems: {
             include: {
-              group: { select: { id: true, name: true, series: true } },
+              group: {
+                select: {
+                  id: true,
+                  name: true,
+                  series: true,
+                  seriesRef: { select: { id: true, name: true } },
+                },
+              },
             },
             orderBy: { sortOrder: 'asc' },
           },

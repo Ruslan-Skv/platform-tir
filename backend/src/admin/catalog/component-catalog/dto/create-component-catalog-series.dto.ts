@@ -1,18 +1,14 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsNotEmpty, IsArray } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsNotEmpty } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class CreateComponentCatalogGroupDto {
-  @IsString()
-  @IsNotEmpty()
-  seriesId: string;
-
+export class CreateComponentCatalogSeriesDto {
   @IsString()
   @IsNotEmpty()
   name: string;
 
   @IsString()
   @IsOptional()
-  series?: string;
+  description?: string;
 
   @IsString()
   @IsOptional()
@@ -30,9 +26,4 @@ export class CreateComponentCatalogGroupDto {
   @IsOptional()
   @Type(() => Number)
   sortOrder?: number;
-
-  @IsArray()
-  @IsString({ each: true })
-  @IsOptional()
-  catalogItemIds?: string[];
 }

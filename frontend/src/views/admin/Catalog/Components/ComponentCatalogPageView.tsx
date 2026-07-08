@@ -15,6 +15,7 @@ import { EditIcon } from '@/shared/ui/icons/EditIcon';
 import { ComponentCatalogGroupsPanel } from './ComponentCatalogGroupsPanel';
 import { ComponentCatalogItemModal } from './ComponentCatalogItemModal';
 import styles from './ComponentCatalogPage.module.css';
+import { ComponentCatalogRulesInfoTip } from './ComponentCatalogRulesInfoTip';
 import type { ComponentCatalogPageModel } from './hooks/useComponentCatalogPage';
 
 type ComponentCatalogPageViewProps = {
@@ -29,6 +30,8 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
     setSearchQuery,
     kindFilter,
     setKindFilter,
+    seriesFilter,
+    setSeriesFilter,
     groupFilter,
     setGroupFilter,
     activeFilter,
@@ -46,6 +49,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
     itemsFetching,
     refetchItems,
     groupFilterOptions,
+    seriesFilterOptions,
     itemModalOpen,
     editItem,
     copyFromItem,
@@ -89,8 +93,13 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
                   <span
                     key={gi.group.id}
                     className={styles.groupTag}
-                    title={gi.group.series ?? undefined}
+                    title={
+                      gi.group.seriesRef?.name
+                        ? `${gi.group.seriesRef.name}${gi.group.series ? ` · ${gi.group.series}` : ''}`
+                        : (gi.group.series ?? undefined)
+                    }
                   >
+                    {gi.group.seriesRef?.name ? `${gi.group.seriesRef.name}: ` : ''}
                     {gi.group.name}
                   </span>
                 ))}
@@ -209,6 +218,9 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Комплектующие</h1>
+          <span className={styles.headerInfoTip}>
+            <ComponentCatalogRulesInfoTip />
+          </span>
           <span className={styles.count}>{countLabel}</span>
         </div>
         <div className={styles.headerActions}>
@@ -235,8 +247,8 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
       </div>
 
       <p className={styles.hint}>
-        Единый справочник погонажа и комплектующих для дверей. Группируйте позиции по сериям и
-        цветам — как в прайсе поставщика — и привязывайте целую группу к карточке двери.
+        Единый справочник погонажа и комплектующих для дверей. Группы моделей объединяют подгруппы
+        по цвету (стойка, наличник, добор) — подгруппу можно скопировать и изменить цвет или цену.
       </p>
 
       <div className={styles.tabs}>
@@ -252,7 +264,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
           className={`${styles.tab} ${tab === 'groups' ? styles.tabActive : ''}`}
           onClick={() => setTab('groups')}
         >
-          Группы для дверей
+          Группы и подгруппы
         </button>
       </div>
 
@@ -270,7 +282,13 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
           {selectedGroup ? (
             <div className={styles.groupFilterBanner}>
               <span>
-                Фильтр по группе: <strong>{selectedGroup.name}</strong>
+                Фильтр по подгруппе: <strong>{selectedGroup.name}</strong>
+                {selectedGroup.seriesRef?.name ? (
+                  <span className={styles.groupFilterSeriesHint}>
+                    {' '}
+                    ({selectedGroup.seriesRef.name})
+                  </span>
+                ) : null}
               </span>
               <button
                 type="button"
@@ -318,13 +336,31 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
               </select>
             </div>
             <div className={styles.groupFilterField}>
-              <label className={styles.filterLabel}>Группа</label>
+              <label className={styles.filterLabel}>Группа моделей</label>
+              <select
+                className={`${styles.select} ${styles.groupFilterSelect}`}
+                value={seriesFilter}
+                onChange={(e) => {
+                  setSeriesFilter(e.target.value);
+                  setGroupFilter('');
+                }}
+              >
+                <option value="">Все группы моделей</option>
+                {seriesFilterOptions.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className={styles.groupFilterField}>
+              <label className={styles.filterLabel}>Подгруппа</label>
               <select
                 className={`${styles.select} ${styles.groupFilterSelect}`}
                 value={groupFilter}
                 onChange={(e) => setGroupFilter(e.target.value)}
               >
-                <option value="">Все группы</option>
+                <option value="">Все подгруппы</option>
                 {groupFilterOptions.map((g) => (
                   <option key={g.id} value={g.id}>
                     {g.name}

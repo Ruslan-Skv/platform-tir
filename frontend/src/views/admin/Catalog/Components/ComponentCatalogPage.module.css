@@ -10,6 +10,12 @@
   margin-bottom: var(--admin-space-4xl);
 }
 
+.headerInfoTip {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .headerLeft {
   display: flex;
   align-items: center;
@@ -292,4 +298,109 @@
   padding: 48px;
   text-align: center;
   color: var(--admin-text-muted);
+}
+
+.hierarchySectionTitle {
+  margin: var(--admin-space-2xl) 0 var(--admin-space-lg);
+  font-size: var(--admin-font-size-lg);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.hierarchySubsectionHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+}
+
+.hierarchyToolbar {
+  margin-left: auto;
+}
+
+.hierarchyNameCell {
+  min-width: 220px;
+  max-width: 520px;
+}
+
+.hierarchyTitle {
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.hierarchySubtitle {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  margin-top: 2px;
+}
+
+.subgroupDetail {
+  margin-top: 16px;
+  padding: 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface-muted, #f9fafb);
+}
+
+.subgroupDetailHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.subgroupDetailTitle {
+  line-height: 1.4;
+  max-width: min(100%, 720px);
+}
+
+.subgroupItemsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.subgroupItemsTable th,
+.subgroupItemsTable td {
+  padding: 8px;
+  text-align: left;
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.subgroupItemsTable thead tr {
+  border-bottom: 1px solid var(--admin-border);
+}
+
+.subgroupPriceCell {
+  font-weight: 600;
+}
+
+.groupPickerList {
+  max-height: 280px;
+  overflow: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: 8px;
+  background: var(--admin-surface, #fff);
+}
+
+.groupPickerRow {
+  display: flex;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid #f2f4f7;
+  cursor: pointer;
+}
+
+.groupPickerMeta {
+  display: block;
+  font-size: 12px;
+  color: #667085;
+}
+
+.groupFilterSeriesHint {
+  color: var(--admin-text-muted);
+  font-weight: 400;
 }

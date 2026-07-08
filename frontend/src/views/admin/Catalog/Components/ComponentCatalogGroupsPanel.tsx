@@ -6,27 +6,35 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import {
   type AdminComponentCatalogGroup,
+  type AdminComponentCatalogSeries,
   COMPONENT_KIND_LABELS,
   createAdminComponentCatalogGroup,
+  createAdminComponentCatalogSeries,
   deleteAdminComponentCatalogGroup,
+  deleteAdminComponentCatalogSeries,
   fetchAdminComponentCatalogGroupsList,
   fetchAdminComponentCatalogList,
+  fetchAdminComponentCatalogSeriesList,
   formatCatalogItemLabel,
   slugifyComponentCatalog,
   updateAdminComponentCatalogGroup,
+  updateAdminComponentCatalogSeries,
 } from '@/shared/api/admin-component-catalog';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import { CopyIcon } from '@/shared/ui/icons';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import modalStyles from './ComponentCatalogModal.module.css';
 import styles from './ComponentCatalogPage.module.css';
+import { ComponentCatalogSubgroupCopyModal } from './ComponentCatalogSubgroupCopyModal';
 import {
   COMPONENT_CATALOG_GROUPS_KEY,
   COMPONENT_CATALOG_LIST_KEY,
+  COMPONENT_CATALOG_SERIES_KEY,
 } from './hooks/useComponentCatalogPage';
 
 type ComponentCatalogGroupsPanelProps = {
@@ -43,43 +51,110 @@ export function ComponentCatalogGroupsPanel({
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(20);
-  const [modalOpen, setModalOpen] = useState(false);
-  const [editGroup, setEditGroup] = useState<AdminComponentCatalogGroup | null>(null);
+  const [selectedSeriesId, setSelectedSeriesId] = useState<string | null>(null);
+  const [subgroupPage, setSubgroupPage] = useState(1);
+  const [subgroupLimit, setSubgroupLimit] = useState(20);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+
+  const [seriesModalOpen, setSeriesModalOpen] = useState(false);
+  const [editSeries, setEditSeries] = useState<AdminComponentCatalogSeries | null>(null);
+
+  const [subgroupModalOpen, setSubgroupModalOpen] = useState(false);
+  const [editSubgroup, setEditSubgroup] = useState<AdminComponentCatalogGroup | null>(null);
+  const [createSubgroupSeriesId, setCreateSubgroupSeriesId] = useState<string | null>(null);
+
+  const [copySource, setCopySource] = useState<AdminComponentCatalogGroup | null>(null);
+  const [copyModalOpen, setCopyModalOpen] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  const { data, isLoading, isFetching, refetch } = useQuery({
-    queryKey: [COMPONENT_CATALOG_GROUPS_KEY, debouncedSearch, page, limit],
+  const {
+    data: seriesData,
+    isLoading: seriesLoading,
+    refetch: refetchSeries,
+  } = useQuery({
+    queryKey: [COMPONENT_CATALOG_SERIES_KEY, debouncedSearch],
     queryFn: () =>
-      fetchAdminComponentCatalogGroupsList({
+      fetchAdminComponentCatalogSeriesList({
         search: debouncedSearch || undefined,
-        page,
-        limit,
+        limit: 200,
       }),
     placeholderData: keepPreviousData,
   });
 
-  const groups = data?.data ?? [];
-  const total = data?.total ?? 0;
+  const seriesList = seriesData?.data ?? [];
+
+  useEffect(() => {
+    if (!selectedSeriesId && seriesList.length > 0) {
+      setSelectedSeriesId(seriesList[0].id);
+    }
+  }, [seriesList, selectedSeriesId]);
+
+  const {
+    data: subgroupsData,
+    isLoading: subgroupsLoading,
+    isFetching,
+    refetch,
+  } = useQuery({
+    queryKey: [
+      COMPONENT_CATALOG_GROUPS_KEY,
+      'subgroups',
+      selectedSeriesId,
+      debouncedSearch,
+      subgroupPage,
+      subgroupLimit,
+    ],
+    queryFn: () =>
+      fetchAdminComponentCatalogGroupsList({
+        seriesId: selectedSeriesId || undefined,
+        search: debouncedSearch || undefined,
+        page: subgroupPage,
+        limit: subgroupLimit,
+      }),
+    enabled: Boolean(selectedSeriesId),
+    placeholderData: keepPreviousData,
+  });
+
+  const subgroups = subgroupsData?.data ?? [];
+  const subgroupsTotal = subgroupsData?.total ?? 0;
+  const selectedSeries = seriesList.find((s) => s.id === selectedSeriesId) ?? null;
 
   const invalidate = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
   }, [queryClient]);
 
-  const handleDelete = useCallback(
+  const handleDeleteSeries = useCallback(
+    async (series: AdminComponentCatalogSeries) => {
+      const count = series._count?.subgroups ?? series.subgroups?.length ?? 0;
+      const msg =
+        count > 0
+          ? `Удалить группу моделей «${series.name}» вместе с ${count} подгруппами?`
+          : `Удалить группу моделей «${series.name}»?`;
+      if (!confirm(msg)) return;
+      try {
+        await deleteAdminComponentCatalogSeries(series.id);
+        if (selectedSeriesId === series.id) setSelectedSeriesId(null);
+        invalidate();
+        onToast('Группа моделей удалена', 'ok');
+      } catch (e) {
+        onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
+      }
+    },
+    [invalidate, onToast, selectedSeriesId]
+  );
+
+  const handleDeleteSubgroup = useCallback(
     async (group: AdminComponentCatalogGroup) => {
-      if (!confirm(`Удалить группу «${group.name}»? Позиции справочника останутся.`)) return;
+      if (!confirm(`Удалить подгруппу «${group.name}»? Позиции справочника останутся.`)) return;
       try {
         await deleteAdminComponentCatalogGroup(group.id);
         invalidate();
-        onToast('Группа удалена', 'ok');
+        onToast('Подгруппа удалена', 'ok');
       } catch (e) {
         onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
       }
@@ -87,20 +162,79 @@ export function ComponentCatalogGroupsPanel({
     [invalidate, onToast]
   );
 
-  const columns = useMemo(
+  const seriesColumns = useMemo(
     () => [
       {
         key: 'name',
-        title: 'Группа / цвет',
+        title: 'Группа моделей',
+        sortable: false,
+        render: (s: AdminComponentCatalogSeries) => (
+          <div className={styles.hierarchyNameCell}>
+            <div className={styles.hierarchyTitle}>{s.name}</div>
+            {s.description ? <div className={styles.hierarchySubtitle}>{s.description}</div> : null}
+          </div>
+        ),
+      },
+      {
+        key: 'subgroups',
+        title: 'Подгрупп',
+        width: '100px',
+        render: (s: AdminComponentCatalogSeries) => s._count?.subgroups ?? s.subgroups?.length ?? 0,
+      },
+      {
+        key: 'isActive',
+        title: 'Статус',
+        width: '100px',
+        render: (s: AdminComponentCatalogSeries) => (
+          <span
+            className={`${styles.badge} ${s.isActive ? styles.badgeActive : styles.badgeInactive}`}
+          >
+            {s.isActive ? 'Активна' : 'Скрыта'}
+          </span>
+        ),
+      },
+      {
+        key: 'actions',
+        title: '',
+        width: '100px',
+        render: (s: AdminComponentCatalogSeries) => (
+          <div className={styles.tableRowActions}>
+            <AdminTableIconButton
+              title="Редактировать"
+              onClick={(e) => {
+                e.stopPropagation();
+                setEditSeries(s);
+                setSeriesModalOpen(true);
+              }}
+            >
+              <EditIcon />
+            </AdminTableIconButton>
+            <AdminTableIconButton
+              title="Удалить"
+              onClick={(e) => {
+                e.stopPropagation();
+                void handleDeleteSeries(s);
+              }}
+            >
+              <DeleteIcon />
+            </AdminTableIconButton>
+          </div>
+        ),
+      },
+    ],
+    [handleDeleteSeries]
+  );
+
+  const subgroupColumns = useMemo(
+    () => [
+      {
+        key: 'name',
+        title: 'Подгруппа / цвет',
         sortable: false,
         render: (g: AdminComponentCatalogGroup) => (
-          <div style={{ minWidth: 280, maxWidth: 520 }}>
-            <div style={{ fontWeight: 600, lineHeight: 1.35 }}>{g.name}</div>
-            {g.series && (
-              <div style={{ fontSize: 12, color: 'var(--admin-text-muted)', marginTop: 2 }}>
-                {g.series}
-              </div>
-            )}
+          <div className={styles.hierarchyNameCell}>
+            <div className={styles.hierarchyTitle}>{g.name}</div>
+            {g.series ? <div className={styles.hierarchySubtitle}>{g.series}</div> : null}
           </div>
         ),
       },
@@ -125,11 +259,21 @@ export function ComponentCatalogGroupsPanel({
       {
         key: 'actions',
         title: '',
-        width: '140px',
+        width: '180px',
         render: (g: AdminComponentCatalogGroup) => (
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className={styles.tableRowActions}>
             <AdminTableIconButton
-              title="Состав группы"
+              title="Копировать подгруппу"
+              onClick={(e) => {
+                e.stopPropagation();
+                setCopySource(g);
+                setCopyModalOpen(true);
+              }}
+            >
+              <CopyIcon />
+            </AdminTableIconButton>
+            <AdminTableIconButton
+              title="Состав подгруппы"
               onClick={(e) => {
                 e.stopPropagation();
                 setExpandedId((prev) => (prev === g.id ? null : g.id));
@@ -141,8 +285,9 @@ export function ComponentCatalogGroupsPanel({
               title="Редактировать"
               onClick={(e) => {
                 e.stopPropagation();
-                setEditGroup(g);
-                setModalOpen(true);
+                setEditSubgroup(g);
+                setCreateSubgroupSeriesId(null);
+                setSubgroupModalOpen(true);
               }}
             >
               <EditIcon />
@@ -151,7 +296,7 @@ export function ComponentCatalogGroupsPanel({
               title="Удалить"
               onClick={(e) => {
                 e.stopPropagation();
-                void handleDelete(g);
+                void handleDeleteSubgroup(g);
               }}
             >
               <DeleteIcon />
@@ -160,39 +305,76 @@ export function ComponentCatalogGroupsPanel({
         ),
       },
     ],
-    [handleDelete]
+    [handleDeleteSubgroup]
   );
 
   return (
     <>
-      <ComponentCatalogGroupModal
-        open={modalOpen}
-        group={editGroup}
+      <ComponentCatalogSeriesModal
+        open={seriesModalOpen}
+        series={editSeries}
         onClose={() => {
-          setModalOpen(false);
-          setEditGroup(null);
+          setSeriesModalOpen(false);
+          setEditSeries(null);
+        }}
+        onSaved={() => {
+          invalidate();
+          setSeriesModalOpen(false);
+          setEditSeries(null);
+          onToast('Группа моделей сохранена', 'ok');
+        }}
+        onError={(msg) => onToast(msg, 'err')}
+      />
+
+      <ComponentCatalogSubgroupModal
+        open={subgroupModalOpen}
+        subgroup={editSubgroup}
+        seriesId={editSubgroup?.seriesId ?? createSubgroupSeriesId ?? selectedSeriesId}
+        seriesList={seriesList}
+        onClose={() => {
+          setSubgroupModalOpen(false);
+          setEditSubgroup(null);
+          setCreateSubgroupSeriesId(null);
         }}
         onCreateItemInGroup={
           onCreateItemInGroup
             ? (group) => {
-                setModalOpen(false);
-                setEditGroup(null);
+                setSubgroupModalOpen(false);
+                setEditSubgroup(null);
+                setCreateSubgroupSeriesId(null);
                 onCreateItemInGroup(group);
               }
             : undefined
         }
         onSaved={() => {
           invalidate();
-          setModalOpen(false);
-          setEditGroup(null);
-          onToast('Группа сохранена', 'ok');
+          setSubgroupModalOpen(false);
+          setEditSubgroup(null);
+          setCreateSubgroupSeriesId(null);
+          onToast('Подгруппа сохранена', 'ok');
+        }}
+        onError={(msg) => onToast(msg, 'err')}
+      />
+
+      <ComponentCatalogSubgroupCopyModal
+        open={copyModalOpen}
+        sourceGroup={copySource}
+        onClose={() => {
+          setCopyModalOpen(false);
+          setCopySource(null);
+        }}
+        onCopied={() => {
+          invalidate();
+          setCopyModalOpen(false);
+          setCopySource(null);
+          onToast('Подгруппа скопирована', 'ok');
         }}
         onError={(msg) => onToast(msg, 'err')}
       />
 
       <div className={styles.filters}>
         <div className={styles.searchField}>
-          <label className={styles.filterLabel}>Поиск по группе или серии</label>
+          <label className={styles.filterLabel}>Поиск</label>
           <input
             type="search"
             className={styles.searchInput}
@@ -202,102 +384,145 @@ export function ComponentCatalogGroupsPanel({
           />
         </div>
         <div>
-          <label className={styles.filterLabel}>На странице</label>
-          <select
-            className={styles.select}
-            value={limit}
-            onChange={(e) => setLimit(Number(e.target.value))}
-          >
-            {[20, 50, 100].map((n) => (
-              <option key={n} value={n}>
-                {n}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
           <label className={styles.filterLabel}>&nbsp;</label>
-          <button type="button" className={styles.refreshButton} onClick={() => void refetch()}>
+          <button
+            type="button"
+            className={styles.refreshButton}
+            onClick={() => void refetchSeries()}
+          >
             {isFetching ? '…' : '↻'}
           </button>
         </div>
-        <div style={{ marginLeft: 'auto' }}>
+        <div className={styles.hierarchyToolbar}>
           <label className={styles.filterLabel}>&nbsp;</label>
           <button
             type="button"
             className={styles.addButton}
             onClick={() => {
-              setEditGroup(null);
-              setModalOpen(true);
+              setEditSeries(null);
+              setSeriesModalOpen(true);
             }}
           >
-            + Новая группа
+            + Группа моделей
           </button>
         </div>
       </div>
 
-      {isLoading ? (
-        <div className={styles.loadingOverlay}>Загрузка групп…</div>
+      <h2 className={styles.hierarchySectionTitle}>Группы моделей дверей</h2>
+      {seriesLoading ? (
+        <div className={styles.loadingOverlay}>Загрузка…</div>
       ) : (
-        <>
-          <DataTable
-            paginationClassName={styles.pagination}
-            paginationActiveClassName={styles.paginationPageActive}
-            data={groups}
-            columns={columns}
-            keyExtractor={(g) => g.id}
-            serverSidePagination
-            pagination={{ page, limit, total, onPageChange: setPage }}
-            onRowClick={(g) => setExpandedId((prev) => (prev === g.id ? null : g.id))}
-          />
+        <DataTable
+          paginationClassName={styles.pagination}
+          paginationActiveClassName={styles.paginationPageActive}
+          data={seriesList}
+          columns={seriesColumns}
+          keyExtractor={(s) => s.id}
+          onRowClick={(s) => setSelectedSeriesId(s.id)}
+        />
+      )}
 
-          {expandedId && groups.find((g) => g.id === expandedId) && (
-            <GroupItemsDetail
-              group={groups.find((g) => g.id === expandedId)!}
-              onSelectGroupFilter={onSelectGroupFilter}
-              onCreateItemInGroup={onCreateItemInGroup}
-            />
+      {selectedSeries ? (
+        <>
+          <div className={styles.hierarchySubsectionHeader}>
+            <h2 className={styles.hierarchySectionTitle}>Подгруппы: {selectedSeries.name}</h2>
+            <button
+              type="button"
+              className={styles.addButton}
+              onClick={() => {
+                setEditSubgroup(null);
+                setCreateSubgroupSeriesId(selectedSeries.id);
+                setSubgroupModalOpen(true);
+              }}
+            >
+              + Подгруппа
+            </button>
+          </div>
+
+          <div className={styles.filters}>
+            <div>
+              <label className={styles.filterLabel}>На странице</label>
+              <select
+                className={styles.select}
+                value={subgroupLimit}
+                onChange={(e) => setSubgroupLimit(Number(e.target.value))}
+              >
+                {[20, 50, 100].map((n) => (
+                  <option key={n} value={n}>
+                    {n}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className={styles.filterLabel}>&nbsp;</label>
+              <button type="button" className={styles.refreshButton} onClick={() => void refetch()}>
+                {isFetching ? '…' : '↻'}
+              </button>
+            </div>
+          </div>
+
+          {subgroupsLoading ? (
+            <div className={styles.loadingOverlay}>Загрузка подгрупп…</div>
+          ) : (
+            <>
+              <DataTable
+                paginationClassName={styles.pagination}
+                paginationActiveClassName={styles.paginationPageActive}
+                data={subgroups}
+                columns={subgroupColumns}
+                keyExtractor={(g) => g.id}
+                serverSidePagination
+                pagination={{
+                  page: subgroupPage,
+                  limit: subgroupLimit,
+                  total: subgroupsTotal,
+                  onPageChange: setSubgroupPage,
+                }}
+                onRowClick={(g) => setExpandedId((prev) => (prev === g.id ? null : g.id))}
+              />
+
+              {expandedId && subgroups.find((g) => g.id === expandedId) ? (
+                <SubgroupItemsDetail
+                  group={subgroups.find((g) => g.id === expandedId)!}
+                  onSelectGroupFilter={onSelectGroupFilter}
+                  onCreateItemInGroup={onCreateItemInGroup}
+                  onCopy={() => {
+                    const g = subgroups.find((x) => x.id === expandedId);
+                    if (g) {
+                      setCopySource(g);
+                      setCopyModalOpen(true);
+                    }
+                  }}
+                />
+              ) : null}
+            </>
           )}
         </>
-      )}
+      ) : null}
     </>
   );
 }
 
-function GroupItemsDetail({
+function SubgroupItemsDetail({
   group,
   onSelectGroupFilter,
   onCreateItemInGroup,
+  onCopy,
 }: {
   group: AdminComponentCatalogGroup;
   onSelectGroupFilter?: (groupId: string) => void;
   onCreateItemInGroup?: (group: AdminComponentCatalogGroup) => void;
+  onCopy: () => void;
 }) {
-  if (!group) return null;
   return (
-    <div
-      style={{
-        marginTop: 16,
-        padding: 16,
-        border: '1px solid var(--admin-border)',
-        borderRadius: 8,
-        background: 'var(--admin-surface-muted, #f9fafb)',
-      }}
-    >
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'flex-start',
-          gap: 12,
-          marginBottom: 12,
-          flexWrap: 'wrap',
-        }}
-      >
-        <strong style={{ lineHeight: 1.4, maxWidth: 'min(100%, 720px)' }}>
-          Состав: {group.name}
-        </strong>
+    <div className={styles.subgroupDetail}>
+      <div className={styles.subgroupDetailHeader}>
+        <strong className={styles.subgroupDetailTitle}>Состав: {group.name}</strong>
         <div className={styles.groupDetailActions}>
+          <button type="button" className={styles.secondaryButton} onClick={onCopy}>
+            Копировать подгруппу
+          </button>
           {onCreateItemInGroup ? (
             <button
               type="button"
@@ -313,38 +538,37 @@ function GroupItemsDetail({
               className={styles.secondaryButton}
               onClick={() => onSelectGroupFilter(group.id)}
             >
-              Показать позиции группы
+              Показать позиции подгруппы
             </button>
           ) : null}
         </div>
       </div>
       {group.items.length === 0 ? (
         <p className={styles.groupCompositionHint}>
-          В группе пока нет позиций. Нажмите «Добавить позицию», чтобы создать стойку, наличник или
-          добор с нужным цветом — карточка сразу попадёт в эту группу. Либо откройте редактирование
-          группы и отметьте уже существующие позиции в справочнике.
+          В подгруппе пока нет позиций. Создайте стойку, наличник и добор с нужным цветом или
+          скопируйте другую подгруппу и измените цвет.
         </p>
       ) : (
-        <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+        <table className={styles.subgroupItemsTable}>
           <thead>
-            <tr style={{ textAlign: 'left', borderBottom: '1px solid var(--admin-border)' }}>
-              <th style={{ padding: '6px 8px' }}>Вид</th>
-              <th style={{ padding: '6px 8px' }}>Наименование</th>
-              <th style={{ padding: '6px 8px' }}>Размер</th>
-              <th style={{ padding: '6px 8px' }}>Цвет</th>
-              <th style={{ padding: '6px 8px' }}>Материал</th>
-              <th style={{ padding: '6px 8px' }}>Цена</th>
+            <tr>
+              <th>Вид</th>
+              <th>Наименование</th>
+              <th>Размер</th>
+              <th>Цвет</th>
+              <th>Материал</th>
+              <th>Цена</th>
             </tr>
           </thead>
           <tbody>
             {group.items.map((row) => (
-              <tr key={row.id} style={{ borderBottom: '1px solid var(--admin-border)' }}>
-                <td style={{ padding: '8px' }}>{COMPONENT_KIND_LABELS[row.catalogItem.kind]}</td>
-                <td style={{ padding: '8px' }}>{row.catalogItem.name}</td>
-                <td style={{ padding: '8px' }}>{row.catalogItem.size || '—'}</td>
-                <td style={{ padding: '8px' }}>{row.catalogItem.color || '—'}</td>
-                <td style={{ padding: '8px' }}>{row.catalogItem.material || '—'}</td>
-                <td style={{ padding: '8px', fontWeight: 600 }}>
+              <tr key={row.id}>
+                <td>{COMPONENT_KIND_LABELS[row.catalogItem.kind]}</td>
+                <td>{row.catalogItem.name}</td>
+                <td>{row.catalogItem.size || '—'}</td>
+                <td>{row.catalogItem.color || '—'}</td>
+                <td>{row.catalogItem.material || '—'}</td>
+                <td className={styles.subgroupPriceCell}>
                   {parseFloat(row.catalogItem.price).toLocaleString('ru-RU')} ₽
                 </td>
               </tr>
@@ -356,23 +580,157 @@ function GroupItemsDetail({
   );
 }
 
-function ComponentCatalogGroupModal({
+function ComponentCatalogSeriesModal({
   open,
-  group,
+  series,
+  onClose,
+  onSaved,
+  onError,
+}: {
+  open: boolean;
+  series: AdminComponentCatalogSeries | null;
+  onClose: () => void;
+  onSaved: () => void;
+  onError: (msg: string) => void;
+}) {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [slug, setSlug] = useState('');
+  const [autoSlug, setAutoSlug] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    if (series) {
+      setName(series.name);
+      setDescription(series.description ?? '');
+      setSlug(series.slug);
+      setAutoSlug(false);
+    } else {
+      setName('');
+      setDescription('');
+      setSlug('');
+      setAutoSlug(true);
+    }
+  }, [open, series]);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const n = name.trim();
+    const s = (slug.trim() || slugifyComponentCatalog(n)).trim();
+    if (!n || !s) {
+      onError('Укажите название группы моделей');
+      return;
+    }
+    setSaving(true);
+    try {
+      const body = {
+        name: n,
+        description: description.trim() || undefined,
+        slug: s,
+      };
+      if (series) {
+        await updateAdminComponentCatalogSeries(series.id, body);
+      } else {
+        await createAdminComponentCatalogSeries(body);
+      }
+      onSaved();
+    } catch (err) {
+      onError(err instanceof Error ? err.message : 'Ошибка');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title={series ? 'Редактировать группу моделей' : 'Новая группа моделей'}
+      size="lg"
+      className={crmFormStyles.modalPanel}
+      showCloseButton
+    >
+      <form
+        className={`${crmFormStyles.formShell} ${modalStyles.formBlueShell}`}
+        data-modal-form
+        data-modal-density="compact"
+        onSubmit={(e) => void handleSubmit(e)}
+      >
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
+          Группа моделей объединяет подгруппы комплектующих для одной серии дверей (например, ЛОФТ,
+          Классика). Внутри — подгруппы по цвету с набором стойки, наличника и добора.
+        </p>
+        <div data-modal-form-grid className={styles.groupFormGrid}>
+          <div data-modal-form-group className={styles.groupNameField}>
+            <label htmlFor="catalog-series-name">Название *</label>
+            <input
+              id="catalog-series-name"
+              value={name}
+              onChange={(e) => {
+                const v = e.target.value;
+                setName(v);
+                if (autoSlug) setSlug(slugifyComponentCatalog(v));
+              }}
+              placeholder="ЛОФТ, Классика Экошпон…"
+            />
+          </div>
+          <div data-modal-form-group className={styles.groupSeriesField}>
+            <label htmlFor="catalog-series-desc">Описание</label>
+            <input
+              id="catalog-series-desc"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Погонаж для дверей серии ЛОФТ"
+            />
+          </div>
+          <div data-modal-form-group>
+            <label htmlFor="catalog-series-slug">Slug *</label>
+            <input
+              id="catalog-series-slug"
+              value={slug}
+              onChange={(e) => {
+                setAutoSlug(false);
+                setSlug(e.target.value);
+              }}
+            />
+          </div>
+        </div>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" onClick={onClose} disabled={saving}>
+            Отмена
+          </button>
+          <button type="submit" data-modal-btn="primary" disabled={saving}>
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+        </div>
+      </form>
+    </Modal>
+  );
+}
+
+function ComponentCatalogSubgroupModal({
+  open,
+  subgroup,
+  seriesId,
+  seriesList,
   onClose,
   onSaved,
   onError,
   onCreateItemInGroup,
 }: {
   open: boolean;
-  group: AdminComponentCatalogGroup | null;
+  subgroup: AdminComponentCatalogGroup | null;
+  seriesId: string | null;
+  seriesList: AdminComponentCatalogSeries[];
   onClose: () => void;
   onSaved: () => void;
   onError: (msg: string) => void;
   onCreateItemInGroup?: (group: AdminComponentCatalogGroup) => void;
 }) {
+  const [selectedSeriesId, setSelectedSeriesId] = useState('');
   const [name, setName] = useState('');
-  const [series, setSeries] = useState('');
+  const [variantNote, setVariantNote] = useState('');
   const [slug, setSlug] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
@@ -389,21 +747,23 @@ function ComponentCatalogGroupModal({
 
   useEffect(() => {
     if (!open) return;
-    if (group) {
-      setName(group.name);
-      setSeries(group.series ?? '');
-      setSlug(group.slug);
-      setSelectedIds(group.items.map((i) => i.catalogItem.id));
+    if (subgroup) {
+      setSelectedSeriesId(subgroup.seriesId);
+      setName(subgroup.name);
+      setVariantNote(subgroup.series ?? '');
+      setSlug(subgroup.slug);
+      setSelectedIds(subgroup.items.map((i) => i.catalogItem.id));
       setAutoSlug(false);
     } else {
+      setSelectedSeriesId(seriesId ?? seriesList[0]?.id ?? '');
       setName('');
-      setSeries('');
+      setVariantNote('');
       setSlug('');
       setSelectedIds([]);
       setAutoSlug(true);
     }
     setItemSearch('');
-  }, [open, group]);
+  }, [open, subgroup, seriesId, seriesList]);
 
   const toggleItem = (id: string) => {
     setSelectedIds((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
@@ -411,22 +771,28 @@ function ComponentCatalogGroupModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const sid = selectedSeriesId.trim();
     const n = name.trim();
     const s = (slug.trim() || slugifyComponentCatalog(n)).trim();
+    if (!sid) {
+      onError('Выберите группу моделей');
+      return;
+    }
     if (!n || !s) {
-      onError('Укажите название группы');
+      onError('Укажите название подгруппы');
       return;
     }
     setSaving(true);
     try {
       const body = {
+        seriesId: sid,
         name: n,
-        series: series.trim() || undefined,
+        series: variantNote.trim() || undefined,
         slug: s,
         catalogItemIds: selectedIds,
       };
-      if (group) {
-        await updateAdminComponentCatalogGroup(group.id, body);
+      if (subgroup) {
+        await updateAdminComponentCatalogGroup(subgroup.id, body);
       } else {
         await createAdminComponentCatalogGroup(body);
       }
@@ -438,13 +804,11 @@ function ComponentCatalogGroupModal({
     }
   };
 
-  const title = group ? 'Редактировать группу' : 'Новая группа комплектующих';
-
   return (
     <Modal
       isOpen={open}
       onClose={onClose}
-      title={title}
+      title={subgroup ? 'Редактировать подгруппу' : 'Новая подгруппа комплектующих'}
       size="xl"
       className={crmFormStyles.modalPanel}
       showCloseButton
@@ -456,16 +820,32 @@ function ComponentCatalogGroupModal({
         onSubmit={(e) => void handleSubmit(e)}
       >
         <p data-modal-form-hint style={{ marginTop: 0 }}>
-          Группа объединяет стойку, наличник, добор и планку одного цвета — её можно привязать к
-          карточке двери целиком. Новые позиции удобнее создавать кнопкой «Создать позицию для
-          группы» — они сразу попадут в состав; существующие отметьте в списке ниже.
+          Подгруппа объединяет стойку, наличник, добор и планку одного цвета. Её можно привязать к
+          карточке двери целиком. Для нового цвета удобнее скопировать существующую подгруппу.
         </p>
 
         <div data-modal-form-grid className={styles.groupFormGrid}>
+          <div data-modal-form-group>
+            <label htmlFor="catalog-subgroup-series">Группа моделей *</label>
+            <select
+              id="catalog-subgroup-series"
+              value={selectedSeriesId}
+              onChange={(e) => setSelectedSeriesId(e.target.value)}
+              disabled={Boolean(subgroup)}
+            >
+              <option value="">— выберите —</option>
+              {seriesList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
           <div data-modal-form-group className={styles.groupNameField}>
-            <label htmlFor="catalog-group-name">Название группы / цвет *</label>
+            <label htmlFor="catalog-subgroup-name">Название подгруппы / цвет *</label>
             <input
-              id="catalog-group-name"
+              id="catalog-subgroup-name"
               value={name}
               onChange={(e) => {
                 const v = e.target.value;
@@ -477,19 +857,19 @@ function ComponentCatalogGroupModal({
           </div>
 
           <div data-modal-form-group className={styles.groupSeriesField}>
-            <label htmlFor="catalog-group-series">Серия / описание</label>
+            <label htmlFor="catalog-subgroup-note">Примечание к варианту</label>
             <input
-              id="catalog-group-series"
-              value={series}
-              onChange={(e) => setSeries(e.target.value)}
-              placeholder="Погонаж для дверей Экошпон, серии ЛОФТ"
+              id="catalog-subgroup-note"
+              value={variantNote}
+              onChange={(e) => setVariantNote(e.target.value)}
+              placeholder="Телескопический погонаж"
             />
           </div>
 
           <div data-modal-form-group>
-            <label htmlFor="catalog-group-slug">Slug *</label>
+            <label htmlFor="catalog-subgroup-slug">Slug *</label>
             <input
-              id="catalog-group-slug"
+              id="catalog-subgroup-slug"
               value={slug}
               onChange={(e) => {
                 setAutoSlug(false);
@@ -500,48 +880,30 @@ function ComponentCatalogGroupModal({
         </div>
 
         <div data-modal-form-group>
-          <label htmlFor="catalog-group-picker-search">Состав группы ({selectedIds.length})</label>
-          {group && onCreateItemInGroup ? (
+          <label htmlFor="catalog-subgroup-picker-search">
+            Состав подгруппы ({selectedIds.length})
+          </label>
+          {subgroup && onCreateItemInGroup ? (
             <div className={styles.groupCompositionToolbar}>
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={() => onCreateItemInGroup(group)}
+                onClick={() => onCreateItemInGroup(subgroup)}
               >
-                + Создать позицию для группы
+                + Создать позицию для подгруппы
               </button>
-              <p className={styles.groupCompositionHint}>
-                Или найдите и отметьте уже существующие позиции справочника
-              </p>
             </div>
           ) : null}
           <input
-            id="catalog-group-picker-search"
+            id="catalog-subgroup-picker-search"
             className={styles.searchInput}
             value={itemSearch}
             onChange={(e) => setItemSearch(e.target.value)}
             placeholder="Поиск позиций для добавления…"
           />
-          <div
-            style={{
-              maxHeight: 280,
-              overflow: 'auto',
-              border: '1px solid var(--admin-border)',
-              borderRadius: 8,
-              background: 'var(--admin-surface, #fff)',
-            }}
-          >
+          <div className={styles.groupPickerList}>
             {pickerItems.map((item) => (
-              <label
-                key={item.id}
-                style={{
-                  display: 'flex',
-                  gap: 10,
-                  padding: '10px 12px',
-                  borderBottom: '1px solid #f2f4f7',
-                  cursor: 'pointer',
-                }}
-              >
+              <label key={item.id} className={styles.groupPickerRow}>
                 <input
                   type="checkbox"
                   checked={selectedIds.includes(item.id)}
@@ -549,7 +911,7 @@ function ComponentCatalogGroupModal({
                 />
                 <span>
                   <strong>{formatCatalogItemLabel(item)}</strong>
-                  <span style={{ display: 'block', fontSize: 12, color: '#667085' }}>
+                  <span className={styles.groupPickerMeta}>
                     {COMPONENT_KIND_LABELS[item.kind]} ·{' '}
                     {parseFloat(item.price).toLocaleString('ru-RU')} ₽
                   </span>
@@ -564,7 +926,7 @@ function ComponentCatalogGroupModal({
             Отмена
           </button>
           <button type="submit" data-modal-btn="primary" disabled={saving}>
-            {saving ? 'Сохранение…' : 'Сохранить группу'}
+            {saving ? 'Сохранение…' : 'Сохранить подгруппу'}
           </button>
         </div>
       </form>

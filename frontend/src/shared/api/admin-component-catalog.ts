@@ -20,7 +20,42 @@ export const COMPONENT_KIND_LABELS: Record<ComponentKind, string> = {
 };
 
 export interface AdminComponentCatalogGroupRef {
-  group: { id: string; name: string; series: string | null };
+  group: {
+    id: string;
+    name: string;
+    series: string | null;
+    seriesRef?: { id: string; name: string } | null;
+  };
+}
+
+export interface AdminComponentCatalogSeriesSubgroup {
+  id: string;
+  name: string;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  _count?: { items: number };
+}
+
+export interface AdminComponentCatalogSeries {
+  id: string;
+  name: string;
+  description: string | null;
+  categoryId: string | null;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  category?: { id: string; name: string; slug: string } | null;
+  subgroups?: AdminComponentCatalogSeriesSubgroup[];
+  _count?: { subgroups: number };
+}
+
+export interface AdminComponentCatalogSeriesListResponse {
+  data: AdminComponentCatalogSeries[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
 }
 
 export interface AdminComponentCatalogItem {
@@ -59,12 +94,14 @@ export interface AdminComponentCatalogGroupItem {
 
 export interface AdminComponentCatalogGroup {
   id: string;
+  seriesId: string;
   name: string;
   series: string | null;
   categoryId: string | null;
   slug: string;
   isActive: boolean;
   sortOrder: number;
+  seriesRef?: { id: string; name: string; slug: string };
   category?: { id: string; name: string; slug: string } | null;
   items: AdminComponentCatalogGroupItem[];
   _count?: { items: number };
@@ -92,6 +129,7 @@ export async function fetchAdminComponentCatalogList(params?: {
   search?: string;
   kind?: ComponentKind;
   groupId?: string;
+  seriesId?: string;
   isActive?: boolean;
   page?: number;
   limit?: number;
@@ -104,6 +142,7 @@ export async function fetchAdminComponentCatalogList(params?: {
   if (params?.search?.trim()) search.set('search', params.search.trim());
   if (params?.kind) search.set('kind', params.kind);
   if (params?.groupId) search.set('groupId', params.groupId);
+  if (params?.seriesId) search.set('seriesId', params.seriesId);
   if (params?.isActive !== undefined) search.set('isActive', params.isActive ? 'true' : 'false');
   if (params?.sortBy) search.set('sortBy', params.sortBy);
   if (params?.sortOrder) search.set('sortOrder', params.sortOrder);
@@ -119,9 +158,87 @@ export async function fetchAdminComponentCatalogList(params?: {
   return res.json();
 }
 
+export async function fetchAdminComponentCatalogSeriesList(params?: {
+  search?: string;
+  categoryId?: string;
+  page?: number;
+  limit?: number;
+}): Promise<AdminComponentCatalogSeriesListResponse> {
+  const search = new URLSearchParams();
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(params?.limit ?? 50));
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  if (params?.categoryId) search.set('categoryId', params.categoryId);
+
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series?${search}`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось загрузить группы моделей');
+  }
+  return res.json();
+}
+
+export async function createAdminComponentCatalogSeries(body: {
+  name: string;
+  description?: string;
+  categoryId?: string;
+  slug: string;
+  isActive?: boolean;
+  sortOrder?: number;
+}): Promise<AdminComponentCatalogSeries> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка создания группы моделей');
+  }
+  return res.json();
+}
+
+export async function updateAdminComponentCatalogSeries(
+  id: string,
+  body: Partial<{
+    name: string;
+    description: string;
+    categoryId: string;
+    slug: string;
+    isActive: boolean;
+    sortOrder: number;
+  }>
+): Promise<AdminComponentCatalogSeries> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка сохранения группы моделей');
+  }
+  return res.json();
+}
+
+export async function deleteAdminComponentCatalogSeries(id: string): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка удаления группы моделей');
+  }
+}
+
 export async function fetchAdminComponentCatalogGroupsList(params?: {
   search?: string;
   categoryId?: string;
+  seriesId?: string;
   page?: number;
   limit?: number;
 }): Promise<AdminComponentCatalogGroupsListResponse> {
@@ -130,6 +247,7 @@ export async function fetchAdminComponentCatalogGroupsList(params?: {
   search.set('limit', String(params?.limit ?? 50));
   if (params?.search?.trim()) search.set('search', params.search.trim());
   if (params?.categoryId) search.set('categoryId', params.categoryId);
+  if (params?.seriesId) search.set('seriesId', params.seriesId);
 
   const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-groups?${search}`, {
     headers: getAdminAuthHeaders(),
@@ -211,6 +329,7 @@ export async function deleteAdminComponentCatalogItem(id: string): Promise<void>
 }
 
 export async function createAdminComponentCatalogGroup(body: {
+  seriesId: string;
   name: string;
   series?: string;
   categoryId?: string;
@@ -234,6 +353,7 @@ export async function createAdminComponentCatalogGroup(body: {
 export async function updateAdminComponentCatalogGroup(
   id: string,
   body: Partial<{
+    seriesId: string;
     name: string;
     series: string;
     categoryId: string;
@@ -288,6 +408,31 @@ export async function addAdminComponentCatalogGroupItem(
       (err as { message?: string }).message || 'Не удалось добавить позицию в группу'
     );
   }
+}
+
+export async function copyAdminComponentCatalogSubgroup(
+  sourceGroupId: string,
+  body: {
+    name: string;
+    color: string;
+    variantNote?: string;
+    slug?: string;
+    priceDelta?: number;
+  }
+): Promise<AdminComponentCatalogGroup> {
+  const res = await apiFetch(
+    `${API_URL}/admin/catalog/component-catalog-groups/${sourceGroupId}/copy`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка копирования подгруппы');
+  }
+  return res.json();
 }
 
 export async function deleteAdminComponentCatalogGroup(id: string): Promise<void> {

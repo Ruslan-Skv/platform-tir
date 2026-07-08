@@ -2,6 +2,11 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateComponentCatalogGroupDto } from './dto/create-component-catalog-group.dto';
+import { CopyComponentCatalogGroupDto } from './dto/copy-component-catalog-group.dto';
+import {
+  buildComponentCatalogItemSlug,
+  slugifyComponentCatalog,
+} from './utils/component-catalog-slug.util';
 
 @Injectable()
 export class ComponentCatalogGroupsService {
@@ -12,7 +17,7 @@ export class ComponentCatalogGroupsService {
       where: { slug: dto.slug },
     });
     if (existing) {
-      throw new ConflictException(`Группа со slug "${dto.slug}" уже существует`);
+      throw new ConflictException(`Подгруппа со slug "${dto.slug}" уже существует`);
     }
 
     const { catalogItemIds, ...data } = dto;
@@ -35,15 +40,17 @@ export class ComponentCatalogGroupsService {
   async findAll(params?: {
     search?: string;
     categoryId?: string;
+    seriesId?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
   }) {
-    const { search, categoryId, isActive, page = 1, limit = 50 } = params || {};
+    const { search, categoryId, seriesId, isActive, page = 1, limit = 50 } = params || {};
     const skip = (page - 1) * limit;
     const where: Prisma.ComponentCatalogGroupWhereInput = {};
     if (isActive !== undefined) where.isActive = isActive;
     if (categoryId) where.categoryId = categoryId;
+    if (seriesId) where.seriesId = seriesId;
     if (search?.trim()) {
       const q = search.trim();
       where.OR = [
@@ -72,7 +79,7 @@ export class ComponentCatalogGroupsService {
       where: { id },
       include: this.groupInclude(),
     });
-    if (!row) throw new NotFoundException(`Группа ${id} не найдена`);
+    if (!row) throw new NotFoundException(`Подгруппа ${id} не найдена`);
     return row;
   }
 
@@ -83,7 +90,7 @@ export class ComponentCatalogGroupsService {
         where: { slug: data.slug, NOT: { id } },
       });
       if (existing) {
-        throw new ConflictException(`Группа со slug "${data.slug}" уже существует`);
+        throw new ConflictException(`Подгруппа со slug "${data.slug}" уже существует`);
       }
     }
 
@@ -156,8 +163,100 @@ export class ComponentCatalogGroupsService {
     return items.map((i: { catalogItemId: string }) => i.catalogItemId);
   }
 
+  async copySubgroup(sourceGroupId: string, dto: CopyComponentCatalogGroupDto) {
+    const source = await this.prisma.componentCatalogGroup.findUnique({
+      where: { id: sourceGroupId },
+      include: {
+        items: {
+          orderBy: { sortOrder: 'asc' },
+          include: { catalogItem: true },
+        },
+      },
+    });
+    if (!source) throw new NotFoundException(`Подгруппа ${sourceGroupId} не найдена`);
+
+    const subgroupSlug = await this.ensureUniqueGroupSlug(
+      dto.slug?.trim() || slugifyComponentCatalog(dto.name),
+    );
+
+    const newCatalogItemIds: string[] = [];
+    for (const row of source.items) {
+      const src = row.catalogItem;
+      const color = dto.color.trim();
+      const baseSlug = buildComponentCatalogItemSlug({
+        name: src.name,
+        size: src.size,
+        color,
+        material: src.material,
+      });
+      const itemSlug = await this.ensureUniqueItemSlug(baseSlug);
+
+      let price = Number(src.price);
+      if (dto.priceDelta !== undefined && dto.priceDelta !== 0) {
+        price = Math.max(0, Math.round((price + dto.priceDelta) * 100) / 100);
+      }
+
+      const created = await this.prisma.componentCatalogItem.create({
+        data: {
+          kind: src.kind,
+          name: src.name,
+          size: src.size,
+          color,
+          material: src.material,
+          price,
+          slug: itemSlug,
+          image: src.image,
+          stock: src.stock,
+          isActive: src.isActive,
+          sortOrder: src.sortOrder,
+          kitQuantity: src.kitQuantity,
+          quantityStep: src.quantityStep,
+        },
+      });
+      newCatalogItemIds.push(created.id);
+    }
+
+    return this.prisma.componentCatalogGroup.create({
+      data: {
+        seriesId: source.seriesId,
+        name: dto.name.trim(),
+        series: dto.variantNote?.trim() || source.series,
+        categoryId: source.categoryId,
+        slug: subgroupSlug,
+        isActive: source.isActive,
+        sortOrder: source.sortOrder,
+        items: {
+          create: newCatalogItemIds.map((catalogItemId, index) => ({
+            catalogItemId,
+            sortOrder: index,
+          })),
+        },
+      },
+      include: this.groupInclude(),
+    });
+  }
+
+  private async ensureUniqueGroupSlug(base: string): Promise<string> {
+    let slug = base;
+    let n = 1;
+    while (await this.prisma.componentCatalogGroup.findUnique({ where: { slug } })) {
+      slug = `${base}-${n++}`;
+    }
+    return slug;
+  }
+
+  private async ensureUniqueItemSlug(base: string): Promise<string> {
+    let slug = base;
+    let n = 1;
+    while (await this.prisma.componentCatalogItem.findUnique({ where: { slug } })) {
+      slug = `${base}-${n++}`;
+    }
+    return slug;
+  }
+
   private groupInclude() {
     return {
+      seriesRef: { select: { id: true, name: true, slug: true } },
       category: { select: { id: true, name: true, slug: true } },
       items: {
         orderBy: { sortOrder: 'asc' as const },

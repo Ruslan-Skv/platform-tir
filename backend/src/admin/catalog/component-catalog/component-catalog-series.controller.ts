@@ -9,47 +9,38 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ComponentKind } from '@prisma/client';
-import { ComponentCatalogService } from './component-catalog.service';
-import { CreateComponentCatalogItemDto } from './dto/create-component-catalog-item.dto';
-import { UpdateComponentCatalogItemDto } from './dto/update-component-catalog-item.dto';
+import { ComponentCatalogSeriesService } from './component-catalog-series.service';
+import { CreateComponentCatalogSeriesDto } from './dto/create-component-catalog-series.dto';
+import { UpdateComponentCatalogSeriesDto } from './dto/update-component-catalog-series.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
 
-@Controller('admin/catalog/component-catalog')
+@Controller('admin/catalog/component-catalog-series')
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
-export class ComponentCatalogController {
-  constructor(private readonly service: ComponentCatalogService) {}
+export class ComponentCatalogSeriesController {
+  constructor(private readonly service: ComponentCatalogSeriesService) {}
 
   @Post()
-  create(@Body() dto: CreateComponentCatalogItemDto) {
+  create(@Body() dto: CreateComponentCatalogSeriesDto) {
     return this.service.create(dto);
   }
 
   @Get()
   findAll(
     @Query('search') search?: string,
-    @Query('kind') kind?: ComponentKind,
-    @Query('groupId') groupId?: string,
-    @Query('seriesId') seriesId?: string,
+    @Query('categoryId') categoryId?: string,
     @Query('isActive') isActive?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
-    @Query('sortBy') sortBy?: string,
-    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.service.findAll({
       search,
-      kind,
-      groupId,
-      seriesId,
+      categoryId,
       isActive: isActive ? isActive === 'true' : undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 50,
-      sortBy,
-      sortOrder,
     });
   }
 
@@ -59,13 +50,8 @@ export class ComponentCatalogController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateComponentCatalogItemDto) {
+  update(@Param('id') id: string, @Body() dto: UpdateComponentCatalogSeriesDto) {
     return this.service.update(id, dto);
-  }
-
-  @Post('reorder')
-  reorder(@Body() items: { id: string; sortOrder: number }[]) {
-    return this.service.reorder(items);
   }
 
   @Delete(':id')

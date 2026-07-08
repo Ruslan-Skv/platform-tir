@@ -12,6 +12,7 @@ import {
 import { ComponentCatalogGroupsService } from './component-catalog-groups.service';
 import { CreateComponentCatalogGroupDto } from './dto/create-component-catalog-group.dto';
 import { UpdateComponentCatalogGroupDto } from './dto/update-component-catalog-group.dto';
+import { CopyComponentCatalogGroupDto } from './dto/copy-component-catalog-group.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -31,6 +32,7 @@ export class ComponentCatalogGroupsController {
   findAll(
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('seriesId') seriesId?: string,
     @Query('isActive') isActive?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -38,10 +40,16 @@ export class ComponentCatalogGroupsController {
     return this.service.findAll({
       search,
       categoryId,
+      seriesId,
       isActive: isActive ? isActive === 'true' : undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 50,
     });
+  }
+
+  @Post(':id/copy')
+  copy(@Param('id') id: string, @Body() dto: CopyComponentCatalogGroupDto) {
+    return this.service.copySubgroup(id, dto);
   }
 
   @Get(':id')
