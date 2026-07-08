@@ -82,8 +82,9 @@ services:
       # MAX (уведомления в мессенджер MAX). Без токена — только email/Telegram
       MAX_BOT_TOKEN: ${MAX_BOT_TOKEN:-}
       MAX_API_BASE_URL: ${MAX_API_BASE_URL:-https://platform-api2.max.ru}
-      # Сброс битого bundle из старых образов; доверяем /etc/ssl/certs (mount с хоста)
-      NODE_EXTRA_CA_CERTS: ''
+      # Node.js 20: без этого fetch не видит CA Минцифры (mount /etc/ssl/certs недостаточен)
+      NODE_USE_SYSTEM_CA: '1'
+      NODE_EXTRA_CA_CERTS: /app/certs/russian-trusted-node.pem
       # Web Push (уведомления админки в установленном PWA на телефоне)
       VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
       VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}

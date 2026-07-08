@@ -47,7 +47,14 @@ RUN mkdir -p /usr/local/share/ca-certificates \
           https://gu-st.ru/content/lending/russian_trusted_sub_ca_pem.crt \
         || tr -d '\r' < /app/certs/russian_trusted_sub_ca.pem \
           > /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt) \
-    && update-ca-certificates
+    && update-ca-certificates \
+    && { tr -d '\r' < /usr/local/share/ca-certificates/russian_trusted_root_ca.crt; printf '\n'; \
+         tr -d '\r' < /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt; printf '\n'; } \
+       > /app/certs/russian-trusted-node.pem
+
+# Node.js 20 по умолчанию доверяет только Mozilla CA, не /etc/ssl/certs
+ENV NODE_USE_SYSTEM_CA=1
+ENV NODE_EXTRA_CA_CERTS=/app/certs/russian-trusted-node.pem
 
 WORKDIR /app
 
