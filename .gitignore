@@ -16,6 +16,9 @@ backups/
 # Misc
 .DS_Store
 *.pem
+# Публичные корневые CA НУЦ Минцифры (TLS к platform-api2.max.ru в Docker)
+!backend/certs/
+!backend/certs/*.pem
 
 # Debug
 npm-debug.log*

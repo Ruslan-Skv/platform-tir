@@ -41,7 +41,7 @@ export class ExternalNotifyService {
     const maxIds = (channels.maxIds ?? []).filter(Boolean);
     const fromLabel = payload.fromLabel ?? 'Сайт';
 
-    await Promise.allSettled([
+    const results = await Promise.allSettled([
       ...emails.map((to) =>
         this.mailer.sendMail({
           from: `"${fromLabel}" <${this.mailFrom}>`,
@@ -57,6 +57,13 @@ export class ExternalNotifyService {
         : []),
       ...(this.maxBotToken ? maxIds.map((chatId) => this.sendMax(chatId, payload.text)) : []),
     ]);
+    for (const result of results) {
+      if (result.status === 'rejected') {
+        const reason = result.reason;
+        const message = reason instanceof Error ? reason.message : String(reason);
+        this.logger.warn(`External notify failed: ${message}`);
+      }
+    }
   }
 
   isTelegramConfigured(): boolean {
@@ -87,14 +94,21 @@ export class ExternalNotifyService {
     const body = text.length > 4000 ? text.slice(0, 3997) + '...' : text;
     const url = new URL(`${this.maxApiBaseUrl.replace(/\/$/, '')}/messages`);
     url.searchParams.set('chat_id', chatId);
-    const response = await fetch(url.toString(), {
-      method: 'POST',
-      headers: {
-        Authorization: this.maxBotToken,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ text: body }),
-    });
+    let response: Response;
+    try {
+      response = await fetch(url.toString(), {
+        method: 'POST',
+        headers: {
+          Authorization: this.maxBotToken,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: body }),
+      });
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      this.logger.warn(`MAX network error for chat ${chatId}: ${message}`);
+      throw err;
+    }
     if (!response.ok) {
       const errText = await response.text().catch(() => response.statusText);
       this.logger.warn(`MAX API ${response.status} for chat ${chatId}: ${errText}`);
