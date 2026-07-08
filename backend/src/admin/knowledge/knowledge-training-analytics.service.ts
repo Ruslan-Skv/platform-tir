@@ -9,6 +9,7 @@ import {
   DASHBOARD_TRAINING_ANALYTICS_ROLES,
   buildTrainingActivityTimeline,
   buildTrainingAnalyticsCategoryMetaMap,
+  buildTrainingAnalyticsCategoryEmployeeBreakdown,
   buildTrainingAnalyticsCategoryTimeline,
   buildTrainingOverallCompletionTimeline,
   eachTrainingAnalyticsDayIso,
@@ -415,6 +416,47 @@ export class KnowledgeTrainingAnalyticsService {
       companyCategoryPercentByDay,
     );
 
+    const categoryEmployeeBreakdown = buildTrainingAnalyticsCategoryEmployeeBreakdown(
+      employees,
+      categoryMeta,
+      trackableMaterials,
+      timelineDays,
+      isMaterialCompleted,
+      videoByUserMaterial,
+      quizPassedByUserMaterial,
+      quizPassedAtByUserMaterial,
+    );
+
+    const employeeMaterialStatus = trackableMaterials.map((material) => ({
+      materialId: material.id,
+      title: material.title,
+      type: material.type,
+      categoryId: material.categoryId,
+      categoryName: material.categoryName,
+      hasQuiz: material.hasQuiz,
+      employeeStatus: employees.map((employee) => {
+        const key = `${employee.id}:${material.id}`;
+        let status: 'completed' | 'in_progress' | 'not_started';
+        if (isMaterialCompleted(employee.id, material)) {
+          status = 'completed';
+        } else if (isMaterialInProgress(employee.id, material)) {
+          status = 'in_progress';
+        } else {
+          status = 'not_started';
+        }
+        const progressPercent =
+          material.type === KnowledgeMaterialType.VIDEO && !material.hasQuiz
+            ? (videoByUserMaterial.get(key)?.progressPercent ?? null)
+            : null;
+        return {
+          userId: employee.id,
+          status,
+          progressPercent:
+            progressPercent != null ? roundTrainingAnalyticsPercent(progressPercent) : null,
+        };
+      }),
+    }));
+
     const overallTimeline = buildTrainingOverallCompletionTimeline(
       timelineDays,
       employees,
@@ -465,6 +507,8 @@ export class KnowledgeTrainingAnalyticsService {
       materialsByType,
       categories,
       categoryTimeline,
+      categoryEmployeeBreakdown,
+      employeeMaterialStatus,
       overallTimeline,
     };
   }

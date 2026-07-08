@@ -258,6 +258,131 @@ export function buildTrainingActivityTimeline(
   }));
 }
 
+export type TrainingAnalyticsEmployeeCategoryRow = {
+  userId: string;
+  firstName: string | null;
+  lastName: string | null;
+  email: string;
+  completedCount: number;
+  completionPercent: number;
+  timeline: Array<{ date: string; completionPercent: number }>;
+};
+
+export type TrainingAnalyticsCategoryEmployeeBreakdown = {
+  categoryId: string;
+  employees: TrainingAnalyticsEmployeeCategoryRow[];
+};
+
+export type TrainingAnalyticsMaterialEmployeeStatus = {
+  materialId: string;
+  title: string;
+  type: KnowledgeMaterialType;
+  categoryId: string;
+  categoryName: string;
+  hasQuiz: boolean;
+  employeeStatus: Array<{
+    userId: string;
+    status: 'completed' | 'in_progress' | 'not_started';
+    progressPercent: number | null;
+  }>;
+};
+
+function countEmployeeCategoryCompletedByDay(
+  employeeId: string,
+  categoryId: string,
+  trackableMaterials: TrainingAnalyticsMaterialRow[],
+  dayEnd: Date,
+  videoByUserMaterial: Map<string, { updatedAt: Date; completed: boolean }>,
+  quizPassedByUserMaterial: Set<string>,
+  quizPassedAtByUserMaterial?: Map<string, Date>,
+): number {
+  let completedByDay = 0;
+  for (const material of trackableMaterials) {
+    if (material.categoryId !== categoryId) continue;
+    const completedAt = resolveTrainingMaterialCompletionDate(
+      employeeId,
+      material,
+      videoByUserMaterial,
+      quizPassedByUserMaterial,
+      quizPassedAtByUserMaterial,
+    );
+    if (completedAt && completedAt <= dayEnd) {
+      completedByDay += 1;
+    }
+  }
+  return completedByDay;
+}
+
+export function buildTrainingAnalyticsCategoryEmployeeBreakdown(
+  employees: Array<{
+    id: string;
+    firstName: string | null;
+    lastName: string | null;
+    email: string;
+  }>,
+  categoryMeta: Map<string, TrainingAnalyticsCategoryMeta>,
+  trackableMaterials: TrainingAnalyticsMaterialRow[],
+  timelineDays: string[],
+  isMaterialCompleted: (employeeId: string, material: TrainingAnalyticsMaterialRow) => boolean,
+  videoByUserMaterial: Map<string, { updatedAt: Date; completed: boolean }>,
+  quizPassedByUserMaterial: Set<string>,
+  quizPassedAtByUserMaterial?: Map<string, Date>,
+): TrainingAnalyticsCategoryEmployeeBreakdown[] {
+  return sortTrainingAnalyticsCategories([...categoryMeta.values()]).map((category) => {
+    const employeesForCategory = employees
+      .map((employee) => {
+        let completedCount = 0;
+        for (const material of trackableMaterials) {
+          if (material.categoryId !== category.categoryId) continue;
+          if (isMaterialCompleted(employee.id, material)) {
+            completedCount += 1;
+          }
+        }
+
+        const timeline = timelineDays.map((day) => {
+          const dayEnd = trainingAnalyticsEndOfDay(new Date(day));
+          const completedByDay = countEmployeeCategoryCompletedByDay(
+            employee.id,
+            category.categoryId,
+            trackableMaterials,
+            dayEnd,
+            videoByUserMaterial,
+            quizPassedByUserMaterial,
+            quizPassedAtByUserMaterial,
+          );
+          return {
+            date: day,
+            completionPercent:
+              category.trackableCount > 0
+                ? roundTrainingAnalyticsPercent((completedByDay / category.trackableCount) * 100)
+                : 0,
+          };
+        });
+
+        return {
+          userId: employee.id,
+          firstName: employee.firstName,
+          lastName: employee.lastName,
+          email: employee.email,
+          completedCount,
+          completionPercent:
+            category.trackableCount > 0
+              ? roundTrainingAnalyticsPercent((completedCount / category.trackableCount) * 100)
+              : 0,
+          timeline,
+        };
+      })
+      .sort(
+        (a, b) => b.completionPercent - a.completionPercent || a.email.localeCompare(b.email, 'ru'),
+      );
+
+    return {
+      categoryId: category.categoryId,
+      employees: employeesForCategory,
+    };
+  });
+}
+
 export function buildTrainingOverallCompletionTimeline(
   days: string[],
   employees: Array<{ id: string }>,

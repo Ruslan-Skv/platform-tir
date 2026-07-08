@@ -7,6 +7,7 @@ import styles from './KnowledgeTrainingAnalyticsPage.module.css';
 import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
 import { TrainingAnalyticsCategoryProgress } from './components/TrainingAnalyticsCategoryProgress';
 import { TrainingAnalyticsDonut } from './components/TrainingAnalyticsDonut';
+import { TrainingAnalyticsMaterialMatrix } from './components/TrainingAnalyticsMaterialMatrix';
 import { TrainingAnalyticsTimelineBar } from './components/TrainingAnalyticsTimelineBar';
 import type { KnowledgeTrainingAnalyticsPageModel } from './hooks/useKnowledgeTrainingAnalyticsPage';
 import {
@@ -272,6 +273,7 @@ export function KnowledgeTrainingAnalyticsPageView({
               trackableCount: category.trackableCount,
             }))}
             categoryTimeline={data.categoryTimeline}
+            categoryEmployeeBreakdown={data.categoryEmployeeBreakdown}
             periodFrom={data.period.from}
             periodTo={data.period.to}
             percentLabel="Средний прогресс"
@@ -389,6 +391,12 @@ export function KnowledgeTrainingAnalyticsPageView({
               ))}
             </div>
           </section>
+
+          <TrainingAnalyticsMaterialMatrix
+            employeeMaterialStatus={data.employeeMaterialStatus}
+            employees={data.employees}
+            categories={data.categories}
+          />
 
           <div className={styles.tablesRow}>
             <section className={styles.card}>

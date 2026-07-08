@@ -248,6 +248,31 @@ export interface KnowledgeTrainingAnalytics {
     date: string;
     categories: Array<{ categoryId: string; completionPercent: number }>;
   }>;
+  categoryEmployeeBreakdown: Array<{
+    categoryId: string;
+    employees: Array<{
+      userId: string;
+      firstName: string | null;
+      lastName: string | null;
+      email: string;
+      completedCount: number;
+      completionPercent: number;
+      timeline: Array<{ date: string; completionPercent: number }>;
+    }>;
+  }>;
+  employeeMaterialStatus: Array<{
+    materialId: string;
+    title: string;
+    type: KnowledgeMaterialType;
+    categoryId: string;
+    categoryName: string;
+    hasQuiz: boolean;
+    employeeStatus: Array<{
+      userId: string;
+      status: 'completed' | 'in_progress' | 'not_started';
+      progressPercent: number | null;
+    }>;
+  }>;
 }
 
 export interface KnowledgeMyTrainingProgress {
