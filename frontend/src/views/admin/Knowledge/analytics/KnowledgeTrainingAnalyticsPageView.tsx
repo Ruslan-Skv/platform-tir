@@ -6,6 +6,7 @@ import { KnowledgeBackLink } from '../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgeTrainingAnalyticsPage.module.css';
 import { TrainingAnalyticsBarFill } from './components/TrainingAnalyticsBarFill';
 import { TrainingAnalyticsCategoryProgress } from './components/TrainingAnalyticsCategoryProgress';
+import { TrainingAnalyticsCollapsibleSection } from './components/TrainingAnalyticsCollapsibleSection';
 import { TrainingAnalyticsDonut } from './components/TrainingAnalyticsDonut';
 import { TrainingAnalyticsMaterialMatrix } from './components/TrainingAnalyticsMaterialMatrix';
 import { TrainingAnalyticsTimelineBar } from './components/TrainingAnalyticsTimelineBar';
@@ -183,48 +184,50 @@ export function KnowledgeTrainingAnalyticsPageView({
             percentLabel="Ваш прогресс"
           />
 
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>Ваша активность по дням</h2>
-              <div className={styles.legend}>
-                <span className={styles.legendItem}>
-                  <span className={`${styles.legendDot} ${styles.legendDotVideo}`} />
-                  Просмотр видео
-                </span>
-                <span className={styles.legendItem}>
-                  <span className={`${styles.legendDot} ${styles.legendDotQuiz}`} />
-                  Попытки тестов
-                </span>
-              </div>
-            </div>
-            <p className={styles.cardHint}>
-              Период: {formatShortDate(personalData.period.from)} —{' '}
-              {formatShortDate(personalData.period.to)}
-            </p>
-            <div
-              className={styles.timelineChart}
-              role="img"
-              aria-label="График вашей активности обучения"
-            >
-              {personalTimelineTicks.map((day) => (
-                <div key={day.date} className={styles.timelineGroup}>
-                  <div className={styles.timelineBars}>
-                    <TrainingAnalyticsTimelineBar
-                      heightPercent={(day.videoProgressUpdates / personalTimelineMax) * 100}
-                      variant="video"
-                      title={`Видео: ${day.videoProgressUpdates}`}
-                    />
-                    <TrainingAnalyticsTimelineBar
-                      heightPercent={(day.quizAttempts / personalTimelineMax) * 100}
-                      variant="quiz"
-                      title={`Тесты: ${day.quizAttempts}`}
-                    />
-                  </div>
-                  <span className={styles.timelineLabel}>{formatShortDate(day.date)}</span>
+          <div className={styles.sectionsStack}>
+            <TrainingAnalyticsCollapsibleSection
+              title="Ваша активность по дням"
+              hint={`Период: ${formatShortDate(personalData.period.from)} — ${formatShortDate(personalData.period.to)}`}
+              defaultExpanded={false}
+              compact
+              headerExtra={
+                <div className={styles.legend}>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.legendDotVideo}`} />
+                    Видео
+                  </span>
+                  <span className={styles.legendItem}>
+                    <span className={`${styles.legendDot} ${styles.legendDotQuiz}`} />
+                    Тесты
+                  </span>
                 </div>
-              ))}
-            </div>
-          </section>
+              }
+            >
+              <div
+                className={`${styles.timelineChart} ${styles.timelineChartCompact}`}
+                role="img"
+                aria-label="График вашей активности обучения"
+              >
+                {personalTimelineTicks.map((day) => (
+                  <div key={day.date} className={styles.timelineGroup}>
+                    <div className={styles.timelineBars}>
+                      <TrainingAnalyticsTimelineBar
+                        heightPercent={(day.videoProgressUpdates / personalTimelineMax) * 100}
+                        variant="video"
+                        title={`Видео: ${day.videoProgressUpdates}`}
+                      />
+                      <TrainingAnalyticsTimelineBar
+                        heightPercent={(day.quizAttempts / personalTimelineMax) * 100}
+                        variant="quiz"
+                        title={`Тесты: ${day.quizAttempts}`}
+                      />
+                    </div>
+                    <span className={styles.timelineLabel}>{formatShortDate(day.date)}</span>
+                  </div>
+                ))}
+              </div>
+            </TrainingAnalyticsCollapsibleSection>
+          </div>
         </>
       )}
 
@@ -279,150 +282,194 @@ export function KnowledgeTrainingAnalyticsPageView({
             percentLabel="Средний прогресс"
           />
 
-          <div className={styles.chartsRow}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Активность по дням</h2>
-                <div className={styles.legend}>
-                  <span className={styles.legendItem}>
-                    <span className={`${styles.legendDot} ${styles.legendDotVideo}`} />
-                    Просмотр видео
-                  </span>
-                  <span className={styles.legendItem}>
-                    <span className={`${styles.legendDot} ${styles.legendDotQuiz}`} />
-                    Попытки тестов
-                  </span>
-                </div>
-              </div>
-              <p className={styles.cardHint}>
-                Период: {formatShortDate(data.period.from)} — {formatShortDate(data.period.to)}
-              </p>
-              <div
-                className={styles.timelineChart}
-                role="img"
-                aria-label="График активности обучения"
+          <div className={styles.sectionsStack}>
+            <div className={styles.chartsRow}>
+              <TrainingAnalyticsCollapsibleSection
+                title="Активность по дням"
+                hint={`Период: ${formatShortDate(data.period.from)} — ${formatShortDate(data.period.to)}`}
+                defaultExpanded={false}
+                compact
+                headerExtra={
+                  <div className={styles.legend}>
+                    <span className={styles.legendItem}>
+                      <span className={`${styles.legendDot} ${styles.legendDotVideo}`} />
+                      Видео
+                    </span>
+                    <span className={styles.legendItem}>
+                      <span className={`${styles.legendDot} ${styles.legendDotQuiz}`} />
+                      Тесты
+                    </span>
+                  </div>
+                }
               >
-                {timelineTicks.map((day) => (
-                  <div key={day.date} className={styles.timelineGroup}>
-                    <div className={styles.timelineBars}>
-                      <TrainingAnalyticsTimelineBar
-                        heightPercent={(day.videoProgressUpdates / timelineMax) * 100}
-                        variant="video"
-                        title={`Видео: ${day.videoProgressUpdates}`}
-                      />
-                      <TrainingAnalyticsTimelineBar
-                        heightPercent={(day.quizAttempts / timelineMax) * 100}
-                        variant="quiz"
-                        title={`Тесты: ${day.quizAttempts}`}
+                <div
+                  className={`${styles.timelineChart} ${styles.timelineChartCompact}`}
+                  role="img"
+                  aria-label="График активности обучения"
+                >
+                  {timelineTicks.map((day) => (
+                    <div key={day.date} className={styles.timelineGroup}>
+                      <div className={styles.timelineBars}>
+                        <TrainingAnalyticsTimelineBar
+                          heightPercent={(day.videoProgressUpdates / timelineMax) * 100}
+                          variant="video"
+                          title={`Видео: ${day.videoProgressUpdates}`}
+                        />
+                        <TrainingAnalyticsTimelineBar
+                          heightPercent={(day.quizAttempts / timelineMax) * 100}
+                          variant="quiz"
+                          title={`Тесты: ${day.quizAttempts}`}
+                        />
+                      </div>
+                      <span className={styles.timelineLabel}>{formatShortDate(day.date)}</span>
+                    </div>
+                  ))}
+                </div>
+              </TrainingAnalyticsCollapsibleSection>
+
+              <TrainingAnalyticsCollapsibleSection
+                title="Статус прохождения"
+                hint="Завершено, в процессе или не начато по всем парам «сотрудник × материал»"
+                badge={formatPercentWithSymbol(data.statusDistribution.completedPercent)}
+                defaultExpanded={false}
+                compact
+              >
+                <div className={styles.donutWrap}>
+                  <TrainingAnalyticsDonut
+                    completedPercent={data.statusDistribution.completedPercent}
+                    inProgressPercent={data.statusDistribution.inProgressPercent}
+                  >
+                    <div className={styles.donutCenter}>
+                      <span className={styles.donutValue}>
+                        {formatPercentWithSymbol(data.statusDistribution.completedPercent)}
+                      </span>
+                      <span className={styles.donutLabel}>завершено</span>
+                    </div>
+                  </TrainingAnalyticsDonut>
+                  <div className={styles.donutLegend}>
+                    <div className={styles.donutLegendItem}>
+                      <span className={`${styles.donutSwatch} ${styles.swatchCompleted}`} />
+                      <span>
+                        Завершено — {data.statusDistribution.completed} (
+                        {formatPercentWithSymbol(data.statusDistribution.completedPercent)})
+                      </span>
+                    </div>
+                    <div className={styles.donutLegendItem}>
+                      <span className={`${styles.donutSwatch} ${styles.swatchInProgress}`} />
+                      <span>
+                        В процессе — {data.statusDistribution.inProgress} (
+                        {formatPercentWithSymbol(data.statusDistribution.inProgressPercent)})
+                      </span>
+                    </div>
+                    <div className={styles.donutLegendItem}>
+                      <span className={`${styles.donutSwatch} ${styles.swatchNotStarted}`} />
+                      <span>
+                        Не начато — {data.statusDistribution.notStarted} (
+                        {formatPercentWithSymbol(data.statusDistribution.notStartedPercent)})
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </TrainingAnalyticsCollapsibleSection>
+            </div>
+
+            <TrainingAnalyticsCollapsibleSection
+              title="Прогресс по сотрудникам"
+              hint="Общий прогресс по всем отслеживаемым материалам"
+              badge={`${data.employees.length} чел.`}
+              defaultExpanded={false}
+              compact
+            >
+              <div className={styles.barChart}>
+                {data.employees.map((employee, index) => (
+                  <div key={employee.userId} className={styles.barRow}>
+                    <span className={styles.barName} title={employee.email}>
+                      {formatEmployeeName(employee)}
+                    </span>
+                    <div className={styles.barTrack}>
+                      <TrainingAnalyticsBarFill
+                        percent={employee.completionPercent}
+                        toneClass={chartToneClass(index)}
                       />
                     </div>
-                    <span className={styles.timelineLabel}>{formatShortDate(day.date)}</span>
+                    <span className={styles.barValue}>
+                      {formatPercentWithSymbol(employee.completionPercent)}
+                    </span>
                   </div>
                 ))}
               </div>
-            </section>
+            </TrainingAnalyticsCollapsibleSection>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Статус прохождения</h2>
-              </div>
-              <p className={styles.cardHint}>
-                Все пары «сотрудник × отслеживаемый материал»: завершено, в процессе или не начато.
-              </p>
-              <div className={styles.donutWrap}>
-                <TrainingAnalyticsDonut
-                  completedPercent={data.statusDistribution.completedPercent}
-                  inProgressPercent={data.statusDistribution.inProgressPercent}
-                >
-                  <div className={styles.donutCenter}>
-                    <span className={styles.donutValue}>
-                      {formatPercentWithSymbol(data.statusDistribution.completedPercent)}
-                    </span>
-                    <span className={styles.donutLabel}>завершено</span>
-                  </div>
-                </TrainingAnalyticsDonut>
-                <div className={styles.donutLegend}>
-                  <div className={styles.donutLegendItem}>
-                    <span className={`${styles.donutSwatch} ${styles.swatchCompleted}`} />
-                    <span>
-                      Завершено — {data.statusDistribution.completed} (
-                      {formatPercentWithSymbol(data.statusDistribution.completedPercent)})
-                    </span>
-                  </div>
-                  <div className={styles.donutLegendItem}>
-                    <span className={`${styles.donutSwatch} ${styles.swatchInProgress}`} />
-                    <span>
-                      В процессе — {data.statusDistribution.inProgress} (
-                      {formatPercentWithSymbol(data.statusDistribution.inProgressPercent)})
-                    </span>
-                  </div>
-                  <div className={styles.donutLegendItem}>
-                    <span className={`${styles.donutSwatch} ${styles.swatchNotStarted}`} />
-                    <span>
-                      Не начато — {data.statusDistribution.notStarted} (
-                      {formatPercentWithSymbol(data.statusDistribution.notStartedPercent)})
-                    </span>
-                  </div>
+            <TrainingAnalyticsMaterialMatrix
+              employeeMaterialStatus={data.employeeMaterialStatus}
+              employees={data.employees}
+              categories={data.categories}
+            />
+
+            <div className={styles.tablesRow}>
+              <TrainingAnalyticsCollapsibleSection
+                title="Материалы с наименьшим охватом"
+                badge="топ-8"
+                defaultExpanded={false}
+                compact
+              >
+                <div className={styles.tableScroll}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Материал</th>
+                        <th>Завершили</th>
+                        <th>Охват</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {[...data.topMaterials]
+                        .reverse()
+                        .slice(0, 8)
+                        .map((material, index) => (
+                          <tr key={material.materialId}>
+                            <td>
+                              <span className={styles.rank}>{index + 1}</span>
+                              {material.title}
+                              <div className={styles.tableMeta}>
+                                {getMaterialTypeLabel(material.type)} · {material.categoryName}
+                              </div>
+                            </td>
+                            <td>
+                              {material.completedCount} / {material.employeeCount}
+                            </td>
+                            <td>{formatPercentWithSymbol(material.completionPercent)}</td>
+                          </tr>
+                        ))}
+                    </tbody>
+                  </table>
                 </div>
-              </div>
-            </section>
-          </div>
+              </TrainingAnalyticsCollapsibleSection>
 
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>Прогресс по сотрудникам</h2>
-            </div>
-            <div className={styles.barChart}>
-              {data.employees.slice(0, 12).map((employee, index) => (
-                <div key={employee.userId} className={styles.barRow}>
-                  <span className={styles.barName} title={employee.email}>
-                    {formatEmployeeName(employee)}
-                  </span>
-                  <div className={styles.barTrack}>
-                    <TrainingAnalyticsBarFill
-                      percent={employee.completionPercent}
-                      toneClass={chartToneClass(index)}
-                    />
-                  </div>
-                  <span className={styles.barValue}>
-                    {formatPercentWithSymbol(employee.completionPercent)}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </section>
-
-          <TrainingAnalyticsMaterialMatrix
-            employeeMaterialStatus={data.employeeMaterialStatus}
-            employees={data.employees}
-            categories={data.categories}
-          />
-
-          <div className={styles.tablesRow}>
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Материалы с наименьшим охватом</h2>
-              </div>
-              <div className={styles.tableScroll}>
-                <table className={styles.table}>
-                  <thead>
-                    <tr>
-                      <th>Материал</th>
-                      <th>Завершили</th>
-                      <th>Охват</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {[...data.topMaterials]
-                      .reverse()
-                      .slice(0, 8)
-                      .map((material, index) => (
+              <TrainingAnalyticsCollapsibleSection
+                title="Лидеры по материалам"
+                badge="топ-8"
+                defaultExpanded={false}
+                compact
+              >
+                <div className={styles.tableScroll}>
+                  <table className={styles.table}>
+                    <thead>
+                      <tr>
+                        <th>Материал</th>
+                        <th>Завершили</th>
+                        <th>Охват</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.topMaterials.slice(0, 8).map((material, index) => (
                         <tr key={material.materialId}>
                           <td>
                             <span className={styles.rank}>{index + 1}</span>
                             {material.title}
                             <div className={styles.tableMeta}>
-                              {getMaterialTypeLabel(material.type)} · {material.categoryName}
+                              {getMaterialTypeLabel(material.type)}
+                              {material.hasQuiz ? ' · с тестом' : ''}
                             </div>
                           </td>
                           <td>
@@ -431,101 +478,70 @@ export function KnowledgeTrainingAnalyticsPageView({
                           <td>{formatPercentWithSymbol(material.completionPercent)}</td>
                         </tr>
                       ))}
-                  </tbody>
-                </table>
-              </div>
-            </section>
+                    </tbody>
+                  </table>
+                </div>
+              </TrainingAnalyticsCollapsibleSection>
+            </div>
 
-            <section className={styles.card}>
-              <div className={styles.cardHeader}>
-                <h2 className={styles.cardTitle}>Лидеры по материалам</h2>
+            <TrainingAnalyticsCollapsibleSection
+              title="Детализация по сотрудникам"
+              hint="Полная таблица с видео, тестами и последней активностью"
+              badge={`${data.employees.length} чел.`}
+              defaultExpanded={false}
+              compact
+            >
+              <div className={styles.typePills}>
+                <div className={styles.typePill}>
+                  <span className={styles.typePillValue}>{data.materialsByType.VIDEO.total}</span>
+                  <span className={styles.typePillLabel}>
+                    Видео ({data.materialsByType.VIDEO.trackable} отслеживаемых)
+                  </span>
+                </div>
+                <div className={styles.typePill}>
+                  <span className={styles.typePillValue}>{data.materialsByType.ARTICLE.total}</span>
+                  <span className={styles.typePillLabel}>
+                    Статьи ({data.materialsByType.ARTICLE.withQuiz} с тестом)
+                  </span>
+                </div>
+                <div className={styles.typePill}>
+                  <span className={styles.typePillValue}>{data.materialsByType.LINK.total}</span>
+                  <span className={styles.typePillLabel}>
+                    Ссылки ({data.materialsByType.LINK.withQuiz} с тестом)
+                  </span>
+                </div>
               </div>
               <div className={styles.tableScroll}>
                 <table className={styles.table}>
                   <thead>
                     <tr>
-                      <th>Материал</th>
-                      <th>Завершили</th>
-                      <th>Охват</th>
+                      <th>Сотрудник</th>
+                      <th>Email</th>
+                      <th>Прогресс</th>
+                      <th>Видео</th>
+                      <th>Тесты</th>
+                      <th>Последняя активность</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {data.topMaterials.slice(0, 8).map((material, index) => (
-                      <tr key={material.materialId}>
+                    {data.employees.map((employee) => (
+                      <tr key={employee.userId}>
+                        <td>{formatEmployeeName(employee)}</td>
+                        <td>{employee.email}</td>
                         <td>
-                          <span className={styles.rank}>{index + 1}</span>
-                          {material.title}
-                          <div className={styles.tableMeta}>
-                            {getMaterialTypeLabel(material.type)}
-                            {material.hasQuiz ? ' · с тестом' : ''}
-                          </div>
+                          {employee.completedCount} / {employee.trackableCount} (
+                          {formatPercentWithSymbol(employee.completionPercent)})
                         </td>
-                        <td>
-                          {material.completedCount} / {material.employeeCount}
-                        </td>
-                        <td>{formatPercentWithSymbol(material.completionPercent)}</td>
+                        <td>{employee.videosCompleted}</td>
+                        <td>{employee.quizzesPassed}</td>
+                        <td>{formatDateTime(employee.lastActivityAt)}</td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </section>
+            </TrainingAnalyticsCollapsibleSection>
           </div>
-
-          <section className={styles.card}>
-            <div className={styles.cardHeader}>
-              <h2 className={styles.cardTitle}>Детализация по сотрудникам</h2>
-            </div>
-            <div className={styles.typePills}>
-              <div className={styles.typePill}>
-                <span className={styles.typePillValue}>{data.materialsByType.VIDEO.total}</span>
-                <span className={styles.typePillLabel}>
-                  Видео ({data.materialsByType.VIDEO.trackable} отслеживаемых)
-                </span>
-              </div>
-              <div className={styles.typePill}>
-                <span className={styles.typePillValue}>{data.materialsByType.ARTICLE.total}</span>
-                <span className={styles.typePillLabel}>
-                  Статьи ({data.materialsByType.ARTICLE.withQuiz} с тестом)
-                </span>
-              </div>
-              <div className={styles.typePill}>
-                <span className={styles.typePillValue}>{data.materialsByType.LINK.total}</span>
-                <span className={styles.typePillLabel}>
-                  Ссылки ({data.materialsByType.LINK.withQuiz} с тестом)
-                </span>
-              </div>
-            </div>
-            <div className={styles.tableScroll}>
-              <table className={styles.table}>
-                <thead>
-                  <tr>
-                    <th>Сотрудник</th>
-                    <th>Email</th>
-                    <th>Прогресс</th>
-                    <th>Видео</th>
-                    <th>Тесты</th>
-                    <th>Последняя активность</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {data.employees.map((employee) => (
-                    <tr key={employee.userId}>
-                      <td>{formatEmployeeName(employee)}</td>
-                      <td>{employee.email}</td>
-                      <td>
-                        {employee.completedCount} / {employee.trackableCount} (
-                        {formatPercentWithSymbol(employee.completionPercent)})
-                      </td>
-                      <td>{employee.videosCompleted}</td>
-                      <td>{employee.quizzesPassed}</td>
-                      <td>{formatDateTime(employee.lastActivityAt)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </section>
         </>
       )}
     </div>
