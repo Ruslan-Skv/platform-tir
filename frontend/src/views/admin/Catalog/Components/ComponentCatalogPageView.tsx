@@ -82,9 +82,9 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         sortKey: 'name',
         render: (row: AdminComponentCatalogItem) => (
           <div>
-            <div style={{ fontWeight: 600 }}>{row.name}</div>
+            <div className={styles.itemNameStrong}>{row.name}</div>
             {row.groupItems && row.groupItems.length > 0 && (
-              <div className={styles.groupTags} style={{ marginTop: 4 }}>
+              <div className={`${styles.groupTags} ${styles.groupTagsUnderName}`}>
                 {row.groupItems.map((gi) => (
                   <span
                     key={gi.group.id}
@@ -164,7 +164,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         title: '',
         width: '120px',
         render: (row: AdminComponentCatalogItem) => (
-          <div style={{ display: 'flex', gap: 4 }}>
+          <div className={styles.tableRowActions}>
             <AdminTableIconButton title="Редактировать" onClick={() => openEditItem(row)}>
               <EditIcon />
             </AdminTableIconButton>
@@ -228,11 +228,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
               </button>
             </>
           )}
-          <Link
-            href="/admin/catalog/products"
-            className={styles.secondaryButton}
-            style={{ textDecoration: 'none' }}
-          >
+          <Link href="/admin/catalog/products" className={styles.secondaryButton}>
             К товарам
           </Link>
         </div>

@@ -10,7 +10,7 @@ import {
   getProductComponents,
 } from '@/shared/api/product-components';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
-import { getComponentQuantityStep } from '@/shared/lib/component-kit';
+import { getComponentQuantityStep } from '@/shared/lib/catalog/component-kit';
 import { useCart } from '@/shared/lib/hooks';
 
 import styles from './ProductComponents.module.css';

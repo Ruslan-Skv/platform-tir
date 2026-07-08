@@ -15,7 +15,7 @@ import {
   linkProductComponentsBatchFromCatalog,
 } from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { getKitComponents } from '@/shared/lib/component-kit';
+import { getKitComponents } from '@/shared/lib/catalog/component-kit';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
@@ -602,7 +602,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
 
       <div className={styles.sectionHeader}>
         <h2 className={styles.sectionTitle}>Комплектующие</h2>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+        <div className={styles.sectionHeaderActions}>
           <button
             data-admin-mutation
             type="button"
@@ -622,11 +622,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
           >
             + Вручную
           </button>
-          <Link
-            href="/admin/catalog/components"
-            className={styles.addButton}
-            style={{ textDecoration: 'none' }}
-          >
+          <Link href="/admin/catalog/components" className={styles.addButtonLink}>
             Справочник
           </Link>
         </div>

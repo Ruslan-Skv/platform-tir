@@ -18,8 +18,8 @@ import {
   patchProductComponent,
 } from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { calculateKitPrice, getKitComponents } from '@/shared/lib/catalog/component-kit';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
-import { calculateKitPrice, getKitComponents } from '@/shared/lib/component-kit';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
 import { usePublicSiteEditMode } from '@/shared/lib/hooks/usePublicSiteEditMode';

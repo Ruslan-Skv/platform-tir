@@ -2,4 +2,4 @@ export {
   formatCatalogPriceAmount,
   formatCatalogPriceWithRuble,
   formatCatalogProductPrice,
-} from '@/shared/lib/format-catalog-price';
+} from '@/shared/lib/catalog/format-catalog-price';

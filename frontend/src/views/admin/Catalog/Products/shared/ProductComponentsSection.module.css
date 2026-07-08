@@ -40,6 +40,20 @@
   background: var(--admin-info-strong);
 }
 
+.addButtonLink {
+  composes: addButton;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.sectionHeaderActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+}
+
 .kitCompositionInfo {
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-secondary);

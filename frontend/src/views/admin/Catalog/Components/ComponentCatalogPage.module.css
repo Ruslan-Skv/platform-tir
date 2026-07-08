@@ -65,6 +65,20 @@
   font-size: var(--admin-font-size-xs);
   font-weight: 500;
   cursor: pointer;
+  text-decoration: none;
+}
+
+.itemNameStrong {
+  font-weight: 600;
+}
+
+.groupTagsUnderName {
+  margin-top: var(--admin-space-xs);
+}
+
+.tableRowActions {
+  display: flex;
+  gap: var(--admin-space-xs);
 }
 
 .tabs {
