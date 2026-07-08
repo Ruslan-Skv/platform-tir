@@ -33,17 +33,21 @@ RUN npm run build
 # OpenSSL нужен Prisma Schema Engine (migrate deploy). apt-get работает в CI и локально; на VPS — образы из GHCR.
 FROM node:20-slim AS runner
 
-RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates \
+RUN apt-get update -y && apt-get install -y --no-install-recommends openssl ca-certificates wget \
     && rm -rf /var/lib/apt/lists/*
 
-# НУЦ Минцифры — TLS для platform-api2.max.ru и др. RU-сервисов (без них fetch в контейнере падает)
+# НУЦ Минцифры — TLS для platform-api2.max.ru (без них fetch в контейнере падает по SSL)
 COPY certs/russian_trusted_root_ca.pem certs/russian_trusted_sub_ca.pem /app/certs/
-RUN cp /app/certs/russian_trusted_root_ca.pem /usr/local/share/ca-certificates/russian_trusted_root_ca.crt \
-    && cp /app/certs/russian_trusted_sub_ca.pem /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt \
-    && update-ca-certificates \
-    && cat /app/certs/russian_trusted_root_ca.pem /app/certs/russian_trusted_sub_ca.pem \
-      > /app/certs/russian-trusted-bundle.pem
-ENV NODE_EXTRA_CA_CERTS=/app/certs/russian-trusted-bundle.pem
+RUN mkdir -p /usr/local/share/ca-certificates \
+    && (wget -q -O /usr/local/share/ca-certificates/russian_trusted_root_ca.crt \
+          https://gu-st.ru/content/lending/russian_trusted_root_ca_pem.crt \
+        || tr -d '\r' < /app/certs/russian_trusted_root_ca.pem \
+          > /usr/local/share/ca-certificates/russian_trusted_root_ca.crt) \
+    && (wget -q -O /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt \
+          https://gu-st.ru/content/lending/russian_trusted_sub_ca_pem.crt \
+        || tr -d '\r' < /app/certs/russian_trusted_sub_ca.pem \
+          > /usr/local/share/ca-certificates/russian_trusted_sub_ca.crt) \
+    && update-ca-certificates
 
 WORKDIR /app
 
