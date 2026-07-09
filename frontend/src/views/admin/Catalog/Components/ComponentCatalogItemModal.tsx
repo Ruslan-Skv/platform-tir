@@ -5,6 +5,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   type AdminComponentCatalogItem,
   type AdminComponentCatalogKind,
+  type ComponentCatalogAssignToGroup,
   addAdminComponentCatalogGroupItem,
   buildComponentCatalogSlug,
   createAdminComponentCatalogItem,
@@ -20,7 +21,7 @@ type ComponentCatalogItemModalProps = {
   open: boolean;
   item: AdminComponentCatalogItem | null;
   copyFrom: AdminComponentCatalogItem | null;
-  assignToGroup: { id: string; name: string } | null;
+  assignToGroup: ComponentCatalogAssignToGroup | null;
   kindOptions: AdminComponentCatalogKind[];
   onClose: () => void;
   onSaved: () => void;
@@ -34,6 +35,7 @@ type CatalogItemFormState = {
   color: string;
   material: string;
   price: string;
+  stock: string;
   slug: string;
   isActive: boolean;
   sortOrder: string;
@@ -53,6 +55,7 @@ const emptyForm = (defaultKindId = ''): CatalogItemFormState => ({
   color: '',
   material: '',
   price: '',
+  stock: '0',
   slug: '',
   isActive: true,
   sortOrder: '0',
@@ -66,6 +69,7 @@ function formFromItem(item: AdminComponentCatalogItem): CatalogItemFormState {
     color: item.color ?? '',
     material: item.material ?? '',
     price: item.price,
+    stock: String(item.stock ?? 0),
     slug: item.slug,
     isActive: item.isActive,
     sortOrder: String(item.sortOrder ?? 0),
@@ -84,23 +88,24 @@ function formFromCopySource(item: AdminComponentCatalogItem): CatalogItemFormSta
 function withAutoSlug(
   form: CatalogItemFormState,
   patch: Partial<CatalogItemFormState>,
-  autoSlug: boolean
+  autoSlug: boolean,
+  seriesSlug?: string
 ): CatalogItemFormState {
   const next = { ...form, ...patch };
   if (autoSlug) {
-    next.slug = buildComponentCatalogSlug(next);
+    next.slug = buildComponentCatalogSlug(next, seriesSlug);
   }
   return next;
 }
 
-function effectiveSlug(form: CatalogItemFormState, autoSlug: boolean): string {
+function effectiveSlug(form: CatalogItemFormState, autoSlug: boolean, seriesSlug?: string): string {
   if (autoSlug) {
-    return buildComponentCatalogSlug(form);
+    return buildComponentCatalogSlug(form, seriesSlug);
   }
   return form.slug.trim();
 }
 
-function snapshotsEqual(a: FormSnapshot, b: FormSnapshot): boolean {
+function snapshotsEqual(a: FormSnapshot, b: FormSnapshot, seriesSlug?: string): boolean {
   const af = a.form;
   const bf = b.form;
   return (
@@ -110,7 +115,8 @@ function snapshotsEqual(a: FormSnapshot, b: FormSnapshot): boolean {
     af.color === bf.color &&
     af.material === bf.material &&
     af.price === bf.price &&
-    effectiveSlug(af, a.autoSlug) === effectiveSlug(bf, b.autoSlug) &&
+    af.stock === bf.stock &&
+    effectiveSlug(af, a.autoSlug, seriesSlug) === effectiveSlug(bf, b.autoSlug, seriesSlug) &&
     af.isActive === bf.isActive &&
     af.sortOrder === bf.sortOrder
   );
@@ -168,6 +174,7 @@ export function ComponentCatalogItemModal({
   }, []);
 
   const defaultKindId = kindOptions.find((k) => k.code === 'OTHER')?.id ?? kindOptions[0]?.id ?? '';
+  const seriesSlug = assignToGroup?.seriesSlug;
 
   useEffect(() => {
     if (!open) return;
@@ -197,7 +204,7 @@ export function ComponentCatalogItemModal({
   }, [open, item, copyFrom, clearSaveSuccess, defaultKindId]);
 
   const currentSnapshot: FormSnapshot = { form, autoSlug };
-  const hasChanges = !snapshotsEqual(currentSnapshot, savedSnapshot);
+  const hasChanges = !snapshotsEqual(currentSnapshot, savedSnapshot, seriesSlug);
 
   useEffect(() => {
     if (hasChanges && saveSuccessVisible) {
@@ -218,13 +225,20 @@ export function ComponentCatalogItemModal({
 
     const name = form.name.trim();
     const price = parseFloat(form.price.replace(',', '.'));
+    const stock = parseInt(form.stock, 10);
     if (!name || !Number.isFinite(price) || price < 0) {
       const msg = 'Заполните название и корректную цену';
       setError(msg);
       onError(msg);
       return;
     }
-    const slug = effectiveSlug(form, autoSlug).trim();
+    if (!Number.isFinite(stock) || stock < 0) {
+      const msg = 'Укажите корректный остаток на складе (0 или больше)';
+      setError(msg);
+      onError(msg);
+      return;
+    }
+    const slug = effectiveSlug(form, autoSlug, seriesSlug).trim();
     if (!slug) {
       const msg = 'Укажите slug';
       setError(msg);
@@ -250,6 +264,7 @@ export function ComponentCatalogItemModal({
         color: form.color.trim() || undefined,
         material: form.material.trim() || undefined,
         price,
+        stock,
         slug,
         isActive: form.isActive,
         sortOrder: parseInt(form.sortOrder, 10) || 0,
@@ -310,8 +325,10 @@ export function ComponentCatalogItemModal({
           {assignToGroup ? (
             <>
               После сохранения позиция будет автоматически добавлена в подгруппу «
-              {assignToGroup.name}». Если в справочнике уже есть позиция с такими же параметрами,
-              она будет использована повторно.
+              {assignToGroup.name}»
+              {assignToGroup.seriesName ? ` (группа моделей «${assignToGroup.seriesName}»)` : ''}.
+              Для каждой группы моделей — отдельная позиция справочника со своей ценой; slug
+              включает код серии.
               {isCopyMode
                 ? ' Скопированы данные исходной карточки — измените отличия (цвет, цену и т.д.).'
                 : ' Заполните поля новой позиции.'}
@@ -354,7 +371,7 @@ export function ComponentCatalogItemModal({
               value={form.name}
               disabled={saving}
               onChange={(e) => {
-                setForm(withAutoSlug(form, { name: e.target.value }, autoSlug));
+                setForm(withAutoSlug(form, { name: e.target.value }, autoSlug, seriesSlug));
               }}
               placeholder="Стойка коробки"
             />
@@ -367,7 +384,7 @@ export function ComponentCatalogItemModal({
               value={form.size}
               disabled={saving}
               onChange={(e) => {
-                setForm(withAutoSlug(form, { size: e.target.value }, autoSlug));
+                setForm(withAutoSlug(form, { size: e.target.value }, autoSlug, seriesSlug));
               }}
               placeholder="74 x 2100"
             />
@@ -381,7 +398,7 @@ export function ComponentCatalogItemModal({
               value={form.color}
               disabled={saving}
               onChange={(e) => {
-                setForm(withAutoSlug(form, { color: e.target.value }, autoSlug));
+                setForm(withAutoSlug(form, { color: e.target.value }, autoSlug, seriesSlug));
               }}
               placeholder="Белый"
             />
@@ -394,7 +411,7 @@ export function ComponentCatalogItemModal({
               value={form.material}
               disabled={saving}
               onChange={(e) => {
-                setForm(withAutoSlug(form, { material: e.target.value }, autoSlug));
+                setForm(withAutoSlug(form, { material: e.target.value }, autoSlug, seriesSlug));
               }}
               placeholder="МДФ / экошпон"
             />
@@ -409,6 +426,18 @@ export function ComponentCatalogItemModal({
               onChange={(e) => setForm({ ...form, price: e.target.value })}
               inputMode="decimal"
               placeholder="770"
+            />
+          </div>
+
+          <div data-modal-form-group>
+            <label htmlFor="catalog-item-stock">Остаток на складе, шт.</label>
+            <input
+              id="catalog-item-stock"
+              value={form.stock}
+              disabled={saving}
+              onChange={(e) => setForm({ ...form, stock: e.target.value })}
+              inputMode="numeric"
+              placeholder="0"
             />
           </div>
 

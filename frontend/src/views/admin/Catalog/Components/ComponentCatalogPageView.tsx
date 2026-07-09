@@ -155,6 +155,18 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         ),
       },
       {
+        key: 'stock',
+        title: 'Остаток',
+        sortable: true,
+        sortKey: 'stock',
+        width: '90px',
+        render: (row: AdminComponentCatalogItem) => (
+          <span className={row.stock <= 0 ? styles.stockEmpty : undefined}>
+            {row.stock.toLocaleString('ru-RU')}
+          </span>
+        ),
+      },
+      {
         key: 'products',
         title: 'Товаров',
         width: '80px',
@@ -256,7 +268,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
                 <button
                   type="button"
                   className={styles.addButton}
-                  onClick={() => openCreateItemInGroup(selectedGroup.id, selectedGroup.name)}
+                  onClick={() => openCreateItemInGroup(selectedGroup)}
                 >
                   + Позиция в группе
                 </button>
@@ -308,7 +320,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
             setGroupFilter(groupId);
             setTab('items');
           }}
-          onCreateItemInGroup={(group) => openCreateItemInGroup(group.id, group.name)}
+          onCreateItemInGroup={(group) => openCreateItemInGroup(group)}
         />
       ) : tab === 'kinds' ? (
         <ComponentCatalogKindSettingsPanel onToast={showToast} />
@@ -328,7 +340,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
               <button
                 type="button"
                 className={styles.secondaryButton}
-                onClick={() => openCreateItemInGroup(selectedGroup.id, selectedGroup.name)}
+                onClick={() => openCreateItemInGroup(selectedGroup)}
               >
                 + Добавить позицию в эту группу
               </button>

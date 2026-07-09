@@ -26,18 +26,13 @@ export class ComponentCatalogService {
 
   async create(dto: CreateComponentCatalogItemDto) {
     const kindId = await this.kindsService.resolveKindId(dto.kindId);
-    const slug = dto.slug.trim();
-
-    const existing = await this.prisma.componentCatalogItem.findUnique({
+    let slug = dto.slug.trim();
+    const slugTaken = await this.prisma.componentCatalogItem.findUnique({
       where: { slug },
-      include: {
-        ...this.usageCountInclude(),
-        ...kindRefInclude,
-      },
+      select: { id: true },
     });
-
-    if (existing) {
-      return this.updateExistingCatalogItem(existing.id, dto, kindId);
+    if (slugTaken) {
+      slug = await this.ensureUniqueSlug(slug);
     }
 
     return this.prisma.componentCatalogItem.create({
@@ -141,6 +136,7 @@ export class ComponentCatalogService {
       color: { color: dir },
       material: { material: dir },
       price: { price: dir },
+      stock: { stock: dir },
       sortOrder: { sortOrder: dir },
       updatedAt: { updatedAt: dir },
       createdAt: { createdAt: dir },
@@ -255,30 +251,6 @@ export class ComponentCatalogService {
         select: { productComponents: true },
       },
     } as const;
-  }
-
-  private updateExistingCatalogItem(
-    id: string,
-    dto: CreateComponentCatalogItemDto,
-    kindId: string,
-  ) {
-    const patch: Prisma.ComponentCatalogItemUncheckedUpdateInput = {
-      kindId,
-      price: dto.price,
-    };
-    if (dto.isActive !== undefined) patch.isActive = dto.isActive;
-    if (dto.sortOrder !== undefined) patch.sortOrder = dto.sortOrder;
-    if (dto.image !== undefined) patch.image = dto.image;
-    if (dto.stock !== undefined) patch.stock = dto.stock;
-
-    return this.prisma.componentCatalogItem.update({
-      where: { id },
-      data: patch,
-      include: {
-        ...this.usageCountInclude(),
-        ...kindRefInclude,
-      },
-    });
   }
 
   private async ensureUniqueSlug(base: string): Promise<string> {

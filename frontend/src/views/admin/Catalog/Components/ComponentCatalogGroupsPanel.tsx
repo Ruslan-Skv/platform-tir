@@ -601,6 +601,7 @@ function SubgroupItemsDetail({
               <th>Цвет</th>
               <th>Материал</th>
               <th>Цена</th>
+              <th>Остаток</th>
             </tr>
           </thead>
           <tbody>
@@ -619,6 +620,15 @@ function SubgroupItemsDetail({
                 <td>{row.catalogItem.material || '—'}</td>
                 <td className={styles.subgroupPriceCell}>
                   {parseFloat(row.catalogItem.price).toLocaleString('ru-RU')} ₽
+                </td>
+                <td
+                  className={
+                    row.catalogItem.stock <= 0
+                      ? styles.subgroupStockEmpty
+                      : styles.subgroupStockCell
+                  }
+                >
+                  {row.catalogItem.stock.toLocaleString('ru-RU')}
                 </td>
               </tr>
             ))}

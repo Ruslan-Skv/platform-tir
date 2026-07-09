@@ -5,8 +5,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { keepPreviousData, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
+  type AdminComponentCatalogGroup,
   type AdminComponentCatalogItem,
   type AdminComponentCatalogKind,
+  type ComponentCatalogAssignToGroup,
   deleteAdminComponentCatalogItem,
   fetchAdminComponentCatalogGroupsList,
   fetchAdminComponentCatalogKinds,
@@ -44,7 +46,7 @@ export function useComponentCatalogPage() {
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<AdminComponentCatalogItem | null>(null);
   const [copyFromItem, setCopyFromItem] = useState<AdminComponentCatalogItem | null>(null);
-  const [assignToGroup, setAssignToGroup] = useState<{ id: string; name: string } | null>(null);
+  const [assignToGroup, setAssignToGroup] = useState<ComponentCatalogAssignToGroup | null>(null);
   const [itemDeleteTarget, setItemDeleteTarget] = useState<AdminComponentCatalogItem | null>(null);
   const [deletingItem, setDeletingItem] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
@@ -153,19 +155,20 @@ export function useComponentCatalogPage() {
   }, []);
 
   const openCreateItemInGroup = useCallback(
-    (groupId: string, groupName?: string) => {
-      const name =
-        groupName?.trim() ||
-        groupFilterOptions.find((g) => g.id === groupId)?.name ||
-        'выбранная группа';
+    (group: Pick<AdminComponentCatalogGroup, 'id' | 'name' | 'seriesRef'>) => {
       setEditItem(null);
       setCopyFromItem(null);
-      setAssignToGroup({ id: groupId, name });
-      setGroupFilter(groupId);
+      setAssignToGroup({
+        id: group.id,
+        name: group.name,
+        seriesSlug: group.seriesRef?.slug,
+        seriesName: group.seriesRef?.name,
+      });
+      setGroupFilter(group.id);
       setTab('items');
       setItemModalOpen(true);
     },
-    [groupFilterOptions]
+    []
   );
 
   const openEditItem = useCallback((item: AdminComponentCatalogItem) => {

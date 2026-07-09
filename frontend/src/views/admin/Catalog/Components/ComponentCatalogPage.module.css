@@ -269,6 +269,21 @@
   white-space: nowrap;
 }
 
+.stockEmpty {
+  color: var(--admin-text-muted);
+}
+
+.subgroupStockCell {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.subgroupStockEmpty {
+  text-align: right;
+  white-space: nowrap;
+  color: var(--admin-text-muted);
+}
+
 .toast {
   position: fixed;
   bottom: 24px;

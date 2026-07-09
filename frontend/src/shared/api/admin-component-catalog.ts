@@ -105,6 +105,13 @@ export interface AdminComponentCatalogGroupItem {
   catalogItem: AdminComponentCatalogItem;
 }
 
+export type ComponentCatalogAssignToGroup = {
+  id: string;
+  name: string;
+  seriesSlug?: string;
+  seriesName?: string;
+};
+
 export interface AdminComponentCatalogGroup {
   id: string;
   seriesId: string;
@@ -529,15 +536,20 @@ export function formatCatalogItemLabel(
 }
 
 /** Slug из названия, размера, цвета и материала — позволяет дублировать название при разном цвете */
-export function buildComponentCatalogSlug(fields: {
-  name: string;
-  size?: string;
-  color?: string;
-  material?: string;
-}): string {
-  return slugifyComponentCatalog(
+export function buildComponentCatalogSlug(
+  fields: {
+    name: string;
+    size?: string;
+    color?: string;
+    material?: string;
+  },
+  seriesSlug?: string
+): string {
+  const base = slugifyComponentCatalog(
     [fields.name, fields.size, fields.color, fields.material].filter(Boolean).join('-')
   );
+  if (!seriesSlug?.trim()) return base;
+  return slugifyComponentCatalog(`${seriesSlug.trim()}-${base}`);
 }
 
 export function slugifyComponentCatalog(value: string): string {
