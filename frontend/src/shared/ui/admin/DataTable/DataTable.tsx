@@ -89,6 +89,8 @@ interface DataTableProps<T> {
   highlightedIds?: string[];
   /** CSS-класс для подсвеченных строк */
   highlightedRowClassName?: string;
+  /** Дополнительный CSS-класс строки по данным записи */
+  getRowClassName?: (item: T) => string | undefined;
   loading?: boolean;
   emptyMessage?: string;
   pagination?: {
@@ -155,6 +157,7 @@ export function DataTable<T>({
   onSelectionChange,
   highlightedIds,
   highlightedRowClassName,
+  getRowClassName,
   loading = false,
   emptyMessage = 'Нет данных',
   pagination,
@@ -480,12 +483,13 @@ export function DataTable<T>({
                 displayData.map((item) => {
                   const id = keyExtractor(item);
                   const isHighlighted = highlightedIds?.includes(id) && highlightedRowClassName;
+                  const rowClassName = getRowClassName?.(item);
                   return (
                     <tr
                       key={id}
                       className={`${styles.row} ${onRowClick ? styles.clickable : ''} ${
                         selectedIds.includes(id) ? styles.selected : ''
-                      } ${isHighlighted ? highlightedRowClassName : ''}`}
+                      } ${isHighlighted ? highlightedRowClassName : ''} ${rowClassName ?? ''}`}
                       onClick={() => onRowClick?.(item)}
                     >
                       {selectable && (

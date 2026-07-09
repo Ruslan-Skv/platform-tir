@@ -1035,6 +1035,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         onSelectionChange={setSelectedIds}
         highlightedIds={priceChangedIds}
         highlightedRowClassName={styles.priceChangedRow}
+        getRowClassName={(product) => (!product.isActive ? styles.inactiveProductRow : undefined)}
         loading={loading}
         emptyMessage="Товары не найдены"
         pagination={{

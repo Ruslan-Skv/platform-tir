@@ -436,6 +436,20 @@
   cursor: help;
 }
 
+/* Подсветка строки: товар неактивен на сайте */
+.inactiveProductRow {
+  background: var(--admin-warning-bg-soft, #fffbeb) !important;
+}
+.inactiveProductRow:hover {
+  background: var(--admin-warning-bg) !important;
+}
+.inactiveProductRow.selected {
+  background: var(--admin-warning-bg-soft, #fffbeb) !important;
+}
+.inactiveProductRow.selected:hover {
+  background: var(--admin-warning-bg) !important;
+}
+
 /* Подсветка строки: цена поставщика изменилась после «Обновить цены» */
 .priceChangedRow {
   background: var(--admin-warning-bg) !important;
