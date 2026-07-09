@@ -5,7 +5,7 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   formatSupplierPriceUpdateMessage,
   getSupplierPriceErrorLabel,
-  mergeSupplierPriceUpdateErrors,
+  getSupplierPriceSyncError,
 } from '@/shared/lib/catalog/supplier-price-update-message';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -103,8 +103,6 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setSelectionHintMessage,
     priceChangedIds,
     setPriceChangedIds,
-    supplierPriceUpdateErrors,
-    setSupplierPriceUpdateErrors,
     syncSupplierPricesMessageType,
     setSyncSupplierPricesMessageType,
     persistedCategoryId,
@@ -344,7 +342,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
           // Цена поставщика + пометка «изменилась»
           if (columnConfig.key === 'supplierPrice') {
             const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
-            const updateError = supplierPriceUpdateErrors[product.id];
+            const updateError = mainSupplier ? getSupplierPriceSyncError(mainSupplier) : null;
             if (!mainSupplier) {
               return <span className={styles.emptyValue}>—</span>;
             }
@@ -674,9 +672,6 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                     }
                     const data = await response.json();
                     setPriceChangedIds(data.changedIds ?? []);
-                    setSupplierPriceUpdateErrors((prev) =>
-                      mergeSupplierPriceUpdateErrors(prev, selectedIds, data.errors)
-                    );
                     const msg = formatSupplierPriceUpdateMessage(data);
                     const hasErrors = (data.errors?.length ?? 0) > 0;
                     const allFailed = hasErrors && data.updated === 0;

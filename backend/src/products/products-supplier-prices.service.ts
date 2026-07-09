@@ -54,6 +54,39 @@ export class ProductsSupplierPricesService {
     private searchIndex: ProductsSearchIndexService,
   ) {}
 
+  private async markSupplierPriceSyncSuccess(
+    rowId: string,
+    newPrice: number,
+    priceChanged: boolean,
+  ): Promise<void> {
+    await this.prisma.productSupplier.update({
+      where: { id: rowId },
+      data: {
+        supplierPrice: new Prisma.Decimal(newPrice),
+        lastSyncAt: new Date(),
+        supplierPriceSyncError: null,
+        supplierPriceSyncErrorCode: null,
+        supplierPriceSyncErrorAt: null,
+        ...(priceChanged && { supplierPriceChangedAt: new Date() }),
+      },
+    });
+  }
+
+  private async markSupplierPriceSyncError(
+    rowId: string,
+    message: string,
+    errorCode: SupplierPriceErrorCode,
+  ): Promise<void> {
+    await this.prisma.productSupplier.update({
+      where: { id: rowId },
+      data: {
+        supplierPriceSyncError: message,
+        supplierPriceSyncErrorCode: errorCode,
+        supplierPriceSyncErrorAt: new Date(),
+      },
+    });
+  }
+
   async syncSupplierPrices(): Promise<SyncSupplierPricesResult> {
     const rows = await this.prisma.productSupplier.findMany({
       where: {
@@ -83,19 +116,13 @@ export class ProductsSupplierPricesService {
         const currentPrice = Number(row.supplierPrice);
         const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
 
-        await this.prisma.productSupplier.update({
-          where: { id: row.id },
-          data: {
-            supplierPrice: new Prisma.Decimal(newPrice),
-            lastSyncAt: new Date(),
-            ...(priceChanged && { supplierPriceChangedAt: new Date() }),
-          },
-        });
+        await this.markSupplierPriceSyncSuccess(row.id, newPrice, priceChanged);
 
         result.updated += 1;
         if (priceChanged) result.changed += 1;
       } catch (err) {
         const { message, errorCode } = formatSupplierPriceError(err);
+        await this.markSupplierPriceSyncError(row.id, message, errorCode);
         result.errors.push({
           productId: row.productId,
           productName: row.product.name,
@@ -145,14 +172,7 @@ export class ProductsSupplierPricesService {
         const currentPrice = Number(row.supplierPrice);
         const priceChanged = Math.abs(newPrice - currentPrice) > 0.01;
 
-        await this.prisma.productSupplier.update({
-          where: { id: row.id },
-          data: {
-            supplierPrice: new Prisma.Decimal(newPrice),
-            lastSyncAt: new Date(),
-            ...(priceChanged && { supplierPriceChangedAt: new Date() }),
-          },
-        });
+        await this.markSupplierPriceSyncSuccess(row.id, newPrice, priceChanged);
 
         result.updated += 1;
         if (priceChanged) {
@@ -161,6 +181,7 @@ export class ProductsSupplierPricesService {
         }
       } catch (err) {
         const { message, errorCode } = formatSupplierPriceError(err);
+        await this.markSupplierPriceSyncError(row.id, message, errorCode);
         result.errors.push({
           productId: row.productId,
           productName: row.product.name,

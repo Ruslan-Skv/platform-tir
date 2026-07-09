@@ -24,6 +24,17 @@ export function getSupplierPriceErrorLabel(error: SupplierPriceUpdateError): str
   return error.message;
 }
 
+export function getSupplierPriceSyncError(supplier: {
+  supplierPriceSyncError?: string | null;
+  supplierPriceSyncErrorCode?: string | null;
+}): SupplierPriceUpdateError | null {
+  if (!supplier.supplierPriceSyncError) return null;
+  return {
+    message: supplier.supplierPriceSyncError,
+    errorCode: supplier.supplierPriceSyncErrorCode as SupplierPriceErrorCode | undefined,
+  };
+}
+
 export function formatSupplierPriceUpdateMessage(data: {
   total: number;
   updated: number;
@@ -57,22 +68,4 @@ export function formatSupplierPriceUpdateMessage(data: {
   parts.push('Подробности — наведите на значок в колонке «Цена поставщика»');
 
   return parts.join('. ');
-}
-
-export function mergeSupplierPriceUpdateErrors(
-  prev: Record<string, SupplierPriceUpdateError>,
-  selectedIds: string[],
-  errors: SupplierPriceUpdateErrorItem[] | undefined
-): Record<string, SupplierPriceUpdateError> {
-  const next = { ...prev };
-  for (const id of selectedIds) {
-    delete next[id];
-  }
-  for (const item of errors ?? []) {
-    next[item.productId] = {
-      message: item.error,
-      errorCode: item.errorCode,
-    };
-  }
-  return next;
 }

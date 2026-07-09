@@ -82,6 +82,9 @@ export const ADMIN_PRODUCT_LIST_SELECT = {
       supplierPrice: true,
       supplierProductUrl: true,
       supplierPriceChangedAt: true,
+      supplierPriceSyncError: true,
+      supplierPriceSyncErrorCode: true,
+      supplierPriceSyncErrorAt: true,
       supplier: {
         select: {
           id: true,

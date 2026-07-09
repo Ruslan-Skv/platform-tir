@@ -25,7 +25,6 @@ import {
   loadProductsListSort,
 } from '@/shared/api/admin-products-list';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import type { SupplierPriceUpdateError } from '@/shared/lib/catalog/supplier-price-update-message';
 
 import {
   mergeProductsListFilters,
@@ -153,10 +152,6 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
   const [selectionHintMessage, setSelectionHintMessage] = useState<string | null>(null);
   /** ID товаров, у которых изменилась цена поставщика после «Обновить цены» */
   const [priceChangedIds, setPriceChangedIds] = useState<string[]>([]);
-  /** Ошибки обновления цены поставщика по productId (после «Обновить цены») */
-  const [supplierPriceUpdateErrors, setSupplierPriceUpdateErrors] = useState<
-    Record<string, SupplierPriceUpdateError>
-  >({});
   const [syncSupplierPricesMessageType, setSyncSupplierPricesMessageType] = useState<
     'success' | 'warning' | 'error'
   >('success');
@@ -1240,8 +1235,6 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     setSelectionHintMessage,
     priceChangedIds,
     setPriceChangedIds,
-    supplierPriceUpdateErrors,
-    setSupplierPriceUpdateErrors,
     syncSupplierPricesMessageType,
     setSyncSupplierPricesMessageType,
     persistedCategoryId,

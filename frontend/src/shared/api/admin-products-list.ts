@@ -30,6 +30,9 @@ export interface AdminProductListItem {
     supplierPrice?: string | number;
     supplierProductUrl?: string | null;
     supplierPriceChangedAt?: string | null;
+    supplierPriceSyncError?: string | null;
+    supplierPriceSyncErrorCode?: string | null;
+    supplierPriceSyncErrorAt?: string | null;
     supplier: {
       id: string;
       legalName: string;
