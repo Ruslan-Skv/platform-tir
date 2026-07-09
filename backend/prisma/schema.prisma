@@ -2106,7 +2106,7 @@ model ComponentCatalogGroup {
   /// Доп. описание подгруппы (оттенок, тип погонажа)
   series     String?
   categoryId String?
-  slug       String                      @unique
+  slug       String
   isActive   Boolean                     @default(true)
   sortOrder  Int                         @default(0)
   createdAt  DateTime                    @default(now())
@@ -2115,6 +2115,7 @@ model ComponentCatalogGroup {
   category   Category?                   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
   items      ComponentCatalogGroupItem[]
 
+  @@unique([seriesId, slug])
   @@index([seriesId])
   @@map("component_catalog_groups")
 }

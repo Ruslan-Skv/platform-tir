@@ -13,17 +13,16 @@ export class ComponentCatalogGroupsService {
   constructor(private prisma: PrismaService) {}
 
   async create(dto: CreateComponentCatalogGroupDto) {
-    const existing = await this.prisma.componentCatalogGroup.findUnique({
-      where: { slug: dto.slug },
-    });
-    if (existing) {
-      throw new ConflictException(`Подгруппа со slug "${dto.slug}" уже существует`);
-    }
-
     const { catalogItemIds, ...data } = dto;
+    const slug = await this.ensureUniqueGroupSlugInSeries(
+      dto.seriesId,
+      dto.slug.trim() || slugifyComponentCatalog(dto.name),
+    );
+
     return this.prisma.componentCatalogGroup.create({
       data: {
         ...data,
+        slug,
         items: catalogItemIds?.length
           ? {
               create: catalogItemIds.map((catalogItemId, index) => ({
@@ -84,13 +83,18 @@ export class ComponentCatalogGroupsService {
   }
 
   async update(id: string, data: Partial<CreateComponentCatalogGroupDto>) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
+    const seriesId = data.seriesId ?? current.seriesId;
+
     if (data.slug) {
+      const slug = data.slug.trim();
       const existing = await this.prisma.componentCatalogGroup.findFirst({
-        where: { slug: data.slug, NOT: { id } },
+        where: { seriesId, slug, NOT: { id } },
       });
       if (existing) {
-        throw new ConflictException(`Подгруппа со slug "${data.slug}" уже существует`);
+        throw new ConflictException(
+          `Подгруппа со slug "${slug}" уже существует в этой группе моделей`,
+        );
       }
     }
 
@@ -175,7 +179,8 @@ export class ComponentCatalogGroupsService {
     });
     if (!source) throw new NotFoundException(`Подгруппа ${sourceGroupId} не найдена`);
 
-    const subgroupSlug = await this.ensureUniqueGroupSlug(
+    const subgroupSlug = await this.ensureUniqueGroupSlugInSeries(
+      source.seriesId,
       dto.slug?.trim() || slugifyComponentCatalog(dto.name),
     );
 
@@ -234,11 +239,16 @@ export class ComponentCatalogGroupsService {
     });
   }
 
-  private async ensureUniqueGroupSlug(base: string): Promise<string> {
-    let slug = base;
+  private async ensureUniqueGroupSlugInSeries(seriesId: string, base: string): Promise<string> {
+    const normalized = base.trim() || 'subgroup';
+    let slug = normalized;
     let n = 1;
-    while (await this.prisma.componentCatalogGroup.findUnique({ where: { slug } })) {
-      slug = `${base}-${n++}`;
+    while (
+      await this.prisma.componentCatalogGroup.findFirst({
+        where: { seriesId, slug },
+      })
+    ) {
+      slug = `${normalized}-${n++}`;
     }
     return slug;
   }
