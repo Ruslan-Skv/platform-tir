@@ -27,7 +27,6 @@ export class ComponentCatalogService {
   async create(dto: CreateComponentCatalogItemDto) {
     const kindId = await this.kindsService.resolveKindId(dto.kindId);
     const slug = dto.slug.trim();
-    const normalized = this.normalizeCatalogItemFields(dto, kindId);
 
     const existing = await this.prisma.componentCatalogItem.findUnique({
       where: { slug },
@@ -38,10 +37,7 @@ export class ComponentCatalogService {
     });
 
     if (existing) {
-      if (!this.isSameCatalogProduct(existing, normalized)) {
-        throw new ConflictException(`Позиция со slug "${slug}" уже существует`);
-      }
-      return this.updateExistingCatalogItem(existing.id, dto);
+      return this.updateExistingCatalogItem(existing.id, dto, kindId);
     }
 
     return this.prisma.componentCatalogItem.create({
@@ -261,43 +257,13 @@ export class ComponentCatalogService {
     } as const;
   }
 
-  private normalizeCatalogItemFields(dto: CreateComponentCatalogItemDto, kindId: string) {
-    return {
-      kindId,
-      name: dto.name.trim(),
-      size: dto.size?.trim() || null,
-      color: dto.color?.trim() || null,
-      material: dto.material?.trim() || null,
-    };
-  }
-
-  private isSameCatalogProduct(
-    existing: {
-      kindId: string;
-      name: string;
-      size: string | null;
-      color: string | null;
-      material: string | null;
-    },
-    normalized: {
-      kindId: string;
-      name: string;
-      size: string | null;
-      color: string | null;
-      material: string | null;
-    },
-  ): boolean {
-    return (
-      existing.kindId === normalized.kindId &&
-      existing.name.trim() === normalized.name &&
-      (existing.size?.trim() || null) === normalized.size &&
-      (existing.color?.trim() || null) === normalized.color &&
-      (existing.material?.trim() || null) === normalized.material
-    );
-  }
-
-  private updateExistingCatalogItem(id: string, dto: CreateComponentCatalogItemDto) {
+  private updateExistingCatalogItem(
+    id: string,
+    dto: CreateComponentCatalogItemDto,
+    kindId: string,
+  ) {
     const patch: Prisma.ComponentCatalogItemUncheckedUpdateInput = {
+      kindId,
       price: dto.price,
     };
     if (dto.isActive !== undefined) patch.isActive = dto.isActive;
