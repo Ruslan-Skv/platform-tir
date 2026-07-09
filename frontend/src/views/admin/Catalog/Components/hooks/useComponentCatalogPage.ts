@@ -45,6 +45,8 @@ export function useComponentCatalogPage() {
   const [editItem, setEditItem] = useState<AdminComponentCatalogItem | null>(null);
   const [copyFromItem, setCopyFromItem] = useState<AdminComponentCatalogItem | null>(null);
   const [assignToGroup, setAssignToGroup] = useState<{ id: string; name: string } | null>(null);
+  const [itemDeleteTarget, setItemDeleteTarget] = useState<AdminComponentCatalogItem | null>(null);
+  const [deletingItem, setDeletingItem] = useState(false);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
 
   useEffect(() => {
@@ -193,26 +195,38 @@ export function useComponentCatalogPage() {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
   }, [queryClient]);
 
-  const handleDeleteItem = useCallback(
-    async (item: AdminComponentCatalogItem) => {
-      const usage = item._count?.productComponents ?? 0;
-      const label = [item.name, item.size, item.color].filter(Boolean).join(', ');
-      const msg =
-        usage > 0
-          ? `Удалить «${label}»? Привязки у ${usage} товаров будут отвязаны.`
-          : `Удалить «${label}»?`;
-      if (!confirm(msg)) return;
-      try {
-        await deleteAdminComponentCatalogItem(item.id);
-        void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
-        void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
-        showToast('Удалено', 'ok');
-      } catch (e) {
-        showToast(e instanceof Error ? e.message : 'Ошибка удаления', 'err');
-      }
-    },
-    [queryClient, showToast]
-  );
+  const handleDeleteItem = useCallback((item: AdminComponentCatalogItem) => {
+    setItemDeleteTarget(item);
+  }, []);
+
+  const confirmDeleteItem = useCallback(async () => {
+    if (!itemDeleteTarget) return;
+    const item = itemDeleteTarget;
+    setDeletingItem(true);
+    try {
+      await deleteAdminComponentCatalogItem(item.id);
+      void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
+      void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
+      showToast('Удалено', 'ok');
+    } catch (e) {
+      showToast(e instanceof Error ? e.message : 'Ошибка удаления', 'err');
+    } finally {
+      setDeletingItem(false);
+      setItemDeleteTarget(null);
+    }
+  }, [itemDeleteTarget, queryClient, showToast]);
+
+  const itemDeleteMessage = useMemo(() => {
+    if (!itemDeleteTarget) return '';
+    const usage = itemDeleteTarget._count?.productComponents ?? 0;
+    const label = [itemDeleteTarget.name, itemDeleteTarget.size, itemDeleteTarget.color]
+      .filter(Boolean)
+      .join(', ');
+    if (usage > 0) {
+      return `Удалить «${label}»? Привязки у ${usage} товаров будут отвязаны.`;
+    }
+    return `Удалить «${label}»?`;
+  }, [itemDeleteTarget]);
 
   const invalidateAll = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
@@ -273,6 +287,11 @@ export function useComponentCatalogPage() {
     closeItemModal,
     handleItemSaved,
     handleDeleteItem,
+    itemDeleteTarget,
+    setItemDeleteTarget,
+    confirmDeleteItem,
+    deletingItem,
+    itemDeleteMessage,
     toast,
     showToast,
     invalidateAll,

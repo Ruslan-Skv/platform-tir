@@ -6,6 +6,7 @@ import Link from 'next/link';
 
 import { getCatalogKindLabel } from '@/shared/api/admin-component-catalog';
 import type { AdminComponentCatalogItem } from '@/shared/api/admin-component-catalog';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton/AdminListRefreshButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -62,6 +63,11 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
     closeItemModal,
     handleItemSaved,
     handleDeleteItem,
+    itemDeleteTarget,
+    setItemDeleteTarget,
+    confirmDeleteItem,
+    deletingItem,
+    itemDeleteMessage,
     toast,
     showToast,
     invalidateAll,
@@ -178,7 +184,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
             <AdminTableIconButton title="Копировать как новую" onClick={() => openCopyItem(row)}>
               <CopyIcon />
             </AdminTableIconButton>
-            <AdminTableIconButton title="Удалить" onClick={() => void handleDeleteItem(row)}>
+            <AdminTableIconButton title="Удалить" onClick={() => handleDeleteItem(row)}>
               <DeleteIcon />
             </AdminTableIconButton>
           </div>
@@ -215,6 +221,21 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         onSaved={handleItemSaved}
         onError={(msg) => showToast(msg, 'err')}
       />
+
+      {itemDeleteTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить позицию?"
+          message={itemDeleteMessage}
+          confirmText={deletingItem ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          onConfirm={() => void confirmDeleteItem()}
+          onClose={() => {
+            if (!deletingItem) setItemDeleteTarget(null);
+          }}
+        />
+      ) : null}
 
       <div className={styles.header}>
         <div className={styles.headerLeft}>

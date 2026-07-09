@@ -22,6 +22,7 @@ import {
   updateAdminComponentCatalogGroup,
   updateAdminComponentCatalogSeries,
 } from '@/shared/api/admin-component-catalog';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -68,6 +69,13 @@ export function ComponentCatalogGroupsPanel({
 
   const [copySource, setCopySource] = useState<AdminComponentCatalogGroup | null>(null);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
+  const [subgroupDeleteTarget, setSubgroupDeleteTarget] =
+    useState<AdminComponentCatalogGroup | null>(null);
+  const [deletingSubgroup, setDeletingSubgroup] = useState(false);
+  const [seriesDeleteTarget, setSeriesDeleteTarget] = useState<AdminComponentCatalogSeries | null>(
+    null
+  );
+  const [deletingSeries, setDeletingSeries] = useState(false);
 
   const { data: kindsData } = useQuery({
     queryKey: [COMPONENT_CATALOG_KINDS_KEY],
@@ -128,39 +136,57 @@ export function ComponentCatalogGroupsPanel({
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
   }, [queryClient]);
 
-  const handleDeleteSeries = useCallback(
-    async (series: AdminComponentCatalogSeries) => {
-      const count = series._count?.subgroups ?? series.subgroups?.length ?? 0;
-      const msg =
-        count > 0
-          ? `Удалить группу моделей «${series.name}» вместе с ${count} подгруппами?`
-          : `Удалить группу моделей «${series.name}»?`;
-      if (!confirm(msg)) return;
-      try {
-        await deleteAdminComponentCatalogSeries(series.id);
-        if (selectedSeriesId === series.id) setSelectedSeriesId(null);
-        invalidate();
-        onToast('Группа моделей удалена', 'ok');
-      } catch (e) {
-        onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
-      }
-    },
-    [invalidate, onToast, selectedSeriesId]
-  );
+  const confirmDeleteSeries = useCallback(async () => {
+    if (!seriesDeleteTarget) return;
+    const series = seriesDeleteTarget;
+    setDeletingSeries(true);
+    try {
+      await deleteAdminComponentCatalogSeries(series.id);
+      if (selectedSeriesId === series.id) setSelectedSeriesId(null);
+      invalidate();
+      onToast('Группа моделей удалена', 'ok');
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
+    } finally {
+      setDeletingSeries(false);
+      setSeriesDeleteTarget(null);
+    }
+  }, [invalidate, onToast, selectedSeriesId, seriesDeleteTarget]);
 
-  const handleDeleteSubgroup = useCallback(
-    async (group: AdminComponentCatalogGroup) => {
-      if (!confirm(`Удалить подгруппу «${group.name}»? Позиции справочника останутся.`)) return;
-      try {
-        await deleteAdminComponentCatalogGroup(group.id);
-        invalidate();
-        onToast('Подгруппа удалена', 'ok');
-      } catch (e) {
-        onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
-      }
-    },
-    [invalidate, onToast]
-  );
+  const seriesDeleteMessage = useMemo(() => {
+    if (!seriesDeleteTarget) return '';
+    const count = seriesDeleteTarget._count?.subgroups ?? seriesDeleteTarget.subgroups?.length ?? 0;
+    if (count > 0) {
+      return `Удалить группу моделей «${seriesDeleteTarget.name}» вместе с ${count} подгруппами? Позиции справочника останутся.`;
+    }
+    return `Удалить группу моделей «${seriesDeleteTarget.name}»?`;
+  }, [seriesDeleteTarget]);
+
+  const confirmDeleteSubgroup = useCallback(async () => {
+    if (!subgroupDeleteTarget) return;
+    const group = subgroupDeleteTarget;
+    setDeletingSubgroup(true);
+    try {
+      await deleteAdminComponentCatalogGroup(group.id);
+      if (expandedId === group.id) setExpandedId(null);
+      invalidate();
+      onToast('Подгруппа удалена', 'ok');
+    } catch (e) {
+      onToast(e instanceof Error ? e.message : 'Ошибка', 'err');
+    } finally {
+      setDeletingSubgroup(false);
+      setSubgroupDeleteTarget(null);
+    }
+  }, [expandedId, invalidate, onToast, subgroupDeleteTarget]);
+
+  const subgroupDeleteMessage = useMemo(() => {
+    if (!subgroupDeleteTarget) return '';
+    const itemCount = subgroupDeleteTarget._count?.items ?? subgroupDeleteTarget.items?.length ?? 0;
+    if (itemCount === 0) {
+      return `Удалить подгруппу «${subgroupDeleteTarget.name}»? Она пуста, позиции справочника не затрагиваются.`;
+    }
+    return `Удалить подгруппу «${subgroupDeleteTarget.name}»? Позиции справочника (${itemCount}) останутся в каталоге.`;
+  }, [subgroupDeleteTarget]);
 
   const seriesColumns = useMemo(
     () => [
@@ -213,7 +239,7 @@ export function ComponentCatalogGroupsPanel({
               title="Удалить"
               onClick={(e) => {
                 e.stopPropagation();
-                void handleDeleteSeries(s);
+                setSeriesDeleteTarget(s);
               }}
             >
               <DeleteIcon />
@@ -222,7 +248,7 @@ export function ComponentCatalogGroupsPanel({
         ),
       },
     ],
-    [handleDeleteSeries]
+    [setSeriesDeleteTarget]
   );
 
   const subgroupColumns = useMemo(
@@ -296,7 +322,7 @@ export function ComponentCatalogGroupsPanel({
               title="Удалить"
               onClick={(e) => {
                 e.stopPropagation();
-                void handleDeleteSubgroup(g);
+                setSubgroupDeleteTarget(g);
               }}
             >
               <DeleteIcon />
@@ -305,7 +331,7 @@ export function ComponentCatalogGroupsPanel({
         ),
       },
     ],
-    [handleDeleteSubgroup]
+    [setSubgroupDeleteTarget]
   );
 
   return (
@@ -371,6 +397,36 @@ export function ComponentCatalogGroupsPanel({
         }}
         onError={(msg) => onToast(msg, 'err')}
       />
+
+      {seriesDeleteTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить группу моделей?"
+          message={seriesDeleteMessage}
+          confirmText={deletingSeries ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          onConfirm={() => void confirmDeleteSeries()}
+          onClose={() => {
+            if (!deletingSeries) setSeriesDeleteTarget(null);
+          }}
+        />
+      ) : null}
+
+      {subgroupDeleteTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить подгруппу?"
+          message={subgroupDeleteMessage}
+          confirmText={deletingSubgroup ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          onConfirm={() => void confirmDeleteSubgroup()}
+          onClose={() => {
+            if (!deletingSubgroup) setSubgroupDeleteTarget(null);
+          }}
+        />
+      ) : null}
 
       <div className={styles.filters}>
         <div className={styles.searchField}>
