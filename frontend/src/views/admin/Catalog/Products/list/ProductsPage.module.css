@@ -420,6 +420,22 @@
   line-height: var(--admin-line-height-flat);
 }
 
+.supplierPriceErrorBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: var(--admin-space-0) var(--admin-space-xs);
+  background: var(--admin-error-text-strong);
+  color: var(--admin-surface);
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  line-height: var(--admin-line-height-flat);
+  cursor: help;
+}
+
 /* Подсветка строки: цена поставщика изменилась после «Обновить цены» */
 .priceChangedRow {
   background: var(--admin-warning-bg) !important;
@@ -1275,6 +1291,11 @@
 .toastError {
   background: var(--admin-error-text-strong);
   color: white;
+}
+
+.toastWarning {
+  background: var(--admin-warning);
+  color: var(--admin-surface);
 }
 
 .toastMessage {

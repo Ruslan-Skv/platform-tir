@@ -7,6 +7,8 @@ import { assertSafeFetchUrl } from '../common/utils/safe-fetch-url.util';
 export class PriceScraperService {
   constructor(private readonly prisma: PrismaService) {}
 
+  private readonly fetchTimeoutMs = 20_000;
+
   private readonly parserTitles: Record<string, string> = {
     STROYKOM_INTERIOR: 'Стройком - Межкомнатные двери',
     STROYKOM_ENTRANCE: 'Стройком - Входные двери',
@@ -502,7 +504,7 @@ export class PriceScraperService {
     await assertSafeFetchUrl(url);
 
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 10000);
+    const timeoutId = setTimeout(() => controller.abort(), this.fetchTimeoutMs);
 
     try {
       const response = await fetch(url, {
@@ -525,7 +527,7 @@ export class PriceScraperService {
 
       if (!response.ok) {
         if (response.status === 404) {
-          throw new HttpException('Страница не найдена', HttpStatus.NOT_FOUND);
+          throw new HttpException('Товар не найден', HttpStatus.NOT_FOUND);
         }
         throw new HttpException(
           `Ошибка при получении страницы: ${response.statusText}`,

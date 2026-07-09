@@ -2,6 +2,11 @@
 
 import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import {
+  formatSupplierPriceUpdateMessage,
+  getSupplierPriceErrorLabel,
+  mergeSupplierPriceUpdateErrors,
+} from '@/shared/lib/catalog/supplier-price-update-message';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
@@ -98,6 +103,10 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setSelectionHintMessage,
     priceChangedIds,
     setPriceChangedIds,
+    supplierPriceUpdateErrors,
+    setSupplierPriceUpdateErrors,
+    syncSupplierPricesMessageType,
+    setSyncSupplierPricesMessageType,
     persistedCategoryId,
     currentCategoryName,
     totalProducts,
@@ -335,18 +344,29 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
           // Цена поставщика + пометка «изменилась»
           if (columnConfig.key === 'supplierPrice') {
             const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+            const updateError = supplierPriceUpdateErrors[product.id];
             if (!mainSupplier) {
               return <span className={styles.emptyValue}>—</span>;
             }
             const price = mainSupplier.supplierPrice;
             const changed = Boolean(mainSupplier.supplierPriceChangedAt);
-            if (price === undefined || price === null) {
+            if ((price === undefined || price === null) && !updateError) {
               return <span className={styles.emptyValue}>—</span>;
             }
             const num = typeof price === 'string' ? parseFloat(price) : Number(price);
             return (
               <span className={styles.supplierPriceCell}>
-                <span className={styles.price}>{formatCurrency(Number.isNaN(num) ? 0 : num)}</span>
+                {price !== undefined && price !== null && !Number.isNaN(num) && (
+                  <span className={styles.price}>{formatCurrency(num)}</span>
+                )}
+                {updateError && (
+                  <span
+                    className={styles.supplierPriceErrorBadge}
+                    title={getSupplierPriceErrorLabel(updateError)}
+                  >
+                    ×
+                  </span>
+                )}
                 {changed && (
                   <span
                     className={styles.supplierPriceChangedBadge}
@@ -654,15 +674,20 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                     }
                     const data = await response.json();
                     setPriceChangedIds(data.changedIds ?? []);
-                    const msg =
-                      data.total === 0
-                        ? 'Среди выбранных нет товаров с ссылкой на товар поставщика'
-                        : `Обработано: ${data.total}, обновлено: ${data.updated}, цена изменилась: ${data.changed}` +
-                          (data.errors?.length ? `, ошибок: ${data.errors.length}` : '');
+                    setSupplierPriceUpdateErrors((prev) =>
+                      mergeSupplierPriceUpdateErrors(prev, selectedIds, data.errors)
+                    );
+                    const msg = formatSupplierPriceUpdateMessage(data);
+                    const hasErrors = (data.errors?.length ?? 0) > 0;
+                    const allFailed = hasErrors && data.updated === 0;
+                    setSyncSupplierPricesMessageType(
+                      allFailed ? 'error' : hasErrors ? 'warning' : 'success'
+                    );
                     setSyncSupplierPricesMessage(msg);
-                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
+                    setTimeout(() => setSyncSupplierPricesMessage(null), hasErrors ? 8000 : 5000);
                     invalidateProductsList();
                   } catch (e) {
+                    setSyncSupplierPricesMessageType('error');
                     setSyncSupplierPricesMessage(
                       e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
                     );
@@ -1240,7 +1265,15 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
 
       {/* Sync supplier prices toast */}
       {syncSupplierPricesMessage && (
-        <div className={`${styles.toast} ${styles.toastSuccess}`}>
+        <div
+          className={`${styles.toast} ${
+            syncSupplierPricesMessageType === 'error'
+              ? styles.toastError
+              : syncSupplierPricesMessageType === 'warning'
+                ? styles.toastWarning
+                : styles.toastSuccess
+          }`}
+        >
           <span className={styles.toastMessage}>{syncSupplierPricesMessage}</span>
           <button
             className={styles.toastClose}

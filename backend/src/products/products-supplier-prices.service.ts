@@ -4,12 +4,21 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
 import { PriceScraperService } from './price-scraper.service';
 import { ProductsSearchIndexService } from './products-search-index.service';
+import {
+  formatSupplierPriceError,
+  type SupplierPriceErrorCode,
+} from './utils/supplier-price-error.util';
 
 export interface SyncSupplierPricesResult {
   total: number;
   updated: number;
   changed: number;
-  errors: Array<{ productId: string; productName: string; error: string }>;
+  errors: Array<{
+    productId: string;
+    productName: string;
+    error: string;
+    errorCode: SupplierPriceErrorCode;
+  }>;
 }
 
 export interface UpdateSupplierPricesResult {
@@ -17,14 +26,24 @@ export interface UpdateSupplierPricesResult {
   updated: number;
   changed: number;
   changedIds: string[];
-  errors: Array<{ productId: string; productName: string; error: string }>;
+  errors: Array<{
+    productId: string;
+    productName: string;
+    error: string;
+    errorCode: SupplierPriceErrorCode;
+  }>;
 }
 
 export interface ApplySupplierPricesResult {
   total: number;
   synced: number;
   syncedIds: string[];
-  errors: Array<{ productId: string; productName: string; error: string }>;
+  errors: Array<{
+    productId: string;
+    productName: string;
+    error: string;
+    errorCode: SupplierPriceErrorCode;
+  }>;
 }
 
 @Injectable()
@@ -76,10 +95,12 @@ export class ProductsSupplierPricesService {
         result.updated += 1;
         if (priceChanged) result.changed += 1;
       } catch (err) {
+        const { message, errorCode } = formatSupplierPriceError(err);
         result.errors.push({
           productId: row.productId,
           productName: row.product.name,
-          error: err instanceof Error ? err.message : String(err),
+          error: message,
+          errorCode,
         });
       }
     }
@@ -139,10 +160,12 @@ export class ProductsSupplierPricesService {
           result.changedIds.push(row.productId);
         }
       } catch (err) {
+        const { message, errorCode } = formatSupplierPriceError(err);
         result.errors.push({
           productId: row.productId,
           productName: row.product.name,
-          error: err instanceof Error ? err.message : String(err),
+          error: message,
+          errorCode,
         });
       }
     }
@@ -181,10 +204,12 @@ export class ProductsSupplierPricesService {
         result.synced += 1;
         result.syncedIds.push(row.productId);
       } catch (err) {
+        const { message, errorCode } = formatSupplierPriceError(err);
         result.errors.push({
           productId: row.productId,
           productName: row.product.name,
-          error: err instanceof Error ? err.message : String(err),
+          error: message,
+          errorCode,
         });
       }
     }
