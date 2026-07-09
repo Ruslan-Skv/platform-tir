@@ -25,18 +25,29 @@ export class ComponentCatalogService {
   ) {}
 
   async create(dto: CreateComponentCatalogItemDto) {
-    const existing = await this.prisma.componentCatalogItem.findUnique({
-      where: { slug: dto.slug },
-    });
-    if (existing) {
-      throw new ConflictException(`Позиция со slug "${dto.slug}" уже существует`);
-    }
-
     const kindId = await this.kindsService.resolveKindId(dto.kindId);
+    const slug = dto.slug.trim();
+    const normalized = this.normalizeCatalogItemFields(dto, kindId);
+
+    const existing = await this.prisma.componentCatalogItem.findUnique({
+      where: { slug },
+      include: {
+        ...this.usageCountInclude(),
+        ...kindRefInclude,
+      },
+    });
+
+    if (existing) {
+      if (!this.isSameCatalogProduct(existing, normalized)) {
+        throw new ConflictException(`Позиция со slug "${slug}" уже существует`);
+      }
+      return this.updateExistingCatalogItem(existing.id, dto);
+    }
 
     return this.prisma.componentCatalogItem.create({
       data: {
         ...dto,
+        slug,
         kindId,
       },
       include: {
@@ -248,6 +259,60 @@ export class ComponentCatalogService {
         select: { productComponents: true },
       },
     } as const;
+  }
+
+  private normalizeCatalogItemFields(dto: CreateComponentCatalogItemDto, kindId: string) {
+    return {
+      kindId,
+      name: dto.name.trim(),
+      size: dto.size?.trim() || null,
+      color: dto.color?.trim() || null,
+      material: dto.material?.trim() || null,
+    };
+  }
+
+  private isSameCatalogProduct(
+    existing: {
+      kindId: string;
+      name: string;
+      size: string | null;
+      color: string | null;
+      material: string | null;
+    },
+    normalized: {
+      kindId: string;
+      name: string;
+      size: string | null;
+      color: string | null;
+      material: string | null;
+    },
+  ): boolean {
+    return (
+      existing.kindId === normalized.kindId &&
+      existing.name.trim() === normalized.name &&
+      (existing.size?.trim() || null) === normalized.size &&
+      (existing.color?.trim() || null) === normalized.color &&
+      (existing.material?.trim() || null) === normalized.material
+    );
+  }
+
+  private updateExistingCatalogItem(id: string, dto: CreateComponentCatalogItemDto) {
+    const patch: Prisma.ComponentCatalogItemUncheckedUpdateInput = {
+      price: dto.price,
+    };
+    if (dto.isActive !== undefined) patch.isActive = dto.isActive;
+    if (dto.sortOrder !== undefined) patch.sortOrder = dto.sortOrder;
+    if (dto.image !== undefined) patch.image = dto.image;
+    if (dto.stock !== undefined) patch.stock = dto.stock;
+
+    return this.prisma.componentCatalogItem.update({
+      where: { id },
+      data: patch,
+      include: {
+        ...this.usageCountInclude(),
+        ...kindRefInclude,
+      },
+    });
   }
 
   private async ensureUniqueSlug(base: string): Promise<string> {
