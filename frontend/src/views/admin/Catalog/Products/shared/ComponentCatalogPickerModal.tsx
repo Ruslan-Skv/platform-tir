@@ -7,11 +7,12 @@ import Link from 'next/link';
 import {
   type AdminComponentCatalogGroup,
   type AdminComponentCatalogItem,
-  COMPONENT_KIND_LABELS,
-  type ComponentKind,
+  type AdminComponentCatalogKind,
   fetchAdminComponentCatalogGroupsList,
+  fetchAdminComponentCatalogKinds,
   fetchAdminComponentCatalogList,
   formatCatalogItemLabel,
+  getCatalogKindLabel,
 } from '@/shared/api/admin-component-catalog';
 
 import styles from './ComponentCatalogPickerModal.module.css';
@@ -41,21 +42,30 @@ export function ComponentCatalogPickerModal({
   const [loading, setLoading] = useState(false);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [kind, setKind] = useState<ComponentKind | ''>('');
+  const [kindId, setKindId] = useState('');
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [selectedGroupId, setSelectedGroupId] = useState<string | null>(null);
+
+  const [kindOptions, setKindOptions] = useState<AdminComponentCatalogKind[]>([]);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
+  useEffect(() => {
+    if (!open) return;
+    void fetchAdminComponentCatalogKinds()
+      .then((res) => setKindOptions(res.data))
+      .catch(() => setKindOptions([]));
+  }, [open]);
+
   const loadItems = useCallback(async () => {
     setLoading(true);
     try {
       const res = await fetchAdminComponentCatalogList({
         search: debouncedSearch || undefined,
-        kind: kind || undefined,
+        kindId: kindId || undefined,
         isActive: true,
         limit: 100,
       });
@@ -65,7 +75,7 @@ export function ComponentCatalogPickerModal({
     } finally {
       setLoading(false);
     }
-  }, [debouncedSearch, kind]);
+  }, [debouncedSearch, kindId]);
 
   const loadGroups = useCallback(async () => {
     setLoading(true);
@@ -93,7 +103,7 @@ export function ComponentCatalogPickerModal({
       setSelected(new Set());
       setSelectedGroupId(null);
       setSearch('');
-      setKind('');
+      setKindId('');
       setMode('groups');
     }
   }, [open]);
@@ -162,13 +172,13 @@ export function ComponentCatalogPickerModal({
           {mode === 'items' && (
             <select
               className={styles.select}
-              value={kind}
-              onChange={(e) => setKind(e.target.value as ComponentKind | '')}
+              value={kindId}
+              onChange={(e) => setKindId(e.target.value)}
             >
               <option value="">Все виды</option>
-              {(Object.keys(COMPONENT_KIND_LABELS) as ComponentKind[]).map((k) => (
-                <option key={k} value={k}>
-                  {COMPONENT_KIND_LABELS[k]}
+              {kindOptions.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
                 </option>
               ))}
             </select>
@@ -222,7 +232,7 @@ export function ComponentCatalogPickerModal({
                 <span className={styles.rowMain}>
                   <span className={styles.rowTitle}>{formatCatalogItemLabel(row)}</span>
                   <span className={styles.rowMeta}>
-                    {COMPONENT_KIND_LABELS[row.kind]} ·{' '}
+                    {getCatalogKindLabel(row.kindId, kindOptions, row.kindRef)} ·{' '}
                     {parseFloat(row.price).toLocaleString('ru-RU')} ₽
                     {row.material ? ` · ${row.material}` : ''}
                   </span>

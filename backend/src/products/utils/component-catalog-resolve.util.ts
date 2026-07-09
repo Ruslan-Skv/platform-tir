@@ -1,14 +1,22 @@
-import { ComponentCatalogItem, ComponentKind, ProductComponent } from '@prisma/client';
+import { ComponentCatalogItem, ProductComponent } from '@prisma/client';
 
-export type ProductComponentWithCatalog = ProductComponent & {
-  catalogItem?: ComponentCatalogItem | null;
+export type CatalogItemWithKind = ComponentCatalogItem & {
+  kindRef: {
+    id: string;
+    code: string;
+    name: string;
+    kitQuantity: number | null;
+    quantityStep: number;
+  };
 };
 
 export type ResolvedProductComponent = {
   id: string;
   productId: string;
   catalogItemId: string | null;
-  kind: ComponentKind;
+  kindId: string | null;
+  kind: string;
+  kindName: string;
   name: string;
   type: string;
   size: string | null;
@@ -26,24 +34,65 @@ export type ResolvedProductComponent = {
   isFromCatalog: boolean;
 };
 
-export function inferComponentKind(name: string, type: string): ComponentKind {
-  const text = `${name} ${type}`.toLowerCase();
-  if (/стойк/.test(text) && /коробк/.test(text)) return ComponentKind.STOIKA_KOROBKI;
-  if (/наличник/.test(text)) return ComponentKind.NALICHNIK;
-  if (/добор/.test(text)) return ComponentKind.DOBOR;
-  if (/притворн/.test(text)) return ComponentKind.PRITVORNAYA_PLANKA;
-  if (/коробк/.test(text)) return ComponentKind.KOROBKA;
-  return ComponentKind.OTHER;
+export type ProductComponentWithCatalog = ProductComponent & {
+  catalogItem?:
+    | (ComponentCatalogItem & {
+        kindRef?: {
+          id: string;
+          code: string;
+          name: string;
+          kitQuantity: number | null;
+          quantityStep: number;
+        };
+      })
+    | null;
+};
+
+export type ComponentKindSettingValues = {
+  kitQuantity: number | null;
+  quantityStep: number;
+};
+
+/** Ключ — code вида, напр. STOIKA_KOROBKI */
+export type ComponentKindSettingsMap = Record<string, ComponentKindSettingValues>;
+
+export function kitQuantityForKind(
+  code: string,
+  settings?: ComponentKindSettingsMap,
+): number | null {
+  if (settings && code in settings) {
+    return settings[code]?.kitQuantity ?? null;
+  }
+  return defaultKitQuantity(code);
 }
 
-export function defaultKitQuantity(kind: ComponentKind): number | null {
-  if (kind === ComponentKind.STOIKA_KOROBKI) return 2.5;
-  if (kind === ComponentKind.NALICHNIK) return 5;
+export function quantityStepForKind(code: string, settings?: ComponentKindSettingsMap): number {
+  const fromSettings = settings?.[code]?.quantityStep;
+  if (fromSettings !== undefined) return fromSettings;
+  return defaultQuantityStep(code);
+}
+
+export function inferComponentKindCode(name: string, type: string): string {
+  const text = `${name} ${type}`.toLowerCase();
+  if (/стойк/.test(text) && /коробк/.test(text)) return 'STOIKA_KOROBKI';
+  if (/наличник/.test(text)) return 'NALICHNIK';
+  if (/добор/.test(text)) return 'DOBOR';
+  if (/притворн/.test(text)) return 'PRITVORNAYA_PLANKA';
+  if (/коробк/.test(text)) return 'KOROBKA';
+  return 'OTHER';
+}
+
+/** @deprecated use inferComponentKindCode */
+export const inferComponentKind = inferComponentKindCode;
+
+export function defaultKitQuantity(code: string): number | null {
+  if (code === 'STOIKA_KOROBKI') return 2.5;
+  if (code === 'NALICHNIK') return 5;
   return null;
 }
 
-export function defaultQuantityStep(kind: ComponentKind): number {
-  if (kind === ComponentKind.STOIKA_KOROBKI) return 0.5;
+export function defaultQuantityStep(code: string): number {
+  if (code === 'STOIKA_KOROBKI') return 0.5;
   return 1;
 }
 
@@ -64,15 +113,19 @@ export function buildComponentLabel(parts: {
 
 export function resolveProductComponent(
   row: ProductComponentWithCatalog,
+  settings?: ComponentKindSettingsMap,
 ): ResolvedProductComponent {
   const catalog = row.catalogItem;
-  if (catalog) {
+  if (catalog?.kindRef) {
     const size = catalog.size;
+    const code = catalog.kindRef.code;
     return {
       id: row.id,
       productId: row.productId,
       catalogItemId: catalog.id,
-      kind: catalog.kind,
+      kindId: catalog.kindRef.id,
+      kind: code,
+      kindName: catalog.kindRef.name,
       name: catalog.name,
       type: formatComponentType(size, row.type),
       size,
@@ -83,20 +136,22 @@ export function resolveProductComponent(
       stock: catalog.stock,
       isActive: row.isActive && catalog.isActive,
       sortOrder: row.sortOrder,
-      kitQuantity: catalog.kitQuantity,
-      quantityStep: catalog.quantityStep,
+      kitQuantity: kitQuantityForKind(code, settings),
+      quantityStep: quantityStepForKind(code, settings),
       createdAt: row.createdAt,
       updatedAt: row.updatedAt,
       isFromCatalog: true,
     };
   }
 
-  const kind = inferComponentKind(row.name, row.type);
+  const code = inferComponentKindCode(row.name, row.type);
   return {
     id: row.id,
     productId: row.productId,
-    catalogItemId: null,
-    kind,
+    catalogItemId: catalog?.id ?? null,
+    kindId: catalog?.kindRef?.id ?? null,
+    kind: code,
+    kindName: catalog?.kindRef?.name ?? row.name,
     name: row.name,
     type: row.type,
     size: row.type || null,
@@ -107,8 +162,8 @@ export function resolveProductComponent(
     stock: row.stock,
     isActive: row.isActive,
     sortOrder: row.sortOrder,
-    kitQuantity: defaultKitQuantity(kind),
-    quantityStep: defaultQuantityStep(kind),
+    kitQuantity: kitQuantityForKind(code, settings),
+    quantityStep: quantityStepForKind(code, settings),
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     isFromCatalog: false,
@@ -117,6 +172,7 @@ export function resolveProductComponent(
 
 export function resolveProductComponents(
   rows: ProductComponentWithCatalog[],
+  settings?: ComponentKindSettingsMap,
 ): ResolvedProductComponent[] {
-  return rows.map(resolveProductComponent);
+  return rows.map((row) => resolveProductComponent(row, settings));
 }

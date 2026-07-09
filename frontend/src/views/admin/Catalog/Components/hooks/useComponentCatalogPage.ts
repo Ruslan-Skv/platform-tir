@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   type AdminComponentCatalogItem,
-  type ComponentKind,
+  type AdminComponentCatalogKind,
   deleteAdminComponentCatalogItem,
   fetchAdminComponentCatalogGroupsList,
+  fetchAdminComponentCatalogKinds,
   fetchAdminComponentCatalogList,
   fetchAdminComponentCatalogSeriesList,
 } from '@/shared/api/admin-component-catalog';
@@ -16,17 +17,18 @@ import {
 export const COMPONENT_CATALOG_LIST_KEY = 'admin-component-catalog-list';
 export const COMPONENT_CATALOG_GROUPS_KEY = 'admin-component-catalog-groups';
 export const COMPONENT_CATALOG_SERIES_KEY = 'admin-component-catalog-series';
+export const COMPONENT_CATALOG_KINDS_KEY = 'admin-component-catalog-kinds';
 
 const LIMIT_STORAGE_KEY = 'admin_component_catalog_page_limit';
 
-export type ComponentCatalogTab = 'items' | 'groups';
+export type ComponentCatalogTab = 'items' | 'groups' | 'kinds';
 
 export function useComponentCatalogPage() {
   const queryClient = useQueryClient();
   const [tab, setTab] = useState<ComponentCatalogTab>('items');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [kindFilter, setKindFilter] = useState<ComponentKind | ''>('');
+  const [kindFilter, setKindFilter] = useState('');
   const [seriesFilter, setSeriesFilter] = useState('');
   const [groupFilter, setGroupFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState<'' | 'true' | 'false'>('');
@@ -68,7 +70,7 @@ export function useComponentCatalogPage() {
   const listQueryParams = useMemo(
     () => ({
       search: debouncedSearch || undefined,
-      kind: kindFilter || undefined,
+      kindId: kindFilter || undefined,
       seriesId: seriesFilter || undefined,
       groupId: groupFilter || undefined,
       isActive: activeFilter === '' ? undefined : activeFilter === 'true',
@@ -106,6 +108,13 @@ export function useComponentCatalogPage() {
     queryKey: [COMPONENT_CATALOG_SERIES_KEY, 'filter-options'],
     queryFn: () => fetchAdminComponentCatalogSeriesList({ limit: 500 }),
   });
+
+  const { data: kindsResponse } = useQuery({
+    queryKey: [COMPONENT_CATALOG_KINDS_KEY],
+    queryFn: fetchAdminComponentCatalogKinds,
+  });
+
+  const kindOptions: AdminComponentCatalogKind[] = kindsResponse?.data ?? [];
 
   const { data: groupsForFilter } = useQuery({
     queryKey: [COMPONENT_CATALOG_GROUPS_KEY, 'filter-options', seriesFilter],
@@ -209,7 +218,21 @@ export function useComponentCatalogPage() {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_KINDS_KEY] });
   }, [queryClient]);
+
+  const isRefreshing =
+    useIsFetching({
+      predicate: (query) => {
+        const key = query.queryKey[0];
+        return (
+          key === COMPONENT_CATALOG_LIST_KEY ||
+          key === COMPONENT_CATALOG_GROUPS_KEY ||
+          key === COMPONENT_CATALOG_SERIES_KEY ||
+          key === COMPONENT_CATALOG_KINDS_KEY
+        );
+      },
+    }) > 0;
 
   return {
     tab,
@@ -236,6 +259,7 @@ export function useComponentCatalogPage() {
     itemsLoading,
     itemsFetching,
     refetchItems,
+    kindOptions,
     groupFilterOptions,
     seriesFilterOptions,
     itemModalOpen,
@@ -252,6 +276,7 @@ export function useComponentCatalogPage() {
     toast,
     showToast,
     invalidateAll,
+    isRefreshing,
   };
 }
 

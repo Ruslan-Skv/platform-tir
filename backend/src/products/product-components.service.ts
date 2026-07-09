@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
+import { ComponentCatalogKindsService } from './services/component-catalog-kinds.service';
 import { CreateProductComponentDto } from './dto/create-product-component.dto';
 import { UpdateProductComponentDto } from './dto/update-product-component.dto';
 import { LinkProductComponentDto } from './dto/link-product-component.dto';
@@ -9,11 +10,24 @@ import {
   formatComponentType,
   resolveProductComponent,
   resolveProductComponents,
+  type ComponentKindSettingsMap,
 } from './utils/component-catalog-resolve.util';
 import { calculateKitPrice } from './utils/component-kit-price.util';
 
 const componentInclude = {
-  catalogItem: true,
+  catalogItem: {
+    include: {
+      kindRef: {
+        select: {
+          id: true,
+          code: true,
+          name: true,
+          kitQuantity: true,
+          quantityStep: true,
+        },
+      },
+    },
+  },
   product: {
     select: {
       id: true,
@@ -26,14 +40,23 @@ const componentInclude = {
 
 @Injectable()
 export class ProductComponentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private kindsService: ComponentCatalogKindsService,
+  ) {}
 
-  private mapRow(row: Awaited<ReturnType<typeof this.fetchComponent>>) {
-    return resolveProductComponent(row);
+  private mapRow(
+    row: Awaited<ReturnType<typeof this.fetchComponent>>,
+    settings: ComponentKindSettingsMap,
+  ) {
+    return resolveProductComponent(row, settings);
   }
 
-  private mapRows(rows: Awaited<ReturnType<typeof this.fetchComponents>>) {
-    return resolveProductComponents(rows);
+  private mapRows(
+    rows: Awaited<ReturnType<typeof this.fetchComponents>>,
+    settings: ComponentKindSettingsMap,
+  ) {
+    return resolveProductComponents(rows, settings);
   }
 
   private async fetchComponent(id: string) {
@@ -82,7 +105,8 @@ export class ProductComponentsService {
       },
       include: componentInclude,
     });
-    return this.mapRow(row);
+    const settings = await this.kindsService.getMap();
+    return this.mapRow(row, settings);
   }
 
   async linkCatalogItem(productId: string, dto: LinkProductComponentDto) {
@@ -119,7 +143,8 @@ export class ProductComponentsService {
       },
       include: componentInclude,
     });
-    return this.mapRow(row);
+    const settings = await this.kindsService.getMap();
+    return this.mapRow(row, settings);
   }
 
   async linkCatalogItemsBatch(productId: string, catalogItemIds: string[]) {
@@ -161,18 +186,21 @@ export class ProductComponentsService {
       OR: [{ catalogItemId: null }, { catalogItem: { isActive: true } }],
     };
     const rows = await this.fetchComponents(where);
-    return this.mapRows(rows).filter((c) => c.isActive);
+    const settings = await this.kindsService.getMap();
+    return this.mapRows(rows, settings).filter((c) => c.isActive);
   }
 
   async findAllAdmin(productId?: string) {
     const where = productId ? { productId } : {};
     const rows = await this.fetchComponents(where);
-    return this.mapRows(rows);
+    const settings = await this.kindsService.getMap();
+    return this.mapRows(rows, settings);
   }
 
   async findOne(id: string) {
     const row = await this.fetchComponent(id);
-    return this.mapRow(row);
+    const settings = await this.kindsService.getMap();
+    return this.mapRow(row, settings);
   }
 
   async update(id: string, updateDto: UpdateProductComponentDto) {
@@ -189,7 +217,8 @@ export class ProductComponentsService {
       data: updateDto,
       include: componentInclude,
     });
-    return this.mapRow(updated);
+    const settings = await this.kindsService.getMap();
+    return this.mapRow(updated, settings);
   }
 
   async remove(id: string) {
@@ -204,7 +233,8 @@ export class ProductComponentsService {
       isActive: true,
       OR: [{ catalogItemId: null }, { catalogItem: { isActive: true } }],
     });
-    return this.mapRows(rows).filter((c) => c.isActive);
+    const settings = await this.kindsService.getMap();
+    return this.mapRows(rows, settings).filter((c) => c.isActive);
   }
 
   async getKitPriceForProduct(productId: string, canvasPriceOverride?: number) {

@@ -1,10 +1,9 @@
-import { ComponentKind } from '@prisma/client';
 import { ResolvedProductComponent } from './component-catalog-resolve.util';
 
 export type KitPriceBreakdownLine = {
   componentId: string | null;
   label: string;
-  kind: ComponentKind | 'CANVAS';
+  kind: string | 'CANVAS';
   quantity: number;
   unitPrice: number;
   total: number;
@@ -24,10 +23,8 @@ export function calculateKitPrice(
   canvasPrice: number,
   components: ResolvedProductComponent[],
 ): KitPriceResult {
-  const stoikaKorobka =
-    components.find((c) => c.kind === ComponentKind.STOIKA_KOROBKI && c.isActive) ?? null;
-  const nalichnik =
-    components.find((c) => c.kind === ComponentKind.NALICHNIK && c.isActive) ?? null;
+  const stoikaKorobka = components.find((c) => c.kind === 'STOIKA_KOROBKI' && c.isActive) ?? null;
+  const nalichnik = components.find((c) => c.kind === 'NALICHNIK' && c.isActive) ?? null;
 
   const breakdown: KitPriceBreakdownLine[] = [
     {
@@ -49,7 +46,7 @@ export function calculateKitPrice(
     breakdown.push({
       componentId: stoikaKorobka.id,
       label: buildKitLineLabel(stoikaKorobka),
-      kind: ComponentKind.STOIKA_KOROBKI,
+      kind: 'STOIKA_KOROBKI',
       quantity: qty,
       unitPrice,
       total: lineTotal,
@@ -64,7 +61,7 @@ export function calculateKitPrice(
     breakdown.push({
       componentId: nalichnik.id,
       label: buildKitLineLabel(nalichnik),
-      kind: ComponentKind.NALICHNIK,
+      kind: 'NALICHNIK',
       quantity: qty,
       unitPrice,
       total: lineTotal,

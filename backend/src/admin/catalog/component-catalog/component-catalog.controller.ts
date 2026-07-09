@@ -9,7 +9,6 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import { ComponentKind } from '@prisma/client';
 import { ComponentCatalogService } from './component-catalog.service';
 import { CreateComponentCatalogItemDto } from './dto/create-component-catalog-item.dto';
 import { UpdateComponentCatalogItemDto } from './dto/update-component-catalog-item.dto';
@@ -31,7 +30,7 @@ export class ComponentCatalogController {
   @Get()
   findAll(
     @Query('search') search?: string,
-    @Query('kind') kind?: ComponentKind,
+    @Query('kindId') kindId?: string,
     @Query('groupId') groupId?: string,
     @Query('seriesId') seriesId?: string,
     @Query('isActive') isActive?: string,
@@ -42,7 +41,7 @@ export class ComponentCatalogController {
   ) {
     return this.service.findAll({
       search,
-      kind,
+      kindId,
       groupId,
       seriesId,
       isActive: isActive ? isActive === 'true' : undefined,

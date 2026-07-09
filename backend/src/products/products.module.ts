@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { CatalogFilterBlocksModule } from '../catalog-filter-blocks/catalog-filter-blocks.module';
+import { ComponentCatalogKindsModule } from './component-catalog-kinds.module';
 import { ProductsService } from './products.service';
 import { ProductsCatalogQueryService } from './products-catalog-query.service';
 import { ProductsSearchIndexService } from './products-search-index.service';
@@ -16,7 +17,7 @@ import { AdminProductCardBadgesController } from './admin-product-card-badges.co
 import { PublicCatalogModule } from './public-catalog/public-catalog.module';
 
 @Module({
-  imports: [CatalogFilterBlocksModule, PublicCatalogModule],
+  imports: [CatalogFilterBlocksModule, PublicCatalogModule, ComponentCatalogKindsModule],
   controllers: [
     ProductsController,
     ProductComponentsController,

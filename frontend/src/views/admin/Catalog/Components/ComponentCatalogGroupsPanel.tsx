@@ -6,16 +6,18 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import {
   type AdminComponentCatalogGroup,
+  type AdminComponentCatalogKind,
   type AdminComponentCatalogSeries,
-  COMPONENT_KIND_LABELS,
   createAdminComponentCatalogGroup,
   createAdminComponentCatalogSeries,
   deleteAdminComponentCatalogGroup,
   deleteAdminComponentCatalogSeries,
   fetchAdminComponentCatalogGroupsList,
+  fetchAdminComponentCatalogKinds,
   fetchAdminComponentCatalogList,
   fetchAdminComponentCatalogSeriesList,
   formatCatalogItemLabel,
+  getCatalogKindLabel,
   slugifyComponentCatalog,
   updateAdminComponentCatalogGroup,
   updateAdminComponentCatalogSeries,
@@ -33,6 +35,7 @@ import styles from './ComponentCatalogPage.module.css';
 import { ComponentCatalogSubgroupCopyModal } from './ComponentCatalogSubgroupCopyModal';
 import {
   COMPONENT_CATALOG_GROUPS_KEY,
+  COMPONENT_CATALOG_KINDS_KEY,
   COMPONENT_CATALOG_LIST_KEY,
   COMPONENT_CATALOG_SERIES_KEY,
 } from './hooks/useComponentCatalogPage';
@@ -66,16 +69,18 @@ export function ComponentCatalogGroupsPanel({
   const [copySource, setCopySource] = useState<AdminComponentCatalogGroup | null>(null);
   const [copyModalOpen, setCopyModalOpen] = useState(false);
 
+  const { data: kindsData } = useQuery({
+    queryKey: [COMPONENT_CATALOG_KINDS_KEY],
+    queryFn: fetchAdminComponentCatalogKinds,
+  });
+  const kindOptions = kindsData?.data ?? [];
+
   useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 300);
     return () => clearTimeout(t);
   }, [search]);
 
-  const {
-    data: seriesData,
-    isLoading: seriesLoading,
-    refetch: refetchSeries,
-  } = useQuery({
+  const { data: seriesData, isLoading: seriesLoading } = useQuery({
     queryKey: [COMPONENT_CATALOG_SERIES_KEY, debouncedSearch],
     queryFn: () =>
       fetchAdminComponentCatalogSeriesList({
@@ -93,12 +98,7 @@ export function ComponentCatalogGroupsPanel({
     }
   }, [seriesList, selectedSeriesId]);
 
-  const {
-    data: subgroupsData,
-    isLoading: subgroupsLoading,
-    isFetching,
-    refetch,
-  } = useQuery({
+  const { data: subgroupsData, isLoading: subgroupsLoading } = useQuery({
     queryKey: [
       COMPONENT_CATALOG_GROUPS_KEY,
       'subgroups',
@@ -383,16 +383,6 @@ export function ComponentCatalogGroupsPanel({
             placeholder="ЛОФТ, Бетон, телескопический…"
           />
         </div>
-        <div>
-          <label className={styles.filterLabel}>&nbsp;</label>
-          <button
-            type="button"
-            className={styles.refreshButton}
-            onClick={() => void refetchSeries()}
-          >
-            {isFetching ? '…' : '↻'}
-          </button>
-        </div>
         <div className={styles.hierarchyToolbar}>
           <label className={styles.filterLabel}>&nbsp;</label>
           <button
@@ -454,12 +444,6 @@ export function ComponentCatalogGroupsPanel({
                 ))}
               </select>
             </div>
-            <div>
-              <label className={styles.filterLabel}>&nbsp;</label>
-              <button type="button" className={styles.refreshButton} onClick={() => void refetch()}>
-                {isFetching ? '…' : '↻'}
-              </button>
-            </div>
           </div>
 
           {subgroupsLoading ? (
@@ -485,6 +469,7 @@ export function ComponentCatalogGroupsPanel({
               {expandedId && subgroups.find((g) => g.id === expandedId) ? (
                 <SubgroupItemsDetail
                   group={subgroups.find((g) => g.id === expandedId)!}
+                  kindOptions={kindOptions}
                   onSelectGroupFilter={onSelectGroupFilter}
                   onCreateItemInGroup={onCreateItemInGroup}
                   onCopy={() => {
@@ -506,11 +491,13 @@ export function ComponentCatalogGroupsPanel({
 
 function SubgroupItemsDetail({
   group,
+  kindOptions,
   onSelectGroupFilter,
   onCreateItemInGroup,
   onCopy,
 }: {
   group: AdminComponentCatalogGroup;
+  kindOptions: AdminComponentCatalogKind[];
   onSelectGroupFilter?: (groupId: string) => void;
   onCreateItemInGroup?: (group: AdminComponentCatalogGroup) => void;
   onCopy: () => void;
@@ -563,7 +550,13 @@ function SubgroupItemsDetail({
           <tbody>
             {group.items.map((row) => (
               <tr key={row.id}>
-                <td>{COMPONENT_KIND_LABELS[row.catalogItem.kind]}</td>
+                <td>
+                  {getCatalogKindLabel(
+                    row.catalogItem.kindId,
+                    kindOptions,
+                    row.catalogItem.kindRef
+                  )}
+                </td>
                 <td>{row.catalogItem.name}</td>
                 <td>{row.catalogItem.size || '—'}</td>
                 <td>{row.catalogItem.color || '—'}</td>
@@ -743,6 +736,13 @@ function ComponentCatalogSubgroupModal({
     enabled: open,
   });
 
+  const { data: kindsData } = useQuery({
+    queryKey: [COMPONENT_CATALOG_KINDS_KEY],
+    queryFn: fetchAdminComponentCatalogKinds,
+    enabled: open,
+  });
+  const kindOptions = kindsData?.data ?? [];
+
   const pickerItems = catalogSearch?.data ?? [];
 
   useEffect(() => {
@@ -912,7 +912,7 @@ function ComponentCatalogSubgroupModal({
                 <span>
                   <strong>{formatCatalogItemLabel(item)}</strong>
                   <span className={styles.groupPickerMeta}>
-                    {COMPONENT_KIND_LABELS[item.kind]} ·{' '}
+                    {getCatalogKindLabel(item.kindId, kindOptions, item.kindRef)} ·{' '}
                     {parseFloat(item.price).toLocaleString('ru-RU')} ₽
                   </span>
                 </span>

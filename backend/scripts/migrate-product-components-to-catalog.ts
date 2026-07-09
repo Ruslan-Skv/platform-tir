@@ -4,8 +4,6 @@
  */
 import { PrismaClient } from '@prisma/client';
 import {
-  defaultKitQuantity,
-  defaultQuantityStep,
   inferComponentKind,
 } from '../src/products/utils/component-catalog-resolve.util';
 
@@ -66,8 +64,6 @@ async function main() {
           stock: pc.stock,
           isActive: true,
           sortOrder: pc.sortOrder,
-          kitQuantity: defaultKitQuantity(kind),
-          quantityStep: defaultQuantityStep(kind),
         },
       });
       catalogId = catalog.id;

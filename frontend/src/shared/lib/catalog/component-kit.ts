@@ -30,7 +30,7 @@ export function getComponentQuantityStep(component: ProductComponent): number {
 }
 
 export function kindLabel(kind: ComponentKind): string {
-  const labels: Record<ComponentKind, string> = {
+  const labels: Record<string, string> = {
     STOIKA_KOROBKI: 'Стойка коробки',
     NALICHNIK: 'Наличник',
     DOBOR: 'Добор',

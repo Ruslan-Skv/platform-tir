@@ -1,9 +1,7 @@
 'use client';
 
-import { AdminHelpInfoIcon } from '@/shared/ui/admin/AdminHelpInfoIcon';
 import { AdminHelpTooltip } from '@/shared/ui/admin/AdminHelpTooltip';
-import { ADMIN_TRAINING_STATISTICS_ICON_SIZE } from '@/shared/ui/icons';
-import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
+import { AdminHelpInfoButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 
 import styles from './ComponentCatalogRulesInfoTip.module.css';
 
@@ -13,7 +11,8 @@ const COMPONENT_CATALOG_HELP = {
   steps: [
     'Группа моделей — серия дверей (ЛОФТ, Классика и т.п.). К ней относятся все подгруппы комплектующих этой серии.',
     'Подгруппа — вариант по цвету или отделке: набор стойки коробки, наличника, добора и планки одного цвета. Её можно привязать к карточке двери целиком.',
-    'Позиция справочника — одна строка прайса: вид, название, размер, цвет, материал, цена. Slug строится из названия, размера, цвета и материала — одно название допустимо при разном цвете.',
+    'Позиция справочника — одна строка прайса: вид, название, размер, цвет, материал, цена. Виды задаются на вкладке «Параметры видов»; там же — «В комплекте» и шаг количества для каждого вида.',
+    'Новый вид комплектующего (например, порог или фурнитура) добавляется на вкладке «Параметры видов» кнопкой «+ Новый вид». После этого его можно выбрать при создании позиции.',
     'Для нового цвета нажмите «Копировать подгруппу»: создаются копии всех позиций с указанным цветом. При необходимости задайте единую корректировку цены, затем отредактируйте отдельные позиции.',
     'Новую позицию в подгруппу удобнее создавать из состава подгруппы — она сразу попадёт в неё после сохранения.',
     'Одну позицию можно скопировать кнопкой в таблице позиций — измените цвет или цену и сохраните как новую запись.',
@@ -23,19 +22,7 @@ const COMPONENT_CATALOG_HELP = {
   ],
 } as const;
 
-type ComponentCatalogRulesInfoTipProps = {
-  iconSize?: number;
-  triggerClassName?: string;
-};
-
-export function ComponentCatalogRulesInfoTip({
-  iconSize = ADMIN_TRAINING_STATISTICS_ICON_SIZE,
-  triggerClassName,
-}: ComponentCatalogRulesInfoTipProps = {}) {
-  const buttonClassName = triggerClassName
-    ? triggerClassName
-    : `${cdTemplates.formatBtn} ${styles.trigger}`;
-
+export function ComponentCatalogRulesInfoTip() {
   return (
     <AdminHelpTooltip
       title={COMPONENT_CATALOG_HELP.title}
@@ -44,9 +31,10 @@ export function ComponentCatalogRulesInfoTip({
       align="end"
       panelClassName={styles.helpPanel}
     >
-      <button type="button" className={buttonClassName} aria-label={COMPONENT_CATALOG_HELP.title}>
-        <AdminHelpInfoIcon size={iconSize} />
-      </button>
+      <AdminHelpInfoButton
+        title={COMPONENT_CATALOG_HELP.title}
+        aria-label={COMPONENT_CATALOG_HELP.title}
+      />
     </AdminHelpTooltip>
   );
 }

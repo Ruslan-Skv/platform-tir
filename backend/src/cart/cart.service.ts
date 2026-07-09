@@ -7,6 +7,8 @@ import {
 } from '../common/utils/service-catalog-markup-effective';
 import { PrismaService } from '../database/prisma.service';
 import type { ProductComponentWithCatalog } from '../products/utils/component-catalog-resolve.util';
+import type { ComponentKindSettingsMap } from '../products/utils/component-catalog-resolve.util';
+import { ComponentCatalogKindsService } from '../products/services/component-catalog-kinds.service';
 import {
   cartComponentItemInclude,
   cartItemListInclude,
@@ -17,18 +19,27 @@ import { mapCartComponent } from './cart-component-resolve.util';
 
 @Injectable()
 export class CartService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private kindsService: ComponentCatalogKindsService,
+  ) {}
 
-  private mapCartItem<T extends { component?: ProductComponentWithCatalog | null }>(item: T) {
+  private mapCartItem<T extends { component?: ProductComponentWithCatalog | null }>(
+    item: T,
+    settings: ComponentKindSettingsMap,
+  ) {
     if (!item.component) return item;
     return {
       ...item,
-      component: mapCartComponent(item.component),
+      component: mapCartComponent(item.component, settings),
     };
   }
 
-  private mapCartItems<T extends { component?: ProductComponentWithCatalog | null }>(items: T[]) {
-    return items.map((item) => this.mapCartItem(item));
+  private mapCartItems<T extends { component?: ProductComponentWithCatalog | null }>(
+    items: T[],
+    settings: ComponentKindSettingsMap,
+  ) {
+    return items.map((item) => this.mapCartItem(item, settings));
   }
 
   async addToCart(
@@ -264,7 +275,7 @@ export class CartService {
       orderBy: { createdAt: 'desc' },
     });
 
-    return this.mapCartItems(items);
+    return this.mapCartItems(items, await this.kindsService.getMap());
   }
 
   async getCartServiceItems(userId: string) {
@@ -493,6 +504,6 @@ export class CartService {
       include: cartItemListInclude,
       orderBy: { createdAt: 'desc' },
     });
-    return this.mapCartItems(items);
+    return this.mapCartItems(items, await this.kindsService.getMap());
   }
 }

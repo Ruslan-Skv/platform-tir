@@ -198,7 +198,7 @@ export class ComponentCatalogGroupsService {
 
       const created = await this.prisma.componentCatalogItem.create({
         data: {
-          kind: src.kind,
+          kindId: src.kindId,
           name: src.name,
           size: src.size,
           color,
@@ -209,8 +209,6 @@ export class ComponentCatalogGroupsService {
           stock: src.stock,
           isActive: src.isActive,
           sortOrder: src.sortOrder,
-          kitQuantity: src.kitQuantity,
-          quantityStep: src.quantityStep,
         },
       });
       newCatalogItemIds.push(created.id);
@@ -263,6 +261,13 @@ export class ComponentCatalogGroupsService {
         include: {
           catalogItem: {
             include: {
+              kindRef: {
+                select: {
+                  id: true,
+                  code: true,
+                  name: true,
+                },
+              },
               _count: { select: { productComponents: true } },
             },
           },

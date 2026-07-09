@@ -1,18 +1,10 @@
-import {
-  IsString,
-  IsOptional,
-  IsBoolean,
-  IsNumber,
-  IsEnum,
-  Min,
-  IsNotEmpty,
-} from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsNumber, Min, IsNotEmpty } from 'class-validator';
 import { Type, Transform } from 'class-transformer';
-import { ComponentKind } from '@prisma/client';
 
 export class CreateComponentCatalogItemDto {
-  @IsEnum(ComponentKind)
-  kind: ComponentKind;
+  @IsString()
+  @IsNotEmpty()
+  kindId: string;
 
   @IsString()
   @IsNotEmpty()
@@ -61,14 +53,4 @@ export class CreateComponentCatalogItemDto {
   @IsOptional()
   @Type(() => Number)
   sortOrder?: number;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  kitQuantity?: number | null;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  quantityStep?: number;
 }

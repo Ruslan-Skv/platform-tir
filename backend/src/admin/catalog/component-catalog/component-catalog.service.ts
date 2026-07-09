@@ -1,16 +1,28 @@
 import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
-import { ComponentKind, Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
+import { ComponentCatalogKindsService } from '../../../products/services/component-catalog-kinds.service';
 import { CreateComponentCatalogItemDto } from './dto/create-component-catalog-item.dto';
-import {
-  defaultKitQuantity,
-  defaultQuantityStep,
-  inferComponentKind,
-} from '../../../products/utils/component-catalog-resolve.util';
+import { inferComponentKindCode } from '../../../products/utils/component-catalog-resolve.util';
+
+const kindRefInclude = {
+  kindRef: {
+    select: {
+      id: true,
+      code: true,
+      name: true,
+      kitQuantity: true,
+      quantityStep: true,
+    },
+  },
+} as const;
 
 @Injectable()
 export class ComponentCatalogService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private kindsService: ComponentCatalogKindsService,
+  ) {}
 
   async create(dto: CreateComponentCatalogItemDto) {
     const existing = await this.prisma.componentCatalogItem.findUnique({
@@ -20,25 +32,23 @@ export class ComponentCatalogService {
       throw new ConflictException(`Позиция со slug "${dto.slug}" уже существует`);
     }
 
-    const kind = dto.kind ?? ComponentKind.OTHER;
-    const kitQuantity = dto.kitQuantity !== undefined ? dto.kitQuantity : defaultKitQuantity(kind);
-    const quantityStep =
-      dto.quantityStep !== undefined ? dto.quantityStep : defaultQuantityStep(kind);
+    const kindId = await this.kindsService.resolveKindId(dto.kindId);
 
     return this.prisma.componentCatalogItem.create({
       data: {
         ...dto,
-        kind,
-        kitQuantity,
-        quantityStep,
+        kindId,
       },
-      include: this.usageCountInclude(),
+      include: {
+        ...this.usageCountInclude(),
+        ...kindRefInclude,
+      },
     });
   }
 
   async findAll(params?: {
     search?: string;
-    kind?: ComponentKind;
+    kindId?: string;
     groupId?: string;
     seriesId?: string;
     isActive?: boolean;
@@ -49,7 +59,7 @@ export class ComponentCatalogService {
   }) {
     const {
       search,
-      kind,
+      kindId,
       groupId,
       seriesId,
       isActive,
@@ -62,7 +72,7 @@ export class ComponentCatalogService {
 
     const where: Prisma.ComponentCatalogItemWhereInput = {};
     if (isActive !== undefined) where.isActive = isActive;
-    if (kind) where.kind = kind;
+    if (kindId) where.kindId = kindId;
     if (groupId) {
       where.groupItems = { some: { groupId } };
     }
@@ -87,6 +97,7 @@ export class ComponentCatalogService {
         where,
         include: {
           ...this.usageCountInclude(),
+          ...kindRefInclude,
           groupItems: {
             include: {
               group: {
@@ -118,7 +129,7 @@ export class ComponentCatalogService {
     const dir = sortOrder;
     const allowed: Record<string, Prisma.ComponentCatalogItemOrderByWithRelationInput> = {
       name: { name: dir },
-      kind: { kind: dir },
+      kind: { kindRef: { name: dir } },
       size: { size: dir },
       color: { color: dir },
       material: { material: dir },
@@ -135,7 +146,10 @@ export class ComponentCatalogService {
   async findOne(id: string) {
     const row = await this.prisma.componentCatalogItem.findUnique({
       where: { id },
-      include: this.usageCountInclude(),
+      include: {
+        ...this.usageCountInclude(),
+        ...kindRefInclude,
+      },
     });
     if (!row) {
       throw new NotFoundException(`Позиция справочника ${id} не найдена`);
@@ -154,19 +168,19 @@ export class ComponentCatalogService {
       }
     }
 
-    const kind = data.kind ?? row.kind;
-    const patch: Prisma.ComponentCatalogItemUpdateInput = { ...data };
-    if (data.kind && data.kitQuantity === undefined && row.kitQuantity == null) {
-      patch.kitQuantity = defaultKitQuantity(kind);
-    }
-    if (data.kind && data.quantityStep === undefined && row.quantityStep === 1) {
-      patch.quantityStep = defaultQuantityStep(kind);
+    const { kindId, ...rest } = data;
+    const patch: Prisma.ComponentCatalogItemUncheckedUpdateInput = { ...rest };
+    if (kindId) {
+      patch.kindId = await this.kindsService.resolveKindId(kindId);
     }
 
     return this.prisma.componentCatalogItem.update({
       where: { id },
       data: patch,
-      include: this.usageCountInclude(),
+      include: {
+        ...this.usageCountInclude(),
+        ...kindRefInclude,
+      },
     });
   }
 
@@ -199,7 +213,8 @@ export class ComponentCatalogService {
     image?: string | null;
     stock?: number;
   }) {
-    const kind = inferComponentKind(fields.name, fields.type);
+    const code = inferComponentKindCode(fields.name, fields.type);
+    const kindId = await this.kindsService.resolveKindIdByCode(code);
     const size = fields.type?.trim() || null;
     const slugBase = [fields.name, size].filter(Boolean).join('-');
     const slug = await this.ensureUniqueSlug(slugBase);
@@ -216,15 +231,13 @@ export class ComponentCatalogService {
 
     return this.prisma.componentCatalogItem.create({
       data: {
-        kind,
+        kindId,
         name: fields.name.trim(),
         size,
         price: fields.price,
         slug,
         image: fields.image ?? null,
         stock: fields.stock ?? 0,
-        kitQuantity: defaultKitQuantity(kind),
-        quantityStep: defaultQuantityStep(kind),
       },
     });
   }

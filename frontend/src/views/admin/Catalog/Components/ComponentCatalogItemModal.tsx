@@ -4,8 +4,7 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type AdminComponentCatalogItem,
-  COMPONENT_KIND_LABELS,
-  type ComponentKind,
+  type AdminComponentCatalogKind,
   addAdminComponentCatalogGroupItem,
   buildComponentCatalogSlug,
   createAdminComponentCatalogItem,
@@ -22,21 +21,20 @@ type ComponentCatalogItemModalProps = {
   item: AdminComponentCatalogItem | null;
   copyFrom: AdminComponentCatalogItem | null;
   assignToGroup: { id: string; name: string } | null;
+  kindOptions: AdminComponentCatalogKind[];
   onClose: () => void;
   onSaved: () => void;
   onError: (message: string) => void;
 };
 
 type CatalogItemFormState = {
-  kind: ComponentKind;
+  kindId: string;
   name: string;
   size: string;
   color: string;
   material: string;
   price: string;
   slug: string;
-  kitQuantity: string;
-  quantityStep: string;
   isActive: boolean;
   sortOrder: string;
 };
@@ -48,31 +46,27 @@ type FormSnapshot = {
 
 const SAVE_SUCCESS_VISIBLE_MS = 3000;
 
-const emptyForm: CatalogItemFormState = {
-  kind: 'OTHER',
+const emptyForm = (defaultKindId = ''): CatalogItemFormState => ({
+  kindId: defaultKindId,
   name: '',
   size: '',
   color: '',
   material: '',
   price: '',
   slug: '',
-  kitQuantity: '',
-  quantityStep: '1',
   isActive: true,
   sortOrder: '0',
-};
+});
 
 function formFromItem(item: AdminComponentCatalogItem): CatalogItemFormState {
   return {
-    kind: item.kind,
+    kindId: item.kindId,
     name: item.name,
     size: item.size ?? '',
     color: item.color ?? '',
     material: item.material ?? '',
     price: item.price,
     slug: item.slug,
-    kitQuantity: item.kitQuantity != null ? String(item.kitQuantity) : '',
-    quantityStep: String(item.quantityStep ?? 1),
     isActive: item.isActive,
     sortOrder: String(item.sortOrder ?? 0),
   };
@@ -110,15 +104,13 @@ function snapshotsEqual(a: FormSnapshot, b: FormSnapshot): boolean {
   const af = a.form;
   const bf = b.form;
   return (
-    af.kind === bf.kind &&
+    af.kindId === bf.kindId &&
     af.name === bf.name &&
     af.size === bf.size &&
     af.color === bf.color &&
     af.material === bf.material &&
     af.price === bf.price &&
     effectiveSlug(af, a.autoSlug) === effectiveSlug(bf, b.autoSlug) &&
-    af.kitQuantity === bf.kitQuantity &&
-    af.quantityStep === bf.quantityStep &&
     af.isActive === bf.isActive &&
     af.sortOrder === bf.sortOrder
   );
@@ -129,14 +121,15 @@ export function ComponentCatalogItemModal({
   item,
   copyFrom,
   assignToGroup,
+  kindOptions,
   onClose,
   onSaved,
   onError,
 }: ComponentCatalogItemModalProps) {
-  const [form, setForm] = useState<CatalogItemFormState>(emptyForm);
+  const [form, setForm] = useState<CatalogItemFormState>(() => emptyForm());
   const [autoSlug, setAutoSlug] = useState(true);
   const [savedSnapshot, setSavedSnapshot] = useState<FormSnapshot>({
-    form: emptyForm,
+    form: emptyForm(),
     autoSlug: true,
   });
   const [persistedItem, setPersistedItem] = useState<AdminComponentCatalogItem | null>(null);
@@ -174,6 +167,8 @@ export function ComponentCatalogItemModal({
     };
   }, []);
 
+  const defaultKindId = kindOptions.find((k) => k.code === 'OTHER')?.id ?? kindOptions[0]?.id ?? '';
+
   useEffect(() => {
     if (!open) return;
     clearSaveSuccess();
@@ -188,17 +183,18 @@ export function ComponentCatalogItemModal({
     } else if (copyFrom) {
       const nextForm = formFromCopySource(copyFrom);
       setForm(nextForm);
-      setSavedSnapshot({ form: emptyForm, autoSlug: true });
+      setSavedSnapshot({ form: emptyForm(defaultKindId), autoSlug: true });
       setAutoSlug(true);
       setIsCopyMode(true);
       window.setTimeout(() => colorInputRef.current?.focus(), 0);
     } else {
-      setForm(emptyForm);
-      setSavedSnapshot({ form: emptyForm, autoSlug: true });
+      const initial = emptyForm(defaultKindId);
+      setForm(initial);
+      setSavedSnapshot({ form: initial, autoSlug: true });
       setAutoSlug(true);
       setIsCopyMode(false);
     }
-  }, [open, item, copyFrom, clearSaveSuccess]);
+  }, [open, item, copyFrom, clearSaveSuccess, defaultKindId]);
 
   const currentSnapshot: FormSnapshot = { form, autoSlug };
   const hasChanges = !snapshotsEqual(currentSnapshot, savedSnapshot);
@@ -248,7 +244,7 @@ export function ComponentCatalogItemModal({
     clearSaveSuccess();
     try {
       const body = {
-        kind: form.kind,
+        kindId: form.kindId,
         name,
         size: form.size.trim() || undefined,
         color: form.color.trim() || undefined,
@@ -257,8 +253,6 @@ export function ComponentCatalogItemModal({
         slug,
         isActive: form.isActive,
         sortOrder: parseInt(form.sortOrder, 10) || 0,
-        kitQuantity: form.kitQuantity.trim() ? parseFloat(form.kitQuantity) : null,
-        quantityStep: form.quantityStep.trim() ? parseFloat(form.quantityStep) : 1,
       };
       const saved = activeItem
         ? await updateAdminComponentCatalogItem(activeItem.id, body)
@@ -330,8 +324,7 @@ export function ComponentCatalogItemModal({
             <>
               Позиция используется в группах комплектующих и привязывается к карточкам дверей.
               Изменение цены здесь автоматически отразится во всех товарах, где позиция уже
-              привязана. Чтобы добавить позицию в группу, выберите группу в фильтре или откройте
-              вкладку «Группы для дверей».
+              привязана. «В комплекте» и шаг количества задаются на вкладке «Параметры видов».
             </>
           )}
         </p>
@@ -341,13 +334,13 @@ export function ComponentCatalogItemModal({
             <label htmlFor="catalog-item-kind">Вид *</label>
             <select
               id="catalog-item-kind"
-              value={form.kind}
+              value={form.kindId}
               disabled={saving}
-              onChange={(e) => setForm({ ...form, kind: e.target.value as ComponentKind })}
+              onChange={(e) => setForm({ ...form, kindId: e.target.value })}
             >
-              {(Object.keys(COMPONENT_KIND_LABELS) as ComponentKind[]).map((k) => (
-                <option key={k} value={k}>
-                  {COMPONENT_KIND_LABELS[k]}
+              {kindOptions.map((k) => (
+                <option key={k.id} value={k.id}>
+                  {k.name}
                 </option>
               ))}
             </select>
@@ -434,28 +427,6 @@ export function ComponentCatalogItemModal({
                 Формируется из названия, размера, цвета и материала
               </span>
             ) : null}
-          </div>
-
-          <div data-modal-form-group>
-            <label htmlFor="catalog-item-kit-qty">В комплекте, шт.</label>
-            <input
-              id="catalog-item-kit-qty"
-              value={form.kitQuantity}
-              disabled={saving}
-              onChange={(e) => setForm({ ...form, kitQuantity: e.target.value })}
-              placeholder="2.5 / 5"
-            />
-          </div>
-
-          <div data-modal-form-group>
-            <label htmlFor="catalog-item-qty-step">Шаг количества</label>
-            <input
-              id="catalog-item-qty-step"
-              value={form.quantityStep}
-              disabled={saving}
-              onChange={(e) => setForm({ ...form, quantityStep: e.target.value })}
-              placeholder="1"
-            />
           </div>
 
           <div data-modal-form-group>

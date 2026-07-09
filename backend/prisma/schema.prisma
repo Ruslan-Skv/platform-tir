@@ -2036,14 +2036,22 @@ model ProductCardVariant {
   @@map("product_card_variants")
 }
 
-/// Вид комплектующей — для расчёта «Комплекта» и шага количества
-enum ComponentKind {
-  STOIKA_KOROBKI
-  NALICHNIK
-  DOBOR
-  PRITVORNAYA_PLANKA
-  KOROBKA
-  OTHER
+/// Вид комплектующей — справочник (можно добавлять из админки)
+model ComponentCatalogKind {
+  id           String                 @id @default(cuid())
+  /// Машинный код, напр. STOIKA_KOROBKI — для расчёта комплекта
+  code         String                 @unique
+  name         String
+  slug         String                 @unique
+  kitQuantity  Float?
+  quantityStep Float                  @default(1)
+  sortOrder    Int                    @default(0)
+  isActive     Boolean                @default(true)
+  createdAt    DateTime               @default(now())
+  updatedAt    DateTime               @updatedAt
+  items        ComponentCatalogItem[]
+
+  @@map("component_catalog_kinds")
 }
 
 /// Группа моделей дверей (серия), к которой относятся подгруппы комплектующих
@@ -2066,7 +2074,7 @@ model ComponentCatalogSeries {
 /// Справочник комплектующих — единая цена для всех товаров
 model ComponentCatalogItem {
   id                String                      @id @default(cuid())
-  kind              ComponentKind               @default(OTHER)
+  kindId            String
   name              String // Название: Наличник, Добор, Стойка коробки
   size              String? // Размер: 70мм, 2000x800
   color             String? // Цвет
@@ -2077,15 +2085,13 @@ model ComponentCatalogItem {
   stock             Int                         @default(0)
   isActive          Boolean                     @default(true)
   sortOrder         Int                         @default(0)
-  /// Количество в «Комплекте» (2.5 стойки, 5 наличников; null — не входит)
-  kitQuantity       Float?
-  /// Шаг при покупке поштучно (0.5 для стойки коробки)
-  quantityStep      Float                       @default(1)
   createdAt         DateTime                    @default(now())
   updatedAt         DateTime                    @updatedAt
+  kindRef           ComponentCatalogKind        @relation(fields: [kindId], references: [id], onDelete: Restrict)
   productComponents ProductComponent[]
   groupItems        ComponentCatalogGroupItem[]
 
+  @@index([kindId])
   @@map("component_catalog_items")
 }
 

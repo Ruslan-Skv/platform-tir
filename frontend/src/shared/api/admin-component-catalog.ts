@@ -2,22 +2,33 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export type ComponentKind =
-  | 'STOIKA_KOROBKI'
-  | 'NALICHNIK'
-  | 'DOBOR'
-  | 'PRITVORNAYA_PLANKA'
-  | 'KOROBKA'
-  | 'OTHER';
+export interface AdminComponentCatalogKind {
+  id: string;
+  code: string;
+  name: string;
+  slug: string;
+  kitQuantity: number | null;
+  quantityStep: number;
+  sortOrder: number;
+  isActive: boolean;
+  _count?: { items: number };
+}
 
-export const COMPONENT_KIND_LABELS: Record<ComponentKind, string> = {
-  STOIKA_KOROBKI: 'Стойка коробки',
-  NALICHNIK: 'Наличник',
-  DOBOR: 'Добор',
-  PRITVORNAYA_PLANKA: 'Притворная планка',
-  KOROBKA: 'Коробка',
-  OTHER: 'Прочее',
-};
+export interface AdminComponentCatalogKindsResponse {
+  data: AdminComponentCatalogKind[];
+}
+
+/** @deprecated используйте kindRef.name или getCatalogKindLabel */
+export type ComponentKind = string;
+
+export function getCatalogKindLabel(
+  kindId: string,
+  kinds: AdminComponentCatalogKind[],
+  kindRef?: Pick<AdminComponentCatalogKind, 'id' | 'name'> | null
+): string {
+  if (kindRef?.name) return kindRef.name;
+  return kinds.find((k) => k.id === kindId)?.name ?? kindId;
+}
 
 export interface AdminComponentCatalogGroupRef {
   group: {
@@ -60,7 +71,11 @@ export interface AdminComponentCatalogSeriesListResponse {
 
 export interface AdminComponentCatalogItem {
   id: string;
-  kind: ComponentKind;
+  kindId: string;
+  kindRef?: Pick<
+    AdminComponentCatalogKind,
+    'id' | 'code' | 'name' | 'kitQuantity' | 'quantityStep'
+  >;
   name: string;
   size: string | null;
   color: string | null;
@@ -71,8 +86,6 @@ export interface AdminComponentCatalogItem {
   stock: number;
   isActive: boolean;
   sortOrder: number;
-  kitQuantity: number | null;
-  quantityStep: number;
   updatedAt?: string;
   groupItems?: AdminComponentCatalogGroupRef[];
   _count?: { productComponents: number };
@@ -127,7 +140,7 @@ function getAdminAuthHeaders(): HeadersInit {
 
 export async function fetchAdminComponentCatalogList(params?: {
   search?: string;
-  kind?: ComponentKind;
+  kindId?: string;
   groupId?: string;
   seriesId?: string;
   isActive?: boolean;
@@ -140,7 +153,7 @@ export async function fetchAdminComponentCatalogList(params?: {
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(params?.limit ?? 50));
   if (params?.search?.trim()) search.set('search', params.search.trim());
-  if (params?.kind) search.set('kind', params.kind);
+  if (params?.kindId) search.set('kindId', params.kindId);
   if (params?.groupId) search.set('groupId', params.groupId);
   if (params?.seriesId) search.set('seriesId', params.seriesId);
   if (params?.isActive !== undefined) search.set('isActive', params.isActive ? 'true' : 'false');
@@ -261,7 +274,7 @@ export async function fetchAdminComponentCatalogGroupsList(params?: {
 }
 
 export async function createAdminComponentCatalogItem(body: {
-  kind: ComponentKind;
+  kindId: string;
   name: string;
   size?: string;
   color?: string;
@@ -272,8 +285,6 @@ export async function createAdminComponentCatalogItem(body: {
   stock?: number;
   isActive?: boolean;
   sortOrder?: number;
-  kitQuantity?: number | null;
-  quantityStep?: number;
 }): Promise<AdminComponentCatalogItem> {
   const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog`, {
     method: 'POST',
@@ -290,7 +301,7 @@ export async function createAdminComponentCatalogItem(body: {
 export async function updateAdminComponentCatalogItem(
   id: string,
   body: Partial<{
-    kind: ComponentKind;
+    kindId: string;
     name: string;
     size: string;
     color: string;
@@ -301,8 +312,6 @@ export async function updateAdminComponentCatalogItem(
     stock: number;
     isActive: boolean;
     sortOrder: number;
-    kitQuantity: number | null;
-    quantityStep: number;
   }>
 ): Promise<AdminComponentCatalogItem> {
   const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog/${id}`, {
@@ -443,6 +452,73 @@ export async function deleteAdminComponentCatalogGroup(id: string): Promise<void
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Ошибка удаления группы');
+  }
+}
+
+export async function fetchAdminComponentCatalogKinds(): Promise<AdminComponentCatalogKindsResponse> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-kinds`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось загрузить виды');
+  }
+  return res.json();
+}
+
+export async function createAdminComponentCatalogKind(body: {
+  name: string;
+  code?: string;
+  slug?: string;
+  kitQuantity?: number | null;
+  quantityStep?: number;
+  sortOrder?: number;
+}): Promise<AdminComponentCatalogKind> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-kinds`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка создания вида');
+  }
+  return res.json();
+}
+
+export async function updateAdminComponentCatalogKind(
+  id: string,
+  body: Partial<{
+    name: string;
+    code: string;
+    slug: string;
+    kitQuantity: number | null;
+    quantityStep: number;
+    sortOrder: number;
+    isActive: boolean;
+  }>
+): Promise<AdminComponentCatalogKind> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-kinds/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка сохранения вида');
+  }
+  return res.json();
+}
+
+export async function deleteAdminComponentCatalogKind(id: string): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-kinds/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка удаления вида');
   }
 }
 

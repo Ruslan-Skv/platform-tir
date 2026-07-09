@@ -2,13 +2,7 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export type ComponentKind =
-  | 'STOIKA_KOROBKI'
-  | 'NALICHNIK'
-  | 'DOBOR'
-  | 'PRITVORNAYA_PLANKA'
-  | 'KOROBKA'
-  | 'OTHER';
+export type ComponentKind = string;
 
 export interface ProductComponent {
   id: string;

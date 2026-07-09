@@ -4,9 +4,10 @@ import { useMemo } from 'react';
 
 import Link from 'next/link';
 
-import { COMPONENT_KIND_LABELS } from '@/shared/api/admin-component-catalog';
+import { getCatalogKindLabel } from '@/shared/api/admin-component-catalog';
 import type { AdminComponentCatalogItem } from '@/shared/api/admin-component-catalog';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton/AdminListRefreshButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { CopyIcon } from '@/shared/ui/icons';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
@@ -17,6 +18,7 @@ import { ComponentCatalogItemModal } from './ComponentCatalogItemModal';
 import styles from './ComponentCatalogPage.module.css';
 import { ComponentCatalogRulesInfoTip } from './ComponentCatalogRulesInfoTip';
 import type { ComponentCatalogPageModel } from './hooks/useComponentCatalogPage';
+import { ComponentCatalogKindSettingsPanel } from './shared/ComponentCatalogKindSettingsPanel';
 
 type ComponentCatalogPageViewProps = {
   model: ComponentCatalogPageModel;
@@ -46,8 +48,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
     items,
     totalItems,
     itemsLoading,
-    itemsFetching,
-    refetchItems,
+    kindOptions,
     groupFilterOptions,
     seriesFilterOptions,
     itemModalOpen,
@@ -63,6 +64,8 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
     handleDeleteItem,
     toast,
     showToast,
+    invalidateAll,
+    isRefreshing,
   } = model;
 
   const selectedGroup = groupFilter
@@ -77,7 +80,8 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         sortable: true,
         sortKey: 'kind',
         width: '130px',
-        render: (row: AdminComponentCatalogItem) => COMPONENT_KIND_LABELS[row.kind],
+        render: (row: AdminComponentCatalogItem) =>
+          getCatalogKindLabel(row.kindId, kindOptions, row.kindRef),
       },
       {
         key: 'name',
@@ -145,12 +149,6 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         ),
       },
       {
-        key: 'kitQuantity',
-        title: 'В комплекте',
-        width: '100px',
-        render: (row: AdminComponentCatalogItem) => row.kitQuantity ?? '—',
-      },
-      {
         key: 'products',
         title: 'Товаров',
         width: '80px',
@@ -187,13 +185,15 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         ),
       },
     ],
-    [openEditItem, openCopyItem, handleDeleteItem]
+    [openEditItem, openCopyItem, handleDeleteItem, kindOptions]
   );
 
   const countLabel =
     tab === 'items'
       ? `${totalItems} ${pluralize(totalItems, 'позиция', 'позиции', 'позиций')}`
-      : 'группы';
+      : tab === 'kinds'
+        ? 'параметры видов'
+        : 'группы';
 
   return (
     <div className={styles.page}>
@@ -210,6 +210,7 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         item={editItem}
         copyFrom={copyFromItem}
         assignToGroup={assignToGroup}
+        kindOptions={kindOptions}
         onClose={closeItemModal}
         onSaved={handleItemSaved}
         onError={(msg) => showToast(msg, 'err')}
@@ -218,9 +219,13 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Комплектующие</h1>
-          <span className={styles.headerInfoTip}>
-            <ComponentCatalogRulesInfoTip />
-          </span>
+          <AdminListRefreshButton
+            onClick={invalidateAll}
+            busy={isRefreshing}
+            title="Обновить данные справочника"
+            aria-label="Обновить данные справочника"
+          />
+          <ComponentCatalogRulesInfoTip />
           <span className={styles.count}>{countLabel}</span>
         </div>
         <div className={styles.headerActions}>
@@ -266,6 +271,13 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
         >
           Группы и подгруппы
         </button>
+        <button
+          type="button"
+          className={`${styles.tab} ${tab === 'kinds' ? styles.tabActive : ''}`}
+          onClick={() => setTab('kinds')}
+        >
+          Параметры видов
+        </button>
       </div>
 
       {tab === 'groups' ? (
@@ -277,6 +289,8 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
           }}
           onCreateItemInGroup={(group) => openCreateItemInGroup(group.id, group.name)}
         />
+      ) : tab === 'kinds' ? (
+        <ComponentCatalogKindSettingsPanel onToast={showToast} />
       ) : (
         <>
           {selectedGroup ? (
@@ -323,14 +337,12 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
               <select
                 className={styles.select}
                 value={kindFilter}
-                onChange={(e) => setKindFilter(e.target.value as typeof kindFilter)}
+                onChange={(e) => setKindFilter(e.target.value)}
               >
                 <option value="">Все виды</option>
-                {(
-                  Object.keys(COMPONENT_KIND_LABELS) as Array<keyof typeof COMPONENT_KIND_LABELS>
-                ).map((k) => (
-                  <option key={k} value={k}>
-                    {COMPONENT_KIND_LABELS[k]}
+                {kindOptions.map((k) => (
+                  <option key={k.id} value={k.id}>
+                    {k.name}
                   </option>
                 ))}
               </select>
@@ -393,16 +405,6 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
                   </option>
                 ))}
               </select>
-            </div>
-            <div>
-              <label className={styles.filterLabel}>&nbsp;</label>
-              <button
-                type="button"
-                className={styles.refreshButton}
-                onClick={() => void refetchItems()}
-              >
-                {itemsFetching ? '…' : '↻'}
-              </button>
             </div>
           </div>
 

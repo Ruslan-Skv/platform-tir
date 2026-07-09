@@ -1,14 +1,21 @@
 import {
   resolveProductComponent,
   type ProductComponentWithCatalog,
+  type ComponentKindSettingsMap,
 } from '../products/utils/component-catalog-resolve.util';
 
-export function resolveCartComponentPrice(component: ProductComponentWithCatalog): number {
-  return parseFloat(resolveProductComponent(component).price);
+export function resolveCartComponentPrice(
+  component: ProductComponentWithCatalog,
+  settings?: ComponentKindSettingsMap,
+): number {
+  return parseFloat(resolveProductComponent(component, settings).price);
 }
 
-export function resolveCartComponentLabel(component: ProductComponentWithCatalog): string {
-  const resolved = resolveProductComponent(component);
+export function resolveCartComponentLabel(
+  component: ProductComponentWithCatalog,
+  settings?: ComponentKindSettingsMap,
+): string {
+  const resolved = resolveProductComponent(component, settings);
   return [resolved.name, resolved.size, resolved.color, resolved.material]
     .filter(Boolean)
     .join(', ');
@@ -18,8 +25,9 @@ export function mapCartComponent(
   component: ProductComponentWithCatalog & {
     product?: { id: string; name: string; slug: string };
   },
+  settings?: ComponentKindSettingsMap,
 ) {
-  const resolved = resolveProductComponent(component);
+  const resolved = resolveProductComponent(component, settings);
   return {
     id: resolved.id,
     productId: resolved.productId,
