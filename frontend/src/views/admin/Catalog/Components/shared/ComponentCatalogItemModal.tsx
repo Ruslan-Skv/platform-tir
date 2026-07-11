@@ -17,6 +17,7 @@ import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
 import modalStyles from './ComponentCatalogModal.module.css';
+import { useComponentCatalogFieldHints } from './useComponentCatalogFieldHints';
 
 function formatLinkedProductsLabel(count: number): string {
   const mod10 = count % 10;
@@ -208,6 +209,7 @@ export function ComponentCatalogItemModal({
 
   const defaultKindId = kindOptions.find((k) => k.code === 'OTHER')?.id ?? kindOptions[0]?.id ?? '';
   const seriesSlug = assignToGroup?.seriesSlug;
+  const fieldHints = useComponentCatalogFieldHints(open, form.kindId);
 
   useEffect(() => {
     if (!open) {
@@ -453,6 +455,7 @@ export function ComponentCatalogItemModal({
               <label htmlFor="catalog-item-name">Название *</label>
               <input
                 id="catalog-item-name"
+                list="catalog-item-name-hints"
                 value={form.name}
                 disabled={saving}
                 onChange={(e) => {
@@ -466,6 +469,7 @@ export function ComponentCatalogItemModal({
               <label htmlFor="catalog-item-size">Размер</label>
               <input
                 id="catalog-item-size"
+                list="catalog-item-size-hints"
                 value={form.size}
                 disabled={saving}
                 onChange={(e) => {
@@ -480,6 +484,7 @@ export function ComponentCatalogItemModal({
               <input
                 id="catalog-item-color"
                 ref={colorInputRef}
+                list="catalog-item-color-hints"
                 value={form.color}
                 disabled={saving}
                 onChange={(e) => {
@@ -493,6 +498,7 @@ export function ComponentCatalogItemModal({
               <label htmlFor="catalog-item-material">Материал</label>
               <input
                 id="catalog-item-material"
+                list="catalog-item-material-hints"
                 value={form.material}
                 disabled={saving}
                 onChange={(e) => {
@@ -570,6 +576,27 @@ export function ComponentCatalogItemModal({
               </label>
             </div>
           </div>
+
+          <datalist id="catalog-item-name-hints">
+            {fieldHints.name.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+          <datalist id="catalog-item-size-hints">
+            {fieldHints.size.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+          <datalist id="catalog-item-color-hints">
+            {fieldHints.color.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+          <datalist id="catalog-item-material-hints">
+            {fieldHints.material.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
 
           {error ? <p data-modal-form-error>{error}</p> : null}
 
