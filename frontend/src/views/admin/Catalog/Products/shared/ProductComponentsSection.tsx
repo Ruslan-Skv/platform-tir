@@ -54,6 +54,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const [linkingCatalog, setLinkingCatalog] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ProductComponent | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const deletingRef = React.useRef(false);
 
   // Состояние для inline редактирования
   const [editingData, setEditingData] = useState<
@@ -459,6 +460,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
+    deletingRef.current = true;
     setDeleting(true);
     try {
       const response = await apiFetch(`${API_URL}/product-components/${deleteTarget.id}`, {
@@ -472,6 +474,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       // Error handled silently
     } finally {
       setDeleting(false);
+      deletingRef.current = false;
       setDeleteTarget(null);
     }
   };
@@ -609,20 +612,19 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
 
   return (
     <div className={styles.section}>
-      {deleteTarget ? (
-        <ConfirmModal
-          isOpen
-          title="Удалить комплектующее?"
-          message={deleteMessage}
-          confirmText={deleting ? 'Удаление…' : 'Удалить'}
-          cancelText="Отмена"
-          variant="danger"
-          onConfirm={() => void confirmDelete()}
-          onClose={() => {
-            if (!deleting) setDeleteTarget(null);
-          }}
-        />
-      ) : null}
+      <ConfirmModal
+        isOpen={deleteTarget !== null}
+        title="Удалить комплектующее?"
+        message={deleteMessage}
+        confirmText={deleting ? 'Удаление…' : 'Удалить'}
+        cancelText="Отмена"
+        variant="danger"
+        closeOnConfirm={false}
+        onConfirm={() => void confirmDelete()}
+        onClose={() => {
+          if (!deleting && !deletingRef.current) setDeleteTarget(null);
+        }}
+      />
 
       <ComponentCatalogPickerModal
         open={catalogPickerOpen}

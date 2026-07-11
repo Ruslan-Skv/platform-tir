@@ -12,6 +12,8 @@ export interface ConfirmModalProps {
   confirmText?: string;
   cancelText?: string;
   variant?: 'danger' | 'default';
+  /** По умолчанию true — закрыть после onConfirm. false для асинхронных действий. */
+  closeOnConfirm?: boolean;
 }
 
 export const ConfirmModal: React.FC<ConfirmModalProps> = ({
@@ -23,10 +25,11 @@ export const ConfirmModal: React.FC<ConfirmModalProps> = ({
   confirmText = 'Подтвердить',
   cancelText = 'Отмена',
   variant = 'default',
+  closeOnConfirm = true,
 }) => {
   const handleConfirm = () => {
     onConfirm();
-    onClose();
+    if (closeOnConfirm) onClose();
   };
 
   return (
