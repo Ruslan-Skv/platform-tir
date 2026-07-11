@@ -28,6 +28,11 @@ export class ComponentCatalogGroupsController {
     return this.service.create(dto);
   }
 
+  @Post('reorder')
+  reorder(@Body() items: { id: string; sortOrder: number }[]) {
+    return this.service.reorder(items);
+  }
+
   @Get()
   findAll(
     @Query('search') search?: string,

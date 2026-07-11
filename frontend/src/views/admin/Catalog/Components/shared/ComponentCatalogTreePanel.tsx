@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +16,8 @@ import {
   deleteAdminComponentCatalogGroup,
   deleteAdminComponentCatalogSeries,
   fetchAdminComponentCatalogTree,
+  reorderAdminComponentCatalogGroups,
+  reorderAdminComponentCatalogSeries,
 } from '@/shared/api/admin-component-catalog';
 import { getCatalogKindLabel } from '@/shared/api/admin-component-catalog';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -110,6 +114,30 @@ function seriesToAdminSeries(series: AdminComponentCatalogTreeSeries): AdminComp
   };
 }
 
+function sortByOrder<T extends { id: string; sortOrder: number }>(items: T[]): T[] {
+  return [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+}
+
+function buildRenumberedOrderAfterSwap<T extends { id: string }>(
+  siblingsSorted: T[],
+  idx: number,
+  j: number
+): { id: string; sortOrder: number }[] {
+  const reordered = [...siblingsSorted];
+  [reordered[idx], reordered[j]] = [reordered[j], reordered[idx]];
+  return reordered.map((s, i) => ({ id: s.id, sortOrder: i }));
+}
+
+function formatProductCountLabel(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} товар`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return `${count} товара`;
+  }
+  return `${count} товаров`;
+}
+
 export function ComponentCatalogTreePanel({
   kindOptions,
   search,
@@ -141,6 +169,7 @@ export function ComponentCatalogTreePanel({
     null
   );
   const [deletingSeries, setDeletingSeries] = useState(false);
+  const [reorderBusyKey, setReorderBusyKey] = useState<string | null>(null);
 
   const treeParams = useMemo(
     () => ({
@@ -157,6 +186,11 @@ export function ComponentCatalogTreePanel({
   });
 
   const hasFilter = Boolean(search || kindFilter || activeFilter);
+  const reorderDisabled = hasFilter;
+  const reorderInProgress = reorderBusyKey !== null;
+  const reorderHint = reorderDisabled
+    ? 'Сбросьте фильтры для изменения порядка'
+    : 'Изменить порядок';
 
   useEffect(() => {
     if (!data || !hasFilter) return;
@@ -191,6 +225,54 @@ export function ComponentCatalogTreePanel({
         : [...prev.subgroups, id],
     }));
   };
+
+  const reorderSeries = useCallback(
+    async (seriesId: string, direction: 'up' | 'down') => {
+      if (reorderDisabled) return;
+      const siblings = sortByOrder(data?.series ?? []);
+      const idx = siblings.findIndex((s) => s.id === seriesId);
+      if (idx < 0) return;
+      const j = direction === 'up' ? idx - 1 : idx + 1;
+      if (j < 0 || j >= siblings.length) return;
+
+      setReorderBusyKey(`series:${seriesId}`);
+      try {
+        await reorderAdminComponentCatalogSeries(buildRenumberedOrderAfterSwap(siblings, idx, j));
+        invalidate();
+        onToast('Порядок групп моделей обновлён', 'ok');
+      } catch (e) {
+        onToast(e instanceof Error ? e.message : 'Ошибка изменения порядка', 'err');
+      } finally {
+        setReorderBusyKey(null);
+      }
+    },
+    [data?.series, invalidate, onToast, reorderDisabled]
+  );
+
+  const reorderSubgroup = useCallback(
+    async (seriesId: string, subgroupId: string, direction: 'up' | 'down') => {
+      if (reorderDisabled) return;
+      const parent = (data?.series ?? []).find((s) => s.id === seriesId);
+      if (!parent) return;
+      const siblings = sortByOrder(parent.subgroups);
+      const idx = siblings.findIndex((g) => g.id === subgroupId);
+      if (idx < 0) return;
+      const j = direction === 'up' ? idx - 1 : idx + 1;
+      if (j < 0 || j >= siblings.length) return;
+
+      setReorderBusyKey(`subgroup:${subgroupId}`);
+      try {
+        await reorderAdminComponentCatalogGroups(buildRenumberedOrderAfterSwap(siblings, idx, j));
+        invalidate();
+        onToast('Порядок подгрупп обновлён', 'ok');
+      } catch (e) {
+        onToast(e instanceof Error ? e.message : 'Ошибка изменения порядка', 'err');
+      } finally {
+        setReorderBusyKey(null);
+      }
+    },
+    [data?.series, invalidate, onToast, reorderDisabled]
+  );
 
   const confirmDeleteSeries = useCallback(async () => {
     if (!seriesDeleteTarget) return;
@@ -375,8 +457,10 @@ export function ComponentCatalogTreePanel({
         </p>
       ) : (
         <div className={styles.catalogTree}>
-          {series.map((s) => {
+          {series.map((s, seriesIndex) => {
             const seriesOpen = expanded.series.includes(s.id);
+            const canMoveSeriesUp = seriesIndex > 0;
+            const canMoveSeriesDown = seriesIndex < series.length - 1;
             return (
               <div key={s.id} className={styles.treeSeriesBlock}>
                 <div className={styles.treeSeriesRow}>
@@ -398,6 +482,28 @@ export function ComponentCatalogTreePanel({
                     </span>
                   </div>
                   <div className={styles.treeRowActions}>
+                    <div className={styles.treeReorderButtons}>
+                      <button
+                        type="button"
+                        className={styles.treeReorderButton}
+                        disabled={!canMoveSeriesUp || reorderInProgress || reorderDisabled}
+                        title={reorderHint}
+                        aria-label="Переместить группу моделей вверх"
+                        onClick={() => void reorderSeries(s.id, 'up')}
+                      >
+                        <ChevronUp className={styles.treeReorderIconSeries} aria-hidden />
+                      </button>
+                      <button
+                        type="button"
+                        className={styles.treeReorderButton}
+                        disabled={!canMoveSeriesDown || reorderInProgress || reorderDisabled}
+                        title={reorderHint}
+                        aria-label="Переместить группу моделей вниз"
+                        onClick={() => void reorderSeries(s.id, 'down')}
+                      >
+                        <ChevronDown className={styles.treeReorderIconSeries} aria-hidden />
+                      </button>
+                    </div>
                     <button
                       type="button"
                       className={styles.secondaryButton}
@@ -432,9 +538,11 @@ export function ComponentCatalogTreePanel({
                     {s.subgroups.length === 0 ? (
                       <p className={styles.treeSubgroupEmpty}>Подгрупп пока нет</p>
                     ) : (
-                      s.subgroups.map((g) => {
+                      s.subgroups.map((g, subgroupIndex) => {
                         const subgroupOpen = expanded.subgroups.includes(g.id);
                         const group = subgroupToGroup(g, s);
+                        const canMoveSubgroupUp = subgroupIndex > 0;
+                        const canMoveSubgroupDown = subgroupIndex < s.subgroups.length - 1;
                         return (
                           <div key={g.id} className={styles.treeSubgroupBlock}>
                             <div className={styles.treeSubgroupRow}>
@@ -452,10 +560,43 @@ export function ComponentCatalogTreePanel({
                                   <span className={styles.treeSubgroupMeta}>{g.series}</span>
                                 ) : null}
                                 <span className={styles.treeSubgroupMeta}>
-                                  {g.items.length} поз.
+                                  {g.items.length} поз. ·{' '}
+                                  {formatProductCountLabel(g.productCount ?? 0)}
                                 </span>
                               </div>
                               <div className={styles.treeRowActions}>
+                                <div className={styles.treeReorderButtons}>
+                                  <button
+                                    type="button"
+                                    className={styles.treeReorderButton}
+                                    disabled={
+                                      !canMoveSubgroupUp || reorderInProgress || reorderDisabled
+                                    }
+                                    title={reorderHint}
+                                    aria-label="Переместить подгруппу вверх"
+                                    onClick={() => void reorderSubgroup(s.id, g.id, 'up')}
+                                  >
+                                    <ChevronUp
+                                      className={styles.treeReorderIconSubgroup}
+                                      aria-hidden
+                                    />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={styles.treeReorderButton}
+                                    disabled={
+                                      !canMoveSubgroupDown || reorderInProgress || reorderDisabled
+                                    }
+                                    title={reorderHint}
+                                    aria-label="Переместить подгруппу вниз"
+                                    onClick={() => void reorderSubgroup(s.id, g.id, 'down')}
+                                  >
+                                    <ChevronDown
+                                      className={styles.treeReorderIconSubgroup}
+                                      aria-hidden
+                                    />
+                                  </button>
+                                </div>
                                 <button
                                   type="button"
                                   className={styles.addButton}

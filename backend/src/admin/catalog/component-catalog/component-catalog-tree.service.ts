@@ -48,6 +48,8 @@ export class ComponentCatalogTreeService {
       },
     });
 
+    const subgroupProductCounts = await this.buildSubgroupProductCounts(seriesRows);
+
     const series = seriesRows
       .map((s) => {
         const subgroups = s.subgroups
@@ -68,6 +70,7 @@ export class ComponentCatalogTreeService {
               isActive: g.isActive,
               sortOrder: g.sortOrder,
               itemCount: g._count.items,
+              productCount: subgroupProductCounts.get(g.id) ?? 0,
               items,
             };
           })
@@ -98,6 +101,64 @@ export class ComponentCatalogTreeService {
     });
 
     return { series, ungroupedItems };
+  }
+
+  /**
+   * Товар считается привязанным к подгруппе, если у него есть все позиции
+   * справочника из полного состава подгруппы.
+   */
+  private async buildSubgroupProductCounts(
+    seriesRows: {
+      subgroups: { id: string; items: { catalogItemId: string }[] }[];
+    }[],
+  ): Promise<Map<string, number>> {
+    const subgroupCatalogIds = new Map<string, string[]>();
+    for (const series of seriesRows) {
+      for (const subgroup of series.subgroups) {
+        subgroupCatalogIds.set(
+          subgroup.id,
+          subgroup.items.map((row) => row.catalogItemId),
+        );
+      }
+    }
+
+    const allCatalogIds = [...new Set([...subgroupCatalogIds.values()].flat())];
+    if (allCatalogIds.length === 0) {
+      return new Map([...subgroupCatalogIds.keys()].map((id) => [id, 0]));
+    }
+
+    const productLinks = await this.prisma.productComponent.findMany({
+      where: { catalogItemId: { in: allCatalogIds } },
+      select: { productId: true, catalogItemId: true },
+    });
+
+    const productCatalogSets = new Map<string, Set<string>>();
+    for (const link of productLinks) {
+      if (!link.catalogItemId) continue;
+      let catalogSet = productCatalogSets.get(link.productId);
+      if (!catalogSet) {
+        catalogSet = new Set();
+        productCatalogSets.set(link.productId, catalogSet);
+      }
+      catalogSet.add(link.catalogItemId);
+    }
+
+    const counts = new Map<string, number>();
+    for (const [subgroupId, catalogItemIds] of subgroupCatalogIds) {
+      if (catalogItemIds.length === 0) {
+        counts.set(subgroupId, 0);
+        continue;
+      }
+      let productCount = 0;
+      for (const catalogSet of productCatalogSets.values()) {
+        if (catalogItemIds.every((id) => catalogSet.has(id))) {
+          productCount += 1;
+        }
+      }
+      counts.set(subgroupId, productCount);
+    }
+
+    return counts;
   }
 
   private buildItemWhere(params: {

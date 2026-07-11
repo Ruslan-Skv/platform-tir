@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -16,6 +16,7 @@ import {
 } from '@/shared/api/product-components';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getKitComponents } from '@/shared/lib/catalog/component-kit';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
@@ -51,6 +52,8 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
   const [showAddForm, setShowAddForm] = useState(false);
   const [catalogPickerOpen, setCatalogPickerOpen] = useState(false);
   const [linkingCatalog, setLinkingCatalog] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ProductComponent | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   // Состояние для inline редактирования
   const [editingData, setEditingData] = useState<
@@ -441,12 +444,24 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (!confirm('Вы уверены, что хотите удалить это комплектующее?')) {
-      return;
+  const handleDelete = (component: ProductComponent) => {
+    setDeleteTarget(component);
+  };
+
+  const deleteMessage = useMemo(() => {
+    if (!deleteTarget) return '';
+    const label = [deleteTarget.name, deleteTarget.type].filter(Boolean).join(', ');
+    if (deleteTarget.isFromCatalog) {
+      return `Удалить привязку «${label}»? Позиция останется в справочнике комплектующих.`;
     }
+    return `Удалить комплектующее «${label}» из этого товара?`;
+  }, [deleteTarget]);
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
     try {
-      const response = await apiFetch(`${API_URL}/product-components/${id}`, {
+      const response = await apiFetch(`${API_URL}/product-components/${deleteTarget.id}`, {
         method: 'DELETE',
         headers: getAuthHeaders(),
       });
@@ -455,6 +470,9 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
       }
     } catch {
       // Error handled silently
+    } finally {
+      setDeleting(false);
+      setDeleteTarget(null);
     }
   };
 
@@ -591,6 +609,21 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
 
   return (
     <div className={styles.section}>
+      {deleteTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить комплектующее?"
+          message={deleteMessage}
+          confirmText={deleting ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          onConfirm={() => void confirmDelete()}
+          onClose={() => {
+            if (!deleting) setDeleteTarget(null);
+          }}
+        />
+      ) : null}
+
       <ComponentCatalogPickerModal
         open={catalogPickerOpen}
         onClose={() => setCatalogPickerOpen(false)}
@@ -1004,7 +1037,7 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                         <button
                           data-admin-mutation
                           type="button"
-                          onClick={() => handleDelete(component.id)}
+                          onClick={() => handleDelete(component)}
                           className={styles.deleteButton}
                           title="Удалить"
                           aria-label="Удалить"

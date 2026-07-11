@@ -193,6 +193,7 @@ export interface AdminComponentCatalogTreeSubgroup {
   isActive: boolean;
   sortOrder: number;
   itemCount: number;
+  productCount: number;
   items: AdminComponentCatalogTreeSubgroupItem[];
 }
 
@@ -312,6 +313,22 @@ export async function deleteAdminComponentCatalogSeries(id: string): Promise<voi
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Ошибка удаления группы моделей');
+  }
+}
+
+export async function reorderAdminComponentCatalogSeries(
+  items: { id: string; sortOrder: number }[]
+): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series/reorder`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(items),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message || 'Ошибка изменения порядка групп моделей'
+    );
   }
 }
 
@@ -519,6 +536,20 @@ export async function deleteAdminComponentCatalogGroup(id: string): Promise<void
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error((err as { message?: string }).message || 'Ошибка удаления группы');
+  }
+}
+
+export async function reorderAdminComponentCatalogGroups(
+  items: { id: string; sortOrder: number }[]
+): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-groups/reorder`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(items),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка изменения порядка подгрупп');
   }
 }
 

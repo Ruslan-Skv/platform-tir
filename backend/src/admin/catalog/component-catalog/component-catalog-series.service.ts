@@ -88,6 +88,19 @@ export class ComponentCatalogSeriesService {
     return this.prisma.componentCatalogSeries.delete({ where: { id } });
   }
 
+  async reorder(items: { id: string; sortOrder: number }[]) {
+    if (!items.length) return { success: true };
+    await this.prisma.$transaction(
+      items.map((item) =>
+        this.prisma.componentCatalogSeries.update({
+          where: { id: item.id },
+          data: { sortOrder: item.sortOrder },
+        }),
+      ),
+    );
+    return { success: true };
+  }
+
   private seriesInclude() {
     return {
       category: { select: { id: true, name: true, slug: true } },

@@ -441,7 +441,7 @@
 .catalogTree {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-lg);
 }
 
 .treeToolbar {
@@ -459,10 +459,11 @@
 }
 
 .treeSeriesBlock {
-  border: 1px solid var(--admin-border);
+  border: 1px solid #c7d2fe;
   border-radius: var(--admin-radius-md);
-  background: var(--admin-surface);
+  background: #eef2ff;
   overflow: hidden;
+  box-shadow: 0 1px 2px rgb(99 102 241 / 8%);
 }
 
 .treeSeriesRow,
@@ -474,8 +475,8 @@
 }
 
 .treeSeriesRow {
-  background: var(--admin-surface-soft, #f9fafb);
-  border-bottom: 1px solid var(--admin-border);
+  background: rgb(99 102 241 / 10%);
+  border-bottom: 1px solid #c7d2fe;
 }
 
 .treeToggle {
@@ -491,7 +492,7 @@
 }
 
 .treeToggle:hover {
-  background: var(--admin-surface-muted);
+  background: rgb(255 255 255 / 45%);
 }
 
 .treeSeriesMain,
@@ -507,12 +508,12 @@
 .treeSeriesTitle {
   font-weight: 700;
   font-size: var(--admin-font-size-md);
-  color: var(--admin-text-secondary);
+  color: #3730a3;
 }
 
 .treeSubgroupTitle {
   font-weight: 600;
-  color: var(--admin-text-secondary);
+  color: #334155;
 }
 
 .treeSeriesMeta,
@@ -529,20 +530,67 @@
   flex-wrap: wrap;
 }
 
+.treeReorderButtons {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  flex-shrink: 0;
+}
+
+.treeReorderButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xs);
+  background: rgb(255 255 255 / 80%);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.treeReorderButton:hover:not(:disabled) {
+  background: #fff;
+  border-color: var(--admin-text-muted);
+}
+
+.treeReorderButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.treeReorderIconSeries {
+  width: 14px;
+  height: 14px;
+}
+
+.treeReorderIconSubgroup {
+  width: 12px;
+  height: 12px;
+}
+
 .treeSubgroups {
-  padding: var(--admin-space-sm) var(--admin-space-md) var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
+  background: rgb(238 242 255 / 55%);
 }
 
 .treeSubgroupBlock {
   margin-top: var(--admin-space-sm);
-  border: 1px solid var(--admin-border);
+  border: 1px solid #cbd5e1;
   border-radius: var(--admin-radius-sm);
-  background: var(--admin-surface-muted, #fafafa);
+  background: #f1f5f9;
   overflow: hidden;
+  box-shadow: inset 3px 0 0 #94a3b8;
 }
 
 .treeSubgroupRow {
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid #cbd5e1;
+  background: rgb(148 163 184 / 12%);
 }
 
 .treeSubgroupEmpty,
@@ -556,25 +604,34 @@
   width: 100%;
   border-collapse: collapse;
   font-size: 13px;
-  background: var(--admin-surface);
+  background: #fff;
 }
 
 .treeItemsTable th,
 .treeItemsTable td {
   padding: 8px 12px;
   text-align: left;
-  border-bottom: 1px solid var(--admin-border);
+  border-bottom: 1px solid #e2e8f0;
 }
 
 .treeItemsTable thead tr {
-  background: var(--admin-surface-soft, #f3f4f6);
+  background: #f8fafc;
+}
+
+.treeItemsTable tbody tr:nth-child(even) {
+  background: #f8fafc;
+}
+
+.treeItemsTable tbody tr:hover {
+  background: #f1f5f9;
 }
 
 .treeUngroupedBlock {
   margin-top: var(--admin-space-md);
-  border: 1px dashed var(--admin-border);
+  border: 1px dashed #cbd5e1;
   border-radius: var(--admin-radius-md);
   overflow: hidden;
+  background: #fff;
 }
 
 .treeUngroupedHeader {
@@ -582,6 +639,64 @@
   align-items: center;
   gap: var(--admin-space-md);
   padding: var(--admin-space-md) var(--admin-space-lg);
-  background: var(--admin-surface-soft, #f9fafb);
-  border-bottom: 1px solid var(--admin-border);
+  background: #f8fafc;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSeriesBlock {
+  border-color: rgb(99 102 241 / 35%);
+  background: rgb(30 27 75 / 55%);
+  box-shadow: none;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSeriesRow {
+  background: rgb(99 102 241 / 18%);
+  border-bottom-color: rgb(99 102 241 / 25%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSeriesTitle {
+  color: #c7d2fe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSubgroups {
+  background: rgb(15 23 42 / 35%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSubgroupBlock {
+  border-color: rgb(148 163 184 / 30%);
+  background: rgb(30 41 59 / 65%);
+  box-shadow: inset 3px 0 0 rgb(148 163 184 / 55%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSubgroupRow {
+  border-bottom-color: rgb(148 163 184 / 25%);
+  background: rgb(148 163 184 / 10%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeSubgroupTitle {
+  color: #e2e8f0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeItemsTable {
+  background: rgb(15 23 42 / 50%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeItemsTable thead tr {
+  background: rgb(30 41 59 / 80%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeItemsTable tbody tr:nth-child(even) {
+  background: rgb(30 41 59 / 45%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeItemsTable tbody tr:hover {
+  background: rgb(51 65 85 / 55%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeReorderButton {
+  background: rgb(30 41 59 / 80%);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeReorderButton:hover:not(:disabled) {
+  background: rgb(51 65 85 / 90%);
 }

@@ -118,6 +118,19 @@ export class ComponentCatalogGroupsService {
     return this.prisma.componentCatalogGroup.delete({ where: { id } });
   }
 
+  async reorder(items: { id: string; sortOrder: number }[]) {
+    if (!items.length) return { success: true };
+    await this.prisma.$transaction(
+      items.map((item) =>
+        this.prisma.componentCatalogGroup.update({
+          where: { id: item.id },
+          data: { sortOrder: item.sortOrder },
+        }),
+      ),
+    );
+    return { success: true };
+  }
+
   async setGroupItems(groupId: string, catalogItemIds: string[]) {
     await this.findOne(groupId);
     await this.prisma.$transaction([
