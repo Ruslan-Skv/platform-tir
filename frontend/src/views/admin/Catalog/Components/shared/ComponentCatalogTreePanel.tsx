@@ -11,6 +11,7 @@ import {
   type AdminComponentCatalogItem,
   type AdminComponentCatalogKind,
   type AdminComponentCatalogSeries,
+  type AdminComponentCatalogTreeResponse,
   type AdminComponentCatalogTreeSeries,
   type AdminComponentCatalogTreeSubgroup,
   deleteAdminComponentCatalogGroup,
@@ -114,18 +115,32 @@ function seriesToAdminSeries(series: AdminComponentCatalogTreeSeries): AdminComp
   };
 }
 
-function sortByOrder<T extends { id: string; sortOrder: number }>(items: T[]): T[] {
-  return [...items].sort((a, b) => a.sortOrder - b.sortOrder || a.id.localeCompare(b.id));
+function sortByOrder<T extends { id: string; sortOrder: number; name?: string }>(items: T[]): T[] {
+  return [...items].sort(
+    (a, b) =>
+      a.sortOrder - b.sortOrder ||
+      (a.name ?? '').localeCompare(b.name ?? '', 'ru') ||
+      a.id.localeCompare(b.id)
+  );
 }
 
-function buildRenumberedOrderAfterSwap<T extends { id: string }>(
-  siblingsSorted: T[],
+function swapSiblingsInOrder<T extends { id: string; sortOrder: number; name?: string }>(
+  siblings: T[],
+  idx: number,
+  j: number
+): T[] {
+  const sorted = sortByOrder(siblings);
+  const reordered = [...sorted];
+  [reordered[idx], reordered[j]] = [reordered[j], reordered[idx]];
+  return reordered.map((item, i) => ({ ...item, sortOrder: i }));
+}
+
+function buildRenumberedOrderAfterSwap<T extends { id: string; sortOrder: number; name?: string }>(
+  siblings: T[],
   idx: number,
   j: number
 ): { id: string; sortOrder: number }[] {
-  const reordered = [...siblingsSorted];
-  [reordered[idx], reordered[j]] = [reordered[j], reordered[idx]];
-  return reordered.map((s, i) => ({ id: s.id, sortOrder: i }));
+  return swapSiblingsInOrder(siblings, idx, j).map((s) => ({ id: s.id, sortOrder: s.sortOrder }));
 }
 
 function formatProductCountLabel(count: number): string {
@@ -228,31 +243,42 @@ export function ComponentCatalogTreePanel({
 
   const reorderSeries = useCallback(
     async (seriesId: string, direction: 'up' | 'down') => {
-      if (reorderDisabled) return;
-      const siblings = sortByOrder(data?.series ?? []);
+      if (reorderDisabled || !data) return;
+      const siblings = sortByOrder(data.series);
       const idx = siblings.findIndex((s) => s.id === seriesId);
       if (idx < 0) return;
       const j = direction === 'up' ? idx - 1 : idx + 1;
       if (j < 0 || j >= siblings.length) return;
 
+      const queryKey = [COMPONENT_CATALOG_TREE_KEY, treeParams] as const;
+      const previousData = data;
+      const newSeries = swapSiblingsInOrder(data.series, idx, j);
+
+      queryClient.setQueryData<AdminComponentCatalogTreeResponse>(queryKey, {
+        ...data,
+        series: newSeries,
+      });
+
       setReorderBusyKey(`series:${seriesId}`);
       try {
         await reorderAdminComponentCatalogSeries(buildRenumberedOrderAfterSwap(siblings, idx, j));
+        await queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
         invalidate();
         onToast('Порядок групп моделей обновлён', 'ok');
       } catch (e) {
+        queryClient.setQueryData(queryKey, previousData);
         onToast(e instanceof Error ? e.message : 'Ошибка изменения порядка', 'err');
       } finally {
         setReorderBusyKey(null);
       }
     },
-    [data?.series, invalidate, onToast, reorderDisabled]
+    [data, invalidate, onToast, queryClient, reorderDisabled, treeParams]
   );
 
   const reorderSubgroup = useCallback(
     async (seriesId: string, subgroupId: string, direction: 'up' | 'down') => {
-      if (reorderDisabled) return;
-      const parent = (data?.series ?? []).find((s) => s.id === seriesId);
+      if (reorderDisabled || !data) return;
+      const parent = data.series.find((s) => s.id === seriesId);
       if (!parent) return;
       const siblings = sortByOrder(parent.subgroups);
       const idx = siblings.findIndex((g) => g.id === subgroupId);
@@ -260,18 +286,32 @@ export function ComponentCatalogTreePanel({
       const j = direction === 'up' ? idx - 1 : idx + 1;
       if (j < 0 || j >= siblings.length) return;
 
+      const queryKey = [COMPONENT_CATALOG_TREE_KEY, treeParams] as const;
+      const previousData = data;
+      const newSubgroups = swapSiblingsInOrder(parent.subgroups, idx, j);
+      const newSeries = data.series.map((s) =>
+        s.id === seriesId ? { ...s, subgroups: newSubgroups } : s
+      );
+
+      queryClient.setQueryData<AdminComponentCatalogTreeResponse>(queryKey, {
+        ...data,
+        series: newSeries,
+      });
+
       setReorderBusyKey(`subgroup:${subgroupId}`);
       try {
         await reorderAdminComponentCatalogGroups(buildRenumberedOrderAfterSwap(siblings, idx, j));
+        await queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
         invalidate();
         onToast('Порядок подгрупп обновлён', 'ok');
       } catch (e) {
+        queryClient.setQueryData(queryKey, previousData);
         onToast(e instanceof Error ? e.message : 'Ошибка изменения порядка', 'err');
       } finally {
         setReorderBusyKey(null);
       }
     },
-    [data?.series, invalidate, onToast, reorderDisabled]
+    [data, invalidate, onToast, queryClient, reorderDisabled, treeParams]
   );
 
   const confirmDeleteSeries = useCallback(async () => {
@@ -327,12 +367,19 @@ export function ComponentCatalogTreePanel({
     [data?.series]
   );
 
+  const series = useMemo(
+    () =>
+      sortByOrder(data?.series ?? []).map((s) => ({
+        ...s,
+        subgroups: sortByOrder(s.subgroups),
+      })),
+    [data?.series]
+  );
+  const ungrouped = data?.ungroupedItems ?? [];
+
   if (isLoading) {
     return <div className={styles.loadingOverlay}>Загрузка…</div>;
   }
-
-  const series = data?.series ?? [];
-  const ungrouped = data?.ungroupedItems ?? [];
 
   return (
     <>
