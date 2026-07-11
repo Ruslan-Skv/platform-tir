@@ -78,8 +78,8 @@ export class AdminBellTrainingFeedService {
           createdAt: { gte: since },
           material: MATERIAL_WHERE,
         },
-        orderBy: { createdAt: 'asc' },
-        take: limit * 3,
+        orderBy: { createdAt: 'desc' },
+        take: limit * 5,
         select: {
           id: true,
           materialId: true,
@@ -95,7 +95,8 @@ export class AdminBellTrainingFeedService {
     const firstQuizPassByPair = new Map<string, (typeof quizAttempts)[number]>();
     for (const attempt of quizAttempts) {
       const pairKey = `${attempt.materialId}:${attempt.userId}`;
-      if (!firstQuizPassByPair.has(pairKey)) {
+      const existing = firstQuizPassByPair.get(pairKey);
+      if (!existing || attempt.createdAt < existing.createdAt) {
         firstQuizPassByPair.set(pairKey, attempt);
       }
     }

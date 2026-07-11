@@ -158,7 +158,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ? getAdminBellTrainingNotifications(20)
           : Promise.resolve([] as AdminBellTrainingNotification[]);
 
-      const [reviewsRes, supportRes, leadsRes, trainingRes] = await Promise.all([
+      const [reviewsResult, supportResult, leadsResult, trainingResult] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
           : Promise.resolve({ data: [] as AdminReview[] }),
@@ -169,13 +169,22 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         loadTraining,
       ]);
 
-      const newReviews = reviewsRes.data ?? [];
-      const supportConvs = Array.isArray(supportRes) ? supportRes : [];
+      const newReviews =
+        reviewsResult.status === 'fulfilled' ? (reviewsResult.value.data ?? []) : [];
+      const supportConvs =
+        supportResult.status === 'fulfilled'
+          ? Array.isArray(supportResult.value)
+            ? supportResult.value
+            : []
+          : [];
       const activeSupport = supportConvs.filter(
         (c) => c.status === 'OPEN' || c.status === 'IN_PROGRESS'
       );
-      const newLeads = filterNotifiableLeads(leadsRes.data ?? [], settings, hasAccess);
-      const newTraining = trainingRes ?? [];
+      const newLeads =
+        leadsResult.status === 'fulfilled'
+          ? filterNotifiableLeads(leadsResult.value.data ?? [], settings, hasAccess)
+          : [];
+      const newTraining = trainingResult.status === 'fulfilled' ? (trainingResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -224,10 +233,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setLeadNotifications(newLeads);
       setTrainingNotifications(newTraining);
     } catch {
-      setReviewNotifications([]);
-      setSupportNotifications([]);
-      setLeadNotifications([]);
-      setTrainingNotifications([]);
+      // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
       setNotificationsLoading(false);
     }
