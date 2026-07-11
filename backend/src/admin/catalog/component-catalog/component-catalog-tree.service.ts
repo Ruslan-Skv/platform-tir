@@ -77,6 +77,10 @@ export class ComponentCatalogTreeService {
           .filter((g) => !hasItemFilter || g.items.length > 0);
 
         const itemCount = subgroups.reduce((sum, g) => sum + g.items.length, 0);
+        const productCount = s.subgroups.reduce(
+          (sum, g) => sum + (subgroupProductCounts.get(g.id) ?? 0),
+          0,
+        );
         return {
           id: s.id,
           name: s.name,
@@ -86,6 +90,7 @@ export class ComponentCatalogTreeService {
           sortOrder: s.sortOrder,
           subgroupCount: s._count.subgroups,
           itemCount,
+          productCount,
           subgroups,
         };
       })

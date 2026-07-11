@@ -369,10 +369,12 @@ export function ComponentCatalogTreePanel({
 
   const series = useMemo(
     () =>
-      sortByOrder(data?.series ?? []).map((s) => ({
-        ...s,
-        subgroups: sortByOrder(s.subgroups),
-      })),
+      sortByOrder(data?.series ?? []).map((s) => {
+        const subgroups = sortByOrder(s.subgroups);
+        const productCount =
+          s.productCount ?? subgroups.reduce((sum, g) => sum + (g.productCount ?? 0), 0);
+        return { ...s, subgroups, productCount };
+      }),
     [data?.series]
   );
   const ungrouped = data?.ungroupedItems ?? [];
@@ -525,7 +527,8 @@ export function ComponentCatalogTreePanel({
                       <span className={styles.treeSeriesMeta}>{s.description}</span>
                     ) : null}
                     <span className={styles.treeSeriesMeta}>
-                      {s.subgroupCount} подгр. · {s.itemCount} поз.
+                      {s.subgroupCount} подгр. · {s.itemCount} поз. ·{' '}
+                      {formatProductCountLabel(s.productCount ?? 0)}
                     </span>
                   </div>
                   <div className={styles.treeRowActions}>

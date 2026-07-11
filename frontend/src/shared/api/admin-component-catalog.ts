@@ -206,6 +206,7 @@ export interface AdminComponentCatalogTreeSeries {
   sortOrder: number;
   subgroupCount: number;
   itemCount: number;
+  productCount: number;
   subgroups: AdminComponentCatalogTreeSubgroup[];
 }
 
