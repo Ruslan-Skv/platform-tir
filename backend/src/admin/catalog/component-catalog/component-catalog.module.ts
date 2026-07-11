@@ -8,6 +8,7 @@ import { ComponentCatalogKindsController } from './component-catalog-kinds.contr
 import { ComponentCatalogService } from './component-catalog.service';
 import { ComponentCatalogGroupsService } from './component-catalog-groups.service';
 import { ComponentCatalogSeriesService } from './component-catalog-series.service';
+import { ComponentCatalogTreeService } from './component-catalog-tree.service';
 
 @Module({
   imports: [DatabaseModule, ComponentCatalogKindsModule],
@@ -21,11 +22,13 @@ import { ComponentCatalogSeriesService } from './component-catalog-series.servic
     ComponentCatalogService,
     ComponentCatalogGroupsService,
     ComponentCatalogSeriesService,
+    ComponentCatalogTreeService,
   ],
   exports: [
     ComponentCatalogService,
     ComponentCatalogGroupsService,
     ComponentCatalogSeriesService,
+    ComponentCatalogTreeService,
     ComponentCatalogKindsModule,
   ],
 })

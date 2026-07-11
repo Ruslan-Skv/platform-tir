@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import { keepPreviousData, useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useIsFetching, useQuery, useQueryClient } from '@tanstack/react-query';
 
 import {
   type AdminComponentCatalogGroup,
@@ -10,39 +10,24 @@ import {
   type AdminComponentCatalogKind,
   type ComponentCatalogAssignToGroup,
   deleteAdminComponentCatalogItem,
-  fetchAdminComponentCatalogGroupsList,
   fetchAdminComponentCatalogKinds,
-  fetchAdminComponentCatalogList,
-  fetchAdminComponentCatalogSeriesList,
 } from '@/shared/api/admin-component-catalog';
 
+export const COMPONENT_CATALOG_TREE_KEY = 'admin-component-catalog-tree';
 export const COMPONENT_CATALOG_LIST_KEY = 'admin-component-catalog-list';
 export const COMPONENT_CATALOG_GROUPS_KEY = 'admin-component-catalog-groups';
 export const COMPONENT_CATALOG_SERIES_KEY = 'admin-component-catalog-series';
 export const COMPONENT_CATALOG_KINDS_KEY = 'admin-component-catalog-kinds';
 
-const LIMIT_STORAGE_KEY = 'admin_component_catalog_page_limit';
-
-export type ComponentCatalogTab = 'items' | 'groups' | 'kinds';
+export type ComponentCatalogTab = 'catalog' | 'kinds';
 
 export function useComponentCatalogPage() {
   const queryClient = useQueryClient();
-  const [tab, setTab] = useState<ComponentCatalogTab>('items');
+  const [tab, setTab] = useState<ComponentCatalogTab>('catalog');
   const [searchQuery, setSearchQuery] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [kindFilter, setKindFilter] = useState('');
-  const [seriesFilter, setSeriesFilter] = useState('');
-  const [groupFilter, setGroupFilter] = useState('');
   const [activeFilter, setActiveFilter] = useState<'' | 'true' | 'false'>('');
-  const [page, setPage] = useState(1);
-  const [limit, setLimit] = useState(() => {
-    if (typeof window === 'undefined') return 50;
-    const stored = localStorage.getItem(LIMIT_STORAGE_KEY);
-    const n = stored ? parseInt(stored, 10) : 50;
-    return [20, 50, 100, 200].includes(n) ? n : 50;
-  });
-  const [sortBy, setSortBy] = useState('sortOrder');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [itemModalOpen, setItemModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<AdminComponentCatalogItem | null>(null);
   const [copyFromItem, setCopyFromItem] = useState<AdminComponentCatalogItem | null>(null);
@@ -56,62 +41,10 @@ export function useComponentCatalogPage() {
     return () => clearTimeout(t);
   }, [searchQuery]);
 
-  useEffect(() => {
-    setPage(1);
-  }, [debouncedSearch, kindFilter, seriesFilter, groupFilter, activeFilter, limit, tab]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      localStorage.setItem(LIMIT_STORAGE_KEY, String(limit));
-    }
-  }, [limit]);
-
   const showToast = useCallback((text: string, type: 'ok' | 'err') => {
     setToast({ text, type });
     setTimeout(() => setToast(null), 4000);
   }, []);
-
-  const listQueryParams = useMemo(
-    () => ({
-      search: debouncedSearch || undefined,
-      kindId: kindFilter || undefined,
-      seriesId: seriesFilter || undefined,
-      groupId: groupFilter || undefined,
-      isActive: activeFilter === '' ? undefined : activeFilter === 'true',
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-    }),
-    [
-      debouncedSearch,
-      kindFilter,
-      seriesFilter,
-      groupFilter,
-      activeFilter,
-      page,
-      limit,
-      sortBy,
-      sortOrder,
-    ]
-  );
-
-  const {
-    data: listResponse,
-    isLoading: itemsLoading,
-    isFetching: itemsFetching,
-    refetch: refetchItems,
-  } = useQuery({
-    queryKey: [COMPONENT_CATALOG_LIST_KEY, listQueryParams],
-    queryFn: () => fetchAdminComponentCatalogList(listQueryParams),
-    placeholderData: keepPreviousData,
-    enabled: tab === 'items',
-  });
-
-  const { data: seriesForFilter } = useQuery({
-    queryKey: [COMPONENT_CATALOG_SERIES_KEY, 'filter-options'],
-    queryFn: () => fetchAdminComponentCatalogSeriesList({ limit: 500 }),
-  });
 
   const { data: kindsResponse } = useQuery({
     queryKey: [COMPONENT_CATALOG_KINDS_KEY],
@@ -119,33 +52,6 @@ export function useComponentCatalogPage() {
   });
 
   const kindOptions: AdminComponentCatalogKind[] = kindsResponse?.data ?? [];
-
-  const { data: groupsForFilter } = useQuery({
-    queryKey: [COMPONENT_CATALOG_GROUPS_KEY, 'filter-options', seriesFilter],
-    queryFn: () =>
-      fetchAdminComponentCatalogGroupsList({
-        limit: 500,
-        seriesId: seriesFilter || undefined,
-      }),
-  });
-
-  const seriesFilterOptions = useMemo(() => seriesForFilter?.data ?? [], [seriesForFilter?.data]);
-  const groupFilterOptions = useMemo(() => groupsForFilter?.data ?? [], [groupsForFilter?.data]);
-
-  useEffect(() => {
-    if (groupFilter && !groupFilterOptions.some((g) => g.id === groupFilter)) {
-      setGroupFilter('');
-    }
-  }, [groupFilter, groupFilterOptions]);
-
-  const items = listResponse?.data ?? [];
-  const totalItems = listResponse?.total ?? 0;
-
-  const handleSortChange = useCallback((nextSortBy: string, nextSortOrder: 'asc' | 'desc') => {
-    setSortBy(nextSortBy);
-    setSortOrder(nextSortOrder);
-    setPage(1);
-  }, []);
 
   const openCreateItem = useCallback(() => {
     setEditItem(null);
@@ -164,8 +70,7 @@ export function useComponentCatalogPage() {
         seriesSlug: group.seriesRef?.slug,
         seriesName: group.seriesRef?.name,
       });
-      setGroupFilter(group.id);
-      setTab('items');
+      setTab('catalog');
       setItemModalOpen(true);
     },
     []
@@ -193,6 +98,7 @@ export function useComponentCatalogPage() {
   }, []);
 
   const handleItemSaved = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
@@ -208,6 +114,7 @@ export function useComponentCatalogPage() {
     setDeletingItem(true);
     try {
       await deleteAdminComponentCatalogItem(item.id);
+      void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
       void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
       void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
       showToast('Удалено', 'ok');
@@ -232,6 +139,7 @@ export function useComponentCatalogPage() {
   }, [itemDeleteTarget]);
 
   const invalidateAll = useCallback(() => {
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_LIST_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_GROUPS_KEY] });
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_SERIES_KEY] });
@@ -243,6 +151,7 @@ export function useComponentCatalogPage() {
       predicate: (query) => {
         const key = query.queryKey[0];
         return (
+          key === COMPONENT_CATALOG_TREE_KEY ||
           key === COMPONENT_CATALOG_LIST_KEY ||
           key === COMPONENT_CATALOG_GROUPS_KEY ||
           key === COMPONENT_CATALOG_SERIES_KEY ||
@@ -258,27 +167,10 @@ export function useComponentCatalogPage() {
     setSearchQuery,
     kindFilter,
     setKindFilter,
-    seriesFilter,
-    setSeriesFilter,
-    groupFilter,
-    setGroupFilter,
     activeFilter,
     setActiveFilter,
-    page,
-    setPage,
-    limit,
-    setLimit,
-    sortBy,
-    sortOrder,
-    handleSortChange,
-    items,
-    totalItems,
-    itemsLoading,
-    itemsFetching,
-    refetchItems,
+    debouncedSearch,
     kindOptions,
-    groupFilterOptions,
-    seriesFilterOptions,
     itemModalOpen,
     editItem,
     copyFromItem,

@@ -178,6 +178,66 @@ export async function fetchAdminComponentCatalogList(params?: {
   return res.json();
 }
 
+export interface AdminComponentCatalogTreeSubgroupItem {
+  id: string;
+  sortOrder: number;
+  catalogItem: AdminComponentCatalogItem;
+}
+
+export interface AdminComponentCatalogTreeSubgroup {
+  id: string;
+  seriesId: string;
+  name: string;
+  series: string | null;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  itemCount: number;
+  items: AdminComponentCatalogTreeSubgroupItem[];
+}
+
+export interface AdminComponentCatalogTreeSeries {
+  id: string;
+  name: string;
+  description: string | null;
+  slug: string;
+  isActive: boolean;
+  sortOrder: number;
+  subgroupCount: number;
+  itemCount: number;
+  subgroups: AdminComponentCatalogTreeSubgroup[];
+}
+
+export interface AdminComponentCatalogTreeResponse {
+  series: AdminComponentCatalogTreeSeries[];
+  ungroupedItems: AdminComponentCatalogItem[];
+}
+
+export async function fetchAdminComponentCatalogTree(params?: {
+  search?: string;
+  kindId?: string;
+  isActive?: boolean;
+}): Promise<AdminComponentCatalogTreeResponse> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  if (params?.kindId) search.set('kindId', params.kindId);
+  if (params?.isActive !== undefined) search.set('isActive', params.isActive ? 'true' : 'false');
+
+  const qs = search.toString();
+  const res = await apiFetch(
+    `${API_URL}/admin/catalog/component-catalog/tree${qs ? `?${qs}` : ''}`,
+    {
+      headers: getAdminAuthHeaders(),
+      cache: 'no-store',
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось загрузить справочник');
+  }
+  return res.json();
+}
+
 export async function fetchAdminComponentCatalogSeriesList(params?: {
   search?: string;
   categoryId?: string;

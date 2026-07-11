@@ -1,6 +1,6 @@
 'use client';
 
-import { ComponentCatalogPage } from '@/views/admin/Catalog/Components/ComponentCatalogPage';
+import { ComponentCatalogPage } from '@/views/admin/Catalog/Components';
 
 export default function AdminComponentCatalogPage() {
   return <ComponentCatalogPage />;

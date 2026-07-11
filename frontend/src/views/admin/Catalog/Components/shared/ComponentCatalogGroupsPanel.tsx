@@ -31,15 +31,15 @@ import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
-import modalStyles from './ComponentCatalogModal.module.css';
-import styles from './ComponentCatalogPage.module.css';
-import { ComponentCatalogSubgroupCopyModal } from './ComponentCatalogSubgroupCopyModal';
+import styles from '../list/ComponentCatalogPage.module.css';
 import {
   COMPONENT_CATALOG_GROUPS_KEY,
   COMPONENT_CATALOG_KINDS_KEY,
   COMPONENT_CATALOG_LIST_KEY,
   COMPONENT_CATALOG_SERIES_KEY,
-} from './hooks/useComponentCatalogPage';
+} from '../list/hooks/useComponentCatalogPage';
+import modalStyles from './ComponentCatalogModal.module.css';
+import { ComponentCatalogSubgroupCopyModal } from './ComponentCatalogSubgroupCopyModal';
 
 type ComponentCatalogGroupsPanelProps = {
   onToast: (text: string, type: 'ok' | 'err') => void;
@@ -98,7 +98,7 @@ export function ComponentCatalogGroupsPanel({
     placeholderData: keepPreviousData,
   });
 
-  const seriesList = seriesData?.data ?? [];
+  const seriesList = useMemo(() => seriesData?.data ?? [], [seriesData?.data]);
 
   useEffect(() => {
     if (!selectedSeriesId && seriesList.length > 0) {
@@ -639,7 +639,7 @@ function SubgroupItemsDetail({
   );
 }
 
-function ComponentCatalogSeriesModal({
+export function ComponentCatalogSeriesModal({
   open,
   series,
   onClose,
@@ -768,7 +768,7 @@ function ComponentCatalogSeriesModal({
   );
 }
 
-function ComponentCatalogSubgroupModal({
+export function ComponentCatalogSubgroupModal({
   open,
   subgroup,
   seriesId,

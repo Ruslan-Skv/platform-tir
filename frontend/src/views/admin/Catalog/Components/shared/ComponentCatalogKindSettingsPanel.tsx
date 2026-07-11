@@ -18,9 +18,12 @@ import { DataTable } from '@/shared/ui/admin/DataTable';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
-import modalStyles from '../ComponentCatalogModal.module.css';
-import styles from '../ComponentCatalogPage.module.css';
-import { COMPONENT_CATALOG_KINDS_KEY } from '../hooks/useComponentCatalogPage';
+import styles from '../list/ComponentCatalogPage.module.css';
+import {
+  COMPONENT_CATALOG_KINDS_KEY,
+  COMPONENT_CATALOG_TREE_KEY,
+} from '../list/hooks/useComponentCatalogPage';
+import modalStyles from './ComponentCatalogModal.module.css';
 
 type KindDraft = {
   name: string;
@@ -76,7 +79,7 @@ export function ComponentCatalogKindSettingsPanel({
     queryFn: fetchAdminComponentCatalogKinds,
   });
 
-  const rows = data?.data ?? [];
+  const rows = useMemo(() => data?.data ?? [], [data?.data]);
 
   useEffect(() => {
     if (!rows.length) return;
@@ -102,6 +105,7 @@ export function ComponentCatalogKindSettingsPanel({
 
   const invalidate = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_KINDS_KEY] });
+    void queryClient.invalidateQueries({ queryKey: [COMPONENT_CATALOG_TREE_KEY] });
     void queryClient.invalidateQueries({ queryKey: ['admin-component-catalog-list'] });
   }, [queryClient]);
 

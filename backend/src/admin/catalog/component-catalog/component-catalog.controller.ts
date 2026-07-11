@@ -10,6 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { ComponentCatalogService } from './component-catalog.service';
+import { ComponentCatalogTreeService } from './component-catalog-tree.service';
 import { CreateComponentCatalogItemDto } from './dto/create-component-catalog-item.dto';
 import { UpdateComponentCatalogItemDto } from './dto/update-component-catalog-item.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
@@ -20,7 +21,10 @@ import { Roles } from '../../../common/decorators/roles.decorator';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('ADMIN', 'CONTENT_MANAGER', 'PARTNER')
 export class ComponentCatalogController {
-  constructor(private readonly service: ComponentCatalogService) {}
+  constructor(
+    private readonly service: ComponentCatalogService,
+    private readonly treeService: ComponentCatalogTreeService,
+  ) {}
 
   @Post()
   create(@Body() dto: CreateComponentCatalogItemDto) {
@@ -49,6 +53,19 @@ export class ComponentCatalogController {
       limit: limit ? parseInt(limit, 10) : 50,
       sortBy,
       sortOrder,
+    });
+  }
+
+  @Get('tree')
+  findTree(
+    @Query('search') search?: string,
+    @Query('kindId') kindId?: string,
+    @Query('isActive') isActive?: string,
+  ) {
+    return this.treeService.findTree({
+      search,
+      kindId,
+      isActive: isActive ? isActive === 'true' : undefined,
     });
   }
 

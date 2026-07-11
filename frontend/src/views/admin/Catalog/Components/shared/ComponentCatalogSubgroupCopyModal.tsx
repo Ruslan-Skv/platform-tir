@@ -10,8 +10,8 @@ import {
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 
+import styles from '../list/ComponentCatalogPage.module.css';
 import modalStyles from './ComponentCatalogModal.module.css';
-import styles from './ComponentCatalogPage.module.css';
 
 type ComponentCatalogSubgroupCopyModalProps = {
   open: boolean;
