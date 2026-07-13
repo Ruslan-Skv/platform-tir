@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 
 import { WorkDaysIpHelp } from '@/features/admin/work-day/WorkDaysIpHelp';
 import { useAuth } from '@/features/auth';
@@ -25,6 +25,27 @@ import styles from './WorkDaysSettingsSection.module.css';
 import { type WeeklySchedule, normalizeWeeklySchedule } from './weekly-schedule.utils';
 
 type Tab = 'general' | 'offices' | 'users';
+
+const OFFICE_ACCENT_COLORS = [
+  '#2563eb',
+  '#059669',
+  '#d97706',
+  '#7c3aed',
+  '#db2777',
+  '#0891b2',
+  '#65a30d',
+  '#ea580c',
+] as const;
+
+function getOfficeAccentColor(
+  officeId: string | null,
+  offices: WorkDayOfficeSchedule[]
+): string | null {
+  if (!officeId) return null;
+  const index = offices.findIndex((office) => office.id === officeId);
+  if (index < 0) return null;
+  return OFFICE_ACCENT_COLORS[index % OFFICE_ACCENT_COLORS.length];
+}
 
 export function WorkDaysSettingsSection() {
   const { user } = useAuth();
@@ -345,18 +366,20 @@ export function WorkDaysSettingsSection() {
               {savingUsers ? 'Сохранение…' : 'Сохранить сотрудников'}
             </button>
           </div>
-          {users.map((u) => (
-            <UserCard
-              key={u.id}
-              user={u}
-              offices={offices}
-              onChange={(patch) =>
-                setUsers((prev) =>
-                  prev.map((item) => (item.id === u.id ? { ...item, ...patch } : item))
-                )
-              }
-            />
-          ))}
+          <div className={styles.userCardsGrid}>
+            {users.map((u) => (
+              <UserCard
+                key={u.id}
+                user={u}
+                offices={offices}
+                onChange={(patch) =>
+                  setUsers((prev) =>
+                    prev.map((item) => (item.id === u.id ? { ...item, ...patch } : item))
+                  )
+                }
+              />
+            ))}
+          </div>
         </section>
       )}
     </SettingsSubPageView>
@@ -449,44 +472,73 @@ function UserCard({
   offices: WorkDayOfficeSchedule[];
   onChange: (patch: Partial<WorkDayUserSchedule>) => void;
 }) {
+  const [scheduleExpanded, setScheduleExpanded] = useState(false);
   const name = [user.lastName, user.firstName].filter(Boolean).join(' ') || user.email;
-  const roleTracked = user.workDayTrackingEnabled;
+  const roleLabel = ROLES_CONFIG.find((r) => r.id === user.role)?.label ?? user.role;
+  const officeAccent = getOfficeAccentColor(user.officeId, offices);
+  const showScheduleEditor = user.useCustomWorkSchedule && scheduleExpanded;
+
   return (
-    <article className={styles.card}>
-      <h3 className={styles.cardTitle}>{name}</h3>
-      <p className={styles.meta}>{user.role}</p>
-      <label className={styles.checkRow}>
-        <input
-          type="checkbox"
-          checked={roleTracked}
-          onChange={(e) => onChange({ workDayTrackingEnabled: e.target.checked })}
-        />
-        Учёт рабочего времени для этого сотрудника
-      </label>
-      <label className={styles.fullWidth}>
-        Офис
-        <select
-          className={styles.input}
-          value={user.officeId ?? ''}
-          onChange={(e) => onChange({ officeId: e.target.value || null })}
-        >
-          <option value="">— не назначен —</option>
-          {offices.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className={styles.checkRow}>
-        <input
-          type="checkbox"
-          checked={user.useCustomWorkSchedule}
-          onChange={(e) => onChange({ useCustomWorkSchedule: e.target.checked })}
-        />
-        Индивидуальный график (иначе — график офиса)
-      </label>
-      {user.useCustomWorkSchedule ? (
+    <article
+      className={`${styles.card} ${styles.userCard} ${officeAccent ? styles.userCardAssigned : ''} ${showScheduleEditor ? styles.userCardExpanded : ''}`}
+      style={officeAccent ? ({ '--user-office-accent': officeAccent } as CSSProperties) : undefined}
+    >
+      <div className={styles.userCardHead}>
+        <h3 className={styles.userCardName} title={name}>
+          {name}
+        </h3>
+        <div className={styles.userCardHeadMeta}>
+          {user.useCustomWorkSchedule ? (
+            <button
+              type="button"
+              className={styles.userScheduleToggle}
+              title={scheduleExpanded ? 'Свернуть карточку' : 'Редактировать индивидуальный график'}
+              onClick={() => setScheduleExpanded((expanded) => !expanded)}
+            >
+              {scheduleExpanded ? 'Свернуть' : 'График'}
+            </button>
+          ) : null}
+          <span className={styles.userCardRole}>{roleLabel}</span>
+        </div>
+      </div>
+      <div className={styles.userCardBody}>
+        <label className={styles.userCheck} title="Учёт рабочего времени для этого сотрудника">
+          <input
+            type="checkbox"
+            checked={user.workDayTrackingEnabled}
+            onChange={(e) => onChange({ workDayTrackingEnabled: e.target.checked })}
+          />
+          <span>Учёт времени</span>
+        </label>
+        <label className={styles.userOffice}>
+          <span>Офис</span>
+          <select
+            className={styles.userSelect}
+            value={user.officeId ?? ''}
+            onChange={(e) => onChange({ officeId: e.target.value || null })}
+          >
+            <option value="">— не назначен —</option>
+            {offices.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={styles.userCheck} title="Индивидуальный график (иначе — график офиса)">
+          <input
+            type="checkbox"
+            checked={user.useCustomWorkSchedule}
+            onChange={(e) => {
+              const checked = e.target.checked;
+              onChange({ useCustomWorkSchedule: checked });
+              setScheduleExpanded(checked);
+            }}
+          />
+          <span>Свой график</span>
+        </label>
+      </div>
+      {showScheduleEditor ? (
         <WeeklyScheduleEditor
           schedule={getUserWeekly(user)}
           onChange={(schedule) => onChange({ workDayWeeklySchedule: schedule })}

@@ -154,6 +154,118 @@
   margin: 0;
 }
 
+.userCardsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 0.65rem;
+}
+
+.userCard {
+  padding: 0.65rem 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.userCardExpanded {
+  grid-column: 1 / -1;
+}
+
+.userCardAssigned {
+  border-color: color-mix(in srgb, var(--user-office-accent) 50%, var(--admin-border, #e2e8f0));
+  background: color-mix(in srgb, var(--user-office-accent) 11%, var(--admin-surface, #fff));
+  box-shadow: inset 3px 0 0 var(--user-office-accent);
+}
+
+.userCardAssigned .userSelect {
+  border-color: color-mix(in srgb, var(--user-office-accent) 40%, var(--admin-border, #e2e8f0));
+  background: color-mix(in srgb, var(--user-office-accent) 6%, var(--admin-surface, #fff));
+}
+
+.userCardHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.userCardHeadMeta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.userScheduleToggle {
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 0.25rem;
+  background: transparent;
+  color: #2563eb;
+  font: inherit;
+  font-size: 0.72rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.userScheduleToggle:hover {
+  background: #eff6ff;
+}
+
+.userCardName {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.userCardRole {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  color: #64748b;
+  background: #f1f5f9;
+  padding: 0.1rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+.userCardBody {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.65rem;
+}
+
+.userCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.userOffice {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.78rem;
+  flex: 1 1 9rem;
+  min-width: 0;
+}
+
+.userSelect {
+  flex: 1;
+  min-width: 0;
+  padding: 0.25rem 0.35rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 0.35rem;
+  font: inherit;
+  font-size: 0.78rem;
+}
+
 .error {
   color: #dc2626;
 }
@@ -161,4 +273,16 @@
 .denied,
 .loading {
   padding: 1rem 0;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userCardAssigned {
+  background: color-mix(in srgb, var(--user-office-accent) 16%, var(--admin-surface, #1e293b));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userCardAssigned .userSelect {
+  background: color-mix(in srgb, var(--user-office-accent) 10%, var(--admin-surface, #1e293b));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .userScheduleToggle:hover {
+  background: color-mix(in srgb, #2563eb 18%, var(--admin-surface, #1e293b));
 }
