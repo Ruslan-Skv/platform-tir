@@ -1,6 +1,6 @@
 'use client';
 
-import { WorkDaysIpHelp } from '@/views/admin/Settings/work-days/WorkDaysIpHelp';
+import { WorkDaysIpHelp } from '@/features/admin/work-day/WorkDaysIpHelp';
 
 import styles from '../WorkDays/WorkDaysPage.module.css';
 import {

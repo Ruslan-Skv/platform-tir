@@ -91,7 +91,12 @@ export interface WorkDayMyStatus {
     weeklySchedule: WeeklySchedule;
     today: DayScheduleEntry & { isWorkDay: boolean };
   };
-  office: { id: string; name: string; allowedIps: string[] } | null;
+  office: {
+    id: string;
+    name: string;
+    allowedIps: string[];
+    skipWorkDayIpCheck: boolean;
+  } | null;
 }
 
 export interface WorkDayOfficeSchedule {
@@ -99,6 +104,7 @@ export interface WorkDayOfficeSchedule {
   name: string;
   isActive: boolean;
   allowedIps: string[];
+  skipWorkDayIpCheck: boolean;
   workDayStartTime: string;
   workDayEndTime: string;
   workDaysOfWeek: number[];

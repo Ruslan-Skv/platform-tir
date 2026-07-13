@@ -104,6 +104,10 @@ export class UpdateOfficeWorkScheduleDto {
   allowedIps?: string[];
 
   @IsOptional()
+  @IsBoolean()
+  skipWorkDayIpCheck?: boolean;
+
+  @IsOptional()
   @IsString()
   @Matches(/^\d{2}:\d{2}$/)
   workDayStartTime?: string;

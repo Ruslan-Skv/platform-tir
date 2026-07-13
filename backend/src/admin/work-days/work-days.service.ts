@@ -128,11 +128,13 @@ export class WorkDaysService implements OnModuleInit {
           'Для вас не назначен офис. Обратитесь к администратору для настройки учёта рабочего времени.',
         );
       }
-      const { ip } = this.getClientMeta(meta);
-      if (!isIpAllowed(ip, office.allowedIps)) {
-        throw new ForbiddenException(
-          `Начать рабочий день можно только из офиса «${office.name}» (IP не совпадает с разрешённым списком).`,
-        );
+      if (!office.skipWorkDayIpCheck) {
+        const { ip } = this.getClientMeta(meta);
+        if (!isIpAllowed(ip, office.allowedIps)) {
+          throw new ForbiddenException(
+            `Начать рабочий день можно только из офиса «${office.name}» (IP не совпадает с разрешённым списком).`,
+          );
+        }
       }
     }
   }
@@ -247,7 +249,12 @@ export class WorkDaysService implements OnModuleInit {
         (todayDay?.status === WorkDayStatus.OPEN && !openPrevious),
       schedule: scheduleResolved,
       office: user.office
-        ? { id: user.office.id, name: user.office.name, allowedIps: user.office.allowedIps }
+        ? {
+            id: user.office.id,
+            name: user.office.name,
+            allowedIps: user.office.allowedIps,
+            skipWorkDayIpCheck: user.office.skipWorkDayIpCheck,
+          }
         : null,
     };
   }

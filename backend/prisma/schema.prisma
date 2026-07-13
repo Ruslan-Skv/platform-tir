@@ -3224,6 +3224,7 @@ model Office {
   isActive              Boolean  @default(true)
   sortOrder             Int      @default(0)
   allowedIps            String[] @default([])
+  skipWorkDayIpCheck    Boolean  @default(false)
   workDayStartTime      String   @default("09:00")
   workDayEndTime        String   @default("18:00")
   workDaysOfWeek        Int[]    @default([1, 2, 3, 4, 5])

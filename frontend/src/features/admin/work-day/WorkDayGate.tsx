@@ -4,6 +4,7 @@ import { useState } from 'react';
 
 import { useWorkDay } from './WorkDayContext';
 import styles from './WorkDayGate.module.css';
+import { WorkDaysIpHelp } from './WorkDaysIpHelp';
 
 function formatWorkDate(dateStr: string): string {
   return new Date(dateStr).toLocaleDateString('ru-RU', {
@@ -114,6 +115,7 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
               {!status.isWorkDayToday ? (
                 <p className={styles.hint}>Сегодня по вашему графику нерабочий день.</p>
               ) : null}
+              <WorkDaysIpHelp variant="compact" />
               <button
                 type="button"
                 className={styles.primaryBtn}

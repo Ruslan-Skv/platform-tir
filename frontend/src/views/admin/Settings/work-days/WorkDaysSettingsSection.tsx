@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import { WorkDaysIpHelp } from '@/features/admin/work-day/WorkDaysIpHelp';
 import { useAuth } from '@/features/auth';
 import {
   type WorkDayOfficeSchedule,
@@ -18,7 +19,6 @@ import { ROLES_CONFIG } from '@/views/admin/Settings';
 import { SettingsSubPageView } from '@/views/admin/Settings';
 
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
-import { WorkDaysIpHelp } from './WorkDaysIpHelp';
 import styles from './WorkDaysSettingsSection.module.css';
 import { type WeeklySchedule, normalizeWeeklySchedule } from './weekly-schedule.utils';
 
@@ -101,6 +101,7 @@ export function WorkDaysSettingsSection() {
       const weekly = getOfficeWeekly(office);
       const updated = await updateWorkDayOffice(office.id, {
         allowedIps: office.allowedIps,
+        skipWorkDayIpCheck: office.skipWorkDayIpCheck,
         workDayWeeklySchedule: weekly,
       });
       setOffices((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -357,6 +358,22 @@ function OfficeCard({
         disabled={saving}
         onChange={(schedule) => onChange({ workDayWeeklySchedule: schedule })}
       />
+      <label className={styles.checkRow}>
+        <input
+          type="checkbox"
+          checked={office.skipWorkDayIpCheck}
+          onChange={(e) => onChange({ skipWorkDayIpCheck: e.target.checked })}
+          disabled={saving}
+        />
+        <span>
+          Не проверять IP при начале рабочего дня
+          <span className={styles.fieldHint}>
+            {' '}
+            — для первичной настройки рабочего места или если определение IP ненадёжно. Глобальная
+            проверка IP должна быть включена в общих настройках.
+          </span>
+        </span>
+      </label>
       <label className={styles.fullWidth}>
         Разрешённые IP адреса офиса
         <span className={styles.fieldHint}>

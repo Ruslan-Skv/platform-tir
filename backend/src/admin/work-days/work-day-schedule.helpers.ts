@@ -34,6 +34,7 @@ export const OFFICE_WORK_SCHEDULE_SELECT = {
   name: true,
   isActive: true,
   allowedIps: true,
+  skipWorkDayIpCheck: true,
   workDayStartTime: true,
   workDayEndTime: true,
   workDaysOfWeek: true,
