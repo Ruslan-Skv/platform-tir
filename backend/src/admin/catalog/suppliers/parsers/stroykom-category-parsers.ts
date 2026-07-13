@@ -296,6 +296,7 @@ export function parseStroykomArchRows(rows: unknown[][]): ParsedPriceListRow[] {
   const parsedRows: ParsedPriceListRow[] = [];
 
   let currentModel: string | null = null;
+  let currentSubItem: string | null = null;
   let pendingFinish = '';
 
   for (const row of rows) {
@@ -307,10 +308,17 @@ export function parseStroykomArchRows(rows: unknown[][]): ParsedPriceListRow[] {
       .replace(/\s*:\s*$/, '');
     const rrc = parseRrcPrice(row[6]);
 
-    if (/^арка\s/i.test(col0)) {
-      currentModel = col0;
-      pendingFinish = '';
-      continue;
+    if (col0) {
+      if (/^арка\s/i.test(col0)) {
+        currentModel = col0;
+        currentSubItem = null;
+        pendingFinish = '';
+        continue;
+      }
+
+      if (currentModel && !isArchColorPaletteRow(col0, col4) && !/^пвх\s+пленка/i.test(col0)) {
+        currentSubItem = col0.replace(/\s+/g, ' ').trim();
+      }
     }
 
     if (!currentModel) continue;
@@ -323,7 +331,7 @@ export function parseStroykomArchRows(rows: unknown[][]): ParsedPriceListRow[] {
     if (rrc === null) continue;
 
     const finish = col4 || pendingFinish || 'неокрашен';
-    const itemName = col2 || 'Базовая комплектация';
+    const itemName = col2 || currentSubItem || 'Базовая комплектация';
 
     const rowKey = buildPriceListRowKey('ARCH', {
       blockTitle: currentModel,

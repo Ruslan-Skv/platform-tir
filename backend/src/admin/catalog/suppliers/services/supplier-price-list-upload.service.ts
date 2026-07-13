@@ -16,6 +16,7 @@ import {
   SUPPLIER_PRICE_LIST_UPLOADS_DIR,
   ensureSupplier,
   mapParsedRowsToCreate,
+  moveUploadedFile,
   uploadedBySelect,
 } from '../supplier-price-list.shared';
 
@@ -75,23 +76,30 @@ export class SupplierPriceListUploadService {
     }
 
     const snapshots = await this.prisma.$transaction(
-      toCreate.map((item) =>
-        this.prisma.supplierPriceListSnapshot.create({
-          data: {
-            supplierId,
-            category: item.category,
-            fileName: file.originalname,
-            storedFileName,
-            priceListDate: item.parsed!.priceListDate,
-            parserCode: item.parsed!.parserCode,
-            sheetName: item.parsed!.sheetName,
-            rowCount: item.parsed!.rows.length,
-            uploadedById,
-            rows: { create: mapParsedRowsToCreate(item.parsed!.rows) },
-          },
-          include: { uploadedBy: { select: uploadedBySelect } },
-        }),
-      ),
+      async (tx) => {
+        const created = [];
+        for (const item of toCreate) {
+          created.push(
+            await tx.supplierPriceListSnapshot.create({
+              data: {
+                supplierId,
+                category: item.category,
+                fileName: file.originalname,
+                storedFileName,
+                priceListDate: item.parsed!.priceListDate,
+                parserCode: item.parsed!.parserCode,
+                sheetName: item.parsed!.sheetName,
+                rowCount: item.parsed!.rows.length,
+                uploadedById,
+                rows: { create: mapParsedRowsToCreate(item.parsed!.rows) },
+              },
+              include: { uploadedBy: { select: uploadedBySelect } },
+            }),
+          );
+        }
+        return created;
+      },
+      { timeout: 120000, maxWait: 15000 },
     );
 
     return {
@@ -121,7 +129,7 @@ export class SupplierPriceListUploadService {
     const storedPath = path.join(dir, storedFileName);
 
     if (file.path && fs.existsSync(file.path)) {
-      fs.renameSync(file.path, storedPath);
+      moveUploadedFile(file.path, storedPath);
     } else if (file.buffer) {
       fs.writeFileSync(storedPath, file.buffer);
     } else {

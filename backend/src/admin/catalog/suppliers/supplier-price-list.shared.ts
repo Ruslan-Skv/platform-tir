@@ -1,4 +1,5 @@
 import { NotFoundException } from '@nestjs/common';
+import * as fs from 'fs';
 import * as path from 'path';
 
 import type { PrismaService } from '../../../database/prisma.service';
@@ -14,7 +15,7 @@ export const SUPPLIER_PRICE_LIST_UPLOADS_DIR = path.join(
 );
 
 export function mapParsedRowsToCreate(rows: ParsedPriceListRow[]) {
-  return rows.map((row) => ({
+  return ensureUniqueRowKeys(rows).map((row) => ({
     rowKey: row.rowKey,
     blockTitle: row.blockTitle,
     color: row.color,
@@ -24,6 +25,19 @@ export function mapParsedRowsToCreate(rows: ParsedPriceListRow[]) {
     variantNote: row.variantNote,
     priceRrc: row.priceRrc,
   }));
+}
+
+export function ensureUniqueRowKeys(rows: ParsedPriceListRow[]): ParsedPriceListRow[] {
+  const seen = new Map<string, number>();
+  return rows.map((row) => {
+    const count = seen.get(row.rowKey) ?? 0;
+    seen.set(row.rowKey, count + 1);
+    if (count === 0) return row;
+    return {
+      ...row,
+      rowKey: `${row.rowKey}|dup:${count + 1}`,
+    };
+  });
 }
 
 export function snapshotMeta(snapshot: {
@@ -94,3 +108,16 @@ export const snapshotRowsOrder = [
   { color: 'asc' as const },
   { itemName: 'asc' as const },
 ];
+
+export function moveUploadedFile(sourcePath: string, destinationPath: string) {
+  try {
+    fs.renameSync(sourcePath, destinationPath);
+  } catch (error) {
+    const code = (error as NodeJS.ErrnoException).code;
+    if (code !== 'EXDEV' && code !== 'EPERM') {
+      throw error;
+    }
+    fs.copyFileSync(sourcePath, destinationPath);
+    fs.unlinkSync(sourcePath);
+  }
+}
