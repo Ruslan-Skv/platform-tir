@@ -80,7 +80,9 @@ export function SupplierPriceListsPageView({ model }: SupplierPriceListsPageView
         <h2 className={styles.sectionTitle}>
           Снимки — {PRICE_LIST_CATEGORY_LABELS[model.category]}
         </h2>
-        {model.snapshots.length === 0 ? (
+        {model.categoryLoading ? (
+          <div className={styles.sectionLoading}>Загрузка снимков…</div>
+        ) : model.snapshots.length === 0 ? (
           <p className={styles.empty}>Снимков пока нет. Загрузите первый прайс-лист.</p>
         ) : (
           <div className={styles.tableWrap}>
@@ -108,25 +110,27 @@ export function SupplierPriceListsPageView({ model }: SupplierPriceListsPageView
         )}
       </section>
 
-      <PriceListCompareSection
-        category={model.category}
-        isTrimCategory={model.isTrimCategory}
-        snapshots={model.snapshots}
-        comparison={model.comparison}
-        filteredRows={model.filteredRows}
-        comparing={model.comparing}
-        mapping={model.mapping}
-        applying={model.applying}
-        currentSnapshotId={model.currentSnapshotId}
-        previousSnapshotId={model.previousSnapshotId}
-        statusFilter={model.statusFilter}
-        setCurrentSnapshotId={model.setCurrentSnapshotId}
-        setPreviousSnapshotId={model.setPreviousSnapshotId}
-        setStatusFilter={model.setStatusFilter}
-        runCompare={model.runCompare}
-        handleAutoMap={model.handleAutoMap}
-        handleApply={model.handleApply}
-      />
+      {model.snapshots.length > 0 ? (
+        <PriceListCompareSection
+          category={model.category}
+          isTrimCategory={model.isTrimCategory}
+          snapshots={model.snapshots}
+          comparison={model.comparison}
+          filteredRows={model.filteredRows}
+          comparing={model.comparing}
+          mapping={model.mapping}
+          applying={model.applying}
+          currentSnapshotId={model.currentSnapshotId}
+          previousSnapshotId={model.previousSnapshotId}
+          statusFilter={model.statusFilter}
+          setCurrentSnapshotId={model.setCurrentSnapshotId}
+          setPreviousSnapshotId={model.setPreviousSnapshotId}
+          setStatusFilter={model.setStatusFilter}
+          runCompare={model.runCompare}
+          handleAutoMap={model.handleAutoMap}
+          handleApply={model.handleApply}
+        />
+      ) : null}
     </div>
   );
 }

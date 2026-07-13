@@ -329,10 +329,19 @@
 }
 
 .loading,
-.empty {
+.empty,
+.sectionLoading {
   padding: var(--admin-space-4xl);
   text-align: center;
   color: var(--admin-text-muted);
+}
+
+.sectionLoading {
+  min-height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-3xl);
 }
 
 .select {

@@ -28,6 +28,7 @@ export type SupplierPriceListsPageModel = {
   comparison: PriceListCompareResponse | null;
   filteredRows: PriceListDiffRow[];
   loading: boolean;
+  categoryLoading: boolean;
   uploading: boolean;
   comparing: boolean;
   mapping: boolean;

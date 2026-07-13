@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
+  PRICE_LIST_CATEGORIES,
   PRICE_LIST_CATEGORY_LABELS,
   type PriceListCompareResponse,
   type PriceListDiffStatus,
@@ -33,9 +34,20 @@ export function useSupplierPriceListsPage({
 }: UseSupplierPriceListsPageOptions): SupplierPriceListsPageModel {
   const [category, setCategory] = useState<SupplierPriceListCategory>('TRIM');
   const [supplier, setSupplier] = useState<SupplierInfo | null>(null);
-  const [snapshots, setSnapshots] = useState<SupplierPriceListSnapshot[]>([]);
+  const [snapshotsByCategory, setSnapshotsByCategory] = useState<
+    Partial<Record<SupplierPriceListCategory, SupplierPriceListSnapshot[]>>
+  >({});
+  const [fetchedCategories, setFetchedCategories] = useState<Set<SupplierPriceListCategory>>(
+    () => new Set()
+  );
   const [comparison, setComparison] = useState<PriceListCompareResponse | null>(null);
   const [loading, setLoading] = useState(true);
+  const snapshots = useMemo(
+    () => snapshotsByCategory[category] ?? [],
+    [snapshotsByCategory, category]
+  );
+
+  const categoryLoading = !fetchedCategories.has(category);
   const [uploading, setUploading] = useState(false);
   const [comparing, setComparing] = useState(false);
   const [mapping, setMapping] = useState(false);
@@ -47,7 +59,7 @@ export function useSupplierPriceListsPage({
   const [statusFilter, setStatusFilter] = useState<PriceListDiffStatus | 'all'>('changed');
   const [message, setMessage] = useState<PriceListPageMessage | null>(null);
 
-  const loadData = useCallback(async () => {
+  const loadSupplier = useCallback(async () => {
     setLoading(true);
     try {
       const token =
@@ -56,27 +68,14 @@ export function useSupplierPriceListsPage({
           : null;
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
 
-      const [supplierRes, snapshotsData] = await Promise.all([
-        apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
-          headers,
-          cache: 'no-store',
-        }),
-        fetchSupplierPriceListSnapshots(supplierId, category),
-      ]);
+      const supplierRes = await apiFetch(`${API_URL}/admin/catalog/suppliers/${supplierId}`, {
+        headers,
+        cache: 'no-store',
+      });
 
       if (!supplierRes.ok) throw new Error('Поставщик не найден');
       const supplierData = (await supplierRes.json()) as SupplierInfo;
       setSupplier(supplierData);
-      setSnapshots(snapshotsData);
-
-      if (snapshotsData.length > 0) {
-        setCurrentSnapshotId(snapshotsData[0].id);
-        setPreviousSnapshotId(snapshotsData[1]?.id ?? '');
-      } else {
-        setCurrentSnapshotId('');
-        setPreviousSnapshotId('');
-        setComparison(null);
-      }
     } catch (e) {
       setMessage({
         type: 'err',
@@ -85,11 +84,80 @@ export function useSupplierPriceListsPage({
     } finally {
       setLoading(false);
     }
+  }, [supplierId]);
+
+  const refreshAllSnapshots = useCallback(async () => {
+    const results = await Promise.all(
+      PRICE_LIST_CATEGORIES.map(async (item) => ({
+        category: item,
+        snapshots: await fetchSupplierPriceListSnapshots(supplierId, item),
+      }))
+    );
+
+    const nextCache = Object.fromEntries(
+      results.map((result) => [result.category, result.snapshots])
+    ) as Partial<Record<SupplierPriceListCategory, SupplierPriceListSnapshot[]>>;
+
+    setSnapshotsByCategory(nextCache);
+    setFetchedCategories(new Set(PRICE_LIST_CATEGORIES));
+
+    const currentSnapshots = nextCache[category] ?? [];
+    if (currentSnapshots.length > 0) {
+      setCurrentSnapshotId(currentSnapshots[0].id);
+      setPreviousSnapshotId(currentSnapshots[1]?.id ?? '');
+    } else {
+      setCurrentSnapshotId('');
+      setPreviousSnapshotId('');
+      setComparison(null);
+    }
+
+    return nextCache;
   }, [supplierId, category]);
 
   useEffect(() => {
-    void loadData();
-  }, [loadData]);
+    void loadSupplier();
+  }, [loadSupplier]);
+
+  useEffect(() => {
+    if (!supplier) return;
+    if (fetchedCategories.size > 0) return;
+
+    let cancelled = false;
+    void (async () => {
+      try {
+        const results = await Promise.all(
+          PRICE_LIST_CATEGORIES.map(async (item) => ({
+            category: item,
+            snapshots: await fetchSupplierPriceListSnapshots(supplierId, item),
+          }))
+        );
+        if (cancelled) return;
+
+        const nextCache = Object.fromEntries(
+          results.map((result) => [result.category, result.snapshots])
+        ) as Partial<Record<SupplierPriceListCategory, SupplierPriceListSnapshot[]>>;
+
+        setSnapshotsByCategory(nextCache);
+        setFetchedCategories(new Set(PRICE_LIST_CATEGORIES));
+
+        const currentSnapshots = nextCache[category] ?? [];
+        if (currentSnapshots.length > 0) {
+          setCurrentSnapshotId(currentSnapshots[0].id);
+          setPreviousSnapshotId(currentSnapshots[1]?.id ?? '');
+        }
+      } catch (e) {
+        if (cancelled) return;
+        setMessage({
+          type: 'err',
+          text: e instanceof Error ? e.message : 'Ошибка загрузки снимков',
+        });
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [supplier, supplierId, category, fetchedCategories.size]);
 
   const runCompare = useCallback(
     async (currentId: string, previousId?: string) => {
@@ -122,15 +190,21 @@ export function useSupplierPriceListsPage({
       setCategory(nextCategory);
       setComparison(null);
       setMessage(null);
-      setSnapshots([]);
-      setCurrentSnapshotId('');
-      setPreviousSnapshotId('');
+
+      const cachedSnapshots = snapshotsByCategory[nextCategory] ?? [];
+      if (cachedSnapshots.length > 0) {
+        setCurrentSnapshotId(cachedSnapshots[0].id);
+        setPreviousSnapshotId(cachedSnapshots[1]?.id ?? '');
+      } else {
+        setCurrentSnapshotId('');
+        setPreviousSnapshotId('');
+      }
     },
-    [category]
+    [category, snapshotsByCategory]
   );
 
   useEffect(() => {
-    if (loading || !currentSnapshotId) return;
+    if (categoryLoading || !currentSnapshotId) return;
     if (!snapshots.some((snapshot) => snapshot.id === currentSnapshotId)) return;
 
     const previousId =
@@ -139,7 +213,7 @@ export function useSupplierPriceListsPage({
         : undefined;
 
     void runCompare(currentSnapshotId, previousId);
-  }, [currentSnapshotId, previousSnapshotId, runCompare, loading, snapshots]);
+  }, [currentSnapshotId, previousSnapshotId, runCompare, categoryLoading, snapshots]);
 
   const clearSelectedFile = useCallback(() => {
     setSelectedFile(null);
@@ -173,12 +247,12 @@ export function useSupplierPriceListsPage({
         text: `Прайс загружен: ${result.snapshots.length} категорий, ${totalRows} строк — ${breakdown}.${skippedNote}`,
       });
 
-      await loadData();
+      const nextCache = await refreshAllSnapshots();
 
       const categorySnapshot = result.snapshots.find((snapshot) => snapshot.category === category);
       if (categorySnapshot) {
         setCurrentSnapshotId(categorySnapshot.id);
-        const refreshed = await fetchSupplierPriceListSnapshots(supplierId, category);
+        const refreshed = nextCache[category] ?? [];
         const previous = refreshed.find((snapshot) => snapshot.id !== categorySnapshot.id);
         setPreviousSnapshotId(previous?.id ?? '');
       }
@@ -195,7 +269,7 @@ export function useSupplierPriceListsPage({
     } finally {
       setUploading(false);
     }
-  }, [selectedFile, supplierId, clearSelectedFile, loadData, category]);
+  }, [selectedFile, supplierId, clearSelectedFile, refreshAllSnapshots, category]);
 
   const handleAutoMap = useCallback(async () => {
     setMapping(true);
@@ -282,6 +356,7 @@ export function useSupplierPriceListsPage({
     comparison,
     filteredRows,
     loading,
+    categoryLoading,
     uploading,
     comparing,
     mapping,
