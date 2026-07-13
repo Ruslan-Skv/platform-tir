@@ -105,6 +105,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnKnowledgeTraining?: boolean;
 
+  @ApiPropertyOptional({ description: 'Учёт рабочего времени (опоздания, ранний уход и т.д.)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnWorkDays?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

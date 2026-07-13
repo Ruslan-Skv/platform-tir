@@ -33,6 +33,7 @@ import { UpdateExternalNotifySettingsDto } from '../external-notify/dto/update-e
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminBellDismissedService } from './admin-bell-dismissed.service';
 import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
+import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
@@ -60,6 +61,7 @@ export class AdminNotificationsController {
     private readonly externalNotifySettings: AdminExternalNotifyService,
     private readonly bellDismissed: AdminBellDismissedService,
     private readonly bellTrainingFeed: AdminBellTrainingFeedService,
+    private readonly bellWorkDayFeed: AdminBellWorkDayFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -114,6 +116,14 @@ export class AdminNotificationsController {
   getBellTrainingFeed(@Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellTrainingFeed.listRecent(take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/work-days')
+  @ApiOperation({ summary: 'События учёта рабочего времени для колокольчика админки' })
+  getBellWorkDayFeed(@Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellWorkDayFeed.listRecent(take);
   }
 
   @Get('settings/by-user/:userId')

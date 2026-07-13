@@ -11,7 +11,8 @@ export type ExternalNotifyEvent =
   | 'support_chat'
   | 'review'
   | 'comment'
-  | 'knowledge_training';
+  | 'knowledge_training'
+  | 'work_day';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -92,6 +93,15 @@ export class AdminExternalNotifyService {
     if (dto.knowledgeTrainingNotifyMaxIds !== undefined) {
       data.knowledgeTrainingNotifyMaxIds = normalizeStringArray(dto.knowledgeTrainingNotifyMaxIds);
     }
+    if (dto.workDayNotifyEmails !== undefined) {
+      data.workDayNotifyEmails = normalizeStringArray(dto.workDayNotifyEmails);
+    }
+    if (dto.workDayNotifyTelegramIds !== undefined) {
+      data.workDayNotifyTelegramIds = normalizeStringArray(dto.workDayNotifyTelegramIds);
+    }
+    if (dto.workDayNotifyMaxIds !== undefined) {
+      data.workDayNotifyMaxIds = normalizeStringArray(dto.workDayNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -145,6 +155,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.knowledgeTrainingNotifyTelegramIds),
           maxIds: parseStringArray(block.knowledgeTrainingNotifyMaxIds),
         };
+      case 'work_day':
+        return {
+          emails: parseStringArray(block.workDayNotifyEmails),
+          telegramIds: parseStringArray(block.workDayNotifyTelegramIds),
+          maxIds: parseStringArray(block.workDayNotifyMaxIds),
+        };
     }
   }
 
@@ -178,6 +194,9 @@ export class AdminExternalNotifyService {
     knowledgeTrainingNotifyEmails: Prisma.JsonValue | null;
     knowledgeTrainingNotifyTelegramIds: Prisma.JsonValue | null;
     knowledgeTrainingNotifyMaxIds: Prisma.JsonValue | null;
+    workDayNotifyEmails: Prisma.JsonValue | null;
+    workDayNotifyTelegramIds: Prisma.JsonValue | null;
+    workDayNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -206,6 +225,9 @@ export class AdminExternalNotifyService {
         block.knowledgeTrainingNotifyTelegramIds,
       ),
       knowledgeTrainingNotifyMaxIds: parseStringArray(block.knowledgeTrainingNotifyMaxIds),
+      workDayNotifyEmails: parseStringArray(block.workDayNotifyEmails),
+      workDayNotifyTelegramIds: parseStringArray(block.workDayNotifyTelegramIds),
+      workDayNotifyMaxIds: parseStringArray(block.workDayNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

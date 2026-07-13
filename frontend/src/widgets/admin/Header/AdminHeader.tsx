@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
+import { WorkDayWidget } from '@/features/admin/work-day';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge';
@@ -22,10 +23,12 @@ import { getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellTrainingNotifications,
+  getAdminBellWorkDayNotifications,
   getAdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellTrainingNotification,
+  AdminBellWorkDayNotification,
   AdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
@@ -62,6 +65,7 @@ import {
   reviewToBellNotificationItem,
   supportToBellNotificationItem,
   trainingToBellNotificationItem,
+  workDayToBellNotificationItem,
 } from './admin-header-notifications.utils';
 
 const ADMIN_NOTIFICATIONS_RESOURCE_ID = 'admin.settings.notifications';
@@ -96,6 +100,7 @@ const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] 
   { href: '/admin/support', label: 'Чат' },
   { href: '/admin/leads', label: 'Заявки' },
   { href: '/admin/knowledge/analytics', label: 'Динамика обучения' },
+  { href: '/admin/crm/work-days', label: 'Рабочее время' },
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
   { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
@@ -120,6 +125,9 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [trainingNotifications, setTrainingNotifications] = useState<
     AdminBellTrainingNotification[]
   >([]);
+  const [workDayNotifications, setWorkDayNotifications] = useState<AdminBellWorkDayNotification[]>(
+    []
+  );
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -131,6 +139,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     support: number;
     leads: number;
     training: number;
+    workDays: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -158,16 +167,23 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ? getAdminBellTrainingNotifications(20)
           : Promise.resolve([] as AdminBellTrainingNotification[]);
 
-      const [reviewsResult, supportResult, leadsResult, trainingResult] = await Promise.allSettled([
-        settings?.notifyOnReviews !== false
-          ? getAdminReviews(1, 10, undefined, false)
-          : Promise.resolve({ data: [] as AdminReview[] }),
-        settings?.notifyOnSupportChat !== false
-          ? getAdminSupportConversations()
-          : Promise.resolve([] as AdminSupportConversation[]),
-        getAdminLeads({ page: 1, limit: 30, status: 'new' }),
-        loadTraining,
-      ]);
+      const loadWorkDays =
+        settings?.notifyOnWorkDays !== false && hasAccess('admin.crm.work-days')
+          ? getAdminBellWorkDayNotifications(20)
+          : Promise.resolve([] as AdminBellWorkDayNotification[]);
+
+      const [reviewsResult, supportResult, leadsResult, trainingResult, workDaysResult] =
+        await Promise.allSettled([
+          settings?.notifyOnReviews !== false
+            ? getAdminReviews(1, 10, undefined, false)
+            : Promise.resolve({ data: [] as AdminReview[] }),
+          settings?.notifyOnSupportChat !== false
+            ? getAdminSupportConversations()
+            : Promise.resolve([] as AdminSupportConversation[]),
+          getAdminLeads({ page: 1, limit: 30, status: 'new' }),
+          loadTraining,
+          loadWorkDays,
+        ]);
 
       const newReviews =
         reviewsResult.status === 'fulfilled' ? (reviewsResult.value.data ?? []) : [];
@@ -185,6 +201,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ? filterNotifiableLeads(leadsResult.value.data ?? [], settings, hasAccess)
           : [];
       const newTraining = trainingResult.status === 'fulfilled' ? (trainingResult.value ?? []) : [];
+      const newWorkDays = workDaysResult.status === 'fulfilled' ? (workDaysResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -192,11 +209,18 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         support: activeSupport.length,
         leads: newLeads.length,
         training: newTraining.length,
+        workDays: newWorkDays.length,
       };
 
       const totalNew =
-        newReviews.length + activeSupport.length + newLeads.length + newTraining.length;
-      const prevTotal = prev ? prev.reviews + prev.support + prev.leads + prev.training : totalNew;
+        newReviews.length +
+        activeSupport.length +
+        newLeads.length +
+        newTraining.length +
+        newWorkDays.length;
+      const prevTotal = prev
+        ? prev.reviews + prev.support + prev.leads + prev.training + prev.workDays
+        : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
         playNotificationSound(
@@ -218,6 +242,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
           ...activeSupport.map(supportToBellNotificationItem),
           ...leadsToBellNotificationItems(newLeads),
           ...newTraining.map(trainingToBellNotificationItem),
+          ...newWorkDays.map(workDayToBellNotificationItem),
         ]
           .filter((item) => isBellTypeEnabled(item.type, settings))
           .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -232,6 +257,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
       setSupportNotifications(activeSupport);
       setLeadNotifications(newLeads);
       setTrainingNotifications(newTraining);
+      setWorkDayNotifications(newWorkDays);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -319,6 +345,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     ...supportNotifications.map(supportToBellNotificationItem),
     ...leadsToBellNotificationItems(leadNotifications),
     ...trainingNotifications.map(trainingToBellNotificationItem),
+    ...workDayNotifications.map(workDayToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>
@@ -447,6 +474,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
 
       <div className={styles.actions}>
         <AdminOnlineAvatars />
+        <WorkDayWidget />
         {canTogglePublicSiteEdit && (
           <button
             type="button"

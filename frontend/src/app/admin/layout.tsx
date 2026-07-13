@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { AdminWebPushManager } from '@/features/admin-push';
 import { AdminSectionAccessShell } from '@/features/admin/components/AdminSectionAccessShell';
 import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
+import { WorkDayGate, WorkDayProvider } from '@/features/admin/work-day';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { getOrCreateStore } from '@/features/theme';
 import { QueryProvider } from '@/shared/lib/react-query/QueryProvider';
@@ -119,38 +120,42 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   return (
     <AdminAccessibleResourcesProvider>
-      <AdminWebPushManager />
-      <div className={styles.adminLayout}>
-        <AdminSidebar
-          collapsed={sidebarCollapsedForView}
-          onToggle={handleSidebarToggle}
-          width={effectiveSidebarWidth}
-          onWidthChange={handleSidebarWidthChange}
-          onResizeStart={() => setIsResizing(true)}
-          onResizeEnd={() => setIsResizing(false)}
-          mobileOpen={mobileSidebarOpen}
-          onMobileClose={() => setMobileSidebarOpen(false)}
-        />
-        <div
-          className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
-          style={{
-            marginLeft: mainAreaMarginLeft,
-            ['--admin-main-offset-left' as string]: `${mainAreaMarginLeft}px`,
-          }}
-        >
-          <AdminPresenceHeartbeat />
-          <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
-          <main className={styles.content}>
-            {authReady ? (
-              <AdminSectionAccessShell>{children}</AdminSectionAccessShell>
-            ) : (
-              <div className={styles.contentLoading} aria-busy="true" aria-label="Загрузка">
-                <div className={styles.loadingSpinner} />
-              </div>
-            )}
-          </main>
+      <WorkDayProvider>
+        <AdminWebPushManager />
+        <div className={styles.adminLayout}>
+          <AdminSidebar
+            collapsed={sidebarCollapsedForView}
+            onToggle={handleSidebarToggle}
+            width={effectiveSidebarWidth}
+            onWidthChange={handleSidebarWidthChange}
+            onResizeStart={() => setIsResizing(true)}
+            onResizeEnd={() => setIsResizing(false)}
+            mobileOpen={mobileSidebarOpen}
+            onMobileClose={() => setMobileSidebarOpen(false)}
+          />
+          <div
+            className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
+            style={{
+              marginLeft: mainAreaMarginLeft,
+              ['--admin-main-offset-left' as string]: `${mainAreaMarginLeft}px`,
+            }}
+          >
+            <AdminPresenceHeartbeat />
+            <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
+            <main className={styles.content}>
+              {authReady ? (
+                <AdminSectionAccessShell>
+                  <WorkDayGate>{children}</WorkDayGate>
+                </AdminSectionAccessShell>
+              ) : (
+                <div className={styles.contentLoading} aria-busy="true" aria-label="Загрузка">
+                  <div className={styles.loadingSpinner} />
+                </div>
+              )}
+            </main>
+          </div>
         </div>
-      </div>
+      </WorkDayProvider>
     </AdminAccessibleResourcesProvider>
   );
 }

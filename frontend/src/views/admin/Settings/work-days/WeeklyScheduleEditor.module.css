@@ -1,0 +1,37 @@
+.wrap {
+  overflow-x: auto;
+}
+
+.table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+}
+
+.table th,
+.table td {
+  padding: 0.4rem 0.5rem;
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  text-align: left;
+}
+
+.table th {
+  font-weight: 600;
+  background: #f8fafc;
+}
+
+.rowOff td:not(:first-child):not(:nth-child(2)) {
+  opacity: 0.45;
+}
+
+.timeInput,
+.numInput {
+  padding: 0.3rem 0.4rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 0.35rem;
+  font: inherit;
+}
+
+.numInput {
+  width: 4rem;
+}

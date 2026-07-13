@@ -13,7 +13,8 @@ export type AdminBellNotificationType =
   | 'quizRemont'
   | 'knowledgeFeedback'
   | 'siteFeedback'
-  | 'knowledgeTraining';
+  | 'knowledgeTraining'
+  | 'workDays';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -24,6 +25,19 @@ export type AdminBellTrainingNotification = {
   userId: string;
   userName: string;
   scorePercent: number | null;
+  occurredAt: string;
+};
+
+export type AdminBellWorkDayNotification = {
+  id: string;
+  kind: 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+  kindLabel: string;
+  workDayId: string;
+  userId: string;
+  userName: string;
+  workDate: string;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
   occurredAt: string;
 };
 
@@ -152,6 +166,25 @@ export function trainingToBellNotificationItem(
   };
 }
 
+export function workDayToBellNotificationItem(
+  item: AdminBellWorkDayNotification
+): AdminBellNotificationItem {
+  const workDateLabel = new Date(item.workDate).toLocaleDateString('ru-RU');
+  let suffix = '';
+  if (item.kind === 'late' && item.lateMinutes > 0) {
+    suffix = ` (+${item.lateMinutes} мин)`;
+  } else if (item.kind === 'early_leave' && item.earlyLeaveMinutes > 0) {
+    suffix = ` (−${item.earlyLeaveMinutes} мин)`;
+  }
+  return {
+    type: 'workDays',
+    id: item.id,
+    date: item.occurredAt,
+    link: `/admin/crm/work-days?userId=${item.userId}`,
+    text: `${item.kindLabel}${suffix}: ${item.userName} — ${workDateLabel}`,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -207,6 +240,10 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.knowledge') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'workDays') {
+    return hasAccess('admin.crm.work-days') && isBellTypeEnabled(item.type, settings);
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -239,6 +276,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnSiteFeedback !== false;
     case 'knowledgeTraining':
       return settings.notifyOnKnowledgeTraining !== false;
+    case 'workDays':
+      return settings.notifyOnWorkDays !== false;
     default:
       return false;
   }
@@ -292,6 +331,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'knowledgeTraining':
       return {
         title: 'Динамика обучения',
+        body: item.text,
+        tag,
+      };
+    case 'workDays':
+      return {
+        title: 'Учёт рабочего времени',
         body: item.text,
         tag,
       };

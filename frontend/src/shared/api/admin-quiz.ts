@@ -74,6 +74,22 @@ export interface QuizSubmissionsResponse {
   stats: Record<string, number>;
 }
 
+export type AdminQuizLandingBrief = Pick<
+  AdminQuizLanding,
+  'slug' | 'title' | 'notifyEmails' | 'notifyTelegramIds' | 'notifyMaxIds' | 'notifyPhones'
+>;
+
+export async function listAdminQuizLandings(
+  getAuthHeaders: () => Record<string, string>
+): Promise<AdminQuizLandingBrief[]> {
+  const res = await apiFetch(`${API_URL}/admin/quiz`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить список квизов');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
 export async function getAdminQuiz(
   slug: string,
   getAuthHeaders: () => Record<string, string>

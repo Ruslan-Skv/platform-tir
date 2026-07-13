@@ -40,6 +40,7 @@ import { ContractDocumentObjectsModule } from './contract-document-objects/contr
 import { ContractDocumentPackagesModule } from './contract-document-packages/contract-document-packages.module';
 import { InstallersModule } from './installers/installers.module';
 import { RecruitmentModule } from './recruitment/recruitment.module';
+import { WorkDaysModule } from './work-days/work-days.module';
 
 @Module({
   imports: [
@@ -87,6 +88,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
     RecruitmentModule,
+    WorkDaysModule,
     // Analytics
     AnalyticsModule,
   ],
@@ -129,6 +131,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
     ContractDocumentObjectsModule,
     ContractDocumentPackagesModule,
     RecruitmentModule,
+    WorkDaysModule,
     AnalyticsModule,
   ],
 })

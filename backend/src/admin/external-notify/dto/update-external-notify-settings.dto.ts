@@ -169,4 +169,31 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   knowledgeTrainingNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Email для уведомлений по учёту рабочего времени',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  workDayNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для уведомлений по учёту рабочего времени',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  workDayNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для уведомлений по учёту рабочего времени',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  workDayNotifyMaxIds?: string[];
 }

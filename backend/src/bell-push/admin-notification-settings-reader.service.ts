@@ -38,6 +38,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnKnowledgeFeedback: true,
       notifyOnSiteFeedback: true,
       notifyOnKnowledgeTraining: true,
+      notifyOnWorkDays: true,
     };
   }
 

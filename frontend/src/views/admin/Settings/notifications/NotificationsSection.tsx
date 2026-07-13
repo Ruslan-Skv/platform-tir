@@ -322,6 +322,7 @@ export function NotificationsSection() {
     notifyOnKnowledgeFeedback: true,
     notifyOnSiteFeedback: true,
     notifyOnKnowledgeTraining: true,
+    notifyOnWorkDays: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -826,6 +827,19 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnKnowledgeTraining">
                   Динамика изучения материалов на обучающей платформе
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnWorkDays"
+                  checked={formSettings.notifyOnWorkDays ?? true}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnWorkDays: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnWorkDays">
+                  Учёт рабочего времени (опоздания, ранний уход, автозакрытие)
                 </label>
               </div>
               {isSuperAdmin ? (

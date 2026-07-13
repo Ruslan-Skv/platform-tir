@@ -1,0 +1,94 @@
+.widget {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  max-width: 20rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: 0.65rem;
+  background: var(--admin-surface, #fff);
+}
+
+.status {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.dot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: #22c55e;
+}
+
+.label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.btn,
+.btnEnd,
+.btnGhost {
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.4rem;
+  font-size: 0.72rem;
+  cursor: pointer;
+}
+
+.btn {
+  border: 1px solid #cbd5e1;
+  background: #f8fafc;
+}
+
+.btnEnd {
+  border: none;
+  background: #1d4ed8;
+  color: #fff;
+}
+
+.btnGhost {
+  border: none;
+  background: transparent;
+  color: #64748b;
+}
+
+.btn:disabled,
+.btnEnd:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.absenceForm {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  align-items: center;
+}
+
+.input {
+  min-width: 8rem;
+  padding: 0.25rem 0.45rem;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.4rem;
+  font-size: 0.72rem;
+}
+
+.error {
+  margin: 0;
+  color: #dc2626;
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1024px) {
+  .widget {
+    display: none;
+  }
+}

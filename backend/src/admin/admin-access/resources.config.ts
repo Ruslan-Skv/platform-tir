@@ -39,6 +39,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.support', label: 'Чат поддержки', path: '/admin/support' },
   { id: 'admin.crm.funnel', label: 'Воронка продаж', path: '/admin/crm/funnel' },
   { id: 'admin.crm.tasks', label: 'Задачи', path: '/admin/crm/tasks' },
+  { id: 'admin.crm.work-days', label: 'Учёт рабочего времени', path: '/admin/crm/work-days' },
+  {
+    id: 'admin.crm.my-work-day',
+    label: 'Мой рабочий день',
+    path: '/admin/crm/my-work-day',
+  },
   { id: 'admin.crm.payroll', label: 'Расчёт з/п', path: '/admin/crm/payroll' },
   {
     id: 'admin.crm.payroll.management',
@@ -295,5 +301,10 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/pwa',
   },
   { id: 'admin.settings.roles', label: 'Роли', path: '/admin/settings/roles' },
+  {
+    id: 'admin.settings.work-days',
+    label: 'Учёт рабочего времени',
+    path: '/admin/settings/work-days',
+  },
   { id: 'admin.users', label: 'Управление пользователями', path: '/admin/users' },
 ];

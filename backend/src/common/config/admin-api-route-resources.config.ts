@@ -6,6 +6,7 @@
 export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/access',
   '/api/v1/admin/presence',
+  '/api/v1/admin/work-days/my',
 ] as const;
 
 const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
@@ -111,6 +112,10 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/installers', resourceId: 'admin.crm.installers' },
   { prefix: '/api/v1/admin/offices', resourceId: 'admin.crm.offices' },
   { prefix: '/api/v1/admin/tasks', resourceId: 'admin.crm.tasks' },
+  { prefix: '/api/v1/admin/work-days/settings', resourceId: 'admin.settings.work-days' },
+  { prefix: '/api/v1/admin/work-days/offices', resourceId: 'admin.settings.work-days' },
+  { prefix: '/api/v1/admin/work-days/users', resourceId: 'admin.settings.work-days' },
+  { prefix: '/api/v1/admin/work-days', resourceId: 'admin.crm.work-days' },
   { prefix: '/api/v1/admin/crm-directions', resourceId: 'admin.crm' },
   { prefix: '/api/v1/admin/complex-objects', resourceId: 'admin.crm.customers' },
   // Прочие разделы админки

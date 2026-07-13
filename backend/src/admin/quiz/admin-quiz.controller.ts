@@ -70,6 +70,12 @@ const policyStorage = diskStorage({
 export class AdminQuizController {
   constructor(private readonly adminQuiz: AdminQuizService) {}
 
+  @Get()
+  @ApiOperation({ summary: 'Список квизов (кратко, для настроек уведомлений)' })
+  listLandings() {
+    return this.adminQuiz.listLandingsBrief();
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Получить квиз с шагами (админ)' })
   getLanding(@Param('slug') slug: string) {

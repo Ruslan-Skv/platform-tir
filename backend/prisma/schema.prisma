@@ -120,7 +120,18 @@ model User {
   salesCandidatesCreated                  SalesCandidate[]                         @relation("SalesCandidateCreatedBy")
   salesCandidateAsTrainee                 SalesCandidate?                          @relation("SalesCandidateTrainee")
   recruitmentCampaignsCreated             RecruitmentCampaign[]                    @relation("RecruitmentCampaignCreatedBy")
+  officeId                                String?
+  useCustomWorkSchedule                   Boolean                                  @default(false)
+  workDayStartTime                        String?
+  workDayEndTime                          String?
+  workDaysOfWeek                          Int[]                                    @default([])
+  gracePeriodMinutes                      Int?
+  workDayTrackingEnabled                  Boolean                                  @default(true)
+  workDayWeeklySchedule                   Json?
+  office                                  Office?                                  @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  workDays                                WorkDay[]
 
+  @@index([officeId])
   @@map("users")
 }
 
@@ -395,6 +406,10 @@ model ExternalNotifySettings {
   knowledgeTrainingNotifyEmails      Json? // string[]
   knowledgeTrainingNotifyTelegramIds Json? // string[]
   knowledgeTrainingNotifyMaxIds      Json? // string[]
+
+  workDayNotifyEmails      Json? // string[]
+  workDayNotifyTelegramIds Json? // string[]
+  workDayNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -2478,6 +2493,7 @@ model UserAdminNotificationOverride {
   notifyOnKnowledgeFeedback Boolean  @default(true)
   notifyOnSiteFeedback      Boolean  @default(true)
   notifyOnKnowledgeTraining Boolean  @default(true)
+  notifyOnWorkDays          Boolean  @default(true)
   updatedAt                 DateTime @updatedAt
   user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2532,6 +2548,7 @@ model AdminNotificationsBlock {
   notifyOnKnowledgeFeedback Boolean  @default(true) // Обратная связь по обучающей платформе
   notifyOnSiteFeedback      Boolean  @default(true) // Обратная связь по публичному сайту
   notifyOnKnowledgeTraining Boolean  @default(true) // Динамика изучения материалов обучения
+  notifyOnWorkDays          Boolean  @default(true) // Учёт рабочего времени
   updatedAt                 DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -3199,21 +3216,29 @@ enum AddressType {
 
 // --- Офисы ---
 model Office {
-  id        String   @id @default(cuid())
-  name      String // Название офиса (например, "Главный офис", "Офис на Ленина")
-  prefix    String? // Префикс офиса (для нумерации договоров и т.п.)
-  address   String?  @db.Text // Адрес офиса
-  phone     String? // Телефон офиса
-  isActive  Boolean  @default(true)
-  sortOrder Int      @default(0)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id                    String   @id @default(cuid())
+  name                  String // Название офиса (например, "Главный офис", "Офис на Ленина")
+  prefix                String? // Префикс офиса (для нумерации договоров и т.п.)
+  address               String?  @db.Text // Адрес офиса
+  phone                 String? // Телефон офиса
+  isActive              Boolean  @default(true)
+  sortOrder             Int      @default(0)
+  allowedIps            String[] @default([])
+  workDayStartTime      String   @default("09:00")
+  workDayEndTime        String   @default("18:00")
+  workDaysOfWeek        Int[]    @default([1, 2, 3, 4, 5])
+  gracePeriodMinutes    Int      @default(10)
+  workDayWeeklySchedule Json?
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
 
   contracts      Contract[]
   complexObjects ComplexObject[]
   otherExpenses  OfficeOtherExpense[]
   incassations   OfficeIncassation[]
   history        OfficeHistory[]
+  users          User[]
+  workDays       WorkDay[]
 
   @@index([isActive])
   @@map("offices")
@@ -3414,4 +3439,85 @@ enum SalesCandidateStatus {
   TEST_TASK
   REJECTED
   HIRED
+}
+
+// --- Учёт рабочего дня ---
+enum WorkDayStatus {
+  OPEN
+  CLOSED
+  AUTO_CLOSED
+}
+
+enum WorkDayCloseReason {
+  MANUAL
+  AUTO_AT_DEADLINE
+  REPORTED_NEXT_DAY
+}
+
+model WorkDaySettings {
+  id                        String     @id @default("main")
+  isEnabled                 Boolean    @default(true)
+  trackedRoles              UserRole[] @default([MANAGER])
+  blockAdminWithoutWorkDay  Boolean    @default(true)
+  requireOfficeIp           Boolean    @default(true)
+  blockMobileDevices        Boolean    @default(true)
+  autoCloseHour             Int        @default(22)
+  autoCloseMinute           Int        @default(0)
+  defaultGracePeriodMinutes Int        @default(10)
+  greetingMessages          String[]   @default(["Доброго дня, {имя}! Желаем продуктивной работы.", "С добрым утром, {имя}! Отличного рабочего дня!", "{имя}, желаем хорошего дня и отличной работы!"])
+  createdAt                 DateTime   @default(now())
+  updatedAt                 DateTime   @updatedAt
+
+  @@map("work_day_settings")
+}
+
+model WorkDay {
+  id                      String              @id @default(cuid())
+  userId                  String
+  officeId                String?
+  workDate                DateTime            @db.Date
+  status                  WorkDayStatus       @default(OPEN)
+  startedAt               DateTime
+  endedAt                 DateTime?
+  closeReason             WorkDayCloseReason?
+  autoClosedAt            DateTime?
+  startedFromIp           String?
+  startedFromUserAgent    String?             @db.Text
+  endedFromIp             String?
+  lateMinutes             Int                 @default(0)
+  earlyLeaveMinutes       Int                 @default(0)
+  reportedEndAt           DateTime?
+  notifiedLateAt          DateTime?
+  notifiedEarlyLeaveAt    DateTime?
+  notifiedAutoClosedAt    DateTime?
+  notifiedReportedCloseAt DateTime?
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+
+  user     User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  office   Office?          @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  absences WorkDayAbsence[]
+
+  @@unique([userId, workDate])
+  @@index([userId])
+  @@index([officeId])
+  @@index([workDate])
+  @@index([status])
+  @@map("work_days")
+}
+
+model WorkDayAbsence {
+  id        String    @id @default(cuid())
+  workDayId String
+  startedAt DateTime
+  endedAt   DateTime?
+  reason    String?
+  comment   String?   @db.Text
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  workDay WorkDay @relation(fields: [workDayId], references: [id], onDelete: Cascade)
+
+  @@index([workDayId])
+  @@map("work_day_absences")
 }

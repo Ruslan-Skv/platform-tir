@@ -128,6 +128,23 @@ const baseNavItems: NavItem[] = [
       { label: 'Воронка продаж', href: '/admin/crm/funnel', resourceId: 'admin.crm.funnel' },
       { label: 'Задачи', href: '/admin/crm/tasks', resourceId: 'admin.crm.tasks' },
       {
+        label: 'Учёт рабочего времени',
+        href: '/admin/crm/my-work-day',
+        resourceId: 'admin.crm.my-work-day',
+        children: [
+          {
+            label: 'Мой рабочий день',
+            href: '/admin/crm/my-work-day',
+            resourceId: 'admin.crm.my-work-day',
+          },
+          {
+            label: 'Журнал сотрудников',
+            href: '/admin/crm/work-days',
+            resourceId: 'admin.crm.work-days',
+          },
+        ],
+      },
+      {
         label: 'Расчёт з/п',
         href: '/admin/crm/payroll',
         resourceId: 'admin.crm.payroll',
@@ -548,6 +565,11 @@ const baseNavItems: NavItem[] = [
             resourceId: 'admin.contract-documents.markups',
           },
         ],
+      },
+      {
+        label: 'Учёт рабочего времени',
+        href: '/admin/settings/work-days',
+        resourceId: 'admin.settings.work-days',
       },
       { label: 'Роли', href: '/admin/settings/roles', resourceId: 'admin.settings.roles' },
       { label: 'Управление пользователями', href: '/admin/users', resourceId: 'admin.users' },

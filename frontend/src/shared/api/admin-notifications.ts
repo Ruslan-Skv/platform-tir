@@ -26,6 +26,7 @@ export interface AdminNotificationsSettings {
   notifyOnKnowledgeFeedback: boolean;
   notifyOnSiteFeedback: boolean;
   notifyOnKnowledgeTraining: boolean;
+  notifyOnWorkDays: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -341,6 +342,31 @@ export async function getAdminBellTrainingNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления об обучении');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellWorkDayNotification = {
+  id: string;
+  kind: 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+  kindLabel: string;
+  workDayId: string;
+  userId: string;
+  userName: string;
+  workDate: string;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  occurredAt: string;
+};
+
+export async function getAdminBellWorkDayNotifications(
+  limit = 20
+): Promise<AdminBellWorkDayNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/work-days?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по учёту рабочего времени');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

@@ -32,6 +32,9 @@ export interface ExternalNotifyChannelsSettings {
   knowledgeTrainingNotifyEmails: string[];
   knowledgeTrainingNotifyTelegramIds: string[];
   knowledgeTrainingNotifyMaxIds: string[];
+  workDayNotifyEmails: string[];
+  workDayNotifyTelegramIds: string[];
+  workDayNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -68,6 +71,9 @@ export async function updateAdminExternalNotifyChannels(
       | 'knowledgeTrainingNotifyEmails'
       | 'knowledgeTrainingNotifyTelegramIds'
       | 'knowledgeTrainingNotifyMaxIds'
+      | 'workDayNotifyEmails'
+      | 'workDayNotifyTelegramIds'
+      | 'workDayNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

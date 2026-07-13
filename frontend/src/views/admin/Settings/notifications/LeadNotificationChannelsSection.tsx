@@ -27,7 +27,7 @@ import {
 import {
   MEBEL_QUIZ_SLUG,
   REMONT_QUIZ_SLUG,
-  getAdminQuizOptional,
+  listAdminQuizLandings,
   updateAdminQuiz,
 } from '@/shared/api/admin-quiz';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
@@ -60,7 +60,8 @@ type ChannelKey =
   | 'comment'
   | 'knowledgeTraining'
   | 'knowledgeFeedback'
-  | 'siteFeedback';
+  | 'siteFeedback'
+  | 'workDays';
 
 type TabId = 'forms' | 'quizzes' | 'other';
 
@@ -87,6 +88,7 @@ const INITIAL: ChannelsState = {
   knowledgeTraining: { ...EMPTY },
   knowledgeFeedback: { ...EMPTY },
   siteFeedback: { ...EMPTY },
+  workDays: { ...EMPTY },
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
@@ -179,6 +181,13 @@ const EVENTS_BY_TAB: Record<
         'Завершение видео, текстовых материалов и успешная сдача тестов сотрудниками на обучающей платформе.',
     },
     {
+      key: 'workDays',
+      label: 'Учёт рабочего времени',
+      title: 'Учёт рабочего времени',
+      description:
+        'Опоздания, ранний уход, автозакрытие рабочего дня и закрытие с указанием времени ухода.',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -209,6 +218,7 @@ function pickExternal(
     | 'knowledgeTraining'
     | 'knowledgeFeedback'
     | 'siteFeedback'
+    | 'workDays'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -240,6 +250,12 @@ function pickExternal(
         notifyEmails: settings.knowledgeTrainingNotifyEmails,
         notifyTelegramIds: settings.knowledgeTrainingNotifyTelegramIds,
         notifyMaxIds: settings.knowledgeTrainingNotifyMaxIds,
+      };
+    case 'workDays':
+      return {
+        notifyEmails: settings.workDayNotifyEmails,
+        notifyTelegramIds: settings.workDayNotifyTelegramIds,
+        notifyMaxIds: settings.workDayNotifyMaxIds,
       };
     case 'knowledgeFeedback':
       return {
@@ -273,6 +289,9 @@ function buildExternalPatch(channels: ChannelsState) {
     knowledgeTrainingNotifyEmails: channels.knowledgeTraining.notifyEmails,
     knowledgeTrainingNotifyTelegramIds: channels.knowledgeTraining.notifyTelegramIds,
     knowledgeTrainingNotifyMaxIds: channels.knowledgeTraining.notifyMaxIds,
+    workDayNotifyEmails: channels.workDays.notifyEmails,
+    workDayNotifyTelegramIds: channels.workDays.notifyTelegramIds,
+    workDayNotifyMaxIds: channels.workDays.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -301,16 +320,18 @@ export function LeadNotificationChannelsSection() {
 
   const fetchSettings = useCallback(async () => {
     try {
-      const [callback, measurement, director, quote, external, quizMebel, quizRemont] =
-        await Promise.all([
-          getAdminCallbackFormSettings(getAuthHeaders),
-          getAdminMeasurementFormSettings(getAuthHeaders),
-          getAdminDirectorMessageSettings(getAuthHeaders),
-          getAdminQuoteFormSettings(getAuthHeaders),
-          getAdminExternalNotifyChannels(),
-          getAdminQuizOptional(MEBEL_QUIZ_SLUG, getAuthHeaders),
-          getAdminQuizOptional(REMONT_QUIZ_SLUG, getAuthHeaders),
-        ]);
+      const [callback, measurement, director, quote, external, quizLandings] = await Promise.all([
+        getAdminCallbackFormSettings(getAuthHeaders),
+        getAdminMeasurementFormSettings(getAuthHeaders),
+        getAdminDirectorMessageSettings(getAuthHeaders),
+        getAdminQuoteFormSettings(getAuthHeaders),
+        getAdminExternalNotifyChannels(),
+        listAdminQuizLandings(getAuthHeaders),
+      ]);
+
+      const quizBySlug = Object.fromEntries(quizLandings.map((quiz) => [quiz.slug, quiz]));
+      const quizMebel = quizBySlug[MEBEL_QUIZ_SLUG] ?? null;
+      const quizRemont = quizBySlug[REMONT_QUIZ_SLUG] ?? null;
 
       setQuizAvailable({
         quizMebel: quizMebel != null,
@@ -357,6 +378,7 @@ export function LeadNotificationChannelsSection() {
         knowledgeTraining: pickExternal(external, 'knowledgeTraining'),
         knowledgeFeedback: pickExternal(external, 'knowledgeFeedback'),
         siteFeedback: pickExternal(external, 'siteFeedback'),
+        workDays: pickExternal(external, 'workDays'),
       });
     } catch (err) {
       console.error('Failed to fetch notification channels:', err);

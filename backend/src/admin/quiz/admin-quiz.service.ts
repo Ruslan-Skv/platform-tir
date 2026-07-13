@@ -21,6 +21,20 @@ export class AdminQuizService {
     return quiz;
   }
 
+  listLandingsBrief() {
+    return this.prisma.quizLanding.findMany({
+      select: {
+        slug: true,
+        title: true,
+        notifyEmails: true,
+        notifyTelegramIds: true,
+        notifyMaxIds: true,
+        notifyPhones: true,
+      },
+      orderBy: { slug: 'asc' },
+    });
+  }
+
   async updateLanding(slug: string, dto: UpdateQuizLandingDto) {
     const existing = await this.prisma.quizLanding.findUnique({ where: { slug } });
     if (!existing) {
