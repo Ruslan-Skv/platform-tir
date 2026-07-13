@@ -2,6 +2,7 @@ import { BadRequestException, Injectable } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
 
+import { decodeMultipartFilename } from '../../../../common/utils/upload-filename.util';
 import { PrismaService } from '../../../../database/prisma.service';
 import type {
   ParsedPriceList,
@@ -38,7 +39,10 @@ export class SupplierPriceListUploadService {
     category: SupplierPriceListCategory = 'TRIM',
     uploadedById?: string,
   ) {
-    const { storedPath, storedFileName } = await this.saveUploadedFile(supplierId, file);
+    const { storedPath, storedFileName, originalFileName } = await this.saveUploadedFile(
+      supplierId,
+      file,
+    );
 
     let parsed: ParsedPriceList;
     try {
@@ -55,11 +59,14 @@ export class SupplierPriceListUploadService {
       );
     }
 
-    return this.createSnapshot(supplierId, file.originalname, storedFileName, parsed, uploadedById);
+    return this.createSnapshot(supplierId, originalFileName, storedFileName, parsed, uploadedById);
   }
 
   async uploadAllSnapshots(supplierId: string, file: Express.Multer.File, uploadedById?: string) {
-    const { storedPath, storedFileName } = await this.saveUploadedFile(supplierId, file);
+    const { storedPath, storedFileName, originalFileName } = await this.saveUploadedFile(
+      supplierId,
+      file,
+    );
 
     let parsedCategories;
     try {
@@ -84,7 +91,7 @@ export class SupplierPriceListUploadService {
             data: {
               supplierId,
               category: item.category,
-              fileName: file.originalname,
+              fileName: originalFileName,
               storedFileName,
               priceListDate: item.parsed!.priceListDate,
               parserCode: item.parsed!.parserCode,
@@ -117,7 +124,7 @@ export class SupplierPriceListUploadService {
     );
 
     return {
-      fileName: file.originalname,
+      fileName: originalFileName,
       snapshots,
       skipped: parsedCategories
         .filter((item) => item.skipped)
@@ -133,13 +140,14 @@ export class SupplierPriceListUploadService {
     await ensureSupplier(this.prisma, supplierId);
     if (!file) throw new BadRequestException('Файл не загружен');
 
-    const ext = path.extname(file.originalname).toLowerCase();
+    const originalFileName = decodeMultipartFilename(file.originalname);
+    const ext = path.extname(originalFileName).toLowerCase();
     if (!['.xls', '.xlsx'].includes(ext)) {
       throw new BadRequestException('Поддерживаются только файлы .xls и .xlsx');
     }
 
     const dir = this.ensureUploadDir(supplierId);
-    const storedFileName = `${Date.now()}-${file.originalname.replace(/[^\w.\- ()а-яА-ЯёЁ]/g, '_')}`;
+    const storedFileName = `${Date.now()}-${originalFileName.replace(/[^\w.\- ()а-яА-ЯёЁ]/g, '_')}`;
     const storedPath = path.join(dir, storedFileName);
 
     if (file.path && fs.existsSync(file.path)) {
@@ -150,7 +158,7 @@ export class SupplierPriceListUploadService {
       throw new BadRequestException('Не удалось сохранить файл');
     }
 
-    return { storedPath, storedFileName };
+    return { storedPath, storedFileName, originalFileName };
   }
 
   private createSnapshot(
