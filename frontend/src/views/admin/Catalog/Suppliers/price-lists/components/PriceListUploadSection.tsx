@@ -58,7 +58,7 @@ export function PriceListUploadSection({
           disabled={uploading || !selectedFile}
           onClick={() => void handleUpload()}
         >
-          {uploading ? 'Загрузка…' : 'Загрузить все категории'}
+          {uploading ? 'Загрузка и разбор…' : 'Загрузить все категории'}
         </button>
       </div>
     </section>

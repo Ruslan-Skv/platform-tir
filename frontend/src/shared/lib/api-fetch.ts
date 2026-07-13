@@ -128,15 +128,23 @@ function canRetry401(
   return true;
 }
 
-export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> {
+export async function apiFetch(
+  input: RequestInfo | URL,
+  init?: RequestInit,
+  timeoutMs?: number
+): Promise<Response> {
   const baseHeaders = normalizeHeaders(input, init);
   await attachSessionBearerIfNeeded(baseHeaders, input);
   await proactiveRefreshBearerIfStale(baseHeaders);
-  const response = await fetchWithTimeout(input, {
-    ...init,
-    headers: baseHeaders,
-    credentials: init?.credentials ?? 'include',
-  });
+  const response = await fetchWithTimeout(
+    input,
+    {
+      ...init,
+      headers: baseHeaders,
+      credentials: init?.credentials ?? 'include',
+    },
+    timeoutMs
+  );
 
   if (response.status !== 401 || !canRetry401(input, init, baseHeaders)) {
     return response;
@@ -152,9 +160,13 @@ export async function apiFetch(input: RequestInfo | URL, init?: RequestInit): Pr
     retryHeaders.set('authorization', `Bearer ${nextToken}`);
   }
 
-  return fetchWithTimeout(input, {
-    ...init,
-    headers: retryHeaders,
-    credentials: init?.credentials ?? 'include',
-  });
+  return fetchWithTimeout(
+    input,
+    {
+      ...init,
+      headers: retryHeaders,
+      credentials: init?.credentials ?? 'include',
+    },
+    timeoutMs
+  );
 }

@@ -19,6 +19,16 @@ import {
 } from './stroykom-category-parsers';
 import { extractPriceListDate, findSheetByName, PARSER_CODE } from './stroykom-price-list.shared';
 
+/** В файлах Стройкома часто десятки тысяч пустых строк — ограничиваем чтение. */
+const PRICE_LIST_SHEET_MAX_ROWS = 4000;
+
+function readStroykomWorkbook(filePath: string) {
+  return XLSX.readFile(filePath, {
+    cellDates: false,
+    sheetRows: PRICE_LIST_SHEET_MAX_ROWS,
+  });
+}
+
 function readSheetRows(workbook: XLSX.WorkBook, sheetName: string) {
   const sheet = workbook.Sheets[sheetName];
   if (!sheet) {
@@ -91,7 +101,7 @@ export function parseStroykomPriceList(
   filePath: string,
   category: SupplierPriceListCategory = 'TRIM',
 ): ParsedPriceList {
-  const workbook = XLSX.readFile(filePath, { cellDates: false });
+  const workbook = readStroykomWorkbook(filePath);
   return parseCategoryFromWorkbook(workbook, category, new Map());
 }
 
@@ -103,7 +113,7 @@ export type ParsedPriceListCategoryResult = {
 };
 
 export function parseStroykomPriceListAll(filePath: string): ParsedPriceListCategoryResult[] {
-  const workbook = XLSX.readFile(filePath, { cellDates: false });
+  const workbook = readStroykomWorkbook(filePath);
   const sheetRowsCache = new Map<string, unknown[][]>();
 
   return SUPPLIER_PRICE_LIST_CATEGORIES.map((category) => {

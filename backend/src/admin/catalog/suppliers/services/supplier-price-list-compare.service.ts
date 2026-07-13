@@ -40,13 +40,16 @@ export class SupplierPriceListCompareService {
 
   async getSnapshot(supplierId: string, snapshotId: string, category?: SupplierPriceListCategory) {
     const snapshot = await this.prisma.supplierPriceListSnapshot.findFirst({
-      where: { id: snapshotId, supplierId, ...(category ? { category } : {}) },
+      where: { id: snapshotId, supplierId },
       include: {
         uploadedBy: { select: uploadedBySelect },
         rows: { orderBy: snapshotRowsOrder },
       },
     });
     if (!snapshot) throw new NotFoundException('Снимок прайс-листа не найден');
+    if (category && snapshot.category !== category) {
+      throw new NotFoundException('Снимок прайс-листа не найден');
+    }
     return snapshot;
   }
 

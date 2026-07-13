@@ -79,27 +79,41 @@ export class SupplierPriceListUploadService {
       async (tx) => {
         const created = [];
         for (const item of toCreate) {
+          const rows = mapParsedRowsToCreate(item.parsed!.rows);
+          const snapshot = await tx.supplierPriceListSnapshot.create({
+            data: {
+              supplierId,
+              category: item.category,
+              fileName: file.originalname,
+              storedFileName,
+              priceListDate: item.parsed!.priceListDate,
+              parserCode: item.parsed!.parserCode,
+              sheetName: item.parsed!.sheetName,
+              rowCount: rows.length,
+              uploadedById,
+            },
+          });
+
+          const batchSize = 200;
+          for (let offset = 0; offset < rows.length; offset += batchSize) {
+            await tx.supplierPriceListRow.createMany({
+              data: rows.slice(offset, offset + batchSize).map((row) => ({
+                ...row,
+                snapshotId: snapshot.id,
+              })),
+            });
+          }
+
           created.push(
-            await tx.supplierPriceListSnapshot.create({
-              data: {
-                supplierId,
-                category: item.category,
-                fileName: file.originalname,
-                storedFileName,
-                priceListDate: item.parsed!.priceListDate,
-                parserCode: item.parsed!.parserCode,
-                sheetName: item.parsed!.sheetName,
-                rowCount: item.parsed!.rows.length,
-                uploadedById,
-                rows: { create: mapParsedRowsToCreate(item.parsed!.rows) },
-              },
+            await tx.supplierPriceListSnapshot.findUniqueOrThrow({
+              where: { id: snapshot.id },
               include: { uploadedBy: { select: uploadedBySelect } },
             }),
           );
         }
         return created;
       },
-      { timeout: 120000, maxWait: 15000 },
+      { timeout: 300000, maxWait: 30000 },
     );
 
     return {

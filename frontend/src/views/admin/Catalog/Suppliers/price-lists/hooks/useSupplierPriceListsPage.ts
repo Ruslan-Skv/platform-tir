@@ -116,11 +116,30 @@ export function useSupplierPriceListsPage({
     [supplierId, category]
   );
 
+  const handleCategoryChange = useCallback(
+    (nextCategory: SupplierPriceListCategory) => {
+      if (nextCategory === category) return;
+      setCategory(nextCategory);
+      setComparison(null);
+      setMessage(null);
+      setSnapshots([]);
+      setCurrentSnapshotId('');
+      setPreviousSnapshotId('');
+    },
+    [category]
+  );
+
   useEffect(() => {
-    if (currentSnapshotId) {
-      void runCompare(currentSnapshotId, previousSnapshotId || undefined);
-    }
-  }, [currentSnapshotId, previousSnapshotId, runCompare]);
+    if (loading || !currentSnapshotId) return;
+    if (!snapshots.some((snapshot) => snapshot.id === currentSnapshotId)) return;
+
+    const previousId =
+      previousSnapshotId && snapshots.some((snapshot) => snapshot.id === previousSnapshotId)
+        ? previousSnapshotId
+        : undefined;
+
+    void runCompare(currentSnapshotId, previousId);
+  }, [currentSnapshotId, previousSnapshotId, runCompare, loading, snapshots]);
 
   const clearSelectedFile = useCallback(() => {
     setSelectedFile(null);
@@ -166,7 +185,12 @@ export function useSupplierPriceListsPage({
     } catch (e) {
       setMessage({
         type: 'err',
-        text: e instanceof Error ? e.message : 'Ошибка загрузки',
+        text:
+          e instanceof Error && (e.name === 'TimeoutError' || /timed out/i.test(e.message))
+            ? 'Загрузка и разбор прайса заняли слишком много времени. Подождите и попробуйте снова.'
+            : e instanceof Error
+              ? e.message
+              : 'Ошибка загрузки',
       });
     } finally {
       setUploading(false);
@@ -240,12 +264,6 @@ export function useSupplierPriceListsPage({
       setApplying(false);
     }
   }, [comparison, supplierId, category, runCompare]);
-
-  const handleCategoryChange = useCallback((nextCategory: SupplierPriceListCategory) => {
-    setCategory(nextCategory);
-    setComparison(null);
-    setMessage(null);
-  }, []);
 
   const filteredRows = useMemo(() => {
     const rows = comparison?.rows ?? [];

@@ -2,6 +2,9 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+/** Загрузка и разбор полного прайса (6 категорий) может занимать несколько минут. */
+export const PRICE_LIST_UPLOAD_TIMEOUT_MS = 300_000;
+
 export type SupplierPriceListCategory =
   | 'TRIM'
   | 'INTERIOR_DOOR'
@@ -29,7 +32,7 @@ export const PRICE_LIST_CATEGORY_LABELS: Record<SupplierPriceListCategory, strin
 };
 
 export const PRICE_LIST_UPLOAD_HINT =
-  'Полный прайс Стройком (.xls / .xlsx) — при загрузке разбираются все категории: погонаж, двери, фурнитура, арки, гармошки';
+  'Полный прайс Стройком (.xls / .xlsx) — разбираются все категории. Большой файл может загружаться 1–3 минуты, не закрывайте страницу.';
 
 export const PRICE_LIST_CATEGORY_HINTS: Record<SupplierPriceListCategory, string> = {
   TRIM: 'Вкладка «Межкомнатные двери с фото», только погонаж, колонка РРЦ',
@@ -150,7 +153,8 @@ export async function uploadSupplierPriceListAll(
       method: 'POST',
       headers: getAdminAuthHeaders(),
       body: formData,
-    }
+    },
+    PRICE_LIST_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) await parseError(res, 'Ошибка загрузки прайс-листа');
   return res.json();
