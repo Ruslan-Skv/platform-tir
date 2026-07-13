@@ -38,31 +38,20 @@ import {
   resolveDaySchedule,
   resolveWorkSchedule,
 } from './utils/work-day.utils';
-import { getEnabledWeekdays, type WeeklySchedule } from './utils/weekly-schedule.types';
+import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
+import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
+import {
+  OFFICE_WORK_SCHEDULE_SELECT,
+  USER_WORK_SCHEDULE_SELECT,
+  legacyFieldsFromWeeklySchedule,
+} from './work-day-schedule.helpers';
 
 type RequestMeta = {
   userAgent?: string;
   forwardedFor?: string | string[];
   realIp?: string;
   remoteAddress?: string;
-};
-
-const DEFAULT_SETTINGS: Omit<WorkDaySettings, 'createdAt' | 'updatedAt'> = {
-  id: 'main',
-  isEnabled: true,
-  trackedRoles: [UserRole.MANAGER],
-  blockAdminWithoutWorkDay: true,
-  requireOfficeIp: true,
-  blockMobileDevices: true,
-  autoCloseHour: 22,
-  autoCloseMinute: 0,
-  defaultGracePeriodMinutes: 10,
-  greetingMessages: [
-    'Доброго дня, {имя}! Желаем продуктивной работы.',
-    'С добрым утром, {имя}! Отличного рабочего дня!',
-    '{имя}, желаем хорошего дня и отличной работы!',
-  ],
 };
 
 @Injectable()
@@ -82,7 +71,7 @@ export class WorkDaysService implements OnModuleInit {
   async getSettings(): Promise<WorkDaySettings> {
     const existing = await this.prisma.workDaySettings.findUnique({ where: { id: 'main' } });
     if (existing) return existing;
-    return this.prisma.workDaySettings.create({ data: DEFAULT_SETTINGS });
+    return this.prisma.workDaySettings.create({ data: DEFAULT_WORK_DAY_SETTINGS });
   }
 
   async updateSettings(dto: UpdateWorkDaySettingsDto): Promise<WorkDaySettings> {
@@ -205,17 +194,10 @@ export class WorkDaysService implements OnModuleInit {
         reportedEndAt: opts.reportedEndAt ?? null,
         earlyLeaveMinutes,
       },
-      include: this.workDayInclude(),
+      include: WORK_DAY_RECORD_INCLUDE,
     });
     this.workDayNotify.onWorkDayClosed(updated);
     return updated;
-  }
-
-  private workDayInclude() {
-    return {
-      office: { select: { id: true, name: true } },
-      absences: { orderBy: { startedAt: 'asc' as const } },
-    };
   }
 
   async getMyStatus(userId: string, role: UserRole) {
@@ -227,7 +209,7 @@ export class WorkDaysService implements OnModuleInit {
     const dayOfWeek = getDayOfWeekInTimezone();
     const todayDay = await this.prisma.workDay.findUnique({
       where: { userId_workDate: { userId, workDate: today } },
-      include: this.workDayInclude(),
+      include: WORK_DAY_RECORD_INCLUDE,
     });
 
     const openPrevious = await this.prisma.workDay.findFirst({
@@ -237,7 +219,7 @@ export class WorkDaysService implements OnModuleInit {
         workDate: { lt: today },
       },
       orderBy: { workDate: 'desc' },
-      include: this.workDayInclude(),
+      include: WORK_DAY_RECORD_INCLUDE,
     });
 
     const scheduleResolved = resolveWorkSchedule(user, user.office, settings, dayOfWeek);
@@ -332,7 +314,7 @@ export class WorkDaysService implements OnModuleInit {
         startedFromUserAgent: userAgent ?? null,
         lateMinutes,
       },
-      include: this.workDayInclude(),
+      include: WORK_DAY_RECORD_INCLUDE,
     });
     this.workDayNotify.onWorkDayStarted(workDay.id, lateMinutes);
 
@@ -520,12 +502,15 @@ export class WorkDaysService implements OnModuleInit {
     if (dto.gracePeriodMinutes !== undefined) data.gracePeriodMinutes = dto.gracePeriodMinutes;
     if (dto.workDayWeeklySchedule !== undefined) {
       data.workDayWeeklySchedule = dto.workDayWeeklySchedule;
-      Object.assign(data, this.legacyFromWeekly(dto.workDayWeeklySchedule as WeeklySchedule));
+      Object.assign(
+        data,
+        legacyFieldsFromWeeklySchedule(dto.workDayWeeklySchedule as WeeklySchedule),
+      );
     }
     return this.prisma.user.update({
       where: { id: userId },
       data,
-      select: this.userScheduleSelect(),
+      select: USER_WORK_SCHEDULE_SELECT,
     });
   }
 
@@ -534,58 +519,16 @@ export class WorkDaysService implements OnModuleInit {
     if (!office) throw new NotFoundException('Офис не найден');
     const data: Record<string, unknown> = { ...dto };
     if (dto.workDayWeeklySchedule !== undefined) {
-      Object.assign(data, this.legacyFromWeekly(dto.workDayWeeklySchedule as WeeklySchedule));
+      Object.assign(
+        data,
+        legacyFieldsFromWeeklySchedule(dto.workDayWeeklySchedule as WeeklySchedule),
+      );
     }
     return this.prisma.office.update({
       where: { id: officeId },
       data,
-      select: this.officeScheduleSelect(),
+      select: OFFICE_WORK_SCHEDULE_SELECT,
     });
-  }
-
-  private legacyFromWeekly(weekly: WeeklySchedule) {
-    const enabledDays = getEnabledWeekdays(weekly);
-    const refKey = enabledDays[0]?.toString() ?? '1';
-    const ref = weekly[refKey] ?? weekly['1']!;
-    return {
-      workDayStartTime: ref.startTime,
-      workDayEndTime: ref.endTime,
-      workDaysOfWeek: enabledDays,
-      gracePeriodMinutes: ref.gracePeriodMinutes,
-    };
-  }
-
-  private userScheduleSelect() {
-    return {
-      id: true,
-      email: true,
-      firstName: true,
-      lastName: true,
-      role: true,
-      officeId: true,
-      workDayTrackingEnabled: true,
-      useCustomWorkSchedule: true,
-      workDayStartTime: true,
-      workDayEndTime: true,
-      workDaysOfWeek: true,
-      gracePeriodMinutes: true,
-      workDayWeeklySchedule: true,
-      office: { select: { id: true, name: true } },
-    } as const;
-  }
-
-  private officeScheduleSelect() {
-    return {
-      id: true,
-      name: true,
-      isActive: true,
-      allowedIps: true,
-      workDayStartTime: true,
-      workDayEndTime: true,
-      workDaysOfWeek: true,
-      gracePeriodMinutes: true,
-      workDayWeeklySchedule: true,
-    } as const;
   }
 
   async listTrackedUsers() {
@@ -594,7 +537,7 @@ export class WorkDaysService implements OnModuleInit {
         isActive: true,
         role: { in: ADMIN_ROLES.filter((r) => r !== UserRole.SUPER_ADMIN) },
       },
-      select: this.userScheduleSelect(),
+      select: USER_WORK_SCHEDULE_SELECT,
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
     });
   }
@@ -602,7 +545,7 @@ export class WorkDaysService implements OnModuleInit {
   async listOfficesWithSchedule() {
     return this.prisma.office.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      select: this.officeScheduleSelect(),
+      select: OFFICE_WORK_SCHEDULE_SELECT,
     });
   }
 }
