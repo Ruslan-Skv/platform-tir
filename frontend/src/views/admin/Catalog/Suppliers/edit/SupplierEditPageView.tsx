@@ -46,12 +46,20 @@ export function SupplierEditPageView({ model }: SupplierEditPageViewProps) {
         </h1>
         <div className={styles.headerActions}>
           {isEditMode && supplierId && (
-            <Link
-              href={`/admin/crm/supplier-settlements/${supplierId}`}
-              className={styles.settlementsLink}
-            >
-              Расчёты с поставщиком →
-            </Link>
+            <>
+              <Link
+                href={`/admin/catalog/suppliers/${supplierId}/price-lists`}
+                className={styles.settlementsLink}
+              >
+                Сверка прайс-листов →
+              </Link>
+              <Link
+                href={`/admin/crm/supplier-settlements/${supplierId}`}
+                className={styles.settlementsLink}
+              >
+                Расчёты с поставщиком →
+              </Link>
+            </>
           )}
           <button type="button" className={styles.backButton} onClick={goBack}>
             ← Назад к списку

@@ -450,6 +450,9 @@ export function adminEditRouteRedirectTarget(pathname: string): string | null {
   if (/^\/admin\/catalog\/categories\/[^/]+\/attributes$/.test(pathname)) {
     return '/admin/catalog/categories';
   }
+  if (/^\/admin\/catalog\/suppliers\/[^/]+\/(edit|price-lists)$/.test(pathname)) {
+    return '/admin/catalog/suppliers';
+  }
   if (/^\/admin\/catalog\/suppliers\/[^/]+$/.test(pathname)) return '/admin/catalog/suppliers';
   if (/^\/admin\/partners\/[^/]+$/.test(pathname)) return '/admin/partners';
   if (/^\/admin\/catalog\/categories\/[^/]+$/.test(pathname)) return '/admin/catalog/categories';

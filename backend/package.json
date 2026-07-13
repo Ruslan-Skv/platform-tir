@@ -38,6 +38,7 @@
     "prisma:seed": "ts-node -r tsconfig-paths/register prisma/seed.ts",
     "prisma:seed-quiz-mebel": "ts-node -r tsconfig-paths/register prisma/run-seed-quiz-mebel.ts",
     "prisma:seed-quiz-remont": "ts-node -r tsconfig-paths/register prisma/run-seed-quiz-remont.ts",
+    "reconcile:stroykom": "ts-node --transpile-only scripts/reconcile-stroykom-price-list.ts",
     "prisma:seed-quizzes": "npm run prisma:seed-quiz-mebel && npm run prisma:seed-quiz-remont",
     "prisma:seed-remont-kvartir": "ts-node -r tsconfig-paths/register prisma/seed-remont-kvartir-catalog.ts",
     "prisma:seed-product-card-badges": "ts-node -r tsconfig-paths/register prisma/seed-product-card-badges-only.ts",

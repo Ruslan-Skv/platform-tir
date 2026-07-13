@@ -100,6 +100,9 @@ export function ComponentCatalogPageView({ model }: ComponentCatalogPageViewProp
           <span className={styles.count}>{countLabel}</span>
         </div>
         <div className={styles.headerActions}>
+          <Link href="/admin/catalog/suppliers" className={styles.secondaryButton}>
+            Сверка прайсов
+          </Link>
           <Link href="/admin/catalog/products" className={styles.secondaryButton}>
             К товарам
           </Link>

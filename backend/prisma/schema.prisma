@@ -95,6 +95,7 @@ model User {
   complexObjectHistory                    ComplexObjectHistory[]                   @relation("ComplexObjectHistoryChangedBy")
   officeHistory                           OfficeHistory[]                          @relation("OfficeHistoryChangedBy")
   supplierSettlementHistory               SupplierSettlementHistory[]              @relation("SupplierSettlementHistoryChangedBy")
+  supplierPriceListSnapshotsUploaded      SupplierPriceListSnapshot[]              @relation("SupplierPriceListUploadedBy")
   taskHistory                             TaskHistory[]                            @relation("TaskHistoryChangedBy")
   customerHistory                         CustomerHistory[]                        @relation("CustomerHistoryChangedBy")
   managedComplexObjects                   ComplexObject[]                          @relation("ComplexObjectManager")
@@ -1618,34 +1619,107 @@ model AttributeValue {
 }
 
 model Supplier {
-  id                     String                      @id @default(cuid())
+  id                     String                        @id @default(cuid())
   name                   String? // Для обратной совместимости
   legalName              String // Наименование юридическое (обязательное)
   commercialName         String? // Наименование коммерческое
   email                  String?
-  phone                  String[]                    @default([]) // Массив телефонов
+  phone                  String[]                      @default([]) // Массив телефонов
   website                String? // Адрес сайта
   legalAddress           String? // Юридический адрес
-  inn                    String?                     @unique // ИНН (уникальный)
+  inn                    String?                       @unique // ИНН (уникальный)
   bankName               String? // Банк
   bankAccount            String? // Расчетный счет (р/сч)
   bankBik                String? // БИК
   apiUrl                 String?
   apiKey                 String?
-  priceMarkup            Decimal                     @default(0) @db.Decimal(5, 2)
-  isActive               Boolean                     @default(true)
-  syncEnabled            Boolean                     @default(false)
+  priceMarkup            Decimal                       @default(0) @db.Decimal(5, 2)
+  isActive               Boolean                       @default(true)
+  syncEnabled            Boolean                       @default(false)
   syncSchedule           String?
   lastSyncAt             DateTime?
-  createdAt              DateTime                    @default(now())
-  updatedAt              DateTime                    @updatedAt
+  createdAt              DateTime                      @default(now())
+  updatedAt              DateTime                      @updatedAt
   products               ProductSupplier[]
   syncLogs               SupplierSyncLog[]
   settlementRows         SupplierSettlementRow[]
   settlementHistory      SupplierSettlementHistory[]
   componentCatalogSeries ComponentCatalogSeries[]
+  priceListSnapshots     SupplierPriceListSnapshot[]
+  priceListRowMappings   SupplierPriceListRowMapping[]
 
   @@map("suppliers")
+}
+
+/// Категория сверки прайс-листа поставщика
+enum SupplierPriceListCategory {
+  TRIM
+  INTERIOR_DOOR
+  STEEL_DOOR
+  HARDWARE
+  ARCH
+  ACCORDION
+}
+
+/// Снимок загруженного прайс-листа поставщика
+model SupplierPriceListSnapshot {
+  id             String                    @id @default(cuid())
+  supplierId     String
+  category       SupplierPriceListCategory @default(TRIM)
+  fileName       String
+  storedFileName String?
+  priceListDate  String?
+  parserCode     String                    @default("STROYKOM_MK")
+  sheetName      String                    @default("Межкомнатные двери с фото")
+  rowCount       Int                       @default(0)
+  uploadedById   String?
+  createdAt      DateTime                  @default(now())
+
+  supplier   Supplier               @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  uploadedBy User?                  @relation("SupplierPriceListUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+  rows       SupplierPriceListRow[]
+
+  @@index([supplierId])
+  @@index([supplierId, category])
+  @@index([createdAt])
+  @@map("supplier_price_list_snapshots")
+}
+
+/// Строка из прайс-листа
+model SupplierPriceListRow {
+  id          String  @id @default(cuid())
+  snapshotId  String
+  rowKey      String
+  blockTitle  String
+  color       String
+  itemName    String
+  size        String?
+  material    String?
+  variantNote String?
+  priceRrc    Decimal @db.Decimal(10, 2)
+
+  snapshot SupplierPriceListSnapshot @relation(fields: [snapshotId], references: [id], onDelete: Cascade)
+
+  @@unique([snapshotId, rowKey])
+  @@index([snapshotId])
+  @@map("supplier_price_list_rows")
+}
+
+/// Привязка строки прайса к позиции справочника комплектующих
+model SupplierPriceListRowMapping {
+  id            String   @id @default(cuid())
+  supplierId    String
+  rowKey        String
+  catalogItemId String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  supplier    Supplier             @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+  catalogItem ComponentCatalogItem @relation(fields: [catalogItemId], references: [id], onDelete: Cascade)
+
+  @@unique([supplierId, rowKey])
+  @@index([catalogItemId])
+  @@map("supplier_price_list_row_mappings")
 }
 
 model SupplierSettlementRow {
@@ -2095,23 +2169,24 @@ model ComponentCatalogSeries {
 
 /// Справочник комплектующих — единая цена для всех товаров
 model ComponentCatalogItem {
-  id                String                      @id @default(cuid())
+  id                String                        @id @default(cuid())
   kindId            String
   name              String // Название: Наличник, Добор, Стойка коробки
   size              String? // Размер: 70мм, 2000x800
   color             String? // Цвет
   material          String? // Материал изготовления
-  price             Decimal                     @db.Decimal(10, 2)
-  slug              String                      @unique
+  price             Decimal                       @db.Decimal(10, 2)
+  slug              String                        @unique
   image             String?
-  stock             Int                         @default(0)
-  isActive          Boolean                     @default(true)
-  sortOrder         Int                         @default(0)
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  kindRef           ComponentCatalogKind        @relation(fields: [kindId], references: [id], onDelete: Restrict)
+  stock             Int                           @default(0)
+  isActive          Boolean                       @default(true)
+  sortOrder         Int                           @default(0)
+  createdAt         DateTime                      @default(now())
+  updatedAt         DateTime                      @updatedAt
+  kindRef           ComponentCatalogKind          @relation(fields: [kindId], references: [id], onDelete: Restrict)
   productComponents ProductComponent[]
   groupItems        ComponentCatalogGroupItem[]
+  priceListMappings SupplierPriceListRowMapping[]
 
   @@index([kindId])
   @@map("component_catalog_items")

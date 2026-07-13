@@ -239,6 +239,27 @@
   border-color: var(--admin-success-lime);
 }
 
+.priceListButton {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  transition: all 0.15s;
+  font-size: var(--admin-font-size-base);
+  text-decoration: none;
+  color: inherit;
+}
+
+.priceListButton:hover {
+  background: #dbeafe;
+  border-color: #60a5fa;
+}
+
 .editButton {
   width: 28px;
   height: 28px;

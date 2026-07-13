@@ -182,6 +182,13 @@ export function SuppliersPageView({ model }: SuppliersPageViewProps) {
             >
               💰
             </Link>
+            <Link
+              href={`/admin/catalog/suppliers/${supplier.id}/price-lists`}
+              className={styles.priceListButton}
+              title="Сверка прайс-листов"
+            >
+              📋
+            </Link>
             <button
               className={styles.editButton}
               onClick={() => router.push(`/admin/catalog/suppliers/${supplier.id}/edit`)}
