@@ -169,3 +169,13 @@ export const ROLES_CONFIG: RoleConfig[] = [
     permissions: ['Просмотр каталога', 'Корзина (без оформления)'],
   },
 ];
+
+export const ROLE_LABELS: Record<BackendRole, string> = Object.fromEntries(
+  ROLES_CONFIG.map((role) => [role.id, role.label])
+) as Record<BackendRole, string>;
+
+/** Русское название роли для UI (аватарки, шапка, списки). */
+export function getRoleLabel(role: string | null | undefined): string {
+  if (!role) return '';
+  return ROLE_LABELS[role as BackendRole] ?? role;
+}

@@ -36,6 +36,7 @@ import type { AdminReview } from '@/shared/api/admin-reviews';
 import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
+import { getRoleLabel } from '@/shared/config/admin-roles';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
@@ -69,13 +70,6 @@ import {
 } from './admin-header-notifications.utils';
 
 const ADMIN_NOTIFICATIONS_RESOURCE_ID = 'admin.settings.notifications';
-
-const ROLE_NAMES: Record<string, string> = {
-  ADMIN: 'Администратор',
-  MANAGER: 'Менеджер',
-  CONTENT_MANAGER: 'Контент-менеджер',
-  TRAINEE: 'Стажёр',
-};
 
 function formatTimeAgo(dateStr: string): string {
   const date = new Date(dateStr);
@@ -634,9 +628,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             )}
             <div className={styles.userInfo}>
               <span className={styles.userName}>{displayName}</span>
-              <span className={styles.userRole}>
-                {user?.role ? ROLE_NAMES[user.role] || user.role : ''}
-              </span>
+              <span className={styles.userRole}>{getRoleLabel(user?.role)}</span>
             </div>
             <span className={styles.userArrow}>▼</span>
           </button>
