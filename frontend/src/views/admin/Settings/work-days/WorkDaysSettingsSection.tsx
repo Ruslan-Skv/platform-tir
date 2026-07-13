@@ -15,6 +15,8 @@ import {
   updateWorkDaySettings,
   updateWorkDayUser,
 } from '@/shared/api/admin-work-days';
+import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
+import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 import { ROLES_CONFIG } from '@/views/admin/Settings';
 import { SettingsSubPageView } from '@/views/admin/Settings';
 
@@ -31,13 +33,14 @@ export function WorkDaysSettingsSection() {
   const [offices, setOffices] = useState<WorkDayOfficeSchedule[]>([]);
   const [users, setUsers] = useState<WorkDayUserSchedule[]>([]);
   const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [notice, setNotice] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [savingGeneral, setSavingGeneral] = useState(false);
+  const [savingOffices, setSavingOffices] = useState(false);
+  const [savingUsers, setSavingUsers] = useState(false);
+  const { saveNoticeVisible, errorMessage, showSaveSuccess, showSaveError } =
+    useAdminSaveFeedback();
 
   const load = useCallback(async () => {
     setLoading(true);
-    setError(null);
     try {
       const [s, o, u] = await Promise.all([
         getWorkDaySettings(),
@@ -48,19 +51,32 @@ export function WorkDaysSettingsSection() {
       setOffices(o);
       setUsers(u);
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка загрузки');
+      showSaveError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [showSaveError]);
 
   useEffect(() => {
     void load();
   }, [load]);
 
-  const flashSaved = () => {
-    setNotice(true);
-    setTimeout(() => setNotice(false), 2000);
+  const buildOfficePayload = (office: WorkDayOfficeSchedule) => ({
+    allowedIps: office.allowedIps,
+    skipWorkDayIpCheck: office.skipWorkDayIpCheck,
+    workDayWeeklySchedule: getOfficeWeekly(office),
+  });
+
+  const buildUserSchedulePayload = (u: WorkDayUserSchedule) => {
+    const payload: Parameters<typeof updateWorkDayUser>[1] = {
+      officeId: u.officeId,
+      workDayTrackingEnabled: u.workDayTrackingEnabled,
+      useCustomWorkSchedule: u.useCustomWorkSchedule,
+    };
+    if (u.useCustomWorkSchedule) {
+      payload.workDayWeeklySchedule = getUserWeekly(u);
+    }
+    return payload;
   };
 
   if (user?.role !== 'SUPER_ADMIN') {
@@ -76,15 +92,15 @@ export function WorkDaysSettingsSection() {
   }
 
   const saveSettings = async (patch: Partial<WorkDaySettings>) => {
-    setSaving(true);
+    setSavingGeneral(true);
     try {
       const updated = await updateWorkDaySettings(patch);
       setSettings(updated);
-      flashSaved();
+      showSaveSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка сохранения');
+      showSaveError(e instanceof Error ? e.message : 'Ошибка сохранения');
     } finally {
-      setSaving(false);
+      setSavingGeneral(false);
     }
   };
 
@@ -95,42 +111,49 @@ export function WorkDaysSettingsSection() {
     void saveSettings({ trackedRoles: tracked });
   };
 
-  const saveOffice = async (office: WorkDayOfficeSchedule) => {
-    setSaving(true);
+  const saveAllOffices = async () => {
+    setSavingOffices(true);
     try {
-      const weekly = getOfficeWeekly(office);
-      const updated = await updateWorkDayOffice(office.id, {
-        allowedIps: office.allowedIps,
-        skipWorkDayIpCheck: office.skipWorkDayIpCheck,
-        workDayWeeklySchedule: weekly,
-      });
-      setOffices((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-      flashSaved();
+      const results = await Promise.allSettled(
+        offices.map((office) => updateWorkDayOffice(office.id, buildOfficePayload(office)))
+      );
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        showSaveError(
+          failed.length === offices.length
+            ? 'Не удалось сохранить настройки офисов'
+            : `Сохранено не для всех: ошибок ${failed.length} из ${offices.length}`
+        );
+      } else {
+        showSaveSuccess();
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка сохранения офиса');
+      showSaveError(e instanceof Error ? e.message : 'Ошибка сохранения офисов');
     } finally {
-      setSaving(false);
+      setSavingOffices(false);
     }
   };
 
-  const saveUserSchedule = async (u: WorkDayUserSchedule) => {
-    setSaving(true);
+  const saveAllUsers = async () => {
+    setSavingUsers(true);
     try {
-      const payload: Parameters<typeof updateWorkDayUser>[1] = {
-        officeId: u.officeId,
-        workDayTrackingEnabled: u.workDayTrackingEnabled,
-        useCustomWorkSchedule: u.useCustomWorkSchedule,
-      };
-      if (u.useCustomWorkSchedule) {
-        payload.workDayWeeklySchedule = getUserWeekly(u);
+      const results = await Promise.allSettled(
+        users.map((u) => updateWorkDayUser(u.id, buildUserSchedulePayload(u)))
+      );
+      const failed = results.filter((r) => r.status === 'rejected');
+      if (failed.length > 0) {
+        showSaveError(
+          failed.length === users.length
+            ? 'Не удалось сохранить настройки сотрудников'
+            : `Сохранено не для всех: ошибок ${failed.length} из ${users.length}`
+        );
+      } else {
+        showSaveSuccess();
       }
-      const updated = await updateWorkDayUser(u.id, payload);
-      setUsers((prev) => prev.map((item) => (item.id === updated.id ? updated : item)));
-      flashSaved();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка сохранения сотрудника');
+      showSaveError(e instanceof Error ? e.message : 'Ошибка сохранения сотрудников');
     } finally {
-      setSaving(false);
+      setSavingUsers(false);
     }
   };
 
@@ -139,9 +162,15 @@ export function WorkDaysSettingsSection() {
       title="Учёт рабочего времени"
       subtitle="Настройка графиков, IP-адресов офисов и ролей, для которых включён учёт рабочего дня."
       backLink={{ href: '/admin/settings', label: '← Настройки' }}
-      saveNoticeVisible={notice}
+      saveNoticeVisible={saveNoticeVisible}
       wide
     >
+      {errorMessage ? (
+        <AdminFormMessage type="error" className={styles.feedback}>
+          {errorMessage}
+        </AdminFormMessage>
+      ) : null}
+
       <div className={styles.tabs}>
         {(
           [
@@ -161,8 +190,6 @@ export function WorkDaysSettingsSection() {
         ))}
       </div>
 
-      {error ? <p className={styles.error}>{error}</p> : null}
-
       {tab === 'general' && (
         <section className={styles.section}>
           <label className={styles.checkRow}>
@@ -170,7 +197,7 @@ export function WorkDaysSettingsSection() {
               type="checkbox"
               checked={settings.isEnabled}
               onChange={(e) => void saveSettings({ isEnabled: e.target.checked })}
-              disabled={saving}
+              disabled={savingGeneral}
             />
             Учёт рабочего дня включён
           </label>
@@ -179,7 +206,7 @@ export function WorkDaysSettingsSection() {
               type="checkbox"
               checked={settings.blockAdminWithoutWorkDay}
               onChange={(e) => void saveSettings({ blockAdminWithoutWorkDay: e.target.checked })}
-              disabled={saving}
+              disabled={savingGeneral}
             />
             Блокировать админку без начала рабочего дня
           </label>
@@ -188,7 +215,7 @@ export function WorkDaysSettingsSection() {
               type="checkbox"
               checked={settings.requireOfficeIp}
               onChange={(e) => void saveSettings({ requireOfficeIp: e.target.checked })}
-              disabled={saving}
+              disabled={savingGeneral}
             />
             Разрешать начало дня только с IP офиса
           </label>
@@ -197,7 +224,7 @@ export function WorkDaysSettingsSection() {
               type="checkbox"
               checked={settings.blockMobileDevices}
               onChange={(e) => void saveSettings({ blockMobileDevices: e.target.checked })}
-              disabled={saving}
+              disabled={savingGeneral}
             />
             Запретить начало дня с мобильных устройств
           </label>
@@ -216,7 +243,7 @@ export function WorkDaysSettingsSection() {
                     autoCloseMinute: parseInt(m || '0', 10),
                   });
                 }}
-                disabled={saving}
+                disabled={savingGeneral}
               />
             </label>
             <label>
@@ -232,7 +259,7 @@ export function WorkDaysSettingsSection() {
                     defaultGracePeriodMinutes: parseInt(e.target.value, 10) || 0,
                   })
                 }
-                disabled={saving}
+                disabled={savingGeneral}
               />
             </label>
           </div>
@@ -247,7 +274,7 @@ export function WorkDaysSettingsSection() {
                   type="checkbox"
                   checked={settings.trackedRoles.includes(role.id)}
                   onChange={() => toggleRole(role.id)}
-                  disabled={saving}
+                  disabled={savingGeneral}
                 />
                 {role.label}
               </label>
@@ -276,16 +303,27 @@ export function WorkDaysSettingsSection() {
 
       {tab === 'offices' && (
         <section className={styles.section}>
+          <div className={styles.tabToolbar}>
+            <p className={styles.hint}>
+              График по дням недели, проверка IP и разрешённые адреса для каждого офиса.
+            </p>
+            <button
+              type="button"
+              className={styles.saveBtn}
+              onClick={() => void saveAllOffices()}
+              disabled={savingOffices || offices.length === 0}
+            >
+              {savingOffices ? 'Сохранение…' : 'Сохранить офисы'}
+            </button>
+          </div>
           <WorkDaysIpHelp />
           {offices.map((office) => (
             <OfficeCard
               key={office.id}
               office={office}
-              saving={saving}
               onChange={(patch) =>
                 setOffices((prev) => prev.map((o) => (o.id === office.id ? { ...o, ...patch } : o)))
               }
-              onSave={() => void saveOffice(office)}
             />
           ))}
         </section>
@@ -293,22 +331,30 @@ export function WorkDaysSettingsSection() {
 
       {tab === 'users' && (
         <section className={styles.section}>
-          <p className={styles.hint}>
-            Все активные сотрудники админки. Учёт по роли включается на вкладке «Общие», но для
-            каждого сотрудника его можно отключить отдельно.
-          </p>
+          <div className={styles.tabToolbar}>
+            <p className={styles.hint}>
+              Все активные сотрудники админки. Учёт по роли включается на вкладке «Общие», но для
+              каждого сотрудника его можно отключить отдельно.
+            </p>
+            <button
+              type="button"
+              className={styles.saveBtn}
+              onClick={() => void saveAllUsers()}
+              disabled={savingUsers || users.length === 0}
+            >
+              {savingUsers ? 'Сохранение…' : 'Сохранить сотрудников'}
+            </button>
+          </div>
           {users.map((u) => (
             <UserCard
               key={u.id}
               user={u}
               offices={offices}
-              saving={saving}
               onChange={(patch) =>
                 setUsers((prev) =>
                   prev.map((item) => (item.id === u.id ? { ...item, ...patch } : item))
                 )
               }
-              onSave={() => void saveUserSchedule(u)}
             />
           ))}
         </section>
@@ -337,14 +383,10 @@ function getUserWeekly(user: WorkDayUserSchedule): WeeklySchedule {
 
 function OfficeCard({
   office,
-  saving,
   onChange,
-  onSave,
 }: {
   office: WorkDayOfficeSchedule;
-  saving: boolean;
   onChange: (patch: Partial<WorkDayOfficeSchedule>) => void;
-  onSave: () => void;
 }) {
   const weekly = getOfficeWeekly(office);
   return (
@@ -355,7 +397,6 @@ function OfficeCard({
       </p>
       <WeeklyScheduleEditor
         schedule={weekly}
-        disabled={saving}
         onChange={(schedule) => onChange({ workDayWeeklySchedule: schedule })}
       />
       <label className={styles.checkRow}>
@@ -363,7 +404,6 @@ function OfficeCard({
           type="checkbox"
           checked={office.skipWorkDayIpCheck}
           onChange={(e) => onChange({ skipWorkDayIpCheck: e.target.checked })}
-          disabled={saving}
         />
         <span>
           Не проверять IP при начале рабочего дня
@@ -396,9 +436,6 @@ function OfficeCard({
           }
         />
       </label>
-      <button type="button" className={styles.saveBtn} onClick={onSave} disabled={saving}>
-        Сохранить офис
-      </button>
     </article>
   );
 }
@@ -406,15 +443,11 @@ function OfficeCard({
 function UserCard({
   user,
   offices,
-  saving,
   onChange,
-  onSave,
 }: {
   user: WorkDayUserSchedule;
   offices: WorkDayOfficeSchedule[];
-  saving: boolean;
   onChange: (patch: Partial<WorkDayUserSchedule>) => void;
-  onSave: () => void;
 }) {
   const name = [user.lastName, user.firstName].filter(Boolean).join(' ') || user.email;
   const roleTracked = user.workDayTrackingEnabled;
@@ -456,13 +489,9 @@ function UserCard({
       {user.useCustomWorkSchedule ? (
         <WeeklyScheduleEditor
           schedule={getUserWeekly(user)}
-          disabled={saving}
           onChange={(schedule) => onChange({ workDayWeeklySchedule: schedule })}
         />
       ) : null}
-      <button type="button" className={styles.saveBtn} onClick={onSave} disabled={saving}>
-        Сохранить
-      </button>
     </article>
   );
 }
