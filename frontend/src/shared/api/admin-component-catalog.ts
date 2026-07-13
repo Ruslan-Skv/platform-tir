@@ -39,6 +39,19 @@ export interface AdminComponentCatalogGroupRef {
   };
 }
 
+export interface AdminComponentCatalogSupplierRef {
+  id: string;
+  legalName: string;
+  commercialName: string | null;
+}
+
+export function formatComponentCatalogSupplierLabel(
+  supplier?: AdminComponentCatalogSupplierRef | null
+): string {
+  if (!supplier) return '—';
+  return supplier.commercialName || supplier.legalName;
+}
+
 export interface AdminComponentCatalogSeriesSubgroup {
   id: string;
   name: string;
@@ -53,10 +66,12 @@ export interface AdminComponentCatalogSeries {
   name: string;
   description: string | null;
   categoryId: string | null;
+  supplierId: string | null;
   slug: string;
   isActive: boolean;
   sortOrder: number;
   category?: { id: string; name: string; slug: string } | null;
+  supplier?: AdminComponentCatalogSupplierRef | null;
   subgroups?: AdminComponentCatalogSeriesSubgroup[];
   _count?: { subgroups: number };
 }
@@ -204,6 +219,8 @@ export interface AdminComponentCatalogTreeSeries {
   slug: string;
   isActive: boolean;
   sortOrder: number;
+  supplierId: string | null;
+  supplier?: AdminComponentCatalogSupplierRef | null;
   subgroupCount: number;
   itemCount: number;
   productCount: number;
@@ -243,6 +260,7 @@ export async function fetchAdminComponentCatalogTree(params?: {
 export async function fetchAdminComponentCatalogSeriesList(params?: {
   search?: string;
   categoryId?: string;
+  supplierId?: string;
   page?: number;
   limit?: number;
 }): Promise<AdminComponentCatalogSeriesListResponse> {
@@ -251,6 +269,7 @@ export async function fetchAdminComponentCatalogSeriesList(params?: {
   search.set('limit', String(params?.limit ?? 50));
   if (params?.search?.trim()) search.set('search', params.search.trim());
   if (params?.categoryId) search.set('categoryId', params.categoryId);
+  if (params?.supplierId) search.set('supplierId', params.supplierId);
 
   const res = await apiFetch(`${API_URL}/admin/catalog/component-catalog-series?${search}`, {
     headers: getAdminAuthHeaders(),
@@ -267,6 +286,7 @@ export async function createAdminComponentCatalogSeries(body: {
   name: string;
   description?: string;
   categoryId?: string;
+  supplierId?: string | null;
   slug: string;
   isActive?: boolean;
   sortOrder?: number;
@@ -289,6 +309,7 @@ export async function updateAdminComponentCatalogSeries(
     name: string;
     description: string;
     categoryId: string;
+    supplierId: string | null;
     slug: string;
     isActive: boolean;
     sortOrder: number;
@@ -642,6 +663,31 @@ export function buildComponentCatalogSlug(
   );
   if (!seriesSlug?.trim()) return base;
   return slugifyComponentCatalog(`${seriesSlug.trim()}-${base}`);
+}
+
+export async function fetchAdminCatalogSuppliersForSelect(): Promise<
+  AdminComponentCatalogSupplierRef[]
+> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/suppliers?limit=1000&isActive=true`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Не удалось загрузить поставщиков');
+  }
+  const data = (await res.json()) as {
+    data?: Array<{
+      id: string;
+      legalName: string;
+      commercialName?: string | null;
+    }>;
+  };
+  return (data.data ?? []).map((supplier) => ({
+    id: supplier.id,
+    legalName: supplier.legalName,
+    commercialName: supplier.commercialName ?? null,
+  }));
 }
 
 export function slugifyComponentCatalog(value: string): string {

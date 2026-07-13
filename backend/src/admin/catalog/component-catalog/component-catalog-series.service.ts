@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+  BadRequestException,
+} from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { CreateComponentCatalogSeriesDto } from './dto/create-component-catalog-series.dto';
@@ -15,6 +20,8 @@ export class ComponentCatalogSeriesService {
       throw new ConflictException(`Группа моделей со slug "${dto.slug}" уже существует`);
     }
 
+    await this.ensureSupplierExists(dto.supplierId);
+
     return this.prisma.componentCatalogSeries.create({
       data: dto,
       include: this.seriesInclude(),
@@ -24,15 +31,17 @@ export class ComponentCatalogSeriesService {
   async findAll(params?: {
     search?: string;
     categoryId?: string;
+    supplierId?: string;
     isActive?: boolean;
     page?: number;
     limit?: number;
   }) {
-    const { search, categoryId, isActive, page = 1, limit = 50 } = params || {};
+    const { search, categoryId, supplierId, isActive, page = 1, limit = 50 } = params || {};
     const skip = (page - 1) * limit;
     const where: Prisma.ComponentCatalogSeriesWhereInput = {};
     if (isActive !== undefined) where.isActive = isActive;
     if (categoryId) where.categoryId = categoryId;
+    if (supplierId) where.supplierId = supplierId;
     if (search?.trim()) {
       const q = search.trim();
       where.OR = [
@@ -76,6 +85,10 @@ export class ComponentCatalogSeriesService {
       }
     }
 
+    if (data.supplierId !== undefined) {
+      await this.ensureSupplierExists(data.supplierId);
+    }
+
     return this.prisma.componentCatalogSeries.update({
       where: { id },
       data,
@@ -104,6 +117,7 @@ export class ComponentCatalogSeriesService {
   private seriesInclude() {
     return {
       category: { select: { id: true, name: true, slug: true } },
+      supplier: { select: { id: true, legalName: true, commercialName: true } },
       subgroups: {
         orderBy: [{ sortOrder: 'asc' as const }, { name: 'asc' as const }],
         include: {
@@ -112,5 +126,13 @@ export class ComponentCatalogSeriesService {
       },
       _count: { select: { subgroups: true } },
     };
+  }
+
+  private async ensureSupplierExists(supplierId?: string | null) {
+    if (!supplierId) return;
+    const supplier = await this.prisma.supplier.findUnique({ where: { id: supplierId } });
+    if (!supplier) {
+      throw new BadRequestException(`Поставщик ${supplierId} не найден`);
+    }
   }
 }

@@ -17,6 +17,7 @@ import {
   deleteAdminComponentCatalogGroup,
   deleteAdminComponentCatalogSeries,
   fetchAdminComponentCatalogTree,
+  formatComponentCatalogSupplierLabel,
   reorderAdminComponentCatalogGroups,
   reorderAdminComponentCatalogSeries,
 } from '@/shared/api/admin-component-catalog';
@@ -108,6 +109,8 @@ function seriesToAdminSeries(series: AdminComponentCatalogTreeSeries): AdminComp
     name: series.name,
     description: series.description,
     categoryId: null,
+    supplierId: series.supplierId ?? null,
+    supplier: series.supplier ?? null,
     slug: series.slug,
     isActive: series.isActive,
     sortOrder: series.sortOrder,
@@ -529,6 +532,9 @@ export function ComponentCatalogTreePanel({
                     <span className={styles.treeSeriesMeta}>
                       {s.subgroupCount} подгр. · {s.itemCount} поз. ·{' '}
                       {formatProductCountLabel(s.productCount ?? 0)}
+                      {s.supplier ? (
+                        <> · {formatComponentCatalogSupplierLabel(s.supplier)}</>
+                      ) : null}
                     </span>
                   </div>
                   <div className={styles.treeRowActions}>

@@ -1618,31 +1618,32 @@ model AttributeValue {
 }
 
 model Supplier {
-  id                String                      @id @default(cuid())
-  name              String? // Для обратной совместимости
-  legalName         String // Наименование юридическое (обязательное)
-  commercialName    String? // Наименование коммерческое
-  email             String?
-  phone             String[]                    @default([]) // Массив телефонов
-  website           String? // Адрес сайта
-  legalAddress      String? // Юридический адрес
-  inn               String?                     @unique // ИНН (уникальный)
-  bankName          String? // Банк
-  bankAccount       String? // Расчетный счет (р/сч)
-  bankBik           String? // БИК
-  apiUrl            String?
-  apiKey            String?
-  priceMarkup       Decimal                     @default(0) @db.Decimal(5, 2)
-  isActive          Boolean                     @default(true)
-  syncEnabled       Boolean                     @default(false)
-  syncSchedule      String?
-  lastSyncAt        DateTime?
-  createdAt         DateTime                    @default(now())
-  updatedAt         DateTime                    @updatedAt
-  products          ProductSupplier[]
-  syncLogs          SupplierSyncLog[]
-  settlementRows    SupplierSettlementRow[]
-  settlementHistory SupplierSettlementHistory[]
+  id                     String                      @id @default(cuid())
+  name                   String? // Для обратной совместимости
+  legalName              String // Наименование юридическое (обязательное)
+  commercialName         String? // Наименование коммерческое
+  email                  String?
+  phone                  String[]                    @default([]) // Массив телефонов
+  website                String? // Адрес сайта
+  legalAddress           String? // Юридический адрес
+  inn                    String?                     @unique // ИНН (уникальный)
+  bankName               String? // Банк
+  bankAccount            String? // Расчетный счет (р/сч)
+  bankBik                String? // БИК
+  apiUrl                 String?
+  apiKey                 String?
+  priceMarkup            Decimal                     @default(0) @db.Decimal(5, 2)
+  isActive               Boolean                     @default(true)
+  syncEnabled            Boolean                     @default(false)
+  syncSchedule           String?
+  lastSyncAt             DateTime?
+  createdAt              DateTime                    @default(now())
+  updatedAt              DateTime                    @updatedAt
+  products               ProductSupplier[]
+  syncLogs               SupplierSyncLog[]
+  settlementRows         SupplierSettlementRow[]
+  settlementHistory      SupplierSettlementHistory[]
+  componentCatalogSeries ComponentCatalogSeries[]
 
   @@map("suppliers")
 }
@@ -2078,14 +2079,17 @@ model ComponentCatalogSeries {
   name        String
   description String?
   categoryId  String?
+  supplierId  String?
   slug        String                  @unique
   isActive    Boolean                 @default(true)
   sortOrder   Int                     @default(0)
   createdAt   DateTime                @default(now())
   updatedAt   DateTime                @updatedAt
   category    Category?               @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  supplier    Supplier?               @relation(fields: [supplierId], references: [id], onDelete: SetNull)
   subgroups   ComponentCatalogGroup[]
 
+  @@index([supplierId])
   @@map("component_catalog_series")
 }
 

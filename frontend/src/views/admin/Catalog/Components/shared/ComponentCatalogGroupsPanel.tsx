@@ -12,11 +12,13 @@ import {
   createAdminComponentCatalogSeries,
   deleteAdminComponentCatalogGroup,
   deleteAdminComponentCatalogSeries,
+  fetchAdminCatalogSuppliersForSelect,
   fetchAdminComponentCatalogGroupsList,
   fetchAdminComponentCatalogKinds,
   fetchAdminComponentCatalogList,
   fetchAdminComponentCatalogSeriesList,
   formatCatalogItemLabel,
+  formatComponentCatalogSupplierLabel,
   getCatalogKindLabel,
   slugifyComponentCatalog,
   updateAdminComponentCatalogGroup,
@@ -199,6 +201,16 @@ export function ComponentCatalogGroupsPanel({
             <div className={styles.hierarchyTitle}>{s.name}</div>
             {s.description ? <div className={styles.hierarchySubtitle}>{s.description}</div> : null}
           </div>
+        ),
+      },
+      {
+        key: 'supplier',
+        title: 'Поставщик',
+        sortable: false,
+        render: (s: AdminComponentCatalogSeries) => (
+          <span className={styles.hierarchySubtitle}>
+            {formatComponentCatalogSupplierLabel(s.supplier)}
+          </span>
         ),
       },
       {
@@ -654,20 +666,29 @@ export function ComponentCatalogSeriesModal({
 }) {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
+  const [supplierId, setSupplierId] = useState('');
   const [slug, setSlug] = useState('');
   const [autoSlug, setAutoSlug] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const { data: suppliers = [] } = useQuery({
+    queryKey: ['component-catalog-suppliers-select'],
+    queryFn: fetchAdminCatalogSuppliersForSelect,
+    enabled: open,
+  });
 
   useEffect(() => {
     if (!open) return;
     if (series) {
       setName(series.name);
       setDescription(series.description ?? '');
+      setSupplierId(series.supplierId ?? '');
       setSlug(series.slug);
       setAutoSlug(false);
     } else {
       setName('');
       setDescription('');
+      setSupplierId('');
       setSlug('');
       setAutoSlug(true);
     }
@@ -686,6 +707,7 @@ export function ComponentCatalogSeriesModal({
       const body = {
         name: n,
         description: description.trim() || undefined,
+        supplierId: supplierId.trim() || null,
         slug: s,
       };
       if (series) {
@@ -718,7 +740,8 @@ export function ComponentCatalogSeriesModal({
       >
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Группа моделей объединяет подгруппы комплектующих для одной серии дверей (например, ЛОФТ,
-          Классика). Внутри — подгруппы по цвету с набором стойки, наличника и добора.
+          Классика). Внутри — подгруппы по цвету с набором стойки, наличника и добора. Поставщик
+          указывается на всю группу: все подгруппы и позиции относятся к выбранному поставщику.
         </p>
         <div data-modal-form-grid className={styles.groupFormGrid}>
           <div data-modal-form-group className={styles.groupNameField}>
@@ -742,6 +765,21 @@ export function ComponentCatalogSeriesModal({
               onChange={(e) => setDescription(e.target.value)}
               placeholder="Погонаж для дверей серии ЛОФТ"
             />
+          </div>
+          <div data-modal-form-group>
+            <label htmlFor="catalog-series-supplier">Поставщик</label>
+            <select
+              id="catalog-series-supplier"
+              value={supplierId}
+              onChange={(e) => setSupplierId(e.target.value)}
+            >
+              <option value="">— не выбран —</option>
+              {suppliers.map((supplier) => (
+                <option key={supplier.id} value={supplier.id}>
+                  {formatComponentCatalogSupplierLabel(supplier)}
+                </option>
+              ))}
+            </select>
           </div>
           <div data-modal-form-group>
             <label htmlFor="catalog-series-slug">Slug *</label>

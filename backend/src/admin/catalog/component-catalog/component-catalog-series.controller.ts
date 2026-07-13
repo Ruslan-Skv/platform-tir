@@ -36,6 +36,7 @@ export class ComponentCatalogSeriesController {
   findAll(
     @Query('search') search?: string,
     @Query('categoryId') categoryId?: string,
+    @Query('supplierId') supplierId?: string,
     @Query('isActive') isActive?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
@@ -43,6 +44,7 @@ export class ComponentCatalogSeriesController {
     return this.service.findAll({
       search,
       categoryId,
+      supplierId,
       isActive: isActive ? isActive === 'true' : undefined,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 50,

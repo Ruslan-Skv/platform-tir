@@ -1,5 +1,5 @@
-import { IsString, IsOptional, IsBoolean, IsNumber, IsNotEmpty } from 'class-validator';
-import { Type } from 'class-transformer';
+import { IsString, IsOptional, IsBoolean, IsNumber, IsNotEmpty, ValidateIf } from 'class-validator';
+import { Type, Transform } from 'class-transformer';
 
 export class CreateComponentCatalogSeriesDto {
   @IsString()
@@ -13,6 +13,12 @@ export class CreateComponentCatalogSeriesDto {
   @IsString()
   @IsOptional()
   categoryId?: string;
+
+  @IsOptional()
+  @ValidateIf((_, value) => value !== null)
+  @IsString()
+  @Transform(({ value }) => (value === '' ? null : value))
+  supplierId?: string | null;
 
   @IsString()
   @IsNotEmpty()

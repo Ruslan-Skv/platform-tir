@@ -30,6 +30,7 @@ export class ComponentCatalogTreeService {
     const seriesRows = await this.prisma.componentCatalogSeries.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
       include: {
+        supplier: { select: { id: true, legalName: true, commercialName: true } },
         _count: { select: { subgroups: true } },
         subgroups: {
           orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
@@ -88,6 +89,8 @@ export class ComponentCatalogTreeService {
           slug: s.slug,
           isActive: s.isActive,
           sortOrder: s.sortOrder,
+          supplierId: s.supplierId,
+          supplier: s.supplier,
           subgroupCount: s._count.subgroups,
           itemCount,
           productCount,
