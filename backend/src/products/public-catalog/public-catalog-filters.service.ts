@@ -28,6 +28,11 @@ export class PublicCatalogFiltersService {
     category: CategoryWithChildren,
     rows: CatalogFilterRow[],
   ): CatalogCategoryFilterOptionDto[] {
+    // false — явно выключено в админке; true/undefined — показывать (в т.ч. до generate Prisma).
+    if (category.showChildCategoryFilters === false) {
+      return [];
+    }
+
     const countDirect = new Map<string, number>();
     for (const row of rows) {
       const slug = row.category.slug;

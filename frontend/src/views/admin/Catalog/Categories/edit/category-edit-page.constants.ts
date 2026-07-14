@@ -9,5 +9,6 @@ export const INITIAL_CATEGORY_EDIT_FORM: CategoryEditFormData = {
   image: '',
   isActive: true,
   sizesRequired: true,
+  showChildCategoryFilters: true,
   order: 0,
 };

@@ -52,4 +52,14 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsBoolean()
   sizesRequired?: boolean;
+
+  @ApiProperty({
+    example: true,
+    default: true,
+    required: false,
+    description: 'Show child categories as checkboxes in the public catalog filter sidebar',
+  })
+  @IsOptional()
+  @IsBoolean()
+  showChildCategoryFilters?: boolean;
 }

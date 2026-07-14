@@ -255,6 +255,23 @@ export function CategoryEditPageView({ model }: CategoryEditPageViewProps) {
               <span>Размеры обязательны для товаров этой категории</span>
             </label>
           </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={formData.showChildCategoryFilters}
+                onChange={(e) =>
+                  setFormData((prev) => ({
+                    ...prev,
+                    showChildCategoryFilters: e.target.checked,
+                  }))
+                }
+                className={styles.checkbox}
+              />
+              <span>Показывать дочерние категории в блоке фильтров на сайте</span>
+            </label>
+          </div>
         </div>
 
         <div className={styles.actions}>

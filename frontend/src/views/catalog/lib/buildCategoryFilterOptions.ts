@@ -100,7 +100,10 @@ export function buildCategoryFilterGroups(options: CategoryFilterOption[]): Cate
   let i = 0;
   while (i < options.length) {
     const opt = options[i];
+    // На странице родительской категории в опции попадают только дети (depth 1) —
+    // показываем их как самостоятельные чекбоксы, а не пропускаем.
     if (opt.depth === 1) {
+      groups.push({ type: 'single', opt });
       i += 1;
       continue;
     }

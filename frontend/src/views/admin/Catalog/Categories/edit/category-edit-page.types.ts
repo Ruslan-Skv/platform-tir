@@ -8,6 +8,8 @@ export type CategoryEditFormData = {
   isActive: boolean;
   /** Размеры обязательны при создании/редактировании товара в этой категории. */
   sizesRequired: boolean;
+  /** Показывать дочерние категории в блоке фильтров на публичной странице категории. */
+  showChildCategoryFilters: boolean;
   order: number;
 };
 

@@ -66,6 +66,7 @@ export function useCategoryEditPage({ categoryId }: UseCategoryEditPageOptions) 
         image: data.image || '',
         isActive: data.isActive ?? true,
         sizesRequired: data.sizesRequired ?? true,
+        showChildCategoryFilters: data.showChildCategoryFilters ?? true,
         order: data.order || 0,
       });
 
@@ -143,6 +144,7 @@ export function useCategoryEditPage({ categoryId }: UseCategoryEditPageOptions) 
         slug: formData.slug,
         isActive: formData.isActive,
         sizesRequired: formData.sizesRequired,
+        showChildCategoryFilters: formData.showChildCategoryFilters,
         order: formData.order,
       };
 

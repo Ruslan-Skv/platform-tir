@@ -2,7 +2,11 @@ import type { Category } from '@prisma/client';
 import type { Prisma } from '@prisma/client';
 import type { PublicCatalogListParams } from '../dto/public-catalog-list.dto';
 
-export type CategoryWithChildren = Category & { children?: CategoryWithChildren[] };
+export type CategoryWithChildren = Category & {
+  children?: CategoryWithChildren[];
+  /** Может отсутствовать до `prisma generate` после миграции. */
+  showChildCategoryFilters?: boolean;
+};
 
 export type CatalogFilterRow = {
   id: string;

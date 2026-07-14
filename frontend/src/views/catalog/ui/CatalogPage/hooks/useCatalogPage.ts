@@ -116,7 +116,8 @@ export function useCatalogPage({
   );
 
   const subcategoryFilterOptions = useMemo(
-    () => categoryFilterOptions.filter((o) => o.depth === 1),
+    () =>
+      categoryFilterOptions.filter((o) => o.depth === 1).map((o) => ({ ...o, depth: 0 as const })),
     [categoryFilterOptions]
   );
 

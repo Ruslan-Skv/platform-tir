@@ -7,6 +7,7 @@ export type Category = {
   image: string | null;
   isActive: boolean;
   sizesRequired?: boolean;
+  showChildCategoryFilters?: boolean;
   order: number;
   parentId: string | null;
   children?: Category[];
