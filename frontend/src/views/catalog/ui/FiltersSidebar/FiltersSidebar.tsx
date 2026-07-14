@@ -848,7 +848,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                         onChange={(e) => toggleCat(opt.slug, e.target.checked)}
                       />
                       <span
-                        className={`${styles.optionText} ${opt.depth === 1 ? styles.categoryOptionNestedLabel : opt.depth === 0 ? styles.categoryOptionParentLabel : ''}`}
+                        className={`${styles.optionText} ${
+                          opt.depth === 1
+                            ? styles.categoryOptionNestedLabel
+                            : opt.depth === 0 && !categoryPageBranchMode
+                              ? styles.categoryOptionParentLabel
+                              : ''
+                        }`}
                       >
                         {formatFilterOptionLabel(opt.label, opt.count)}
                       </span>
