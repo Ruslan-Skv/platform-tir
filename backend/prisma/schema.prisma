@@ -1984,6 +1984,8 @@ model Category {
   parentId                  String?
   order                     Int                        @default(0)
   isActive                  Boolean                    @default(true)
+  /// Если false — размеры в карточке товара не обязательны (например, фурнитура).
+  sizesRequired             Boolean                    @default(true)
   createdAt                 DateTime                   @default(now())
   updatedAt                 DateTime                   @updatedAt
   icon                      String?

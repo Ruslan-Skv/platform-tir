@@ -42,4 +42,14 @@ export class CreateCategoryDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({
+    example: true,
+    default: true,
+    required: false,
+    description: 'Whether product sizes are required in this category',
+  })
+  @IsOptional()
+  @IsBoolean()
+  sizesRequired?: boolean;
 }

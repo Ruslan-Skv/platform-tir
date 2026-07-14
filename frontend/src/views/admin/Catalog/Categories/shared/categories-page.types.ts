@@ -6,6 +6,7 @@ export type Category = {
   icon: string | null;
   image: string | null;
   isActive: boolean;
+  sizesRequired?: boolean;
   order: number;
   parentId: string | null;
   children?: Category[];

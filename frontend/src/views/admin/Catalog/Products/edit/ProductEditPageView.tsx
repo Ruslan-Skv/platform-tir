@@ -75,6 +75,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
     formData,
     setFormData,
     reqHighlight,
+    sizesRequired,
     handleSupplierProductUrlBlur,
     categoryAttributes,
     customAttributes,
@@ -325,6 +326,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
               openingSide={formData.openingSide}
               suggestedSizes={suggestedSizes}
               sizesHighlight={reqHighlight.sizes}
+              sizesRequired={sizesRequired}
               onSizesChange={(sizes) => setFormData((prev) => ({ ...prev, sizes }))}
               onOpeningSideChange={(openingSide) =>
                 setFormData((prev) => ({ ...prev, openingSide }))

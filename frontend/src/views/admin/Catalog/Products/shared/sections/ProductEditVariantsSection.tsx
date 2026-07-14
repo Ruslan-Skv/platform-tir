@@ -7,6 +7,8 @@ type ProductEditVariantsSectionProps = {
   openingSide: string[];
   suggestedSizes: string[];
   sizesHighlight: boolean;
+  /** По умолчанию true — размеры обязательны. */
+  sizesRequired?: boolean;
   onSizesChange: (sizes: string[]) => void;
   onOpeningSideChange: (openingSide: string[]) => void;
 };
@@ -16,6 +18,7 @@ export function ProductEditVariantsSection({
   openingSide,
   suggestedSizes,
   sizesHighlight,
+  sizesRequired = true,
   onSizesChange,
   onOpeningSideChange,
 }: ProductEditVariantsSectionProps) {
@@ -23,17 +26,19 @@ export function ProductEditVariantsSection({
     onOpeningSideChange(checked ? [...openingSide, side] : openingSide.filter((s) => s !== side));
   };
 
+  const sizesBlockClass = sizesRequired
+    ? sizesHighlight
+      ? styles.fieldHighlightBlockFilled
+      : styles.fieldHighlightBlockEmpty
+    : undefined;
+
   return (
     <div className={styles.formSection}>
       <h2 className={styles.sectionTitle}>Варианты исполнения</h2>
 
       <div className={styles.formGroup}>
-        <label>Размеры *</label>
-        <div
-          className={
-            sizesHighlight ? styles.fieldHighlightBlockFilled : styles.fieldHighlightBlockEmpty
-          }
-        >
+        <label>{sizesRequired ? 'Размеры *' : 'Размеры'}</label>
+        <div className={sizesBlockClass}>
           {suggestedSizes.length > 0 && (
             <div className={styles.sizesHint}>
               <span className={styles.sizesHintLabel}>
@@ -106,8 +111,9 @@ export function ProductEditVariantsSection({
             + Добавить размер
           </button>
           <p className={styles.hint}>
-            Добавьте один или несколько размеров. Если не указано, параметр не будет отображаться в
-            публичке.
+            {sizesRequired
+              ? 'Добавьте один или несколько размеров. Если не указано, параметр не будет отображаться в публичке.'
+              : 'Для этой категории размеры необязательны. Если не указано, параметр не будет отображаться в публичке.'}
           </p>
         </div>
       </div>

@@ -31,6 +31,7 @@ import {
 } from '../shared/copy-product-utils';
 import {
   collectInteriorDoorsSubtreeIdsFromRoots,
+  findCategoryInTree,
   findInteriorDoorsRootForSelection,
 } from '../shared/interior-doors-category-utils';
 import {
@@ -51,6 +52,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  sizesRequired?: boolean;
   children?: Category[];
 }
 
@@ -178,9 +180,16 @@ export function useProductCreatePage({
     };
   });
 
+  const sizesRequired = useMemo(() => {
+    if (!formData.categoryId) return true;
+    const category = findCategoryInTree(categories, formData.categoryId);
+    return category?.sizesRequired !== false;
+  }, [categories, formData.categoryId]);
+
   const reqHighlight = useMemo(() => {
     const priceRaw = String(formData.price).trim().replace(',', '.');
     const priceNum = parseFloat(priceRaw);
+    const sizesFilled = formData.sizes.some((s) => s.trim().length > 0);
     return {
       name: formData.name.trim().length > 0,
       category: Boolean(formData.categoryId.trim()),
@@ -191,7 +200,7 @@ export function useProductCreatePage({
         (formData.supplierSku != null && String(formData.supplierSku).trim().length > 0),
       price: priceRaw !== '' && Number.isFinite(priceNum) && priceNum > 0,
       stock: Number.isFinite(formData.stock) && formData.stock >= 0,
-      sizes: formData.sizes.some((s) => s.trim().length > 0),
+      sizes: !sizesRequired || sizesFilled,
       images: formData.images.some((u) => u.trim().length > 0),
     };
   }, [
@@ -204,6 +213,7 @@ export function useProductCreatePage({
     formData.stock,
     formData.sizes,
     formData.images,
+    sizesRequired,
   ]);
 
   // Атрибуты категории и товара
@@ -993,7 +1003,8 @@ export function useProductCreatePage({
         doorThicknessId: formData.doorThicknessId,
         weatherstripId: formData.weatherstripId,
       },
-      categoryAttributes
+      categoryAttributes,
+      { sizesRequired }
     );
     if (missing.length > 0) {
       setError(
@@ -1279,6 +1290,7 @@ export function useProductCreatePage({
     formData,
     setFormData,
     reqHighlight,
+    sizesRequired,
     categoryAttributes,
     customAttributes,
     setCustomAttributes,

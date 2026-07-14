@@ -241,6 +241,20 @@ export function CategoryEditPageView({ model }: CategoryEditPageViewProps) {
               <span>Категория активна (отображается на сайте)</span>
             </label>
           </div>
+
+          <div className={styles.formGroup}>
+            <label className={styles.checkboxLabel}>
+              <input
+                type="checkbox"
+                checked={formData.sizesRequired}
+                onChange={(e) =>
+                  setFormData((prev) => ({ ...prev, sizesRequired: e.target.checked }))
+                }
+                className={styles.checkbox}
+              />
+              <span>Размеры обязательны для товаров этой категории</span>
+            </label>
+          </div>
         </div>
 
         <div className={styles.actions}>

@@ -98,10 +98,19 @@ export interface AdminProductFormSnapshot {
   weatherstripId?: string;
 }
 
+export type AdminProductRequiredFieldsOptions = {
+  /**
+   * Обязательность размеров для выбранной категории (настройка категории).
+   * По умолчанию true — как раньше для всех категорий.
+   */
+  sizesRequired?: boolean;
+};
+
 /** Возвращает подписи незаполненных обязательных полей (по порядку проверки). */
 export function validateAdminProductRequiredFields(
   s: AdminProductFormSnapshot,
-  categoryAttributes?: CategoryAttrRowForValidation[]
+  categoryAttributes?: CategoryAttrRowForValidation[],
+  options?: AdminProductRequiredFieldsOptions
 ): string[] {
   if (s.isActive === false) {
     return [];
@@ -123,9 +132,12 @@ export function validateAdminProductRequiredFields(
     missing.push('Остаток на складе');
   }
 
-  const cleanedSizes = s.sizes.map((size) => size.trim()).filter((size) => size.length > 0);
-  if (cleanedSizes.length === 0) {
-    missing.push('Размеры');
+  const sizesRequired = options?.sizesRequired !== false;
+  if (sizesRequired) {
+    const cleanedSizes = s.sizes.map((size) => size.trim()).filter((size) => size.length > 0);
+    if (cleanedSizes.length === 0) {
+      missing.push('Размеры');
+    }
   }
 
   const hasImage = s.images.some((url) => url.trim().length > 0);

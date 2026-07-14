@@ -7,6 +7,8 @@ export interface CategoryTreeNode {
   id: string;
   name: string;
   slug: string;
+  /** По умолчанию true; false — размеры в карточке товара не обязательны. */
+  sizesRequired?: boolean;
   children?: CategoryTreeNode[];
 }
 
@@ -73,4 +75,19 @@ export function collectInteriorDoorsSubtreeIdsFromRoots(tree: CategoryTreeNode[]
   };
   walk(tree);
   return ids;
+}
+
+/** Найти категорию по id в дереве (включая вложенные). */
+export function findCategoryInTree<T extends CategoryTreeNode>(
+  tree: T[],
+  categoryId: string
+): T | null {
+  for (const node of tree) {
+    if (node.id === categoryId) return node;
+    if (node.children?.length) {
+      const found = findCategoryInTree(node.children as T[], categoryId);
+      if (found) return found;
+    }
+  }
+  return null;
 }

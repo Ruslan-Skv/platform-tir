@@ -18,6 +18,7 @@ export class CategoriesCrudService {
         parentId: createCategoryDto.parentId ?? undefined,
         order: createCategoryDto.order ?? 0,
         isActive: createCategoryDto.isActive ?? true,
+        sizesRequired: createCategoryDto.sizesRequired ?? true,
         createdById: createdByUserId ?? null,
       },
       include: {

@@ -8,5 +8,6 @@ export const INITIAL_CATEGORY_EDIT_FORM: CategoryEditFormData = {
   icon: '',
   image: '',
   isActive: true,
+  sizesRequired: true,
   order: 0,
 };

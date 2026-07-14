@@ -29,7 +29,10 @@ import {
   isManufacturerFkCategorySlug,
   isWeatherstripFkCategorySlug,
 } from '../shared/catalog-attribute-fk-slugs';
-import { findInteriorDoorsRootForSelection } from '../shared/interior-doors-category-utils';
+import {
+  findCategoryInTree,
+  findInteriorDoorsRootForSelection,
+} from '../shared/interior-doors-category-utils';
 import { DEFAULT_CARD_SECTIONS, getCardSections } from '../shared/product-card-sections';
 import {
   PRODUCT_FORM_API_URL,
@@ -51,6 +54,7 @@ interface Category {
   id: string;
   name: string;
   slug: string;
+  sizesRequired?: boolean;
   children?: Category[];
 }
 
@@ -262,9 +266,16 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     };
   }, []);
 
+  const sizesRequired = useMemo(() => {
+    if (!formData.categoryId) return true;
+    const category = findCategoryInTree(categories, formData.categoryId);
+    return category?.sizesRequired !== false;
+  }, [categories, formData.categoryId]);
+
   const reqHighlight = useMemo(() => {
     const priceRaw = String(formData.price).trim().replace(',', '.');
     const priceNum = parseFloat(priceRaw);
+    const sizesFilled = formData.sizes.some((s) => s.trim().length > 0);
     return {
       name: formData.name.trim().length > 0,
       category: Boolean(formData.categoryId.trim()),
@@ -275,7 +286,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
         (formData.supplierSku != null && String(formData.supplierSku).trim().length > 0),
       price: priceRaw !== '' && Number.isFinite(priceNum) && priceNum > 0,
       stock: Number.isFinite(formData.stock) && formData.stock >= 0,
-      sizes: formData.sizes.some((s) => s.trim().length > 0),
+      sizes: !sizesRequired || sizesFilled,
       images: formData.images.some((u) => u.trim().length > 0),
     };
   }, [
@@ -288,6 +299,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     formData.stock,
     formData.sizes,
     formData.images,
+    sizesRequired,
   ]);
 
   /** Только метаданные парсера (без запроса цены на страницу поставщика). Цена — по кнопке «Получить цену». */
@@ -1134,7 +1146,8 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
         doorThicknessId: formData.doorThicknessId,
         weatherstripId: formData.weatherstripId,
       },
-      categoryAttributes
+      categoryAttributes,
+      { sizesRequired }
     );
     if (missing.length > 0) {
       setError(
@@ -1399,6 +1412,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     formData,
     setFormData,
     reqHighlight,
+    sizesRequired,
     handleSupplierProductUrlBlur,
     categoryAttributes,
     customAttributes,

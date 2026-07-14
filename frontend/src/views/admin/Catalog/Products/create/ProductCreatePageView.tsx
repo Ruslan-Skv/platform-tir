@@ -43,6 +43,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
     setParserInfo,
     setParserBannerError,
     reqHighlight,
+    sizesRequired,
     partners,
     flatCategories,
     suppliers,
@@ -223,6 +224,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             openingSide={formData.openingSide}
             suggestedSizes={suggestedSizes}
             sizesHighlight={reqHighlight.sizes}
+            sizesRequired={sizesRequired}
             onSizesChange={(sizes) => setFormData((prev) => ({ ...prev, sizes }))}
             onOpeningSideChange={(openingSide) => setFormData((prev) => ({ ...prev, openingSide }))}
           />

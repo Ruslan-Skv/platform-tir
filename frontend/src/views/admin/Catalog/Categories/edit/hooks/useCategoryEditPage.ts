@@ -65,6 +65,7 @@ export function useCategoryEditPage({ categoryId }: UseCategoryEditPageOptions) 
         icon: data.icon || '',
         image: data.image || '',
         isActive: data.isActive ?? true,
+        sizesRequired: data.sizesRequired ?? true,
         order: data.order || 0,
       });
 
@@ -141,6 +142,7 @@ export function useCategoryEditPage({ categoryId }: UseCategoryEditPageOptions) 
         name: formData.name,
         slug: formData.slug,
         isActive: formData.isActive,
+        sizesRequired: formData.sizesRequired,
         order: formData.order,
       };
 

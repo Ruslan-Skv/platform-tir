@@ -6,6 +6,8 @@ export type CategoryEditFormData = {
   icon: string;
   image: string;
   isActive: boolean;
+  /** Размеры обязательны при создании/редактировании товара в этой категории. */
+  sizesRequired: boolean;
   order: number;
 };
 
