@@ -1,5 +1,8 @@
 'use client';
 
+import { useCallback, useRef } from 'react';
+
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { AdminSaveButton, AdminStickySaveButtonSlot } from '@/views/admin/ui/AdminStickySaveButton';
 
@@ -23,6 +26,23 @@ import type { ProductEditPageModel } from './useProductEditPage';
 type ProductEditPageViewProps = {
   model: ProductEditPageModel;
 };
+
+function ScrollChevronIcon({ direction }: { direction: 'up' | 'down' }) {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      {direction === 'down' ? <path d="M6 9l6 6 6-6" /> : <path d="M18 15l-6-6-6 6" />}
+    </svg>
+  );
+}
 
 export function ProductEditPageView({ model }: ProductEditPageViewProps) {
   const {
@@ -100,6 +120,16 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
     clearSupplierProductUrl,
   } = model;
 
+  const pageFooterRef = useRef<HTMLDivElement>(null);
+
+  const scrollToCardBottom = useCallback(() => {
+    pageFooterRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }, []);
+
+  const scrollToCardTop = useCallback(() => {
+    pageHeaderRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [pageHeaderRef]);
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -135,6 +165,15 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           <h1 className={styles.title}>Редактирование товара</h1>
         </div>
         <div className={styles.pageHeaderActions}>
+          <AdminTableIconButton
+            type="button"
+            className={styles.scrollNavIconButton}
+            onClick={scrollToCardBottom}
+            aria-label="Прокрутить карточку вниз"
+            title="Вниз"
+          >
+            <ScrollChevronIcon direction="down" />
+          </AdminTableIconButton>
           <button
             data-admin-mutation
             type="button"
@@ -385,14 +424,26 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
       {productId && <ProductReviewsSection productId={productId} />}
 
       {/* Нижняя строка: слева "Назад к списку", справа "Отмена" и "Сохранить изменения" */}
-      <div className={`${styles.formActions} ${styles.formActionsFooter}`}>
-        <button
-          type="button"
-          className={styles.backButtonBottom}
-          onClick={navigateBackToProductsList}
-        >
-          ← Назад к списку
-        </button>
+      <div ref={pageFooterRef} className={`${styles.formActions} ${styles.formActionsFooter}`}>
+        <div className={styles.formActionsLeft}>
+          <button
+            type="button"
+            className={styles.scrollToTopButton}
+            onClick={scrollToCardTop}
+            aria-label="Прокрутить карточку наверх"
+            title="Наверх"
+          >
+            <ScrollChevronIcon direction="up" />
+            Наверх
+          </button>
+          <button
+            type="button"
+            className={styles.backButtonBottom}
+            onClick={navigateBackToProductsList}
+          >
+            ← Назад к списку
+          </button>
+        </div>
         <div className={styles.formActionsRight}>
           <button
             type="button"

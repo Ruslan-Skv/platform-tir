@@ -975,9 +975,46 @@
   border-top: 1px solid var(--admin-border);
 }
 
+.formActionsLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  flex-wrap: wrap;
+}
+
 .formActionsRight {
   display: flex;
   gap: var(--admin-space-md);
+}
+
+.scrollNavIconButton {
+  flex-shrink: 0;
+}
+
+.scrollToTopButton {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-accent);
+  font-weight: 500;
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.scrollToTopButton svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
+.scrollToTopButton:hover {
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-soft-strong);
 }
 
 .backButtonBottom {
@@ -1057,9 +1094,17 @@
     flex-direction: column;
   }
 
+  .formActionsLeft,
+  .formActionsRight {
+    width: 100%;
+  }
+
+  .scrollToTopButton,
+  .backButtonBottom,
   .cancelButton,
   .footerSaveButton {
     width: 100%;
+    justify-content: center;
   }
 }
 
@@ -1794,7 +1839,8 @@
   border-top-color: var(--admin-text-secondary);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButtonBottom,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .scrollToTopButton {
   background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-accent);
