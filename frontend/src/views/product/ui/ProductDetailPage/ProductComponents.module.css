@@ -109,6 +109,13 @@
   line-height: 1.2;
 }
 
+.componentColor {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #6b7280;
+  line-height: 1.2;
+}
+
 .componentEditInput {
   width: 100%;
   max-width: 100%;
@@ -408,6 +415,7 @@
 
   .componentName,
   .componentType,
+  .componentColor,
   .componentPrice {
     font-size: 0.75rem;
   }
@@ -432,7 +440,8 @@
   color: #d1d5db;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .componentType {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentType,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentColor {
   color: #f9fafb;
 }
 

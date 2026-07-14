@@ -314,6 +314,12 @@
   flex-shrink: 0;
 }
 
+.componentColor {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  flex-shrink: 0;
+}
+
 .componentPrice {
   font-size: var(--admin-font-size-xs);
   font-weight: 600;
@@ -573,6 +579,7 @@
   color: var(--admin-surface-soft);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .componentColor,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentStock,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .componentSortOrder,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .inlineLabel {

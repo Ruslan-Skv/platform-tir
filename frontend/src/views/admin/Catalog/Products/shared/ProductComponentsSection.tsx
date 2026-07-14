@@ -990,6 +990,9 @@ export const ProductComponentsSection: React.FC<ProductComponentsSectionProps> =
                       ) : (
                         <>
                           <span className={styles.componentType}>{component.type}</span>
+                          {component.color ? (
+                            <span className={styles.componentColor}>Цвет: {component.color}</span>
+                          ) : null}
                           <span className={styles.componentPrice}>
                             {parseFloat(String(component.price)).toLocaleString('ru-RU')} ₽
                           </span>

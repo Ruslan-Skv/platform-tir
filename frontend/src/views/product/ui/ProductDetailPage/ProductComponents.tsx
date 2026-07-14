@@ -228,6 +228,9 @@ export const ProductComponents: React.FC<ProductComponentsProps> = ({
                     <>
                       <span className={styles.componentName}>{component.name}</span>
                       <span className={styles.componentType}>{component.type}</span>
+                      {component.color ? (
+                        <span className={styles.componentColor}>{component.color}</span>
+                      ) : null}
                     </>
                   )}
                 </div>
