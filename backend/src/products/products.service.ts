@@ -47,6 +47,10 @@ export class ProductsService {
     return this.read.getSizesByCategoryId(categoryId);
   }
 
+  getAttributeValuesByCategoryId(categoryId: string) {
+    return this.read.getAttributeValuesByCategoryId(categoryId);
+  }
+
   findOne(id: string) {
     return this.read.findOne(id);
   }

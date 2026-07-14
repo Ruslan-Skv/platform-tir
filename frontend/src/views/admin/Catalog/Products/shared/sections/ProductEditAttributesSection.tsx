@@ -27,6 +27,8 @@ type ProductEditAttributesSectionProps<T extends ProductAttributesFormSlice> = {
   fkCatalogError: string | null;
   fkCatalogShowPermissionHint: boolean;
   categoryAttributes: ProductCategoryAttribute[];
+  /** Подсказки значений атрибутов из других товаров категории (по slug). */
+  suggestedAttributeValues?: Record<string, string[]>;
   formData: T;
   setFormData: Dispatch<SetStateAction<T>>;
   manufacturers: CatalogFkOption[];
@@ -46,6 +48,7 @@ export function ProductEditAttributesSection<T extends ProductAttributesFormSlic
   fkCatalogError,
   fkCatalogShowPermissionHint,
   categoryAttributes,
+  suggestedAttributeValues = {},
   formData,
   setFormData,
   manufacturers,
@@ -122,6 +125,8 @@ export function ProductEditAttributesSection<T extends ProductAttributesFormSlic
                 const isSelectFromList =
                   ca.attribute.type === 'SELECT' ||
                   (ca.attribute.type === 'COLOR' && ca.attribute.values.length > 0);
+                const freeTextHints = suggestedAttributeValues[slug] ?? [];
+                const freeTextDatalistId = `category-attr-hints-${ca.id}`;
 
                 return (
                   <div
@@ -415,52 +420,72 @@ export function ProductEditAttributesSection<T extends ProductAttributesFormSlic
                           ))}
                         </select>
                       ) : ca.attribute.type === 'NUMBER' ? (
-                        <input
-                          type="number"
-                          value={rawAttr || ''}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              attributes: {
-                                ...prev.attributes,
-                                [slug]: e.target.value,
-                              },
-                            }))
-                          }
-                          className={
-                            attrRequired
-                              ? `${styles.input} ${
-                                  attrValueFilled
-                                    ? styles.fieldHighlightFilled
-                                    : styles.fieldHighlightEmpty
-                                }`
-                              : styles.input
-                          }
-                          step="any"
-                        />
+                        <>
+                          <input
+                            type="number"
+                            list={freeTextHints.length > 0 ? freeTextDatalistId : undefined}
+                            value={rawAttr || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                attributes: {
+                                  ...prev.attributes,
+                                  [slug]: e.target.value,
+                                },
+                              }))
+                            }
+                            className={
+                              attrRequired
+                                ? `${styles.input} ${
+                                    attrValueFilled
+                                      ? styles.fieldHighlightFilled
+                                      : styles.fieldHighlightEmpty
+                                  }`
+                                : styles.input
+                            }
+                            step="any"
+                          />
+                          {freeTextHints.length > 0 && (
+                            <datalist id={freeTextDatalistId}>
+                              {freeTextHints.map((hint) => (
+                                <option key={hint} value={hint} />
+                              ))}
+                            </datalist>
+                          )}
+                        </>
                       ) : (
-                        <input
-                          type="text"
-                          value={rawAttr || ''}
-                          onChange={(e) =>
-                            setFormData((prev) => ({
-                              ...prev,
-                              attributes: {
-                                ...prev.attributes,
-                                [slug]: e.target.value,
-                              },
-                            }))
-                          }
-                          className={
-                            attrRequired
-                              ? `${styles.input} ${
-                                  attrValueFilled
-                                    ? styles.fieldHighlightFilled
-                                    : styles.fieldHighlightEmpty
-                                }`
-                              : styles.input
-                          }
-                        />
+                        <>
+                          <input
+                            type="text"
+                            list={freeTextHints.length > 0 ? freeTextDatalistId : undefined}
+                            value={rawAttr || ''}
+                            onChange={(e) =>
+                              setFormData((prev) => ({
+                                ...prev,
+                                attributes: {
+                                  ...prev.attributes,
+                                  [slug]: e.target.value,
+                                },
+                              }))
+                            }
+                            className={
+                              attrRequired
+                                ? `${styles.input} ${
+                                    attrValueFilled
+                                      ? styles.fieldHighlightFilled
+                                      : styles.fieldHighlightEmpty
+                                  }`
+                                : styles.input
+                            }
+                          />
+                          {freeTextHints.length > 0 && (
+                            <datalist id={freeTextDatalistId}>
+                              {freeTextHints.map((hint) => (
+                                <option key={hint} value={hint} />
+                              ))}
+                            </datalist>
+                          )}
+                        </>
                       )}
                       {showClear && (
                         <button

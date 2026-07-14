@@ -265,6 +265,9 @@ export function useProductCreatePage({
     });
   const [imageError, setImageError] = useState<string | null>(null);
   const [suggestedSizes, setSuggestedSizes] = useState<string[]>([]);
+  const [suggestedAttributeValues, setSuggestedAttributeValues] = useState<
+    Record<string, string[]>
+  >({});
   const [suggestedComponentNames, setSuggestedComponentNames] = useState<string[]>([]);
   const [parserInfo, setParserInfo] = useState<ParserInfo | null>(null);
   const [parserLoading, setParserLoading] = useState(false);
@@ -606,6 +609,31 @@ export function useProductCreatePage({
       })
       .catch(() => {
         if (!cancelled) setSuggestedSizes([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [formData.categoryId, getAuthHeaders]);
+
+  // Подсказки значений атрибутов категории (datalist, как у комплектующих)
+  useEffect(() => {
+    if (!formData.categoryId) {
+      setSuggestedAttributeValues({});
+      return;
+    }
+    let cancelled = false;
+    apiFetch(
+      `${PRODUCT_FORM_API_URL}/products/admin/attribute-values-by-category?categoryId=${encodeURIComponent(formData.categoryId)}`,
+      { headers: getAuthHeaders() }
+    )
+      .then((res) => (res.ok ? res.json() : {}))
+      .then((data: Record<string, string[]>) => {
+        if (!cancelled && data && typeof data === 'object' && !Array.isArray(data)) {
+          setSuggestedAttributeValues(data);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setSuggestedAttributeValues({});
       });
     return () => {
       cancelled = true;
@@ -1313,6 +1341,7 @@ export function useProductCreatePage({
     submitProductForm,
     imageError,
     suggestedSizes,
+    suggestedAttributeValues,
     suggestedComponentNames,
     parserInfo,
     setParserInfo,

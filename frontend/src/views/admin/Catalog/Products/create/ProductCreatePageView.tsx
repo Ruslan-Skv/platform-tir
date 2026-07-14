@@ -62,6 +62,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
     badgeDefinitions,
     handleToggleCatalogBadge,
     suggestedSizes,
+    suggestedAttributeValues,
     handleSeoTitleChange,
     handleSeoDescriptionChange,
     imageError,
@@ -255,6 +256,7 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
             fkCatalogError={fkCatalogError}
             fkCatalogShowPermissionHint={fkCatalogShowPermissionHint}
             categoryAttributes={categoryAttributes}
+            suggestedAttributeValues={suggestedAttributeValues}
             formData={formData}
             setFormData={setFormData}
             manufacturers={manufacturers}

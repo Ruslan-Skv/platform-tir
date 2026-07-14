@@ -67,6 +67,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
     productNotFound,
     productMeta,
     suggestedSizes,
+    suggestedAttributeValues,
     parserInfo,
     setParserInfo,
     parserLoading,
@@ -382,6 +383,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
               fkCatalogError={fkCatalogError}
               fkCatalogShowPermissionHint={fkCatalogShowPermissionHint}
               categoryAttributes={categoryAttributes}
+              suggestedAttributeValues={suggestedAttributeValues}
               formData={formData}
               setFormData={setFormData}
               manufacturers={manufacturers}

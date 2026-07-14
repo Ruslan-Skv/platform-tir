@@ -61,6 +61,16 @@ export class ProductsController {
     return this.productsService.getSizesByCategoryId(categoryId);
   }
 
+  @Get('admin/attribute-values-by-category')
+  @CatalogAdminAuth()
+  @ApiOperation({
+    summary: 'Значения атрибутов из товаров категории (подсказки datalist для формы)',
+  })
+  @ApiQuery({ name: 'categoryId', required: true, description: 'ID категории' })
+  getAttributeValuesByCategory(@Query('categoryId') categoryId: string) {
+    return this.productsService.getAttributeValuesByCategoryId(categoryId);
+  }
+
   @Post('admin/sync-supplier-prices')
   @CatalogAdminAuth()
   @ApiOperation({ summary: 'Массовая синхронизация цен поставщика по ссылкам (все товары)' })
