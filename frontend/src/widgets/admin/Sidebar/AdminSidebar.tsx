@@ -297,6 +297,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.catalog.categories',
       },
       {
+        label: 'Характеристики',
+        href: '/admin/catalog/attributes',
+        resourceId: 'admin.catalog.attributes',
+      },
+      {
         label: 'Комплектующие',
         href: '/admin/catalog/components',
         resourceId: 'admin.catalog.components',

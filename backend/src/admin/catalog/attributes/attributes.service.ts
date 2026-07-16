@@ -67,17 +67,31 @@ export class AttributesService {
       ];
     }
 
+    const include = {
+      values: {
+        orderBy: { order: 'asc' as const },
+      },
+      categories: {
+        orderBy: { category: { name: 'asc' as const } },
+        select: {
+          categoryId: true,
+          category: {
+            select: { id: true, name: true },
+          },
+        },
+      },
+      _count: {
+        select: { categories: true },
+      },
+    };
+
     const [attributes, total] = await Promise.all([
       this.prisma.attribute.findMany({
         where,
-        include: {
-          values: {
-            orderBy: { order: 'asc' },
-          },
-        },
+        include,
         skip,
         take: limit,
-        orderBy: { order: 'asc' },
+        orderBy: [{ order: 'asc' }, { name: 'asc' }],
       }),
       this.prisma.attribute.count({ where }),
     ]);
@@ -97,6 +111,18 @@ export class AttributesService {
       include: {
         values: {
           orderBy: { order: 'asc' },
+        },
+        categories: {
+          orderBy: { category: { name: 'asc' } },
+          select: {
+            categoryId: true,
+            category: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+        _count: {
+          select: { categories: true },
         },
       },
     });
@@ -121,18 +147,31 @@ export class AttributesService {
       }
     }
 
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { values, ...attributeData } = data;
 
-    return this.prisma.attribute.update({
+    await this.prisma.attribute.update({
       where: { id },
       data: attributeData,
-      include: {
-        values: {
-          orderBy: { order: 'asc' },
-        },
-      },
     });
+
+    if (values !== undefined) {
+      await this.prisma.attributeValue.deleteMany({
+        where: { attributeId: id },
+      });
+
+      if (values.length > 0) {
+        await this.prisma.attributeValue.createMany({
+          data: values.map((v, index) => ({
+            attributeId: id,
+            value: v.value,
+            colorHex: v.colorHex,
+            order: v.order ?? index,
+          })),
+        });
+      }
+    }
+
+    return this.findOne(id);
   }
 
   async remove(id: string) {
