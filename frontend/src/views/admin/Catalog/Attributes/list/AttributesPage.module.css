@@ -251,6 +251,22 @@
   justify-content: flex-end;
 }
 
+.mergeTip {
+  margin: 0 0 var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.45;
+  color: var(--admin-text-secondary);
+  background: var(--admin-info-bg, var(--admin-surface-muted));
+  border: 1px solid var(--admin-info-border, var(--admin-border));
+  border-radius: var(--admin-radius-md);
+}
+
+.mergeTip code {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 0.95em;
+}
+
 .empty {
   padding: 32px 16px;
   text-align: center;

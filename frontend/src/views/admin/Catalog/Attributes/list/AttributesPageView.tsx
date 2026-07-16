@@ -9,8 +9,10 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton/AdminListRefreshButton';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
+import { MergeIcon } from '@/shared/ui/icons/MergeIcon';
 
 import { AttributeFormModal } from './AttributeFormModal';
+import { AttributeMergeModal } from './AttributeMergeModal';
 import styles from './AttributesPage.module.css';
 import {
   attributeTypeBadgeClass,
@@ -38,12 +40,16 @@ export function AttributesPageView({ model }: AttributesPageViewProps) {
     setShowCreateModal,
     editingAttribute,
     setEditingAttribute,
+    mergeSource,
+    setMergeSource,
+    merging,
     deleteModal,
     deleting,
     deleteError,
     fetchAttributes,
     handleCreate,
     handleUpdate,
+    handleMerge,
     openDeleteModal,
     closeDeleteModal,
     handleDelete,
@@ -93,6 +99,15 @@ export function AttributesPageView({ model }: AttributesPageViewProps) {
         initial={editingAttribute}
         onClose={() => setEditingAttribute(null)}
         onSubmit={handleUpdate}
+      />
+
+      <AttributeMergeModal
+        open={Boolean(mergeSource)}
+        source={mergeSource}
+        candidates={attributes}
+        merging={merging}
+        onClose={() => setMergeSource(null)}
+        onMerge={handleMerge}
       />
 
       <div className={styles.header}>
@@ -213,6 +228,12 @@ export function AttributesPageView({ model }: AttributesPageViewProps) {
                           onClick={() => setEditingAttribute(attr)}
                         >
                           <EditIcon />
+                        </AdminTableIconButton>
+                        <AdminTableIconButton
+                          title="Объединить с другой характеристикой"
+                          onClick={() => setMergeSource(attr)}
+                        >
+                          <MergeIcon />
                         </AdminTableIconButton>
                         <AdminTableIconButton
                           title="Удалить характеристику из каталога"

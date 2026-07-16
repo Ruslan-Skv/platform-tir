@@ -8,6 +8,7 @@ import {
   createAdminAttribute,
   deleteAdminAttribute,
   fetchAdminAttributesList,
+  mergeAdminAttributes,
   updateAdminAttribute,
 } from '@/shared/api/admin-attributes';
 
@@ -26,6 +27,8 @@ export function useAttributesPage() {
 
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<AdminAttribute | null>(null);
+  const [mergeSource, setMergeSource] = useState<AdminAttribute | null>(null);
+  const [merging, setMerging] = useState(false);
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     attribute: AdminAttribute | null;
@@ -145,6 +148,23 @@ export function useAttributesPage() {
     }
   };
 
+  const handleMerge = async (keepId: string) => {
+    if (!mergeSource) return;
+    setMerging(true);
+    try {
+      const result = await mergeAdminAttributes(keepId, mergeSource.id);
+      setMergeSource(null);
+      const { stats } = result;
+      showToast(
+        `Объединено: +${stats.categoryLinksMoved} кат., товаров обновлено: ${stats.productsUpdated}`,
+        'ok'
+      );
+      await fetchAttributes({ silent: true });
+    } finally {
+      setMerging(false);
+    }
+  };
+
   return {
     attributes,
     total,
@@ -157,12 +177,16 @@ export function useAttributesPage() {
     setShowCreateModal,
     editingAttribute,
     setEditingAttribute,
+    mergeSource,
+    setMergeSource,
+    merging,
     deleteModal,
     deleting,
     deleteError,
     fetchAttributes,
     handleCreate,
     handleUpdate,
+    handleMerge,
     openDeleteModal,
     closeDeleteModal,
     handleDelete,

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/common';
 import { AttributesService } from './attributes.service';
 import { CreateAttributeDto, AttributeValueDto } from './dto/create-attribute.dto';
+import { MergeAttributeDto } from './dto/merge-attribute.dto';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -41,6 +42,11 @@ export class AttributesController {
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 50,
     });
+  }
+
+  @Post(':id/merge')
+  merge(@Param('id') id: string, @Body() body: MergeAttributeDto) {
+    return this.attributesService.merge(id, body.sourceId);
   }
 
   @Get(':id')

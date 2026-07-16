@@ -139,3 +139,33 @@ export async function deleteAdminAttribute(id: string): Promise<void> {
     throw new Error((err as { message?: string }).message || 'Ошибка удаления характеристики');
   }
 }
+
+export type MergeAdminAttributesResult = {
+  keep: AdminAttribute;
+  source: { id: string; name: string; slug: string };
+  stats: {
+    categoryLinksMoved: number;
+    categoryLinksDroppedAsDuplicate: number;
+    filterItemsMoved: number;
+    filterItemsDroppedAsDuplicate: number;
+    valuesMerged: number;
+    productsUpdated: number;
+  };
+};
+
+/** Влить source в keep (keep остаётся, source удаляется). */
+export async function mergeAdminAttributes(
+  keepId: string,
+  sourceId: string
+): Promise<MergeAdminAttributesResult> {
+  const res = await apiFetch(`${API_URL}/admin/catalog/attributes/${keepId}/merge`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ sourceId }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message || 'Ошибка объединения характеристик');
+  }
+  return res.json();
+}
