@@ -505,6 +505,7 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
   };
 
   return {
+    categoryId,
     router,
     category,
     categoryAttributes,

@@ -72,3 +72,37 @@ export function attributeTypeBadgeClass(type: Attribute['type']): string {
   };
   return `${styles.attributeType} ${map[type]}`;
 }
+
+export type AttributeTreeSeriesKey = 'own' | 'inherited';
+
+export type AttributeTreeExpandedState = {
+  series: AttributeTreeSeriesKey[];
+  attributes: string[];
+};
+
+const ATTR_TREE_EXPANDED_KEY_PREFIX = 'admin_category_attributes_expanded_';
+
+export function loadAttributeTreeExpanded(categoryId: string): AttributeTreeExpandedState {
+  if (typeof window === 'undefined') {
+    return { series: ['own', 'inherited'], attributes: [] };
+  }
+  try {
+    const raw = localStorage.getItem(`${ATTR_TREE_EXPANDED_KEY_PREFIX}${categoryId}`);
+    if (!raw) return { series: ['own', 'inherited'], attributes: [] };
+    const parsed = JSON.parse(raw) as AttributeTreeExpandedState;
+    return {
+      series: Array.isArray(parsed.series) ? parsed.series : ['own', 'inherited'],
+      attributes: Array.isArray(parsed.attributes) ? parsed.attributes : [],
+    };
+  } catch {
+    return { series: ['own', 'inherited'], attributes: [] };
+  }
+}
+
+export function saveAttributeTreeExpanded(
+  categoryId: string,
+  state: AttributeTreeExpandedState
+): void {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(`${ATTR_TREE_EXPANDED_KEY_PREFIX}${categoryId}`, JSON.stringify(state));
+}

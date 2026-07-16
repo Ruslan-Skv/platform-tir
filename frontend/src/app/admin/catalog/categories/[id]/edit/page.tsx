@@ -1,10 +1,16 @@
 'use client';
 
-import { use } from 'react';
+import { use, useEffect } from 'react';
 
-import { CategoryEditPage } from '@/views/admin/Catalog/Categories';
+import { useRouter } from 'next/navigation';
 
 export default function AdminCategoryEditPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  return <CategoryEditPage categoryId={id} />;
+  const router = useRouter();
+
+  useEffect(() => {
+    router.replace(`/admin/catalog/categories?edit=${encodeURIComponent(id)}`);
+  }, [id, router]);
+
+  return null;
 }

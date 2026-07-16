@@ -1,0 +1,203 @@
+.slugHint {
+  font-size: 0.6875rem;
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.iconImageSection {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xl);
+  flex-wrap: wrap;
+}
+
+.iconPickerWrapper {
+  position: relative;
+}
+
+.iconButton {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.iconButton:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+}
+
+.iconButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.iconPicker {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  margin-top: var(--admin-space-md);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  padding: var(--admin-space-xl);
+  box-shadow: 0 10px 25px var(--admin-overlay-color-149);
+  z-index: 100;
+  min-width: 260px;
+}
+
+.iconGrid {
+  display: grid;
+  grid-template-columns: repeat(10, 1fr);
+  gap: var(--admin-space-xs);
+}
+
+.iconOption {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: 2px solid transparent;
+  border-radius: var(--admin-radius-sm);
+  cursor: pointer;
+  font-size: var(--admin-font-size-2xl);
+}
+
+.iconOption:hover {
+  background: var(--admin-surface-soft);
+}
+
+.iconOption.iconSelected {
+  border-color: var(--admin-accent);
+  background: var(--admin-accent-soft);
+}
+
+.clearIconButton {
+  width: 100%;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-md);
+  background: var(--admin-error-bg);
+  border: 1px solid var(--admin-error-border-soft);
+  border-radius: var(--admin-radius-sm);
+  color: var(--admin-error-strong);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+}
+
+.orDivider {
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+.fileInput {
+  position: absolute;
+  width: 0;
+  height: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+
+.uploadButton {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+}
+
+.uploadButton:hover {
+  background: var(--admin-surface-muted);
+}
+
+.previewSection {
+  margin-top: var(--admin-space-xl);
+  padding: var(--admin-space-xl);
+  background: var(--admin-surface-muted);
+  border-radius: var(--admin-radius-md);
+}
+
+.previewLabel {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-bottom: var(--admin-space-md);
+}
+
+.preview {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xl);
+  padding: var(--admin-space-xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+}
+
+.iconPreview {
+  font-size: var(--admin-font-size-4xl);
+  line-height: 1;
+}
+
+.imagePreviewWrapper {
+  position: relative;
+  width: 48px;
+  height: 48px;
+}
+
+.imagePreview {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-md);
+}
+
+.removeImageButton {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--admin-error-strong);
+  color: var(--admin-surface);
+  border: none;
+  border-radius: 50%;
+  font-size: 10px;
+  cursor: pointer;
+}
+
+.removeImageButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.previewName {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.checkboxRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-md);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.checkboxRow input {
+  margin-top: 2px;
+  accent-color: var(--admin-accent);
+}

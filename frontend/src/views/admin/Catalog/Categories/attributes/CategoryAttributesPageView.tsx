@@ -1,18 +1,28 @@
 'use client';
 
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
+import { useCallback, useEffect, useMemo, useState } from 'react';
+
 import { AttributeColorDot } from '@/shared/ui/AttributeColorDot/AttributeColorDot';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import {
   AttributeOptionRowsEditor,
   type AttributeOptionRowsEditorMod,
 } from './AttributeOptionRowsEditor';
 import styles from './CategoryAttributesPage.module.css';
-import type { Attribute } from './category-attributes-page.types';
+import type { Attribute, CategoryAttribute } from './category-attributes-page.types';
 import {
+  type AttributeTreeSeriesKey,
   attributeTypeBadgeClass,
   generateSlug,
   getTypeLabel,
   isListAttributeType,
+  loadAttributeTreeExpanded,
+  saveAttributeTreeExpanded,
 } from './category-attributes-page.utils';
 import type { CategoryAttributesPageModel } from './hooks/useCategoryAttributesPage';
 
@@ -22,6 +32,7 @@ type CategoryAttributesPageViewProps = {
 
 export function CategoryAttributesPageView({ model }: CategoryAttributesPageViewProps) {
   const {
+    categoryId,
     router,
     category,
     categoryAttributes,
@@ -66,6 +77,242 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
     handleEditAttribute,
   } = model;
 
+  const [treeExpanded, setTreeExpanded] = useState(() => loadAttributeTreeExpanded(categoryId));
+
+  useEffect(() => {
+    setTreeExpanded(loadAttributeTreeExpanded(categoryId));
+  }, [categoryId]);
+
+  const persistTreeExpanded = useCallback(
+    (next: typeof treeExpanded) => {
+      setTreeExpanded(next);
+      if (categoryId) saveAttributeTreeExpanded(categoryId, next);
+    },
+    [categoryId]
+  );
+
+  const ownAttributes = useMemo(
+    () => categoryAttributes.filter((ca) => !ca.isInherited),
+    [categoryAttributes]
+  );
+  const inheritedAttributes = useMemo(
+    () => categoryAttributes.filter((ca) => ca.isInherited),
+    [categoryAttributes]
+  );
+
+  const toggleSeries = (key: AttributeTreeSeriesKey) => {
+    persistTreeExpanded({
+      ...treeExpanded,
+      series: treeExpanded.series.includes(key)
+        ? treeExpanded.series.filter((id) => id !== key)
+        : [...treeExpanded.series, key],
+    });
+  };
+
+  const toggleAttribute = (attributeId: string) => {
+    persistTreeExpanded({
+      ...treeExpanded,
+      attributes: treeExpanded.attributes.includes(attributeId)
+        ? treeExpanded.attributes.filter((id) => id !== attributeId)
+        : [...treeExpanded.attributes, attributeId],
+    });
+  };
+
+  const expandAllAttributes = () => {
+    persistTreeExpanded({
+      series: ['own', 'inherited'],
+      attributes: categoryAttributes.map((ca) => ca.attributeId),
+    });
+  };
+
+  const collapseAllAttributes = () => {
+    persistTreeExpanded({
+      series: treeExpanded.series,
+      attributes: [],
+    });
+  };
+
+  const renderAttributeSubgroup = (ca: CategoryAttribute) => {
+    const idx = categoryAttributes.findIndex((item) => item.attributeId === ca.attributeId);
+    const isOpen = treeExpanded.attributes.includes(ca.attributeId);
+    const valueCount = ca.attribute.values.length;
+
+    return (
+      <div key={ca.id} className={styles.treeSubgroupBlock}>
+        <div className={styles.treeSubgroupRow}>
+          <button
+            type="button"
+            className={styles.treeToggle}
+            onClick={() => toggleAttribute(ca.attributeId)}
+            aria-expanded={isOpen}
+            aria-label={isOpen ? 'Свернуть' : 'Развернуть'}
+          >
+            {isOpen ? '▼' : '▶'}
+          </button>
+          <input
+            type="checkbox"
+            checked={selectedForApply.includes(ca.attributeId)}
+            onChange={() => toggleSelectForApply(ca.attributeId)}
+            className={styles.applyCheckbox}
+            title="Выбрать для применения к товарам"
+          />
+          <div className={styles.treeSubgroupMain}>
+            <span className={styles.treeSubgroupTitle}>{ca.attribute.name}</span>
+            <span className={styles.treeSubgroupMeta}>{ca.attribute.slug}</span>
+            <span className={attributeTypeBadgeClass(ca.attribute.type)}>
+              {getTypeLabel(ca.attribute.type)}
+              {ca.attribute.unit ? ` (${ca.attribute.unit})` : ''}
+            </span>
+            {ca.isInherited ? (
+              <span
+                className={styles.inheritedBadge}
+                title="Атрибут задан у родительской категории"
+              >
+                из родителя
+              </span>
+            ) : null}
+            {ca.isRequired ? <span className={styles.requiredBadge}>обязательный</span> : null}
+            {valueCount > 0 ? (
+              <span className={styles.treeSubgroupMeta}>{valueCount} знач.</span>
+            ) : null}
+          </div>
+          <div className={styles.treeRowActions}>
+            <div className={styles.treeReorderButtons}>
+              <button
+                type="button"
+                className={styles.treeReorderButton}
+                onClick={() => moveCategoryAttribute(ca.attributeId, 'up')}
+                disabled={reordering || idx === 0}
+                title="Выше"
+                aria-label="Переместить выше"
+              >
+                <ChevronUp className={styles.treeReorderIconSubgroup} aria-hidden />
+              </button>
+              <button
+                type="button"
+                className={styles.treeReorderButton}
+                onClick={() => moveCategoryAttribute(ca.attributeId, 'down')}
+                disabled={reordering || idx === categoryAttributes.length - 1}
+                title="Ниже"
+                aria-label="Переместить ниже"
+              >
+                <ChevronDown className={styles.treeReorderIconSubgroup} aria-hidden />
+              </button>
+            </div>
+            <AdminTableIconButton
+              title="Редактировать атрибут (изменения затронут все категории)"
+              onClick={() => openEditModal(ca.attribute)}
+            >
+              <EditIcon />
+            </AdminTableIconButton>
+            <AdminTableIconButton
+              title={
+                ca.isInherited
+                  ? 'Атрибут задан у родительской категории. Удалите его там или сначала добавьте в эту категорию явно.'
+                  : 'Удалить атрибут только из этой категории'
+              }
+              onClick={() => handleDeleteAttributeFromCategory(ca.attributeId, ca.attribute.name)}
+              disabled={Boolean(ca.isInherited)}
+            >
+              <DeleteIcon />
+            </AdminTableIconButton>
+          </div>
+        </div>
+
+        {isOpen ? (
+          <div className={styles.attrTreeBody}>
+            {ca.attribute.values.length > 0 ? (
+              <div className={styles.attributeValues}>
+                {ca.attribute.values.map((v) => (
+                  <span key={v.id} className={styles.valueTag}>
+                    {v.colorHex ? (
+                      <AttributeColorDot color={v.colorHex} className={styles.colorDot} />
+                    ) : null}
+                    {v.value}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className={styles.attrTreeEmpty}>Нет предустановленных значений</p>
+            )}
+
+            {selectedForApply.includes(ca.attributeId) ? (
+              <div className={styles.defaultValueInput}>
+                <label>Значение по умолчанию для товаров:</label>
+                <input
+                  type="text"
+                  value={defaultValues[ca.attributeId] || ''}
+                  onChange={(e) =>
+                    setDefaultValues((prev) => ({
+                      ...prev,
+                      [ca.attributeId]: e.target.value,
+                    }))
+                  }
+                  placeholder="Оставьте пустым, если не нужно"
+                  className={styles.input}
+                />
+              </div>
+            ) : null}
+
+            <div className={styles.attributeFooter}>
+              <label
+                className={styles.requiredToggle}
+                title="На карточке товара поле подсвечивается и сохранение без значения блокируется."
+              >
+                <input
+                  type="checkbox"
+                  checked={ca.isRequired}
+                  onChange={() => handleToggleRequired(ca.attributeId, ca.isRequired)}
+                />
+                <span>Обязательный для товара</span>
+              </label>
+            </div>
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
+  const renderAttributeSeries = (
+    seriesKey: AttributeTreeSeriesKey,
+    title: string,
+    subtitle: string,
+    items: CategoryAttribute[]
+  ) => {
+    if (items.length === 0) return null;
+    const seriesOpen = treeExpanded.series.includes(seriesKey);
+
+    return (
+      <div className={styles.treeSeriesBlock}>
+        <div className={styles.treeSeriesRow}>
+          <button
+            type="button"
+            className={styles.treeToggle}
+            onClick={() => toggleSeries(seriesKey)}
+            aria-expanded={seriesOpen}
+            aria-label={seriesOpen ? 'Свернуть группу' : 'Развернуть группу'}
+          >
+            {seriesOpen ? '▼' : '▶'}
+          </button>
+          <div className={styles.treeSeriesMain}>
+            <span className={styles.treeSeriesTitle}>{title}</span>
+            <span className={styles.treeSeriesMeta}>{subtitle}</span>
+            <span className={styles.treeSeriesMeta}>
+              {items.length}{' '}
+              {items.length === 1 ? 'атрибут' : items.length < 5 ? 'атрибута' : 'атрибутов'}
+            </span>
+          </div>
+        </div>
+
+        {seriesOpen ? (
+          <div className={styles.treeSubgroups}>
+            {items.map((ca) => renderAttributeSubgroup(ca))}
+          </div>
+        ) : null}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className={styles.page}>
@@ -90,212 +337,122 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
       </div>
 
       <div className={styles.content}>
-        <div className={styles.section}>
-          <div className={styles.sectionHeader}>
-            <h2>Атрибуты категории ({categoryAttributes.length})</h2>
-            <div className={styles.sectionActions}>
-              {categoryAttributes.length > 1 && (
-                <button
-                  data-admin-mutation
-                  className={styles.normalizeOrderButton}
-                  onClick={normalizeCategoryAttributesOrder}
-                  disabled={reordering}
-                  title="Пронумеровать атрибуты по текущему списку и сохранить. Полезно, если после добавления у нескольких атрибутов одинаковый order."
-                >
-                  {reordering ? '⏳ Сохранение порядка...' : '↕ Сохранить порядок'}
-                </button>
-              )}
-              {category?.parentId && (
-                <button
-                  data-admin-mutation
-                  className={styles.inheritButton}
-                  onClick={handleInheritFromParent}
-                  disabled={inheriting}
-                  title={`Скопировать атрибуты из родительской категории "${category.parent?.name || ''}"`}
-                >
-                  {inheriting
-                    ? '⏳ Наследование...'
-                    : `📥 Унаследовать от "${category.parent?.name || 'родителя'}"`}
-                </button>
-              )}
-              <button
-                data-admin-mutation
-                className={styles.addButton}
-                onClick={() => setShowAddModal(true)}
-              >
-                + Добавить существующий
-              </button>
-              <button
-                data-admin-mutation
-                className={styles.createButton}
-                onClick={() => setShowCreateModal(true)}
-              >
-                + Создать новый
-              </button>
-            </div>
-          </div>
+        <div className={styles.sectionHeader}>
+          <h2>Атрибуты ({categoryAttributes.length})</h2>
+        </div>
 
-          <div className={styles.infoBanner} role="note">
-            <p>
-              Атрибут — общее определение в каталоге; к категории привязывается ссылка. «Удалить»
-              снимает привязку только здесь. «Редактировать» меняет определение везде, где атрибут
-              используется. «Создать новый» создаёт глобальный атрибут и сразу привязывает к этой
-              категории.
+        <div className={styles.treeToolbar}>
+          {categoryAttributes.length > 1 ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={styles.secondaryButton}
+              onClick={normalizeCategoryAttributesOrder}
+              disabled={reordering}
+              title="Пронумеровать атрибуты по текущему списку и сохранить"
+            >
+              {reordering ? 'Сохранение порядка…' : '↕ Сохранить порядок'}
+            </button>
+          ) : null}
+          {category?.parentId ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={styles.secondaryButton}
+              onClick={handleInheritFromParent}
+              disabled={inheriting}
+              title={`Скопировать атрибуты из родительской категории «${category.parent?.name || ''}»`}
+            >
+              {inheriting
+                ? 'Наследование…'
+                : `Унаследовать от «${category.parent?.name || 'родителя'}»`}
+            </button>
+          ) : null}
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => setShowAddModal(true)}
+          >
+            + Добавить существующий
+          </button>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addButton}
+            onClick={() => setShowCreateModal(true)}
+          >
+            + Создать новый
+          </button>
+          {categoryAttributes.length > 0 ? (
+            <>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={expandAllAttributes}
+              >
+                Развернуть все
+              </button>
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={collapseAllAttributes}
+              >
+                Свернуть все
+              </button>
+            </>
+          ) : null}
+        </div>
+
+        <div className={styles.infoBanner} role="note">
+          <p>
+            Атрибут — общее определение в каталоге; к категории привязывается ссылка. «Удалить»
+            снимает привязку только здесь. «Редактировать» меняет определение везде, где атрибут
+            используется. «Создать новый» создаёт глобальный атрибут и сразу привязывает к этой
+            категории.
+          </p>
+        </div>
+
+        {categoryAttributes.length > 0 ? (
+          <div className={styles.catalogTree}>
+            {renderAttributeSeries(
+              'own',
+              'Собственные атрибуты',
+              'Привязаны напрямую к этой категории',
+              ownAttributes
+            )}
+            {renderAttributeSeries(
+              'inherited',
+              `Унаследованные${category?.parent?.name ? ` · ${category.parent.name}` : ''}`,
+              'Заданы у родительской категории — удалить можно только там',
+              inheritedAttributes
+            )}
+          </div>
+        ) : (
+          <div className={styles.treeEmpty}>
+            <p>Атрибуты не добавлены</p>
+            <p className={styles.hint}>
+              Добавьте атрибуты, чтобы задать характеристики товарам этой категории
             </p>
           </div>
+        )}
 
-          {categoryAttributes.length > 0 ? (
-            <div className={styles.attributesList}>
-              {categoryAttributes.map((ca, idx) => (
-                <div key={ca.id} className={styles.attributeCard}>
-                  <div className={styles.attributeHeader}>
-                    <input
-                      type="checkbox"
-                      checked={selectedForApply.includes(ca.attributeId)}
-                      onChange={() => toggleSelectForApply(ca.attributeId)}
-                      className={styles.applyCheckbox}
-                      title="Выбрать для применения к товарам"
-                    />
-                    <div className={styles.orderControls} aria-label="Порядок атрибутов">
-                      <button
-                        type="button"
-                        className={styles.orderButton}
-                        onClick={() => moveCategoryAttribute(ca.attributeId, 'up')}
-                        disabled={reordering || idx === 0}
-                        title="Выше"
-                        aria-label="Переместить выше"
-                      >
-                        ↑
-                      </button>
-                      <button
-                        type="button"
-                        className={styles.orderButton}
-                        onClick={() => moveCategoryAttribute(ca.attributeId, 'down')}
-                        disabled={reordering || idx === categoryAttributes.length - 1}
-                        title="Ниже"
-                        aria-label="Переместить ниже"
-                      >
-                        ↓
-                      </button>
-                    </div>
-                    <div className={styles.attributeInfo}>
-                      <span className={styles.attributeName}>{ca.attribute.name}</span>
-                      <span className={styles.attributeSlug}>{ca.attribute.slug}</span>
-                      {ca.isInherited && (
-                        <span
-                          className={styles.inheritedBadge}
-                          title="Атрибут задан у родительской категории"
-                        >
-                          из родителя
-                        </span>
-                      )}
-                    </div>
-                    <span className={attributeTypeBadgeClass(ca.attribute.type)}>
-                      {getTypeLabel(ca.attribute.type)}
-                      {ca.attribute.unit && ` (${ca.attribute.unit})`}
-                    </span>
-                  </div>
-
-                  {ca.attribute.values.length > 0 && (
-                    <div className={styles.attributeValues}>
-                      {ca.attribute.values.slice(0, 5).map((v) => (
-                        <span key={v.id} className={styles.valueTag}>
-                          {v.colorHex && (
-                            <AttributeColorDot color={v.colorHex} className={styles.colorDot} />
-                          )}
-                          {v.value}
-                        </span>
-                      ))}
-                      {ca.attribute.values.length > 5 && (
-                        <span className={styles.moreValues}>+{ca.attribute.values.length - 5}</span>
-                      )}
-                    </div>
-                  )}
-
-                  {selectedForApply.includes(ca.attributeId) && (
-                    <div className={styles.defaultValueInput}>
-                      <label>Значение по умолчанию:</label>
-                      <input
-                        type="text"
-                        value={defaultValues[ca.attributeId] || ''}
-                        onChange={(e) =>
-                          setDefaultValues((prev) => ({
-                            ...prev,
-                            [ca.attributeId]: e.target.value,
-                          }))
-                        }
-                        placeholder="Оставьте пустым, если не нужно"
-                        className={styles.input}
-                      />
-                    </div>
-                  )}
-
-                  <div className={styles.attributeFooter}>
-                    <label
-                      className={styles.requiredToggle}
-                      title="На карточке товара поле подсвечивается и сохранение без значения блокируется."
-                    >
-                      <input
-                        type="checkbox"
-                        checked={ca.isRequired}
-                        onChange={() => handleToggleRequired(ca.attributeId, ca.isRequired)}
-                      />
-                      <span>Обязательный для товара</span>
-                    </label>
-                    <div className={styles.attributeActions}>
-                      <button
-                        className={styles.editButton}
-                        onClick={() => openEditModal(ca.attribute)}
-                        title="Редактировать атрибут (изменения затронут все категории)"
-                      >
-                        ✏️ Редактировать
-                      </button>
-                      <button
-                        data-admin-mutation
-                        className={styles.deleteButton}
-                        onClick={() =>
-                          handleDeleteAttributeFromCategory(ca.attributeId, ca.attribute.name)
-                        }
-                        disabled={Boolean(ca.isInherited)}
-                        title={
-                          ca.isInherited
-                            ? 'Атрибут задан у родительской категории. Удалите его там или сначала добавьте в эту категорию явно.'
-                            : 'Удалить атрибут только из этой категории'
-                        }
-                      >
-                        🗑️ Удалить
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <div className={styles.empty}>
-              <p>Атрибуты не добавлены</p>
-              <p className={styles.hint}>
-                Добавьте атрибуты, чтобы задать характеристики товарам этой категории
-              </p>
-            </div>
-          )}
-
-          {selectedForApply.length > 0 && (
-            <div className={styles.applySection}>
-              <button
-                className={styles.applyButton}
-                onClick={handleApplyToProducts}
-                disabled={applyingToProducts}
-              >
-                {applyingToProducts
-                  ? 'Применение...'
-                  : `Применить ${selectedForApply.length} атрибут(ов) ко всем товарам категории`}
-              </button>
-              <p className={styles.applyHint}>
-                Атрибуты будут добавлены к товарам, которые их ещё не имеют
-              </p>
-            </div>
-          )}
-        </div>
+        {selectedForApply.length > 0 ? (
+          <div className={styles.applySection}>
+            <button
+              className={styles.applyButton}
+              onClick={handleApplyToProducts}
+              disabled={applyingToProducts}
+            >
+              {applyingToProducts
+                ? 'Применение...'
+                : `Применить ${selectedForApply.length} атрибут(ов) ко всем товарам категории`}
+            </button>
+            <p className={styles.applyHint}>
+              Атрибуты будут добавлены к товарам, которые их ещё не имеют
+            </p>
+          </div>
+        ) : null}
       </div>
 
       {showAddModal && (

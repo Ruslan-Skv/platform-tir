@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -8,7 +8,7 @@ import { useAuth } from '@/features/auth';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { API_URL } from '../../shared/categories-page.constants';
-import type { Category, CreateMessage, NewCategoryForm } from '../../shared/categories-page.types';
+import type { Category } from '../../shared/categories-page.types';
 import {
   collectExpandableIds,
   flattenCategories,
@@ -16,16 +16,12 @@ import {
   saveExpandedCategoryIds,
 } from '../../shared/categories-page.utils';
 
-const EMPTY_NEW_CATEGORY: NewCategoryForm = {
-  name: '',
-  slug: '',
-  description: '',
-  parentId: '',
-  icon: '',
-  image: '',
+export type UseCategoriesPageOptions = {
+  initialEditCategoryId?: string | null;
 };
 
-export function useCategoriesPage() {
+export function useCategoriesPage(options: UseCategoriesPageOptions = {}) {
+  const { initialEditCategoryId = null } = options;
   const router = useRouter();
   const { getAuthHeaders, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
@@ -40,12 +36,13 @@ export function useCategoriesPage() {
   const [deleting, setDeleting] = useState(false);
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [newCategory, setNewCategory] = useState<NewCategoryForm>(EMPTY_NEW_CATEGORY);
-  const [creating, setCreating] = useState(false);
-  const [createMessage, setCreateMessage] = useState<CreateMessage | null>(null);
-  const [showIconPicker, setShowIconPicker] = useState(false);
-  const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [editCategoryId, setEditCategoryId] = useState<string | null>(null);
+  const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+
+  const showToast = useCallback((text: string, type: 'ok' | 'err') => {
+    setToast({ text, type });
+    setTimeout(() => setToast(null), 4000);
+  }, []);
 
   const fetchCategories = useCallback(async () => {
     setLoading(true);
@@ -69,96 +66,42 @@ export function useCategoriesPage() {
     void fetchCategories();
   }, [fetchCategories, isAuthenticated, isAuthLoading]);
 
+  useEffect(() => {
+    if (initialEditCategoryId) {
+      setEditCategoryId(initialEditCategoryId);
+    }
+  }, [initialEditCategoryId]);
+
   const flatCategories = useMemo(() => flattenCategories(categories), [categories]);
 
-  const handleImageSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result as string);
-        setNewCategory((prev) => ({ ...prev, image: reader.result as string }));
-      };
-      reader.readAsDataURL(file);
+  const closeCreateModal = useCallback(() => {
+    setShowCreateModal(false);
+  }, []);
+
+  const handleCategoryCreated = useCallback(
+    (_created: Category) => {
+      void fetchCategories();
+    },
+    [fetchCategories]
+  );
+
+  const openEditModal = useCallback((category: Category) => {
+    setEditCategoryId(category.id);
+  }, []);
+
+  const closeEditModal = useCallback(() => {
+    setEditCategoryId(null);
+    if (typeof window !== 'undefined' && new URLSearchParams(window.location.search).has('edit')) {
+      router.replace('/admin/catalog/categories');
     }
-  };
+  }, [router]);
 
-  const clearImage = () => {
-    setImagePreview(null);
-    setNewCategory((prev) => ({ ...prev, image: '' }));
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
-  };
-
-  const handleCreateCategory = async () => {
-    if (!newCategory.name || !newCategory.slug) {
-      setCreateMessage({ type: 'error', text: 'Заполните название и slug' });
-      return;
-    }
-
-    setCreating(true);
-    setCreateMessage(null);
-
-    try {
-      const categoryData: {
-        name: string;
-        slug: string;
-        description?: string;
-        parentId?: string;
-        icon?: string;
-        image?: string;
-      } = {
-        name: newCategory.name,
-        slug: newCategory.slug,
-      };
-
-      if (newCategory.description && newCategory.description.trim()) {
-        categoryData.description = newCategory.description.trim();
-      }
-
-      if (newCategory.parentId && newCategory.parentId.trim()) {
-        categoryData.parentId = newCategory.parentId;
-      }
-
-      if (newCategory.icon && newCategory.icon.trim()) {
-        categoryData.icon = newCategory.icon.trim();
-      }
-
-      if (newCategory.image && newCategory.image.trim()) {
-        categoryData.image = newCategory.image.trim();
-      }
-
-      const response = await apiFetch(`${API_URL}/categories`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-        body: JSON.stringify(categoryData),
-      });
-
-      if (response.ok) {
-        const created = await response.json();
-        setCreateMessage({ type: 'success', text: `Категория "${created.name}" создана` });
-        setNewCategory(EMPTY_NEW_CATEGORY);
-        setImagePreview(null);
-        fetchCategories();
-
-        setTimeout(() => {
-          setShowCreateModal(false);
-          setCreateMessage(null);
-        }, 1500);
-      } else {
-        const data = await response.json().catch(() => ({}));
-        setCreateMessage({ type: 'error', text: data.message || 'Ошибка создания категории' });
-      }
-    } catch {
-      setCreateMessage({ type: 'error', text: 'Ошибка сети' });
-    } finally {
-      setCreating(false);
-    }
-  };
+  const handleCategoryUpdated = useCallback(
+    (_updated: Category) => {
+      void fetchCategories();
+    },
+    [fetchCategories]
+  );
 
   const toggleExpand = (id: string) => {
     setExpandedCategories((prev) => {
@@ -234,19 +177,14 @@ export function useCategoriesPage() {
     deleteError,
     showCreateModal,
     setShowCreateModal,
-    newCategory,
-    setNewCategory,
-    creating,
-    createMessage,
-    showIconPicker,
-    setShowIconPicker,
-    imagePreview,
-    fileInputRef,
+    closeCreateModal,
+    handleCategoryCreated,
+    editCategoryId,
+    openEditModal,
+    closeEditModal,
+    handleCategoryUpdated,
     flatCategories,
     fetchCategories,
-    handleImageSelect,
-    clearImage,
-    handleCreateCategory,
     toggleExpand,
     expandAllCategories,
     collapseAllCategories,
@@ -254,6 +192,8 @@ export function useCategoriesPage() {
     openDeleteModal,
     closeDeleteModal,
     handleDeleteCategory,
+    toast,
+    showToast,
     router,
   };
 }

@@ -8,14 +8,11 @@ import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
-import { CATEGORY_ICONS } from '../shared/categories-page.constants';
 import type { Category } from '../shared/categories-page.types';
-import {
-  countCategories,
-  formatCategoryProductCount,
-  generateSlug,
-} from '../shared/categories-page.utils';
+import { countCategories, formatCategoryProductCount } from '../shared/categories-page.utils';
 import styles from './CategoriesPage.module.css';
+import { CategoryCreateModal } from './CategoryCreateModal';
+import { CategoryEditModal } from './CategoryEditModal';
 import type { CategoriesPageModel } from './hooks/useCategoriesPage';
 
 type CategoriesPageViewProps = {
@@ -46,19 +43,15 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
     deleteError,
     showCreateModal,
     setShowCreateModal,
-    newCategory,
-    setNewCategory,
-    creating,
-    createMessage,
-    showIconPicker,
-    setShowIconPicker,
-    imagePreview,
-    fileInputRef,
+    closeCreateModal,
+    handleCategoryCreated,
+    editCategoryId,
+    openEditModal,
+    closeEditModal,
+    handleCategoryUpdated,
     flatCategories,
     fetchCategories,
-    handleImageSelect,
-    clearImage,
-    handleCreateCategory,
+    toast,
     toggleExpand,
     expandAllCategories,
     collapseAllCategories,
@@ -66,7 +59,6 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
     openDeleteModal,
     closeDeleteModal,
     handleDeleteCategory,
-    router,
   } = model;
 
   const totalCount = countCategories(categories);
@@ -111,10 +103,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
       >
         Атрибуты
       </button>
-      <AdminTableIconButton
-        title="Редактировать категорию"
-        onClick={() => router.push(`/admin/catalog/categories/${category.id}/edit`)}
-      >
+      <AdminTableIconButton title="Редактировать категорию" onClick={() => openEditModal(category)}>
         <EditIcon />
       </AdminTableIconButton>
       <AdminTableIconButton title="Удалить категорию" onClick={() => openDeleteModal(category)}>
@@ -203,6 +192,28 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
 
   return (
     <div className={styles.page}>
+      {toast ? (
+        <div
+          className={`${styles.toast} ${toast.type === 'ok' ? styles.toastOk : styles.toastErr}`}
+        >
+          {toast.text}
+        </div>
+      ) : null}
+
+      <CategoryCreateModal
+        open={showCreateModal}
+        flatCategories={flatCategories}
+        onClose={closeCreateModal}
+        onCreated={handleCategoryCreated}
+      />
+
+      <CategoryEditModal
+        open={Boolean(editCategoryId)}
+        categoryId={editCategoryId}
+        onClose={closeEditModal}
+        onSaved={handleCategoryUpdated}
+      />
+
       <div className={styles.header}>
         <div className={styles.headerLeft}>
           <h1 className={styles.title}>Категории</h1>
@@ -274,193 +285,6 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
             if (!deleting) closeDeleteModal();
           }}
         />
-      ) : null}
-
-      {showCreateModal ? (
-        <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>Создать категорию</h2>
-              <button className={styles.modalClose} onClick={() => setShowCreateModal(false)}>
-                ×
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              {createMessage ? (
-                <div className={`${styles.messageBox} ${styles[createMessage.type]}`}>
-                  {createMessage.text}
-                </div>
-              ) : null}
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Название *</label>
-                <input
-                  type="text"
-                  value={newCategory.name}
-                  onChange={(e) => {
-                    const name = e.target.value;
-                    setNewCategory((prev) => ({
-                      ...prev,
-                      name,
-                      slug: generateSlug(name),
-                    }));
-                  }}
-                  placeholder="Например: Входные двери Гардиан"
-                  className={styles.input}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Slug (URL) *</label>
-                <input
-                  type="text"
-                  value={newCategory.slug}
-                  onChange={(e) =>
-                    setNewCategory((prev) => ({ ...prev, slug: e.target.value.toLowerCase() }))
-                  }
-                  placeholder="entrance-doors-guardian"
-                  className={styles.input}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Родительская категория</label>
-                <select
-                  value={newCategory.parentId}
-                  onChange={(e) =>
-                    setNewCategory((prev) => ({ ...prev, parentId: e.target.value }))
-                  }
-                  className={styles.select}
-                >
-                  <option value="">Без родителя (корневая)</option>
-                  {flatCategories.map((cat) => (
-                    <option key={cat.id} value={cat.id}>
-                      {cat.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Описание</label>
-                <textarea
-                  value={newCategory.description}
-                  onChange={(e) =>
-                    setNewCategory((prev) => ({ ...prev, description: e.target.value }))
-                  }
-                  placeholder="Краткое описание категории"
-                  className={styles.textarea}
-                  rows={3}
-                />
-              </div>
-
-              <div className={styles.formGroup}>
-                <label className={styles.label}>Иконка или изображение</label>
-                <div className={styles.iconImageSection}>
-                  <div className={styles.iconPickerWrapper}>
-                    <button
-                      type="button"
-                      className={styles.iconButton}
-                      onClick={() => setShowIconPicker(!showIconPicker)}
-                    >
-                      {newCategory.icon || '📁'} Выбрать иконку
-                    </button>
-                    {showIconPicker ? (
-                      <div className={styles.iconPicker}>
-                        <div className={styles.iconGrid}>
-                          {CATEGORY_ICONS.map((icon, idx) => (
-                            <button
-                              key={idx}
-                              type="button"
-                              className={`${styles.iconOption} ${newCategory.icon === icon ? styles.iconSelected : ''}`}
-                              onClick={() => {
-                                setNewCategory((prev) => ({ ...prev, icon }));
-                                setShowIconPicker(false);
-                              }}
-                            >
-                              {icon}
-                            </button>
-                          ))}
-                        </div>
-                        {newCategory.icon ? (
-                          <button
-                            type="button"
-                            className={styles.clearIconButton}
-                            onClick={() => {
-                              setNewCategory((prev) => ({ ...prev, icon: '' }));
-                              setShowIconPicker(false);
-                            }}
-                          >
-                            Очистить иконку
-                          </button>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </div>
-
-                  <span className={styles.orDivider}>или</span>
-
-                  <div className={styles.imageUploadWrapper}>
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept="image/*"
-                      onChange={handleImageSelect}
-                      className={styles.fileInput}
-                      id="category-image"
-                    />
-                    <label htmlFor="category-image" className={styles.uploadButton}>
-                      Загрузить картинку
-                    </label>
-                  </div>
-                </div>
-
-                {(newCategory.icon || imagePreview) && (
-                  <div className={styles.previewSection}>
-                    <span className={styles.previewLabel}>Предпросмотр:</span>
-                    <div className={styles.preview}>
-                      {imagePreview ? (
-                        <div className={styles.imagePreviewWrapper}>
-                          <img src={imagePreview} alt="Preview" className={styles.imagePreview} />
-                          <button
-                            type="button"
-                            className={styles.removeImageButton}
-                            onClick={clearImage}
-                          >
-                            ✕
-                          </button>
-                        </div>
-                      ) : newCategory.icon ? (
-                        <span className={styles.iconPreview}>{newCategory.icon}</span>
-                      ) : null}
-                      <span className={styles.previewName}>
-                        {newCategory.name || 'Название категории'}
-                      </span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.cancelButton}
-                onClick={() => setShowCreateModal(false)}
-                disabled={creating}
-              >
-                Отмена
-              </button>
-              <button
-                className={styles.primaryButton}
-                onClick={handleCreateCategory}
-                disabled={creating || !newCategory.name || !newCategory.slug}
-              >
-                {creating ? 'Создание...' : 'Создать'}
-              </button>
-            </div>
-          </div>
-        </div>
       ) : null}
     </div>
   );
