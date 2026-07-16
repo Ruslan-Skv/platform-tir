@@ -111,7 +111,7 @@ interface Product {
       commercialName?: string | null;
     };
   }>;
-  /** Схожие товары в одной карточке (до 5): цена, размер, фото, наименование, цвет, доп. опция */
+  /** Схожие товары в одной карточке (до 30): цена, размер, фото, наименование, цвет, доп. опция */
   cardVariants?: Array<{
     id?: string;
     name: string;
@@ -1334,7 +1334,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
           weatherstripId: formData.weatherstripId.trim() || null,
           cardVariants: formData.cardVariants
             .filter((v) => v.name.trim() && !Number.isNaN(parseFloat(v.price)))
-            .slice(0, 5)
+            .slice(0, 30)
             .map((v) => ({
               name: v.name.trim(),
               price: parseFloat(v.price),

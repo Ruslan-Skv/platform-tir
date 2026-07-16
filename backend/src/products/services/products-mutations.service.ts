@@ -80,7 +80,7 @@ export class ProductsMutationsService {
     await this.syncProductCardBadges(product.id, catalogBadgeIds ?? []);
 
     if (cardVariants && cardVariants.length > 0) {
-      const toCreate = cardVariants.slice(0, 5).map((v, i) => ({
+      const toCreate = cardVariants.slice(0, 30).map((v, i) => ({
         productId: product.id,
         name: v.name,
         price: new Prisma.Decimal(v.price),
@@ -235,7 +235,7 @@ export class ProductsMutationsService {
       await this.prisma.productCardVariant.deleteMany({ where: { productId: id } });
       const list = cardVariants ?? [];
       if (list.length > 0) {
-        const toCreate = list.slice(0, 5).map((v, i) => ({
+        const toCreate = list.slice(0, 30).map((v, i) => ({
           productId: id,
           name: v.name,
           price: new Prisma.Decimal(v.price),

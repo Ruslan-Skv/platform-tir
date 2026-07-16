@@ -2,7 +2,7 @@ import { ApiProperty } from '@nestjs/swagger';
 import { IsString, IsNumber, IsOptional, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-/** Один вариант «схожего товара» в карточке (до 5 на товар). */
+/** Один вариант «схожего товара» в карточке (до 30 на товар). */
 export class ProductCardVariantDto {
   @ApiProperty({ example: 'Дверь белая 60×200' })
   @IsString()

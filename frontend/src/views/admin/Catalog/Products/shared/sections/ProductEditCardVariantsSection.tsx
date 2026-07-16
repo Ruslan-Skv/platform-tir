@@ -50,8 +50,9 @@ export function ProductEditCardVariantsSection({
       />
       <h2 className={styles.sectionTitle}>Схожие товары в карточке</h2>
       <p className={`${styles.hint} ${styles.hintSpaced}`}>
-        До 5 вариантов в одной карточке (как на Wildberries/Озон): отличаются ценой, размером, фото,
-        наименованием, цветом, доп. опцией. Пользователь выбирает нужный вариант прямо в карточке.
+        До 30 вариантов в одной карточке (как на Wildberries/Озон): отличаются ценой, размером,
+        фото, наименованием, цветом, доп. опцией. Пользователь выбирает нужный вариант прямо в
+        карточке.
       </p>
       {displayVariants.map((variant, index) => (
         <div key={`card-variant-${index}`} className={styles.cardVariantBlock}>
@@ -155,7 +156,7 @@ export function ProductEditCardVariantsSection({
           )}
         </div>
       ))}
-      {cardVariants.length < 5 && (
+      {cardVariants.length < 30 && (
         <button
           data-admin-mutation
           type="button"
@@ -164,7 +165,7 @@ export function ProductEditCardVariantsSection({
             onCardVariantsChange([...cardVariants, emptyCardVariant(cardVariants.length)])
           }
         >
-          + Добавить вариант (макс. 5)
+          + Добавить вариант (макс. 30)
         </button>
       )}
     </div>

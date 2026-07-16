@@ -235,11 +235,11 @@ export class CreateProductDto {
   @Type(() => Number)
   supplierPrice?: number;
 
-  /** Схожие товары в одной карточке (до 5): цена, размер, фото, наименование, цвет, доп. опция */
-  @ApiProperty({ type: [ProductCardVariantDto], required: false, maxItems: 5 })
+  /** Схожие товары в одной карточке (до 30): цена, размер, фото, наименование, цвет, доп. опция */
+  @ApiProperty({ type: [ProductCardVariantDto], required: false, maxItems: 30 })
   @IsOptional()
   @IsArray()
-  @ArrayMaxSize(5)
+  @ArrayMaxSize(30)
   @Type(() => ProductCardVariantDto)
   cardVariants?: ProductCardVariantDto[];
 
