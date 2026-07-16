@@ -56,7 +56,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
     normalizeCategoryAttributesOrder,
     moveCategoryAttribute,
     handleAddAttributes,
-    handleRemoveAttribute,
+    handleDeleteAttributeFromCategory,
     handleToggleRequired,
     handleCreateAttribute,
     handleApplyToProducts,
@@ -64,7 +64,6 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
     handleInheritFromParent,
     openEditModal,
     handleEditAttribute,
-    handleDeleteAttribute,
   } = model;
 
   if (loading) {
@@ -136,6 +135,15 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
             </div>
           </div>
 
+          <div className={styles.infoBanner} role="note">
+            <p>
+              Атрибут — общее определение в каталоге; к категории привязывается ссылка. «Удалить»
+              снимает привязку только здесь. «Редактировать» меняет определение везде, где атрибут
+              используется. «Создать новый» создаёт глобальный атрибут и сразу привязывает к этой
+              категории.
+            </p>
+          </div>
+
           {categoryAttributes.length > 0 ? (
             <div className={styles.attributesList}>
               {categoryAttributes.map((ca, idx) => (
@@ -173,6 +181,14 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                     <div className={styles.attributeInfo}>
                       <span className={styles.attributeName}>{ca.attribute.name}</span>
                       <span className={styles.attributeSlug}>{ca.attribute.slug}</span>
+                      {ca.isInherited && (
+                        <span
+                          className={styles.inheritedBadge}
+                          title="Атрибут задан у родительской категории"
+                        >
+                          из родителя
+                        </span>
+                      )}
                     </div>
                     <span className={attributeTypeBadgeClass(ca.attribute.type)}>
                       {getTypeLabel(ca.attribute.type)}
@@ -230,24 +246,24 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                       <button
                         className={styles.editButton}
                         onClick={() => openEditModal(ca.attribute)}
-                        title="Редактировать атрибут"
+                        title="Редактировать атрибут (изменения затронут все категории)"
                       >
                         ✏️ Редактировать
                       </button>
                       <button
-                        className={styles.removeButton}
-                        onClick={() => handleRemoveAttribute(ca.attributeId)}
-                        title="Убрать из категории"
-                      >
-                        Убрать
-                      </button>
-                      <button
                         data-admin-mutation
                         className={styles.deleteButton}
-                        onClick={() => handleDeleteAttribute(ca.attributeId, ca.attribute.name)}
-                        title="Удалить атрибут полностью"
+                        onClick={() =>
+                          handleDeleteAttributeFromCategory(ca.attributeId, ca.attribute.name)
+                        }
+                        disabled={Boolean(ca.isInherited)}
+                        title={
+                          ca.isInherited
+                            ? 'Атрибут задан у родительской категории. Удалите его там или сначала добавьте в эту категорию явно.'
+                            : 'Удалить атрибут только из этой категории'
+                        }
                       >
-                        🗑️
+                        🗑️ Удалить
                       </button>
                     </div>
                   </div>
@@ -505,6 +521,11 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
         <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <h3>Редактировать атрибут</h3>
+
+            <div className={styles.editSharedWarning} role="note">
+              Правки имени, slug, типа и значений затронут все категории, где используется этот
+              атрибут.
+            </div>
 
             <div className={styles.formGroup}>
               <label>Название *</label>

@@ -231,8 +231,14 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     }
   };
 
-  const handleRemoveAttribute = async (attributeId: string) => {
-    if (!confirm('Удалить атрибут из категории?')) return;
+  const handleDeleteAttributeFromCategory = async (attributeId: string, attributeName: string) => {
+    if (
+      !confirm(
+        `Удалить атрибут «${attributeName}» из этой категории? В других категориях он останется.`
+      )
+    ) {
+      return;
+    }
 
     try {
       const response = await apiFetch(
@@ -244,13 +250,18 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
       );
 
       if (response.ok) {
-        showMessage('success', 'Атрибут удалён');
+        showMessage('success', 'Атрибут удалён из категории');
         fetchData({ silent: true });
       } else {
-        throw new Error('Failed to remove attribute');
+        const data = await response.json().catch(() => ({}));
+        throw new Error(
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : 'Failed to remove attribute'
+        );
       }
-    } catch {
-      showMessage('error', 'Ошибка удаления атрибута');
+    } catch (error) {
+      showMessage('error', error instanceof Error ? error.message : 'Ошибка удаления атрибута');
     }
   };
 
@@ -493,32 +504,6 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     }
   };
 
-  const handleDeleteAttribute = async (attributeId: string, attributeName: string) => {
-    if (
-      !confirm(
-        `Удалить атрибут "${attributeName}" полностью? Это удалит его из всех категорий и товаров.`
-      )
-    ) {
-      return;
-    }
-
-    try {
-      const response = await apiFetch(`${API_URL}/attributes/${attributeId}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders(),
-      });
-
-      if (response.ok) {
-        showMessage('success', 'Атрибут удалён');
-        fetchData({ silent: true });
-      } else {
-        throw new Error('Failed to delete attribute');
-      }
-    } catch {
-      showMessage('error', 'Ошибка удаления атрибута');
-    }
-  };
-
   return {
     router,
     category,
@@ -554,7 +539,7 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     normalizeCategoryAttributesOrder,
     moveCategoryAttribute,
     handleAddAttributes,
-    handleRemoveAttribute,
+    handleDeleteAttributeFromCategory,
     handleToggleRequired,
     handleCreateAttribute,
     handleApplyToProducts,
@@ -562,7 +547,6 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     handleInheritFromParent,
     openEditModal,
     handleEditAttribute,
-    handleDeleteAttribute,
   };
 }
 

@@ -82,6 +82,21 @@
   margin: 0;
 }
 
+.infoBanner {
+  margin-bottom: var(--admin-space-xl);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-base);
+}
+
+.infoBanner p {
+  margin: 0;
+}
+
 .sectionActions {
   display: flex;
   gap: var(--admin-space-md);
@@ -241,6 +256,20 @@
   border-radius: var(--admin-radius-xs);
 }
 
+.inheritedBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--admin-info-light);
+  background: var(--admin-info-bg-soft);
+  border: 1px solid var(--admin-info-border);
+  white-space: nowrap;
+}
+
 .attributeType {
   font-size: var(--admin-font-size-xs);
   font-weight: 500;
@@ -385,18 +414,6 @@
   border-color: var(--admin-info-light);
 }
 
-.removeButton {
-  background: none;
-  border: none;
-  color: var(--admin-warning);
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-}
-
-.removeButton:hover {
-  text-decoration: underline;
-}
-
 .deleteButton {
   background: var(--admin-error-bg);
   border: 1px solid var(--admin-error-border-soft);
@@ -408,9 +425,25 @@
   transition: all 0.15s;
 }
 
-.deleteButton:hover {
+.deleteButton:hover:not(:disabled) {
   background: var(--admin-error-bg-soft);
   border-color: var(--admin-danger-border-strong);
+}
+
+.deleteButton:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.editSharedWarning {
+  margin: 0 0 var(--admin-space-xl);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  background: var(--admin-warning-bg);
+  border: 1px solid var(--admin-warning-border-soft);
+  border-radius: var(--admin-radius-md);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-base);
 }
 
 .empty {
@@ -975,17 +1008,13 @@
   border-color: var(--admin-chart-cyan);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .removeButton {
-  color: var(--admin-warning-border);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
   background: var(--admin-overlay-color-059);
   border-color: var(--admin-error-strong);
   color: var(--admin-danger-border-strong);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover:not(:disabled) {
   background: var(--admin-overlay-color-062);
 }
 

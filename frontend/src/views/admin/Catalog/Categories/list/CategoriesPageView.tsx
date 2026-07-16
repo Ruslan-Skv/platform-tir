@@ -1,16 +1,40 @@
 'use client';
 
-import { IndentedBlock } from '@/shared/ui/IndentedBlock/IndentedBlock';
+import Link from 'next/link';
+
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton/AdminListRefreshButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
 import { CATEGORY_ICONS } from '../shared/categories-page.constants';
 import type { Category } from '../shared/categories-page.types';
-import { generateSlug } from '../shared/categories-page.utils';
+import {
+  countCategories,
+  formatCategoryProductCount,
+  generateSlug,
+} from '../shared/categories-page.utils';
 import styles from './CategoriesPage.module.css';
 import type { CategoriesPageModel } from './hooks/useCategoriesPage';
 
 type CategoriesPageViewProps = {
   model: CategoriesPageModel;
 };
+
+function buildDeleteMessage(category: Category): string {
+  const parts = [`Удалить категорию «${category.name}»?`];
+  if (category.children && category.children.length > 0) {
+    parts.push(`Вместе с ${category.children.length} подкатегориями.`);
+  }
+  if (category._count && category._count.products > 0) {
+    parts.push(
+      `В этой категории ${formatCategoryProductCount(category._count.products)} — они останутся без категории.`
+    );
+  }
+  parts.push('Действие нельзя отменить.');
+  return parts.join(' ');
+}
 
 export function CategoriesPageView({ model }: CategoriesPageViewProps) {
   const {
@@ -31,10 +55,13 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
     imagePreview,
     fileInputRef,
     flatCategories,
+    fetchCategories,
     handleImageSelect,
     clearImage,
     handleCreateCategory,
     toggleExpand,
+    expandAllCategories,
+    collapseAllCategories,
     handleManageAttributes,
     openDeleteModal,
     closeDeleteModal,
@@ -42,71 +69,126 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
     router,
   } = model;
 
-  const renderCategory = (category: Category, level = 0) => {
-    const hasChildren = category.children && category.children.length > 0;
-    const isExpanded = expandedCategories.has(category.id);
+  const totalCount = countCategories(categories);
+
+  const renderCategoryVisual = (category: Category) => {
+    if (category.image) {
+      return <img src={category.image} alt="" className={styles.categoryThumb} />;
+    }
+    if (category.icon) {
+      return <span className={styles.categoryIcon}>{category.icon}</span>;
+    }
+    return <span className={styles.categoryIconPlaceholder}>📁</span>;
+  };
+
+  const renderCategoryMeta = (category: Category) => {
+    const total = category._count?.totalProducts ?? category._count?.products;
+    const own = category._count?.products;
+    const childCount = category.children?.length ?? 0;
 
     return (
-      <div key={category.id} className={styles.categoryItem}>
-        <IndentedBlock paddingLeft={level * 24 + 16} className={styles.categoryRow}>
-          <div className={styles.categoryInfo}>
+      <>
+        <span className={styles.treeMeta}>{category.slug}</span>
+        {childCount > 0 ? <span className={styles.treeMeta}>{childCount} подкат.</span> : null}
+        {typeof total === 'number' ? (
+          <span className={styles.treeMeta}>{formatCategoryProductCount(total)}</span>
+        ) : null}
+        {typeof own === 'number' && typeof total === 'number' && total !== own ? (
+          <span className={styles.treeMeta}>своих: {own}</span>
+        ) : null}
+        {!category.isActive ? <span className={styles.badgeInactive}>Скрыта</span> : null}
+      </>
+    );
+  };
+
+  const renderCategoryActions = (category: Category) => (
+    <div className={styles.treeRowActions}>
+      <button
+        type="button"
+        className={styles.secondaryButton}
+        onClick={() => handleManageAttributes(category.id)}
+        title="Управление атрибутами"
+      >
+        Атрибуты
+      </button>
+      <AdminTableIconButton
+        title="Редактировать категорию"
+        onClick={() => router.push(`/admin/catalog/categories/${category.id}/edit`)}
+      >
+        <EditIcon />
+      </AdminTableIconButton>
+      <AdminTableIconButton title="Удалить категорию" onClick={() => openDeleteModal(category)}>
+        <DeleteIcon />
+      </AdminTableIconButton>
+    </div>
+  );
+
+  const renderCategory = (category: Category, depth: 0 | 1) => {
+    const hasChildren = Boolean(category.children && category.children.length > 0);
+    const isExpanded = expandedCategories.has(category.id);
+    const isRoot = depth === 0;
+
+    if (isRoot) {
+      return (
+        <div key={category.id} className={styles.treeRootBlock}>
+          <div className={styles.treeRootRow}>
             {hasChildren ? (
-              <button className={styles.expandButton} onClick={() => toggleExpand(category.id)}>
+              <button
+                type="button"
+                className={styles.treeToggle}
+                onClick={() => toggleExpand(category.id)}
+                aria-expanded={isExpanded}
+                aria-label={isExpanded ? 'Свернуть' : 'Развернуть'}
+              >
                 {isExpanded ? '▼' : '▶'}
               </button>
             ) : (
-              <span className={styles.expandPlaceholder} />
+              <span className={styles.treeTogglePlaceholder} />
             )}
-            {category.image ? (
-              <img src={category.image} alt="" className={styles.categoryImage} />
-            ) : category.icon ? (
-              <span className={styles.categoryIcon}>{category.icon}</span>
-            ) : null}
-            <span className={styles.categoryName}>{category.name}</span>
-            <span className={styles.categorySlug}>{category.slug}</span>
-            {!category.isActive && <span className={styles.inactiveBadge}>Скрыта</span>}
-            {category._count && (
-              <span className={styles.productCount}>
-                {category._count.totalProducts ?? category._count.products} товаров
-                {category._count.totalProducts !== undefined &&
-                  category._count.totalProducts !== category._count.products && (
-                    <span className={styles.ownProductCount}>
-                      (своих: {category._count.products})
-                    </span>
-                  )}
-              </span>
-            )}
+            {renderCategoryVisual(category)}
+            <div className={styles.treeMain}>
+              <span className={styles.treeRootTitle}>{category.name}</span>
+              <div className={styles.treeMetaRow}>{renderCategoryMeta(category)}</div>
+            </div>
+            {renderCategoryActions(category)}
           </div>
-          <div className={styles.categoryActions}>
+          {hasChildren && isExpanded ? (
+            <div className={styles.treeChildren}>
+              {category.children!.map((child) => renderCategory(child, 1))}
+            </div>
+          ) : null}
+        </div>
+      );
+    }
+
+    return (
+      <div key={category.id} className={styles.treeChildBlock}>
+        <div className={styles.treeChildRow}>
+          {hasChildren ? (
             <button
-              className={styles.attributesButton}
-              onClick={() => handleManageAttributes(category.id)}
-              title="Управление атрибутами"
+              type="button"
+              className={styles.treeToggle}
+              onClick={() => toggleExpand(category.id)}
+              aria-expanded={isExpanded}
+              aria-label={isExpanded ? 'Свернуть' : 'Развернуть'}
             >
-              ⚙️ Атрибуты
+              {isExpanded ? '▼' : '▶'}
             </button>
-            <button
-              className={styles.editButton}
-              onClick={() => router.push(`/admin/catalog/categories/${category.id}/edit`)}
-              title="Редактировать"
-            >
-              ✏️
-            </button>
-            <button
-              data-admin-mutation
-              className={styles.deleteButton}
-              onClick={() => openDeleteModal(category)}
-              title="Удалить категорию"
-            >
-              🗑️
-            </button>
+          ) : (
+            <span className={styles.treeTogglePlaceholder} />
+          )}
+          {renderCategoryVisual(category)}
+          <div className={styles.treeMain}>
+            <span className={styles.treeChildTitle}>{category.name}</span>
+            <div className={styles.treeMetaRow}>{renderCategoryMeta(category)}</div>
           </div>
-        </IndentedBlock>
-        {hasChildren && isExpanded && (
-          <div className={styles.children}>
-            {category.children!.map((child) => renderCategory(child, level + 1))}
+          {renderCategoryActions(category)}
+        </div>
+        {hasChildren && isExpanded ? (
+          <div className={styles.treeNestedChildren}>
+            {category.children!.map((child) => renderCategory(child, 1))}
           </div>
-        )}
+        ) : null}
       </div>
     );
   };
@@ -114,10 +196,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loading}>
-          <div className={styles.spinner}></div>
-          <p>Загрузка категорий...</p>
-        </div>
+        <div className={styles.loadingOverlay}>Загрузка категорий…</div>
       </div>
     );
   }
@@ -125,85 +204,79 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
   return (
     <div className={styles.page}>
       <div className={styles.header}>
-        <h1 className={styles.title}>Категории</h1>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Категории</h1>
+          <AdminListRefreshButton
+            onClick={() => void fetchCategories()}
+            busy={loading}
+            title="Обновить список категорий"
+            aria-label="Обновить список категорий"
+          />
+          <span className={styles.count}>
+            {totalCount}{' '}
+            {totalCount === 1 ? 'категория' : totalCount < 5 ? 'категории' : 'категорий'}
+          </span>
+        </div>
+        <div className={styles.headerActions}>
+          <Link href="/admin/catalog/products" className={styles.secondaryButton}>
+            К товарам
+          </Link>
+        </div>
+      </div>
+
+      <p className={styles.hint}>
+        Дерево категорий каталога: корневые разделы сворачиваются как группы, подкатегории — как
+        подгруппы. Разверните нужную ветку, чтобы увидеть дочерние категории и перейти к атрибутам.
+      </p>
+
+      <div className={styles.treeToolbar}>
         <button
+          type="button"
           data-admin-mutation
           className={styles.addButton}
           onClick={() => setShowCreateModal(true)}
         >
           + Добавить категорию
         </button>
+        <button type="button" className={styles.secondaryButton} onClick={expandAllCategories}>
+          Развернуть все
+        </button>
+        <button type="button" className={styles.secondaryButton} onClick={collapseAllCategories}>
+          Свернуть все
+        </button>
       </div>
 
-      <div className={styles.categoriesTree}>
-        {categories.length > 0 ? (
-          categories.map((category) => renderCategory(category))
-        ) : (
-          <div className={styles.empty}>
-            <p>Категории не найдены</p>
-          </div>
-        )}
-      </div>
-
-      {deleteModal.isOpen && deleteModal.category && (
-        <div className={styles.modalOverlay} onClick={closeDeleteModal}>
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.modalHeader}>
-              <h2 className={styles.modalTitle}>⚠️ Удаление категории</h2>
-              <button className={styles.modalClose} onClick={closeDeleteModal}>
-                ×
-              </button>
-            </div>
-
-            <div className={styles.modalBody}>
-              <div className={styles.warningBox}>
-                <p className={styles.warningText}>
-                  <strong>Внимание!</strong> Вы собираетесь удалить категорию:
-                </p>
-                <p className={styles.categoryToDelete}>&quot;{deleteModal.category.name}&quot;</p>
-
-                {deleteModal.category.children && deleteModal.category.children.length > 0 && (
-                  <p className={styles.warningSubtext}>
-                    ⚠️ Эта категория содержит {deleteModal.category.children.length} подкатегорий,
-                    которые также будут удалены!
-                  </p>
-                )}
-
-                {deleteModal.category._count && deleteModal.category._count.products > 0 && (
-                  <p className={styles.warningSubtext}>
-                    ⚠️ В этой категории {deleteModal.category._count.products} товаров. Товары
-                    станут без категории!
-                  </p>
-                )}
-
-                <p className={styles.dangerText}>🚫 Это действие невозможно отменить!</p>
-              </div>
-
-              {deleteError && <div className={styles.errorMessage}>{deleteError}</div>}
-            </div>
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.cancelButton}
-                onClick={closeDeleteModal}
-                disabled={deleting}
-              >
-                Отмена
-              </button>
-              <button
-                data-admin-mutation
-                className={styles.dangerButton}
-                onClick={handleDeleteCategory}
-                disabled={deleting}
-              >
-                {deleting ? 'Удаление...' : 'Удалить безвозвратно'}
-              </button>
-            </div>
-          </div>
+      {categories.length > 0 ? (
+        <div className={styles.catalogTree}>
+          {categories.map((category) => renderCategory(category, 0))}
         </div>
+      ) : (
+        <p className={styles.treeEmpty}>
+          Категории не найдены. Создайте первую корневую категорию.
+        </p>
       )}
 
-      {showCreateModal && (
+      {deleteModal.isOpen && deleteModal.category ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить категорию?"
+          message={
+            deleteError
+              ? `${buildDeleteMessage(deleteModal.category)} ${deleteError}`
+              : buildDeleteMessage(deleteModal.category)
+          }
+          confirmText={deleting ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          closeOnConfirm={false}
+          onConfirm={() => void handleDeleteCategory()}
+          onClose={() => {
+            if (!deleting) closeDeleteModal();
+          }}
+        />
+      ) : null}
+
+      {showCreateModal ? (
         <div className={styles.modalOverlay} onClick={() => setShowCreateModal(false)}>
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <div className={styles.modalHeader}>
@@ -214,11 +287,11 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
             </div>
 
             <div className={styles.modalBody}>
-              {createMessage && (
+              {createMessage ? (
                 <div className={`${styles.messageBox} ${styles[createMessage.type]}`}>
                   {createMessage.text}
                 </div>
-              )}
+              ) : null}
 
               <div className={styles.formGroup}>
                 <label className={styles.label}>Название *</label>
@@ -293,7 +366,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
                     >
                       {newCategory.icon || '📁'} Выбрать иконку
                     </button>
-                    {showIconPicker && (
+                    {showIconPicker ? (
                       <div className={styles.iconPicker}>
                         <div className={styles.iconGrid}>
                           {CATEGORY_ICONS.map((icon, idx) => (
@@ -310,7 +383,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
                             </button>
                           ))}
                         </div>
-                        {newCategory.icon && (
+                        {newCategory.icon ? (
                           <button
                             type="button"
                             className={styles.clearIconButton}
@@ -321,9 +394,9 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
                           >
                             Очистить иконку
                           </button>
-                        )}
+                        ) : null}
                       </div>
-                    )}
+                    ) : null}
                   </div>
 
                   <span className={styles.orDivider}>или</span>
@@ -338,7 +411,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
                       id="category-image"
                     />
                     <label htmlFor="category-image" className={styles.uploadButton}>
-                      📷 Загрузить картинку
+                      Загрузить картинку
                     </label>
                   </div>
                 </div>
@@ -388,7 +461,7 @@ export function CategoriesPageView({ model }: CategoriesPageViewProps) {
             </div>
           </div>
         </div>
-      )}
+      ) : null}
     </div>
   );
 }

@@ -64,11 +64,11 @@ export class CategoriesAttributesService {
       ownAttrIds,
     );
 
-    const combined = [...ownRows, ...inheritedRows];
     const requiredInAncestors = await this.getAttributeIdsRequiredInAncestors(categoryId);
 
-    const merged = combined.map((row) => ({
+    const merged = [...ownRows, ...inheritedRows].map((row) => ({
       ...row,
+      isInherited: !ownAttrIds.has(row.attributeId),
       isRequired: row.isRequired || requiredInAncestors.has(row.attributeId),
     }));
 

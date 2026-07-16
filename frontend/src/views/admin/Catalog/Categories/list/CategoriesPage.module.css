@@ -1,12 +1,20 @@
 .page {
-  max-width: 1200px;
+  max-width: none;
+  margin: 0;
 }
 
 .header {
   display: flex;
-  justify-content: space-between;
   align-items: center;
+  justify-content: space-between;
   margin-bottom: var(--admin-space-4xl);
+}
+
+.headerLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  padding-left: 7px;
 }
 
 .title {
@@ -16,232 +24,239 @@
   margin: 0;
 }
 
-.addButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
-  color: white;
-  border: none;
-  border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-  transition: all 0.2s;
-}
-
-.addButton:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--admin-overlay-color-144), 0.3);
-}
-
-.loading {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  padding: var(--admin-space-8xl);
-  color: var(--admin-text-muted);
-}
-
-.spinner {
-  width: 40px;
-  height: 40px;
-  border: 3px solid var(--admin-border);
-  border-top-color: var(--admin-accent);
-  border-radius: var(--admin-radius-full);
-  animation: spin 0.8s linear infinite;
-  margin-bottom: var(--admin-space-2xl);
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-.categoriesTree {
-  background: var(--admin-surface);
-  border-radius: var(--admin-radius-xl);
-  box-shadow: var(--admin-shadow-card);
-  overflow: hidden;
-}
-
-.categoryItem {
-  border-bottom: 1px solid var(--admin-border);
-}
-
-.categoryItem:last-child {
-  border-bottom: none;
-}
-
-.categoryRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--admin-space-md) var(--admin-space-lg);
-  transition: background 0.15s;
-}
-
-.categoryRow:hover {
-  background: var(--admin-surface-muted);
-}
-
-.categoryInfo {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-xl);
-  flex: 1;
-}
-
-.expandButton {
-  width: 24px;
-  height: 24px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: none;
-  border: none;
-  cursor: pointer;
-  color: var(--admin-text-muted);
-  font-size: var(--admin-font-size-xs);
-  border-radius: var(--admin-radius-xs);
-  transition: all 0.15s;
-}
-
-.expandButton:hover {
+.count {
   background: var(--admin-border);
-  color: var(--admin-text-secondary);
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border-radius: var(--admin-radius-3xl);
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
 }
 
-.expandPlaceholder {
-  width: 24px;
+.headerActions {
+  display: flex;
+  gap: var(--admin-space-xl);
+  flex-wrap: wrap;
 }
 
-.categoryIcon {
-  font-size: var(--admin-font-size-2xl);
-  line-height: var(--admin-line-height-flat);
-}
-
-.categoryImage {
-  width: 24px;
-  height: 24px;
-  object-fit: cover;
-  border-radius: var(--admin-radius-xs);
-}
-
-.categoryName {
-  font-weight: 500;
-  color: var(--admin-text-secondary);
-}
-
-.categorySlug {
+.hint {
+  margin: 0 0 var(--admin-space-3xl);
   color: var(--admin-text-muted);
   font-size: var(--admin-font-size-sm);
-  font-family: monospace;
+  line-height: 1.5;
 }
 
-.productCount {
-  background: var(--admin-accent-soft);
-  color: var(--admin-accent);
-  padding: var(--admin-space-2xs) var(--admin-space-sm);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-2xs);
-  font-weight: 500;
+.treeToolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+  flex-wrap: wrap;
+}
+
+.addButton {
   display: inline-flex;
   align-items: center;
-  gap: var(--admin-space-xs);
-}
-
-.ownProductCount {
-  color: var(--admin-accent);
-  font-weight: 400;
-  font-size: var(--admin-font-size-xs);
-  opacity: 0.8;
-}
-
-.inactiveBadge {
-  background: var(--admin-warning-bg);
-  color: var(--admin-warning-text);
-  padding: var(--admin-space-2xs) var(--admin-space-sm);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-2xs);
-  font-weight: 500;
-}
-
-.categoryActions {
-  display: flex;
-  gap: var(--admin-space-md);
-}
-
-.attributesButton {
+  justify-content: center;
   padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: var(--admin-success-bg-soft);
-  color: var(--admin-success-strong);
-  border: 1px solid var(--admin-success-border-soft);
-  border-radius: var(--admin-radius-sm);
-  font-size: var(--admin-font-size-sm);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.attributesButton:hover {
-  background: var(--admin-success-bg);
-  border-color: var(--admin-success-lime);
-}
-
-.editButton {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--admin-surface-soft);
   border: none;
-  border-radius: var(--admin-radius-sm);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-info);
+  color: var(--admin-surface);
   cursor: pointer;
-  transition: all 0.15s;
-  font-size: var(--admin-font-size-base);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
 }
 
-.editButton:hover {
-  background: var(--admin-border);
+.addButton:hover:not(:disabled) {
+  background: var(--admin-info-strong);
 }
 
-.deleteButton {
-  width: 28px;
-  height: 28px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--admin-error-bg);
-  border: 1px solid var(--admin-error-border-soft);
-  border-radius: var(--admin-radius-sm);
+.secondaryButton {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s;
-  font-size: var(--admin-font-size-base);
+  text-decoration: none;
 }
 
-.deleteButton:hover {
-  background: var(--admin-error-bg-soft);
-  border-color: var(--admin-danger-border-strong);
-}
-
-.children {
+.secondaryButton:hover:not(:disabled) {
   background: var(--admin-surface-muted);
 }
 
-.empty {
+.loadingOverlay {
+  padding: 48px;
   text-align: center;
-  padding: var(--admin-space-6xl);
   color: var(--admin-text-muted);
 }
 
-/* Модальное окно удаления */
+.catalogTree {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg);
+}
+
+.treeEmpty {
+  padding: 32px 16px;
+  text-align: center;
+  color: var(--admin-text-muted);
+}
+
+.treeRootBlock {
+  border: 1px solid #c7d2fe;
+  border-radius: var(--admin-radius-md);
+  background: #eef2ff;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgb(99 102 241 / 8%);
+}
+
+.treeRootRow,
+.treeChildRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+}
+
+.treeRootRow {
+  background: rgb(99 102 241 / 10%);
+  border-bottom: 1px solid #c7d2fe;
+}
+
+.treeToggle,
+.treeTogglePlaceholder {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+}
+
+.treeToggle {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  font-size: 12px;
+  color: var(--admin-text-muted);
+  border-radius: var(--admin-radius-sm);
+}
+
+.treeToggle:hover {
+  background: rgb(255 255 255 / 45%);
+}
+
+.treeMain {
+  flex: 1;
+  min-width: 0;
+}
+
+.treeRootTitle {
+  display: block;
+  font-weight: 700;
+  font-size: var(--admin-font-size-md);
+  color: #3730a3;
+  line-height: 1.35;
+}
+
+.treeChildTitle {
+  display: block;
+  font-weight: 600;
+  color: #334155;
+  line-height: 1.35;
+}
+
+.treeMetaRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-top: 2px;
+}
+
+.treeMeta {
+  font-size: 12px;
+  color: var(--admin-text-muted);
+}
+
+.badgeInactive {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: #fef3f2;
+  color: #b42318;
+}
+
+.categoryThumb {
+  width: 28px;
+  height: 28px;
+  object-fit: cover;
+  border-radius: var(--admin-radius-xs);
+  flex-shrink: 0;
+}
+
+.categoryIcon,
+.categoryIconPlaceholder {
+  width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.categoryIconPlaceholder {
+  opacity: 0.65;
+}
+
+.treeRowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.treeChildren {
+  padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
+  background: rgb(238 242 255 / 55%);
+}
+
+.treeChildBlock {
+  margin-top: var(--admin-space-sm);
+  border: 1px solid #cbd5e1;
+  border-radius: var(--admin-radius-sm);
+  background: #f1f5f9;
+  overflow: hidden;
+  box-shadow: inset 3px 0 0 #94a3b8;
+}
+
+.treeChildBlock:first-child {
+  margin-top: 0;
+}
+
+.treeChildRow {
+  border-bottom: 1px solid #cbd5e1;
+  background: rgb(148 163 184 / 12%);
+}
+
+.treeNestedChildren {
+  padding: var(--admin-space-sm) var(--admin-space-md) var(--admin-space-md);
+  background: rgb(248 250 252 / 90%);
+}
+
+.treeNestedChildren .treeChildBlock {
+  box-shadow: inset 3px 0 0 #cbd5e1;
+}
+
+/* Модальное окно создания */
 .modalOverlay {
   position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
+  inset: 0;
   background: var(--admin-overlay-color-155);
   display: flex;
   align-items: center;
@@ -251,10 +266,12 @@
 }
 
 .modal {
-  background: white;
+  background: var(--admin-surface);
   border-radius: var(--admin-radius-2xl);
-  max-width: 480px;
+  max-width: 560px;
   width: 100%;
+  max-height: 90vh;
+  overflow: auto;
   box-shadow: 0 25px 50px -12px var(--admin-overlay-color-151);
   animation: modalAppear 0.2s ease-out;
 }
@@ -279,7 +296,7 @@
 }
 
 .modalTitle {
-  font-size: var(--admin-font-size-2xl);
+  font-size: var(--admin-font-size-xl);
   font-weight: 600;
   color: var(--admin-text-secondary);
   margin: 0;
@@ -297,7 +314,6 @@
   color: var(--admin-text-muted);
   cursor: pointer;
   border-radius: var(--admin-radius-sm);
-  transition: all 0.15s;
 }
 
 .modalClose:hover {
@@ -309,52 +325,6 @@
   padding: var(--admin-space-4xl);
 }
 
-.warningBox {
-  background: var(--admin-warning-bg);
-  border: 1px solid var(--admin-warning-border);
-  border-radius: var(--admin-radius-xl);
-  padding: var(--admin-space-2xl);
-}
-
-.warningText {
-  color: var(--admin-warning-text);
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
-  font-size: var(--admin-font-size-base);
-}
-
-.categoryToDelete {
-  color: var(--admin-text-secondary);
-  font-size: var(--admin-font-size-xl);
-  font-weight: 600;
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-xl) var(--admin-space-0);
-  padding: var(--admin-space-md) var(--admin-space-xl);
-  background: white;
-  border-radius: var(--admin-radius-sm);
-}
-
-.warningSubtext {
-  color: var(--admin-warning-brown);
-  font-size: var(--admin-font-size-sm);
-  margin: 8px 0 0 0;
-}
-
-.dangerText {
-  color: var(--admin-error-strong);
-  font-weight: 600;
-  margin: 16px 0 0 0;
-  font-size: var(--admin-font-size-base);
-}
-
-.errorMessage {
-  background: var(--admin-error-bg);
-  border: 1px solid var(--admin-error-border-soft);
-  color: var(--admin-error-strong);
-  padding: var(--admin-space-xl) var(--admin-space-2xl);
-  border-radius: var(--admin-radius-md);
-  margin-top: var(--admin-space-2xl);
-  font-size: var(--admin-font-size-sm);
-}
-
 .modalActions {
   display: flex;
   justify-content: flex-end;
@@ -362,54 +332,9 @@
   padding: var(--admin-space-2xl) var(--admin-space-4xl);
   border-top: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
-  border-radius: var(--admin-radius-card-bottom);
+  border-radius: 0 0 var(--admin-radius-2xl) var(--admin-radius-2xl);
 }
 
-.cancelButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: white;
-  color: var(--admin-text-secondary);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.cancelButton:hover:not(:disabled) {
-  background: var(--admin-surface-soft);
-  border-color: var(--admin-text-muted);
-}
-
-.cancelButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-.dangerButton {
-  padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: linear-gradient(135deg, var(--admin-danger), var(--admin-error-strong));
-  color: white;
-  border: none;
-  border-radius: var(--admin-radius-md);
-  font-weight: 500;
-  font-size: var(--admin-font-size-xs);
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.dangerButton:hover:not(:disabled) {
-  background: linear-gradient(135deg, var(--admin-error-strong), var(--admin-error-text));
-  box-shadow: 0 4px 12px var(--admin-overlay-color-167);
-}
-
-.dangerButton:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
-
-/* Форма создания категории */
 .formGroup {
   margin-bottom: var(--admin-space-2xl);
 }
@@ -422,53 +347,28 @@
   margin-bottom: var(--admin-space-sm);
 }
 
-.input {
+.input,
+.select,
+.textarea {
   width: 100%;
-  padding: var(--admin-space-lg) var(--admin-space-xl);
-  border: 1px solid var(--admin-border-strong);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-base);
-  transition: all 0.15s;
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  font-family: inherit;
 }
 
-.input:focus {
-  outline: none;
-  border-color: var(--admin-accent);
-  box-shadow: var(--admin-shadow-focus-soft);
-}
-
-.select {
-  width: 100%;
-  padding: var(--admin-space-lg) var(--admin-space-xl);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-base);
-  background: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.select:focus {
+.input:focus,
+.select:focus,
+.textarea:focus {
   outline: none;
   border-color: var(--admin-accent);
   box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .textarea {
-  width: 100%;
-  padding: var(--admin-space-lg) var(--admin-space-xl);
-  border: 1px solid var(--admin-border-strong);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-base);
   resize: vertical;
-  font-family: inherit;
-  transition: all 0.15s;
-}
-
-.textarea:focus {
-  outline: none;
-  border-color: var(--admin-accent);
-  box-shadow: var(--admin-shadow-focus-soft);
 }
 
 .messageBox {
@@ -490,21 +390,39 @@
   color: var(--admin-error-strong);
 }
 
-.primaryButton {
+.cancelButton {
   padding: var(--admin-space-sm) var(--admin-space-xl);
-  background: linear-gradient(135deg, var(--admin-accent), var(--admin-accent));
-  color: white;
-  border: none;
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   font-weight: 500;
   font-size: var(--admin-font-size-xs);
   cursor: pointer;
-  transition: all 0.15s;
+}
+
+.cancelButton:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+}
+
+.cancelButton:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.primaryButton {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: none;
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-info);
+  color: var(--admin-surface);
+  font-weight: 600;
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
 }
 
 .primaryButton:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(var(--admin-overlay-color-144), 0.3);
+  background: var(--admin-info-strong);
 }
 
 .primaryButton:disabled {
@@ -512,7 +430,6 @@
   cursor: not-allowed;
 }
 
-/* Секция иконки/изображения */
 .iconImageSection {
   display: flex;
   align-items: center;
@@ -528,18 +445,16 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-md);
-  padding: var(--admin-space-lg) var(--admin-space-2xl);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
   background: var(--admin-surface-soft);
-  border: 1px solid var(--admin-border-strong);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
   cursor: pointer;
-  font-size: var(--admin-font-size-lg);
-  transition: all 0.15s;
+  font-size: var(--admin-font-size-sm);
 }
 
 .iconButton:hover {
-  background: var(--admin-border);
-  border-color: var(--admin-text-muted);
+  background: var(--admin-surface-muted);
 }
 
 .iconPicker {
@@ -547,8 +462,8 @@
   top: 100%;
   left: 0;
   margin-top: var(--admin-space-md);
-  background: white;
-  border: 1px solid var(--admin-border-strong);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-xl);
   padding: var(--admin-space-xl);
   box-shadow: 0 10px 25px var(--admin-overlay-color-149);
@@ -573,12 +488,10 @@
   border-radius: var(--admin-radius-sm);
   cursor: pointer;
   font-size: var(--admin-font-size-2xl);
-  transition: all 0.15s;
 }
 
 .iconOption:hover {
   background: var(--admin-surface-soft);
-  transform: scale(1.1);
 }
 
 .iconOption.iconSelected {
@@ -596,20 +509,11 @@
   color: var(--admin-error-strong);
   font-size: var(--admin-font-size-sm);
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.clearIconButton:hover {
-  background: var(--admin-error-bg-soft);
 }
 
 .orDivider {
   color: var(--admin-text-muted);
   font-size: var(--admin-font-size-sm);
-}
-
-.imageUploadWrapper {
-  position: relative;
 }
 
 .fileInput {
@@ -621,22 +525,19 @@
 }
 
 .uploadButton {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--admin-space-md);
-  padding: var(--admin-space-lg) var(--admin-space-2xl);
-  background: var(--admin-success-bg-soft);
-  border: 1px solid var(--admin-success-border-soft);
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
-  color: var(--admin-success-strong);
+  color: var(--admin-text-secondary);
   cursor: pointer;
-  font-size: var(--admin-font-size-base);
-  transition: all 0.15s;
+  font-size: var(--admin-font-size-sm);
 }
 
 .uploadButton:hover {
-  background: var(--admin-success-bg);
-  border-color: var(--admin-success-lime);
+  background: var(--admin-surface-muted);
 }
 
 .previewSection {
@@ -658,14 +559,14 @@
   align-items: center;
   gap: var(--admin-space-xl);
   padding: var(--admin-space-xl);
-  background: white;
+  background: var(--admin-surface);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
 }
 
 .iconPreview {
   font-size: var(--admin-font-size-4xl);
-  line-height: var(--admin-line-height-flat);
+  line-height: 1;
 }
 
 .imagePreviewWrapper {
@@ -696,12 +597,6 @@
   border-radius: var(--admin-radius-full);
   font-size: var(--admin-font-size-xs);
   cursor: pointer;
-  transition: all 0.15s;
-}
-
-.removeImageButton:hover {
-  background: var(--admin-error-strong);
-  transform: scale(1.1);
 }
 
 .previewName {
@@ -709,171 +604,55 @@
   color: var(--admin-text-secondary);
 }
 
-/* Тёмная тема — категории каталога */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: var(--admin-surface-muted);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeRootBlock {
+  border-color: rgb(99 102 241 / 35%);
+  background: rgb(30 27 75 / 55%);
+  box-shadow: none;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
-  color: var(--admin-text-muted);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeRootRow {
+  background: rgb(99 102 241 / 18%);
+  border-bottom-color: rgb(99 102 241 / 25%);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .spinner {
-  border-color: var(--admin-text-secondary);
-  border-top-color: var(--admin-accent);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeRootTitle {
+  color: #c7d2fe;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoriesTree {
-  background: var(--admin-text-secondary);
-  box-shadow: var(--admin-shadow-card-dark);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeChildren {
+  background: rgb(15 23 42 / 35%);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryItem {
-  border-bottom-color: var(--admin-text-secondary);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeChildBlock {
+  border-color: rgb(148 163 184 / 30%);
+  background: rgb(30 41 59 / 65%);
+  box-shadow: inset 3px 0 0 rgb(148 163 184 / 55%);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryRow:hover {
-  background: var(--admin-text-secondary);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeChildRow {
+  border-bottom-color: rgb(148 163 184 / 25%);
+  background: rgb(148 163 184 / 10%);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton {
-  color: var(--admin-text-muted);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeChildTitle {
+  color: #e2e8f0;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .expandButton:hover {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .treeNestedChildren {
+  background: rgb(15 23 42 / 45%);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryName {
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categorySlug {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .productCount {
-  background: rgba(var(--admin-overlay-color-144), 0.3);
-  color: var(--admin-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .ownProductCount {
-  color: var(--admin-accent);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .inactiveBadge {
-  background: var(--admin-overlay-color-079);
-  color: var(--admin-warning-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesButton {
-  background: var(--admin-overlay-color-115);
-  color: var(--admin-success-border);
-  border-color: var(--admin-success);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .attributesButton:hover {
-  background: var(--admin-overlay-color-117);
-  border-color: var(--admin-success-emerald);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .editButton:hover {
-  background: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton {
-  background: var(--admin-overlay-color-059);
-  border-color: var(--admin-error-strong);
-  color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteButton:hover {
-  background: var(--admin-overlay-color-062);
-  border-color: var(--admin-error-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .children {
-  background: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .empty {
-  color: var(--admin-text-muted);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .badgeInactive {
+  background: rgb(180 35 24 / 20%);
+  color: #fda29b;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .modal {
   background: var(--admin-text-secondary);
-  box-shadow: 0 25px 50px -12px var(--admin-overlay-color-155);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalHeader {
-  border-bottom-color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .modalTitle {
   color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalClose:hover {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .warningBox {
-  background: var(--admin-overlay-color-077);
-  border-color: var(--admin-warning-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .warningText {
-  color: var(--admin-warning-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .categoryToDelete {
-  color: var(--admin-surface-muted);
-  background: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .warningSubtext {
-  color: var(--admin-warning-amber);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dangerText {
-  color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .errorMessage {
-  background: var(--admin-overlay-color-059);
-  border-color: var(--admin-error-strong);
-  color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .modalActions {
-  border-top-color: var(--admin-text-secondary);
-  background: var(--admin-text-primary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .cancelButton:hover:not(:disabled) {
-  background: var(--admin-sidebar-text);
-  border-color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .label {
-  color: var(--admin-border-strong);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .input,
@@ -884,87 +663,12 @@
   color: var(--admin-surface-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
-  background: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .messageBox.success {
-  background: var(--admin-overlay-color-098);
-  border-color: var(--admin-success);
-  color: var(--admin-success-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .messageBox.error {
-  background: var(--admin-overlay-color-059);
-  border-color: var(--admin-error-strong);
-  color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconButton:hover {
-  background: var(--admin-sidebar-text);
-  border-color: var(--admin-text-muted);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark']) .iconPicker {
   background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
-  box-shadow: 0 10px 25px var(--admin-overlay-color-153);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption:hover {
-  background: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .iconOption.iconSelected {
-  border-color: var(--admin-accent);
-  background: rgba(var(--admin-overlay-color-144), 0.25);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton {
-  background: var(--admin-overlay-color-059);
-  border-color: var(--admin-error-strong);
-  color: var(--admin-danger-border-strong);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .clearIconButton:hover {
-  background: var(--admin-overlay-color-062);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .orDivider {
-  color: var(--admin-text-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton {
-  background: var(--admin-overlay-color-115);
-  border-color: var(--admin-success);
-  color: var(--admin-success-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .uploadButton:hover {
-  background: var(--admin-overlay-color-117);
-  border-color: var(--admin-success-emerald);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .previewSection {
-  background: var(--admin-text-secondary);
-  border-radius: var(--admin-radius-md);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .previewLabel {
-  color: var(--admin-text-muted);
+  border-color: var(--admin-sidebar-text);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .preview {
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .previewName {
-  color: var(--admin-surface-muted);
 }

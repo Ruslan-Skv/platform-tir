@@ -1,17 +1,53 @@
 import type { Category, FlatCategoryOption } from './categories-page.types';
 
-export function collectExpandableIds(categories: Category[]): Set<string> {
-  const ids = new Set<string>();
+export function collectExpandableIds(categories: Category[]): string[] {
+  const ids: string[] = [];
   const collectIds = (cats: Category[]) => {
     cats.forEach((cat) => {
       if (cat.children && cat.children.length > 0) {
-        ids.add(cat.id);
+        ids.push(cat.id);
         collectIds(cat.children);
       }
     });
   };
   collectIds(categories);
   return ids;
+}
+
+export function countCategories(categories: Category[]): number {
+  return categories.reduce(
+    (sum, cat) => sum + 1 + (cat.children?.length ? countCategories(cat.children) : 0),
+    0
+  );
+}
+
+const EXPANDED_STORAGE_KEY = 'admin_catalog_categories_expanded';
+
+export function loadExpandedCategoryIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(EXPANDED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveExpandedCategoryIds(ids: Set<string>) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify([...ids]));
+}
+
+export function formatCategoryProductCount(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} товар`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return `${count} товара`;
+  }
+  return `${count} товаров`;
 }
 
 export function flattenCategories(categories: Category[], prefix = ''): FlatCategoryOption[] {

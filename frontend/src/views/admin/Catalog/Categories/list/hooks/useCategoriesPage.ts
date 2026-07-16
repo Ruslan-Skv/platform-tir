@@ -9,7 +9,12 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 import { API_URL } from '../../shared/categories-page.constants';
 import type { Category, CreateMessage, NewCategoryForm } from '../../shared/categories-page.types';
-import { collectExpandableIds, flattenCategories } from '../../shared/categories-page.utils';
+import {
+  collectExpandableIds,
+  flattenCategories,
+  loadExpandedCategoryIds,
+  saveExpandedCategoryIds,
+} from '../../shared/categories-page.utils';
 
 const EMPTY_NEW_CATEGORY: NewCategoryForm = {
   name: '',
@@ -25,7 +30,9 @@ export function useCategoriesPage() {
   const { getAuthHeaders, isAuthenticated, isLoading: isAuthLoading } = useAuth();
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
-  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(() =>
+    loadExpandedCategoryIds()
+  );
   const [deleteModal, setDeleteModal] = useState<{
     isOpen: boolean;
     category: Category | null;
@@ -49,7 +56,6 @@ export function useCategoriesPage() {
       if (response.ok) {
         const data: Category[] = await response.json();
         setCategories(data);
-        setExpandedCategories(collectExpandableIds(data));
       }
     } catch (error) {
       console.error('Failed to fetch categories:', error);
@@ -156,14 +162,27 @@ export function useCategoriesPage() {
 
   const toggleExpand = (id: string) => {
     setExpandedCategories((prev) => {
-      const newSet = new Set(prev);
-      if (newSet.has(id)) {
-        newSet.delete(id);
+      const next = new Set(prev);
+      if (next.has(id)) {
+        next.delete(id);
       } else {
-        newSet.add(id);
+        next.add(id);
       }
-      return newSet;
+      saveExpandedCategoryIds(next);
+      return next;
     });
+  };
+
+  const expandAllCategories = () => {
+    const next = new Set(collectExpandableIds(categories));
+    setExpandedCategories(next);
+    saveExpandedCategoryIds(next);
+  };
+
+  const collapseAllCategories = () => {
+    const next = new Set<string>();
+    setExpandedCategories(next);
+    saveExpandedCategoryIds(next);
   };
 
   const handleManageAttributes = (categoryId: string) => {
@@ -229,6 +248,8 @@ export function useCategoriesPage() {
     clearImage,
     handleCreateCategory,
     toggleExpand,
+    expandAllCategories,
+    collapseAllCategories,
     handleManageAttributes,
     openDeleteModal,
     closeDeleteModal,

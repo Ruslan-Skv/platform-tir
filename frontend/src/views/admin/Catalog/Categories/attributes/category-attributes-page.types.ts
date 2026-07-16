@@ -20,6 +20,8 @@ export interface CategoryAttribute {
   attributeId: string;
   isRequired: boolean;
   order: number;
+  /** true — атрибут виден из родительской категории, своей привязки у этой категории нет */
+  isInherited?: boolean;
   attribute: Attribute;
 }
 
