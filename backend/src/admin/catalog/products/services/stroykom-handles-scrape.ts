@@ -1,4 +1,6 @@
 import * as cheerio from 'cheerio';
+import * as fs from 'fs';
+import * as path from 'path';
 
 export const STROYKOM_BASE = 'https://436830.ru';
 export const STROYKOM_HANDLES_SITE_CATEGORY_ID = 53;
@@ -19,7 +21,8 @@ export type StroykomHandlesDetailData = {
   price: number | null;
   brand: string | null;
   manufacturer: string | null;
-  descriptionHtml: string;
+  /** Plain text for admin/storefront description (not HTML). */
+  description: string;
   fullImages: string[];
 };
 
@@ -34,6 +37,162 @@ export function absUrl(href: string): string {
   }
   if (href.startsWith('//')) return `https:${href}`;
   return new URL(href.replace(/^\/\//, '/'), STROYKOM_BASE).toString();
+}
+
+/** Encode path segments (spaces/Cyrillic) without touching query string. */
+export function encodeImageUrl(url: string): string {
+  try {
+    const u = new URL(absUrl(url));
+    u.pathname = u.pathname
+      .split('/')
+      .map((seg) => {
+        if (!seg) return seg;
+        try {
+          return encodeURIComponent(decodeURIComponent(seg));
+        } catch {
+          return encodeURIComponent(seg);
+        }
+      })
+      .join('/');
+    return u.toString();
+  } catch {
+    return absUrl(url);
+  }
+}
+
+/**
+ * Keep only direct product images on 436830.ru.
+ * Skips show_image_in_imgtag.php (often broken / hijacked redirects) and non-product assets.
+ */
+export function normalizeProductImageUrl(raw: string | null | undefined): string | null {
+  if (!raw) return null;
+  let url = absUrl(raw.replace(/&amp;/g, '&'));
+
+  try {
+    const u = new URL(url);
+    if (!/(^|\.)436830\.ru$/i.test(u.hostname)) return null;
+
+    if (/show_image_in_imgtag\.php/i.test(u.pathname)) {
+      const filename = u.searchParams.get('filename');
+      if (!filename || /(?:^|[\\/])(?:\.\.|uvelich|banner)/i.test(filename)) return null;
+      // Absolute paths in filename → map under site root; relative → under product/
+      const cleaned = filename
+        .replace(/^\/+/, '')
+        .replace(/^components\/com_virtuemart\/shop_image\/product\//i, '');
+      url = `${STROYKOM_BASE}/components/com_virtuemart/shop_image/product/${cleaned}`;
+    }
+
+    const path = new URL(url).pathname;
+    if (!/\/shop_image\/product\//i.test(path)) return null;
+    if (/uvelich\.png|M_images|banners/i.test(path)) return null;
+    if (!/\.(png|jpe?g|webp|gif)$/i.test(path)) return null;
+
+    return encodeImageUrl(url);
+  } catch {
+    return null;
+  }
+}
+
+export function isResizedStroykomImage(url: string): boolean {
+  return /\/shop_image\/product\/resized\//i.test(url);
+}
+
+/** VirtueMart product files look like `___________A_____624d58b78587c.png`, not `24 Ручки.jpg`. */
+export function isLikelyStroykomProductPhoto(url: string): boolean {
+  try {
+    const name = decodeURIComponent(new URL(url).pathname.split('/').pop() || '');
+    return /_[a-f0-9]{8,}\.(png|jpe?g|webp|gif)$/i.test(name);
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Prefer full-size product photos. Resized thumbs often 404 / redirect and break the gallery.
+ */
+export function collectProductImages(...groups: Array<Array<string | null | undefined>>): string[] {
+  const full: string[] = [];
+  const thumbs: string[] = [];
+  const seen = new Set<string>();
+  for (const group of groups) {
+    for (const raw of group) {
+      const url = normalizeProductImageUrl(raw);
+      if (!url || seen.has(url)) continue;
+      seen.add(url);
+      if (isResizedStroykomImage(url)) thumbs.push(url);
+      else full.push(url);
+    }
+  }
+  const preferred = full.filter(isLikelyStroykomProductPhoto);
+  const chosen = (preferred.length > 0 ? preferred : full.length > 0 ? full : thumbs).slice(0, 8);
+  return chosen;
+}
+
+function detectImageExtension(buf: Buffer, contentType: string | null): string | null {
+  if (buf.length >= 8 && buf[0] === 0x89 && buf[1] === 0x50 && buf[2] === 0x4e && buf[3] === 0x47) {
+    return '.png';
+  }
+  if (buf.length >= 3 && buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) {
+    return '.jpg';
+  }
+  if (buf.length >= 6 && buf.subarray(0, 3).toString('ascii') === 'GIF') {
+    return '.gif';
+  }
+  if (
+    buf.length >= 12 &&
+    buf.subarray(0, 4).toString('ascii') === 'RIFF' &&
+    buf.subarray(8, 12).toString('ascii') === 'WEBP'
+  ) {
+    return '.webp';
+  }
+  const ct = (contentType || '').toLowerCase();
+  if (ct.includes('png')) return '.png';
+  if (ct.includes('jpeg') || ct.includes('jpg')) return '.jpg';
+  if (ct.includes('webp')) return '.webp';
+  if (ct.includes('gif')) return '.gif';
+  return null;
+}
+
+/**
+ * Download remote Stroykom photos into local /uploads so the admin UI does not
+ * hotlink 436830.ru (external loads are often rewritten/blocked by AV/CSP).
+ */
+export async function downloadStroykomImagesToUploads(
+  remoteUrls: string[],
+  productKey: string,
+): Promise<string[]> {
+  if (remoteUrls.length === 0) return [];
+
+  const dir = path.join(process.cwd(), 'uploads', 'products', 'stroykom');
+  fs.mkdirSync(dir, { recursive: true });
+
+  const local: string[] = [];
+  for (let i = 0; i < remoteUrls.length; i++) {
+    const remote = remoteUrls[i];
+    try {
+      const res = await fetch(remote, {
+        headers: {
+          'User-Agent':
+            'Mozilla/5.0 (compatible; TerritoryInteriorImporter/1.0; +https://territory-interior.ru)',
+          Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8',
+          Referer: `${STROYKOM_BASE}/`,
+        },
+        redirect: 'follow',
+      });
+      if (!res.ok) continue;
+      const buf = Buffer.from(await res.arrayBuffer());
+      const ext = detectImageExtension(buf, res.headers.get('content-type'));
+      if (!ext) continue;
+
+      const safeKey = productKey.replace(/[^a-zA-Z0-9_-]+/g, '-').slice(0, 40);
+      const filename = `sk-h-${safeKey}-${i}${ext}`;
+      fs.writeFileSync(path.join(dir, filename), buf);
+      local.push(`/uploads/products/stroykom/${filename}`);
+    } catch {
+      // keep going; caller may fall back to remote URL
+    }
+  }
+  return local;
 }
 
 export function slugify(value: string): string {
@@ -96,14 +255,6 @@ export function normalizeSlug(slug: string): string {
   return slug.trim().toLowerCase().replace(/_/g, '-');
 }
 
-export function escapeHtml(s: string): string {
-  return s
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
-}
-
 export async function fetchHtml(url: string): Promise<string> {
   const res = await fetch(url, {
     headers: {
@@ -148,7 +299,7 @@ export function parseListingHtml(html: string): StroykomHandlesListingItem[] {
       name: nameM[1].replace(/\s+/g, ' ').trim(),
       colorCode: colorM?.[1]?.trim() || null,
       price: priceRaw ? Number(priceRaw) : null,
-      thumbUrl: imgM?.[1] ? absUrl(imgM[1].replace(/&amp;/g, '&')) : null,
+      thumbUrl: normalizeProductImageUrl(imgM?.[1] ?? null),
       url,
     });
   }
@@ -158,15 +309,34 @@ export function parseListingHtml(html: string): StroykomHandlesListingItem[] {
 
 function rebuildDescriptionText(text: string): string {
   return text
+    .replace(/Производитель:\s*\.\s*/gi, 'Производитель: ')
     .replace(/Торговая марка:/gi, '\nТорговая марка:')
     .replace(/Производитель:/gi, '\nПроизводитель:')
     .replace(/Наименование:/gi, '\nНаименование:')
     .replace(/Варианты цветов:/gi, '\nВарианты цветов:')
+    .replace(/Цвет:/gi, '\nЦвет:')
     .replace(/Описание:/gi, '\nОписание:')
     .replace(/Комплектация:/gi, '\nКомплектация:')
-    .replace(/•/g, '\n• ')
+    .replace(/Дополнительно приобретается:/gi, '\nДополнительно приобретается:')
+    .replace(/•\s*/g, '\n• ')
+    .replace(/[ \t]+\n/g, '\n')
     .replace(/\n{3,}/g, '\n\n')
     .trim();
+}
+
+/** Convert Virtuemart product HTML into plain multiline description. */
+export function htmlToPlainDescription(html: string): string {
+  const $ = cheerio.load(html);
+  $('br').replaceWith('\n');
+  $('p, div, li, tr').each((_, el) => {
+    $(el).append('\n');
+  });
+  const text = $.root()
+    .text()
+    .replace(/\u00a0/g, ' ')
+    .replace(/[ \t]+/g, ' ')
+    .replace(/ *\n */g, '\n');
+  return rebuildDescriptionText(text);
 }
 
 export function parseDetailHtml(html: string): StroykomHandlesDetailData {
@@ -193,24 +363,31 @@ export function parseDetailHtml(html: string): StroykomHandlesDetailData {
   const fullImages: string[] = [];
   $('a[rel^="lightbox"]').each((_, el) => {
     const href = $(el).attr('href');
-    if (!href) return;
-    if (/uvelich\.png|M_images|banners/i.test(href)) return;
-    fullImages.push(absUrl(href));
+    const normalized = normalizeProductImageUrl(href);
+    if (normalized) fullImages.push(normalized);
   });
+  // Fallback only if lightbox has nothing (some pages only have <img>).
+  if (fullImages.length === 0) {
+    $('img[src*="shop_image/product"], img[src*="show_image_in_imgtag"]').each((_, el) => {
+      const src = $(el).attr('src');
+      const normalized = normalizeProductImageUrl(src);
+      if (normalized) fullImages.push(normalized);
+    });
+  }
 
-  const descParts: string[] = [];
+  const descPartsHtml: string[] = [];
   $('#vmMainPage td[colspan="2"] p').each((_, p) => {
     const htmlP = ($(p).html() || '').trim();
-    if (htmlP) descParts.push(`<p>${htmlP}</p>`);
+    if (htmlP) descPartsHtml.push(`<p>${htmlP}</p>`);
   });
 
-  let descriptionHtml =
-    descParts.length > 0 ? descParts.join('\n') : `<p>${escapeHtml(text.slice(0, 4000))}</p>`;
+  let description =
+    descPartsHtml.length > 0
+      ? htmlToPlainDescription(descPartsHtml.join('\n'))
+      : rebuildDescriptionText(text);
 
-  if (descParts.length < 2 && text.length > 80) {
-    descriptionHtml = `<pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(
-      rebuildDescriptionText(text),
-    )}</pre>`;
+  if (!description && text) {
+    description = rebuildDescriptionText(text).slice(0, 4000);
   }
 
   return {
@@ -218,8 +395,8 @@ export function parseDetailHtml(html: string): StroykomHandlesDetailData {
     subtitle,
     price,
     brand: brandM?.[1]?.trim() || null,
-    manufacturer: manufacturerM?.[1]?.trim() || null,
-    descriptionHtml,
+    manufacturer: manufacturerM?.[1]?.trim()?.replace(/^\.\s*/, '') || null,
+    description,
     fullImages: [...new Set(fullImages)],
   };
 }

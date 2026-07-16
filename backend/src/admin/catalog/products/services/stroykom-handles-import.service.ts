@@ -4,7 +4,8 @@ import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../../../../database/prisma.service';
 import {
-  escapeHtml,
+  collectProductImages,
+  downloadStroykomImagesToUploads,
   fetchDetail,
   normalizeColorCode,
   normalizeSlug,
@@ -344,13 +345,9 @@ export class StroykomHandlesImportService {
       };
     },
   ): Promise<'created' | 'skipped'> {
-    const supplierSku = `SK-H-${listing.productId}`;
-
     if (opts.skipExisting) {
       const existingLink = await this.prisma.productSupplier.findFirst({
-        where: {
-          OR: [{ supplierProductUrl: listing.url }, { supplierId: opts.supplierId, supplierSku }],
-        },
+        where: { supplierProductUrl: listing.url },
       });
       if (existingLink) return 'skipped';
     }
@@ -364,13 +361,16 @@ export class StroykomHandlesImportService {
       throw new Error('Не удалось определить цену');
     }
 
-    const images = [
-      ...new Set([...detail.fullImages, listing.thumbUrl].filter((x): x is string => Boolean(x))),
-    ].slice(0, 8);
+    const remoteImages = collectProductImages(detail.fullImages, [listing.thumbUrl]);
+    const downloaded = await downloadStroykomImagesToUploads(remoteImages, listing.productId);
+    const images = downloaded.length > 0 ? downloaded : remoteImages;
 
-    let description = detail.descriptionHtml;
+    let description = detail.description.trim();
     if (detail.subtitle) {
-      description = `<p><em>${escapeHtml(detail.subtitle)}</em></p>\n${description}`;
+      const sub = detail.subtitle.trim();
+      if (sub && !description.startsWith(sub)) {
+        description = `${sub}\n\n${description}`.trim();
+      }
     }
 
     const attributes: Array<{ name: string; value: string; slug: string }> = [];
@@ -397,6 +397,7 @@ export class StroykomHandlesImportService {
       slugify(`ruchka-${listing.name}-${listing.colorCode || ''}-${listing.productId}`) ||
       `ruchka-${listing.productId}`;
     const slug = await this.uniqueSlug(slugBase);
+    const sku = await this.uniqueSku();
 
     const product = await this.prisma.product.create({
       data: {
@@ -413,7 +414,7 @@ export class StroykomHandlesImportService {
         attributes: attributes as unknown as Prisma.InputJsonValue,
         sizes: [],
         openingSide: [],
-        sku: supplierSku,
+        sku,
         ...(manufacturerId ? { manufacturerId } : {}),
       },
     });
@@ -422,7 +423,8 @@ export class StroykomHandlesImportService {
       data: {
         productId: product.id,
         supplierId: opts.supplierId,
-        supplierSku,
+        // У Стройком нет артикулов — поле оставляем пустым.
+        supplierSku: '',
         supplierPrice: new Prisma.Decimal(price),
         supplierProductUrl: listing.url,
         isMainSupplier: true,
@@ -431,6 +433,24 @@ export class StroykomHandlesImportService {
     });
 
     return 'created';
+  }
+
+  /** Same pattern as admin UI `generateSku()` — our catalog SKU, not supplier article. */
+  private generateSkuCandidate(): string {
+    const timestamp = Date.now().toString().slice(-6);
+    const random = Math.floor(Math.random() * 1000)
+      .toString()
+      .padStart(3, '0');
+    return `${timestamp}${random}`;
+  }
+
+  private async uniqueSku(): Promise<string> {
+    for (let attempt = 0; attempt < 20; attempt++) {
+      const sku = this.generateSkuCandidate();
+      const exists = await this.prisma.product.findUnique({ where: { sku } });
+      if (!exists) return sku;
+    }
+    return `sk-${randomUUID().replace(/-/g, '').slice(0, 12)}`;
   }
 
   private async uniqueSlug(base: string): Promise<string> {
