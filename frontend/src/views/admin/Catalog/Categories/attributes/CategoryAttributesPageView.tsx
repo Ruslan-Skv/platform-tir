@@ -5,6 +5,7 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { AttributeColorDot } from '@/shared/ui/AttributeColorDot/AttributeColorDot';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
@@ -13,6 +14,8 @@ import {
   AttributeOptionRowsEditor,
   type AttributeOptionRowsEditorMod,
 } from './AttributeOptionRowsEditor';
+import { CategoryAttributeAddModal } from './CategoryAttributeAddModal';
+import { CategoryAttributeCreateModal } from './CategoryAttributeCreateModal';
 import styles from './CategoryAttributesPage.module.css';
 import type { Attribute, CategoryAttribute } from './category-attributes-page.types';
 import {
@@ -44,14 +47,6 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
     setShowAddModal,
     showCreateModal,
     setShowCreateModal,
-    selectedAttributeIds,
-    setSelectedAttributeIds,
-    bulkAddAsRequired,
-    setBulkAddAsRequired,
-    createLinkAsRequired,
-    setCreateLinkAsRequired,
-    newAttribute,
-    setNewAttribute,
     showEditModal,
     setShowEditModal,
     editingAttribute,
@@ -61,18 +56,19 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
     selectedForApply,
     defaultValues,
     setDefaultValues,
-    inheriting,
     clearNoticeModal,
     availableAttributes,
-    normalizeCategoryAttributesOrder,
     moveCategoryAttribute,
     handleAddAttributes,
+    deleteModal,
+    deleting,
+    openDeleteAttributeModal,
+    closeDeleteAttributeModal,
     handleDeleteAttributeFromCategory,
     handleToggleRequired,
     handleCreateAttribute,
     handleApplyToProducts,
     toggleSelectForApply,
-    handleInheritFromParent,
     openEditModal,
     handleEditAttribute,
   } = model;
@@ -183,7 +179,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                 className={styles.treeReorderButton}
                 onClick={() => moveCategoryAttribute(ca.attributeId, 'up')}
                 disabled={reordering || idx === 0}
-                title="Выше"
+                title="Переместить выше (порядок сохранится сразу)"
                 aria-label="Переместить выше"
               >
                 <ChevronUp className={styles.treeReorderIconSubgroup} aria-hidden />
@@ -193,7 +189,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                 className={styles.treeReorderButton}
                 onClick={() => moveCategoryAttribute(ca.attributeId, 'down')}
                 disabled={reordering || idx === categoryAttributes.length - 1}
-                title="Ниже"
+                title="Переместить ниже (порядок сохранится сразу)"
                 aria-label="Переместить ниже"
               >
                 <ChevronDown className={styles.treeReorderIconSubgroup} aria-hidden />
@@ -211,7 +207,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                   ? 'Атрибут задан у родительской категории. Удалите его там или сначала добавьте в эту категорию явно.'
                   : 'Удалить атрибут только из этой категории'
               }
-              onClick={() => handleDeleteAttributeFromCategory(ca.attributeId, ca.attribute.name)}
+              onClick={() => openDeleteAttributeModal(ca.attributeId, ca.attribute.name)}
               disabled={Boolean(ca.isInherited)}
             >
               <DeleteIcon />
@@ -342,37 +338,12 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
         </div>
 
         <div className={styles.treeToolbar}>
-          {categoryAttributes.length > 1 ? (
-            <button
-              data-admin-mutation
-              type="button"
-              className={styles.secondaryButton}
-              onClick={normalizeCategoryAttributesOrder}
-              disabled={reordering}
-              title="Пронумеровать атрибуты по текущему списку и сохранить"
-            >
-              {reordering ? 'Сохранение порядка…' : '↕ Сохранить порядок'}
-            </button>
-          ) : null}
-          {category?.parentId ? (
-            <button
-              data-admin-mutation
-              type="button"
-              className={styles.secondaryButton}
-              onClick={handleInheritFromParent}
-              disabled={inheriting}
-              title={`Скопировать атрибуты из родительской категории «${category.parent?.name || ''}»`}
-            >
-              {inheriting
-                ? 'Наследование…'
-                : `Унаследовать от «${category.parent?.name || 'родителя'}»`}
-            </button>
-          ) : null}
           <button
             data-admin-mutation
             type="button"
             className={styles.secondaryButton}
             onClick={() => setShowAddModal(true)}
+            title="Привязать к этой категории уже существующий атрибут из каталога (созданный ранее в другой категории). Определение атрибута общее: имя, тип и значения остаются теми же."
           >
             + Добавить существующий
           </button>
@@ -381,6 +352,7 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
             type="button"
             className={styles.addButton}
             onClick={() => setShowCreateModal(true)}
+            title="Создать новый атрибут в каталоге и сразу привязать к этой категории. Если нужен только здесь — не добавляйте его в другие категории. Если общий для дочерних — создайте у родителя."
           >
             + Создать новый
           </button>
@@ -406,10 +378,11 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
 
         <div className={styles.infoBanner} role="note">
           <p>
-            Атрибут — общее определение в каталоге; к категории привязывается ссылка. «Удалить»
-            снимает привязку только здесь. «Редактировать» меняет определение везде, где атрибут
-            используется. «Создать новый» создаёт глобальный атрибут и сразу привязывает к этой
-            категории.
+            Общие для ветки атрибуты задавайте у родителя — дочерние увидят их в блоке
+            «Унаследованные»; править имя/тип/значения лучше там. Атрибут только для этой категории
+            — «Создать новый» здесь и никуда больше не добавляйте. «Удалить» снимает привязку только
+            здесь. «Редактировать» меняет определение атрибута везде, где на него есть ссылки.
+            Порядок сохраняется сразу при нажатии ↑/↓.
           </p>
         </div>
 
@@ -455,224 +428,34 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
         ) : null}
       </div>
 
-      {showAddModal && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => {
-            setShowAddModal(false);
-            setBulkAddAsRequired(false);
-          }}
-        >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Добавить атрибуты</h3>
-            <p className={styles.hint}>
-              Отметьте «Обязательный для товара», чтобы на карточке товара поле подсвечивалось и не
-              давало сохранить товар без значения (в категориях с этим атрибутом).
-            </p>
-            <label className={`${styles.checkboxLabel} ${styles.checkboxLabelTight}`}>
-              <input
-                type="checkbox"
-                checked={bulkAddAsRequired}
-                onChange={(e) => setBulkAddAsRequired(e.target.checked)}
-              />
-              <span>Обязательный для товара (все выбранные ниже)</span>
-            </label>
+      <CategoryAttributeAddModal
+        open={showAddModal}
+        availableAttributes={availableAttributes}
+        saving={saving}
+        onClose={() => setShowAddModal(false)}
+        onAdd={handleAddAttributes}
+      />
 
-            {availableAttributes.length > 0 ? (
-              <>
-                <div className={styles.attributeSelectList}>
-                  {availableAttributes.map((attr) => (
-                    <label key={attr.id} className={styles.attributeSelectItem}>
-                      <input
-                        type="checkbox"
-                        checked={selectedAttributeIds.includes(attr.id)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setSelectedAttributeIds((prev) => [...prev, attr.id]);
-                          } else {
-                            setSelectedAttributeIds((prev) => prev.filter((id) => id !== attr.id));
-                          }
-                        }}
-                      />
-                      <span className={styles.attrName}>{attr.name}</span>
-                      <span className={attributeTypeBadgeClass(attr.type)}>
-                        {getTypeLabel(attr.type)}
-                      </span>
-                    </label>
-                  ))}
-                </div>
+      <CategoryAttributeCreateModal
+        open={showCreateModal}
+        saving={saving}
+        onClose={() => setShowCreateModal(false)}
+        onCreate={handleCreateAttribute}
+      />
 
-                <div className={styles.modalActions}>
-                  <button
-                    className={styles.cancelButton}
-                    onClick={() => {
-                      setShowAddModal(false);
-                      setBulkAddAsRequired(false);
-                    }}
-                  >
-                    Отмена
-                  </button>
-                  <button
-                    data-admin-mutation
-                    className={styles.saveButton}
-                    onClick={handleAddAttributes}
-                    disabled={saving || selectedAttributeIds.length === 0}
-                  >
-                    {saving ? 'Добавление...' : `Добавить (${selectedAttributeIds.length})`}
-                  </button>
-                </div>
-              </>
-            ) : (
-              <div className={styles.emptyModal}>
-                <p>Все атрибуты уже добавлены к категории</p>
-                <button
-                  className={styles.cancelButton}
-                  onClick={() => {
-                    setShowAddModal(false);
-                    setBulkAddAsRequired(false);
-                  }}
-                >
-                  Закрыть
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {showCreateModal && (
-        <div
-          className={styles.modalOverlay}
-          onClick={() => {
-            setShowCreateModal(false);
-            setCreateLinkAsRequired(false);
-          }}
-        >
-          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
-            <h3>Создать новый атрибут</h3>
-
-            <div className={styles.formGroup}>
-              <label>Название *</label>
-              <input
-                type="text"
-                value={newAttribute.name}
-                onChange={(e) => {
-                  const name = e.target.value;
-                  setNewAttribute((prev) => ({
-                    ...prev,
-                    name,
-                    slug: generateSlug(name),
-                  }));
-                }}
-                className={styles.input}
-                placeholder="Например: Материал"
-              />
-            </div>
-
-            <div className={styles.formGroup}>
-              <label>Slug (URL) *</label>
-              <input
-                type="text"
-                value={newAttribute.slug}
-                onChange={(e) =>
-                  setNewAttribute((prev) => ({
-                    ...prev,
-                    slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '-'),
-                  }))
-                }
-                className={styles.input}
-                placeholder="material"
-              />
-            </div>
-
-            <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>Тип</label>
-                <select
-                  value={newAttribute.type}
-                  onChange={(e) => {
-                    const type = e.target.value as Attribute['type'];
-                    setNewAttribute((prev) => ({
-                      ...prev,
-                      type,
-                      ...(!isListAttributeType(type) ? { optionRows: [] } : {}),
-                    }));
-                  }}
-                  className={styles.select}
-                >
-                  <option value="TEXT">Текст</option>
-                  <option value="NUMBER">Число</option>
-                  <option value="BOOLEAN">Да/Нет</option>
-                  <option value="SELECT">Выбор из списка</option>
-                  <option value="MULTI_SELECT">Множественный выбор</option>
-                  <option value="COLOR">Цвет</option>
-                </select>
-              </div>
-
-              <div className={styles.formGroup}>
-                <label>Единица измерения</label>
-                <input
-                  type="text"
-                  value={newAttribute.unit}
-                  onChange={(e) => setNewAttribute((prev) => ({ ...prev, unit: e.target.value }))}
-                  className={styles.input}
-                  placeholder="мм, кг, шт"
-                />
-              </div>
-            </div>
-
-            {isListAttributeType(newAttribute.type) && (
-              <div className={styles.formGroup}>
-                <AttributeOptionRowsEditor
-                  rows={newAttribute.optionRows}
-                  onChange={(optionRows) => setNewAttribute((prev) => ({ ...prev, optionRows }))}
-                  mod={styles as AttributeOptionRowsEditorMod}
-                />
-              </div>
-            )}
-
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={newAttribute.isFilterable}
-                onChange={(e) =>
-                  setNewAttribute((prev) => ({ ...prev, isFilterable: e.target.checked }))
-                }
-              />
-              <span>Использовать для фильтрации</span>
-            </label>
-
-            <label className={styles.checkboxLabel}>
-              <input
-                type="checkbox"
-                checked={createLinkAsRequired}
-                onChange={(e) => setCreateLinkAsRequired(e.target.checked)}
-              />
-              <span>Обязательный при заполнении карточек товаров в этой категории</span>
-            </label>
-
-            <div className={styles.modalActions}>
-              <button
-                className={styles.cancelButton}
-                onClick={() => {
-                  setShowCreateModal(false);
-                  setCreateLinkAsRequired(false);
-                }}
-              >
-                Отмена
-              </button>
-              <button
-                data-admin-mutation
-                className={styles.saveButton}
-                onClick={handleCreateAttribute}
-                disabled={saving}
-              >
-                {saving ? 'Создание...' : 'Создать и добавить'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {deleteModal ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить атрибут из категории?"
+          message={`Удалить атрибут «${deleteModal.attributeName}» из этой категории? В других категориях он останется.`}
+          confirmText={deleting ? 'Удаление…' : 'Удалить'}
+          cancelText="Отмена"
+          variant="danger"
+          closeOnConfirm={false}
+          onConfirm={() => void handleDeleteAttributeFromCategory()}
+          onClose={closeDeleteAttributeModal}
+        />
+      ) : null}
 
       {showEditModal && editingAttribute && (
         <div className={styles.modalOverlay} onClick={() => setShowEditModal(false)}>

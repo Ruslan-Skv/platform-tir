@@ -28,10 +28,6 @@ export class CategoriesCrudService {
       },
     });
 
-    if (createCategoryDto.parentId) {
-      await this.inheritAttributesFromParent(category.id, createCategoryDto.parentId);
-    }
-
     return category;
   }
 

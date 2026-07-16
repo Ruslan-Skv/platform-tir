@@ -34,18 +34,6 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [selectedAttributeIds, setSelectedAttributeIds] = useState<string[]>([]);
-  const [bulkAddAsRequired, setBulkAddAsRequired] = useState(false);
-  const [createLinkAsRequired, setCreateLinkAsRequired] = useState(false);
-
-  const [newAttribute, setNewAttribute] = useState({
-    name: '',
-    slug: '',
-    type: 'TEXT' as Attribute['type'],
-    unit: '',
-    isFilterable: true,
-    optionRows: [] as string[],
-  });
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingAttribute, setEditingAttribute] = useState<Attribute | null>(null);
@@ -61,8 +49,11 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
   const [applyingToProducts, setApplyingToProducts] = useState(false);
   const [selectedForApply, setSelectedForApply] = useState<string[]>([]);
   const [defaultValues, setDefaultValues] = useState<Record<string, string>>({});
-
-  const [inheriting, setInheriting] = useState(false);
+  const [deleteModal, setDeleteModal] = useState<{
+    attributeId: string;
+    attributeName: string;
+  } | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const clearNoticeModal = useCallback(() => {
     if (noticeCloseTimerRef.current !== null) {
@@ -182,24 +173,12 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     ]);
   };
 
-  const normalizeCategoryAttributesOrder = async () => {
-    if (reordering) return;
-    const normalized = [...categoryAttributes]
-      .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-      .map((ca, i) => ({ ...ca, order: i }));
-    setCategoryAttributes(normalized);
-    await persistCategoryAttributesOrder(
-      normalized.map((ca) => ({ attributeId: ca.attributeId, order: ca.order }))
-    );
-    showMessage('success', 'Порядок атрибутов сохранён');
-  };
-
   const availableAttributes = allAttributes.filter(
     (attr) => !categoryAttributes.some((ca) => ca.attributeId === attr.id)
   );
 
-  const handleAddAttributes = async () => {
-    if (selectedAttributeIds.length === 0) return;
+  const handleAddAttributes = async (attributeIds: string[], asRequired: boolean) => {
+    if (attributeIds.length === 0) return;
 
     setSaving(true);
     try {
@@ -210,39 +189,43 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          attributeIds: selectedAttributeIds,
-          isRequired: bulkAddAsRequired,
+          attributeIds,
+          isRequired: asRequired,
         }),
       });
 
-      if (response.ok) {
-        showMessage('success', 'Атрибуты добавлены');
-        setShowAddModal(false);
-        setSelectedAttributeIds([]);
-        setBulkAddAsRequired(false);
-        fetchData({ silent: true });
-      } else {
-        throw new Error('Failed to add attributes');
+      if (!response.ok) {
+        throw new Error('Не удалось добавить атрибуты');
       }
-    } catch {
-      showMessage('error', 'Ошибка добавления атрибутов');
+
+      showMessage('success', 'Атрибуты добавлены');
+      setShowAddModal(false);
+      fetchData({ silent: true });
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Ошибка добавления атрибутов';
+      showMessage('error', message);
+      throw error instanceof Error ? error : new Error(message);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteAttributeFromCategory = async (attributeId: string, attributeName: string) => {
-    if (
-      !confirm(
-        `Удалить атрибут «${attributeName}» из этой категории? В других категориях он останется.`
-      )
-    ) {
-      return;
-    }
+  const openDeleteAttributeModal = (attributeId: string, attributeName: string) => {
+    setDeleteModal({ attributeId, attributeName });
+  };
 
+  const closeDeleteAttributeModal = () => {
+    if (deleting) return;
+    setDeleteModal(null);
+  };
+
+  const handleDeleteAttributeFromCategory = async () => {
+    if (!deleteModal) return;
+
+    setDeleting(true);
     try {
       const response = await apiFetch(
-        `${API_URL}/categories/${categoryId}/attributes/${attributeId}`,
+        `${API_URL}/categories/${categoryId}/attributes/${deleteModal.attributeId}`,
         {
           method: 'DELETE',
           headers: getAuthHeaders(),
@@ -250,6 +233,7 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
       );
 
       if (response.ok) {
+        setDeleteModal(null);
         showMessage('success', 'Атрибут удалён из категории');
         fetchData({ silent: true });
       } else {
@@ -262,6 +246,8 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
       }
     } catch (error) {
       showMessage('error', error instanceof Error ? error.message : 'Ошибка удаления атрибута');
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -301,16 +287,19 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     }
   };
 
-  const handleCreateAttribute = async () => {
-    if (!newAttribute.name || !newAttribute.slug) {
-      showMessage('error', 'Заполните название и slug');
-      return;
-    }
-
+  const handleCreateAttribute = async (payload: {
+    name: string;
+    slug: string;
+    type: Attribute['type'];
+    unit: string;
+    isFilterable: boolean;
+    optionRows: string[];
+    linkAsRequired: boolean;
+  }) => {
     setSaving(true);
     try {
-      const valuesPayload = isListAttributeType(newAttribute.type)
-        ? newAttribute.optionRows.map((v) => v.trim()).filter(Boolean)
+      const valuesPayload = isListAttributeType(payload.type)
+        ? payload.optionRows.map((v) => v.trim()).filter(Boolean)
         : undefined;
 
       const response = await apiFetch(`${API_URL}/categories/attributes`, {
@@ -320,48 +309,49 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
           ...getAuthHeaders(),
         },
         body: JSON.stringify({
-          name: newAttribute.name,
-          slug: newAttribute.slug,
-          type: newAttribute.type,
-          unit: newAttribute.unit || undefined,
-          isFilterable: newAttribute.isFilterable,
+          name: payload.name,
+          slug: payload.slug,
+          type: payload.type,
+          unit: payload.unit || undefined,
+          isFilterable: payload.isFilterable,
           values: valuesPayload,
         }),
       });
 
-      if (response.ok) {
-        const created = await response.json();
-        showMessage('success', 'Атрибут создан');
-        setShowCreateModal(false);
-        setNewAttribute({
-          name: '',
-          slug: '',
-          type: 'TEXT',
-          unit: '',
-          isFilterable: true,
-          optionRows: [],
-        });
-
-        await apiFetch(`${API_URL}/categories/${categoryId}/attributes`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            ...getAuthHeaders(),
-          },
-          body: JSON.stringify({
-            attributeId: created.id,
-            isRequired: createLinkAsRequired,
-          }),
-        });
-
-        setCreateLinkAsRequired(false);
-        fetchData({ silent: true });
-      } else {
+      if (!response.ok) {
         const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to create attribute');
+        throw new Error(
+          typeof data.message === 'string' && data.message.trim()
+            ? data.message
+            : 'Не удалось создать атрибут'
+        );
       }
+
+      const created = await response.json();
+
+      const linkResponse = await apiFetch(`${API_URL}/categories/${categoryId}/attributes`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...getAuthHeaders(),
+        },
+        body: JSON.stringify({
+          attributeId: created.id,
+          isRequired: payload.linkAsRequired,
+        }),
+      });
+
+      if (!linkResponse.ok) {
+        throw new Error('Атрибут создан, но не удалось привязать к категории');
+      }
+
+      showMessage('success', 'Атрибут создан и добавлен в категорию');
+      setShowCreateModal(false);
+      fetchData({ silent: true });
     } catch (error) {
-      showMessage('error', error instanceof Error ? error.message : 'Ошибка создания атрибута');
+      const message = error instanceof Error ? error.message : 'Ошибка создания атрибута';
+      showMessage('error', message);
+      throw error instanceof Error ? error : new Error(message);
     } finally {
       setSaving(false);
     }
@@ -408,40 +398,6 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     setSelectedForApply((prev) =>
       prev.includes(attrId) ? prev.filter((id) => id !== attrId) : [...prev, attrId]
     );
-  };
-
-  const handleInheritFromParent = async () => {
-    if (!category?.parentId) return;
-
-    setInheriting(true);
-    try {
-      const response = await apiFetch(`${API_URL}/categories/${categoryId}/attributes/inherit`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...getAuthHeaders(),
-        },
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        showMessage(
-          'success',
-          `Унаследовано: ${result.inherited} атрибут(ов), пропущено: ${result.skipped}`
-        );
-        fetchData({ silent: true });
-      } else {
-        const data = await response.json().catch(() => ({}));
-        throw new Error(data.message || 'Failed to inherit attributes');
-      }
-    } catch (error) {
-      showMessage(
-        'error',
-        error instanceof Error ? error.message : 'Ошибка наследования атрибутов'
-      );
-    } finally {
-      setInheriting(false);
-    }
   };
 
   const openEditModal = (attr: Attribute) => {
@@ -517,14 +473,6 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     setShowAddModal,
     showCreateModal,
     setShowCreateModal,
-    selectedAttributeIds,
-    setSelectedAttributeIds,
-    bulkAddAsRequired,
-    setBulkAddAsRequired,
-    createLinkAsRequired,
-    setCreateLinkAsRequired,
-    newAttribute,
-    setNewAttribute,
     showEditModal,
     setShowEditModal,
     editingAttribute,
@@ -534,18 +482,19 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     selectedForApply,
     defaultValues,
     setDefaultValues,
-    inheriting,
     clearNoticeModal,
     availableAttributes,
-    normalizeCategoryAttributesOrder,
     moveCategoryAttribute,
     handleAddAttributes,
+    deleteModal,
+    deleting,
+    openDeleteAttributeModal,
+    closeDeleteAttributeModal,
     handleDeleteAttributeFromCategory,
     handleToggleRequired,
     handleCreateAttribute,
     handleApplyToProducts,
     toggleSelectForApply,
-    handleInheritFromParent,
     openEditModal,
     handleEditAttribute,
   };
