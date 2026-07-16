@@ -24,6 +24,14 @@ import {
   fetchMergedCategoryAttributes,
   loadProductsListSort,
 } from '@/shared/api/admin-products-list';
+import {
+  STROYKOM_HANDLES_CATEGORY_ID,
+  STROYKOM_SUPPLIER_ID,
+  type StroykomHandlesImportJob,
+  fetchStroykomHandlesImportJob,
+  isStroykomHandlesCategory,
+  startStroykomHandlesImport,
+} from '@/shared/api/admin-stroykom-handles-import';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 import {
@@ -1157,6 +1165,59 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
   // Count total edits
   const totalEditsCount = Object.keys(editedProducts).filter((id) => hasEdits(id)).length;
 
+  const showStroykomHandlesImport =
+    isStroykomHandlesCategory(categoryFilter || categoryId) ||
+    currentCategoryName?.trim().toLowerCase() === 'ручки';
+
+  const [stroykomConfirmOpen, setStroykomConfirmOpen] = useState(false);
+  const [stroykomJob, setStroykomJob] = useState<StroykomHandlesImportJob | null>(null);
+  const [stroykomStarting, setStroykomStarting] = useState(false);
+  const [stroykomError, setStroykomError] = useState<string | null>(null);
+
+  const startStroykomImport = async () => {
+    setStroykomStarting(true);
+    setStroykomError(null);
+    try {
+      const { jobId } = await startStroykomHandlesImport(
+        {
+          categoryId: categoryFilter || categoryId || STROYKOM_HANDLES_CATEGORY_ID,
+          supplierId: STROYKOM_SUPPLIER_ID,
+          skipExisting: true,
+        },
+        getAuthHeaders()
+      );
+      setStroykomConfirmOpen(false);
+      const initial = await fetchStroykomHandlesImportJob(jobId, getAuthHeaders());
+      setStroykomJob(initial);
+    } catch (e) {
+      setStroykomError(e instanceof Error ? e.message : 'Ошибка запуска импорта');
+    } finally {
+      setStroykomStarting(false);
+    }
+  };
+
+  useEffect(() => {
+    if (!stroykomJob) return;
+    if (stroykomJob.status === 'done' || stroykomJob.status === 'error') {
+      if (stroykomJob.status === 'done') {
+        invalidateProductsList();
+      }
+      return;
+    }
+    const t = window.setInterval(() => {
+      void fetchStroykomHandlesImportJob(stroykomJob.id, getAuthHeaders())
+        .then((job) => setStroykomJob(job))
+        .catch((e) => setStroykomError(e instanceof Error ? e.message : 'Ошибка статуса импорта'));
+    }, 1500);
+    return () => window.clearInterval(t);
+  }, [stroykomJob, getAuthHeaders, invalidateProductsList]);
+
+  const closeStroykomProgress = () => {
+    if (stroykomJob?.status === 'running' || stroykomJob?.status === 'pending') return;
+    setStroykomJob(null);
+    setStroykomError(null);
+  };
+
   return {
     categoryId,
     router,
@@ -1264,6 +1325,14 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     performBulkDelete,
     handleImport,
     resetImportModal,
+    showStroykomHandlesImport,
+    stroykomConfirmOpen,
+    setStroykomConfirmOpen,
+    stroykomJob,
+    stroykomStarting,
+    stroykomError,
+    startStroykomImport,
+    closeStroykomProgress,
     exportToCSV,
     exportToExcel,
     toggleColumn,

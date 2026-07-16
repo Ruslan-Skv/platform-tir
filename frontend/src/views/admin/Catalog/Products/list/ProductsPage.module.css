@@ -1468,3 +1468,28 @@
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
 }
+
+.stroykomImportProgress {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.stroykomImportProgress p {
+  margin: 0;
+}
+
+.stroykomImportError {
+  color: var(--admin-error-text);
+}
+
+.stroykomImportErrors {
+  margin: 0;
+  padding-left: 1.25rem;
+  max-height: 10rem;
+  overflow-y: auto;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}

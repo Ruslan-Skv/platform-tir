@@ -4,6 +4,7 @@ import { AdminProductsQueryService } from './services/admin-products-query.servi
 import { AdminProductsBulkService } from './services/admin-products-bulk.service';
 import { AdminProductsImportService } from './services/admin-products-import.service';
 import { AdminProductsReviewsService } from './services/admin-products-reviews.service';
+import { StroykomHandlesImportService } from './services/stroykom-handles-import.service';
 import { AdminProductsController } from './admin-products.controller';
 import { DatabaseModule } from '../../../database/database.module';
 import { ProductsModule } from '../../../products/products.module';
@@ -17,7 +18,8 @@ import { ProductsModule } from '../../../products/products.module';
     AdminProductsBulkService,
     AdminProductsImportService,
     AdminProductsReviewsService,
+    StroykomHandlesImportService,
   ],
-  exports: [AdminProductsService],
+  exports: [AdminProductsService, StroykomHandlesImportService],
 })
 export class AdminProductsModule {}

@@ -15,6 +15,7 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 import { AdminProductsService } from './admin-products.service';
 import { ProductsService } from '../../../products/products.service';
+import { StroykomHandlesImportService } from './services/stroykom-handles-import.service';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -26,6 +27,7 @@ export class AdminProductsController {
   constructor(
     private readonly adminProductsService: AdminProductsService,
     private readonly productsService: ProductsService,
+    private readonly stroykomHandlesImport: StroykomHandlesImportService,
   ) {}
 
   @Get()
@@ -191,6 +193,36 @@ export class AdminProductsController {
   @Get('import/preview')
   async getImportPreview(@Query('path') filePath: string) {
     return this.adminProductsService.previewImportFile(filePath);
+  }
+
+  /** Импорт ручек с сайта Стройком (category_id=53) — фоновая задача. */
+  @Post('import-stroykom-handles')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
+  startStroykomHandlesImport(
+    @Body()
+    body: {
+      categoryId?: string;
+      supplierId?: string;
+      limit?: number;
+      delayMs?: number;
+      skipExisting?: boolean;
+      ensureCategory?: boolean;
+    },
+  ) {
+    return this.stroykomHandlesImport.startImport({
+      categoryId: body.categoryId,
+      supplierId: body.supplierId,
+      limit: body.limit,
+      delayMs: body.delayMs,
+      skipExisting: body.skipExisting,
+      ensureCategory: body.ensureCategory,
+    });
+  }
+
+  @Get('import-stroykom-handles/:jobId')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
+  getStroykomHandlesImportJob(@Param('jobId') jobId: string) {
+    return this.stroykomHandlesImport.getJob(jobId);
   }
 
   // Reviews

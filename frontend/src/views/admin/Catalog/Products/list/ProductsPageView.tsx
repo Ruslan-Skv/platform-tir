@@ -7,6 +7,8 @@ import {
   getSupplierPriceErrorLabel,
   getSupplierPriceSyncError,
 } from '@/shared/lib/catalog/supplier-price-update-message';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
@@ -85,6 +87,14 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setImportSkuPrefix,
     importing,
     importResult,
+    showStroykomHandlesImport,
+    stroykomConfirmOpen,
+    setStroykomConfirmOpen,
+    stroykomJob,
+    stroykomStarting,
+    stroykomError,
+    startStroykomImport,
+    closeStroykomProgress,
     fileInputRef,
     columnSelectorRef,
     showExportModal,
@@ -627,6 +637,21 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
               <button className={styles.secondaryButton} onClick={() => setShowImportModal(true)}>
                 📥 Импорт
               </button>
+              {showStroykomHandlesImport ? (
+                <button
+                  type="button"
+                  data-admin-mutation
+                  className={styles.secondaryButton}
+                  onClick={() => setStroykomConfirmOpen(true)}
+                  disabled={Boolean(
+                    stroykomJob &&
+                    (stroykomJob.status === 'running' || stroykomJob.status === 'pending')
+                  )}
+                  title="Скопировать ручки с сайта поставщика Стройком (436830.ru)"
+                >
+                  Импорт с сайта Стройком
+                </button>
+              ) : null}
               <button
                 className={`${styles.secondaryButton} ${!hasSelection ? styles.secondaryButtonDisabled : ''}`}
                 title={!hasSelection ? 'Сначала выберите товары в таблице' : undefined}
@@ -1294,6 +1319,79 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={stroykomConfirmOpen}
+        title="Импорт с сайта Стройком?"
+        message={
+          stroykomError
+            ? stroykomError
+            : 'Будут созданы отдельные товары по каждой позиции ручек с 436830.ru (~154 шт.): название, цена, описание, фото, поставщик Стройком, ссылка на карточку, остаток 100. Уже импортированные (по артикулу/ссылке) будут пропущены. Импорт займёт несколько минут.'
+        }
+        confirmText={stroykomStarting ? 'Запуск…' : 'Начать импорт'}
+        cancelText="Отмена"
+        variant="default"
+        closeOnConfirm={false}
+        onConfirm={() => {
+          if (!stroykomStarting) void startStroykomImport();
+        }}
+        onClose={() => {
+          if (!stroykomStarting) setStroykomConfirmOpen(false);
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(stroykomJob)}
+        onClose={closeStroykomProgress}
+        title="Импорт ручек Стройком"
+        size="sm"
+        showCloseButton={
+          stroykomJob?.status === 'done' || stroykomJob?.status === 'error' || !stroykomJob
+        }
+      >
+        {stroykomJob ? (
+          <div className={styles.stroykomImportProgress}>
+            <p>
+              Статус:{' '}
+              {stroykomJob.status === 'pending'
+                ? 'Ожидание…'
+                : stroykomJob.status === 'running'
+                  ? 'Идёт импорт…'
+                  : stroykomJob.status === 'done'
+                    ? 'Готово'
+                    : 'Ошибка'}
+            </p>
+            <p>
+              Прогресс: {stroykomJob.done} / {stroykomJob.total || '…'}
+            </p>
+            <p>
+              Создано: {stroykomJob.created}, пропущено: {stroykomJob.skipped}, ошибок:{' '}
+              {stroykomJob.errors.length}
+            </p>
+            {stroykomJob.message ? <p>{stroykomJob.message}</p> : null}
+            {stroykomError ? <p className={styles.stroykomImportError}>{stroykomError}</p> : null}
+            {stroykomJob.errors.length > 0 ? (
+              <ul className={styles.stroykomImportErrors}>
+                {stroykomJob.errors.slice(0, 8).map((err) => (
+                  <li key={err}>{err}</li>
+                ))}
+                {stroykomJob.errors.length > 8 ? (
+                  <li>…и ещё {stroykomJob.errors.length - 8}</li>
+                ) : null}
+              </ul>
+            ) : null}
+            {(stroykomJob.status === 'done' || stroykomJob.status === 'error') && (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={closeStroykomProgress}
+              >
+                Закрыть
+              </button>
+            )}
+          </div>
+        ) : null}
+      </Modal>
     </div>
   );
 }
