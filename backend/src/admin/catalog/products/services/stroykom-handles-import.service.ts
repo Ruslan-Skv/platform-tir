@@ -368,8 +368,11 @@ export class StroykomHandlesImportService {
     let description = detail.description.trim();
     if (detail.subtitle) {
       const sub = detail.subtitle.trim();
-      if (sub && !description.startsWith(sub)) {
-        description = `${sub}\n\n${description}`.trim();
+      if (sub && !description.includes(sub)) {
+        description = `<p><em>${sub
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')}</em></p>\n${description}`.trim();
       }
     }
 

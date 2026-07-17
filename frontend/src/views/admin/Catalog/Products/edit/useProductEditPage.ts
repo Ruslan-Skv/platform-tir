@@ -48,6 +48,10 @@ import {
   generateSku,
   transliterate,
 } from '../shared/product-form-utils';
+import {
+  useProductEditDirtyState,
+  useProductEditLeaveGuard,
+} from './hooks/useProductEditLeaveGuard';
 import { useProductEditSaveButton } from './hooks/useProductEditSaveButton';
 
 interface Category {
@@ -147,9 +151,14 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
   const getAuthHeadersRef = useRef(getAuthHeaders);
   getAuthHeadersRef.current = getAuthHeaders;
   const fromCategory = searchParams.get('fromCategory') ?? '';
-  const navigateBackToProductsList = useCallback(() => {
-    router.push(buildProductsListBackUrl(fromCategory));
-  }, [router, fromCategory]);
+  const productsListBackUrl = useMemo(() => buildProductsListBackUrl(fromCategory), [fromCategory]);
+  const copyProductUrl = useMemo(
+    () =>
+      `/admin/catalog/products/new?copyFrom=${productId}${
+        fromCategory ? `&fromCategory=${fromCategory}` : ''
+      }`,
+    [productId, fromCategory]
+  );
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [fetchingPrice, setFetchingPrice] = useState(false);
@@ -381,6 +390,15 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
   const [customAttributes, setCustomAttributes] = useState<{ key: string; value: string }[]>([]);
   const [newAttrKey, setNewAttrKey] = useState('');
   const [newAttrValue, setNewAttrValue] = useState('');
+  const { isDirty, captureBaseline, resetBaseline } = useProductEditDirtyState(
+    loading,
+    formData,
+    customAttributes
+  );
+  const captureBaselineRef = useRef(captureBaseline);
+  captureBaselineRef.current = captureBaseline;
+  const resetBaselineRef = useRef(resetBaseline);
+  resetBaselineRef.current = resetBaseline;
 
   // Флаги автогенерации
   const [autoSlug, setAutoSlug] = useState(false); // false по умолчанию, т.к. редактирование
@@ -559,6 +577,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     setLoading(true);
     setError(null);
     setProductNotFound(false);
+    resetBaselineRef.current();
 
     const run = async () => {
       try {
@@ -694,7 +713,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
 
         if (!active) return;
 
-        setFormData({
+        const nextFormData = {
           name: product.name || '',
           slug: product.slug || '',
           sku: product.sku || '',
@@ -730,7 +749,9 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
             .slice()
             .sort((a, b) => (a.sortOrder ?? 0) - (b.sortOrder ?? 0))
             .map((s) => s.badgeId),
-        });
+        };
+
+        setFormData(nextFormData);
 
         // Сохраняем начальное название для отслеживания изменений
         setInitialName(product.name || '');
@@ -743,6 +764,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
         });
 
         setCustomAttributes(customAttrs);
+        captureBaselineRef.current(nextFormData, customAttrs);
       } catch (err) {
         if ((err as Error).name === 'AbortError') return;
         if (!active) return;
@@ -1150,8 +1172,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
     });
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const saveProduct = async (): Promise<boolean> => {
     setError(null);
     setSuccess(null);
 
@@ -1181,7 +1202,7 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
       setError(
         `Не удалось сохранить: не заполнены обязательные поля: ${missing.join(', ')}. Заполните их и попробуйте снова.`
       );
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -1369,22 +1390,26 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
       }
 
       // Ответ PATCH теперь включает suppliers после upsert; синхронизируем поля поставщика с сервером
+      let nextFormData = formData;
       if (Array.isArray(updated?.suppliers)) {
         const main = updated.suppliers.find((ps) => ps.isMainSupplier);
         if (main) {
-          setFormData((prev) => ({
-            ...prev,
-            supplierId: main.supplierId || prev.supplierId,
+          nextFormData = {
+            ...formData,
+            supplierId: main.supplierId || formData.supplierId,
             supplierSku:
               main.supplierSku != null && String(main.supplierSku).length > 0
                 ? String(main.supplierSku)
                 : '',
-            supplierProductUrl: main.supplierProductUrl ?? prev.supplierProductUrl,
+            supplierProductUrl: main.supplierProductUrl ?? formData.supplierProductUrl,
             supplierPrice:
-              main.supplierPrice != null ? String(main.supplierPrice) : prev.supplierPrice,
-          }));
+              main.supplierPrice != null ? String(main.supplierPrice) : formData.supplierPrice,
+          };
+          setFormData(nextFormData);
         }
       }
+
+      captureBaseline(nextFormData, customAttributes);
 
       setSuccess('Товар успешно сохранён');
       setTimeout(() => setSuccess(null), 3000);
@@ -1403,18 +1428,53 @@ export function useProductEditPage({ productId }: ProductEditPageProps) {
         }).catch((e) => console.warn('Revalidate failed:', e));
       }
       router.refresh();
+      return true;
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка сохранения');
+      return false;
     } finally {
       setSaving(false);
     }
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await saveProduct();
+  };
+
+  const {
+    leaveConfirmOpen,
+    leaveSaving,
+    requestLeave,
+    cancelLeave,
+    confirmLeaveWithoutSave,
+    confirmLeaveWithSave,
+  } = useProductEditLeaveGuard({
+    enabled: !loading && !productNotFound,
+    isDirty,
+    saving,
+    saveProduct,
+  });
+
+  const navigateBackToProductsList = useCallback(() => {
+    requestLeave(productsListBackUrl);
+  }, [requestLeave, productsListBackUrl]);
+
+  const navigateToCopyProduct = useCallback(() => {
+    requestLeave(copyProductUrl);
+  }, [requestLeave, copyProductUrl]);
 
   return {
     productId,
     router,
     fromCategory,
     navigateBackToProductsList,
+    navigateToCopyProduct,
+    leaveConfirmOpen,
+    leaveSaving,
+    cancelLeave,
+    confirmLeaveWithoutSave,
+    confirmLeaveWithSave,
     loading,
     saving,
     fetchingPrice,

@@ -1791,6 +1791,34 @@
   line-height: 1.7;
 }
 
+.descriptionText :is(p, ul, ol) {
+  margin: 0 0 0.75em;
+}
+
+.descriptionText :is(p, ul, ol):last-child {
+  margin-bottom: 0;
+}
+
+.descriptionText :is(ul, ol) {
+  padding-left: 1.25em;
+}
+
+.descriptionText strong,
+.descriptionText b {
+  font-weight: 700;
+  color: inherit;
+}
+
+.descriptionText {
+  font-synthesis: style;
+}
+
+.descriptionText em,
+.descriptionText i {
+  font-style: italic !important;
+  font-synthesis: style;
+}
+
 .descriptionTextarea {
   display: block;
   width: 100%;

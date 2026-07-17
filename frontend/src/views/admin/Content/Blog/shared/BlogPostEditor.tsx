@@ -11,9 +11,10 @@ import TextAlign from '@tiptap/extension-text-align';
 import { EditorContent, type Extensions, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useEffect, useId, useMemo, useRef, useState } from 'react';
 
 import { normalizeUploadsInUrl } from '@/shared/lib/public-upload-url';
+import { Modal } from '@/shared/ui/Modal';
 
 import styles from './BlogPostEditor.module.css';
 import { BLOG_PARAGRAPH_INDENT_CLASS, BlogParagraph } from './blogParagraphExtension';
@@ -46,7 +47,12 @@ export function BlogPostEditor({
   enableTextAlign = true,
 }: BlogPostEditorProps) {
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const linkInputRef = useRef<HTMLInputElement>(null);
+  const linkInputId = useId();
   const [uploadingImage, setUploadingImage] = useState(false);
+  const [linkModalOpen, setLinkModalOpen] = useState(false);
+  const [linkDraft, setLinkDraft] = useState('https://');
+  const [linkHadExisting, setLinkHadExisting] = useState(false);
 
   const extensions = useMemo((): Extensions => {
     const base: Extensions = [
@@ -110,6 +116,14 @@ export function BlogPostEditor({
     [extensions]
   );
 
+  useEffect(() => {
+    if (!linkModalOpen) return;
+    requestAnimationFrame(() => {
+      linkInputRef.current?.focus();
+      linkInputRef.current?.select();
+    });
+  }, [linkModalOpen]);
+
   if (!editor) {
     return <div className={styles.editorShell} aria-hidden />;
   }
@@ -136,17 +150,32 @@ export function BlogPostEditor({
     typeof paraClass === 'string' &&
     paraClass.split(/\s+/).includes(BLOG_PARAGRAPH_INDENT_CLASS);
 
-  const setLink = () => {
-    const prev = editor.getAttributes('link').href as string | undefined;
-    const url =
-      typeof window !== 'undefined' ? window.prompt('Адрес ссылки', prev || 'https://') : null;
-    if (url === null) return;
-    const u = url.trim();
+  const openLinkModal = () => {
+    const prev = (editor.getAttributes('link').href as string | undefined)?.trim() || '';
+    setLinkHadExisting(Boolean(prev));
+    setLinkDraft(prev || 'https://');
+    setLinkModalOpen(true);
+  };
+
+  const closeLinkModal = () => {
+    setLinkModalOpen(false);
+    editor.chain().focus().run();
+  };
+
+  const applyLink = (e: React.FormEvent) => {
+    e.preventDefault();
+    const u = linkDraft.trim();
     if (u === '') {
       editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
+    } else {
+      editor.chain().focus().extendMarkRange('link').setLink({ href: u }).run();
     }
-    editor.chain().focus().extendMarkRange('link').setLink({ href: u }).run();
+    setLinkModalOpen(false);
+  };
+
+  const removeLink = () => {
+    editor.chain().focus().extendMarkRange('link').unsetLink().run();
+    setLinkModalOpen(false);
   };
 
   const insertImage = () => {
@@ -317,7 +346,7 @@ export function BlogPostEditor({
           </>
         ) : null}
         <span className={styles.toolbarSep} aria-hidden />
-        {btn('🔗', editor.isActive('link'), setLink, 'Ссылка')}
+        {btn('🔗', editor.isActive('link'), openLinkModal, 'Ссылка')}
         {enableImages && onUploadImage
           ? btn(
               uploadingImage ? '…' : '🖼',
@@ -342,6 +371,53 @@ export function BlogPostEditor({
         />
       ) : null}
       <EditorContent editor={editor} className={styles.editorContent} />
+
+      <Modal
+        isOpen={linkModalOpen}
+        onClose={closeLinkModal}
+        title={linkHadExisting ? 'Изменить ссылку' : 'Добавить ссылку'}
+        size="sm"
+      >
+        <form onSubmit={applyLink} className={styles.linkModalForm}>
+          <div className={styles.linkModalField}>
+            <label htmlFor={linkInputId} className={styles.linkModalLabel}>
+              Адрес ссылки
+            </label>
+            <input
+              ref={linkInputRef}
+              id={linkInputId}
+              type="url"
+              name="linkUrl"
+              value={linkDraft}
+              onChange={(e) => setLinkDraft(e.target.value)}
+              className={styles.linkModalInput}
+              placeholder="https://…"
+              autoComplete="url"
+            />
+          </div>
+          <div className={styles.linkModalActions}>
+            {linkHadExisting ? (
+              <button type="button" className={styles.linkModalDanger} onClick={removeLink}>
+                Удалить
+              </button>
+            ) : (
+              <span />
+            )}
+            <div className={styles.linkModalActionsRight}>
+              <button type="button" className={styles.linkModalSecondary} onClick={closeLinkModal}>
+                Отмена
+              </button>
+              <button
+                type="submit"
+                className={styles.linkModalPrimary}
+                disabled={!linkDraft.trim()}
+              >
+                {linkHadExisting ? 'Сохранить' : 'Добавить'}
+              </button>
+            </div>
+          </div>
+        </form>
+      </Modal>
     </div>
   );
 }

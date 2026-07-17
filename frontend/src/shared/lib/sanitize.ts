@@ -115,6 +115,40 @@ export function escapeHtmlAndPreserveNewlines(text: string): string {
   return escaped.replace(/\n/g, '<br />');
 }
 
+export function looksLikeHtml(value: string): boolean {
+  return /<[a-z][\s\S]*>/i.test(value.trim());
+}
+
+/** Plain text → простой HTML для TipTap; HTML оставляем как есть. */
+export function toRichTextEditorHtml(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (looksLikeHtml(trimmed)) return trimmed;
+  return trimmed
+    .split(/\n{2,}/)
+    .map((paragraph) => `<p>${escapeHtmlAndPreserveNewlines(paragraph)}</p>`)
+    .join('');
+}
+
+/**
+ * Рендер описания товара: rich HTML (из импорта/редактора) или plain text со старых записей.
+ */
+export function renderProductDescriptionHtml(value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed) return '';
+  if (looksLikeHtml(trimmed)) return sanitizeHtml(trimmed);
+  return escapeHtmlAndPreserveNewlines(trimmed);
+}
+
+export function isRichTextEmpty(value: string | null | undefined): boolean {
+  if (!value?.trim()) return true;
+  return !value
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
 /** Опасные протоколы в href, приводящие к XSS */
 const UNSAFE_HREF_PROTOCOLS = /^(javascript|data|vbscript|file):/i;
 

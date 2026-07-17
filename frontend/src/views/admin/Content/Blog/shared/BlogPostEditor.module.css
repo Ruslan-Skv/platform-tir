@@ -78,10 +78,19 @@
   line-height: var(--admin-line-height-xl);
   color: var(--admin-text-primary);
   outline: none;
+  /* body { font-synthesis: none } + Play без italic — иначе курсив в редакторе не виден */
+  font-synthesis: style;
 }
 
 .proseMirror:focus {
   outline: none;
+}
+
+.proseMirror :global(em),
+.proseMirror :global(i),
+.proseMirror :global([style*='font-style: italic']) {
+  font-style: italic !important;
+  font-synthesis: style;
 }
 
 .proseMirror :global(p) {
@@ -189,4 +198,96 @@
 
 .hiddenInput {
   display: none;
+}
+
+.linkModalForm {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.linkModalField {
+  margin-bottom: var(--admin-space-2xl);
+}
+
+.linkModalLabel {
+  display: block;
+  margin-bottom: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.linkModalInput {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--admin-space-md) var(--admin-space-xl);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-base);
+  color: var(--admin-text-primary);
+  background: var(--admin-surface);
+}
+
+.linkModalInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: var(--focus-ring-accent);
+}
+
+.linkModalActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-xl);
+}
+
+.linkModalActionsRight {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl);
+  margin-left: auto;
+}
+
+.linkModalPrimary,
+.linkModalSecondary,
+.linkModalDanger {
+  min-height: 40px;
+  padding: var(--admin-space-md) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.linkModalPrimary {
+  border: none;
+  color: var(--admin-surface);
+  background: var(--admin-accent);
+}
+
+.linkModalPrimary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.linkModalSecondary {
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+}
+
+.linkModalSecondary:hover {
+  background: var(--admin-surface-muted);
+}
+
+.linkModalDanger {
+  border: 1px solid var(--admin-border-strong);
+  color: var(--admin-accent);
+  background: var(--admin-surface);
+}
+
+.linkModalDanger:hover {
+  background: var(--admin-surface-soft);
 }

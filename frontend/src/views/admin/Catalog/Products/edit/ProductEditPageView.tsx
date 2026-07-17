@@ -2,6 +2,7 @@
 
 import { useCallback, useRef } from 'react';
 
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { AdminSaveButton, AdminStickySaveButtonSlot } from '@/views/admin/ui/AdminStickySaveButton';
@@ -47,9 +48,13 @@ function ScrollChevronIcon({ direction }: { direction: 'up' | 'down' }) {
 export function ProductEditPageView({ model }: ProductEditPageViewProps) {
   const {
     productId,
-    router,
-    fromCategory,
     navigateBackToProductsList,
+    navigateToCopyProduct,
+    leaveConfirmOpen,
+    leaveSaving,
+    cancelLeave,
+    confirmLeaveWithoutSave,
+    confirmLeaveWithSave,
     loading,
     saving,
     fetchingPrice,
@@ -180,13 +185,7 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
             data-admin-mutation
             type="button"
             className={`${styles.cancelButton} ${styles.copyProductButton}`}
-            onClick={() =>
-              router.push(
-                `/admin/catalog/products/new?copyFrom=${productId}${
-                  fromCategory ? `&fromCategory=${fromCategory}` : ''
-                }`
-              )
-            }
+            onClick={navigateToCopyProduct}
             aria-label="Скопировать товар"
           >
             <CopyIcon />
@@ -373,7 +372,10 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           {showSection('description') && (
             <ProductEditDescriptionSection
               description={formData.description}
-              onChange={handleChange}
+              editorKey={productId}
+              onDescriptionChange={(value) =>
+                setFormData((prev) => ({ ...prev, description: value }))
+              }
             />
           )}
 
@@ -497,6 +499,22 @@ export function ProductEditPageView({ model }: ProductEditPageViewProps) {
           </button>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={leaveConfirmOpen}
+        title="Несохранённые изменения"
+        message="В карточке есть несохранённые изменения. Сохранить их перед выходом?"
+        confirmText="Сохранить"
+        discardText="Не сохранять"
+        cancelText="Отмена"
+        onConfirm={() => {
+          void confirmLeaveWithSave();
+        }}
+        onDiscard={confirmLeaveWithoutSave}
+        onClose={cancelLeave}
+        closeOnConfirm={false}
+        confirmLoading={leaveSaving || saving}
+      />
     </ProductEditPageRoot>
   );
 }

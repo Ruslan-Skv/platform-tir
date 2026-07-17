@@ -15,7 +15,7 @@ import {
 } from '@/shared/lib/product-availability';
 import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { escapeHtmlAndPreserveNewlines, getSafeHref } from '@/shared/lib/sanitize';
+import { getSafeHref, renderProductDescriptionHtml } from '@/shared/lib/sanitize';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
 import { ProductComponents } from './ProductComponents';
@@ -1215,7 +1215,7 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
             <div
               className={styles.descriptionText}
               dangerouslySetInnerHTML={{
-                __html: escapeHtmlAndPreserveNewlines(product.description),
+                __html: renderProductDescriptionHtml(product.description),
               }}
             />
           ) : (

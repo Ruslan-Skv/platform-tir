@@ -249,7 +249,10 @@ export function ProductCreatePageView({ model }: ProductCreatePageViewProps) {
 
           <ProductEditDescriptionSection
             description={formData.description}
-            onChange={handleChange}
+            editorKey="new-product"
+            onDescriptionChange={(value) =>
+              setFormData((prev) => ({ ...prev, description: value }))
+            }
           />
 
           <ProductEditAttributesSection

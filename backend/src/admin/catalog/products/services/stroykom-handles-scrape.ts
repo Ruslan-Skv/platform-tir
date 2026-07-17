@@ -21,7 +21,7 @@ export type StroykomHandlesDetailData = {
   price: number | null;
   brand: string | null;
   manufacturer: string | null;
-  /** Plain text for admin/storefront description (not HTML). */
+  /** Sanitized HTML description (preserves bold/lists from supplier pages). */
   description: string;
   fullImages: string[];
 };
@@ -307,6 +307,110 @@ export function parseListingHtml(html: string): StroykomHandlesListingItem[] {
   return items;
 }
 
+function escapeHtmlText(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+/**
+ * Keep supplier description markup (bold/lists/paragraphs), strip scripts/styles/events.
+ */
+export function sanitizeSupplierDescriptionHtml(html: string): string {
+  const $ = cheerio.load(`<div id="sk-desc">${html}</div>`, {
+    decodeEntities: false,
+  });
+  const $root = $('#sk-desc');
+  $root.find('script, style, iframe, object, embed, link, meta, noscript').remove();
+
+  const allowed = new Set([
+    'p',
+    'br',
+    'strong',
+    'b',
+    'em',
+    'i',
+    'u',
+    's',
+    'a',
+    'ul',
+    'ol',
+    'li',
+    'h1',
+    'h2',
+    'h3',
+    'h4',
+    'h5',
+    'h6',
+    'span',
+    'div',
+    'blockquote',
+  ]);
+
+  $root.find('*').each((_, el) => {
+    if (el.type !== 'tag') return;
+    const tag = el.tagName.toLowerCase();
+    if (!allowed.has(tag)) {
+      $(el).replaceWith($(el).contents());
+      return;
+    }
+
+    if (tag === 'a') {
+      const rawHref = ($(el).attr('href') || '').trim();
+      let safeHref: string | null = null;
+      if (rawHref && !/^(javascript|data|vbscript|file):/i.test(rawHref)) {
+        try {
+          safeHref = absUrl(rawHref.replace(/&amp;/g, '&'));
+          if (!/^https?:\/\//i.test(safeHref) && !/^mailto:/i.test(safeHref)) {
+            safeHref = null;
+          }
+        } catch {
+          safeHref = null;
+        }
+      }
+      // Drop all attrs, then keep only safe link attrs.
+      const attribs = { ...el.attribs };
+      for (const name of Object.keys(attribs)) {
+        $(el).removeAttr(name);
+      }
+      if (!safeHref) {
+        $(el).replaceWith($(el).contents());
+        return;
+      }
+      $(el).attr('href', safeHref);
+      $(el).attr('target', '_blank');
+      $(el).attr('rel', 'noopener noreferrer');
+      return;
+    }
+
+    const attribs = { ...el.attribs };
+    for (const name of Object.keys(attribs)) {
+      const lower = name.toLowerCase();
+      if (lower.startsWith('on') || lower === 'style' || lower === 'class' || lower === 'id') {
+        $(el).removeAttr(name);
+      }
+    }
+  });
+
+  // Drop empty noise like white "." used as spacer on Stroykom pages.
+  $root.find('span').each((_, el) => {
+    const text = $(el)
+      .text()
+      .replace(/\u00a0/g, ' ')
+      .trim();
+    if (text === '.' || text === '') {
+      $(el).replaceWith($(el).contents());
+    }
+  });
+
+  return ($root.html() || '')
+    .replace(/Производитель:(&nbsp;|\s)*\./gi, 'Производитель: ')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 function rebuildDescriptionText(text: string): string {
   return text
     .replace(/Производитель:\s*\.\s*/gi, 'Производитель: ')
@@ -324,7 +428,7 @@ function rebuildDescriptionText(text: string): string {
     .trim();
 }
 
-/** Convert Virtuemart product HTML into plain multiline description. */
+/** Convert Virtuemart product HTML into plain multiline description (legacy/fallback). */
 export function htmlToPlainDescription(html: string): string {
   const $ = cheerio.load(html);
   $('br').replaceWith('\n');
@@ -337,6 +441,18 @@ export function htmlToPlainDescription(html: string): string {
     .replace(/[ \t]+/g, ' ')
     .replace(/ *\n */g, '\n');
   return rebuildDescriptionText(text);
+}
+
+function plainTextToSimpleHtml(text: string): string {
+  const trimmed = text.trim();
+  if (!trimmed) return '';
+  return trimmed
+    .split(/\n{2,}/)
+    .map((paragraph) => {
+      const withBreaks = escapeHtmlText(paragraph).replace(/\n/g, '<br>');
+      return `<p>${withBreaks}</p>`;
+    })
+    .join('\n');
 }
 
 export function parseDetailHtml(html: string): StroykomHandlesDetailData {
@@ -383,11 +499,11 @@ export function parseDetailHtml(html: string): StroykomHandlesDetailData {
 
   let description =
     descPartsHtml.length > 0
-      ? htmlToPlainDescription(descPartsHtml.join('\n'))
-      : rebuildDescriptionText(text);
+      ? sanitizeSupplierDescriptionHtml(descPartsHtml.join('\n'))
+      : plainTextToSimpleHtml(rebuildDescriptionText(text));
 
   if (!description && text) {
-    description = rebuildDescriptionText(text).slice(0, 4000);
+    description = plainTextToSimpleHtml(rebuildDescriptionText(text).slice(0, 4000));
   }
 
   return {
