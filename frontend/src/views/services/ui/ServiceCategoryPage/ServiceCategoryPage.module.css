@@ -1195,18 +1195,19 @@
   margin-top: 1rem;
   font-size: 0.8125rem;
   font-weight: 500;
-  background: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
   color: white;
   border: none;
   border-radius: 0.5rem;
   cursor: pointer;
-  transition: background-color 0.2s ease;
+  transition: filter 0.2s ease;
   height: 36px;
   box-sizing: border-box;
 }
 
 .addToCartButton:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  filter: brightness(1.08);
 }
 
 .addToCartButton:focus {
@@ -1218,7 +1219,7 @@
 }
 
 .addToCartButton:active:not(:disabled) {
-  opacity: 0.95;
+  filter: brightness(0.95);
 }
 
 .addToCartButton:disabled {
@@ -1229,7 +1230,9 @@
 .addToCartButtonSuccess,
 .addToCartButtonSuccess:hover,
 .addToCartButtonSuccess:disabled {
-  background: #10b981;
+  background-color: #10b981;
+  background-image: none;
+  filter: none;
   cursor: default;
   opacity: 1;
 }
@@ -1452,17 +1455,20 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
-  background: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  filter: brightness(1.1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:hover,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:disabled {
-  background: #10b981;
+  background-color: #10b981;
+  background-image: none;
+  filter: none;
 }
 
 /* Усиленные тёмные стили для карточек помещений (в конце файла, чтобы перекрывать базу) */

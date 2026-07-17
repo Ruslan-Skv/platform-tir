@@ -1175,7 +1175,8 @@
 }
 
 .addToCartButton {
-  background: var(--gradient-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
   border: none;
   border-radius: 0.5rem;
   color: white;
@@ -1187,7 +1188,7 @@
   margin-right: -0.75rem;
   margin-bottom: -0.65rem;
   padding: 0.5rem 0.75rem;
-  transition: background 0.2s ease;
+  transition: filter 0.2s ease;
   width: calc(100% + 1.5rem);
   height: 36px;
   box-sizing: border-box;
@@ -1197,7 +1198,7 @@
 }
 
 .addToCartButton:hover:not(:disabled) {
-  background: var(--gradient-accent-hover);
+  filter: brightness(1.08);
 }
 
 .addToCartButton:focus {
@@ -1209,7 +1210,7 @@
 }
 
 .addToCartButton:active:not(:disabled) {
-  opacity: 0.95;
+  filter: brightness(0.95);
 }
 
 .addToCartButton:disabled {
@@ -1523,11 +1524,12 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
-  background: var(--gradient-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
-  background: var(--gradient-accent-hover);
+  filter: brightness(1.1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .cartControls {

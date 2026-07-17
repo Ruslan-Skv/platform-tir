@@ -255,14 +255,15 @@
 
 .addToCartButton {
   padding: 0.25rem 0.6rem;
-  background: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
   color: white;
   border: none;
   border-radius: 0.25rem;
   font-size: 0.6875rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s;
+  transition: filter 0.2s ease;
   white-space: nowrap;
   height: 28px;
   box-sizing: border-box;
@@ -272,7 +273,11 @@
 }
 
 .addToCartButton:hover:not(:disabled) {
-  background: var(--color-accent-hover);
+  filter: brightness(1.08);
+}
+
+.addToCartButton:active:not(:disabled) {
+  filter: brightness(0.95);
 }
 
 .addToCartButton:disabled {

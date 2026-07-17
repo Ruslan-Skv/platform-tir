@@ -913,33 +913,6 @@
   color: #333;
 }
 
-.addToCartButton {
-  padding: 0.375rem 0.875rem;
-  background: var(--gradient-accent);
-  color: white;
-  border: none;
-  border-radius: 0.375rem;
-  font-size: 0.75rem;
-  font-weight: 600;
-  cursor: pointer;
-  transition: background 0.2s;
-  white-space: nowrap;
-  height: 32px;
-  box-sizing: border-box;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.addToCartButton:hover:not(:disabled) {
-  background: var(--gradient-accent-hover);
-}
-
-.addToCartButton:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
-
 .cartControls {
   display: flex;
   align-items: center;
@@ -1181,14 +1154,15 @@
 
 .addToCartButtonCompact {
   padding: 0.35rem 0.75rem;
-  background: var(--gradient-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
   color: white;
   border: none;
   border-radius: 0.25rem;
   font-size: 0.8125rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: filter 0.2s ease;
   white-space: nowrap;
   height: 28px;
   box-sizing: border-box;
@@ -1198,7 +1172,11 @@
 }
 
 .addToCartButtonCompact:hover:not(:disabled) {
-  background: var(--gradient-accent-hover);
+  filter: brightness(1.08);
+}
+
+.addToCartButtonCompact:active:not(:disabled) {
+  filter: brightness(0.95);
 }
 
 .addToCartButtonCompact:disabled {
@@ -1404,30 +1382,44 @@
 .addToCartButton {
   flex: 1;
   padding: 0.875rem 1.5rem;
-  background: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
   color: white;
   border: none;
   border-radius: 0.375rem;
   font-size: 1rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: filter 0.2s ease;
   height: 48px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-.addToCartButton:hover {
-  background: var(--color-accent-hover);
+.addToCartButton:hover:not(:disabled) {
+  filter: brightness(1.08);
+}
+
+.addToCartButton:active:not(:disabled) {
+  filter: brightness(0.95);
+}
+
+.addToCartButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 .addToCartButtonSuccess {
-  background: #10b981 !important;
+  background-color: #10b981 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
-.addToCartButtonSuccess:hover {
-  background: #059669 !important;
+.addToCartButtonSuccess:hover:not(:disabled) {
+  background-color: #059669 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
 .favoriteButton {
@@ -2275,19 +2267,25 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton {
-  background: var(--gradient-accent);
+  background-color: var(--color-accent);
+  background-image: var(--gradient-accent);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover {
-  background: var(--gradient-accent-hover);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButton:hover:not(:disabled) {
+  filter: brightness(1.1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess {
-  background: #10b981 !important;
+  background-color: #10b981 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .addToCartButtonSuccess:hover {
-  background: #059669 !important;
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .addToCartButtonSuccess:hover:not(:disabled) {
+  background-color: #059669 !important;
+  background-image: none !important;
+  filter: none !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .favoriteButton {
