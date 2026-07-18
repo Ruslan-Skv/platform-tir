@@ -12,6 +12,8 @@
   font-weight: 500;
   line-height: var(--admin-line-height-xs);
   white-space: nowrap;
+  min-width: 5.5rem;
+  text-align: center;
   border: 1px solid var(--admin-success-border-soft);
   background: var(--admin-success-bg-soft);
   color: var(--admin-success-text-strong);

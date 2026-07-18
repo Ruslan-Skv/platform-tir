@@ -86,7 +86,6 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
   const [categoryName, setCategoryName] = useState('');
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [saveSuccessText, setSaveSuccessText] = useState('Сохранено');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { saveSuccessVisible, showSaveSuccess, clearSaveSuccess } = useCategoryModalSaveNotice();
 
@@ -145,7 +144,6 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
   useEffect(() => {
     if (!open || !categoryId) return;
     setShowIconPicker(false);
-    setSaveSuccessText('Сохранено');
     clearSaveSuccess();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -153,10 +151,10 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
     void loadCategory();
   }, [open, categoryId, loadCategory, clearSaveSuccess]);
 
-  const title = useMemo(
-    () => (categoryName ? `Редактировать · ${categoryName}` : 'Редактировать категорию'),
-    [categoryName]
-  );
+  const title = useMemo(() => {
+    const name = form.name.trim() || categoryName;
+    return name ? `Редактировать · ${name}` : 'Редактировать категорию';
+  }, [form.name, categoryName]);
 
   const handleClose = () => {
     if (saving || loading) return;
@@ -200,18 +198,31 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
     setError(null);
     clearSaveSuccess();
 
+    const nextSnapshot: CategoryEditFormData = {
+      name,
+      slug,
+      description: form.description.trim(),
+      parentId: form.parentId.trim(),
+      icon: form.icon.trim(),
+      image: form.image.trim(),
+      isActive: form.isActive,
+      sizesRequired: form.sizesRequired,
+      showChildCategoryFilters: form.showChildCategoryFilters,
+      order: form.order,
+    };
+
     try {
       const updateData: Record<string, unknown> = {
-        name,
-        slug,
-        isActive: form.isActive,
-        sizesRequired: form.sizesRequired,
-        showChildCategoryFilters: form.showChildCategoryFilters,
-        order: form.order,
-        description: form.description.trim() ? form.description.trim() : null,
-        parentId: form.parentId.trim() ? form.parentId : null,
-        icon: form.icon.trim() ? form.icon.trim() : null,
-        image: form.image.trim() ? form.image.trim() : null,
+        name: nextSnapshot.name,
+        slug: nextSnapshot.slug,
+        isActive: nextSnapshot.isActive,
+        sizesRequired: nextSnapshot.sizesRequired,
+        showChildCategoryFilters: nextSnapshot.showChildCategoryFilters,
+        order: nextSnapshot.order,
+        description: nextSnapshot.description ? nextSnapshot.description : null,
+        parentId: nextSnapshot.parentId ? nextSnapshot.parentId : null,
+        icon: nextSnapshot.icon ? nextSnapshot.icon : null,
+        image: nextSnapshot.image ? nextSnapshot.image : null,
       };
 
       const response = await apiFetch(`${API_URL}/categories/${categoryId}`, {
@@ -230,8 +241,12 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
       }
 
       const saved: Category = await response.json();
-      applyCategoryToForm(saved);
-      setSaveSuccessText(`Категория «${saved.name}» сохранена`);
+      // Снимок из отправленных данных — без рассинхрона null/'' с ответом API (иначе hasChanges снова true и notice сразу сбрасывается).
+      setForm(nextSnapshot);
+      setSavedSnapshot(nextSnapshot);
+      setCategoryName(saved.name || nextSnapshot.name);
+      setOriginalSlug(saved.slug || nextSnapshot.slug);
+      setImagePreview(nextSnapshot.image || null);
       showSaveSuccess();
       onSaved(saved);
     } catch {
@@ -246,9 +261,9 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
       isOpen={open}
       onClose={handleClose}
       title={title}
-      titleAside={<AdminSaveNotice visible={saveSuccessVisible}>{saveSuccessText}</AdminSaveNotice>}
+      titleAside={<AdminSaveNotice visible={saveSuccessVisible}>Сохранено</AdminSaveNotice>}
       size="lg"
-      className={crmFormStyles.modalPanel}
+      className={`${crmFormStyles.modalPanel} ${styles.modalPanel}`}
       showCloseButton
     >
       {loading ? (
@@ -484,13 +499,6 @@ export function CategoryEditModal({ open, categoryId, onClose, onSaved }: Catego
           </div>
 
           {error ? <p data-modal-form-error>{error}</p> : null}
-
-          {saveSuccessVisible ? (
-            <div data-modal-footer-info data-modal-tone="success" role="status">
-              <span data-modal-footer-info-icon aria-hidden="true" />
-              <span data-modal-footer-info-text>{saveSuccessText}</span>
-            </div>
-          ) : null}
 
           <div data-modal-form-actions>
             <button

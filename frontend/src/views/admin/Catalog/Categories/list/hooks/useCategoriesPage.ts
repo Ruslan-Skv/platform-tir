@@ -44,22 +44,29 @@ export function useCategoriesPage(options: UseCategoriesPageOptions = {}) {
     setTimeout(() => setToast(null), 4000);
   }, []);
 
-  const fetchCategories = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await apiFetch(`${API_URL}/categories?includeInactive=true`, {
-        headers: getAuthHeaders(),
-      });
-      if (response.ok) {
-        const data: Category[] = await response.json();
-        setCategories(data);
+  const fetchCategories = useCallback(
+    async (options?: { silent?: boolean }) => {
+      if (!options?.silent) {
+        setLoading(true);
       }
-    } catch (error) {
-      console.error('Failed to fetch categories:', error);
-    } finally {
-      setLoading(false);
-    }
-  }, [getAuthHeaders]);
+      try {
+        const response = await apiFetch(`${API_URL}/categories?includeInactive=true`, {
+          headers: getAuthHeaders(),
+        });
+        if (response.ok) {
+          const data: Category[] = await response.json();
+          setCategories(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch categories:', error);
+      } finally {
+        if (!options?.silent) {
+          setLoading(false);
+        }
+      }
+    },
+    [getAuthHeaders]
+  );
 
   useEffect(() => {
     if (isAuthLoading || !isAuthenticated) return;
@@ -98,7 +105,7 @@ export function useCategoriesPage(options: UseCategoriesPageOptions = {}) {
 
   const handleCategoryUpdated = useCallback(
     (_updated: Category) => {
-      void fetchCategories();
+      void fetchCategories({ silent: true });
     },
     [fetchCategories]
   );

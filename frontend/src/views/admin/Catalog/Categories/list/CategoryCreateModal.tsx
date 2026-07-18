@@ -174,7 +174,7 @@ export function CategoryCreateModal({
       title="Новая категория"
       titleAside={<AdminSaveNotice visible={saveSuccessVisible}>{saveSuccessText}</AdminSaveNotice>}
       size="lg"
-      className={crmFormStyles.modalPanel}
+      className={`${crmFormStyles.modalPanel} ${styles.modalPanel}`}
       showCloseButton
     >
       <form
