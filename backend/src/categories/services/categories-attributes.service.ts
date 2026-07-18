@@ -65,12 +65,18 @@ export class CategoriesAttributesService {
     );
 
     const requiredInAncestors = await this.getAttributeIdsRequiredInAncestors(categoryId);
+    const ancestorAttrIds = await this.getAncestorAttributeIds(categoryId);
 
-    const merged = [...ownRows, ...inheritedRows].map((row) => ({
-      ...row,
-      isInherited: !ownAttrIds.has(row.attributeId),
-      isRequired: row.isRequired || requiredInAncestors.has(row.attributeId),
-    }));
+    const merged = [...ownRows, ...inheritedRows].map((row) => {
+      const isOwn = ownAttrIds.has(row.attributeId);
+      return {
+        ...row,
+        isInherited: !isOwn,
+        /** Своя привязка есть, но тот же атрибут есть у родителя — удаление лишь снимет дубль. */
+        isAlsoInherited: isOwn && ancestorAttrIds.has(row.attributeId),
+        isRequired: row.isRequired || requiredInAncestors.has(row.attributeId),
+      };
+    });
 
     merged.sort((a, b) => {
       if (a.order !== b.order) return a.order - b.order;
@@ -440,6 +446,19 @@ export class CategoriesAttributesService {
         categoryId: { in: ancestorIds },
         isRequired: true,
       },
+      select: { attributeId: true },
+    });
+    return new Set(rows.map((r) => r.attributeId));
+  }
+
+  /** Атрибуты, привязанные к любому предку (для детекта дубля «свой + унаследованный»). */
+  private async getAncestorAttributeIds(categoryId: string): Promise<Set<string>> {
+    const ancestorIds = await this.getAncestorCategoryIds(categoryId);
+    if (ancestorIds.length === 0) {
+      return new Set();
+    }
+    const rows = await this.prisma.categoryAttribute.findMany({
+      where: { categoryId: { in: ancestorIds } },
       select: { attributeId: true },
     });
     return new Set(rows.map((r) => r.attributeId));

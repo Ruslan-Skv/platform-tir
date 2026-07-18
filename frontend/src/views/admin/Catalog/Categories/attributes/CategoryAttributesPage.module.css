@@ -322,6 +322,28 @@
   white-space: nowrap;
 }
 
+.alsoInheritedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: var(--admin-radius-full);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--admin-warning-brown);
+  background: var(--admin-warning-bg);
+  border: 1px solid var(--admin-warning-border);
+  white-space: nowrap;
+  cursor: help;
+}
+
+.alsoInheritedIcon {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+}
+
 .attributeType {
   font-size: var(--admin-font-size-xs);
   font-weight: 500;

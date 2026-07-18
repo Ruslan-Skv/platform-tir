@@ -22,6 +22,11 @@ export interface CategoryAttribute {
   order: number;
   /** true — атрибут виден из родительской категории, своей привязки у этой категории нет */
   isInherited?: boolean;
+  /**
+   * true — у категории есть своя привязка, но тот же атрибут уже есть у родителя.
+   * Удаление снимет только дубль; атрибут останется в блоке «Унаследованные».
+   */
+  isAlsoInherited?: boolean;
   attribute: Attribute;
 }
 

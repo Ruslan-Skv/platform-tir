@@ -1,6 +1,6 @@
 'use client';
 
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, GitBranch } from 'lucide-react';
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
@@ -167,6 +167,15 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
                 из родителя
               </span>
             ) : null}
+            {ca.isAlsoInherited ? (
+              <span
+                className={styles.alsoInheritedBadge}
+                title="Тот же атрибут уже есть у родителя. Удаление снимет только явную привязку — атрибут останется в блоке «Унаследованные»."
+              >
+                <GitBranch className={styles.alsoInheritedIcon} aria-hidden />
+                дубль родителя
+              </span>
+            ) : null}
             {ca.isRequired ? <span className={styles.requiredBadge}>обязательный</span> : null}
             {valueCount > 0 ? (
               <span className={styles.treeSubgroupMeta}>{valueCount} знач.</span>
@@ -205,9 +214,17 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
               title={
                 ca.isInherited
                   ? 'Атрибут задан у родительской категории. Удалите его там или сначала добавьте в эту категорию явно.'
-                  : 'Удалить атрибут только из этой категории'
+                  : ca.isAlsoInherited
+                    ? 'Снять явную привязку — атрибут останется унаследованным от родителя'
+                    : 'Удалить атрибут только из этой категории'
               }
-              onClick={() => openDeleteAttributeModal(ca.attributeId, ca.attribute.name)}
+              onClick={() =>
+                openDeleteAttributeModal(
+                  ca.attributeId,
+                  ca.attribute.name,
+                  Boolean(ca.isAlsoInherited)
+                )
+              }
               disabled={Boolean(ca.isInherited)}
             >
               <DeleteIcon />
@@ -446,9 +463,17 @@ export function CategoryAttributesPageView({ model }: CategoryAttributesPageView
       {deleteModal ? (
         <ConfirmModal
           isOpen
-          title="Удалить атрибут из категории?"
-          message={`Удалить атрибут «${deleteModal.attributeName}» из этой категории? В других категориях он останется.`}
-          confirmText={deleting ? 'Удаление…' : 'Удалить'}
+          title={
+            deleteModal.isAlsoInherited ? 'Снять явную привязку?' : 'Удалить атрибут из категории?'
+          }
+          message={
+            deleteModal.isAlsoInherited
+              ? `Атрибут «${deleteModal.attributeName}» уже есть у родителя. Удаление снимет только дубль — он останется и появится в блоке «Унаследованные».`
+              : `Удалить атрибут «${deleteModal.attributeName}» из этой категории? В других категориях он останется.`
+          }
+          confirmText={
+            deleting ? 'Удаление…' : deleteModal.isAlsoInherited ? 'Снять привязку' : 'Удалить'
+          }
           cancelText="Отмена"
           variant="danger"
           closeOnConfirm={false}

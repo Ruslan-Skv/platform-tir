@@ -52,6 +52,7 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
   const [deleteModal, setDeleteModal] = useState<{
     attributeId: string;
     attributeName: string;
+    isAlsoInherited: boolean;
   } | null>(null);
   const [deleting, setDeleting] = useState(false);
 
@@ -210,8 +211,12 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
     }
   };
 
-  const openDeleteAttributeModal = (attributeId: string, attributeName: string) => {
-    setDeleteModal({ attributeId, attributeName });
+  const openDeleteAttributeModal = (
+    attributeId: string,
+    attributeName: string,
+    isAlsoInherited = false
+  ) => {
+    setDeleteModal({ attributeId, attributeName, isAlsoInherited });
   };
 
   const closeDeleteAttributeModal = () => {
@@ -234,7 +239,12 @@ export function useCategoryAttributesPage({ categoryId }: CategoryAttributesPage
 
       if (response.ok) {
         setDeleteModal(null);
-        showMessage('success', 'Атрибут удалён из категории');
+        showMessage(
+          'success',
+          deleteModal.isAlsoInherited
+            ? 'Явная привязка снята — атрибут отображается в блоке «Унаследованные»'
+            : 'Атрибут удалён из категории'
+        );
         fetchData({ silent: true });
       } else {
         const data = await response.json().catch(() => ({}));
