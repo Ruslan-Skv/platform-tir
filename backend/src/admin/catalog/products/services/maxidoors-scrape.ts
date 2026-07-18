@@ -288,6 +288,7 @@ function normalizeCharLabel(label: string): string {
 /**
  * Собирает HTML описания. Характеристики из excludeLabels не попадают в список
  * (они уже записаны в отдельные поля карточки).
+ * Если остался только доп. текст — без заголовка «Дополнительно» (в публичке он и так в «Описание»).
  */
 export function buildMaxidoorsProductDescription(
   charRows: Array<{ label: string; value: string }>,
@@ -297,12 +298,16 @@ export function buildMaxidoorsProductDescription(
   const excluded = new Set(excludeLabels.map(normalizeCharLabel).filter(Boolean));
   const remaining = charRows.filter((r) => !excluded.has(normalizeCharLabel(r.label)));
   const charsHtml = charsToHtml(remaining);
-  let description = '';
-  if (charsHtml) description += `<p><strong>Описание</strong></p>\n${charsHtml}\n`;
-  if (extraDescription.trim()) {
-    description += `<p><strong>Дополнительно</strong></p>\n${extraDescription.trim()}`;
+  const extra = extraDescription.trim();
+
+  if (charsHtml && extra) {
+    return `<p><strong>Описание</strong></p>\n${charsHtml}\n<p><strong>Дополнительно</strong></p>\n${extra}`;
   }
-  return description.trim();
+  if (charsHtml) {
+    return `<p><strong>Описание</strong></p>\n${charsHtml}`;
+  }
+  // Только доп. текст — без подзаголовка «Дополнительно»
+  return extra;
 }
 
 export function parseDetailHtml(html: string): MaxidoorsDetailData {
