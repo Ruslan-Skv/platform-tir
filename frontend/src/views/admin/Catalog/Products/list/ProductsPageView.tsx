@@ -95,6 +95,14 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     stroykomError,
     startStroykomImport,
     closeStroykomProgress,
+    showMaxidoorsHandlesImport,
+    maxidoorsConfirmOpen,
+    setMaxidoorsConfirmOpen,
+    maxidoorsJob,
+    maxidoorsStarting,
+    maxidoorsError,
+    startMaxidoorsImport,
+    closeMaxidoorsProgress,
     fileInputRef,
     columnSelectorRef,
     showExportModal,
@@ -650,6 +658,21 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                   title="Скопировать ручки с сайта поставщика Стройком (436830.ru)"
                 >
                   Импорт с сайта Стройком
+                </button>
+              ) : null}
+              {showMaxidoorsHandlesImport ? (
+                <button
+                  type="button"
+                  data-admin-mutation
+                  className={styles.secondaryButton}
+                  onClick={() => setMaxidoorsConfirmOpen(true)}
+                  disabled={Boolean(
+                    maxidoorsJob &&
+                    (maxidoorsJob.status === 'running' || maxidoorsJob.status === 'pending')
+                  )}
+                  title="Скопировать ручки с сайта поставщика Максидорс (maxi-doors.ru)"
+                >
+                  Импорт с сайта Максидорс
                 </button>
               ) : null}
               <button
@@ -1385,6 +1408,79 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                 type="button"
                 className={styles.secondaryButton}
                 onClick={closeStroykomProgress}
+              >
+                Закрыть
+              </button>
+            )}
+          </div>
+        ) : null}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={maxidoorsConfirmOpen}
+        title="Импорт с сайта Максидорс?"
+        message={
+          maxidoorsError
+            ? maxidoorsError
+            : 'Будут созданы товары из раздела «Ручки межкомнатные» на maxi-doors.ru (~176 шт.) в категорию «Ручки (м)»: название, цена, артикул и ссылка поставщика, описание, фото, цвет из названия, производитель, материал покрытия, SEO. Наличие — остаток 100; под заказ — остаток 0. Уже импортированные (по ссылке на карточку) будут пропущены.'
+        }
+        confirmText={maxidoorsStarting ? 'Запуск…' : 'Начать импорт'}
+        cancelText="Отмена"
+        variant="default"
+        closeOnConfirm={false}
+        onConfirm={() => {
+          if (!maxidoorsStarting) void startMaxidoorsImport();
+        }}
+        onClose={() => {
+          if (!maxidoorsStarting) setMaxidoorsConfirmOpen(false);
+        }}
+      />
+
+      <Modal
+        isOpen={Boolean(maxidoorsJob)}
+        onClose={closeMaxidoorsProgress}
+        title="Импорт ручек Максидорс"
+        size="sm"
+        showCloseButton={
+          maxidoorsJob?.status === 'done' || maxidoorsJob?.status === 'error' || !maxidoorsJob
+        }
+      >
+        {maxidoorsJob ? (
+          <div className={styles.stroykomImportProgress}>
+            <p>
+              Статус:{' '}
+              {maxidoorsJob.status === 'pending'
+                ? 'ожидание'
+                : maxidoorsJob.status === 'running'
+                  ? 'выполняется'
+                  : maxidoorsJob.status === 'done'
+                    ? 'готово'
+                    : 'ошибка'}
+            </p>
+            <p>
+              Прогресс: {maxidoorsJob.done} / {maxidoorsJob.total || '…'}
+            </p>
+            <p>
+              Создано: {maxidoorsJob.created}, пропущено: {maxidoorsJob.skipped}, ошибок:{' '}
+              {maxidoorsJob.errors.length}
+            </p>
+            {maxidoorsJob.message ? <p>{maxidoorsJob.message}</p> : null}
+            {maxidoorsError ? <p className={styles.stroykomImportError}>{maxidoorsError}</p> : null}
+            {maxidoorsJob.errors.length > 0 ? (
+              <ul className={styles.stroykomImportErrors}>
+                {maxidoorsJob.errors.slice(0, 8).map((err) => (
+                  <li key={err}>{err}</li>
+                ))}
+                {maxidoorsJob.errors.length > 8 ? (
+                  <li>…и ещё {maxidoorsJob.errors.length - 8}</li>
+                ) : null}
+              </ul>
+            ) : null}
+            {(maxidoorsJob.status === 'done' || maxidoorsJob.status === 'error') && (
+              <button
+                type="button"
+                className={styles.secondaryButton}
+                onClick={closeMaxidoorsProgress}
               >
                 Закрыть
               </button>

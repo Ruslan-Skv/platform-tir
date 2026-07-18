@@ -5,6 +5,7 @@ import { AdminProductsBulkService } from './services/admin-products-bulk.service
 import { AdminProductsImportService } from './services/admin-products-import.service';
 import { AdminProductsReviewsService } from './services/admin-products-reviews.service';
 import { StroykomHandlesImportService } from './services/stroykom-handles-import.service';
+import { MaxidoorsHandlesImportService } from './services/maxidoors-handles-import.service';
 import { AdminProductsController } from './admin-products.controller';
 import { DatabaseModule } from '../../../database/database.module';
 import { ProductsModule } from '../../../products/products.module';
@@ -19,7 +20,8 @@ import { ProductsModule } from '../../../products/products.module';
     AdminProductsImportService,
     AdminProductsReviewsService,
     StroykomHandlesImportService,
+    MaxidoorsHandlesImportService,
   ],
-  exports: [AdminProductsService, StroykomHandlesImportService],
+  exports: [AdminProductsService, StroykomHandlesImportService, MaxidoorsHandlesImportService],
 })
 export class AdminProductsModule {}
