@@ -17,6 +17,7 @@ import { AdminProductsService } from './admin-products.service';
 import { ProductsService } from '../../../products/products.service';
 import { StroykomHandlesImportService } from './services/stroykom-handles-import.service';
 import { MaxidoorsHandlesImportService } from './services/maxidoors-handles-import.service';
+import { MaxidoorsImportService } from './services/maxidoors-import.service';
 import { JwtAuthGuard } from '../../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../../common/guards/roles.guard';
 import { Roles } from '../../../common/decorators/roles.decorator';
@@ -30,6 +31,7 @@ export class AdminProductsController {
     private readonly productsService: ProductsService,
     private readonly stroykomHandlesImport: StroykomHandlesImportService,
     private readonly maxidoorsHandlesImport: MaxidoorsHandlesImportService,
+    private readonly maxidoorsImport: MaxidoorsImportService,
   ) {}
 
   @Get()
@@ -225,6 +227,49 @@ export class AdminProductsController {
   @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
   getStroykomHandlesImportJob(@Param('jobId') jobId: string) {
     return this.stroykomHandlesImport.getJob(jobId);
+  }
+
+  /** Список каталогов MaxiDoors, доступных для импорта. */
+  @Get('import-maxidoors/catalogs')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
+  listMaxidoorsCatalogs() {
+    return this.maxidoorsImport.listCatalogs();
+  }
+
+  /**
+   * Универсальный импорт раздела MaxiDoors (handles | cylinders | …).
+   * body.catalog — ключ из /import-maxidoors/catalogs
+   */
+  @Post('import-maxidoors')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
+  startMaxidoorsImport(
+    @Body()
+    body: {
+      catalog: string;
+      categoryId?: string;
+      supplierId?: string;
+      limit?: number;
+      delayMs?: number;
+      skipExisting?: boolean;
+    },
+  ) {
+    if (!body?.catalog?.trim()) {
+      throw new BadRequestException('Укажите catalog (например handles или cylinders)');
+    }
+    return this.maxidoorsImport.startImport({
+      catalog: body.catalog.trim(),
+      categoryId: body.categoryId,
+      supplierId: body.supplierId,
+      limit: body.limit,
+      delayMs: body.delayMs,
+      skipExisting: body.skipExisting,
+    });
+  }
+
+  @Get('import-maxidoors/:jobId')
+  @Roles('ADMIN', 'CONTENT_MANAGER', 'SUPER_ADMIN')
+  getMaxidoorsImportJob(@Param('jobId') jobId: string) {
+    return this.maxidoorsImport.getJob(jobId);
   }
 
   /** Импорт ручек с сайта Максидорс (furnitura/ruchki) — фоновая задача. */

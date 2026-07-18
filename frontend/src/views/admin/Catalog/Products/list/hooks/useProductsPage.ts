@@ -17,12 +17,12 @@ import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-quer
 
 import { useAuth } from '@/features/auth';
 import {
-  MAXIDOORS_HANDLES_CATEGORY_ID,
-  type MaxidoorsHandlesImportJob,
-  fetchMaxidoorsHandlesImportJob,
-  isMaxidoorsHandlesCategory,
-  startMaxidoorsHandlesImport,
-} from '@/shared/api/admin-maxidoors-handles-import';
+  type MaxidoorsCatalogUi,
+  type MaxidoorsImportJob,
+  fetchMaxidoorsImportJob,
+  resolveMaxidoorsCatalogForCategory,
+  startMaxidoorsImport,
+} from '@/shared/api/admin-maxidoors-import';
 import {
   ADMIN_PRODUCTS_AUTHORS_QUERY_KEY,
   ADMIN_PRODUCTS_LIST_QUERY_KEY,
@@ -1176,9 +1176,11 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     isStroykomHandlesCategory(categoryFilter || categoryId) ||
     currentCategoryName?.trim().toLowerCase() === 'ручки';
 
-  const showMaxidoorsHandlesImport =
-    isMaxidoorsHandlesCategory(categoryFilter || categoryId) ||
-    currentCategoryName?.trim().toLowerCase() === 'ручки (м)';
+  const maxidoorsCatalog: MaxidoorsCatalogUi | null = resolveMaxidoorsCatalogForCategory(
+    categoryFilter || categoryId,
+    currentCategoryName
+  );
+  const showMaxidoorsImport = Boolean(maxidoorsCatalog);
 
   const [stroykomConfirmOpen, setStroykomConfirmOpen] = useState(false);
   const [stroykomJob, setStroykomJob] = useState<StroykomHandlesImportJob | null>(null);
@@ -1186,7 +1188,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
   const [stroykomError, setStroykomError] = useState<string | null>(null);
 
   const [maxidoorsConfirmOpen, setMaxidoorsConfirmOpen] = useState(false);
-  const [maxidoorsJob, setMaxidoorsJob] = useState<MaxidoorsHandlesImportJob | null>(null);
+  const [maxidoorsJob, setMaxidoorsJob] = useState<MaxidoorsImportJob | null>(null);
   const [maxidoorsStarting, setMaxidoorsStarting] = useState(false);
   const [maxidoorsError, setMaxidoorsError] = useState<string | null>(null);
 
@@ -1212,19 +1214,21 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     }
   };
 
-  const startMaxidoorsImport = async () => {
+  const startMaxidoorsCatalogImport = async () => {
+    if (!maxidoorsCatalog) return;
     setMaxidoorsStarting(true);
     setMaxidoorsError(null);
     try {
-      const { jobId } = await startMaxidoorsHandlesImport(
+      const { jobId } = await startMaxidoorsImport(
         {
-          categoryId: categoryFilter || categoryId || MAXIDOORS_HANDLES_CATEGORY_ID,
+          catalog: maxidoorsCatalog.key,
+          categoryId: categoryFilter || categoryId || maxidoorsCatalog.categoryId,
           skipExisting: true,
         },
         getAuthHeaders()
       );
       setMaxidoorsConfirmOpen(false);
-      const initial = await fetchMaxidoorsHandlesImportJob(jobId, getAuthHeaders());
+      const initial = await fetchMaxidoorsImportJob(jobId, getAuthHeaders());
       setMaxidoorsJob(initial);
     } catch (e) {
       setMaxidoorsError(e instanceof Error ? e.message : 'Ошибка запуска импорта');
@@ -1264,7 +1268,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
       return;
     }
     const t = window.setInterval(() => {
-      void fetchMaxidoorsHandlesImportJob(maxidoorsJob.id, getAuthHeaders())
+      void fetchMaxidoorsImportJob(maxidoorsJob.id, getAuthHeaders())
         .then((job) => setMaxidoorsJob(job))
         .catch((e) => setMaxidoorsError(e instanceof Error ? e.message : 'Ошибка статуса импорта'));
     }, 1500);
@@ -1392,13 +1396,14 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     stroykomError,
     startStroykomImport,
     closeStroykomProgress,
-    showMaxidoorsHandlesImport,
+    showMaxidoorsImport,
+    maxidoorsCatalog,
     maxidoorsConfirmOpen,
     setMaxidoorsConfirmOpen,
     maxidoorsJob,
     maxidoorsStarting,
     maxidoorsError,
-    startMaxidoorsImport,
+    startMaxidoorsCatalogImport,
     closeMaxidoorsProgress,
     exportToCSV,
     exportToExcel,

@@ -95,13 +95,14 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     stroykomError,
     startStroykomImport,
     closeStroykomProgress,
-    showMaxidoorsHandlesImport,
+    showMaxidoorsImport,
+    maxidoorsCatalog,
     maxidoorsConfirmOpen,
     setMaxidoorsConfirmOpen,
     maxidoorsJob,
     maxidoorsStarting,
     maxidoorsError,
-    startMaxidoorsImport,
+    startMaxidoorsCatalogImport,
     closeMaxidoorsProgress,
     fileInputRef,
     columnSelectorRef,
@@ -660,7 +661,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                   Импорт с сайта Стройком
                 </button>
               ) : null}
-              {showMaxidoorsHandlesImport ? (
+              {showMaxidoorsImport ? (
                 <button
                   type="button"
                   data-admin-mutation
@@ -670,7 +671,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                     maxidoorsJob &&
                     (maxidoorsJob.status === 'running' || maxidoorsJob.status === 'pending')
                   )}
-                  title="Скопировать ручки с сайта поставщика Максидорс (maxi-doors.ru)"
+                  title={`Скопировать «${maxidoorsCatalog?.label ?? 'товары'}» с сайта поставщика Максидорс (maxi-doors.ru)`}
                 >
                   Импорт с сайта Максидорс
                 </button>
@@ -1422,14 +1423,15 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         message={
           maxidoorsError
             ? maxidoorsError
-            : 'Будут созданы товары из раздела «Ручки межкомнатные» на maxi-doors.ru (~176 шт.) в категорию «Ручки (м)»: название, цена, артикул и ссылка поставщика, описание, фото, цвет из названия, производитель, материал покрытия, SEO. Наличие — остаток 100; под заказ — остаток 0. Уже импортированные (по ссылке на карточку) будут пропущены.'
+            : maxidoorsCatalog?.confirmMessage ||
+              'Будут созданы товары с сайта maxi-doors.ru. Уже импортированные (по ссылке на карточку) будут пропущены.'
         }
         confirmText={maxidoorsStarting ? 'Запуск…' : 'Начать импорт'}
         cancelText="Отмена"
         variant="default"
         closeOnConfirm={false}
         onConfirm={() => {
-          if (!maxidoorsStarting) void startMaxidoorsImport();
+          if (!maxidoorsStarting) void startMaxidoorsCatalogImport();
         }}
         onClose={() => {
           if (!maxidoorsStarting) setMaxidoorsConfirmOpen(false);
@@ -1439,7 +1441,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
       <Modal
         isOpen={Boolean(maxidoorsJob)}
         onClose={closeMaxidoorsProgress}
-        title="Импорт ручек Максидорс"
+        title={`Импорт Максидорс${maxidoorsCatalog ? `: ${maxidoorsCatalog.label}` : ''}`}
         size="sm"
         showCloseButton={
           maxidoorsJob?.status === 'done' || maxidoorsJob?.status === 'error' || !maxidoorsJob
