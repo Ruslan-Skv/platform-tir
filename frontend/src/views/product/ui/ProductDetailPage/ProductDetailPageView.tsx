@@ -2,8 +2,7 @@
 
 import { CheckIcon, PencilSquareIcon, XMarkIcon } from '@heroicons/react/24/outline';
 
-import React from 'react';
-import { createPortal } from 'react-dom';
+import React, { useRef } from 'react';
 
 import Link from 'next/link';
 
@@ -20,6 +19,7 @@ import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 
 import { ProductComponents } from './ProductComponents';
 import styles from './ProductDetailPage.module.css';
+import { ProductImageLightbox } from './ProductImageLightbox';
 import { ProductReviewsSection } from './ProductReviewsSection';
 import { ProductVideoPlayer } from './ProductVideoPlayer';
 import type { ProductDetailPageModel } from './hooks/useProductDetailPage';
@@ -49,7 +49,7 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
     setSelectedImage,
     isLightboxOpen,
     lightboxIndex,
-    isMounted,
+    lightboxOrigin,
     isAddingToCart,
     setIsAddingToCart,
     isWishlistLoading,
@@ -131,6 +131,8 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
     exitPublicComponentsEdit,
     handleSavePublicComponents,
   } = model;
+
+  const mainImageRef = useRef<HTMLImageElement>(null);
 
   if (loading) {
     return (
@@ -249,10 +251,11 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
                 <button
                   type="button"
                   className={styles.mainImageButton}
-                  onClick={() => openLightbox(selectedImage)}
+                  onClick={() => openLightbox(selectedImage, mainImageRef.current)}
                   aria-label="Открыть изображение"
                 >
                   <img
+                    ref={mainImageRef}
                     src={product.images[selectedImage]}
                     alt={product.name}
                     className={styles.image}
@@ -1273,68 +1276,16 @@ export function ProductDetailPageView({ model }: ProductDetailPageViewProps) {
         initialReviews={product.reviews}
       />
 
-      {/* Лайтбокс через Portal — рендерится в body, вне иерархии компонентов */}
-      {isMounted &&
-        isLightboxOpen &&
-        product.images.length > 0 &&
-        createPortal(
-          <div className={styles.lightbox} onClick={closeLightbox}>
-            <button
-              type="button"
-              className={styles.lightboxClose}
-              onClick={(e) => {
-                e.stopPropagation();
-                closeLightbox();
-              }}
-              aria-label="Закрыть"
-            >
-              ✕
-            </button>
-
-            {product.images.length > 1 && (
-              <button
-                type="button"
-                className={`${styles.lightboxArrow} ${styles.lightboxArrowLeft}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToPrevImage();
-                }}
-                aria-label="Предыдущее изображение"
-              >
-                ‹
-              </button>
-            )}
-
-            <div className={styles.lightboxContent} onClick={(e) => e.stopPropagation()}>
-              <img
-                src={product.images[lightboxIndex]}
-                alt={`${product.name} - ${lightboxIndex + 1}`}
-                className={styles.lightboxImage}
-              />
-            </div>
-
-            {product.images.length > 1 && (
-              <button
-                type="button"
-                className={`${styles.lightboxArrow} ${styles.lightboxArrowRight}`}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  goToNextImage();
-                }}
-                aria-label="Следующее изображение"
-              >
-                ›
-              </button>
-            )}
-
-            {product.images.length > 1 && (
-              <div className={styles.lightboxCounter}>
-                {lightboxIndex + 1} / {product.images.length}
-              </div>
-            )}
-          </div>,
-          document.body
-        )}
+      <ProductImageLightbox
+        open={isLightboxOpen}
+        images={product.images}
+        index={lightboxIndex}
+        productName={product.name}
+        originRect={lightboxOrigin}
+        onClose={closeLightbox}
+        onPrev={goToPrevImage}
+        onNext={goToNextImage}
+      />
     </div>
   );
 }

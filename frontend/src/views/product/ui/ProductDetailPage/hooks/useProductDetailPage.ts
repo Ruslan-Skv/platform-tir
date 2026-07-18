@@ -58,6 +58,12 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
   const [selectedImage, setSelectedImage] = useState(0);
   const [isLightboxOpen, setIsLightboxOpen] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [lightboxOrigin, setLightboxOrigin] = useState<{
+    left: number;
+    top: number;
+    width: number;
+    height: number;
+  } | null>(null);
   const [isMounted, setIsMounted] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
   const [isWishlistLoading, setIsWishlistLoading] = useState(false);
@@ -391,16 +397,25 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
   };
 
   // Функции для лайтбокса
-  const openLightbox = (index: number) => {
+  const openLightbox = (index: number, originEl?: HTMLElement | null) => {
+    const rect = originEl?.getBoundingClientRect();
+    setLightboxOrigin(
+      rect
+        ? {
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height,
+          }
+        : null
+    );
     setLightboxIndex(index);
     setIsLightboxOpen(true);
-    document.body.style.overflow = 'hidden';
   };
 
-  const closeLightbox = () => {
+  const closeLightbox = useCallback(() => {
     setIsLightboxOpen(false);
-    document.body.style.overflow = '';
-  };
+  }, []);
 
   const goToPrevImage = useCallback(() => {
     if (product) {
@@ -413,24 +428,6 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
       setLightboxIndex((prev) => (prev === product.images.length - 1 ? 0 : prev + 1));
     }
   }, [product]);
-
-  // Обработка клавиатуры для лайтбокса
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isLightboxOpen) return;
-
-      if (e.key === 'Escape') {
-        closeLightbox();
-      } else if (e.key === 'ArrowLeft') {
-        goToPrevImage();
-      } else if (e.key === 'ArrowRight') {
-        goToNextImage();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isLightboxOpen, goToPrevImage, goToNextImage]);
 
   // Стоимость комплекта по подсказке: полотно 1шт., стойка коробки 2,5шт., наличники 5шт.
   const kitPrice = useMemo(() => {
@@ -871,6 +868,7 @@ export function useProductDetailPage({ slug }: ProductDetailPageProps) {
     setSelectedImage,
     isLightboxOpen,
     lightboxIndex,
+    lightboxOrigin,
     isMounted,
     isAddingToCart,
     setIsAddingToCart,
