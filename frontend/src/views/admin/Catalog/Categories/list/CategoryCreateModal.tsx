@@ -53,7 +53,6 @@ export function CategoryCreateModal({
   const [error, setError] = useState<string | null>(null);
   const [showIconPicker, setShowIconPicker] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
-  const [saveSuccessText, setSaveSuccessText] = useState('Сохранено');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { saveSuccessVisible, showSaveSuccess, clearSaveSuccess } = useCategoryModalSaveNotice();
 
@@ -64,7 +63,6 @@ export function CategoryCreateModal({
     setError(null);
     setShowIconPicker(false);
     setImagePreview(null);
-    setSaveSuccessText('Сохранено');
     clearSaveSuccess();
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
@@ -93,6 +91,16 @@ export function CategoryCreateModal({
   const clearImage = () => {
     setImagePreview(null);
     setForm((prev) => ({ ...prev, image: '' }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const resetFormForNextCreate = () => {
+    setForm(EMPTY_FORM);
+    setAutoSlug(true);
+    setShowIconPicker(false);
+    setImagePreview(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = '';
     }
@@ -150,16 +158,12 @@ export function CategoryCreateModal({
       }
 
       const created: Category = await response.json();
-      setForm(EMPTY_FORM);
-      setAutoSlug(true);
-      setShowIconPicker(false);
-      setImagePreview(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      setSaveSuccessText(`Категория «${created.name}» создана`);
+      // Сначала уведомление и обновление списка, форму чистим после — меньше скачка высоты.
       showSaveSuccess();
       onCreated(created);
+      requestAnimationFrame(() => {
+        resetFormForNextCreate();
+      });
     } catch {
       setError('Ошибка сети');
     } finally {
@@ -172,7 +176,7 @@ export function CategoryCreateModal({
       isOpen={open}
       onClose={handleClose}
       title="Новая категория"
-      titleAside={<AdminSaveNotice visible={saveSuccessVisible}>{saveSuccessText}</AdminSaveNotice>}
+      titleAside={<AdminSaveNotice visible={saveSuccessVisible}>Создано</AdminSaveNotice>}
       size="lg"
       className={`${crmFormStyles.modalPanel} ${styles.modalPanel}`}
       showCloseButton
@@ -345,13 +349,6 @@ export function CategoryCreateModal({
         </div>
 
         {error ? <p data-modal-form-error>{error}</p> : null}
-
-        {saveSuccessVisible ? (
-          <div data-modal-footer-info data-modal-tone="success" role="status">
-            <span data-modal-footer-info-icon aria-hidden="true" />
-            <span data-modal-footer-info-text>{saveSuccessText}</span>
-          </div>
-        ) : null}
 
         <div data-modal-form-actions>
           <button type="button" data-modal-btn="secondary" onClick={handleClose} disabled={saving}>

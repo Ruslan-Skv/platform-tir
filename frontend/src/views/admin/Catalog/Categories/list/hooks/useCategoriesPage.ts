@@ -87,7 +87,7 @@ export function useCategoriesPage(options: UseCategoriesPageOptions = {}) {
 
   const handleCategoryCreated = useCallback(
     (_created: Category) => {
-      void fetchCategories();
+      void fetchCategories({ silent: true });
     },
     [fetchCategories]
   );
