@@ -25,8 +25,10 @@ export type MaxidoorsDetailData = {
   onOrder: boolean;
   manufacturer: string | null;
   coatingMaterial: string | null;
-  /** Sanitized HTML */
+  /** Sanitized HTML (характеристики + дополнительно) */
   description: string;
+  /** Только блок «Дополнительно» без списка характеристик */
+  extraDescription: string;
   charRows: Array<{ label: string; value: string }>;
   images: string[];
 };
@@ -279,6 +281,30 @@ function charsToHtml(rows: Array<{ label: string; value: string }>): string {
   return `<ul>\n${lis}\n</ul>`;
 }
 
+function normalizeCharLabel(label: string): string {
+  return label.replace(/:$/, '').trim().toLowerCase();
+}
+
+/**
+ * Собирает HTML описания. Характеристики из excludeLabels не попадают в список
+ * (они уже записаны в отдельные поля карточки).
+ */
+export function buildMaxidoorsProductDescription(
+  charRows: Array<{ label: string; value: string }>,
+  extraDescription: string,
+  excludeLabels: string[] = [],
+): string {
+  const excluded = new Set(excludeLabels.map(normalizeCharLabel).filter(Boolean));
+  const remaining = charRows.filter((r) => !excluded.has(normalizeCharLabel(r.label)));
+  const charsHtml = charsToHtml(remaining);
+  let description = '';
+  if (charsHtml) description += `<p><strong>Описание</strong></p>\n${charsHtml}\n`;
+  if (extraDescription.trim()) {
+    description += `<p><strong>Дополнительно</strong></p>\n${extraDescription.trim()}`;
+  }
+  return description.trim();
+}
+
 export function parseDetailHtml(html: string): MaxidoorsDetailData {
   const $ = cheerio.load(html);
   const title = $('h1').first().text().replace(/\s+/g, ' ').trim();
@@ -309,23 +335,17 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
 
   const extraHtml = $('.item-descr-3 .text').first().html() || '';
   const extraText = $('.item-descr-3 .text').first().text().replace(/\s+/g, ' ').trim();
-  const charsHtml = charsToHtml(charRows);
-  let description = '';
-  if (charsHtml) description += `<p><strong>Описание</strong></p>\n${charsHtml}\n`;
+  let extraDescription = '';
   if (extraHtml.trim()) {
-    const sanitizedExtra = stripMaxidoorsBoilerplateHtml(
+    extraDescription = stripMaxidoorsBoilerplateHtml(
       normalizeMaxidoorsDescriptionFlow(sanitizeSupplierDescriptionHtml(extraHtml)),
     );
-    if (sanitizedExtra) {
-      description += `<p><strong>Дополнительно</strong></p>\n${sanitizedExtra}`;
-    }
   } else if (extraText) {
     const cleanedText = stripMaxidoorsBoilerplateText(extraText);
-    if (cleanedText) {
-      description += `<p><strong>Дополнительно</strong></p>\n<p>${escapeHtmlText(cleanedText)}</p>`;
-    }
+    if (cleanedText) extraDescription = `<p>${escapeHtmlText(cleanedText)}</p>`;
   }
-  description = description.trim();
+
+  const description = buildMaxidoorsProductDescription(charRows, extraDescription);
 
   const images: string[] = [];
   const pushImg = (raw: string | undefined | null) => {
@@ -369,6 +389,7 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
     manufacturer,
     coatingMaterial,
     description,
+    extraDescription,
     charRows,
     images: images.slice(0, 12),
   };

@@ -11,6 +11,7 @@ import {
   type MaxidoorsCatalogKey,
 } from './maxidoors-catalogs';
 import {
+  buildMaxidoorsProductDescription,
   buildSeoFields,
   downloadMaxidoorsImagesToUploads,
   extractColorFromName,
@@ -419,6 +420,7 @@ export class MaxidoorsImportService {
     const attributes: Array<{ name: string; value: string; slug: string }> = [];
     let manufacturerId: string | null = null;
     let coatingMaterialId: string | null = null;
+    const mappedCharLabels: string[] = [];
 
     for (const slot of opts.attrSlots) {
       const { rule, slug, isFk } = slot;
@@ -433,6 +435,7 @@ export class MaxidoorsImportService {
 
       if (rule.kind === 'manufacturer') {
         const value = detail.manufacturer || findCharValue(detail.charRows, 'Производитель');
+        if (value) mappedCharLabels.push('Производитель');
         if (isFk) {
           manufacturerId = await this.resolveManufacturerId(value);
         } else if (value) {
@@ -444,6 +447,7 @@ export class MaxidoorsImportService {
       if (rule.kind === 'coatingMaterial') {
         const label = rule.charLabel || 'Материал покрытия';
         const value = detail.coatingMaterial || findCharValue(detail.charRows, label);
+        if (value) mappedCharLabels.push(label);
         if (isFk) {
           coatingMaterialId = await this.resolveCoatingMaterialId(value);
         } else if (value) {
@@ -455,10 +459,18 @@ export class MaxidoorsImportService {
       if (rule.kind === 'json') {
         const value = findCharValue(detail.charRows, rule.charLabel);
         if (value) {
+          mappedCharLabels.push(rule.charLabel);
           attributes.push({ name: rule.name, value, slug });
         }
       }
     }
+
+    const description =
+      buildMaxidoorsProductDescription(
+        detail.charRows,
+        detail.extraDescription || '',
+        mappedCharLabels,
+      ) || null;
 
     const seo = buildSeoFields(name, opts.categoryName, opts.catalog.seoExtraKeywords);
     const slugBase =
@@ -471,7 +483,7 @@ export class MaxidoorsImportService {
       data: {
         name,
         slug: productSlug,
-        description: detail.description || null,
+        description,
         shortDescription: seo.shortDescription,
         seoTitle: seo.seoTitle,
         seoDescription: seo.seoDescription,
