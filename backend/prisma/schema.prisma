@@ -1767,6 +1767,8 @@ model ProductSupplier {
   supplierPriceSyncError     String? // Текст ошибки при последней попытке получить цену
   supplierPriceSyncErrorCode String? // Код ошибки (PRODUCT_NOT_FOUND, TIMEOUT, …)
   supplierPriceSyncErrorAt   DateTime? // Когда зафиксирована ошибка
+  supplierCatalogNewAt       DateTime? // Пометка: добавлен последним импортом каталога поставщика
+  supplierCatalogMissingAt   DateTime? // Пометка: нет в разделе поставщика при последнем импорте
   isMainSupplier             Boolean   @default(false)
   lastSyncAt                 DateTime?
   createdAt                  DateTime  @default(now())

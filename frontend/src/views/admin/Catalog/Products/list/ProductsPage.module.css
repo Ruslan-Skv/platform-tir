@@ -378,6 +378,14 @@
   flex-direction: column;
 }
 
+.productNameRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  max-width: 320px;
+  min-width: 0;
+}
+
 .productName {
   font-weight: 500;
   color: var(--admin-text-secondary);
@@ -418,6 +426,40 @@
   font-size: var(--admin-font-size-sm);
   font-weight: 700;
   line-height: var(--admin-line-height-flat);
+}
+
+.supplierCatalogNewBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: var(--admin-space-0) var(--admin-space-xs);
+  background: var(--admin-success, #16a34a);
+  color: var(--admin-surface);
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  line-height: var(--admin-line-height-flat);
+  cursor: help;
+}
+
+.supplierCatalogMissingBadge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 18px;
+  height: 18px;
+  padding: var(--admin-space-0) var(--admin-space-xs);
+  background: var(--admin-error-text-strong, #dc2626);
+  color: var(--admin-surface);
+  border-radius: var(--admin-radius-full);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  line-height: var(--admin-line-height-flat);
+  cursor: help;
 }
 
 .supplierPriceErrorBadge {
@@ -1490,6 +1532,24 @@
   padding-left: 1.25rem;
   max-height: 10rem;
   overflow-y: auto;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.maxidoorsImportReport {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.maxidoorsImportReportTitle {
+  margin: 0;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.maxidoorsImportReportHint {
+  margin: 0;
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
 }

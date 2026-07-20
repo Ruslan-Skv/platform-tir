@@ -8,6 +8,7 @@ export const MAXIDOORS_BASE = 'https://maxi-doors.ru';
 /** @deprecated use catalog config listPath */
 export const MAXIDOORS_HANDLES_LIST_PATH = '/product-category/furnitura/ruchki/';
 export const MAXIDOORS_CYLINDERS_LIST_PATH = '/product-category/furnitura/cilindri/';
+export const MAXIDOORS_THUMBTURNS_LIST_PATH = '/product-category/furnitura/zavertki/';
 
 export type MaxidoorsListingItem = {
   productKey: string;
@@ -39,15 +40,21 @@ export type MaxidoorsHandlesListingItem = MaxidoorsListingItem;
 export type MaxidoorsHandlesDetailData = MaxidoorsDetailData;
 
 const COLOR_PHRASES = [
+  'матовый никель/хром',
+  'графит/хром',
+  'зеленая бронза',
+  'валлийские золото',
   'черный/графит',
   'белый/хром',
   'мат. никель',
   'мат.никель',
   'матовый никель',
+  'мат.хром',
   'чёрный никель',
   'черный никель',
   'сатин хром',
   'матовый хром',
+  'хром матовый',
   'белый',
   'черный',
   'чёрный',
@@ -59,7 +66,6 @@ const COLOR_PHRASES = [
   'никель',
   'сатин',
   'антрацит',
-  'хром матовый',
   'латунь',
   'кофе',
   'венге',

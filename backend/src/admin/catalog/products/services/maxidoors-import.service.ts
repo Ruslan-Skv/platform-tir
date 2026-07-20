@@ -6,6 +6,7 @@ import { PrismaService } from '../../../../database/prisma.service';
 import {
   getMaxidoorsCatalog,
   listMaxidoorsCatalogKeys,
+  maxidoorsCatalogCategoryNames,
   type MaxidoorsAttrRule,
   type MaxidoorsCatalogConfig,
   type MaxidoorsCatalogKey,
@@ -26,6 +27,13 @@ import {
 
 export type MaxidoorsImportJobStatus = 'pending' | 'running' | 'done' | 'error';
 
+export type MaxidoorsImportItemRef = {
+  name: string;
+  url: string;
+  productId?: string;
+  supplierSku?: string | null;
+};
+
 export type MaxidoorsImportJob = {
   id: string;
   catalog: MaxidoorsCatalogKey;
@@ -37,6 +45,10 @@ export type MaxidoorsImportJob = {
   created: number;
   skipped: number;
   errors: string[];
+  /** Новые товары, созданные в этом запуске */
+  createdItems: MaxidoorsImportItemRef[];
+  /** Ранее импортированные, которых больше нет в листинге поставщика */
+  missingItems: MaxidoorsImportItemRef[];
   startedAt: string;
   finishedAt?: string;
   message?: string;
@@ -56,6 +68,10 @@ type ResolvedAttrSlot = {
   slug: string;
   isFk: boolean;
 };
+
+function normalizeSupplierProductUrl(url: string): string {
+  return url.trim().split('#')[0].replace(/\/?$/, '/').toLowerCase();
+}
 
 @Injectable()
 export class MaxidoorsImportService {
@@ -97,6 +113,8 @@ export class MaxidoorsImportService {
       created: 0,
       skipped: 0,
       errors: [],
+      createdItems: [],
+      missingItems: [],
       startedAt: new Date().toISOString(),
     };
     this.jobs.set(jobId, job);
@@ -158,11 +176,25 @@ export class MaxidoorsImportService {
     const attrSlots = await this.ensureAttrSlots(category.id, catalog.attrRules);
     const categoryName = category.name;
 
-    let listings = await scrapeAllListings(catalog.listPath, opts.delayMs, (url, count) => {
+    // Сбрасываем «новые» пометки прошлого прогона в этой категории у Максидорс.
+    await this.prisma.productSupplier.updateMany({
+      where: {
+        supplierId,
+        product: { categoryId: category.id },
+        supplierCatalogNewAt: { not: null },
+      },
+      data: { supplierCatalogNewAt: null },
+    });
+
+    // Полный листинг раздела — и для импорта, и для поиска пропавших.
+    const allListings = await scrapeAllListings(catalog.listPath, opts.delayMs, (url, count) => {
       this.logger.log(`[${catalog.key}] Listing: ${url} → ${count}`);
     });
+    const listingUrlSet = new Set(allListings.map((item) => normalizeSupplierProductUrl(item.url)));
+
+    let listings = allListings;
     if (opts.limit && opts.limit > 0) {
-      listings = listings.slice(0, opts.limit);
+      listings = allListings.slice(0, opts.limit);
     }
     job.total = listings.length;
 
@@ -177,8 +209,12 @@ export class MaxidoorsImportService {
           skipExisting: opts.skipExisting,
           attrSlots,
         });
-        if (result === 'created') job.created += 1;
-        else job.skipped += 1;
+        if (result.status === 'created') {
+          job.created += 1;
+          if (result.item) job.createdItems.push(result.item);
+        } else {
+          job.skipped += 1;
+        }
       } catch (e) {
         const msg = `${listing.productKey}: ${e instanceof Error ? e.message : String(e)}`;
         job.errors.push(msg);
@@ -188,9 +224,84 @@ export class MaxidoorsImportService {
       }
     }
 
+    job.missingItems = await this.findMissingSupplierProducts({
+      categoryId: category.id,
+      supplierId,
+      listingUrlSet,
+    });
+
+    await this.syncCatalogMissingFlags({
+      categoryId: category.id,
+      supplierId,
+      missingProductIds: job.missingItems
+        .map((item) => item.productId)
+        .filter((id): id is string => Boolean(id)),
+    });
+
     job.status = 'done';
     job.finishedAt = new Date().toISOString();
-    job.message = `Создано ${job.created}, пропущено ${job.skipped}, ошибок ${job.errors.length}`;
+    job.message = `Создано ${job.created}, пропущено ${job.skipped}, отсутствует у поставщика ${job.missingItems.length}, ошибок ${job.errors.length}`;
+  }
+
+  private async syncCatalogMissingFlags(opts: {
+    categoryId: string;
+    supplierId: string;
+    missingProductIds: string[];
+  }) {
+    const missingIds = opts.missingProductIds;
+    await this.prisma.productSupplier.updateMany({
+      where: {
+        supplierId: opts.supplierId,
+        product: { categoryId: opts.categoryId },
+        supplierCatalogMissingAt: { not: null },
+        ...(missingIds.length > 0 ? { productId: { notIn: missingIds } } : {}),
+      },
+      data: { supplierCatalogMissingAt: null },
+    });
+
+    if (missingIds.length === 0) return;
+
+    await this.prisma.productSupplier.updateMany({
+      where: {
+        supplierId: opts.supplierId,
+        productId: { in: missingIds },
+      },
+      data: { supplierCatalogMissingAt: new Date() },
+    });
+  }
+
+  private async findMissingSupplierProducts(opts: {
+    categoryId: string;
+    supplierId: string;
+    listingUrlSet: Set<string>;
+  }): Promise<MaxidoorsImportItemRef[]> {
+    const links = await this.prisma.productSupplier.findMany({
+      where: {
+        supplierId: opts.supplierId,
+        product: { categoryId: opts.categoryId },
+        supplierProductUrl: { contains: 'maxi-doors.ru', mode: 'insensitive' },
+      },
+      select: {
+        supplierProductUrl: true,
+        supplierSku: true,
+        product: { select: { id: true, name: true } },
+      },
+    });
+
+    const missing: MaxidoorsImportItemRef[] = [];
+    for (const link of links) {
+      const url = (link.supplierProductUrl || '').trim();
+      if (!url) continue;
+      if (opts.listingUrlSet.has(normalizeSupplierProductUrl(url))) continue;
+      missing.push({
+        name: link.product.name,
+        url,
+        productId: link.product.id,
+        supplierSku: link.supplierSku,
+      });
+    }
+    missing.sort((a, b) => a.name.localeCompare(b.name, 'ru'));
+    return missing;
   }
 
   private async resolveCategory(
@@ -210,10 +321,12 @@ export class MaxidoorsImportService {
       if (byDefault) return { id: byDefault.id, name: byDefault.name };
     }
 
-    const byName = await this.prisma.category.findFirst({
-      where: { name: { equals: catalog.categoryName, mode: 'insensitive' } },
-    });
-    if (byName) return { id: byName.id, name: byName.name };
+    for (const name of maxidoorsCatalogCategoryNames(catalog)) {
+      const byName = await this.prisma.category.findFirst({
+        where: { name: { equals: name, mode: 'insensitive' } },
+      });
+      if (byName) return { id: byName.id, name: byName.name };
+    }
 
     throw new BadRequestException(
       `Категория «${catalog.categoryName}» не найдена. Создайте её или передайте categoryId.`,
@@ -386,12 +499,27 @@ export class MaxidoorsImportService {
       skipExisting: boolean;
       attrSlots: ResolvedAttrSlot[];
     },
-  ): Promise<'created' | 'skipped'> {
+  ): Promise<{ status: 'created' | 'skipped'; item?: MaxidoorsImportItemRef }> {
     if (opts.skipExisting) {
       const existingLink = await this.prisma.productSupplier.findFirst({
-        where: { supplierProductUrl: listing.url },
+        where: {
+          OR: [
+            { supplierProductUrl: listing.url },
+            { supplierProductUrl: listing.url.replace(/\/$/, '') },
+            { supplierProductUrl: `${listing.url.replace(/\/$/, '')}/` },
+          ],
+        },
       });
-      if (existingLink) return 'skipped';
+      if (existingLink) {
+        // Товар снова есть у поставщика — снимаем пометку «отсутствует».
+        if (existingLink.supplierCatalogMissingAt) {
+          await this.prisma.productSupplier.update({
+            where: { id: existingLink.id },
+            data: { supplierCatalogMissingAt: null },
+          });
+        }
+        return { status: 'skipped' };
+      }
     }
 
     const detail = await fetchDetail(listing.url, opts.delayMs);
@@ -513,10 +641,20 @@ export class MaxidoorsImportService {
         supplierProductUrl: listing.url,
         isMainSupplier: true,
         supplierStock: stock,
+        supplierCatalogNewAt: new Date(),
+        supplierCatalogMissingAt: null,
       },
     });
 
-    return 'created';
+    return {
+      status: 'created',
+      item: {
+        name,
+        url: listing.url,
+        productId: product.id,
+        supplierSku: supplierSku || null,
+      },
+    };
   }
 
   private generateSkuCandidate(): string {

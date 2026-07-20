@@ -272,7 +272,33 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
             )}
           </div>
           <div className={styles.productInfo}>
-            <span className={styles.productName}>{product.name}</span>
+            <span className={styles.productNameRow}>
+              <span className={styles.productName}>{product.name}</span>
+              {(() => {
+                const mainSupplier = product.suppliers?.find((s) => s.isMainSupplier);
+                if (!mainSupplier) return null;
+                return (
+                  <>
+                    {mainSupplier.supplierCatalogNewAt ? (
+                      <span
+                        className={styles.supplierCatalogNewBadge}
+                        title="Новый товар: добавлен импортом с сайта поставщика"
+                      >
+                        +
+                      </span>
+                    ) : null}
+                    {mainSupplier.supplierCatalogMissingAt ? (
+                      <span
+                        className={styles.supplierCatalogMissingBadge}
+                        title="Товар больше не найден в разделе у поставщика"
+                      >
+                        −
+                      </span>
+                    ) : null}
+                  </>
+                );
+              })()}
+            </span>
             <span className={styles.productSku}>{product.sku}</span>
           </div>
         </div>
@@ -1442,7 +1468,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         isOpen={Boolean(maxidoorsJob)}
         onClose={closeMaxidoorsProgress}
         title={`Импорт Максидорс${maxidoorsCatalog ? `: ${maxidoorsCatalog.label}` : ''}`}
-        size="sm"
+        size="md"
         showCloseButton={
           maxidoorsJob?.status === 'done' || maxidoorsJob?.status === 'error' || !maxidoorsJob
         }
@@ -1463,11 +1489,55 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
               Прогресс: {maxidoorsJob.done} / {maxidoorsJob.total || '…'}
             </p>
             <p>
-              Создано: {maxidoorsJob.created}, пропущено: {maxidoorsJob.skipped}, ошибок:{' '}
+              Создано: {maxidoorsJob.created}, пропущено: {maxidoorsJob.skipped}, отсутствует у
+              поставщика: {maxidoorsJob.missingItems?.length ?? 0}, ошибок:{' '}
               {maxidoorsJob.errors.length}
             </p>
             {maxidoorsJob.message ? <p>{maxidoorsJob.message}</p> : null}
             {maxidoorsError ? <p className={styles.stroykomImportError}>{maxidoorsError}</p> : null}
+
+            {(maxidoorsJob.createdItems?.length ?? 0) > 0 ? (
+              <div className={styles.maxidoorsImportReport}>
+                <p className={styles.maxidoorsImportReportTitle}>
+                  Новые товары ({maxidoorsJob.createdItems!.length})
+                </p>
+                <ul className={styles.stroykomImportErrors}>
+                  {maxidoorsJob.createdItems!.slice(0, 30).map((item) => (
+                    <li key={item.url || item.productId || item.name}>
+                      {item.name}
+                      {item.supplierSku ? ` · арт. ${item.supplierSku}` : ''}
+                    </li>
+                  ))}
+                  {maxidoorsJob.createdItems!.length > 30 ? (
+                    <li>…и ещё {maxidoorsJob.createdItems!.length - 30}</li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
+
+            {(maxidoorsJob.missingItems?.length ?? 0) > 0 ? (
+              <div className={styles.maxidoorsImportReport}>
+                <p className={styles.maxidoorsImportReportTitle}>
+                  Нет у поставщика ({maxidoorsJob.missingItems!.length})
+                </p>
+                <p className={styles.maxidoorsImportReportHint}>
+                  Ранее импортированы, но сейчас отсутствуют в разделе на maxi-doors.ru. Не
+                  удаляются автоматически — проверьте вручную.
+                </p>
+                <ul className={styles.stroykomImportErrors}>
+                  {maxidoorsJob.missingItems!.slice(0, 30).map((item) => (
+                    <li key={item.productId || item.url || item.name}>
+                      {item.name}
+                      {item.supplierSku ? ` · арт. ${item.supplierSku}` : ''}
+                    </li>
+                  ))}
+                  {maxidoorsJob.missingItems!.length > 30 ? (
+                    <li>…и ещё {maxidoorsJob.missingItems!.length - 30}</li>
+                  ) : null}
+                </ul>
+              </div>
+            ) : null}
+
             {maxidoorsJob.errors.length > 0 ? (
               <ul className={styles.stroykomImportErrors}>
                 {maxidoorsJob.errors.slice(0, 8).map((err) => (

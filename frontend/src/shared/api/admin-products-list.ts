@@ -33,6 +33,8 @@ export interface AdminProductListItem {
     supplierPriceSyncError?: string | null;
     supplierPriceSyncErrorCode?: string | null;
     supplierPriceSyncErrorAt?: string | null;
+    supplierCatalogNewAt?: string | null;
+    supplierCatalogMissingAt?: string | null;
     supplier: {
       id: string;
       legalName: string;

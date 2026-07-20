@@ -1,6 +1,10 @@
-import { MAXIDOORS_CYLINDERS_LIST_PATH, MAXIDOORS_HANDLES_LIST_PATH } from './maxidoors-scrape';
+import {
+  MAXIDOORS_CYLINDERS_LIST_PATH,
+  MAXIDOORS_HANDLES_LIST_PATH,
+  MAXIDOORS_THUMBTURNS_LIST_PATH,
+} from './maxidoors-scrape';
 
-export type MaxidoorsCatalogKey = 'handles' | 'cylinders';
+export type MaxidoorsCatalogKey = 'handles' | 'cylinders' | 'thumbturns';
 
 /**
  * Правило маппинга характеристики MaxiDoors → поле нашей карточки.
@@ -40,6 +44,8 @@ export type MaxidoorsCatalogConfig = {
   defaultCategoryId?: string;
   /** Точное имя категории в нашей админке (для резолва и показа кнопки) */
   categoryName: string;
+  /** Доп. имена категории (локальные варианты вроде «… (м)») */
+  categoryNameAliases?: string[];
   slugPrefix: string;
   imageFilePrefix: string;
   seoExtraKeywords: string[];
@@ -69,7 +75,6 @@ export const MAXIDOORS_CATALOGS: Record<MaxidoorsCatalogKey, MaxidoorsCatalogCon
     key: 'cylinders',
     label: 'Цилиндры',
     listPath: MAXIDOORS_CYLINDERS_LIST_PATH,
-    // ID на проде может отличаться — резолв по имени «Цилиндры (м)»
     categoryName: 'Цилиндры (м)',
     slugPrefix: 'cilindr-m',
     imageFilePrefix: 'md-c',
@@ -128,6 +133,21 @@ export const MAXIDOORS_CATALOGS: Record<MaxidoorsCatalogKey, MaxidoorsCatalogCon
       { kind: 'manufacturer' },
     ],
   },
+  thumbturns: {
+    key: 'thumbturns',
+    label: 'Завертки',
+    listPath: MAXIDOORS_THUMBTURNS_LIST_PATH,
+    categoryName: 'Завертки',
+    categoryNameAliases: ['Завертки (м)'],
+    slugPrefix: 'zavertka-m',
+    imageFilePrefix: 'md-z',
+    seoExtraKeywords: ['завертка', 'сантехническая завертка'],
+    attrRules: [
+      { kind: 'colorFromName', name: 'Цвет', slug: 'tsvet', order: 10 },
+      { kind: 'manufacturer' },
+      { kind: 'coatingMaterial', charLabel: 'Материал покрытия' },
+    ],
+  },
 };
 
 export function getMaxidoorsCatalog(key: string): MaxidoorsCatalogConfig {
@@ -142,4 +162,8 @@ export function getMaxidoorsCatalog(key: string): MaxidoorsCatalogConfig {
 
 export function listMaxidoorsCatalogKeys(): MaxidoorsCatalogKey[] {
   return Object.keys(MAXIDOORS_CATALOGS) as MaxidoorsCatalogKey[];
+}
+
+export function maxidoorsCatalogCategoryNames(catalog: MaxidoorsCatalogConfig): string[] {
+  return [catalog.categoryName, ...(catalog.categoryNameAliases ?? [])];
 }

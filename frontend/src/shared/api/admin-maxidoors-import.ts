@@ -2,12 +2,13 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-export type MaxidoorsCatalogKey = 'handles' | 'cylinders';
+export type MaxidoorsCatalogKey = 'handles' | 'cylinders' | 'thumbturns';
 
 export type MaxidoorsCatalogUi = {
   key: MaxidoorsCatalogKey;
   label: string;
-  categoryName: string;
+  /** Имена категорий (lower-case), в которых показывать кнопку импорта */
+  categoryNames: string[];
   /** Прод-ID, если известен (локально может отличаться — матчим ещё и по имени) */
   categoryId?: string;
   confirmMessage: string;
@@ -18,22 +19,37 @@ export const MAXIDOORS_CATALOG_UI: MaxidoorsCatalogUi[] = [
   {
     key: 'handles',
     label: 'Ручки межкомнатные',
-    categoryName: 'ручки (м)',
+    categoryNames: ['ручки (м)'],
     categoryId: 'cmrq8cmcb00im11w2bxnf0m6i',
     confirmMessage:
-      'Будут созданы товары из раздела «Ручки межкомнатные» на maxi-doors.ru в категорию «Ручки (м)»: название, цена, артикул и ссылка поставщика, описание, фото, цвет из названия, производитель, материал покрытия, SEO. Наличие — остаток 100; под заказ — остаток 0. Уже импортированные (по ссылке на карточку) будут пропущены.',
+      'Будут созданы товары из раздела «Ручки межкомнатные» на maxi-doors.ru в категорию «Ручки (м)». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
   },
   {
     key: 'cylinders',
     label: 'Цилиндры',
-    categoryName: 'цилиндры (м)',
+    categoryNames: ['цилиндры (м)'],
     confirmMessage:
-      'Будут созданы товары из раздела «Цилиндры» на maxi-doors.ru (~105 шт.) в категорию «Цилиндры (м)»: название, цена, артикул и ссылка поставщика, описание, фото, характеристики (секретность, пины, ключи, размер, материал, класс защиты, механизм постоянного ключа), производитель, SEO. Наличие — остаток 100; под заказ — остаток 0. Уже импортированные будут пропущены.',
+      'Будут созданы товары из раздела «Цилиндры» на maxi-doors.ru (~105 шт.) в категорию «Цилиндры (м)». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
+  },
+  {
+    key: 'thumbturns',
+    label: 'Завертки',
+    categoryNames: ['завертки', 'завертки (м)'],
+    categoryId: 'cmrsug79w0009zm5mrrri3wr5',
+    confirmMessage:
+      'Будут созданы товары из раздела «Завертки» на maxi-doors.ru (~71 шт.) в категорию «Завертки». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
   },
 ];
 
 /** @deprecated use MAXIDOORS_CATALOG_UI / resolveMaxidoorsCatalogForCategory */
 export const MAXIDOORS_HANDLES_CATEGORY_ID = 'cmrq8cmcb00im11w2bxnf0m6i';
+
+export type MaxidoorsImportItemRef = {
+  name: string;
+  url: string;
+  productId?: string;
+  supplierSku?: string | null;
+};
 
 export type MaxidoorsImportJob = {
   id: string;
@@ -46,6 +62,8 @@ export type MaxidoorsImportJob = {
   created: number;
   skipped: number;
   errors: string[];
+  createdItems?: MaxidoorsImportItemRef[];
+  missingItems?: MaxidoorsImportItemRef[];
   startedAt: string;
   finishedAt?: string;
   message?: string;
@@ -61,7 +79,7 @@ export function resolveMaxidoorsCatalogForCategory(
   const name = categoryName?.trim().toLowerCase() || '';
   for (const catalog of MAXIDOORS_CATALOG_UI) {
     if (catalog.categoryId && categoryId && catalog.categoryId === categoryId) return catalog;
-    if (name && name === catalog.categoryName) return catalog;
+    if (name && catalog.categoryNames.includes(name)) return catalog;
   }
   return null;
 }
