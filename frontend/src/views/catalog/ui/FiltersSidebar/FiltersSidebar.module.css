@@ -272,6 +272,15 @@
   gap: 0.5rem;
 }
 
+/* Длинные фасеты (цвет и т.п.): не растягиваем страницу — скролл внутри блока. */
+.optionsScrollable {
+  max-height: 16.5rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 0.15rem;
+  scrollbar-gutter: stable;
+}
+
 .option {
   align-items: center;
   cursor: pointer;

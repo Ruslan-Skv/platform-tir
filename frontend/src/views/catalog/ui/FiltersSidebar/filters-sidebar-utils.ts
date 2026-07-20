@@ -1,5 +1,18 @@
 export const FILTERS_PRICE_STEP = 100;
 
+/** При большем числе значений список опций в сайдбаре ограничивается по высоте и скроллится. */
+export const FILTER_OPTIONS_SCROLL_THRESHOLD = 30;
+
+export function filterOptionsListClassName(
+  baseClass: string,
+  scrollableClass: string,
+  optionsCount: number
+): string {
+  return optionsCount > FILTER_OPTIONS_SCROLL_THRESHOLD
+    ? `${baseClass} ${scrollableClass}`
+    : baseClass;
+}
+
 export function formatFilterOptionLabel(label: string, count: number | undefined): string {
   if (count === undefined || !Number.isFinite(count)) return label;
   return `${label} (${count.toLocaleString('ru-RU')})`;

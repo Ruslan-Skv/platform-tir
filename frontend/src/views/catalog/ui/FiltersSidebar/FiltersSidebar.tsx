@@ -20,6 +20,7 @@ import {
   FILTERS_PRICE_STEP,
   clampCatalogPriceRange,
   clearCatalogFilterKeys,
+  filterOptionsListClassName,
   formatFilterOptionLabel,
   formatPriceInput,
   normalizePriceInput,
@@ -484,7 +485,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           isOpen={isSectionOpen(facet.id)}
           onToggle={() => toggleSection(facet.id)}
         >
-          <div className={styles.options}>
+          <div
+            className={filterOptionsListClassName(
+              styles.options,
+              styles.optionsScrollable,
+              facet.options.length
+            )}
+          >
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
                 <input
@@ -513,7 +520,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           isOpen={isSectionOpen(facet.id)}
           onToggle={() => toggleSection(facet.id)}
         >
-          <div className={styles.options}>
+          <div
+            className={filterOptionsListClassName(
+              styles.options,
+              styles.optionsScrollable,
+              facet.options.length
+            )}
+          >
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
                 <input
@@ -540,7 +553,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
           isOpen={isSectionOpen(facet.id)}
           onToggle={() => toggleSection(facet.id)}
         >
-          <div className={styles.options}>
+          <div
+            className={filterOptionsListClassName(
+              styles.options,
+              styles.optionsScrollable,
+              facet.options.length
+            )}
+          >
             {facet.options.map((opt) => (
               <label key={opt.value} className={styles.option}>
                 <input
@@ -802,7 +821,13 @@ export const FiltersSidebar: React.FC<FiltersSidebarProps> = ({
                 </button>
               </div>
             ) : null}
-            <div className={styles.options}>
+            <div
+              className={filterOptionsListClassName(
+                styles.options,
+                styles.optionsScrollable,
+                categoryOptions.length
+              )}
+            >
               {parentCategoryRadioMode ? (
                 <label className={`${styles.option} ${styles.categoryOptionParentLabel}`}>
                   <input

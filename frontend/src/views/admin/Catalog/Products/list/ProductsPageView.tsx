@@ -14,6 +14,7 @@ import { DataTable } from '@/shared/ui/admin/DataTable';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { EditIcon } from '@/shared/ui/icons/EditIcon';
 
+import { MaxidoorsImportConfirmModal, MaxidoorsImportProgressModal } from './MaxidoorsImportModals';
 import styles from './ProductsPage.module.css';
 import type { ProductsPageModel } from './hooks/useProductsPage';
 import {
@@ -1443,19 +1444,11 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         ) : null}
       </Modal>
 
-      <ConfirmModal
-        isOpen={maxidoorsConfirmOpen}
-        title="Импорт с сайта Максидорс?"
-        message={
-          maxidoorsError
-            ? maxidoorsError
-            : maxidoorsCatalog?.confirmMessage ||
-              'Будут созданы товары с сайта maxi-doors.ru. Уже импортированные (по ссылке на карточку) будут пропущены.'
-        }
-        confirmText={maxidoorsStarting ? 'Запуск…' : 'Начать импорт'}
-        cancelText="Отмена"
-        variant="default"
-        closeOnConfirm={false}
+      <MaxidoorsImportConfirmModal
+        open={maxidoorsConfirmOpen}
+        catalog={maxidoorsCatalog}
+        starting={maxidoorsStarting}
+        error={maxidoorsError}
         onConfirm={() => {
           if (!maxidoorsStarting) void startMaxidoorsCatalogImport();
         }}
@@ -1464,102 +1457,12 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         }}
       />
 
-      <Modal
-        isOpen={Boolean(maxidoorsJob)}
+      <MaxidoorsImportProgressModal
+        job={maxidoorsJob}
+        catalogLabel={maxidoorsCatalog?.label}
+        error={maxidoorsError}
         onClose={closeMaxidoorsProgress}
-        title={`Импорт Максидорс${maxidoorsCatalog ? `: ${maxidoorsCatalog.label}` : ''}`}
-        size="md"
-        showCloseButton={
-          maxidoorsJob?.status === 'done' || maxidoorsJob?.status === 'error' || !maxidoorsJob
-        }
-      >
-        {maxidoorsJob ? (
-          <div className={styles.stroykomImportProgress}>
-            <p>
-              Статус:{' '}
-              {maxidoorsJob.status === 'pending'
-                ? 'ожидание'
-                : maxidoorsJob.status === 'running'
-                  ? 'выполняется'
-                  : maxidoorsJob.status === 'done'
-                    ? 'готово'
-                    : 'ошибка'}
-            </p>
-            <p>
-              Прогресс: {maxidoorsJob.done} / {maxidoorsJob.total || '…'}
-            </p>
-            <p>
-              Создано: {maxidoorsJob.created}, пропущено: {maxidoorsJob.skipped}, отсутствует у
-              поставщика: {maxidoorsJob.missingItems?.length ?? 0}, ошибок:{' '}
-              {maxidoorsJob.errors.length}
-            </p>
-            {maxidoorsJob.message ? <p>{maxidoorsJob.message}</p> : null}
-            {maxidoorsError ? <p className={styles.stroykomImportError}>{maxidoorsError}</p> : null}
-
-            {(maxidoorsJob.createdItems?.length ?? 0) > 0 ? (
-              <div className={styles.maxidoorsImportReport}>
-                <p className={styles.maxidoorsImportReportTitle}>
-                  Новые товары ({maxidoorsJob.createdItems!.length})
-                </p>
-                <ul className={styles.stroykomImportErrors}>
-                  {maxidoorsJob.createdItems!.slice(0, 30).map((item) => (
-                    <li key={item.url || item.productId || item.name}>
-                      {item.name}
-                      {item.supplierSku ? ` · арт. ${item.supplierSku}` : ''}
-                    </li>
-                  ))}
-                  {maxidoorsJob.createdItems!.length > 30 ? (
-                    <li>…и ещё {maxidoorsJob.createdItems!.length - 30}</li>
-                  ) : null}
-                </ul>
-              </div>
-            ) : null}
-
-            {(maxidoorsJob.missingItems?.length ?? 0) > 0 ? (
-              <div className={styles.maxidoorsImportReport}>
-                <p className={styles.maxidoorsImportReportTitle}>
-                  Нет у поставщика ({maxidoorsJob.missingItems!.length})
-                </p>
-                <p className={styles.maxidoorsImportReportHint}>
-                  Ранее импортированы, но сейчас отсутствуют в разделе на maxi-doors.ru. Не
-                  удаляются автоматически — проверьте вручную.
-                </p>
-                <ul className={styles.stroykomImportErrors}>
-                  {maxidoorsJob.missingItems!.slice(0, 30).map((item) => (
-                    <li key={item.productId || item.url || item.name}>
-                      {item.name}
-                      {item.supplierSku ? ` · арт. ${item.supplierSku}` : ''}
-                    </li>
-                  ))}
-                  {maxidoorsJob.missingItems!.length > 30 ? (
-                    <li>…и ещё {maxidoorsJob.missingItems!.length - 30}</li>
-                  ) : null}
-                </ul>
-              </div>
-            ) : null}
-
-            {maxidoorsJob.errors.length > 0 ? (
-              <ul className={styles.stroykomImportErrors}>
-                {maxidoorsJob.errors.slice(0, 8).map((err) => (
-                  <li key={err}>{err}</li>
-                ))}
-                {maxidoorsJob.errors.length > 8 ? (
-                  <li>…и ещё {maxidoorsJob.errors.length - 8}</li>
-                ) : null}
-              </ul>
-            ) : null}
-            {(maxidoorsJob.status === 'done' || maxidoorsJob.status === 'error') && (
-              <button
-                type="button"
-                className={styles.secondaryButton}
-                onClick={closeMaxidoorsProgress}
-              >
-                Закрыть
-              </button>
-            )}
-          </div>
-        ) : null}
-      </Modal>
+      />
     </div>
   );
 }
