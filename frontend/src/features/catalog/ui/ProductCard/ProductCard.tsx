@@ -11,6 +11,7 @@ import type { Product } from '@/entities/product';
 import { patchProductPricing } from '@/shared/api/admin-product-patch';
 import { isCompareLimitExceededError } from '@/shared/api/compare';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
+import { saveCatalogScrollPosition } from '@/shared/lib/catalog/catalog-scroll-restore';
 import { formatCatalogPriceWithRuble } from '@/shared/lib/catalog/format-catalog-price';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
 import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
@@ -37,13 +38,6 @@ interface ProductCardProps {
   showPartnerIconOnCards?: boolean; // Показывать иконку партнёра на карточках
   /** После PATCH цены с публичного сайта — обновить товар в сетке каталога */
   onProductCatalogPatched?: (data: CatalogApiProduct) => void;
-}
-
-function saveCatalogScrollPosition(): void {
-  if (typeof window === 'undefined') return;
-  if (!window.location.pathname.startsWith('/catalog/products')) return;
-  const urlKey = `${window.location.pathname}${window.location.search}`;
-  sessionStorage.setItem(`catalog_scroll:${urlKey}`, String(window.scrollY));
 }
 
 export const ProductCard: React.FC<ProductCardProps> = ({
@@ -300,11 +294,12 @@ export const ProductCard: React.FC<ProductCardProps> = ({
   return (
     <div
       className={`${styles.productCard} ${compact ? styles.productCardCompact : ''} ${isCompareMode ? styles.productCardCompare : ''}`}
+      data-catalog-product-slug={product.slug}
     >
       <Link
         href={`/product/${product.slug}`}
         className={styles.cardLink}
-        onClick={saveCatalogScrollPosition}
+        onClick={() => saveCatalogScrollPosition(product.slug)}
       >
         <div className={styles.nameBlock}>
           <h3 className={styles.name}>{displayName}</h3>

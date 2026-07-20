@@ -140,7 +140,7 @@ export const CatalogHubPreview: React.FC<CatalogHubPreviewProps> = ({
                   Смотреть все →
                 </Link>
               </div>
-              <div className={gridStyles.grid}>
+              <div className={gridStyles.grid} data-catalog-products-grid>
                 {products.map((product) => (
                   <ProductCard
                     key={product.originalId ?? product.id}

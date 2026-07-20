@@ -275,7 +275,7 @@ export const ProductsGrid: React.FC<ProductsGridProps> = ({
         </div>
       </div>
 
-      <div className={styles.grid}>
+      <div className={styles.grid} data-catalog-products-grid>
         {mappedProducts.map((product) => (
           <ProductCard
             key={product.originalId ?? product.id}

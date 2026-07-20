@@ -46,6 +46,9 @@ export function catalogProductsHref(...slugSegments: string[]): string {
 /** Прокрутка в начало страницы товара (мобильные часто сохраняют offset с каталога или смещаются после подгрузки контента). */
 export function scrollProductDetailToTop() {
   if (typeof window === 'undefined') return;
+  if ('scrollRestoration' in history) {
+    history.scrollRestoration = 'manual';
+  }
   window.scrollTo(0, 0);
   document.documentElement.scrollTop = 0;
   document.body.scrollTop = 0;

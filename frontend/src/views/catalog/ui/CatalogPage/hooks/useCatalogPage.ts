@@ -1,11 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
 import type { CatalogHubPreviewResponse } from '@/shared/api/catalog-hub-preview';
 import type { PublicCatalogPageResponse } from '@/shared/api/public-catalog-list';
+import {
+  readCatalogScrollRestore,
+  restoreCatalogScrollPosition,
+} from '@/shared/lib/catalog/catalog-scroll-restore';
 import type { CategoryFilterOption } from '@/views/catalog/lib/buildCategoryFilterOptions';
 import { parseCatalogSearchParams } from '@/views/catalog/lib/catalog-search-params';
 import { newURLSearchParamsLive } from '@/views/catalog/lib/newURLSearchParamsLive';
@@ -33,14 +37,6 @@ function readPageFromSearchParams(searchParams: URLSearchParams): number {
   return Number.isFinite(raw) && raw >= 1 ? raw : 1;
 }
 
-function readSavedScrollPosition(urlKey: string): number | null {
-  if (typeof window === 'undefined') return null;
-  const raw = sessionStorage.getItem(`catalog_scroll:${urlKey}`);
-  if (raw == null) return null;
-  const value = Number(raw);
-  return Number.isFinite(value) && value >= 0 ? value : null;
-}
-
 export function useCatalogPage({
   categorySlug,
   categoryName,
@@ -62,20 +58,17 @@ export function useCatalogPage({
   /** 0 — ещё не получили из сетки; нельзя начинать с 1, иначе при возврате с ?page=N эффект сразу «поджимает» URL к 1 */
   const [totalPages, setTotalPages] = useState(0);
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
-  const [didRestoreScroll, setDidRestoreScroll] = useState(false);
   const [priceBounds, setPriceBounds] = useState<{ min: number; max: number } | null>(null);
+  const [catalogGridReady, setCatalogGridReady] = useState(() =>
+    Boolean(initialPage?.products?.length && !(isCatalogHub && !searchParams.get('branch')?.trim()))
+  );
 
   const pageFromUrl = useMemo(() => readPageFromSearchParams(searchParams), [searchParams]);
   const searchFromUrl = searchParams.get('search') ?? '';
   const prevSearchFromUrlRef = useRef<string | null>(null);
 
   const facetBranchSlug = isCatalogHub ? searchParams.get('branch')?.trim() || null : null;
-
   const isHubPreviewMode = isCatalogHub && !facetBranchSlug;
-
-  const [, setCatalogGridReady] = useState(() =>
-    Boolean(initialPage?.products?.length && !(isCatalogHub && !searchParams.get('branch')?.trim()))
-  );
 
   const prevHubPreviewRef = useRef(isHubPreviewMode);
   useEffect(() => {
@@ -90,6 +83,7 @@ export function useCatalogPage({
       setPriceBounds(null);
     }
   }, [isHubPreviewMode]);
+
   const { options: hubCategoryOptions, loading: hubCategoriesLoading } = useCatalogHubCategories(
     isCatalogHub || isCategoryPage,
     initialHubCategories
@@ -216,26 +210,42 @@ export function useCatalogPage({
     }
   }, [searchFromUrl, pageFromUrl, replacePageInUrl]);
 
-  useEffect(() => {
-    setDidRestoreScroll(false);
+  useLayoutEffect(() => {
+    if (typeof history !== 'undefined' && 'scrollRestoration' in history) {
+      history.scrollRestoration = 'manual';
+    }
+    const saved = readCatalogScrollRestore(catalogUrlKey);
+    if (!saved) return;
+    // До paint: хотя бы Y, чтобы Back не мелькал с верха страницы.
+    window.scrollTo({ top: saved.y, behavior: 'auto' });
   }, [catalogUrlKey]);
 
   useEffect(() => {
-    if (didRestoreScroll) return;
-    if (totalPages <= 0) return;
-    const savedY = readSavedScrollPosition(catalogUrlKey);
-    if (savedY == null) {
-      setDidRestoreScroll(true);
-      return;
-    }
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        window.scrollTo({ top: savedY, behavior: 'auto' });
-        sessionStorage.removeItem(`catalog_scroll:${catalogUrlKey}`);
-        setDidRestoreScroll(true);
+    const saved = readCatalogScrollRestore(catalogUrlKey);
+    if (!saved) return;
+    if (!catalogGridReady) return;
+
+    let cancelled = false;
+    let settleCleanup: (() => void) | undefined;
+    let innerRaf = 0;
+    const outerRaf = requestAnimationFrame(() => {
+      innerRaf = requestAnimationFrame(() => {
+        if (cancelled) return;
+        // Якорь по карточке + удержание при CLS (картинки/колонки на проде).
+        settleCleanup = restoreCatalogScrollPosition({
+          urlKey: catalogUrlKey,
+          settleMs: 1000,
+        });
       });
     });
-  }, [catalogUrlKey, didRestoreScroll, totalPages]);
+
+    return () => {
+      cancelled = true;
+      cancelAnimationFrame(outerRaf);
+      if (innerRaf) cancelAnimationFrame(innerRaf);
+      settleCleanup?.();
+    };
+  }, [catalogUrlKey, catalogGridReady]);
 
   const handlePageChange = (page: number) => {
     replacePageInUrl(page, true);
