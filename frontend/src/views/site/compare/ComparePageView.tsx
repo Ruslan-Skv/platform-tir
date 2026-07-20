@@ -1,6 +1,6 @@
 'use client';
 
-import React, { Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import React, { Fragment, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -63,7 +63,7 @@ const SLOTS_DESKTOP = 4;
 
 export function ComparePageView() {
   const { count } = useCompare();
-  const { data: products = [], isLoading, isFetching, error, refetch } = useCompareProducts();
+  const { data: products = [], isLoading, error } = useCompareProducts();
   const [isMobile, setIsMobile] = useState(false);
   /** id товара в каждом слоте (устойчиво к удалению других позиций из списка). */
   const [slotProductId, setSlotProductId] = useState<string[]>([]);
@@ -89,20 +89,24 @@ export function ComparePageView() {
       setSlotProductId([]);
       return;
     }
-    setSlotProductId((prev) =>
-      Array.from({ length: slotCount }, (_, slot) => {
+    setSlotProductId((prev) => {
+      const used = new Set<string>();
+      return Array.from({ length: slotCount }, (_, slot) => {
         const oldId = prev[slot];
-        if (oldId && products.some((p) => p.id === oldId)) {
+        if (oldId && products.some((p) => p.id === oldId) && !used.has(oldId)) {
+          used.add(oldId);
           return oldId;
         }
-        return products[slot % products.length]!.id;
-      })
-    );
+        const nextUnused = products.find((p) => !used.has(p.id));
+        if (nextUnused) {
+          used.add(nextUnused.id);
+          return nextUnused.id;
+        }
+        // Свободных товаров нет — слот пустой (не дублируем)
+        return '';
+      });
+    });
   }, [productIdsKey, products, slotCount]);
-
-  const refreshCompareProducts = useCallback(() => {
-    void refetch();
-  }, [refetch]);
 
   useEffect(() => {
     const fetchPartnerSettings = async () => {
@@ -146,15 +150,13 @@ export function ComparePageView() {
 
   const getProductIndexForSlot = (slot: number): number => {
     const id = slotProductId[slot];
-    if (id) {
-      const idx = products.findIndex((p) => p.id === id);
-      if (idx >= 0) return idx;
-    }
-    return Math.min(slot, Math.max(0, products.length - 1));
+    if (!id) return -1;
+    return products.findIndex((p) => p.id === id);
   };
 
   const getMappedProductForSlot = (slot: number) => {
     const pi = getProductIndexForSlot(slot);
+    if (pi < 0) return null;
     return mappedProducts[pi] ?? null;
   };
 
@@ -162,18 +164,24 @@ export function ComparePageView() {
     if (products.length <= 1) return;
     setSlotProductId((prev) => {
       const next = [...prev];
+      const usedElsewhere = new Set(
+        next.map((id, i) => (i !== slot && id ? id : '')).filter((id): id is string => Boolean(id))
+      );
+      const pool = products.filter((p) => !usedElsewhere.has(p.id));
+      if (pool.length === 0) return prev;
+
       const curId = next[slot];
-      let curIdx = curId ? products.findIndex((p) => p.id === curId) : -1;
-      if (curIdx < 0) {
-        curIdx = slot % products.length;
-      }
-      const newIdx = (curIdx + delta + products.length) % products.length;
-      next[slot] = products[newIdx]!.id;
+      let curIdx = curId ? pool.findIndex((p) => p.id === curId) : -1;
+      if (curIdx < 0) curIdx = 0;
+      const newIdx = (curIdx + delta + pool.length) % pool.length;
+      next[slot] = pool[newIdx]!.id;
       return next;
     });
   };
 
-  const canPickInSlot = products.length > 1;
+  /** Всегда полный набор слотов; незанятые остаются пустыми (без дублей). */
+  const visibleSlotCount = slotCount;
+  const canPickInSlot = products.length > slotCount;
 
   const showInitialLoading = isLoading && products.length === 0;
 
@@ -265,6 +273,7 @@ export function ComparePageView() {
   const renderSlotNav = (slot: number) => {
     if (!canPickInSlot) return null;
     const pi = getProductIndexForSlot(slot);
+    if (pi < 0) return null;
     return (
       <div className={styles.slotNav}>
         <button
@@ -296,7 +305,6 @@ export function ComparePageView() {
           {count > 0 && (
             <span className={styles.itemCount}>
               {count} {goodsWord(count)}
-              {isFetching && products.length > 0 ? ' · обновление…' : ''}
             </span>
           )}
         </div>
@@ -305,10 +313,13 @@ export function ComparePageView() {
       <div className={styles.compareWrapper}>
         {!isMobile && (
           <div className={styles.compareTableWrapper}>
-            <div className={styles.compareTable}>
+            <CompareGridLayout
+              className={styles.compareTable}
+              gridTemplateColumns={`180px repeat(${visibleSlotCount}, 1fr)`}
+            >
               <div className={styles.tableHeader}>
                 <div className={styles.headerCellChars} />
-                {Array.from({ length: slotCount }).map((_, slot) => {
+                {Array.from({ length: visibleSlotCount }).map((_, slot) => {
                   const product = getMappedProductForSlot(slot);
                   return (
                     <div key={slot} className={styles.slotColumn}>
@@ -317,7 +328,6 @@ export function ComparePageView() {
                           <ProductCard
                             product={product}
                             isCompareMode
-                            onRemoveFromCompare={refreshCompareProducts}
                             partnerLogoUrl={partnerSettings.partnerLogoUrl}
                             showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
                           />
@@ -332,7 +342,7 @@ export function ComparePageView() {
               {basicRows.map((row) => (
                 <div key={row.key} className={styles.tableRow}>
                   <div className={styles.rowLabel}>{row.label}</div>
-                  {Array.from({ length: slotCount }).map((_, slot) => (
+                  {Array.from({ length: visibleSlotCount }).map((_, slot) => (
                     <div key={slot} className={styles.rowCell}>
                       {row.get(getMappedProductForSlot(slot))}
                     </div>
@@ -343,7 +353,7 @@ export function ComparePageView() {
               {allCharacteristics.map((charName) => (
                 <div key={charName} className={styles.tableRow}>
                   <div className={styles.rowLabel}>{charName}</div>
-                  {Array.from({ length: slotCount }).map((_, slot) => {
+                  {Array.from({ length: visibleSlotCount }).map((_, slot) => {
                     const m = getMappedProductForSlot(slot);
                     const char = m?.characteristics?.find((c) => c.name === charName);
                     return (
@@ -354,14 +364,14 @@ export function ComparePageView() {
                   })}
                 </div>
               ))}
-            </div>
+            </CompareGridLayout>
           </div>
         )}
 
         {isMobile && (
           <div className={styles.mobileCompare}>
             <div className={`${catalogGridStyles.grid} ${catalogGridStyles.gridMobile2}`}>
-              {Array.from({ length: slotCount }).map((_, slot) => {
+              {Array.from({ length: visibleSlotCount }).map((_, slot) => {
                 const mp = getMappedProductForSlot(slot);
                 return (
                   <div key={slot} className={styles.mobileCardCell}>
@@ -369,7 +379,6 @@ export function ComparePageView() {
                       <ProductCard
                         product={mp}
                         isCompareMode
-                        onRemoveFromCompare={refreshCompareProducts}
                         partnerLogoUrl={partnerSettings.partnerLogoUrl}
                         showPartnerIconOnCards={partnerSettings.showPartnerIconOnCards}
                       />
@@ -380,9 +389,9 @@ export function ComparePageView() {
             </div>
             <CompareGridLayout
               className={styles.mobileNavRow}
-              gridTemplateColumns={`repeat(${slotCount}, minmax(0, 1fr))`}
+              gridTemplateColumns={`repeat(${visibleSlotCount}, minmax(0, 1fr))`}
             >
-              {Array.from({ length: slotCount }).map((_, slot) => (
+              {Array.from({ length: visibleSlotCount }).map((_, slot) => (
                 <div key={slot} className={styles.mobileNavCell}>
                   {renderSlotNav(slot)}
                 </div>
@@ -390,15 +399,15 @@ export function ComparePageView() {
             </CompareGridLayout>
             <CompareGridLayout
               className={styles.mobileParamsTable}
-              gridTemplateColumns={`minmax(5.5rem, 34%) repeat(${slotCount}, minmax(0, 1fr))`}
+              gridTemplateColumns={`minmax(5.5rem, 34%) repeat(${visibleSlotCount}, minmax(0, 1fr))`}
             >
               {basicRows.map((row) => (
                 <Fragment key={row.key}>
                   <div className={styles.mobileParamRowLabel}>{row.label}</div>
-                  {Array.from({ length: slotCount }).map((_, slot) => (
+                  {Array.from({ length: visibleSlotCount }).map((_, slot) => (
                     <div
                       key={slot}
-                      className={`${styles.mobileParamRowValue}${slot === slotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
+                      className={`${styles.mobileParamRowValue}${slot === visibleSlotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
                     >
                       {row.get(getMappedProductForSlot(slot) ?? null)}
                     </div>
@@ -408,13 +417,13 @@ export function ComparePageView() {
               {allCharacteristics.map((charName) => (
                 <Fragment key={charName}>
                   <div className={styles.mobileParamRowLabel}>{charName}</div>
-                  {Array.from({ length: slotCount }).map((_, slot) => {
+                  {Array.from({ length: visibleSlotCount }).map((_, slot) => {
                     const m = getMappedProductForSlot(slot);
                     const char = m?.characteristics?.find((c) => c.name === charName);
                     return (
                       <div
                         key={slot}
-                        className={`${styles.mobileParamRowValue}${slot === slotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
+                        className={`${styles.mobileParamRowValue}${slot === visibleSlotCount - 1 ? ` ${styles.mobileParamRowValueLast}` : ''}`}
                       >
                         {char ? char.value : '—'}
                       </div>

@@ -9,7 +9,7 @@
 }
 
 .titleRow {
-  align-items: center;
+  align-items: baseline;
   display: flex;
   flex-wrap: nowrap;
   gap: 0.75rem;
@@ -32,6 +32,7 @@
   font-size: 0.9375rem;
   font-weight: 500;
   line-height: 1.2;
+  text-align: right;
   white-space: nowrap;
 }
 

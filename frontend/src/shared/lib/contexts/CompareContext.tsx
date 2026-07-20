@@ -33,7 +33,6 @@ const CompareContext = createContext<CompareContextValue | undefined>(undefined)
 export function CompareProvider({ children }: { children: React.ReactNode }) {
   const queryClient = useQueryClient();
   const [compare, setCompare] = useState<string[]>([]);
-  const [count, setCount] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isChecking, setIsChecking] = useState(false);
 
@@ -41,6 +40,21 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
   compareRef.current = compare;
 
   const prevHadTokenRef = useRef<boolean | null>(null);
+
+  /** Счётчик всегда = число id в локальном списке (без рассинхрона с /compare/count). */
+  const count = compare.length;
+
+  const applyResolvedProducts = useCallback(
+    (products: Awaited<ReturnType<typeof compareApi.getCompare>>) => {
+      const ids = products.map((p) => p.id);
+      setCompare(ids);
+      if (!compareApi.hasSiteAuthToken()) {
+        compareApi.writeGuestCompareIds(ids);
+      }
+      queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, products);
+    },
+    [queryClient]
+  );
 
   const reloadCompareFromStorageOrApi = useCallback(async () => {
     const hasToken = compareApi.hasSiteAuthToken();
@@ -60,12 +74,9 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       }
       try {
         const products = await compareApi.getCompare();
-        setCompare(products.map((p) => p.id));
-        setCount(products.length);
-        queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, products);
+        applyResolvedProducts(products);
       } catch {
         setCompare([]);
-        setCount(0);
         queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, []);
       }
     } else {
@@ -73,22 +84,23 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
         compareApi.writeGuestCompareIds(compareRef.current);
       }
       const ids = compareApi.readGuestCompareIds();
-      setCompare(ids);
-      setCount(ids.length);
       if (ids.length === 0) {
+        setCompare([]);
         queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, []);
       } else {
         try {
           const products = await compareApi.getCompare();
-          queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, products);
+          // Только реально загруженные товары — убираем битые id из storage и счётчика
+          applyResolvedProducts(products);
         } catch {
+          setCompare(ids);
           queryClient.removeQueries({ queryKey: COMPARE_PRODUCTS_QUERY_KEY });
         }
       }
     }
 
     prevHadTokenRef.current = hasToken;
-  }, [queryClient]);
+  }, [applyResolvedProducts, queryClient]);
 
   useEffect(() => {
     let alive = true;
@@ -132,35 +144,38 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
 
   const refreshCount = useCallback(async () => {
     try {
-      const newCount = await compareApi.getCompareCount();
-      setCount(newCount);
+      const products = await compareApi.getCompare();
+      applyResolvedProducts(products);
     } catch {
-      setCount(compareApi.hasSiteAuthToken() ? 0 : compareApi.readGuestCompareIds().length);
+      if (compareApi.hasSiteAuthToken()) {
+        setCompare([]);
+        queryClient.setQueryData(COMPARE_PRODUCTS_QUERY_KEY, []);
+      } else {
+        setCompare(compareApi.readGuestCompareIds());
+      }
     }
-  }, []);
+  }, [applyResolvedProducts, queryClient]);
 
   const addToCompare = useCallback(
     async (productId: string) => {
       await compareApi.addToCompare(productId);
       setCompare((prev) => (prev.includes(productId) ? prev : [...prev, productId]));
-      await refreshCount();
       await queryClient.invalidateQueries({ queryKey: COMPARE_PRODUCTS_QUERY_KEY });
     },
-    [queryClient, refreshCount]
+    [queryClient]
   );
 
   const removeFromCompare = useCallback(
     async (productId: string) => {
       await compareApi.removeFromCompare(productId);
       setCompare((prev) => prev.filter((id) => id !== productId));
-      await refreshCount();
       queryClient.setQueryData(
         COMPARE_PRODUCTS_QUERY_KEY,
         (prev: Awaited<ReturnType<typeof compareApi.getCompare>> | undefined) =>
           prev?.filter((p) => p.id !== productId) ?? []
       );
     },
-    [queryClient, refreshCount]
+    [queryClient]
   );
 
   const toggleCompare = useCallback(

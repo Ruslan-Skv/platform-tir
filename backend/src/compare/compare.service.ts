@@ -33,9 +33,9 @@ export class CompareService {
       throw new ConflictException('Product already in compare');
     }
 
-    // Проверяем лимит сравнения (максимум 10 товаров)
+    // Проверяем лимит сравнения (максимум 10 активных товаров)
     const compareCount = await this.prisma.compareItem.count({
-      where: { userId },
+      where: { userId, product: { isActive: true } },
     });
 
     if (compareCount >= 10) {
@@ -88,12 +88,20 @@ export class CompareService {
       select: { productId: true },
     });
     const ids = items.map((i) => i.productId);
-    return this.productsService.findManyActiveByIdsForCompare(ids);
+    const products = await this.productsService.findManyActiveByIdsForCompare(ids);
+    const activeIds = new Set(products.map((p) => p.id));
+    const orphanIds = ids.filter((id) => !activeIds.has(id));
+    if (orphanIds.length > 0) {
+      await this.prisma.compareItem.deleteMany({
+        where: { userId, productId: { in: orphanIds } },
+      });
+    }
+    return products;
   }
 
   async getCompareCount(userId: string) {
     return this.prisma.compareItem.count({
-      where: { userId },
+      where: { userId, product: { isActive: true } },
     });
   }
 

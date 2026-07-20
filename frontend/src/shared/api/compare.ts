@@ -61,13 +61,24 @@ function getAuthHeaders(): HeadersInit {
   return headers;
 }
 
+function dedupeProductIds(ids: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const id of ids) {
+    if (typeof id !== 'string' || !id || seen.has(id)) continue;
+    seen.add(id);
+    out.push(id);
+  }
+  return out;
+}
+
 export function readGuestCompareIds(): string[] {
   if (typeof window === 'undefined') return [];
   try {
     const raw = localStorage.getItem(GUEST_COMPARE_STORAGE_KEY);
     const parsed = raw ? (JSON.parse(raw) as unknown) : [];
     if (!Array.isArray(parsed)) return [];
-    return parsed.filter((x): x is string => typeof x === 'string' && x.length > 0);
+    return dedupeProductIds(parsed.filter((x): x is string => typeof x === 'string'));
   } catch {
     return [];
   }
@@ -75,7 +86,7 @@ export function readGuestCompareIds(): string[] {
 
 export function writeGuestCompareIds(ids: string[]): void {
   if (typeof window === 'undefined') return;
-  localStorage.setItem(GUEST_COMPARE_STORAGE_KEY, JSON.stringify(ids));
+  localStorage.setItem(GUEST_COMPARE_STORAGE_KEY, JSON.stringify(dedupeProductIds(ids)));
 }
 
 export function clearGuestCompareIds(): void {
