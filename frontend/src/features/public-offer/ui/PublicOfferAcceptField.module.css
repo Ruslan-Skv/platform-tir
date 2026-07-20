@@ -6,23 +6,49 @@
   font-size: 0.875rem;
   line-height: 1.45;
   color: #374151;
-  cursor: pointer;
 }
 
 .checkbox {
   flex-shrink: 0;
-  width: 1rem;
-  height: 1rem;
-  margin-top: 0.15rem;
+  width: 1.125rem;
+  height: 1.125rem;
+  margin-top: 0.1rem;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  border: 1.5px solid #9ca3af;
+  border-radius: 0.25rem;
+  background-color: #fff;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  color-scheme: light;
+}
+
+.checkbox:checked {
+  border-color: var(--color-accent);
+  background-color: var(--color-accent);
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Cpath fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' d='M3.5 8.5l3 3 6-6'/%3E%3C/svg%3E");
+}
+
+.checkbox:focus-visible {
+  outline: 2px solid var(--color-accent);
+  outline-offset: 2px;
 }
 
 .text {
   flex: 1;
+  cursor: pointer;
 }
 
 .link {
   color: #d90652;
   text-decoration: none;
+  /* Чтобы на тач-устройствах хватало область нажатия по «(читать)» */
+  display: inline;
+  padding: 0.1em 0;
+  position: relative;
+  z-index: 1;
 }
 
 .link:hover {

@@ -1,5 +1,7 @@
 'use client';
 
+import type { MouseEvent, ReactNode } from 'react';
+
 import Link from 'next/link';
 
 import {
@@ -18,6 +20,20 @@ type PublicOfferAcceptFieldProps = {
   className?: string;
 };
 
+function OfferDocLink({ href, children }: { href: string; children: ReactNode }) {
+  return (
+    <Link
+      href={href}
+      className={styles.link}
+      onClick={(e: MouseEvent) => {
+        e.stopPropagation();
+      }}
+    >
+      {children}
+    </Link>
+  );
+}
+
 function renderAcceptText(offer: PublicOfferInfo) {
   const acceptText = offer.acceptText || 'Я принимаю условия публичной оферты';
   const linkPhrase = offer.name || 'публичной оферты';
@@ -28,9 +44,9 @@ function renderAcceptText(offer: PublicOfferInfo) {
     return (
       <>
         {acceptText.slice(0, linkIndex)}
-        <Link href={href} className={styles.link} target="_blank">
+        <OfferDocLink href={href}>
           {acceptText.slice(linkIndex, linkIndex + linkPhrase.length)}
-        </Link>
+        </OfferDocLink>
         {acceptText.slice(linkIndex + linkPhrase.length)}
       </>
     );
@@ -38,10 +54,7 @@ function renderAcceptText(offer: PublicOfferInfo) {
 
   return (
     <>
-      {acceptText}{' '}
-      <Link href={href} className={styles.link} target="_blank">
-        (читать)
-      </Link>
+      {acceptText} <OfferDocLink href={href}>(читать)</OfferDocLink>
     </>
   );
 }
@@ -57,16 +70,25 @@ export function PublicOfferAcceptField({
   }
 
   return (
-    <label className={`${styles.label}${className ? ` ${className}` : ''}`}>
+    <div className={`${styles.label}${className ? ` ${className}` : ''}`}>
       <input
         type="checkbox"
         checked={checked}
         onChange={(e) => onChange(e.target.checked)}
         className={styles.checkbox}
         required
+        aria-label={offer.acceptText || 'Я принимаю условия публичной оферты'}
       />
-      <span className={styles.text}>{renderAcceptText(offer)}</span>
-    </label>
+      <span
+        className={styles.text}
+        onClick={(e) => {
+          if ((e.target as HTMLElement).closest('a')) return;
+          onChange(!checked);
+        }}
+      >
+        {renderAcceptText(offer)}
+      </span>
+    </div>
   );
 }
 
