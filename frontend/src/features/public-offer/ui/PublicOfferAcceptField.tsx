@@ -6,9 +6,9 @@ import { useState } from 'react';
 import {
   type PublicOfferInfo,
   areAllOffersAccepted,
-  formatPublicOfferContent,
   isPublicOfferActive,
   isPublicOfferPdfUrl,
+  renderPublicOfferHtml,
   resolvePublicOfferEmbedUrl,
 } from '@/shared/lib/legal/public-offer';
 import { Modal } from '@/shared/ui/Modal';
@@ -108,10 +108,10 @@ function PublicOfferPreviewBody({ offer }: { offer: PublicOfferInfo }) {
   const pdfUrl = isPublicOfferPdfUrl(offer.offerUrl)
     ? resolvePublicOfferEmbedUrl(offer.offerUrl)
     : null;
-  const text = offer.offerContent ? formatPublicOfferContent(offer.offerContent) : null;
+  const html = offer.offerContent ? renderPublicOfferHtml(offer.offerContent) : null;
 
-  if (text) {
-    return <div className={styles.previewText}>{text}</div>;
+  if (html) {
+    return <div className={styles.previewText} dangerouslySetInnerHTML={{ __html: html }} />;
   }
 
   if (pdfUrl) {

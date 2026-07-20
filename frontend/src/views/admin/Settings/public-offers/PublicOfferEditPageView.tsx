@@ -17,8 +17,10 @@ import {
   type PublicOfferScopeType,
   publicOfferPath,
 } from '@/shared/lib/legal/public-offer';
+import { isRichTextEmpty, toRichTextEditorHtml } from '@/shared/lib/sanitize';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
+import { BlogPostEditor } from '@/views/admin/Content/Blog/shared/BlogPostEditor';
 import { QuizAdminFileUpload } from '@/views/admin/Quiz/ui/QuizAdminFileUpload';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
@@ -401,15 +403,23 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
             />
           </label>
 
-          <label className={styles.field}>
+          <div className={styles.field}>
             <span>Текст оферты (если без PDF)</span>
-            <textarea
-              value={form.offerContent}
-              onChange={(e) => updateField('offerContent', e.target.value)}
-              rows={12}
+            <p className={styles.fieldHint}>
+              Заголовки (H2–H6) — крупнее и по центру через кнопку «⬌». Абзацы — выравнивание по
+              ширине кнопкой «☰».
+            </p>
+            <BlogPostEditor
+              key={currentOfferId || 'new-offer-content'}
+              value={toRichTextEditorHtml(form.offerContent)}
+              onChange={(html) => {
+                updateField('offerContent', isRichTextEmpty(html) ? '' : html);
+              }}
+              compact
+              enableTextAlign
               placeholder="Вставьте текст публичной оферты…"
             />
-          </label>
+          </div>
         </div>
 
         <div className={styles.scopesSection}>

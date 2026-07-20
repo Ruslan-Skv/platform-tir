@@ -33,7 +33,48 @@
   line-height: 1.65;
   text-align: justify;
   text-justify: inter-word;
-  white-space: pre-wrap;
+}
+
+.textBody :global(p) {
+  margin: 0 0 0.9em;
+}
+
+.textBody :global(h2),
+.textBody :global(h3),
+.textBody :global(h4),
+.textBody :global(h5),
+.textBody :global(h6) {
+  margin: 1.35em 0 0.65em;
+  font-weight: 700;
+  line-height: 1.3;
+  text-align: center;
+}
+
+.textBody :global(h2) {
+  font-size: 1.5rem;
+}
+
+.textBody :global(h3) {
+  font-size: 1.3rem;
+}
+
+.textBody :global(h4) {
+  font-size: 1.15rem;
+}
+
+.textBody :global(h5),
+.textBody :global(h6) {
+  font-size: 1.05rem;
+}
+
+.textBody :global(ul),
+.textBody :global(ol) {
+  margin: 0 0 0.9em;
+  padding-left: 1.4em;
+}
+
+.textBody :global(a) {
+  color: #d90652;
 }
 
 .back {

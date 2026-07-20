@@ -58,6 +58,7 @@ const ALLOWED_ATTR = [
   'rowspan',
   'colwidth',
   'scope',
+  'style',
 ];
 
 /**

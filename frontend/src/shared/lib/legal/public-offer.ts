@@ -1,3 +1,5 @@
+import { looksLikeHtml, sanitizeHtml } from '@/shared/lib/sanitize';
+
 export const SITE_PUBLIC_OFFERS_PATH = '/offer';
 
 export function publicOfferPath(slug: string): string {
@@ -66,12 +68,36 @@ export function resolvePublicOfferEmbedUrl(url: string | null | undefined): stri
   return trimmed;
 }
 
+/** @deprecated Используйте renderPublicOfferHtml */
 export function formatPublicOfferContent(content: string): string {
   return content
     .split(/\n{2,}/)
     .map((paragraph) => paragraph.trim())
     .filter(Boolean)
     .join('\n\n');
+}
+
+/** HTML для показа оферты (TipTap или старый plain text). */
+export function renderPublicOfferHtml(content: string): string {
+  const trimmed = content.trim();
+  if (!trimmed) return '';
+  if (looksLikeHtml(trimmed)) {
+    return sanitizeHtml(trimmed);
+  }
+  const paragraphs = trimmed
+    .split(/\n{2,}/)
+    .map((paragraph) => paragraph.trim())
+    .filter(Boolean)
+    .map((paragraph) => {
+      const escaped = paragraph
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\n/g, '<br />');
+      return `<p>${escaped}</p>`;
+    });
+  return sanitizeHtml(paragraphs.join(''));
 }
 
 /** @deprecated Используйте SITE_PUBLIC_OFFERS_PATH */

@@ -3,8 +3,8 @@ import Link from 'next/link';
 import {
   type PublicOfferInfo,
   SITE_PUBLIC_OFFERS_PATH,
-  formatPublicOfferContent,
   isPublicOfferPdfUrl,
+  renderPublicOfferHtml,
   resolvePublicOfferEmbedUrl,
 } from '@/shared/lib/legal/public-offer';
 
@@ -27,7 +27,7 @@ export function PublicOfferPageView({ data }: PublicOfferPageViewProps) {
   const pdfUrl = isPublicOfferPdfUrl(data.offerUrl)
     ? resolvePublicOfferEmbedUrl(data.offerUrl)
     : null;
-  const text = data.offerContent ? formatPublicOfferContent(data.offerContent) : null;
+  const html = data.offerContent ? renderPublicOfferHtml(data.offerContent) : null;
 
   if (pdfUrl) {
     return (
@@ -37,11 +37,11 @@ export function PublicOfferPageView({ data }: PublicOfferPageViewProps) {
     );
   }
 
-  if (text) {
+  if (html) {
     return (
       <article className={styles.textPage}>
         <h1 className={styles.title}>{data.pageTitle}</h1>
-        <div className={styles.textBody}>{text}</div>
+        <div className={styles.textBody} dangerouslySetInnerHTML={{ __html: html }} />
         <p className={styles.back}>
           <Link href={SITE_PUBLIC_OFFERS_PATH}>← Все оферты</Link>
           {' · '}
