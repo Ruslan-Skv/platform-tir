@@ -111,7 +111,11 @@ export function useCatalogPage({
 
   const subcategoryFilterOptions = useMemo(
     () =>
-      categoryFilterOptions.filter((o) => o.depth === 1).map((o) => ({ ...o, depth: 0 as const })),
+      categoryFilterOptions
+        .filter((o) => o.depth === 1)
+        .slice()
+        .sort((a, b) => a.label.localeCompare(b.label, 'ru'))
+        .map((o) => ({ ...o, depth: 0 as const })),
     [categoryFilterOptions]
   );
 
@@ -120,7 +124,10 @@ export function useCatalogPage({
     if (!isCatalogHub) return categoryFilterOptions;
     if (!facetBranchSlug) return hubCategoryOptions;
     const roots = hubCategoryOptions.filter((o) => o.depth !== 1);
-    const children = categoryFilterOptions.filter((o) => o.depth === 1);
+    const children = categoryFilterOptions
+      .filter((o) => o.depth === 1)
+      .slice()
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
     const activeRoot = roots.find((r) => r.slug === facetBranchSlug);
     if (!activeRoot) return roots.length > 0 ? roots : categoryFilterOptions;
     const facetedRoot = categoryFilterOptions.find(

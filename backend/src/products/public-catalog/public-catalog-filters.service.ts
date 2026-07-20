@@ -71,7 +71,13 @@ export class PublicCatalogFiltersService {
     };
 
     const options = walk(category, 0);
-    return options.length > 1 ? options : [];
+    if (options.length <= 1) return [];
+
+    const roots = options.filter((o) => o.depth === 0);
+    const children = options
+      .filter((o) => o.depth === 1)
+      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
+    return [...roots, ...children];
   }
 
   filterRowsForList(

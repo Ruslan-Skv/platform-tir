@@ -37,7 +37,7 @@ export function categoriesToHubFilterOptions(
       depth: 0,
     });
 
-    for (const child of childrenWithProducts) {
+    for (const child of childrenWithProducts.sort((a, b) => a.name.localeCompare(b.name, 'ru'))) {
       out.push({
         slug: child.slug,
         label: child.name,

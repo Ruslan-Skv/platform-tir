@@ -43,7 +43,12 @@ export class PublicCatalogQueryService {
     const category = await this.prisma.category.findUnique({
       where: { slug: effectiveSlug },
       include: {
-        children: { include: { children: true } },
+        children: {
+          orderBy: [{ name: 'asc' }],
+          include: {
+            children: { orderBy: [{ name: 'asc' }] },
+          },
+        },
       },
     });
 
