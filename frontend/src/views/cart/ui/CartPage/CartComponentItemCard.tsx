@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { parseCartPrice } from '@/shared/api/cart';
@@ -68,7 +67,7 @@ export function CartComponentItemCard({
   return (
     <div className={styles.cartItem}>
       <Link href={`/product/${item.component.product.slug}`} className={styles.itemImage}>
-        <Image
+        <img
           src={item.component.image || '/images/products/door-placeholder.jpg'}
           alt={item.component.name}
           width={88}

@@ -29,6 +29,16 @@ const nextConfig = {
         hostname: 'psk-pobeda.ru',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: '436830.ru',
+        pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'www.436830.ru',
+        pathname: '/**',
+      },
     ],
   },
   async headers() {

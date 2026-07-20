@@ -4,7 +4,6 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 
 import type { Dispatch, SetStateAction } from 'react';
 
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { parseCartPrice } from '@/shared/api/cart';
@@ -70,7 +69,7 @@ export function CartProductItemCard({
   return (
     <div className={styles.cartItem}>
       <Link href={`/product/${item.product.slug}`} className={styles.itemImage}>
-        <Image
+        <img
           src={item.product.images?.[0] || '/images/products/door-placeholder.jpg'}
           alt={item.product.name}
           width={88}
