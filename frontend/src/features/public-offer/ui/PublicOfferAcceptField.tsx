@@ -1,15 +1,17 @@
 'use client';
 
-import type { MouseEvent, ReactNode } from 'react';
-
-import Link from 'next/link';
+import type { ReactNode } from 'react';
+import { useState } from 'react';
 
 import {
   type PublicOfferInfo,
   areAllOffersAccepted,
+  formatPublicOfferContent,
   isPublicOfferActive,
-  publicOfferPath,
+  isPublicOfferPdfUrl,
+  resolvePublicOfferEmbedUrl,
 } from '@/shared/lib/legal/public-offer';
+import { Modal } from '@/shared/ui/Modal';
 
 import styles from './PublicOfferAcceptField.module.css';
 
@@ -18,35 +20,37 @@ type PublicOfferAcceptFieldProps = {
   checked: boolean;
   onChange: (checked: boolean) => void;
   className?: string;
+  onOpenOffer: (offer: PublicOfferInfo) => void;
 };
 
-function OfferDocLink({ href, children }: { href: string; children: ReactNode }) {
+function OfferDocButton({ onOpen, children }: { onOpen: () => void; children: ReactNode }) {
   return (
-    <Link
-      href={href}
+    <button
+      type="button"
       className={styles.link}
-      onClick={(e: MouseEvent) => {
+      onClick={(e) => {
+        e.preventDefault();
         e.stopPropagation();
+        onOpen();
       }}
     >
       {children}
-    </Link>
+    </button>
   );
 }
 
-function renderAcceptText(offer: PublicOfferInfo) {
+function renderAcceptText(offer: PublicOfferInfo, onOpen: () => void) {
   const acceptText = offer.acceptText || 'Я принимаю условия публичной оферты';
   const linkPhrase = offer.name || 'публичной оферты';
   const linkIndex = acceptText.toLowerCase().indexOf(linkPhrase.toLowerCase());
-  const href = publicOfferPath(offer.slug);
 
   if (linkIndex >= 0) {
     return (
       <>
         {acceptText.slice(0, linkIndex)}
-        <OfferDocLink href={href}>
+        <OfferDocButton onOpen={onOpen}>
           {acceptText.slice(linkIndex, linkIndex + linkPhrase.length)}
-        </OfferDocLink>
+        </OfferDocButton>
         {acceptText.slice(linkIndex + linkPhrase.length)}
       </>
     );
@@ -54,7 +58,7 @@ function renderAcceptText(offer: PublicOfferInfo) {
 
   return (
     <>
-      {acceptText} <OfferDocLink href={href}>(читать)</OfferDocLink>
+      {acceptText} <OfferDocButton onOpen={onOpen}>(читать)</OfferDocButton>
     </>
   );
 }
@@ -64,6 +68,7 @@ export function PublicOfferAcceptField({
   checked,
   onChange,
   className,
+  onOpenOffer,
 }: PublicOfferAcceptFieldProps) {
   if (!isPublicOfferActive(offer)) {
     return null;
@@ -82,11 +87,11 @@ export function PublicOfferAcceptField({
       <span
         className={styles.text}
         onClick={(e) => {
-          if ((e.target as HTMLElement).closest('a')) return;
+          if ((e.target as HTMLElement).closest('button')) return;
           onChange(!checked);
         }}
       >
-        {renderAcceptText(offer)}
+        {renderAcceptText(offer, () => onOpenOffer(offer))}
       </span>
     </div>
   );
@@ -99,6 +104,38 @@ type PublicOfferAcceptFieldsProps = {
   className?: string;
 };
 
+function PublicOfferPreviewBody({ offer }: { offer: PublicOfferInfo }) {
+  const pdfUrl = isPublicOfferPdfUrl(offer.offerUrl)
+    ? resolvePublicOfferEmbedUrl(offer.offerUrl)
+    : null;
+  const text = offer.offerContent ? formatPublicOfferContent(offer.offerContent) : null;
+
+  if (text) {
+    return <div className={styles.previewText}>{text}</div>;
+  }
+
+  if (pdfUrl) {
+    return (
+      <div className={styles.previewPdf}>
+        <p className={styles.previewPdfHint}>
+          Документ в формате PDF. Если предпросмотр не отображается, откройте файл отдельно.
+        </p>
+        <a
+          href={pdfUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className={styles.previewPdfOpen}
+        >
+          Открыть PDF
+        </a>
+        <iframe className={styles.previewPdfFrame} src={pdfUrl} title={offer.pageTitle} />
+      </div>
+    );
+  }
+
+  return <p className={styles.previewEmpty}>Текст оферты ещё не загружен.</p>;
+}
+
 export function PublicOfferAcceptFields({
   offers,
   acceptedIds,
@@ -106,6 +143,8 @@ export function PublicOfferAcceptFields({
   className,
 }: PublicOfferAcceptFieldsProps) {
   const activeOffers = offers.filter(isPublicOfferActive);
+  const [previewOffer, setPreviewOffer] = useState<PublicOfferInfo | null>(null);
+
   if (activeOffers.length === 0) {
     return null;
   }
@@ -118,9 +157,22 @@ export function PublicOfferAcceptFields({
           offer={offer}
           checked={acceptedIds.has(offer.id)}
           onChange={(checked) => onToggle(offer.id, checked)}
+          onOpenOffer={setPreviewOffer}
           className={styles.multiField}
         />
       ))}
+
+      <Modal
+        isOpen={previewOffer != null}
+        onClose={() => setPreviewOffer(null)}
+        title={previewOffer?.pageTitle || 'Публичная оферта'}
+        size="lg"
+        compactOnMobile
+        alignTop
+        contentClassName={styles.previewModalContent}
+      >
+        {previewOffer ? <PublicOfferPreviewBody offer={previewOffer} /> : null}
+      </Modal>
     </div>
   );
 }
