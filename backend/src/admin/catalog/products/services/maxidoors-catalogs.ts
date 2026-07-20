@@ -1,4 +1,5 @@
 import {
+  MAXIDOORS_APARTMENT_DOORS_LIST_PATH,
   MAXIDOORS_BOLTS_LIST_PATH,
   MAXIDOORS_CLOSERS_LIST_PATH,
   MAXIDOORS_CYLINDERS_LIST_PATH,
@@ -27,7 +28,8 @@ export type MaxidoorsCatalogKey =
   | 'sliding'
   | 'hinges'
   | 'plateHandles'
-  | 'misc';
+  | 'misc'
+  | 'apartmentDoors';
 
 /**
  * Правило маппинга характеристики MaxiDoors → поле нашей карточки.
@@ -56,6 +58,14 @@ export type MaxidoorsAttrRule =
       name?: string;
       slug?: string;
       order?: number;
+    }
+  | {
+      /**
+       * Все характеристики из charRows (в т.ч. разобранные из блока «Описание»),
+       * которые ещё не замаплены другими правилами → JSON-атрибуты категории (создаются при необходимости).
+       */
+      kind: 'autoChars';
+      orderStart?: number;
     };
 
 export type MaxidoorsCatalogConfig = {
@@ -414,6 +424,22 @@ export const MAXIDOORS_CATALOGS: Record<MaxidoorsCatalogKey, MaxidoorsCatalogCon
         charLabel: 'Материал',
         order: 20,
       },
+    ],
+  },
+  apartmentDoors: {
+    key: 'apartmentDoors',
+    label: 'Двери в квартиру',
+    listPath: MAXIDOORS_APARTMENT_DOORS_LIST_PATH,
+    categoryName: 'Двери в квартиру (м)',
+    categoryNameAliases: ['Двери в квартиру'],
+    slugPrefix: 'dver-kvartira-m',
+    imageFilePrefix: 'md-ad',
+    seoExtraKeywords: ['входная дверь', 'дверь в квартиру', 'металлическая дверь'],
+    attrRules: [
+      { kind: 'colorFromName', name: 'Цвет', slug: 'tsvet', order: 5 },
+      { kind: 'manufacturer' },
+      // Параметры из блока «Описание» на карточке поставщика → отдельные атрибуты
+      { kind: 'autoChars', orderStart: 10 },
     ],
   },
 };

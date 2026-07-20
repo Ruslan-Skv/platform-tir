@@ -15,7 +15,8 @@ export type MaxidoorsCatalogKey =
   | 'sliding'
   | 'hinges'
   | 'plateHandles'
-  | 'misc';
+  | 'misc'
+  | 'apartmentDoors';
 
 export type MaxidoorsCatalogUi = {
   key: MaxidoorsCatalogKey;
@@ -124,6 +125,13 @@ export const MAXIDOORS_CATALOG_UI: MaxidoorsCatalogUi[] = [
     categoryNames: ['разное (м)', 'разное'],
     confirmMessage:
       'Будут созданы товары из раздела «Разное» на maxi-doors.ru (~38 шт.) в категорию «Разное (м)». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
+  },
+  {
+    key: 'apartmentDoors',
+    label: 'Двери в квартиру',
+    categoryNames: ['двери в квартиру (м)', 'двери в квартиру'],
+    confirmMessage:
+      'Будут созданы товары из раздела «Двери в квартиру» на maxi-doors.ru (~47 шт.) в категорию «Двери в квартиру (м)». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
   },
 ];
 

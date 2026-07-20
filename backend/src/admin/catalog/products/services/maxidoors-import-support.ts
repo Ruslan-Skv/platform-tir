@@ -17,6 +17,7 @@ import {
   extractColorFromName,
   fetchDetail,
   findCharValue,
+  isMaxidoorsBoilerplateCharRow,
   mergeProductImages,
   normalizeSlug,
   slugify,
@@ -172,6 +173,12 @@ export async function ensureMaxidoorsAttrSlots(
         });
       }
       slots.push({ rule, slug, isFk: false });
+      continue;
+    }
+
+    if (rule.kind === 'autoChars') {
+      // Слоты создаются при импорте по фактическим charRows карточки.
+      slots.push({ rule, slug: '', isFk: false });
     }
   }
 
@@ -415,6 +422,33 @@ export async function importMaxidoorsOneListing(
         mappedCharLabels.push(rule.charLabel);
         attributes.push({ name: rule.name, value, slug });
       }
+      continue;
+    }
+
+    if (rule.kind === 'autoChars') {
+      let order = rule.orderStart ?? 100;
+      for (const row of detail.charRows) {
+        const label = row.label.replace(/:$/, '').trim();
+        const value = row.value.trim();
+        if (!label || !value) continue;
+        if (isMaxidoorsBoilerplateCharRow(label, value)) continue;
+        // Размеры → Product.sizes (блок «Варианты исполнения»), не атрибут категории
+        if (/^размер$/i.test(label)) continue;
+        if (mappedCharLabels.some((x) => x.toLowerCase() === label.toLowerCase())) continue;
+        if (attributes.some((a) => a.name.toLowerCase() === label.toLowerCase())) {
+          mappedCharLabels.push(label);
+          continue;
+        }
+        const preferredSlug = slugify(label) || `attr-${order}`;
+        const attrSlug = await ensureAttributeOnCategory(prisma, opts.categoryId, {
+          name: label,
+          slug: preferredSlug,
+          order,
+        });
+        attributes.push({ name: label, value, slug: attrSlug });
+        mappedCharLabels.push(label);
+        order += 1;
+      }
     }
   }
 
@@ -449,8 +483,8 @@ export async function importMaxidoorsOneListing(
       categoryId: opts.categoryId,
       images,
       attributes: attributes as unknown as Prisma.InputJsonValue,
-      sizes: [],
-      openingSide: [],
+      sizes: detail.sizes,
+      openingSide: detail.openingSides,
       sku,
       ...(manufacturerId ? { manufacturerId } : {}),
       ...(coatingMaterialId ? { coatingMaterialId } : {}),

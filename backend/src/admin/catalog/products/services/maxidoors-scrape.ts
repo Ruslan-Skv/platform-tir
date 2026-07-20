@@ -20,6 +20,8 @@ export const MAXIDOORS_SLIDING_LIST_PATH =
 export const MAXIDOORS_HINGES_LIST_PATH = '/product-category/furnitura/petli-dvernie/';
 export const MAXIDOORS_PLATE_HANDLES_LIST_PATH = '/product-category/furnitura/ruchki-na-planke/';
 export const MAXIDOORS_MISC_LIST_PATH = '/product-category/furnitura/raznoe/';
+export const MAXIDOORS_APARTMENT_DOORS_LIST_PATH =
+  '/product-category/vhodnie-dveri/dveri-k-kvartiru/';
 
 export type MaxidoorsListingItem = {
   productKey: string;
@@ -42,6 +44,10 @@ export type MaxidoorsDetailData = {
   /** Только блок «Дополнительно» без списка характеристик */
   extraDescription: string;
   charRows: Array<{ label: string; value: string }>;
+  /** Варианты из блока «Размер:» → Product.sizes */
+  sizes: string[];
+  /** Стороны открывания из опций размера → Product.openingSide («левое»/«правое») */
+  openingSides: Array<'левое' | 'правое'>;
   images: string[];
 };
 
@@ -302,6 +308,224 @@ function normalizeCharLabel(label: string): string {
   return label.replace(/:$/, '').trim().toLowerCase();
 }
 
+/** Разбор одной опции «860х2050 левая» → размер + сторона. */
+export function parseMaxidoorsSizeOptionText(text: string): {
+  size: string | null;
+  openingSide: 'левое' | 'правое' | null;
+} {
+  const t = text.replace(/\s+/g, ' ').trim();
+  if (!t || /выберите|choose|select\s*size/i.test(t)) {
+    return { size: null, openingSide: null };
+  }
+
+  let openingSide: 'левое' | 'правое' | null = null;
+  if (/(?:^|[\s,;/(])лев(?:ая|ое|ый)(?:$|[\s,;)/])/i.test(` ${t} `)) openingSide = 'левое';
+  else if (/(?:^|[\s,;/(])прав(?:ая|ое|ый)(?:$|[\s,;)/])/i.test(` ${t} `)) openingSide = 'правое';
+
+  const size = t
+    .replace(/лев(?:ая|ое|ый)/gi, '')
+    .replace(/прав(?:ая|ое|ый)/gi, '')
+    .replace(/[x×XХ]/g, 'х')
+    .replace(/\s+/g, ' ')
+    .replace(/^[,;.\-–—/\s]+|[,;.\-–—/\s]+$/g, '')
+    .trim();
+
+  if (!size || !/\d/.test(size)) return { size: null, openingSide };
+  return { size, openingSide };
+}
+
+/**
+ * Варианты из блока «Размер:» (select.select-size на карточке MaxiDoors).
+ * Уникальные размеры → Product.sizes; стороны → Product.openingSide.
+ */
+export function extractMaxidoorsSizeVariants($: cheerio.Root): {
+  sizes: string[];
+  openingSides: Array<'левое' | 'правое'>;
+} {
+  const sizes: string[] = [];
+  const sizeSeen = new Set<string>();
+  const sides = new Set<'левое' | 'правое'>();
+
+  const pushOption = (raw: string) => {
+    const { size, openingSide } = parseMaxidoorsSizeOptionText(raw);
+    if (openingSide) sides.add(openingSide);
+    if (!size) return;
+    const key = size.toLowerCase();
+    if (sizeSeen.has(key)) return;
+    sizeSeen.add(key);
+    sizes.push(size);
+  };
+
+  $('select.select-size option, select[name="attribute_pa_razmer"] option').each((_, el) => {
+    pushOption($(el).text());
+  });
+
+  // Fallback: характеристика «Размер: …» одним текстом
+  if (sizes.length === 0) {
+    $('.item-descr-2 .chars > div').each((_, el) => {
+      const spans = $(el).find('span');
+      const label = spans.eq(0).text().replace(/:$/, '').replace(/\s+/g, ' ').trim();
+      if (!/^размер$/i.test(label)) return;
+      const value = spans.eq(1).text().replace(/\s+/g, ' ').trim();
+      for (const part of value.split(/[,;]|(?=\d{2,4}\s*[xх×XХ])/)) {
+        pushOption(part);
+      }
+    });
+  }
+
+  const openingSides: Array<'левое' | 'правое'> = [];
+  if (sides.has('левое')) openingSides.push('левое');
+  if (sides.has('правое')) openingSides.push('правое');
+
+  return { sizes, openingSides };
+}
+
+/**
+ * Разбирает блок «Описание» поставщика на пары «Параметр: значение»
+ * (часто через &lt;br&gt;/&lt;p&gt; или одним абзацем).
+ */
+export function extractLabeledDescriptionFields(
+  raw: string,
+): Array<{ label: string; value: string }> {
+  if (!raw?.trim()) return [];
+
+  const plain = raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/\r/g, '')
+    .replace(/[ \t]+\n/g, '\n')
+    .replace(/\n[ \t]+/g, '\n')
+    .trim();
+
+  if (!plain) return [];
+
+  const collect = (pushAll: (push: (label: string, value: string) => void) => void) => {
+    const rows: Array<{ label: string; value: string }> = [];
+    const seen = new Set<string>();
+    const push = (labelRaw: string, valueRaw: string) => {
+      const label = labelRaw.replace(/:$/, '').replace(/\s+/g, ' ').trim();
+      const value = valueRaw.replace(/\s+/g, ' ').trim();
+      if (label.length < 2 || label.length > 90 || !value) return;
+      if (/^\d+$/.test(label)) return;
+      if (/^https?/i.test(label)) return;
+      // Подписи характеристик у MaxiDoors — по-русски
+      if (!/[А-ЯЁа-яё]/.test(label)) return;
+      if (/[\/\\]/.test(label)) return;
+      if (/^(г\.|ул\.|пр\.|тел|пн|сб|вс)/i.test(label)) return;
+      if (isMaxidoorsBoilerplateCharRow(label, value)) return;
+      const key = normalizeCharLabel(label);
+      if (seen.has(key)) return;
+      seen.add(key);
+      rows.push({ label, value });
+    };
+    pushAll(push);
+    return rows;
+  };
+
+  const fromLines = collect((push) => {
+    for (const line of plain.split(/\n+/)) {
+      const t = line.replace(/\s+/g, ' ').trim();
+      if (!t) continue;
+      const idx = t.indexOf(':');
+      if (idx <= 0) continue;
+      push(t.slice(0, idx), t.slice(idx + 1));
+    }
+  });
+
+  // Построчный разбор надёжнее (нет ложных «RIGGER/MONARCH Внешние петли»)
+  if (fromLines.length >= 2) return fromLines;
+
+  return collect((push) => {
+    // Один абзац: новый параметр после начала / точки / перевода строки; подпись с кириллицы
+    const source = plain;
+    const reNl = /(?:^|[.!?]\s+|\n+\s*)([А-ЯЁ][А-ЯЁа-яё0-9][А-ЯЁа-яё0-9\s\-()]{0,68}?)\s*:\s*/g;
+    const matches: Array<{ label: string; index: number; len: number }> = [];
+    let m: RegExpExecArray | null;
+    while ((m = reNl.exec(source)) !== null) {
+      matches.push({ label: m[1], index: m.index, len: m[0].length });
+    }
+    if (matches.length === 0) {
+      const normalized = plain.replace(/\s+/g, ' ').trim();
+      const reFlat = /(?:^|[.!?]\s+)([А-ЯЁ][А-ЯЁа-яё0-9][А-ЯЁа-яё0-9\s\-()]{0,68}?)\s*:\s*/g;
+      while ((m = reFlat.exec(normalized)) !== null) {
+        matches.push({ label: m[1], index: m.index, len: m[0].length });
+      }
+      for (let i = 0; i < matches.length; i++) {
+        const valueStart = matches[i].index + matches[i].len;
+        const valueEnd = i + 1 < matches.length ? matches[i + 1].index : normalized.length;
+        push(matches[i].label, normalized.slice(valueStart, valueEnd));
+      }
+      return;
+    }
+    for (let i = 0; i < matches.length; i++) {
+      const valueStart = matches[i].index + matches[i].len;
+      const valueEnd = i + 1 < matches.length ? matches[i + 1].index : source.length;
+      push(matches[i].label, source.slice(valueStart, valueEnd));
+    }
+  });
+}
+
+/** Убирает из текста/HTML строки вида «Label: value» для уже извлечённых параметров.
+ * Всегда возвращает plain text (без HTML-тегов), с переводами строк между абзацами.
+ */
+export function stripLabeledFieldsFromDescription(raw: string, labels: string[]): string {
+  if (!raw?.trim()) return '';
+  const labelSet = new Set(labels.map(normalizeCharLabel));
+
+  const plain = raw
+    .replace(/<br\s*\/?>/gi, '\n')
+    .replace(/<\/p>/gi, '\n')
+    .replace(/<\/div>/gi, '\n')
+    .replace(/<\/li>/gi, '\n')
+    .replace(/<[^>]+>/g, ' ')
+    .replace(/&nbsp;/gi, ' ')
+    .replace(/&amp;/gi, '&')
+    .replace(/\r/g, '');
+
+  const kept: string[] = [];
+  for (const line of plain.split(/\n+/)) {
+    const t = line.replace(/\s+/g, ' ').trim();
+    if (!t) continue;
+    const idx = t.indexOf(':');
+    if (idx > 0) {
+      const label = t.slice(0, idx).trim();
+      if (labelSet.has(normalizeCharLabel(label))) continue;
+    }
+    kept.push(t);
+  }
+
+  let remaining = kept.join('\n').trim();
+  for (const label of labels) {
+    const escaped = label.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp(
+      `${escaped}\\s*:\\s*.*?(?=\\s+[A-Za-zА-ЯЁ][A-Za-zА-ЯЁа-яё0-9][A-Za-zА-ЯЁа-яё0-9\\s\\-_/()]{0,68}?\\s*:|$)`,
+      'i',
+    );
+    remaining = remaining
+      .replace(re, ' ')
+      .replace(/[^\S\n]+/g, ' ')
+      .replace(/ *\n */g, '\n')
+      .trim();
+  }
+
+  return remaining;
+}
+
+/** Plain text → безопасные абзацы HTML (теги не показываются как текст). */
+export function plainTextToParagraphsHtml(text: string): string {
+  if (!text?.trim()) return '';
+  return text
+    .split(/\n+/)
+    .map((p) => p.replace(/\s+/g, ' ').trim())
+    .filter((p) => p.length > 0)
+    .map((p) => `<p>${escapeHtmlText(p)}</p>`)
+    .join('\n');
+}
+
 /**
  * Собирает HTML описания. Характеристики из excludeLabels не попадают в список
  * (они уже записаны в отдельные поля карточки).
@@ -355,6 +579,26 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
   const extraHtml = $('.item-descr-3 .text').first().html() || '';
   const extraText = $('.item-descr-3 .text').first().text().replace(/\s+/g, ' ').trim();
 
+  // Сначала срезаем рекламный хвост — иначе из него появляются ложные атрибуты
+  // («Данную модель Вы можете…: г. Мурманск…»).
+  const descriptionSourceRaw = extraHtml.trim() || extraText;
+  const descriptionSourceClean = stripMaxidoorsBoilerplateText(
+    descriptionSourceRaw
+      .replace(/<br\s*\/?>/gi, '\n')
+      .replace(/<\/p>/gi, '\n')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' '),
+  );
+
+  // Параметры из блока «Описание» («Внутренняя отделка: …», «Толщина стали: …» и т.д.)
+  const labeledFromDescription = extractLabeledDescriptionFields(descriptionSourceClean);
+  for (const row of labeledFromDescription) {
+    if (isMaxidoorsBoilerplateCharRow(row.label, row.value)) continue;
+    const key = normalizeCharLabel(row.label);
+    if (charRows.some((r) => normalizeCharLabel(r.label) === key)) continue;
+    charRows.push({ label: row.label, value: row.value });
+  }
+
   // У ограничителей и части фурнитуры «Производитель» / материал часто только в тексте описания.
   let manufacturer = findChar(/^производитель$/i);
   if (!manufacturer) {
@@ -377,17 +621,14 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
     if (mat) charRows.push({ label: 'Материал', value: mat });
   }
 
-  let extraDescription = '';
-  if (extraHtml.trim()) {
-    extraDescription = stripMaxidoorsBoilerplateHtml(
-      normalizeMaxidoorsDescriptionFlow(sanitizeSupplierDescriptionHtml(extraHtml)),
-    );
-  } else if (extraText) {
-    const cleanedText = stripMaxidoorsBoilerplateText(extraText);
-    if (cleanedText) extraDescription = `<p>${escapeHtmlText(cleanedText)}</p>`;
-  }
-
-  const description = buildMaxidoorsProductDescription(charRows, extraDescription);
+  // Описание без уже разобранных «Параметр: значение» (они уйдут в атрибуты).
+  // Всегда plain→HTML: иначе сырые <p> экранируются и видны как текст.
+  const remainingPlain = stripLabeledFieldsFromDescription(
+    extraHtml.trim() || extraText,
+    labeledFromDescription.map((r) => r.label),
+  );
+  const cleanedRemaining = stripMaxidoorsBoilerplateText(remainingPlain);
+  const extraDescription = plainTextToParagraphsHtml(cleanedRemaining);
 
   const images: string[] = [];
   const pushImg = (raw: string | undefined | null) => {
@@ -423,6 +664,17 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
     $('meta[property="og:image"]').each((_, el) => pushImg($(el).attr('content')));
   }
 
+  // Финальный фильтр: рекламный хвост не должен попасть в charRows / атрибуты.
+  // «Размер» уходит в Product.sizes, не в JSON-атрибуты.
+  const filteredCharRows = charRows.filter(
+    (r) =>
+      !isMaxidoorsBoilerplateCharRow(r.label, r.value) &&
+      !/^размер$/i.test(r.label.replace(/:$/, '').trim()),
+  );
+  const description = buildMaxidoorsProductDescription(filteredCharRows, extraDescription);
+
+  const { sizes, openingSides } = extractMaxidoorsSizeVariants($);
+
   return {
     title,
     price,
@@ -432,13 +684,25 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
     coatingMaterial,
     description,
     extraDescription,
-    charRows,
+    charRows: filteredCharRows,
+    sizes,
+    openingSides,
     images: images.slice(0, 12),
   };
 }
 
 const MAXIDOORS_BOILERPLATE_RE =
-  /возникли\s+вопросы|60-11-60|оформите\s+заказ\s+и\s+наши\s+сотрудники|фото\s+двери\s+может\s+не\s+передать|салонах\s+наших\s+партнеров|г\.\s*мурманск|г\.\s*апатиты/i;
+  /возникли\s+вопросы|60-11-60|оформите\s+заказ\s+и\s+наши\s+сотрудники|фото\s+двери\s+может\s+не\s+передать|салонах\s+наших\s+партнеров|данную\s+модель\s+вы\s+можете|детально\s+рассмотреть|г\.\s*мурманск|г\.\s*апатиты|ул\.\s*свердлова|ул\.\s*ферсмана|кольский\s+просп/i;
+
+/** Рекламный/контактный хвост или «псевдо-характеристика» из него — не переносим в атрибуты. */
+export function isMaxidoorsBoilerplateCharRow(label: string, value: string): boolean {
+  const blob = `${label} ${value}`.replace(/\s+/g, ' ').trim();
+  if (!blob) return true;
+  if (MAXIDOORS_BOILERPLATE_RE.test(blob)) return true;
+  if (/данную\s+модель|салонах\s+наших\s+партн/i.test(label)) return true;
+  if (/^г\.\s*/i.test(value) && /ул\.|просп/i.test(value)) return true;
+  return false;
+}
 
 /**
  * У MaxiDoors часто Word-вёрстка с <br> посередине фразы (узкая колонка).
@@ -511,13 +775,21 @@ export function stripMaxidoorsBoilerplateText(text: string): string {
     /Возникли\s+вопросы/i,
     /Оформите\s+заказ\s+и\s+наши\s+сотрудники/i,
     /Фото\s+двери\s+может\s+не\s+передать/i,
+    /Данную\s+модель\s+Вы\s+можете/i,
+    /салонах\s+наших\s+партнеров/i,
   ];
   let cut = text.length;
   for (const re of markers) {
     const m = text.match(re);
     if (m?.index != null) cut = Math.min(cut, m.index);
   }
-  return text.slice(0, cut).replace(/\s+/g, ' ').trim();
+  // Сохраняем переносы строк — они нужны для разбора «Параметр: значение».
+  return text
+    .slice(0, cut)
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
 }
 
 /**
