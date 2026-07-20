@@ -3,6 +3,7 @@ import {
   MAXIDOORS_BOLTS_LIST_PATH,
   MAXIDOORS_CLOSERS_LIST_PATH,
   MAXIDOORS_CYLINDERS_LIST_PATH,
+  MAXIDOORS_EKOSHAPON_LIST_PATH,
   MAXIDOORS_HANDLES_LIST_PATH,
   MAXIDOORS_HINGES_LIST_PATH,
   MAXIDOORS_LIMITERS_LIST_PATH,
@@ -10,9 +11,11 @@ import {
   MAXIDOORS_MISC_LIST_PATH,
   MAXIDOORS_PLATES_LIST_PATH,
   MAXIDOORS_PLATE_HANDLES_LIST_PATH,
+  MAXIDOORS_PVH_LIST_PATH,
   MAXIDOORS_RIGELS_LIST_PATH,
   MAXIDOORS_SLIDING_LIST_PATH,
   MAXIDOORS_THUMBTURNS_LIST_PATH,
+  MAXIDOORS_VFD_EMALEX_LIST_PATH,
 } from './maxidoors-scrape';
 
 export type MaxidoorsCatalogKey =
@@ -29,7 +32,10 @@ export type MaxidoorsCatalogKey =
   | 'hinges'
   | 'plateHandles'
   | 'misc'
-  | 'apartmentDoors';
+  | 'apartmentDoors'
+  | 'ekoshpon'
+  | 'pvh'
+  | 'vfdEmalex';
 
 /**
  * Правило маппинга характеристики MaxiDoors → поле нашей карточки.
@@ -83,6 +89,11 @@ export type MaxidoorsCatalogConfig = {
   imageFilePrefix: string;
   seoExtraKeywords: string[];
   attrRules: MaxidoorsAttrRule[];
+  /**
+   * Не импортировать карточки «Комплект …» (полотно + фурнитура).
+   * Для каталогов дверных полотен — true.
+   */
+  skipKitProducts?: boolean;
 };
 
 /** Прод «Ручки (м)» */
@@ -435,10 +446,67 @@ export const MAXIDOORS_CATALOGS: Record<MaxidoorsCatalogKey, MaxidoorsCatalogCon
     slugPrefix: 'dver-kvartira-m',
     imageFilePrefix: 'md-ad',
     seoExtraKeywords: ['входная дверь', 'дверь в квартиру', 'металлическая дверь'],
+    skipKitProducts: true,
     attrRules: [
       { kind: 'colorFromName', name: 'Цвет', slug: 'tsvet', order: 5 },
       { kind: 'manufacturer' },
       // Параметры из блока «Описание» на карточке поставщика → отдельные атрибуты
+      { kind: 'autoChars', orderStart: 10 },
+    ],
+  },
+  ekoshpon: {
+    key: 'ekoshpon',
+    label: 'Двери экошпон',
+    listPath: MAXIDOORS_EKOSHAPON_LIST_PATH,
+    defaultCategoryId: 'cmrt2frl10005fnhxel2vno8i',
+    categoryName: 'Двери экошпон (м)',
+    categoryNameAliases: ['Двери экошпон'],
+    slugPrefix: 'dver-ekoshpon-m',
+    imageFilePrefix: 'md-ek',
+    seoExtraKeywords: ['межкомнатная дверь', 'экошпон', 'двери экошпон'],
+    skipKitProducts: true,
+    attrRules: [
+      { kind: 'manufacturer' },
+      { kind: 'coatingMaterial', charLabel: 'Материал покрытия' },
+      // Характеристики карточки (тип полотна, цвет двери, толщина и т.д.)
+      // Блок «Комплектующие» и цена комплекта не импортируются.
+      { kind: 'autoChars', orderStart: 10 },
+    ],
+  },
+  pvh: {
+    key: 'pvh',
+    label: 'Двери ПВХ',
+    listPath: MAXIDOORS_PVH_LIST_PATH,
+    defaultCategoryId: 'cmrt38k540001cqf2sww09mxw',
+    categoryName: 'Двери ПВХ (м)',
+    categoryNameAliases: ['Двери ПВХ'],
+    slugPrefix: 'dver-pvh-m',
+    imageFilePrefix: 'md-pvh',
+    seoExtraKeywords: ['межкомнатная дверь', 'пвх', 'двери пвх'],
+    skipKitProducts: true,
+    attrRules: [
+      { kind: 'manufacturer' },
+      // На карточках ПВХ чаще «Материал:», не «Материал покрытия:»
+      { kind: 'coatingMaterial', charLabel: 'Материал' },
+      // Блок «Комплектующие» и цена комплекта не импортируются.
+      { kind: 'autoChars', orderStart: 10 },
+    ],
+  },
+  vfdEmalex: {
+    key: 'vfdEmalex',
+    label: 'Двери ВФД Эмалекс',
+    listPath: MAXIDOORS_VFD_EMALEX_LIST_PATH,
+    defaultCategoryId: 'cmrt3yktl000b2a1dvj2gwz0u',
+    categoryName: 'Двери ВФД Эмалекс (м)',
+    categoryNameAliases: ['Двери ВФД Эмалекс', 'ВФД Эмалекс (м)'],
+    slugPrefix: 'dver-vfd-emalex-m',
+    imageFilePrefix: 'md-vfd',
+    seoExtraKeywords: ['межкомнатная дверь', 'вфд', 'эмалекс', 'двери эмалекс'],
+    skipKitProducts: true,
+    attrRules: [
+      { kind: 'manufacturer' },
+      { kind: 'coatingMaterial', charLabel: 'Материал покрытия' },
+      // Блок «Комплектующие» и цена комплекта не импортируются.
       { kind: 'autoChars', orderStart: 10 },
     ],
   },

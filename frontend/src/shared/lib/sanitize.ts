@@ -123,11 +123,89 @@ export function looksLikeHtml(value: string): boolean {
 export function toRichTextEditorHtml(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
-  if (looksLikeHtml(trimmed)) return trimmed;
+  if (looksLikeHtml(trimmed)) return reflowBrokenDescriptionHtml(trimmed);
   return trimmed
     .split(/\n{2,}/)
     .map((paragraph) => `<p>${escapeHtmlAndPreserveNewlines(paragraph)}</p>`)
     .join('');
+}
+
+/**
+ * Склеивает подряд идущие &lt;p&gt;, оборванные посреди фразы (Word/узкая колонка).
+ * Списки и абзацы с разметкой (strong и т.п.) не трогаем.
+ */
+export function reflowBrokenDescriptionHtml(html: string): string {
+  if (!html?.trim()) return '';
+
+  const segments = html.match(
+    /<ul[\s\S]*?<\/ul>|<ol[\s\S]*?<\/ol>|<p(?:\s[^>]*)?>[\s\S]*?<\/p>|[^<]+/gi
+  ) || [html];
+
+  type PBuf = { inner: string };
+  const result: string[] = [];
+  let pRun: PBuf[] = [];
+
+  const plainText = (inner: string) =>
+    inner
+      .replace(/<br\s*\/?>/gi, ' ')
+      .replace(/<[^>]+>/g, ' ')
+      .replace(/&nbsp;/gi, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+  const isPlainInner = (inner: string) => !/<[a-z]/i.test(inner.replace(/<br\s*\/?>/gi, ''));
+
+  const flushPRun = () => {
+    if (pRun.length === 0) return;
+    if (pRun.length === 1 || !pRun.every((p) => isPlainInner(p.inner))) {
+      for (const p of pRun) {
+        result.push(`<p>${p.inner}</p>`);
+      }
+      pRun = [];
+      return;
+    }
+
+    const lines = pRun.map((p) => plainText(p.inner)).filter(Boolean);
+    const paragraphs: string[] = [];
+    let buf = lines[0] || '';
+    for (let i = 1; i < lines.length; i++) {
+      const next = lines[i];
+      if (buf && !/[.!?…]$/.test(buf)) {
+        buf = `${buf} ${next}`;
+        continue;
+      }
+      if (buf) paragraphs.push(buf);
+      buf = next;
+    }
+    if (buf) paragraphs.push(buf);
+
+    for (const p of paragraphs) {
+      result.push(`<p>${escapeHtmlText(p)}</p>`);
+    }
+    pRun = [];
+  };
+
+  for (const seg of segments) {
+    const pm = seg.match(/^<p(?:\s[^>]*)?>([\s\S]*?)<\/p>$/i);
+    if (pm) {
+      pRun.push({ inner: pm[1] });
+      continue;
+    }
+    // Пробелы между тегами не разрывают серию абзацев
+    if (!seg.trim()) continue;
+    flushPRun();
+    result.push(seg);
+  }
+  flushPRun();
+  return result.join('\n');
+}
+
+function escapeHtmlText(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }
 
 /**
@@ -136,7 +214,7 @@ export function toRichTextEditorHtml(value: string): string {
 export function renderProductDescriptionHtml(value: string): string {
   const trimmed = value.trim();
   if (!trimmed) return '';
-  if (looksLikeHtml(trimmed)) return sanitizeHtml(trimmed);
+  if (looksLikeHtml(trimmed)) return sanitizeHtml(reflowBrokenDescriptionHtml(trimmed));
   return escapeHtmlAndPreserveNewlines(trimmed);
 }
 

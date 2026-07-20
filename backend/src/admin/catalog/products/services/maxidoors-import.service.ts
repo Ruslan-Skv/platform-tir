@@ -16,7 +16,7 @@ import {
   type MaxidoorsImportJob,
   type StartMaxidoorsImportOptions,
 } from './maxidoors-import.types';
-import { scrapeAllListings } from './maxidoors-scrape';
+import { scrapeAllListings, isMaxidoorsKitProduct } from './maxidoors-scrape';
 
 export type {
   MaxidoorsImportItemRef,
@@ -66,6 +66,7 @@ export class MaxidoorsImportService {
       skipped: 0,
       errors: [],
       createdItems: [],
+      skippedItems: [],
       missingItems: [],
       startedAt: new Date().toISOString(),
     };
@@ -144,8 +145,23 @@ export class MaxidoorsImportService {
     const listingUrlSet = new Set(allListings.map((item) => normalizeSupplierProductUrl(item.url)));
 
     let listings = allListings;
+    if (catalog.skipKitProducts) {
+      const before = listings.length;
+      listings = listings.filter(
+        (item) =>
+          !isMaxidoorsKitProduct({
+            url: item.url,
+            name: item.name,
+            productKey: item.productKey,
+          }),
+      );
+      const skippedKits = before - listings.length;
+      if (skippedKits > 0) {
+        this.logger.log(`[${catalog.key}] Пропущено комплектов: ${skippedKits}`);
+      }
+    }
     if (opts.limit && opts.limit > 0) {
-      listings = allListings.slice(0, opts.limit);
+      listings = listings.slice(0, opts.limit);
     }
     job.total = listings.length;
 
@@ -165,6 +181,7 @@ export class MaxidoorsImportService {
           if (result.item) job.createdItems.push(result.item);
         } else {
           job.skipped += 1;
+          if (result.item) job.skippedItems.push(result.item);
         }
       } catch (e) {
         const msg = `${listing.productKey}: ${e instanceof Error ? e.message : String(e)}`;
@@ -191,6 +208,22 @@ export class MaxidoorsImportService {
 
     job.status = 'done';
     job.finishedAt = new Date().toISOString();
-    job.message = `Создано ${job.created}, пропущено ${job.skipped}, отсутствует у поставщика ${job.missingItems.length}, ошибок ${job.errors.length}`;
+    const otherCatSkipped = job.skippedItems.filter(
+      (item) => item.categoryId && item.categoryId !== category.id,
+    ).length;
+    const sameCatSkipped = job.skipped - otherCatSkipped;
+    const skipParts: string[] = [];
+    if (sameCatSkipped > 0) skipParts.push(`${sameCatSkipped} уже в этой категории`);
+    if (otherCatSkipped > 0) {
+      skipParts.push(`${otherCatSkipped} уже в другой категории`);
+    }
+    job.message = [
+      `Создано ${job.created}`,
+      skipParts.length > 0
+        ? `пропущено ${job.skipped} (${skipParts.join(', ')})`
+        : `пропущено ${job.skipped}`,
+      `отсутствует у поставщика ${job.missingItems.length}`,
+      `ошибок ${job.errors.length}`,
+    ].join(', ');
   }
 }

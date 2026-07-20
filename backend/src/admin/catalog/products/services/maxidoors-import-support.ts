@@ -17,7 +17,9 @@ import {
   extractColorFromName,
   fetchDetail,
   findCharValue,
+  isLikelyMaxidoorsCharLabel,
   isMaxidoorsBoilerplateCharRow,
+  isMaxidoorsMarketingCompositionRow,
   mergeProductImages,
   normalizeSlug,
   slugify,
@@ -342,6 +344,19 @@ export async function importMaxidoorsOneListing(
           { supplierProductUrl: `${listing.url.replace(/\/$/, '')}/` },
         ],
       },
+      select: {
+        id: true,
+        supplierSku: true,
+        supplierCatalogMissingAt: true,
+        product: {
+          select: {
+            id: true,
+            name: true,
+            categoryId: true,
+            category: { select: { name: true } },
+          },
+        },
+      },
     });
     if (existingLink) {
       if (existingLink.supplierCatalogMissingAt) {
@@ -350,13 +365,24 @@ export async function importMaxidoorsOneListing(
           data: { supplierCatalogMissingAt: null },
         });
       }
-      return { status: 'skipped' };
+      return {
+        status: 'skipped',
+        item: {
+          name: (existingLink.product.name || listing.name).replace(/\s+/g, ' ').trim(),
+          url: listing.url,
+          productId: existingLink.product.id,
+          supplierSku: existingLink.supplierSku,
+          categoryId: existingLink.product.categoryId,
+          categoryName: existingLink.product.category.name,
+        },
+      };
     }
   }
 
   const detail = await fetchDetail(listing.url, opts.delayMs);
   const name = (detail.title || listing.name).replace(/\s+/g, ' ').trim();
-  const price = listing.price ?? detail.price ?? 0;
+  // Цена полотна с карточки приоритетнее листинга (на листинге иногда другая вёрстка)
+  const price = detail.price ?? listing.price ?? 0;
   if (!price || price <= 0) {
     throw new Error('Не удалось определить цену');
   }
@@ -432,8 +458,12 @@ export async function importMaxidoorsOneListing(
         const value = row.value.trim();
         if (!label || !value) continue;
         if (isMaxidoorsBoilerplateCharRow(label, value)) continue;
+        if (isMaxidoorsMarketingCompositionRow(label, value)) continue;
         // Размеры → Product.sizes (блок «Варианты исполнения»), не атрибут категории
         if (/^размер$/i.test(label)) continue;
+        // Комплектующие переносятся отдельно — не трогаем
+        if (/^комплектующ/i.test(label)) continue;
+        if (!isLikelyMaxidoorsCharLabel(label)) continue;
         if (mappedCharLabels.some((x) => x.toLowerCase() === label.toLowerCase())) continue;
         if (attributes.some((a) => a.name.toLowerCase() === label.toLowerCase())) {
           mappedCharLabels.push(label);

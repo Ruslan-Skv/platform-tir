@@ -16,7 +16,10 @@ export type MaxidoorsCatalogKey =
   | 'hinges'
   | 'plateHandles'
   | 'misc'
-  | 'apartmentDoors';
+  | 'apartmentDoors'
+  | 'ekoshpon'
+  | 'pvh'
+  | 'vfdEmalex';
 
 export type MaxidoorsCatalogUi = {
   key: MaxidoorsCatalogKey;
@@ -133,6 +136,30 @@ export const MAXIDOORS_CATALOG_UI: MaxidoorsCatalogUi[] = [
     confirmMessage:
       'Будут созданы товары из раздела «Двери в квартиру» на maxi-doors.ru (~47 шт.) в категорию «Двери в квартиру (м)». Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
   },
+  {
+    key: 'ekoshpon',
+    label: 'Двери экошпон',
+    categoryNames: ['двери экошпон (м)', 'двери экошпон'],
+    categoryId: 'cmrt2frl10005fnhxel2vno8i',
+    confirmMessage:
+      'Будут созданы товары из раздела «Двери экошпон» на maxi-doors.ru (~45 шт.) в категорию «Двери экошпон (м)». Импортируется цена полотна (не комплекта); блок «Комплектующие» не переносится. Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
+  },
+  {
+    key: 'pvh',
+    label: 'Двери ПВХ',
+    categoryNames: ['двери пвх (м)', 'двери пвх'],
+    categoryId: 'cmrt38k540001cqf2sww09mxw',
+    confirmMessage:
+      'Будут созданы товары из раздела «Двери ПВХ» на maxi-doors.ru (~31 шт.) в категорию «Двери ПВХ (м)». Импортируется цена полотна (не комплекта); блок «Комплектующие» не переносится. Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
+  },
+  {
+    key: 'vfdEmalex',
+    label: 'Двери ВФД Эмалекс',
+    categoryNames: ['двери вфд эмалекс (м)', 'двери вфд эмалекс', 'вфд эмалекс (м)'],
+    categoryId: 'cmrt3yktl000b2a1dvj2gwz0u',
+    confirmMessage:
+      'Будут созданы товары из раздела «Двери ВФД Эмалекс» на maxi-doors.ru (~19 шт.) в категорию «Двери ВФД Эмалекс (м)». Импортируется цена полотна (не комплекта); блок «Комплектующие» не переносится. Уже импортированные пропускаются. После завершения покажется список новых и товаров, которых больше нет у поставщика.',
+  },
 ];
 
 /** @deprecated use MAXIDOORS_CATALOG_UI / resolveMaxidoorsCatalogForCategory */
@@ -143,6 +170,8 @@ export type MaxidoorsImportItemRef = {
   url: string;
   productId?: string;
   supplierSku?: string | null;
+  categoryId?: string | null;
+  categoryName?: string | null;
 };
 
 export type MaxidoorsImportJob = {
@@ -157,6 +186,8 @@ export type MaxidoorsImportJob = {
   skipped: number;
   errors: string[];
   createdItems?: MaxidoorsImportItemRef[];
+  /** Пропущены: URL поставщика уже есть (в этой или другой категории) */
+  skippedItems?: MaxidoorsImportItemRef[];
   missingItems?: MaxidoorsImportItemRef[];
   startedAt: string;
   finishedAt?: string;

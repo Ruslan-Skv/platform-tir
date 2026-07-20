@@ -7,6 +7,9 @@ export type MaxidoorsImportItemRef = {
   url: string;
   productId?: string;
   supplierSku?: string | null;
+  /** Категория, в которой товар уже лежит (для пропущенных как existing) */
+  categoryId?: string | null;
+  categoryName?: string | null;
 };
 
 export type MaxidoorsImportJob = {
@@ -22,6 +25,8 @@ export type MaxidoorsImportJob = {
   errors: string[];
   /** Новые товары, созданные в этом запуске */
   createdItems: MaxidoorsImportItemRef[];
+  /** Пропущены: URL поставщика уже есть в каталоге (в этой или другой категории) */
+  skippedItems: MaxidoorsImportItemRef[];
   /** Ранее импортированные, которых больше нет в листинге поставщика */
   missingItems: MaxidoorsImportItemRef[];
   startedAt: string;

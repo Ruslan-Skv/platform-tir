@@ -103,6 +103,20 @@ function buildTimeline(job: MaxidoorsImportJob): TimelineStep[] {
   ];
 }
 
+function formatSkippedItemLine(
+  item: NonNullable<MaxidoorsImportJob['skippedItems']>[number],
+  targetCategoryId: string
+): string {
+  const where =
+    item.categoryName != null && item.categoryName !== ''
+      ? item.categoryId && item.categoryId !== targetCategoryId
+        ? `уже в «${item.categoryName}»`
+        : `уже в этой категории («${item.categoryName}»)`
+      : 'уже в каталоге';
+  const sku = item.supplierSku ? ` · арт. ${item.supplierSku}` : '';
+  return `${item.name}${sku} — ${where}`;
+}
+
 function StepMarker({ status }: { status: TimelineStepStatus }) {
   const label = status === 'done' ? '✓' : status === 'error' ? '!' : status === 'active' ? '' : '';
   return (
@@ -270,6 +284,28 @@ export function MaxidoorsImportProgressModal({ job, catalogLabel, error, onClose
                 ))}
                 {job.createdItems!.length > 30 ? (
                   <li>…и ещё {job.createdItems!.length - 30}</li>
+                ) : null}
+              </ul>
+            </div>
+          ) : null}
+
+          {(job.skippedItems?.length ?? 0) > 0 ? (
+            <div className={styles.report}>
+              <p className={styles.reportTitle}>
+                Уже импортированы ранее ({job.skippedItems!.length})
+              </p>
+              <p className={styles.reportHint}>
+                Пропущены: товар с таким URL поставщика уже есть в каталоге. Ниже — куда он был
+                импортирован раньше.
+              </p>
+              <ul className={styles.reportList}>
+                {job.skippedItems!.slice(0, 40).map((item) => (
+                  <li key={item.productId || item.url || item.name}>
+                    {formatSkippedItemLine(item, job.categoryId)}
+                  </li>
+                ))}
+                {job.skippedItems!.length > 40 ? (
+                  <li>…и ещё {job.skippedItems!.length - 40}</li>
                 ) : null}
               </ul>
             </div>

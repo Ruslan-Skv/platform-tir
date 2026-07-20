@@ -22,6 +22,9 @@ export const MAXIDOORS_PLATE_HANDLES_LIST_PATH = '/product-category/furnitura/ru
 export const MAXIDOORS_MISC_LIST_PATH = '/product-category/furnitura/raznoe/';
 export const MAXIDOORS_APARTMENT_DOORS_LIST_PATH =
   '/product-category/vhodnie-dveri/dveri-k-kvartiru/';
+export const MAXIDOORS_EKOSHAPON_LIST_PATH = '/product-category/dveri-mezhkomnatnie/jekoshpon/';
+export const MAXIDOORS_PVH_LIST_PATH = '/product-category/dveri-mezhkomnatnie/pvh/';
+export const MAXIDOORS_VFD_EMALEX_LIST_PATH = '/product-category/dveri-mezhkomnatnie/dveri-vfd/';
 
 export type MaxidoorsListingItem = {
   productKey: string;
@@ -109,6 +112,28 @@ export function parsePrice(text: string | null | undefined): number | null {
   if (!m) return null;
   const n = Number(m[1].replace(/\s/g, '').replace(',', '.'));
   return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/**
+ * Цена товара на карточке MaxiDoors: берём стоимость **полотна**, не комплекта
+ * и не позиций из блока «Комплектующие».
+ */
+export function parseMaxidoorsPanelPrice($: cheerio.Root): number | null {
+  const panelNew =
+    parsePrice($('.item-descr-1 .complect [data-mode="single"] .price-new').first().text()) ||
+    parsePrice(
+      $('.item-descr-1 .complect .active[data-mode="single"] .price-new').first().text(),
+    ) ||
+    parsePrice($('.complect [data-mode="single"] .price-new').first().text());
+  if (panelNew) return panelNew;
+
+  // Без переключателя «Полотно/Комплект» — обычная цена в шапке карточки
+  const header =
+    parsePrice($('.item-descr-1 .price-new').first().text()) ||
+    parsePrice($('.item-descr-1 .price').first().text());
+  if (header) return header;
+
+  return parsePrice($('.catalog-item > .price, .catalog-item .item-descr-1 .price').first().text());
 }
 
 /** Цвет из названия: ищем известные оттенки (длинные фразы раньше коротких). */
@@ -380,6 +405,85 @@ export function extractMaxidoorsSizeVariants($: cheerio.Root): {
   return { sizes, openingSides };
 }
 
+/** Настоящие подписи характеристик короткие («Цвет двери»), не целые предложения с «:». */
+export function isLikelyMaxidoorsCharLabel(label: string): boolean {
+  const t = label.replace(/:$/, '').replace(/\s+/g, ' ').trim();
+  if (t.length < 2 || t.length > 48) return false;
+  const words = t.split(/\s+/).filter(Boolean);
+  if (words.length > 5) return false;
+  // Маркетинг / проза, случайно попавшая как «Label: …»
+  if (
+    /отличает|отличают|представляет|является|позволяет|обеспечивает|изготовл|практичность|презентабельн|зачастую|недорогие/i.test(
+      t,
+    )
+  ) {
+    return false;
+  }
+  if (/^двери\s+из\s+/i.test(t)) return false;
+  if (/^характеристики$/i.test(t)) return false;
+  return true;
+}
+
+/**
+ * Рекламный состав комплекта (полотно + ручка BASARA + защёлка BUSSARE …) —
+ * не характеристики и не описание товара-полотна.
+ */
+export function isMaxidoorsMarketingCompositionRow(label: string, value: string): boolean {
+  const l = label.replace(/:$/, '').replace(/\s+/g, ' ').trim();
+  const v = value.replace(/\s+/g, ' ').trim();
+  const blob = `${l} ${v}`;
+  if (/basara|bussare/i.test(blob)) return true;
+  if (/дверное\s+полотно\s*\(/i.test(l)) return true;
+  if (/дизайнерская\s+ручка|магнитная\s+защелк|петли\s+bussare/i.test(l)) return true;
+  if (/\bR\d{2}\.\d{3}\b|\bL\d{4}\b/i.test(l)) return true;
+  // Короткие «Цвет/Покрытие/Тип установки» с рекламным абзацем вместо значения
+  if (/^(цвет|покрытие|тип\s+установки)$/i.test(l) && v.length > 40 && /[.!]/.test(v)) {
+    return true;
+  }
+  if (/что\s+входит\s+в\s+стоимость|полноценный\s+комплект|экономите\s+до/i.test(blob)) {
+    return true;
+  }
+  return false;
+}
+
+/** Карточки «Комплект …» (полотно+фурнитура) — не импортируем в каталоги полотен. */
+export function isMaxidoorsKitProduct(opts: {
+  url?: string | null;
+  name?: string | null;
+  productKey?: string | null;
+}): boolean {
+  const url = (opts.url || '').toLowerCase();
+  const key = (opts.productKey || '').toLowerCase();
+  const name = (opts.name || '').replace(/\s+/g, ' ').trim();
+  if (/\/product\/komplekt-|\/komplekt-/.test(url)) return true;
+  if (/^komplekt-/.test(key)) return true;
+  if (/^комплект\b/i.test(name)) return true;
+  return false;
+}
+
+/** Срезает рекламный блок состава комплекта из текста описания. */
+export function stripMaxidoorsKitCompositionText(text: string): string {
+  if (!text?.trim()) return '';
+  const markers = [
+    /что\s+входит\s+в\s+стоимость\s+комплекта/i,
+    /дверное\s+полотно\s*\(\s*дифорд\s*\)/i,
+    /дизайнерская\s+ручка\s+basara/i,
+    /магнитная\s+защелка\s+bussare/i,
+    /главное\s+преимущество\s+этого\s+набора/i,
+  ];
+  let cut = text.length;
+  for (const re of markers) {
+    const m = text.match(re);
+    if (m?.index != null) cut = Math.min(cut, m.index);
+  }
+  return text
+    .slice(0, cut)
+    .replace(/[^\S\n]+/g, ' ')
+    .replace(/ *\n */g, '\n')
+    .replace(/\n{3,}/g, '\n\n')
+    .trim();
+}
+
 /**
  * Разбирает блок «Описание» поставщика на пары «Параметр: значение»
  * (часто через &lt;br&gt;/&lt;p&gt; или одним абзацем).
@@ -409,7 +513,8 @@ export function extractLabeledDescriptionFields(
     const push = (labelRaw: string, valueRaw: string) => {
       const label = labelRaw.replace(/:$/, '').replace(/\s+/g, ' ').trim();
       const value = valueRaw.replace(/\s+/g, ' ').trim();
-      if (label.length < 2 || label.length > 90 || !value) return;
+      if (!label || !value) return;
+      if (!isLikelyMaxidoorsCharLabel(label)) return;
       if (/^\d+$/.test(label)) return;
       if (/^https?/i.test(label)) return;
       // Подписи характеристик у MaxiDoors — по-русски
@@ -417,6 +522,7 @@ export function extractLabeledDescriptionFields(
       if (/[\/\\]/.test(label)) return;
       if (/^(г\.|ул\.|пр\.|тел|пн|сб|вс)/i.test(label)) return;
       if (isMaxidoorsBoilerplateCharRow(label, value)) return;
+      if (isMaxidoorsMarketingCompositionRow(label, value)) return;
       const key = normalizeCharLabel(label);
       if (seen.has(key)) return;
       seen.add(key);
@@ -515,10 +621,37 @@ export function stripLabeledFieldsFromDescription(raw: string, labels: string[])
   return remaining;
 }
 
+/**
+ * Склеивает «оборванные» строки от Word/узкой колонки поставщика
+ * (перенос посреди предложения отдельным &lt;p&gt;/строкой).
+ * Новая строка абзаца — только если предыдущая заканчивается на . ! ? …
+ */
+export function reflowSoftWrappedProse(text: string): string {
+  const lines = text
+    .split(/\n+/)
+    .map((l) => l.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+  if (lines.length === 0) return '';
+
+  const paragraphs: string[] = [];
+  let buf = lines[0];
+  for (let i = 1; i < lines.length; i++) {
+    const next = lines[i];
+    if (!/[.!?…]$/.test(buf)) {
+      buf = `${buf} ${next}`;
+      continue;
+    }
+    paragraphs.push(buf);
+    buf = next;
+  }
+  paragraphs.push(buf);
+  return paragraphs.join('\n');
+}
+
 /** Plain text → безопасные абзацы HTML (теги не показываются как текст). */
 export function plainTextToParagraphsHtml(text: string): string {
   if (!text?.trim()) return '';
-  return text
+  return reflowSoftWrappedProse(text)
     .split(/\n+/)
     .map((p) => p.replace(/\s+/g, ' ').trim())
     .filter((p) => p.length > 0)
@@ -557,9 +690,7 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
   const supplierSku =
     parseSupplierSku($('.code-up').first().text()) || parseSupplierSku($.root().text());
 
-  const price =
-    parsePrice($('.item-descr-1 .price').first().text()) ||
-    parsePrice($('.catalog-item .price').first().text());
+  const price = parseMaxidoorsPanelPrice($);
 
   const tape = $('.catalog-item .tape, .tape-stock').first().text().replace(/\s+/g, ' ').trim();
   const onOrder =
@@ -582,18 +713,23 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
   // Сначала срезаем рекламный хвост — иначе из него появляются ложные атрибуты
   // («Данную модель Вы можете…: г. Мурманск…»).
   const descriptionSourceRaw = extraHtml.trim() || extraText;
-  const descriptionSourceClean = stripMaxidoorsBoilerplateText(
-    descriptionSourceRaw
-      .replace(/<br\s*\/?>/gi, '\n')
-      .replace(/<\/p>/gi, '\n')
-      .replace(/<[^>]+>/g, ' ')
-      .replace(/&nbsp;/gi, ' '),
+  const descriptionSourceClean = stripMaxidoorsKitCompositionText(
+    stripMaxidoorsBoilerplateText(
+      descriptionSourceRaw
+        .replace(/<br\s*\/?>/gi, '\n')
+        .replace(/<\/p>/gi, '\n')
+        .replace(/<[^>]+>/g, ' ')
+        .replace(/&nbsp;/gi, ' '),
+    ),
   );
 
   // Параметры из блока «Описание» («Внутренняя отделка: …», «Толщина стали: …» и т.д.)
   const labeledFromDescription = extractLabeledDescriptionFields(descriptionSourceClean);
   for (const row of labeledFromDescription) {
     if (isMaxidoorsBoilerplateCharRow(row.label, row.value)) continue;
+    if (isMaxidoorsMarketingCompositionRow(row.label, row.value)) continue;
+    if (!isLikelyMaxidoorsCharLabel(row.label)) continue;
+    if (/^комплектующ/i.test(row.label)) continue;
     const key = normalizeCharLabel(row.label);
     if (charRows.some((r) => normalizeCharLabel(r.label) === key)) continue;
     charRows.push({ label: row.label, value: row.value });
@@ -627,7 +763,9 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
     extraHtml.trim() || extraText,
     labeledFromDescription.map((r) => r.label),
   );
-  const cleanedRemaining = stripMaxidoorsBoilerplateText(remainingPlain);
+  const cleanedRemaining = stripMaxidoorsKitCompositionText(
+    stripMaxidoorsBoilerplateText(remainingPlain),
+  );
   const extraDescription = plainTextToParagraphsHtml(cleanedRemaining);
 
   const images: string[] = [];
@@ -665,11 +803,13 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
   }
 
   // Финальный фильтр: рекламный хвост не должен попасть в charRows / атрибуты.
-  // «Размер» уходит в Product.sizes, не в JSON-атрибуты.
+  // «Размер» уходит в Product.sizes; «Комплектующие» не импортируем.
   const filteredCharRows = charRows.filter(
     (r) =>
       !isMaxidoorsBoilerplateCharRow(r.label, r.value) &&
-      !/^размер$/i.test(r.label.replace(/:$/, '').trim()),
+      !isMaxidoorsMarketingCompositionRow(r.label, r.value) &&
+      !/^размер$/i.test(r.label.replace(/:$/, '').trim()) &&
+      !/^комплектующ/i.test(r.label.replace(/:$/, '').trim()),
   );
   const description = buildMaxidoorsProductDescription(filteredCharRows, extraDescription);
 
