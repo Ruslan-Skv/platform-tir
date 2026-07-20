@@ -9,6 +9,17 @@ export const MAXIDOORS_BASE = 'https://maxi-doors.ru';
 export const MAXIDOORS_HANDLES_LIST_PATH = '/product-category/furnitura/ruchki/';
 export const MAXIDOORS_CYLINDERS_LIST_PATH = '/product-category/furnitura/cilindri/';
 export const MAXIDOORS_THUMBTURNS_LIST_PATH = '/product-category/furnitura/zavertki/';
+export const MAXIDOORS_LIMITERS_LIST_PATH = '/product-category/furnitura/ogranichiteli/';
+export const MAXIDOORS_BOLTS_LIST_PATH = '/product-category/furnitura/zadvizhki/';
+export const MAXIDOORS_PLATES_LIST_PATH = '/product-category/furnitura/nakladki/';
+export const MAXIDOORS_LOCKS_LIST_PATH = '/product-category/furnitura/zamki-vreznie/';
+export const MAXIDOORS_CLOSERS_LIST_PATH = '/product-category/furnitura/zamki-navesnie/';
+export const MAXIDOORS_RIGELS_LIST_PATH = '/product-category/furnitura/rigeli/';
+export const MAXIDOORS_SLIDING_LIST_PATH =
+  '/product-category/furnitura/komplektujushhie-dlja-razdvizhnih-dverej/';
+export const MAXIDOORS_HINGES_LIST_PATH = '/product-category/furnitura/petli-dvernie/';
+export const MAXIDOORS_PLATE_HANDLES_LIST_PATH = '/product-category/furnitura/ruchki-na-planke/';
+export const MAXIDOORS_MISC_LIST_PATH = '/product-category/furnitura/raznoe/';
 
 export type MaxidoorsListingItem = {
   productKey: string;
@@ -341,11 +352,31 @@ export function parseDetailHtml(html: string): MaxidoorsDetailData {
   const findChar = (re: RegExp) =>
     charRows.find((r) => re.test(r.label.replace(/:$/, '')))?.value?.trim() || null;
 
-  const manufacturer = findChar(/^производитель$/i);
-  const coatingMaterial = findChar(/^материал\s+покрытия$/i);
-
   const extraHtml = $('.item-descr-3 .text').first().html() || '';
   const extraText = $('.item-descr-3 .text').first().text().replace(/\s+/g, ' ').trim();
+
+  // У ограничителей и части фурнитуры «Производитель» / материал часто только в тексте описания.
+  let manufacturer = findChar(/^производитель$/i);
+  if (!manufacturer) {
+    const m = extraText.match(
+      /производитель\s*:\s*([A-Za-zА-Яа-яЁё0-9][A-Za-zА-Яа-яЁё0-9\s.,\-/()]{0,80}?)(?=\s*(?:дополнительно|материал|цвет|высота|гальваническое|$))/i,
+    );
+    manufacturer = m?.[1]?.replace(/\s+/g, ' ').trim() || null;
+  }
+
+  const coatingMaterial = findChar(/^материал\s+покрытия$/i);
+
+  if (!findChar(/^материал$/i)) {
+    const mat =
+      findChar(/^материал\s+изготовления$/i) ||
+      extraText
+        .match(/материал\s+изготовления\s*:\s*([^.]+)/i)?.[1]
+        ?.replace(/\s+/g, ' ')
+        .trim() ||
+      null;
+    if (mat) charRows.push({ label: 'Материал', value: mat });
+  }
+
   let extraDescription = '';
   if (extraHtml.trim()) {
     extraDescription = stripMaxidoorsBoilerplateHtml(
