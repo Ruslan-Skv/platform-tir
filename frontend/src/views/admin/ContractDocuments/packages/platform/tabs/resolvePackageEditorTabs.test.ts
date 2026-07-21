@@ -4,8 +4,8 @@ import { PACKAGE_DOCUMENT_TAB_IDS } from './packageDocumentTabs';
 import { resolvePackageEditorVisibleTabs } from './resolvePackageEditorTabs';
 
 describe('resolvePackageEditorVisibleTabs', () => {
-  it('shows consent tab for REPAIR, WINDOWS, DOORS and BLINDS', () => {
-    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS', 'BLINDS'] as const) {
+  it('shows consent tab for REPAIR, WINDOWS, DOORS, BLINDS and CEILINGS', () => {
+    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS', 'BLINDS', 'CEILINGS'] as const) {
       const tabs = resolvePackageEditorVisibleTabs({
         tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
         packageKind: kind,
@@ -15,28 +15,24 @@ describe('resolvePackageEditorVisibleTabs', () => {
     }
   });
 
-  it('hides memo for REPAIR and shows it for DOORS and BLINDS', () => {
+  it('hides memo for REPAIR and shows it for DOORS, BLINDS and CEILINGS', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
       packageKind: 'REPAIR',
       addendumSlotCount: 0,
     });
-    const doors = resolvePackageEditorVisibleTabs({
-      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
-      packageKind: 'DOORS',
-      addendumSlotCount: 0,
-    });
-    const blinds = resolvePackageEditorVisibleTabs({
-      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
-      packageKind: 'BLINDS',
-      addendumSlotCount: 0,
-    });
-    expect(repair).not.toContain('memo');
-    expect(doors).toContain('memo');
-    expect(blinds).toContain('memo');
+    for (const kind of ['DOORS', 'BLINDS', 'CEILINGS'] as const) {
+      const tabs = resolvePackageEditorVisibleTabs({
+        tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+        packageKind: kind,
+        addendumSlotCount: 0,
+      });
+      expect(repair).not.toContain('memo');
+      expect(tabs).toContain('memo');
+    }
   });
 
-  it('shows deliveryNote for DOORS and BLINDS after actAcceptance and before memo', () => {
+  it('shows deliveryNote for DOORS, BLINDS and CEILINGS after actAcceptance and before memo', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
       packageKind: 'REPAIR',
@@ -47,7 +43,7 @@ describe('resolvePackageEditorVisibleTabs', () => {
       packageKind: 'WINDOWS',
       addendumSlotCount: 0,
     });
-    for (const kind of ['DOORS', 'BLINDS'] as const) {
+    for (const kind of ['DOORS', 'BLINDS', 'CEILINGS'] as const) {
       const tabs = resolvePackageEditorVisibleTabs({
         tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
         packageKind: kind,

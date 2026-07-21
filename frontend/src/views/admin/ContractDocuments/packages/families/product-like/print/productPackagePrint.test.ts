@@ -10,7 +10,7 @@ import {
 
 describe('productPackagePrint', () => {
   it('enables compact print for customer-facing product direction tabs', () => {
-    for (const kind of ['WINDOWS', 'DOORS', 'BLINDS'] as const) {
+    for (const kind of ['WINDOWS', 'DOORS', 'BLINDS', 'CEILINGS'] as const) {
       expect(shouldUseWindowsPackageCompactPrint(kind, 'contract')).toBe(true);
       expect(shouldUseWindowsPackageCompactPrint(kind, 'specification')).toBe(true);
       expect(shouldUseWindowsPackageCompactPrint(kind, 'estimate')).toBe(true);

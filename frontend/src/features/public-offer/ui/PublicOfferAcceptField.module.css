@@ -69,17 +69,47 @@
   margin-top: 0.5rem;
 }
 
-.previewModalContent {
-  max-height: min(75vh, 36rem);
+/* Как модалка «Новая категория»: отступы панели + голубая оболочка формы */
+.modalPanel {
+  padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px) !important;
+}
+
+.modalPanel > div:first-child {
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: var(--admin-space-xl, 12px);
+}
+
+.modalPanel :global([class*='titleRow']) {
+  align-items: center;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.formShell:global([data-modal-form]) {
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface-soft, #f8fafc) 100%
+  );
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+}
+
+.previewCard {
+  max-height: min(60vh, 32rem);
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  padding: var(--admin-space-lg, 10px) var(--admin-space-xl, 12px);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
 }
 
 .previewText {
   margin: 0;
   font-size: 0.9375rem;
   line-height: 1.65;
-  color: #1f2937;
+  color: var(--admin-text-primary, #1f2937);
   text-align: justify;
 }
 
@@ -127,42 +157,39 @@
 .previewPdfHint {
   margin: 0;
   font-size: 0.875rem;
-  color: #6b7280;
-}
-
-.previewPdfOpen {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  align-self: flex-start;
-  min-height: 2.5rem;
-  padding: 0.5rem 1rem;
-  border-radius: 0.375rem;
-  background: var(--gradient-accent, var(--color-accent));
-  color: #fff;
-  font-size: 0.9375rem;
-  font-weight: 600;
-  text-decoration: none;
-  -webkit-tap-highlight-color: transparent;
-  touch-action: manipulation;
+  color: var(--admin-text-muted, #6b7280);
 }
 
 .previewPdfFrame {
   width: 100%;
   min-height: 18rem;
-  height: min(55vh, 28rem);
-  border: 1px solid #e5e7eb;
-  border-radius: 0.375rem;
-  background: #f3f4f6;
+  height: min(45vh, 24rem);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-soft, #f3f4f6);
 }
 
 .previewEmpty {
   margin: 0;
-  color: #6b7280;
+  color: var(--admin-text-muted, #6b7280);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .label {
   color: #e5e7eb;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formShell:global([data-modal-form]) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136, rgb(37 99 235 / 0.14)) 0%,
+    var(--admin-overlay-color-021, rgb(37 99 235 / 0.06)) 100%
+  );
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewCard {
+  border-color: var(--admin-border, #374151);
+  background: var(--admin-surface, #111827);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .previewText {
@@ -176,5 +203,5 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .previewPdfFrame {
   border-color: #374151;
-  background: #111827;
+  background: #0b1220;
 }

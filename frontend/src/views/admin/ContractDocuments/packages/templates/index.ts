@@ -59,11 +59,23 @@ const BLINDS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTa
   memo: blindsTemplateMemo,
 };
 
+/** Натяжные потолки: те же дефолты, что у «Двери» (включая памятку). */
+const CEILINGS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
+  contract: doorsTemplateContract,
+  actAcceptance: doorsTemplateActAcceptance,
+  deliveryNote: doorsTemplateDeliveryNote,
+  memo: doorsTemplateMemo,
+};
+
 /** Резервный HTML вкладки библиотеки с учётом направления пакета. */
 export function libraryTemplateFallbackHtml(
   kind: ContractDocumentPackageKind,
   tab: PackageLibraryTemplateTabId
 ): string {
+  if (kind === 'CEILINGS') {
+    const ceilingsHtml = CEILINGS_LIBRARY_TEMPLATE_OVERRIDES[tab];
+    if (ceilingsHtml) return ceilingsHtml;
+  }
   if (kind === 'BLINDS') {
     const blindsHtml = BLINDS_LIBRARY_TEMPLATE_OVERRIDES[tab];
     if (blindsHtml) return blindsHtml;
@@ -118,6 +130,13 @@ export function packageDocumentTemplateFallbackHtml(
   kind: ContractDocumentPackageKind,
   tab: PackageDocumentTemplateTabId
 ): string {
+  if (kind === 'CEILINGS') {
+    const ceilingsDocHtml = PRODUCT_LINE_SPEC_DOCUMENT_TEMPLATE_OVERRIDES[tab];
+    if (ceilingsDocHtml) return ceilingsDocHtml;
+    const ceilingsLibraryTab = tab as PackageLibraryTemplateTabId;
+    const ceilingsHtml = CEILINGS_LIBRARY_TEMPLATE_OVERRIDES[ceilingsLibraryTab];
+    if (ceilingsHtml) return ceilingsHtml;
+  }
   if (kind === 'BLINDS') {
     const blindsDocHtml = PRODUCT_LINE_SPEC_DOCUMENT_TEMPLATE_OVERRIDES[tab];
     if (blindsDocHtml) return blindsDocHtml;

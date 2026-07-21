@@ -9,10 +9,10 @@ import { isProductLikePackageKind } from './packageDirectionRegistry';
 /** Товарные направления с общим UI пакета (счёт-заказ, спецификация, без акта начала работ). */
 export type ProductDirectionPackageKind = Extract<
   ContractDocumentPackageKind,
-  'WINDOWS' | 'DOORS' | 'BLINDS'
+  'WINDOWS' | 'DOORS' | 'BLINDS' | 'CEILINGS'
 >;
 
-/** Направления «Окна», «Двери», «Жалюзи» — общий UI пакета PRODUCT_LIKE. */
+/** Направления «Окна», «Двери», «Жалюзи», «Натяжные потолки» — общий UI пакета PRODUCT_LIKE. */
 export function isProductDirectionPackageKind(
   kind: ContractDocumentPackageKind | undefined | null
 ): kind is ProductDirectionPackageKind {

@@ -4,14 +4,14 @@
 
 ## Направления (kind)
 
-| Kind        | UI      | Семейство       | `directions/`                      |
-| ----------- | ------- | --------------- | ---------------------------------- |
-| `REPAIR`    | Ремонт  | `REPAIR_LIKE`   | scaffold (код в `platform/`)       |
-| `WINDOWS`   | Окна    | `PRODUCT_LIKE`  | алиасы `Windows*` → `product-like` |
-| `DOORS`     | Двери   | `PRODUCT_LIKE`  | алиасы `Doors*` → `product-like`   |
-| `BLINDS`    | Жалюзи  | `PRODUCT_LIKE`  | алиасы `Blinds*` → `product-like`  |
-| `CEILINGS`  | Потолки | `UNIMPLEMENTED` | scaffold                           |
-| `FURNITURE` | Мебель  | `UNIMPLEMENTED` | scaffold                           |
+| Kind        | UI               | Семейство       | `directions/`                       |
+| ----------- | ---------------- | --------------- | ----------------------------------- |
+| `REPAIR`    | Ремонт           | `REPAIR_LIKE`   | scaffold (код в `platform/`)        |
+| `WINDOWS`   | Окна             | `PRODUCT_LIKE`  | алиасы `Windows*` → `product-like`  |
+| `DOORS`     | Двери            | `PRODUCT_LIKE`  | алиасы `Doors*` → `product-like`    |
+| `BLINDS`    | Жалюзи           | `PRODUCT_LIKE`  | алиасы `Blinds*` → `product-like`   |
+| `CEILINGS`  | Натяжные потолки | `PRODUCT_LIKE`  | алиасы `Ceilings*` → `product-like` |
+| `FURNITURE` | Мебель           | `UNIMPLEMENTED` | scaffold                            |
 
 Реестр: `config/packageDirectionRegistry.ts`.
 
@@ -40,10 +40,10 @@ packages/
 
 ## Семейства
 
-| Семейство       | Направления         | Особенности                                                          |
-| --------------- | ------------------- | -------------------------------------------------------------------- |
-| `REPAIR_LIKE`   | Ремонт              | Смета, акты, заказ-наряды, производственный журнал                   |
-| `PRODUCT_LIKE`  | Окна, Двери, Жалюзи | Счёт-заказ, спецификация, памятка; Двери/Жалюзи — строки + накладная |
-| `UNIMPLEMENTED` | Потолки, Мебель     | В реестре; создание договоров отключено                              |
+| Семейство       | Направления                           | Особенности                                                                  |
+| --------------- | ------------------------------------- | ---------------------------------------------------------------------------- |
+| `REPAIR_LIKE`   | Ремонт                                | Смета, акты, заказ-наряды, производственный журнал                           |
+| `PRODUCT_LIKE`  | Окна, Двери, Жалюзи, Натяжные потолки | Счёт-заказ, спецификация, памятка; Двери/Жалюзи/Потолки — строки + накладная |
+| `UNIMPLEMENTED` | Мебель                                | В реестре; создание договоров отключено                                      |
 
 Новый товарный комплект = запись в реестре (`productLikeConfig` или `productLikeWithLineSpecification`) + overrides в `templates/`; отдельная папка в `directions/` — только если есть уникальный UI или логика.

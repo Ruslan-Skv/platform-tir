@@ -9,15 +9,15 @@ export type ProductSpecificationCopy = {
 export function productSpecificationCopy(
   packageKind: ProductDirectionPackageKind
 ): ProductSpecificationCopy {
-  if (packageKind === 'BLINDS') {
+  if (packageKind === 'DOORS') {
     return {
-      hint: 'Заполните позиции вручную. Итог по строкам учитывается в стоимости изделий по договору.',
+      hint: 'Заполните позиции вручную или загрузите из корзины каталога. Итог по строкам учитывается в стоимости изделий по договору.',
       a4Title: 'Спецификация',
     };
   }
   if (packageUsesLineSpecification(packageKind)) {
     return {
-      hint: 'Заполните позиции вручную или загрузите из корзины каталога. Итог по строкам учитывается в стоимости изделий по договору.',
+      hint: 'Заполните позиции вручную. Итог по строкам учитывается в стоимости изделий по договору.',
       a4Title: 'Спецификация',
     };
   }

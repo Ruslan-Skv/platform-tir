@@ -560,9 +560,12 @@ export class ContractDocumentPackagesController {
     if (
       pkg.kind !== ContractDocumentPackageKind.WINDOWS &&
       pkg.kind !== ContractDocumentPackageKind.DOORS &&
-      pkg.kind !== ContractDocumentPackageKind.BLINDS
+      pkg.kind !== ContractDocumentPackageKind.BLINDS &&
+      pkg.kind !== ContractDocumentPackageKind.CEILINGS
     ) {
-      throw new BadRequestException('Доступно только для товарных пакетов (Окна, Двери, Жалюзи)');
+      throw new BadRequestException(
+        'Доступно только для товарных пакетов (Окна, Двери, Жалюзи, Натяжные потолки)',
+      );
     }
     const filename = path.basename(file.path);
     return {

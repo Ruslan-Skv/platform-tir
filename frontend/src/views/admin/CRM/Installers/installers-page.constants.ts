@@ -6,7 +6,7 @@ export const DIRECTION_LABELS: Record<InstallerDirection, string> = {
   REPAIR: 'Ремонт',
   WINDOWS: 'Окна',
   DOORS: 'Двери',
-  CEILINGS: 'Потолки',
+  CEILINGS: 'Натяжные потолки',
   FURNITURE: 'Мебель',
   BLINDS: 'Жалюзи',
 };

@@ -121,7 +121,7 @@ const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDir
   REPAIR: repairLikeConfig('REPAIR', 'Ремонт', true),
   WINDOWS: productLikeConfig('WINDOWS', 'Окна'),
   DOORS: productLikeWithLineSpecification('DOORS', 'Двери'),
-  CEILINGS: unimplementedConfig('CEILINGS', 'Потолки'),
+  CEILINGS: productLikeWithLineSpecification('CEILINGS', 'Натяжные потолки'),
   BLINDS: productLikeWithLineSpecification('BLINDS', 'Жалюзи'),
   FURNITURE: unimplementedConfig('FURNITURE', 'Мебель'),
 };

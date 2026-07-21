@@ -43,6 +43,7 @@ export const TEMPLATE_LIBRARY_KIND_OPTIONS = [
   { value: 'WINDOWS' as const, label: 'Окна' },
   { value: 'DOORS' as const, label: 'Двери' },
   { value: 'BLINDS' as const, label: 'Жалюзи' },
+  { value: 'CEILINGS' as const, label: 'Натяжные потолки' },
 ];
 
 export function templateLibraryKindLabel(kind: ContractDocumentPackageKind): string {

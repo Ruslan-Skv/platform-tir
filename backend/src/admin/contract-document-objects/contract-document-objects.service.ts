@@ -20,7 +20,7 @@ const KIND_LABELS: Record<ContractDocumentPackageKind, string> = {
   REPAIR: 'Ремонт',
   WINDOWS: 'Окна',
   DOORS: 'Двери',
-  CEILINGS: 'Потолки',
+  CEILINGS: 'Натяжные потолки',
   BLINDS: 'Жалюзи',
   FURNITURE: 'Мебель',
 };

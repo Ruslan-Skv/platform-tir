@@ -120,12 +120,7 @@ function PublicOfferPreviewBody({ offer }: { offer: PublicOfferInfo }) {
         <p className={styles.previewPdfHint}>
           Документ в формате PDF. Если предпросмотр не отображается, откройте файл отдельно.
         </p>
-        <a
-          href={pdfUrl}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={styles.previewPdfOpen}
-        >
+        <a href={pdfUrl} target="_blank" rel="noopener noreferrer" data-modal-btn="primary">
           Открыть PDF
         </a>
         <iframe className={styles.previewPdfFrame} src={pdfUrl} title={offer.pageTitle} />
@@ -167,11 +162,24 @@ export function PublicOfferAcceptFields({
         onClose={() => setPreviewOffer(null)}
         title={previewOffer?.pageTitle || 'Публичная оферта'}
         size="lg"
-        compactOnMobile
-        alignTop
-        contentClassName={styles.previewModalContent}
+        showCloseButton
+        className={styles.modalPanel}
       >
-        {previewOffer ? <PublicOfferPreviewBody offer={previewOffer} /> : null}
+        <div className={styles.formShell} data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Договор оферты. Ознакомьтесь с текстом перед подтверждением согласия в корзине.
+          </p>
+
+          <div className={styles.previewCard}>
+            {previewOffer ? <PublicOfferPreviewBody offer={previewOffer} /> : null}
+          </div>
+
+          <div data-modal-form-actions>
+            <button type="button" data-modal-btn="secondary" onClick={() => setPreviewOffer(null)}>
+              Закрыть
+            </button>
+          </div>
+        </div>
       </Modal>
     </div>
   );
