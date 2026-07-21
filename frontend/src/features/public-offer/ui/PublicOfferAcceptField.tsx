@@ -164,6 +164,7 @@ export function PublicOfferAcceptFields({
         size="lg"
         showCloseButton
         className={styles.modalPanel}
+        contentClassName={styles.modalContent}
       >
         <div className={styles.formShell} data-modal-form data-modal-density="compact">
           <p data-modal-form-hint style={{ marginTop: 0 }}>

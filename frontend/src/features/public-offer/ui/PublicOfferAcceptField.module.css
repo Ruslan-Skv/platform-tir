@@ -69,12 +69,19 @@
   margin-top: 0.5rem;
 }
 
-/* Как модалка «Новая категория»: отступы панели + голубая оболочка формы */
+/* Как модалка «Новая категория»: отступы панели + голубая оболочка формы.
+   Скролл только у текста (.previewCard), не у всей панели. */
 .modalPanel {
+  display: flex !important;
+  flex-direction: column !important;
+  /* Вычитаем вертикальные отступы .center у Modal — иначе появляется «лишние» 3–4 мм скролла оболочки */
+  max-height: calc(100dvh - 24px - env(safe-area-inset-bottom, 0px)) !important;
+  overflow: hidden !important;
   padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px) !important;
 }
 
 .modalPanel > div:first-child {
+  flex-shrink: 0;
   gap: var(--admin-space-sm, 6px);
   margin-bottom: var(--admin-space-xl, 12px);
 }
@@ -84,8 +91,21 @@
   gap: var(--admin-space-sm, 6px);
 }
 
+.modalContent {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
 .formShell:global([data-modal-form]) {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
   gap: var(--admin-space-xs, 4px);
+  min-height: 0;
+  overflow: hidden;
   padding: var(--admin-space-xs, 4px);
   background: linear-gradient(
     180deg,
@@ -95,14 +115,28 @@
   border-color: var(--admin-info-border-soft, #bfdbfe);
 }
 
+.formShell:global([data-modal-form]) :global([data-modal-form-hint]),
+.formShell:global([data-modal-form]) :global([data-modal-form-actions]) {
+  flex-shrink: 0;
+}
+
 .previewCard {
-  max-height: min(60vh, 32rem);
+  flex: 1 1 auto;
+  min-height: 0;
   overflow: auto;
   -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
   padding: var(--admin-space-lg, 10px) var(--admin-space-xl, 12px);
   border: 1px solid var(--admin-border, #e5e7eb);
   border-radius: var(--admin-radius-md, 8px);
   background: var(--admin-surface, #fff);
+}
+
+@media (width <= 767px) {
+  .modalPanel {
+    max-height: calc(100dvh - 16px - env(safe-area-inset-bottom, 0px)) !important;
+    padding: var(--admin-space-xl, 12px) var(--admin-space-lg, 10px) !important;
+  }
 }
 
 .previewText {
