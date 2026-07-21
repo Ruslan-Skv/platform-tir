@@ -26,7 +26,8 @@ export class ContractDocumentPackageCrudService {
     if (
       dto.kind === ContractDocumentPackageKind.REPAIR ||
       dto.kind === ContractDocumentPackageKind.WINDOWS ||
-      dto.kind === ContractDocumentPackageKind.DOORS
+      dto.kind === ContractDocumentPackageKind.DOORS ||
+      dto.kind === ContractDocumentPackageKind.BLINDS
     ) {
       const defaultDays = await this.kindSettings.resolveDefaultWorkPeriodDays(dto.kind);
       formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);

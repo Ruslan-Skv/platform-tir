@@ -22,12 +22,17 @@ export function PackageTemplateDocumentPreview({
   packageKind,
   renderedDoc,
 }: PackageTemplateDocumentPreviewProps) {
+  const landscapeSheet = packageKind === 'BLINDS' && activeTab === 'deliveryNote';
+
   if (isPackageTemplateA4SheetTab(activeTab)) {
+    const sheetClass = `${cdDocPreview.estimateA4Sheet}${
+      landscapeSheet ? ` ${cdDocPreview.estimateA4SheetLandscape}` : ''
+    }`;
     return (
       <div className={cdDocPreview.estimateA4Wrap}>
         {isPackageActTwinOneSheetTab(activeTab, packageKind) ? (
           <article
-            className={`${cdDocPreview.estimateA4Sheet} ${cdDocPreview.packageActTwinSheet}`}
+            className={`${sheetClass} ${cdDocPreview.packageActTwinSheet}`}
             aria-label="Два экземпляра акта на одном листе"
           >
             <div
@@ -38,7 +43,10 @@ export function PackageTemplateDocumentPreview({
             />
           </article>
         ) : (
-          <article className={cdDocPreview.estimateA4Sheet}>
+          <article
+            className={sheetClass}
+            data-page-orientation={landscapeSheet ? 'landscape' : 'portrait'}
+          >
             <div
               className={cdDocPreview.contractA4Preview}
               dangerouslySetInnerHTML={{ __html: renderedDoc }}

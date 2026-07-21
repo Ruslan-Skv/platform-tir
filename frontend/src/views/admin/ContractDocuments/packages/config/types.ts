@@ -21,8 +21,13 @@ export type PackageDirectionConfig = {
   hiddenEditorTabs: readonly PackageDocumentTabId[];
   /** Памятка в строке вкладок (только PRODUCT_LIKE). */
   memoTabVisible: boolean;
-  /** Накладная в строке вкладок (только «Двери»). */
+  /** Накладная в строке вкладок (Двери, Жалюзи, …). */
   deliveryNoteTabVisible: boolean;
+  /**
+   * Спецификация строками (как «Двери»), а не файлом+суммой (как «Окна»).
+   * Позиции хранятся в `doorsSpecificationLines` до обобщения модели.
+   */
+  lineSpecificationEnabled: boolean;
   /** Переопределения подписей вкладок (счёт-заказ, …). */
   tabLabelOverrides: Partial<Record<PackageDocumentTabId, PackageTabLabelOverride>>;
   profilesKind: ContractDocumentPackageKind;

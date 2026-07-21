@@ -167,6 +167,15 @@ export const PACKAGE_CONTRACT_PLACEHOLDER_GROUPS: PackageContractPlaceholderGrou
     ],
   },
   {
+    title: 'Накладная (товарные направления)',
+    items: [
+      {
+        path: 'deliveryNote.productsHtml',
+        label: 'Таблица изделий из спецификации (HTML; Двери, Жалюзи, …)',
+      },
+    ],
+  },
+  {
     title: 'Дата',
     items: [
       {

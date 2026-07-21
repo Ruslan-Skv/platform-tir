@@ -26,6 +26,8 @@ export type PrintDocumentOptions = {
   contractCompact?: boolean;
   /** Пакет «Окна»: единая типографика, плотные поля страницы, смета/спецификация как договор. */
   windowsPackagePrint?: boolean;
+  /** Ориентация листа при печати (спецификация/накладная «Жалюзи» — landscape). */
+  pageOrientation?: 'portrait' | 'landscape';
 };
 
 const MARGIN_FOOTER_MAX_EACH = 44;
@@ -49,7 +51,11 @@ function cssDoubleQuotedStringFragment(s: string): string {
  * Подписи — в `@bottom-center`, номера — в `@bottom-right`: в одном длинном `content`
  * счётчики иногда не отображаются в Chromium (см. примеры с отдельными margin boxes).
  */
-function buildMarginFooterPageRule(names: PrintMarginFooterNames, tightMargins = false): string {
+function buildMarginFooterPageRule(
+  names: PrintMarginFooterNames,
+  tightMargins = false,
+  pageOrientation: 'portrait' | 'landscape' = 'portrait'
+): string {
   const c = cssDoubleQuotedStringFragment(
     truncateOneLine(names.contractorSignatory, MARGIN_FOOTER_MAX_EACH)
   );
@@ -60,7 +66,7 @@ function buildMarginFooterPageRule(names: PrintMarginFooterNames, tightMargins =
   return `
   @page {
     margin: ${pageMargin};
-    size: A4;
+    size: A4 ${pageOrientation};
     @bottom-center {
       content: "Подрядчик ______________ / ${c}     Заказчик ______________ / ${u}";
       font-size: 7pt;
@@ -511,37 +517,37 @@ const WINDOWS_PACKAGE_UNIFIED_PRINT_CSS = `
   .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(1) {
     text-align: center !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(2),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(2) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
     width: 24% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(3),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(3) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
     width: 11% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(4),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(4) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
     width: 10% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(5),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(5) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
     width: 14% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(6),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(6) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-last-child(3),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(3) {
     width: 7% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(6) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(3) {
     text-align: right !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(7),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(7),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(8),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(8) {
-    width: 15% !important;
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-last-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-last-child(1),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(1) {
+    width: 12% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(7),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(8) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(1) {
     text-align: right !important;
   }
   .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th {
@@ -724,13 +730,15 @@ function buildPrintStylesheet(
   marginFooter?: PrintMarginFooterNames,
   cashOrderCompact?: boolean,
   contractCompact?: boolean,
-  windowsPackagePrint?: boolean
+  windowsPackagePrint?: boolean,
+  pageOrientation: 'portrait' | 'landscape' = 'portrait'
 ): string {
+  const orientation = pageOrientation === 'landscape' ? 'landscape' : 'portrait';
   const pageBlock = marginFooter
-    ? buildMarginFooterPageRule(marginFooter, windowsPackagePrint)
+    ? buildMarginFooterPageRule(marginFooter, windowsPackagePrint, orientation)
     : windowsPackagePrint
-      ? `@page { margin: 10mm; size: A4 portrait; }`
-      : `@page { margin: 16mm; size: A4; }`;
+      ? `@page { margin: 10mm; size: A4 ${orientation}; }`
+      : `@page { margin: 16mm; size: A4 ${orientation}; }`;
 
   const cashOrderBlock = cashOrderCompact ? CASH_ORDER_COMPACT_PRINT_CSS : '';
   const contractBlock = contractCompact
@@ -869,37 +877,37 @@ function buildPrintStylesheet(
   .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(1) {
     text-align: center;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(2),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(2) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
     width: 24%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(3),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(3) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
     width: 11%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(4),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(4) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
     width: 10%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(5),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(5) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
     width: 14%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(6),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(6) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-last-child(3),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(3) {
     width: 7%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(6) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(3) {
     text-align: right;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(7),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(7),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(8),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(8) {
-    width: 15%;
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-last-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-last-child(1),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(1) {
+    width: 12%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(7),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(8) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(1) {
     text-align: right;
   }
   .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th {
@@ -1194,7 +1202,8 @@ export function buildPrintableHtmlDocument(
     options?.marginFooter,
     options?.cashOrderCompact,
     options?.contractCompact,
-    options?.windowsPackagePrint
+    options?.windowsPackagePrint,
+    options?.pageOrientation ?? 'portrait'
   );
   const needsContractCompactMarkup =
     options?.contractCompact ||
@@ -1270,10 +1279,12 @@ export async function downloadDocumentPdf(
   const fullHtml = buildPrintableHtmlDocument(innerHtml, documentTitle, options);
   const fileName = sanitizeDownloadFileName(downloadFileName, 'pdf');
 
+  const landscape = options?.pageOrientation === 'landscape';
   const iframe = document.createElement('iframe');
   iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.cssText =
-    'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;';
+  iframe.style.cssText = landscape
+    ? 'position:fixed;left:-10000px;top:0;width:297mm;height:210mm;border:0;visibility:hidden;'
+    : 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;';
   document.body.appendChild(iframe);
 
   const doc = iframe.contentDocument;
@@ -1321,7 +1332,11 @@ export async function downloadDocumentPdf(
           scrollX: 0,
           scrollY: 0,
         },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: landscape ? 'landscape' : 'portrait',
+        },
       })
       .from(doc.body)
       .save();

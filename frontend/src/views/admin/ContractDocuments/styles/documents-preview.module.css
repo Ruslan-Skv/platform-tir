@@ -1274,6 +1274,12 @@
   line-height: var(--admin-line-height-base);
 }
 
+/* Спецификация «Жалюзи»: альбомный A4 (много колонок). */
+.estimateA4SheetLandscape {
+  width: 297mm;
+  min-height: 210mm;
+}
+
 .estimateA4AppendixRef {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
   font-size: var(--admin-print-font-size-10px);
@@ -1380,7 +1386,8 @@
   padding-bottom: 3px;
 }
 
-/* Спецификация «Двери»: 8 колонок (не путать с 6-колоночной сметой). */
+/* Спецификация товарного направления: последние 3 колонки — Кол-во / Стоимость / Сумма
+   (у дверей 8 колонок, у жалюзей больше — ширины через nth-last-child). */
 .doorsSpecificationA4Table {
   width: 100%;
   border-collapse: collapse;
@@ -1409,46 +1416,48 @@
   text-align: center;
 }
 
-.doorsSpecificationA4Table th:nth-child(2),
-.doorsSpecificationA4Table td:nth-child(2) {
+/* Двери (8 колонок): фиксированные ширины характеристик. */
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
   width: 24%;
 }
 
-.doorsSpecificationA4Table th:nth-child(3),
-.doorsSpecificationA4Table td:nth-child(3) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
   width: 11%;
 }
 
-.doorsSpecificationA4Table th:nth-child(4),
-.doorsSpecificationA4Table td:nth-child(4) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
   width: 10%;
 }
 
-.doorsSpecificationA4Table th:nth-child(5),
-.doorsSpecificationA4Table td:nth-child(5) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
   width: 14%;
 }
 
-.doorsSpecificationA4Table th:nth-child(6),
-.doorsSpecificationA4Table td:nth-child(6) {
+/* Кол-во / Стоимость / Сумма — всегда последние три, независимо от числа колонок. */
+.doorsSpecificationA4Table th:nth-last-child(3),
+.doorsSpecificationA4Table td:nth-last-child(3) {
   width: 7%;
   white-space: nowrap;
 }
 
-.doorsSpecificationA4Table td:nth-child(6) {
+.doorsSpecificationA4Table td:nth-last-child(3) {
   text-align: right;
 }
 
-.doorsSpecificationA4Table th:nth-child(7),
-.doorsSpecificationA4Table td:nth-child(7),
-.doorsSpecificationA4Table th:nth-child(8),
-.doorsSpecificationA4Table td:nth-child(8) {
-  width: 15%;
+.doorsSpecificationA4Table th:nth-last-child(2),
+.doorsSpecificationA4Table td:nth-last-child(2),
+.doorsSpecificationA4Table th:nth-last-child(1),
+.doorsSpecificationA4Table td:nth-last-child(1) {
+  width: 12%;
   white-space: nowrap;
 }
 
-.doorsSpecificationA4Table td:nth-child(7),
-.doorsSpecificationA4Table td:nth-child(8) {
+.doorsSpecificationA4Table td:nth-last-child(2),
+.doorsSpecificationA4Table td:nth-last-child(1) {
   text-align: right;
 }
 

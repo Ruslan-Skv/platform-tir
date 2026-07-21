@@ -2,6 +2,7 @@
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
+import { packageUsesLineSpecification } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { DoorsSpecificationTabContent } from '../../../families/product-like/specification/DoorsSpecificationTabContent';
 import { ProductSpecificationTabContent } from '../../../families/product-like/specification/ProductSpecificationTabContent';
@@ -28,7 +29,7 @@ export type ProductSpecificationTabProps = {
   onError: (message: string) => void;
 };
 
-/** Вкладка «Спецификация» для товарных направлений (Окна, Двери, …). */
+/** Вкладка «Спецификация» для товарных направлений (Окна, Двери, Жалюзи, …). */
 export function ProductSpecificationTab({
   packageKind,
   packageId,
@@ -53,9 +54,10 @@ export function ProductSpecificationTab({
     return null;
   }
 
-  if (packageKind === 'DOORS') {
+  if (packageUsesLineSpecification(packageKind)) {
     return (
       <DoorsSpecificationTabContent
+        packageKind={packageKind}
         lines={doorsSpecificationLines}
         contractNumberLabel={contractNumberLabel}
         contractDateLabel={contractDateLabel}

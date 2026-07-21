@@ -12,6 +12,7 @@ export {
   isRepairLikePackageKind,
   packageKindUiLabel,
   packageKindsWithCreateEnabled,
+  packageUsesLineSpecification,
 } from './packageDirectionRegistry';
 
 export {

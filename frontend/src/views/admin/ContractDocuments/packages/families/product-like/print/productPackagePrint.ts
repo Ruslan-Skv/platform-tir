@@ -99,5 +99,9 @@ export function resolvePackageEditorPrintOptions(
   formData: unknown
 ): PrintDocumentOptions | undefined {
   if (!shouldUseWindowsPackageCompactPrint(packageKind, tab)) return undefined;
-  return pickWindowsPackagePrintDocumentOptions(tab, formData);
+  const base = pickWindowsPackagePrintDocumentOptions(tab, formData);
+  if (packageKind === 'BLINDS' && (tab === 'specification' || tab === 'deliveryNote')) {
+    return { ...base, pageOrientation: 'landscape' };
+  }
+  return base;
 }

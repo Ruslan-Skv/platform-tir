@@ -21,7 +21,8 @@ export class ContractDocumentPackageKindSettingsService {
 
   private fallbackWorkPeriodDays(kind: ContractDocumentPackageKind): number {
     return kind === ContractDocumentPackageKind.WINDOWS ||
-      kind === ContractDocumentPackageKind.DOORS
+      kind === ContractDocumentPackageKind.DOORS ||
+      kind === ContractDocumentPackageKind.BLINDS
       ? DEFAULT_WINDOWS_CONTRACT_WORK_PERIOD_DAYS
       : DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS;
   }
@@ -54,7 +55,8 @@ export class ContractDocumentPackageKindSettingsService {
     };
     if (
       kind === ContractDocumentPackageKind.WINDOWS ||
-      kind === ContractDocumentPackageKind.DOORS
+      kind === ContractDocumentPackageKind.DOORS ||
+      kind === ContractDocumentPackageKind.BLINDS
     ) {
       return {
         ...base,

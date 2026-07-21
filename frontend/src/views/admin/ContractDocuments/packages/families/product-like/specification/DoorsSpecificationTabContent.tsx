@@ -1,11 +1,14 @@
 'use client';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import {
   PackageLockNotice,
   packageLockNoticeMessage,
@@ -33,6 +36,7 @@ const SPEC_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4W
 const SPEC_ROOT = `${SPEC_BLOCK} ${SPEC_DATA_COMPACT} ${SPEC_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
 
 type DoorsSpecificationTabContentProps = {
+  packageKind: ContractDocumentPackageKind;
   lines: DoorsSpecificationLine[];
   contractNumberLabel: string;
   contractDateLabel: string;
@@ -45,6 +49,7 @@ type DoorsSpecificationTabContentProps = {
 };
 
 export function DoorsSpecificationTabContent({
+  packageKind,
   lines,
   contractNumberLabel,
   contractDateLabel,
@@ -56,7 +61,10 @@ export function DoorsSpecificationTabContent({
   onDiscountPercentChange,
 }: DoorsSpecificationTabContentProps) {
   const editorLines = ensureAtLeastOneDoorsSpecificationLine(lines);
-  const copy = productSpecificationCopy('DOORS');
+  const copy = productSpecificationCopy(
+    isProductDirectionPackageKind(packageKind) ? packageKind : 'DOORS'
+  );
+  const showCartImport = packageKind === 'DOORS';
 
   return (
     <div className={SPEC_ROOT}>
@@ -86,12 +94,15 @@ export function DoorsSpecificationTabContent({
               />
             </div>
           </div>
-          <DoorsSpecificationCartImportButton
-            lines={editorLines}
-            disabled={disabled}
-            onLinesChange={onLinesChange}
-          />
+          {showCartImport ? (
+            <DoorsSpecificationCartImportButton
+              lines={editorLines}
+              disabled={disabled}
+              onLinesChange={onLinesChange}
+            />
+          ) : null}
           <DoorsSpecificationLinesEditor
+            packageKind={packageKind}
             lines={editorLines}
             readOnly={disabled}
             onChange={onLinesChange}
@@ -104,6 +115,7 @@ export function DoorsSpecificationTabContent({
         >
           <div className={SPEC_A4_WRAP}>
             <DoorsSpecificationPreviewSheet
+              packageKind={packageKind}
               contractNumberLabel={contractNumberLabel}
               contractDateLabel={contractDateLabel}
               lines={editorLines}

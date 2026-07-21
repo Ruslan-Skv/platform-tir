@@ -5,6 +5,7 @@ import { useMemo } from 'react';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { packageKindUiLabel } from '../../../config';
 import { PackageInteractiveInstallerPicker } from './PackageInteractiveInstallerPicker';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
 import {
@@ -19,6 +20,7 @@ import {
 
 export function PackageWorkOrdersHubInteractiveEstimatePanel() {
   const {
+    packageKind,
     isWindowsPackage,
     form,
     contractInstallers,
@@ -46,6 +48,8 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
     return counts;
   }, [form.finalEstimateInstallerAssignments]);
 
+  const directionLabel = packageKindUiLabel(packageKind);
+
   return (
     <div className={woPanelRootClass(isWindowsPackage, WO_INTERACTIVE_TAB)}>
       <div className={WO_FORM_GRID}>
@@ -67,11 +71,7 @@ export function PackageWorkOrdersHubInteractiveEstimatePanel() {
           </div>
           <PackageInteractiveInstallerPicker
             allInstallers={contractInstallers}
-            emptyListHint={
-              isWindowsPackage
-                ? 'Нет мастеров по направлению «Окна». Добавьте их в CRM → Мастера.'
-                : undefined
-            }
+            emptyListHint={`Нет мастеров по направлению «${directionLabel}». Добавьте их в CRM → Мастера.`}
             selectedInstallers={selectedInstallers}
             activeInstallerId={activeInstallerId}
             installerAssignedCounts={installerAssignedCounts}

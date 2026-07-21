@@ -6,6 +6,7 @@ import type {
 
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
 import { todayContractDateDdMmYyyy } from '../../../core/contractDateFormat';
+import { packageUsesLineSpecification } from '../../config';
 import { isProductDirectionPackageKind } from '../../config/productDirectionPackageKind';
 import {
   buildWindowsAddendumPrintHtml,
@@ -14,6 +15,7 @@ import {
 } from '../../families/product-like/addendum/addendumSpecification';
 import { productContractCostFieldsForTemplate } from '../../families/product-like/cost/productContractCostBreakdown';
 import { buildWindowsWorkOrderAddendumForTemplate } from '../../families/product-like/print/productWorkOrder';
+import { buildDoorsDeliveryNoteProductsHtml } from '../../families/product-like/specification/doorsSpecification';
 import {
   buildEstimateDiscountTotalsBlockHtml,
   buildEstimateDocPrintEmbedHtml,
@@ -102,6 +104,10 @@ export function packageFormForTemplate(
     workPeriodIncreaseSentence: string;
     /** Абзац про увеличение срока или пустая строка (без плейсхолдера «__________»). */
     workPeriodIncreaseHtml: string;
+  };
+  /** Накладная «Двери»: таблица изделий из спецификации. */
+  deliveryNote?: {
+    productsHtml: string;
   };
 } {
   const estimateGroupsForTpl = options?.estimateGroups ?? [];
@@ -422,6 +428,15 @@ export function packageFormForTemplate(
 
   const contractCostFields = productContractCostFieldsForTemplate(form);
 
+  const deliveryNoteForTemplate = packageUsesLineSpecification(options?.packageKind)
+    ? {
+        productsHtml: buildDoorsDeliveryNoteProductsHtml(
+          form.doorsSpecificationLines,
+          options?.packageKind
+        ),
+      }
+    : undefined;
+
   const contractForTemplate = {
     ...form.contract,
     prepaymentAmountWords,
@@ -449,6 +464,7 @@ export function packageFormForTemplate(
     customer: customerWithInvoice,
     ...(addendumForTemplate ? { addendum: addendumForTemplate } : {}),
     ...(workOrderAddendumForTemplate ? { workOrderAddendum: workOrderAddendumForTemplate } : {}),
+    ...(deliveryNoteForTemplate ? { deliveryNote: deliveryNoteForTemplate } : {}),
     meta: {
       /** Текущая календарная дата в формате дд.мм.гггг (момент предпросмотра/печати). Шаблон: `{{meta.currentDate}}`. */
       currentDate: todayContractDateDdMmYyyy(),

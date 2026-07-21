@@ -1,0 +1,12 @@
+.directionList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+  margin: var(--admin-space-sm, 6px) 0;
+  padding: var(--admin-space-sm, 6px);
+}
+
+.directionList button {
+  justify-content: center;
+  width: 100%;
+}

@@ -1,3 +1,4 @@
+import { packageUsesLineSpecification } from '../../../config';
 import type { ProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 
 export type ProductSpecificationCopy = {
@@ -8,7 +9,13 @@ export type ProductSpecificationCopy = {
 export function productSpecificationCopy(
   packageKind: ProductDirectionPackageKind
 ): ProductSpecificationCopy {
-  if (packageKind === 'DOORS') {
+  if (packageKind === 'BLINDS') {
+    return {
+      hint: 'Заполните позиции вручную. Итог по строкам учитывается в стоимости изделий по договору.',
+      a4Title: 'Спецификация',
+    };
+  }
+  if (packageUsesLineSpecification(packageKind)) {
     return {
       hint: 'Заполните позиции вручную или загрузите из корзины каталога. Итог по строкам учитывается в стоимости изделий по договору.',
       a4Title: 'Спецификация',

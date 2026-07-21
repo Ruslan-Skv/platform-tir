@@ -10,6 +10,8 @@ import type {
 
 import { applyTemplate } from '../../../../core/applyTemplate';
 import { prepareContractTemplateHtmlForPreview } from '../../../../core/typography/contractTemplateTypography';
+import { packageUsesLineSpecification } from '../../../config';
+import { ensureDoorsDeliveryNoteProductsHtml } from '../../../families/product-like/specification/doorsSpecification';
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import type { PackageFormData } from '../../form/packageForm';
 import { packageFormForTemplate } from '../../form/packageForm';
@@ -78,13 +80,20 @@ export function usePackageRenderedDocument({
     } else {
       tpl = templateOverrides[tab] ?? resolveTemplateHtml(tab);
     }
-    return prepareContractTemplateHtmlForPreview(
+    let html = prepareContractTemplateHtmlForPreview(
       applyTemplate(tpl, formForActiveTemplate, {
         autoInsertContractSignatures: activeTab === 'contract',
         plainCustomerPlaceholders: isPackagePlainCustomerTab(activeTab),
       })
     );
-  }, [activeTab, formForActiveTemplate, templateOverrides, resolveTemplateHtml]);
+    if (activeTab === 'deliveryNote' && packageUsesLineSpecification(packageKind)) {
+      html = ensureDoorsDeliveryNoteProductsHtml(
+        html,
+        formForActiveTemplate.deliveryNote?.productsHtml ?? ''
+      );
+    }
+    return html;
+  }, [activeTab, formForActiveTemplate, templateOverrides, resolveTemplateHtml, packageKind]);
 }
 
 export function usePackageFormForTemplate(

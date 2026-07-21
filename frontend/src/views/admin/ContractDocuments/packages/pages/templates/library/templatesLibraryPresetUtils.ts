@@ -42,6 +42,7 @@ export const TEMPLATE_LIBRARY_KIND_OPTIONS = [
   { value: 'REPAIR' as const, label: 'Ремонт' },
   { value: 'WINDOWS' as const, label: 'Окна' },
   { value: 'DOORS' as const, label: 'Двери' },
+  { value: 'BLINDS' as const, label: 'Жалюзи' },
 ];
 
 export function templateLibraryKindLabel(kind: ContractDocumentPackageKind): string {

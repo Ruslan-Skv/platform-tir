@@ -92,9 +92,9 @@ export function computeContractDeadlineFromWorkPeriodStart(
 /** Значения, которые считаем «не заданными вручную» — подставим актуальный срок из настроек. */
 function isLegacyDefaultWorkPeriodDays(
   days: number,
-  packageKind: 'REPAIR' | 'WINDOWS' | 'DOORS'
+  packageKind: 'REPAIR' | 'WINDOWS' | 'DOORS' | 'BLINDS'
 ): boolean {
-  if (packageKind === 'WINDOWS' || packageKind === 'DOORS') {
+  if (packageKind === 'WINDOWS' || packageKind === 'DOORS' || packageKind === 'BLINDS') {
     return (
       days === DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS ||
       days === DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS
@@ -110,7 +110,7 @@ export function isPackageWorkPeriodManualFlag(value: unknown): boolean {
 export function resolvePackageWorkPeriodForForm(
   stored: string | undefined | null,
   defaultDays: number,
-  packageKind: 'REPAIR' | 'WINDOWS' | 'DOORS' = 'REPAIR',
+  packageKind: 'REPAIR' | 'WINDOWS' | 'DOORS' | 'BLINDS' = 'REPAIR',
   workPeriodIsManual = false
 ): { value: string; autofill: boolean } {
   const trimmed = (stored ?? '').trim();

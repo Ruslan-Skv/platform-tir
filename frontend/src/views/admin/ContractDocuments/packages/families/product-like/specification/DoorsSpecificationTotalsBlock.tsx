@@ -4,6 +4,7 @@ import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import {
   type DoorsSpecificationLine,
   computeDoorsSpecificationNetTotal,
+  doorsSpecificationLineHasContent,
   formatDoorsSpecificationMoney,
 } from './doorsSpecification';
 
@@ -13,13 +14,14 @@ type Props = {
 };
 
 export function DoorsSpecificationTotalsBlock({ lines, discountPercent }: Props) {
+  const hasPositions = lines.some(doorsSpecificationLineHasContent);
   const {
     grossTotal,
     discountPercent: parsedDiscount,
     netTotal,
   } = computeDoorsSpecificationNetTotal(lines, discountPercent);
 
-  if (grossTotal <= 0) {
+  if (!hasPositions) {
     return <p className={cdDocPreview.estimateA4Empty}>Позиции не заполнены.</p>;
   }
 

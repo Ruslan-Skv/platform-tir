@@ -4,8 +4,8 @@ import { PACKAGE_DOCUMENT_TAB_IDS } from './packageDocumentTabs';
 import { resolvePackageEditorVisibleTabs } from './resolvePackageEditorTabs';
 
 describe('resolvePackageEditorVisibleTabs', () => {
-  it('shows consent tab for REPAIR, WINDOWS and DOORS', () => {
-    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS'] as const) {
+  it('shows consent tab for REPAIR, WINDOWS, DOORS and BLINDS', () => {
+    for (const kind of ['REPAIR', 'WINDOWS', 'DOORS', 'BLINDS'] as const) {
       const tabs = resolvePackageEditorVisibleTabs({
         tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
         packageKind: kind,
@@ -15,7 +15,7 @@ describe('resolvePackageEditorVisibleTabs', () => {
     }
   });
 
-  it('hides memo for REPAIR and shows it for DOORS', () => {
+  it('hides memo for REPAIR and shows it for DOORS and BLINDS', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
       packageKind: 'REPAIR',
@@ -26,11 +26,17 @@ describe('resolvePackageEditorVisibleTabs', () => {
       packageKind: 'DOORS',
       addendumSlotCount: 0,
     });
+    const blinds = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'BLINDS',
+      addendumSlotCount: 0,
+    });
     expect(repair).not.toContain('memo');
     expect(doors).toContain('memo');
+    expect(blinds).toContain('memo');
   });
 
-  it('shows deliveryNote only for DOORS after actAcceptance and before memo', () => {
+  it('shows deliveryNote for DOORS and BLINDS after actAcceptance and before memo', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
       packageKind: 'REPAIR',
@@ -41,19 +47,21 @@ describe('resolvePackageEditorVisibleTabs', () => {
       packageKind: 'WINDOWS',
       addendumSlotCount: 0,
     });
-    const doors = resolvePackageEditorVisibleTabs({
-      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
-      packageKind: 'DOORS',
-      addendumSlotCount: 0,
-    });
-    expect(repair).not.toContain('deliveryNote');
-    expect(windows).not.toContain('deliveryNote');
-    expect(doors).toContain('deliveryNote');
-    const actIdx = doors.indexOf('actAcceptance');
-    const deliveryIdx = doors.indexOf('deliveryNote');
-    const memoIdx = doors.indexOf('memo');
-    expect(deliveryIdx).toBeGreaterThan(actIdx);
-    expect(memoIdx).toBeGreaterThan(deliveryIdx);
+    for (const kind of ['DOORS', 'BLINDS'] as const) {
+      const tabs = resolvePackageEditorVisibleTabs({
+        tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+        packageKind: kind,
+        addendumSlotCount: 0,
+      });
+      expect(repair).not.toContain('deliveryNote');
+      expect(windows).not.toContain('deliveryNote');
+      expect(tabs).toContain('deliveryNote');
+      const actIdx = tabs.indexOf('actAcceptance');
+      const deliveryIdx = tabs.indexOf('deliveryNote');
+      const memoIdx = tabs.indexOf('memo');
+      expect(deliveryIdx).toBeGreaterThan(actIdx);
+      expect(memoIdx).toBeGreaterThan(deliveryIdx);
+    }
   });
 
   it('shows finalEstimate for REPAIR and specification (not finalEstimate) for PRODUCT_LIKE', () => {

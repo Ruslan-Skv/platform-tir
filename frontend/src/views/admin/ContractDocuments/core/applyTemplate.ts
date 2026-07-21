@@ -44,6 +44,7 @@ const RAW_HTML_TEMPLATE_PATHS = new Set([
   'workOrderAddendum.categoryTotalsHtml',
   'invoice.linesHtml',
   'invoice.qrCodeHtml',
+  'deliveryNote.productsHtml',
 ]);
 
 /** Пустое значение — пустая строка, без плейсхолдера «__________». */

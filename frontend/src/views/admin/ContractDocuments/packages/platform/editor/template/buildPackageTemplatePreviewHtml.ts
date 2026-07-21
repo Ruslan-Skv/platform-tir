@@ -6,6 +6,8 @@ import type {
 
 import { applyTemplate } from '../../../../core/applyTemplate';
 import { prepareContractTemplateHtmlForPreview } from '../../../../core/typography/contractTemplateTypography';
+import { packageUsesLineSpecification } from '../../../config';
+import { ensureDoorsDeliveryNoteProductsHtml } from '../../../families/product-like/specification/doorsSpecification';
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import type { PackageFormData } from '../../form/packageForm';
 import { packageFormForTemplate } from '../../form/packageForm';
@@ -74,10 +76,14 @@ export function buildPackageTemplatePreviewHtml(
     windowsWorkOrderMarkupPercent,
   });
   const tpl = templateOverrides[templateTab] ?? resolveTemplateHtml(templateTab);
-  return prepareContractTemplateHtmlForPreview(
+  let html = prepareContractTemplateHtmlForPreview(
     applyTemplate(tpl, formForTpl, {
       autoInsertContractSignatures: tab === 'contract',
       plainCustomerPlaceholders: isPackagePlainCustomerTab(tab),
     })
   );
+  if (tab === 'deliveryNote' && packageUsesLineSpecification(packageKind)) {
+    html = ensureDoorsDeliveryNoteProductsHtml(html, formForTpl.deliveryNote?.productsHtml ?? '');
+  }
+  return html;
 }

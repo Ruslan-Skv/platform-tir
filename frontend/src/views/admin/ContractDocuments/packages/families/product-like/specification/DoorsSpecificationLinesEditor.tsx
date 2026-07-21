@@ -4,6 +4,8 @@ import { PlusIcon } from '@heroicons/react/24/outline';
 
 import { useMemo } from 'react';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import attachStyles from '../../../platform/editor/estimateTab/PackageEstimateAttach.module.css';
@@ -11,11 +13,14 @@ import {
   type DoorsSpecificationLine,
   formatDoorsSpecificationLineTotal,
   formatDoorsSpecificationMoney,
+  lineSpecificationAttributeColumns,
+  lineSpecificationAttributeValue,
   newDoorsSpecificationLine,
   resolveDoorsSpecificationLineTotal,
 } from './doorsSpecification';
 
 type Props = {
+  packageKind: ContractDocumentPackageKind;
   lines: DoorsSpecificationLine[];
   readOnly: boolean;
   onChange: (lines: DoorsSpecificationLine[]) => void;
@@ -25,7 +30,22 @@ function withSyncedTotal(line: DoorsSpecificationLine): DoorsSpecificationLine {
   return { ...line, lineTotal: formatDoorsSpecificationLineTotal(line) };
 }
 
-export function DoorsSpecificationLinesEditor({ lines, readOnly, onChange }: Props) {
+const ATTR_COL_CLASS: Record<string, string> = {
+  name: cdProduct.doorsSpecificationColName,
+  size: cdProduct.doorsSpecificationColSize,
+  width: cdProduct.doorsSpecificationColWidth,
+  height: cdProduct.doorsSpecificationColHeight,
+  color: cdProduct.doorsSpecificationColColor,
+  openingSide: cdProduct.doorsSpecificationColOpening,
+  mounting: cdProduct.doorsSpecificationColMounting,
+  control: cdProduct.doorsSpecificationColControl,
+};
+
+export function DoorsSpecificationLinesEditor({ packageKind, lines, readOnly, onChange }: Props) {
+  const attributeColumns = useMemo(
+    () => lineSpecificationAttributeColumns(packageKind),
+    [packageKind]
+  );
   const sectionTotal = useMemo(
     () => lines.reduce((sum, line) => sum + resolveDoorsSpecificationLineTotal(line), 0),
     [lines]
@@ -54,10 +74,9 @@ export function DoorsSpecificationLinesEditor({ lines, readOnly, onChange }: Pro
         <table className={cdProduct.doorsSpecificationTable}>
           <colgroup>
             <col className={cdProduct.doorsSpecificationColIndex} />
-            <col className={cdProduct.doorsSpecificationColName} />
-            <col className={cdProduct.doorsSpecificationColSize} />
-            <col className={cdProduct.doorsSpecificationColColor} />
-            <col className={cdProduct.doorsSpecificationColOpening} />
+            {attributeColumns.map((col) => (
+              <col key={col.id} className={ATTR_COL_CLASS[col.id]} />
+            ))}
             <col className={cdProduct.doorsSpecificationColQty} />
             <col className={cdProduct.doorsSpecificationColPrice} />
             <col className={cdProduct.doorsSpecificationColAmount} />
@@ -66,10 +85,11 @@ export function DoorsSpecificationLinesEditor({ lines, readOnly, onChange }: Pro
           <thead>
             <tr>
               <th>№</th>
-              <th>Наименование</th>
-              <th>Размер</th>
-              <th>Цвет</th>
-              <th title="Сторона открывания (Тип)">Сторона откр.</th>
+              {attributeColumns.map((col) => (
+                <th key={col.id} title={col.title ?? col.label}>
+                  {col.shortLabel ?? col.label}
+                </th>
+              ))}
               <th>Кол-во</th>
               <th>Стоимость</th>
               <th>Сумма</th>
@@ -80,46 +100,18 @@ export function DoorsSpecificationLinesEditor({ lines, readOnly, onChange }: Pro
             {lines.map((line, index) => (
               <tr key={line.id}>
                 <td className={cdProduct.doorsSpecificationIndexCell}>{index + 1}</td>
-                <td>
-                  <input
-                    type="text"
-                    value={line.name}
-                    onChange={(e) => updateLine(line.id, { name: e.target.value })}
-                    placeholder="Дверь, фурнитура, наличник…"
-                    disabled={readOnly}
-                    autoComplete="off"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={line.size}
-                    onChange={(e) => updateLine(line.id, { size: e.target.value })}
-                    placeholder="800×2000"
-                    disabled={readOnly}
-                    autoComplete="off"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={line.color}
-                    onChange={(e) => updateLine(line.id, { color: e.target.value })}
-                    placeholder="Белый"
-                    disabled={readOnly}
-                    autoComplete="off"
-                  />
-                </td>
-                <td>
-                  <input
-                    type="text"
-                    value={line.openingSide}
-                    onChange={(e) => updateLine(line.id, { openingSide: e.target.value })}
-                    placeholder="Левая"
-                    disabled={readOnly}
-                    autoComplete="off"
-                  />
-                </td>
+                {attributeColumns.map((col) => (
+                  <td key={col.id}>
+                    <input
+                      type="text"
+                      value={lineSpecificationAttributeValue(line, col.id)}
+                      onChange={(e) => updateLine(line.id, { [col.id]: e.target.value })}
+                      placeholder={col.placeholder}
+                      disabled={readOnly}
+                      autoComplete="off"
+                    />
+                  </td>
+                ))}
                 <td>
                   <input
                     type="text"

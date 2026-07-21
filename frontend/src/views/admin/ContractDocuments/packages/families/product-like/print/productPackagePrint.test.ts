@@ -3,13 +3,14 @@ import { describe, expect, it } from 'vitest';
 import { buildEstimateSheetPrintHtml } from '../../../platform/estimates/packageEstimateDocPrintEmbedHtml';
 import {
   pickWindowsPackagePrintDocumentOptions,
+  resolvePackageEditorPrintOptions,
   shouldUseWindowsPackageCompactPrint,
   wrapEstimateSheetHtmlForWindowsPrint,
 } from './productPackagePrint';
 
 describe('productPackagePrint', () => {
-  it('enables compact print for customer-facing WINDOWS and DOORS tabs', () => {
-    for (const kind of ['WINDOWS', 'DOORS'] as const) {
+  it('enables compact print for customer-facing product direction tabs', () => {
+    for (const kind of ['WINDOWS', 'DOORS', 'BLINDS'] as const) {
       expect(shouldUseWindowsPackageCompactPrint(kind, 'contract')).toBe(true);
       expect(shouldUseWindowsPackageCompactPrint(kind, 'specification')).toBe(true);
       expect(shouldUseWindowsPackageCompactPrint(kind, 'estimate')).toBe(true);
@@ -32,6 +33,27 @@ describe('productPackagePrint', () => {
       windowsPackagePrint: true,
     });
     expect(pickWindowsPackagePrintDocumentOptions('contract', null).marginFooter).toBeDefined();
+  });
+
+  it('sets landscape orientation for blinds specification and delivery note print', () => {
+    expect(resolvePackageEditorPrintOptions('BLINDS', 'specification', null)).toEqual({
+      contractCompact: true,
+      windowsPackagePrint: true,
+      pageOrientation: 'landscape',
+    });
+    expect(resolvePackageEditorPrintOptions('BLINDS', 'deliveryNote', null)).toEqual({
+      contractCompact: true,
+      windowsPackagePrint: true,
+      pageOrientation: 'landscape',
+    });
+    expect(resolvePackageEditorPrintOptions('DOORS', 'specification', null)).toEqual({
+      contractCompact: true,
+      windowsPackagePrint: true,
+    });
+    expect(resolvePackageEditorPrintOptions('DOORS', 'deliveryNote', null)).toEqual({
+      contractCompact: true,
+      windowsPackagePrint: true,
+    });
   });
 
   it('wraps estimate sheet HTML for print stylesheet', () => {

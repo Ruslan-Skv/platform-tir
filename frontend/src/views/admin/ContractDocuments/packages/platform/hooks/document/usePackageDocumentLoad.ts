@@ -273,11 +273,8 @@ export function usePackageDocumentLoad({
           : normalizedStoredDate;
         const persistContractDate = contractDateAutofill || dateMigratedFromLegacy;
 
-        const workPeriodPackageKind: 'REPAIR' | 'WINDOWS' | 'DOORS' = isProductDirectionPackageKind(
-          currentKind
-        )
-          ? currentKind
-          : 'REPAIR';
+        const workPeriodPackageKind: 'REPAIR' | 'WINDOWS' | 'DOORS' | 'BLINDS' =
+          isProductDirectionPackageKind(currentKind) ? currentKind : 'REPAIR';
         const workPeriodIsManualStored = mergedForm.contract.workPeriodIsManual === true;
         const { value: workPeriod, autofill: workPeriodAutofill } = resolvePackageWorkPeriodForForm(
           mergedForm.contract.workPeriod,

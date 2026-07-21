@@ -3,11 +3,14 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { packageKindUiLabel, packageKindsWithCreateEnabled } from '../../../config';
 import { PackageHubModal } from '../../../platform/hub/hubModal/PackageHubModal';
 import { PackageWorkOrdersHubListModal } from '../../../platform/hub/workOrders/PackageWorkOrdersHubListModal';
+import createDirectionStyles from './ContractsCreateDirectionModal.module.css';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
 import { PackageContractTrashModal } from './modals/PackageContractTrashModal';
 
@@ -66,13 +69,23 @@ export function ContractsListModals({
         }}
         title="Новое оформление договора"
         size="sm"
+        className={crmFormStyles.modalPanel}
+        showCloseButton={!creating}
         compactOnMobile
       >
-        <div data-modal-form data-modal-density="compact">
+        <div
+          className={`${crmFormStyles.formShell} ${modalStyles.formBlueShell}`}
+          data-modal-form
+          data-modal-density="compact"
+        >
           <p data-modal-form-hint style={{ marginTop: 0 }}>
             Выберите направление, по которому создаётся пакет документов.
           </p>
-          <div data-modal-form-actions>
+          <div
+            className={createDirectionStyles.directionList}
+            role="group"
+            aria-label="Направление"
+          >
             {packageKindsWithCreateEnabled().map((kind, index) => (
               <button
                 key={kind}
@@ -85,9 +98,11 @@ export function ContractsListModals({
                 {createDirectionBusyKind === kind ? 'Создание…' : packageKindUiLabel(kind)}
               </button>
             ))}
+          </div>
+          <div data-modal-form-actions>
             <button
               type="button"
-              data-modal-btn="ghost"
+              data-modal-btn="secondary"
               disabled={creating}
               onClick={onCloseCreateDirection}
             >

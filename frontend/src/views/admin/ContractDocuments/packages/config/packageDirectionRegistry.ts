@@ -32,6 +32,12 @@ const PRODUCT_TAB_LABEL_OVERRIDES: PackageDirectionConfig['tabLabelOverrides'] =
   estimate: { full: 'Счёт-заказ', short: 'Счёт-заказ' },
 };
 
+/** Товарные направления со спецификацией строками и накладной (как «Двери»). */
+const PRODUCT_LINE_SPEC_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = [
+  'actStart',
+  'productionLog',
+];
+
 function repairLikeConfig(
   kind: ContractDocumentPackageKind,
   label: string,
@@ -45,6 +51,7 @@ function repairLikeConfig(
     hiddenEditorTabs: ['specification'],
     memoTabVisible: false,
     deliveryNoteTabVisible: false,
+    lineSpecificationEnabled: false,
     tabLabelOverrides: {},
     profilesKind: kind,
     settingsKind: 'REPAIR',
@@ -66,12 +73,25 @@ function productLikeConfig(
     hiddenEditorTabs: PRODUCT_LIKE_HIDDEN_EDITOR_TABS,
     memoTabVisible: true,
     deliveryNoteTabVisible: false,
+    lineSpecificationEnabled: false,
     tabLabelOverrides: PRODUCT_TAB_LABEL_OVERRIDES,
     profilesKind: 'REPAIR',
     settingsKind: 'WINDOWS',
     estimateCatalogKind: 'REPAIR',
     templatePresetsKind: kind,
     excludedLibraryTemplateTabs: PRODUCT_LIBRARY_EXCLUDED,
+  };
+}
+
+function productLikeWithLineSpecification(
+  kind: ContractDocumentPackageKind,
+  label: string
+): PackageDirectionConfig {
+  return {
+    ...productLikeConfig(kind, label),
+    deliveryNoteTabVisible: true,
+    lineSpecificationEnabled: true,
+    excludedLibraryTemplateTabs: PRODUCT_LINE_SPEC_LIBRARY_EXCLUDED,
   };
 }
 
@@ -87,6 +107,7 @@ function unimplementedConfig(
     hiddenEditorTabs: [...PRODUCT_LIKE_HIDDEN_EDITOR_TABS, 'specification'],
     memoTabVisible: false,
     deliveryNoteTabVisible: false,
+    lineSpecificationEnabled: false,
     tabLabelOverrides: {},
     profilesKind: 'REPAIR',
     settingsKind: 'REPAIR',
@@ -99,13 +120,9 @@ function unimplementedConfig(
 const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDirectionConfig> = {
   REPAIR: repairLikeConfig('REPAIR', 'Ремонт', true),
   WINDOWS: productLikeConfig('WINDOWS', 'Окна'),
-  DOORS: {
-    ...productLikeConfig('DOORS', 'Двери'),
-    deliveryNoteTabVisible: true,
-    excludedLibraryTemplateTabs: ['actStart', 'productionLog'],
-  },
+  DOORS: productLikeWithLineSpecification('DOORS', 'Двери'),
   CEILINGS: unimplementedConfig('CEILINGS', 'Потолки'),
-  BLINDS: unimplementedConfig('BLINDS', 'Жалюзи'),
+  BLINDS: productLikeWithLineSpecification('BLINDS', 'Жалюзи'),
   FURNITURE: unimplementedConfig('FURNITURE', 'Мебель'),
 };
 
@@ -133,6 +150,14 @@ export function isRepairLikePackageKind(
 ): boolean {
   if (!kind) return false;
   return getPackageDirectionConfig(kind).family === 'REPAIR_LIKE';
+}
+
+/** Спецификация строками + накладная из этих строк (Двери, Жалюзи, …). */
+export function packageUsesLineSpecification(
+  kind: ContractDocumentPackageKind | undefined | null
+): boolean {
+  if (!kind) return false;
+  return getPackageDirectionConfig(kind).lineSpecificationEnabled;
 }
 
 export function packageKindUiLabel(kind: ContractDocumentPackageKind): string {

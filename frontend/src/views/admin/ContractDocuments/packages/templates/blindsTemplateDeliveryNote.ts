@@ -1,12 +1,12 @@
 import { buildContractAppendixRefParagraphHtml } from '../../core/typography/contractTemplateAppendixRef';
 
-/** Шаблон «Накладная на передачу дверных изделий» (направление «Двери»). */
-export const doorsTemplateDeliveryNote = `
+/** Шаблон «Накладная на передачу жалюзи» (направление «Жалюзи»). */
+export const blindsTemplateDeliveryNote = `
 <div class="docPrint docPrintContractCompact">
   ${buildContractAppendixRefParagraphHtml(3)}
-  <h3 style="text-align: center; font-weight: normal; margin: 11pt 0 5pt; line-height: 1.32;">Накладная на передачу дверных изделий</h3>
+  <h3 style="text-align: center; font-weight: normal; margin: 11pt 0 5pt; line-height: 1.32;">Накладная на передачу жалюзи</h3>
   <p style="text-align: justify; text-indent: 1.25cm;">
-    Исполнитель передал, а Заказчик принял дверные изделия по договору № {{contract.number}} от {{contract.date}}
+    Исполнитель передал, а Заказчик принял жалюзи по договору № {{contract.number}} от {{contract.date}}
     для объекта: {{object.objectAddress}}.
   </p>
   <p style="text-align: justify; text-indent: 1.25cm;">

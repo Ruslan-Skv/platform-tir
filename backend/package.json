@@ -45,6 +45,8 @@
     "prisma:seed-repair-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-repair-contract-template-presets.ts",
     "prisma:seed-windows-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-windows-contract-template-presets.ts",
     "prisma:seed-doors-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-doors-contract-template-presets.ts",
+    "prisma:seed-blinds-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-blinds-contract-template-presets.ts",
+    "prisma:copy-doors-templates-to-blinds": "ts-node -r tsconfig-paths/register scripts/copy-doors-templates-to-blinds.ts",
     "create-super-admin": "ts-node -r tsconfig-paths/register prisma/create-super-admin.ts"
   },
   "dependencies": {

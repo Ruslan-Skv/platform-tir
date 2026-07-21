@@ -559,9 +559,10 @@ export class ContractDocumentPackagesController {
     const pkg = await this.service.findOne(id);
     if (
       pkg.kind !== ContractDocumentPackageKind.WINDOWS &&
-      pkg.kind !== ContractDocumentPackageKind.DOORS
+      pkg.kind !== ContractDocumentPackageKind.DOORS &&
+      pkg.kind !== ContractDocumentPackageKind.BLINDS
     ) {
-      throw new BadRequestException('Доступно только для пакетов «Окна» и «Двери»');
+      throw new BadRequestException('Доступно только для товарных пакетов (Окна, Двери, Жалюзи)');
     }
     const filename = path.basename(file.path);
     return {
