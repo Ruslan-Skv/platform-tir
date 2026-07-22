@@ -553,11 +553,6 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.contract-documents',
         children: [
           {
-            label: 'Инструкция по работе с разделом',
-            href: '/admin/contract-documents/instruction',
-            resourceId: 'admin.contract-documents.instruction',
-          },
-          {
             label: 'Исполнители',
             href: '/admin/contract-documents/requisites',
             resourceId: 'admin.contract-documents.requisites',

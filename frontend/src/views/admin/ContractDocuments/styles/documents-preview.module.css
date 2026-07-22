@@ -2184,49 +2184,6 @@
   padding: var(--admin-space-md) var(--admin-space-md);
 }
 
-.instructionArticle {
-  max-width: 900px;
-  font-size: var(--admin-font-size-base);
-  line-height: var(--admin-line-height-xl);
-  color: var(--admin-text-secondary);
-}
-
-.instructionArticle h2 {
-  font-size: var(--admin-font-size-xl);
-  margin: 28px 0 12px;
-  color: var(--admin-text-primary);
-}
-
-.instructionArticle h2:first-of-type {
-  margin-top: var(--admin-space-md);
-}
-
-.instructionArticle ul {
-  margin: 8px 0 12px;
-  padding-left: 1.35rem;
-}
-
-.instructionArticle li {
-  margin-bottom: var(--admin-space-sm);
-}
-
-.instructionArticle pre {
-  background: var(--admin-surface-muted);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  padding: var(--admin-space-xl) var(--admin-space-xl);
-  overflow-x: auto;
-  font-size: var(--admin-font-size-md);
-  margin: var(--admin-space-lg) var(--admin-space-0);
-}
-
-.instructionArticle code {
-  font-size: var(--admin-font-size-sm);
-  background: var(--admin-surface-soft);
-  padding: var(--admin-space-2xs) var(--admin-space-sm);
-  border-radius: var(--admin-radius-xs);
-}
-
 .hint {
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
@@ -2239,10 +2196,6 @@
 .hint.addendumLockNotice {
   color: var(--admin-warning-text, #92400e);
   margin-top: var(--admin-space-0);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractInstructionHint {
-  color: var(--admin-bg-page);
 }
 
 .error {

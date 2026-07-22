@@ -14,6 +14,14 @@ export function isGenericRepairContractHtml(html: string | undefined | null): bo
   );
 }
 
+/** Старый потолочный шаблон без тире в перечислениях — нужно обновить HTML. */
+export function isOutdatedCeilingsContractHtml(html: string | undefined | null): boolean {
+  const h = html ?? '';
+  if (!/натяжного потолка/i.test(h)) return false;
+  if (!/договор подряда \(с элементами купли-продажи\)/i.test(h)) return false;
+  return !h.includes('— Изготовить и передать в собственность');
+}
+
 function listCeilingsContractPresets(items: ContractTemplatePreset[]): ContractTemplatePreset[] {
   return items.filter(
     (it) =>
@@ -23,10 +31,14 @@ function listCeilingsContractPresets(items: ContractTemplatePreset[]): ContractT
   );
 }
 
+function shouldReplaceCeilingsContractHtml(html: string | undefined | null): boolean {
+  return isGenericRepairContractHtml(html) || isOutdatedCeilingsContractHtml(html);
+}
+
 /**
  * Гарантирует для CEILINGS пресет договора с текстом натяжных потолков:
  * — если пресетов договора нет — создаёт дефолтный;
- * — если все договоры — «ремонтный» шаблон — подменяет HTML на потолочный.
+ * — если договоры «ремонтные» или устаревшие (без тире) — подменяет HTML.
  */
 export async function ensureCeilingsContractTemplatePresets(
   items: ContractTemplatePreset[]
@@ -49,12 +61,11 @@ export async function ensureCeilingsContractTemplatePresets(
     ];
     changed = true;
   } else {
-    const allRepairLike = contracts.every((it) => isGenericRepairContractHtml(it.html));
-    if (allRepairLike) {
+    const replaceable = contracts.filter((it) => shouldReplaceCeilingsContractHtml(it.html));
+    if (replaceable.length > 0) {
+      const replaceIds = new Set(replaceable.map((it) => it.id));
       next = next.map((it) => {
-        if (it.archived) return it;
-        if (packageLibraryTemplateTabIdFromPreset(it.tabId) !== 'contract') return it;
-        if (!isGenericRepairContractHtml(it.html)) return it;
+        if (!replaceIds.has(it.id)) return it;
         changed = true;
         return {
           ...it,

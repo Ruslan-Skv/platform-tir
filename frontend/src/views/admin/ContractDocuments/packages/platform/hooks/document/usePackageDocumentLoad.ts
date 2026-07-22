@@ -19,6 +19,7 @@ import {
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
   getContractDocumentWindowsSettings,
+  getContractDocumentWorkPeriodSettings,
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
@@ -212,21 +213,28 @@ export function usePackageDocumentLoad({
           })),
           getContractDocumentPackages(currentKind).catch(() => []),
           getInstallers().catch(() => [] as InstallerMaster[]),
-          (packageContractSettingsKind(currentKind) === 'WINDOWS'
-            ? getContractDocumentWindowsSettings()
-            : getContractDocumentRepairSettings()
-          ).catch(() =>
-            packageContractSettingsKind(currentKind) === 'WINDOWS'
-              ? {
-                  defaultWorkPeriodDays: DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
-                  windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
-                  updatedAt: null as string | null,
-                }
-              : {
-                  defaultWorkPeriodDays: DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
-                  updatedAt: null as string | null,
-                }
-          ),
+          (() => {
+            const settingsKind = packageContractSettingsKind(currentKind);
+            if (settingsKind === 'REPAIR') {
+              return getContractDocumentRepairSettings().catch(() => ({
+                defaultWorkPeriodDays: DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
+                updatedAt: null as string | null,
+              }));
+            }
+            if (settingsKind === 'WINDOWS') {
+              return getContractDocumentWindowsSettings().catch(() => ({
+                defaultWorkPeriodDays: DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
+                windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+                updatedAt: null as string | null,
+              }));
+            }
+            return getContractDocumentWorkPeriodSettings(settingsKind).catch(() => ({
+              kind: settingsKind,
+              defaultWorkPeriodDays: DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
+              windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+              updatedAt: null as string | null,
+            }));
+          })(),
           listPackagePaymentInvoices(packageId).catch(() => []),
         ]);
         setPackageKind(currentKind);

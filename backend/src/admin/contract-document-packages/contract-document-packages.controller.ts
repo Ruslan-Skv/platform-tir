@@ -41,7 +41,12 @@ import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
 } from './dto/set-repair-settings.dto';
+import {
+  ApplyWorkPeriodToAllByKindDto,
+  SetWorkPeriodSettingsByKindDto,
+} from './dto/set-work-period-settings-by-kind.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
+import { SetWorkOrderMarkupByKindDto } from './dto/set-work-order-markup-by-kind.dto';
 import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
 import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
 
@@ -356,6 +361,33 @@ export class ContractDocumentPackagesController {
     return this.service.applyRepairWorkPeriodToAllPackages(dto);
   }
 
+  @Get('work-period-settings')
+  getWorkPeriodSettings(@Query('kind') kind: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите корректный query-параметр kind');
+    }
+    return this.service.getWorkPeriodSettings(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('work-period-settings')
+  @Roles('SUPER_ADMIN')
+  setWorkPeriodSettings(@Body() dto: SetWorkPeriodSettingsByKindDto, @Req() req: RequestWithUser) {
+    return this.service.setWorkPeriodSettings(
+      dto.kind,
+      { defaultWorkPeriodDays: dto.defaultWorkPeriodDays },
+      req.user?.id,
+    );
+  }
+
+  @Post('work-period-settings/apply-to-all')
+  @Roles('SUPER_ADMIN')
+  applyWorkPeriodToAllByKind(@Body() dto: ApplyWorkPeriodToAllByKindDto) {
+    return this.service.applyWorkPeriodToAllPackages(dto.kind, {
+      workPeriodDays: dto.workPeriodDays,
+    });
+  }
+
   @Get('windows-settings')
   getWindowsSettings() {
     return this.service.getWindowsSettings();
@@ -373,13 +405,49 @@ export class ContractDocumentPackagesController {
     return this.service.applyWindowsWorkPeriodToAllPackages(dto);
   }
 
-  /** @deprecated Используйте GET windows-settings (поле windowsWorkOrderMarkupPercent). */
+  @Get('work-order-markup-settings')
+  getWorkOrderMarkupSettings(@Query('kind') kind: string) {
+    const allowed = new Set<string>([
+      ContractDocumentPackageKind.WINDOWS,
+      ContractDocumentPackageKind.DOORS,
+      ContractDocumentPackageKind.BLINDS,
+      ContractDocumentPackageKind.CEILINGS,
+    ]);
+    if (!kind || !allowed.has(kind)) {
+      throw new BadRequestException('Укажите kind: WINDOWS, DOORS, BLINDS или CEILINGS');
+    }
+    return this.service.getWorkOrderMarkupSettings(kind as ContractDocumentPackageKind);
+  }
+
+  @Put('work-order-markup-settings')
+  @Roles('SUPER_ADMIN')
+  setWorkOrderMarkupSettings(
+    @Body() dto: SetWorkOrderMarkupByKindDto,
+    @Req() req: RequestWithUser,
+  ) {
+    const allowed = new Set<ContractDocumentPackageKind>([
+      ContractDocumentPackageKind.WINDOWS,
+      ContractDocumentPackageKind.DOORS,
+      ContractDocumentPackageKind.BLINDS,
+      ContractDocumentPackageKind.CEILINGS,
+    ]);
+    if (!allowed.has(dto.kind)) {
+      throw new BadRequestException('Укажите kind: WINDOWS, DOORS, BLINDS или CEILINGS');
+    }
+    return this.service.setWorkOrderMarkupSettings(
+      dto.kind,
+      { windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent },
+      req.user?.id,
+    );
+  }
+
+  /** @deprecated Используйте GET work-order-markup-settings?kind=WINDOWS. */
   @Get('windows-settings/work-order-markup')
   getWindowsWorkOrderMarkupSettings() {
     return this.service.getWindowsWorkOrderMarkupSettings();
   }
 
-  /** @deprecated Используйте PUT windows-settings. */
+  /** @deprecated Используйте PUT work-order-markup-settings. */
   @Put('windows-settings/work-order-markup')
   @Roles('SUPER_ADMIN')
   setWindowsWorkOrderMarkupSettings(

@@ -18,11 +18,9 @@ export function PackageSettingsPageView({
       title="Сроки договоров"
       subtitle={
         <>
-          Срок в рабочих днях подставляется в поле «Срок дог.» на вкладке «Данные» и в шаблон{' '}
-          <code>{'{{contract.workPeriod}}'}</code>. Менять срок могут пользователи с уровнем доступа
-          «Редактирование» для этого раздела. После подписания договора срок изменить нельзя. До
-          подписания можно задать срок в карточке (ручной режим) — такие договоры не затрагивает
-          массовое обновление.
+          Срок в рабочих днях для каждого направления. Подставляется в «Срок дог.» и в{' '}
+          <code>{'{{contract.workPeriod}}'}</code>. После подписания срок не меняется; договоры с
+          ручным сроком в карточке массовое обновление не затрагивает.
         </>
       }
       error={error}
@@ -37,6 +35,24 @@ export function PackageSettingsPageView({
         />
         <WorkPeriodSettingsSection
           kind="WINDOWS"
+          isSuperAdmin={isSuperAdmin}
+          onError={setError}
+          onOk={setOk}
+        />
+        <WorkPeriodSettingsSection
+          kind="DOORS"
+          isSuperAdmin={isSuperAdmin}
+          onError={setError}
+          onOk={setOk}
+        />
+        <WorkPeriodSettingsSection
+          kind="BLINDS"
+          isSuperAdmin={isSuperAdmin}
+          onError={setError}
+          onOk={setOk}
+        />
+        <WorkPeriodSettingsSection
+          kind="CEILINGS"
           isSuperAdmin={isSuperAdmin}
           onError={setError}
           onOk={setOk}

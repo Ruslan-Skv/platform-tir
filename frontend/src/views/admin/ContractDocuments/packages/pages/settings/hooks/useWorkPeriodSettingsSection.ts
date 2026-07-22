@@ -17,6 +17,12 @@ export type UseWorkPeriodSettingsSectionParams = {
   onOk: (message: string | null) => void;
 };
 
+export type WorkPeriodConfirmState = {
+  days: number;
+  title: string;
+  message: string;
+};
+
 export function useWorkPeriodSettingsSection({
   kind,
   isSuperAdmin,
@@ -29,6 +35,7 @@ export function useWorkPeriodSettingsSection({
   const [applyingAll, setApplyingAll] = useState(false);
   const [defaultDaysInput, setDefaultDaysInput] = useState(String(config.fallbackDays));
   const [updatedAt, setUpdatedAt] = useState<string | null>(null);
+  const [confirmState, setConfirmState] = useState<WorkPeriodConfirmState | null>(null);
 
   const load = useCallback(async () => {
     const cfg = WORK_PERIOD_KIND_CONFIG[kind];
@@ -58,6 +65,24 @@ export function useWorkPeriodSettingsSection({
     setDefaultDaysInput(normalizePackageWorkPeriodInput(raw));
   }, []);
 
+  const runApplyToAll = useCallback(
+    async (days: number) => {
+      setApplyingAll(true);
+      onError(null);
+      onOk(null);
+      try {
+        const res = await config.applyToAll({ workPeriodDays: days });
+        onOk(formatApplyWorkPeriodResult(res, config.title));
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Не удалось применить ко всем');
+      } finally {
+        setApplyingAll(false);
+        setConfirmState(null);
+      }
+    },
+    [config, onError, onOk]
+  );
+
   const handleSaveDefault = useCallback(async () => {
     if (!isSuperAdmin) return;
     if (parsedDefaultDays === null) {
@@ -71,15 +96,11 @@ export function useWorkPeriodSettingsSection({
       const res = await config.save({ defaultWorkPeriodDays: parsedDefaultDays });
       setDefaultDaysInput(formatPackageWorkPeriodDays(res.defaultWorkPeriodDays));
       setUpdatedAt(res.updatedAt);
-      const applyNow = window.confirm(
-        `Срок по умолчанию для «${config.title}» сохранён (${parsedDefaultDays} дн.).\n\nПрименить ко всем неподписанным договорам «${config.title}» без ручного срока в карточке?`
-      );
-      if (applyNow) {
-        const applyRes = await config.applyToAll({ workPeriodDays: parsedDefaultDays });
-        onOk(`${config.saveOk} ${formatApplyWorkPeriodResult(applyRes, config.title)}`);
-      } else {
-        onOk(config.saveOk);
-      }
+      setConfirmState({
+        days: parsedDefaultDays,
+        title: 'Применить к существующим договорам?',
+        message: config.applyConfirm(parsedDefaultDays),
+      });
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось сохранить');
     } finally {
@@ -87,26 +108,15 @@ export function useWorkPeriodSettingsSection({
     }
   }, [config, isSuperAdmin, onError, onOk, parsedDefaultDays]);
 
-  const handleApplyToAll = useCallback(async () => {
-    if (!isSuperAdmin) return;
-    const days = parsedDefaultDays;
-    if (days === null) {
-      onError('Сначала укажите корректный срок в поле выше.');
-      return;
-    }
-    if (!window.confirm(config.applyConfirm(days))) return;
-    setApplyingAll(true);
-    onError(null);
-    onOk(null);
-    try {
-      const res = await config.applyToAll({ workPeriodDays: days });
-      onOk(formatApplyWorkPeriodResult(res, config.title));
-    } catch (e) {
-      onError(e instanceof Error ? e.message : 'Не удалось применить ко всем');
-    } finally {
-      setApplyingAll(false);
-    }
-  }, [config, isSuperAdmin, onError, onOk, parsedDefaultDays]);
+  const handleConfirmModal = useCallback(() => {
+    if (!confirmState) return;
+    void runApplyToAll(confirmState.days);
+  }, [confirmState, runApplyToAll]);
+
+  const handleDismissAfterSave = useCallback(() => {
+    onOk(config.saveOk);
+    setConfirmState(null);
+  }, [config.saveOk, onOk]);
 
   return {
     title: config.title,
@@ -118,9 +128,11 @@ export function useWorkPeriodSettingsSection({
     updatedAt,
     parsedDefaultDays,
     isSuperAdmin,
+    confirmState,
     handleDefaultDaysChange,
     handleSaveDefault,
-    handleApplyToAll,
+    handleConfirmModal,
+    handleDismissAfterSave,
   };
 }
 

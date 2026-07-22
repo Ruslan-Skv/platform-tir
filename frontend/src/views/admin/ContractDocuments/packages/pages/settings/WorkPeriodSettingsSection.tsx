@@ -1,5 +1,6 @@
 'use client';
 
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdEstimateTab from '@/views/admin/ContractDocuments/styles/estimate-tab.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -21,20 +22,22 @@ export function WorkPeriodSettingsSection(params: UseWorkPeriodSettingsSectionPa
     updatedAt,
     parsedDefaultDays,
     isSuperAdmin,
+    confirmState,
     handleDefaultDaysChange,
     handleSaveDefault,
-    handleApplyToAll,
+    handleConfirmModal,
+    handleDismissAfterSave,
   } = useWorkPeriodSettingsSection(params);
 
   return (
     <section className={cdHub.packageSettingsCard}>
-      <h2 className={cdEstimateTab.sectionTitle}>{title}</h2>
+      <h2 className={`${cdEstimateTab.sectionTitle} ${cdHub.packageSettingsCardTitle}`}>{title}</h2>
       {loading ? (
         <p className={cdTemplates.hint}>Загрузка…</p>
       ) : (
         <>
-          <div className={cdEstimateTab.field}>
-            <label htmlFor={inputId}>Срок договора по умолчанию (рабочих дней)</label>
+          <div className={`${cdEstimateTab.field} ${cdHub.packageSettingsDaysField}`}>
+            <label htmlFor={inputId}>Срок по умолчанию (раб. дней)</label>
             <input
               id={inputId}
               inputMode="numeric"
@@ -57,27 +60,30 @@ export function WorkPeriodSettingsSection(params: UseWorkPeriodSettingsSectionPa
                 data-admin-mutation
                 type="button"
                 className={cdWorkspace.primaryBtn}
-                disabled={saving || parsedDefaultDays === null}
+                disabled={saving || applyingAll || parsedDefaultDays === null}
+                aria-busy={saving || applyingAll}
                 onClick={() => void handleSaveDefault()}
               >
-                {saving ? 'Сохранение…' : 'Сохранить по умолчанию'}
-              </button>
-              <button
-                type="button"
-                className={cdWorkspace.secondaryBtn}
-                disabled={applyingAll || parsedDefaultDays === null}
-                onClick={() => void handleApplyToAll()}
-              >
-                {applyingAll ? 'Применение…' : `Применить ко всем договорам «${title}»`}
+                Сохранить
               </button>
             </div>
           ) : (
-            <p className={cdTemplates.hint}>
-              Изменить срок по умолчанию или применить ко всем договорам может только суперадмин.
-            </p>
+            <p className={cdTemplates.hint}>Изменить срок может только суперадмин.</p>
           )}
         </>
       )}
+
+      <ConfirmModal
+        isOpen={confirmState != null}
+        onClose={handleDismissAfterSave}
+        onConfirm={handleConfirmModal}
+        title={confirmState?.title ?? 'Подтверждение'}
+        message={confirmState?.message ?? ''}
+        confirmText="Применить"
+        cancelText="Только сохранить"
+        closeOnConfirm={false}
+        confirmLoading={applyingAll}
+      />
     </section>
   );
 }

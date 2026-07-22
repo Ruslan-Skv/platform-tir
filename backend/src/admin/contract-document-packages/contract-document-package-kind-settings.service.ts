@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
@@ -43,6 +43,15 @@ export class ContractDocumentPackageKindSettingsService {
     return this.resolveDefaultWorkPeriodDays(ContractDocumentPackageKind.REPAIR);
   }
 
+  private supportsWorkOrderMarkup(kind: ContractDocumentPackageKind): boolean {
+    return (
+      kind === ContractDocumentPackageKind.WINDOWS ||
+      kind === ContractDocumentPackageKind.DOORS ||
+      kind === ContractDocumentPackageKind.BLINDS ||
+      kind === ContractDocumentPackageKind.CEILINGS
+    );
+  }
+
   async getWorkPeriodSettings(kind: ContractDocumentPackageKind) {
     const days = await this.resolveDefaultWorkPeriodDays(kind);
     const row = await this.prisma.contractDocumentRepairSettings.findUnique({
@@ -54,15 +63,10 @@ export class ContractDocumentPackageKindSettingsService {
       defaultWorkPeriodDays: days,
       updatedAt: row?.updatedAt?.toISOString() ?? null,
     };
-    if (
-      kind === ContractDocumentPackageKind.WINDOWS ||
-      kind === ContractDocumentPackageKind.DOORS ||
-      kind === ContractDocumentPackageKind.BLINDS ||
-      kind === ContractDocumentPackageKind.CEILINGS
-    ) {
+    if (this.supportsWorkOrderMarkup(kind)) {
       return {
         ...base,
-        windowsWorkOrderMarkupPercent: await this.resolveWindowsWorkOrderMarkupPercent(),
+        windowsWorkOrderMarkupPercent: await this.resolveWorkOrderMarkupPercent(kind),
       };
     }
     return base;
@@ -135,7 +139,7 @@ export class ContractDocumentPackageKindSettingsService {
     return {
       kind,
       defaultWorkPeriodDays: row.defaultWorkPeriodDays ?? currentDays,
-      windowsWorkOrderMarkupPercent: await this.resolveWindowsWorkOrderMarkupPercent(),
+      windowsWorkOrderMarkupPercent: await this.resolveWorkOrderMarkupPercent(kind),
       updatedAt: row.updatedAt.toISOString(),
     };
   }
@@ -190,10 +194,13 @@ export class ContractDocumentPackageKindSettingsService {
     return this.applyWorkPeriodToAllPackages(ContractDocumentPackageKind.WINDOWS, dto);
   }
 
-  async resolveWindowsWorkOrderMarkupPercent(): Promise<number> {
+  async resolveWorkOrderMarkupPercent(kind: ContractDocumentPackageKind): Promise<number> {
+    if (!this.supportsWorkOrderMarkup(kind)) {
+      return DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT;
+    }
     try {
       const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-        where: { kind: ContractDocumentPackageKind.WINDOWS },
+        where: { kind },
         select: { windowsWorkOrderMarkupPercent: true },
       });
       const raw = row?.windowsWorkOrderMarkupPercent ?? DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT;
@@ -205,24 +212,44 @@ export class ContractDocumentPackageKindSettingsService {
     }
   }
 
-  async getWindowsWorkOrderMarkupSettings() {
-    const windowsWorkOrderMarkupPercent = await this.resolveWindowsWorkOrderMarkupPercent();
+  /** @deprecated Используйте {@link resolveWorkOrderMarkupPercent} */
+  async resolveWindowsWorkOrderMarkupPercent(): Promise<number> {
+    return this.resolveWorkOrderMarkupPercent(ContractDocumentPackageKind.WINDOWS);
+  }
+
+  async getWorkOrderMarkupSettings(kind: ContractDocumentPackageKind) {
+    if (!this.supportsWorkOrderMarkup(kind)) {
+      throw new BadRequestException(
+        `Наценка заказ-наряда не поддерживается для направления ${kind}`,
+      );
+    }
+    const windowsWorkOrderMarkupPercent = await this.resolveWorkOrderMarkupPercent(kind);
     const row = await this.prisma.contractDocumentRepairSettings.findUnique({
-      where: { kind: ContractDocumentPackageKind.WINDOWS },
+      where: { kind },
       select: { updatedAt: true },
     });
     return {
+      kind,
       windowsWorkOrderMarkupPercent,
       updatedAt: row?.updatedAt?.toISOString() ?? null,
     };
   }
 
-  async setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
-    const fallbackDays = this.fallbackWorkPeriodDays(ContractDocumentPackageKind.WINDOWS);
+  async setWorkOrderMarkupSettings(
+    kind: ContractDocumentPackageKind,
+    dto: SetWindowsWorkOrderMarkupDto,
+    updatedById?: string,
+  ) {
+    if (!this.supportsWorkOrderMarkup(kind)) {
+      throw new BadRequestException(
+        `Наценка заказ-наряда не поддерживается для направления ${kind}`,
+      );
+    }
+    const fallbackDays = this.fallbackWorkPeriodDays(kind);
     const row = await this.prisma.contractDocumentRepairSettings.upsert({
-      where: { kind: ContractDocumentPackageKind.WINDOWS },
+      where: { kind },
       create: {
-        kind: ContractDocumentPackageKind.WINDOWS,
+        kind,
         defaultWorkPeriodDays: fallbackDays,
         windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent,
         updatedById: updatedById ?? null,
@@ -234,8 +261,17 @@ export class ContractDocumentPackageKindSettingsService {
       select: { windowsWorkOrderMarkupPercent: true, updatedAt: true },
     });
     return {
+      kind,
       windowsWorkOrderMarkupPercent: row.windowsWorkOrderMarkupPercent,
       updatedAt: row.updatedAt.toISOString(),
     };
+  }
+
+  async getWindowsWorkOrderMarkupSettings() {
+    return this.getWorkOrderMarkupSettings(ContractDocumentPackageKind.WINDOWS);
+  }
+
+  async setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
+    return this.setWorkOrderMarkupSettings(ContractDocumentPackageKind.WINDOWS, dto, updatedById);
   }
 }

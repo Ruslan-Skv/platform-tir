@@ -170,8 +170,10 @@ export function CeilingsSpecificationEditor({
 
   return (
     <div className={cdProduct.ceilingsSpecificationEditor}>
-      <div className={fieldsRowClassName}>
-        <div className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField}`}>
+      <div className={`${fieldsRowClassName} ${cdProduct.ceilingsSpecificationTotalsRow}`}>
+        <div
+          className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField} ${cdProduct.ceilingsSpecificationCompactField}`}
+        >
           <label htmlFor="ceilings-extra-markup">Доп. наценка, %</label>
           <input
             id="ceilings-extra-markup"
@@ -184,7 +186,9 @@ export function CeilingsSpecificationEditor({
             onChange={(e) => onChange({ ...spec, extraMarkupPercent: e.target.value })}
           />
         </div>
-        <div className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField}`}>
+        <div
+          className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField} ${cdProduct.ceilingsSpecificationCompactField}`}
+        >
           <label htmlFor="ceilings-discount">Скидка, %</label>
           <input
             id="ceilings-discount"
@@ -197,17 +201,26 @@ export function CeilingsSpecificationEditor({
             onChange={(e) => onChange({ ...spec, discountPercent: e.target.value })}
           />
         </div>
+        <p className={cdProduct.ceilingsSpecificationTotals}>
+          {totals.extraMarkupPercent > 0 || totals.discountPercent > 0 ? (
+            <>
+              Итого: {formatCeilingsMoney(totals.grossTotal)} руб.
+              {totals.extraMarkupPercent > 0 && totals.discountPercent > 0
+                ? ` · с наценкой ${formatCeilingsMoney(totals.withExtraMarkup)} руб. · со скидкой `
+                : totals.extraMarkupPercent > 0
+                  ? ' · с наценкой '
+                  : ' · со скидкой '}
+              <span className={cdProduct.ceilingsSpecificationTotalsBadge}>
+                {formatCeilingsMoney(totals.netTotal)} руб.
+              </span>
+            </>
+          ) : (
+            <span className={cdProduct.ceilingsSpecificationTotalsBadge}>
+              Итого: {formatCeilingsMoney(totals.grossTotal)} руб.
+            </span>
+          )}
+        </p>
       </div>
-
-      <p className={cdProduct.doorsSpecificationSectionTotal}>
-        Итого: {formatCeilingsMoney(totals.grossTotal)} руб.
-        {totals.extraMarkupPercent > 0
-          ? ` · с наценкой ${formatCeilingsMoney(totals.withExtraMarkup)} руб.`
-          : ''}
-        {totals.discountPercent > 0
-          ? ` · со скидкой ${formatCeilingsMoney(totals.netTotal)} руб.`
-          : ''}
-      </p>
 
       <div className={cdProduct.ceilingsSpecificationCards}>
         {spec.ceilings.map((ceiling) => {

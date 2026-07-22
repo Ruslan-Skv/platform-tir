@@ -2,10 +2,13 @@ import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-do
 import {
   applyRepairWorkPeriodToAllPackages,
   applyWindowsWorkPeriodToAllPackages,
+  applyWorkPeriodToAllPackagesByKind,
   getContractDocumentRepairSettings,
   getContractDocumentWindowsSettings,
+  getContractDocumentWorkPeriodSettings,
   putContractDocumentRepairSettings,
   putContractDocumentWindowsSettings,
+  putContractDocumentWorkPeriodSettings,
 } from '@/shared/api/admin-contract-document-packages';
 
 import {
@@ -13,7 +16,10 @@ import {
   DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
 } from '../../platform/form/contractWorkPeriod';
 
-export type WorkPeriodSettingsKind = Extract<ContractDocumentPackageKind, 'REPAIR' | 'WINDOWS'>;
+export type WorkPeriodSettingsKind = Extract<
+  ContractDocumentPackageKind,
+  'REPAIR' | 'WINDOWS' | 'DOORS' | 'BLINDS' | 'CEILINGS'
+>;
 
 export type ApplyWorkPeriodToAllResult = {
   updated: number;
@@ -21,22 +27,43 @@ export type ApplyWorkPeriodToAllResult = {
   skippedManual?: number;
 };
 
-export const WORK_PERIOD_KIND_CONFIG: Record<
-  WorkPeriodSettingsKind,
-  {
-    title: string;
-    inputId: string;
-    fallbackDays: number;
-    load: () => Promise<{ defaultWorkPeriodDays: number; updatedAt: string | null }>;
-    save: (body: { defaultWorkPeriodDays: number }) => Promise<{
-      defaultWorkPeriodDays: number;
-      updatedAt: string | null;
-    }>;
-    applyToAll: (body: { workPeriodDays: number }) => Promise<ApplyWorkPeriodToAllResult>;
-    applyConfirm: (days: number) => string;
-    saveOk: string;
-  }
-> = {
+type WorkPeriodKindConfigEntry = {
+  title: string;
+  inputId: string;
+  fallbackDays: number;
+  load: () => Promise<{ defaultWorkPeriodDays: number; updatedAt: string | null }>;
+  save: (body: { defaultWorkPeriodDays: number }) => Promise<{
+    defaultWorkPeriodDays: number;
+    updatedAt: string | null;
+  }>;
+  applyToAll: (body: { workPeriodDays: number }) => Promise<ApplyWorkPeriodToAllResult>;
+  applyConfirm: (days: number) => string;
+  saveOk: string;
+};
+
+function productKindConfig(
+  kind: Extract<WorkPeriodSettingsKind, 'DOORS' | 'BLINDS' | 'CEILINGS'>,
+  title: string
+): WorkPeriodKindConfigEntry {
+  return {
+    title,
+    inputId: `package_${kind.toLowerCase()}_default_work_period`,
+    fallbackDays: DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
+    load: () => getContractDocumentWorkPeriodSettings(kind),
+    save: (body) =>
+      putContractDocumentWorkPeriodSettings({
+        kind,
+        defaultWorkPeriodDays: body.defaultWorkPeriodDays,
+      }),
+    applyToAll: (body) =>
+      applyWorkPeriodToAllPackagesByKind({ kind, workPeriodDays: body.workPeriodDays }),
+    applyConfirm: (days) =>
+      `Срок по умолчанию сохранён (${days} дн.). Применить его ко всем неподписанным договорам «${title}» без ручного срока? Подписанные и с ручным сроком в карточке не изменятся.`,
+    saveOk: `Срок по умолчанию для «${title}» сохранён.`,
+  };
+}
+
+export const WORK_PERIOD_KIND_CONFIG: Record<WorkPeriodSettingsKind, WorkPeriodKindConfigEntry> = {
   REPAIR: {
     title: 'Ремонт',
     inputId: 'package_repair_default_work_period',
@@ -45,9 +72,8 @@ export const WORK_PERIOD_KIND_CONFIG: Record<
     save: putContractDocumentRepairSettings,
     applyToAll: applyRepairWorkPeriodToAllPackages,
     applyConfirm: (days) =>
-      `Установить срок ${days} рабочих дней во всех неподписанных договорах «Ремонт» без ручного срока? Подписанные договоры и договоры, где суперадмин задал срок в карточке, не изменятся.`,
-    saveOk:
-      'Срок по умолчанию для «Ремонт» сохранён. Новые договоры и договоры без ручного срока получат его при открытии (если не задан свой срок).',
+      `Срок по умолчанию сохранён (${days} дн.). Применить его ко всем неподписанным договорам «Ремонт» без ручного срока? Подписанные и с ручным сроком в карточке не изменятся.`,
+    saveOk: 'Срок по умолчанию для «Ремонт» сохранён.',
   },
   WINDOWS: {
     title: 'Окна',
@@ -57,8 +83,10 @@ export const WORK_PERIOD_KIND_CONFIG: Record<
     save: putContractDocumentWindowsSettings,
     applyToAll: applyWindowsWorkPeriodToAllPackages,
     applyConfirm: (days) =>
-      `Установить срок ${days} рабочих дней во всех неподписанных договорах «Окна» без ручного срока? Подписанные договоры и договоры, где суперадмин задал срок в карточке, не изменятся.`,
-    saveOk:
-      'Срок по умолчанию для «Окна» сохранён. Новые договоры и договоры без ручного срока получат его при открытии (если не задан свой срок).',
+      `Срок по умолчанию сохранён (${days} дн.). Применить его ко всем неподписанным договорам «Окна» без ручного срока? Подписанные и с ручным сроком в карточке не изменятся.`,
+    saveOk: 'Срок по умолчанию для «Окна» сохранён.',
   },
+  DOORS: productKindConfig('DOORS', 'Двери'),
+  BLINDS: productKindConfig('BLINDS', 'Жалюзи'),
+  CEILINGS: productKindConfig('CEILINGS', 'Натяжные потолки'),
 };

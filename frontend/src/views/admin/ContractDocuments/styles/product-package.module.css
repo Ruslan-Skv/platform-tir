@@ -1036,6 +1036,56 @@
   gap: var(--admin-space-md);
 }
 
+.ceilingsSpecificationTotalsRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: flex-end;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+}
+
+.ceilingsSpecificationCompactField {
+  flex: 0 0 auto;
+  width: 8rem;
+  max-width: 8rem;
+  min-width: 0;
+}
+
+.ceilingsSpecificationCompactField input {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: var(--admin-space-2xs) var(--admin-space-xs) !important;
+}
+
+.ceilingsSpecificationCompactField > label {
+  white-space: nowrap;
+}
+
+.ceilingsSpecificationTotals {
+  margin: 0 0 var(--admin-space-2xs) auto;
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 700;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+}
+
+.ceilingsSpecificationTotalsBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-success-border-soft, #86efac);
+  background: var(--admin-success-bg-soft, #dcfce7);
+  font-weight: 700;
+  color: var(--admin-success-text-strong, #166534);
+  white-space: nowrap;
+}
+
 .ceilingsSpecificationCards {
   display: grid;
   gap: var(--admin-space-md);
@@ -1140,10 +1190,9 @@
 
 .ceilingsSpecificationLineRow {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(64px, 0.65fr) minmax(72px, 0.75fr) minmax(
-      72px,
-      0.8fr
-    ) auto;
+  grid-template-columns:
+    minmax(0, 2fr) minmax(64px, 0.65fr) minmax(72px, 0.75fr) minmax(72px, 0.8fr)
+    auto;
   gap: var(--admin-space-xs);
   align-items: center;
   margin-bottom: var(--admin-space-xs);

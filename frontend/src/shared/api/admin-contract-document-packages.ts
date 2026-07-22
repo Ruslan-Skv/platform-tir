@@ -689,6 +689,68 @@ export type WindowsContractSettings = RepairContractSettings & {
   windowsWorkOrderMarkupPercent: number;
 };
 
+export type WorkPeriodSettingsByKind = RepairContractSettings & {
+  kind: ContractDocumentPackageKind;
+  windowsWorkOrderMarkupPercent?: number;
+};
+
+export type ApplyWorkPeriodToAllPackagesResult = {
+  updated: number;
+  workPeriodDays: number;
+  skippedSigned?: number;
+  skippedManual?: number;
+  kind?: ContractDocumentPackageKind;
+};
+
+export async function getContractDocumentWorkPeriodSettings(
+  kind: ContractDocumentPackageKind
+): Promise<WorkPeriodSettingsByKind> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/work-period-settings?kind=${encodeURIComponent(kind)}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить настройки срока договора');
+  return res.json();
+}
+
+export async function putContractDocumentWorkPeriodSettings(body: {
+  kind: ContractDocumentPackageKind;
+  defaultWorkPeriodDays: number;
+}): Promise<WorkPeriodSettingsByKind> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/work-period-settings`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить настройки срока');
+  }
+  return res.json();
+}
+
+export async function applyWorkPeriodToAllPackagesByKind(body: {
+  kind: ContractDocumentPackageKind;
+  workPeriodDays: number;
+}): Promise<ApplyWorkPeriodToAllPackagesResult> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/work-period-settings/apply-to-all`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось обновить срок во всех договорах');
+  }
+  return res.json();
+}
+
 export async function getContractDocumentRepairSettings(): Promise<RepairContractSettings> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/repair-settings`,
@@ -715,14 +777,6 @@ export async function putContractDocumentRepairSettings(body: {
   }
   return res.json();
 }
-
-export type ApplyWorkPeriodToAllPackagesResult = {
-  updated: number;
-  workPeriodDays: number;
-  skippedSigned?: number;
-  skippedManual?: number;
-  kind?: ContractDocumentPackageKind;
-};
 
 export async function applyRepairWorkPeriodToAllPackages(body: {
   workPeriodDays: number;
@@ -771,26 +825,52 @@ export async function putContractDocumentWindowsSettings(body: {
 }
 
 export type WindowsWorkOrderMarkupSettings = {
+  kind?: ContractDocumentPackageKind;
   windowsWorkOrderMarkupPercent: number;
   updatedAt: string | null;
 };
 
+export async function getContractDocumentWorkOrderMarkupSettings(
+  kind: Extract<ContractDocumentPackageKind, 'WINDOWS' | 'DOORS' | 'BLINDS' | 'CEILINGS'>
+): Promise<WindowsWorkOrderMarkupSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/work-order-markup-settings?kind=${encodeURIComponent(kind)}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить наценку заказ-наряда');
+  return res.json();
+}
+
+export async function putContractDocumentWorkOrderMarkupSettings(body: {
+  kind: Extract<ContractDocumentPackageKind, 'WINDOWS' | 'DOORS' | 'BLINDS' | 'CEILINGS'>;
+  windowsWorkOrderMarkupPercent: number;
+}): Promise<WindowsWorkOrderMarkupSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/work-order-markup-settings`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить наценку заказ-наряда');
+  }
+  return res.json();
+}
+
 export async function getContractDocumentWindowsWorkOrderMarkup(): Promise<WindowsWorkOrderMarkupSettings> {
-  const settings = await getContractDocumentWindowsSettings();
-  return {
-    windowsWorkOrderMarkupPercent: settings.windowsWorkOrderMarkupPercent,
-    updatedAt: settings.updatedAt,
-  };
+  return getContractDocumentWorkOrderMarkupSettings('WINDOWS');
 }
 
 export async function putContractDocumentWindowsWorkOrderMarkup(body: {
   windowsWorkOrderMarkupPercent: number;
 }): Promise<WindowsWorkOrderMarkupSettings> {
-  const settings = await putContractDocumentWindowsSettings(body);
-  return {
-    windowsWorkOrderMarkupPercent: settings.windowsWorkOrderMarkupPercent,
-    updatedAt: settings.updatedAt,
-  };
+  return putContractDocumentWorkOrderMarkupSettings({
+    kind: 'WINDOWS',
+    windowsWorkOrderMarkupPercent: body.windowsWorkOrderMarkupPercent,
+  });
 }
 
 export async function applyWindowsWorkPeriodToAllPackages(body: {

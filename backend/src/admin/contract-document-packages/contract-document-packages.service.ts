@@ -207,8 +207,24 @@ export class ContractDocumentPackagesService {
     return this.kindSettings.applyWindowsWorkPeriodToAllPackages(dto);
   }
 
+  resolveWorkOrderMarkupPercent(kind: ContractDocumentPackageKind) {
+    return this.kindSettings.resolveWorkOrderMarkupPercent(kind);
+  }
+
   resolveWindowsWorkOrderMarkupPercent() {
     return this.kindSettings.resolveWindowsWorkOrderMarkupPercent();
+  }
+
+  getWorkOrderMarkupSettings(kind: ContractDocumentPackageKind) {
+    return this.kindSettings.getWorkOrderMarkupSettings(kind);
+  }
+
+  setWorkOrderMarkupSettings(
+    kind: ContractDocumentPackageKind,
+    dto: SetWindowsWorkOrderMarkupDto,
+    updatedById?: string,
+  ) {
+    return this.kindSettings.setWorkOrderMarkupSettings(kind, dto, updatedById);
   }
 
   getWindowsWorkOrderMarkupSettings() {

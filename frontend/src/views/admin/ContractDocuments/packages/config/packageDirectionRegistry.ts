@@ -98,6 +98,8 @@ function productLikeWithLineSpecification(
     ...productLikeConfig(kind, label),
     deliveryNoteTabVisible: true,
     lineSpecificationEnabled: true,
+    /** Срок договора — отдельная настройка по направлению (не общая с «Окна»). */
+    settingsKind: kind,
     excludedLibraryTemplateTabs: PRODUCT_LINE_SPEC_LIBRARY_EXCLUDED,
   };
 }

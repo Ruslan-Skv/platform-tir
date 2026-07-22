@@ -214,13 +214,6 @@
   );
 }
 
-.contractInstructionHint {
-  margin-top: var(--admin-space-xs);
-  margin-bottom: 0;
-  font-size: var(--admin-font-size-xs);
-  line-height: var(--admin-line-height-sm);
-}
-
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   :global(.packageDataTabDense)
   .packageDataPartySection
