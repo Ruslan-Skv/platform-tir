@@ -6,14 +6,13 @@ import type {
 
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
 import { todayContractDateDdMmYyyy } from '../../../core/contractDateFormat';
-import { packageUsesLineSpecification } from '../../config';
+import { getPackageDirectionConfig } from '../../config';
 import { isProductDirectionPackageKind } from '../../config/productDirectionPackageKind';
 import {
   buildWindowsAddendumPrintHtml,
   windowsAddendumSlotHasAccountOrderContent,
   windowsAddendumSlotHasAnyPrintContent,
 } from '../../families/product-like/addendum/addendumSpecification';
-import { buildCeilingsDeliveryNoteProductsHtml } from '../../families/product-like/ceilings/ceilingsSpecification';
 import { productContractCostFieldsForTemplate } from '../../families/product-like/cost/productContractCostBreakdown';
 import { buildWindowsWorkOrderAddendumForTemplate } from '../../families/product-like/print/productWorkOrder';
 import { buildDoorsDeliveryNoteProductsHtml } from '../../families/product-like/specification/doorsSpecification';
@@ -429,17 +428,15 @@ export function packageFormForTemplate(
 
   const contractCostFields = productContractCostFieldsForTemplate(form);
 
-  const deliveryNoteForTemplate = packageUsesLineSpecification(options?.packageKind)
-    ? {
-        productsHtml:
-          options?.packageKind === 'CEILINGS'
-            ? buildCeilingsDeliveryNoteProductsHtml(form.ceilingsSpecification)
-            : buildDoorsDeliveryNoteProductsHtml(
-                form.doorsSpecificationLines,
-                options?.packageKind
-              ),
-      }
-    : undefined;
+  const deliveryNoteForTemplate =
+    options?.packageKind && getPackageDirectionConfig(options.packageKind).deliveryNoteTabVisible
+      ? {
+          productsHtml: buildDoorsDeliveryNoteProductsHtml(
+            form.doorsSpecificationLines,
+            options.packageKind
+          ),
+        }
+      : undefined;
 
   const contractForTemplate = {
     ...form.contract,

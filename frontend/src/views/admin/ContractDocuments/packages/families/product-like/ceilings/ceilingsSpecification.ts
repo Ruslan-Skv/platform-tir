@@ -27,6 +27,7 @@ export type CeilingsFabricLine = {
 };
 
 export type CeilingsTapeLine = {
+  id: string;
   priceItemId: string;
   kind: string;
   color: string;
@@ -47,7 +48,7 @@ export type CeilingsCeilingBlock = {
   id: string;
   title: string;
   fabrics: CeilingsFabricLine[];
-  tape: CeilingsTapeLine | null;
+  tapes: CeilingsTapeLine[];
   profiles: CeilingsNamedQtyLine[];
   extras: CeilingsNamedQtyLine[];
   goods: CeilingsNamedQtyLine[];
@@ -73,6 +74,18 @@ export function newCeilingsFabricLine(partial?: Partial<CeilingsFabricLine>): Ce
   };
 }
 
+export function newCeilingsTapeLine(partial?: Partial<CeilingsTapeLine>): CeilingsTapeLine {
+  return {
+    id: newId('tape'),
+    priceItemId: '',
+    kind: '',
+    color: '',
+    qtyM: '',
+    unitPrice: '',
+    ...partial,
+  };
+}
+
 export function newCeilingsNamedQtyLine(
   partial?: Partial<CeilingsNamedQtyLine>
 ): CeilingsNamedQtyLine {
@@ -92,7 +105,7 @@ export function newCeilingsCeilingBlock(index = 1): CeilingsCeilingBlock {
     id: newId('ceiling'),
     title: `Потолок №${index}`,
     fabrics: [newCeilingsFabricLine()],
-    tape: null,
+    tapes: [],
     profiles: [],
     extras: [],
     goods: [],
@@ -143,16 +156,23 @@ export function normalizeCeilingsSpecification(raw: unknown): CeilingsSpecificat
           };
         })
         .filter(Boolean) as CeilingsFabricLine[];
-      const tapeRaw = asRecord(c.tape);
-      const tape: CeilingsTapeLine | null = tapeRaw
-        ? {
-            priceItemId: str(tapeRaw.priceItemId),
-            kind: str(tapeRaw.kind),
-            color: str(tapeRaw.color),
-            qtyM: str(tapeRaw.qtyM),
-            unitPrice: str(tapeRaw.unitPrice),
-          }
-        : null;
+      const mapTape = (row: Record<string, unknown>): CeilingsTapeLine => ({
+        id: str(row.id, newId('tape')),
+        priceItemId: str(row.priceItemId),
+        kind: str(row.kind),
+        color: str(row.color),
+        qtyM: str(row.qtyM),
+        unitPrice: str(row.unitPrice),
+      });
+      const tapesFromArray = (Array.isArray(c.tapes) ? c.tapes : [])
+        .map((x) => {
+          const row = asRecord(x);
+          return row ? mapTape(row) : null;
+        })
+        .filter(Boolean) as CeilingsTapeLine[];
+      const legacyTape = asRecord(c.tape);
+      const tapes =
+        tapesFromArray.length > 0 ? tapesFromArray : legacyTape ? [mapTape(legacyTape)] : [];
       const mapNamed = (list: unknown): CeilingsNamedQtyLine[] =>
         (Array.isArray(list) ? list : [])
           .map((x) => {
@@ -172,7 +192,7 @@ export function normalizeCeilingsSpecification(raw: unknown): CeilingsSpecificat
         id: str(c.id, newId('ceiling')),
         title: str(c.title, `Потолок №${index + 1}`),
         fabrics: fabrics.length > 0 ? fabrics : [newCeilingsFabricLine()],
-        tape,
+        tapes,
         profiles: mapNamed(c.profiles),
         extras: mapNamed(c.extras),
         goods: mapNamed(c.goods),
@@ -208,10 +228,14 @@ function lineAmount(qtyRaw: string, priceRaw: string): number {
   return qty * price;
 }
 
+export function ceilingsLineAmount(qtyRaw: string, priceRaw: string): number {
+  return lineAmount(qtyRaw, priceRaw);
+}
+
 export function sumCeilingsCeilingGross(ceiling: CeilingsCeilingBlock): number {
   let sum = 0;
   for (const f of ceiling.fabrics) sum += lineAmount(f.qtyM2, f.unitPrice);
-  if (ceiling.tape) sum += lineAmount(ceiling.tape.qtyM, ceiling.tape.unitPrice);
+  for (const t of ceiling.tapes) sum += lineAmount(t.qtyM, t.unitPrice);
   for (const p of ceiling.profiles) sum += lineAmount(p.qty, p.unitPrice);
   for (const e of ceiling.extras) sum += lineAmount(e.qty, e.unitPrice);
   for (const g of ceiling.goods) sum += lineAmount(g.qty, g.unitPrice);
@@ -222,13 +246,17 @@ export function ceilingsSpecificationHasContent(spec: CeilingsSpecification): bo
   return spec.ceilings.some((c) => sumCeilingsCeilingGross(c) > 0 || ceilingHasFilledFields(c));
 }
 
-function ceilingHasFilledFields(c: CeilingsCeilingBlock): boolean {
+export function ceilingHasFilledFields(c: CeilingsCeilingBlock): boolean {
   if (c.fabrics.some((f) => f.article.trim() || f.texture.trim() || f.qtyM2.trim())) return true;
-  if (c.tape && (c.tape.color.trim() || c.tape.qtyM.trim())) return true;
+  if (c.tapes.some((t) => t.color.trim() || t.qtyM.trim() || t.priceItemId.trim())) return true;
   if (c.profiles.some((p) => p.name.trim() || p.qty.trim())) return true;
   if (c.extras.some((p) => p.name.trim() || p.qty.trim())) return true;
   if (c.goods.some((p) => p.name.trim() || p.qty.trim())) return true;
   return false;
+}
+
+export function isCeilingsCeilingEmpty(c: CeilingsCeilingBlock): boolean {
+  return !ceilingHasFilledFields(c) && sumCeilingsCeilingGross(c) <= 0;
 }
 
 export function computeCeilingsSpecificationNetTotal(spec: CeilingsSpecification): {
@@ -276,15 +304,16 @@ export function flattenCeilingsSpecificationRows(
         amount,
       });
     }
-    if (ceiling.tape && (ceiling.tape.color.trim() || ceiling.tape.qtyM.trim())) {
+    for (const t of ceiling.tapes) {
+      if (!t.color.trim() && !t.qtyM.trim() && !t.priceItemId.trim()) continue;
       rows.push({
         ceilingTitle: ceiling.title,
-        name: ceiling.tape.kind === 'mask_x' ? 'Маск.лента.Х' : 'Маск.лента',
-        detail: ceiling.tape.color,
-        qty: ceiling.tape.qtyM || '—',
+        name: t.kind === 'mask_x' ? 'Маск.лента.Х' : 'Маск.лента',
+        detail: t.color,
+        qty: t.qtyM || '—',
         unit: 'м',
-        unitPrice: ceiling.tape.unitPrice || '0',
-        amount: lineAmount(ceiling.tape.qtyM, ceiling.tape.unitPrice),
+        unitPrice: t.unitPrice || '0',
+        amount: lineAmount(t.qtyM, t.unitPrice),
       });
     }
     const pushNamed = (list: CeilingsNamedQtyLine[], fallbackName: string) => {
@@ -308,6 +337,65 @@ export function flattenCeilingsSpecificationRows(
   return rows;
 }
 
+export type CeilingsClientPrintRow = {
+  name: string;
+  detail: string;
+  qty: string;
+  unit: string;
+  unitPrice: number;
+  amount: number;
+};
+
+export type CeilingsClientPrintSection = {
+  ceilingTitle: string;
+  rows: CeilingsClientPrintRow[];
+  subtotal: number;
+};
+
+/** Модель листа для клиента: цены уже с доп. наценкой, без раскрытия % наценки. */
+export function buildCeilingsClientPrintModel(spec: CeilingsSpecification): {
+  sections: CeilingsClientPrintSection[];
+  totals: ReturnType<typeof computeCeilingsSpecificationNetTotal>;
+  hasContent: boolean;
+} {
+  const totals = computeCeilingsSpecificationNetTotal(spec);
+  const factor = totals.extraMarkupPercent > 0 ? 1 + totals.extraMarkupPercent / 100 : 1;
+  const flat = flattenCeilingsSpecificationRows(spec);
+  const byTitle = new Map<string, CeilingsFlatPrintRow[]>();
+  for (const row of flat) {
+    const list = byTitle.get(row.ceilingTitle) ?? [];
+    list.push(row);
+    byTitle.set(row.ceilingTitle, list);
+  }
+  const sections: CeilingsClientPrintSection[] = [];
+  for (const ceiling of spec.ceilings) {
+    const source = byTitle.get(ceiling.title) ?? [];
+    if (source.length === 0) continue;
+    const rows: CeilingsClientPrintRow[] = source.map((r) => {
+      const unitPrice = (parseCeilingsQty(r.unitPrice) ?? 0) * factor;
+      const amount = r.amount * factor;
+      return {
+        name: r.name,
+        detail: r.detail,
+        qty: r.qty,
+        unit: r.unit,
+        unitPrice,
+        amount,
+      };
+    });
+    sections.push({
+      ceilingTitle: ceiling.title,
+      rows,
+      subtotal: rows.reduce((s, r) => s + r.amount, 0),
+    });
+  }
+  return {
+    sections,
+    totals,
+    hasContent: ceilingsSpecificationHasContent(spec),
+  };
+}
+
 function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -324,26 +412,25 @@ export function buildCeilingsSpecificationSheetHtml(input: {
   customerFullName: string;
   spec: CeilingsSpecification;
 }): string {
-  const rows = flattenCeilingsSpecificationRows(input.spec);
-  const totals = computeCeilingsSpecificationNetTotal(input.spec);
-  const body = rows
-    .map(
-      (r) => `<tr>
-  <td style="border:1px solid #cbd5e1;padding:2px 4px;">${escapeHtml(r.ceilingTitle)}</td>
+  const { sections, totals, hasContent } = buildCeilingsClientPrintModel(input.spec);
+
+  const tablesHtml = sections
+    .map((section) => {
+      const body = section.rows
+        .map(
+          (r) => `<tr>
   <td style="border:1px solid #cbd5e1;padding:2px 4px;">${escapeHtml(r.name)}</td>
   <td style="border:1px solid #cbd5e1;padding:2px 4px;">${escapeHtml(r.detail || '—')}</td>
   <td style="border:1px solid #cbd5e1;padding:2px 4px;text-align:right;">${escapeHtml(r.qty)} ${escapeHtml(r.unit)}</td>
-  <td style="border:1px solid #cbd5e1;padding:2px 4px;text-align:right;">${escapeHtml(formatCeilingsMoney(parseCeilingsQty(r.unitPrice) ?? 0))}</td>
+  <td style="border:1px solid #cbd5e1;padding:2px 4px;text-align:right;">${escapeHtml(formatCeilingsMoney(r.unitPrice))}</td>
   <td style="border:1px solid #cbd5e1;padding:2px 4px;text-align:right;">${escapeHtml(formatCeilingsMoney(r.amount))}</td>
 </tr>`
-    )
-    .join('');
-
-  const table = rows.length
-    ? `<table class="doorsSpecificationA4Table" data-spec-layout="ceilings" style="width:100%;table-layout:fixed;border-collapse:collapse;margin:6pt 0 8pt;">
+        )
+        .join('');
+      return `<p class="estimateA4DiscountMeta" style="margin:8pt 0 4pt;font-weight:600;">${escapeHtml(section.ceilingTitle)}</p>
+<table class="doorsSpecificationA4Table" data-spec-layout="ceilings" style="width:100%;table-layout:fixed;border-collapse:collapse;margin:0 0 8pt;">
   <thead>
     <tr>
-      <th style="border:1px solid #cbd5e1;padding:2px 4px;">Потолок</th>
       <th style="border:1px solid #cbd5e1;padding:2px 4px;">Наименование</th>
       <th style="border:1px solid #cbd5e1;padding:2px 4px;">Фактура / артикул / цвет</th>
       <th style="border:1px solid #cbd5e1;padding:2px 4px;">Кол-во</th>
@@ -352,26 +439,19 @@ export function buildCeilingsSpecificationSheetHtml(input: {
     </tr>
   </thead>
   <tbody>${body}</tbody>
-</table>`
-    : '';
+</table>`;
+    })
+    .join('\n');
 
   let totalsHtml = `<p class="estimateA4Empty">Позиции не заполнены.</p>`;
-  if (ceilingsSpecificationHasContent(input.spec)) {
+  if (hasContent) {
     const parts: string[] = [];
     parts.push(
-      `<p class="estimateA4Total">Итого по спецификации: <strong>${escapeHtml(formatCeilingsMoney(totals.grossTotal))} руб.</strong></p>`
+      `<p class="estimateA4Total">Итого: <strong>${escapeHtml(formatCeilingsMoney(totals.withExtraMarkup))} руб.</strong></p>`
     );
-    if (totals.extraMarkupPercent > 0) {
-      parts.push(
-        `<p class="estimateA4DiscountMeta">Доп. наценка: ${String(totals.extraMarkupPercent).replace('.', ',')}%</p>`
-      );
-      parts.push(
-        `<p class="estimateA4Total">С учётом наценки: <strong>${escapeHtml(formatCeilingsMoney(totals.withExtraMarkup))} руб.</strong></p>`
-      );
-    }
     if (totals.discountPercent > 0) {
       parts.push(
-        `<p class="estimateA4DiscountMeta">Скидка по спецификации: ${String(totals.discountPercent).replace('.', ',')}%</p>`
+        `<p class="estimateA4DiscountMeta">Скидка: ${String(totals.discountPercent).replace('.', ',')}%</p>`
       );
       parts.push(
         `<p class="estimateA4Total">Итого со скидкой: <strong>${escapeHtml(formatCeilingsMoney(totals.netTotal))} руб.</strong></p>`
@@ -382,43 +462,12 @@ export function buildCeilingsSpecificationSheetHtml(input: {
 
   return `<p class="estimateA4AppendixRef">Приложение №1 к договору № ${escapeHtml(input.contractNumberLabel)} от ${escapeHtml(input.contractDateLabel)}</p>
 <h4 class="estimateA4Title">Спецификация</h4>
-<p class="estimateA4DiscountMeta">При выборе потолков учитывать: полотно №1 — самое большое.</p>
-${table}
+${tablesHtml}
 ${totalsHtml}
 ${buildProductPackageSignaturesFooterHtml({
   directorName: input.directorName,
   customerFullName: input.customerFullName,
 })}`;
-}
-
-export function buildCeilingsDeliveryNoteProductsHtml(spec: CeilingsSpecification): string {
-  const rows = flattenCeilingsSpecificationRows(spec).filter((r) => r.qty !== '—' || r.name);
-  if (rows.length === 0) {
-    return `<div class="doorsDeliveryNoteProducts"><p class="estimateA4Empty">Позиции спецификации не заполнены.</p></div>`;
-  }
-  const body = rows
-    .map(
-      (r, i) => `<tr>
-  <td style="border:1px solid #cbd5e1;padding:1px 2px;text-align:center;">${i + 1}</td>
-  <td style="border:1px solid #cbd5e1;padding:1px 2px;">${escapeHtml(r.ceilingTitle)}</td>
-  <td style="border:1px solid #cbd5e1;padding:1px 2px;">${escapeHtml(r.name)}${r.detail ? ` (${escapeHtml(r.detail)})` : ''}</td>
-  <td style="border:1px solid #cbd5e1;padding:1px 2px;text-align:right;">${escapeHtml(r.qty)} ${escapeHtml(r.unit)}</td>
-</tr>`
-    )
-    .join('');
-  return `<div class="doorsDeliveryNoteProducts">
-<table class="doorsDeliveryNoteProductsTable" style="width:100%;table-layout:fixed;border-collapse:collapse;margin:8pt 0 10pt;">
-  <thead>
-    <tr>
-      <th style="border:1px solid #cbd5e1;padding:1px 2px;">№</th>
-      <th style="border:1px solid #cbd5e1;padding:1px 2px;">Потолок</th>
-      <th style="border:1px solid #cbd5e1;padding:1px 2px;">Наименование</th>
-      <th style="border:1px solid #cbd5e1;padding:1px 2px;">Кол-во</th>
-    </tr>
-  </thead>
-  <tbody>${body}</tbody>
-</table>
-</div>`;
 }
 
 export function applyPriceItemToFabric(
@@ -498,10 +547,15 @@ export function applyPriceItemToNamed(
   };
 }
 
-export function applyPriceItemToTape(item: CeilingsPriceItem, qtyM = ''): CeilingsTapeLine {
+export function applyPriceItemToTape(
+  item: CeilingsPriceItem,
+  qtyM = '',
+  lineId?: string
+): CeilingsTapeLine {
   const tapeKind = typeof item.attributes.tapeKind === 'string' ? item.attributes.tapeKind : 'mask';
   const color = typeof item.attributes.color === 'string' ? item.attributes.color : item.name;
   return {
+    id: lineId || newId('tape'),
     priceItemId: item.id,
     kind: tapeKind,
     color,

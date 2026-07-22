@@ -59,11 +59,10 @@ const BLINDS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTa
   memo: blindsTemplateMemo,
 };
 
-/** Натяжные потолки: те же дефолты, что у «Двери» (включая памятку). */
+/** Натяжные потолки: договор / акт / памятка (без накладной). */
 const CEILINGS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
   contract: doorsTemplateContract,
   actAcceptance: doorsTemplateActAcceptance,
-  deliveryNote: doorsTemplateDeliveryNote,
   memo: doorsTemplateMemo,
 };
 

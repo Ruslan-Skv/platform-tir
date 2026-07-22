@@ -510,28 +510,43 @@ const WINDOWS_PACKAGE_UNIFIED_PRINT_CSS = `
     overflow-wrap: break-word !important;
     word-break: break-word !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-child(1),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(1) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) th:nth-child(1),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
     width: 4% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-child(1) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
     text-align: center !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(2) {
     width: 24% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(3),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(3) {
     width: 11% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(4),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(4) {
     width: 10% !important;
   }
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
-  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(5),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(5) {
     width: 14% !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(1),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(1) {
+    width: 30% !important;
+    white-space: normal !important;
+    text-align: left !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(2),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(2) {
+    width: 38% !important;
+    white-space: normal !important;
+  }
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-last-child(3),
+  .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-last-child(3) {
+    width: 10% !important;
   }
   .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table th:nth-last-child(3),
   .docPrint.windowsPackageUnifiedPrint .doorsSpecificationA4Table td:nth-last-child(3) {
@@ -870,28 +885,40 @@ function buildPrintStylesheet(
     border: 1px solid #9ca3af; padding: 2pt 4pt; vertical-align: top;
     overflow-wrap: break-word; word-break: break-word; line-height: 1.28;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-child(1),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(1) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) th:nth-child(1),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
     width: 4%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-child(1) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
     text-align: center;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(2) {
     width: 24%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(3),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(3) {
     width: 11%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(4),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(4) {
     width: 10%;
   }
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
-  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) th:nth-child(5),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings']) td:nth-child(5) {
     width: 14%;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(1),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(1) {
+    width: 30%; white-space: normal; text-align: left;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(2),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(2) {
+    width: 38%; white-space: normal;
+  }
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-last-child(3),
+  .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-last-child(3) {
+    width: 10%;
   }
   .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table th:nth-last-child(3),
   .docPrint .estimateA4DocPrintEmbed .doorsSpecificationA4Table td:nth-last-child(3) {

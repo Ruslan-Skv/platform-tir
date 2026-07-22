@@ -22,9 +22,7 @@ export function PackageTemplateDocumentPreview({
   packageKind,
   renderedDoc,
 }: PackageTemplateDocumentPreviewProps) {
-  const landscapeSheet =
-    (packageKind === 'BLINDS' && activeTab === 'deliveryNote') ||
-    (packageKind === 'CEILINGS' && activeTab === 'deliveryNote');
+  const landscapeSheet = packageKind === 'BLINDS' && activeTab === 'deliveryNote';
 
   if (isPackageTemplateA4SheetTab(activeTab)) {
     const sheetClass = `${cdDocPreview.estimateA4Sheet}${

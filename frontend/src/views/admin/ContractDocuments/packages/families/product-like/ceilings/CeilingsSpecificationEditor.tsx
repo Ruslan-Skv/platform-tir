@@ -2,7 +2,10 @@
 
 import { PlusIcon } from '@heroicons/react/24/outline';
 
-import { useMemo } from 'react';
+import { type ReactNode, useMemo } from 'react';
+
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
@@ -21,14 +24,18 @@ import {
   type CeilingsFabricLine,
   type CeilingsNamedQtyLine,
   type CeilingsSpecification,
+  type CeilingsTapeLine,
   applyFabricCascadeSelection,
   applyPriceItemToNamed,
   applyPriceItemToTape,
+  ceilingsLineAmount,
   computeCeilingsSpecificationNetTotal,
   formatCeilingsMoney,
+  isCeilingsCeilingEmpty,
   newCeilingsCeilingBlock,
   newCeilingsFabricLine,
   newCeilingsNamedQtyLine,
+  newCeilingsTapeLine,
   sumCeilingsCeilingGross,
 } from './ceilingsSpecification';
 
@@ -45,6 +52,86 @@ function activeByCategory(items: CeilingsPriceItem[], category: string) {
   return items
     .filter((it) => it.active && it.category === category)
     .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'ru'));
+}
+
+function lineTotalLabel(qty: string, price: string): string {
+  const amount = ceilingsLineAmount(qty, price);
+  return `${formatCeilingsMoney(amount)} ₽`;
+}
+
+function fabricBlockHasData(fabrics: CeilingsFabricLine[]): boolean {
+  return fabrics.some(
+    (f) =>
+      f.texture.trim() ||
+      f.series.trim() ||
+      f.color.trim() ||
+      f.article.trim() ||
+      f.qtyM2.trim() ||
+      f.unitPrice.trim() ||
+      ceilingsLineAmount(f.qtyM2, f.unitPrice) > 0
+  );
+}
+
+function tapeBlockHasData(tapes: CeilingsTapeLine[]): boolean {
+  return tapes.some(
+    (t) =>
+      t.priceItemId.trim() ||
+      t.color.trim() ||
+      t.qtyM.trim() ||
+      t.unitPrice.trim() ||
+      ceilingsLineAmount(t.qtyM, t.unitPrice) > 0
+  );
+}
+
+function namedBlockHasData(lines: CeilingsNamedQtyLine[]): boolean {
+  return lines.some(
+    (l) =>
+      l.priceItemId.trim() ||
+      l.name.trim() ||
+      l.qty.trim() ||
+      l.unitPrice.trim() ||
+      ceilingsLineAmount(l.qty, l.unitPrice) > 0
+  );
+}
+
+function SpecBlock({
+  title,
+  filled,
+  readOnly,
+  onAdd,
+  addAriaLabel,
+  children,
+}: {
+  title: string;
+  filled: boolean;
+  readOnly: boolean;
+  onAdd?: () => void;
+  addAriaLabel?: string;
+  children: ReactNode;
+}) {
+  return (
+    <section
+      className={`${cdProduct.ceilingsSpecificationBlock} ${
+        filled ? cdProduct.ceilingsSpecificationBlockFilled : ''
+      }`}
+    >
+      <div className={cdProduct.ceilingsSpecificationBlockHeader}>
+        <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>{title}</h4>
+        {!readOnly && onAdd ? (
+          <button
+            type="button"
+            className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn} ${cdProduct.ceilingsSpecificationBlockAddBtn}`}
+            aria-label={addAriaLabel || `Добавить в «${title}»`}
+            title={addAriaLabel || `Добавить в «${title}»`}
+            onClick={onAdd}
+          >
+            +
+          </button>
+        ) : null}
+      </div>
+      <div className={cdProduct.ceilingsSpecificationBlockBody}>{children}</div>
+    </section>
+  );
 }
 
 export function CeilingsSpecificationEditor({
@@ -125,125 +212,92 @@ export function CeilingsSpecificationEditor({
       <div className={cdProduct.ceilingsSpecificationCards}>
         {spec.ceilings.map((ceiling) => {
           const ceilingSum = sumCeilingsCeilingGross(ceiling);
+          const canDeleteEmpty =
+            !readOnly && spec.ceilings.length > 1 && isCeilingsCeilingEmpty(ceiling);
           return (
             <section key={ceiling.id} className={cdProduct.ceilingsSpecificationCard}>
               <div className={cdProduct.ceilingsSpecificationCardHeader}>
-                <div className={`${fieldClassName} ${cdProduct.ceilingsSpecificationTitleField}`}>
-                  <label htmlFor={`ceiling-title-${ceiling.id}`}>Потолок</label>
-                  <input
-                    id={`ceiling-title-${ceiling.id}`}
-                    type="text"
-                    value={ceiling.title}
-                    disabled={readOnly}
-                    autoComplete="off"
-                    onChange={(e) => updateCeiling(ceiling.id, { title: e.target.value })}
-                  />
-                </div>
-                <p className={cdProduct.ceilingsSpecificationCardSum}>
-                  {formatCeilingsMoney(ceilingSum)} руб.
-                </p>
-                {!readOnly && spec.ceilings.length > 1 ? (
-                  <button
-                    type="button"
-                    className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+                <span className={cdProduct.ceilingsSpecificationCardLabel}>{ceiling.title}</span>
+                <span className={cdProduct.ceilingsSpecificationCardSum}>
+                  {formatCeilingsMoney(ceilingSum)} ₽
+                </span>
+                {canDeleteEmpty ? (
+                  <AdminTableIconButton
+                    className={cdProduct.ceilingsSpecificationCardDelete}
+                    title="Удалить пустой потолок"
+                    aria-label="Удалить пустой потолок"
+                    data-admin-mutation
                     onClick={() => removeCeiling(ceiling.id)}
                   >
-                    Удалить
-                  </button>
+                    <DeleteIcon />
+                  </AdminTableIconButton>
                 ) : null}
               </div>
 
-              <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>Полотно</h4>
-              {ceiling.fabrics.map((fabric, fabricIndex) => (
-                <FabricCascadeRow
-                  key={fabric.id}
-                  fabric={fabric}
-                  fabricIndex={fabricIndex}
-                  priceItems={priceItems}
-                  textures={textures}
-                  readOnly={readOnly}
-                  canRemove={ceiling.fabrics.length > 1}
-                  onChange={(next) =>
-                    updateCeiling(ceiling.id, {
-                      fabrics: ceiling.fabrics.map((f) => (f.id === fabric.id ? next : f)),
-                    })
-                  }
-                  onRemove={() =>
-                    updateCeiling(ceiling.id, {
-                      fabrics: ceiling.fabrics.filter((f) => f.id !== fabric.id),
-                    })
-                  }
-                />
-              ))}
-              {!readOnly ? (
-                <button
-                  type="button"
-                  className={`${cdWorkspace.secondaryBtn} ${cdProduct.ceilingsSpecificationAddLineBtn}`}
-                  onClick={() =>
-                    updateCeiling(ceiling.id, {
-                      fabrics: [...ceiling.fabrics, newCeilingsFabricLine()],
-                    })
-                  }
-                >
-                  + Полотно
-                </button>
-              ) : null}
-
-              <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>Окантовочная лента</h4>
-              <div className={cdProduct.ceilingsSpecificationLineRow}>
-                <select
-                  disabled={readOnly}
-                  value={ceiling.tape?.priceItemId ?? ''}
-                  aria-label="Окантовочная лента"
-                  onChange={(e) => {
-                    if (!e.target.value) {
-                      updateCeiling(ceiling.id, { tape: null });
-                      return;
+              <SpecBlock
+                title="Полотно"
+                filled={fabricBlockHasData(ceiling.fabrics)}
+                readOnly={readOnly}
+                addAriaLabel="Добавить полотно"
+                onAdd={() =>
+                  updateCeiling(ceiling.id, {
+                    fabrics: [...ceiling.fabrics, newCeilingsFabricLine()],
+                  })
+                }
+              >
+                {ceiling.fabrics.map((fabric, fabricIndex) => (
+                  <FabricCascadeRow
+                    key={fabric.id}
+                    fabric={fabric}
+                    fabricIndex={fabricIndex}
+                    priceItems={priceItems}
+                    textures={textures}
+                    readOnly={readOnly}
+                    canRemove={ceiling.fabrics.length > 1}
+                    onChange={(next) =>
+                      updateCeiling(ceiling.id, {
+                        fabrics: ceiling.fabrics.map((f) => (f.id === fabric.id ? next : f)),
+                      })
                     }
-                    const item = tapes.find((x) => x.id === e.target.value);
-                    if (!item) return;
-                    updateCeiling(ceiling.id, {
-                      tape: applyPriceItemToTape(item, ceiling.tape?.qtyM ?? ''),
-                    });
-                  }}
-                >
-                  <option value="">Без ленты</option>
-                  {tapes.map((it) => (
-                    <option key={it.id} value={it.id}>
-                      {it.name} ({it.retailPrice} ₽/{it.unit})
-                    </option>
-                  ))}
-                </select>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="м"
-                  value={ceiling.tape?.qtyM ?? ''}
-                  disabled={readOnly || !ceiling.tape}
-                  autoComplete="off"
-                  onChange={(e) =>
-                    ceiling.tape &&
-                    updateCeiling(ceiling.id, {
-                      tape: { ...ceiling.tape, qtyM: e.target.value },
-                    })
-                  }
-                />
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  placeholder="Цена"
-                  value={ceiling.tape?.unitPrice ?? ''}
-                  disabled={readOnly || !ceiling.tape}
-                  autoComplete="off"
-                  onChange={(e) =>
-                    ceiling.tape &&
-                    updateCeiling(ceiling.id, {
-                      tape: { ...ceiling.tape, unitPrice: e.target.value },
-                    })
-                  }
-                />
-                <span className={cdProduct.ceilingsSpecificationLineSpacer} />
-              </div>
+                    onRemove={() =>
+                      updateCeiling(ceiling.id, {
+                        fabrics: ceiling.fabrics.filter((f) => f.id !== fabric.id),
+                      })
+                    }
+                  />
+                ))}
+              </SpecBlock>
+
+              <SpecBlock
+                title="Окантовочная лента"
+                filled={tapeBlockHasData(ceiling.tapes)}
+                readOnly={readOnly}
+                addAriaLabel="Добавить ленту"
+                onAdd={() =>
+                  updateCeiling(ceiling.id, {
+                    tapes: [...ceiling.tapes, newCeilingsTapeLine()],
+                  })
+                }
+              >
+                {ceiling.tapes.map((tape) => (
+                  <TapeLineRow
+                    key={tape.id}
+                    tape={tape}
+                    options={tapes}
+                    readOnly={readOnly}
+                    onChange={(next) =>
+                      updateCeiling(ceiling.id, {
+                        tapes: ceiling.tapes.map((t) => (t.id === tape.id ? next : t)),
+                      })
+                    }
+                    onRemove={() =>
+                      updateCeiling(ceiling.id, {
+                        tapes: ceiling.tapes.filter((t) => t.id !== tape.id),
+                      })
+                    }
+                  />
+                ))}
+              </SpecBlock>
 
               <NamedLinesBlock
                 title="Багет / профиль"
@@ -316,6 +370,9 @@ function FabricCascadeRow({
 
   return (
     <div className={cdProduct.ceilingsSpecificationFabricRow}>
+      <span className={cdProduct.ceilingsSpecificationLineIndex} aria-hidden>
+        {fabricIndex + 1}
+      </span>
       <select
         disabled={readOnly}
         value={fabric.texture}
@@ -401,15 +458,92 @@ function FabricCascadeRow({
         inputMode="decimal"
         placeholder="Цена"
         value={fabric.unitPrice}
-        disabled={readOnly}
+        readOnly
+        tabIndex={-1}
+        aria-label="Цена из прайса"
+        className={cdProduct.ceilingsSpecificationPriceReadonly}
         autoComplete="off"
-        onChange={(e) => onChange({ ...fabric, unitPrice: e.target.value })}
       />
+      <span className={cdProduct.ceilingsSpecificationLineTotal}>
+        {lineTotalLabel(fabric.qtyM2, fabric.unitPrice)}
+      </span>
       <button
         type="button"
         className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
         aria-label="Удалить полотно"
         disabled={readOnly || !canRemove}
+        onClick={onRemove}
+      >
+        ×
+      </button>
+    </div>
+  );
+}
+
+function TapeLineRow({
+  tape,
+  options,
+  readOnly,
+  onChange,
+  onRemove,
+}: {
+  tape: CeilingsTapeLine;
+  options: CeilingsPriceItem[];
+  readOnly: boolean;
+  onChange: (next: CeilingsTapeLine) => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className={cdProduct.ceilingsSpecificationLineRow}>
+      <select
+        disabled={readOnly}
+        value={tape.priceItemId}
+        aria-label="Окантовочная лента"
+        onChange={(e) => {
+          if (!e.target.value) {
+            onChange({ ...tape, priceItemId: '', kind: '', color: '', unitPrice: '' });
+            return;
+          }
+          const item = options.find((x) => x.id === e.target.value);
+          if (!item) return;
+          onChange(applyPriceItemToTape(item, tape.qtyM, tape.id));
+        }}
+      >
+        <option value="">Выберите ленту…</option>
+        {options.map((it) => (
+          <option key={it.id} value={it.id}>
+            {it.name} ({it.retailPrice} ₽/{it.unit})
+          </option>
+        ))}
+      </select>
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="м"
+        value={tape.qtyM}
+        disabled={readOnly}
+        autoComplete="off"
+        onChange={(e) => onChange({ ...tape, qtyM: e.target.value })}
+      />
+      <input
+        type="text"
+        inputMode="decimal"
+        placeholder="Цена"
+        value={tape.unitPrice}
+        readOnly
+        tabIndex={-1}
+        aria-label="Цена из прайса"
+        className={cdProduct.ceilingsSpecificationPriceReadonly}
+        autoComplete="off"
+      />
+      <span className={cdProduct.ceilingsSpecificationLineTotal}>
+        {lineTotalLabel(tape.qtyM, tape.unitPrice)}
+      </span>
+      <button
+        type="button"
+        className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
+        aria-label="Удалить ленту"
+        disabled={readOnly}
         onClick={onRemove}
       >
         ×
@@ -436,8 +570,13 @@ function NamedLinesBlock({
   const grouped = groupOptions ? groupGoodsAdminBlocks(options) : null;
 
   return (
-    <>
-      <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>{title}</h4>
+    <SpecBlock
+      title={title}
+      filled={namedBlockHasData(lines)}
+      readOnly={readOnly}
+      addAriaLabel={`Добавить строку в «${title}»`}
+      onAdd={() => onChange([...lines, newCeilingsNamedQtyLine()])}
+    >
       {lines.map((line) => (
         <div key={line.id} className={cdProduct.ceilingsSpecificationLineRow}>
           <select
@@ -486,14 +625,15 @@ function NamedLinesBlock({
             inputMode="decimal"
             placeholder="Цена"
             value={line.unitPrice}
-            disabled={readOnly}
+            readOnly
+            tabIndex={-1}
+            aria-label="Цена из прайса"
+            className={cdProduct.ceilingsSpecificationPriceReadonly}
             autoComplete="off"
-            onChange={(e) =>
-              onChange(
-                lines.map((l) => (l.id === line.id ? { ...l, unitPrice: e.target.value } : l))
-              )
-            }
           />
+          <span className={cdProduct.ceilingsSpecificationLineTotal}>
+            {lineTotalLabel(line.qty, line.unitPrice)}
+          </span>
           <button
             type="button"
             className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
@@ -505,15 +645,6 @@ function NamedLinesBlock({
           </button>
         </div>
       ))}
-      {!readOnly ? (
-        <button
-          type="button"
-          className={`${cdWorkspace.secondaryBtn} ${cdProduct.ceilingsSpecificationAddLineBtn}`}
-          onClick={() => onChange([...lines, newCeilingsNamedQtyLine()])}
-        >
-          + Строка
-        </button>
-      ) : null}
-    </>
+    </SpecBlock>
   );
 }

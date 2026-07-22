@@ -38,6 +38,13 @@ const PRODUCT_LINE_SPEC_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[]
   'productionLog',
 ];
 
+/** Потолки: своя спецификация, без накладной. */
+const CEILINGS_LIBRARY_EXCLUDED: readonly PackageLibraryTemplateTabId[] = [
+  'actStart',
+  'productionLog',
+  'deliveryNote',
+];
+
 function repairLikeConfig(
   kind: ContractDocumentPackageKind,
   label: string,
@@ -121,7 +128,11 @@ const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDir
   REPAIR: repairLikeConfig('REPAIR', 'Ремонт', true),
   WINDOWS: productLikeConfig('WINDOWS', 'Окна'),
   DOORS: productLikeWithLineSpecification('DOORS', 'Двери'),
-  CEILINGS: productLikeWithLineSpecification('CEILINGS', 'Натяжные потолки'),
+  CEILINGS: {
+    ...productLikeWithLineSpecification('CEILINGS', 'Натяжные потолки'),
+    deliveryNoteTabVisible: false,
+    excludedLibraryTemplateTabs: CEILINGS_LIBRARY_EXCLUDED,
+  },
   BLINDS: productLikeWithLineSpecification('BLINDS', 'Жалюзи'),
   FURNITURE: unimplementedConfig('FURNITURE', 'Мебель'),
 };

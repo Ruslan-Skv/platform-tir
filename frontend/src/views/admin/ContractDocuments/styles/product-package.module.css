@@ -1052,35 +1052,98 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--admin-space-sm);
-  align-items: flex-end;
+  align-items: center;
   margin-bottom: var(--admin-space-sm);
 }
 
-.ceilingsSpecificationTitleField {
-  flex: 1 1 220px;
-  min-width: 0;
-  margin-bottom: 0;
+.ceilingsSpecificationCardLabel {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-success-border-soft, #86efac);
+  background: var(--admin-success-bg-soft, #dcfce7);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-success-text-strong, #166534);
+  white-space: nowrap;
 }
 
 .ceilingsSpecificationCardSum {
   margin: 0;
-  padding-bottom: var(--admin-space-xs);
   font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
   font-weight: 600;
-  color: var(--admin-text-secondary);
+  color: var(--admin-text-primary);
   white-space: nowrap;
 }
 
+.ceilingsSpecificationCardDelete {
+  margin-left: auto;
+}
+
 .ceilingsSpecificationSectionTitle {
-  margin: var(--admin-space-md) 0 var(--admin-space-xs);
+  margin: 0;
   font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
   font-weight: 600;
   color: var(--admin-text-primary);
 }
 
+.ceilingsSpecificationBlock {
+  margin-top: var(--admin-space-sm);
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  overflow: hidden;
+}
+
+.ceilingsSpecificationBlockFilled {
+  border-color: color-mix(in srgb, var(--admin-info, #2563eb) 35%, var(--admin-border, #e2e8f0));
+  background: color-mix(in srgb, var(--admin-info, #2563eb) 6%, var(--admin-surface, #fff));
+}
+
+.ceilingsSpecificationBlockHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  background: color-mix(in srgb, var(--admin-surface-muted, #f1f5f9) 80%, transparent);
+}
+
+.ceilingsSpecificationBlockFilled .ceilingsSpecificationBlockHeader {
+  border-bottom-color: color-mix(
+    in srgb,
+    var(--admin-info, #2563eb) 20%,
+    var(--admin-border, #e2e8f0)
+  );
+  background: color-mix(in srgb, var(--admin-info, #2563eb) 8%, var(--admin-surface, #fff));
+}
+
+.ceilingsSpecificationBlockAddBtn {
+  min-width: 28px;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.ceilingsSpecificationBlockBody {
+  padding: var(--admin-space-sm);
+}
+
+.ceilingsSpecificationBlockBody:empty {
+  display: none;
+}
+
 .ceilingsSpecificationLineRow {
   display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(72px, 0.7fr) minmax(88px, 0.8fr) auto;
+  grid-template-columns: minmax(0, 2fr) minmax(64px, 0.65fr) minmax(72px, 0.75fr) minmax(
+      72px,
+      0.8fr
+    ) auto;
   gap: var(--admin-space-xs);
   align-items: center;
   margin-bottom: var(--admin-space-xs);
@@ -1088,13 +1151,29 @@
 
 .ceilingsSpecificationFabricRow {
   display: grid;
-  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(
-      64px,
-      0.55fr
-    ) minmax(72px, 0.65fr) auto;
+  grid-template-columns:
+    1.5rem minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(56px, 0.5fr)
+    minmax(64px, 0.6fr) minmax(72px, 0.75fr) auto;
   gap: var(--admin-space-xs);
   align-items: center;
   margin-bottom: var(--admin-space-xs);
+}
+
+.ceilingsSpecificationLineIndex {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-text-muted, #64748b);
+}
+
+.ceilingsSpecificationLineTotal {
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+  text-align: right;
 }
 
 .ceilingsSpecificationLineRow select,
@@ -1113,14 +1192,10 @@
   color: var(--admin-text-primary);
 }
 
-.ceilingsSpecificationLineSpacer {
-  width: 32px;
-  height: 1px;
-}
-
-.ceilingsSpecificationAddLineBtn {
-  margin: var(--admin-space-2xs) 0 var(--admin-space-sm);
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+.ceilingsSpecificationPriceReadonly {
+  background: var(--admin-surface-muted, #f1f5f9) !important;
+  color: var(--admin-text-secondary) !important;
+  cursor: default;
 }
 
 @media (max-width: 720px) {
@@ -1133,10 +1208,10 @@
   }
 
   .ceilingsSpecificationFabricRow {
-    grid-template-columns: 1fr 1fr auto;
+    grid-template-columns: 1.5rem 1fr 1fr auto;
   }
 
   .ceilingsSpecificationFabricRow select {
-    grid-column: 1 / -1;
+    grid-column: 2 / -1;
   }
 }

@@ -1,15 +1,16 @@
 'use client';
 
+import Link from 'next/link';
+
 import type { CeilingsPriceItem } from '@/shared/api/admin-contract-document-packages';
-import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdEstimateTab from '@/views/admin/ContractDocuments/styles/estimate-tab.module.css';
-import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
-import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
+import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import type { FabricAdminBlock } from '../../families/product-like/ceilings/ceilingsFabricCatalog';
 import { resolveGoodsGroupMarkup } from '../../families/product-like/ceilings/ceilingsGoodsCatalog';
 import styles from './CeilingsPriceListPage.module.css';
-import { SettingsPageLayout } from './SettingsPageLayout';
 import type { useCeilingsPriceListPage } from './hooks/useCeilingsPriceListPage';
 
 type Props = ReturnType<typeof useCeilingsPriceListPage>;
@@ -40,27 +41,56 @@ export function CeilingsPriceListPageView(model: Props) {
     save,
   } = model;
 
+  const itemsCount =
+    category === 'FABRIC'
+      ? fabricBlocks.reduce((n, b) => n + b.items.length, 0)
+      : category === 'GOODS'
+        ? goodsBlocks.reduce((n, b) => n + b.items.length, 0)
+        : filtered.length;
+
   return (
-    <SettingsPageLayout
-      title="Прайсы · Натяжные потолки"
-      subtitle={
+    <div className={styles.page}>
+      <Link className={styles.backLink} href="/admin/contract-documents">
+        ← Оформление договоров
+      </Link>
+
+      <div className={styles.header}>
+        <div className={styles.headerLeft}>
+          <h1 className={styles.title}>Прайсы · Натяжные потолки</h1>
+          {!loading ? <span className={styles.count}>{itemsCount}</span> : null}
+          <AdminSaveNotice visible={Boolean(success)} />
+        </div>
+        <button
+          data-admin-mutation
+          type="button"
+          className={styles.addButton}
+          disabled={loading || saving}
+          onClick={() => void save()}
+        >
+          {saving ? 'Сохранение…' : 'Сохранить'}
+        </button>
+      </div>
+
+      <p className={styles.hint}>
+        Справочник комплектующих для спецификации CEILINGS. Полотно — зависимые списки «ПрайсП»;
+        товар — блоки «СЗ на товар».
+      </p>
+
+      {error ? (
+        <div className={styles.messageSlot}>
+          <AdminFormMessage type="error">{error}</AdminFormMessage>
+        </div>
+      ) : null}
+
+      {loading ? (
+        <div className={styles.loadingOverlay}>Загрузка…</div>
+      ) : (
         <>
-          Справочник комплектующих для спецификации CEILINGS. Полотно — как на листе «ПрайсП»:
-          отдельные зависимые списки (фактура → серия → цвет).
-        </>
-      }
-      error={error}
-      ok={success}
-    >
-      <section className={styles.pageCard}>
-        <h2 className={cdEstimateTab.sectionTitle}>Наценки по умолчанию</h2>
-        {loading ? (
-          <p className={cdTemplates.hint}>Загрузка…</p>
-        ) : (
-          <>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Наценки по умолчанию</h2>
             <div className={styles.markupsGrid}>
-              <div className={cdEstimateTab.field}>
-                <label htmlFor="ceilings-fabric-markup">Наценка полотна</label>
+              <div className={styles.field}>
+                <label htmlFor="ceilings-fabric-markup">Полотно</label>
                 <input
                   id="ceilings-fabric-markup"
                   type="number"
@@ -72,8 +102,8 @@ export function CeilingsPriceListPageView(model: Props) {
                   }
                 />
               </div>
-              <div className={cdEstimateTab.field}>
-                <label htmlFor="ceilings-profile-markup">Наценка профилей</label>
+              <div className={styles.field}>
+                <label htmlFor="ceilings-profile-markup">Профили</label>
                 <input
                   id="ceilings-profile-markup"
                   type="number"
@@ -85,8 +115,8 @@ export function CeilingsPriceListPageView(model: Props) {
                   }
                 />
               </div>
-              <div className={cdEstimateTab.field}>
-                <label htmlFor="ceilings-tape-markup">Наценка лент</label>
+              <div className={styles.field}>
+                <label htmlFor="ceilings-tape-markup">Ленты</label>
                 <input
                   id="ceilings-tape-markup"
                   type="number"
@@ -98,7 +128,7 @@ export function CeilingsPriceListPageView(model: Props) {
                   }
                 />
               </div>
-              <div className={cdEstimateTab.field}>
+              <div className={styles.field}>
                 <label htmlFor="ceilings-extra-markup">Доп. наценка спецификации, %</label>
                 <input
                   id="ceilings-extra-markup"
@@ -115,8 +145,10 @@ export function CeilingsPriceListPageView(model: Props) {
                 />
               </div>
             </div>
+          </section>
 
-            <h2 className={cdEstimateTab.sectionTitle}>Позиции прайса</h2>
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Позиции прайса</h2>
 
             <div className={styles.categoryTabs} role="tablist" aria-label="Категория прайса">
               {categories.map((c) => (
@@ -136,45 +168,34 @@ export function CeilingsPriceListPageView(model: Props) {
             </div>
 
             <div className={styles.toolbar}>
-              <div className={`${cdEstimateTab.field} ${styles.searchField}`}>
-                <input
-                  id="ceilings-price-search"
-                  type="search"
-                  placeholder="Поиск…"
-                  value={search}
-                  disabled={saving}
-                  autoComplete="off"
-                  aria-label="Поиск по наименованию"
-                  onChange={(e) => setSearch(e.target.value)}
-                />
-              </div>
+              <input
+                id="ceilings-price-search"
+                className={styles.searchInput}
+                type="search"
+                placeholder="Поиск…"
+                value={search}
+                disabled={saving}
+                autoComplete="off"
+                aria-label="Поиск по наименованию"
+                onChange={(e) => setSearch(e.target.value)}
+              />
               {category !== 'FABRIC' && category !== 'GOODS' ? (
                 <button
                   data-admin-mutation
                   type="button"
-                  className={cdWorkspace.secondaryBtn}
+                  className={styles.secondaryButton}
                   disabled={saving}
                   onClick={addItem}
                 >
                   Добавить
                 </button>
               ) : null}
-              <button
-                data-admin-mutation
-                type="button"
-                className={cdWorkspace.primaryBtn}
-                disabled={saving}
-                onClick={() => void save()}
-              >
-                {saving ? 'Сохранение…' : 'Сохранить'}
-              </button>
             </div>
 
             {category === 'FABRIC' ? (
-              <div className={styles.fabricBlocks}>
-                <p className={cdTemplates.hint}>
-                  Блоки соответствуют умным таблицам Excel «ПрайсП». Цена задаётся у серии (2-й
-                  список); цвета (3-й список) наследуют цену своей серии.
+              <div className={styles.blocks}>
+                <p className={styles.hint} style={{ marginBottom: 0 }}>
+                  Цена у серии (2-й список); цвета (3-й) наследуют цену серии.
                 </p>
                 {fabricBlocks.map((block) => (
                   <FabricBlockTable
@@ -187,14 +208,13 @@ export function CeilingsPriceListPageView(model: Props) {
                   />
                 ))}
                 {fabricBlocks.length === 0 ? (
-                  <p className={cdTemplates.hint}>Нет позиций полотна</p>
+                  <p className={styles.hint}>Нет позиций полотна</p>
                 ) : null}
               </div>
             ) : category === 'GOODS' ? (
-              <div className={styles.fabricBlocks}>
-                <p className={cdTemplates.hint}>
-                  Блоки как на листе «СЗ на товар» (колонки I–K). Общая наценка блока пересчитывает
-                  розницу всех позиций: розница = закуп × наценка.
+              <div className={styles.blocks}>
+                <p className={styles.hint} style={{ marginBottom: 0 }}>
+                  Наценка блока: розница = закуп × наценка.
                 </p>
                 {goodsBlocks.map((block) => {
                   const groupMarkup = resolveGoodsGroupMarkup(
@@ -202,11 +222,11 @@ export function CeilingsPriceListPageView(model: Props) {
                     settings.goodsGroupMarkups
                   );
                   return (
-                    <section key={block.key} className={styles.fabricBlock}>
-                      <div className={styles.fabricBlockHeader}>
-                        <h3 className={styles.fabricBlockTitle}>{block.title}</h3>
+                    <section key={block.key} className={styles.block}>
+                      <div className={styles.blockHeader}>
+                        <h3 className={styles.blockTitle}>{block.title}</h3>
                         <div className={styles.goodsBlockMarkup}>
-                          <label htmlFor={`goods-markup-${block.key}`}>Наценка блока</label>
+                          <label htmlFor={`goods-markup-${block.key}`}>Наценка</label>
                           <input
                             id={`goods-markup-${block.key}`}
                             type="number"
@@ -222,7 +242,7 @@ export function CeilingsPriceListPageView(model: Props) {
                         <button
                           data-admin-mutation
                           type="button"
-                          className={cdWorkspace.secondaryBtn}
+                          className={styles.secondaryButton}
                           disabled={saving}
                           onClick={() => addGoodsToBlock(block.key)}
                         >
@@ -241,30 +261,20 @@ export function CeilingsPriceListPageView(model: Props) {
                 })}
               </div>
             ) : (
-              <PriceItemsTable
-                items={filtered}
-                saving={saving}
-                showPrices
-                updateItem={updateItem}
-                removeItem={removeItem}
-              />
+              <div className={styles.block}>
+                <PriceItemsTable
+                  items={filtered}
+                  saving={saving}
+                  showPrices
+                  updateItem={updateItem}
+                  removeItem={removeItem}
+                />
+              </div>
             )}
-
-            <div className={`${cdHub.packageSettingsActions} ${styles.actionsRow}`}>
-              <button
-                data-admin-mutation
-                type="button"
-                className={cdWorkspace.primaryBtn}
-                disabled={saving}
-                onClick={() => void save()}
-              >
-                {saving ? 'Сохранение…' : 'Сохранить'}
-              </button>
-            </div>
-          </>
-        )}
-      </section>
-    </SettingsPageLayout>
+          </section>
+        </>
+      )}
+    </div>
   );
 }
 
@@ -283,13 +293,13 @@ function FabricBlockTable({
 }) {
   const showPrices = block.level === 'SERIES';
   return (
-    <section className={styles.fabricBlock}>
-      <div className={styles.fabricBlockHeader}>
-        <h3 className={styles.fabricBlockTitle}>{block.title}</h3>
+    <section className={styles.block}>
+      <div className={styles.blockHeader}>
+        <h3 className={styles.blockTitle}>{block.title}</h3>
         <button
           data-admin-mutation
           type="button"
-          className={cdWorkspace.secondaryBtn}
+          className={styles.secondaryButton}
           disabled={saving}
           onClick={onAdd}
         >
@@ -297,9 +307,7 @@ function FabricBlockTable({
         </button>
       </div>
       {block.level === 'COLOR' ? (
-        <p className={cdTemplates.hint}>
-          Цвета серии «{block.key}» — без собственной цены (берётся цена серии).
-        </p>
+        <p className={styles.blockHint}>Цвета без собственной цены — берётся цена серии.</p>
       ) : null}
       <PriceItemsTable
         items={block.items}
@@ -326,8 +334,8 @@ function PriceItemsTable({
   removeItem: (id: string) => void;
 }) {
   return (
-    <div className={cdWorkspace.tableWrap}>
-      <table className={cdWorkspace.table}>
+    <div className={styles.tableWrap}>
+      <table className={styles.table}>
         <thead>
           <tr>
             <th>Наименование</th>
@@ -425,15 +433,16 @@ function PriceItemsTable({
                 </>
               ) : null}
               <td className={styles.actionsCell}>
-                <button
+                <AdminTableIconButton
+                  title="Удалить"
                   data-admin-mutation
-                  type="button"
-                  className={cdWorkspace.dangerBtn}
-                  disabled={saving}
-                  onClick={() => removeItem(it.id)}
+                  onClick={() => {
+                    if (saving) return;
+                    removeItem(it.id);
+                  }}
                 >
-                  Удалить
-                </button>
+                  <DeleteIcon />
+                </AdminTableIconButton>
               </td>
             </tr>
           ))}

@@ -20,10 +20,10 @@ describe('libraryTemplateTabIdsForPackageKind', () => {
     expect(libraryTemplateTabIdsForPackageKind('REPAIR')).not.toContain('memo');
   });
 
-  it('includes deliveryNote for DOORS, BLINDS and CEILINGS library', () => {
+  it('includes deliveryNote for DOORS and BLINDS library only', () => {
     expect(libraryTemplateTabIdsForPackageKind('DOORS')).toContain('deliveryNote');
     expect(libraryTemplateTabIdsForPackageKind('BLINDS')).toContain('deliveryNote');
-    expect(libraryTemplateTabIdsForPackageKind('CEILINGS')).toContain('deliveryNote');
+    expect(libraryTemplateTabIdsForPackageKind('CEILINGS')).not.toContain('deliveryNote');
     expect(libraryTemplateTabIdsForPackageKind('WINDOWS')).not.toContain('deliveryNote');
     expect(libraryTemplateTabIdsForPackageKind('REPAIR')).not.toContain('deliveryNote');
   });
@@ -52,11 +52,9 @@ describe('normalizeLibraryTemplateTabForPackageKind', () => {
   it('maps deliveryNote to contract for directions without накладная', () => {
     expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'WINDOWS')).toBe('contract');
     expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'REPAIR')).toBe('contract');
+    expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'CEILINGS')).toBe('contract');
     expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'DOORS')).toBe('deliveryNote');
     expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'BLINDS')).toBe(
-      'deliveryNote'
-    );
-    expect(normalizeLibraryTemplateTabForPackageKind('deliveryNote', 'CEILINGS')).toBe(
       'deliveryNote'
     );
   });

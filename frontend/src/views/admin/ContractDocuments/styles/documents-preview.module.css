@@ -1406,35 +1406,63 @@
   word-break: break-word;
 }
 
-.doorsSpecificationA4Table th:nth-child(1),
-.doorsSpecificationA4Table td:nth-child(1) {
+/* Двери / жалюзи: первая колонка — №. */
+.doorsSpecificationA4Table:not([data-spec-layout='ceilings']) th:nth-child(1),
+.doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
   width: 4%;
   white-space: nowrap;
 }
 
-.doorsSpecificationA4Table td:nth-child(1) {
+.doorsSpecificationA4Table:not([data-spec-layout='ceilings']) td:nth-child(1) {
   text-align: center;
 }
 
 /* Двери (8 колонок): фиксированные ширины характеристик. */
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(2),
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(2) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  th:nth-child(2),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  td:nth-child(2) {
   width: 24%;
 }
 
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(3),
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(3) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  th:nth-child(3),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  td:nth-child(3) {
   width: 11%;
 }
 
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(4),
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(4) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  th:nth-child(4),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  td:nth-child(4) {
   width: 10%;
 }
 
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) th:nth-child(5),
-.doorsSpecificationA4Table:not([data-spec-layout='blinds']) td:nth-child(5) {
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  th:nth-child(5),
+.doorsSpecificationA4Table:not([data-spec-layout='blinds']):not([data-spec-layout='ceilings'])
+  td:nth-child(5) {
   width: 14%;
+}
+
+/* Потолки (5 колонок): Наименование / Фактура / Кол-во / Цена / Стоимость. */
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(1),
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(1) {
+  width: 30%;
+  white-space: normal;
+  text-align: left;
+}
+
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-child(2),
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-child(2) {
+  width: 38%;
+  white-space: normal;
+}
+
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] th:nth-last-child(3),
+.doorsSpecificationA4Table[data-spec-layout='ceilings'] td:nth-last-child(3) {
+  width: 10%;
 }
 
 /* Кол-во / Стоимость / Сумма — всегда последние три, независимо от числа колонок. */
@@ -1482,6 +1510,19 @@
   line-height: var(--admin-line-height-sm);
   text-align: right;
   color: var(--admin-text-muted);
+}
+
+.ceilingsSpecPrintSection {
+  margin: 10pt 0 8pt;
+}
+
+.ceilingsSpecPrintCeilingTitle {
+  margin: 0 0 4pt;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-primary);
+  text-align: left;
 }
 
 .estimateA4Signatures {

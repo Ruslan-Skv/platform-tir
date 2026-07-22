@@ -4,9 +4,7 @@ import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import { PackageEstimateSignaturesBlock } from '../../../platform/editor/estimateTab/estimateTabUi';
 import {
   type CeilingsSpecification,
-  ceilingsSpecificationHasContent,
-  computeCeilingsSpecificationNetTotal,
-  flattenCeilingsSpecificationRows,
+  buildCeilingsClientPrintModel,
   formatCeilingsMoney,
 } from './ceilingsSpecification';
 
@@ -25,9 +23,7 @@ export function CeilingsSpecificationPreviewSheet({
   customerFullName,
   spec,
 }: Props) {
-  const rows = flattenCeilingsSpecificationRows(spec);
-  const totals = computeCeilingsSpecificationNetTotal(spec);
-  const hasContent = ceilingsSpecificationHasContent(spec);
+  const { sections, totals, hasContent } = buildCeilingsClientPrintModel(spec);
 
   return (
     <article
@@ -39,59 +35,51 @@ export function CeilingsSpecificationPreviewSheet({
         Приложение №1 к договору № {contractNumberLabel} от {contractDateLabel}
       </p>
       <h4 className={cdDocPreview.estimateA4Title}>Спецификация</h4>
-      <p className={cdDocPreview.estimateA4DiscountMeta}>
-        При выборе потолков учитывать: полотно №1 — самое большое.
-      </p>
-      {rows.length > 0 ? (
-        <table className={`${cdDocPreview.doorsSpecificationA4Table} doorsSpecificationA4Table`}>
-          <thead>
-            <tr>
-              <th>Потолок</th>
-              <th>Наименование</th>
-              <th>Фактура / артикул / цвет</th>
-              <th>Кол-во</th>
-              <th>Цена</th>
-              <th>Стоимость</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r, i) => (
-              <tr key={`${r.ceilingTitle}-${r.name}-${i}`}>
-                <td>{r.ceilingTitle}</td>
-                <td>{r.name}</td>
-                <td>{r.detail || '—'}</td>
-                <td>
-                  {r.qty} {r.unit}
-                </td>
-                <td>{formatCeilingsMoney(Number(String(r.unitPrice).replace(',', '.')) || 0)}</td>
-                <td>{formatCeilingsMoney(r.amount)}</td>
+
+      {sections.map((section) => (
+        <div key={section.ceilingTitle} className={cdDocPreview.ceilingsSpecPrintSection}>
+          <p className={cdDocPreview.ceilingsSpecPrintCeilingTitle}>{section.ceilingTitle}</p>
+          <table
+            className={`${cdDocPreview.doorsSpecificationA4Table} doorsSpecificationA4Table`}
+            data-spec-layout="ceilings"
+          >
+            <thead>
+              <tr>
+                <th>Наименование</th>
+                <th>Фактура / артикул / цвет</th>
+                <th>Кол-во</th>
+                <th>Цена</th>
+                <th>Стоимость</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      ) : null}
+            </thead>
+            <tbody>
+              {section.rows.map((r, i) => (
+                <tr key={`${section.ceilingTitle}-${r.name}-${i}`}>
+                  <td>{r.name}</td>
+                  <td>{r.detail || '—'}</td>
+                  <td>
+                    {r.qty} {r.unit}
+                  </td>
+                  <td>{formatCeilingsMoney(r.unitPrice)}</td>
+                  <td>{formatCeilingsMoney(r.amount)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ))}
+
       {!hasContent ? (
         <p className={cdDocPreview.estimateA4Empty}>Позиции не заполнены.</p>
       ) : (
         <>
           <p className={cdDocPreview.estimateA4Total}>
-            Итого по спецификации: <strong>{formatCeilingsMoney(totals.grossTotal)} руб.</strong>
+            Итого: <strong>{formatCeilingsMoney(totals.withExtraMarkup)} руб.</strong>
           </p>
-          {totals.extraMarkupPercent > 0 ? (
-            <>
-              <p className={cdDocPreview.estimateA4DiscountMeta}>
-                Доп. наценка: {String(totals.extraMarkupPercent).replace('.', ',')}%
-              </p>
-              <p className={cdDocPreview.estimateA4Total}>
-                С учётом наценки:{' '}
-                <strong>{formatCeilingsMoney(totals.withExtraMarkup)} руб.</strong>
-              </p>
-            </>
-          ) : null}
           {totals.discountPercent > 0 ? (
             <>
               <p className={cdDocPreview.estimateA4DiscountMeta}>
-                Скидка по спецификации: {String(totals.discountPercent).replace('.', ',')}%
+                Скидка: {String(totals.discountPercent).replace('.', ',')}%
               </p>
               <p className={cdDocPreview.estimateA4Total}>
                 Итого со скидкой: <strong>{formatCeilingsMoney(totals.netTotal)} руб.</strong>

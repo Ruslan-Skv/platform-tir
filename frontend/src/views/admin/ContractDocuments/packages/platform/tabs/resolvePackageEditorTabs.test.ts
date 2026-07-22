@@ -32,7 +32,7 @@ describe('resolvePackageEditorVisibleTabs', () => {
     }
   });
 
-  it('shows deliveryNote for DOORS, BLINDS and CEILINGS after actAcceptance and before memo', () => {
+  it('shows deliveryNote for DOORS and BLINDS after actAcceptance and before memo', () => {
     const repair = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
       packageKind: 'REPAIR',
@@ -43,14 +43,20 @@ describe('resolvePackageEditorVisibleTabs', () => {
       packageKind: 'WINDOWS',
       addendumSlotCount: 0,
     });
-    for (const kind of ['DOORS', 'BLINDS', 'CEILINGS'] as const) {
+    const ceilings = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'CEILINGS',
+      addendumSlotCount: 0,
+    });
+    expect(repair).not.toContain('deliveryNote');
+    expect(windows).not.toContain('deliveryNote');
+    expect(ceilings).not.toContain('deliveryNote');
+    for (const kind of ['DOORS', 'BLINDS'] as const) {
       const tabs = resolvePackageEditorVisibleTabs({
         tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
         packageKind: kind,
         addendumSlotCount: 0,
       });
-      expect(repair).not.toContain('deliveryNote');
-      expect(windows).not.toContain('deliveryNote');
       expect(tabs).toContain('deliveryNote');
       const actIdx = tabs.indexOf('actAcceptance');
       const deliveryIdx = tabs.indexOf('deliveryNote');

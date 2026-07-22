@@ -93,6 +93,12 @@ export function useCeilingsPriceListPage() {
     void load();
   }, [load]);
 
+  useEffect(() => {
+    if (!success) return;
+    const t = window.setTimeout(() => setSuccess(null), 3000);
+    return () => window.clearTimeout(t);
+  }, [success]);
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     return items
@@ -276,12 +282,12 @@ export function useCeilingsPriceListPage() {
         },
         items,
       });
+      // Не подменяем весь список позиций ответом сервера — иначе страница «дёргается».
       setSettings({
         ...res.settings,
         goodsGroupMarkups: normalizeGoodsGroupMarkups(res.settings.goodsGroupMarkups),
       });
-      setItems(res.items);
-      setSuccess(`Сохранено: ${res.items.length} позиций прайса`);
+      setSuccess('Сохранено');
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка сохранения');
     } finally {
