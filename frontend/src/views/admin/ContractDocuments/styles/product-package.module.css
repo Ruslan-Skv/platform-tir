@@ -279,6 +279,11 @@
   line-height: var(--admin-line-height-sm);
 }
 
+/* Вкладки «Счёт-заказ» / «Смета»: компактный шрифт (как у подсказок) — все направления. */
+.windowsContractTabTypography.windowsContractEstimateTab {
+  --windows-contract-tab-font-size: var(--admin-font-size-xs);
+}
+
 .estimateTabCompact.windowsContractTabTypography.dataCompact .sectionTitle,
 .estimateTabCompact.windowsContractTabTypography .estimateSectionTitle {
   font-size: var(--windows-contract-tab-font-size);
@@ -325,7 +330,7 @@
 }
 
 .estimateTabCompact.windowsContractTabTypography .estimateAttachedColumnTitle {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   font-weight: normal;
   letter-spacing: normal;
   text-align: left;
@@ -333,11 +338,11 @@
 
 .estimateTabCompact.windowsContractTabTypography .estimateAttachedEmpty,
 .estimateTabCompact.windowsContractTabTypography .estimateAttachedPresetMeta {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
 }
 
 .estimateTabCompact.windowsContractTabTypography .estimateAttachedPresetMain strong {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
 }
 
 .estimateTabCompact.windowsContractTabTypography .windowsAddendumSpecSectionTotal,
@@ -788,6 +793,19 @@
 .estimateTabCompact.windowsContractTabTypography .windowsContractFormSection input[type='tel'],
 .estimateTabCompact.windowsContractTabTypography .windowsContractFormSection input[type='email'] {
   font-size: var(--windows-contract-tab-font-size);
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimateTabCompact.windowsContractTabTypography.windowsContractEstimateTab
+  .windowsContractFormSection
+  label,
+.estimateTabCompact.windowsContractTabTypography.windowsContractEstimateTab
+  .windowsContractFormSection
+  select,
+.estimateTabCompact.windowsContractTabTypography.windowsContractEstimateTab
+  .windowsContractFormSection
+  p {
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
 }
 

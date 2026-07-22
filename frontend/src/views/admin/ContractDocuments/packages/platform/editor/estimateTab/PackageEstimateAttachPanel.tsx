@@ -4,7 +4,7 @@ import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import attachStyles from './PackageEstimateAttach.module.css';
 import type { PackageEstimateTabProps } from './PackageEstimateTab';
-import { ESTIMATE_TAB_HINT } from './packageEstimateTabStyles';
+import { ESTIMATE_HINT, ESTIMATE_TAB_HINT } from './packageEstimateTabStyles';
 
 export type PackageEstimateAttachPanelProps = Pick<
   PackageEstimateTabProps,
@@ -55,13 +55,11 @@ export function PackageEstimateAttachPanel({
   return (
     <>
       <div
-        className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
+        className={`${attachStyles.estimatePickAndAttachedRow} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateAttachWindowsTypography}`}
       >
         <div className={attachStyles.estimatePickColumn}>
           <div className={attachStyles.estimateSelectsRow}>
-            <div
-              className={`${cdEstimateTab.field}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsField}` : ''}`}
-            >
+            <div className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField}`}>
               <label htmlFor="estimate_group_select">Объект</label>
               <select
                 id="estimate_group_select"
@@ -96,9 +94,7 @@ export function PackageEstimateAttachPanel({
                 ))}
               </select>
             </div>
-            <div
-              className={`${cdEstimateTab.field}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsField}` : ''}`}
-            >
+            <div className={`${cdEstimateTab.field} ${attachStyles.estimateAttachWindowsField}`}>
               <label htmlFor="estimate_select">Расчёт</label>
               <select
                 id="estimate_select"
@@ -149,7 +145,7 @@ export function PackageEstimateAttachPanel({
                     : 'Нет свободных расчётов для прикрепления.'}
               </p>
             ) : (
-              <p className={ESTIMATE_TAB_HINT}>
+              <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>
                 Сначала объект, затем расчёт → «Прикрепить». Нельзя смешивать расчёты разных
                 объектов. Справа — порядок{' '}
                 {isProductDirectionPackage ? 'в счёте-заказе' : 'в смете'} (перетаскивание).
@@ -220,7 +216,7 @@ export function PackageEstimateAttachPanel({
         (id) => (estimateUsageById.get(id)?.length ?? 0) === 0
       ) ? (
         <p
-          className={`${ESTIMATE_TAB_HINT} ${attachStyles.estimateTabHintFullWidth}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
+          className={`${ESTIMATE_TAB_HINT} ${attachStyles.estimateTabHintFullWidth} ${attachStyles.estimateAttachWindowsTypography}`}
         >
           Часть расчётов уже прикреплена в других пакетах:{' '}
           {[

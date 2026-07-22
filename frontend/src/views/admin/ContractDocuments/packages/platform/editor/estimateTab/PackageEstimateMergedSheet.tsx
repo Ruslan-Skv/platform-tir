@@ -27,7 +27,7 @@ export function PackageEstimateMergedSheet({
 }: PackageEstimateMergedSheetProps) {
   return (
     <div
-      className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField}${isProductDirectionPackage ? ` ${attachStyles.estimateAttachWindowsTypography}` : ''}`}
+      className={`${cdEstimateTab.field} ${cdEstimateTab.fieldSpanAll} ${attachStyles.estimateSheetField} ${attachStyles.estimateAttachWindowsTypography}`}
     >
       <label>Содержимое объединённой сметы</label>
       <div className={`${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`}>

@@ -150,10 +150,10 @@
   font-size: var(--admin-font-size-2xs);
 }
 
-/* Товарные пакеты («Окна»/«Двери»): единый шрифт блока прикрепления и превью сметы. */
+/* Товарные пакеты: тот же размер, что у подсказок (.hint → admin-font-size-xs). */
 .estimateAttachWindowsTypography.estimateTabHint,
 .estimateAttachWindowsTypography .estimateAttachedColumnTitle {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   font-weight: normal;
   letter-spacing: normal;
   line-height: var(--admin-line-height-sm);
@@ -163,40 +163,48 @@
 .estimateAttachWindowsTypography .estimateAttachedEmpty,
 .estimateAttachWindowsTypography .estimateAttachedPresetMeta,
 .estimateAttachWindowsTypography .estimateTabHint {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
 }
 
 .estimateAttachWindowsTypography .estimateAttachedPresetMain strong {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
 }
 
 .estimateAttachWindowsTypography .estimateAttachedRemoveBtn {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   line-height: 1;
 }
 
 .estimateAttachWindowsTypography.estimateSheetField > label,
 .estimateAttachWindowsTypography .estimateSheetField > label {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
 }
 
 .estimateAttachWindowsTypography .estimateAttachPrimaryBtn {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
 }
 
-/* Перебивает .estimateTabCompact.dataCompact .field label (2xs) в товарных пакетах. */
+/* Перебивает windowsContractFormSection select/label (sm) — как у подсказок вкладки. */
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachWindowsField > label {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs) !important;
   font-weight: 600;
   color: var(--admin-text-secondary);
   line-height: var(--admin-line-height-sm);
 }
 
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachWindowsField select {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs) !important;
+  line-height: var(--admin-line-height-sm);
+}
+
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedColumnTitle,
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedEmpty,
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedPresetMeta,
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedPresetMain strong {
+  font-size: var(--admin-font-size-xs) !important;
   line-height: var(--admin-line-height-sm);
 }
