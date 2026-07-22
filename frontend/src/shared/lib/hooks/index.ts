@@ -9,5 +9,6 @@ export { usePhotoMobileLayout } from './usePhotoMobileLayout';
 export { usePublicSiteEditMode } from './usePublicSiteEditMode';
 export { useCanEditCatalogOnPublic } from './useCanEditCatalogOnPublic';
 export { useBrowserHistoryNavigation } from './useBrowserHistoryNavigation';
+export { useFaviconBadge } from './useFaviconBadge';
 export type { CategoryFromAPI, NavigationCategory } from './useDynamicCategories';
 export type { ServiceCategoryForNav } from './useDynamicServiceCategories';

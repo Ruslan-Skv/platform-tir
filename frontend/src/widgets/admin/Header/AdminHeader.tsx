@@ -40,7 +40,7 @@ import { getRoleLabel } from '@/shared/config/admin-roles';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
 import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
-import { useBrowserHistoryNavigation } from '@/shared/lib/hooks';
+import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import {
   PUBLIC_SITE_EDIT_MODE_EVENT,
@@ -354,6 +354,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
     visibleNotificationItems.length < enabledNotificationItems.length;
 
   const unreadCount = visibleNotificationItems.length;
+  useFaviconBadge(unreadCount);
   const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
 
   const dismissNotification = useCallback(
