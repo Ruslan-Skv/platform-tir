@@ -1,0 +1,160 @@
+.pageCard {
+  margin-top: var(--admin-space-lg);
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  max-width: 1100px;
+}
+
+.markupsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: var(--admin-space-md);
+}
+
+.searchField {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.categoryTabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-md);
+}
+
+.categoryTab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  cursor: pointer;
+}
+
+.categoryTab:hover {
+  background: var(--admin-border);
+}
+
+.categoryTabActive {
+  color: var(--admin-surface);
+  background: var(--admin-info);
+  border-color: var(--admin-info);
+}
+
+.categoryTabActive:hover {
+  background: var(--admin-info-strong);
+  border-color: var(--admin-info-strong);
+}
+
+.cellInput {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-sm);
+  line-height: var(--admin-line-height-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}
+
+.cellInputNarrow {
+  width: 4.5rem;
+}
+
+.cellInputNum {
+  width: 5.5rem;
+  text-align: right;
+}
+
+.cellInputMarkup {
+  width: 4.75rem;
+  text-align: right;
+}
+
+.actionsCell {
+  white-space: nowrap;
+}
+
+.emptyCell {
+  color: var(--admin-text-secondary);
+  padding: var(--admin-space-lg) !important;
+}
+
+.actionsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  margin-top: var(--admin-space-md);
+}
+
+.fabricBlocks {
+  display: grid;
+  gap: var(--admin-space-lg);
+}
+
+.fabricBlock {
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft, #f8fafc);
+}
+
+.fabricBlockHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--admin-space-sm);
+}
+
+.fabricBlockTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-md);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.goodsBlockMarkup {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  margin-left: auto;
+}
+
+.goodsBlockMarkup label {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.goodsBlockMarkup input {
+  width: 5rem;
+  box-sizing: border-box;
+  font-size: var(--admin-font-size-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+}

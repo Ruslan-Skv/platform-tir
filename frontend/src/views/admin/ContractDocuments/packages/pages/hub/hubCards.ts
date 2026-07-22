@@ -35,4 +35,9 @@ export const CONTRACT_DOCUMENTS_HUB_CARDS: HubCard[] = [
     title: 'Наценки договоров',
     hint: 'Наценка при расчёте заказ-наряда по «Окна» (цена счёт-заказа минус %); меняет суперадмин.',
   },
+  {
+    href: '/admin/contract-documents/settings/ceilings-price-list',
+    title: 'Прайсы · Натяжные потолки',
+    hint: 'Полотно, ленты, профили и товар для спецификации договоров CEILINGS.',
+  },
 ];

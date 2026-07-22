@@ -1028,3 +1028,115 @@
   background: var(--admin-surface);
   border-color: color-mix(in srgb, var(--admin-border) 70%, transparent);
 }
+
+/* Спецификация «Натяжные потолки»: карточки потолков. */
+.ceilingsSpecificationEditor {
+  margin-top: var(--admin-space-sm);
+  display: grid;
+  gap: var(--admin-space-md);
+}
+
+.ceilingsSpecificationCards {
+  display: grid;
+  gap: var(--admin-space-md);
+}
+
+.ceilingsSpecificationCard {
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: var(--admin-radius-lg, 12px);
+  padding: var(--admin-space-md);
+  background: var(--admin-surface, #fff);
+}
+
+.ceilingsSpecificationCardHeader {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: flex-end;
+  margin-bottom: var(--admin-space-sm);
+}
+
+.ceilingsSpecificationTitleField {
+  flex: 1 1 220px;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.ceilingsSpecificationCardSum {
+  margin: 0;
+  padding-bottom: var(--admin-space-xs);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.ceilingsSpecificationSectionTitle {
+  margin: var(--admin-space-md) 0 var(--admin-space-xs);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.ceilingsSpecificationLineRow {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(72px, 0.7fr) minmax(88px, 0.8fr) auto;
+  gap: var(--admin-space-xs);
+  align-items: center;
+  margin-bottom: var(--admin-space-xs);
+}
+
+.ceilingsSpecificationFabricRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 1.3fr) minmax(0, 1fr) minmax(
+      64px,
+      0.55fr
+    ) minmax(72px, 0.65fr) auto;
+  gap: var(--admin-space-xs);
+  align-items: center;
+  margin-bottom: var(--admin-space-xs);
+}
+
+.ceilingsSpecificationLineRow select,
+.ceilingsSpecificationLineRow input,
+.ceilingsSpecificationFabricRow select,
+.ceilingsSpecificationFabricRow input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  line-height: var(--admin-line-height-sm);
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border, #e2e8f0);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-primary);
+}
+
+.ceilingsSpecificationLineSpacer {
+  width: 32px;
+  height: 1px;
+}
+
+.ceilingsSpecificationAddLineBtn {
+  margin: var(--admin-space-2xs) 0 var(--admin-space-sm);
+  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+}
+
+@media (max-width: 720px) {
+  .ceilingsSpecificationLineRow {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .ceilingsSpecificationLineRow select {
+    grid-column: 1 / -1;
+  }
+
+  .ceilingsSpecificationFabricRow {
+    grid-template-columns: 1fr 1fr auto;
+  }
+
+  .ceilingsSpecificationFabricRow select {
+    grid-column: 1 / -1;
+  }
+}

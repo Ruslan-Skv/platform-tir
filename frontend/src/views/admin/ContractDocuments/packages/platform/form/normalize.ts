@@ -2,6 +2,7 @@ import {
   normalizeProductAddendumSpecificationLines,
   windowsAddendumSlotHasSpecificationContent,
 } from '../../families/product-like/addendum/addendumSpecification';
+import { normalizeCeilingsSpecification } from '../../families/product-like/ceilings/ceilingsSpecification';
 import { normalizeDoorsSpecificationLines } from '../../families/product-like/specification/doorsSpecification';
 import {
   defaultAddendumSlots,
@@ -512,6 +513,9 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
       'string'
         ? String((merged as unknown as Record<string, unknown>).doorsSpecificationDiscountPercent)
         : '',
+    ceilingsSpecification: normalizeCeilingsSpecification(
+      (merged as unknown as Record<string, unknown>).ceilingsSpecification
+    ),
     estimateObjectGroupKey:
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'
         ? String((merged as unknown as Record<string, unknown>).estimateObjectGroupKey)

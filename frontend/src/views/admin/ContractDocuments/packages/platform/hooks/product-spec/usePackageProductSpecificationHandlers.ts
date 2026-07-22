@@ -58,12 +58,21 @@ export function usePackageProductSpecificationHandlers({
     [setForm, touchPackageData]
   );
 
+  const onCeilingsSpecificationChange = useCallback(
+    (ceilingsSpecification: PackageFormData['ceilingsSpecification']) => {
+      setForm((p) => ({ ...p, ceilingsSpecification }));
+      touchPackageData();
+    },
+    [setForm, touchPackageData]
+  );
+
   return {
     onProductSpecificationAmountChange,
     onProductSpecificationFileAttached,
     onProductSpecificationFileClear,
     onDoorsSpecificationLinesChange,
     onDoorsSpecificationDiscountPercentChange,
+    onCeilingsSpecificationChange,
     onError: setError,
   };
 }

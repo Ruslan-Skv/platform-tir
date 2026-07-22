@@ -18,6 +18,8 @@ import { ContractDocumentPackageGlobalLibraryService } from './contract-document
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
+import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
+import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
 
 @Injectable()
 export class ContractDocumentPackagesService {
@@ -26,6 +28,7 @@ export class ContractDocumentPackagesService {
     private readonly globalLibrary: ContractDocumentPackageGlobalLibraryService,
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
+    private readonly ceilingsPriceList: ContractDocumentPackageCeilingsPriceListService,
   ) {}
 
   create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -214,5 +217,13 @@ export class ContractDocumentPackagesService {
 
   setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
     return this.kindSettings.setWindowsWorkOrderMarkupSettings(dto, updatedById);
+  }
+
+  getCeilingsPriceList() {
+    return this.ceilingsPriceList.getPriceList();
+  }
+
+  setCeilingsPriceList(dto: SetCeilingsPriceListDto, updatedById?: string) {
+    return this.ceilingsPriceList.setPriceList(dto, updatedById);
   }
 }

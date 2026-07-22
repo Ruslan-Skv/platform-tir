@@ -4,14 +4,14 @@
 
 ## Направления (kind)
 
-| Kind        | UI               | Семейство       | `directions/`                       |
-| ----------- | ---------------- | --------------- | ----------------------------------- |
-| `REPAIR`    | Ремонт           | `REPAIR_LIKE`   | scaffold (код в `platform/`)        |
-| `WINDOWS`   | Окна             | `PRODUCT_LIKE`  | алиасы `Windows*` → `product-like`  |
-| `DOORS`     | Двери            | `PRODUCT_LIKE`  | алиасы `Doors*` → `product-like`    |
-| `BLINDS`    | Жалюзи           | `PRODUCT_LIKE`  | алиасы `Blinds*` → `product-like`   |
-| `CEILINGS`  | Натяжные потолки | `PRODUCT_LIKE`  | алиасы `Ceilings*` → `product-like` |
-| `FURNITURE` | Мебель           | `UNIMPLEMENTED` | scaffold                            |
+| Kind        | UI               | Семейство       | `directions/`                      |
+| ----------- | ---------------- | --------------- | ---------------------------------- |
+| `REPAIR`    | Ремонт           | `REPAIR_LIKE`   | scaffold (код в `platform/`)       |
+| `WINDOWS`   | Окна             | `PRODUCT_LIKE`  | алиасы `Windows*` → `product-like` |
+| `DOORS`     | Двери            | `PRODUCT_LIKE`  | алиасы `Doors*` → `product-like`   |
+| `BLINDS`    | Жалюзи           | `PRODUCT_LIKE`  | алиасы `Blinds*` → `product-like`  |
+| `CEILINGS`  | Натяжные потолки | `PRODUCT_LIKE`  | `ceilings/` спецификация + прайс   |
+| `FURNITURE` | Мебель           | `UNIMPLEMENTED` | scaffold                           |
 
 Реестр: `config/packageDirectionRegistry.ts`.
 

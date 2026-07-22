@@ -1,3 +1,4 @@
+import { defaultCeilingsSpecification } from '../../families/product-like/ceilings/ceilingsSpecification';
 import { newDoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 import type {
   PackageAddendumSlotEstimateBlock,
@@ -157,6 +158,7 @@ export function defaultPackageFormData(): PackageFormData {
     productSpecificationFileName: '',
     doorsSpecificationLines: [newDoorsSpecificationLine()],
     doorsSpecificationDiscountPercent: '',
+    ceilingsSpecification: defaultCeilingsSpecification(),
     issuedInvoices: [],
   };
 }

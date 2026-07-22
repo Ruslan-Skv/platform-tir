@@ -51,4 +51,33 @@ describe('computeProductContractCostBreakdown', () => {
     });
     expect(breakdown.productsAmount).toBe(40_000);
   });
+
+  it('uses ceilings specification net total for products when filled', () => {
+    const base = defaultPackageFormData();
+    const breakdown = computeProductContractCostBreakdown({
+      ...base,
+      ceilingsSpecification: {
+        extraMarkupPercent: '0',
+        discountPercent: '',
+        ceilings: [
+          {
+            ...base.ceilingsSpecification.ceilings[0]!,
+            fabrics: [
+              {
+                id: 'f1',
+                priceItemId: '',
+                texture: 'Матовый',
+                series: 'М01',
+                color: '',
+                article: 'М01',
+                qtyM2: '10',
+                unitPrice: '300',
+              },
+            ],
+          },
+        ],
+      },
+    });
+    expect(breakdown.productsAmount).toBe(3_000);
+  });
 });

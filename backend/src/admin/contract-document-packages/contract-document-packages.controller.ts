@@ -43,6 +43,7 @@ import {
 } from './dto/set-repair-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
 import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
+import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -245,6 +246,16 @@ export class ContractDocumentPackagesController {
   @Put('estimate-presets')
   setGlobalEstimatePresets(@Body() dto: SetGlobalEstimatePresetsDto, @Req() req: RequestWithUser) {
     return this.service.setGlobalEstimatePresets(dto, req.user?.id);
+  }
+
+  @Get('ceilings-price-list')
+  getCeilingsPriceList() {
+    return this.service.getCeilingsPriceList();
+  }
+
+  @Put('ceilings-price-list')
+  setCeilingsPriceList(@Body() dto: SetCeilingsPriceListDto, @Req() req: RequestWithUser) {
+    return this.service.setCeilingsPriceList(dto, req.user?.id);
   }
 
   @Get('estimate-presets/trash')

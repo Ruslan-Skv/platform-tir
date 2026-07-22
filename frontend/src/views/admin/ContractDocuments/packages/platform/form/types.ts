@@ -1,4 +1,5 @@
 import type { ProductAddendumSpecificationLine } from '../../families/product-like/addendum/addendumSpecification';
+import type { CeilingsSpecification } from '../../families/product-like/ceilings/ceilingsSpecification';
 import type { DoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 
 export type { ProductAddendumSpecificationLine, DoorsSpecificationLine };
@@ -318,6 +319,8 @@ export interface PackageFormData {
   doorsSpecificationLines: DoorsSpecificationLine[];
   /** Скидка на спецификацию дверей, % (только направление «Двери»). */
   doorsSpecificationDiscountPercent: string;
+  /** Спецификация натяжных потолков (карточки потолков объекта). */
+  ceilingsSpecification: CeilingsSpecification;
   /**
    * Номер договора на момент создания копии пакета (из поля «Номер договора»).
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».

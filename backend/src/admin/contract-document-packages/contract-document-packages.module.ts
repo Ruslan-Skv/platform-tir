@@ -9,6 +9,7 @@ import { ContractDocumentPackageCrudService } from './contract-document-package-
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
+import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
 
 @Module({
   imports: [DatabaseModule],
@@ -19,6 +20,7 @@ import { ContractDocumentPackageKindSettingsService } from './contract-document-
     ContractDocumentPackageGlobalLibraryService,
     ContractDocumentPackageEstimatePresetsService,
     ContractDocumentPackageKindSettingsService,
+    ContractDocumentPackageCeilingsPriceListService,
     ContractDocumentPackagePaymentsService,
     ContractDocumentPaymentInvoicesService,
   ],

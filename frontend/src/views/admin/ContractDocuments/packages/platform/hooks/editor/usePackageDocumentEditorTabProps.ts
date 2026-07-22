@@ -267,6 +267,7 @@ export function usePackageDocumentEditorTabProps({
       productSpecificationFileName: form.productSpecificationFileName,
       doorsSpecificationLines: form.doorsSpecificationLines,
       doorsSpecificationDiscountPercent: form.doorsSpecificationDiscountPercent,
+      ceilingsSpecification: form.ceilingsSpecification,
       ...productSpecificationHandlers,
     }),
     [
@@ -279,6 +280,7 @@ export function usePackageDocumentEditorTabProps({
       form.productSpecificationFileName,
       form.doorsSpecificationLines,
       form.doorsSpecificationDiscountPercent,
+      form.ceilingsSpecification,
       productSpecificationHandlers,
     ]
   );

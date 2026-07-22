@@ -904,3 +904,63 @@ export async function putContractDocumentEstimatePresets(body: {
   }
   return res.json();
 }
+
+export type CeilingsPriceCategory = 'FABRIC' | 'TAPE' | 'PROFILE' | 'FABRIC_EXTRA' | 'GOODS';
+
+export type CeilingsPriceListSettings = {
+  fabricMarkup: number;
+  profileMarkup: number;
+  tapeMarkup: number;
+  defaultExtraMarkupPercent: number;
+  /** Общая наценка по блокам вкладки «Товар» (ключ = название группы). */
+  goodsGroupMarkups: Record<string, number>;
+};
+
+export type CeilingsPriceItem = {
+  id: string;
+  category: CeilingsPriceCategory;
+  name: string;
+  unit: string;
+  purchasePrice: number;
+  markup: number | null;
+  retailPrice: number;
+  attributes: Record<string, unknown>;
+  active: boolean;
+  sortOrder: number;
+};
+
+export type CeilingsPriceListResponse = {
+  kind: 'CEILINGS';
+  settings: CeilingsPriceListSettings;
+  items: CeilingsPriceItem[];
+  updatedAt: string | null;
+};
+
+export async function getCeilingsPriceList(): Promise<CeilingsPriceListResponse> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/ceilings-price-list`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить прайс натяжных потолков');
+  return res.json();
+}
+
+export async function putCeilingsPriceList(body: {
+  settings?: Partial<CeilingsPriceListSettings>;
+  items: CeilingsPriceItem[];
+}): Promise<CeilingsPriceListResponse> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/ceilings-price-list`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join('. ') : err.message;
+    throw new Error(msg || 'Не удалось сохранить прайс натяжных потолков');
+  }
+  return res.json();
+}

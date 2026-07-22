@@ -569,6 +569,11 @@ const baseNavItems: NavItem[] = [
             href: '/admin/contract-documents/settings/markups',
             resourceId: 'admin.contract-documents.markups',
           },
+          {
+            label: 'Прайсы · Натяжные потолки',
+            href: '/admin/contract-documents/settings/ceilings-price-list',
+            resourceId: 'admin.contract-documents.ceilings-price-list',
+          },
         ],
       },
       {

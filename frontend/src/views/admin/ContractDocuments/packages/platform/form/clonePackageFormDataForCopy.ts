@@ -30,6 +30,7 @@ export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknow
     productSpecificationFileName: '',
     doorsSpecificationLines: defaultPackageFormData().doorsSpecificationLines,
     doorsSpecificationDiscountPercent: '',
+    ceilingsSpecification: defaultPackageFormData().ceilingsSpecification,
     estimate: {
       ...form.estimate,
       selectedPresetIds: [],

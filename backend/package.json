@@ -49,6 +49,8 @@
     "prisma:copy-doors-templates-to-blinds": "ts-node -r tsconfig-paths/register scripts/copy-doors-templates-to-blinds.ts",
     "prisma:seed-ceilings-contract-templates": "ts-node -r tsconfig-paths/register prisma/seed-ceilings-contract-template-presets.ts",
     "prisma:copy-doors-templates-to-ceilings": "ts-node -r tsconfig-paths/register scripts/copy-doors-templates-to-ceilings.ts",
+    "prisma:seed-ceilings-price-list": "ts-node -r tsconfig-paths/register prisma/seed-ceilings-price-list.ts",
+    "prisma:check-ceilings-montage-works": "ts-node -r tsconfig-paths/register prisma/seed-ceilings-montage-works-check.ts",
     "create-super-admin": "ts-node -r tsconfig-paths/register prisma/create-super-admin.ts"
   },
   "dependencies": {

@@ -1,11 +1,14 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { CreateReviewDto, Review, ReviewsSettings } from '@/shared/api/reviews';
 import { createReview, getProductReviews, getReviewsSettings } from '@/shared/api/reviews';
 
 import styles from './ProductReviewsSection.module.css';
+
+/** Стабильный default: `initialReviews = []` на каждый рендер давал новый [] и шторм GET /reviews. */
+const EMPTY_REVIEWS: Review[] = [];
 
 interface ProductReviewsSectionProps {
   productId: string;
@@ -20,7 +23,7 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   productName: _productName,
   initialRating = 0,
   initialReviewsCount = 0,
-  initialReviews = [],
+  initialReviews = EMPTY_REVIEWS,
 }) => {
   const [settings, setSettings] = useState<ReviewsSettings | null>(null);
   const [reviews, setReviews] = useState<Review[]>(initialReviews);
@@ -37,6 +40,9 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
   const [formSuccess, setFormSuccess] = useState(false);
+
+  /** Уже подтянули первую страницу для текущего productId (SSR или fetch). */
+  const initialFetchDoneRef = useRef(initialReviews.length > 0);
 
   useEffect(() => {
     getReviewsSettings()
@@ -64,15 +70,27 @@ export const ProductReviewsSection: React.FC<ProductReviewsSectionProps> = ({
     [productId, settings?.enabled]
   );
 
+  // Смена товара: сбросить локальное состояние и флаг первичной загрузки.
   useEffect(() => {
-    if (settings?.enabled && page === 1 && initialReviews.length === 0) {
-      loadReviews(1);
-    } else if (initialReviews.length > 0) {
-      setReviews(initialReviews);
-      setTotal(initialReviewsCount);
-      setReviewsCount(initialReviewsCount);
-    }
-  }, [settings?.enabled, initialReviews, initialReviewsCount, loadReviews, page]);
+    initialFetchDoneRef.current = initialReviews.length > 0;
+    setReviews(initialReviews);
+    setTotal(initialReviewsCount);
+    setReviewsCount(initialReviewsCount);
+    setRating(initialRating);
+    setPage(1);
+    setFormSuccess(false);
+    // initial* — снимок на момент смены productId; не синхронизируем на каждый рендер родителя
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset only on product change
+  }, [productId]);
+
+  // Один раз, когда отзывы включены и SSR/родитель не отдал список.
+  useEffect(() => {
+    if (!settings?.enabled) return;
+    if (initialFetchDoneRef.current) return;
+    // Синхронно, до await — иначе Strict Mode / быстрый ре-рендер запустит второй GET.
+    initialFetchDoneRef.current = true;
+    void loadReviews(1);
+  }, [settings?.enabled, loadReviews, productId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
