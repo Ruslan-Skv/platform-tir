@@ -31,6 +31,7 @@ import {
   todayContractDateDdMmYyyy,
 } from '../../../../core/contractDateFormat';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { ensureCeilingsContractTemplatePresets } from '../../../families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
 import {
   DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
   normalizeWindowsWorkOrderMarkupPercent,
@@ -39,6 +40,7 @@ import {
   packageContractSettingsKind,
   packageExecutorProfilesKind,
   packageSignatoryProfilesKind,
+  packageTemplatePresetsKind,
 } from '../../catalogKinds';
 import {
   type PackageContractObjectBlockFieldId,
@@ -180,6 +182,7 @@ export function usePackageDocumentLoad({
         const profilesKind = packageExecutorProfilesKind(currentKind);
         const signatoriesKind = packageSignatoryProfilesKind(currentKind);
         const estimatePresetsKind = estimatePresetsCatalogKind(currentKind);
+        const templatePresetsKind = packageTemplatePresetsKind(currentKind);
         const [
           profilesRes,
           signatoryRes,
@@ -198,7 +201,7 @@ export function usePackageDocumentLoad({
             items: [] as ContractSignatoryProfile[],
             updatedAt: null as string | null,
           })),
-          getContractDocumentTemplatePresets(currentKind).catch(() => ({
+          getContractDocumentTemplatePresets(templatePresetsKind).catch(() => ({
             items: [] as ContractTemplatePreset[],
             updatedAt: null as string | null,
           })),
@@ -381,7 +384,11 @@ export function usePackageDocumentLoad({
             formData: (p.formData ?? {}) as Record<string, unknown>,
           }))
         );
-        const normalizedTemplates = templates.map((it) => normalizeContractTemplatePreset(it));
+        let normalizedTemplates = templates.map((it) => normalizeContractTemplatePreset(it));
+        if (currentKind === 'CEILINGS') {
+          const ensured = await ensureCeilingsContractTemplatePresets(normalizedTemplates);
+          normalizedTemplates = ensured.items.map((it) => normalizeContractTemplatePreset(it));
+        }
         setContractTemplatePresets(normalizedTemplates);
         const selectedIds = { ...templatePresetIds };
         if (contractTemplateId && !selectedIds.contract) {

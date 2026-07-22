@@ -5,7 +5,6 @@
   max-height: min(88vh, 50rem) !important;
   min-height: min(88vh, 50rem) !important;
   overflow: hidden !important;
-  transition: none !important;
 }
 
 .modalPanel {

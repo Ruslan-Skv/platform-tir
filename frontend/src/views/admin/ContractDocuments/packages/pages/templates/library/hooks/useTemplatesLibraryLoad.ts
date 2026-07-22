@@ -11,6 +11,7 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { getContractDocumentTemplatePresetsTrash } from '@/shared/api/admin-contract-document-template-presets-trash';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { ensureCeilingsContractTemplatePresets } from '@/views/admin/ContractDocuments/packages/families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
 import { fixMisassignedProductLibraryPresets } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateSelection';
 import type { PackageLibraryTemplateTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
@@ -84,9 +85,14 @@ export function useTemplatesLibraryLoad({
           filterTemplatesByActiveKind(nextRaw, activeLibraryKind),
           activeLibraryKind
         );
-        setItems(next);
+        const ensured =
+          activeLibraryKind === 'CEILINGS'
+            ? await ensureCeilingsContractTemplatePresets(next)
+            : { items: next, changed: false };
+        if (templatesLoadRequestIdRef.current !== requestId) return;
+        setItems(ensured.items);
         lastSavedSnapshotRef.current = JSON.stringify(
-          next.map((it) => normalizeContractTemplatePreset(it))
+          ensured.items.map((it) => normalizeContractTemplatePreset(it))
         );
         isInitialHydrationRef.current = true;
         void refreshTrashCount();

@@ -7,6 +7,7 @@ import { packageTemplateActStart } from './actStart';
 import { packageTemplateAddendum } from './addendum';
 import { blindsTemplateMemo } from './blindsTemplateMemo';
 import { packageTemplateCashOrder } from './cashOrder';
+import { ceilingsTemplateContract } from './ceilingsTemplateContract';
 import { packageTemplateConsent } from './consent';
 import { packageTemplateContract } from './contract';
 import { doorsTemplateActAcceptance } from './doorsActAcceptance';
@@ -59,9 +60,9 @@ const BLINDS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTa
   memo: blindsTemplateMemo,
 };
 
-/** Натяжные потолки: договор / акт / памятка (без накладной). */
+/** Натяжные потолки: свой договор; акт / памятка — как у дверей. */
 const CEILINGS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
-  contract: doorsTemplateContract,
+  contract: ceilingsTemplateContract,
   actAcceptance: doorsTemplateActAcceptance,
   memo: doorsTemplateMemo,
 };

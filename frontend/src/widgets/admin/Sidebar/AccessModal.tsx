@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type AdminAccessGrantLevel,
@@ -37,6 +37,9 @@ interface AccessModalProps {
   resourceLabel?: string;
   onClose: () => void;
 }
+
+/** Должно совпадать с transition панели/backdrop в Modal.module.css (0.28s). */
+const ACCESS_MODAL_LEAVE_MS = 300;
 
 const ROLE_LABELS: Record<string, string> = Object.fromEntries(
   ROLES_CONFIG.filter((r) => r.id !== 'USER' && r.id !== 'GUEST').map((r) => [r.id, r.label])
@@ -358,6 +361,11 @@ export function AccessModal({
   resourceLabel: resourceLabelOverride,
   onClose,
 }: AccessModalProps) {
+  // Стартуем закрытой и открываем на следующем кадре — иначе Headless UI
+  // монтирует Dialog уже open и пропускает enter (как у «Настройки платформы»: false → true).
+  const [open, setOpen] = useState(false);
+  const leavePhaseRef = useRef(false);
+  const leaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [resourceId, setResourceId] = useState(initialResourceId);
   const [permissions, setPermissions] = useState<ResourcePermissionsResponse | null>(null);
   const [users, setUsers] = useState<AdminUserItem[]>([]);
@@ -366,6 +374,38 @@ export function AccessModal({
   const [addUserId, setAddUserId] = useState('');
   const [addUserPermission, setAddUserPermission] = useState<AdminAccessGrantLevel>('PARTICIPATE');
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    let raf2 = 0;
+    const raf1 = requestAnimationFrame(() => {
+      raf2 = requestAnimationFrame(() => {
+        setOpen(true);
+      });
+    });
+    return () => {
+      cancelAnimationFrame(raf1);
+      cancelAnimationFrame(raf2);
+    };
+  }, []);
+
+  const handleClose = useCallback(() => {
+    leavePhaseRef.current = true;
+    setOpen(false);
+  }, []);
+
+  useEffect(() => {
+    if (open || !leavePhaseRef.current) return;
+    leaveTimerRef.current = setTimeout(() => {
+      leaveTimerRef.current = null;
+      onClose();
+    }, ACCESS_MODAL_LEAVE_MS);
+    return () => {
+      if (leaveTimerRef.current != null) {
+        clearTimeout(leaveTimerRef.current);
+        leaveTimerRef.current = null;
+      }
+    };
+  }, [open, onClose]);
 
   useEffect(() => {
     setResourceId(initialResourceId);
@@ -450,8 +490,8 @@ export function AccessModal({
 
   return (
     <Modal
-      isOpen
-      onClose={onClose}
+      isOpen={open}
+      onClose={handleClose}
       title={modalTitle}
       size="lg"
       alignTop

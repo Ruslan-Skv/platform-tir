@@ -17,6 +17,8 @@ import {
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { ensureCeilingsContractTemplatePresets } from '../../../families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
+import { packageTemplatePresetsKind } from '../../catalogKinds';
 import {
   type BuildPersistedFormDataOptions,
   type PackageDocumentTemplateTabId,
@@ -185,7 +187,7 @@ export function usePackageHub({
     setError(null);
     try {
       const row = await getContractDocumentPackage(packageId);
-      const presetsKind = isProductDirectionPackageKind(row.kind) ? row.kind : 'REPAIR';
+      const presetsKind = packageTemplatePresetsKind(row.kind);
       const [paymentsRes, presetsRes] = await Promise.all([
         getContractDocumentPackagePayments(packageId).catch(
           () => [] as ContractDocumentPackagePayment[]
@@ -195,7 +197,12 @@ export function usePackageHub({
           updatedAt: null,
         })),
       ]);
-      setContractTemplatePresets(presetsRes.items ?? []);
+      let templateItems = presetsRes.items ?? [];
+      if (row.kind === 'CEILINGS') {
+        const ensured = await ensureCeilingsContractTemplatePresets(templateItems);
+        templateItems = ensured.items;
+      }
+      setContractTemplatePresets(templateItems);
       if (row.kind !== 'REPAIR' && !isProductDirectionPackageKind(row.kind)) {
         setError('Этот пакет относится к другому направлению.');
         setPaymentRows([]);
