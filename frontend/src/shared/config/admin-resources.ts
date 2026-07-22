@@ -96,14 +96,15 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/contract-documents/settings/markups',
   },
   {
-    id: 'admin.contract-documents.ceilings-price-list',
-    label: 'Настройки — Оформление договоров — Прайсы · Натяжные потолки',
-    path: '/admin/contract-documents/settings/ceilings-price-list',
-  },
-  {
     id: 'admin.contract-documents.estimates',
     label: 'Расчёты',
     path: '/admin/contract-documents/estimates',
+  },
+  { id: 'admin.price-lists', label: 'Прайсы', path: '/admin/price-lists' },
+  {
+    id: 'admin.price-lists.ceilings',
+    label: 'Прайсы — Натяжные потолки',
+    path: '/admin/price-lists/ceilings',
   },
   { id: 'admin.accounting', label: 'Бухгалтерия', path: '/admin/accounting/invoices' },
   {

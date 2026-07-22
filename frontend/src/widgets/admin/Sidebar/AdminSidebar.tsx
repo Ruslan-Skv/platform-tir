@@ -309,6 +309,19 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Прайсы',
+    href: '/admin/price-lists',
+    icon: '🏷️',
+    resourceId: 'admin.price-lists',
+    children: [
+      {
+        label: 'Натяжные потолки',
+        href: '/admin/price-lists/ceilings',
+        resourceId: 'admin.price-lists.ceilings',
+      },
+    ],
+  },
+  {
     label: 'Ремонт квартир',
     href: '/admin/service-catalog',
     icon: '🔧',
@@ -568,11 +581,6 @@ const baseNavItems: NavItem[] = [
             label: 'Наценки договоров',
             href: '/admin/contract-documents/settings/markups',
             resourceId: 'admin.contract-documents.markups',
-          },
-          {
-            label: 'Прайсы · Натяжные потолки',
-            href: '/admin/contract-documents/settings/ceilings-price-list',
-            resourceId: 'admin.contract-documents.ceilings-price-list',
           },
         ],
       },

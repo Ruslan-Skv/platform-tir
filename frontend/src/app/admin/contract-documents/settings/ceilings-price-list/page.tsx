@@ -1,5 +1,6 @@
-import { ContractDocumentsCeilingsPriceListPage } from '@/views/admin/ContractDocuments/packages/pages/settings/ContractDocumentsCeilingsPriceListPage';
+import { redirect } from 'next/navigation';
 
-export default function AdminContractDocumentsCeilingsPriceListPage() {
-  return <ContractDocumentsCeilingsPriceListPage />;
+/** Старый путь под «Оформление договоров» → раздел «Прайсы». */
+export default function AdminContractDocumentsCeilingsPriceListRedirectPage() {
+  redirect('/admin/price-lists/ceilings');
 }

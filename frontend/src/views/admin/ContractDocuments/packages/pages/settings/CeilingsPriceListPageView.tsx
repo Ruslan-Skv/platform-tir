@@ -50,13 +50,13 @@ export function CeilingsPriceListPageView(model: Props) {
 
   return (
     <div className={styles.page}>
-      <Link className={styles.backLink} href="/admin/contract-documents">
-        ← Оформление договоров
+      <Link className={styles.backLink} href="/admin/price-lists">
+        ← Прайсы
       </Link>
 
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Прайсы · Натяжные потолки</h1>
+          <h1 className={styles.title}>Натяжные потолки</h1>
           {!loading ? <span className={styles.count}>{itemsCount}</span> : null}
           <AdminSaveNotice visible={Boolean(success)} />
         </div>
