@@ -24,6 +24,14 @@ import {
   writeServiceCatalogUiState,
 } from '../service-catalog-items-page.utils';
 
+function readInitialUiState() {
+  const saved = readServiceCatalogUiState();
+  return {
+    collapsedCategoryIds: new Set(saved?.collapsedCategoryIds ?? []),
+    nestedChildBlocksHiddenRoots: new Set(saved?.nestedChildBlocksHiddenRoots ?? []),
+  };
+}
+
 export function useServiceCatalogItemsPage() {
   const { getAuthHeaders } = useAuth();
   const [categories, setCategories] = useState<ServiceCatalogCategory[]>([]);
@@ -40,29 +48,18 @@ export function useServiceCatalogItemsPage() {
   });
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<Partial<ServiceCatalogItem>>({});
-  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(new Set());
-  const [nestedChildBlocksHiddenRoots, setNestedChildBlocksHiddenRoots] = useState<Set<string>>(
-    () => new Set()
+  const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(
+    () => readInitialUiState().collapsedCategoryIds
   );
-  const skipPersistUiRef = useRef(true);
+  const [nestedChildBlocksHiddenRoots, setNestedChildBlocksHiddenRoots] = useState<Set<string>>(
+    () => readInitialUiState().nestedChildBlocksHiddenRoots
+  );
+  const collapsedCategoryIdsRef = useRef(collapsedCategoryIds);
+  const nestedChildBlocksHiddenRootsRef = useRef(nestedChildBlocksHiddenRoots);
+  collapsedCategoryIdsRef.current = collapsedCategoryIds;
+  nestedChildBlocksHiddenRootsRef.current = nestedChildBlocksHiddenRoots;
   const [reorderBusyKey, setReorderBusyKey] = useState<string | null>(null);
   const reorderInProgress = reorderBusyKey !== null;
-
-  useEffect(() => {
-    const saved = readServiceCatalogUiState();
-    if (saved) {
-      setCollapsedCategoryIds(new Set(saved.collapsedCategoryIds));
-      setNestedChildBlocksHiddenRoots(new Set(saved.nestedChildBlocksHiddenRoots));
-    }
-  }, []);
-
-  useEffect(() => {
-    if (skipPersistUiRef.current) {
-      skipPersistUiRef.current = false;
-      return;
-    }
-    writeServiceCatalogUiState(collapsedCategoryIds, nestedChildBlocksHiddenRoots);
-  }, [collapsedCategoryIds, nestedChildBlocksHiddenRoots]);
 
   const structuralCategoryRows = useMemo(
     () => flattenStructuralCategoryRows(categories, undefined, []),
@@ -87,6 +84,7 @@ export function useServiceCatalogItemsPage() {
       } else {
         next.add(categoryId);
       }
+      writeServiceCatalogUiState(next, nestedChildBlocksHiddenRootsRef.current);
       return next;
     });
   };
@@ -102,6 +100,7 @@ export function useServiceCatalogItemsPage() {
       } else {
         for (const id of ids) next.add(id);
       }
+      writeServiceCatalogUiState(next, nestedChildBlocksHiddenRootsRef.current);
       return next;
     });
   };
@@ -111,6 +110,7 @@ export function useServiceCatalogItemsPage() {
       const next = new Set(prev);
       if (next.has(rootParentId)) next.delete(rootParentId);
       else next.add(rootParentId);
+      writeServiceCatalogUiState(collapsedCategoryIdsRef.current, next);
       return next;
     });
   };
