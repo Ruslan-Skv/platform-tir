@@ -29,6 +29,10 @@ interface AdminSidebarProps {
   onResizeEnd?: () => void;
   mobileOpen?: boolean;
   onMobileClose?: () => void;
+  /** После первого кадра — чтобы не анимировать восстановление ширины из localStorage */
+  transitionsEnabled?: boolean;
+  /** Пока false — ширина только из CSS-переменных bootstrap (без inline override) */
+  applyInlineWidth?: boolean;
 }
 
 interface NavChild {
@@ -644,6 +648,8 @@ export function AdminSidebar({
   onResizeEnd,
   mobileOpen = false,
   onMobileClose,
+  transitionsEnabled = false,
+  applyInlineWidth = true,
 }: AdminSidebarProps) {
   const pathname = usePathname();
   const [fromCategory, setFromCategory] = useState<string | null>(null);
@@ -864,8 +870,10 @@ export function AdminSidebar({
         />
       ) : null}
       <aside
-        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing ? styles.resizing : ''} ${sidebarUiPrefs.hideIcons ? styles.hideIcons : ''} ${useMobileGrid ? styles.mobileGrid : ''}`}
-        style={isMobileViewport ? undefined : { width: collapsed ? undefined : width }}
+        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing || !transitionsEnabled ? styles.resizing : ''} ${sidebarUiPrefs.hideIcons ? styles.hideIcons : ''} ${useMobileGrid ? styles.mobileGrid : ''}`}
+        style={
+          isMobileViewport || !applyInlineWidth ? undefined : collapsed ? undefined : { width }
+        }
       >
         {!collapsed && (
           <div
@@ -1019,11 +1027,15 @@ export function AdminSidebar({
               </div>
             </>
           ) : (
-            navItems.map((item) => {
+            navItems.map((item, index) => {
               const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
               const isItemExpanded = Boolean(item.children && expandedItems.includes(item.href));
               return (
-                <div key={item.href} className={styles.navItem}>
+                <div
+                  key={item.href}
+                  className={styles.navItem}
+                  style={{ ['--nav-stagger' as string]: index }}
+                >
                   {item.children ? (
                     <>
                       <div

@@ -7,7 +7,7 @@
   left: 0;
   top: 0;
   height: 100vh;
-  width: 220px;
+  width: var(--admin-sidebar-width, 220px);
   background-color: var(--admin-surface, #ffffff);
   color: var(--admin-sidebar-text-strong);
   display: flex;
@@ -15,10 +15,40 @@
   transition: width 0.3s ease;
   z-index: 100;
   overflow: hidden;
-  border-right: 1px solid #93c5fd;
+  border-right: none;
+}
+
+/* Разделитель сайдбар/контент: при входе и reload рисуется сверху вниз */
+.sidebar::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 1px;
+  height: 100%;
+  background: #93c5fd;
+  transform: scaleY(0);
+  transform-origin: top center;
+  animation: adminSidebarEdgeDraw 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  pointer-events: none;
+  z-index: 20;
+}
+
+@keyframes adminSidebarEdgeDraw {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
 }
 
 .sidebar.collapsed {
+  width: 70px;
+}
+
+/* До гидратации React: свёртка из bootstrap-скрипта */
+:global(html[data-admin-sidebar-collapsed]) .sidebar {
   width: 70px;
 }
 
@@ -145,6 +175,34 @@
 
 .navItem {
   margin-bottom: var(--admin-space-0);
+  opacity: 0;
+  transform: translateX(-10px);
+  animation: adminSidebarNavItemIn 0.45s ease forwards;
+  animation-delay: calc(var(--nav-stagger, 0) * 0.32s);
+}
+
+@keyframes adminSidebarNavItemIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sidebar::after {
+    animation: none;
+    transform: scaleY(1);
+  }
+
+  .navItem {
+    opacity: 1;
+    transform: none;
+    animation: none;
+  }
 }
 
 .navLinkRow {
@@ -479,6 +537,10 @@
     border-radius: 0;
     box-shadow: none;
     background-color: var(--admin-surface, #ffffff);
+  }
+
+  .sidebar::after {
+    display: none;
   }
 
   .sidebar.collapsed {
@@ -850,7 +912,10 @@
   --admin-sidebar-hover-bg: rgb(148 163 184 / 0.14);
   --admin-sidebar-active-bg: rgb(14 165 233 / 0.16);
   --admin-sidebar-active-border: #38bdf8;
-  border-right-color: #60a5fa;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sidebar::after {
+  background: #60a5fa;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navLink.active,

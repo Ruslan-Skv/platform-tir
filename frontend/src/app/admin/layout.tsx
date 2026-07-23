@@ -11,6 +11,15 @@ import { AdminAccessibleResourcesProvider } from '@/features/admin/contexts/Admi
 import { WorkDayGate, WorkDayProvider } from '@/features/admin/work-day';
 import { AuthProvider, useAuth } from '@/features/auth';
 import { getOrCreateStore } from '@/features/theme';
+import {
+  ADMIN_SIDEBAR_COLLAPSED_WIDTH,
+  ADMIN_SIDEBAR_DEFAULT_WIDTH,
+  clampAdminSidebarWidth,
+  persistAdminSidebarCollapsed,
+  persistAdminSidebarWidth,
+  readStoredAdminSidebarCollapsed,
+  readStoredAdminSidebarWidth,
+} from '@/shared/lib/admin-sidebar-layout';
 import { QueryProvider } from '@/shared/lib/react-query/QueryProvider';
 import { AdminHeader } from '@/widgets/admin/Header/AdminHeader';
 import { AdminPresenceHeartbeat } from '@/widgets/admin/Header/AdminPresenceHeartbeat';
@@ -18,48 +27,58 @@ import { AdminSidebar } from '@/widgets/admin/Sidebar/AdminSidebar';
 
 import styles from './layout.module.css';
 
-const SIDEBAR_WIDTH_STORAGE_KEY = 'admin-sidebar-width';
-const DEFAULT_SIDEBAR_WIDTH = 220;
-const MIN_SIDEBAR_WIDTH = 180;
-const MAX_SIDEBAR_WIDTH = 400;
+function syncSidebarCssVars(width: number, collapsed: boolean, isMobile: boolean) {
+  if (typeof document === 'undefined') return;
+  const offset = isMobile ? 0 : collapsed ? ADMIN_SIDEBAR_COLLAPSED_WIDTH : width;
+  const root = document.documentElement;
+  root.style.setProperty('--admin-sidebar-width', `${width}px`);
+  root.style.setProperty('--admin-sidebar-offset', `${offset}px`);
+  if (collapsed) root.setAttribute('data-admin-sidebar-collapsed', '');
+  else root.removeAttribute('data-admin-sidebar-collapsed');
+}
 
 function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [sidebarWidth, setSidebarWidth] = useState(DEFAULT_SIDEBAR_WIDTH);
+  const [sidebarWidth, setSidebarWidth] = useState(ADMIN_SIDEBAR_DEFAULT_WIDTH);
   const [isResizing, setIsResizing] = useState(false);
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [isMobileLayout, setIsMobileLayout] = useState(false);
+  const [sidebarLayoutReady, setSidebarLayoutReady] = useState(false);
+  const [sidebarTransitionsReady, setSidebarTransitionsReady] = useState(false);
 
   useEffect(() => {
-    try {
-      const stored = localStorage.getItem(SIDEBAR_WIDTH_STORAGE_KEY);
-      if (stored) {
-        const parsed = parseInt(stored, 10);
-        if (!Number.isNaN(parsed) && parsed >= MIN_SIDEBAR_WIDTH && parsed <= MAX_SIDEBAR_WIDTH) {
-          setSidebarWidth(parsed);
-        }
-      }
-    } catch {
-      // ignore localStorage errors
-    }
-  }, []);
+    const width = readStoredAdminSidebarWidth();
+    const collapsed = readStoredAdminSidebarCollapsed();
+    setSidebarWidth(width);
+    setSidebarCollapsed(collapsed);
 
-  useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1024px)');
-    const syncMobileLayout = () => setIsMobileLayout(mediaQuery.matches);
+    const syncMobileLayout = () => {
+      const mobile = mediaQuery.matches;
+      setIsMobileLayout(mobile);
+      syncSidebarCssVars(width, collapsed, mobile);
+    };
     syncMobileLayout();
+    setSidebarLayoutReady(true);
     mediaQuery.addEventListener('change', syncMobileLayout);
-    return () => mediaQuery.removeEventListener('change', syncMobileLayout);
+
+    // Включаем transition только после первого применения сохранённой ширины
+    const id = window.requestAnimationFrame(() => setSidebarTransitionsReady(true));
+    return () => {
+      mediaQuery.removeEventListener('change', syncMobileLayout);
+      window.cancelAnimationFrame(id);
+    };
   }, []);
+
+  useEffect(() => {
+    if (!sidebarLayoutReady) return;
+    syncSidebarCssVars(sidebarWidth, sidebarCollapsed, isMobileLayout);
+  }, [sidebarWidth, sidebarCollapsed, isMobileLayout, sidebarLayoutReady]);
 
   const handleSidebarWidthChange = (width: number) => {
-    const clamped = Math.min(MAX_SIDEBAR_WIDTH, Math.max(MIN_SIDEBAR_WIDTH, width));
+    const clamped = clampAdminSidebarWidth(width);
     setSidebarWidth(clamped);
-    try {
-      localStorage.setItem(SIDEBAR_WIDTH_STORAGE_KEY, String(clamped));
-    } catch {
-      // ignore
-    }
+    persistAdminSidebarWidth(clamped);
   };
   const { isAuthenticated, isLoading, isAdmin } = useAuth();
   const pathname = usePathname();
@@ -119,8 +138,6 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     return <>{children}</>;
   }
 
-  const authReady = !isLoading && isAuthenticated && isAdmin;
-
   // Не авторизован — короткий спиннер до редиректа на login (без оболочки)
   if (!isLoading && (!isAuthenticated || !isAdmin)) {
     return (
@@ -130,7 +147,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     );
   }
 
-  const effectiveSidebarWidth = sidebarCollapsed ? 70 : sidebarWidth;
+  const effectiveSidebarWidth = sidebarCollapsed ? ADMIN_SIDEBAR_COLLAPSED_WIDTH : sidebarWidth;
   const mainAreaMarginLeft = isMobileLayout ? 0 : effectiveSidebarWidth;
   const sidebarCollapsedForView = isMobileLayout ? false : sidebarCollapsed;
 
@@ -139,7 +156,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
       setMobileSidebarOpen((open) => !open);
       return;
     }
-    setSidebarCollapsed((collapsed) => !collapsed);
+    setSidebarCollapsed((collapsed) => {
+      const next = !collapsed;
+      persistAdminSidebarCollapsed(next);
+      return next;
+    });
   };
 
   return (
@@ -156,13 +177,19 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             onResizeEnd={() => setIsResizing(false)}
             mobileOpen={mobileSidebarOpen}
             onMobileClose={() => setMobileSidebarOpen(false)}
+            transitionsEnabled={sidebarTransitionsReady && !isResizing}
+            applyInlineWidth={sidebarLayoutReady}
           />
           <div
-            className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing ? styles.resizing : ''}`}
-            style={{
-              marginLeft: mainAreaMarginLeft,
-              ['--admin-main-offset-left' as string]: `${mainAreaMarginLeft}px`,
-            }}
+            className={`${styles.mainArea} ${sidebarCollapsed ? styles.expanded : ''} ${isResizing || !sidebarTransitionsReady ? styles.resizing : ''}`}
+            style={
+              sidebarLayoutReady
+                ? {
+                    marginLeft: mainAreaMarginLeft,
+                    ['--admin-main-offset-left' as string]: `${mainAreaMarginLeft}px`,
+                  }
+                : undefined
+            }
           >
             <AdminPresenceHeartbeat />
             <AdminHeader
@@ -170,15 +197,11 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
               mobileMenuOpen={mobileSidebarOpen}
             />
             <main className={styles.content}>
-              {authReady ? (
-                <AdminSectionAccessShell>
-                  <WorkDayGate>{children}</WorkDayGate>
-                </AdminSectionAccessShell>
-              ) : (
-                <div className={styles.contentLoading} aria-busy="true" aria-label="Загрузка">
-                  <div className={styles.loadingSpinner} />
-                </div>
-              )}
+              {/* Пока auth грузится — уже рендерим страницу (без спиннера), чтобы дашборд
+                  мог плавно проявиться из прозрачности. Неавторизованных отсекает early-return выше. */}
+              <AdminSectionAccessShell>
+                <WorkDayGate>{children}</WorkDayGate>
+              </AdminSectionAccessShell>
             </main>
           </div>
         </div>

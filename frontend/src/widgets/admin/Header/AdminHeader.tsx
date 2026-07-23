@@ -11,7 +11,7 @@ import {
   XMarkIcon,
 } from '@heroicons/react/24/outline';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -149,6 +149,48 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+  const headerRevealStartedAt = useRef(0);
+
+  useLayoutEffect(() => {
+    const root = headerRef.current;
+    if (!root) return;
+
+    const STAGGER_MS = 150;
+    if (!headerRevealStartedAt.current) {
+      headerRevealStartedAt.current = performance.now();
+    }
+
+    const syncRevealOrder = () => {
+      const revealSelector = `.${styles.headerReveal}`;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        root.querySelectorAll<HTMLElement>(revealSelector).forEach((node) => {
+          node.classList.add(styles.headerRevealPlay);
+          node.style.setProperty('--header-reveal-delay', '0ms');
+        });
+        return;
+      }
+
+      const nodes = [...root.querySelectorAll<HTMLElement>(revealSelector)].filter((node) => {
+        if (window.getComputedStyle(node).display === 'none') return false;
+        const rect = node.getBoundingClientRect();
+        return rect.width > 0 || rect.height > 0;
+      });
+
+      const elapsed = performance.now() - headerRevealStartedAt.current;
+      nodes.forEach((node, index) => {
+        if (node.dataset.revealStarted === '1') return;
+        node.dataset.revealStarted = '1';
+        const delay = Math.max(0, index * STAGGER_MS - elapsed);
+        node.style.setProperty('--header-reveal-delay', `${delay}ms`);
+        node.classList.add(styles.headerRevealPlay);
+      });
+    };
+
+    syncRevealOrder();
+    const observer = new MutationObserver(syncRevealOrder);
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   useEffect(() => {
     const el = headerRef.current;
@@ -471,13 +513,19 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   return (
     <header className={styles.header} ref={headerRef}>
       <div className={styles.headerStart}>
-        <Logo
-          href="/"
-          ariaLabel="На главную — Территория интерьерных решений"
-          className={styles.headerLogoSvg}
-          linkClassName={styles.headerLogo}
-        />
-        <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
+        <span className={`${styles.headerRevealHost} ${styles.headerReveal}`}>
+          <Logo
+            href="/"
+            ariaLabel="На главную — Территория интерьерных решений"
+            className={styles.headerLogoSvg}
+            linkClassName={styles.headerLogo}
+          />
+        </span>
+        <div
+          className={`${styles.historyNav} ${styles.headerReveal}`}
+          role="group"
+          aria-label="Навигация по истории"
+        >
           <button
             type="button"
             className={styles.historyNavButton}
@@ -500,7 +548,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           </button>
         </div>
       </div>
-      <div className={styles.searchWrapper}>
+      <div className={`${styles.searchWrapper} ${styles.headerReveal} ${styles.headerRevealFade}`}>
         <input
           type="search"
           placeholder="Поиск по админ-панели..."
@@ -510,15 +558,19 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       </div>
 
       <div className={styles.actions}>
-        <AdminOnlineAvatars />
-        <WorkDayWidget />
+        <span className={`${styles.headerRevealHost} ${styles.headerReveal}`}>
+          <AdminOnlineAvatars />
+        </span>
+        <span className={`${styles.headerRevealHost} ${styles.headerReveal}`}>
+          <WorkDayWidget />
+        </span>
         {canTogglePublicSiteEdit && (
           <button
             type="button"
             className={
               publicSiteEditMode
-                ? `${styles.publicSiteEditToggle} ${styles.publicSiteEditToggleActive}`
-                : styles.publicSiteEditToggle
+                ? `${styles.publicSiteEditToggle} ${styles.publicSiteEditToggleActive} ${styles.headerReveal}`
+                : `${styles.publicSiteEditToggle} ${styles.headerReveal}`
             }
             onClick={togglePublicSiteEditMode}
             title={
@@ -535,7 +587,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         )}
         <button
           type="button"
-          className={styles.iconButton}
+          className={`${styles.iconButton} ${styles.headerReveal}`}
           onClick={toggleTheme}
           title={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
           aria-label={isDarkTheme ? 'Светлая тема' : 'Тёмная тема'}
@@ -548,7 +600,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         </button>
 
         {canLoadAdminNotifications ? (
-          <div className={styles.notificationWrapper} ref={notificationRef}>
+          <div
+            className={`${styles.notificationWrapper} ${styles.headerReveal}`}
+            ref={notificationRef}
+          >
             <button
               className={styles.iconButton}
               onClick={() => {
@@ -660,7 +715,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           </div>
         ) : null}
 
-        <div className={styles.userWrapper} ref={userMenuRef}>
+        <div className={`${styles.userWrapper} ${styles.headerReveal}`} ref={userMenuRef}>
           <button
             className={styles.userButton}
             onClick={() => setShowUserMenu(!showUserMenu)}
@@ -712,7 +767,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         {onMobileMenuOpen ? (
           <button
             type="button"
-            className={styles.mobileMenuButton}
+            className={`${styles.mobileMenuButton} ${styles.headerReveal}`}
             onClick={onMobileMenuOpen}
             title={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
             aria-label={mobileMenuOpen ? 'Закрыть меню навигации' : 'Открыть меню навигации'}

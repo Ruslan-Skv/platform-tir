@@ -741,7 +741,7 @@
 
 .mainArea {
   flex: 1;
-  margin-left: var(--admin-space-10xl);
+  margin-left: var(--admin-sidebar-offset, var(--admin-sidebar-width, 220px));
   transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
@@ -751,7 +751,7 @@
 }
 
 .mainArea.expanded {
-  margin-left: var(--admin-space-9xl);
+  margin-left: var(--admin-sidebar-offset, 70px);
 }
 
 .mainArea.resizing {

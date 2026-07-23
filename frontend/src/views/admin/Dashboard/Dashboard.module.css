@@ -8,6 +8,24 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--admin-space-0) var(--admin-space-xs) var(--admin-space-7xl);
+  opacity: 0;
+  animation: dashboardPageFadeIn 3s ease forwards;
+}
+
+@keyframes dashboardPageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page {
+    opacity: 1;
+    animation: none;
+  }
 }
 
 @media (max-width: 640px) {
