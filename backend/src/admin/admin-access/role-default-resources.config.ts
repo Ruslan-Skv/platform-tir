@@ -69,6 +69,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.analytics.managers',
     'admin.analytics.marketing',
     'admin.settings.product-templates',
+    'admin.settings.appearance',
     'admin.settings.partner-products',
     'admin.settings.reviews',
     'admin.settings.catalog',

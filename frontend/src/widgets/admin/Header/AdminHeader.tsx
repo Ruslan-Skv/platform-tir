@@ -15,6 +15,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
+import { AdminProfileModal } from '@/features/admin/profile';
 import { WorkDayWidget } from '@/features/admin/work-day';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
@@ -48,6 +49,9 @@ import {
   setPublicSiteEditMode,
 } from '@/shared/lib/public-site-edit-mode';
 import { getSafeHref } from '@/shared/lib/sanitize';
+import { NotificationBellIcon } from '@/shared/ui/icons/NotificationBellIcon';
+import { ProfileMenuIcon } from '@/shared/ui/icons/ProfileMenuIcon';
+import { ProfileUserSquareIcon } from '@/shared/ui/icons/ProfileUserSquareIcon';
 
 import styles from './AdminHeader.module.css';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
@@ -113,6 +117,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [showProfileModal, setShowProfileModal] = useState(false);
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
   const [leadNotifications, setLeadNotifications] = useState<UnifiedLeadItem[]>([]);
@@ -328,6 +333,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`.trim()
     : user?.email || 'Пользователь';
+  const displayTitle = user?.jobTitle?.trim() || getRoleLabel(user?.role);
 
   const handleLogout = () => {
     logout();
@@ -513,8 +519,10 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
                 setShowNotifications(!showNotifications);
                 if (!showNotifications) loadAllNotifications();
               }}
+              aria-label="Уведомления"
+              title="Уведомления"
             >
-              🔔
+              <NotificationBellIcon className={styles.bellIcon} />
               {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
             </button>
 
@@ -617,7 +625,11 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
         ) : null}
 
         <div className={styles.userWrapper} ref={userMenuRef}>
-          <button className={styles.userButton} onClick={() => setShowUserMenu(!showUserMenu)}>
+          <button
+            className={styles.userButton}
+            onClick={() => setShowUserMenu(!showUserMenu)}
+            title={`${displayName}${displayTitle ? ` — ${displayTitle}` : ''}`}
+          >
             {user?.avatar ? (
               <img
                 src={getAvatarUrl(user.avatar) ?? user.avatar}
@@ -629,7 +641,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             )}
             <div className={styles.userInfo}>
               <span className={styles.userName}>{displayName}</span>
-              <span className={styles.userRole}>{getRoleLabel(user?.role)}</span>
+              <span className={styles.userRole}>{displayTitle}</span>
             </div>
             <span className={styles.userArrow}>▼</span>
           </button>
@@ -641,20 +653,28 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
                 <span>{user?.email}</span>
               </div>
               <div className={styles.dropdownDivider} />
-              <a href="/admin/profile" className={styles.dropdownItem}>
-                👤 Профиль
-              </a>
-              <a href="/admin/settings" className={styles.dropdownItem}>
-                ⚙️ Настройки
-              </a>
+              <button
+                type="button"
+                className={styles.dropdownItem}
+                onClick={() => {
+                  setShowUserMenu(false);
+                  setShowProfileModal(true);
+                }}
+              >
+                <ProfileMenuIcon size={32} className={styles.dropdownItemIcon} />
+                Профиль
+              </button>
               <div className={styles.dropdownDivider} />
               <button className={styles.dropdownItem} onClick={handleLogout}>
-                🚪 Выйти
+                <ProfileUserSquareIcon size={32} className={styles.dropdownItemIcon} />
+                Выйти
               </button>
             </div>
           )}
         </div>
       </div>
+
+      <AdminProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
     </header>
   );
 }

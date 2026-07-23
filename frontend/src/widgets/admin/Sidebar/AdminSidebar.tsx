@@ -12,6 +12,7 @@ import {
   useAdminAccessibleResources,
 } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
+import { useAdminSidebarUiPrefs } from '@/shared/lib/admin-sidebar-ui-prefs';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';
@@ -44,6 +45,13 @@ interface NavItem {
   resourceId?: string;
   children?: NavChild[];
 }
+
+/** Кадр drill-down в мобильной сетке сайдбара. */
+type GridNavFrame = {
+  title: string;
+  items: NavChild[];
+  parentIcon?: string;
+};
 
 /** Все href подраздела (плоские + вложенные) — для выбора самого длинного совпадения с pathname */
 function collectAllNavHrefs(children: NavChild[]): string[] {
@@ -426,6 +434,11 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.settings',
     children: [
       {
+        label: 'Внешний вид админки',
+        href: '/admin/settings/appearance',
+        resourceId: 'admin.settings.appearance',
+      },
+      {
         label: 'Шаблоны товаров',
         href: '/admin/settings/product-templates',
         resourceId: 'admin.settings.product-templates',
@@ -640,10 +653,20 @@ export function AdminSidebar({
   const [isResizing, setIsResizing] = useState(false);
   const [accessModalResourceId, setAccessModalResourceId] = useState<string | null>(null);
   const [isMobileViewport, setIsMobileViewport] = useState(false);
+  const [gridNavStack, setGridNavStack] = useState<GridNavFrame[]>([]);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
+  const { prefs: sidebarUiPrefs } = useAdminSidebarUiPrefs();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
+  /** На свёрнутой десктопной рейке иконки нужны всегда. */
+  const showNavIcons = !sidebarUiPrefs.hideIcons || collapsed;
+  const useMobileGrid = isMobileViewport && sidebarUiPrefs.mobileLayout === 'grid3';
+  const gridDrillFrame = gridNavStack.length > 0 ? gridNavStack[gridNavStack.length - 1] : null;
+  const isAccessFocus = useCallback(
+    (resourceId?: string) => Boolean(resourceId && accessModalResourceId === resourceId),
+    [accessModalResourceId]
+  );
 
   useEffect(() => {
     const mediaQuery = window.matchMedia('(max-width: 1024px)');
@@ -651,6 +674,24 @@ export function AdminSidebar({
     syncMobileViewport();
     mediaQuery.addEventListener('change', syncMobileViewport);
     return () => mediaQuery.removeEventListener('change', syncMobileViewport);
+  }, []);
+
+  useEffect(() => {
+    if (!mobileOpen || !useMobileGrid) {
+      setGridNavStack([]);
+    }
+  }, [mobileOpen, useMobileGrid]);
+
+  useEffect(() => {
+    setGridNavStack([]);
+  }, [pathname]);
+
+  const pushGridNavFrame = useCallback((frame: GridNavFrame) => {
+    setGridNavStack((prev) => [...prev, frame]);
+  }, []);
+
+  const popGridNavFrame = useCallback(() => {
+    setGridNavStack((prev) => prev.slice(0, -1));
   }, []);
 
   const handleResizeStart = useCallback(
@@ -823,7 +864,7 @@ export function AdminSidebar({
         />
       ) : null}
       <aside
-        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing ? styles.resizing : ''}`}
+        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing ? styles.resizing : ''} ${sidebarUiPrefs.hideIcons ? styles.hideIcons : ''} ${useMobileGrid ? styles.mobileGrid : ''}`}
         style={isMobileViewport ? undefined : { width: collapsed ? undefined : width }}
       >
         {!collapsed && (
@@ -867,78 +908,293 @@ export function AdminSidebar({
           </button>
         </div>
 
-        <nav className={styles.nav}>
-          {navItems.map((item) => {
-            const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
-            return (
-              <div key={item.href} className={styles.navItem}>
-                {item.children ? (
-                  <>
-                    <div className={styles.navLinkRow}>
-                      <button
-                        className={`${styles.navLink} ${
-                          isActive(item.href) || isChildActive(item.children) ? styles.active : ''
+        <nav
+          className={`${styles.nav} ${useMobileGrid && !gridDrillFrame ? styles.navMobileGrid : ''} ${useMobileGrid && gridDrillFrame ? styles.navMobileDrill : ''}`}
+        >
+          {useMobileGrid && gridDrillFrame ? (
+            <>
+              <div className={styles.gridDrillHeader}>
+                <button
+                  type="button"
+                  className={styles.gridDrillBack}
+                  onClick={popGridNavFrame}
+                  aria-label="Назад"
+                >
+                  ← Назад
+                </button>
+                <div className={styles.gridDrillTitle}>
+                  {showNavIcons && gridDrillFrame.parentIcon ? (
+                    <span className={styles.gridDrillTitleIcon} aria-hidden>
+                      {gridDrillFrame.parentIcon}
+                    </span>
+                  ) : null}
+                  <span className={styles.gridDrillTitleText}>{gridDrillFrame.title}</span>
+                </div>
+              </div>
+              <div className={styles.gridDrillList}>
+                {gridDrillFrame.items.map((child, childIndex) => {
+                  const sectionNavHrefs = collectAllNavHrefs(gridDrillFrame.items);
+                  const rowKey = `${child.href}::${child.label}::${childIndex}`;
+                  if (child.children?.length) {
+                    return (
+                      <div
+                        key={rowKey}
+                        className={`${styles.gridDrillRow}${
+                          isAccessFocus(child.resourceId) ? ` ${styles.accessFocus}` : ''
                         }`}
-                        onClick={() => toggleExpand(item.href)}
                       >
-                        <span className={styles.icon}>{item.icon}</span>
-                        {!collapsed && (
-                          <>
-                            <span className={styles.label}>{item.label}</span>
-                            <span
-                              className={`${styles.arrow} ${
-                                expandedItems.includes(item.href) ? styles.expanded : ''
-                              }`}
-                            >
-                              ▼
-                            </span>
-                          </>
-                        )}
-                      </button>
-                      {!collapsed && isSuperAdmin && item.resourceId && (
                         <button
                           type="button"
-                          className={styles.accessIcon}
+                          className={`${styles.gridDrillItem} ${
+                            isChildOrDescendantActive(child) ? styles.active : ''
+                          }`}
+                          onClick={() =>
+                            pushGridNavFrame({
+                              title: child.label,
+                              items: child.children!,
+                            })
+                          }
+                        >
+                          <span className={styles.gridDrillItemLabel}>{child.label}</span>
+                          <span className={styles.gridDrillChevron} aria-hidden>
+                            ›
+                          </span>
+                        </button>
+                        {isSuperAdmin && child.resourceId ? (
+                          <button
+                            type="button"
+                            className={`${styles.accessIconSubmenu}${
+                              isAccessFocus(child.resourceId) ? ` ${styles.accessIconActive}` : ''
+                            }`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAccessModalResourceId(child.resourceId!);
+                            }}
+                            title="Доступ"
+                            aria-label={`Управление доступом: ${child.label}`}
+                          >
+                            <AdminAccessIcon size={14} />
+                          </button>
+                        ) : null}
+                      </div>
+                    );
+                  }
+                  return (
+                    <div
+                      key={rowKey}
+                      className={`${styles.gridDrillRow}${
+                        isAccessFocus(child.resourceId) ? ` ${styles.accessFocus}` : ''
+                      }`}
+                    >
+                      <Link
+                        href={getSafeHref(child.href, '/')}
+                        className={`${styles.gridDrillItem} ${
+                          isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
+                        }`}
+                        onClick={() => onMobileClose?.()}
+                      >
+                        <span className={styles.gridDrillItemLabel}>{child.label}</span>
+                      </Link>
+                      {isSuperAdmin && child.resourceId ? (
+                        <button
+                          type="button"
+                          className={`${styles.accessIconSubmenu}${
+                            isAccessFocus(child.resourceId) ? ` ${styles.accessIconActive}` : ''
+                          }`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setAccessModalResourceId(item.resourceId!);
+                            setAccessModalResourceId(child.resourceId!);
                           }}
                           title="Доступ"
-                          aria-label={`Управление доступом: ${item.label}`}
+                          aria-label={`Управление доступом: ${child.label}`}
                         >
-                          <AdminAccessIcon size={16} />
+                          <AdminAccessIcon size={14} />
                         </button>
-                      )}
+                      ) : null}
                     </div>
-                    {!collapsed && expandedItems.includes(item.href) && (
-                      <div className={styles.submenu}>
-                        {item.children.map((child) =>
-                          child.children ? (
-                            <div key={child.label} className={styles.submenuGroup}>
-                              <div className={styles.submenuGroupRowWrap}>
-                                <button
-                                  type="button"
-                                  className={`${styles.submenuGroupRow} ${
-                                    isChildOrDescendantActive(child) ? styles.active : ''
+                  );
+                })}
+              </div>
+            </>
+          ) : (
+            navItems.map((item) => {
+              const sectionNavHrefs = item.children ? collectAllNavHrefs(item.children) : [];
+              const isItemExpanded = Boolean(item.children && expandedItems.includes(item.href));
+              return (
+                <div key={item.href} className={styles.navItem}>
+                  {item.children ? (
+                    <>
+                      <div
+                        className={`${styles.navLinkRow}${
+                          isAccessFocus(item.resourceId) ? ` ${styles.accessFocus}` : ''
+                        }`}
+                      >
+                        <button
+                          className={`${styles.navLink} ${
+                            isActive(item.href) || isChildActive(item.children) ? styles.active : ''
+                          }`}
+                          onClick={() => {
+                            if (useMobileGrid) {
+                              pushGridNavFrame({
+                                title: item.label,
+                                items: item.children!,
+                                parentIcon: item.icon,
+                              });
+                              return;
+                            }
+                            toggleExpand(item.href);
+                          }}
+                        >
+                          {showNavIcons ? <span className={styles.icon}>{item.icon}</span> : null}
+                          {!collapsed && (
+                            <>
+                              <span className={styles.label}>{item.label}</span>
+                              <span
+                                className={`${styles.arrow} ${
+                                  !useMobileGrid && isItemExpanded ? styles.expanded : ''
+                                }`}
+                              >
+                                {useMobileGrid ? '›' : '▼'}
+                              </span>
+                            </>
+                          )}
+                        </button>
+                        {!collapsed && !useMobileGrid && isSuperAdmin && item.resourceId && (
+                          <button
+                            type="button"
+                            className={`${styles.accessIcon}${
+                              isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''
+                            }`}
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              setAccessModalResourceId(item.resourceId!);
+                            }}
+                            title="Доступ"
+                            aria-label={`Управление доступом: ${item.label}`}
+                          >
+                            <AdminAccessIcon size={16} />
+                          </button>
+                        )}
+                      </div>
+                      {!useMobileGrid && !collapsed && isItemExpanded && (
+                        <div className={styles.submenu}>
+                          {item.children.map((child) =>
+                            child.children ? (
+                              <div key={child.label} className={styles.submenuGroup}>
+                                <div
+                                  className={`${styles.submenuGroupRowWrap}${
+                                    isAccessFocus(child.resourceId) ? ` ${styles.accessFocus}` : ''
                                   }`}
-                                  onClick={() => toggleExpand(child.href)}
-                                  aria-expanded={isNestedExpanded(child)}
-                                  aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
                                 >
-                                  <span className={styles.submenuGroupLink}>{child.label}</span>
-                                  <span
-                                    className={`${styles.arrow} ${
-                                      isNestedExpanded(child) ? styles.expanded : ''
+                                  <button
+                                    type="button"
+                                    className={`${styles.submenuGroupRow} ${
+                                      isChildOrDescendantActive(child) ? styles.active : ''
                                     }`}
+                                    onClick={() => toggleExpand(child.href)}
+                                    aria-expanded={isNestedExpanded(child)}
+                                    aria-label={`${child.label}, ${isNestedExpanded(child) ? 'свернуть' : 'развернуть'}`}
                                   >
-                                    ▼
-                                  </span>
-                                </button>
+                                    <span className={styles.submenuGroupLink}>{child.label}</span>
+                                    <span
+                                      className={`${styles.arrow} ${
+                                        isNestedExpanded(child) ? styles.expanded : ''
+                                      }`}
+                                    >
+                                      ▼
+                                    </span>
+                                  </button>
+                                  {isSuperAdmin && child.resourceId && (
+                                    <button
+                                      type="button"
+                                      className={`${styles.accessIconSubmenu}${
+                                        isAccessFocus(child.resourceId)
+                                          ? ` ${styles.accessIconActive}`
+                                          : ''
+                                      }`}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        setAccessModalResourceId(child.resourceId!);
+                                      }}
+                                      title="Доступ"
+                                      aria-label={`Управление доступом: ${child.label}`}
+                                    >
+                                      <AdminAccessIcon size={14} />
+                                    </button>
+                                  )}
+                                </div>
+                                {isNestedExpanded(child) && (
+                                  <div className={styles.submenuNested}>
+                                    {child.children.map((nested) => (
+                                      <div
+                                        key={nested.href}
+                                        className={`${styles.submenuLinkRow}${
+                                          isAccessFocus(nested.resourceId)
+                                            ? ` ${styles.accessFocus}`
+                                            : ''
+                                        }`}
+                                      >
+                                        <Link
+                                          href={getSafeHref(nested.href, '/')}
+                                          className={`${styles.submenuLink} ${
+                                            isPathActive(nested.href, sectionNavHrefs)
+                                              ? styles.active
+                                              : ''
+                                          }`}
+                                        >
+                                          {nested.label}
+                                        </Link>
+                                        {isSuperAdmin && nested.resourceId && (
+                                          <button
+                                            type="button"
+                                            className={`${styles.accessIconSubmenu}${
+                                              isAccessFocus(nested.resourceId)
+                                                ? ` ${styles.accessIconActive}`
+                                                : ''
+                                            }`}
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              e.stopPropagation();
+                                              setAccessModalResourceId(nested.resourceId!);
+                                            }}
+                                            title="Доступ"
+                                            aria-label={`Управление доступом: ${nested.label}`}
+                                          >
+                                            <AdminAccessIcon size={14} />
+                                          </button>
+                                        )}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ) : (
+                              <div
+                                key={child.label}
+                                className={`${styles.submenuLinkRow}${
+                                  isAccessFocus(child.resourceId) ? ` ${styles.accessFocus}` : ''
+                                }`}
+                              >
+                                <Link
+                                  href={getSafeHref(child.href, '/')}
+                                  className={`${styles.submenuLink} ${
+                                    isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
+                                  }`}
+                                >
+                                  {child.label}
+                                </Link>
                                 {isSuperAdmin && child.resourceId && (
                                   <button
                                     type="button"
-                                    className={styles.accessIconSubmenu}
+                                    className={`${styles.accessIconSubmenu}${
+                                      isAccessFocus(child.resourceId)
+                                        ? ` ${styles.accessIconActive}`
+                                        : ''
+                                    }`}
                                     onClick={(e) => {
                                       e.preventDefault();
                                       e.stopPropagation();
@@ -951,100 +1207,50 @@ export function AdminSidebar({
                                   </button>
                                 )}
                               </div>
-                              {isNestedExpanded(child) && (
-                                <div className={styles.submenuNested}>
-                                  {child.children.map((nested) => (
-                                    <div key={nested.href} className={styles.submenuLinkRow}>
-                                      <Link
-                                        href={getSafeHref(nested.href, '/')}
-                                        className={`${styles.submenuLink} ${
-                                          isPathActive(nested.href, sectionNavHrefs)
-                                            ? styles.active
-                                            : ''
-                                        }`}
-                                      >
-                                        {nested.label}
-                                      </Link>
-                                      {isSuperAdmin && nested.resourceId && (
-                                        <button
-                                          type="button"
-                                          className={styles.accessIconSubmenu}
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            e.stopPropagation();
-                                            setAccessModalResourceId(nested.resourceId!);
-                                          }}
-                                          title="Доступ"
-                                          aria-label={`Управление доступом: ${nested.label}`}
-                                        >
-                                          <AdminAccessIcon size={14} />
-                                        </button>
-                                      )}
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          ) : (
-                            <div key={child.label} className={styles.submenuLinkRow}>
-                              <Link
-                                href={getSafeHref(child.href, '/')}
-                                className={`${styles.submenuLink} ${
-                                  isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
-                                }`}
-                              >
-                                {child.label}
-                              </Link>
-                              {isSuperAdmin && child.resourceId && (
-                                <button
-                                  type="button"
-                                  className={styles.accessIconSubmenu}
-                                  onClick={(e) => {
-                                    e.preventDefault();
-                                    e.stopPropagation();
-                                    setAccessModalResourceId(child.resourceId!);
-                                  }}
-                                  title="Доступ"
-                                  aria-label={`Управление доступом: ${child.label}`}
-                                >
-                                  <AdminAccessIcon size={14} />
-                                </button>
-                              )}
-                            </div>
-                          )
-                        )}
-                      </div>
-                    )}
-                  </>
-                ) : (
-                  <div className={styles.navLinkRow}>
-                    <Link
-                      href={getSafeHref(item.href, '/')}
-                      className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
+                            )
+                          )}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div
+                      className={`${styles.navLinkRow}${
+                        isAccessFocus(item.resourceId) ? ` ${styles.accessFocus}` : ''
+                      }`}
                     >
-                      <span className={styles.icon}>{item.icon}</span>
-                      {!collapsed && <span className={styles.label}>{item.label}</span>}
-                    </Link>
-                    {!collapsed && isSuperAdmin && item.resourceId && (
-                      <button
-                        type="button"
-                        className={styles.accessIcon}
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          setAccessModalResourceId(item.resourceId!);
+                      <Link
+                        href={getSafeHref(item.href, '/')}
+                        className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
+                        onClick={() => {
+                          if (useMobileGrid) onMobileClose?.();
                         }}
-                        title="Доступ"
-                        aria-label={`Управление доступом: ${item.label}`}
                       >
-                        <AdminAccessIcon size={16} />
-                      </button>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                        {showNavIcons ? <span className={styles.icon}>{item.icon}</span> : null}
+                        {!collapsed && <span className={styles.label}>{item.label}</span>}
+                      </Link>
+                      {!collapsed && !useMobileGrid && isSuperAdmin && item.resourceId && (
+                        <button
+                          type="button"
+                          className={`${styles.accessIcon}${
+                            isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''
+                          }`}
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setAccessModalResourceId(item.resourceId!);
+                          }}
+                          title="Доступ"
+                          aria-label={`Управление доступом: ${item.label}`}
+                        >
+                          <AdminAccessIcon size={16} />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
+            })
+          )}
         </nav>
 
         {accessModalResourceId && typeof document !== 'undefined'

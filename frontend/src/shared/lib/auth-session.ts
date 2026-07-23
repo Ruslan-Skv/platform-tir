@@ -119,6 +119,7 @@ export type TokenLoginPayload = {
     role: string;
     firstName?: string | null;
     lastName?: string | null;
+    jobTitle?: string | null;
     avatar?: string | null;
   };
 };

@@ -9,3 +9,4 @@ export {
   useAdminAccessibleResources,
   useAdminResourcePermission,
 } from './contexts/AdminAccessibleResourcesContext';
+export { AdminProfileModal, AdminProfileForm } from './profile';

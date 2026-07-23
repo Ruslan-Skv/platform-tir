@@ -46,6 +46,8 @@ model User {
   createdAt                               DateTime                                 @default(now())
   updatedAt                               DateTime                                 @updatedAt
   avatar                                  String?
+  /// Должность в компании (для отображения в шапке админки; если пусто — показывается роль)
+  jobTitle                                String?
   phone                                   String?
   notificationSettings                    UserNotificationSettings?
   notificationHistory                     UserNotification[]

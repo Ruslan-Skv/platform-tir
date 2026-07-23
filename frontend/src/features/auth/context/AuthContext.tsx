@@ -47,6 +47,8 @@ interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  /** Должность в компании; если нет — в шапке показываем роль */
+  jobTitle?: string | null;
   role: AdminRole | 'USER' | 'GUEST';
   avatar?: string | null;
 }

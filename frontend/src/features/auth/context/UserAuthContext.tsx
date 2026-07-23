@@ -42,6 +42,8 @@ export interface User {
   email: string;
   firstName: string | null;
   lastName: string | null;
+  /** Должность в компании; если нет — в шапке админки показываем роль */
+  jobTitle?: string | null;
   role: UserRole;
   avatar?: string | null;
 }

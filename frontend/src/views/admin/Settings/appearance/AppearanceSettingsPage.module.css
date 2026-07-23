@@ -1,0 +1,61 @@
+.checkboxRow,
+.radioRow {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-3xl);
+  cursor: pointer;
+  color: var(--admin-text-secondary);
+}
+
+.checkboxRow input,
+.radioRow input {
+  margin-top: 4px;
+  accent-color: var(--admin-accent, #0284c7);
+  flex-shrink: 0;
+}
+
+.optionTitle {
+  display: block;
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.optionHint {
+  display: block;
+  margin-top: 4px;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+  font-weight: 400;
+}
+
+.fieldset {
+  margin: 0 0 var(--admin-space-3xl);
+  padding: var(--admin-space-3xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  background: var(--admin-surface);
+}
+
+.legend {
+  padding: 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-md);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.fieldsetHint {
+  margin: 0 0 var(--admin-space-2xl);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.liveHint {
+  margin: 0;
+  min-height: 1.5em;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}

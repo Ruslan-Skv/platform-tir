@@ -220,6 +220,26 @@
   background: var(--admin-sidebar-hover-bg);
 }
 
+.accessIconActive,
+.accessIcon.accessIconActive,
+.accessIconSubmenu.accessIconActive {
+  color: #b45309;
+  background: rgb(251 191 36 / 0.45);
+}
+
+.accessFocus {
+  background: rgb(254 243 199 / 0.95);
+  box-shadow: inset 3px 0 0 #d97706;
+  border-radius: var(--admin-radius-sm);
+}
+
+.accessFocus > .navLink,
+.accessFocus > .submenuLink,
+.accessFocus > .submenuGroupRow,
+.accessFocus > .gridDrillItem {
+  color: var(--admin-sidebar-text-strong);
+}
+
 .submenuGroupRowWrap,
 .submenuLinkRow {
   display: flex;
@@ -293,6 +313,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.sidebar.hideIcons:not(.collapsed) .navLink {
+  gap: var(--admin-space-sm);
 }
 
 .label {
@@ -624,6 +648,215 @@
   :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuNested {
     background: rgb(0 0 0 / 0.16);
   }
+
+  /* Мобильная сетка 3× — квадратные плитки верхнего уровня */
+  .mobileGrid .navMobileGrid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: var(--admin-space-sm);
+    align-content: start;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem > .navLinkRow {
+    flex: 1;
+    min-height: 0;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem .navLink {
+    position: relative;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    gap: var(--admin-space-xs);
+    text-align: center;
+    aspect-ratio: 1;
+    min-height: 0;
+    height: 100%;
+    padding: var(--admin-space-sm);
+    width: 100%;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem .icon {
+    font-size: 1.5rem;
+    min-width: 0;
+    line-height: 1;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem .label {
+    flex: 0 1 auto;
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    font-size: 0.7rem;
+    line-height: 1.25;
+    font-weight: 600;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem .arrow {
+    position: absolute;
+    top: 6px;
+    right: 8px;
+    font-size: 0.85rem;
+    opacity: 0.55;
+    transform: none;
+  }
+
+  .mobileGrid .navMobileGrid > .navItem .accessIcon {
+    display: none;
+  }
+
+  .mobileGrid.hideIcons .navMobileGrid > .navItem .label {
+    -webkit-line-clamp: 4;
+    font-size: 0.75rem;
+  }
+
+  /* Drill-down: экран раздела поверх сетки */
+  .mobileGrid .navMobileDrill {
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+    padding-top: 0;
+  }
+
+  .gridDrillHeader {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-space-sm);
+    margin: 0 0 var(--admin-space-md);
+    padding-bottom: var(--admin-space-md);
+    border-bottom: 1px solid var(--admin-sidebar-divider);
+  }
+
+  .gridDrillBack {
+    align-self: flex-start;
+    border: none;
+    background: transparent;
+    padding: var(--admin-space-xs) 0;
+    color: var(--admin-sidebar-active-border, #0284c7);
+    font-size: var(--admin-font-size-sm);
+    font-weight: 600;
+    cursor: pointer;
+    font-family: inherit;
+  }
+
+  .gridDrillBack:hover {
+    text-decoration: underline;
+  }
+
+  .gridDrillTitle {
+    display: flex;
+    align-items: center;
+    gap: var(--admin-space-sm);
+    min-width: 0;
+  }
+
+  .gridDrillTitleIcon {
+    font-size: 1.25rem;
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .gridDrillTitleText {
+    font-size: var(--admin-font-size-lg);
+    font-weight: 700;
+    color: var(--admin-sidebar-text-strong);
+    line-height: 1.3;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gridDrillList {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-space-xs);
+  }
+
+  .gridDrillRow {
+    display: flex;
+    align-items: stretch;
+    border: 1px solid var(--admin-sidebar-divider);
+    border-radius: var(--admin-radius-md);
+    background: var(--admin-surface, #fff);
+    overflow: hidden;
+  }
+
+  .gridDrillItem {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--admin-space-sm);
+    min-height: 44px;
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    border: none;
+    background: transparent;
+    color: var(--admin-sidebar-text-strong);
+    text-decoration: none;
+    font-size: var(--admin-font-size-sm);
+    font-weight: 500;
+    font-family: inherit;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .gridDrillItem:hover {
+    background: var(--admin-sidebar-hover-bg);
+  }
+
+  .gridDrillItem.active {
+    color: #0c4a6e;
+    background: var(--admin-sidebar-active-bg);
+  }
+
+  .gridDrillItemLabel {
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .gridDrillChevron {
+    flex-shrink: 0;
+    font-size: 1.25rem;
+    line-height: 1;
+    opacity: 0.45;
+  }
+
+  .gridDrillRow .accessIconSubmenu {
+    align-self: center;
+    margin-right: var(--admin-space-xs);
+  }
+
+  .gridDrillRow.accessFocus {
+    background: rgb(254 243 199 / 0.95);
+    border-color: #d97706;
+    box-shadow: inset 3px 0 0 #d97706;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .gridDrillRow {
+    background: var(--admin-surface);
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .gridDrillRow.accessFocus {
+    background: rgb(180 83 9 / 0.28);
+    border-color: #fbbf24;
+    box-shadow: inset 3px 0 0 #fbbf24;
+  }
+
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .gridDrillItem.active {
+    color: #e0f2fe;
+  }
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .sidebar {
@@ -636,4 +869,16 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuLink.active,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .submenuGroupRow.active {
   color: #e0f2fe;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .accessFocus {
+  background: rgb(180 83 9 / 0.28);
+  box-shadow: inset 3px 0 0 #fbbf24;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .accessIconActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .accessIcon.accessIconActive,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .accessIconSubmenu.accessIconActive {
+  color: #fbbf24;
+  background: rgb(251 191 36 / 0.28);
 }

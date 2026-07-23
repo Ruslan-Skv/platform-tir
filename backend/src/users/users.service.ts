@@ -51,6 +51,7 @@ export class UsersService {
         email: true,
         firstName: true,
         lastName: true,
+        jobTitle: true,
         role: true,
         isActive: true,
         isGuest: true,
@@ -133,11 +134,20 @@ export class UsersService {
     });
   }
 
-  async update(id: string, updateUserDto: UpdateUserDto) {
+  async update(id: string, updateUserDto: UpdateUserDto & { jobTitle?: string | null }) {
     await this.findOne(id);
-    const data = { ...updateUserDto };
-    if (data.password) {
+    const data: Record<string, unknown> = { ...updateUserDto };
+    if (data.password && typeof data.password === 'string') {
       data.password = await hashPassword(data.password);
+    }
+    if (Object.prototype.hasOwnProperty.call(data, 'jobTitle')) {
+      const raw = data.jobTitle;
+      data.jobTitle =
+        raw === null || raw === undefined
+          ? null
+          : typeof raw === 'string'
+            ? raw.trim() || null
+            : null;
     }
     const updated = await this.prisma.user.update({
       where: { id },
@@ -147,6 +157,7 @@ export class UsersService {
         email: true,
         firstName: true,
         lastName: true,
+        jobTitle: true,
         role: true,
         isActive: true,
         avatar: true,

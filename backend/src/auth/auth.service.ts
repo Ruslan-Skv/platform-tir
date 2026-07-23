@@ -26,6 +26,7 @@ type UserPayload = {
   role: string;
   firstName?: string | null;
   lastName?: string | null;
+  jobTitle?: string | null;
   avatar?: string | null;
 };
 
@@ -37,6 +38,7 @@ export type AuthTokensResponse = {
     email: string;
     firstName: string | null;
     lastName: string | null;
+    jobTitle: string | null;
     role: string;
     avatar: string | null;
   };
@@ -94,6 +96,7 @@ export class AuthService {
       email: user.email,
       firstName: user.firstName ?? null,
       lastName: user.lastName ?? null,
+      jobTitle: user.jobTitle ?? null,
       role: user.role,
       avatar: user.avatar ?? null,
     };
@@ -139,6 +142,7 @@ export class AuthService {
       role: u.role,
       firstName: u.firstName,
       lastName: u.lastName,
+      jobTitle: u.jobTitle ?? null,
       avatar: u.avatar ?? null,
     };
     return {

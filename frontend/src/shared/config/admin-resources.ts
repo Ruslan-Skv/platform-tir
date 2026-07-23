@@ -185,6 +185,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.analytics.marketing', label: 'Маркетинг', path: '/admin/analytics/marketing' },
   { id: 'admin.settings', label: 'Настройки', path: '/admin/settings' },
   {
+    id: 'admin.settings.appearance',
+    label: 'Внешний вид админки',
+    path: '/admin/settings/appearance',
+  },
+  {
     id: 'admin.settings.product-templates',
     label: 'Шаблоны товаров',
     path: '/admin/settings/product-templates',
