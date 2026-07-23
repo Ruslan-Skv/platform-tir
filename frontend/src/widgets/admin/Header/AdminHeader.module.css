@@ -4,8 +4,8 @@
   justify-content: space-between;
   gap: var(--admin-space-md);
   padding: var(--admin-space-md) var(--admin-space-xl);
-  background: var(--admin-surface);
-  border-bottom: 1px solid var(--admin-border);
+  background: var(--admin-bg-page, #ffffff);
+  border-bottom: 1px solid #93c5fd;
   position: sticky;
   top: 0;
   z-index: 50;
@@ -759,7 +759,6 @@
     padding: var(--admin-space-sm) var(--admin-space-md);
     gap: var(--admin-space-sm);
     z-index: 120;
-    border-bottom: none;
   }
 
   .headerStart {
@@ -977,4 +976,8 @@
   .dropdownHeaderActions {
     flex-wrap: wrap;
   }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .header {
+  border-bottom-color: #60a5fa;
 }

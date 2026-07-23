@@ -81,6 +81,24 @@ html {
   scrollbar-gutter: stable;
 }
 
+/* Админка: скролл окна как у публички, без кастомных scrollbar-*.
+   scrollbar-gutter: auto — без пустой «рельсы», когда ползунок ещё не нарисован. */
+html:has([data-admin-shell]) {
+  background-color: #ffffff;
+  scrollbar-gutter: auto;
+}
+
+html:has([data-admin-shell]) body {
+  background-color: #ffffff;
+}
+
+html[data-theme='dark']:has([data-admin-shell]),
+html[data-app-theme='dark']:has([data-admin-shell]),
+html[data-theme='dark']:has([data-admin-shell]) body,
+html[data-app-theme='dark']:has([data-admin-shell]) body {
+  background-color: #1f2937;
+}
+
 @media (width <= 768px) {
   html {
     /* На узких экранах stable + 100%-контент иногда даёт горизонтальный скролл */

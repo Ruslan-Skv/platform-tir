@@ -260,19 +260,36 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         'Notification' in window &&
         Notification.permission === 'granted'
       ) {
-        const latestItem = [
-          ...newReviews.map(reviewToBellNotificationItem),
-          ...activeSupport.map(supportToBellNotificationItem),
-          ...leadsToBellNotificationItems(newLeads),
-          ...newTraining.map(trainingToBellNotificationItem),
-          ...newWorkDays.map(workDayToBellNotificationItem),
-        ]
-          .filter((item) => isBellTypeEnabled(item.type, settings))
-          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        // Если активна Web Push-подписка, десктопное уведомление уже приходит из SW —
+        // не дублируем через new Notification из опроса колокольчика.
+        let pushActive = false;
+        if ('serviceWorker' in navigator && 'PushManager' in window) {
+          try {
+            const registration = await navigator.serviceWorker.getRegistration('/');
+            const subscription = registration
+              ? await registration.pushManager.getSubscription()
+              : null;
+            pushActive = Boolean(subscription);
+          } catch {
+            pushActive = false;
+          }
+        }
 
-        if (latestItem) {
-          const { title, body, tag } = buildDesktopNotification(latestItem);
-          new Notification(title, { body, tag });
+        if (!pushActive) {
+          const latestItem = [
+            ...newReviews.map(reviewToBellNotificationItem),
+            ...activeSupport.map(supportToBellNotificationItem),
+            ...leadsToBellNotificationItems(newLeads),
+            ...newTraining.map(trainingToBellNotificationItem),
+            ...newWorkDays.map(workDayToBellNotificationItem),
+          ]
+            .filter((item) => isBellTypeEnabled(item.type, settings))
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+
+          if (latestItem) {
+            const { title, body, tag } = buildDesktopNotification(latestItem);
+            new Notification(title, { body, tag });
+          }
         }
       }
 

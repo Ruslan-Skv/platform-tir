@@ -53,6 +53,7 @@ export function KnowledgeMaterialQuiz({
   const [expanded, setExpanded] = useState(false);
   const answersRef = useRef(answers);
   answersRef.current = answers;
+  const submittingRef = useRef(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,13 +91,14 @@ export function KnowledgeMaterialQuiz({
 
   const submitQuiz = useCallback(
     async (timedOut: boolean) => {
-      if (!quiz) return;
+      if (!quiz || submittingRef.current) return;
 
       if (!timedOut && !quiz.questions.every((q) => answersRef.current[q.id])) {
         setError('Ответьте на все вопросы');
         return;
       }
 
+      submittingRef.current = true;
       setSubmitting(true);
       setError(timedOut ? 'Время вышло. Ответы отправлены автоматически.' : null);
       try {
@@ -111,6 +113,7 @@ export function KnowledgeMaterialQuiz({
       } catch (e) {
         setError(e instanceof Error ? e.message : 'Ошибка отправки');
       } finally {
+        submittingRef.current = false;
         setSubmitting(false);
       }
     },

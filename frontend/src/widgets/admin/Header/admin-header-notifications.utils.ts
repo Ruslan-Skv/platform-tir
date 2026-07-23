@@ -328,12 +328,17 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
         body: item.text.replace(/^(Ошибка на сайте|Предложение по сайту) от /, ''),
         tag,
       };
-    case 'knowledgeTraining':
+    case 'knowledgeTraining': {
+      // Совпадает с tag Web Push (knowledge-training-notify.service), чтобы OS схлопывала дубли.
+      const [kind, materialId, userId] = item.id.split(':');
+      const pushAlignedTag =
+        kind && materialId && userId ? `knowledge-training-${kind}-${materialId}-${userId}` : tag;
       return {
         title: 'Динамика обучения',
         body: item.text,
-        tag,
+        tag: pushAlignedTag,
       };
+    }
     case 'workDays':
       return {
         title: 'Учёт рабочего времени',

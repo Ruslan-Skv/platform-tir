@@ -146,12 +146,23 @@
   padding: 0.25rem 0.75rem;
 }
 
-.loginModalPanel {
+.loginPanel {
   width: 100%;
   max-width: 400px;
+  background: var(--admin-surface);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-2xl);
+  box-shadow: 0 10px 40px rgb(0 0 0 / 12%);
+  padding: var(--admin-space-4xl) var(--admin-space-3xl) var(--admin-space-3xl);
+  color: var(--admin-text-secondary);
 }
 
-.loginModalTitle {
+.loginPanelTitle {
+  margin: 0 0 var(--admin-space-3xl);
+  font-size: var(--admin-font-size-xl);
+  font-weight: 600;
+  line-height: var(--admin-line-height-md);
+  color: var(--admin-text-primary);
   text-align: center;
 }
 
@@ -344,6 +355,10 @@
 }
 
 /* Тёмная тема — карточка и форма */
+:where(html[data-theme='dark']) .loginPanel {
+  box-shadow: 0 10px 40px rgb(0 0 0 / 35%);
+}
+
 :where(html[data-theme='dark']) .loginCard {
   background: transparent;
 }

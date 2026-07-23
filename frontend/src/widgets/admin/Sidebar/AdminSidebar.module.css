@@ -8,14 +8,14 @@
   top: 0;
   height: 100vh;
   width: 220px;
-  background-color: var(--admin-bg-page, #f5f7fa);
+  background-color: var(--admin-surface, #ffffff);
   color: var(--admin-sidebar-text-strong);
   display: flex;
   flex-direction: column;
   transition: width 0.3s ease;
   z-index: 100;
   overflow: hidden;
-  border-right: 1px solid var(--admin-sidebar-divider);
+  border-right: 1px solid #93c5fd;
 }
 
 .sidebar.collapsed {
@@ -61,7 +61,7 @@
   justify-content: center;
   padding: var(--admin-space-md) calc(var(--admin-space-md) + 28px) var(--admin-space-md)
     var(--admin-space-md);
-  border-bottom: 1px solid var(--admin-sidebar-divider);
+  border-bottom: none;
 }
 
 .sidebar.collapsed .header {
@@ -850,6 +850,7 @@
   --admin-sidebar-hover-bg: rgb(148 163 184 / 0.14);
   --admin-sidebar-active-bg: rgb(14 165 233 / 0.16);
   --admin-sidebar-active-border: #38bdf8;
+  border-right-color: #60a5fa;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .navLink.active,

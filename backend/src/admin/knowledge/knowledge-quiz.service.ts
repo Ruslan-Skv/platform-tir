@@ -339,7 +339,6 @@ export class KnowledgeQuizService {
     }
 
     const previousAttempts = await this.getUserAttemptsForMaterial(materialId, userId);
-    const hadPassedBefore = previousAttempts.some((attempt) => attempt.passed);
     const [maxAttemptsPerDay, cooldownMinutes] = await Promise.all([
       this.platformSettings.getMaterialQuizMaxAttemptsPerDay(),
       this.platformSettings.getMaterialQuizRetryCooldownMinutes(),
@@ -393,16 +392,26 @@ export class KnowledgeQuizService {
       },
     });
 
-    if (passed && !hadPassedBefore && !editorView) {
-      this.knowledgeTrainingNotify.notifyProgress('quiz_passed', userId, materialId, {
-        scorePercent,
+    // Только первая успешная попытка → одно уведомление.
+    // Сравниваем id с самой ранней успешной записью — устойчивее к гонке, чем count===1.
+    let isFirstPass = false;
+    if (passed && !editorView) {
+      const firstPass = await this.prisma.knowledgeQuizAttempt.findFirst({
+        where: { materialId, userId, passed: true },
+        orderBy: { createdAt: 'asc' },
+        select: { id: true },
       });
+      isFirstPass = firstPass?.id === attempt.id;
+      if (isFirstPass) {
+        this.knowledgeTrainingNotify.notifyProgress('quiz_passed', userId, materialId, {
+          scorePercent,
+        });
+      }
     }
 
-    const celebration =
-      passed && !hadPassedBefore
-        ? await this.knowledgeTrainingCelebration.buildForMaterialCompletion(userId, materialId)
-        : null;
+    const celebration = isFirstPass
+      ? await this.knowledgeTrainingCelebration.buildForMaterialCompletion(userId, materialId)
+      : null;
 
     return {
       attemptId: attempt.id,

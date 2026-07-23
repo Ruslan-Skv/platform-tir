@@ -11,7 +11,6 @@ import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { resolveAdminHomePathForRole } from '@/shared/config/admin-resources';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
-import { Modal } from '@/shared/ui/Modal';
 
 import styles from './AdminLoginPage.module.css';
 
@@ -79,15 +78,11 @@ export function AdminLoginPageView() {
           <MoonIcon className={styles.themeIcon} />
         )}
       </button>
-      <Modal
-        isOpen={true}
-        onClose={() => {}}
-        title="Вход в цифровую платформу"
-        size="sm"
-        showCloseButton={false}
-        className={styles.loginModalPanel}
-        titleClassName={styles.loginModalTitle}
-      >
+      {/* Без Headless Dialog: иначе scroll-lock на html ломает ползунок на Windows. */}
+      <div className={styles.loginPanel} role="dialog" aria-labelledby="admin-login-title">
+        <h1 id="admin-login-title" className={styles.loginPanelTitle}>
+          Вход в цифровую платформу
+        </h1>
         <div className={styles.loginCard}>
           <div className={styles.logo}>
             <AdminPlatformBrand size="login" />
@@ -164,7 +159,7 @@ export function AdminLoginPageView() {
             </Link>
           </div>
         </div>
-      </Modal>
+      </div>
     </div>
   );
 }

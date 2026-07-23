@@ -1,11 +1,11 @@
 .adminLayout {
   display: flex;
-  min-height: 100vh;
+  min-height: 100dvh;
   min-width: 0;
   max-width: 100%;
-  background-color: var(--admin-bg-page, #f5f7fa);
+  background-color: var(--admin-bg-page, #ffffff);
   color: var(--admin-text-primary, #1f2937);
-  --admin-bg-page: #f5f7fa;
+  --admin-bg-page: #ffffff;
   --admin-surface: #ffffff;
   --admin-surface-muted: #f9fafb;
   --admin-surface-soft: #f3f4f6;
@@ -745,9 +745,9 @@
   transition: margin-left 0.3s ease;
   display: flex;
   flex-direction: column;
-  min-height: 100vh;
   min-width: 0;
   max-width: 100%;
+  background-color: var(--admin-bg-page, #ffffff);
 }
 
 .mainArea.expanded {
@@ -761,11 +761,10 @@
 .content {
   flex: 1;
   padding: var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xl) var(--admin-space-xs);
-  overflow-x: hidden;
   min-width: 0;
   max-width: 100%;
   box-sizing: border-box;
-  background-color: var(--admin-bg-page, #f5f7fa);
+  background-color: var(--admin-bg-page, #ffffff);
 }
 
 .contentLoading {
@@ -780,7 +779,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background-color: var(--admin-bg-page, #f5f7fa);
+  background-color: var(--admin-bg-page, #ffffff);
 }
 
 .loading {
@@ -826,19 +825,6 @@
   .loadingContainer {
     background-color: var(--admin-surface, #ffffff);
   }
-
-  /* PWA / overscroll: фон вокруг контента как у шапки */
-  :global(html:has([data-admin-shell])),
-  :global(html:has([data-admin-shell]) body) {
-    background-color: #ffffff;
-  }
-
-  :global(html[data-theme='dark']:has([data-admin-shell])),
-  :global(html[data-app-theme='dark']:has([data-admin-shell])),
-  :global(html[data-theme='dark']:has([data-admin-shell]) body),
-  :global(html[data-app-theme='dark']:has([data-admin-shell]) body) {
-    background-color: #1f2937;
-  }
 }
 
 @media print {
@@ -865,9 +851,9 @@
 
 /* Тёмная тема админки */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .adminLayout {
-  background-color: var(--admin-bg-page, #111827);
+  background-color: var(--admin-bg-page, #1f2937);
   color: var(--admin-text-primary, #f3f4f6);
-  --admin-bg-page: #111827;
+  --admin-bg-page: #1f2937;
   --admin-surface: #1f2937;
   --admin-surface-muted: #111827;
   --admin-surface-soft: #374151;
@@ -1138,17 +1124,32 @@
   --admin-overlay-color-180: rgb(17 24 39 / 0.95);
 }
 
+/* Фон shell = страница (скроллбар полностью системный, как на публичке). */
+:global(html:has([data-admin-shell])) {
+  background-color: #ffffff;
+}
+
+:global(html:has([data-admin-shell]) body) {
+  background-color: #ffffff;
+}
+
+:global(html[data-theme='dark']:has([data-admin-shell])),
+:global(html[data-app-theme='dark']:has([data-admin-shell])),
+:global(html[data-theme='dark']:has([data-admin-shell]) body),
+:global(html[data-app-theme='dark']:has([data-admin-shell]) body) {
+  background-color: #1f2937;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loadingContainer {
-  background-color: var(--admin-bg-page, #111827);
+  background-color: var(--admin-bg-page, #1f2937);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
   color: var(--admin-text-muted, #9ca3af);
 }
 
-/* Общие стили контента админки в тёмной теме (заголовки, ссылки, текст) */
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content {
-  background-color: var(--admin-bg-page, #111827);
+  background-color: var(--admin-bg-page, #1f2937);
   color: var(--admin-text-secondary, #e5e7eb);
 }
 

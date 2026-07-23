@@ -65,17 +65,41 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
 
+  const isLoginPage = pathname === '/admin/login';
+
   useEffect(() => {
     setMobileSidebarOpen(false);
   }, [pathname]);
+
+  // Сброс leftover scroll-lock Headless UI (Modal) и любых inline overflow на html/body.
+  useEffect(() => {
+    if (isLoginPage) return;
+
+    const unlock = () => {
+      const openDialog = document.querySelector(
+        '[role="dialog"][data-open], [role="dialog"][data-headlessui-state*="open"]'
+      );
+      if (openDialog) return;
+      const root = document.documentElement;
+      const body = document.body;
+      if (root.style.overflow === 'hidden') root.style.removeProperty('overflow');
+      if (root.style.paddingRight) root.style.removeProperty('padding-right');
+      if (body.style.overflow === 'hidden') body.style.removeProperty('overflow');
+      if (body.style.paddingRight) body.style.removeProperty('padding-right');
+    };
+
+    unlock();
+    const obs = new MutationObserver(unlock);
+    obs.observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
+    obs.observe(document.body, { attributes: true, attributeFilter: ['style'] });
+    return () => obs.disconnect();
+  }, [isLoginPage, pathname]);
 
   useEffect(() => {
     if (!isMobileLayout) {
       setMobileSidebarOpen(false);
     }
   }, [isMobileLayout]);
-
-  const isLoginPage = pathname === '/admin/login';
 
   useEffect(() => {
     // Skip redirect for login page
