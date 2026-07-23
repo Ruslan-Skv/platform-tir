@@ -4,6 +4,8 @@
   justify-content: space-between;
   gap: var(--admin-space-md);
   padding: var(--admin-space-md) var(--admin-space-xl);
+  /* Запас справа: иначе профиль обрезается системным скроллбаром окна */
+  padding-right: var(--admin-space-5xl);
   background: var(--admin-bg-page, #ffffff);
   border-bottom: 1px solid #93c5fd;
   position: sticky;
@@ -308,8 +310,8 @@
   align-items: center;
   justify-content: center;
   background: var(--admin-surface-soft);
-  border: none;
-  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   font-size: var(--admin-font-size-lg);
   transition: all 0.2s;
@@ -317,6 +319,7 @@
 
 .iconButton:hover {
   background: var(--admin-border);
+  border-color: var(--admin-border-strong);
 }
 
 .iconButton:focus {
@@ -396,14 +399,15 @@
   gap: var(--admin-space-md);
   padding: var(--admin-space-sm) var(--admin-space-lg);
   background: var(--admin-surface-soft);
-  border: none;
-  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .userButton:hover {
   background: var(--admin-border);
+  border-color: var(--admin-border-strong);
 }
 
 .avatar {
@@ -759,6 +763,7 @@
     padding: var(--admin-space-sm) var(--admin-space-md);
     gap: var(--admin-space-sm);
     z-index: 120;
+    border-bottom: none;
   }
 
   .headerStart {
