@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 
-import { canEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
+import { canEditCatalogOnPublicSite } from '@/shared/lib/admin';
 
 export function useCanEditCatalogOnPublic(): boolean {
   const [allowed, setAllowed] = useState(false);

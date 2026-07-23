@@ -2,6 +2,7 @@
 
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 
+import { setPublicSiteEditMode } from '@/shared/lib/admin';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type TokenLoginPayload,
@@ -16,7 +17,6 @@ import {
   revokeRefreshOnServer,
 } from '@/shared/lib/auth-session';
 import { formatAuthHttpError } from '@/shared/lib/nest-error-message';
-import { setPublicSiteEditMode } from '@/shared/lib/public-site-edit-mode';
 
 export type UserRole =
   | 'SUPER_ADMIN'

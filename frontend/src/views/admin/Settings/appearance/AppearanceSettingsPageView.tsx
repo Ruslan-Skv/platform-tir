@@ -2,10 +2,7 @@
 
 import { useState } from 'react';
 
-import {
-  type AdminSidebarMobileLayout,
-  useAdminSidebarUiPrefs,
-} from '@/shared/lib/admin-sidebar-ui-prefs';
+import { type AdminSidebarMobileLayout, useAdminSidebarUiPrefs } from '@/shared/lib/admin';
 import pageStyles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 

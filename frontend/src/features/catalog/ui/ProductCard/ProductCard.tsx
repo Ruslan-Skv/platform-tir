@@ -10,6 +10,7 @@ import Link from 'next/link';
 import type { Product } from '@/entities/product';
 import { patchProductPricing } from '@/shared/api/admin-product-patch';
 import { isCompareLimitExceededError } from '@/shared/api/compare';
+import { touchPublicSiteEditModeActivity } from '@/shared/lib/admin';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import { saveCatalogScrollPosition } from '@/shared/lib/catalog/catalog-scroll-restore';
 import { formatCatalogPriceWithRuble } from '@/shared/lib/catalog/format-catalog-price';
@@ -22,7 +23,6 @@ import {
   getProductAvailability,
 } from '@/shared/lib/product-availability';
 import { isPublicPriceDraftDirty } from '@/shared/lib/public-price-draft';
-import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import type { CatalogApiProduct } from '@/shared/types/catalog';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';

@@ -12,7 +12,7 @@ import {
   useAdminAccessibleResources,
 } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
-import { useAdminSidebarUiPrefs } from '@/shared/lib/admin-sidebar-ui-prefs';
+import { useAdminSidebarUiPrefs } from '@/shared/lib/admin';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { AdminAccessIcon } from '@/shared/ui/icons/AdminAccessIcon';

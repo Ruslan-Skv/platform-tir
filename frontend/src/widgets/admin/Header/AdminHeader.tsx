@@ -38,16 +38,16 @@ import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
 import { getRoleLabel } from '@/shared/config/admin-roles';
-import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
-import { getAvatarUrl } from '@/shared/lib/avatar';
-import { canRoleEditCatalogOnPublicSite } from '@/shared/lib/catalog-public-edit';
-import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
-import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import {
   PUBLIC_SITE_EDIT_MODE_EVENT,
+  canRoleEditCatalogOnPublicSite,
   getPublicSiteEditMode,
   setPublicSiteEditMode,
-} from '@/shared/lib/public-site-edit-mode';
+} from '@/shared/lib/admin';
+import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
+import { getAvatarUrl } from '@/shared/lib/avatar';
+import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
+import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { NotificationBellIcon } from '@/shared/ui/icons/NotificationBellIcon';
 import { ProfileMenuIcon } from '@/shared/ui/icons/ProfileMenuIcon';

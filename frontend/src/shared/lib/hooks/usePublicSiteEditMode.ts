@@ -7,7 +7,7 @@ import {
   checkPublicSiteEditModeIdleAndMaybeDisable,
   getPublicSiteEditMode,
   setPublicSiteEditMode,
-} from '@/shared/lib/public-site-edit-mode';
+} from '@/shared/lib/admin';
 
 const IDLE_CHECK_INTERVAL_MS = 60_000;
 

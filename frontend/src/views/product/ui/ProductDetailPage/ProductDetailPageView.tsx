@@ -7,12 +7,12 @@ import React, { useRef } from 'react';
 import Link from 'next/link';
 
 import type { PublicComponentDraftRow } from '@/shared/api/product-components';
+import { touchPublicSiteEditModeActivity } from '@/shared/lib/admin';
 import { isAuthRequiredForCartError } from '@/shared/lib/cart-auth-required';
 import {
   PRODUCT_AVAILABILITY_LABEL,
   getProductAvailability,
 } from '@/shared/lib/product-availability';
-import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { getSafeHref, renderProductDescriptionHtml } from '@/shared/lib/sanitize';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';

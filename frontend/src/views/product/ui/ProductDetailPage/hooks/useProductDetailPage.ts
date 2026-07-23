@@ -17,6 +17,7 @@ import {
   getProductComponents,
   patchProductComponent,
 } from '@/shared/api/product-components';
+import { touchPublicSiteEditModeActivity } from '@/shared/lib/admin';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { calculateKitPrice, getKitComponents } from '@/shared/lib/catalog/component-kit';
 import { emitCompareLimitExceeded } from '@/shared/lib/compare-limit-notify';
@@ -24,7 +25,6 @@ import { useCart, useCompare, useWishlist } from '@/shared/lib/hooks';
 import { useCanEditCatalogOnPublic } from '@/shared/lib/hooks/useCanEditCatalogOnPublic';
 import { usePublicSiteEditMode } from '@/shared/lib/hooks/usePublicSiteEditMode';
 import { isPublicPriceDraftDirty } from '@/shared/lib/public-price-draft';
-import { touchPublicSiteEditModeActivity } from '@/shared/lib/public-site-edit-mode';
 
 import {
   type AttributeItem,
