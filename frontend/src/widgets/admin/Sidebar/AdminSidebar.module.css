@@ -456,7 +456,10 @@
 @media (max-width: 1024px) {
   .mobileBackdrop {
     position: fixed;
-    inset: 0;
+    top: var(--admin-header-height, 2.875rem);
+    right: 0;
+    bottom: 0;
+    left: 0;
     z-index: 105;
     border: none;
     padding: 0;
@@ -465,6 +468,8 @@
   }
 
   .sidebar {
+    top: var(--admin-header-height, 2.875rem);
+    height: calc(100dvh - var(--admin-header-height, 2.875rem));
     width: 100vw !important;
     max-width: 100vw;
     transform: translateX(-100%);
@@ -484,28 +489,9 @@
     transform: translateX(0);
   }
 
+  /* Общая шапка — AdminHeader; в выезжающей панели только пункты меню */
   .header {
-    padding: var(--admin-space-md) calc(var(--admin-space-md) + 32px) var(--admin-space-md)
-      var(--admin-space-md);
-    background: var(--admin-surface, #fff);
-    border-bottom: 1px solid var(--admin-sidebar-divider);
-  }
-
-  .toggleBtn {
-    top: var(--admin-space-md);
-    right: var(--admin-space-md);
-    width: 28px;
-    height: 28px;
-    border-radius: var(--admin-radius-sm);
-    border: 1px solid var(--admin-sidebar-divider);
-    background: var(--admin-surface-muted, #f9fafb);
-    font-size: var(--admin-font-size-xs);
-    transform: none;
-  }
-
-  .sidebar:not(.collapsed) .toggleBtn {
-    top: var(--admin-space-md);
-    transform: none;
+    display: none;
   }
 
   .nav {
@@ -625,7 +611,6 @@
     background: rgb(0 0 0 / 0.58);
   }
 
-  :where(html[data-theme='dark'], [data-app-theme='dark']) .header,
   :where(html[data-theme='dark'], [data-app-theme='dark']) .navItem {
     background: var(--admin-surface);
   }

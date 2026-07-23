@@ -8,6 +8,7 @@ import {
   MoonIcon,
   PencilSquareIcon,
   SunIcon,
+  XMarkIcon,
 } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -49,6 +50,7 @@ import { getAvatarUrl } from '@/shared/lib/avatar';
 import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
+import { Logo } from '@/shared/ui/Logo';
 import { NotificationBellIcon } from '@/shared/ui/icons/NotificationBellIcon';
 import { ProfileMenuIcon } from '@/shared/ui/icons/ProfileMenuIcon';
 import { ProfileUserSquareIcon } from '@/shared/ui/icons/ProfileUserSquareIcon';
@@ -107,9 +109,10 @@ const NOTIFICATIONS_SETTINGS_HREF = '/admin/settings/notifications';
 
 type AdminHeaderProps = {
   onMobileMenuOpen?: () => void;
+  mobileMenuOpen?: boolean;
 };
 
-export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
+export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminHeaderProps = {}) {
   const { user, logout, isLoading: authLoading } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useAdminAccessibleResources();
   const canLoadAdminNotifications = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
@@ -118,6 +121,7 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
+  const headerRef = useRef<HTMLElement>(null);
   const [reviewNotifications, setReviewNotifications] = useState<AdminReview[]>([]);
   const [supportNotifications, setSupportNotifications] = useState<AdminSupportConversation[]>([]);
   const [leadNotifications, setLeadNotifications] = useState<UnifiedLeadItem[]>([]);
@@ -145,6 +149,26 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
 
   const notificationRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = headerRef.current;
+    if (!el || typeof ResizeObserver === 'undefined') return;
+
+    const syncHeaderHeight = () => {
+      document.documentElement.style.setProperty(
+        '--admin-header-height',
+        `${el.getBoundingClientRect().height}px`
+      );
+    };
+
+    syncHeaderHeight();
+    const observer = new ResizeObserver(syncHeaderHeight);
+    observer.observe(el);
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--admin-header-height');
+    };
+  }, []);
 
   const loadNotificationSettings = useCallback(async () => {
     try {
@@ -428,19 +452,14 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
   };
 
   return (
-    <header className={styles.header}>
+    <header className={styles.header} ref={headerRef}>
       <div className={styles.headerStart}>
-        {onMobileMenuOpen ? (
-          <button
-            type="button"
-            className={styles.mobileMenuButton}
-            onClick={onMobileMenuOpen}
-            title="Открыть меню"
-            aria-label="Открыть меню навигации"
-          >
-            <Bars3Icon className={styles.mobileMenuIcon} aria-hidden />
-          </button>
-        ) : null}
+        <Logo
+          href="/"
+          ariaLabel="На главную — Территория интерьерных решений"
+          className={styles.headerLogoSvg}
+          linkClassName={styles.headerLogo}
+        />
         <div className={styles.historyNav} role="group" aria-label="Навигация по истории">
           <button
             type="button"
@@ -672,6 +691,23 @@ export function AdminHeader({ onMobileMenuOpen }: AdminHeaderProps = {}) {
             </div>
           )}
         </div>
+
+        {onMobileMenuOpen ? (
+          <button
+            type="button"
+            className={styles.mobileMenuButton}
+            onClick={onMobileMenuOpen}
+            title={mobileMenuOpen ? 'Закрыть меню' : 'Открыть меню'}
+            aria-label={mobileMenuOpen ? 'Закрыть меню навигации' : 'Открыть меню навигации'}
+            aria-expanded={mobileMenuOpen}
+          >
+            {mobileMenuOpen ? (
+              <XMarkIcon className={styles.mobileMenuIcon} aria-hidden />
+            ) : (
+              <Bars3Icon className={styles.mobileMenuIcon} aria-hidden />
+            )}
+          </button>
+        ) : null}
       </div>
 
       <AdminProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />

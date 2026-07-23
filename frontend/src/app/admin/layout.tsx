@@ -141,7 +141,10 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
             }}
           >
             <AdminPresenceHeartbeat />
-            <AdminHeader onMobileMenuOpen={() => setMobileSidebarOpen(true)} />
+            <AdminHeader
+              onMobileMenuOpen={() => setMobileSidebarOpen((open) => !open)}
+              mobileMenuOpen={mobileSidebarOpen}
+            />
             <main className={styles.content}>
               {authReady ? (
                 <AdminSectionAccessShell>
