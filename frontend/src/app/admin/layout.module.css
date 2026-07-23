@@ -804,14 +804,40 @@
 }
 
 @media (max-width: 1024px) {
+  .adminLayout {
+    background-color: var(--admin-surface, #ffffff);
+  }
+
   .mainArea {
     margin-left: 0 !important;
     width: 100%;
     max-width: 100%;
+    background-color: var(--admin-surface, #ffffff);
   }
 
   .mainArea.expanded {
     margin-left: 0 !important;
+  }
+
+  .content {
+    background-color: var(--admin-surface, #ffffff);
+  }
+
+  .loadingContainer {
+    background-color: var(--admin-surface, #ffffff);
+  }
+
+  /* PWA / overscroll: фон вокруг контента как у шапки */
+  :global(html:has([data-admin-shell])),
+  :global(html:has([data-admin-shell]) body) {
+    background-color: #ffffff;
+  }
+
+  :global(html[data-theme='dark']:has([data-admin-shell])),
+  :global(html[data-app-theme='dark']:has([data-admin-shell])),
+  :global(html[data-theme='dark']:has([data-admin-shell]) body),
+  :global(html[data-app-theme='dark']:has([data-admin-shell]) body) {
+    background-color: #1f2937;
   }
 }
 
@@ -1124,6 +1150,15 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content {
   background-color: var(--admin-bg-page, #111827);
   color: var(--admin-text-secondary, #e5e7eb);
+}
+
+@media (max-width: 1024px) {
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .adminLayout,
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .mainArea,
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .content,
+  :where(html[data-theme='dark'], [data-app-theme='dark']) .loadingContainer {
+    background-color: var(--admin-surface, #1f2937);
+  }
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content h1,

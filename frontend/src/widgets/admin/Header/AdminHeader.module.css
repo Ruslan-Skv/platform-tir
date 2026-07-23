@@ -759,6 +759,7 @@
     padding: var(--admin-space-sm) var(--admin-space-md);
     gap: var(--admin-space-sm);
     z-index: 120;
+    border-bottom: none;
   }
 
   .headerStart {

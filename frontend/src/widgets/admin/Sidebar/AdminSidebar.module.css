@@ -478,6 +478,7 @@
     border-right: none;
     border-radius: 0;
     box-shadow: none;
+    background-color: var(--admin-surface, #ffffff);
   }
 
   .sidebar.collapsed {
@@ -726,7 +727,7 @@
     border: none;
     background: transparent;
     padding: var(--admin-space-xs) 0;
-    color: var(--admin-sidebar-active-border, #0284c7);
+    color: #9ca3af;
     font-size: var(--admin-font-size-sm);
     font-weight: 600;
     cursor: pointer;
@@ -734,6 +735,7 @@
   }
 
   .gridDrillBack:hover {
+    color: #6b7280;
     text-decoration: underline;
   }
 

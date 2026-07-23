@@ -122,7 +122,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
     <AdminAccessibleResourcesProvider>
       <WorkDayProvider>
         <AdminWebPushManager />
-        <div className={styles.adminLayout}>
+        <div className={styles.adminLayout} data-admin-shell>
           <AdminSidebar
             collapsed={sidebarCollapsedForView}
             onToggle={handleSidebarToggle}
