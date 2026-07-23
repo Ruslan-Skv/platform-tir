@@ -30,7 +30,7 @@ export function AppearanceSettingsPageView() {
   return (
     <SettingsSubPageView
       title="Внешний вид админки"
-      subtitle="Настройки интерфейса сохраняются в этом браузере и применяются сразу."
+      subtitle="Настройки сохраняются в вашем аккаунте и применяются на всех устройствах."
       saveNoticeVisible={saveNoticeVisible}
       backLink={{ href: '/admin/settings', label: '← К списку настроек' }}
     >
@@ -94,8 +94,8 @@ export function AppearanceSettingsPageView() {
         </fieldset>
 
         <p className={styles.liveHint}>
-          Изменения применяются сразу. На узком экране откройте меню (☰), чтобы увидеть выбранный
-          вид.
+          Изменения сохраняются в аккаунте и сразу применяются. На узком экране откройте меню (☰),
+          чтобы увидеть выбранный вид.
         </p>
       </section>
     </SettingsSubPageView>

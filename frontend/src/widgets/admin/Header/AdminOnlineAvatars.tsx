@@ -17,6 +17,10 @@ function displayName(u: AdminOnlineUser): string {
   return n || u.email;
 }
 
+function displayTitle(u: AdminOnlineUser): string {
+  return u.jobTitle?.trim() || getRoleLabel(u.role);
+}
+
 export function AdminOnlineAvatars() {
   const { isAuthenticated, isLoading, user } = useAuth();
   const shouldLoadPresence = user?.role === 'SUPER_ADMIN';
@@ -58,7 +62,7 @@ export function AdminOnlineAvatars() {
     >
       {shown.map((u, index) => {
         const src = u.avatar ? getAvatarUrl(u.avatar) : null;
-        const label = `${displayName(u)} — ${getRoleLabel(u.role)}`;
+        const label = `${displayName(u)} — ${displayTitle(u)}`;
         return (
           <div key={u.id} className={styles.onlineFace} style={{ zIndex: index + 1 }} title={label}>
             {src ? (

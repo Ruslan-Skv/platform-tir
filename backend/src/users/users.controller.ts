@@ -24,9 +24,11 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateNotificationSettingsDto } from './dto/update-notification-settings.dto';
+import { UpdateAdminSidebarUiPrefsDto } from './dto/update-admin-sidebar-ui-prefs.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../common/guards/roles.guard';
 import { Roles } from '../common/decorators/roles.decorator';
+import { ADMIN_ROLES } from '../common/config/admin-roles.config';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 import { assertImageUploadMagicBytes } from '../common/utils/upload-magic-bytes.util';
 
@@ -63,6 +65,25 @@ export class UsersController {
     @Body() dto: UpdateNotificationSettingsDto,
   ) {
     return this.usersService.updateNotificationSettings(req.user.id, dto);
+  }
+
+  @Get('me/admin-sidebar-ui-prefs')
+  @UseGuards(RolesGuard)
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Настройки вида админ-сайдбара (синхронизация между устройствами)' })
+  getAdminSidebarUiPrefs(@Request() req: RequestWithUser) {
+    return this.usersService.getAdminSidebarUiPrefs(req.user.id);
+  }
+
+  @Patch('me/admin-sidebar-ui-prefs')
+  @UseGuards(RolesGuard)
+  @Roles(...ADMIN_ROLES)
+  @ApiOperation({ summary: 'Обновить настройки вида админ-сайдбара' })
+  updateAdminSidebarUiPrefs(
+    @Request() req: RequestWithUser,
+    @Body() dto: UpdateAdminSidebarUiPrefsDto,
+  ) {
+    return this.usersService.updateAdminSidebarUiPrefs(req.user.id, dto);
   }
 
   @Get('me/notifications')

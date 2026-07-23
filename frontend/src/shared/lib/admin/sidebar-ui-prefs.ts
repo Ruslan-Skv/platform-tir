@@ -2,6 +2,11 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import {
+  getAdminSidebarUiPrefs,
+  updateAdminSidebarUiPrefs as patchAdminSidebarUiPrefsApi,
+} from '@/shared/api/admin-sidebar-ui-prefs';
+
 export type AdminSidebarMobileLayout = 'list' | 'grid3';
 
 export type AdminSidebarUiPrefs = {
@@ -48,14 +53,16 @@ export function writeAdminSidebarUiPrefs(prefs: AdminSidebarUiPrefs): void {
   });
 }
 
+function prefsEqual(a: AdminSidebarUiPrefs, b: AdminSidebarUiPrefs): boolean {
+  return a.hideIcons === b.hideIcons && a.mobileLayout === b.mobileLayout;
+}
+
 export function useAdminSidebarUiPrefs() {
-  const [prefs, setPrefs] = useState<AdminSidebarUiPrefs>(DEFAULT_ADMIN_SIDEBAR_UI_PREFS);
+  const [prefs, setPrefs] = useState<AdminSidebarUiPrefs>(() => readAdminSidebarUiPrefs());
   const prefsRef = useRef(prefs);
   prefsRef.current = prefs;
 
   useEffect(() => {
-    setPrefs(readAdminSidebarUiPrefs());
-
     const onCustom = (event: Event) => {
       const detail = (event as CustomEvent<AdminSidebarUiPrefs>).detail;
       if (detail) {
@@ -73,7 +80,38 @@ export function useAdminSidebarUiPrefs() {
 
     window.addEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, onCustom);
     window.addEventListener('storage', onStorage);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const remote = await getAdminSidebarUiPrefs();
+        if (cancelled) return;
+        const local = readAdminSidebarUiPrefs();
+        const remoteIsDefault = prefsEqual(remote, DEFAULT_ADMIN_SIDEBAR_UI_PREFS);
+        const localHasCustom = !prefsEqual(local, DEFAULT_ADMIN_SIDEBAR_UI_PREFS);
+
+        // Если в браузере уже выбраны настройки, а в аккаунте ещё дефолт —
+        // переносим локальный выбор на сервер (миграция со старых установок).
+        if (remoteIsDefault && localHasCustom) {
+          const saved = await patchAdminSidebarUiPrefsApi(local);
+          if (cancelled) return;
+          setPrefs(saved);
+          writeAdminSidebarUiPrefs(saved);
+          return;
+        }
+
+        // Иначе сервер — источник истины между устройствами.
+        if (!prefsEqual(remote, local)) {
+          writeAdminSidebarUiPrefs(remote);
+        }
+        setPrefs(remote);
+      } catch {
+        // офлайн / нет прав — остаёмся на localStorage
+      }
+    })();
+
     return () => {
+      cancelled = true;
       window.removeEventListener(ADMIN_SIDEBAR_UI_PREFS_EVENT, onCustom);
       window.removeEventListener('storage', onStorage);
     };
@@ -86,6 +124,17 @@ export function useAdminSidebarUiPrefs() {
     };
     setPrefs(next);
     writeAdminSidebarUiPrefs(next);
+
+    void patchAdminSidebarUiPrefsApi(next)
+      .then((saved) => {
+        if (!prefsEqual(saved, prefsRef.current)) {
+          setPrefs(saved);
+          writeAdminSidebarUiPrefs(saved);
+        }
+      })
+      .catch(() => {
+        // локальный кэш уже обновлён; при следующем заходе подтянется с сервера
+      });
   }, []);
 
   return { prefs, updatePrefs };

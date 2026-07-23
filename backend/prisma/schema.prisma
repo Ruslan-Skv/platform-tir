@@ -48,6 +48,10 @@ model User {
   avatar                                  String?
   /// Должность в компании (для отображения в шапке админки; если пусто — показывается роль)
   jobTitle                                String?
+  /// Скрыть эмодзи-иконки пунктов админ-сайдбара (синхронизируется между устройствами)
+  adminSidebarHideIcons                   Boolean                                  @default(false)
+  /// Вид мобильного админ-меню: list | grid3
+  adminSidebarMobileLayout                String                                   @default("list")
   phone                                   String?
   notificationSettings                    UserNotificationSettings?
   notificationHistory                     UserNotification[]

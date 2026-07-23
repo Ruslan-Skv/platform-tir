@@ -194,6 +194,47 @@ export class UsersService {
     );
   }
 
+  async getAdminSidebarUiPrefs(userId: string): Promise<{
+    hideIcons: boolean;
+    mobileLayout: 'list' | 'grid3';
+  }> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: {
+        adminSidebarHideIcons: true,
+        adminSidebarMobileLayout: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException(`User with ID ${userId} not found`);
+    }
+    return {
+      hideIcons: Boolean(user.adminSidebarHideIcons),
+      mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
+    };
+  }
+
+  async updateAdminSidebarUiPrefs(
+    userId: string,
+    data: { hideIcons?: boolean; mobileLayout?: 'list' | 'grid3' },
+  ): Promise<{ hideIcons: boolean; mobileLayout: 'list' | 'grid3' }> {
+    const updated = await this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        ...(data.hideIcons !== undefined && { adminSidebarHideIcons: data.hideIcons }),
+        ...(data.mobileLayout !== undefined && { adminSidebarMobileLayout: data.mobileLayout }),
+      },
+      select: {
+        adminSidebarHideIcons: true,
+        adminSidebarMobileLayout: true,
+      },
+    });
+    return {
+      hideIcons: Boolean(updated.adminSidebarHideIcons),
+      mobileLayout: updated.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
+    };
+  }
+
   async getNotificationHistory(userId: string, params?: { page?: number; limit?: number }) {
     const page = params?.page ?? 1;
     const limit = params?.limit ?? 50;

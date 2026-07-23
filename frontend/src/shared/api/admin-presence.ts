@@ -11,6 +11,7 @@ export interface AdminOnlineUser {
   firstName: string | null;
   lastName: string | null;
   role: string;
+  jobTitle?: string | null;
   avatar: string | null;
 }
 

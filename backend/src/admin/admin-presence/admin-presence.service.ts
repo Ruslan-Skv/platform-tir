@@ -31,6 +31,7 @@ export class AdminPresenceService {
       firstName: string | null;
       lastName: string | null;
       role: UserRole;
+      jobTitle: string | null;
       avatar: string | null;
     }>
   > {
@@ -53,6 +54,7 @@ export class AdminPresenceService {
         firstName: true,
         lastName: true,
         role: true,
+        jobTitle: true,
         avatar: true,
       },
     });
