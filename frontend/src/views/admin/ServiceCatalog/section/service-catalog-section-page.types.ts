@@ -2,6 +2,11 @@ import type { SERVICE_ICON_OPTIONS } from '../shared/SERVICE_ICON_OPTIONS';
 
 export type ServiceIconOptionValue = (typeof SERVICE_ICON_OPTIONS)[number]['value'];
 
+export type FlatCategoryOption = {
+  id: string;
+  name: string;
+};
+
 export type NewServiceCategoryForm = {
   name: string;
   slug: string;
@@ -13,6 +18,7 @@ export type NewServiceCategoryForm = {
   cardBackgroundTransparent: boolean;
   showPricesInPublic: boolean;
   priceMarkupPercent: number;
+  isActive: boolean;
 };
 
 export type ServiceCatalogItem = {
@@ -45,21 +51,18 @@ export type ServiceCatalogCategory = {
   _count?: { items: number };
 };
 
-export type EditCategoryData = {
+export type EditServiceCategoryForm = {
   name: string;
   slug: string;
+  description: string;
+  parentId: string;
   icon: string;
   image: string;
   cardBackgroundImage: string;
   cardBackgroundTransparent: boolean;
   showPricesInPublic: boolean;
   priceMarkupPercent: number;
-  parentId: string | null;
-};
-
-export type PageMessage = {
-  type: 'success' | 'error';
-  text: string;
+  isActive: boolean;
 };
 
 export type DeleteTarget = {

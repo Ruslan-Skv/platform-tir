@@ -1,5 +1,7 @@
 import type { ServiceCatalogCategory } from './service-catalog-section-page.types';
 
+const EXPANDED_STORAGE_KEY = 'admin_service_catalog_categories_expanded';
+
 export function flattenCategoriesForSelect(
   cats: ServiceCatalogCategory[],
   prefix = ''
@@ -26,15 +28,63 @@ export function collectDescendantIds(cat: ServiceCatalogCategory): Set<string> {
   return s;
 }
 
+export function collectExpandableIds(categories: ServiceCatalogCategory[]): string[] {
+  const ids: string[] = [];
+  const walk = (cats: ServiceCatalogCategory[]) => {
+    cats.forEach((cat) => {
+      if (cat.children && cat.children.length > 0) {
+        ids.push(cat.id);
+        walk(cat.children);
+      }
+    });
+  };
+  walk(categories);
+  return ids;
+}
+
+export function countCategories(categories: ServiceCatalogCategory[]): number {
+  return categories.reduce(
+    (sum, cat) => sum + 1 + (cat.children?.length ? countCategories(cat.children) : 0),
+    0
+  );
+}
+
 export function countNestedCategories(cat: ServiceCatalogCategory): number {
   return collectDescendantIds(cat).size;
 }
 
+export function loadExpandedCategoryIds(): Set<string> {
+  if (typeof window === 'undefined') return new Set();
+  try {
+    const raw = localStorage.getItem(EXPANDED_STORAGE_KEY);
+    if (!raw) return new Set();
+    const parsed = JSON.parse(raw) as string[];
+    return new Set(Array.isArray(parsed) ? parsed : []);
+  } catch {
+    return new Set();
+  }
+}
+
+export function saveExpandedCategoryIds(ids: Set<string>) {
+  if (typeof window === 'undefined') return;
+  localStorage.setItem(EXPANDED_STORAGE_KEY, JSON.stringify([...ids]));
+}
+
+export function formatCategoryItemsCount(count: number): string {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} вид работ`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 10 || mod100 >= 20)) {
+    return `${count} вида работ`;
+  }
+  return `${count} видов работ`;
+}
+
 export function buildDeleteCategoryModalMessage(name: string, nestedCategoryCount: number): string {
   if (nestedCategoryCount > 0) {
-    return `Удалить категорию «${name}»?\n\nБудут также удалены все дочерние и вложенные подкатегории (${nestedCategoryCount}) и все виды работ внутри этой ветки.`;
+    return `Удалить категорию «${name}»? Вместе с ${nestedCategoryCount} подкатегориями и всеми видами работ внутри этой ветки. Действие нельзя отменить.`;
   }
-  return `Удалить категорию «${name}»? Все виды работ в этой категории также будут удалены.`;
+  return `Удалить категорию «${name}»? Все виды работ в этой категории также будут удалены. Действие нельзя отменить.`;
 }
 
 export function findCategoryById(
@@ -47,22 +97,6 @@ export function findCategoryById(
     if (inner) return inner;
   }
   return null;
-}
-
-export function flattenVisible(
-  cats: ServiceCatalogCategory[],
-  level: number,
-  expanded: Set<string>
-): Array<{ cat: ServiceCatalogCategory; level: number }> {
-  const out: Array<{ cat: ServiceCatalogCategory; level: number }> = [];
-  for (const c of cats) {
-    out.push({ cat: c, level });
-    const ch = c.children;
-    if (ch?.length && expanded.has(c.id)) {
-      out.push(...flattenVisible(ch, level + 1, expanded));
-    }
-  }
-  return out;
 }
 
 export function slugify(text: string): string {
