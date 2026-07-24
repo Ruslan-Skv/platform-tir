@@ -557,6 +557,13 @@
   box-sizing: border-box;
 }
 
+.addItemActions {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  flex-wrap: wrap;
+}
+
 .inputPriceNarrow {
   width: 100px;
 }

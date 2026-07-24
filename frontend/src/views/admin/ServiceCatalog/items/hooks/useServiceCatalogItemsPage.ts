@@ -147,6 +147,21 @@ export function useServiceCatalogItemsPage() {
     [getAuthHeaders]
   );
 
+  /** Перезагрузка без «Загрузка…» и без сброса позиции скролла. */
+  const reloadKeepingScroll = useCallback(
+    async (beforeReload?: () => void) => {
+      const y = typeof window !== 'undefined' ? window.scrollY : 0;
+      beforeReload?.();
+      await load(true);
+      if (typeof window === 'undefined') return;
+      const restore = () => window.scrollTo(0, y);
+      restore();
+      requestAnimationFrame(restore);
+      window.setTimeout(restore, 50);
+    },
+    [load]
+  );
+
   useEffect(() => {
     load();
   }, [load]);
@@ -220,7 +235,7 @@ export function useServiceCatalogItemsPage() {
       }
       if (results.every((r) => r.ok)) {
         showMessage('success', 'Порядок видов работ обновлён');
-        await load(true);
+        await reloadKeepingScroll();
       } else {
         showMessage('error', 'Не удалось изменить порядок');
       }
@@ -250,9 +265,10 @@ export function useServiceCatalogItemsPage() {
       });
       if (res.ok) {
         showMessage('success', 'Вид работ добавлен');
-        setShowNewItem(null);
-        setNewItem({ name: '', description: '', price: '', unit: 'м²' });
-        load();
+        await reloadKeepingScroll(() => {
+          setShowNewItem(null);
+          setNewItem({ name: '', description: '', price: '', unit: 'м²' });
+        });
       } else {
         const err = await res.json().catch(() => ({}));
         showMessage('error', err.message || 'Ошибка добавления');
@@ -284,9 +300,10 @@ export function useServiceCatalogItemsPage() {
       });
       if (res.ok) {
         showMessage('success', 'Вид работ обновлён');
-        setEditingItem(null);
-        setEditItemData({});
-        load();
+        await reloadKeepingScroll(() => {
+          setEditingItem(null);
+          setEditItemData({});
+        });
       } else {
         showMessage('error', 'Ошибка обновления');
       }
@@ -305,8 +322,9 @@ export function useServiceCatalogItemsPage() {
       });
       if (res.ok) {
         showMessage('success', 'Вид работ удалён');
-        setDeleteTarget(null);
-        load();
+        await reloadKeepingScroll(() => {
+          setDeleteTarget(null);
+        });
       } else {
         showMessage('error', 'Ошибка удаления');
       }

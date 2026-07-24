@@ -40,6 +40,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
     message,
     deleteTarget,
     setDeleteTarget,
+    deleting,
     showNewItem,
     setShowNewItem,
     newItem,
@@ -64,7 +65,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
     handleDelete,
   } = model;
 
-  if (loading) {
+  if (loading && categories.length === 0) {
     return (
       <div className={styles.page}>
         <p>Загрузка...</p>
@@ -443,7 +444,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                               </tr>
                             );
                           })}
-                          {showNewItem === cat.id && (
+                          {showNewItem === cat.id ? (
                             <tr className={styles.addItemRow}>
                               <td className={styles.nameCell}>
                                 <textarea
@@ -464,7 +465,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                     setNewItem((p) => ({ ...p, price: e.target.value }))
                                   }
                                   placeholder="Базовая цена"
-                                  className={styles.input}
+                                  className={`${styles.input} ${styles.inputPriceNarrow}`}
                                 />
                               </td>
                               <td className={styles.priceDerivedCell}>
@@ -483,38 +484,40 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                     setNewItem((p) => ({ ...p, unit: e.target.value }))
                                   }
                                   placeholder="м²"
-                                  className={styles.input}
+                                  className={`${styles.input} ${styles.inputSortNarrow}`}
                                 />
                               </td>
                               <td>
-                                <button
-                                  type="button"
-                                  className={styles.saveButton}
-                                  onClick={() => handleAddItem(cat.id)}
-                                >
-                                  Добавить
-                                </button>
-                                <button
-                                  type="button"
-                                  className={styles.cancelButton}
-                                  onClick={() => {
-                                    setShowNewItem(null);
-                                    setNewItem({
-                                      name: '',
-                                      description: '',
-                                      price: '',
-                                      unit: 'м²',
-                                    });
-                                  }}
-                                >
-                                  Отмена
-                                </button>
+                                <span className={styles.addItemActions}>
+                                  <button
+                                    type="button"
+                                    className={styles.saveButton}
+                                    onClick={() => void handleAddItem(cat.id)}
+                                  >
+                                    Добавить
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className={styles.cancelButton}
+                                    onClick={() => {
+                                      setShowNewItem(null);
+                                      setNewItem({
+                                        name: '',
+                                        description: '',
+                                        price: '',
+                                        unit: 'м²',
+                                      });
+                                    }}
+                                  >
+                                    Отмена
+                                  </button>
+                                </span>
                               </td>
                             </tr>
-                          )}
+                          ) : null}
                         </tbody>
                       </table>
-                      {showNewItem !== cat.id && (
+                      {showNewItem !== cat.id ? (
                         <button
                           data-admin-mutation
                           type="button"
@@ -523,7 +526,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                         >
                           + Добавить вид работ
                         </button>
-                      )}
+                      ) : null}
                     </>
                   )}
                 </div>
@@ -538,9 +541,13 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
           message={deleteTarget ? `Удалить вид работ «${deleteTarget.name}»?` : ''}
           confirmText="Удалить"
           cancelText="Отмена"
-          onConfirm={handleDelete}
-          onClose={() => setDeleteTarget(null)}
+          onConfirm={() => void handleDelete()}
+          onClose={() => {
+            if (!deleting) setDeleteTarget(null);
+          }}
           variant="danger"
+          closeOnConfirm={false}
+          confirmLoading={deleting}
         />
       </div>
       {message &&

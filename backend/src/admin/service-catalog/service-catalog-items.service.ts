@@ -19,6 +19,16 @@ export class ServiceCatalogItemsService {
 
   async createItem(dto: CreateServiceCatalogItemDto) {
     await this.categories.findCategoryById(dto.categoryId);
+
+    let sortOrder = dto.sortOrder;
+    if (sortOrder === undefined) {
+      const agg = await this.prisma.serviceCatalogItem.aggregate({
+        where: { categoryId: dto.categoryId },
+        _max: { sortOrder: true },
+      });
+      sortOrder = (agg._max.sortOrder ?? -1) + 1;
+    }
+
     const created = await this.prisma.serviceCatalogItem.create({
       data: {
         categoryId: dto.categoryId,
@@ -26,7 +36,7 @@ export class ServiceCatalogItemsService {
         description: dto.description,
         price: new Prisma.Decimal(dto.price),
         unit: dto.unit ?? 'м²',
-        sortOrder: dto.sortOrder ?? 0,
+        sortOrder,
         isActive: dto.isActive ?? true,
       },
     });
