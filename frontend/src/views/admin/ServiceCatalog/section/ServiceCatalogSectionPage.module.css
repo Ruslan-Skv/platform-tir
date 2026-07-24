@@ -226,6 +226,47 @@
   flex-wrap: wrap;
 }
 
+.reorderButtons {
+  display: inline-flex;
+  flex-direction: row;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  flex-shrink: 0;
+}
+
+.reorderIconButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: var(--admin-space-0);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xs);
+  background: var(--admin-surface);
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.reorderIconButton:hover:not(:disabled) {
+  background: var(--admin-scrollbar-track);
+  border-color: var(--admin-text-muted);
+  color: var(--admin-text);
+}
+
+.reorderIconButton:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.reorderIcon {
+  width: 16px;
+  height: 16px;
+}
+
 .treeChildren {
   padding: var(--admin-space-md) var(--admin-space-lg) var(--admin-space-lg);
   background: rgb(238 242 255 / 55%);

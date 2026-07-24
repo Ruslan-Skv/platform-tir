@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronDown, ChevronUp } from 'lucide-react';
+
 import Link from 'next/link';
 
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
@@ -54,6 +56,8 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
     openDeleteModal,
     closeDeleteModal,
     handleDeleteCategory,
+    reorderCategory,
+    reorderInProgress,
   } = model;
 
   const totalCount = countCategories(categories);
@@ -87,30 +91,79 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
     );
   };
 
-  const renderCategoryActions = (category: ServiceCatalogCategory) => (
-    <div className={styles.treeRowActions}>
-      <Link
-        href={`/catalog/services/${category.slug}`}
-        target="_blank"
-        rel="noreferrer"
-        className={styles.secondaryButton}
-        title="Открыть на сайте"
-      >
-        На сайте
-      </Link>
-      <AdminTableIconButton title="Редактировать категорию" onClick={() => openEditModal(category)}>
-        <EditIcon />
-      </AdminTableIconButton>
-      <AdminTableIconButton title="Удалить категорию" onClick={() => openDeleteModal(category)}>
-        <DeleteIcon />
-      </AdminTableIconButton>
-    </div>
-  );
+  const renderCategoryActions = (
+    category: ServiceCatalogCategory,
+    siblings: ServiceCatalogCategory[],
+    depth: 0 | 1
+  ) => {
+    const idx = siblings.findIndex((s) => s.id === category.id);
+    const canMoveUp = idx > 0;
+    const canMoveDown = idx >= 0 && idx < siblings.length - 1;
+    const showReorder = siblings.length > 1;
 
-  const renderCategory = (category: ServiceCatalogCategory, depth: 0 | 1) => {
+    return (
+      <div className={styles.treeRowActions}>
+        {showReorder ? (
+          <div
+            className={styles.reorderButtons}
+            role="group"
+            aria-label={
+              depth === 0 ? 'Порядок категории в списке' : 'Порядок подкатегории в списке'
+            }
+          >
+            <button
+              type="button"
+              className={styles.reorderIconButton}
+              disabled={!canMoveUp || reorderInProgress}
+              title="Переместить выше"
+              aria-label="Переместить выше"
+              onClick={() => void reorderCategory(category, siblings, 'up')}
+            >
+              <ChevronUp className={styles.reorderIcon} aria-hidden />
+            </button>
+            <button
+              type="button"
+              className={styles.reorderIconButton}
+              disabled={!canMoveDown || reorderInProgress}
+              title="Переместить ниже"
+              aria-label="Переместить ниже"
+              onClick={() => void reorderCategory(category, siblings, 'down')}
+            >
+              <ChevronDown className={styles.reorderIcon} aria-hidden />
+            </button>
+          </div>
+        ) : null}
+        <Link
+          href={`/catalog/services/${category.slug}`}
+          target="_blank"
+          rel="noreferrer"
+          className={styles.secondaryButton}
+          title="Открыть на сайте"
+        >
+          На сайте
+        </Link>
+        <AdminTableIconButton
+          title="Редактировать категорию"
+          onClick={() => openEditModal(category)}
+        >
+          <EditIcon />
+        </AdminTableIconButton>
+        <AdminTableIconButton title="Удалить категорию" onClick={() => openDeleteModal(category)}>
+          <DeleteIcon />
+        </AdminTableIconButton>
+      </div>
+    );
+  };
+
+  const renderCategory = (
+    category: ServiceCatalogCategory,
+    depth: 0 | 1,
+    siblings: ServiceCatalogCategory[]
+  ) => {
     const hasChildren = Boolean(category.children && category.children.length > 0);
     const isExpanded = expandedCategories.has(category.id);
     const isRoot = depth === 0;
+    const childSiblings = category.children ?? [];
 
     if (isRoot) {
       return (
@@ -134,11 +187,11 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
               <span className={styles.treeRootTitle}>{category.name}</span>
               <div className={styles.treeMetaRow}>{renderCategoryMeta(category)}</div>
             </div>
-            {renderCategoryActions(category)}
+            {renderCategoryActions(category, siblings, depth)}
           </div>
           {hasChildren && isExpanded ? (
             <div className={styles.treeChildren}>
-              {category.children!.map((child) => renderCategory(child, 1))}
+              {childSiblings.map((child) => renderCategory(child, 1, childSiblings))}
             </div>
           ) : null}
         </div>
@@ -166,11 +219,11 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
             <span className={styles.treeChildTitle}>{category.name}</span>
             <div className={styles.treeMetaRow}>{renderCategoryMeta(category)}</div>
           </div>
-          {renderCategoryActions(category)}
+          {renderCategoryActions(category, siblings, depth)}
         </div>
         {hasChildren && isExpanded ? (
           <div className={styles.treeNestedChildren}>
-            {category.children!.map((child) => renderCategory(child, 1))}
+            {childSiblings.map((child) => renderCategory(child, 1, childSiblings))}
           </div>
         ) : null}
       </div>
@@ -234,7 +287,7 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
 
       <p className={styles.hint}>
         Дерево категорий ремонта квартир: корневые разделы сворачиваются как группы, подкатегории —
-        как подгруппы. Разверните нужную ветку, чтобы увидеть дочерние категории.
+        как подгруппы. Стрелками ↑↓ можно менять порядок категорий и подкатегорий среди соседей.
       </p>
 
       <div className={styles.treeToolbar}>
@@ -256,7 +309,7 @@ export function ServiceCatalogSectionPageView({ model }: ServiceCatalogSectionPa
 
       {categories.length > 0 ? (
         <div className={styles.catalogTree}>
-          {categories.map((category) => renderCategory(category, 0))}
+          {categories.map((category) => renderCategory(category, 0, categories))}
         </div>
       ) : (
         <p className={styles.treeEmpty}>

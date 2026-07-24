@@ -30,6 +30,8 @@ export function useServiceCatalogSectionPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editCategoryId, setEditCategoryId] = useState<string | null>(null);
   const [toast, setToast] = useState<{ type: 'ok' | 'err'; text: string } | null>(null);
+  const [reorderBusyKey, setReorderBusyKey] = useState<string | null>(null);
+  const reorderInProgress = reorderBusyKey !== null;
 
   const showToast = useCallback((text: string, type: 'ok' | 'err') => {
     setToast({ text, type });
@@ -161,6 +163,47 @@ export function useServiceCatalogSectionPage() {
     }
   };
 
+  const reorderCategory = useCallback(
+    async (
+      category: ServiceCatalogCategory,
+      siblings: ServiceCatalogCategory[],
+      direction: 'up' | 'down'
+    ) => {
+      const idx = siblings.findIndex((s) => s.id === category.id);
+      if (idx < 0) return;
+      const j = direction === 'up' ? idx - 1 : idx + 1;
+      if (j < 0 || j >= siblings.length) return;
+
+      setReorderBusyKey(category.id);
+      try {
+        const res = await apiFetch(
+          `${API_URL}/admin/service-catalog/categories/${category.id}/reorder?includeInactive=true`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+            body: JSON.stringify({ direction }),
+          }
+        );
+        if (res.ok) {
+          const nextTree = (await res.json()) as ServiceCatalogCategory[];
+          setCategories(nextTree);
+          showToast('Порядок обновлён', 'ok');
+        } else {
+          const data = await res.json().catch(() => ({}));
+          showToast(
+            typeof data.message === 'string' ? data.message : 'Не удалось изменить порядок',
+            'err'
+          );
+        }
+      } catch {
+        showToast('Ошибка сети при изменении порядка', 'err');
+      } finally {
+        setReorderBusyKey(null);
+      }
+    },
+    [getAuthHeaders, showToast]
+  );
+
   return {
     categories,
     loading,
@@ -184,6 +227,8 @@ export function useServiceCatalogSectionPage() {
     openDeleteModal,
     closeDeleteModal,
     handleDeleteCategory,
+    reorderCategory,
+    reorderInProgress,
     toast,
     showToast,
   };
