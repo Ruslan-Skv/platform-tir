@@ -29,7 +29,7 @@
   background: #93c5fd;
   transform: scaleY(0);
   transform-origin: top center;
-  animation: adminSidebarEdgeDraw 5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: adminSidebarEdgeDraw 1.2s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   pointer-events: none;
   z-index: 20;
 }
@@ -177,8 +177,9 @@
   margin-bottom: var(--admin-space-0);
   opacity: 0;
   transform: translateX(-10px);
-  animation: adminSidebarNavItemIn 0.45s ease forwards;
-  animation-delay: calc(var(--nav-stagger, 0) * 0.32s);
+  /* ~20 пунктов: шаг 0.04s → весь список за ~0.8–1с (раньше index*0.32s ≈ 5–6с) */
+  animation: adminSidebarNavItemIn 0.2s ease forwards;
+  animation-delay: calc(var(--nav-stagger, 0) * 0.04s);
 }
 
 @keyframes adminSidebarNavItemIn {
@@ -742,6 +743,7 @@
     white-space: normal;
     display: -webkit-box;
     -webkit-line-clamp: 3;
+    line-clamp: 3;
     -webkit-box-orient: vertical;
     overflow: hidden;
     font-size: 0.7rem;
@@ -764,6 +766,7 @@
 
   .mobileGrid.hideIcons .navMobileGrid > .navItem .label {
     -webkit-line-clamp: 4;
+    line-clamp: 4;
     font-size: 0.75rem;
   }
 
