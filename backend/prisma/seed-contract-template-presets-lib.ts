@@ -43,25 +43,39 @@ export function extractTemplateFromTsFile(filePath: string): string {
   return m[1];
 }
 
+function resolveFrontendTemplatesDir(): string | null {
+  const candidates = [
+    path.join(__dirname, '../../frontend/src/views/admin/ContractDocuments/packages/templates'),
+    path.join(process.cwd(), '../frontend/src/views/admin/ContractDocuments/packages/templates'),
+    path.join(process.cwd(), 'frontend/src/views/admin/ContractDocuments/packages/templates'),
+  ];
+  for (const dir of candidates) {
+    if (fs.existsSync(dir)) return dir;
+  }
+  return null;
+}
+
+/** Fallback из .ts; пустой массив, если frontend не смонтирован (прод/docker). */
 export function loadDefaultsFromFrontendRepo(cfg: KindSeedConfig): PresetItem[] {
-  const templatesDir = path.join(
-    __dirname,
-    '../../frontend/src/views/admin/ContractDocuments/packages/templates'
-  );
-  return cfg.libraryTabs.map((tabId) => {
+  const templatesDir = resolveFrontendTemplatesDir();
+  if (!templatesDir) return [];
+
+  const result: PresetItem[] = [];
+  for (const tabId of cfg.libraryTabs) {
     const file = cfg.tabTemplateFiles[tabId];
-    if (!file) {
-      throw new Error(`${cfg.kind}: нет fallback-файла для вкладки ${tabId}`);
-    }
-    return {
+    if (!file) continue;
+    const filePath = path.join(templatesDir, file);
+    if (!fs.existsSync(filePath)) continue;
+    result.push({
       id: `${cfg.seedIdPrefix}-${tabId}`,
       tabId,
       title: cfg.tabTitles[tabId] ?? tabId,
-      html: extractTemplateFromTsFile(path.join(templatesDir, file)),
+      html: extractTemplateFromTsFile(filePath),
       isDefault: true,
       archived: false,
-    };
-  });
+    });
+  }
+  return result;
 }
 
 export function loadDefaultsFromSeedJson(cfg: KindSeedConfig): PresetItem[] | null {
@@ -86,13 +100,19 @@ export function loadDefaultsFromSeedJson(cfg: KindSeedConfig): PresetItem[] | nu
 }
 
 /**
- * JSON имеет приоритет по вкладкам; недостающие вкладки добираются из .ts.
- * Если на вкладке в JSON несколько пресетов — все сохраняются (как в UI-экспорте).
+ * JSON имеет приоритет по вкладкам; недостающие вкладки добираются из .ts (если есть).
+ * На сервере достаточно seed-data/*.json — frontend монтировать не обязательно.
  */
 export function loadSeedDefaults(cfg: KindSeedConfig): PresetItem[] {
-  const fromFrontend = loadDefaultsFromFrontendRepo(cfg);
   const fromJson = loadDefaultsFromSeedJson(cfg);
-  if (!fromJson) return fromFrontend;
+  const fromFrontend = loadDefaultsFromFrontendRepo(cfg);
+
+  if (!fromJson?.length && !fromFrontend.length) {
+    throw new Error(
+      `${cfg.kind}: нет seed JSON (prisma/seed-data/${cfg.kind.toLowerCase()}-library-templates.seed.json) и нет frontend .ts`
+    );
+  }
+  if (!fromJson?.length) return fromFrontend;
 
   const merged = [...fromJson];
   const jsonTabIds = new Set(fromJson.map((item) => item.tabId));
