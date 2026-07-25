@@ -1,30 +1,54 @@
 # Seed-данные Prisma
 
-## Библиотека шаблонов «Ремонт»
+## Библиотека шаблонов договоров (все направления)
 
-Файл `repair-library-templates.seed.json` (опционально) — активные пресеты пяти вкладок:
+Файлы в этом каталоге — снимок активных пресетов из локальной библиотеки
+(`/admin/contract-documents/templates`). На проде они становятся дефолтами.
 
-- `contract`, `actStart`, `actAcceptance`, `cashOrder`, `productionLog`
+| Файл                                   | Направление      |
+| -------------------------------------- | ---------------- |
+| `repair-library-templates.seed.json`   | Ремонт           |
+| `windows-library-templates.seed.json`  | Окна             |
+| `doors-library-templates.seed.json`    | Двери            |
+| `blinds-library-templates.seed.json`   | Жалюзи           |
+| `ceilings-library-templates.seed.json` | Натяжные потолки |
 
-Создайте файл кнопкой **«Экспорт для прода»** в библиотеке шаблонов (супер-админ).
+### Обновить снимок из локальной БД
 
 ```bash
 cd backend
+npx ts-node -r tsconfig-paths/register scripts/export-local-library-templates.ts
+```
+
+Либо в UI супер-админа: **«Выгрузка шаблонов на прод»** по каждому направлению
+и положить скачанные JSON сюда с теми же именами.
+
+### Залить на прод (перезаписать библиотеку)
+
+Режим `replace-library` архивирует старые активные пресеты направления и вставляет
+ваши seed-шаблоны как дефолтные. Старые автосгенерированные stubs больше не нужны.
+
+```bash
+cd backend
+# DATABASE_URL должен указывать на прод
+
+$env:REPAIR_TEMPLATES_SEED_MODE="replace-library"
+$env:WINDOWS_TEMPLATES_SEED_MODE="replace-library"
+$env:DOORS_TEMPLATES_SEED_MODE="replace-library"
+$env:BLINDS_TEMPLATES_SEED_MODE="replace-library"
+$env:CEILINGS_TEMPLATES_SEED_MODE="replace-library"
+npm run prisma:seed-all-contract-templates
+```
+
+Или по одному направлению:
+
+```bash
+$env:REPAIR_TEMPLATES_SEED_MODE="replace-library"
 npm run prisma:seed-repair-contract-templates
 ```
 
-Режимы:
+Приоритет HTML: `*-library-templates.seed.json` → fallback `.ts` из frontend
+(недостающие вкладки, например согласие у потолков, добираются из `.ts`).
 
-- по умолчанию (`fill-missing`) — добавить пресет, если на вкладке нет активного; устаревшие `tabId` → в архив;
-- `REPAIR_TEMPLATES_SEED_MODE=replace-library` — перезаписать HTML активных пресетов на вкладках из seed-файла или из `.ts` в репозитории.
-
-## Библиотека шаблонов «Окна»
-
-Стартовый пресет **«Акт сдачи-приёмки»** (`actAcceptance`, HTML из `windowsActAcceptance.ts`):
-
-```bash
-cd backend
-npm run prisma:seed-windows-contract-templates
-```
-
-Режимы: `fill-missing` (по умолчанию), `WINDOWS_TEMPLATES_SEED_MODE=replace-library` — перезаписать активный пресет вкладки.
+Режим по умолчанию (`fill-missing`) только добавляет пресет, если на вкладке
+ещё нет активного — существующие не трогает.
