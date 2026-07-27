@@ -92,6 +92,17 @@ export class MeasurementsCrudService {
     dateTo?: string;
     withoutContract?: boolean;
     hasCustomerId?: boolean;
+    /** Область списка: мои / мои направления / все. */
+    scope?: 'mine' | 'my_directions' | 'all';
+    /** Для scope=mine — текущий пользователь (managerId или surveyorId). */
+    scopeUserId?: string;
+    /** Для scope=my_directions — направления пользователя. */
+    myDirectionIds?: string[];
+    includeCounts?: boolean;
+    /** Для counts.scope.mine. */
+    countsUserId?: string;
+    /** Для counts.scope.my_directions. */
+    countsMyDirectionIds?: string[];
     page?: number;
     limit?: number;
     sortBy?: 'receptionDate' | 'executionDate' | 'status';
@@ -107,6 +118,12 @@ export class MeasurementsCrudService {
       dateTo,
       withoutContract,
       hasCustomerId,
+      scope = 'all',
+      scopeUserId,
+      myDirectionIds,
+      includeCounts = false,
+      countsUserId,
+      countsMyDirectionIds,
       page = 1,
       limit = 20,
       sortBy = 'receptionDate',
@@ -114,48 +131,20 @@ export class MeasurementsCrudService {
     } = params || {};
 
     const skip = (page - 1) * limit;
-    const where: Prisma.MeasurementWhereInput = {};
-
-    if (status) {
-      where.status = status as Prisma.EnumMeasurementStatusFilter;
-    }
-    if (managerId) where.managerId = managerId;
-    if (surveyorId) where.surveyorId = surveyorId;
-    if (withoutContract) {
-      where.contract = { is: null };
-    }
-    if (hasCustomerId) {
-      where.customerId = { not: null };
-    }
-
-    const andParts: Prisma.MeasurementWhereInput[] = [];
-
-    if (search) {
-      andParts.push({
-        OR: [
-          { customerName: { contains: search, mode: 'insensitive' } },
-          { customerPhone: { contains: search } },
-          { customerAddress: { contains: search, mode: 'insensitive' } },
-          { comments: { contains: search, mode: 'insensitive' } },
-        ],
-      });
-    }
-
-    if (directionId) {
-      andParts.push({
-        OR: [{ directionId }, { additionalDirections: { some: { directionId } } }],
-      });
-    }
-
-    if (andParts.length > 0) {
-      where.AND = andParts;
-    }
-
-    if (dateFrom || dateTo) {
-      where.receptionDate = {};
-      if (dateFrom) where.receptionDate.gte = new Date(dateFrom);
-      if (dateTo) where.receptionDate.lte = new Date(dateTo);
-    }
+    const where = this.buildListWhere({
+      status,
+      managerId: scope === 'mine' ? undefined : managerId,
+      surveyorId,
+      directionId,
+      search,
+      dateFrom,
+      dateTo,
+      withoutContract,
+      hasCustomerId,
+      scope,
+      scopeUserId,
+      myDirectionIds,
+    });
 
     const orderBy: Prisma.MeasurementOrderByWithRelationInput =
       sortBy === 'executionDate'
@@ -164,7 +153,7 @@ export class MeasurementsCrudService {
           ? { status: sortOrder }
           : { receptionDate: sortOrder };
 
-    const [rows, total] = await Promise.all([
+    const [rows, total, counts] = await Promise.all([
       this.prisma.measurement.findMany({
         where,
         include: MEASUREMENT_RELATIONS_INCLUDE,
@@ -173,6 +162,24 @@ export class MeasurementsCrudService {
         orderBy,
       }),
       this.prisma.measurement.count({ where }),
+      includeCounts
+        ? this.buildListCounts({
+            status,
+            managerId: scope === 'mine' ? undefined : managerId,
+            surveyorId,
+            directionId,
+            search,
+            dateFrom,
+            dateTo,
+            withoutContract,
+            hasCustomerId,
+            scope,
+            scopeUserId,
+            myDirectionIds,
+            countsUserId,
+            countsMyDirectionIds,
+          })
+        : Promise.resolve(undefined),
     ]);
 
     return {
@@ -181,6 +188,200 @@ export class MeasurementsCrudService {
       page,
       limit,
       totalPages: Math.ceil(total / limit),
+      ...(counts ? { counts } : {}),
+    };
+  }
+
+  private buildListWhere(opts: {
+    status?: string;
+    managerId?: string;
+    surveyorId?: string;
+    directionId?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    withoutContract?: boolean;
+    hasCustomerId?: boolean;
+    scope?: 'mine' | 'my_directions' | 'all';
+    scopeUserId?: string;
+    myDirectionIds?: string[];
+  }): Prisma.MeasurementWhereInput {
+    const where: Prisma.MeasurementWhereInput = {};
+    const andParts: Prisma.MeasurementWhereInput[] = [];
+
+    if (opts.status) {
+      where.status = opts.status as Prisma.EnumMeasurementStatusFilter;
+    }
+    if (opts.managerId) where.managerId = opts.managerId;
+    if (opts.surveyorId) where.surveyorId = opts.surveyorId;
+    if (opts.withoutContract) {
+      where.contract = { is: null };
+    }
+    if (opts.hasCustomerId) {
+      where.customerId = { not: null };
+    }
+
+    if (opts.search) {
+      andParts.push({
+        OR: [
+          { customerName: { contains: opts.search, mode: 'insensitive' } },
+          { customerPhone: { contains: opts.search } },
+          { customerAddress: { contains: opts.search, mode: 'insensitive' } },
+          { comments: { contains: opts.search, mode: 'insensitive' } },
+        ],
+      });
+    }
+
+    if (opts.directionId) {
+      andParts.push({
+        OR: [
+          { directionId: opts.directionId },
+          { additionalDirections: { some: { directionId: opts.directionId } } },
+        ],
+      });
+    }
+
+    const scope = opts.scope ?? 'all';
+    if (scope === 'mine') {
+      const userId = opts.scopeUserId?.trim() || '';
+      if (!userId) {
+        andParts.push({ id: { in: [] } });
+      } else {
+        andParts.push({
+          OR: [{ managerId: userId }, { surveyorId: userId }],
+        });
+      }
+    } else if (scope === 'my_directions') {
+      const ids = [...new Set((opts.myDirectionIds ?? []).map((id) => id.trim()).filter(Boolean))];
+      if (ids.length === 0) {
+        andParts.push({ id: { in: [] } });
+      } else {
+        andParts.push({
+          OR: [
+            { directionId: { in: ids } },
+            { additionalDirections: { some: { directionId: { in: ids } } } },
+          ],
+        });
+      }
+    }
+
+    if (andParts.length > 0) {
+      where.AND = andParts;
+    }
+
+    if (opts.dateFrom || opts.dateTo) {
+      where.receptionDate = {};
+      if (opts.dateFrom) where.receptionDate.gte = new Date(opts.dateFrom);
+      if (opts.dateTo) where.receptionDate.lte = new Date(opts.dateTo);
+    }
+
+    return where;
+  }
+
+  private async buildListCounts(opts: {
+    status?: string;
+    managerId?: string;
+    surveyorId?: string;
+    directionId?: string;
+    search?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    withoutContract?: boolean;
+    hasCustomerId?: boolean;
+    scope?: 'mine' | 'my_directions' | 'all';
+    scopeUserId?: string;
+    myDirectionIds?: string[];
+    countsUserId?: string;
+    countsMyDirectionIds?: string[];
+  }): Promise<{
+    scope: { mine: number; my_directions: number; all: number };
+    status: Record<string, number>;
+  }> {
+    const base = {
+      managerId: opts.managerId,
+      surveyorId: opts.surveyorId,
+      directionId: opts.directionId,
+      search: opts.search,
+      dateFrom: opts.dateFrom,
+      dateTo: opts.dateTo,
+      withoutContract: opts.withoutContract,
+      hasCustomerId: opts.hasCustomerId,
+    };
+
+    const countWith = (override: {
+      status?: string;
+      scope?: 'mine' | 'my_directions' | 'all';
+      scopeUserId?: string;
+      myDirectionIds?: string[];
+      managerId?: string;
+    }) =>
+      this.prisma.measurement.count({
+        where: this.buildListWhere({
+          ...base,
+          status: override.status,
+          managerId: override.managerId !== undefined ? override.managerId : base.managerId,
+          scope: override.scope ?? 'all',
+          scopeUserId: override.scopeUserId,
+          myDirectionIds: override.myDirectionIds,
+        }),
+      });
+
+    const countsUserId = opts.countsUserId?.trim() || '';
+    const myDirs = [
+      ...new Set((opts.countsMyDirectionIds ?? []).map((id) => id.trim()).filter(Boolean)),
+    ];
+
+    const statusValues = ['NEW', 'COMPLETED', 'CANCELLED', 'CONVERTED'] as const;
+    const currentScope = opts.scope ?? 'all';
+    const scopeStatus = opts.status; // область учитывает выбранный статус
+    const [scopeMine, scopeMyDirections, scopeAll, statusAllInScope, ...statusCounts] =
+      await Promise.all([
+        countsUserId
+          ? countWith({
+              status: scopeStatus,
+              scope: 'mine',
+              scopeUserId: countsUserId,
+              managerId: undefined,
+            })
+          : Promise.resolve(0),
+        myDirs.length
+          ? countWith({
+              status: scopeStatus,
+              scope: 'my_directions',
+              myDirectionIds: myDirs,
+              managerId: undefined,
+            })
+          : Promise.resolve(0),
+        countWith({ status: scopeStatus, scope: 'all', managerId: undefined }),
+        countWith({
+          scope: currentScope,
+          scopeUserId: opts.scopeUserId,
+          myDirectionIds: opts.myDirectionIds,
+          managerId: currentScope === 'mine' ? undefined : opts.managerId,
+        }),
+        ...statusValues.map((st) =>
+          countWith({
+            status: st,
+            scope: currentScope,
+            scopeUserId: opts.scopeUserId,
+            myDirectionIds: opts.myDirectionIds,
+            managerId: currentScope === 'mine' ? undefined : opts.managerId,
+          }),
+        ),
+      ]);
+
+    const status: Record<string, number> = { '': statusAllInScope };
+    statusValues.forEach((st, i) => {
+      status[st] = statusCounts[i] ?? 0;
+    });
+
+    return {
+      scope: {
+        mine: scopeMine,
+        my_directions: scopeMyDirections,
+        all: scopeAll,
+      },
+      status,
     };
   }
 

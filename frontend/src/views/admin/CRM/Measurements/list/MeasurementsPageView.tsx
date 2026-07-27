@@ -15,6 +15,8 @@ import {
   MEASUREMENTS_PAGE_LIMIT_OPTIONS,
   type MeasurementsPageLimit,
 } from '../shared/measurementsListFilters';
+import { MeasurementsListFiltersPanel } from './MeasurementsListFiltersPanel';
+import { MeasurementsListRulesInfoTip } from './MeasurementsListRulesInfoTip';
 import styles from './MeasurementsPage.module.css';
 import type { MeasurementsPageModel } from './hooks/useMeasurementsPage';
 import { formatDate, formatUser, measurementsFilterFieldClass } from './measurements-page.utils';
@@ -22,6 +24,10 @@ import { formatDate, formatUser, measurementsFilterFieldClass } from './measurem
 type MeasurementsPageViewProps = {
   model: MeasurementsPageModel;
 };
+
+function chipClass(active: boolean): string {
+  return `${styles.chip}${active ? ` ${styles.chipActive}` : ''}`;
+}
 
 export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
   const router = useRouter();
@@ -47,12 +53,18 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
     setDateFrom,
     dateTo,
     setDateTo,
+    listScope,
+    setListScope,
+    scopeCounts,
+    statusCounts,
     measurementSortBy,
     measurementSortOrder,
     linksByMeasurementId,
     fetchData,
     handleMeasurementSortChange,
   } = model;
+
+  const showManagerFilter = listScope !== 'mine';
 
   const renderDirection = (m: Measurement) => {
     const primary = m.direction?.name;
@@ -149,7 +161,10 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Замеры</h1>
+          <div className={styles.headerTitleGroup}>
+            <h1 className={styles.title}>Замеры</h1>
+            <MeasurementsListRulesInfoTip />
+          </div>
           <span className={styles.count}>{total} замеров</span>
         </div>
         <div className={styles.headerActions}>
@@ -166,132 +181,186 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
         </div>
       </div>
 
-      <div className={styles.filters}>
-        <input
-          type="search"
-          placeholder="Поиск по ФИО, адресу, телефону..."
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          className={measurementsFilterFieldClass(
-            styles.searchInput,
-            Boolean(search.trim()),
-            styles.filterActive
-          )}
-          aria-label="Поиск по ФИО, адресу, телефону"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => {
-            setStatusFilter(e.target.value);
-            setPage(1);
-          }}
-          className={measurementsFilterFieldClass(
-            styles.select,
-            Boolean(statusFilter),
-            styles.filterActive
-          )}
-          aria-label="Статус"
+      <div className={styles.filtersStack}>
+        <MeasurementsListFiltersPanel
+          listScope={listScope}
+          statusFilter={statusFilter}
+          search={search}
+          managerFilter={managerFilter}
+          managerOptions={managerOptions}
+          directionFilter={directionFilter}
+          directions={directions}
+          dateFrom={dateFrom}
+          dateTo={dateTo}
+          limit={limit}
         >
-          <option value="">Все статусы</option>
-          {MEASUREMENT_STATUS_OPTIONS.map((o) => (
-            <option key={o.value} value={o.value}>
-              {o.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={managerFilter}
-          onChange={(e) => {
-            setManagerFilter(e.target.value);
-            setPage(1);
-          }}
-          className={measurementsFilterFieldClass(
-            styles.select,
-            Boolean(managerFilter),
-            styles.filterActive
-          )}
-          aria-label="Менеджер"
-        >
-          <option value="">Все менеджеры</option>
-          {managerOptions.map((p) => (
-            <option key={p.crmUserId} value={p.crmUserId}>
-              {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
-            </option>
-          ))}
-        </select>
-        <select
-          value={directionFilter}
-          onChange={(e) => {
-            setDirectionFilter(e.target.value);
-            setPage(1);
-          }}
-          className={measurementsFilterFieldClass(
-            styles.select,
-            Boolean(directionFilter),
-            styles.filterActive
-          )}
-          aria-label="Направление"
-        >
-          <option value="">Все направления</option>
-          {directions.map((d) => (
-            <option key={d.id} value={d.id}>
-              {d.name}
-            </option>
-          ))}
-        </select>
-        <label className={styles.dateLabel}>
-          <span className={styles.dateLabelText}>Дата от</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => {
-              setDateFrom(e.target.value);
-              setPage(1);
-            }}
-            className={measurementsFilterFieldClass(
-              styles.dateInput,
-              Boolean(dateFrom),
-              styles.filterActive
-            )}
-            aria-label="Дата от"
-          />
-        </label>
-        <label className={styles.dateLabel}>
-          <span className={styles.dateLabelText}>Дата до</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => {
-              setDateTo(e.target.value);
-              setPage(1);
-            }}
-            className={measurementsFilterFieldClass(
-              styles.dateInput,
-              Boolean(dateTo),
-              styles.filterActive
-            )}
-            aria-label="Дата до"
-          />
-        </label>
-        <select
-          value={limit}
-          onChange={(e) => {
-            setLimit(Number(e.target.value) as MeasurementsPageLimit);
-            setPage(1);
-          }}
-          disabled={loading}
-          className={styles.pageLimitSelect}
-          aria-label="Количество строк на странице"
-        >
-          {MEASUREMENTS_PAGE_LIMIT_OPTIONS.map((n) => (
-            <option key={n} value={n}>
-              {n} на странице
-            </option>
-          ))}
-        </select>
+          <div className={styles.chipRow} role="group" aria-label="Область списка замеров">
+            <span className={styles.chipRowLabel}>Очередь</span>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(listScope === 'mine')}
+              onClick={() => setListScope('mine')}
+            >
+              Мои ({scopeCounts.mine ?? 0})
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(listScope === 'my_directions')}
+              onClick={() => setListScope('my_directions')}
+            >
+              Мои направления ({scopeCounts.my_directions ?? 0})
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(listScope === 'all')}
+              onClick={() => setListScope('all')}
+            >
+              Все ({scopeCounts.all ?? 0})
+            </button>
+          </div>
+
+          <div className={styles.chipRow} role="group" aria-label="Статус замера">
+            <span className={styles.chipRowLabel}>Статус</span>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(statusFilter === '')}
+              onClick={() => {
+                setStatusFilter('');
+                setPage(1);
+              }}
+            >
+              Все ({statusCounts[''] ?? total})
+            </button>
+            {MEASUREMENT_STATUS_OPTIONS.map((o) => (
+              <button
+                key={o.value}
+                type="button"
+                disabled={loading}
+                className={chipClass(statusFilter === o.value)}
+                onClick={() => {
+                  setStatusFilter(o.value);
+                  setPage(1);
+                }}
+              >
+                {o.label} ({statusCounts[o.value] ?? 0})
+              </button>
+            ))}
+          </div>
+
+          <div className={styles.filters}>
+            <input
+              type="search"
+              placeholder="Поиск по ФИО, адресу, телефону..."
+              value={search}
+              onChange={(e) => {
+                setSearch(e.target.value);
+                setPage(1);
+              }}
+              className={measurementsFilterFieldClass(
+                styles.searchInput,
+                Boolean(search.trim()),
+                styles.filterActive
+              )}
+              aria-label="Поиск по ФИО, адресу, телефону"
+            />
+            {showManagerFilter ? (
+              <select
+                value={managerFilter}
+                onChange={(e) => {
+                  setManagerFilter(e.target.value);
+                  setPage(1);
+                }}
+                className={measurementsFilterFieldClass(
+                  styles.select,
+                  Boolean(managerFilter),
+                  styles.filterActive
+                )}
+                aria-label="Менеджер"
+              >
+                <option value="">Все менеджеры</option>
+                {managerOptions.map((p) => (
+                  <option key={p.crmUserId} value={p.crmUserId}>
+                    {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+            <select
+              value={directionFilter}
+              onChange={(e) => {
+                setDirectionFilter(e.target.value);
+                setPage(1);
+              }}
+              className={measurementsFilterFieldClass(
+                styles.select,
+                Boolean(directionFilter),
+                styles.filterActive
+              )}
+              aria-label="Направление"
+            >
+              <option value="">Все направления</option>
+              {directions.map((d) => (
+                <option key={d.id} value={d.id}>
+                  {d.name}
+                </option>
+              ))}
+            </select>
+            <label className={styles.dateLabel}>
+              <span className={styles.dateLabelText}>Дата от</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => {
+                  setDateFrom(e.target.value);
+                  setPage(1);
+                }}
+                className={measurementsFilterFieldClass(
+                  styles.dateInput,
+                  Boolean(dateFrom),
+                  styles.filterActive
+                )}
+                aria-label="Дата от"
+              />
+            </label>
+            <label className={styles.dateLabel}>
+              <span className={styles.dateLabelText}>Дата до</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => {
+                  setDateTo(e.target.value);
+                  setPage(1);
+                }}
+                className={measurementsFilterFieldClass(
+                  styles.dateInput,
+                  Boolean(dateTo),
+                  styles.filterActive
+                )}
+                aria-label="Дата до"
+              />
+            </label>
+            <select
+              value={limit}
+              onChange={(e) => {
+                setLimit(Number(e.target.value) as MeasurementsPageLimit);
+                setPage(1);
+              }}
+              disabled={loading}
+              className={styles.pageLimitSelect}
+              aria-label="Количество строк на странице"
+            >
+              {MEASUREMENTS_PAGE_LIMIT_OPTIONS.map((n) => (
+                <option key={n} value={n}>
+                  {n} на странице
+                </option>
+              ))}
+            </select>
+          </div>
+        </MeasurementsListFiltersPanel>
       </div>
 
       <DataTable

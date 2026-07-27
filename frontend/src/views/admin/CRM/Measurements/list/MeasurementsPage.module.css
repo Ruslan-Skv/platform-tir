@@ -34,6 +34,12 @@
   gap: var(--admin-space-2xl);
 }
 
+.headerTitleGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
 .title {
   font-size: var(--admin-font-size-4xl);
   font-weight: 700;
@@ -103,7 +109,158 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--admin-space-md);
+  margin-bottom: 0;
+}
+
+.filtersStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
   margin-bottom: var(--admin-space-xl);
+}
+
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.chipRowLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+  margin-right: var(--admin-space-2xs);
+}
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.chip:hover:not(:disabled) {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+  background: var(--admin-surface-muted);
+}
+
+.chip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.chipActive {
+  border-color: var(--admin-info);
+  background: var(--admin-info-bg-soft);
+  color: var(--admin-info-text, #1e40af);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
+  font-weight: 600;
+}
+
+.filtersPanel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface);
+}
+
+.filtersPanelHeader {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.filtersPanelToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.filtersPanelToggle:hover {
+  color: var(--admin-text-primary);
+}
+
+.filtersPanelChevron {
+  display: inline-flex;
+  width: 0.85rem;
+  justify-content: center;
+  color: var(--admin-text-muted);
+}
+
+.filtersPanelTitle {
+  letter-spacing: 0.01em;
+}
+
+.filtersPanelExpandLink {
+  margin: 0;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-accent, #0ea5e9);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.3;
+  cursor: pointer;
+}
+
+.filtersPanelExpandLink:hover {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+  background: var(--admin-surface-muted);
+}
+
+.filtersSummary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.filtersSummaryChip {
+  display: inline-flex;
+  max-width: 100%;
+  padding: var(--admin-space-2xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.35;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.filtersPanelBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
 }
 
 .directoryPagination {
@@ -326,6 +483,30 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput.filterActive::placeholder {
   color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chip {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chipActive {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
+  color: var(--admin-text-primary, #f9fafb);
+  box-shadow: 0 0 0 1px var(--admin-info-border, #93c5fd);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filtersPanel {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filtersSummaryChip {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusNEW {

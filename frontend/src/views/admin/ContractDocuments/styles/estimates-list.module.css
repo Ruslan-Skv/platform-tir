@@ -562,7 +562,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: var(--admin-border);
 }
 
-/* Компактное тело таблицы */
+/* Компактное тело таблицы — как у договоров */
 .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
   padding: 4px 6px;
   font-size: 0.75rem;
@@ -585,34 +585,30 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   box-shadow: none !important;
 }
 
-/* Карточки объектов расчётов — тёплый amber (договора используют teal) */
+/* Карточки объектов — светлый amber (договора: teal); высота как у object-row договоров */
 .estimatesDirectoryTable .estimatesListObjectRow td {
-  background: var(--admin-warning-bg, #fef3c7) !important;
-  border-top-color: var(--admin-warning-border, #fcd34d) !important;
-  border-bottom-color: var(--admin-warning-border, #fcd34d) !important;
+  background: #fffbeb !important;
+  border-top-color: var(--admin-warning-border-soft, #fde68a) !important;
+  border-bottom-color: var(--admin-warning-border-soft, #fde68a) !important;
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
+  font-size: 0.75rem;
+  line-height: 1.25;
 }
 
 .estimatesDirectoryTable .estimatesListObjectRow:hover td {
-  background: color-mix(
-    in srgb,
-    var(--admin-warning-bg, #fef3c7) 70%,
-    var(--admin-surface, #fff)
-  ) !important;
+  background: color-mix(in srgb, #fffbeb 72%, var(--admin-surface, #fff)) !important;
 }
 
 .estimatesDirectoryTable .estimatesListObjectRowExpanded td {
-  background: color-mix(
-    in srgb,
-    var(--admin-warning-bg, #fef3c7) 78%,
-    var(--admin-warning-amber, #fbbf24)
-  ) !important;
+  background: color-mix(in srgb, #fffbeb 88%, var(--admin-warning-bg, #fef3c7)) !important;
 }
 
 .estimatesDirectoryTable .estimatesListObjectAccentCell {
   box-shadow:
-    inset 4px 0 0 var(--admin-warning-strong, #d97706),
+    inset 4px 0 0 var(--admin-warning, #f59e0b),
     inset 0 1px 0 rgb(255 255 255 / 35%) !important;
-  border-color: var(--admin-warning-border, #fcd34d) !important;
+  border-color: var(--admin-warning-border-soft, #fde68a) !important;
 }
 
 .estimatesDirectoryTable .estimatesListObjectRowCollapsed td:first-child {
@@ -642,7 +638,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 }
 
 .estimatesDirectoryTable .estimatesListChildRowLast td {
-  border-bottom: 1px solid var(--admin-warning-border, #fcd34d);
+  border-bottom: 1px solid var(--admin-warning-border-soft, #fde68a);
 }
 
 .estimatesDirectoryTable .estimatesListStandaloneCard td {
@@ -650,6 +646,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-top: 1px solid var(--admin-border-strong, #cbd5e1) !important;
   border-bottom: 1px solid var(--admin-border-strong, #cbd5e1) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
+  padding-top: 5px !important;
+  padding-bottom: 5px !important;
 }
 
 .estimatesDirectoryTable .estimatesListStandaloneCard td:first-child {
@@ -657,7 +655,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-top-left-radius: var(--admin-radius-md, 8px);
   border-bottom-left-radius: var(--admin-radius-md, 8px);
   box-shadow:
-    inset 4px 0 0 var(--admin-warning-strong, #d97706),
+    inset 4px 0 0 var(--admin-warning, #f59e0b),
     inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
@@ -675,9 +673,9 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   .estimatesDirectoryTable
   .estimatesListObjectRow
   td {
-  background: rgb(245 158 11 / 0.16) !important;
-  border-top-color: rgb(251 191 36 / 0.35) !important;
-  border-bottom-color: rgb(251 191 36 / 0.35) !important;
+  background: rgb(245 158 11 / 0.1) !important;
+  border-top-color: rgb(251 191 36 / 0.28) !important;
+  border-bottom-color: rgb(251 191 36 / 0.28) !important;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -700,6 +698,12 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 @media (min-width: 1280px) {
   .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
     padding: 4px 5px;
+  }
+
+  .estimatesDirectoryTable .estimatesListObjectRow td,
+  .estimatesDirectoryTable .estimatesListStandaloneCard td {
+    padding-top: 5px !important;
+    padding-bottom: 5px !important;
   }
 }
 
@@ -827,6 +831,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* В таблице расчётов жирным в строках — только название объекта (шапка — thead th) */
 .estimatesDirectoryTable .estimatesListTable .estimatesCardTitle {
   font-weight: normal;
+  font-size: 0.8125rem;
+  line-height: 1.25;
 }
 
 .estimatesListEmptyInGroupRow td {

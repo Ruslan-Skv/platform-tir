@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useSearchParams } from 'next/navigation';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type ContractDocumentPackage,
   type ContractEstimatePreset,
@@ -15,8 +16,10 @@ import {
 import {
   type CrmDirection,
   type Measurement,
+  type MeasurementsListCounts,
   getCrmDirections,
   getMeasurements,
+  getMyCrmDirectionIds,
 } from '@/shared/api/admin-crm';
 
 import {
@@ -25,22 +28,29 @@ import {
   parseMeasurementListSortBy,
 } from '../../shared/measurementListSort';
 import {
+  type MeasurementsListScope,
   type MeasurementsPageLimit,
   loadMeasurementsListFilters,
   persistMeasurementsListFilters,
   reloadMeasurementsListFiltersFromStorage,
 } from '../../shared/measurementsListFilters';
+import { getMeasurementsListRoleDefaults } from '../../shared/measurementsListScope';
 import type { MeasurementLinksInfo } from '../measurements-page.types';
 import {
   chooseLatestByUpdatedAt,
   extractEstimatePresetIdsFromPackageForm,
 } from '../measurements-page.utils';
 
+const EMPTY_SCOPE_COUNTS = { mine: 0, my_directions: 0, all: 0 };
+
 export function useMeasurementsPage() {
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const initialListStateRef = useRef(loadMeasurementsListFilters());
   const initialListState = initialListStateRef.current;
   const listStateHydratedRef = useRef(false);
+  const skipListFiltersPersistRef = useRef(true);
+  const roleDefaultsAppliedRef = useRef(false);
 
   const [data, setData] = useState<Measurement[]>([]);
   const [total, setTotal] = useState(0);
@@ -49,21 +59,34 @@ export function useMeasurementsPage() {
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
+  const [myDirectionIds, setMyDirectionIds] = useState<string[]>([]);
   const [statusFilter, setStatusFilter] = useState(initialListState.statusFilter);
   const [managerFilter, setManagerFilter] = useState(initialListState.managerFilter);
   const [directionFilter, setDirectionFilter] = useState(initialListState.directionFilter);
   const [search, setSearch] = useState(initialListState.search);
   const [dateFrom, setDateFrom] = useState(initialListState.dateFrom);
   const [dateTo, setDateTo] = useState(initialListState.dateTo);
+  const [listScope, setListScopeState] = useState<MeasurementsListScope>(
+    initialListState.listScope
+  );
+  const [scopeTouched, setScopeTouched] = useState(initialListState.scopeTouched);
   const [measurementSortBy, setMeasurementSortBy] = useState<MeasurementListSortBy>(
     initialListState.sortBy
   );
   const [measurementSortOrder, setMeasurementSortOrder] = useState<MeasurementListSortOrder>(
     initialListState.sortOrder
   );
+  const [scopeCounts, setScopeCounts] = useState(EMPTY_SCOPE_COUNTS);
+  const [statusCounts, setStatusCounts] = useState<Record<string, number>>({});
   const [linksByMeasurementId, setLinksByMeasurementId] = useState<
     Record<string, MeasurementLinksInfo>
   >({});
+
+  const setListScope = useCallback((scope: MeasurementsListScope) => {
+    setListScopeState(scope);
+    setScopeTouched(true);
+    setPage(1);
+  }, []);
 
   useEffect(() => {
     const saved = reloadMeasurementsListFiltersFromStorage();
@@ -77,11 +100,25 @@ export function useMeasurementsPage() {
     setMeasurementSortOrder(saved.sortOrder);
     setPage(saved.page);
     setLimit(saved.pageLimit);
+    setListScopeState(saved.listScope);
+    setScopeTouched(saved.scopeTouched);
     listStateHydratedRef.current = true;
   }, []);
 
   useEffect(() => {
+    if (scopeTouched || roleDefaultsAppliedRef.current) return;
+    if (!user?.role) return;
+    const defaults = getMeasurementsListRoleDefaults(user.role);
+    setListScopeState(defaults.listScope);
+    roleDefaultsAppliedRef.current = true;
+  }, [user?.role, scopeTouched]);
+
+  useEffect(() => {
     if (!listStateHydratedRef.current) return;
+    if (skipListFiltersPersistRef.current) {
+      skipListFiltersPersistRef.current = false;
+      return;
+    }
     persistMeasurementsListFilters({
       search,
       managerFilter,
@@ -93,6 +130,8 @@ export function useMeasurementsPage() {
       sortOrder: measurementSortOrder,
       page,
       pageLimit: limit,
+      listScope,
+      scopeTouched,
     });
   }, [
     search,
@@ -105,6 +144,8 @@ export function useMeasurementsPage() {
     measurementSortOrder,
     page,
     limit,
+    listScope,
+    scopeTouched,
   ]);
 
   useEffect(() => {
@@ -180,6 +221,20 @@ export function useMeasurementsPage() {
     []
   );
 
+  const applyCounts = useCallback((counts: MeasurementsListCounts | undefined) => {
+    if (!counts) {
+      setScopeCounts(EMPTY_SCOPE_COUNTS);
+      setStatusCounts({});
+      return;
+    }
+    setScopeCounts({
+      mine: counts.scope?.mine ?? 0,
+      my_directions: counts.scope?.my_directions ?? 0,
+      all: counts.scope?.all ?? 0,
+    });
+    setStatusCounts(counts.status ?? {});
+  }, []);
+
   const fetchData = useCallback(async () => {
     setLoading(true);
     try {
@@ -187,21 +242,27 @@ export function useMeasurementsPage() {
         page,
         limit,
         status: statusFilter || undefined,
-        managerId: managerFilter || undefined,
+        managerId: listScope === 'mine' ? undefined : managerFilter || undefined,
         directionId: directionFilter || undefined,
         search: search || undefined,
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
+        scope: listScope,
+        myDirectionIds: listScope === 'my_directions' ? myDirectionIds : undefined,
+        includeCounts: true,
+        countsMyDirectionIds: myDirectionIds,
         sortBy: measurementSortBy,
         sortOrder: measurementSortOrder,
       });
       setData(res.data);
       setTotal(res.total);
+      applyCounts(res.counts);
       await loadMeasurementLinks(res.data);
     } catch (err) {
       console.error(err);
       setData([]);
       setTotal(0);
+      applyCounts(undefined);
       setLinksByMeasurementId({});
     } finally {
       setLoading(false);
@@ -215,8 +276,11 @@ export function useMeasurementsPage() {
     search,
     dateFrom,
     dateTo,
+    listScope,
+    myDirectionIds,
     measurementSortBy,
     measurementSortOrder,
+    applyCounts,
     loadMeasurementLinks,
   ]);
 
@@ -238,6 +302,9 @@ export function useMeasurementsPage() {
         setManagerOptions(items);
       })
       .catch(() => setManagerOptions([]));
+    getMyCrmDirectionIds()
+      .then(setMyDirectionIds)
+      .catch(() => setMyDirectionIds([]));
   }, []);
 
   useEffect(() => {
@@ -276,6 +343,10 @@ export function useMeasurementsPage() {
     setDateFrom,
     dateTo,
     setDateTo,
+    listScope,
+    setListScope,
+    scopeCounts,
+    statusCounts,
     measurementSortBy,
     measurementSortOrder,
     linksByMeasurementId,

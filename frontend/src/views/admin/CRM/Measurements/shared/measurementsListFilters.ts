@@ -4,6 +4,9 @@ import {
   parseMeasurementListSortBy,
 } from './measurementListSort';
 import { MEASUREMENT_STATUS_OPTIONS } from './measurementStatuses';
+import type { MeasurementsListScope } from './measurementsListScope';
+
+export type { MeasurementsListScope } from './measurementsListScope';
 
 export const MEASUREMENTS_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
 export type MeasurementsPageLimit = (typeof MEASUREMENTS_PAGE_LIMIT_OPTIONS)[number];
@@ -20,9 +23,12 @@ export interface MeasurementsListFiltersPersisted {
   sortOrder: MeasurementListSortOrder;
   page: number;
   pageLimit: MeasurementsPageLimit;
+  listScope: MeasurementsListScope;
+  /** false → один раз применить дефолты по роли. */
+  scopeTouched: boolean;
 }
 
-const MEASUREMENTS_LIST_FILTERS_STORAGE_KEY = 'admin_measurements_list_filters_v1';
+const MEASUREMENTS_LIST_FILTERS_STORAGE_KEY = 'admin_measurements_list_filters_v2';
 const MEASUREMENTS_LIST_SORT_LEGACY_STORAGE_KEY = 'admin_measurements_list_sort';
 
 const EMPTY_FILTERS: MeasurementsListFiltersPersisted = {
@@ -36,6 +42,8 @@ const EMPTY_FILTERS: MeasurementsListFiltersPersisted = {
   sortOrder: 'desc',
   page: 1,
   pageLimit: 20,
+  listScope: 'all',
+  scopeTouched: false,
 };
 
 function normalizePage(raw: unknown): number {
@@ -56,6 +64,14 @@ const STATUS_FILTER_VALUES = new Set<string>([
   '',
   ...MEASUREMENT_STATUS_OPTIONS.map((o) => o.value),
 ]);
+
+const LIST_SCOPE_VALUES = new Set<MeasurementsListScope>(['mine', 'my_directions', 'all']);
+
+function normalizeListScope(raw: unknown): MeasurementsListScope {
+  return typeof raw === 'string' && LIST_SCOPE_VALUES.has(raw as MeasurementsListScope)
+    ? (raw as MeasurementsListScope)
+    : EMPTY_FILTERS.listScope;
+}
 
 function loadLegacySortOnly(): Pick<
   MeasurementsListFiltersPersisted,
@@ -90,6 +106,7 @@ function normalizePersistedFilters(
 
   const hasSortInPayload = typeof raw.sortBy === 'string';
   const legacy = !hasSortInPayload ? loadLegacySortOnly() : null;
+  const listScope = normalizeListScope(raw.listScope);
 
   return {
     search: typeof raw.search === 'string' ? raw.search : '',
@@ -107,6 +124,8 @@ function normalizePersistedFilters(
         : (legacy?.sortOrder ?? EMPTY_FILTERS.sortOrder),
     page: normalizePage(raw.page),
     pageLimit: normalizePageLimit(raw.pageLimit),
+    listScope,
+    scopeTouched: raw.scopeTouched === true,
   };
 }
 
@@ -116,6 +135,14 @@ function readFromLocalStorage(): MeasurementsListFiltersPersisted {
   try {
     const raw = localStorage.getItem(MEASUREMENTS_LIST_FILTERS_STORAGE_KEY);
     if (!raw) {
+      // Миграция со старого ключа v1
+      const legacyV1 = localStorage.getItem('admin_measurements_list_filters_v1');
+      if (legacyV1) {
+        const migrated = normalizePersistedFilters(
+          JSON.parse(legacyV1) as Partial<MeasurementsListFiltersPersisted>
+        );
+        return migrated;
+      }
       const legacy = loadLegacySortOnly();
       return legacy ? { ...EMPTY_FILTERS, ...legacy } : { ...EMPTY_FILTERS };
     }
@@ -148,6 +175,7 @@ export function persistMeasurementsListFilters(state: MeasurementsListFiltersPer
   try {
     localStorage.setItem(MEASUREMENTS_LIST_FILTERS_STORAGE_KEY, JSON.stringify(state));
     localStorage.removeItem(MEASUREMENTS_LIST_SORT_LEGACY_STORAGE_KEY);
+    localStorage.removeItem('admin_measurements_list_filters_v1');
   } catch {
     /* ignore quota / private mode */
   }

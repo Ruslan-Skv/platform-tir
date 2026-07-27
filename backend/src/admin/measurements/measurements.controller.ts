@@ -46,6 +46,7 @@ export class MeasurementsController {
 
   @Get()
   findAll(
+    @Req() req: RequestWithUser,
     @Query('status') status?: string,
     @Query('managerId') managerId?: string,
     @Query('surveyorId') surveyorId?: string,
@@ -55,6 +56,10 @@ export class MeasurementsController {
     @Query('dateTo') dateTo?: string,
     @Query('withoutContract') withoutContract?: string,
     @Query('hasCustomerId') hasCustomerId?: string,
+    @Query('scope') scope?: string,
+    @Query('myDirectionIds') myDirectionIds?: string,
+    @Query('includeCounts') includeCounts?: string,
+    @Query('countsMyDirectionIds') countsMyDirectionIds?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('sortBy') sortBy?: string,
@@ -66,6 +71,14 @@ export class MeasurementsController {
         ? sortBy
         : undefined;
     const sortOrderNorm = sortOrder === 'asc' || sortOrder === 'desc' ? sortOrder : undefined;
+    const scopeNorm =
+      scope === 'mine' || scope === 'my_directions' || scope === 'all' ? scope : 'all';
+    const parseIds = (raw?: string) =>
+      (raw ?? '')
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean);
+    const userId = req.user?.id?.trim() || undefined;
     return this.measurementsService.findAll({
       status,
       managerId,
@@ -76,6 +89,12 @@ export class MeasurementsController {
       dateTo,
       withoutContract: truthy(withoutContract),
       hasCustomerId: truthy(hasCustomerId),
+      scope: scopeNorm,
+      scopeUserId: scopeNorm === 'mine' ? userId : undefined,
+      myDirectionIds: scopeNorm === 'my_directions' ? parseIds(myDirectionIds) : undefined,
+      includeCounts: truthy(includeCounts),
+      countsUserId: userId,
+      countsMyDirectionIds: parseIds(countsMyDirectionIds),
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
       sortBy: sortByNorm,

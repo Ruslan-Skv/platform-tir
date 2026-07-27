@@ -712,6 +712,13 @@ export interface Measurement {
 
 export type MeasurementListSortBy = 'receptionDate' | 'executionDate' | 'status';
 
+export type MeasurementsListScope = 'mine' | 'my_directions' | 'all';
+
+export type MeasurementsListCounts = {
+  scope: { mine: number; my_directions: number; all: number };
+  status: Record<string, number>;
+};
+
 export async function getMeasurements(params?: {
   status?: string;
   managerId?: string;
@@ -724,6 +731,10 @@ export async function getMeasurements(params?: {
   withoutContract?: boolean;
   /** Только замеры с выбранной карточкой клиента (`customerId`). */
   hasCustomerId?: boolean;
+  scope?: MeasurementsListScope;
+  myDirectionIds?: string[];
+  includeCounts?: boolean;
+  countsMyDirectionIds?: string[];
   page?: number;
   limit?: number;
   sortBy?: MeasurementListSortBy;
@@ -734,6 +745,7 @@ export async function getMeasurements(params?: {
   page: number;
   limit: number;
   totalPages: number;
+  counts?: MeasurementsListCounts;
 }> {
   const searchParams = new URLSearchParams();
   if (params?.status) searchParams.set('status', params.status);
@@ -745,6 +757,14 @@ export async function getMeasurements(params?: {
   if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
   if (params?.withoutContract) searchParams.set('withoutContract', 'true');
   if (params?.hasCustomerId) searchParams.set('hasCustomerId', 'true');
+  if (params?.scope && params.scope !== 'all') searchParams.set('scope', params.scope);
+  if (params?.myDirectionIds && params.myDirectionIds.length > 0) {
+    searchParams.set('myDirectionIds', [...new Set(params.myDirectionIds)].join(','));
+  }
+  if (params?.includeCounts) searchParams.set('includeCounts', 'true');
+  if (params?.countsMyDirectionIds && params.countsMyDirectionIds.length > 0) {
+    searchParams.set('countsMyDirectionIds', [...new Set(params.countsMyDirectionIds)].join(','));
+  }
   searchParams.set('page', String(params?.page ?? 1));
   searchParams.set('limit', String(params?.limit ?? 20));
   if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
