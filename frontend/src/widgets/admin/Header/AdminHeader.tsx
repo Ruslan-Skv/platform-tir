@@ -12,6 +12,7 @@ import {
 } from '@heroicons/react/24/outline';
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
 
@@ -148,8 +149,17 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
 
   const notificationRef = useRef<HTMLDivElement>(null);
+  const notificationsDropdownRef = useRef<HTMLDivElement>(null);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const headerRevealStartedAt = useRef(0);
+  const [notificationsPanelBox, setNotificationsPanelBox] = useState<{
+    top: number;
+    left: number;
+    width: number;
+    mobile: boolean;
+  } | null>(null);
+  const [notificationsPanelRendered, setNotificationsPanelRendered] = useState(false);
+  const [notificationsPanelOpen, setNotificationsPanelOpen] = useState(false);
 
   useLayoutEffect(() => {
     const root = headerRef.current;
@@ -165,6 +175,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         root.querySelectorAll<HTMLElement>(revealSelector).forEach((node) => {
           node.classList.add(styles.headerRevealPlay);
+          node.classList.add(styles.headerRevealDone);
           node.style.setProperty('--header-reveal-delay', '0ms');
         });
         return;
@@ -178,17 +189,36 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
 
       const elapsed = performance.now() - headerRevealStartedAt.current;
       nodes.forEach((node, index) => {
-        if (node.dataset.revealStarted === '1') return;
+        if (node.dataset.revealStarted === '1') {
+          // React перезаписывает className и может снять headerRevealPlay → opacity: 0
+          if (
+            !node.classList.contains(styles.headerRevealPlay) &&
+            !node.classList.contains(styles.headerRevealDone)
+          ) {
+            node.classList.add(styles.headerRevealDone);
+          }
+          return;
+        }
         node.dataset.revealStarted = '1';
         const delay = Math.max(0, index * STAGGER_MS - elapsed);
         node.style.setProperty('--header-reveal-delay', `${delay}ms`);
         node.classList.add(styles.headerRevealPlay);
+        const onAnimEnd = (event: AnimationEvent) => {
+          if (event.target !== node) return;
+          node.classList.add(styles.headerRevealDone);
+        };
+        node.addEventListener('animationend', onAnimEnd, { once: true });
       });
     };
 
     syncRevealOrder();
     const observer = new MutationObserver(syncRevealOrder);
-    observer.observe(root, { childList: true, subtree: true });
+    observer.observe(root, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ['class'],
+    });
     return () => observer.disconnect();
   }, []);
 
@@ -399,10 +429,13 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+      const target = event.target as Node;
+      const inBell = notificationRef.current?.contains(target);
+      const inPanel = notificationsDropdownRef.current?.contains(target);
+      if (!inBell && !inPanel) {
         setShowNotifications(false);
       }
-      if (userMenuRef.current && !userMenuRef.current.contains(event.target as Node)) {
+      if (userMenuRef.current && !userMenuRef.current.contains(target)) {
         setShowUserMenu(false);
       }
     };
@@ -412,6 +445,78 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  useLayoutEffect(() => {
+    if (!showNotifications) return;
+
+    const syncBox = () => {
+      const header = headerRef.current;
+      const bell = notificationRef.current;
+      if (!header || !bell) return;
+
+      const gutter = 16;
+      const isMobile = window.matchMedia('(max-width: 1024px)').matches;
+      if (isMobile) {
+        setNotificationsPanelBox({
+          top: Math.round(header.getBoundingClientRect().bottom + 8),
+          left: gutter,
+          width: Math.max(280, window.innerWidth - gutter * 2),
+          mobile: true,
+        });
+        return;
+      }
+
+      const bellRect = bell.getBoundingClientRect();
+      const width = Math.min(360, window.innerWidth - gutter * 2);
+      const left = Math.min(
+        Math.max(gutter, Math.round(bellRect.right - width)),
+        window.innerWidth - width - gutter
+      );
+      setNotificationsPanelBox({
+        top: Math.round(bellRect.bottom + 8),
+        left,
+        width,
+        mobile: false,
+      });
+    };
+
+    syncBox();
+    window.addEventListener('resize', syncBox);
+    window.addEventListener('scroll', syncBox, true);
+    return () => {
+      window.removeEventListener('resize', syncBox);
+      window.removeEventListener('scroll', syncBox, true);
+    };
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (showNotifications) {
+      setNotificationsPanelRendered(true);
+      return;
+    }
+    setNotificationsPanelOpen(false);
+    if (
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches
+    ) {
+      setNotificationsPanelRendered(false);
+      setNotificationsPanelBox(null);
+    }
+  }, [showNotifications]);
+
+  useEffect(() => {
+    if (!showNotifications || !notificationsPanelBox || !notificationsPanelRendered) return;
+    const id = window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => setNotificationsPanelOpen(true));
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [showNotifications, notificationsPanelBox, notificationsPanelRendered]);
+
+  const finishNotificationsPanelExit = useCallback(() => {
+    if (showNotifications) return;
+    setNotificationsPanelRendered(false);
+    setNotificationsPanelBox(null);
+  }, [showNotifications]);
 
   const displayName = user?.firstName
     ? `${user.firstName} ${user.lastName || ''}`.trim()
@@ -565,25 +670,27 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           <WorkDayWidget />
         </span>
         {canTogglePublicSiteEdit && (
-          <button
-            type="button"
-            className={
-              publicSiteEditMode
-                ? `${styles.publicSiteEditToggle} ${styles.publicSiteEditToggleActive} ${styles.headerReveal}`
-                : `${styles.publicSiteEditToggle} ${styles.headerReveal}`
-            }
-            onClick={togglePublicSiteEditMode}
-            title={
-              publicSiteEditMode
-                ? 'Выключить редактирование публичного сайта'
-                : 'Включить режим: правки характеристик товаров на публичном сайте'
-            }
-          >
-            <PencilSquareIcon className={styles.publicSiteEditIcon} aria-hidden />
-            <span className={styles.publicSiteEditLabel}>
-              {publicSiteEditMode ? 'Редактирование сайта: вкл' : 'Редактировать публичный сайт'}
-            </span>
-          </button>
+          <span className={styles.headerReveal}>
+            <button
+              type="button"
+              className={
+                publicSiteEditMode
+                  ? `${styles.publicSiteEditToggle} ${styles.publicSiteEditToggleActive}`
+                  : styles.publicSiteEditToggle
+              }
+              onClick={togglePublicSiteEditMode}
+              title={
+                publicSiteEditMode
+                  ? 'Выключить редактирование публичного сайта'
+                  : 'Включить режим: правки характеристик товаров на публичном сайте'
+              }
+            >
+              <PencilSquareIcon className={styles.publicSiteEditIcon} aria-hidden />
+              <span className={styles.publicSiteEditLabel}>
+                {publicSiteEditMode ? 'Редактирование сайта: вкл' : 'Редактировать публичный сайт'}
+              </span>
+            </button>
+          </span>
         )}
         <button
           type="button"
@@ -617,101 +724,133 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
               {unreadCount > 0 && <span className={styles.badge}>{unreadCount}</span>}
             </button>
 
-            {showNotifications && (
-              <div className={`${styles.dropdown} ${styles.notificationsDropdown}`}>
-                <div className={styles.dropdownHeader}>
-                  <span>Уведомления</span>
-                  <div className={styles.dropdownHeaderActions}>
-                    <Link
-                      href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                      className={styles.notificationSettingsLink}
+            {notificationsPanelRendered &&
+              notificationsPanelBox &&
+              createPortal(
+                <>
+                  {notificationsPanelBox.mobile ? (
+                    <button
+                      type="button"
+                      className={`${styles.notificationsBackdrop}${
+                        notificationsPanelOpen ? ` ${styles.notificationsBackdropOpen}` : ''
+                      }`}
+                      aria-label="Закрыть уведомления"
                       onClick={() => setShowNotifications(false)}
-                    >
-                      Настройки
-                    </Link>
-                    {visibleNotificationItems.length > 0 ? (
-                      <button
-                        type="button"
-                        className={styles.markAllRead}
-                        onClick={() => void handleMarkAllNotificationsRead()}
-                      >
-                        Прочитать все
-                      </button>
-                    ) : null}
-                  </div>
-                </div>
-                <div className={styles.notificationList}>
-                  {notificationsLoading ? (
-                    <div className={styles.notificationItem}>
-                      <p className={styles.notificationText}>Загрузка...</p>
-                    </div>
-                  ) : visibleNotificationItems.length === 0 ? (
-                    <div className={styles.notificationItem}>
-                      <p className={styles.notificationText}>
-                        {hasDismissedNotifications
-                          ? 'Все уведомления прочитаны'
-                          : 'Нет новых уведомлений'}
-                      </p>
-                      {enabledNotificationItems.length > 0 && !hasDismissedNotifications ? (
-                        <span className={styles.notificationHint}>
-                          Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
-                        </span>
-                      ) : null}
-                    </div>
-                  ) : (
-                    visibleNotificationItems.map((item) => (
-                      <div
-                        key={`${item.type}-${item.id}`}
-                        className={`${styles.notificationRow} ${styles.unread}`}
-                      >
-                        <Link
-                          href={getSafeHref(item.link, '#')}
-                          className={styles.notificationItem}
-                          onClick={() => handleNotificationClick(item)}
-                        >
-                          <p className={styles.notificationText}>{item.text}</p>
-                          <span className={styles.notificationTime}>
-                            {formatTimeAgo(item.date)}
-                          </span>
-                        </Link>
-                        <button
-                          type="button"
-                          className={styles.dismissNotification}
-                          title="Отметить прочитанным"
-                          aria-label="Отметить прочитанным"
-                          onClick={() => handleDismissNotification(item)}
-                        >
-                          <CheckIcon className={styles.dismissNotificationIcon} aria-hidden />
-                        </button>
-                      </div>
-                    ))
-                  )}
-                </div>
-                <div className={styles.dropdownFooter}>
-                  <Link
-                    href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                    className={styles.notificationSettingsButton}
-                    onClick={() => setShowNotifications(false)}
+                    />
+                  ) : null}
+                  <div
+                    ref={notificationsDropdownRef}
+                    className={`${styles.dropdown} ${styles.notificationsDropdown} ${styles.notificationsDropdownPortal}${
+                      notificationsPanelOpen ? ` ${styles.notificationsDropdownPortalOpen}` : ''
+                    }`}
+                    style={{
+                      top: notificationsPanelBox.top,
+                      left: notificationsPanelBox.left,
+                      width: notificationsPanelBox.width,
+                      minWidth: notificationsPanelBox.width,
+                      maxWidth: notificationsPanelBox.width,
+                    }}
+                    onTransitionEnd={(event) => {
+                      if (event.target !== event.currentTarget) return;
+                      if (event.propertyName !== 'opacity') return;
+                      finishNotificationsPanelExit();
+                    }}
                   >
-                    Настройки уведомлений и push
-                  </Link>
-                  <div className={styles.footerChips}>
-                    {FOOTER_LINKS.filter(
-                      (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
-                    ).map((link) => (
+                    <div className={styles.dropdownHeader}>
+                      <span>Уведомления</span>
+                      <div className={styles.dropdownHeaderActions}>
+                        <Link
+                          href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                          className={styles.notificationSettingsLink}
+                          onClick={() => setShowNotifications(false)}
+                        >
+                          Настройки
+                        </Link>
+                        {visibleNotificationItems.length > 0 ? (
+                          <button
+                            type="button"
+                            className={styles.markAllRead}
+                            onClick={() => void handleMarkAllNotificationsRead()}
+                          >
+                            Прочитать все
+                          </button>
+                        ) : null}
+                      </div>
+                    </div>
+                    <div className={styles.notificationList}>
+                      {notificationsLoading ? (
+                        <div className={styles.notificationItem}>
+                          <p className={styles.notificationText}>Загрузка...</p>
+                        </div>
+                      ) : visibleNotificationItems.length === 0 ? (
+                        <div className={styles.notificationItem}>
+                          <p className={styles.notificationText}>
+                            {hasDismissedNotifications
+                              ? 'Все уведомления прочитаны'
+                              : 'Нет новых уведомлений'}
+                          </p>
+                          {enabledNotificationItems.length > 0 && !hasDismissedNotifications ? (
+                            <span className={styles.notificationHint}>
+                              Нажмите «Прочитать все» или ✓ у каждого пункта, чтобы скрыть события
+                            </span>
+                          ) : null}
+                        </div>
+                      ) : (
+                        visibleNotificationItems.map((item) => (
+                          <div
+                            key={`${item.type}-${item.id}`}
+                            className={`${styles.notificationRow} ${styles.unread}`}
+                          >
+                            <Link
+                              href={getSafeHref(item.link, '#')}
+                              className={styles.notificationItem}
+                              onClick={() => handleNotificationClick(item)}
+                            >
+                              <p className={styles.notificationText}>{item.text}</p>
+                              <span className={styles.notificationTime}>
+                                {formatTimeAgo(item.date)}
+                              </span>
+                            </Link>
+                            <button
+                              type="button"
+                              className={styles.dismissNotification}
+                              title="Отметить прочитанным"
+                              aria-label="Отметить прочитанным"
+                              onClick={() => handleDismissNotification(item)}
+                            >
+                              <CheckIcon className={styles.dismissNotificationIcon} aria-hidden />
+                            </button>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className={styles.dropdownFooter}>
                       <Link
-                        key={link.href}
-                        href={link.href}
-                        className={styles.footerChip}
+                        href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                        className={styles.notificationSettingsButton}
                         onClick={() => setShowNotifications(false)}
                       >
-                        {link.label}
+                        Настройки уведомлений и push
                       </Link>
-                    ))}
+                      <div className={styles.footerChips}>
+                        {FOOTER_LINKS.filter(
+                          (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'
+                        ).map((link) => (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            className={styles.footerChip}
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            {link.label}
+                          </Link>
+                        ))}
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </div>
-            )}
+                </>,
+                document.querySelector('[data-admin-shell]') ?? document.body
+              )}
           </div>
         ) : null}
 

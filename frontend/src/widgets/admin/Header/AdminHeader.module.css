@@ -58,7 +58,7 @@
   }
   to {
     opacity: 1;
-    transform: translateX(0);
+    transform: none;
   }
 }
 
@@ -89,6 +89,12 @@
 .headerReveal.headerRevealPlay {
   animation: adminHeaderItemIn 0.4s ease forwards;
   animation-delay: var(--header-reveal-delay, 0ms);
+}
+
+/* После анимации / если React сбросил headerRevealPlay при смене className */
+.headerReveal.headerRevealDone {
+  opacity: 1;
+  animation: none;
 }
 
 .headerRevealFade.headerRevealPlay {
@@ -648,6 +654,71 @@
   max-width: 360px;
 }
 
+.notificationsDropdownPortal {
+  position: fixed;
+  right: auto;
+  top: auto;
+  left: auto;
+  min-width: 0;
+  max-width: none;
+  z-index: 5000;
+  box-sizing: border-box;
+  /* fallback: вне .adminLayout CSS-переменные не наследуются */
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text-primary, #111827);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  box-shadow: var(--admin-shadow-popover, 0 10px 40px rgb(15 23 42 / 0.18));
+  opacity: 0;
+  transform: translateY(-8px) scale(0.98);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 0.2s ease,
+    transform 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.notificationsDropdownPortalOpen {
+  opacity: 1;
+  transform: translateY(0) scale(1);
+  pointer-events: auto;
+}
+
+.notificationsBackdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 4999;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: rgb(15 23 42 / 0.4);
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.notificationsBackdropOpen {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notificationsDropdownPortal,
+  .notificationsBackdrop {
+    transition: none;
+  }
+
+  .notificationsDropdownPortal {
+    transform: none;
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .notificationsDropdownPortal {
+  background: var(--admin-surface, #1f2937);
+  color: var(--admin-text-primary, #f9fafb);
+  border-color: var(--admin-border, #374151);
+}
+
 .notificationList {
   max-height: 340px;
   overflow-y: auto;
@@ -1063,10 +1134,9 @@
     display: none;
   }
 
-  .dropdown,
-  .notificationsDropdown {
-    min-width: min(320px, calc(100vw - var(--admin-space-2xl)));
-    max-width: calc(100vw - var(--admin-space-2xl));
+  .dropdown {
+    min-width: min(320px, calc(100vw - 2rem));
+    max-width: calc(100vw - 2rem);
   }
 
   :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileMenuButton,

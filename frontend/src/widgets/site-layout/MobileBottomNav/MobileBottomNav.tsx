@@ -17,7 +17,7 @@ import type React from 'react';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { useFormContext } from '@/features/forms';
@@ -60,6 +60,7 @@ type MoreEntry = MoreLinkEntry | MoreActionEntry;
 
 export function MobileBottomNav() {
   const pathname = usePathname();
+  const router = useRouter();
   const path = pathname ?? '';
   const { measurementModal, callbackModal } = useFormContext();
   const chatSupport = useChatSupportOpen();
@@ -119,6 +120,27 @@ export function MobileBottomNav() {
   ];
 
   const closeMore = useCallback(() => setMoreOpen(false), []);
+
+  /** Avoid sync unmount of Link on click — that can abort App Router soft-nav until reload. */
+  const onMoreLinkClick = useCallback(
+    (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
+      if (
+        e.defaultPrevented ||
+        e.button !== 0 ||
+        e.metaKey ||
+        e.altKey ||
+        e.ctrlKey ||
+        e.shiftKey
+      ) {
+        closeMore();
+        return;
+      }
+      e.preventDefault();
+      router.push(href);
+      closeMore();
+    },
+    [closeMore, router]
+  );
 
   useEffect(() => {
     if (!moreOpen) return;
@@ -224,7 +246,7 @@ export function MobileBottomNav() {
                     href={href}
                     className={`${styles.moreLink} ${isActive ? styles.moreLinkActive : ''}`}
                     aria-current={isActive ? 'page' : undefined}
-                    onClick={closeMore}
+                    onClick={(e) => onMoreLinkClick(e, href)}
                   >
                     <Icon className={styles.moreIcon} />
                     <span>{label}</span>
