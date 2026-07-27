@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
+import { ContractDocumentPackageKind } from '@prisma/client';
 
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
@@ -18,6 +18,10 @@ import { ContractDocumentPackageGlobalLibraryService } from './contract-document
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
+import {
+  ContractDocumentPackageListService,
+  type ContractDocumentPackageFindAllFilters,
+} from './list-pipeline/contract-document-package-list.service';
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
 import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
 
@@ -25,6 +29,7 @@ import { SetCeilingsPriceListDto } from './dto/set-ceilings-price-list.dto';
 export class ContractDocumentPackagesService {
   constructor(
     private readonly crud: ContractDocumentPackageCrudService,
+    private readonly list: ContractDocumentPackageListService,
     private readonly globalLibrary: ContractDocumentPackageGlobalLibraryService,
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
@@ -35,27 +40,8 @@ export class ContractDocumentPackagesService {
     return this.crud.create(dto, createdById);
   }
 
-  findAll(filters?: {
-    kind?: ContractDocumentPackageKind;
-    kinds?: ContractDocumentPackageKind[];
-    responsibleManagerId?: string;
-    statuses?: ContractDocumentPackageStatus[];
-    search?: string;
-    pipelineStatuses?: Array<'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED'>;
-    managerId?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    directionIds?: string[];
-    sortBy?: 'date' | 'contractNumber' | 'status' | 'customer' | 'manager' | 'updatedAt';
-    sortOrder?: 'asc' | 'desc';
-    page?: number;
-    limit?: number;
-    includeCounts?: boolean;
-    countsUserId?: string;
-    countsMyDirectionIds?: string[];
-    paginated?: boolean;
-  }) {
-    return this.crud.findAll(filters);
+  findAll(filters?: ContractDocumentPackageFindAllFilters) {
+    return this.list.findAll(filters);
   }
 
   findOne(id: string, options?: { allowTrashed?: boolean }) {
