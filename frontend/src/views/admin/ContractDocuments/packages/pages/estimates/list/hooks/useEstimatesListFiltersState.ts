@@ -1,25 +1,35 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  type EstimatesListScope,
   type EstimatesListViewMode,
   type EstimatesPageLimit,
   loadEstimatesListFilters,
   persistEstimatesListFilters,
   reloadEstimatesListFiltersFromStorage,
 } from '../estimatesListFilters';
+import { getEstimatesListRoleDefaults } from '../estimatesListScope';
 import { type EstimatesListSortBy, type EstimatesListSortOrder } from '../estimatesListSort';
 import { normalizeEstimatesListSearch } from '../estimatesListUtils';
 
-export function useEstimatesListFiltersState(archiveView: boolean) {
+export function useEstimatesListFiltersState(
+  archiveView: boolean,
+  currentUserRole: string | null | undefined
+) {
   const initialListFiltersRef = useRef(loadEstimatesListFilters());
   const listFiltersHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
+  const roleDefaultsAppliedRef = useRef(false);
 
   const [search, setSearch] = useState(initialListFiltersRef.current.search);
   const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
   const [listViewMode, setListViewMode] = useState<EstimatesListViewMode>(
     initialListFiltersRef.current.listViewMode
   );
+  const [listScope, setListScopeState] = useState<EstimatesListScope>(
+    initialListFiltersRef.current.listScope
+  );
+  const [scopeTouched, setScopeTouched] = useState(initialListFiltersRef.current.scopeTouched);
   const [dateFrom, setDateFrom] = useState(initialListFiltersRef.current.dateFrom);
   const [dateTo, setDateTo] = useState(initialListFiltersRef.current.dateTo);
   const [listSortBy, setListSortBy] = useState<EstimatesListSortBy>(
@@ -36,13 +46,22 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
 
   const searchNorm = normalizeEstimatesListSearch(search);
   const effectiveExpandedAddressKey = listViewMode === 'by_object' ? expandedAddressKey : null;
-  const hasActiveListFilters = Boolean(searchNorm || managerFilter || dateFrom || dateTo);
+  const hasActiveListFilters = Boolean(
+    searchNorm || managerFilter || dateFrom || dateTo || listScope !== 'all'
+  );
+
+  const setListScope = useCallback((scope: EstimatesListScope) => {
+    setListScopeState(scope);
+    setScopeTouched(true);
+  }, []);
 
   useEffect(() => {
     const saved = reloadEstimatesListFiltersFromStorage();
     setSearch(saved.search);
     setManagerFilter(saved.managerFilter);
     setListViewMode(saved.listViewMode);
+    setListScopeState(saved.listScope);
+    setScopeTouched(saved.scopeTouched);
     setDateFrom(saved.dateFrom);
     setDateTo(saved.dateTo);
     setListSortBy(saved.sortBy);
@@ -51,6 +70,14 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
     setExpandedAddressKey(saved.expandedAddressKey);
     listFiltersHydratedRef.current = true;
   }, []);
+
+  useEffect(() => {
+    if (scopeTouched || roleDefaultsAppliedRef.current) return;
+    if (!currentUserRole) return;
+    const defaults = getEstimatesListRoleDefaults(currentUserRole);
+    setListScopeState(defaults.listScope);
+    roleDefaultsAppliedRef.current = true;
+  }, [currentUserRole, scopeTouched]);
 
   const handleListSortChange = useCallback(
     (column: EstimatesListSortBy) => {
@@ -79,6 +106,8 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
       sortOrder: listSortOrder,
       pageLimit: limit,
       listViewMode,
+      listScope,
+      scopeTouched,
       expandedAddressKey,
     });
   }, [
@@ -90,6 +119,8 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
     listSortOrder,
     limit,
     listViewMode,
+    listScope,
+    scopeTouched,
     expandedAddressKey,
   ]);
 
@@ -101,6 +132,7 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
     dateFrom,
     dateTo,
     listViewMode,
+    listScope,
     listSortBy,
     listSortOrder,
     archiveView,
@@ -113,6 +145,8 @@ export function useEstimatesListFiltersState(archiveView: boolean) {
     setManagerFilter,
     listViewMode,
     setListViewMode,
+    listScope,
+    setListScope,
     dateFrom,
     setDateFrom,
     dateTo,

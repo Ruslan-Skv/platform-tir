@@ -74,6 +74,12 @@ export class ContractEstimatePresetDto {
   @MaxLength(80)
   sourceMeasurementId?: string;
 
+  /** Автор расчёта (User.id) для области «Мои». */
+  @IsOptional()
+  @IsString()
+  @MaxLength(80)
+  createdById?: string;
+
   /** Карточка заказчика в CRM (`Customer.id`). */
   @IsOptional()
   @IsString()

@@ -64,12 +64,14 @@ export function EstimateAddressGroupTableRow({
   return (
     <tr
       key={section.addressKey}
-      className={`${dataTableStyles.row} ${cdBase.contractsListObjectRow} ${
-        expanded ? cdBase.contractsListObjectRowExpanded : ''
+      className={`${dataTableStyles.row} ${cdBase.contractsListObjectRow} ${cdEstimatesList.estimatesListObjectRow} ${
+        expanded
+          ? `${cdBase.contractsListObjectRowExpanded} ${cdEstimatesList.estimatesListObjectRowExpanded}`
+          : cdEstimatesList.estimatesListObjectRowCollapsed
       }`}
     >
       <td
-        className={`${cdEstimatesList.contractsListSelectCol} ${cdBase.contractsListObjectAccentCell}`}
+        className={`${cdEstimatesList.contractsListSelectCol} ${cdBase.contractsListObjectAccentCell} ${cdEstimatesList.estimatesListObjectAccentCell}`}
       >
         <button
           type="button"
@@ -86,6 +88,7 @@ export function EstimateAddressGroupTableRow({
       <td className={cdEstimatesList.estimatesListTitleCell}>
         <div className={cdBase.contractsListObjectMain}>
           <div className={cdBase.contractsListObjectTitleRow}>
+            <span className={cdBase.contractsListObjectKindChip}>Объект</span>
             <span className={cdBase.estimatesListObjectAddressLabel}>
               {estimateObjectAddressDisplayLabel(section.addressKey)}
             </span>
@@ -126,6 +129,7 @@ export function EstimateAddressGroupTableRow({
               min={0}
               max={999}
               step={0.1}
+              className={cdEstimatesList.estimatesListMarkupInput}
               defaultValue={
                 typeof unifiedGroup.additionalMarkupPercent === 'number'
                   ? String(unifiedGroup.additionalMarkupPercent)
@@ -147,66 +151,74 @@ export function EstimateAddressGroupTableRow({
       </td>
       <td className={cdEstimatesList.contractsListActionsCol}>
         <div
-          className={`${cdEstimatesList.estimatesCardActions} ${cdEstimatesList.estimatesListActionsRow}`}
+          className={`${cdEstimatesList.estimatesCardActions} ${cdEstimatesList.estimatesListActionsGrid}`}
         >
-          {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
-            <button
-              type="button"
-              className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-              disabled={saving}
-              aria-label="В перспективу"
-              title={
-                unifiedGroup
-                  ? 'Перенести объект и все расчёты на вкладку «В перспективе»'
-                  : 'Перенести все расчёты по этому адресу на вкладку «В перспективе»'
-              }
-              onClick={() => onAddressPipelineStage(section.addressKey, 'prospect')}
-            >
-              <EstimatesToProspectIcon />
-            </button>
-          ) : null}
-          {!archiveView && pipelineTab === 'prospect' && section.items.length > 0 ? (
-            <button
-              type="button"
-              className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-              disabled={saving}
-              aria-label="В работе"
-              title={
-                unifiedGroup
-                  ? 'Вернуть объект и все расчёты на вкладку «В работе»'
-                  : 'Вернуть все расчёты по этому адресу на вкладку «В работе»'
-              }
-              onClick={() => onAddressPipelineStage(section.addressKey, 'active')}
-            >
-              <EstimatesToActiveIcon />
-            </button>
-          ) : null}
-          {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
-            <button
-              data-admin-mutation
-              type="button"
-              className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-              disabled={saving}
-              aria-label="В архив"
-              title="Отправить все расчёты по этому адресу в архив"
-              onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, true)}
-            >
-              <EstimatesArchiveIcon />
-            </button>
-          ) : null}
-          {archiveView ? (
-            <button
-              data-admin-mutation
-              type="button"
-              className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-              disabled={saving}
-              aria-label="Восстановить"
-              title="Вернуть все расчёты по этому адресу в основной список"
-              onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, false)}
-            >
-              <EstimatesRestoreFromArchiveIcon />
-            </button>
-          ) : null}
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
+              <button
+                type="button"
+                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В перспективу"
+                title={
+                  unifiedGroup
+                    ? 'Перенести объект и все расчёты на вкладку «В перспективе»'
+                    : 'Перенести все расчёты по этому адресу на вкладку «В перспективе»'
+                }
+                onClick={() => onAddressPipelineStage(section.addressKey, 'prospect')}
+              >
+                <EstimatesToProspectIcon />
+              </button>
+            ) : null}
+            {!archiveView && pipelineTab === 'prospect' && section.items.length > 0 ? (
+              <button
+                type="button"
+                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В работе"
+                title={
+                  unifiedGroup
+                    ? 'Вернуть объект и все расчёты на вкладку «В работе»'
+                    : 'Вернуть все расчёты по этому адресу на вкладку «В работе»'
+                }
+                onClick={() => onAddressPipelineStage(section.addressKey, 'active')}
+              >
+                <EstimatesToActiveIcon />
+              </button>
+            ) : null}
+          </div>
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
+              <button
+                data-admin-mutation
+                type="button"
+                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="В архив"
+                title="Отправить все расчёты по этому адресу в архив"
+                onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, true)}
+              >
+                <EstimatesArchiveIcon />
+              </button>
+            ) : null}
+            {archiveView ? (
+              <button
+                data-admin-mutation
+                type="button"
+                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+                disabled={saving}
+                aria-label="Восстановить"
+                title="Вернуть все расчёты по этому адресу в основной список"
+                onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, false)}
+              >
+                <EstimatesRestoreFromArchiveIcon />
+              </button>
+            ) : null}
+          </div>
+          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
+          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
+          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
+          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
         </div>
       </td>
     </tr>

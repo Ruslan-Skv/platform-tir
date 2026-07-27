@@ -34,6 +34,10 @@ import {
 export type EstimatePresetTableRowProps = {
   preset: ContractEstimatePreset;
   childOfAddress?: boolean;
+  /** Последний расчёт в раскрытом объекте — скругление низа. */
+  lastAddressChild?: boolean;
+  /** Расчёт без объекта — карточка со скруглением. */
+  standaloneCard?: boolean;
   saving: boolean;
   archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
@@ -53,6 +57,8 @@ export type EstimatePresetTableRowProps = {
 export function EstimatePresetTableRow({
   preset: it,
   childOfAddress,
+  lastAddressChild,
+  standaloneCard,
   saving,
   archiveView,
   pipelineTab,
@@ -111,14 +117,16 @@ export function EstimatePresetTableRow({
       })
     : '—';
   const isChildRow = Boolean(childOfAddress);
+  const rowClass = isChildRow
+    ? `${dataTableStyles.row} ${cdEstimatesList.estimatesListEstimateRow} ${cdBase.contractsListChildRow}${
+        lastAddressChild ? ` ${cdEstimatesList.estimatesListChildRowLast}` : ''
+      }`
+    : standaloneCard
+      ? `${dataTableStyles.row} ${cdEstimatesList.estimatesListEstimateRow} ${cdEstimatesList.estimatesListStandaloneCard}`
+      : `${dataTableStyles.row} ${cdEstimatesList.estimatesListEstimateRow}`;
 
   return (
-    <tr
-      key={it.id}
-      className={`${dataTableStyles.row} ${cdEstimatesList.estimatesListEstimateRow}${
-        isChildRow ? ` ${cdBase.contractsListChildRow}` : ''
-      }`}
-    >
+    <tr key={it.id} className={rowClass}>
       <td className={cdEstimatesList.contractsListSelectCol} />
       <td className={cdEstimatesList.estimatesListTitleCell}>
         <div className={cdEstimatesList.estimatesCardTitleRow}>

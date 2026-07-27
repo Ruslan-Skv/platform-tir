@@ -6,7 +6,7 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 
 import type { EstimatePipelineTab } from '../../../../platform/estimates/estimatePipelineStage';
-import type { EstimatesListViewMode } from '../estimatesListFilters';
+import type { EstimatesListScope, EstimatesListViewMode } from '../estimatesListFilters';
 import {
   buildEstimateLayoutBlocks,
   buildEstimatesTableDisplayItems,
@@ -23,6 +23,7 @@ import type { EstimatesListWorkspacePackage } from '../estimatesListPackageUsage
 import type { EstimatesListSortBy, EstimatesListSortOrder } from '../estimatesListSort';
 import {
   countArchivedEstimates,
+  countEstimatesListScopes,
   countEstimatesPipelineTabs,
   filterVisibleEstimatesListItems,
 } from '../estimatesListVisibleItems';
@@ -37,6 +38,8 @@ export type UseEstimatesListDerivedDataParams = {
   dateFrom: string;
   dateTo: string;
   managerFilter: string;
+  listScope: EstimatesListScope;
+  currentUserId: string | null;
   listViewMode: EstimatesListViewMode;
   listSortBy: EstimatesListSortBy;
   listSortOrder: EstimatesListSortOrder;
@@ -55,6 +58,8 @@ export function useEstimatesListDerivedData({
   dateFrom,
   dateTo,
   managerFilter,
+  listScope,
+  currentUserId,
   listViewMode,
   listSortBy,
   listSortOrder,
@@ -93,6 +98,8 @@ export function useEstimatesListDerivedData({
         dateFrom,
         dateTo,
         managerFilter,
+        listScope,
+        currentUserId,
         managerIdsByPresetId,
       }),
     [
@@ -104,6 +111,34 @@ export function useEstimatesListDerivedData({
       dateFrom,
       dateTo,
       managerFilter,
+      listScope,
+      currentUserId,
+      managerIdsByPresetId,
+    ]
+  );
+
+  const scopeCounts = useMemo(
+    () =>
+      countEstimatesListScopes(
+        items,
+        groups,
+        archiveView,
+        pipelineTab,
+        searchNorm,
+        dateFrom,
+        dateTo,
+        currentUserId,
+        managerIdsByPresetId
+      ),
+    [
+      items,
+      groups,
+      archiveView,
+      pipelineTab,
+      searchNorm,
+      dateFrom,
+      dateTo,
+      currentUserId,
       managerIdsByPresetId,
     ]
   );
@@ -149,6 +184,7 @@ export function useEstimatesListDerivedData({
     usageByEstimateId,
     groupIdsWithLockedEstimate,
     visibleItems,
+    scopeCounts,
     pipelineTabCounts,
     archiveCount,
     addressGroupCount,

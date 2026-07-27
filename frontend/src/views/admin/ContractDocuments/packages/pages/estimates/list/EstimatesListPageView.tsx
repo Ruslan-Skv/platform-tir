@@ -69,6 +69,9 @@ export function EstimatesListPageView({
         saving={saving}
         search={filters.search}
         onSearchChange={filters.setSearch}
+        listScope={filters.listScope}
+        onListScopeChange={filters.setListScope}
+        scopeCounts={derived.scopeCounts}
         listViewMode={filters.listViewMode}
         onListViewModeChange={filters.setListViewMode}
         managerFilter={filters.managerFilter}

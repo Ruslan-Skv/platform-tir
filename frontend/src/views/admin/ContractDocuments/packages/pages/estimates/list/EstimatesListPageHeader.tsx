@@ -12,6 +12,7 @@ import {
   ESTIMATE_PIPELINE_TAB_LABELS,
   type EstimatePipelineTab,
 } from '../../../platform/estimates/estimatePipelineStage';
+import { EstimatesListRulesInfoTip } from './EstimatesListRulesInfoTip';
 import type { EstimatesListViewMode } from './estimatesListFilters';
 
 export type EstimatesListPageHeaderProps = {
@@ -67,7 +68,12 @@ export function EstimatesListPageHeader({
         ) : null}
         <div className={cdEstimatesList.estimatesEditorHeaderStack}>
           <div className={cdEstimatesList.contractsListHeaderLeft}>
-            <h1 className={cdEstimatesList.title}>{archiveView ? 'Архив расчётов' : 'Расчёты'}</h1>
+            <div className={cdEstimatesList.contractsListHeaderTitleGroup}>
+              <h1 className={cdEstimatesList.title}>
+                {archiveView ? 'Архив расчётов' : 'Расчёты'}
+              </h1>
+              <EstimatesListRulesInfoTip />
+            </div>
             <div className={cdEstimatesList.titleWithAutosave}>
               <span
                 className={cdEstimatesList.contractsListCount}

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
 import type {
   ContractEstimateGroup,
   ContractEstimatePreset,
@@ -77,6 +78,7 @@ export function useEstimateWorkspaceSave({
   setEstimateCalculatorError,
   setExitConfirmOpen,
 }: UseEstimateWorkspaceSaveParams) {
+  const { user } = useAuth();
   const [saving, setSaving] = useState(false);
 
   const isEditingExisting = useMemo(
@@ -147,6 +149,7 @@ export function useEstimateWorkspaceSave({
         newSplitBundleFromUrl,
         joinSplitBundleIdFromUrl,
         fromMeasurementId,
+        actorUserId: user?.id ?? null,
       });
       setSelectedEstimateId(nextItem.id);
       const synced = await persistEstimateWorkspacePresets(nextItems, estimateGroups);
@@ -175,6 +178,7 @@ export function useEstimateWorkspaceSave({
     newSplitBundleFromUrl,
     joinSplitBundleIdFromUrl,
     fromMeasurementId,
+    user?.id,
     estimateGroups,
     setSelectedEstimateId,
     setItems,

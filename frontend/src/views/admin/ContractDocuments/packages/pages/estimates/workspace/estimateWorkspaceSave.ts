@@ -89,6 +89,8 @@ export type BuildEstimateWorkspaceSaveBatchParams = {
   newSplitBundleFromUrl: boolean;
   joinSplitBundleIdFromUrl: string;
   fromMeasurementId: string | null;
+  /** Текущий пользователь — для createdById у новых расчётов. */
+  actorUserId?: string | null;
 };
 
 export async function buildEstimateWorkspaceSaveBatch({
@@ -106,6 +108,7 @@ export async function buildEstimateWorkspaceSaveBatch({
   newSplitBundleFromUrl,
   joinSplitBundleIdFromUrl,
   fromMeasurementId,
+  actorUserId,
 }: BuildEstimateWorkspaceSaveBatchParams): Promise<{
   nextItem: ContractEstimatePreset;
   nextItems: ContractEstimatePreset[];
@@ -187,6 +190,8 @@ export async function buildEstimateWorkspaceSaveBatch({
     snapshot: mergedSnapshot,
     createdAt,
     updatedAt: new Date().toISOString(),
+    createdById:
+      existing?.createdById?.trim() || (actorUserId?.trim() ? actorUserId.trim() : undefined),
     crmCustomerId: crmCustomerId.trim(),
     customerName: clampWithEllipsis(customerName.trim(), 200),
     objectAddress: clampWithEllipsis(objectAddress.trim(), 500),

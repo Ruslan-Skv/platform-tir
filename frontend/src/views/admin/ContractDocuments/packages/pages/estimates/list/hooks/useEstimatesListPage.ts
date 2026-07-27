@@ -2,6 +2,8 @@ import { useCallback, useState } from 'react';
 
 import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
+
 import { parseEstimatePipelineTab } from '../../../../platform/estimates/estimatePipelineStage';
 import { useEstimatesListDerivedData } from './useEstimatesListDerivedData';
 import { useEstimatesListFiltersState } from './useEstimatesListFiltersState';
@@ -17,6 +19,7 @@ export function useEstimatesListPage() {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
+  const { user } = useAuth();
   const archiveView = searchParams.get('archive') === '1';
   const pipelineTab = archiveView
     ? 'active'
@@ -31,7 +34,7 @@ export function useEstimatesListPage() {
   }, []);
 
   const load = useEstimatesListLoad(handleLoadError);
-  const filters = useEstimatesListFiltersState(archiveView);
+  const filters = useEstimatesListFiltersState(archiveView, user?.role);
   const navigation = useEstimatesListNavigation(pathname, router, searchParams, filters.setPage);
   const modals = useEstimatesListModalsState(load.items);
   const generateFromMeasurement = useEstimatesListGenerateFromMeasurement(setError);
@@ -46,6 +49,8 @@ export function useEstimatesListPage() {
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     managerFilter: filters.managerFilter,
+    listScope: filters.listScope,
+    currentUserId: user?.id ?? null,
     listViewMode: filters.listViewMode,
     listSortBy: filters.listSortBy,
     listSortOrder: filters.listSortOrder,

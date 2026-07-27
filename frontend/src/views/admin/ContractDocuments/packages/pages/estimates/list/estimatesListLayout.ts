@@ -18,8 +18,15 @@ export type EstimateLayoutBlock =
 
 export type EstimatesTableDisplayItem =
   | { type: 'address'; addressKey: string; items: ContractEstimatePreset[] }
-  | { type: 'estimate'; preset: ContractEstimatePreset; childOfAddress?: boolean }
-  | { type: 'soloArchivedSection' };
+  | {
+      type: 'estimate';
+      preset: ContractEstimatePreset;
+      childOfAddress?: boolean;
+      /** Расчёт вне объекта — отдельная карточка. */
+      standaloneCard?: boolean;
+    }
+  | { type: 'soloArchivedSection' }
+  | { type: 'gap'; id: string };
 
 export type BuildEstimateLayoutBlocksParams = {
   visibleItems: ContractEstimatePreset[];
@@ -108,26 +115,40 @@ export function buildEstimatesTableDisplayItems(
   effectiveExpandedAddressKey: string | null
 ): EstimatesTableDisplayItem[] {
   const out: EstimatesTableDisplayItem[] = [];
+  let needsGapBeforeNextCard = false;
+
+  const pushGap = (id: string) => {
+    out.push({ type: 'gap', id });
+  };
+
   for (const block of blocks) {
     if (block.kind === 'flatRun') {
       for (const preset of block.items) {
-        out.push({ type: 'estimate', preset });
+        if (needsGapBeforeNextCard) pushGap(`gap-before-${preset.id}`);
+        out.push({ type: 'estimate', preset, standaloneCard: true });
+        needsGapBeforeNextCard = true;
       }
     } else if (block.kind === 'address') {
+      if (needsGapBeforeNextCard) pushGap(`gap-before-addr-${block.addressKey}`);
       out.push({
         type: 'address',
         addressKey: block.addressKey,
         items: block.items,
       });
+      needsGapBeforeNextCard = true;
       if (effectiveExpandedAddressKey === block.addressKey) {
         for (const preset of block.items) {
           out.push({ type: 'estimate', preset, childOfAddress: true });
         }
       }
     } else if (block.kind === 'soloArchived') {
+      if (needsGapBeforeNextCard) pushGap('gap-before-solo-archived');
       out.push({ type: 'soloArchivedSection' });
+      needsGapBeforeNextCard = false;
       for (const preset of block.items) {
-        out.push({ type: 'estimate', preset });
+        if (needsGapBeforeNextCard) pushGap(`gap-before-${preset.id}`);
+        out.push({ type: 'estimate', preset, standaloneCard: true });
+        needsGapBeforeNextCard = true;
       }
     }
   }

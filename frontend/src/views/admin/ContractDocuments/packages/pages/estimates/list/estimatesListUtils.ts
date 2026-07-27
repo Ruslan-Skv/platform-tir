@@ -118,6 +118,18 @@ export function estimateMatchesManagerFilter(
   return Boolean(ids?.has(managerFilter));
 }
 
+/** Расчёт «мой»: автор пресета или менеджер привязанного договора. */
+export function estimateBelongsToUser(
+  preset: ContractEstimatePreset,
+  userId: string,
+  managerIdsByPresetId: Map<string, Set<string>>
+): boolean {
+  if (!userId) return false;
+  if (preset.createdById?.trim() === userId) return true;
+  const ids = managerIdsByPresetId.get(preset.id);
+  return Boolean(ids?.has(userId));
+}
+
 export function parseOptionalPercentInput(raw: string): number | undefined {
   const t = raw.trim().replace(',', '.');
   if (!t) return undefined;

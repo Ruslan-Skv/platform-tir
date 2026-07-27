@@ -18,6 +18,8 @@ export type EstimatesListWorkspacePackage = {
   title: string | null;
   status: ContractDocumentPackageStatus;
   formData: Record<string, unknown>;
+  createdById: string | null;
+  responsibleManagerId: string | null;
   crmContract: { contractNumber: string; contractDate: string } | null;
 };
 
@@ -34,6 +36,8 @@ export function mapPackagesForEstimatesList(
           ? 'REFUSED'
           : 'IN_PROGRESS',
     formData: (p.formData ?? {}) as Record<string, unknown>,
+    createdById: p.createdById?.trim() || null,
+    responsibleManagerId: p.responsibleManagerId?.trim() || null,
     crmContract: p.crmContract
       ? {
           contractNumber: p.crmContract.contractNumber,
@@ -133,7 +137,11 @@ export function buildPackageManagerById(
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const pkg of workspacePackages) {
-    map.set(pkg.id, packageManagerCrmUserIdFromForm(pkg.formData));
+    const fromResponsible = pkg.responsibleManagerId?.trim() ?? '';
+    const fromSignatory = packageManagerCrmUserIdFromForm(pkg.formData);
+    const fromCreator = pkg.createdById?.trim() ?? '';
+    const managerId = fromResponsible || fromSignatory || fromCreator;
+    map.set(pkg.id, managerId);
   }
   return map;
 }

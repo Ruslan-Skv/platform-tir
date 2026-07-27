@@ -137,7 +137,18 @@ export function EstimatesListTable({
                   </td>
                 </tr>
               ) : (
-                paginatedDisplayItems.map((item) => {
+                paginatedDisplayItems.map((item, index) => {
+                  if (item.type === 'gap') {
+                    return (
+                      <tr
+                        key={item.id}
+                        className={cdEstimatesList.estimatesListObjectGroupGap}
+                        aria-hidden
+                      >
+                        <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN} />
+                      </tr>
+                    );
+                  }
                   if (item.type === 'address') {
                     return (
                       <EstimateAddressGroupTableRow
@@ -166,11 +177,17 @@ export function EstimatesListTable({
                       </tr>
                     );
                   }
+                  const next = paginatedDisplayItems[index + 1];
+                  const isLastAddressChild =
+                    Boolean(item.childOfAddress) &&
+                    (next == null || next.type !== 'estimate' || !next.childOfAddress);
                   return (
                     <EstimatePresetTableRow
                       key={`est_${item.preset.id}`}
                       preset={item.preset}
                       childOfAddress={item.childOfAddress}
+                      lastAddressChild={isLastAddressChild}
+                      standaloneCard={item.standaloneCard}
                       saving={saving}
                       archiveView={archiveView}
                       pipelineTab={pipelineTab}

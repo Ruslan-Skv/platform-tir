@@ -37,6 +37,7 @@ export function EstimatePresetRowMarkupCell({
           min={0}
           max={999}
           step={0.1}
+          className={cdEstimatesList.estimatesListMarkupInput}
           defaultValue={
             typeof it.additionalMarkupPercent === 'number'
               ? String(it.additionalMarkupPercent)

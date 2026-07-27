@@ -12,6 +12,9 @@ import {
 
 export type EstimatesListViewMode = 'flat' | 'by_object';
 
+/** Область списка: мои расчёты / все. */
+export type EstimatesListScope = 'mine' | 'all';
+
 export type EstimatesPageLimit = ContractsPageLimit;
 
 export const ESTIMATES_PAGE_LIMIT_OPTIONS = CONTRACTS_PAGE_LIMIT_OPTIONS;
@@ -25,11 +28,14 @@ export interface EstimatesListFiltersPersisted {
   sortOrder: EstimatesListSortOrder;
   pageLimit: EstimatesPageLimit;
   listViewMode: EstimatesListViewMode;
+  listScope: EstimatesListScope;
+  /** false → один раз применить дефолты по роли. */
+  scopeTouched: boolean;
   /** Раскрытый блок объекта в режиме «По объектам» (`estimateObjectAddressKey`). */
   expandedAddressKey: string | null;
 }
 
-const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v6';
+const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v7';
 
 const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   search: '',
@@ -40,6 +46,8 @@ const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   sortOrder: 'desc',
   pageLimit: 20,
   listViewMode: 'by_object',
+  listScope: 'all',
+  scopeTouched: false,
   expandedAddressKey: null,
 };
 
@@ -51,6 +59,10 @@ function normalizeExpandedAddressKey(raw: unknown): string | null {
 
 function normalizeListViewMode(raw: unknown): EstimatesListViewMode {
   return raw === 'flat' || raw === 'by_object' ? raw : EMPTY_FILTERS.listViewMode;
+}
+
+function normalizeListScope(raw: unknown): EstimatesListScope {
+  return raw === 'mine' || raw === 'all' ? raw : EMPTY_FILTERS.listScope;
 }
 
 function normalizePageLimit(raw: unknown): EstimatesPageLimit {
@@ -78,6 +90,8 @@ function normalizePersistedFilters(
         : EMPTY_FILTERS.sortOrder,
     pageLimit: raw.pageLimit != null ? normalizePageLimit(raw.pageLimit) : EMPTY_FILTERS.pageLimit,
     listViewMode: normalizeListViewMode(raw.listViewMode),
+    listScope: normalizeListScope(raw.listScope),
+    scopeTouched: raw.scopeTouched === true,
     expandedAddressKey: normalizeExpandedAddressKey(raw.expandedAddressKey),
   };
 }
