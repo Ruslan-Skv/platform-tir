@@ -842,7 +842,8 @@ export function AdminSidebar({
     return getBestMatchingHref(pathname ?? '', sectionNavHrefs, topLevelOnlyHrefs) === href;
   };
 
-  // При навигации раскрываем только активную ветку (accordion)
+  // При навигации в раздел с детьми — раскрываем активную ветку (accordion).
+  // На «листовые» пункты без вложенности не схлопываем уже открытые ветки — иначе прыгает низ меню.
   useEffect(() => {
     const toExpand: string[] = [];
     navItems.forEach((item) => {
@@ -855,6 +856,7 @@ export function AdminSidebar({
         });
       }
     });
+    if (toExpand.length === 0) return;
     setExpandedItems(toExpand);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- раскрытие по pathname; isActive/isChild* меняются с pathname
   }, [pathname, navItems]);

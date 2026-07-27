@@ -224,13 +224,19 @@
   padding: var(--admin-space-xs) var(--admin-space-md);
   color: var(--admin-sidebar-text);
   text-decoration: none;
-  transition: all 0.2s;
-  border: none;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
   background: none;
   width: 100%;
   cursor: pointer;
   font-size: var(--admin-font-size-sm);
   text-align: left;
+  box-sizing: border-box;
 }
 
 .accessIcon {
@@ -361,8 +367,7 @@
 .navLink.active {
   color: #0c4a6e;
   background: var(--admin-sidebar-active-bg);
-  border: 1px solid var(--admin-sidebar-active-border);
-  border-radius: var(--admin-radius-sm);
+  border-color: var(--admin-sidebar-active-border);
   box-shadow: none;
 }
 
@@ -409,7 +414,14 @@
   color: var(--admin-sidebar-text);
   text-decoration: none;
   font-size: var(--admin-font-size-sm);
-  transition: all 0.2s;
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
+  box-sizing: border-box;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .submenuLink:hover {
@@ -420,8 +432,7 @@
 .submenuLink.active {
   color: #0c4a6e;
   background: var(--admin-sidebar-active-bg);
-  border: 1px solid var(--admin-sidebar-active-border);
-  border-radius: var(--admin-radius-sm);
+  border-color: var(--admin-sidebar-active-border);
   box-shadow: none;
 }
 
@@ -437,11 +448,18 @@
   color: var(--admin-sidebar-text);
   font-size: var(--admin-font-size-sm);
   width: 100%;
-  border: none;
+  border: 1px solid transparent;
+  border-radius: var(--admin-radius-sm);
   background: none;
   cursor: pointer;
   text-align: left;
   font-family: inherit;
+  box-sizing: border-box;
+  transition:
+    color 0.2s,
+    background 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
 }
 
 .submenuGroupRow:hover {
@@ -452,8 +470,7 @@
 .submenuGroupRow.active {
   color: #0c4a6e;
   background: var(--admin-sidebar-active-bg);
-  border: 1px solid var(--admin-sidebar-active-border);
-  border-radius: var(--admin-radius-sm);
+  border-color: var(--admin-sidebar-active-border);
   box-shadow: none;
 }
 
@@ -590,9 +607,8 @@
   }
 
   .navItem:has(> .navLinkRow > .navLink.active) .navLink.active {
-    border: none;
+    border-color: transparent;
     background: transparent;
-    border-radius: 0;
   }
 
   .navLink.active {
@@ -602,11 +618,9 @@
   .submenuLink.active,
   .submenuGroupRow.active {
     background: var(--admin-sidebar-active-bg);
-    border: 1px solid var(--admin-sidebar-active-border);
-    border-radius: var(--admin-radius-sm);
+    border-color: var(--admin-sidebar-active-border);
     box-shadow: none;
     color: #0c4a6e;
-    margin-inline: var(--admin-space-xs);
   }
 
   .icon {
