@@ -1,9 +1,14 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
 import { useAuth } from '@/features/auth/context/AuthContext';
 
+import {
+  type ContractsListColumnKey,
+  loadContractsListVisibleColumns,
+  persistContractsListVisibleColumns,
+} from '../contractsListColumns';
 import { useContractsListDerivedData } from './useContractsListDerivedData';
 import { useContractsListFiltersState } from './useContractsListFiltersState';
 import { useContractsListLoad } from './useContractsListLoad';
@@ -16,6 +21,18 @@ export function useContractsListPage() {
   const router = useRouter();
   const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
+  const [visibleColumns, setVisibleColumnsState] = useState<ContractsListColumnKey[]>(() =>
+    loadContractsListVisibleColumns()
+  );
+
+  const setVisibleColumns = useCallback((next: ContractsListColumnKey[]) => {
+    setVisibleColumnsState(next);
+    persistContractsListVisibleColumns(next);
+  }, []);
+
+  useEffect(() => {
+    setVisibleColumnsState(loadContractsListVisibleColumns());
+  }, []);
 
   const handleLoadError = useCallback((message: string) => {
     setError(message);
@@ -73,6 +90,7 @@ export function useContractsListPage() {
     expandedObjectId: filters.expandedObjectId,
     page: filters.page,
     limit: filters.limit,
+    visibleColumns,
   });
 
   useContractsListSyncEffects({
@@ -118,6 +136,8 @@ export function useContractsListPage() {
     savedViews,
     objectsById,
     presetById,
+    visibleColumns,
+    setVisibleColumns,
   };
 }
 

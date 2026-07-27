@@ -8,6 +8,10 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
 
+import {
+  type ContractsListColumnKey,
+  countContractsListTableColSpan,
+} from '../contractsListColumns';
 import type { ContractsListScope, ContractsListViewMode } from '../contractsListFilters';
 import {
   buildContractsListTableDisplayItems,
@@ -43,6 +47,7 @@ export type UseContractsListDerivedDataParams = {
   expandedObjectId: string | null;
   page: number;
   limit: number;
+  visibleColumns: readonly ContractsListColumnKey[];
 };
 
 export function useContractsListDerivedData(params: UseContractsListDerivedDataParams) {
@@ -51,7 +56,10 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
     [params.rows]
   );
 
-  const contractsListTableColSpan = 15 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
+  const contractsListTableColSpan = useMemo(
+    () => countContractsListTableColSpan(params.visibleColumns, addendumColumnCount),
+    [params.visibleColumns, addendumColumnCount]
+  );
 
   /** Rows already filtered + paginated by server. */
   const visibleRows = params.rows;

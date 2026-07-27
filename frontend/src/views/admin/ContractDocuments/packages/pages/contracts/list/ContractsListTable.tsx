@@ -12,6 +12,7 @@ import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import { ContractListObjectRow } from './ContractListObjectRow';
 import { ContractListPackageRow } from './ContractListPackageRow';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
+import { type ContractsListColumnKey, isContractsListColumnVisible } from './contractsListColumns';
 import type { ContractsListDisplayItem } from './contractsListLayout';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 import { ContractsListSortableTh } from './contractsListTableUi';
@@ -23,6 +24,7 @@ type ContractsListTableProps = {
   emptyFilteredListMessage: string;
   contractsListTableColSpan: number;
   addendumColumnCount: number;
+  visibleColumns: readonly ContractsListColumnKey[];
   paginatedDisplayItems: ContractsListDisplayItem[];
   listSortBy: ContractsListSortBy;
   listSortOrder: ContractsListSortOrder;
@@ -53,6 +55,7 @@ export function ContractsListTable({
   emptyFilteredListMessage,
   contractsListTableColSpan,
   addendumColumnCount,
+  visibleColumns,
   paginatedDisplayItems,
   listSortBy,
   listSortOrder,
@@ -75,6 +78,8 @@ export function ContractsListTable({
   onOpenWorkOrdersHub,
   onOpenActPhotos,
 }: ContractsListTableProps) {
+  const col = (key: ContractsListColumnKey) => isContractsListColumnVisible(visibleColumns, key);
+
   return (
     <div className={`${dataTableStyles.tableContainer} ${cdHub.contractsDirectoryTable}`}>
       <div className={dataTableStyles.tableWrapper}>
@@ -83,73 +88,89 @@ export function ContractsListTable({
             <thead className={dataTableStyles.stickyHeader}>
               <tr>
                 <th className={cdHub.contractsListSelectCol} aria-label="Группа" />
-                <th className={cdHub.contractsListKindCol}>Направл.</th>
-                <ContractsListSortableTh
-                  column="contractNumber"
-                  title="№ дог."
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="date"
-                  title="Дата"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="status"
-                  title="Статус"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="customer"
-                  title="Заказчик"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="manager"
-                  title="Ответственный"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <th>Адрес объекта</th>
-                <th>Описание работ</th>
-                <th>СД нач.</th>
-                {addendumColumnCount > 0
+                {col('kind') ? <th className={cdHub.contractsListKindCol}>Направл.</th> : null}
+                {col('contractNumber') ? (
+                  <ContractsListSortableTh
+                    column="contractNumber"
+                    title="№ дог."
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('date') ? (
+                  <ContractsListSortableTh
+                    column="date"
+                    title="Дата"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('status') ? (
+                  <ContractsListSortableTh
+                    column="status"
+                    title="Статус"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('customer') ? (
+                  <ContractsListSortableTh
+                    column="customer"
+                    title="Заказчик"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('manager') ? (
+                  <ContractsListSortableTh
+                    column="manager"
+                    title="Ответственный"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('address') ? <th>Адрес объекта</th> : null}
+                {col('workDescription') ? <th>Описание работ</th> : null}
+                {col('contractTotal') ? <th>СД нач.</th> : null}
+                {col('addenda') && addendumColumnCount > 0
                   ? Array.from({ length: addendumColumnCount }, (_, i) => (
                       <th key={`addendum_th_${i + 1}`}>Д/с №{i + 1}</th>
                     ))
                   : null}
-                {addendumColumnCount > 0 ? <th>СД итог.</th> : null}
-                <th>Оплачено</th>
-                <ContractsListSortableTh
-                  column="remaining"
-                  title="Остаток"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="workStartAct"
-                  title="Акт нр"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
-                <ContractsListSortableTh
-                  column="closeAct"
-                  title="Акт с/п"
-                  sortBy={listSortBy}
-                  sortOrder={listSortOrder}
-                  onSort={onSort}
-                />
+                {col('addenda') && addendumColumnCount > 0 ? <th>СД итог.</th> : null}
+                {col('paid') ? <th>Оплачено</th> : null}
+                {col('remaining') ? (
+                  <ContractsListSortableTh
+                    column="remaining"
+                    title="Остаток"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('workStartAct') ? (
+                  <ContractsListSortableTh
+                    column="workStartAct"
+                    title="Акт нр"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
+                {col('closeAct') ? (
+                  <ContractsListSortableTh
+                    column="closeAct"
+                    title="Акт с/п"
+                    sortBy={listSortBy}
+                    sortOrder={listSortOrder}
+                    onSort={onSort}
+                  />
+                ) : null}
                 <th className={cdHub.contractsListActionsCol} />
               </tr>
             </thead>
@@ -215,6 +236,7 @@ export function ContractsListTable({
                       lastObjectChild={isLastObjectChild}
                       standaloneCard={item.standaloneCard}
                       addendumColumnCount={addendumColumnCount}
+                      visibleColumns={visibleColumns}
                       crmUsers={crmUsers}
                       loading={loading}
                       creating={creating}

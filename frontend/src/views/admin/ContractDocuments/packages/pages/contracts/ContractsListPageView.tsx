@@ -32,6 +32,8 @@ export function ContractsListPageView({
   mutations,
   savedViews,
   objectsById,
+  visibleColumns,
+  setVisibleColumns,
 }: ContractsListPageViewProps) {
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -42,6 +44,8 @@ export function ContractsListPageView({
         loading={load.loading}
         actionsBusy={modals.actionsBusy}
         trashCount={load.trashCount}
+        visibleColumns={visibleColumns}
+        onVisibleColumnsChange={setVisibleColumns}
         onCreateClick={() => modals.setCreateDirectionModalOpen(true)}
         onRefresh={() => void load.load()}
         onOpenTrash={() => modals.setTrashOpen(true)}
@@ -125,6 +129,7 @@ export function ContractsListPageView({
         emptyFilteredListMessage={derived.emptyFilteredListMessage}
         contractsListTableColSpan={derived.contractsListTableColSpan}
         addendumColumnCount={derived.addendumColumnCount}
+        visibleColumns={visibleColumns}
         paginatedDisplayItems={derived.paginatedDisplayItems}
         listSortBy={filters.listSortBy}
         listSortOrder={filters.listSortOrder}

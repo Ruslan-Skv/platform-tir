@@ -872,6 +872,109 @@
   font-size: 0.8125rem;
 }
 
+.contractsListColumnSelectorWrap {
+  position: relative;
+}
+
+.contractsListColumnsBtn {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 40px;
+  min-height: 40px;
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  box-shadow: none;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.contractsListColumnsBtnIcon {
+  display: block;
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+}
+
+.contractsListColumnsBtn:hover:not(:disabled) {
+  border-color: var(--admin-border-strong);
+  background: var(--admin-surface-soft);
+}
+
+.contractsListColumnsBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.contractsListColumnsBtnActive {
+  border-color: var(--admin-info);
+  background: var(--admin-info-bg-soft);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft);
+}
+
+.contractsListColumnSelectorDropdown {
+  position: absolute;
+  top: calc(100% + var(--admin-space-sm));
+  right: 0;
+  z-index: 40;
+  min-width: 16rem;
+  max-width: min(20rem, 90vw);
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface);
+  box-shadow: var(--admin-shadow-popover, 0 8px 24px rgb(15 23 42 / 0.12));
+}
+
+.contractsListColumnSelectorHeader {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-bottom: 1px solid var(--admin-border);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+}
+
+.contractsListColumnSelectorList {
+  max-height: min(22rem, 50vh);
+  overflow-y: auto;
+  padding: var(--admin-space-xs) 0;
+}
+
+.contractsListColumnSelectorItem {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.contractsListColumnSelectorItem:hover {
+  background: var(--admin-surface-soft);
+}
+
+.contractsListColumnSelectorItemSelected {
+  background: var(--admin-surface-muted);
+}
+
+.contractsListColumnSelectorItemLocked {
+  opacity: 0.75;
+  cursor: default;
+}
+
+.contractsListColumnSelectorItem input {
+  flex-shrink: 0;
+}
+
 .contractsListActionsCol {
   width: 130px;
   min-width: 130px;

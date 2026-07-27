@@ -28,6 +28,7 @@ import {
   contractsListContractCloseActDateCell,
   contractsListWorkStartActDateCell,
 } from './contractsListActPhotos';
+import { type ContractsListColumnKey, isContractsListColumnVisible } from './contractsListColumns';
 import {
   ellipsizeContractsListOneLine,
   formatContractsListMoney,
@@ -61,6 +62,7 @@ export type ContractListPackageRowProps = {
   /** Договор без объекта — отдельная карточка со скруглением (режим by_object). */
   standaloneCard?: boolean;
   addendumColumnCount: number;
+  visibleColumns: readonly ContractsListColumnKey[];
   crmUsers: CrmUser[];
   loading: boolean;
   creating: boolean;
@@ -80,6 +82,7 @@ export function ContractListPackageRow({
   lastObjectChild,
   standaloneCard,
   addendumColumnCount,
+  visibleColumns,
   crmUsers,
   loading,
   creating,
@@ -92,6 +95,7 @@ export function ContractListPackageRow({
   onOpenWorkOrdersHub,
   onOpenActPhotos,
 }: ContractListPackageRowProps) {
+  const col = (key: ContractsListColumnKey) => isContractsListColumnVisible(visibleColumns, key);
   const fd = pkg.formData ?? {};
   const form = mergePackageFormData(fd);
   const num = getDisplayContractNumber({ formData: fd });
@@ -135,31 +139,47 @@ export function ContractListPackageRow({
       }}
     >
       <td className={cdHub.contractsListSelectCol} />
-      <td className={cdHub.contractsListKindCol}>{contractsListPackageKindLabel(pkg.kind)}</td>
-      <td>{num}</td>
-      <td>{formatSigningDateOnly(pkg)}</td>
-      <td>
-        <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
-          {packageListPipelineStatusLabel(pipelineStatus)}
-        </span>
-      </td>
-      <td>{contractsListCustomerName(fd)}</td>
-      <td title={managerLabel}>{ellipsizeContractsListOneLine(managerLabel, 40)}</td>
-      <td>{ellipsizeContractsListOneLine(contractsListObjectAddress(fd), 64)}</td>
-      <td title={workDesc.length > workShort.length ? workDesc : undefined}>{workShort}</td>
-      <td>{formatContractsListMoney(totalRub)}</td>
-      {addendumColumnCount > 0
+      {col('kind') ? (
+        <td className={cdHub.contractsListKindCol}>{contractsListPackageKindLabel(pkg.kind)}</td>
+      ) : null}
+      {col('contractNumber') ? <td>{num}</td> : null}
+      {col('date') ? <td>{formatSigningDateOnly(pkg)}</td> : null}
+      {col('status') ? (
+        <td>
+          <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
+            {packageListPipelineStatusLabel(pipelineStatus)}
+          </span>
+        </td>
+      ) : null}
+      {col('customer') ? <td>{contractsListCustomerName(fd)}</td> : null}
+      {col('manager') ? (
+        <td title={managerLabel}>{ellipsizeContractsListOneLine(managerLabel, 40)}</td>
+      ) : null}
+      {col('address') ? (
+        <td>{ellipsizeContractsListOneLine(contractsListObjectAddress(fd), 64)}</td>
+      ) : null}
+      {col('workDescription') ? (
+        <td title={workDesc.length > workShort.length ? workDesc : undefined}>{workShort}</td>
+      ) : null}
+      {col('contractTotal') ? <td>{formatContractsListMoney(totalRub)}</td> : null}
+      {col('addenda') && addendumColumnCount > 0
         ? Array.from({ length: addendumColumnCount }, (_, i) => (
             <td key={`addendum_td_${pkg.id}_${i + 1}`}>
               {formatContractsListMoney(contractsListSignedAddendumRub(form, i))}
             </td>
           ))
         : null}
-      {addendumColumnCount > 0 ? <td>{formatContractsListMoney(totalWithAddendaRub)}</td> : null}
-      <td>{formatContractsListPaidWithPercent(paidRub, paymentBaseRub)}</td>
-      <td>{formatContractsListMoney(remainingRub)}</td>
-      <td title="Акт начала работ">{contractsListWorkStartActDateCell(form)}</td>
-      <td title="Акт сдачи-приёмки">{contractsListContractCloseActDateCell(form)}</td>
+      {col('addenda') && addendumColumnCount > 0 ? (
+        <td>{formatContractsListMoney(totalWithAddendaRub)}</td>
+      ) : null}
+      {col('paid') ? <td>{formatContractsListPaidWithPercent(paidRub, paymentBaseRub)}</td> : null}
+      {col('remaining') ? <td>{formatContractsListMoney(remainingRub)}</td> : null}
+      {col('workStartAct') ? (
+        <td title="Акт начала работ">{contractsListWorkStartActDateCell(form)}</td>
+      ) : null}
+      {col('closeAct') ? (
+        <td title="Акт сдачи-приёмки">{contractsListContractCloseActDateCell(form)}</td>
+      ) : null}
       <td
         className={cdHub.contractsListActionsCol}
         onClick={(e) => e.stopPropagation()}

@@ -7,7 +7,9 @@ import {
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import { ContractsListColumnsSelector } from './ContractsListColumnsSelector';
 import { ContractsListRulesInfoTip } from './ContractsListRulesInfoTip';
+import type { ContractsListColumnKey } from './contractsListColumns';
 
 type ContractsListPageHeaderProps = {
   visibleRowCount: number;
@@ -16,6 +18,8 @@ type ContractsListPageHeaderProps = {
   loading: boolean;
   actionsBusy: boolean;
   trashCount: number;
+  visibleColumns: ContractsListColumnKey[];
+  onVisibleColumnsChange: (next: ContractsListColumnKey[]) => void;
   onCreateClick: () => void;
   onRefresh: () => void;
   onOpenTrash: () => void;
@@ -28,6 +32,8 @@ export function ContractsListPageHeader({
   loading,
   actionsBusy,
   trashCount,
+  visibleColumns,
+  onVisibleColumnsChange,
   onCreateClick,
   onRefresh,
   onOpenTrash,
@@ -54,6 +60,11 @@ export function ContractsListPageHeader({
         >
           {creating ? 'Создание…' : '+ Новый договор'}
         </button>
+        <ContractsListColumnsSelector
+          visibleColumns={visibleColumns}
+          onVisibleColumnsChange={onVisibleColumnsChange}
+          disabled={loading}
+        />
         <AdminListRefreshButton
           disabled={actionsBusy || loading}
           busy={loading}
