@@ -1,6 +1,11 @@
 import { UserRole } from '@prisma/client';
 import { AdminResourcePermissionLevel } from './dto/set-permission.dto';
 import {
+  canRoleAccessAdminSettingsResources,
+  getAdminResourceAncestors,
+  isAdminSettingsRestrictedResource,
+} from './admin-resource-tree.config';
+import {
   isKnowledgeCategoryResourceId,
   isKnowledgeCategoryTestsResourceId,
   KNOWLEDGE_RESOURCE_ID,
@@ -35,11 +40,11 @@ function isResourceDeniedByRolePermissions(
   resourceId: string,
   rolePerms: RolePermissionRow[],
 ): boolean {
-  return rolePerms.some(
-    (p) =>
-      p.permission === 'DENIED' &&
-      (p.resourceId === resourceId || resourceId.startsWith(`${p.resourceId}.`)),
+  const deniedIds = new Set(
+    rolePerms.filter((p) => p.permission === 'DENIED').map((p) => p.resourceId),
   );
+  if (deniedIds.has(resourceId)) return true;
+  return getAdminResourceAncestors(resourceId).some((ancestorId) => deniedIds.has(ancestorId));
 }
 
 export function getRoleEffectiveAccessForResource(
@@ -53,6 +58,15 @@ export function getRoleEffectiveAccessForResource(
       role,
       effective: 'EDIT',
       source: 'super_admin',
+      hasExplicitOverride: false,
+    };
+  }
+
+  if (!canRoleAccessAdminSettingsResources(role) && isAdminSettingsRestrictedResource(resourceId)) {
+    return {
+      role,
+      effective: 'NONE',
+      source: 'none',
       hasExplicitOverride: false,
     };
   }
@@ -162,6 +176,13 @@ export function getUserEffectiveAccessForResource(
 ): EffectiveAccess {
   if (userRole === 'SUPER_ADMIN') {
     return 'EDIT';
+  }
+
+  if (
+    !canRoleAccessAdminSettingsResources(userRole) &&
+    isAdminSettingsRestrictedResource(resourceId)
+  ) {
+    return 'NONE';
   }
 
   if (userExplicit === AdminResourcePermissionLevel.DENIED) {

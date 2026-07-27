@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
@@ -6,6 +6,10 @@ import {
   getRoleEffectiveAccessForResourceWithInheritance,
   getUserEffectiveAccessForResource,
 } from './access-effective.util';
+import {
+  canRoleAccessAdminSettingsResources,
+  isAdminSettingsRestrictedResource,
+} from './admin-resource-tree.config';
 import {
   buildKnowledgeCategoryResourceId,
   buildKnowledgeCategoryTestsResourceId,
@@ -533,6 +537,14 @@ export class AdminAccessService {
     permission: AdminResourcePermissionLevel,
   ) {
     await this.resolveResource(resourceId);
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { role: true },
+    });
+    if (!user) {
+      throw new NotFoundException(`Пользователь ${userId} не найден`);
+    }
+    this.assertSettingsPermissionAllowed(user.role, resourceId);
     await this.prisma.adminResourcePermission.upsert({
       where: {
         resourceId_userId: { resourceId, userId },
@@ -560,6 +572,7 @@ export class AdminAccessService {
     if (!ADMIN_ROLES.includes(role as UserRole)) {
       throw new NotFoundException(`Роль ${role} не найдена`);
     }
+    this.assertSettingsPermissionAllowed(role as UserRole, resourceId);
     await this.prisma.adminResourceRolePermission.upsert({
       where: {
         resourceId_role: { resourceId, role },
@@ -576,5 +589,16 @@ export class AdminAccessService {
       where: { resourceId, role },
     });
     return this.getPermissions(resourceId);
+  }
+
+  private assertSettingsPermissionAllowed(role: UserRole, resourceId: string): void {
+    if (
+      !canRoleAccessAdminSettingsResources(role) &&
+      isAdminSettingsRestrictedResource(resourceId)
+    ) {
+      throw new ForbiddenException(
+        'Раздел «Настройки» и оформление договоров доступны только ролям Админ и Супер-админ',
+      );
+    }
   }
 }

@@ -12,6 +12,7 @@ import {
   useAdminAccessibleResources,
 } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
+import { canRoleSeeAdminSettingsNav } from '@/shared/config/admin-resource-tree';
 import { useAdminSidebarUiPrefs } from '@/shared/lib/admin';
 import { getSafeHref } from '@/shared/lib/sanitize';
 import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
@@ -609,10 +610,14 @@ const baseNavItems: NavItem[] = [
 
 function filterNavByAccess(
   items: NavItem[],
-  hasAccess: (id: string | undefined) => boolean
+  hasAccess: (id: string | undefined) => boolean,
+  options?: { hideSettingsNav?: boolean }
 ): NavItem[] {
   return items
     .map((item) => {
+      if (options?.hideSettingsNav && item.resourceId === 'admin.settings') {
+        return null;
+      }
       if (!item.children) {
         return hasAccess(item.resourceId) ? item : null;
       }
@@ -728,7 +733,8 @@ export function AdminSidebar({
   );
 
   const navItems = useMemo(() => {
-    const filtered = filterNavByAccess(baseNavItems, hasAccess);
+    const hideSettingsNav = !canRoleSeeAdminSettingsNav(currentUser?.role);
+    const filtered = filterNavByAccess(baseNavItems, hasAccess, { hideSettingsNav });
     if (filtered.length > 0 || currentUser?.role === 'SUPER_ADMIN') {
       return filtered;
     }
@@ -737,7 +743,7 @@ export function AdminSidebar({
     if (cached.length > 0) {
       const cachedIds = new Set(cached.map((resource) => resource.id));
       const cachedHasAccess = createHasAccessChecker(cachedIds, currentUser?.role);
-      const fromCache = filterNavByAccess(baseNavItems, cachedHasAccess);
+      const fromCache = filterNavByAccess(baseNavItems, cachedHasAccess, { hideSettingsNav });
       if (fromCache.length > 0) {
         return fromCache;
       }

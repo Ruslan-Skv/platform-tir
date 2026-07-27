@@ -14,10 +14,13 @@ import {
   setResourcePermission,
   setRolePermission,
 } from '@/shared/api/admin-access';
+import { KNOWLEDGE_CATEGORY_RESOURCE_PREFIX } from '@/shared/config/admin-knowledge-resources';
 import {
-  KNOWLEDGE_CATEGORY_RESOURCE_PREFIX,
-  KNOWLEDGE_RESOURCE_ID,
-} from '@/shared/config/admin-knowledge-resources';
+  canRoleSeeAdminSettingsNav,
+  getAdminResourceChildren,
+  getAdminResourceParent,
+  isAdminSettingsRestrictedResource,
+} from '@/shared/config/admin-resource-tree';
 import { getAdminResourceLabel } from '@/shared/config/admin-resources';
 import { ROLES_CONFIG } from '@/shared/config/admin-roles';
 import { Modal } from '@/shared/ui/Modal';
@@ -60,12 +63,14 @@ function formatUserLabel(user: {
 
 function RoleOverviewActions({
   row,
+  resourceId,
   saving,
   onSet,
   onRevoke,
   onDeny,
 }: {
   row: RoleAccessOverviewItem;
+  resourceId: string;
   saving: boolean;
   onSet: (role: string, permission: Exclude<AdminAccessGrantLevel, 'DENIED'>) => void;
   onRevoke: (role: string) => void;
@@ -77,6 +82,10 @@ function RoleOverviewActions({
 
   if (row.source === 'inherited_denied') {
     return <span className={styles.inheritedHint}>Закрыто выше по дереву</span>;
+  }
+
+  if (isAdminSettingsRestrictedResource(resourceId) && !canRoleSeeAdminSettingsNav(row.role)) {
+    return <span className={styles.inheritedHint}>Только Админ / Супер-админ</span>;
   }
 
   const actions: ReactNode[] = [];
@@ -354,8 +363,6 @@ const CHILD_RESOURCE_IDS: Record<string, string[]> = {
   'admin.crm.contract-payments': ['admin.crm.contract-payments.incassation'],
 };
 
-const KNOWLEDGE_CATEGORY_PREFIX = KNOWLEDGE_CATEGORY_RESOURCE_PREFIX;
-
 export function AccessModal({
   resourceId: initialResourceId,
   resourceLabel: resourceLabelOverride,
@@ -471,12 +478,11 @@ export function AccessModal({
   const rolesDenied = roleOverview.filter((r) => r.effective === 'DENIED');
   const rolesWithOverrides = roleOverview.filter((r) => r.hasExplicitOverride);
 
-  const relatedResourceIds = CHILD_RESOURCE_IDS[initialResourceId] ?? [];
-  const parentResourceId = initialResourceId.startsWith(KNOWLEDGE_CATEGORY_PREFIX)
-    ? KNOWLEDGE_RESOURCE_ID
-    : null;
+  const relatedResourceIds =
+    CHILD_RESOURCE_IDS[initialResourceId] ?? getAdminResourceChildren(initialResourceId);
+  const parentResourceId = getAdminResourceParent(initialResourceId);
   const resourceLabel = resourceLabelOverride ?? getAdminResourceLabel(resourceId);
-  const isKnowledgeCategory = resourceId.startsWith(KNOWLEDGE_CATEGORY_PREFIX);
+  const isKnowledgeCategory = resourceId.startsWith(KNOWLEDGE_CATEGORY_RESOURCE_PREFIX);
   const contentReady = permissions !== null;
   const showSkeleton = loading && !contentReady;
 
@@ -565,7 +571,7 @@ export function AccessModal({
             {resourceId !== initialResourceId &&
             (parentResourceId
               ? resourceId === parentResourceId
-              : !initialResourceId.startsWith(KNOWLEDGE_CATEGORY_PREFIX)) ? (
+              : !initialResourceId.startsWith(KNOWLEDGE_CATEGORY_RESOURCE_PREFIX)) ? (
               <button
                 type="button"
                 data-modal-btn="secondary"
@@ -633,6 +639,7 @@ export function AccessModal({
                         <td>
                           <RoleOverviewActions
                             row={row}
+                            resourceId={resourceId}
                             saving={saving}
                             onSet={(role, permission) =>
                               void runMutation(() =>
