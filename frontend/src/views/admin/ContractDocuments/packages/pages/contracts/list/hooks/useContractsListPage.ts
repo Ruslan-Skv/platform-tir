@@ -2,23 +2,40 @@ import { useCallback, useMemo, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
+
 import { useContractsListDerivedData } from './useContractsListDerivedData';
 import { useContractsListFiltersState } from './useContractsListFiltersState';
 import { useContractsListLoad } from './useContractsListLoad';
 import { useContractsListModalsState } from './useContractsListModalsState';
 import { useContractsListMutations } from './useContractsListMutations';
+import { useContractsListSavedViews } from './useContractsListSavedViews';
 import { useContractsListSyncEffects } from './useContractsListSyncEffects';
 
 export function useContractsListPage() {
   const router = useRouter();
+  const { user } = useAuth();
   const [error, setError] = useState<string | null>(null);
 
   const handleLoadError = useCallback((message: string) => {
     setError(message);
   }, []);
 
-  const load = useContractsListLoad(handleLoadError);
-  const filters = useContractsListFiltersState();
+  const filters = useContractsListFiltersState(user?.role);
+  const load = useContractsListLoad(handleLoadError, {
+    listScope: filters.listScope,
+    currentUserId: user?.id ?? null,
+    selectedDirectionIds: filters.directionFilters,
+    statusFilters: filters.statusFilters,
+    search: filters.search,
+    managerFilter: filters.managerFilter,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
+    sortBy: filters.listSortBy,
+    sortOrder: filters.listSortOrder,
+    page: filters.page,
+    limit: filters.limit,
+  });
   const modals = useContractsListModalsState();
 
   const presetById = useMemo(
@@ -33,10 +50,15 @@ export function useContractsListPage() {
 
   const derived = useContractsListDerivedData({
     rows: load.rows,
+    serverTotal: load.total,
+    serverCounts: load.counts,
     searchNorm: filters.searchNorm,
     managerFilter: filters.managerFilter,
-    statusFilter: filters.statusFilter,
-    directionFilter: filters.directionFilter,
+    statusFilters: filters.statusFilters,
+    directionFilters: filters.directionFilters,
+    listScope: filters.listScope,
+    currentUserId: user?.id ?? null,
+    myDirectionIds: load.myDirectionIds,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     directions: load.directions,
@@ -56,8 +78,9 @@ export function useContractsListPage() {
   useContractsListSyncEffects({
     searchNorm: filters.searchNorm,
     managerFilter: filters.managerFilter,
-    statusFilter: filters.statusFilter,
-    directionFilter: filters.directionFilter,
+    statusFilters: filters.statusFilters,
+    directionFilters: filters.directionFilters,
+    listScope: filters.listScope,
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     listViewMode: filters.listViewMode,
@@ -69,7 +92,7 @@ export function useContractsListPage() {
     managerOptions: load.managerOptions,
     setManagerFilter: filters.setManagerFilter,
     directions: load.directions,
-    setDirectionFilter: filters.setDirectionFilter,
+    setDirectionFilters: filters.setDirectionFilters,
   });
 
   const mutations = useContractsListMutations({
@@ -77,6 +100,11 @@ export function useContractsListPage() {
     load: load.load,
     setError,
     modals,
+  });
+
+  const savedViews = useContractsListSavedViews({
+    currentFilters: filters.currentFiltersSnapshot,
+    onApplyFilters: filters.applyFiltersSnapshot,
   });
 
   return {
@@ -87,6 +115,7 @@ export function useContractsListPage() {
     modals,
     derived,
     mutations,
+    savedViews,
     objectsById,
     presetById,
   };

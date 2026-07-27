@@ -10,6 +10,7 @@ export type PackageJournalFlushPayload = {
   title: string | null;
   formData: Record<string, unknown>;
   status?: ContractDocumentPackageStatus;
+  responsibleManagerId?: string | null;
 };
 
 export type PackageJournalScheduler = {
@@ -45,6 +46,9 @@ export function createPackageJournalScheduler(args: {
       title: payload.title,
       formData: payload.formData,
       ...(payload.status !== undefined ? { status: payload.status } : {}),
+      ...(payload.responsibleManagerId !== undefined
+        ? { responsibleManagerId: payload.responsibleManagerId }
+        : {}),
       recordVersion: true,
     });
     args.onFlushed?.();

@@ -4,28 +4,47 @@ import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-docum
 import type { CrmDirection } from '@/shared/api/admin-crm';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
-import type { PackageListPipelineStatus } from '../../../platform/hub/pipeline/packagePipeline';
 import {
   CONTRACTS_PAGE_LIMIT_OPTIONS,
+  type ContractsListScope,
   type ContractsListViewMode,
   type ContractsPageLimit,
 } from './contractsListFilters';
 import { contractsListFilterFieldClass } from './contractsListFormatters';
+import {
+  CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS,
+  CONTRACTS_LIST_QUEUE_PRESETS,
+  type ContractsListQueuePreset,
+  toggleContractsListChipValue,
+} from './contractsListScope';
+
+function contractsListDirectionChipLabel(direction: CrmDirection): string {
+  if (direction.slug === 'stretch-ceilings') return 'Потолки';
+  return direction.name;
+}
 
 type ContractsListFiltersBarProps = {
   loading: boolean;
   search: string;
   onSearchChange: (value: string) => void;
-  statusFilter: '' | PackageListPipelineStatus;
-  onStatusFilterChange: (value: '' | PackageListPipelineStatus) => void;
+  listScope: ContractsListScope;
+  onListScopeChange: (scope: ContractsListScope) => void;
+  queuePreset: ContractsListQueuePreset | null;
+  onQueuePresetChange: (preset: ContractsListQueuePreset) => void;
+  statusFilters: string[];
+  onStatusFiltersChange: (value: string[]) => void;
   listViewMode: ContractsListViewMode;
   onListViewModeChange: (mode: ContractsListViewMode) => void;
   managerFilter: string;
   onManagerFilterChange: (value: string) => void;
   managerOptions: ContractSignatoryProfile[];
-  directionFilter: string;
-  onDirectionFilterChange: (value: string) => void;
+  directionFilters: string[];
+  onDirectionFiltersChange: (value: string[]) => void;
   directions: CrmDirection[];
+  myDirectionIds: string[];
+  scopeCounts: Record<ContractsListScope, number>;
+  queuePresetCounts: Partial<Record<ContractsListQueuePreset, number>>;
+  directionCounts: Record<string, number>;
   dateFrom: string;
   onDateFromChange: (value: string) => void;
   dateTo: string;
@@ -34,20 +53,32 @@ type ContractsListFiltersBarProps = {
   onLimitChange: (limit: ContractsPageLimit) => void;
 };
 
+function chipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
 export function ContractsListFiltersBar({
   loading,
   search,
   onSearchChange,
-  statusFilter,
-  onStatusFilterChange,
+  listScope,
+  onListScopeChange,
+  queuePreset,
+  onQueuePresetChange,
+  statusFilters,
+  onStatusFiltersChange,
   listViewMode,
   onListViewModeChange,
   managerFilter,
   onManagerFilterChange,
   managerOptions,
-  directionFilter,
-  onDirectionFilterChange,
+  directionFilters,
+  onDirectionFiltersChange,
   directions,
+  myDirectionIds,
+  scopeCounts,
+  queuePresetCounts,
+  directionCounts,
   dateFrom,
   onDateFromChange,
   dateTo,
@@ -55,133 +86,203 @@ export function ContractsListFiltersBar({
   limit,
   onLimitChange,
 }: ContractsListFiltersBarProps) {
+  const showManagerFilter = listScope !== 'mine';
+
   return (
-    <div className={cdHub.contractsListFilters}>
-      <input
-        type="search"
-        placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
-        value={search}
-        onChange={(e) => onSearchChange(e.target.value)}
-        disabled={loading}
-        className={contractsListFilterFieldClass(
-          cdHub.contractsListSearchInput,
-          Boolean(search.trim()),
-          cdHub.contractsListFilterActive
-        )}
-        aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
-      />
-      <select
-        id="repair_list_status_filter"
-        value={statusFilter}
-        onChange={(e) =>
-          onStatusFilterChange((e.target.value || '') as '' | PackageListPipelineStatus)
-        }
-        disabled={loading}
-        className={contractsListFilterFieldClass(
-          cdHub.contractsListSelect,
-          Boolean(statusFilter),
-          cdHub.contractsListFilterActive
-        )}
-        aria-label="Статус"
-      >
-        <option value="">Все статусы</option>
-        <option value="IN_PROJECT">В проекте</option>
-        <option value="SIGNED">Подписан</option>
-        <option value="WORK_IN_PROGRESS">В работе</option>
-        <option value="CLOSED">Закрыт</option>
-        <option value="REFUSED">Отказ</option>
-      </select>
-      <select
-        value={listViewMode}
-        onChange={(e) => onListViewModeChange(e.target.value as ContractsListViewMode)}
-        disabled={loading}
-        className={cdHub.contractsListSelect}
-        aria-label="Режим списка"
-      >
-        <option value="by_object">По объектам</option>
-        <option value="flat">Плоский список</option>
-      </select>
-      <select
-        id="repair_list_manager_filter"
-        value={managerFilter}
-        onChange={(e) => onManagerFilterChange(e.target.value)}
-        disabled={loading}
-        className={contractsListFilterFieldClass(
-          cdHub.contractsListSelect,
-          Boolean(managerFilter),
-          cdHub.contractsListFilterActive
-        )}
-        aria-label="Менеджер"
-      >
-        <option value="">Все менеджеры</option>
-        {managerOptions.map((p) => (
-          <option key={p.crmUserId} value={p.crmUserId}>
-            {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
-          </option>
+    <div className={cdHub.contractsListFiltersStack}>
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Очередь договоров">
+        <span className={cdHub.contractsListChipRowLabel}>Очередь</span>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(listScope === 'mine')}
+          onClick={() => onListScopeChange('mine')}
+        >
+          Мои ({scopeCounts.mine ?? 0})
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(listScope === 'my_directions')}
+          onClick={() => onListScopeChange('my_directions')}
+          title={
+            myDirectionIds.length === 0
+              ? 'Направления ещё не назначены в карточке пользователя'
+              : undefined
+          }
+        >
+          Мои направления ({scopeCounts.my_directions ?? 0})
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(listScope === 'all')}
+          onClick={() => onListScopeChange('all')}
+        >
+          Все ({scopeCounts.all ?? 0})
+        </button>
+      </div>
+
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Рабочий этап">
+        <span className={cdHub.contractsListChipRowLabel}>Этап</span>
+        {CONTRACTS_LIST_QUEUE_PRESETS.map((preset) => (
+          <button
+            key={preset.id}
+            type="button"
+            disabled={loading}
+            className={chipClass(queuePreset === preset.id)}
+            title={preset.hint}
+            onClick={() => onQueuePresetChange(preset.id)}
+          >
+            {preset.label} ({queuePresetCounts[preset.id] ?? 0})
+          </button>
         ))}
-      </select>
-      <select
-        id="repair_list_direction_filter"
-        value={directionFilter}
-        onChange={(e) => onDirectionFilterChange(e.target.value)}
-        disabled={loading}
-        className={contractsListFilterFieldClass(
-          cdHub.contractsListSelect,
-          Boolean(directionFilter),
-          cdHub.contractsListFilterActive
-        )}
-        aria-label="Направление"
-      >
-        <option value="">Все направления</option>
-        {directions.map((d) => (
-          <option key={d.id} value={d.id}>
-            {d.name}
-          </option>
+      </div>
+
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Статусы">
+        <span className={cdHub.contractsListChipRowLabel}>Статус</span>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(statusFilters.length === 0)}
+          onClick={() => onStatusFiltersChange([])}
+        >
+          Все
+        </button>
+        {CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS.map((opt) => (
+          <button
+            key={opt.value}
+            type="button"
+            disabled={loading}
+            className={chipClass(statusFilters.includes(opt.value))}
+            onClick={() =>
+              onStatusFiltersChange(toggleContractsListChipValue(statusFilters, opt.value))
+            }
+          >
+            {opt.label}
+          </button>
         ))}
-      </select>
-      <label className={cdHub.contractsListDateLabel}>
-        <span className={cdHub.contractsListDateLabelText}>Дата от</span>
+      </div>
+
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Направления">
+        <span className={cdHub.contractsListChipRowLabel}>Направление</span>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(directionFilters.length === 0)}
+          onClick={() => onDirectionFiltersChange([])}
+        >
+          Все
+        </button>
+        {directions.map((d) => {
+          const isMine = myDirectionIds.includes(d.id);
+          const active = directionFilters.includes(d.id);
+          return (
+            <button
+              key={d.id}
+              type="button"
+              disabled={loading}
+              className={`${chipClass(active)}${isMine ? ` ${cdHub.contractsListChipMine}` : ''}`}
+              onClick={() =>
+                onDirectionFiltersChange(toggleContractsListChipValue(directionFilters, d.id))
+              }
+              title={isMine ? 'Ваше направление' : undefined}
+            >
+              {contractsListDirectionChipLabel(d)} ({directionCounts[d.id] ?? 0})
+            </button>
+          );
+        })}
+      </div>
+
+      <div className={cdHub.contractsListFilters}>
         <input
-          type="date"
-          value={dateFrom}
-          onChange={(e) => onDateFromChange(e.target.value)}
+          type="search"
+          placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
+          value={search}
+          onChange={(e) => onSearchChange(e.target.value)}
           disabled={loading}
           className={contractsListFilterFieldClass(
-            cdHub.contractsListDateInput,
-            Boolean(dateFrom),
+            cdHub.contractsListSearchInput,
+            Boolean(search.trim()),
             cdHub.contractsListFilterActive
           )}
-          aria-label="Дата от"
+          aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
         />
-      </label>
-      <label className={cdHub.contractsListDateLabel}>
-        <span className={cdHub.contractsListDateLabelText}>Дата до</span>
-        <input
-          type="date"
-          value={dateTo}
-          onChange={(e) => onDateToChange(e.target.value)}
+        <select
+          value={listViewMode}
+          onChange={(e) => onListViewModeChange(e.target.value as ContractsListViewMode)}
           disabled={loading}
-          className={contractsListFilterFieldClass(
-            cdHub.contractsListDateInput,
-            Boolean(dateTo),
-            cdHub.contractsListFilterActive
-          )}
-          aria-label="Дата до"
-        />
-      </label>
-      <select
-        value={limit}
-        onChange={(e) => onLimitChange(Number(e.target.value) as ContractsPageLimit)}
-        disabled={loading}
-        className={cdHub.contractsListSelect}
-        aria-label="Количество строк на странице"
-      >
-        {CONTRACTS_PAGE_LIMIT_OPTIONS.map((n) => (
-          <option key={n} value={n}>
-            {n} на странице
-          </option>
-        ))}
-      </select>
+          className={cdHub.contractsListSelect}
+          aria-label="Режим списка"
+        >
+          <option value="by_object">По объектам</option>
+          <option value="flat">Плоский список</option>
+        </select>
+        {showManagerFilter ? (
+          <select
+            id="repair_list_manager_filter"
+            value={managerFilter}
+            onChange={(e) => onManagerFilterChange(e.target.value)}
+            disabled={loading}
+            className={contractsListFilterFieldClass(
+              cdHub.contractsListSelect,
+              Boolean(managerFilter),
+              cdHub.contractsListFilterActive
+            )}
+            aria-label="Ответственный менеджер"
+          >
+            <option value="">Все ответственные</option>
+            {managerOptions.map((p) => (
+              <option key={p.crmUserId} value={p.crmUserId}>
+                {p.title?.trim() || p.directorNameNominative?.trim() || p.crmUserId}
+              </option>
+            ))}
+          </select>
+        ) : null}
+        <label className={cdHub.contractsListDateLabel}>
+          <span className={cdHub.contractsListDateLabelText}>Дата от</span>
+          <input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => onDateFromChange(e.target.value)}
+            disabled={loading}
+            className={contractsListFilterFieldClass(
+              cdHub.contractsListDateInput,
+              Boolean(dateFrom),
+              cdHub.contractsListFilterActive
+            )}
+            aria-label="Дата от"
+          />
+        </label>
+        <label className={cdHub.contractsListDateLabel}>
+          <span className={cdHub.contractsListDateLabelText}>Дата до</span>
+          <input
+            type="date"
+            value={dateTo}
+            onChange={(e) => onDateToChange(e.target.value)}
+            disabled={loading}
+            className={contractsListFilterFieldClass(
+              cdHub.contractsListDateInput,
+              Boolean(dateTo),
+              cdHub.contractsListFilterActive
+            )}
+            aria-label="Дата до"
+          />
+        </label>
+        <select
+          value={limit}
+          onChange={(e) => onLimitChange(Number(e.target.value) as ContractsPageLimit)}
+          disabled={loading}
+          className={cdHub.contractsListSelect}
+          aria-label="Количество строк на странице"
+        >
+          {CONTRACTS_PAGE_LIMIT_OPTIONS.map((n) => (
+            <option key={n} value={n}>
+              {n} на странице
+            </option>
+          ))}
+        </select>
+      </div>
     </div>
   );
 }

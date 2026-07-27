@@ -45,6 +45,43 @@ export async function getCrmUsers(): Promise<CrmUser[]> {
   return res.json();
 }
 
+export async function getMyCrmDirectionIds(): Promise<string[]> {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions/users/me/directions`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить ваши направления');
+  const data = (await res.json()) as { directionIds?: string[] };
+  return Array.isArray(data.directionIds) ? data.directionIds : [];
+}
+
+export async function getUserCrmDirectionIds(userId: string): Promise<string[]> {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions/users/${userId}/directions`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить направления пользователя');
+  const data = (await res.json()) as { directionIds?: string[] };
+  return Array.isArray(data.directionIds) ? data.directionIds : [];
+}
+
+export async function setUserCrmDirectionIds(
+  userId: string,
+  directionIds: string[]
+): Promise<string[]> {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions/users/${userId}/directions`, {
+    method: 'PUT',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ directionIds }),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      typeof err?.message === 'string' ? err.message : 'Не удалось сохранить направления'
+    );
+  }
+  const data = (await res.json()) as { directionIds?: string[] };
+  return Array.isArray(data.directionIds) ? data.directionIds : [];
+}
+
 export type InstallerDirection =
   | 'REPAIR'
   | 'WINDOWS'

@@ -266,6 +266,33 @@
   margin: 0;
 }
 
+.directionsHint {
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.4;
+}
+
+.directionsCheckboxGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+}
+
+.directionCheckboxItem {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+}
+
+.directionCheckboxItem input {
+  width: auto;
+  margin: 0;
+}
+
 .formActions {
   display: flex;
   justify-content: flex-end;

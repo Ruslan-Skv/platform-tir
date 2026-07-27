@@ -196,11 +196,55 @@ export function contractsListManagerCrmUserId(form: PackageFormData): string {
   return form.executor.signatoryCrmUserId?.trim() ?? '';
 }
 
-/** Подпись в списке: ФИО из формы, иначе из CRM, иначе название карточки. */
+/** Пакет «мой»: ответственный менеджер, иначе подписант-менеджер, иначе создатель. */
+export function contractsListPackageBelongsToUser(
+  pkg: ContractDocumentPackage,
+  userId: string
+): boolean {
+  if (!userId) return false;
+  if (pkg.responsibleManagerId?.trim() === userId) return true;
+  if (pkg.createdById?.trim() === userId) return true;
+  const form = mergePackageFormData(pkg.formData ?? {});
+  return contractsListManagerCrmUserId(form) === userId;
+}
+
+/** Id менеджера для фильтра списка: responsibleManagerId → signatory → createdBy. */
+export function contractsListEffectiveManagerUserId(pkg: ContractDocumentPackage): string {
+  const responsible = pkg.responsibleManagerId?.trim();
+  if (responsible) return responsible;
+  const form = mergePackageFormData(pkg.formData ?? {});
+  const signatory = contractsListManagerCrmUserId(form);
+  if (signatory) return signatory;
+  return pkg.createdById?.trim() ?? '';
+}
+
+function formatContractsListUserRefName(
+  user:
+    | { firstName?: string | null; lastName?: string | null; email?: string | null }
+    | null
+    | undefined
+): string {
+  if (!user) return '';
+  const parts = [user.firstName, user.lastName].filter(Boolean);
+  return parts.length ? parts.join(' ') : (user.email ?? '');
+}
+
+/** Подпись в списке: ответственный менеджер пакета, иначе ФИО из формы/CRM. */
 export function contractsListManagerDisplayLabel(
   form: PackageFormData,
-  crmUsers: CrmUser[]
+  crmUsers: CrmUser[],
+  pkg?: ContractDocumentPackage
 ): string {
+  if (pkg?.responsibleManager) {
+    const fromRef = formatContractsListUserRefName(pkg.responsibleManager);
+    if (fromRef) return fromRef;
+  }
+  const responsibleId = pkg?.responsibleManagerId?.trim();
+  if (responsibleId) {
+    const u = crmUsers.find((x) => x.id === responsibleId);
+    const n = formatCrmUserName(u);
+    if (n) return n;
+  }
   const nom = form.executor.directorNameNominative?.trim();
   if (nom) return nom;
   const id = contractsListManagerCrmUserId(form);
@@ -212,6 +256,10 @@ export function contractsListManagerDisplayLabel(
   }
   const title = form.executor.selectedSignatoryProfileTitle?.trim();
   if (title) return title;
+  if (pkg?.createdBy) {
+    const fromCreated = formatContractsListUserRefName(pkg.createdBy);
+    if (fromCreated) return fromCreated;
+  }
   return '—';
 }
 
@@ -514,8 +562,16 @@ export function compareContractListRows(
       );
     }
     case 'manager': {
-      const la = contractsListManagerDisplayLabel(mergePackageFormData(a.formData ?? {}), crmUsers);
-      const lb = contractsListManagerDisplayLabel(mergePackageFormData(b.formData ?? {}), crmUsers);
+      const la = contractsListManagerDisplayLabel(
+        mergePackageFormData(a.formData ?? {}),
+        crmUsers,
+        a
+      );
+      const lb = contractsListManagerDisplayLabel(
+        mergePackageFormData(b.formData ?? {}),
+        crmUsers,
+        b
+      );
       return compareContractsListStrings(la, lb, sortOrder);
     }
     case 'remaining':

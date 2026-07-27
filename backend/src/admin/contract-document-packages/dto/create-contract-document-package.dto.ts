@@ -16,4 +16,8 @@ export class CreateContractDocumentPackageDto {
   @IsOptional()
   @IsString()
   crmContractId?: string;
+
+  @IsOptional()
+  @IsString()
+  responsibleManagerId?: string;
 }

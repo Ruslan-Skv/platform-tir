@@ -31,6 +31,7 @@ export type UsePackageProfileDirectoryHandlersOptions = {
   executorProfiles: ExecutorRequisiteProfile[];
   signatoryProfiles: ContractSignatoryProfile[];
   setLinkedCrmCustomerId: React.Dispatch<React.SetStateAction<string | null>>;
+  onResponsibleManagerIdChange?: (userId: string | null) => void;
 };
 
 export function usePackageProfileDirectoryHandlers({
@@ -42,6 +43,7 @@ export function usePackageProfileDirectoryHandlers({
   executorProfiles,
   signatoryProfiles,
   setLinkedCrmCustomerId,
+  onResponsibleManagerIdChange,
 }: UsePackageProfileDirectoryHandlersOptions) {
   const customerPhonesReadonlyDisplay = useMemo(() => {
     const parts = (form.customer.phones ?? []).map((p) => p.trim()).filter(Boolean);
@@ -143,9 +145,19 @@ export function usePackageProfileDirectoryHandlers({
           },
         };
       });
+      const nextCrmUserId = signatoryProfiles.find((it) => it.title === title)?.crmUserId?.trim();
+      if (nextCrmUserId && onResponsibleManagerIdChange) {
+        onResponsibleManagerIdChange(nextCrmUserId);
+      }
       touchPackageData();
     },
-    [contractAndEstimateLocked, signatoryProfiles, setForm, touchPackageData]
+    [
+      contractAndEstimateLocked,
+      signatoryProfiles,
+      setForm,
+      touchPackageData,
+      onResponsibleManagerIdChange,
+    ]
   );
 
   useEffect(() => {

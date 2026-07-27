@@ -24,6 +24,7 @@ export type UsePackageDocumentPersistOptions = {
   formRef: React.MutableRefObject<PackageFormData>;
   draftTitleRef: React.MutableRefObject<string>;
   dirtyRef: React.MutableRefObject<boolean>;
+  responsibleManagerIdRef: React.MutableRefObject<string | null>;
   buildPersistedFormData: (form: PackageFormData) => Record<string, unknown>;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   setDirty: React.Dispatch<React.SetStateAction<boolean>>;
@@ -35,6 +36,15 @@ export type UsePackageDocumentPersistOptions = {
   >;
 };
 
+function resolveResponsibleManagerIdForPersist(
+  form: PackageFormData,
+  currentResponsibleManagerId: string | null
+): string | null {
+  const fromSignatory = form.executor.signatoryCrmUserId?.trim() || '';
+  if (fromSignatory) return fromSignatory;
+  return currentResponsibleManagerId?.trim() || null;
+}
+
 export function usePackageDocumentPersist({
   packageId,
   loading,
@@ -42,6 +52,7 @@ export function usePackageDocumentPersist({
   formRef,
   draftTitleRef,
   dirtyRef,
+  responsibleManagerIdRef,
   buildPersistedFormData,
   setForm,
   setDirty,
@@ -59,6 +70,10 @@ export function usePackageDocumentPersist({
       getPayload: () => ({
         title: draftTitleRef.current.trim() || null,
         formData: buildPersistedFormData(formRef.current),
+        responsibleManagerId: resolveResponsibleManagerIdForPersist(
+          formRef.current,
+          responsibleManagerIdRef.current
+        ),
       }),
       onFlushed: () => {
         if (isVersionsHistoryOpenRef.current) {
@@ -75,6 +90,7 @@ export function usePackageDocumentPersist({
     buildPersistedFormData,
     draftTitleRef,
     formRef,
+    responsibleManagerIdRef,
     isVersionsHistoryOpenRef,
     refreshPackageVersionsRef,
   ]);
@@ -92,11 +108,17 @@ export function usePackageDocumentPersist({
     async (nextForm: PackageFormData, opts?: { recordVersion?: boolean }) => {
       const formData = buildPersistedFormData(nextForm);
       const recordVersion = opts?.recordVersion === true;
+      const responsibleManagerId = resolveResponsibleManagerIdForPersist(
+        nextForm,
+        responsibleManagerIdRef.current
+      );
       await updateContractDocumentPackage(packageId, {
         title: draftTitleRef.current.trim() || null,
         formData,
+        responsibleManagerId,
         recordVersion,
       });
+      responsibleManagerIdRef.current = responsibleManagerId;
       if (recordVersion) {
         journalSchedulerRef.current?.acknowledgeImmediateVersion();
         if (isVersionsHistoryOpenRef.current) {
@@ -117,6 +139,7 @@ export function usePackageDocumentPersist({
       buildPersistedFormData,
       draftTitleRef,
       formRef,
+      responsibleManagerIdRef,
       isVersionsHistoryOpenRef,
       refreshPackageVersionsRef,
       setDirty,
@@ -134,11 +157,17 @@ export function usePackageDocumentPersist({
     if (loading || packageFlowStatusRef.current === 'REFUSED') return;
     if (!hadPendingTimer && !dirtyRef.current) return;
     const formData = buildPersistedFormData(formRef.current);
+    const responsibleManagerId = resolveResponsibleManagerIdForPersist(
+      formRef.current,
+      responsibleManagerIdRef.current
+    );
     await updateContractDocumentPackage(packageId, {
       title: draftTitleRef.current.trim() || null,
       formData,
+      responsibleManagerId,
       recordVersion: false,
     });
+    responsibleManagerIdRef.current = responsibleManagerId;
     journalSchedulerRef.current?.schedule();
     setDirty(false);
     setWorkspacePackages((prev) => prev.map((p) => (p.id === packageId ? { ...p, formData } : p)));
@@ -150,6 +179,7 @@ export function usePackageDocumentPersist({
     dirtyRef,
     formRef,
     draftTitleRef,
+    responsibleManagerIdRef,
     setDirty,
     setWorkspacePackages,
   ]);

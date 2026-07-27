@@ -3,28 +3,40 @@ import type { ContractDocumentPackage } from '@/shared/api/admin-contract-docume
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
 
-import { mergePackageFormData } from '../../../platform/form/packageForm';
+import type { ContractsListScope } from './contractsListFilters';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 import {
   compareContractListRows,
   compareContractsListStrings,
-  contractsListManagerCrmUserId,
+  contractsListEffectiveManagerUserId,
   contractsListMatchesDateRange,
   contractsListMatchesSearch,
+  contractsListPackageBelongsToUser,
   contractsListPackageDirectionIds,
   contractsListPipelineStatus,
 } from './contractsListUtils';
 
 export type ContractsListDisplayItem =
   | { type: 'object'; objectId: string; packages: ContractDocumentPackage[] }
-  | { type: 'package'; package: ContractDocumentPackage; childOfObject?: boolean };
+  | {
+      type: 'package';
+      package: ContractDocumentPackage;
+      childOfObject?: boolean;
+      /** Договор без объекта в режиме by_object — отдельная карточка. */
+      standaloneCard?: boolean;
+    }
+  /** Визуальный зазор между карточками объектов (by_object). */
+  | { type: 'gap'; id: string; size?: 'default' | 'section' };
 
 export type FilterContractsListVisibleRowsParams = {
   rows: ContractDocumentPackage[];
   searchNorm: string;
   managerFilter: string;
-  statusFilter: string;
-  directionFilter: string;
+  statusFilters: string[];
+  directionFilters: string[];
+  listScope: ContractsListScope;
+  currentUserId: string | null;
+  myDirectionIds: string[];
   dateFrom: string;
   dateTo: string;
   directions: CrmDirection[];
@@ -40,8 +52,11 @@ export function filterContractsListVisibleRows({
   rows,
   searchNorm,
   managerFilter,
-  statusFilter,
-  directionFilter,
+  statusFilters,
+  directionFilters,
+  listScope,
+  currentUserId,
+  myDirectionIds,
   dateFrom,
   dateTo,
   directions,
@@ -58,21 +73,33 @@ export function filterContractsListVisibleRows({
     list = list.filter((r) => contractsListMatchesSearch(r, searchNorm));
   }
 
-  if (managerFilter) {
-    list = list.filter((r) => {
-      const form = mergePackageFormData(r.formData ?? {});
-      return contractsListManagerCrmUserId(form) === managerFilter;
-    });
+  if (listScope === 'mine' && currentUserId) {
+    list = list.filter((r) => contractsListPackageBelongsToUser(r, currentUserId));
+  } else if (managerFilter) {
+    list = list.filter((r) => contractsListEffectiveManagerUserId(r) === managerFilter);
   }
 
-  if (statusFilter) {
-    list = list.filter((r) => contractsListPipelineStatus(r) === statusFilter);
+  if (listScope === 'my_directions') {
+    if (myDirectionIds.length === 0) {
+      list = [];
+    } else {
+      list = list.filter((r) => {
+        const ids = contractsListPackageDirectionIds(r, directions, presetById, measurementsById);
+        return ids.some((id) => myDirectionIds.includes(id));
+      });
+    }
   }
 
-  if (directionFilter) {
+  if (statusFilters.length > 0) {
+    const statusSet = new Set(statusFilters);
+    list = list.filter((r) => statusSet.has(contractsListPipelineStatus(r)));
+  }
+
+  if (directionFilters.length > 0) {
+    const dirSet = new Set(directionFilters);
     list = list.filter((r) =>
-      contractsListPackageDirectionIds(r, directions, presetById, measurementsById).includes(
-        directionFilter
+      contractsListPackageDirectionIds(r, directions, presetById, measurementsById).some((id) =>
+        dirSet.has(id)
       )
     );
   }
@@ -143,6 +170,9 @@ export function buildContractsListTableDisplayItems({
 
   const items: ContractsListDisplayItem[] = [];
   for (const oid of objectIds) {
+    if (items.length > 0) {
+      items.push({ type: 'gap', id: `gap-before-${oid}` });
+    }
     const pkgs = byObject.get(oid) ?? [];
     items.push({ type: 'object', objectId: oid, packages: pkgs });
     if (expandedObjectId === oid) {
@@ -151,8 +181,15 @@ export function buildContractsListTableDisplayItems({
       }
     }
   }
-  for (const pkg of ungrouped) {
-    items.push({ type: 'package', package: pkg });
+  if (ungrouped.length > 0 && items.length > 0) {
+    items.push({ type: 'gap', id: 'gap-before-ungrouped' });
+  }
+  for (let i = 0; i < ungrouped.length; i++) {
+    const pkg = ungrouped[i]!;
+    if (i > 0) {
+      items.push({ type: 'gap', id: `gap-before-pkg-${pkg.id}` });
+    }
+    items.push({ type: 'package', package: pkg, standaloneCard: true });
   }
   return items;
 }

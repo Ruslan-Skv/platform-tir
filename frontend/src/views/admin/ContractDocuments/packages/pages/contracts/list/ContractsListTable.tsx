@@ -114,7 +114,7 @@ export function ContractsListTable({
                 />
                 <ContractsListSortableTh
                   column="manager"
-                  title="Менеджер"
+                  title="Ответственный"
                   sortBy={listSortBy}
                   sortOrder={listSortOrder}
                   onSort={onSort}
@@ -173,7 +173,22 @@ export function ContractsListTable({
                   </td>
                 </tr>
               ) : (
-                paginatedDisplayItems.map((item) => {
+                paginatedDisplayItems.map((item, index) => {
+                  if (item.type === 'gap') {
+                    return (
+                      <tr
+                        key={item.id}
+                        className={`${cdHub.contractsListObjectGroupGap}${
+                          item.size === 'section'
+                            ? ` ${cdHub.contractsListObjectGroupGapSection}`
+                            : ''
+                        }`}
+                        aria-hidden
+                      >
+                        <td colSpan={contractsListTableColSpan} />
+                      </tr>
+                    );
+                  }
                   if (item.type === 'object') {
                     return (
                       <ContractListObjectRow
@@ -182,16 +197,23 @@ export function ContractsListTable({
                         packages={item.packages}
                         objectsById={objectsById}
                         addendumColumnCount={addendumColumnCount}
+                        colSpan={contractsListTableColSpan}
                         expandedObjectId={expandedObjectId}
                         onToggleExpand={onToggleObjectExpand}
                       />
                     );
                   }
+                  const next = paginatedDisplayItems[index + 1];
+                  const isLastObjectChild =
+                    Boolean(item.childOfObject) &&
+                    (next == null || next.type !== 'package' || !next.childOfObject);
                   return (
                     <ContractListPackageRow
                       key={item.package.id}
                       pkg={item.package}
                       childOfObject={item.childOfObject}
+                      lastObjectChild={isLastObjectChild}
+                      standaloneCard={item.standaloneCard}
                       addendumColumnCount={addendumColumnCount}
                       crmUsers={crmUsers}
                       loading={loading}

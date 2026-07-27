@@ -56,6 +56,10 @@ import {
 export type ContractListPackageRowProps = {
   pkg: ContractDocumentPackage;
   childOfObject?: boolean;
+  /** Последний договор в раскрытой карточке объекта — скругление низа. */
+  lastObjectChild?: boolean;
+  /** Договор без объекта — отдельная карточка со скруглением (режим by_object). */
+  standaloneCard?: boolean;
   addendumColumnCount: number;
   crmUsers: CrmUser[];
   loading: boolean;
@@ -73,6 +77,8 @@ export type ContractListPackageRowProps = {
 export function ContractListPackageRow({
   pkg,
   childOfObject,
+  lastObjectChild,
+  standaloneCard,
   addendumColumnCount,
   crmUsers,
   loading,
@@ -100,7 +106,7 @@ export function ContractListPackageRow({
   const remainingRub = contractsListRemainingToPayRub(paymentBaseRub, paidRub);
   const workDesc = contractsListWorkDescription(fd);
   const workShort = ellipsizeContractsListOneLine(workDesc, 100);
-  const managerLabel = contractsListManagerDisplayLabel(form, crmUsers);
+  const managerLabel = contractsListManagerDisplayLabel(form, crmUsers, pkg);
   const copyBusy = copyingPackageId === pkg.id;
   const deleteBusy = deletingPackageId === pkg.id;
   const canDeleteDraft = isPackageDraftDeletionAllowed(pkg);
@@ -108,8 +114,12 @@ export function ContractListPackageRow({
   const actPhotoItems = contractsListAttachedActPhotosFromForm(form, publicUploadUrl);
   const packageHref = adminContractDocumentsContractsPackageHref(pkg.id);
   const rowClass = childOfObject
-    ? `${dataTableStyles.row} ${cdHub.contractsListClickableRow} ${cdBase.contractsListChildRow}`
-    : `${dataTableStyles.row} ${cdHub.contractsListClickableRow}`;
+    ? `${dataTableStyles.row} ${cdHub.contractsListClickableRow} ${cdBase.contractsListChildRow}${
+        lastObjectChild ? ` ${cdHub.contractsListChildRowLast}` : ''
+      }`
+    : standaloneCard
+      ? `${dataTableStyles.row} ${cdHub.contractsListClickableRow} ${cdHub.contractsListStandaloneCard}`
+      : `${dataTableStyles.row} ${cdHub.contractsListClickableRow}`;
 
   return (
     <tr

@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { ContractDocumentPackageKind } from '@prisma/client';
+import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
 
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
@@ -35,8 +35,27 @@ export class ContractDocumentPackagesService {
     return this.crud.create(dto, createdById);
   }
 
-  findAll(kind?: ContractDocumentPackageKind) {
-    return this.crud.findAll(kind);
+  findAll(filters?: {
+    kind?: ContractDocumentPackageKind;
+    kinds?: ContractDocumentPackageKind[];
+    responsibleManagerId?: string;
+    statuses?: ContractDocumentPackageStatus[];
+    search?: string;
+    pipelineStatuses?: Array<'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED'>;
+    managerId?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    directionIds?: string[];
+    sortBy?: 'date' | 'contractNumber' | 'status' | 'customer' | 'manager' | 'updatedAt';
+    sortOrder?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+    includeCounts?: boolean;
+    countsUserId?: string;
+    countsMyDirectionIds?: string[];
+    paginated?: boolean;
+  }) {
+    return this.crud.findAll(filters);
   }
 
   findOne(id: string, options?: { allowTrashed?: boolean }) {

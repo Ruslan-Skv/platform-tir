@@ -14,11 +14,19 @@ const CONTRACTS_PAGE_LIMIT_LEGACY_KEY = 'admin_repair_contracts_page_limit';
 
 export type ContractsListViewMode = 'flat' | 'by_object';
 
+/** Очередь списка: мои пакеты / пакеты моих направлений / всё. */
+export type ContractsListScope = 'mine' | 'my_directions' | 'all';
+
 export interface ContractsListFiltersPersisted {
   search: string;
   managerFilter: string;
-  statusFilter: string;
-  directionFilter: string;
+  /** Мультивыбор статусов пайплайна; пусто = все. */
+  statusFilters: string[];
+  /** Мультивыбор CRM-направлений; пусто = все (в рамках scope). */
+  directionFilters: string[];
+  listScope: ContractsListScope;
+  /** false → один раз применить дефолты по роли текущего пользователя. */
+  scopeTouched: boolean;
   dateFrom: string;
   dateTo: string;
   sortBy: ContractsListSortBy;
@@ -27,14 +35,17 @@ export interface ContractsListFiltersPersisted {
   listViewMode: ContractsListViewMode;
 }
 
-/** Ключ localStorage (исторически repair_* — не менять без миграции). */
-const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_repair_contracts_list_filters_v2';
+const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_contract_documents_contracts_list_filters_v3';
+/** @deprecated */
+const CONTRACTS_LIST_FILTERS_STORAGE_KEY_V2 = 'admin_repair_contracts_list_filters_v2';
 
-const EMPTY_FILTERS: ContractsListFiltersPersisted = {
+export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   search: '',
   managerFilter: '',
-  statusFilter: '',
-  directionFilter: '',
+  statusFilters: [],
+  directionFilters: [],
+  listScope: 'all',
+  scopeTouched: false,
   dateFrom: '',
   dateTo: '',
   sortBy: 'date',
@@ -48,7 +59,7 @@ function normalizePageLimit(raw: unknown): ContractsPageLimit {
   if (CONTRACTS_PAGE_LIMIT_OPTIONS.includes(n as ContractsPageLimit)) {
     return n as ContractsPageLimit;
   }
-  return EMPTY_FILTERS.pageLimit;
+  return EMPTY_CONTRACTS_LIST_FILTERS.pageLimit;
 }
 
 function readLegacyPageLimit(): ContractsPageLimit | null {
@@ -73,34 +84,79 @@ const PIPELINE_STATUS_FILTER_VALUES = new Set([
   'REFUSED',
 ]);
 
+const LIST_SCOPE_VALUES = new Set<ContractsListScope>(['mine', 'my_directions', 'all']);
+
+function normalizeStatusFilters(raw: unknown, legacySingle?: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return [
+      ...new Set(
+        raw.filter(
+          (v): v is string => typeof v === 'string' && PIPELINE_STATUS_FILTER_VALUES.has(v)
+        )
+      ),
+    ];
+  }
+  if (
+    typeof legacySingle === 'string' &&
+    legacySingle &&
+    PIPELINE_STATUS_FILTER_VALUES.has(legacySingle)
+  ) {
+    return [legacySingle];
+  }
+  return [];
+}
+
+function normalizeDirectionFilters(raw: unknown, legacySingle?: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return [
+      ...new Set(raw.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)),
+    ];
+  }
+  if (typeof legacySingle === 'string' && legacySingle.trim()) {
+    return [legacySingle.trim()];
+  }
+  return [];
+}
+
 function normalizePersistedFilters(
-  raw: Partial<ContractsListFiltersPersisted> | null | undefined
+  raw:
+    | (Partial<ContractsListFiltersPersisted> & {
+        statusFilter?: string;
+        directionFilter?: string;
+      })
+    | null
+    | undefined
 ): ContractsListFiltersPersisted {
-  if (!raw || typeof raw !== 'object') return { ...EMPTY_FILTERS };
-  const status =
-    typeof raw.statusFilter === 'string' &&
-    (raw.statusFilter === '' || PIPELINE_STATUS_FILTER_VALUES.has(raw.statusFilter))
-      ? raw.statusFilter
-      : '';
+  if (!raw || typeof raw !== 'object') return { ...EMPTY_CONTRACTS_LIST_FILTERS };
   const hasSortInPayload = typeof raw.sortBy === 'string';
+  const listScope =
+    typeof raw.listScope === 'string' && LIST_SCOPE_VALUES.has(raw.listScope as ContractsListScope)
+      ? (raw.listScope as ContractsListScope)
+      : EMPTY_CONTRACTS_LIST_FILTERS.listScope;
   return {
     search: typeof raw.search === 'string' ? raw.search : '',
     managerFilter: typeof raw.managerFilter === 'string' ? raw.managerFilter : '',
-    statusFilter: status,
-    directionFilter: typeof raw.directionFilter === 'string' ? raw.directionFilter : '',
+    statusFilters: normalizeStatusFilters(raw.statusFilters, raw.statusFilter),
+    directionFilters: normalizeDirectionFilters(raw.directionFilters, raw.directionFilter),
+    listScope,
+    scopeTouched: typeof raw.scopeTouched === 'boolean' ? raw.scopeTouched : listScope !== 'all',
     dateFrom: typeof raw.dateFrom === 'string' ? raw.dateFrom : '',
     dateTo: typeof raw.dateTo === 'string' ? raw.dateTo : '',
-    sortBy: hasSortInPayload ? parseContractsListSortBy(raw.sortBy!) : EMPTY_FILTERS.sortBy,
+    sortBy: hasSortInPayload
+      ? parseContractsListSortBy(raw.sortBy!)
+      : EMPTY_CONTRACTS_LIST_FILTERS.sortBy,
     sortOrder:
-      raw.sortOrder === 'asc' || raw.sortOrder === 'desc' ? raw.sortOrder : EMPTY_FILTERS.sortOrder,
+      raw.sortOrder === 'asc' || raw.sortOrder === 'desc'
+        ? raw.sortOrder
+        : EMPTY_CONTRACTS_LIST_FILTERS.sortOrder,
     pageLimit:
       raw.pageLimit != null
         ? normalizePageLimit(raw.pageLimit)
-        : (readLegacyPageLimit() ?? EMPTY_FILTERS.pageLimit),
+        : (readLegacyPageLimit() ?? EMPTY_CONTRACTS_LIST_FILTERS.pageLimit),
     listViewMode:
       raw.listViewMode === 'flat' || raw.listViewMode === 'by_object'
         ? raw.listViewMode
-        : EMPTY_FILTERS.listViewMode,
+        : EMPTY_CONTRACTS_LIST_FILTERS.listViewMode,
   };
 }
 
@@ -108,18 +164,33 @@ let memoryCache: ContractsListFiltersPersisted | null = null;
 
 function readFromLocalStorage(): ContractsListFiltersPersisted {
   try {
-    const raw = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY);
-    if (!raw) return { ...EMPTY_FILTERS };
-    return normalizePersistedFilters(JSON.parse(raw) as Partial<ContractsListFiltersPersisted>);
+    const rawV3 = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY);
+    if (rawV3) {
+      return normalizePersistedFilters(JSON.parse(rawV3) as Partial<ContractsListFiltersPersisted>);
+    }
+    const rawV2 = localStorage.getItem(CONTRACTS_LIST_FILTERS_STORAGE_KEY_V2);
+    if (rawV2) {
+      const migrated = normalizePersistedFilters(
+        JSON.parse(rawV2) as Partial<ContractsListFiltersPersisted> & {
+          statusFilter?: string;
+          directionFilter?: string;
+        }
+      );
+      // Миграция с v2: не затираем привычные фильтры ролевым дефолтом.
+      migrated.scopeTouched = true;
+      migrated.listScope = 'all';
+      return migrated;
+    }
+    return { ...EMPTY_CONTRACTS_LIST_FILTERS };
   } catch {
-    return { ...EMPTY_FILTERS };
+    return { ...EMPTY_CONTRACTS_LIST_FILTERS };
   }
 }
 
 export function loadContractsListFilters(): ContractsListFiltersPersisted {
   if (memoryCache) return memoryCache;
   if (typeof window === 'undefined') {
-    return { ...EMPTY_FILTERS };
+    return { ...EMPTY_CONTRACTS_LIST_FILTERS };
   }
   memoryCache = readFromLocalStorage();
   return memoryCache;
@@ -127,7 +198,7 @@ export function loadContractsListFilters(): ContractsListFiltersPersisted {
 
 /** Перечитать localStorage (после SSR / навигации) и обновить кэш. */
 export function reloadContractsListFiltersFromStorage(): ContractsListFiltersPersisted {
-  if (typeof window === 'undefined') return { ...EMPTY_FILTERS };
+  if (typeof window === 'undefined') return { ...EMPTY_CONTRACTS_LIST_FILTERS };
   memoryCache = readFromLocalStorage();
   return memoryCache;
 }

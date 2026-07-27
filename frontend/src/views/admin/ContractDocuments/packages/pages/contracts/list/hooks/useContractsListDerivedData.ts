@@ -3,26 +3,32 @@ import { useMemo } from 'react';
 import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type {
   ContractDocumentPackage,
+  ContractDocumentPackagesListCounts,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
 
-import type { ContractsListViewMode } from '../contractsListFilters';
+import type { ContractsListScope, ContractsListViewMode } from '../contractsListFilters';
 import {
   buildContractsListTableDisplayItems,
   countContractsListObjectGroups,
-  filterContractsListVisibleRows,
-  paginateContractsListDisplayItems,
 } from '../contractsListLayout';
+import { CONTRACTS_LIST_QUEUE_PRESETS, type ContractsListQueuePreset } from '../contractsListScope';
 import type { ContractsListSortBy, ContractsListSortOrder } from '../contractsListSort';
 import { contractsListMaxSignedAddendumSlotCount } from '../contractsListUtils';
 
 export type UseContractsListDerivedDataParams = {
   rows: ContractDocumentPackage[];
+  /** Server total after exact filters (not just current page). */
+  serverTotal: number;
+  serverCounts: ContractDocumentPackagesListCounts | null;
   searchNorm: string;
   managerFilter: string;
-  statusFilter: string;
-  directionFilter: string;
+  statusFilters: string[];
+  directionFilters: string[];
+  listScope: ContractsListScope;
+  currentUserId: string | null;
+  myDirectionIds: string[];
   dateFrom: string;
   dateTo: string;
   directions: CrmDirection[];
@@ -47,41 +53,33 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
 
   const contractsListTableColSpan = 15 + addendumColumnCount + (addendumColumnCount > 0 ? 1 : 0);
 
-  const visibleRows = useMemo(
-    () =>
-      filterContractsListVisibleRows({
-        rows: params.rows,
-        searchNorm: params.searchNorm,
-        managerFilter: params.managerFilter,
-        statusFilter: params.statusFilter,
-        directionFilter: params.directionFilter,
-        dateFrom: params.dateFrom,
-        dateTo: params.dateTo,
-        directions: params.directions,
-        presetById: params.presetById,
-        measurementsById: params.measurementsById,
-        listSortBy: params.listSortBy,
-        listSortOrder: params.listSortOrder,
-        crmUsers: params.crmUsers,
-        addendumColumnCount,
-      }),
-    [
-      params.rows,
-      params.searchNorm,
-      params.managerFilter,
-      params.statusFilter,
-      params.directionFilter,
-      params.dateFrom,
-      params.dateTo,
-      params.directions,
-      params.presetById,
-      params.measurementsById,
-      params.listSortBy,
-      params.listSortOrder,
-      params.crmUsers,
-      addendumColumnCount,
-    ]
-  );
+  /** Rows already filtered + paginated by server. */
+  const visibleRows = params.rows;
+
+  const scopeCounts = useMemo((): Record<ContractsListScope, number> => {
+    const c = params.serverCounts?.scope;
+    return {
+      mine: c?.mine ?? 0,
+      my_directions: c?.my_directions ?? 0,
+      all: c?.all ?? 0,
+    };
+  }, [params.serverCounts]);
+
+  const queuePresetCounts = useMemo(() => {
+    const q = params.serverCounts?.queue ?? {};
+    const entries = CONTRACTS_LIST_QUEUE_PRESETS.map(
+      (preset) => [preset.id, q[preset.id] ?? 0] as const
+    );
+    return Object.fromEntries(entries) as Record<ContractsListQueuePreset, number>;
+  }, [params.serverCounts]);
+
+  const directionCounts = useMemo(() => {
+    const d = params.serverCounts?.directions ?? {};
+    const entries = params.directions.map(
+      (direction) => [direction.id, d[direction.id] ?? 0] as const
+    );
+    return Object.fromEntries(entries) as Record<string, number>;
+  }, [params.serverCounts, params.directions]);
 
   const tableDisplayItems = useMemo(
     () =>
@@ -108,34 +106,42 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
     [tableDisplayItems, params.listViewMode]
   );
 
-  const totalVisible =
-    params.listViewMode === 'flat' ? visibleRows.length : tableDisplayItems.length;
+  /** Server total for package-level pagination. */
+  const totalVisible = params.serverTotal;
 
-  const paginatedDisplayItems = useMemo(
-    () => paginateContractsListDisplayItems(tableDisplayItems, params.page, params.limit),
-    [tableDisplayItems, params.page, params.limit]
-  );
+  /** Already a server page — do not slice again. */
+  const paginatedDisplayItems = tableDisplayItems;
 
   const emptyFilteredListMessage = useMemo(() => {
-    if (params.rows.length === 0) return '';
+    if (params.serverTotal > 0 || params.rows.length > 0) return '';
+    if (params.listScope === 'my_directions' && params.myDirectionIds.length === 0) {
+      return 'Не назначены ваши направления. Укажите их в карточке пользователя (Пользователи).';
+    }
     const hasActiveFilters = Boolean(
       params.searchNorm ||
       params.managerFilter ||
-      params.statusFilter ||
-      params.directionFilter ||
+      params.statusFilters.length > 0 ||
+      params.directionFilters.length > 0 ||
       params.dateFrom ||
-      params.dateTo
+      params.dateTo ||
+      params.listScope !== 'all'
     );
     if (!hasActiveFilters) return '';
+    if (params.listScope === 'mine') {
+      return 'Нет ваших договоров по выбранным фильтрам.';
+    }
     return 'Нет договоров по выбранным фильтрам.';
   }, [
+    params.serverTotal,
     params.rows.length,
     params.searchNorm,
     params.managerFilter,
-    params.statusFilter,
-    params.directionFilter,
+    params.statusFilters,
+    params.directionFilters,
     params.dateFrom,
     params.dateTo,
+    params.listScope,
+    params.myDirectionIds.length,
   ]);
 
   return {
@@ -144,6 +150,9 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
     visibleRows,
     tableDisplayItems,
     objectGroupCount,
+    scopeCounts,
+    queuePresetCounts,
+    directionCounts,
     totalVisible,
     paginatedDisplayItems,
     emptyFilteredListMessage,

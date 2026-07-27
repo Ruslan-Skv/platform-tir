@@ -3,13 +3,14 @@ import { useEffect } from 'react';
 import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection } from '@/shared/api/admin-crm';
 
-import type { ContractsListViewMode } from '../contractsListFilters';
+import type { ContractsListScope, ContractsListViewMode } from '../contractsListFilters';
 
 export type UseContractsListSyncEffectsParams = {
   searchNorm: string;
   managerFilter: string;
-  statusFilter: string;
-  directionFilter: string;
+  statusFilters: string[];
+  directionFilters: string[];
+  listScope: ContractsListScope;
   dateFrom: string;
   dateTo: string;
   listViewMode: ContractsListViewMode;
@@ -21,14 +22,15 @@ export type UseContractsListSyncEffectsParams = {
   managerOptions: ContractSignatoryProfile[];
   setManagerFilter: (value: string) => void;
   directions: CrmDirection[];
-  setDirectionFilter: (value: string) => void;
+  setDirectionFilters: (value: string[] | ((prev: string[]) => string[])) => void;
 };
 
 export function useContractsListSyncEffects({
   searchNorm,
   managerFilter,
-  statusFilter,
-  directionFilter,
+  statusFilters,
+  directionFilters,
+  listScope,
   dateFrom,
   dateTo,
   listViewMode,
@@ -40,15 +42,16 @@ export function useContractsListSyncEffects({
   managerOptions,
   setManagerFilter,
   directions,
-  setDirectionFilter,
+  setDirectionFilters,
 }: UseContractsListSyncEffectsParams) {
   useEffect(() => {
     setPage(1);
   }, [
     searchNorm,
     managerFilter,
-    statusFilter,
-    directionFilter,
+    statusFilters,
+    directionFilters,
+    listScope,
     dateFrom,
     dateTo,
     listViewMode,
@@ -72,9 +75,11 @@ export function useContractsListSyncEffects({
   }, [managerFilter, managerOptions, setManagerFilter]);
 
   useEffect(() => {
-    if (!directionFilter) return;
-    if (!directions.some((d) => d.id === directionFilter)) {
-      setDirectionFilter('');
+    if (directionFilters.length === 0) return;
+    const valid = new Set(directions.map((d) => d.id));
+    const next = directionFilters.filter((id) => valid.has(id));
+    if (next.length !== directionFilters.length) {
+      setDirectionFilters(next);
     }
-  }, [directionFilter, directions, setDirectionFilter]);
+  }, [directionFilters, directions, setDirectionFilters]);
 }

@@ -117,6 +117,7 @@ model User {
   productsUpdated                         Product[]                                @relation("ProductUpdatedBy")
   categoriesCreated                       Category[]                               @relation("CategoryCreatedBy")
   contractDocumentPackagesCreated         ContractDocumentPackage[]                @relation("ContractDocumentPackagesCreated")
+  contractDocumentPackagesResponsible     ContractDocumentPackage[]                @relation("ContractDocumentPackagesResponsible")
   contractDocumentPackagesDeleted         ContractDocumentPackage[]                @relation("ContractDocumentPackagesDeleted")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]         @relation("ContractDocumentPackagePaymentRecordedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
@@ -127,6 +128,8 @@ model User {
   salesCandidatesCreated                  SalesCandidate[]                         @relation("SalesCandidateCreatedBy")
   salesCandidateAsTrainee                 SalesCandidate?                          @relation("SalesCandidateTrainee")
   recruitmentCampaignsCreated             RecruitmentCampaign[]                    @relation("RecruitmentCampaignCreatedBy")
+  /// CRM-направления, которые ведёт сотрудник (менеджер / ведущий — несколько штук).
+  crmDirections                           UserCrmDirection[]
   officeId                                String?
   useCustomWorkSchedule                   Boolean                                  @default(false)
   workDayStartTime                        String?
@@ -2679,8 +2682,23 @@ model CrmDirection {
   measurements                    Measurement[]
   measurementAdditionalDirections MeasurementAdditionalDirection[]
   contracts                       Contract[]
+  users                           UserCrmDirection[]
 
   @@map("crm_directions")
+}
+
+/// Назначения CRM-направлений сотруднику (many-to-many).
+model UserCrmDirection {
+  userId      String
+  directionId String
+  createdAt   DateTime @default(now())
+
+  user      User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  direction CrmDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
+
+  @@id([userId, directionId])
+  @@index([directionId])
+  @@map("user_crm_directions")
 }
 
 model MeasurementAdditionalDirection {
@@ -2956,34 +2974,38 @@ model ContractDocumentObject {
 }
 
 model ContractDocumentPackage {
-  id               String                        @id @default(cuid())
-  kind             ContractDocumentPackageKind
-  title            String?
-  status           ContractDocumentPackageStatus @default(IN_PROGRESS)
+  id                   String                        @id @default(cuid())
+  kind                 ContractDocumentPackageKind
+  title                String?
+  status               ContractDocumentPackageStatus @default(IN_PROGRESS)
   /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
-  formData         Json                          @default("{}")
+  formData             Json                          @default("{}")
   /// Связь с договором в учётной системе (таблица `Contract`).
-  crmContractId    String?
+  crmContractId        String?
   /// Группа «объект» (несколько пакетов / направлений на одном адресе).
-  documentObjectId String?
-  createdById      String?
-  deletedAt        DateTime?                     @map("deleted_at")
-  deletedById      String?                       @map("deleted_by_id")
-  createdAt        DateTime                      @default(now())
-  updatedAt        DateTime                      @updatedAt
+  documentObjectId     String?
+  createdById          String?
+  /// Явно назначенный ответственный менеджер пакета (для очереди «Мои» и передачи договоров).
+  responsibleManagerId String?
+  deletedAt            DateTime?                     @map("deleted_at")
+  deletedById          String?                       @map("deleted_by_id")
+  createdAt            DateTime                      @default(now())
+  updatedAt            DateTime                      @updatedAt
 
-  documentObject  ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
-  createdBy       User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedBy       User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract     Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
-  versions        ContractDocumentPackageVersion[]
-  payments        ContractDocumentPackagePayment[]
-  paymentInvoices ContractDocumentPaymentInvoice[]
+  documentObject     ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy          User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  responsibleManager User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
+  deletedBy          User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract        Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions           ContractDocumentPackageVersion[]
+  payments           ContractDocumentPackagePayment[]
+  paymentInvoices    ContractDocumentPaymentInvoice[]
 
   @@index([kind])
   @@index([createdAt])
   @@index([crmContractId])
   @@index([documentObjectId])
+  @@index([responsibleManagerId])
   @@index([deletedAt])
   @@map("contract_document_packages")
 }

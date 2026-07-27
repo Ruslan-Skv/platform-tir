@@ -7,7 +7,6 @@ import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
 import {
-  ellipsizeContractsListOneLine,
   formatContractsListMoney,
   formatContractsListPaidWithPercent,
 } from './contractsListFormatters';
@@ -22,6 +21,7 @@ export type ContractListObjectRowProps = {
   packages: ContractDocumentPackage[];
   objectsById: Map<string, ContractDocumentObject>;
   addendumColumnCount: number;
+  colSpan: number;
   expandedObjectId: string | null;
   onToggleExpand: (objectId: string) => void;
 };
@@ -31,6 +31,7 @@ export function ContractListObjectRow({
   packages,
   objectsById,
   addendumColumnCount,
+  colSpan,
   expandedObjectId,
   onToggleExpand,
 }: ContractListObjectRowProps) {
@@ -48,49 +49,89 @@ export function ContractListObjectRow({
   const agg = aggregateContractsListPackagesMoney(packages, addendumColumnCount);
   const paymentBase = addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
   const expanded = expandedObjectId === objectId;
+  const totalLabel =
+    addendumColumnCount > 0
+      ? formatContractsListMoney(agg.totalWithAddendaRub)
+      : formatContractsListMoney(agg.totalRub);
+  const nameNorm = objName.trim().toLowerCase().replace(/\s+/g, ' ');
+  const addressNorm = (objAddress || '').trim().toLowerCase().replace(/\s+/g, ' ');
+  const showAddressMeta = Boolean(addressNorm) && addressNorm !== nameNorm;
 
   return (
     <tr
-      className={`${dataTableStyles.row} ${cdBase.contractsListObjectRow} ${
-        expanded ? cdBase.contractsListObjectRowExpanded : ''
+      className={`${dataTableStyles.row} ${cdBase.contractsListObjectRow} ${cdHub.contractsListObjectGroupRow} ${
+        expanded
+          ? `${cdBase.contractsListObjectRowExpanded} ${cdHub.contractsListObjectGroupRowExpanded}`
+          : cdHub.contractsListObjectGroupRowCollapsed
       }`}
     >
-      <td className={cdHub.contractsListSelectCol}>
-        <button
-          type="button"
-          className={cdBase.contractsListExpandBtn}
-          aria-expanded={expanded}
-          aria-label={expanded ? 'Свернуть договоры' : 'Развернуть договоры'}
-          onClick={() => onToggleExpand(objectId)}
-        >
-          {expanded ? '▼' : '▶'}
-        </button>
+      <td
+        colSpan={colSpan}
+        className={`${cdBase.contractsListObjectAccentCell} ${cdHub.contractsListObjectGroupCell}`}
+      >
+        <div className={cdHub.contractsListObjectHeader}>
+          <div className={cdHub.contractsListObjectHeaderControls}>
+            <button
+              type="button"
+              className={cdBase.contractsListExpandBtn}
+              aria-expanded={expanded}
+              aria-label={expanded ? 'Свернуть договоры' : 'Развернуть договоры'}
+              title={expanded ? 'Свернуть' : 'Развернуть'}
+              onClick={() => onToggleExpand(objectId)}
+            >
+              {expanded ? '−' : '+'}
+            </button>
+          </div>
+
+          <div className={cdHub.contractsListObjectHeaderMain}>
+            <div className={cdHub.contractsListObjectHeaderTitleBlock}>
+              <div className={cdBase.contractsListObjectTitleRow}>
+                <span className={cdBase.contractsListObjectKindChip}>Объект</span>
+                <span className={cdBase.contractsListObjectAddressLabel} title={objName}>
+                  {objName}
+                </span>
+                <span className={cdBase.contractsListObjectBadge}>({packages.length})</span>
+              </div>
+              {objCustomer || showAddressMeta ? (
+                <div className={cdHub.contractsListObjectHeaderMeta}>
+                  {objCustomer ? (
+                    <span className={cdHub.contractsListObjectMetaChip} title={objCustomer}>
+                      {objCustomer}
+                    </span>
+                  ) : null}
+                  {showAddressMeta ? (
+                    <span
+                      className={cdHub.contractsListObjectMetaChip}
+                      title={objAddress || undefined}
+                    >
+                      {objAddress}
+                    </span>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+
+            <div className={cdHub.contractsListObjectHeaderStats} aria-label="Сводка по объекту">
+              <span className={cdHub.contractsListObjectStat}>
+                <span className={cdHub.contractsListObjectStatLabel}>СД</span>
+                <span className={cdHub.contractsListObjectStatValue}>{totalLabel}</span>
+              </span>
+              <span className={cdHub.contractsListObjectStat}>
+                <span className={cdHub.contractsListObjectStatLabel}>Оплачено</span>
+                <span className={cdHub.contractsListObjectStatValue}>
+                  {formatContractsListPaidWithPercent(agg.paidRub, paymentBase)}
+                </span>
+              </span>
+              <span className={cdHub.contractsListObjectStat}>
+                <span className={cdHub.contractsListObjectStatLabel}>Остаток</span>
+                <span className={cdHub.contractsListObjectStatValue}>
+                  {formatContractsListMoney(agg.remainingRub)}
+                </span>
+              </span>
+            </div>
+          </div>
+        </div>
       </td>
-      <td className={cdHub.contractsListKindCol}>Объект</td>
-      <td>
-        <span className={cdBase.contractsListObjectAddressLabel}>{objName}</span>
-        <span className={cdBase.contractsListObjectBadge}>{packages.length} дог.</span>
-      </td>
-      <td>—</td>
-      <td>—</td>
-      <td>{objCustomer || '—'}</td>
-      <td>—</td>
-      <td>{ellipsizeContractsListOneLine(objAddress || '—', 64)}</td>
-      <td>—</td>
-      <td>{formatContractsListMoney(agg.totalRub)}</td>
-      {addendumColumnCount > 0
-        ? Array.from({ length: addendumColumnCount }, (_, i) => (
-            <td key={`obj_add_${objectId}_${i + 1}`}>—</td>
-          ))
-        : null}
-      {addendumColumnCount > 0 ? (
-        <td>{formatContractsListMoney(agg.totalWithAddendaRub)}</td>
-      ) : null}
-      <td>{formatContractsListPaidWithPercent(agg.paidRub, paymentBase)}</td>
-      <td>{formatContractsListMoney(agg.remainingRub)}</td>
-      <td>—</td>
-      <td>—</td>
-      <td className={cdHub.contractsListActionsCol} />
     </tr>
   );
 }

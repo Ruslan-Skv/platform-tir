@@ -89,6 +89,7 @@ export type PackageDocumentLoadSetters = {
   setDraftTitle: React.Dispatch<React.SetStateAction<string>>;
   setPackageFlowStatus: React.Dispatch<React.SetStateAction<ContractDocumentPackageStatus>>;
   setLinkedCrmCustomerId: React.Dispatch<React.SetStateAction<string | null>>;
+  setResponsibleManagerId: React.Dispatch<React.SetStateAction<string | null>>;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   setContractObjectBlockBaseline: React.Dispatch<
     React.SetStateAction<Record<PackageContractObjectBlockFieldId, string> | null>
@@ -145,6 +146,7 @@ export function usePackageDocumentLoad({
     setDraftTitle,
     setPackageFlowStatus,
     setLinkedCrmCustomerId,
+    setResponsibleManagerId,
     setForm,
     setContractObjectBlockBaseline,
     setTemplateOverrides,
@@ -248,6 +250,9 @@ export function usePackageDocumentLoad({
         }
         setPaymentInvoiceCount(paymentInvoicesRes.length);
         setDraftTitle(row.title ?? '');
+        setResponsibleManagerId(
+          row.responsibleManagerId?.trim() || row.createdById?.trim() || null
+        );
         setPackageFlowStatus(
           row.status === 'CONTRACT_CONCLUDED'
             ? 'CONTRACT_CONCLUDED'
@@ -476,6 +481,7 @@ export function usePackageDocumentLoad({
       setExecutorProfiles,
       setForm,
       setLinkedCrmCustomerId,
+      setResponsibleManagerId,
       setLoading,
       setPackageFlowStatus,
       setPackageKind,

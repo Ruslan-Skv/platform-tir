@@ -5,6 +5,7 @@ export const contractDocumentPackageInclude = {
     select: { id: true, name: true, address: true, customerName: true },
   },
   createdBy: { select: packageUserSelect },
+  responsibleManager: { select: packageUserSelect },
   deletedBy: { select: packageUserSelect },
   crmContract: {
     select: {
@@ -17,6 +18,16 @@ export const contractDocumentPackageInclude = {
       totalAmount: true,
     },
   },
-  /** Для списков пакетов: сумма оплат по журналу без полной выгрузки платежей. */
-  payments: { select: { amount: true } },
+  /**
+   * Для списков пакетов: журнал оплат (суммы + тип/дата) — нужен для точного pipeline-статуса
+   * (70% / Д/с / дата предоплаты окон).
+   */
+  payments: {
+    select: {
+      amount: true,
+      paymentType: true,
+      addendumNumber: true,
+      paymentDate: true,
+    },
+  },
 };

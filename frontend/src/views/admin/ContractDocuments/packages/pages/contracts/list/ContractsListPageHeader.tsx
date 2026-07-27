@@ -7,6 +7,7 @@ import {
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import { ContractsListRulesInfoTip } from './ContractsListRulesInfoTip';
 
 type ContractsListPageHeaderProps = {
   visibleRowCount: number;
@@ -34,7 +35,10 @@ export function ContractsListPageHeader({
   return (
     <div className={cdHub.editorHeader}>
       <div className={cdHub.contractsListHeaderLeft}>
-        <h1 className={cdHub.title}>Договора</h1>
+        <div className={cdHub.contractsListHeaderTitleGroup}>
+          <h1 className={cdHub.title}>Договора</h1>
+          <ContractsListRulesInfoTip />
+        </div>
         <span className={cdHub.contractsListCount}>
           {visibleRowCount} договоров
           {objectGroupCount > 0 ? ` · ${objectGroupCount} объектов` : ''}

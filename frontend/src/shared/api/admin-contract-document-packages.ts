@@ -98,9 +98,11 @@ export interface ContractDocumentPackage {
   documentObject?: ContractDocumentObjectRef | null;
   crmContractId: string | null;
   createdById: string | null;
+  responsibleManagerId?: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: ContractDocumentPackageUserRef | null;
+  responsibleManager?: ContractDocumentPackageUserRef | null;
   crmContract?: ContractDocumentPackageCrmContract | null;
   /** При `include` в списке пакетов — строки журнала оплат (только `amount`). */
   payments?: Array<{ amount: string | number }>;
@@ -330,12 +332,102 @@ export interface ContractEstimatePreset {
   estimateWorkScopeKeys?: string[];
 }
 
+export type ContractDocumentPackageListPipelineStatus =
+  | 'IN_PROJECT'
+  | 'SIGNED'
+  | 'WORK_IN_PROGRESS'
+  | 'CLOSED'
+  | 'REFUSED';
+
+export type GetContractDocumentPackagesParams = {
+  kind?: ContractDocumentPackageKind;
+  kinds?: ContractDocumentPackageKind[];
+  responsibleManagerId?: string;
+  /** DB-статусы пакета: IN_PROGRESS | CONTRACT_CONCLUDED | REFUSED */
+  statuses?: ContractDocumentPackageStatus[];
+  search?: string;
+  /** Точные pipeline-статусы списка. */
+  pipelineStatuses?: ContractDocumentPackageListPipelineStatus[];
+  managerId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  directionIds?: string[];
+  sortBy?: 'date' | 'contractNumber' | 'status' | 'customer' | 'manager' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+  page?: number;
+  limit?: number;
+  includeCounts?: boolean;
+  countsUserId?: string;
+  countsMyDirectionIds?: string[];
+  /** Явно запросить paginated-ответ (также включается при page). */
+  paginated?: boolean;
+};
+
+export type ContractDocumentPackagesListCounts = {
+  scope: { mine: number; my_directions: number; all: number };
+  queue: Partial<Record<string, number>>;
+  directions: Record<string, number>;
+};
+
+export type ContractDocumentPackagesListResponse = {
+  data: ContractDocumentPackage[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  counts?: ContractDocumentPackagesListCounts;
+};
+
+/** @param kindOrParams — kind (строка) или объект фильтров. Без page → массив (legacy). */
 export async function getContractDocumentPackages(
-  kind?: ContractDocumentPackageKind
+  kindOrParams?: ContractDocumentPackageKind | GetContractDocumentPackagesParams
 ): Promise<ContractDocumentPackage[]> {
+  const params: GetContractDocumentPackagesParams =
+    typeof kindOrParams === 'string' ? { kind: kindOrParams } : (kindOrParams ?? {});
+  const res = await getContractDocumentPackagesPage({ ...params, paginated: false });
+  return Array.isArray(res) ? res : res.data;
+}
+
+/** Paginated list hub: всегда `{ data, total, ... }`. */
+export async function getContractDocumentPackagesPage(
+  params: GetContractDocumentPackagesParams = {}
+): Promise<ContractDocumentPackage[] | ContractDocumentPackagesListResponse> {
   const base = getApiBaseUrl();
   const qs = new URLSearchParams();
-  if (kind) qs.set('kind', kind);
+  if (params.kind) qs.set('kind', params.kind);
+  if (params.kinds && params.kinds.length > 0) {
+    qs.set('kinds', [...new Set(params.kinds)].join(','));
+  }
+  if (params.responsibleManagerId?.trim()) {
+    qs.set('responsibleManagerId', params.responsibleManagerId.trim());
+  }
+  if (params.statuses && params.statuses.length > 0) {
+    qs.set('statuses', [...new Set(params.statuses)].join(','));
+  }
+  if (params.search?.trim()) {
+    qs.set('search', params.search.trim());
+  }
+  if (params.pipelineStatuses && params.pipelineStatuses.length > 0) {
+    qs.set('pipelineStatuses', [...new Set(params.pipelineStatuses)].join(','));
+  }
+  if (params.managerId?.trim()) {
+    qs.set('managerId', params.managerId.trim());
+  }
+  if (params.dateFrom?.trim()) qs.set('dateFrom', params.dateFrom.trim());
+  if (params.dateTo?.trim()) qs.set('dateTo', params.dateTo.trim());
+  if (params.directionIds && params.directionIds.length > 0) {
+    qs.set('directionIds', [...new Set(params.directionIds)].join(','));
+  }
+  if (params.sortBy) qs.set('sortBy', params.sortBy);
+  if (params.sortOrder) qs.set('sortOrder', params.sortOrder);
+  if (params.page != null) qs.set('page', String(params.page));
+  if (params.limit != null) qs.set('limit', String(params.limit));
+  if (params.includeCounts) qs.set('includeCounts', '1');
+  if (params.countsUserId?.trim()) qs.set('countsUserId', params.countsUserId.trim());
+  if (params.countsMyDirectionIds && params.countsMyDirectionIds.length > 0) {
+    qs.set('countsMyDirectionIds', [...new Set(params.countsMyDirectionIds)].join(','));
+  }
+  if (params.paginated || params.page != null) qs.set('paginated', '1');
   const query = qs.toString();
   const url = `${base}/admin/contract-document-packages${query ? `?${query}` : ''}`;
   const res = await apiFetch(url, { headers: getAdminAuthHeaders() });
@@ -424,6 +516,7 @@ export async function createContractDocumentPackage(body: {
   title?: string;
   formData?: Record<string, unknown>;
   crmContractId?: string;
+  responsibleManagerId?: string | null;
 }): Promise<ContractDocumentPackage> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages`, {
     method: 'POST',
@@ -440,6 +533,7 @@ export async function updateContractDocumentPackage(
     title?: string | null;
     formData?: Record<string, unknown>;
     crmContractId?: string | null;
+    responsibleManagerId?: string | null;
     status?: ContractDocumentPackageStatus;
     /** Сохранить снимок в историю версий после успешного PATCH. */
     recordVersion?: boolean;

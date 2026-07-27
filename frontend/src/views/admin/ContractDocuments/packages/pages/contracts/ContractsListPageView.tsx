@@ -5,8 +5,10 @@ import cdHub from '../../../styles/contracts-list-hub.module.css';
 import cdDocPreview from '../../../styles/documents-preview.module.css';
 import cdWorkspace from '../../../styles/estimates-workspace.module.css';
 import { ContractsListFiltersBar } from './list/ContractsListFiltersBar';
+import { ContractsListFiltersPanel } from './list/ContractsListFiltersPanel';
 import { ContractsListModals } from './list/ContractsListModals';
 import { ContractsListPageHeader } from './list/ContractsListPageHeader';
+import { ContractsListSavedViewsBar } from './list/ContractsListSavedViewsBar';
 import { ContractsListTable } from './list/ContractsListTable';
 import type { ContractsListPageModel } from './list/hooks/useContractsListPage';
 
@@ -28,12 +30,13 @@ export function ContractsListPageView({
   modals,
   derived,
   mutations,
+  savedViews,
   objectsById,
 }: ContractsListPageViewProps) {
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
       <ContractsListPageHeader
-        visibleRowCount={derived.visibleRows.length}
+        visibleRowCount={derived.totalVisible}
         objectGroupCount={derived.objectGroupCount}
         creating={modals.creating}
         loading={load.loading}
@@ -46,30 +49,74 @@ export function ContractsListPageView({
 
       {error ? <p className={cdDocPreview.error}>{error}</p> : null}
 
-      <ContractsListFiltersBar
-        loading={load.loading}
-        search={filters.search}
-        onSearchChange={filters.setSearch}
-        statusFilter={filters.statusFilter}
-        onStatusFilterChange={filters.setStatusFilter}
-        listViewMode={filters.listViewMode}
-        onListViewModeChange={filters.setListViewMode}
-        managerFilter={filters.managerFilter}
-        onManagerFilterChange={filters.setManagerFilter}
-        managerOptions={load.managerOptions}
-        directionFilter={filters.directionFilter}
-        onDirectionFilterChange={filters.setDirectionFilter}
+      <ContractsListFiltersPanel
+        listScope={filters.listScope}
+        queuePreset={filters.queuePreset}
+        statusFilters={filters.statusFilters}
+        directionFilters={filters.directionFilters}
         directions={load.directions}
+        search={filters.search}
+        listViewMode={filters.listViewMode}
+        managerFilter={filters.managerFilter}
+        managerOptions={load.managerOptions}
         dateFrom={filters.dateFrom}
-        onDateFromChange={filters.setDateFrom}
         dateTo={filters.dateTo}
-        onDateToChange={filters.setDateTo}
         limit={filters.limit}
-        onLimitChange={(nextLimit) => {
-          filters.setLimit(nextLimit);
-          filters.setPage(1);
-        }}
-      />
+        activeSavedViewTitle={
+          savedViews.activeViewId
+            ? (savedViews.views.find((view) => view.id === savedViews.activeViewId)?.title ?? null)
+            : null
+        }
+      >
+        <ContractsListFiltersBar
+          loading={load.loading}
+          search={filters.search}
+          onSearchChange={filters.setSearch}
+          listScope={filters.listScope}
+          onListScopeChange={filters.setListScope}
+          queuePreset={filters.queuePreset}
+          onQueuePresetChange={filters.applyQueuePreset}
+          statusFilters={filters.statusFilters}
+          onStatusFiltersChange={filters.setStatusFilters}
+          listViewMode={filters.listViewMode}
+          onListViewModeChange={filters.setListViewMode}
+          managerFilter={filters.managerFilter}
+          onManagerFilterChange={filters.setManagerFilter}
+          managerOptions={load.managerOptions}
+          directionFilters={filters.directionFilters}
+          onDirectionFiltersChange={filters.setDirectionFilters}
+          directions={load.directions}
+          myDirectionIds={load.myDirectionIds}
+          scopeCounts={derived.scopeCounts}
+          queuePresetCounts={derived.queuePresetCounts}
+          directionCounts={derived.directionCounts}
+          dateFrom={filters.dateFrom}
+          onDateFromChange={filters.setDateFrom}
+          dateTo={filters.dateTo}
+          onDateToChange={filters.setDateTo}
+          limit={filters.limit}
+          onLimitChange={(nextLimit) => {
+            filters.setLimit(nextLimit);
+            filters.setPage(1);
+          }}
+        />
+
+        <ContractsListSavedViewsBar
+          loading={load.loading}
+          views={savedViews.views}
+          activeViewId={savedViews.activeViewId}
+          draftTitle={savedViews.draftTitle}
+          onDraftTitleChange={savedViews.setDraftTitle}
+          saveOpen={savedViews.saveOpen}
+          onSaveOpenChange={savedViews.setSaveOpen}
+          suggestedTitles={savedViews.suggestedTitles}
+          onApplyView={savedViews.applyView}
+          onOpenSaveComposer={savedViews.openSaveComposer}
+          onSaveCurrentView={savedViews.saveCurrentView}
+          onDeleteView={savedViews.deleteView}
+          onRenameView={savedViews.renameView}
+        />
+      </ContractsListFiltersPanel>
 
       <ContractsListTable
         loading={load.loading}

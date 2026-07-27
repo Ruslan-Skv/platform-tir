@@ -14,7 +14,7 @@ import {
   UseInterceptors,
   UploadedFile,
 } from '@nestjs/common';
-import { ContractDocumentPackageKind } from '@prisma/client';
+import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
 import * as fs from 'fs';
@@ -116,10 +116,98 @@ export class ContractDocumentPackagesController {
   }
 
   @Get()
-  findAll(@Query('kind') kind?: string) {
+  findAll(
+    @Query('kind') kind?: string,
+    @Query('kinds') kindsRaw?: string,
+    @Query('responsibleManagerId') responsibleManagerId?: string,
+    @Query('statuses') statusesRaw?: string,
+    @Query('search') search?: string,
+    @Query('pipelineStatuses') pipelineStatusesRaw?: string,
+    @Query('managerId') managerId?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('directionIds') directionIdsRaw?: string,
+    @Query('sortBy') sortByRaw?: string,
+    @Query('sortOrder') sortOrderRaw?: string,
+    @Query('page') pageRaw?: string,
+    @Query('limit') limitRaw?: string,
+    @Query('includeCounts') includeCountsRaw?: string,
+    @Query('countsUserId') countsUserId?: string,
+    @Query('countsMyDirectionIds') countsMyDirectionIdsRaw?: string,
+    @Query('paginated') paginatedRaw?: string,
+  ) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
     const k = kind && allowed.has(kind) ? (kind as ContractDocumentPackageKind) : undefined;
-    return this.service.findAll(k);
+    const kinds = (kindsRaw ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item): item is ContractDocumentPackageKind => allowed.has(item));
+    const allowedStatuses = new Set<string>(Object.values(ContractDocumentPackageStatus));
+    const statuses = (statusesRaw ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item): item is ContractDocumentPackageStatus => allowedStatuses.has(item));
+    const allowedPipeline = new Set([
+      'IN_PROJECT',
+      'SIGNED',
+      'WORK_IN_PROGRESS',
+      'CLOSED',
+      'REFUSED',
+    ]);
+    const pipelineStatuses = (pipelineStatusesRaw ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item): item is 'IN_PROJECT' | 'SIGNED' | 'WORK_IN_PROGRESS' | 'CLOSED' | 'REFUSED' =>
+        allowedPipeline.has(item),
+      );
+    const directionIds = (directionIdsRaw ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const countsMyDirectionIds = (countsMyDirectionIdsRaw ?? '')
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean);
+    const allowedSort = new Set([
+      'date',
+      'contractNumber',
+      'status',
+      'customer',
+      'manager',
+      'updatedAt',
+    ]);
+    const sortBy =
+      sortByRaw && allowedSort.has(sortByRaw)
+        ? (sortByRaw as 'date' | 'contractNumber' | 'status' | 'customer' | 'manager' | 'updatedAt')
+        : undefined;
+    const sortOrder = sortOrderRaw === 'asc' || sortOrderRaw === 'desc' ? sortOrderRaw : undefined;
+    const page = pageRaw ? parseInt(pageRaw, 10) : undefined;
+    const limit = limitRaw ? parseInt(limitRaw, 10) : undefined;
+    const includeCounts =
+      includeCountsRaw === '1' || includeCountsRaw === 'true' || includeCountsRaw === 'yes';
+    const paginated =
+      paginatedRaw === '1' || paginatedRaw === 'true' || paginatedRaw === 'yes' || page != null;
+
+    return this.service.findAll({
+      kind: k,
+      kinds,
+      responsibleManagerId: responsibleManagerId?.trim() || undefined,
+      statuses,
+      search: search?.trim() || undefined,
+      pipelineStatuses,
+      managerId: managerId?.trim() || undefined,
+      dateFrom: dateFrom?.trim() || undefined,
+      dateTo: dateTo?.trim() || undefined,
+      directionIds,
+      sortBy,
+      sortOrder,
+      page: Number.isFinite(page) ? page : undefined,
+      limit: Number.isFinite(limit) ? limit : undefined,
+      includeCounts,
+      countsUserId: countsUserId?.trim() || undefined,
+      countsMyDirectionIds,
+      paginated,
+    });
   }
 
   @Get('trash')

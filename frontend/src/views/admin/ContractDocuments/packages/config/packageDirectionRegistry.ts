@@ -131,7 +131,7 @@ const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDir
   WINDOWS: productLikeConfig('WINDOWS', 'Окна'),
   DOORS: productLikeWithLineSpecification('DOORS', 'Двери'),
   CEILINGS: {
-    ...productLikeWithLineSpecification('CEILINGS', 'Натяжные потолки'),
+    ...productLikeWithLineSpecification('CEILINGS', 'Потолки'),
     deliveryNoteTabVisible: false,
     excludedLibraryTemplateTabs: CEILINGS_LIBRARY_EXCLUDED,
   },

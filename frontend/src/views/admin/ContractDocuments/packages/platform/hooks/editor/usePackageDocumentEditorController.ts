@@ -118,6 +118,9 @@ export function usePackageDocumentEditorController({
   const dirtyRef = useRef(false);
   dirtyRef.current = dirty;
   const [linkedCrmCustomerId, setLinkedCrmCustomerId] = useState<string | null>(null);
+  const [responsibleManagerId, setResponsibleManagerId] = useState<string | null>(null);
+  const responsibleManagerIdRef = useRef<string | null>(null);
+  responsibleManagerIdRef.current = responsibleManagerId;
   const linkedCrmCustomerIdRef = useRef<string | null>(null);
   linkedCrmCustomerIdRef.current = linkedCrmCustomerId;
   const [templateOverrides, setTemplateOverrides] = useState<
@@ -219,6 +222,7 @@ export function usePackageDocumentEditorController({
     formRef,
     draftTitleRef,
     dirtyRef,
+    responsibleManagerIdRef,
     buildPersistedFormData: buildEditorPersistedFormData,
     setForm,
     setDirty,
@@ -265,6 +269,7 @@ export function usePackageDocumentEditorController({
       setDraftTitle,
       setPackageFlowStatus,
       setLinkedCrmCustomerId,
+      setResponsibleManagerId,
       setForm,
       setContractObjectBlockBaseline,
       setTemplateOverrides,
@@ -335,6 +340,7 @@ export function usePackageDocumentEditorController({
     executorProfiles,
     signatoryProfiles,
     setLinkedCrmCustomerId,
+    onResponsibleManagerIdChange: setResponsibleManagerId,
   });
 
   const { updateContract, updateObject, updateWorkOrder } = usePackageContractFieldHandlers({

@@ -17,6 +17,11 @@ export class UpdateContractDocumentPackageDto {
   crmContractId?: string | null;
 
   @IsOptional()
+  @ValidateIf((_, v) => v !== undefined)
+  @IsString()
+  responsibleManagerId?: string | null;
+
+  @IsOptional()
   @IsEnum(ContractDocumentPackageStatus)
   status?: ContractDocumentPackageStatus;
 

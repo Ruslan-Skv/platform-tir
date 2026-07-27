@@ -69,11 +69,20 @@ export function PackageDataManagerPartySection({
                 className={`${DATA_HINT} ${styles.packageDataPartySectionFieldHint}`}
                 style={{ gridColumn: '1 / -1' }}
               >
-                Связь с CRM: id сотрудника{' '}
-                <code style={{ fontSize: '0.9em' }}>{form.executor.signatoryCrmUserId}</code> —
-                пользователь из справочника «Менеджеры».
+                Ответственный менеджер пакета связан с CRM-пользователем{' '}
+                <code style={{ fontSize: '0.9em' }}>{form.executor.signatoryCrmUserId}</code>. При
+                смене карточки менеджера в блоке «Договор и объект» ответственность по договору
+                передаётся этому сотруднику.
               </p>
-            ) : null}
+            ) : (
+              <p
+                className={`${DATA_HINT} ${styles.packageDataPartySectionFieldHint}`}
+                style={{ gridColumn: '1 / -1' }}
+              >
+                Выберите карточку менеджера в блоке «Договор и объект», чтобы закрепить
+                ответственного за пакет (очередь «Мои» в списке договоров).
+              </p>
+            )}
             <div className={DATA_PARTY_FIELD}>
               <label htmlFor="e_directorNom">Менеджер (именит. падеж)</label>
               <input id="e_directorNom" readOnly value={form.executor.directorNameNominative} />

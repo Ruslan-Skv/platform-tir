@@ -68,7 +68,9 @@ export function EstimateAddressGroupTableRow({
         expanded ? cdBase.contractsListObjectRowExpanded : ''
       }`}
     >
-      <td className={cdEstimatesList.contractsListSelectCol}>
+      <td
+        className={`${cdEstimatesList.contractsListSelectCol} ${cdBase.contractsListObjectAccentCell}`}
+      >
         <button
           type="button"
           className={cdBase.contractsListExpandBtn}
@@ -78,17 +80,21 @@ export function EstimateAddressGroupTableRow({
           disabled={saving}
           onClick={() => onToggleAddressExpand(section.addressKey)}
         >
-          {expanded ? '▼' : '▶'}
+          {expanded ? '−' : '+'}
         </button>
       </td>
       <td className={cdEstimatesList.estimatesListTitleCell}>
-        <span className={cdBase.estimatesListObjectAddressLabel}>
-          {estimateObjectAddressDisplayLabel(section.addressKey)}
-        </span>
-        <span className={cdBase.contractsListObjectBadge}>
-          {section.items.length} расч.
-          {boundInGroup > 0 ? ` · привяз. ${boundInGroup}` : ''}
-        </span>
+        <div className={cdBase.contractsListObjectMain}>
+          <div className={cdBase.contractsListObjectTitleRow}>
+            <span className={cdBase.estimatesListObjectAddressLabel}>
+              {estimateObjectAddressDisplayLabel(section.addressKey)}
+            </span>
+            <span className={cdBase.contractsListObjectBadge}>
+              ({section.items.length}
+              {boundInGroup > 0 ? ` · привяз. ${boundInGroup}` : ''})
+            </span>
+          </div>
+        </div>
       </td>
       <td className={cdEstimatesList.estimatesListDateCell}>—</td>
       <td className={cdEstimatesList.estimatesListCostCell}>—</td>
