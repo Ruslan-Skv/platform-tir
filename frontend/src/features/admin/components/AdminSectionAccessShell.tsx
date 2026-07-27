@@ -107,7 +107,9 @@ export function AdminSectionAccessShell({ children }: AdminSectionAccessShellPro
     return null;
   }
 
-  const showReadOnlyBanner = isReadOnly && Boolean(sectionLabel) && user?.role !== 'TRAINEE';
+  const isKnowledgeSection = (pathname ?? '').startsWith('/admin/knowledge');
+  const showReadOnlyBanner =
+    isReadOnly && Boolean(sectionLabel) && user?.role !== 'TRAINEE' && !isKnowledgeSection;
 
   return (
     <AdminSectionPermissionContext.Provider value={sectionPermission}>
