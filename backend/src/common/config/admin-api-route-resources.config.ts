@@ -7,6 +7,8 @@ export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/access',
   '/api/v1/admin/presence',
   '/api/v1/admin/work-days/my',
+  // Свой профиль ЛК — не ресурс «Управление пользователями»
+  '/api/v1/users/me',
 ] as const;
 
 const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{

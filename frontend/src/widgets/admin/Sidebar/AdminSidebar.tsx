@@ -1000,7 +1000,9 @@ export function AdminSidebar({
                         className={`${styles.gridDrillItem} ${
                           isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
                         }`}
-                        onClick={() => onMobileClose?.()}
+                        onClick={() => {
+                          if (isMobileViewport) onMobileClose?.();
+                        }}
                       >
                         <span className={styles.gridDrillItemLabel}>{child.label}</span>
                       </Link>
@@ -1157,6 +1159,9 @@ export function AdminSidebar({
                                               ? styles.active
                                               : ''
                                           }`}
+                                          onClick={() => {
+                                            if (isMobileViewport) onMobileClose?.();
+                                          }}
                                         >
                                           {nested.label}
                                         </Link>
@@ -1196,6 +1201,9 @@ export function AdminSidebar({
                                   className={`${styles.submenuLink} ${
                                     isPathActive(child.href, sectionNavHrefs) ? styles.active : ''
                                   }`}
+                                  onClick={() => {
+                                    if (isMobileViewport) onMobileClose?.();
+                                  }}
                                 >
                                   {child.label}
                                 </Link>
@@ -1234,7 +1242,9 @@ export function AdminSidebar({
                         href={getSafeHref(item.href, '/')}
                         className={`${styles.navLink} ${isActive(item.href) ? styles.active : ''}`}
                         onClick={() => {
-                          if (useMobileGrid) onMobileClose?.();
+                          // Pathname может не измениться (тот же раздел, только query) —
+                          // тогда layout-эффект не закроет меню; закрываем явно.
+                          if (isMobileViewport) onMobileClose?.();
                         }}
                       >
                         {showNavIcons ? <span className={styles.icon}>{item.icon}</span> : null}

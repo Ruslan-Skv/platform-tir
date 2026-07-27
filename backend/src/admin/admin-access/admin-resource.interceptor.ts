@@ -38,8 +38,13 @@ export class AdminResourceInterceptor implements NestInterceptor {
     const isAdminApiPath = requestPath.startsWith('/api/v1/admin/');
     const isAdminUser = ADMIN_ROLES.includes(user.role as UserRole);
 
-    // Личный кабинет на публичке (в т.ч. стажёры с ролью TRAINEE в админке).
-    if (requestPath.startsWith('/api/v1/users/me/')) {
+    // Личный кабинет: свой профиль (/users/me), аватар/настройки (/users/me/…) и смена пароля.
+    // Важно: `/users/me` без хвоста — иначе PATCH профиля попадает под admin.users.
+    if (
+      requestPath === '/api/v1/users/me' ||
+      requestPath.startsWith('/api/v1/users/me/') ||
+      /^\/api\/v1\/users\/[^/]+\/password$/.test(requestPath)
+    ) {
       return next.handle();
     }
 
