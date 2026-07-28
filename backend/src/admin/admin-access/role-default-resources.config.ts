@@ -169,6 +169,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.crm.installers',
     'admin.crm.customers',
     'admin.forms',
+    'admin.support',
     'admin.crm.funnel',
     'admin.crm.tasks',
     'admin.crm.my-work-day',

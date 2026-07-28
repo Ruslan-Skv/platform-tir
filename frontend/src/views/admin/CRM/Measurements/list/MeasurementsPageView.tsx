@@ -168,6 +168,9 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
           <span className={styles.count}>{total} замеров</span>
         </div>
         <div className={styles.headerActions}>
+          <Link data-admin-mutation href="/admin/measurements/new" className={styles.addButton}>
+            + Новый замер
+          </Link>
           <AdminListRefreshButton
             onClick={() => void fetchData()}
             disabled={loading}
@@ -175,9 +178,6 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
             title="Обновить список замеров"
             aria-label="Обновить список замеров"
           />
-          <Link data-admin-mutation href="/admin/measurements/new" className={styles.addButton}>
-            + Новый замер
-          </Link>
         </div>
       </div>
 

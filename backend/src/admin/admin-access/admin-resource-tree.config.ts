@@ -8,7 +8,7 @@ import {
 
 /**
  * Явный родитель ресурса по структуре сайдбара админки.
- * Топ-пункты (Договора, Расчёты, Замеры, …) сюда не входят — у них нет родителя.
+ * Топ-пункты (Договора, Расчёты, Замеры, Заявки, Чат поддержки, …) сюда не входят — у них нет родителя.
  * Наследование DENIED идёт только по этой карте, не по префиксу resourceId.
  */
 export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
@@ -17,8 +17,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.cash-register': 'admin.crm',
   'admin.crm.supplier-settlements': 'admin.crm',
   'admin.crm.offices': 'admin.crm',
-  'admin.forms': 'admin.crm',
-  'admin.support': 'admin.crm',
+  // admin.forms / admin.support — топ-пункты сайдбара (как Замеры), не наследуют DENIED от CRM
   'admin.crm.funnel': 'admin.crm',
   'admin.crm.tasks': 'admin.crm',
   'admin.crm.my-work-day': 'admin.crm',
