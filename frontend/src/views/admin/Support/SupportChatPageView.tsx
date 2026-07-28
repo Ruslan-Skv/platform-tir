@@ -1,6 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import styles from './SupportChatPage.module.css';
 import type { SupportChatPageModel } from './hooks/useSupportChatPage';
@@ -26,10 +30,14 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
     refreshing,
     loadingMessages,
     sending,
+    deleting,
     sendMessage,
+    deleteConversation,
     refresh,
+    canDelete,
   } = model;
-  const refreshBusy = loading || refreshing || loadingMessages;
+  const refreshBusy = loading || refreshing || loadingMessages || deleting;
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
   return (
     <div className={styles.page}>
@@ -97,10 +105,25 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
           ) : (
             <>
               <div className={styles.chatHeader}>
-                {userName(selected)} · {selected.user.email}
-                <span className={`${styles.statusBadge} ${styles[`status${selected.status}`]}`}>
-                  {STATUS_LABELS[selected.status] ?? selected.status}
-                </span>
+                <div className={styles.chatHeaderInfo}>
+                  {userName(selected)} · {selected.user.email}
+                  <span className={`${styles.statusBadge} ${styles[`status${selected.status}`]}`}>
+                    {STATUS_LABELS[selected.status] ?? selected.status}
+                  </span>
+                </div>
+                {canDelete ? (
+                  <button
+                    data-admin-mutation
+                    type="button"
+                    className={styles.deleteButton}
+                    disabled={deleting}
+                    onClick={() => setConfirmDelete(true)}
+                    title={deleting ? 'Удаление...' : 'Удалить диалог'}
+                    aria-label={deleting ? 'Удаление...' : 'Удалить диалог'}
+                  >
+                    <DeleteIcon size={16} tone="inherit" />
+                  </button>
+                ) : null}
               </div>
               {loadingMessages ? (
                 <div className={styles.loading}>Загрузка сообщений...</div>
@@ -146,6 +169,22 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
           )}
         </div>
       </div>
+
+      {selected && confirmDelete ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить диалог?"
+          message={`Диалог с ${userName(selected)} и все сообщения будут удалены без возможности восстановления.`}
+          onConfirm={() => {
+            const id = selected.id;
+            setConfirmDelete(false);
+            void deleteConversation(id);
+          }}
+          onClose={() => setConfirmDelete(false)}
+          confirmText={deleting ? 'Удаление...' : 'Удалить'}
+          variant="danger"
+        />
+      ) : null}
     </div>
   );
 }

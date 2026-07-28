@@ -241,4 +241,16 @@ export class SupportChatService {
       },
     });
   }
+
+  async deleteConversation(conversationId: string, userRole: string) {
+    if (userRole !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Удаление диалогов доступно только суперадмину');
+    }
+    const conv = await this.prisma.supportConversation.findUnique({
+      where: { id: conversationId },
+    });
+    if (!conv) throw new NotFoundException('Диалог не найден');
+    await this.prisma.supportConversation.delete({ where: { id: conversationId } });
+    return { id: conversationId };
+  }
 }

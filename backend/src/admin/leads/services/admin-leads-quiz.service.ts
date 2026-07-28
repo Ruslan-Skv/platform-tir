@@ -72,6 +72,19 @@ export class AdminLeadsQuizService {
     return this.mapQuizSubmission(row, source, slug);
   }
 
+  async deleteLead(slug: string, entityId: string): Promise<{ id: string }> {
+    const quiz = await this.prisma.quizLanding.findUnique({ where: { slug } });
+    if (!quiz) throw new NotFoundException('Квиз не найден');
+    const source = QUIZ_SLUG_TO_SOURCE[slug];
+    if (!source) throw new NotFoundException('Заявка не найдена');
+    const existing = await this.prisma.quizSubmission.findFirst({
+      where: { id: entityId, quizId: quiz.id },
+    });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+    await this.prisma.quizSubmission.delete({ where: { id: entityId } });
+    return { id: buildLeadId(source, entityId) };
+  }
+
   private quizWhere(
     quizId: string,
     opts: { status?: LeadStatus; search?: string },

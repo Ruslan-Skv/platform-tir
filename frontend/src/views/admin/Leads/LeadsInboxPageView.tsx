@@ -1,13 +1,17 @@
 'use client';
 
+import { CheckIcon } from '@heroicons/react/24/outline';
+
 import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
 import type { LeadSource, LeadStatus, UnifiedLeadItem } from '@/shared/api/admin-leads';
 import { LEAD_STATUS_LABELS } from '@/shared/api/admin-leads';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import styles from './LeadsInboxPage.module.css';
 
@@ -17,6 +21,8 @@ type LeadsInboxPageViewProps = {
     loading: boolean;
     refreshing?: boolean;
     savingId: string | null;
+    deletingId?: string | null;
+    canDelete?: boolean;
     page: number;
     setPage: (page: number) => void;
     totalPages: number;
@@ -34,6 +40,7 @@ type LeadsInboxPageViewProps = {
     loadLeads: () => void | Promise<void>;
     handleStatusChange: (lead: UnifiedLeadItem, status: LeadStatus) => void | Promise<void>;
     handleNoteSave: (lead: UnifiedLeadItem, managerNote: string) => void | Promise<void>;
+    handleDelete?: (lead: UnifiedLeadItem) => void | Promise<void>;
     errorMessage: string | null;
     variant?: 'inbox' | 'director';
   };
@@ -108,8 +115,12 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
     loadLeads,
     handleStatusChange,
     handleNoteSave,
+    handleDelete,
     errorMessage,
   } = model;
+  const canDelete = Boolean(model.canDelete && handleDelete);
+  const deletingId = model.deletingId ?? null;
+  const [deleteTarget, setDeleteTarget] = useState<UnifiedLeadItem | null>(null);
   const variant = 'variant' in model && model.variant === 'director' ? 'director' : 'inbox';
   const isDirector = variant === 'director';
   const refreshBusy = loading || refreshing;
@@ -243,8 +254,11 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
                   key={lead.id}
                   lead={lead}
                   saving={savingId === lead.id}
+                  deleting={deletingId === lead.id}
+                  canDelete={canDelete}
                   onStatusChange={handleStatusChange}
                   onNoteSave={handleNoteSave}
+                  onDeleteRequest={canDelete ? () => setDeleteTarget(lead) : undefined}
                   hideSourceBadge={isDirector}
                 />
               ))}
@@ -276,6 +290,22 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
           </div>
         ) : null}
       </div>
+
+      {deleteTarget && handleDelete ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить заявку?"
+          message={`«${deleteTarget.name}» (${deleteTarget.sourceLabel}) будет удалена без возможности восстановления.`}
+          onConfirm={() => {
+            const target = deleteTarget;
+            setDeleteTarget(null);
+            void handleDelete(target);
+          }}
+          onClose={() => setDeleteTarget(null)}
+          confirmText={deletingId === deleteTarget.id ? 'Удаление...' : 'Удалить'}
+          variant="danger"
+        />
+      ) : null}
     </div>
   );
 }
@@ -283,19 +313,26 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
 type LeadCardProps = {
   lead: UnifiedLeadItem;
   saving: boolean;
+  deleting?: boolean;
+  canDelete?: boolean;
   onStatusChange: (lead: UnifiedLeadItem, status: LeadStatus) => void | Promise<void>;
   onNoteSave: (lead: UnifiedLeadItem, managerNote: string) => void | Promise<void>;
+  onDeleteRequest?: () => void;
   hideSourceBadge?: boolean;
 };
 
 function LeadCard({
   lead,
   saving,
+  deleting = false,
+  canDelete = false,
   onStatusChange,
   onNoteSave,
+  onDeleteRequest,
   hideSourceBadge = false,
 }: LeadCardProps) {
   const [noteDraft, setNoteDraft] = useState(lead.managerNote ?? '');
+  const busy = saving || deleting;
 
   useEffect(() => {
     setNoteDraft(lead.managerNote ?? '');
@@ -321,6 +358,11 @@ function LeadCard({
       </div>
       <div className={styles.cardBody}>
         <p className={styles.preview}>{lead.preview}</p>
+        {lead.detailUrl ? (
+          <Link href={lead.detailUrl} className={styles.detailLink}>
+            Открыть раздел →
+          </Link>
+        ) : null}
       </div>
       <div className={styles.cardFooter}>
         <label className={styles.statusLabel}>
@@ -328,7 +370,7 @@ function LeadCard({
           <select
             className={styles.statusSelect}
             value={lead.status}
-            disabled={!lead.statusEditable || saving}
+            disabled={!lead.statusEditable || busy}
             onChange={(e) => onStatusChange(lead, e.target.value as typeof lead.status)}
             title={lead.statusEditable ? undefined : 'Статус заказа меняется на странице заказа'}
           >
@@ -346,25 +388,37 @@ function LeadCard({
             className={styles.noteInput}
             value={noteDraft}
             onChange={(e) => setNoteDraft(e.target.value)}
-            disabled={saving}
+            disabled={busy}
             placeholder="Комментарий для коллег..."
           />
         </label>
 
-        <button
-          type="button"
-          className={styles.button}
-          disabled={saving || noteDraft === (lead.managerNote ?? '')}
-          onClick={() => onNoteSave(lead, noteDraft)}
-        >
-          {saving ? 'Сохранение...' : 'Сохранить заметку'}
-        </button>
+        <div className={styles.cardActions}>
+          <button
+            type="button"
+            className={styles.iconSaveButton}
+            disabled={busy || noteDraft === (lead.managerNote ?? '')}
+            onClick={() => onNoteSave(lead, noteDraft)}
+            title={saving ? 'Сохранение...' : 'Сохранить заметку'}
+            aria-label={saving ? 'Сохранение...' : 'Сохранить заметку'}
+          >
+            <CheckIcon width={16} height={16} aria-hidden />
+          </button>
 
-        {lead.detailUrl ? (
-          <Link href={lead.detailUrl} className={styles.detailLink}>
-            Открыть раздел →
-          </Link>
-        ) : null}
+          {canDelete && onDeleteRequest ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={styles.iconDeleteButton}
+              disabled={busy}
+              onClick={onDeleteRequest}
+              title={deleting ? 'Удаление...' : 'Удалить'}
+              aria-label={deleting ? 'Удаление...' : 'Удалить'}
+            >
+              <DeleteIcon size={16} tone="inherit" />
+            </button>
+          ) : null}
+        </div>
       </div>
     </article>
   );

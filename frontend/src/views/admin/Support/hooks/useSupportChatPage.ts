@@ -13,6 +13,7 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1
 export function useSupportChatPage() {
   const { getAuthHeaders, user } = useAuth();
   const { canEdit } = useAdminSectionCanEdit();
+  const canDelete = user?.role === 'SUPER_ADMIN';
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selected, setSelected] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -22,6 +23,7 @@ export function useSupportChatPage() {
   const [refreshing, setRefreshing] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const hasLoadedOnceRef = useRef(false);
 
   const fetchConversations = useCallback(async () => {
@@ -107,6 +109,27 @@ export function useSupportChatPage() {
     }
   };
 
+  const deleteConversation = async (conversationId: string) => {
+    if (!canDelete || deleting) return false;
+    setDeleting(true);
+    try {
+      const res = await apiFetch(`${API_URL}/support/conversations/${conversationId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) return false;
+      setConversations((prev) => prev.filter((c) => c.id !== conversationId));
+      setSelected((prev) => (prev?.id === conversationId ? null : prev));
+      setMessages([]);
+      return true;
+    } catch (e) {
+      console.error(e);
+      return false;
+    } finally {
+      setDeleting(false);
+    }
+  };
+
   const refresh = useCallback(async () => {
     await fetchConversations();
     if (selected?.id) {
@@ -128,9 +151,12 @@ export function useSupportChatPage() {
     refreshing,
     loadingMessages,
     sending,
+    deleting,
     sendMessage,
+    deleteConversation,
     refresh,
     canEdit,
+    canDelete,
   };
 }
 

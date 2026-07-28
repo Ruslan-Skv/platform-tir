@@ -57,6 +57,13 @@ export class AdminLeadsOrderService {
     return this.mapOrder(row);
   }
 
+  async deleteLead(entityId: string): Promise<{ id: string }> {
+    const existing = await this.prisma.order.findUnique({ where: { id: entityId } });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+    await this.prisma.order.delete({ where: { id: entityId } });
+    return { id: buildLeadId('order', entityId) };
+  }
+
   private readonly orderSelect = {
     id: true,
     orderNumber: true,

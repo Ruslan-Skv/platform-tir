@@ -178,6 +178,71 @@
   border-color: var(--admin-border);
 }
 
+.buttonDanger {
+  background: var(--admin-danger, #dc2626);
+  color: var(--admin-surface);
+}
+
+.buttonDanger:hover {
+  background: var(--admin-danger-strong, #b91c1c);
+}
+
+.buttonDanger:disabled {
+  background: var(--admin-text-muted);
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.iconDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-danger, #dc2626);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iconDeleteButton:hover:not(:disabled) {
+  border-color: var(--admin-danger, #dc2626);
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.iconDeleteButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.iconSaveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-info, #2563eb);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.iconSaveButton:hover:not(:disabled) {
+  border-color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.iconSaveButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 .panelBody {
   flex: 1;
   overflow-y: auto;
@@ -375,7 +440,17 @@
   resize: vertical;
 }
 
+.cardActions {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  flex-shrink: 0;
+}
+
 .detailLink {
+  display: inline-block;
+  margin-top: var(--admin-space-md);
   font-size: var(--admin-font-size-sm);
   color: var(--admin-info, #2563eb);
   text-decoration: none;

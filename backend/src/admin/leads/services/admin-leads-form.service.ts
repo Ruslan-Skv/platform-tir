@@ -88,6 +88,15 @@ export class AdminLeadsFormService {
     return this.mapFormSubmission(row, source);
   }
 
+  async deleteLead(source: LeadSource, entityId: string): Promise<{ id: string }> {
+    const existing = await this.prisma.formSubmission.findFirst({
+      where: { id: entityId, type: this.formTypeFromSource(source) },
+    });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+    await this.prisma.formSubmission.delete({ where: { id: entityId } });
+    return { id: buildLeadId(source, entityId) };
+  }
+
   private mapFormSubmission(
     row: {
       id: string;

@@ -136,6 +136,34 @@ export class AdminLeadsService {
     }
   }
 
+  async deleteLead(leadId: string, allowedSources: LeadSource[]) {
+    const parsed = parseLeadId(leadId);
+    if (!parsed) throw new BadRequestException('Некорректный идентификатор заявки');
+    if (!allowedSources.includes(parsed.source)) {
+      throw new NotFoundException('Заявка не найдена');
+    }
+
+    switch (parsed.source) {
+      case 'form_measurement':
+      case 'form_callback':
+      case 'form_director':
+      case 'form_quote':
+        return this.formLeads.deleteLead(parsed.source, parsed.entityId);
+      case 'quiz_mebel':
+        return this.quizLeads.deleteLead(FURNITURE_QUIZ_SLUG, parsed.entityId);
+      case 'quiz_remont':
+        return this.quizLeads.deleteLead(REMONT_QUIZ_SLUG, parsed.entityId);
+      case 'order':
+        return this.orderLeads.deleteLead(parsed.entityId);
+      case 'site_feedback':
+        return this.feedbackLeads.deleteSiteLead(parsed.entityId);
+      case 'knowledge_feedback':
+        return this.feedbackLeads.deleteKnowledgeLead(parsed.entityId);
+      default:
+        throw new NotFoundException('Заявка не найдена');
+    }
+  }
+
   private pickSources(source: LeadSource | undefined, allowed: LeadSource[]): LeadSource[] {
     if (source) {
       if (!allowed.includes(source)) return [];

@@ -169,6 +169,45 @@
   background: var(--admin-surface-muted);
   font-weight: 500;
   color: var(--admin-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-lg);
+  flex-wrap: wrap;
+}
+
+.chatHeaderInfo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  min-width: 0;
+}
+
+.deleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  background: var(--admin-surface);
+  color: var(--admin-danger, #dc2626);
+  flex-shrink: 0;
+}
+
+.deleteButton:hover:not(:disabled) {
+  border-color: var(--admin-danger, #dc2626);
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.deleteButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
 }
 
 .chatMessages {

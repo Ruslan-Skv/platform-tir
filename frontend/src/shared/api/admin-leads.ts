@@ -134,6 +134,18 @@ export async function updateAdminLead(
   return res.json();
 }
 
+export async function deleteAdminLead(leadId: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/leads/${encodeURIComponent(leadId)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось удалить заявку');
+  }
+  return res.json();
+}
+
 export async function updateAdminDirectorMessage(
   leadId: string,
   body: { status?: LeadStatus; managerNote?: string | null }

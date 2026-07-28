@@ -58,6 +58,13 @@ export class AdminLeadsFeedbackService {
     return this.mapSiteFeedback(row);
   }
 
+  async deleteSiteLead(entityId: string): Promise<{ id: string }> {
+    const existing = await this.prisma.sitePlatformFeedback.findUnique({ where: { id: entityId } });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+    await this.prisma.sitePlatformFeedback.delete({ where: { id: entityId } });
+    return { id: buildLeadId('site_feedback', entityId) };
+  }
+
   async fetchKnowledgeLeads(opts: {
     status?: LeadStatus;
     search?: string;
@@ -103,6 +110,15 @@ export class AdminLeadsFeedbackService {
       include: { user: { select: { firstName: true, lastName: true, email: true } } },
     });
     return this.mapKnowledgeFeedback(row);
+  }
+
+  async deleteKnowledgeLead(entityId: string): Promise<{ id: string }> {
+    const existing = await this.prisma.knowledgePlatformFeedback.findUnique({
+      where: { id: entityId },
+    });
+    if (!existing) throw new NotFoundException('Заявка не найдена');
+    await this.prisma.knowledgePlatformFeedback.delete({ where: { id: entityId } });
+    return { id: buildLeadId('knowledge_feedback', entityId) };
   }
 
   private siteFeedbackWhere(opts: {
