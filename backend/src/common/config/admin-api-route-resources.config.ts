@@ -101,9 +101,10 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
     prefix: '/api/v1/admin/contract-document-packages',
     resourceId: 'admin.contract-documents.repair',
   },
+  // Объекты договоров — операционные данные списка «Договора», не хаб настроек оформления
   {
     prefix: '/api/v1/admin/contract-document-objects',
-    resourceId: 'admin.contract-documents',
+    resourceId: 'admin.contract-documents.repair',
   },
   { prefix: '/api/v1/admin/contracts', resourceId: 'admin.contract-documents.repair' },
   // CRM
@@ -118,6 +119,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/work-days/offices', resourceId: 'admin.settings.work-days' },
   { prefix: '/api/v1/admin/work-days/users', resourceId: 'admin.settings.work-days' },
   { prefix: '/api/v1/admin/work-days', resourceId: 'admin.crm.work-days' },
+  // CRUD направлений — хаб CRM; shared GET вынесены в ADMIN_API_RESOURCE_SKIPS
   { prefix: '/api/v1/admin/crm-directions', resourceId: 'admin.crm' },
   { prefix: '/api/v1/admin/complex-objects', resourceId: 'admin.crm.customers' },
   // Прочие разделы админки

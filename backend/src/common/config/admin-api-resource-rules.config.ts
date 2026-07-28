@@ -17,6 +17,34 @@ export type AdminApiResourceRule = {
 
 /**
 
+ * Shared-read маршруты без проверки resourceId (достаточно JwtAuth + @Roles).
+
+ * Направления/список CRM-пользователей нужны топ-разделам (Договора, Замеры, Заказчики),
+
+ * даже если хаб admin.crm явно закрыт — DENIED с хаба не наследуется на эти разделы.
+
+ */
+
+export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
+  methods: string[];
+  pathPattern: RegExp;
+}> = [
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/crm-directions$/,
+  },
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/crm-directions\/users\/list$/,
+  },
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/crm-directions\/users\/me\/directions$/,
+  },
+];
+
+/**
+
  * Исключения из общего правила «GET → VIEW, мутации → EDIT».
 
  * Проверяются до префиксного сопоставления в admin-api-route-resources.config.
@@ -209,6 +237,13 @@ export function matchAdminApiResourceRule(
   const pathOnly = requestPath.split('?')[0] ?? requestPath;
 
   const upperMethod = method.toUpperCase();
+
+  for (const skip of ADMIN_API_RESOURCE_SKIPS) {
+    if (!skip.methods.includes(upperMethod)) continue;
+    if (skip.pathPattern.test(pathOnly)) {
+      return null;
+    }
+  }
 
   for (const rule of ADMIN_API_RESOURCE_EXCEPTIONS) {
     if (!rule.methods.includes(upperMethod)) continue;
