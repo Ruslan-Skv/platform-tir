@@ -3,14 +3,15 @@
 import Link from 'next/link';
 
 import { Modal } from '@/shared/ui/Modal';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageIssueInvoicePanel';
 
+import { contractsListFilterFieldClass } from '../ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
 import cdBase from '../ContractDocuments/styles/base.module.css';
 import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
 import cdDataTab from '../ContractDocuments/styles/data-tab.module.css';
 import cdChrome from '../ContractDocuments/styles/editor-chrome.module.css';
-import cdWorkspace from '../ContractDocuments/styles/estimates-workspace.module.css';
 import pageStyles from './AccountingInvoicesPage.module.css';
 import { PackageInvoicesModalLoader } from './PackageInvoicesModalLoader';
 import { formatDateRu, formatMoneyRub } from './accounting-invoices-page.utils';
@@ -50,60 +51,46 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
   } = model;
 
   return (
-    <div className={`${cdBase.page} ${cdBase.pageWide}`}>
-      <div className={`${cdWorkspace.editorHeader} ${cdHub.blockHeader}`}>
-        <div className={cdChrome.packageEditorHeaderLeft}>
-          <h1 className={cdWorkspace.title}>Счета на оплату</h1>
-          <p className={cdWorkspace.subtitle}>
-            Единый журнал выставленных счетов по договорам ремонта. Номер счёта общий для всей
-            организации.
-          </p>
+    <div className={`${cdBase.page} ${cdBase.pageWide} ${cdHub.contractsListPage}`}>
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsListHeaderTitleGroup}>
+            <h1 className={cdHub.title}>Счета на оплату</h1>
+          </div>
+          <span className={cdHub.contractsListCount}>{rows.length} счетов</span>
         </div>
-        <div className={cdHub.headerActions}>
+        <div className={cdChrome.headerButtonsRow}>
           <button
             data-admin-mutation
             type="button"
-            className={cdWorkspace.primaryBtn}
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={loading}
             onClick={() => void openIssueModal()}
           >
             + Выставить счёт
           </button>
-          <button
-            type="button"
-            className={`${cdBase.secondaryBtn} ${cdBase.estimatesPageRefreshIconBtn}`}
+          <AdminListRefreshButton
             disabled={loading}
-            aria-busy={loading}
+            busy={loading}
             title="Обновить список"
+            aria-label={loading ? 'Обновление списка счетов' : 'Обновить список счетов'}
             onClick={() => void load()}
-          >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              width={18}
-              height={18}
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={2}
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className={loading ? cdChrome.estimatesRefreshIconSpinning : undefined}
-              aria-hidden
-            >
-              <path d="M23 4v6h-6" />
-              <path d="M1 20v-6h6" />
-              <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-            </svg>
-          </button>
+          />
         </div>
       </div>
 
-      <div className={`${cdWorkspace.estimatesToolbar} ${pageStyles.toolbarSpaced}`}>
+      <div className={`${cdHub.contractsListFilters} ${pageStyles.toolbarSpaced}`}>
         <input
           type="search"
-          className={cdBase.searchInput}
           placeholder="Поиск: № счёта, договор, заказчик, основание…"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          disabled={loading}
+          className={contractsListFilterFieldClass(
+            cdHub.contractsListSearchInput,
+            Boolean(search.trim()),
+            cdHub.contractsListFilterActive
+          )}
           aria-label="Поиск по счетам"
         />
       </div>
