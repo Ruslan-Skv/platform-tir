@@ -14,6 +14,7 @@ import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import styles from './LeadsInboxPage.module.css';
+import { LeadsInboxRulesInfoTip } from './LeadsInboxRulesInfoTip';
 
 type LeadsInboxPageViewProps = {
   model: {
@@ -134,7 +135,10 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerText}>
-          <h1 className={styles.title}>{isDirector ? 'Письмо директору' : 'Входящие заявки'}</h1>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.title}>{isDirector ? 'Письмо директору' : 'Входящие заявки'}</h1>
+            <LeadsInboxRulesInfoTip variant={isDirector ? 'director' : 'inbox'} />
+          </div>
         </div>
         <div className={styles.headerActions}>
           <AdminListRefreshButton

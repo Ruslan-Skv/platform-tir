@@ -119,6 +119,12 @@ function getBestMatchingHref(
 const baseNavItems: NavItem[] = [
   { label: 'Дашборд', href: '/admin', icon: '📊', resourceId: 'admin' },
   {
+    label: 'Мой рабочий день',
+    href: '/admin/crm/my-work-day',
+    icon: '⏱️',
+    resourceId: 'admin.crm.my-work-day',
+  },
+  {
     label: 'CRM',
     href: '/admin/crm',
     icon: '👥',
@@ -139,21 +145,14 @@ const baseNavItems: NavItem[] = [
       { label: 'Воронка продаж', href: '/admin/crm/funnel', resourceId: 'admin.crm.funnel' },
       { label: 'Задачи', href: '/admin/crm/tasks', resourceId: 'admin.crm.tasks' },
       {
-        label: 'Учёт рабочего времени',
-        href: '/admin/crm/my-work-day',
-        resourceId: 'admin.crm.my-work-day',
-        children: [
-          {
-            label: 'Мой рабочий день',
-            href: '/admin/crm/my-work-day',
-            resourceId: 'admin.crm.my-work-day',
-          },
-          {
-            label: 'Журнал сотрудников',
-            href: '/admin/crm/work-days',
-            resourceId: 'admin.crm.work-days',
-          },
-        ],
+        label: 'Журнал сотрудников',
+        href: '/admin/crm/work-days',
+        resourceId: 'admin.crm.work-days',
+      },
+      {
+        label: 'Запросы рабочего дня',
+        href: '/admin/crm/work-day-requests',
+        resourceId: 'admin.crm.work-days',
       },
       {
         label: 'Расчёт з/п',
@@ -750,7 +749,27 @@ export function AdminSidebar({
 
   const navItems = useMemo(() => {
     const hideSettingsNav = !canRoleSeeAdminSettingsNav(currentUser?.role);
-    const filtered = filterNavByAccess(baseNavItems, hasAccess, { hideSettingsNav });
+    const isSa = currentUser?.role === 'SUPER_ADMIN';
+    const stripSaOnly = (items: NavItem[]): NavItem[] =>
+      items.map((item) => {
+        if (!item.children) return item;
+        return {
+          ...item,
+          children: item.children
+            .filter((child) => isSa || child.href !== '/admin/crm/work-day-requests')
+            .map((child) =>
+              child.children
+                ? {
+                    ...child,
+                    children: child.children.filter(
+                      (n) => isSa || n.href !== '/admin/crm/work-day-requests'
+                    ),
+                  }
+                : child
+            ),
+        };
+      });
+    const filtered = stripSaOnly(filterNavByAccess(baseNavItems, hasAccess, { hideSettingsNav }));
     if (filtered.length > 0 || currentUser?.role === 'SUPER_ADMIN') {
       return filtered;
     }
@@ -759,7 +778,9 @@ export function AdminSidebar({
     if (cached.length > 0) {
       const cachedIds = new Set(cached.map((resource) => resource.id));
       const cachedHasAccess = createHasAccessChecker(cachedIds, currentUser?.role);
-      const fromCache = filterNavByAccess(baseNavItems, cachedHasAccess, { hideSettingsNav });
+      const fromCache = stripSaOnly(
+        filterNavByAccess(baseNavItems, cachedHasAccess, { hideSettingsNav })
+      );
       if (fromCache.length > 0) {
         return fromCache;
       }

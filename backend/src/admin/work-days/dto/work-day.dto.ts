@@ -2,6 +2,7 @@ import {
   IsArray,
   IsBoolean,
   IsEnum,
+  IsIn,
   IsInt,
   IsObject,
   IsOptional,
@@ -156,4 +157,28 @@ export class CloseForgottenWorkDayDto {
 
   @IsString()
   workDayId: string;
+}
+
+export class CreateWorkDayRequestDto {
+  @IsIn(['DAY_OFF', 'EARLY_LEAVE', 'LATE_ARRIVAL'])
+  type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/)
+  requestDate: string;
+
+  @IsOptional()
+  @IsString()
+  @Matches(/^\d{2}:\d{2}$/)
+  proposedEndTime?: string;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}
+
+export class ReviewWorkDayRequestDto {
+  @IsOptional()
+  @IsString()
+  reviewComment?: string;
 }

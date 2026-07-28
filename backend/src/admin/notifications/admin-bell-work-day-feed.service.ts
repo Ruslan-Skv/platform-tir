@@ -1,14 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import { WorkDayCloseReason, WorkDayStatus } from '@prisma/client';
+import { WorkDayCloseReason, WorkDayRequestStatus, WorkDayStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
-export type WorkDayBellKind = 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+export type WorkDayBellKind =
+  | 'late'
+  | 'early_leave'
+  | 'auto_closed'
+  | 'reported_close'
+  | 'day_off_request'
+  | 'early_leave_request'
+  | 'late_arrival_request';
 
 export type AdminBellWorkDayNotification = {
   id: string;
   kind: WorkDayBellKind;
   kindLabel: string;
-  workDayId: string;
+  workDayId: string | null;
+  requestId: string | null;
   userId: string;
   userName: string;
   workDate: string;
@@ -22,6 +30,9 @@ const KIND_LABELS: Record<WorkDayBellKind, string> = {
   early_leave: 'Ранний уход',
   auto_closed: 'Автозакрытие',
   reported_close: 'Указано время ухода',
+  day_off_request: 'Запрос выходного',
+  early_leave_request: 'Запрос уйти пораньше',
+  late_arrival_request: 'Запрос прийти попозже',
 };
 
 @Injectable()
@@ -32,25 +43,38 @@ export class AdminBellWorkDayFeedService {
     const since = new Date();
     since.setDate(since.getDate() - 14);
 
-    const rows = await this.prisma.workDay.findMany({
-      where: {
-        OR: [
-          { lateMinutes: { gt: 0 }, notifiedLateAt: { not: null } },
-          { earlyLeaveMinutes: { gt: 0 }, notifiedEarlyLeaveAt: { not: null } },
-          { status: WorkDayStatus.AUTO_CLOSED, notifiedAutoClosedAt: { not: null } },
-          {
-            closeReason: WorkDayCloseReason.REPORTED_NEXT_DAY,
-            notifiedReportedCloseAt: { not: null },
-          },
-        ],
-        updatedAt: { gte: since },
-      },
-      orderBy: { updatedAt: 'desc' },
-      take: limit * 4,
-      include: {
-        user: { select: { firstName: true, lastName: true, email: true } },
-      },
-    });
+    const [rows, requests] = await Promise.all([
+      this.prisma.workDay.findMany({
+        where: {
+          OR: [
+            { lateMinutes: { gt: 0 }, notifiedLateAt: { not: null } },
+            { earlyLeaveMinutes: { gt: 0 }, notifiedEarlyLeaveAt: { not: null } },
+            { status: WorkDayStatus.AUTO_CLOSED, notifiedAutoClosedAt: { not: null } },
+            {
+              closeReason: WorkDayCloseReason.REPORTED_NEXT_DAY,
+              notifiedReportedCloseAt: { not: null },
+            },
+          ],
+          updatedAt: { gte: since },
+        },
+        orderBy: { updatedAt: 'desc' },
+        take: limit * 4,
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true } },
+        },
+      }),
+      this.prisma.workDayRequest.findMany({
+        where: {
+          status: WorkDayRequestStatus.PENDING,
+          createdAt: { gte: since },
+        },
+        orderBy: { createdAt: 'desc' },
+        take: limit,
+        include: {
+          user: { select: { firstName: true, lastName: true, email: true } },
+        },
+      }),
+    ]);
 
     const items: AdminBellWorkDayNotification[] = [];
     for (const row of rows) {
@@ -60,12 +84,20 @@ export class AdminBellWorkDayFeedService {
 
       if (row.lateMinutes > 0 && row.notifiedLateAt) {
         items.push(
-          this.mapItem('late', row.id, row.userId, userName, workDate, row, row.notifiedLateAt),
+          this.mapWorkDayItem(
+            'late',
+            row.id,
+            row.userId,
+            userName,
+            workDate,
+            row,
+            row.notifiedLateAt,
+          ),
         );
       }
       if (row.earlyLeaveMinutes > 0 && row.notifiedEarlyLeaveAt) {
         items.push(
-          this.mapItem(
+          this.mapWorkDayItem(
             'early_leave',
             row.id,
             row.userId,
@@ -78,7 +110,7 @@ export class AdminBellWorkDayFeedService {
       }
       if (row.status === WorkDayStatus.AUTO_CLOSED && row.notifiedAutoClosedAt) {
         items.push(
-          this.mapItem(
+          this.mapWorkDayItem(
             'auto_closed',
             row.id,
             row.userId,
@@ -91,7 +123,7 @@ export class AdminBellWorkDayFeedService {
       }
       if (row.closeReason === WorkDayCloseReason.REPORTED_NEXT_DAY && row.notifiedReportedCloseAt) {
         items.push(
-          this.mapItem(
+          this.mapWorkDayItem(
             'reported_close',
             row.id,
             row.userId,
@@ -104,12 +136,37 @@ export class AdminBellWorkDayFeedService {
       }
     }
 
+    for (const req of requests) {
+      const userName =
+        [req.user.firstName, req.user.lastName].filter(Boolean).join(' ').trim() || req.user.email;
+      const workDate = req.requestDate.toISOString().slice(0, 10);
+      const kind: WorkDayBellKind =
+        req.type === 'DAY_OFF'
+          ? 'day_off_request'
+          : req.type === 'EARLY_LEAVE'
+            ? 'early_leave_request'
+            : 'late_arrival_request';
+      items.push({
+        id: `${kind}:${req.id}`,
+        kind,
+        kindLabel: KIND_LABELS[kind],
+        workDayId: null,
+        requestId: req.id,
+        userId: req.userId,
+        userName,
+        workDate,
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
+        occurredAt: req.createdAt.toISOString(),
+      });
+    }
+
     return items
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
       .slice(0, limit);
   }
 
-  private mapItem(
+  private mapWorkDayItem(
     kind: WorkDayBellKind,
     workDayId: string,
     userId: string,
@@ -123,6 +180,7 @@ export class AdminBellWorkDayFeedService {
       kind,
       kindLabel: KIND_LABELS[kind],
       workDayId,
+      requestId: null,
       userId,
       userName,
       workDate,

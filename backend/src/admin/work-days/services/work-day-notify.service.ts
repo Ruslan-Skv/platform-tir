@@ -5,18 +5,30 @@ import { ExternalNotifyService } from '../../../external-notify/external-notify.
 import { ExternalNotifySettingsService } from '../../../external-notify/external-notify-settings.service';
 import { PrismaService } from '../../../database/prisma.service';
 
-export type WorkDayNotifyKind = 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+export type WorkDayNotifyKind =
+  | 'late'
+  | 'early_leave'
+  | 'auto_closed'
+  | 'reported_close'
+  | 'day_off_request'
+  | 'early_leave_request'
+  | 'late_arrival_request';
 
 const KIND_LABELS: Record<WorkDayNotifyKind, string> = {
   late: 'Опоздание',
   early_leave: 'Ранний уход',
   auto_closed: 'Автозакрытие рабочего дня',
   reported_close: 'Закрытие с указанием времени ухода',
+  day_off_request: 'Запрос выходного',
+  early_leave_request: 'Запрос уйти пораньше',
+  late_arrival_request: 'Запрос прийти попозже',
 };
 
-const NOTIFY_FIELD: Record<
-  WorkDayNotifyKind,
-  'notifiedLateAt' | 'notifiedEarlyLeaveAt' | 'notifiedAutoClosedAt' | 'notifiedReportedCloseAt'
+const NOTIFY_FIELD: Partial<
+  Record<
+    WorkDayNotifyKind,
+    'notifiedLateAt' | 'notifiedEarlyLeaveAt' | 'notifiedAutoClosedAt' | 'notifiedReportedCloseAt'
+  >
 > = {
   late: 'notifiedLateAt',
   early_leave: 'notifiedEarlyLeaveAt',
@@ -57,8 +69,81 @@ export class WorkDayNotifyService {
     }
   }
 
+  onRequestCreated(requestId: string): void {
+    void this.notifyRequest(requestId).catch(() => undefined);
+  }
+
+  private async notifyRequest(requestId: string): Promise<void> {
+    const request = await this.prisma.workDayRequest.findUnique({
+      where: { id: requestId },
+      include: {
+        user: { select: { firstName: true, lastName: true, email: true, role: true } },
+      },
+    });
+    if (!request || request.status !== 'PENDING') return;
+
+    const kind: WorkDayNotifyKind =
+      request.type === 'DAY_OFF'
+        ? 'day_off_request'
+        : request.type === 'EARLY_LEAVE'
+          ? 'early_leave_request'
+          : 'late_arrival_request';
+    const employeeName =
+      [request.user.firstName, request.user.lastName].filter(Boolean).join(' ').trim() ||
+      request.user.email;
+    const workDateLabel = request.requestDate.toLocaleDateString('ru-RU');
+    const kindLabel = KIND_LABELS[kind];
+    const detailLine =
+      request.type === 'EARLY_LEAVE' && request.proposedEndTime
+        ? `Желаемое время ухода: ${request.proposedEndTime}`
+        : request.type === 'LATE_ARRIVAL' && request.proposedEndTime
+          ? `Желаемое время прихода: ${request.proposedEndTime}`
+          : request.comment
+            ? `Комментарий: ${request.comment}`
+            : null;
+
+    const subject = `${kindLabel}: ${employeeName} (${workDateLabel})`;
+    const text = [
+      'Учёт рабочего времени',
+      '',
+      `Событие: ${kindLabel}`,
+      `Дата: ${workDateLabel}`,
+      `Сотрудник: ${employeeName}`,
+      `Email: ${request.user.email}`,
+      request.user.role ? `Роль: ${request.user.role}` : null,
+      detailLine,
+      `Запросы: /admin/crm/work-day-requests`,
+    ]
+      .filter(Boolean)
+      .join('\n');
+
+    const channels = await this.externalNotifySettings.getChannelsForEvent('work_day');
+    await this.externalNotify.send(channels, {
+      subject,
+      text,
+      replyTo: request.user.email,
+      fromLabel: 'Учёт рабочего времени',
+    });
+
+    const bodyParts = [employeeName, workDateLabel];
+    if (
+      (request.type === 'EARLY_LEAVE' || request.type === 'LATE_ARRIVAL') &&
+      request.proposedEndTime
+    ) {
+      bodyParts.push(request.proposedEndTime);
+    }
+
+    await this.adminBellPush.notify('work_day', {
+      title: kindLabel,
+      body: bodyParts.join(' · '),
+      url: `/admin/crm/work-day-requests?id=${request.id}`,
+      tag: `work-day-request-${request.id}`,
+    });
+  }
+
   private async tryNotify(kind: WorkDayNotifyKind, workDayId: string): Promise<void> {
     const field = NOTIFY_FIELD[kind];
+    if (!field) return;
     const claimed = await this.prisma.workDay.updateMany({
       where: { id: workDayId, [field]: null },
       data: { [field]: new Date() },
@@ -99,6 +184,8 @@ export class WorkDayNotifyService {
               minute: '2-digit',
             })}`
           : 'Сотрудник указал время ухода на следующий день.';
+        break;
+      default:
         break;
     }
 

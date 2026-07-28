@@ -44,12 +44,12 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   { id: 'admin.support', label: 'Чат поддержки', path: '/admin/support' },
   { id: 'admin.crm.funnel', label: 'Воронка продаж', path: '/admin/crm/funnel' },
   { id: 'admin.crm.tasks', label: 'Задачи', path: '/admin/crm/tasks' },
-  { id: 'admin.crm.work-days', label: 'Учёт рабочего времени', path: '/admin/crm/work-days' },
   {
     id: 'admin.crm.my-work-day',
     label: 'Мой рабочий день',
     path: '/admin/crm/my-work-day',
   },
+  { id: 'admin.crm.work-days', label: 'Журнал сотрудников', path: '/admin/crm/work-days' },
   { id: 'admin.crm.payroll', label: 'Расчёт з/п', path: '/admin/crm/payroll' },
   {
     id: 'admin.crm.payroll.management',

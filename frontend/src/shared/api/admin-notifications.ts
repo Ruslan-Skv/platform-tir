@@ -348,9 +348,17 @@ export async function getAdminBellTrainingNotifications(
 
 export type AdminBellWorkDayNotification = {
   id: string;
-  kind: 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+  kind:
+    | 'late'
+    | 'early_leave'
+    | 'auto_closed'
+    | 'reported_close'
+    | 'day_off_request'
+    | 'early_leave_request'
+    | 'late_arrival_request';
   kindLabel: string;
-  workDayId: string;
+  workDayId: string | null;
+  requestId?: string | null;
   userId: string;
   userName: string;
   workDate: string;

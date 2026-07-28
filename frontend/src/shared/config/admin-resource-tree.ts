@@ -14,11 +14,10 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.cash-register': 'admin.crm',
   'admin.crm.supplier-settlements': 'admin.crm',
   'admin.crm.offices': 'admin.crm',
-  // admin.forms / admin.forms.director / admin.support — топ-пункты сайдбара (как Замеры)
+  // admin.forms / admin.forms.director / admin.support / admin.crm.my-work-day — топ-пункты сайдбара
   'admin.crm.funnel': 'admin.crm',
   'admin.crm.tasks': 'admin.crm',
-  'admin.crm.my-work-day': 'admin.crm',
-  'admin.crm.work-days': 'admin.crm.my-work-day',
+  'admin.crm.work-days': 'admin.crm',
   'admin.crm.payroll': 'admin.crm',
   'admin.crm.payroll.management': 'admin.crm.payroll',
   'admin.crm.contract-payments.incassation': 'admin.crm.contract-payments',

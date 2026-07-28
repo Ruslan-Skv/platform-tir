@@ -40,6 +40,7 @@ import {
 } from './utils/work-day.utils';
 import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
+import { WorkDayRequestsService } from './work-day-requests.service';
 import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
 import {
   OFFICE_WORK_SCHEDULE_SELECT,
@@ -61,6 +62,7 @@ export class WorkDaysService implements OnModuleInit {
   constructor(
     private readonly prisma: PrismaService,
     private readonly workDayNotify: WorkDayNotifyService,
+    private readonly workDayRequests: WorkDayRequestsService,
   ) {}
 
   onModuleInit() {
@@ -180,7 +182,13 @@ export class WorkDaysService implements OnModuleInit {
       schedule: ReturnType<typeof resolveDaySchedule>;
     },
   ) {
-    const earlyLeaveMinutes = calculateEarlyLeaveMinutes(opts.endedAt, day.workDate, opts.schedule);
+    const earlyLeaveApproved = await this.workDayRequests.hasApprovedEarlyLeave(
+      day.userId,
+      day.workDate,
+    );
+    const earlyLeaveMinutes = earlyLeaveApproved
+      ? 0
+      : calculateEarlyLeaveMinutes(opts.endedAt, day.workDate, opts.schedule);
     await this.prisma.workDayAbsence.updateMany({
       where: { workDayId: day.id, endedAt: null },
       data: { endedAt: opts.endedAt },
@@ -226,7 +234,10 @@ export class WorkDaysService implements OnModuleInit {
 
     const scheduleResolved = resolveWorkSchedule(user, user.office, settings, dayOfWeek);
     const todaySchedule = resolveDaySchedule(user, user.office, settings, dayOfWeek);
-    const isWorkDayToday = todaySchedule.isWorkDay;
+    const approvedDayOff = await this.workDayRequests.hasApprovedDayOff(userId, today);
+    const approvedEarlyLeave = await this.workDayRequests.hasApprovedEarlyLeave(userId, today);
+    const approvedLateArrival = await this.workDayRequests.hasApprovedLateArrival(userId, today);
+    const isWorkDayToday = todaySchedule.isWorkDay && !approvedDayOff;
 
     return {
       tracked,
@@ -237,6 +248,9 @@ export class WorkDaysService implements OnModuleInit {
         blockMobileDevices: settings.blockMobileDevices,
       },
       isWorkDayToday,
+      approvedDayOff,
+      approvedEarlyLeave,
+      approvedLateArrival,
       todayWorkDay: todayDay,
       forgottenOpenDay: openPrevious,
       hasOpenAbsence: todayDay?.absences.some((a) => !a.endedAt) ?? false,
@@ -269,12 +283,13 @@ export class WorkDaysService implements OnModuleInit {
 
     const dayOfWeek = getDayOfWeekInTimezone();
     const todaySchedule = resolveDaySchedule(user, user.office, settings, dayOfWeek);
-    if (!todaySchedule.isWorkDay) {
+    const today = getTodayDateInTimezone();
+    if (!todaySchedule.isWorkDay || (await this.workDayRequests.hasApprovedDayOff(userId, today))) {
       throw new BadRequestException('Сегодня нерабочий день по вашему графику.');
     }
 
     const openPrevious = await this.prisma.workDay.findFirst({
-      where: { userId, status: WorkDayStatus.OPEN, workDate: { lt: getTodayDateInTimezone() } },
+      where: { userId, status: WorkDayStatus.OPEN, workDate: { lt: today } },
     });
     if (openPrevious) {
       throw new BadRequestException({
@@ -285,7 +300,6 @@ export class WorkDaysService implements OnModuleInit {
       });
     }
 
-    const today = getTodayDateInTimezone();
     const existing = await this.prisma.workDay.findUnique({
       where: { userId_workDate: { userId, workDate: today } },
     });
@@ -308,7 +322,8 @@ export class WorkDaysService implements OnModuleInit {
 
     const now = new Date();
     const { ip, userAgent } = this.getClientMeta(meta);
-    const lateMinutes = calculateLateMinutes(now, today, todaySchedule);
+    const lateArrivalApproved = await this.workDayRequests.hasApprovedLateArrival(userId, today);
+    const lateMinutes = lateArrivalApproved ? 0 : calculateLateMinutes(now, today, todaySchedule);
 
     const workDay = await this.prisma.workDay.create({
       data: {
@@ -440,9 +455,10 @@ export class WorkDaysService implements OnModuleInit {
     const earlyLeaveDays = records.filter((r) => r.earlyLeaveMinutes > 0).length;
     const autoClosedDays = records.filter((r) => r.status === WorkDayStatus.AUTO_CLOSED).length;
     const totalAbsenceMinutes = records.reduce((sum, row) => {
+      const now = Date.now();
       const dayAbsence = row.absences.reduce((s, a) => {
-        if (!a.endedAt) return s;
-        return s + (a.endedAt.getTime() - a.startedAt.getTime()) / 60_000;
+        const end = a.endedAt ? a.endedAt.getTime() : now;
+        return s + (end - a.startedAt.getTime()) / 60_000;
       }, 0);
       return sum + dayAbsence;
     }, 0);

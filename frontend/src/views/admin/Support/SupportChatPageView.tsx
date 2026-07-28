@@ -7,6 +7,7 @@ import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import styles from './SupportChatPage.module.css';
+import { SupportChatRulesInfoTip } from './help/SupportChatRulesInfoTip';
 import type { SupportChatPageModel } from './hooks/useSupportChatPage';
 import { STATUS_FILTER_OPTIONS, STATUS_LABELS } from './support-chat-page.constants';
 import { formatDate, userName } from './support-chat-page.utils';
@@ -43,7 +44,10 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
     <div className={styles.page}>
       <header className={styles.header}>
         <div className={styles.headerText}>
-          <h1 className={styles.title}>Чат поддержки</h1>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.title}>Чат поддержки</h1>
+            <SupportChatRulesInfoTip />
+          </div>
         </div>
         <div className={styles.headerActions}>
           <AdminListRefreshButton

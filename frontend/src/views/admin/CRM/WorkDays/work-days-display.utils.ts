@@ -15,10 +15,17 @@ export function workDayUserName(row: WorkDayRecord): string {
 }
 
 export function workDayAbsenceMinutes(row: WorkDayRecord): number {
+  const now = Date.now();
   return (row.absences ?? []).reduce((sum, a) => {
-    if (!a.endedAt) return sum;
-    return sum + (new Date(a.endedAt).getTime() - new Date(a.startedAt).getTime()) / 60_000;
+    const end = a.endedAt ? new Date(a.endedAt).getTime() : now;
+    return sum + (end - new Date(a.startedAt).getTime()) / 60_000;
   }, 0);
+}
+
+export function formatWorkDayAbsenceInterval(startedAt: string, endedAt: string | null): string {
+  const start = formatWorkDayTime(startedAt);
+  if (!endedAt) return `${start}–…`;
+  return `${start}–${formatWorkDayTime(endedAt)}`;
 }
 
 export function workDayStatusLabel(status: WorkDayRecord['status']): string {

@@ -79,6 +79,9 @@ export interface WorkDayMyStatus {
     blockMobileDevices: boolean;
   };
   isWorkDayToday: boolean;
+  approvedDayOff?: boolean;
+  approvedEarlyLeave?: boolean;
+  approvedLateArrival?: boolean;
   todayWorkDay: WorkDayRecord | null;
   forgottenOpenDay: WorkDayRecord | null;
   hasOpenAbsence: boolean;
@@ -320,5 +323,130 @@ export async function updateWorkDayUser(
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Не удалось сохранить настройки сотрудника');
+  return res.json();
+}
+
+export type WorkDayRequestType = 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+export type WorkDayRequestStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED';
+
+export interface WorkDayRequest {
+  id: string;
+  userId: string;
+  type: WorkDayRequestType;
+  status: WorkDayRequestStatus;
+  requestDate: string;
+  proposedEndTime: string | null;
+  comment: string | null;
+  reviewedById: string | null;
+  reviewedAt: string | null;
+  reviewComment: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role?: string;
+  };
+  reviewedBy?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
+}
+
+export async function createMyWorkDayRequest(body: {
+  type: WorkDayRequestType;
+  requestDate: string;
+  proposedEndTime?: string;
+  comment?: string;
+}): Promise<WorkDayRequest> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/my/requests`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отправить запрос');
+  }
+  return res.json();
+}
+
+export async function getMyWorkDayRequests(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+  status?: WorkDayRequestStatus;
+}): Promise<WorkDayRequest[]> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  if (params?.status) search.set('status', params.status);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/work-days/my/requests${qs ? `?${qs}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить запросы');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function cancelMyWorkDayRequest(id: string): Promise<WorkDayRequest> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/my/requests/${id}/cancel`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отменить запрос');
+  }
+  return res.json();
+}
+
+export async function getAdminWorkDayRequests(params?: {
+  status?: WorkDayRequestStatus;
+}): Promise<WorkDayRequest[]> {
+  const search = new URLSearchParams();
+  if (params?.status) search.set('status', params.status);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/work-days/requests${qs ? `?${qs}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить запросы');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function approveWorkDayRequest(
+  id: string,
+  body?: { reviewComment?: string }
+): Promise<WorkDayRequest> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/requests/${id}/approve`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось подтвердить запрос');
+  }
+  return res.json();
+}
+
+export async function rejectWorkDayRequest(
+  id: string,
+  body?: { reviewComment?: string }
+): Promise<WorkDayRequest> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/requests/${id}/reject`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body ?? {}),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отклонить запрос');
+  }
   return res.json();
 }

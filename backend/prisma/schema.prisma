@@ -140,6 +140,8 @@ model User {
   workDayWeeklySchedule                   Json?
   office                                  Office?                                  @relation(fields: [officeId], references: [id], onDelete: SetNull)
   workDays                                WorkDay[]
+  workDayRequests                         WorkDayRequest[]                         @relation("WorkDayRequestUser")
+  workDayRequestsReviewed                 WorkDayRequest[]                         @relation("WorkDayRequestReviewedBy")
 
   @@index([officeId])
   @@map("users")
@@ -3634,4 +3636,41 @@ model WorkDayAbsence {
 
   @@index([workDayId])
   @@map("work_day_absences")
+}
+
+enum WorkDayRequestType {
+  DAY_OFF
+  EARLY_LEAVE
+  LATE_ARRIVAL
+}
+
+enum WorkDayRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+model WorkDayRequest {
+  id              String               @id @default(cuid())
+  userId          String
+  type            WorkDayRequestType
+  status          WorkDayRequestStatus @default(PENDING)
+  requestDate     DateTime             @db.Date
+  proposedEndTime String? // HH:mm — уход (EARLY_LEAVE) или приход (LATE_ARRIVAL)
+  comment         String?              @db.Text
+  reviewedById    String?
+  reviewedAt      DateTime?
+  reviewComment   String?              @db.Text
+  createdAt       DateTime             @default(now())
+  updatedAt       DateTime             @updatedAt
+
+  user       User  @relation("WorkDayRequestUser", fields: [userId], references: [id], onDelete: Cascade)
+  reviewedBy User? @relation("WorkDayRequestReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestDate])
+  @@index([type, status, requestDate])
+  @@map("work_day_requests")
 }

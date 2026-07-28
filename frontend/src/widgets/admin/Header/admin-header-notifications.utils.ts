@@ -30,9 +30,17 @@ export type AdminBellTrainingNotification = {
 
 export type AdminBellWorkDayNotification = {
   id: string;
-  kind: 'late' | 'early_leave' | 'auto_closed' | 'reported_close';
+  kind:
+    | 'late'
+    | 'early_leave'
+    | 'auto_closed'
+    | 'reported_close'
+    | 'day_off_request'
+    | 'early_leave_request'
+    | 'late_arrival_request';
   kindLabel: string;
-  workDayId: string;
+  workDayId: string | null;
+  requestId?: string | null;
   userId: string;
   userName: string;
   workDate: string;
@@ -178,11 +186,20 @@ export function workDayToBellNotificationItem(
   } else if (item.kind === 'early_leave' && item.earlyLeaveMinutes > 0) {
     suffix = ` (−${item.earlyLeaveMinutes} мин)`;
   }
+  const isRequest =
+    item.kind === 'day_off_request' ||
+    item.kind === 'early_leave_request' ||
+    item.kind === 'late_arrival_request';
+  const link = isRequest
+    ? item.requestId
+      ? `/admin/crm/work-day-requests?id=${item.requestId}`
+      : '/admin/crm/work-day-requests'
+    : `/admin/crm/work-days?userId=${item.userId}`;
   return {
     type: 'workDays',
     id: item.id,
     date: item.occurredAt,
-    link: `/admin/crm/work-days?userId=${item.userId}`,
+    link,
     text: `${item.kindLabel}${suffix}: ${item.userName} — ${workDateLabel}`,
   };
 }

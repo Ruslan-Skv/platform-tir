@@ -8,12 +8,15 @@ import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
 import {
   CloseForgottenWorkDayDto,
+  CreateWorkDayRequestDto,
+  ReviewWorkDayRequestDto,
   StartAbsenceDto,
   StartWorkDayDto,
   UpdateOfficeWorkScheduleDto,
   UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
+import { WorkDayRequestsService } from './work-day-requests.service';
 import { WorkDaysService } from './work-days.service';
 
 function extractMeta(req: Request) {
@@ -29,7 +32,10 @@ function extractMeta(req: Request) {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ADMIN_ROLES)
 export class WorkDaysController {
-  constructor(private readonly workDaysService: WorkDaysService) {}
+  constructor(
+    private readonly workDaysService: WorkDaysService,
+    private readonly workDayRequests: WorkDayRequestsService,
+  ) {}
 
   @Get('settings')
   @Roles(UserRole.SUPER_ADMIN)
@@ -118,6 +124,62 @@ export class WorkDaysController {
     @Query('dateTo') dateTo?: string,
   ) {
     return this.workDaysService.listMyWorkDays(req.user.id, { dateFrom, dateTo });
+  }
+
+  @Post('my/requests')
+  async createMyRequest(@Req() req: RequestWithUser, @Body() dto: CreateWorkDayRequestDto) {
+    const row = await this.workDayRequests.createMyRequest(req.user.id, dto);
+    return this.workDayRequests.mapRequest(row);
+  }
+
+  @Get('my/requests')
+  async listMyRequests(
+    @Req() req: RequestWithUser,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('status') status?: string,
+  ) {
+    const rows = await this.workDayRequests.listMyRequests(req.user.id, {
+      dateFrom,
+      dateTo,
+      status,
+    });
+    return rows.map((row) => this.workDayRequests.mapRequest(row));
+  }
+
+  @Post('my/requests/:id/cancel')
+  async cancelMyRequest(@Req() req: RequestWithUser, @Param('id') id: string) {
+    const row = await this.workDayRequests.cancelMyRequest(req.user.id, id);
+    return this.workDayRequests.mapRequest(row);
+  }
+
+  @Get('requests')
+  @Roles(UserRole.SUPER_ADMIN)
+  async listRequests(@Query('status') status?: string) {
+    const rows = await this.workDayRequests.listRequests({ status });
+    return rows.map((row) => this.workDayRequests.mapRequest(row));
+  }
+
+  @Post('requests/:id/approve')
+  @Roles(UserRole.SUPER_ADMIN)
+  async approveRequest(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewWorkDayRequestDto,
+  ) {
+    const row = await this.workDayRequests.approveRequest(id, req.user.id, dto);
+    return this.workDayRequests.mapRequest(row);
+  }
+
+  @Post('requests/:id/reject')
+  @Roles(UserRole.SUPER_ADMIN)
+  async rejectRequest(
+    @Req() req: RequestWithUser,
+    @Param('id') id: string,
+    @Body() dto: ReviewWorkDayRequestDto,
+  ) {
+    const row = await this.workDayRequests.rejectRequest(id, req.user.id, dto);
+    return this.workDayRequests.mapRequest(row);
   }
 
   @Get()
