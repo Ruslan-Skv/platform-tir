@@ -83,7 +83,7 @@ export function isLeadSourceNotifiable(
     case 'form_callback':
       return settings.notifyOnCallbackForm !== false;
     case 'form_director':
-      return settings.notifyOnDirectorForm !== false;
+      return hasAccess('admin.forms.director') && settings.notifyOnDirectorForm !== false;
     case 'form_quote':
       return settings.notifyOnQuoteForm !== false;
     case 'quiz_mebel':
@@ -139,9 +139,11 @@ export function leadToBellNotificationItem(
 
   const link =
     lead.detailUrl ??
-    (lead.source.startsWith('form_') || lead.source.startsWith('quiz_')
-      ? '/admin/leads'
-      : '/admin/leads');
+    (lead.source === 'form_director'
+      ? '/admin/director-messages'
+      : lead.source.startsWith('form_') || lead.source.startsWith('quiz_')
+        ? '/admin/leads'
+        : '/admin/leads');
 
   return {
     type,

@@ -124,6 +124,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/complex-objects', resourceId: 'admin.crm.customers' },
   // Прочие разделы админки
   { prefix: '/api/v1/admin/knowledge', resourceId: 'admin.knowledge' },
+  { prefix: '/api/v1/admin/director-messages', resourceId: 'admin.forms.director' },
   { prefix: '/api/v1/admin/forms', resourceId: 'admin.forms' },
   { prefix: '/api/v1/admin/leads', resourceId: 'admin.forms' },
   { prefix: '/api/v1/admin/quiz', resourceId: 'admin.quiz' },

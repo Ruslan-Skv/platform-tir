@@ -82,10 +82,10 @@ html {
 }
 
 /* Админка: скролл окна как у публички, без кастомных scrollbar-*.
-   scrollbar-gutter: auto — без пустой «рельсы», когда ползунок ещё не нарисован. */
+   scrollbar-gutter: stable — без горизонтального прыжка при смене фильтра/длины ленты. */
 html:has([data-admin-shell]) {
   background-color: #ffffff;
-  scrollbar-gutter: auto;
+  scrollbar-gutter: stable;
 }
 
 html:has([data-admin-shell]) body {

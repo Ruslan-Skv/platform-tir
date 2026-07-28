@@ -65,6 +65,7 @@ export type LeadsListResponse = {
   totalPages: number;
   statusStats: Record<string, number>;
   sources: { id: LeadSource; label: string }[];
+  sourceStats?: Partial<Record<LeadSource, number>>;
 };
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -98,6 +99,25 @@ export async function getAdminLeads(params?: {
   return res.json();
 }
 
+export async function getAdminDirectorMessages(params?: {
+  page?: number;
+  limit?: number;
+  status?: LeadStatus | '';
+  search?: string;
+}): Promise<LeadsListResponse> {
+  const query = new URLSearchParams();
+  if (params?.page) query.set('page', String(params.page));
+  if (params?.limit) query.set('limit', String(params.limit));
+  if (params?.status) query.set('status', params.status);
+  if (params?.search?.trim()) query.set('search', params.search.trim());
+
+  const res = await apiFetch(`${API_URL}/admin/director-messages?${query}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить письма директору');
+  return res.json();
+}
+
 export async function updateAdminLead(
   leadId: string,
   body: { status?: LeadStatus; managerNote?: string | null }
@@ -110,6 +130,22 @@ export async function updateAdminLead(
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось обновить заявку');
+  }
+  return res.json();
+}
+
+export async function updateAdminDirectorMessage(
+  leadId: string,
+  body: { status?: LeadStatus; managerNote?: string | null }
+): Promise<UnifiedLeadItem> {
+  const res = await apiFetch(`${API_URL}/admin/director-messages/${encodeURIComponent(leadId)}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось обновить письмо');
   }
   return res.json();
 }

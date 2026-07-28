@@ -2,35 +2,16 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import { useSearchParams } from 'next/navigation';
-
 import {
   type LeadSource,
   type LeadStatus,
   type UnifiedLeadItem,
-  getAdminLeads,
-  updateAdminLead,
+  getAdminDirectorMessages,
+  updateAdminDirectorMessage,
 } from '@/shared/api/admin-leads';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
-function parseSourceParam(value: string | null): LeadSource | '' {
-  if (!value) return '';
-  const allowed: LeadSource[] = [
-    'form_measurement',
-    'form_callback',
-    'form_quote',
-    'quiz_mebel',
-    'quiz_remont',
-    'order',
-    'site_feedback',
-    'knowledge_feedback',
-  ];
-  return allowed.includes(value as LeadSource) ? (value as LeadSource) : '';
-}
-
-export function useLeadsInboxPage() {
-  const searchParams = useSearchParams();
-  const initialSource = parseSourceParam(searchParams.get('source'));
+export function useDirectorMessagesPage() {
   const [leads, setLeads] = useState<UnifiedLeadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -39,9 +20,6 @@ export function useLeadsInboxPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
   const [statusStats, setStatusStats] = useState<Record<string, number>>({});
-  const [availableSources, setAvailableSources] = useState<{ id: LeadSource; label: string }[]>([]);
-  const [sourceStats, setSourceStats] = useState<Partial<Record<LeadSource, number>>>({});
-  const [sourceFilter, setSourceFilter] = useState<LeadSource | ''>(initialSource);
   const [statusFilter, setStatusFilter] = useState<LeadStatus | ''>('');
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
@@ -50,15 +28,13 @@ export function useLeadsInboxPage() {
     useAdminSaveFeedback();
 
   const loadLeads = useCallback(async () => {
-    // Не схлопываем ленту при смене фильтра — иначе прыгает скроллбар окна.
     if (!hasLoadedOnceRef.current) setLoading(true);
     else setRefreshing(true);
     resetSaveFeedback();
     try {
-      const res = await getAdminLeads({
+      const res = await getAdminDirectorMessages({
         page,
         limit: 20,
-        source: sourceFilter,
         status: statusFilter,
         search,
       });
@@ -66,17 +42,15 @@ export function useLeadsInboxPage() {
       setTotalPages(res.totalPages);
       setTotal(res.total);
       setStatusStats(res.statusStats);
-      setAvailableSources(res.sources);
-      setSourceStats(res.sourceStats ?? {});
       hasLoadedOnceRef.current = true;
     } catch {
       setLeads([]);
-      showSaveError('Не удалось загрузить заявки');
+      showSaveError('Не удалось загрузить письма директору');
     } finally {
       setLoading(false);
       setRefreshing(false);
     }
-  }, [page, sourceFilter, statusFilter, search, resetSaveFeedback, showSaveError]);
+  }, [page, statusFilter, search, resetSaveFeedback, showSaveError]);
 
   useEffect(() => {
     loadLeads();
@@ -90,7 +64,7 @@ export function useLeadsInboxPage() {
   const handleStatusChange = async (lead: UnifiedLeadItem, status: LeadStatus) => {
     setSavingId(lead.id);
     try {
-      const updated = await updateAdminLead(lead.id, { status });
+      const updated = await updateAdminDirectorMessage(lead.id, { status });
       setLeads((prev) => prev.map((item) => (item.id === lead.id ? updated : item)));
       showSaveSuccess();
     } catch (err) {
@@ -103,7 +77,9 @@ export function useLeadsInboxPage() {
   const handleNoteSave = async (lead: UnifiedLeadItem, managerNote: string) => {
     setSavingId(lead.id);
     try {
-      const updated = await updateAdminLead(lead.id, { managerNote: managerNote.trim() || null });
+      const updated = await updateAdminDirectorMessage(lead.id, {
+        managerNote: managerNote.trim() || null,
+      });
       setLeads((prev) => prev.map((item) => (item.id === lead.id ? updated : item)));
       showSaveSuccess();
     } catch (err) {
@@ -123,13 +99,10 @@ export function useLeadsInboxPage() {
     totalPages,
     total,
     statusStats,
-    availableSources,
-    sourceStats,
-    sourceFilter,
-    setSourceFilter: (value: LeadSource | '') => {
-      setPage(1);
-      setSourceFilter(value);
-    },
+    availableSources: [] as { id: string; label: string }[],
+    sourceStats: {} as Partial<Record<LeadSource, number>>,
+    sourceFilter: '',
+    setSourceFilter: (_value: LeadSource | '') => undefined,
     statusFilter,
     setStatusFilter: (value: LeadStatus | '') => {
       setPage(1);
@@ -142,7 +115,8 @@ export function useLeadsInboxPage() {
     handleStatusChange,
     handleNoteSave,
     errorMessage,
+    variant: 'director' as const,
   };
 }
 
-export type LeadsInboxPageModel = ReturnType<typeof useLeadsInboxPage>;
+export type DirectorMessagesPageModel = ReturnType<typeof useDirectorMessagesPage>;

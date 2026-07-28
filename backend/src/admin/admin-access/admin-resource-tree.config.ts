@@ -17,7 +17,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.cash-register': 'admin.crm',
   'admin.crm.supplier-settlements': 'admin.crm',
   'admin.crm.offices': 'admin.crm',
-  // admin.forms / admin.support — топ-пункты сайдбара (как Замеры), не наследуют DENIED от CRM
+  // admin.forms / admin.forms.director / admin.support — топ-пункты сайдбара (как Замеры)
   'admin.crm.funnel': 'admin.crm',
   'admin.crm.tasks': 'admin.crm',
   'admin.crm.my-work-day': 'admin.crm',

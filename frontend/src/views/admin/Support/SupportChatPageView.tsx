@@ -1,8 +1,10 @@
 'use client';
 
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+
 import styles from './SupportChatPage.module.css';
 import type { SupportChatPageModel } from './hooks/useSupportChatPage';
-import { STATUS_LABELS } from './support-chat-page.constants';
+import { STATUS_FILTER_OPTIONS, STATUS_LABELS } from './support-chat-page.constants';
 import { formatDate, userName } from './support-chat-page.utils';
 
 type SupportChatPageViewProps = {
@@ -21,32 +23,47 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
     input,
     setInput,
     loading,
+    refreshing,
     loadingMessages,
     sending,
     sendMessage,
+    refresh,
   } = model;
+  const refreshBusy = loading || refreshing || loadingMessages;
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Чат поддержки</h1>
-        <p className={styles.subtitle}>
-          Диалоги пользователей с поддержкой. Выберите диалог и ответьте клиенту.
-        </p>
+        <div className={styles.headerText}>
+          <h1 className={styles.title}>Чат поддержки</h1>
+        </div>
+        <div className={styles.headerActions}>
+          <AdminListRefreshButton
+            onClick={() => void refresh()}
+            disabled={refreshBusy}
+            busy={refreshBusy}
+            title="Обновить"
+            aria-label="Обновить список диалогов"
+          />
+        </div>
       </header>
       <div className={styles.layout}>
         <div className={styles.conversationList}>
           <div className={styles.conversationListHeader}>
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              aria-label="Фильтр по статусу"
-            >
-              <option value="">Все статусы</option>
-              <option value="OPEN">Открыт</option>
-              <option value="IN_PROGRESS">В работе</option>
-              <option value="CLOSED">Закрыт</option>
-            </select>
+            <div className={styles.chipRow} role="group" aria-label="Статус диалога">
+              <span className={styles.chipRowLabel}>Статус</span>
+              {STATUS_FILTER_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value || 'all'}
+                  type="button"
+                  disabled={refreshBusy}
+                  className={`${styles.filterChip} ${statusFilter === opt.value ? styles.filterChipActive : ''}`}
+                  onClick={() => setStatusFilter(opt.value)}
+                >
+                  {opt.label}
+                </button>
+              ))}
+            </div>
           </div>
           {loading ? (
             <div className={styles.loading}>Загрузка диалогов...</div>

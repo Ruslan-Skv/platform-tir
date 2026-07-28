@@ -22,7 +22,7 @@ import { WorkDayWidget } from '@/features/admin/work-day';
 import { useAuth } from '@/features/auth';
 import { useTheme } from '@/features/theme';
 import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge';
-import { getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
+import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellTrainingNotifications,
@@ -267,18 +267,29 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           ? getAdminBellWorkDayNotifications(20)
           : Promise.resolve([] as AdminBellWorkDayNotification[]);
 
-      const [reviewsResult, supportResult, leadsResult, trainingResult, workDaysResult] =
-        await Promise.allSettled([
-          settings?.notifyOnReviews !== false
-            ? getAdminReviews(1, 10, undefined, false)
-            : Promise.resolve({ data: [] as AdminReview[] }),
-          settings?.notifyOnSupportChat !== false
-            ? getAdminSupportConversations()
-            : Promise.resolve([] as AdminSupportConversation[]),
-          getAdminLeads({ page: 1, limit: 30, status: 'new' }),
-          loadTraining,
-          loadWorkDays,
-        ]);
+      const [
+        reviewsResult,
+        supportResult,
+        leadsResult,
+        directorResult,
+        trainingResult,
+        workDaysResult,
+      ] = await Promise.allSettled([
+        settings?.notifyOnReviews !== false
+          ? getAdminReviews(1, 10, undefined, false)
+          : Promise.resolve({ data: [] as AdminReview[] }),
+        settings?.notifyOnSupportChat !== false
+          ? getAdminSupportConversations()
+          : Promise.resolve([] as AdminSupportConversation[]),
+        hasAccess('admin.forms')
+          ? getAdminLeads({ page: 1, limit: 30, status: 'new' })
+          : Promise.resolve({ data: [] as UnifiedLeadItem[] }),
+        hasAccess('admin.forms.director')
+          ? getAdminDirectorMessages({ page: 1, limit: 30, status: 'new' })
+          : Promise.resolve({ data: [] as UnifiedLeadItem[] }),
+        loadTraining,
+        loadWorkDays,
+      ]);
 
       const newReviews =
         reviewsResult.status === 'fulfilled' ? (reviewsResult.value.data ?? []) : [];
@@ -291,10 +302,14 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const activeSupport = supportConvs.filter(
         (c) => c.status === 'OPEN' || c.status === 'IN_PROGRESS'
       );
-      const newLeads =
-        leadsResult.status === 'fulfilled'
-          ? filterNotifiableLeads(leadsResult.value.data ?? [], settings, hasAccess)
-          : [];
+      const inboxLeads = leadsResult.status === 'fulfilled' ? (leadsResult.value.data ?? []) : [];
+      const directorLeads =
+        directorResult.status === 'fulfilled' ? (directorResult.value.data ?? []) : [];
+      const newLeads = filterNotifiableLeads(
+        [...inboxLeads, ...directorLeads],
+        settings,
+        hasAccess
+      );
       const newTraining = trainingResult.status === 'fulfilled' ? (trainingResult.value ?? []) : [];
       const newWorkDays = workDaysResult.status === 'fulfilled' ? (workDaysResult.value ?? []) : [];
 

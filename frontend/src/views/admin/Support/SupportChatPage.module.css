@@ -4,19 +4,28 @@
 }
 
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-2xl);
   margin-bottom: var(--admin-space-4xl);
+}
+
+.headerText {
+  min-width: 0;
+}
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-lg);
+  flex-shrink: 0;
 }
 
 .title {
   font-size: var(--admin-font-size-4xl);
   font-weight: 700;
-  color: var(--admin-text-secondary);
-  margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-md) var(--admin-space-0);
-}
-
-.subtitle {
-  font-size: var(--admin-font-size-base);
-  color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
   margin: 0;
 }
 
@@ -41,15 +50,49 @@
   border-bottom: 1px solid var(--admin-border);
   display: flex;
   gap: var(--admin-space-md);
-  align-items: center;
+  align-items: flex-start;
 }
 
-.conversationListHeader select {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
+.chipRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.chipRowLabel {
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  margin-right: var(--admin-space-xs);
+  min-width: 3.5rem;
+}
+
+.filterChip {
+  padding: var(--admin-space-xs) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  line-height: 1.3;
+}
+
+.filterChip:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.filterChip:hover:not(:disabled) {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+}
+
+.filterChipActive {
+  border-color: var(--admin-info);
+  background: var(--admin-info-bg-soft);
+  box-shadow: 0 0 0 1px var(--admin-info-border-soft, #93c5fd);
+  font-weight: 600;
+  color: var(--admin-text-primary);
 }
 
 .conversationListScroll {
@@ -63,28 +106,37 @@
   width: 100%;
   padding: var(--admin-space-xl);
   text-align: left;
-  border: none;
+  border: 1px solid transparent;
   border-radius: var(--admin-radius-lg);
-  background: var(--admin-surface-muted);
+  background: var(--admin-surface-soft);
   margin-bottom: var(--admin-space-sm);
   cursor: pointer;
   font-size: var(--admin-font-size-sm);
-  transition: background 0.2s;
+  color: var(--admin-text-secondary);
+  transition:
+    background 0.2s,
+    border-color 0.2s,
+    color 0.2s;
 }
 
 .conversationItem:hover {
-  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
 }
 
 .conversationItem.active {
-  background: var(--admin-chart-violet-bg);
-  color: var(--admin-accent);
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-border);
+  color: var(--admin-text-primary);
   font-weight: 500;
 }
 
 .conversationUser {
   font-weight: 500;
-  color: var(--admin-text-secondary);
+  color: var(--admin-text-primary);
+}
+
+.conversationItem.active .conversationUser {
+  color: inherit;
 }
 
 .conversationMeta {
@@ -116,7 +168,7 @@
   border-bottom: 1px solid var(--admin-border);
   background: var(--admin-surface-muted);
   font-weight: 500;
-  color: var(--admin-text-secondary);
+  color: var(--admin-text-primary);
 }
 
 .chatMessages {
@@ -175,12 +227,12 @@
 
 .chatInputRow input:focus {
   outline: none;
-  border-color: var(--admin-accent);
+  border-color: var(--admin-info, #2563eb);
 }
 
 .chatInputRow button {
   padding: var(--admin-space-lg) var(--admin-space-18);
-  background: var(--admin-accent);
+  background: var(--admin-info, #2563eb);
   color: var(--admin-surface);
   border: none;
   border-radius: var(--admin-radius-lg);
@@ -190,7 +242,7 @@
 }
 
 .chatInputRow button:hover {
-  background: var(--admin-accent);
+  background: var(--admin-info-strong, #1d4ed8);
 }
 
 .chatInputRow button:disabled {
@@ -238,112 +290,95 @@
 }
 
 .statusCLOSED {
-  background: var(--admin-border);
-  color: var(--admin-sidebar-text);
-}
-
-/* Dark theme */
-:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .subtitle {
+  background: var(--admin-surface-muted);
   color: var(--admin-text-muted);
+  border: 1px solid var(--admin-border);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationList {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationListHeader {
-  border-bottom-color: var(--admin-text-secondary);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationListHeader select {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem {
-  background: var(--admin-text-secondary);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem:hover {
-  background: var(--admin-sidebar-text);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem.active {
-  background: var(--admin-accent);
-  color: var(--admin-chart-violet-bg);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationUser {
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationMeta,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationPreview {
-  color: var(--admin-text-muted);
-}
-
+/* Тёмная тема: семантические токены layout */
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationList,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chatArea {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-text-secondary);
+  background: var(--admin-surface);
+  border-color: var(--admin-border-strong);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .chatHeader {
-  background: var(--admin-text-secondary);
-  border-bottom-color: var(--admin-sidebar-text);
-  color: var(--admin-border);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .chatMessage.theirs {
-  background: var(--admin-text-secondary);
-  color: var(--admin-surface-muted);
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .chatMessageMeta {
-  color: var(--admin-text-muted);
-}
-
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationListHeader,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatHeader,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow {
-  border-top-color: var(--admin-text-secondary);
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterChip {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterChip:hover:not(:disabled) {
+  border-color: var(--admin-info-bright, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .filterChipActive {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
+  color: var(--admin-text-primary);
+  box-shadow: 0 0 0 1px var(--admin-info-border, #93c5fd);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow input {
-  background: var(--admin-text-secondary);
-  border-color: var(--admin-sidebar-text);
-  color: var(--admin-surface-muted);
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .chatInputRow input::placeholder {
   color: var(--admin-text-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .emptyState,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .loading {
-  color: var(--admin-text-muted);
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem {
+  background: var(--admin-surface-soft);
+  border-color: transparent;
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem:hover {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .conversationItem.active {
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent-border);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .chatMessage.theirs {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusOPEN {
-  background: var(--admin-overlay-color-099);
-  color: var(--admin-success-lime);
+  background: var(--admin-overlay-success-soft);
+  color: var(--admin-success-lime, #86efac);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusIN_PROGRESS {
-  background: var(--admin-overlay-color-124);
-  color: var(--admin-info-border);
+  background: var(--admin-overlay-info-soft);
+  color: var(--admin-info-bright, #93c5fd);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .statusCLOSED {
-  background: var(--admin-sidebar-text);
-  color: var(--admin-border-strong);
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-muted);
 }
 
 @media (max-width: 900px) {
+  .title {
+    font-size: var(--admin-font-size-2xl);
+  }
+
   .layout {
     grid-template-columns: 1fr;
   }

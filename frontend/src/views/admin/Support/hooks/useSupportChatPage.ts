@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
@@ -19,11 +19,14 @@ export function useSupportChatPage() {
   const [statusFilter, setStatusFilter] = useState<string>('');
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [sending, setSending] = useState(false);
+  const hasLoadedOnceRef = useRef(false);
 
   const fetchConversations = useCallback(async () => {
-    setLoading(true);
+    if (!hasLoadedOnceRef.current) setLoading(true);
+    else setRefreshing(true);
     try {
       const params = new URLSearchParams({ asSupport: 'true' });
       if (statusFilter) params.set('status', statusFilter);
@@ -37,11 +40,13 @@ export function useSupportChatPage() {
         setSelected((prev) =>
           prev && !list.find((c: Conversation) => c.id === prev.id) ? null : prev
         );
+        hasLoadedOnceRef.current = true;
       }
     } catch (e) {
       console.error(e);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [getAuthHeaders, statusFilter]);
 
@@ -102,6 +107,13 @@ export function useSupportChatPage() {
     }
   };
 
+  const refresh = useCallback(async () => {
+    await fetchConversations();
+    if (selected?.id) {
+      await fetchMessages(selected.id);
+    }
+  }, [fetchConversations, fetchMessages, selected?.id]);
+
   return {
     user,
     conversations,
@@ -113,9 +125,11 @@ export function useSupportChatPage() {
     input,
     setInput,
     loading,
+    refreshing,
     loadingMessages,
     sending,
     sendMessage,
+    refresh,
     canEdit,
   };
 }

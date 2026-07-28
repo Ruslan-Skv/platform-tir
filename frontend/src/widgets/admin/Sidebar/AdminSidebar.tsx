@@ -219,6 +219,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.forms',
   },
   {
+    label: 'Письмо директору',
+    href: '/admin/director-messages',
+    icon: '✉️',
+    resourceId: 'admin.forms.director',
+  },
+  {
     label: 'Чат поддержки',
     href: '/admin/support',
     icon: '💬',

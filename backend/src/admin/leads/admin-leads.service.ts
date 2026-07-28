@@ -36,7 +36,6 @@ export class AdminLeadsService {
     const sources: LeadSource[] = [
       'form_measurement',
       'form_callback',
-      'form_director',
       'form_quote',
       'quiz_mebel',
       'quiz_remont',
@@ -46,6 +45,10 @@ export class AdminLeadsService {
       sources.push('site_feedback', 'knowledge_feedback');
     }
     return sources;
+  }
+
+  resolveDirectorSources(): LeadSource[] {
+    return ['form_director'];
   }
 
   async listLeads(params: ListParams) {
@@ -72,6 +75,12 @@ export class AdminLeadsService {
     const data = merged.slice(skip, skip + limit);
 
     const statusStats = await this.collectStatusStats(activeSources, search);
+    const sourceStatsEntries = await Promise.all(
+      allowedSources.map(
+        async (src) => [src, await this.countSourceLeads(src, { status, search })] as const,
+      ),
+    );
+    const sourceStats = Object.fromEntries(sourceStatsEntries) as Record<LeadSource, number>;
 
     return {
       data,
@@ -80,7 +89,8 @@ export class AdminLeadsService {
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
       statusStats,
-      sources: activeSources.map((s) => ({ id: s, label: LEAD_SOURCE_LABELS[s] })),
+      sources: allowedSources.map((s) => ({ id: s, label: LEAD_SOURCE_LABELS[s] })),
+      sourceStats,
     };
   }
 
