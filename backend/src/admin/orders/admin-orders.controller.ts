@@ -134,11 +134,29 @@ export class AdminOrdersController {
     @Query('status') status?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: 'asc' | 'desc',
   ) {
     return this.adminOrdersService.getServiceOrders({
       status,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 20,
+      sortBy,
+      sortOrder,
+    });
+  }
+
+  @Get('trash')
+  @Roles('SUPER_ADMIN')
+  findTrash(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.adminOrdersService.findTrash({
+      search,
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 25,
     });
   }
 
@@ -146,6 +164,18 @@ export class AdminOrdersController {
   @Roles('ADMIN', 'SUPER_ADMIN', 'MANAGER')
   getServiceOrder(@Param('id') id: string) {
     return this.adminOrdersService.getServiceOrder(id);
+  }
+
+  @Delete('service-order/:id')
+  @Roles('SUPER_ADMIN')
+  removeServiceOrder(@Param('id') id: string) {
+    return this.adminOrdersService.deleteServiceOrder(id);
+  }
+
+  @Post('service-order/:id/restore')
+  @Roles('SUPER_ADMIN')
+  restoreServiceOrder(@Param('id') id: string) {
+    return this.adminOrdersService.restoreServiceOrder(id);
   }
 
   @Patch('service-order/:id/customer')
@@ -189,6 +219,12 @@ export class AdminOrdersController {
   @Roles('SUPER_ADMIN')
   removeOrder(@Param('id') id: string) {
     return this.adminOrdersService.deleteOrder(id);
+  }
+
+  @Post(':id/restore')
+  @Roles('SUPER_ADMIN')
+  restoreOrder(@Param('id') id: string) {
+    return this.adminOrdersService.restoreOrder(id);
   }
 
   @Patch(':id/status')

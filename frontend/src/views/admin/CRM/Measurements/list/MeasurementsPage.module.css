@@ -32,6 +32,24 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-2xl);
+  min-width: 0;
+}
+
+.headerTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  width: 100%;
+  min-width: 0;
+}
+
+.headerTitleCluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  min-width: 0;
 }
 
 .headerTitleGroup {
@@ -53,6 +71,22 @@
   border-radius: var(--admin-radius-3xl);
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.countMobile {
+  display: none;
+}
+
+.headerIconActionsDesktop {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.headerIconActionsMobile {
+  display: none;
 }
 
 .addButton {
@@ -391,19 +425,294 @@
   color: var(--admin-success-text-strong);
 }
 
-@media (max-width: 768px) {
-  .filters {
-    flex-direction: column;
+.mobileCards {
+  display: none;
+}
+
+.mobileCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft);
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.mobileCard:hover {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+  background: var(--admin-surface-muted);
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.mobileCardMain {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobileCardName {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  line-height: var(--admin-line-height-sm);
+  word-break: break-word;
+}
+
+.mobileCardMeta {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-sm);
+  word-break: break-word;
+}
+
+.mobileCardRows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.mobileCardRow {
+  display: grid;
+  grid-template-columns: 6.5rem minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.mobileCardRow dt {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.mobileCardRow dd {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.mobileEmpty,
+.mobileLoading {
+  margin: 0;
+  padding: var(--admin-space-4xl) var(--admin-space-xl);
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+@media (max-width: 900px) {
+  .page {
+    max-width: 100%;
   }
 
-  .searchInput {
+  .filtersStack {
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-md);
+  }
+
+  .filtersPanel {
+    gap: var(--admin-space-xs);
+    padding: var(--admin-space-xs) var(--admin-space-sm);
+  }
+
+  .filtersPanelHeader {
+    gap: var(--admin-space-xs);
+  }
+
+  .filtersPanelToggle {
+    font-size: var(--admin-font-size-xs);
+    gap: var(--admin-space-xs);
+  }
+
+  .filtersPanelExpandLink {
+    padding: 2px var(--admin-space-sm);
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .filtersSummary {
+    gap: 4px;
+  }
+
+  .filtersSummaryChip {
+    padding: 1px 6px;
+    font-size: var(--admin-font-size-2xs);
+    line-height: 1.3;
+  }
+
+  .filtersPanelBody {
+    gap: var(--admin-space-sm);
+  }
+
+  .chipRow {
+    gap: 4px;
+    align-items: flex-start;
+  }
+
+  .chipRowLabel {
+    flex: 0 0 100%;
+    margin: 0;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .chip {
+    padding: 2px 8px;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+  }
+
+  .searchInput,
+  .select,
+  .pageLimitSelect,
+  .dateInput {
+    width: 100%;
     max-width: none;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+  .dateLabel {
+    display: grid;
+    grid-template-columns: 4.5rem minmax(0, 1fr);
+    align-items: center;
+    gap: var(--admin-space-sm);
+    width: 100%;
+  }
+
+  .dateLabelText {
+    font-size: var(--admin-font-size-xs);
   }
 
   .header {
     flex-direction: column;
-    align-items: flex-start;
-    gap: var(--admin-space-2xl);
+    align-items: stretch;
+    gap: var(--admin-space-md);
+    margin-bottom: var(--admin-space-md);
+    padding-bottom: var(--admin-space-sm);
+  }
+
+  .headerLeft {
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
+  }
+
+  /* Одна строка: Замеры → подсказка → счётчик → Обновить */
+  .headerTitleRow {
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .headerTitleCluster,
+  .headerTitleCluster .headerTitleGroup {
+    display: contents;
+  }
+
+  .headerTitleRow .title {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: var(--admin-font-size-2xl);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .headerTitleRow .count {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .countDesktop {
+    display: none;
+  }
+
+  .countMobile {
+    display: inline;
+  }
+
+  .headerTitleRow > :not(.title):not(.headerIconActionsMobile) {
+    flex: 0 0 auto;
+  }
+
+  .headerIconActionsDesktop {
+    display: none;
+  }
+
+  .headerIconActionsMobile {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .headerTitleRow :global(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: var(--admin-space-xs);
+  }
+
+  .headerActions {
+    width: 100%;
+    gap: var(--admin-space-sm);
+  }
+
+  .addButton {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 2.5rem;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .mobileCards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-md);
+  }
+
+  /* Таблица скрыта, пагинация DataTable остаётся */
+  .directoryTable :global([class*='tableWrapper']) {
+    display: none !important;
+  }
+
+  .directoryTable {
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .directoryPagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-md);
+    padding: var(--admin-space-md) 0;
+    border-top: none;
+  }
+
+  .directoryPagination :global(button) {
+    min-height: 2.25rem;
   }
 }
 
@@ -539,4 +848,22 @@
   background: var(--admin-overlay-color-098);
   border: 1px solid var(--admin-success-lime);
   color: var(--admin-success-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard:hover {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-info-bright, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardName {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardMeta {
+  color: var(--admin-text-muted);
 }

@@ -7,6 +7,101 @@ import {
   DEFAULT_APPROVAL_VALID_MINUTES,
 } from './admin-orders-delivery-settings.service';
 
+const PRODUCT_ORDER_SORT_KEYS = new Set([
+  'orderNumber',
+  'manager',
+  'customer',
+  'status',
+  'payment',
+  'paymentStatus',
+  'total',
+  'createdAt',
+]);
+
+const SERVICE_ORDER_SORT_KEYS = new Set([
+  'orderNumber',
+  'manager',
+  'customer',
+  'status',
+  'payment',
+  'paymentStatus',
+  'total',
+  'createdAt',
+]);
+
+function resolveProductOrderBy(
+  sortBy: string,
+  sortOrder: 'asc' | 'desc',
+): Prisma.OrderOrderByWithRelationInput | Prisma.OrderOrderByWithRelationInput[] {
+  const key = PRODUCT_ORDER_SORT_KEYS.has(sortBy) ? sortBy : 'createdAt';
+  switch (key) {
+    case 'orderNumber':
+      return { orderNumber: sortOrder };
+    case 'total':
+      return { total: sortOrder };
+    case 'status':
+      return { status: sortOrder };
+    case 'payment':
+    case 'paymentStatus':
+      return { paymentStatus: sortOrder };
+    case 'manager':
+      return [
+        { processedByManager: { lastName: sortOrder } },
+        { processedByManager: { firstName: sortOrder } },
+        { processedByManager: { email: sortOrder } },
+      ];
+    case 'customer':
+      return [
+        { customerLastName: sortOrder },
+        { customerFirstName: sortOrder },
+        { customerEmail: sortOrder },
+        { user: { lastName: sortOrder } },
+        { user: { firstName: sortOrder } },
+        { user: { email: sortOrder } },
+      ];
+    case 'createdAt':
+    default:
+      return { createdAt: sortOrder };
+  }
+}
+
+function resolveServiceOrderBy(
+  sortBy: string,
+  sortOrder: 'asc' | 'desc',
+): Prisma.ServiceOrderOrderByWithRelationInput | Prisma.ServiceOrderOrderByWithRelationInput[] {
+  const key = SERVICE_ORDER_SORT_KEYS.has(sortBy) ? sortBy : 'createdAt';
+  switch (key) {
+    case 'orderNumber':
+      return { orderNumber: sortOrder };
+    case 'total':
+      return { total: sortOrder };
+    case 'status':
+      return { status: sortOrder };
+    case 'manager':
+      return [
+        { createdByManager: { lastName: sortOrder } },
+        { createdByManager: { firstName: sortOrder } },
+        { createdByManager: { email: sortOrder } },
+      ];
+    case 'customer':
+      return [
+        { customerLastName: sortOrder },
+        { customerFirstName: sortOrder },
+        { customerEmail: sortOrder },
+        { user: { lastName: sortOrder } },
+        { user: { firstName: sortOrder } },
+        { user: { email: sortOrder } },
+      ];
+    case 'payment':
+    case 'paymentStatus':
+      // У сервисных заказов нет статуса оплаты — стабильный fallback.
+      return { createdAt: sortOrder };
+    case 'createdAt':
+    default:
+      return { createdAt: sortOrder };
+  }
+}
+
 @Injectable()
 export class AdminOrdersQueryService {
   constructor(
@@ -52,7 +147,7 @@ export class AdminOrdersQueryService {
     } = params || {};
 
     const skip = (page - 1) * limit;
-    let where: Prisma.OrderWhereInput = {};
+    let where: Prisma.OrderWhereInput = { deletedAt: null };
 
     if (status) {
       where.status = status as Prisma.EnumOrderStatusFilter;
@@ -193,7 +288,7 @@ export class AdminOrdersQueryService {
         },
         skip,
         take: limit,
-        orderBy: { [sortBy]: sortOrder },
+        orderBy: resolveProductOrderBy(sortBy, sortOrder === 'asc' ? 'asc' : 'desc'),
       }),
       this.prisma.order.count({ where }),
     ]);
@@ -207,10 +302,16 @@ export class AdminOrdersQueryService {
     };
   }
 
-  async getServiceOrders(params?: { status?: string; page?: number; limit?: number }) {
-    const { status, page = 1, limit = 20 } = params || {};
+  async getServiceOrders(params?: {
+    status?: string;
+    page?: number;
+    limit?: number;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
+  }) {
+    const { status, page = 1, limit = 20, sortBy = 'createdAt', sortOrder = 'desc' } = params || {};
     const skip = (page - 1) * limit;
-    const where: Prisma.ServiceOrderWhereInput = {};
+    const where: Prisma.ServiceOrderWhereInput = { deletedAt: null };
     if (status) {
       where.status = status as 'PENDING' | 'CONFIRMED' | 'CANCELLED';
     }
@@ -219,7 +320,7 @@ export class AdminOrdersQueryService {
         where,
         skip,
         take: limit,
-        orderBy: { createdAt: 'desc' },
+        orderBy: resolveServiceOrderBy(sortBy, sortOrder === 'asc' ? 'asc' : 'desc'),
         include: {
           user: { select: { id: true, email: true, firstName: true, lastName: true } },
           createdByManager: { select: { id: true, email: true, firstName: true, lastName: true } },
@@ -247,6 +348,9 @@ export class AdminOrdersQueryService {
       },
     });
     if (!order) {
+      throw new NotFoundException('Заказ на услуги не найден');
+    }
+    if (order.deletedAt) {
       throw new NotFoundException('Заказ на услуги не найден');
     }
     return order;
@@ -319,6 +423,10 @@ export class AdminOrdersQueryService {
     });
 
     if (!order) {
+      throw new NotFoundException(`Order with ID ${id} not found`);
+    }
+
+    if (order.deletedAt) {
       throw new NotFoundException(`Order with ID ${id} not found`);
     }
 

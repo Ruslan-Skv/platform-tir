@@ -126,36 +126,38 @@ export function EstimatesListFiltersBar({
             ))}
           </select>
         ) : null}
-        <label className={cdHub.contractsListDateLabel}>
-          <span className={cdHub.contractsListDateLabelText}>Дата от</span>
-          <input
-            type="date"
-            value={dateFrom}
-            onChange={(e) => onDateFromChange(e.target.value)}
-            disabled={disabled}
-            className={estimatesListFilterFieldClass(
-              cdHub.contractsListDateInput,
-              Boolean(dateFrom),
-              cdHub.contractsListFilterActive
-            )}
-            aria-label="Дата от"
-          />
-        </label>
-        <label className={cdHub.contractsListDateLabel}>
-          <span className={cdHub.contractsListDateLabelText}>Дата до</span>
-          <input
-            type="date"
-            value={dateTo}
-            onChange={(e) => onDateToChange(e.target.value)}
-            disabled={disabled}
-            className={estimatesListFilterFieldClass(
-              cdHub.contractsListDateInput,
-              Boolean(dateTo),
-              cdHub.contractsListFilterActive
-            )}
-            aria-label="Дата до"
-          />
-        </label>
+        <div className={cdHub.contractsListDateFilters}>
+          <label className={cdHub.contractsListDateLabel}>
+            <span className={cdHub.contractsListDateLabelText}>Дата от</span>
+            <input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => onDateFromChange(e.target.value)}
+              disabled={disabled}
+              className={estimatesListFilterFieldClass(
+                cdHub.contractsListDateInput,
+                Boolean(dateFrom),
+                cdHub.contractsListFilterActive
+              )}
+              aria-label="Дата от"
+            />
+          </label>
+          <label className={cdHub.contractsListDateLabel}>
+            <span className={cdHub.contractsListDateLabelText}>Дата до</span>
+            <input
+              type="date"
+              value={dateTo}
+              onChange={(e) => onDateToChange(e.target.value)}
+              disabled={disabled}
+              className={estimatesListFilterFieldClass(
+                cdHub.contractsListDateInput,
+                Boolean(dateTo),
+                cdHub.contractsListFilterActive
+              )}
+              aria-label="Дата до"
+            />
+          </label>
+        </div>
         <select
           value={limit}
           onChange={(e) => onLimitChange(Number(e.target.value) as EstimatesPageLimit)}

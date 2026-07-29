@@ -38,24 +38,67 @@ export function ContractsListPageHeader({
   onRefresh,
   onOpenTrash,
 }: ContractsListPageHeaderProps) {
+  const iconsDisabled = actionsBusy || loading;
+  const countTitle =
+    objectGroupCount > 0
+      ? `${visibleRowCount} договоров · ${objectGroupCount} объектов`
+      : `${visibleRowCount} договоров`;
+
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdHub.contractsHeaderIconActionsMobile
+          : cdHub.contractsHeaderIconActionsDesktop
+      }
+    >
+      <AdminListRefreshButton
+        disabled={iconsDisabled}
+        busy={loading}
+        title="Обновить список"
+        aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
+        onClick={onRefresh}
+      />
+      <AdminToolbarTrashButton
+        trashCount={trashCount}
+        onClick={onOpenTrash}
+        title="Корзина договоров"
+        aria-label="Корзина договоров"
+      />
+    </div>
+  );
+
   return (
     <div className={cdHub.editorHeader}>
       <div className={cdHub.contractsListHeaderLeft}>
-        <div className={cdHub.contractsListHeaderTitleGroup}>
-          <h1 className={cdHub.title}>Договора</h1>
-          <ContractsListRulesInfoTip />
+        <div className={cdHub.contractsHeaderTitleRow}>
+          <div className={cdHub.contractsHeaderTitleCluster}>
+            <div className={cdHub.contractsListHeaderTitleGroup}>
+              <h1 className={cdHub.title}>Договора</h1>
+              <ContractsListRulesInfoTip />
+            </div>
+            <span className={cdHub.contractsListCount} title={countTitle}>
+              <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+              <span className={cdHub.contractsListCountMobile}>
+                {objectGroupCount > 0 ? (
+                  <>
+                    {visibleRowCount}/{objectGroupCount}
+                  </>
+                ) : (
+                  visibleRowCount
+                )}
+              </span>
+            </span>
+          </div>
+          {iconActions('mobile')}
         </div>
-        <span className={cdHub.contractsListCount}>
-          {visibleRowCount} договоров
-          {objectGroupCount > 0 ? ` · ${objectGroupCount} объектов` : ''}
-        </span>
       </div>
       <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
         <button
           data-admin-mutation
           type="button"
           className={cdChrome.contractsListHeaderAddBtn}
-          disabled={actionsBusy || loading}
+          disabled={iconsDisabled}
           onClick={onCreateClick}
         >
           {creating ? 'Создание…' : '+ Новый договор'}
@@ -67,19 +110,7 @@ export function ContractsListPageHeader({
             disabled={loading}
           />
         </span>
-        <AdminListRefreshButton
-          disabled={actionsBusy || loading}
-          busy={loading}
-          title="Обновить список"
-          aria-label={loading ? 'Обновление списка договоров' : 'Обновить список договоров'}
-          onClick={onRefresh}
-        />
-        <AdminToolbarTrashButton
-          trashCount={trashCount}
-          onClick={onOpenTrash}
-          title="Корзина договоров"
-          aria-label="Корзина договоров"
-        />
+        {iconActions('desktop')}
       </div>
     </div>
   );

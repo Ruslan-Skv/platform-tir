@@ -156,8 +156,30 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Заказчики и клиенты</h1>
-          <span className={styles.count}>{directoryTotal} записей</span>
+          <div className={styles.headerTitleRow}>
+            <div className={styles.headerTitleCluster}>
+              <h1 className={styles.title}>Заказчики и клиенты</h1>
+              <span className={styles.count} title={`${directoryTotal} записей`}>
+                <span className={styles.countDesktop}>{directoryTotal} записей</span>
+                <span className={styles.countMobile}>{directoryTotal}</span>
+              </span>
+            </div>
+            <div className={styles.headerIconActionsMobile}>
+              <AdminListRefreshButton
+                onClick={bumpListRefresh}
+                disabled={loading}
+                busy={loading}
+                title="Обновить список заказчиков"
+                aria-label="Обновить список заказчиков"
+              />
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина клиентов"
+                aria-label="Корзина клиентов"
+              />
+            </div>
+          </div>
         </div>
         <div className={styles.headerActions}>
           <button
@@ -168,19 +190,21 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
           >
             + Новый заказчик
           </button>
-          <AdminListRefreshButton
-            onClick={bumpListRefresh}
-            disabled={loading}
-            busy={loading}
-            title="Обновить список заказчиков"
-            aria-label="Обновить список заказчиков"
-          />
-          <AdminToolbarTrashButton
-            trashCount={trashCount}
-            onClick={() => setTrashOpen(true)}
-            title="Корзина клиентов"
-            aria-label="Корзина клиентов"
-          />
+          <div className={styles.headerIconActionsDesktop}>
+            <AdminListRefreshButton
+              onClick={bumpListRefresh}
+              disabled={loading}
+              busy={loading}
+              title="Обновить список заказчиков"
+              aria-label="Обновить список заказчиков"
+            />
+            <AdminToolbarTrashButton
+              trashCount={trashCount}
+              onClick={() => setTrashOpen(true)}
+              title="Корзина клиентов"
+              aria-label="Корзина клиентов"
+            />
+          </div>
         </div>
       </div>
 
@@ -223,43 +247,45 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
           ))}
         </select>
 
-        <select
-          id="customers-type-filter"
-          value={typeFilter}
-          onChange={(e) => {
-            setTypeFilter(e.target.value as CustomerTypeFilter);
-            setDirectoryPage(1);
-          }}
-          className={customersFilterFieldClass(
-            styles.authorSelect,
-            typeFilter !== 'all',
-            styles.filterActive
-          )}
-          aria-label="Тип заказчика"
-        >
-          {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
-            <option key={value} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
+        <div className={styles.filtersTypeLimitRow}>
+          <select
+            id="customers-type-filter"
+            value={typeFilter}
+            onChange={(e) => {
+              setTypeFilter(e.target.value as CustomerTypeFilter);
+              setDirectoryPage(1);
+            }}
+            className={customersFilterFieldClass(
+              styles.authorSelect,
+              typeFilter !== 'all',
+              styles.filterActive
+            )}
+            aria-label="Тип заказчика"
+          >
+            {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
 
-        <select
-          value={directoryPageLimit}
-          onChange={(e) => {
-            setDirectoryPageLimit(Number(e.target.value) as CustomersPageLimit);
-            setDirectoryPage(1);
-          }}
-          disabled={loading}
-          className={styles.pageLimitSelect}
-          aria-label="Количество строк на странице"
-        >
-          {pageLimitOptions.map((n) => (
-            <option key={n} value={n}>
-              {n} на странице
-            </option>
-          ))}
-        </select>
+          <select
+            value={directoryPageLimit}
+            onChange={(e) => {
+              setDirectoryPageLimit(Number(e.target.value) as CustomersPageLimit);
+              setDirectoryPage(1);
+            }}
+            disabled={loading}
+            className={styles.pageLimitSelect}
+            aria-label="Количество строк на странице"
+          >
+            {pageLimitOptions.map((n) => (
+              <option key={n} value={n}>
+                {n} на странице
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}

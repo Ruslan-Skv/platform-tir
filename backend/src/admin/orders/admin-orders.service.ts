@@ -16,7 +16,7 @@ export class AdminOrdersService {
   ) {}
 
   async getStats(dateFrom?: string, dateTo?: string) {
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = { deletedAt: null };
 
     if (dateFrom || dateTo) {
       where.createdAt = {};
@@ -87,6 +87,22 @@ export class AdminOrdersService {
 
   deleteOrder(id: string) {
     return this.mutations.deleteOrder(id);
+  }
+
+  restoreOrder(id: string) {
+    return this.mutations.restoreOrder(id);
+  }
+
+  deleteServiceOrder(id: string) {
+    return this.mutations.deleteServiceOrder(id);
+  }
+
+  restoreServiceOrder(id: string) {
+    return this.mutations.restoreServiceOrder(id);
+  }
+
+  findTrash(params?: { search?: string; page?: number; limit?: number }) {
+    return this.mutations.findTrash(params);
   }
 
   updateOrderItem(

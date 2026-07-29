@@ -130,7 +130,7 @@ export class OrdersService {
   }
 
   async findAll(userId?: string, role?: string) {
-    const where: Prisma.OrderWhereInput = {};
+    const where: Prisma.OrderWhereInput = { deletedAt: null };
     const canSeeAllOrders = role === 'ADMIN' || role === 'SUPER_ADMIN';
     if (!canSeeAllOrders && userId) {
       where.userId = userId;

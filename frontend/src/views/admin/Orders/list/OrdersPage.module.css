@@ -20,8 +20,7 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
   background: var(--admin-text-primary);
   border-color: var(--admin-text-secondary);
   color: var(--admin-border);
@@ -92,38 +91,65 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: var(--admin-space-4xl);
+  margin-bottom: var(--admin-space-lg);
+  padding-bottom: var(--admin-space-md);
+  border-bottom: 1px solid var(--admin-border);
 }
 
 .headerLeft {
   display: flex;
   align-items: center;
   gap: var(--admin-space-2xl);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.headerTitleRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xl);
+  min-width: 0;
+  width: 100%;
 }
 
 .title {
-  font-size: var(--admin-font-size-2xl);
+  font-size: var(--admin-font-size-4xl);
   font-weight: 700;
   color: var(--admin-text-secondary);
   margin: 0;
 }
 
 .count {
-  background: var(--admin-border);
-  padding: var(--admin-space-xs) var(--admin-space-xl);
-  border-radius: var(--admin-radius-3xl);
-  font-size: var(--admin-font-size-base);
-  color: var(--admin-text-muted);
+  white-space: nowrap;
 }
 
-.serviceOrdersLink {
-  color: var(--admin-info);
-  text-decoration: none;
-  font-size: var(--admin-font-size-base);
+.countMobile {
+  display: none;
 }
 
-.serviceOrdersLink:hover {
-  text-decoration: underline;
+.headerActions {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.headerIconActionsDesktop {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.headerIconActionsMobile {
+  display: none;
+}
+
+.filtersStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xl);
 }
 
 .serviceOrderBadge {
@@ -170,6 +196,21 @@
   overflow-x: auto;
 }
 
+.filtersSelectRow {
+  display: contents;
+}
+
+.filtersDateRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
+  flex: 0 0 auto;
+}
+
 .searchInput {
   flex: 0 0 auto;
   width: 180px;
@@ -201,18 +242,132 @@
   border-color: var(--admin-accent);
 }
 
-.dateInput {
-  padding: var(--admin-space-sm) var(--admin-space-lg);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  font-size: var(--admin-font-size-sm);
-  background: var(--admin-surface);
-  width: 120px;
+.mobileCards {
+  display: none;
 }
 
-.dateInput:focus {
-  outline: none;
-  border-color: var(--admin-accent);
+.mobileCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft);
+  text-align: left;
+  color: inherit;
+  font: inherit;
+}
+
+.mobileCardOpen {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.mobileCardActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mobileCard:hover {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+  background: var(--admin-surface-muted);
+}
+
+.errorText {
+  margin: 0 0 var(--admin-space-md);
+  color: var(--admin-danger, #dc2626);
+  font-size: var(--admin-font-size-sm);
+}
+
+.iconSpinning {
+  animation: ordersIconSpin 0.85s linear infinite;
+}
+
+@keyframes ordersIconSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.mobileCardMain {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobileCardName {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-accent);
+  line-height: var(--admin-line-height-sm);
+  word-break: break-word;
+}
+
+.mobileCardMeta {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  line-height: var(--admin-line-height-sm);
+  word-break: break-word;
+}
+
+.mobileCardRows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.mobileCardRow {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.mobileCardRow dt {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.mobileCardRow dd {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.mobileEmpty,
+.mobileLoading {
+  margin: 0;
+  padding: var(--admin-space-4xl) var(--admin-space-xl);
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+.ordersPagination {
+  justify-content: center;
+  gap: var(--admin-space-2xl);
+  flex-wrap: wrap;
 }
 
 /* Bulk Actions */
@@ -414,17 +569,127 @@
   background: var(--admin-border);
 }
 
-@media (max-width: 1024px) {
-  .stats {
-    grid-template-columns: repeat(2, 1fr);
+@media (max-width: 900px) {
+  .page {
+    max-width: 100%;
   }
 
-  .filters {
+  .header {
     flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-md);
+    margin-bottom: var(--admin-space-md);
+    padding-bottom: var(--admin-space-sm);
   }
 
-  .searchInput {
-    max-width: none;
+  .headerLeft {
+    width: 100%;
+    gap: 0;
+  }
+
+  .headerTitleRow {
+    width: 100%;
+    flex-wrap: nowrap;
+    gap: 6px;
+  }
+
+  .headerTitleRow :global([class*='contractsListHeaderTitleGroup']) {
+    display: contents;
+  }
+
+  .headerTitleRow .title {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: var(--admin-font-size-2xl);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .headerTitleRow .count {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .countDesktop {
+    display: none;
+  }
+
+  .countMobile {
+    display: inline;
+  }
+
+  .headerIconActionsDesktop {
+    display: none;
+  }
+
+  .headerIconActionsMobile {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .headerTitleRow :global(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: var(--admin-space-xs);
+  }
+
+  .headerActions {
+    display: none;
+  }
+
+  .filtersStack {
+    margin-bottom: var(--admin-space-md);
+  }
+
+  .stats {
+    grid-template-columns: 1fr 1fr;
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-md);
+  }
+
+  .bulkActions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .mobileCards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-md);
+  }
+
+  .loading {
+    display: none;
+  }
+
+  /* Таблица скрыта, пагинация остаётся */
+  .ordersTable :global([class*='tableWrapper']) {
+    display: none !important;
+  }
+
+  .ordersTable {
+    box-shadow: none;
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .ordersPagination {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-md);
+    padding: var(--admin-space-md) 0;
+  }
+
+  .ordersPagination :global(button) {
+    min-height: 2.25rem;
   }
 }
 
@@ -463,8 +728,7 @@
   color: var(--admin-surface-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
-:where(html[data-theme='dark'], [data-app-theme='dark']) .dateInput {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
@@ -511,4 +775,22 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .viewButton:hover {
   background: var(--admin-sidebar-text);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard:hover {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-info-bright, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardName {
+  color: var(--admin-info-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardMeta {
+  color: var(--admin-text-muted);
 }

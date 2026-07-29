@@ -1,0 +1,126 @@
+.modalPanel {
+  max-height: min(92vh, 52rem);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.shell :global([data-modal-form-hint]) {
+  margin: 0;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  max-height: min(58vh, 28rem);
+  overflow: auto;
+  padding: var(--admin-space-sm, 6px) !important;
+}
+
+.headerRow,
+.eventRow {
+  display: grid;
+  grid-template-columns: minmax(7.5rem, 0.9fr) minmax(8rem, 1.4fr) minmax(5.5rem, 0.7fr) minmax(
+      6rem,
+      1fr
+    );
+  gap: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  align-items: start;
+}
+
+.headerRow {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0 var(--admin-space-xs, 4px) var(--admin-space-2xs, 2px);
+  position: sticky;
+  top: 0;
+  background: var(--admin-surface, #fff);
+  z-index: 1;
+}
+
+.eventList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.eventRow {
+  background: var(--admin-surface, #fff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  font-size: var(--modal-fs-sm, 0.8125rem);
+  line-height: var(--admin-line-height-sm, 1.25);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+}
+
+.colTime {
+  color: var(--admin-text-secondary, #374151);
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+.colLabel {
+  color: var(--admin-text-primary, #111827);
+  font-weight: 500;
+  word-break: break-word;
+}
+
+.colDuration {
+  color: var(--admin-text-muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.colAuthor {
+  color: var(--admin-text-muted, #6b7280);
+  word-break: break-word;
+}
+
+.shell :global([data-modal-form-actions]) {
+  margin-top: var(--admin-space-xs, 4px);
+}
+
+@media (max-width: 640px) {
+  .headerRow {
+    display: none;
+  }
+
+  .eventRow {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .colTime::before,
+  .colLabel::before,
+  .colDuration::before,
+  .colAuthor::before {
+    color: var(--admin-text-muted, #6b7280);
+    font-size: var(--admin-font-size-xs, 0.75rem);
+    font-weight: 600;
+    margin-right: var(--admin-space-xs, 4px);
+  }
+
+  .colTime::before {
+    content: 'Дата: ';
+  }
+
+  .colLabel::before {
+    content: 'Событие: ';
+  }
+
+  .colDuration::before {
+    content: 'Длит.: ';
+  }
+
+  .colAuthor::before {
+    content: 'Автор: ';
+  }
+}

@@ -60,7 +60,7 @@ export class UserCabinetService {
         },
       }),
       this.prisma.order.findMany({
-        where: { userId },
+        where: { userId, deletedAt: null },
         include: {
           items: { include: { product: { select: { id: true, name: true, slug: true } } } },
           shippingAddress: true,

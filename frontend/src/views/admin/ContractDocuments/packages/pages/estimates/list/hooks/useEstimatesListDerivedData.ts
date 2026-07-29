@@ -173,11 +173,17 @@ export function useEstimatesListDerivedData({
     [estimateLayoutBlocks, effectiveExpandedAddressKey]
   );
 
-  const totalTableRows = tableDisplayItems.length;
+  /** Без служебных gap-строк: иначе «Всего» больше числа видимых объектов/расчётов. */
+  const paginatableDisplayItems = useMemo(
+    () => tableDisplayItems.filter((item) => item.type !== 'gap'),
+    [tableDisplayItems]
+  );
+
+  const totalTableRows = paginatableDisplayItems.length;
 
   const paginatedDisplayItems = useMemo(
-    () => paginateEstimatesTableDisplayItems(tableDisplayItems, page, limit),
-    [tableDisplayItems, page, limit]
+    () => paginateEstimatesTableDisplayItems(paginatableDisplayItems, page, limit),
+    [paginatableDisplayItems, page, limit]
   );
 
   return {

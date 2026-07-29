@@ -1,20 +1,26 @@
 'use client';
 
-import { Fragment } from 'react';
+import { Fragment, useEffect, useState } from 'react';
 
 import Link from 'next/link';
 
 import { formatApprovalCountdown, getApprovalRemainingMs } from '@/shared/api/user-orders';
+import {
+  AdminListRefreshButton,
+  AdminToolbarIconButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
+import {
+  AdminStickyPageRoot,
+  AdminStickySaveButtonSlot,
+} from '@/views/admin/ui/AdminStickySaveButton';
 
 import styles from './OrderDetailPage.module.css';
+import { OrderHistoryModal } from './OrderHistoryModal';
 import type { OrderDetailPageModel } from './hooks/useOrderDetailPage';
 import { ORDER_DETAIL_STATUS_OPTIONS } from './order-detail-page.constants';
-import {
-  buildOrderHistory,
-  formatDurationMinutesSeconds,
-  formatEventDateTime,
-  formatOrderDetailPrice,
-} from './order-detail-page.utils';
+import { formatDurationMinutesSeconds, formatOrderDetailPrice } from './order-detail-page.utils';
 
 type OrderDetailPageViewProps = {
   model: OrderDetailPageModel;
@@ -46,7 +52,6 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
     setDeliveryMoversCount,
     deliveryPlannedDate,
     setDeliveryPlannedDate,
-    deliverySaving,
     customerEmail,
     setCustomerEmail,
     customerPhone,
@@ -57,8 +62,11 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
     setCustomerMiddleName,
     customerLastName,
     setCustomerLastName,
-    customerSaving,
-    customerSaveSuccess,
+    saving,
+    saveToastSuccess,
+    setSaveToastSuccess,
+    saveToastError,
+    setSaveToastError,
     showOrderHistoryModal,
     setShowOrderHistoryModal,
     refreshing,
@@ -66,15 +74,26 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
     setCommentDraftByItemId,
     orderServiceGroups,
     isManagerRole,
-    canEdit,
+    isSuperAdmin,
+    pageHeaderRef,
+    saveButtonState,
+    saveButtonPinnedTopPx,
+    handleHeaderSaveClick,
     handleRefresh,
     handleStatusChange,
     handleSendBack,
     handleDeleteOrder,
     handleSendToEmail,
-    handleSaveCustomer,
-    handleSaveDelivery,
   } = model;
+
+  const [compactChrome, setCompactChrome] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 900px)');
+    const sync = () => setCompactChrome(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   if (loading) {
     return (
@@ -109,35 +128,52 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
     (order.createdByManagerId ? order.customerEmail : order.user?.email || order.customerEmail);
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.headerRow}>
-          <Link href="/admin/orders" className={styles.backLink}>
-            ← К списку заказов
-          </Link>
-          <div className={styles.headerActions}>
-            <button
-              type="button"
-              className={styles.refreshButton}
-              onClick={handleRefresh}
-              disabled={refreshing}
-              title="Обновить данные заказа"
+    <AdminStickyPageRoot stickyTopPx={saveButtonPinnedTopPx} className={styles.page}>
+      <div ref={pageHeaderRef} className={styles.headerChrome}>
+        <Link href="/admin/orders" className={styles.headerBack}>
+          ← К списку заказов
+        </Link>
+
+        <div className={styles.headerIcons}>
+          <AdminToolbarIconButton
+            type="button"
+            onClick={() => setShowOrderHistoryModal(true)}
+            title="История заказа"
+            aria-label="История заказа"
+          >
+            <VersionsHistoryIcon size={18} />
+          </AdminToolbarIconButton>
+          <AdminListRefreshButton
+            onClick={handleRefresh}
+            disabled={refreshing || saving}
+            busy={refreshing}
+            title="Обновить данные заказа"
+            aria-label={refreshing ? 'Обновление данных заказа' : 'Обновить данные заказа'}
+          />
+          {isSuperAdmin && (
+            <AdminToolbarIconButton
+              data-admin-mutation
+              onClick={() => setDeleteConfirmOpen(true)}
+              disabled={deleteSubmitting || saving}
+              iconSpinning={deleteSubmitting}
+              title="В корзину"
+              aria-label={deleteSubmitting ? 'Перемещение в корзину…' : 'В корзину'}
+              aria-busy={deleteSubmitting}
             >
-              {refreshing ? 'Обновление…' : 'Обновить'}
-            </button>
-            {canEdit && (
-              <button
-                data-admin-mutation
-                type="button"
-                className={styles.deleteButton}
-                onClick={() => setDeleteConfirmOpen(true)}
-                disabled={deleteSubmitting}
-              >
-                {deleteSubmitting ? 'Удаление…' : 'Удалить заказ'}
-              </button>
-            )}
-          </div>
+              <DeleteIcon size={18} />
+            </AdminToolbarIconButton>
+          )}
         </div>
+
+        <div className={styles.headerSave}>
+          <AdminStickySaveButtonSlot
+            state={saveButtonState}
+            saving={saving}
+            label={compactChrome ? 'Сохранить' : 'Сохранить изменения'}
+            onClick={handleHeaderSaveClick}
+          />
+        </div>
+
         <div className={styles.titleRow}>
           <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
           <span className={styles.managerInline}>
@@ -150,33 +186,27 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
               <span className={styles.mutedText}>Менеджер ещё не назначен</span>
             )}
           </span>
-          <button
-            type="button"
-            className={styles.historyActionButton}
-            onClick={() => setShowOrderHistoryModal(true)}
-            title="История заказа"
-            aria-label="История заказа"
-          >
-            📋 История
-          </button>
         </div>
-        <p className={styles.currentStatus}>
-          Статус:{' '}
-          <span className={`${styles.statusBadge} ${styles[`status${order.status}`] ?? ''}`}>
-            {ORDER_DETAIL_STATUS_OPTIONS.find((o) => o.value === order.status)?.label ??
-              order.status}
+
+        <div className={styles.currentStatus}>
+          <span className={styles.currentStatusText}>
+            Статус:{' '}
+            <span className={`${styles.statusBadge} ${styles[`status${order.status}`] ?? ''}`}>
+              {ORDER_DETAIL_STATUS_OPTIONS.find((o) => o.value === order.status)?.label ??
+                order.status}
+            </span>
+            {order.status === 'PENDING_REVIEW' && order.submittedForReviewAt && (
+              <>
+                {' · '}
+                <span className={styles.currentStatusHighlight}>
+                  {formatDurationMinutesSeconds(
+                    Date.now() - new Date(order.submittedForReviewAt).getTime()
+                  )}
+                </span>
+              </>
+            )}
           </span>
-          {order.status === 'PENDING_REVIEW' && order.submittedForReviewAt && (
-            <>
-              {' · '}
-              <span className={styles.currentStatusHighlight}>
-                {formatDurationMinutesSeconds(
-                  Date.now() - new Date(order.submittedForReviewAt).getTime()
-                )}
-              </span>
-            </>
-          )}
-        </p>
+        </div>
       </div>
 
       {deleteConfirmOpen && (
@@ -186,7 +216,8 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         >
           <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
             <p className={styles.modalText}>
-              Удалить заказ <strong>{order.orderNumber}</strong>? Это действие нельзя отменить.
+              Переместить заказ <strong>{order.orderNumber}</strong> в корзину? Он исчезнет из
+              списка, восстановить можно из корзины.
             </p>
             <div className={styles.modalActions}>
               <button
@@ -204,7 +235,7 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
                 onClick={handleDeleteOrder}
                 disabled={deleteSubmitting}
               >
-                {deleteSubmitting ? 'Удаление…' : 'Удалить'}
+                {deleteSubmitting ? 'Перемещение…' : 'В корзину'}
               </button>
             </div>
           </div>
@@ -246,247 +277,330 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         </div>
       )}
 
-      <div className={styles.actionsRow}>
-        {canSendBack &&
-          (() => {
-            const hasProductItems = (order.items ?? []).length > 0;
-            const hasCommentsForProductItems = (order.items ?? []).some((item) => {
-              const value = commentDraftByItemId[item.id] ?? item.managerComment ?? '';
-              return typeof value === 'string' && value.trim().length > 0;
-            });
-            const sendBackDisabled =
-              order.status === 'RETURNED_FOR_CORRECTION' ||
-              (hasProductItems && !hasCommentsForProductItems);
-            return (
-              <button
-                type="button"
-                className={styles.sendBackButton}
-                onClick={sendBackDisabled ? undefined : () => setSendBackModalOpen(true)}
-                disabled={sendBackDisabled}
-                title={
-                  hasProductItems && !hasCommentsForProductItems
-                    ? 'Сначала оставьте рекомендации для покупателя в составе заказа (комментарии к позициям)'
-                    : undefined
-                }
-              >
-                {order.status === 'RETURNED_FOR_CORRECTION'
-                  ? 'Заказ на доработке'
-                  : 'Отправить на доработку покупателю'}
-              </button>
-            );
-          })()}
-        {order.status === 'PENDING_REVIEW' && (
-          <button
-            data-admin-mutation
-            type="button"
-            className={styles.approveButton}
-            onClick={() => handleStatusChange('APPROVED')}
-            disabled={statusUpdating}
-          >
-            {statusUpdating ? 'Сохранение…' : 'Заказ проверен'}
-          </button>
-        )}
-        {canSendToEmail && isManagerRole && (
-          <button
-            data-admin-mutation
-            type="button"
-            className={styles.approveButton}
-            onClick={handleSendToEmail}
-            disabled={sendToEmailInProgress}
-            title="Отправить заказ на email покупателя для ознакомления и оплаты"
-          >
-            {sendToEmailInProgress ? 'Отправка…' : 'Отправить на email покупателя'}
-          </button>
-        )}
-        {order.sentToEmailAt && (
-          <span className={styles.sentToEmailBadge} role="status">
-            Отправлено на email {new Date(order.sentToEmailAt).toLocaleString('ru-RU')}
-          </span>
-        )}
-        {!['CANCELLED', 'DELIVERED', 'REFUNDED'].includes(order.status) && (
-          <button
-            type="button"
-            className={styles.cancelOrderButton}
-            onClick={() => setCancelOrderConfirmOpen(true)}
-            disabled={statusUpdating}
-          >
-            {statusUpdating ? '…' : 'Отменить заказ'}
-          </button>
-        )}
-      </div>
-      {statusUpdating && <span className={styles.saving}>Сохранение...</span>}
-      {approvedNotice && (
-        <p className={styles.approvedNotice} role="status">
-          Покупатель может продолжить оформление заказа
-        </p>
-      )}
-      {order.status === 'APPROVED' && order.approvedAt && (
-        <p className={styles.approvalCountdown}>
-          Осталось для оформления покупателем:{' '}
-          <span className={styles.approvalCountdownTime}>
-            {formatApprovalCountdown(
-              getApprovalRemainingMs(order.approvedAt, order.approvalValidMinutes)
-            )}
-          </span>
-        </p>
-      )}
-
-      <section className={`${styles.section} ${styles.clientSection}`}>
-        <h2 className={styles.sectionTitle}>Клиент</h2>
-        <div className={styles.clientRow}>
-          <div className={styles.clientField}>
-            <label className={styles.inputLabel}>Email</label>
-            <input
-              type="email"
-              value={customerEmail}
-              onChange={(e) => setCustomerEmail(e.target.value)}
-              className={styles.input}
-              placeholder="customer@example.com"
-            />
-          </div>
-          <div className={styles.clientField}>
-            <label className={styles.inputLabel}>Фамилия</label>
-            <input
-              type="text"
-              value={customerLastName}
-              onChange={(e) => setCustomerLastName(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-          <div className={styles.clientField}>
-            <label className={styles.inputLabel}>Имя</label>
-            <input
-              type="text"
-              value={customerFirstName}
-              onChange={(e) => setCustomerFirstName(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-          <div className={styles.clientField}>
-            <label className={styles.inputLabel}>Отчество</label>
-            <input
-              type="text"
-              value={customerMiddleName}
-              onChange={(e) => setCustomerMiddleName(e.target.value)}
-              className={styles.input}
-            />
-          </div>
-          <div className={styles.clientField}>
-            <label className={styles.inputLabel}>Телефон</label>
-            <input
-              type="tel"
-              value={customerPhone}
-              onChange={(e) => setCustomerPhone(e.target.value)}
-              className={styles.input}
-              placeholder="+7 (___) ___-__-__"
-            />
-          </div>
-          <div className={styles.clientActions}>
+      <section className={`${styles.section} ${styles.sectionActions}`}>
+        <h2 className={styles.sectionTitle}>Действия по заказу</h2>
+        <div className={styles.actionsRow}>
+          {canSendBack &&
+            (() => {
+              const hasProductItems = (order.items ?? []).length > 0;
+              const hasCommentsForProductItems = (order.items ?? []).some((item) => {
+                const value = commentDraftByItemId[item.id] ?? item.managerComment ?? '';
+                return typeof value === 'string' && value.trim().length > 0;
+              });
+              const sendBackDisabled =
+                order.status === 'RETURNED_FOR_CORRECTION' ||
+                (hasProductItems && !hasCommentsForProductItems);
+              return (
+                <button
+                  type="button"
+                  className={styles.sendBackButton}
+                  onClick={sendBackDisabled ? undefined : () => setSendBackModalOpen(true)}
+                  disabled={sendBackDisabled}
+                  title={
+                    hasProductItems && !hasCommentsForProductItems
+                      ? 'Сначала оставьте рекомендации для покупателя в составе заказа (комментарии к позициям)'
+                      : undefined
+                  }
+                >
+                  {order.status === 'RETURNED_FOR_CORRECTION'
+                    ? 'Заказ на доработке'
+                    : 'Отправить на доработку покупателю'}
+                </button>
+              );
+            })()}
+          {order.status === 'PENDING_REVIEW' && (
             <button
               data-admin-mutation
               type="button"
-              className={styles.saveButton}
-              onClick={handleSaveCustomer}
-              disabled={customerSaving}
+              className={styles.approveButton}
+              onClick={() => handleStatusChange('APPROVED')}
+              disabled={statusUpdating}
             >
-              {customerSaving ? 'Сохранение…' : 'Сохранить'}
+              {statusUpdating ? 'Сохранение…' : 'Заказ проверен'}
             </button>
-            {customerSaveSuccess && (
-              <span className={styles.inlineSuccess} role="status">
-                Сохранено
-              </span>
-            )}
+          )}
+          {canSendToEmail && isManagerRole && (
+            <button
+              data-admin-mutation
+              type="button"
+              className={styles.approveButton}
+              onClick={handleSendToEmail}
+              disabled={sendToEmailInProgress}
+              title="Отправить заказ на email покупателя для ознакомления и оплаты"
+            >
+              {sendToEmailInProgress ? 'Отправка…' : 'Отправить на email покупателя'}
+            </button>
+          )}
+          {order.sentToEmailAt && (
+            <span className={styles.sentToEmailBadge} role="status">
+              Отправлено на email {new Date(order.sentToEmailAt).toLocaleString('ru-RU')}
+            </span>
+          )}
+          {!['CANCELLED', 'DELIVERED', 'REFUNDED'].includes(order.status) && (
+            <button
+              type="button"
+              className={styles.cancelOrderButton}
+              onClick={() => setCancelOrderConfirmOpen(true)}
+              disabled={statusUpdating}
+            >
+              {statusUpdating ? '…' : 'Отменить заказ'}
+            </button>
+          )}
+        </div>
+        {statusUpdating && <span className={styles.saving}>Сохранение...</span>}
+        {approvedNotice && (
+          <p className={styles.approvedNotice} role="status">
+            Покупатель может продолжить оформление заказа
+          </p>
+        )}
+        {order.status === 'APPROVED' && order.approvedAt && (
+          <p className={styles.approvalCountdown}>
+            Осталось для оформления покупателем:{' '}
+            <span className={styles.approvalCountdownTime}>
+              {formatApprovalCountdown(
+                getApprovalRemainingMs(order.approvedAt, order.approvalValidMinutes)
+              )}
+            </span>
+          </p>
+        )}
+      </section>
+
+      <section className={`${styles.section} ${styles.sectionClient}`}>
+        <h2 className={styles.sectionTitle}>Клиент</h2>
+        <div className={styles.clientFields}>
+          <div className={styles.deliveryCostEditRow}>
+            <label className={styles.deliveryCostEditLabel}>
+              Email
+              <input
+                type="email"
+                value={customerEmail}
+                onChange={(e) => setCustomerEmail(e.target.value)}
+                className={`${styles.deliveryCostInput} ${styles.clientFieldInput}`}
+                placeholder="customer@example.com"
+              />
+            </label>
+          </div>
+          <div className={styles.deliveryCostEditRow}>
+            <label className={styles.deliveryCostEditLabel}>
+              Фамилия
+              <input
+                type="text"
+                value={customerLastName}
+                onChange={(e) => setCustomerLastName(e.target.value)}
+                className={`${styles.deliveryCostInput} ${styles.clientFieldInput}`}
+              />
+            </label>
+          </div>
+          <div className={styles.deliveryCostEditRow}>
+            <label className={styles.deliveryCostEditLabel}>
+              Имя
+              <input
+                type="text"
+                value={customerFirstName}
+                onChange={(e) => setCustomerFirstName(e.target.value)}
+                className={`${styles.deliveryCostInput} ${styles.clientFieldInput}`}
+              />
+            </label>
+          </div>
+          <div className={styles.deliveryCostEditRow}>
+            <label className={styles.deliveryCostEditLabel}>
+              Отчество
+              <input
+                type="text"
+                value={customerMiddleName}
+                onChange={(e) => setCustomerMiddleName(e.target.value)}
+                className={`${styles.deliveryCostInput} ${styles.clientFieldInput}`}
+              />
+            </label>
+          </div>
+          <div className={styles.deliveryCostEditRow}>
+            <label className={styles.deliveryCostEditLabel}>
+              Телефон
+              <input
+                type="tel"
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                className={`${styles.deliveryCostInput} ${styles.clientFieldInput}`}
+                placeholder="+7 (___) ___-__-__"
+              />
+            </label>
           </div>
         </div>
       </section>
 
-      <section className={styles.section}>
+      <section className={`${styles.section} ${styles.sectionItems}`}>
         <h2 className={styles.sectionTitle}>Состав заказа</h2>
-        <table className={styles.itemsTable}>
-          <thead>
-            <tr>
-              <th className={styles.th}>Товар / комментарий менеджера</th>
-              <th className={styles.th}>Артикул</th>
-              <th className={styles.th}>Кол-во</th>
-              <th className={styles.th}>Цена</th>
-              <th className={styles.th}>Сумма</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => {
-              const price = Number(item.price);
-              const lineTotal = price * item.quantity;
-              return (
-                <tr key={item.id} className={styles.tr}>
-                  <td className={`${styles.td} ${styles.itemRow}`}>
-                    <span className={styles.productName}>{item.product?.name ?? '—'}</span>
-                    {(item.size || item.openingSide) && (
-                      <span className={styles.itemMeta}>
-                        {[item.size, item.openingSide].filter(Boolean).join(', ')}
-                      </span>
-                    )}
-                    <div className={styles.itemActions}>
-                      <div className={styles.commentBlock}>
-                        <label className={styles.commentLabel} htmlFor={`comment-${item.id}`}>
-                          Рекомендации для покупателя (замена, количество и т.п.):
-                        </label>
-                        <textarea
-                          id={`comment-${item.id}`}
-                          className={styles.commentInput}
-                          value={commentDraftByItemId[item.id] ?? item.managerComment ?? ''}
-                          onChange={(e) =>
-                            setCommentDraftByItemId((prev) => ({
-                              ...prev,
-                              [item.id]: e.target.value,
-                            }))
-                          }
-                          placeholder="Например: рекомендуем заменить на… или изменить количество на…"
-                          rows={2}
-                        />
+
+        <div className={styles.itemsMobile} aria-label="Состав заказа">
+          {items.map((item) => {
+            const price = Number(item.price);
+            const lineTotal = price * item.quantity;
+            return (
+              <article key={item.id} className={styles.itemMobileCard}>
+                <div className={styles.itemMobileName}>{item.product?.name ?? '—'}</div>
+                {(item.size || item.openingSide || item.product?.sku) && (
+                  <div className={styles.itemMobileMeta}>
+                    {[item.product?.sku, item.size, item.openingSide].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+                <div className={styles.itemMobileRows}>
+                  <div className={styles.itemMobileRow}>
+                    <span className={styles.itemMobileRowLabel}>Кол-во</span>
+                    <span className={styles.itemMobileRowValue}>{item.quantity}</span>
+                  </div>
+                  <div className={styles.itemMobileRow}>
+                    <span className={styles.itemMobileRowLabel}>Цена</span>
+                    <span className={styles.itemMobileRowValue}>
+                      {formatOrderDetailPrice(price)}
+                    </span>
+                  </div>
+                  <div className={styles.itemMobileRow}>
+                    <span className={styles.itemMobileRowLabel}>Сумма</span>
+                    <span className={styles.itemMobileRowValue}>
+                      {formatOrderDetailPrice(lineTotal)}
+                    </span>
+                  </div>
+                </div>
+                <div className={styles.commentBlock}>
+                  <label className={styles.commentLabel} htmlFor={`comment-mobile-${item.id}`}>
+                    Рекомендации для покупателя
+                  </label>
+                  <textarea
+                    id={`comment-mobile-${item.id}`}
+                    className={styles.commentInput}
+                    value={commentDraftByItemId[item.id] ?? item.managerComment ?? ''}
+                    onChange={(e) =>
+                      setCommentDraftByItemId((prev) => ({
+                        ...prev,
+                        [item.id]: e.target.value,
+                      }))
+                    }
+                    placeholder="Например: рекомендуем заменить на… или изменить количество на…"
+                    rows={2}
+                  />
+                </div>
+              </article>
+            );
+          })}
+          {orderServiceGroups.map((group) => (
+            <div key={group.categoryName}>
+              <div className={styles.itemMobileGroup}>{group.categoryName}</div>
+              {group.rooms.map((room) => (
+                <div key={`${group.categoryName}-${room.roomName}`}>
+                  <div className={styles.itemMobileRoom}>{room.roomName}</div>
+                  {room.items.map((svc) => (
+                    <article key={svc.id} className={styles.itemMobileCard}>
+                      <div className={styles.itemMobileServiceName}>{svc.name}</div>
+                      <div className={styles.itemMobileRows}>
+                        <div className={styles.itemMobileRow}>
+                          <span className={styles.itemMobileRowLabel}>Кол-во</span>
+                          <span className={styles.itemMobileRowValue}>{svc.quantity}</span>
+                        </div>
+                        <div className={styles.itemMobileRow}>
+                          <span className={styles.itemMobileRowLabel}>Цена</span>
+                          <span className={styles.itemMobileRowValue}>
+                            {formatOrderDetailPrice(svc.price)}
+                          </span>
+                        </div>
+                        <div className={styles.itemMobileRow}>
+                          <span className={styles.itemMobileRowLabel}>Сумма</span>
+                          <span className={styles.itemMobileRowValue}>
+                            {formatOrderDetailPrice(svc.amount)}
+                          </span>
+                        </div>
                       </div>
-                    </div>
-                  </td>
-                  <td className={styles.td}>{item.product?.sku ?? '—'}</td>
-                  <td className={styles.td}>{item.quantity}</td>
-                  <td className={styles.td}>{formatOrderDetailPrice(price)}</td>
-                  <td className={styles.td}>{formatOrderDetailPrice(lineTotal)}</td>
-                </tr>
-              );
-            })}
-            {orderServiceGroups.map((group) => (
-              <Fragment key={group.categoryName}>
-                <tr className={styles.serviceCategoryRow}>
-                  <td className={styles.serviceCategoryCell} colSpan={5}>
-                    {group.categoryName}
-                  </td>
-                </tr>
-                {group.rooms.map((room) => (
-                  <Fragment key={`${group.categoryName}-${room.roomName}`}>
-                    <tr className={styles.serviceRoomRow}>
-                      <td className={styles.serviceRoomCell} colSpan={5}>
-                        {room.roomName}
-                      </td>
-                    </tr>
-                    {room.items.map((svc) => (
-                      <tr key={svc.id} className={styles.tr}>
-                        <td className={`${styles.td} ${styles.itemRow}`}>
-                          <span className={styles.productName}>{svc.name}</span>
-                          <span className={styles.itemMeta}>{svc.unit}</span>
+                    </article>
+                  ))}
+                </div>
+              ))}
+            </div>
+          ))}
+        </div>
+
+        <div className={`${styles.itemsTableWrap} ${styles.itemsTableDesktop}`}>
+          <table className={styles.itemsTable}>
+            <thead>
+              <tr>
+                <th className={styles.th}>Товар / комментарий менеджера</th>
+                <th className={styles.th}>Артикул</th>
+                <th className={styles.th}>Кол-во</th>
+                <th className={styles.th}>Цена</th>
+                <th className={styles.th}>Сумма</th>
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((item) => {
+                const price = Number(item.price);
+                const lineTotal = price * item.quantity;
+                return (
+                  <tr key={item.id} className={styles.tr}>
+                    <td className={`${styles.td} ${styles.itemRow}`}>
+                      <span className={styles.productName}>{item.product?.name ?? '—'}</span>
+                      {(item.size || item.openingSide) && (
+                        <span className={styles.itemMeta}>
+                          {[item.size, item.openingSide].filter(Boolean).join(', ')}
+                        </span>
+                      )}
+                      <div className={styles.itemActions}>
+                        <div className={styles.commentBlock}>
+                          <label className={styles.commentLabel} htmlFor={`comment-${item.id}`}>
+                            Рекомендации для покупателя (замена, количество и т.п.):
+                          </label>
+                          <textarea
+                            id={`comment-${item.id}`}
+                            className={styles.commentInput}
+                            value={commentDraftByItemId[item.id] ?? item.managerComment ?? ''}
+                            onChange={(e) =>
+                              setCommentDraftByItemId((prev) => ({
+                                ...prev,
+                                [item.id]: e.target.value,
+                              }))
+                            }
+                            placeholder="Например: рекомендуем заменить на… или изменить количество на…"
+                            rows={2}
+                          />
+                        </div>
+                      </div>
+                    </td>
+                    <td className={styles.td}>{item.product?.sku ?? '—'}</td>
+                    <td className={styles.td}>{item.quantity}</td>
+                    <td className={styles.td}>{formatOrderDetailPrice(price)}</td>
+                    <td className={styles.td}>{formatOrderDetailPrice(lineTotal)}</td>
+                  </tr>
+                );
+              })}
+              {orderServiceGroups.map((group) => (
+                <Fragment key={group.categoryName}>
+                  <tr className={styles.serviceCategoryRow}>
+                    <td className={styles.serviceCategoryCell} colSpan={5}>
+                      {group.categoryName}
+                    </td>
+                  </tr>
+                  {group.rooms.map((room) => (
+                    <Fragment key={`${group.categoryName}-${room.roomName}`}>
+                      <tr className={styles.serviceRoomRow}>
+                        <td className={styles.serviceRoomCell} colSpan={5}>
+                          {room.roomName}
                         </td>
-                        <td className={styles.td}>—</td>
-                        <td className={styles.td}>
-                          {svc.quantity} {svc.unit}
-                        </td>
-                        <td className={styles.td}>{formatOrderDetailPrice(svc.price)}</td>
-                        <td className={styles.td}>{formatOrderDetailPrice(svc.amount)}</td>
                       </tr>
-                    ))}
-                  </Fragment>
-                ))}
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
+                      {room.items.map((svc) => (
+                        <tr key={svc.id} className={styles.tr}>
+                          <td className={`${styles.td} ${styles.itemRow}`}>
+                            <span className={styles.productName}>{svc.name}</span>
+                          </td>
+                          <td className={styles.td}>—</td>
+                          <td className={styles.td}>{svc.quantity}</td>
+                          <td className={styles.td}>{formatOrderDetailPrice(svc.price)}</td>
+                          <td className={styles.td}>{formatOrderDetailPrice(svc.amount)}</td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </Fragment>
+              ))}
+            </tbody>
+          </table>
+        </div>
         <p className={styles.total}>Итого: {formatOrderDetailPrice(total)}</p>
       </section>
 
@@ -530,55 +644,17 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         </div>
       )}
 
-      {showOrderHistoryModal && (
-        <div className={styles.modalOverlay} onClick={() => setShowOrderHistoryModal(false)}>
-          <div className={styles.historyModal} onClick={(e) => e.stopPropagation()}>
-            <div className={styles.historyModalHeader}>
-              <h3 className={styles.historyModalTitle}>История заказа {order.orderNumber}</h3>
-              <button
-                type="button"
-                className={styles.historyModalClose}
-                onClick={() => setShowOrderHistoryModal(false)}
-                aria-label="Закрыть"
-              >
-                ×
-              </button>
-            </div>
-            <div className={styles.orderHistory}>
-              {buildOrderHistory(order).length === 0 ? (
-                <p className={styles.orderHistoryEmpty}>Нет событий</p>
-              ) : (
-                <>
-                  <div className={styles.orderHistoryHeader}>
-                    <span className={styles.orderHistoryTime}>Дата и время</span>
-                    <span className={styles.orderHistoryLabel}>Событие</span>
-                    <span className={styles.orderHistoryDuration}>Продолжительность</span>
-                    <span className={styles.orderHistoryAuthor}>Автор</span>
-                  </div>
-                  <ul className={styles.orderHistoryList}>
-                    {buildOrderHistory(order).map((event) => (
-                      <li key={`${event.at}-${event.label}`} className={styles.orderHistoryItem}>
-                        <span className={styles.orderHistoryTime}>
-                          {formatEventDateTime(event.at)}
-                        </span>
-                        <span className={styles.orderHistoryLabel}>{event.label}</span>
-                        <span className={styles.orderHistoryDuration}>{event.duration ?? '—'}</span>
-                        <span className={styles.orderHistoryAuthor}>{event.author}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderHistoryModal
+        isOpen={showOrderHistoryModal}
+        order={order}
+        onClose={() => setShowOrderHistoryModal(false)}
+      />
 
       {(order.shippingAddressId ||
         order.shippingAddress ||
         order.deliveryType ||
         order.shippingCost != null) && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.sectionDelivery}`}>
           <h2 className={styles.sectionTitle}>Доставка</h2>
           <div className={styles.deliveryCompact}>
             <div className={styles.deliveryCompactLeft}>
@@ -699,26 +775,21 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
                     type="date"
                     value={deliveryPlannedDate}
                     onChange={(e) => setDeliveryPlannedDate(e.target.value)}
-                    className={styles.deliveryCostInput}
+                    className={
+                      deliveryPlannedDate
+                        ? `${styles.deliveryCostInput} ${styles.deliveryDateInputFilled}`
+                        : styles.deliveryCostInput
+                    }
                   />
                 </label>
               </div>
-              <button
-                data-admin-mutation
-                type="button"
-                className={styles.deliveryCostSaveBtn}
-                disabled={deliverySaving}
-                onClick={handleSaveDelivery}
-              >
-                {deliverySaving ? 'Сохранение…' : 'Сохранить'}
-              </button>
             </div>
           )}
         </section>
       )}
 
       {order.returnedForCorrectionAt && (
-        <section className={styles.section}>
+        <section className={`${styles.section} ${styles.sectionCorrection}`}>
           <h2 className={styles.sectionTitle}>Последняя отправка на доработку</h2>
           <p className={styles.muted}>
             {new Date(order.returnedForCorrectionAt).toLocaleString('ru-RU')}
@@ -728,6 +799,35 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
           )}
         </section>
       )}
-    </div>
+
+      {saveToastSuccess && (
+        <div className={`${styles.toast} ${styles.toastSuccess}`} role="status">
+          <span className={styles.toastIcon}>✓</span>
+          <span className={styles.toastMessage}>{saveToastSuccess}</span>
+          <button
+            type="button"
+            className={styles.toastClose}
+            onClick={() => setSaveToastSuccess(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+      {saveToastError && (
+        <div className={`${styles.toast} ${styles.toastError}`} role="alert">
+          <span className={styles.toastIcon}>⚠</span>
+          <span className={styles.toastMessage}>{saveToastError}</span>
+          <button
+            type="button"
+            className={styles.toastClose}
+            onClick={() => setSaveToastError(null)}
+            aria-label="Закрыть"
+          >
+            ✕
+          </button>
+        </div>
+      )}
+    </AdminStickyPageRoot>
   );
 }

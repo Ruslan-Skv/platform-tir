@@ -53,6 +53,10 @@ export async function getAdminOrders(
     orderNumber?: string;
     customer?: string;
     manager?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    sortBy?: string;
+    sortOrder?: 'asc' | 'desc';
   }
 ): Promise<{
   data: AdminOrderSummary[];
@@ -68,6 +72,10 @@ export async function getAdminOrders(
   if (options?.manager) params.set('manager', options.manager);
   if (options?.paymentStatus) params.set('paymentStatus', options.paymentStatus);
   if (options?.hasDelivery) params.set('hasDelivery', 'true');
+  if (options?.dateFrom) params.set('dateFrom', options.dateFrom);
+  if (options?.dateTo) params.set('dateTo', options.dateTo);
+  if (options?.sortBy) params.set('sortBy', options.sortBy);
+  if (options?.sortOrder) params.set('sortOrder', options.sortOrder);
   const res = await apiFetch(`${API_URL}/admin/orders?${params}`, {
     headers: getAdminAuthHeaders(),
   });
@@ -92,8 +100,81 @@ export async function deleteAdminOrder(id: string): Promise<{ id: string }> {
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
-    throw new Error((err as { message?: string }).message ?? 'Не удалось удалить заказ');
+    throw new Error(
+      (err as { message?: string }).message ?? 'Не удалось переместить заказ в корзину'
+    );
   }
+  return res.json();
+}
+
+export async function restoreAdminOrder(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/orders/${id}/restore`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error((err as { message?: string }).message ?? 'Не удалось восстановить заказ');
+  }
+  return res.json();
+}
+
+export async function deleteServiceOrder(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-order/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message ?? 'Не удалось переместить заказ на услуги в корзину'
+    );
+  }
+  return res.json();
+}
+
+export async function restoreServiceOrder(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/orders/service-order/${id}/restore`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(
+      (err as { message?: string }).message ?? 'Не удалось восстановить заказ на услуги'
+    );
+  }
+  return res.json();
+}
+
+export type AdminOrderTrashRow = {
+  id: string;
+  orderNumber: string;
+  orderType: 'product' | 'service';
+  total: string | number;
+  deletedAt: string;
+  customerLabel: string;
+};
+
+export async function getAdminOrdersTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<{
+  data: AdminOrderTrashRow[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+}> {
+  const search = new URLSearchParams();
+  if (params?.search?.trim()) search.set('search', params.search.trim());
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  const res = await apiFetch(`${API_URL}/admin/orders/trash?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить корзину заказов');
   return res.json();
 }
 
@@ -210,6 +291,8 @@ export async function getServiceOrders(params?: {
   status?: string;
   page?: number;
   limit?: number;
+  sortBy?: string;
+  sortOrder?: 'asc' | 'desc';
 }): Promise<{
   items: ServiceOrderSummary[];
   total: number;
@@ -221,6 +304,8 @@ export async function getServiceOrders(params?: {
   if (params?.status) q.set('status', params.status);
   if (params?.page) q.set('page', String(params.page));
   if (params?.limit) q.set('limit', String(params.limit));
+  if (params?.sortBy) q.set('sortBy', params.sortBy);
+  if (params?.sortOrder) q.set('sortOrder', params.sortOrder);
   const res = await apiFetch(`${API_URL}/admin/orders/service-orders?${q}`, {
     headers: getAdminAuthHeaders(),
   });

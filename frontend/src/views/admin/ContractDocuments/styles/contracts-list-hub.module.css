@@ -27,6 +27,38 @@
   white-space: nowrap;
 }
 
+.contractsListCountMobile {
+  display: none;
+}
+
+.contractsHeaderTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  width: 100%;
+  min-width: 0;
+}
+
+.contractsHeaderTitleCluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  min-width: 0;
+}
+
+.contractsHeaderIconActionsDesktop {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.contractsHeaderIconActionsMobile {
+  display: none;
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListPage .editorHeader .title {
   color: var(--admin-text-primary);
 }
@@ -1444,10 +1476,75 @@
     margin-bottom: var(--admin-space-xl);
   }
 
+  .contractsListPage .editorHeader .title {
+    font-size: var(--admin-font-size-2xl);
+  }
+
   .contractsListPage .contractsListHeaderLeft {
-    flex-wrap: wrap;
-    gap: var(--admin-space-md);
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
     min-width: 0;
+  }
+
+  /* Одна строка: Договора → подсказка → счётчик → Обновить / Корзина */
+  .contractsListPage .contractsHeaderTitleRow {
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .contractsListPage .contractsHeaderTitleCluster,
+  .contractsListPage .contractsHeaderTitleCluster .contractsListHeaderTitleGroup {
+    display: contents;
+  }
+
+  .contractsListPage .contractsHeaderTitleRow .title {
+    flex: 0 1 auto;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .contractsListPage .contractsListCount {
+    flex: 0 0 auto;
+    padding: 2px 8px;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .contractsListPage .contractsListCountDesktop {
+    display: none;
+  }
+
+  .contractsListPage .contractsListCountMobile {
+    display: inline;
+  }
+
+  .contractsListPage
+    .contractsHeaderTitleRow
+    > :not(.title):not(.contractsHeaderIconActionsMobile) {
+    flex: 0 0 auto;
+  }
+
+  .contractsHeaderIconActionsDesktop {
+    display: none;
+  }
+
+  .contractsHeaderIconActionsMobile {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .contractsListPage .contractsHeaderTitleRow :global(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: var(--admin-space-xs);
   }
 
   /* Только шапка списка договоров — не трогаем другие страницы с .contractsListPage */

@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useRouter } from 'next/navigation';
 
@@ -18,6 +18,7 @@ import {
   updateAdminOrderStatus,
 } from '@/shared/api/admin-orders';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
+import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { ORDER_DETAIL_POLL_INTERVAL_MS } from '../order-detail-page.constants';
 import type { OrderDetail, OrderItemDetail, OrderServiceGroup } from '../order-detail-page.types';
@@ -27,6 +28,8 @@ export function useOrderDetailPage(orderId: string) {
   const router = useRouter();
   const { user } = useAuth();
   const { canEdit } = useAdminSectionCanEdit();
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const handleSaveAllRef = useRef<() => Promise<void>>(async () => {});
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [loading, setLoading] = useState(true);
@@ -44,14 +47,14 @@ export function useOrderDetailPage(orderId: string) {
   const [deliveryCarryCost, setDeliveryCarryCost] = useState('');
   const [deliveryMoversCount, setDeliveryMoversCount] = useState('');
   const [deliveryPlannedDate, setDeliveryPlannedDate] = useState('');
-  const [deliverySaving, setDeliverySaving] = useState(false);
   const [customerEmail, setCustomerEmail] = useState('');
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerFirstName, setCustomerFirstName] = useState('');
   const [customerMiddleName, setCustomerMiddleName] = useState('');
   const [customerLastName, setCustomerLastName] = useState('');
-  const [customerSaving, setCustomerSaving] = useState(false);
-  const [customerSaveSuccess, setCustomerSaveSuccess] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveToastSuccess, setSaveToastSuccess] = useState<string | null>(null);
+  const [saveToastError, setSaveToastError] = useState<string | null>(null);
   const [, setTick] = useState(0);
   const [showOrderHistoryModal, setShowOrderHistoryModal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -237,14 +240,14 @@ export function useOrderDetailPage(orderId: string) {
   };
 
   const handleDeleteOrder = async () => {
-    if (!orderId || !canEdit) return;
+    if (!orderId || user?.role !== 'SUPER_ADMIN') return;
     setDeleteSubmitting(true);
     try {
       await deleteAdminOrder(orderId);
       setDeleteConfirmOpen(false);
       router.push('/admin/orders');
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось удалить заказ');
+      alert(err instanceof Error ? err.message : 'Не удалось переместить заказ в корзину');
     } finally {
       setDeleteSubmitting(false);
     }
@@ -267,66 +270,112 @@ export function useOrderDetailPage(orderId: string) {
     }
   };
 
-  const handleSaveCustomer = async () => {
-    if (!canEdit) return;
-    if (!orderId) return;
-    setCustomerSaving(true);
-    setCustomerSaveSuccess(false);
+  const handleSaveAll = async () => {
+    if (!canEdit || !orderId || !order) return;
+
+    const showSaveError = (message: string) => {
+      setSaveToastSuccess(null);
+      setSaveToastError(message);
+      window.setTimeout(() => setSaveToastError(null), 5000);
+    };
+
+    const hasDeliveryEdit = Boolean(
+      order.shippingAddressId ||
+      order.shippingAddress ||
+      order.deliveryType != null ||
+      order.shippingCost != null
+    );
+
+    let shippingNum = Number(order.shippingCost ?? 0);
+    let carryNum: number | null = null;
+    let moversCountNum: number | null = null;
+
+    if (hasDeliveryEdit) {
+      shippingNum =
+        deliveryShippingCost.trim() === ''
+          ? Number(order.shippingCost ?? 0)
+          : parseFloat(deliveryShippingCost);
+      carryNum = deliveryCarryCost.trim() === '' ? null : parseFloat(deliveryCarryCost);
+      if (isNaN(shippingNum) || shippingNum < 0) {
+        showSaveError('Укажите корректную стоимость доставки (число ≥ 0).');
+        return;
+      }
+      if (carryNum !== null && (isNaN(carryNum) || carryNum < 0)) {
+        showSaveError(
+          'Укажите корректную стоимость грузчиков (число ≥ 0) или оставьте поле пустым.'
+        );
+        return;
+      }
+      moversCountNum = deliveryMoversCount.trim() === '' ? null : parseInt(deliveryMoversCount, 10);
+      if (moversCountNum !== null && (isNaN(moversCountNum) || moversCountNum < 0)) {
+        showSaveError(
+          'Укажите корректное количество грузчиков (целое число ≥ 0) или оставьте поле пустым.'
+        );
+        return;
+      }
+    }
+
+    setSaving(true);
+    setSaveToastSuccess(null);
+    setSaveToastError(null);
     try {
-      const updated = await updateAdminOrderCustomer(orderId, {
-        customerEmail: customerEmail.trim() || null,
-        customerPhone: customerPhone.trim() || null,
-        customerFirstName: customerFirstName.trim() || null,
-        customerMiddleName: customerMiddleName.trim() || null,
-        customerLastName: customerLastName.trim() || null,
+      const items = order.items ?? [];
+      const commentsToSave = items.filter((item) => {
+        const draft = (commentDraftByItemId[item.id] ?? item.managerComment ?? '').trim();
+        const saved = (item.managerComment ?? '').trim();
+        return draft !== saved;
       });
-      setOrder(normalizeOrder(updated));
-      setCustomerSaveSuccess(true);
-      window.setTimeout(() => setCustomerSaveSuccess(false), 2000);
+
+      await Promise.all([
+        updateAdminOrderCustomer(orderId, {
+          customerEmail: customerEmail.trim() || null,
+          customerPhone: customerPhone.trim() || null,
+          customerFirstName: customerFirstName.trim() || null,
+          customerMiddleName: customerMiddleName.trim() || null,
+          customerLastName: customerLastName.trim() || null,
+        }),
+        ...(hasDeliveryEdit
+          ? [
+              updateAdminOrderDelivery(orderId, {
+                shippingCost: shippingNum,
+                carryCost: carryNum,
+                moversCount: moversCountNum,
+                plannedDeliveryDate: deliveryPlannedDate.trim() ? deliveryPlannedDate.trim() : null,
+              }),
+            ]
+          : []),
+        ...commentsToSave.map((item) =>
+          updateAdminOrderItem(orderId, item.id, {
+            managerComment:
+              (commentDraftByItemId[item.id] ?? item.managerComment ?? '').trim() || null,
+          })
+        ),
+      ]);
+
+      const fresh = await getAdminOrder(orderId);
+      setOrder(normalizeOrder(fresh));
+      setSaveToastSuccess('Заказ успешно сохранён');
+      window.setTimeout(() => setSaveToastSuccess(null), 3000);
     } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось обновить данные покупателя');
+      const message =
+        err instanceof Error && err.message.trim()
+          ? err.message.trim()
+          : 'Не удалось сохранить заказ. Проверьте данные и попробуйте снова.';
+      showSaveError(message);
     } finally {
-      setCustomerSaving(false);
+      setSaving(false);
     }
   };
 
-  const handleSaveDelivery = async () => {
-    if (!canEdit) return;
-    if (!orderId || !order) return;
-    const shippingNum =
-      deliveryShippingCost.trim() === ''
-        ? Number(order.shippingCost ?? 0)
-        : parseFloat(deliveryShippingCost);
-    const carryNum = deliveryCarryCost.trim() === '' ? null : parseFloat(deliveryCarryCost);
-    if (isNaN(shippingNum) || shippingNum < 0) {
-      alert('Укажите корректную стоимость доставки');
-      return;
-    }
-    if (carryNum !== null && (isNaN(carryNum) || carryNum < 0)) {
-      alert('Укажите корректную стоимость грузчиков');
-      return;
-    }
-    const moversCountNum =
-      deliveryMoversCount.trim() === '' ? null : parseInt(deliveryMoversCount, 10);
-    if (moversCountNum !== null && (isNaN(moversCountNum) || moversCountNum < 0)) {
-      alert('Укажите корректное количество грузчиков');
-      return;
-    }
-    setDeliverySaving(true);
-    try {
-      const updated = await updateAdminOrderDelivery(orderId, {
-        shippingCost: shippingNum,
-        carryCost: carryNum,
-        moversCount: moversCountNum,
-        plannedDeliveryDate: deliveryPlannedDate.trim() ? deliveryPlannedDate.trim() : null,
-      });
-      setOrder(normalizeOrder(updated));
-    } catch (err) {
-      alert(err instanceof Error ? err.message : 'Не удалось сохранить');
-    } finally {
-      setDeliverySaving(false);
-    }
-  };
+  handleSaveAllRef.current = handleSaveAll;
+
+  const saveButtonState = useAdminStickySaveButton({
+    enabled: !loading && Boolean(order) && canEdit,
+    loading,
+    saving,
+    pageHeaderRef,
+    onSave: () => void handleSaveAllRef.current(),
+  });
 
   const orderServiceGroups = useMemo((): OrderServiceGroup[] => {
     if (!order) return [];
@@ -334,6 +383,7 @@ export function useOrderDetailPage(orderId: string) {
   }, [order]);
 
   const isManagerRole = ['ADMIN', 'SUPER_ADMIN', 'MANAGER'].includes(user?.role ?? '');
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
 
   return {
     orderId,
@@ -361,7 +411,6 @@ export function useOrderDetailPage(orderId: string) {
     setDeliveryMoversCount,
     deliveryPlannedDate,
     setDeliveryPlannedDate,
-    deliverySaving,
     customerEmail,
     setCustomerEmail,
     customerPhone,
@@ -372,8 +421,11 @@ export function useOrderDetailPage(orderId: string) {
     setCustomerMiddleName,
     customerLastName,
     setCustomerLastName,
-    customerSaving,
-    customerSaveSuccess,
+    saving,
+    saveToastSuccess,
+    setSaveToastSuccess,
+    saveToastError,
+    setSaveToastError,
     showOrderHistoryModal,
     setShowOrderHistoryModal,
     refreshing,
@@ -381,14 +433,17 @@ export function useOrderDetailPage(orderId: string) {
     setCommentDraftByItemId,
     orderServiceGroups,
     isManagerRole,
+    isSuperAdmin,
     canEdit,
+    pageHeaderRef,
+    saveButtonState,
+    saveButtonPinnedTopPx: saveButtonState.saveButtonPinnedTopPx,
+    handleHeaderSaveClick: saveButtonState.handleSaveClick,
     handleRefresh,
     handleStatusChange,
     handleSendBack,
     handleDeleteOrder,
     handleSendToEmail,
-    handleSaveCustomer,
-    handleSaveDelivery,
   };
 }
 

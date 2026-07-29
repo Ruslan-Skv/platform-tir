@@ -34,6 +34,24 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-2xl);
+  min-width: 0;
+}
+
+.headerTitleRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  width: 100%;
+  min-width: 0;
+}
+
+.headerTitleCluster {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-2xl);
+  min-width: 0;
 }
 
 .title {
@@ -49,6 +67,22 @@
   border-radius: var(--admin-radius-3xl);
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.countMobile {
+  display: none;
+}
+
+.headerIconActionsDesktop {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: var(--admin-space-xs);
+}
+
+.headerIconActionsMobile {
+  display: none;
 }
 
 .headerActions {
@@ -125,6 +159,10 @@
   flex: 1 1 240px;
   gap: var(--admin-space-sm);
   min-width: 0;
+}
+
+.filtersTypeLimitRow {
+  display: contents;
 }
 
 .authorSelect {
@@ -683,25 +721,80 @@
   }
 
   .headerLeft {
-    flex-wrap: wrap;
-    gap: var(--admin-space-md);
+    flex-wrap: nowrap;
+    gap: 0;
+    width: 100%;
     min-width: 0;
   }
 
-  .count {
-    padding: 2px var(--admin-space-md);
+  /* Одна строка: заголовок → счётчик → Обновить / Корзина */
+  .headerTitleRow {
+    width: 100%;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 6px;
+  }
+
+  .headerTitleCluster {
+    display: contents;
+  }
+
+  .headerTitleRow .title {
+    flex: 0 1 auto;
+    min-width: 0;
+    font-size: var(--admin-font-size-2xl);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .headerTitleRow .count {
+    flex: 0 0 auto;
+    padding: 2px 8px;
     font-size: var(--admin-font-size-xs);
+  }
+
+  .countDesktop {
+    display: none;
+  }
+
+  .countMobile {
+    display: inline;
+  }
+
+  .headerTitleRow > :not(.title):not(.headerIconActionsMobile) {
+    flex: 0 0 auto;
+  }
+
+  .headerIconActionsDesktop {
+    display: none;
+  }
+
+  .headerIconActionsMobile {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 2px;
+    margin-left: auto;
+  }
+
+  .headerTitleRow :global(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
+    padding: var(--admin-space-xs);
   }
 
   .headerActions {
     width: 100%;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-start;
   }
 
   .addButton {
     flex: 1 1 auto;
-    min-height: 2.25rem;
+    width: 100%;
+    min-height: 2.5rem;
     padding: var(--admin-space-sm) var(--admin-space-lg);
   }
 
@@ -723,6 +816,26 @@
     width: 100%;
     max-width: none;
     min-width: 0;
+  }
+
+  .filtersTypeLimitRow {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+    width: 100%;
+  }
+
+  .filtersTypeLimitRow .authorSelect,
+  .filtersTypeLimitRow .pageLimitSelect {
+    flex: 1 1 0;
+    width: auto;
+    min-width: 0;
+    min-height: 2rem;
+    padding: 2px var(--admin-space-md);
+    font-size: var(--admin-font-size-xs);
+    line-height: 1.25;
+    border-radius: var(--admin-radius-sm);
   }
 
   .bulkActions {

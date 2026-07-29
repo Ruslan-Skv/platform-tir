@@ -823,7 +823,9 @@ model ServiceOrder {
   user               User               @relation(fields: [userId], references: [id], onDelete: Restrict)
   createdByManager   User?              @relation("ServiceOrdersCreatedByManager", fields: [createdByManagerId], references: [id], onDelete: SetNull)
   items              ServiceOrderItem[]
+  deletedAt          DateTime?          @map("deleted_at")
 
+  @@index([deletedAt])
   @@map("service_orders")
 }
 
@@ -2320,7 +2322,9 @@ model Order {
   processedByManager           User?              @relation("OrdersProcessedByManager", fields: [processedByManagerId], references: [id])
   payments                     Payment[]
   orderEvents                  OrderEvent[]
+  deletedAt                    DateTime?          @map("deleted_at")
 
+  @@index([deletedAt])
   @@map("orders")
 }
 

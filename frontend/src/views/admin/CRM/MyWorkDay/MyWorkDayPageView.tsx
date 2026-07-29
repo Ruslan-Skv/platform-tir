@@ -100,13 +100,30 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
       <div className={`${cdHub.editorHeader} ${styles.header}`}>
         <div className={`${cdHub.contractsListHeaderLeft} ${styles.headerLeft}`}>
-          <div className={cdHub.contractsListHeaderTitleGroup}>
-            <h1 className={styles.title}>Мой рабочий день</h1>
-            <MyWorkDayRulesInfoTip />
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={`${cdHub.title} ${styles.title}`}>Мой рабочий день</h1>
+                <MyWorkDayRulesInfoTip />
+              </div>
+              <span
+                className={`${cdHub.contractsListCount} ${styles.count}`}
+                title={`${rows.length} записей`}
+              >
+                <span className={cdHub.contractsListCountDesktop}>{rows.length} записей</span>
+                <span className={cdHub.contractsListCountMobile}>{rows.length}</span>
+              </span>
+            </div>
+            <div className={cdHub.contractsHeaderIconActionsMobile}>
+              <AdminListRefreshButton
+                disabled={loading}
+                busy={loading}
+                title="Обновить"
+                aria-label={loading ? 'Обновление журнала' : 'Обновить журнал'}
+                onClick={() => void load()}
+              />
+            </div>
           </div>
-          <span className={`${cdHub.contractsListCount} ${styles.count}`}>
-            {rows.length} записей
-          </span>
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${styles.headerActions}`}>
           <button
@@ -154,13 +171,15 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               Отлучиться
             </button>
           )}
-          <AdminListRefreshButton
-            disabled={loading}
-            busy={loading}
-            title="Обновить"
-            aria-label={loading ? 'Обновление журнала' : 'Обновить журнал'}
-            onClick={() => void load()}
-          />
+          <div className={cdHub.contractsHeaderIconActionsDesktop}>
+            <AdminListRefreshButton
+              disabled={loading}
+              busy={loading}
+              title="Обновить"
+              aria-label={loading ? 'Обновление журнала' : 'Обновить журнал'}
+              onClick={() => void load()}
+            />
+          </div>
         </div>
       </div>
 

@@ -54,6 +54,116 @@ export function EstimatesListPageHeader({
 }: EstimatesListPageHeaderProps) {
   const disabled = saving || refreshing;
 
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdEstimatesList.estimatesHeaderIconActionsMobile
+          : cdEstimatesList.estimatesHeaderIconActionsDesktop
+      }
+    >
+      <button
+        type="button"
+        className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesPageRefreshIconBtn}`}
+        disabled={disabled}
+        aria-busy={refreshing}
+        aria-label={refreshing ? 'Обновление списка расчётов' : 'Обновить список расчётов'}
+        title="Обновить"
+        onClick={onRefresh}
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className={refreshing ? cdChrome.estimatesRefreshIconSpinning : undefined}
+          aria-hidden
+        >
+          <path d="M23 4v6h-6" />
+          <path d="M1 20v-6h6" />
+          <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+        </svg>
+      </button>
+      <AdminToolbarTrashButton
+        trashCount={trashCount}
+        onClick={onOpenTrash}
+        title="Корзина расчётов"
+        aria-label="Корзина расчётов"
+      />
+      <span className={toolbarBadgeStyles.wrap}>
+        <button
+          type="button"
+          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesPageRefreshIconBtn} ${cdEstimatesList.estimatesPageArchiveIconBtn}`}
+          disabled={disabled}
+          aria-label={
+            archiveView
+              ? 'Вернуться к основному списку расчётов'
+              : archiveCount > 0
+                ? `Архив: ${archiveCount > 99 ? 'более 99' : archiveCount} расч. в архиве`
+                : 'Архив: объекты и расчёты, отправленные в архив'
+          }
+          title={
+            archiveView
+              ? 'Вернуться к основному списку расчётов'
+              : archiveCount > 0
+                ? `Архив (${archiveCount > 99 ? '99+' : archiveCount})`
+                : 'Объекты с расчётами, отправленные в архив'
+          }
+          onClick={() => onNavigateArchiveView(!archiveView)}
+        >
+          {archiveView ? (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M8 6h13" />
+              <path d="M8 12h13" />
+              <path d="M8 18h13" />
+              <path d="M3 6h.01" />
+              <path d="M3 12h.01" />
+              <path d="M3 18h.01" />
+            </svg>
+          ) : (
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={18}
+              height={18}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M21 8v13H3V8" />
+              <path d="M23 3v5H1V3z" />
+              <path d="M10 12h4" />
+            </svg>
+          )}
+        </button>
+        {archiveCount > 0 ? (
+          <span className={toolbarBadgeStyles.badge} aria-hidden>
+            {archiveCount > 99 ? '99+' : archiveCount}
+          </span>
+        ) : null}
+      </span>
+    </div>
+  );
+
   return (
     <div className={cdEstimatesList.editorHeader}>
       <div>
@@ -68,41 +178,46 @@ export function EstimatesListPageHeader({
         ) : null}
         <div className={cdEstimatesList.estimatesEditorHeaderStack}>
           <div className={cdEstimatesList.contractsListHeaderLeft}>
-            <div className={cdEstimatesList.contractsListHeaderTitleGroup}>
-              <h1 className={cdEstimatesList.title}>
-                {archiveView ? 'Архив расчётов' : 'Расчёты'}
-              </h1>
-              <EstimatesListRulesInfoTip />
-            </div>
-            <div className={cdEstimatesList.titleWithAutosave}>
-              <span
-                className={cdEstimatesList.contractsListCount}
-                title={
-                  !archiveView
-                    ? listViewMode === 'by_object' && addressGroupCount > 0
-                      ? `${visibleItemCount} расчётов · ${addressGroupCount} объектов`
-                      : `${visibleItemCount} расчётов`
-                    : undefined
-                }
-              >
-                {!archiveView ? (
-                  listViewMode === 'by_object' && addressGroupCount > 0 ? (
-                    <>
-                      {visibleItemCount}/{addressGroupCount}
-                    </>
-                  ) : (
-                    visibleItemCount
-                  )
-                ) : (
-                  <>
-                    {visibleItemCount} расч.
-                    {listViewMode === 'by_object' && addressGroupCount > 0
-                      ? ` · ${addressGroupCount} объектов`
-                      : ''}
-                  </>
-                )}
-              </span>
-              <AdminSaveNotice visible={autosaveVisible}>Сохранено.</AdminSaveNotice>
+            <div className={cdEstimatesList.estimatesHeaderTitleRow}>
+              <div className={cdEstimatesList.estimatesHeaderTitleCluster}>
+                <div className={cdEstimatesList.contractsListHeaderTitleGroup}>
+                  <h1 className={cdEstimatesList.title}>
+                    {archiveView ? 'Архив расчётов' : 'Расчёты'}
+                  </h1>
+                  <EstimatesListRulesInfoTip />
+                </div>
+                <div className={cdEstimatesList.titleWithAutosave}>
+                  <span
+                    className={cdEstimatesList.contractsListCount}
+                    title={
+                      !archiveView
+                        ? listViewMode === 'by_object' && addressGroupCount > 0
+                          ? `${visibleItemCount} расчётов · ${addressGroupCount} объектов`
+                          : `${visibleItemCount} расчётов`
+                        : undefined
+                    }
+                  >
+                    {!archiveView ? (
+                      listViewMode === 'by_object' && addressGroupCount > 0 ? (
+                        <>
+                          {visibleItemCount}/{addressGroupCount}
+                        </>
+                      ) : (
+                        visibleItemCount
+                      )
+                    ) : (
+                      <>
+                        {visibleItemCount} расч.
+                        {listViewMode === 'by_object' && addressGroupCount > 0
+                          ? ` · ${addressGroupCount} объектов`
+                          : ''}
+                      </>
+                    )}
+                  </span>
+                  <AdminSaveNotice visible={autosaveVisible}>Сохранено.</AdminSaveNotice>
+                </div>
+              </div>
+              {iconActions('mobile')}
             </div>
           </div>
           {!archiveView ? (
@@ -160,105 +275,7 @@ export function EstimatesListPageHeader({
             </Link>
           </>
         ) : null}
-        <button
-          type="button"
-          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesPageRefreshIconBtn}`}
-          disabled={disabled}
-          aria-busy={refreshing}
-          aria-label={refreshing ? 'Обновление списка расчётов' : 'Обновить список расчётов'}
-          title="Обновить"
-          onClick={onRefresh}
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            width={18}
-            height={18}
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth={2}
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className={refreshing ? cdChrome.estimatesRefreshIconSpinning : undefined}
-            aria-hidden
-          >
-            <path d="M23 4v6h-6" />
-            <path d="M1 20v-6h6" />
-            <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
-          </svg>
-        </button>
-        <AdminToolbarTrashButton
-          trashCount={trashCount}
-          onClick={onOpenTrash}
-          title="Корзина расчётов"
-          aria-label="Корзина расчётов"
-        />
-        <span className={toolbarBadgeStyles.wrap}>
-          <button
-            type="button"
-            className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesPageRefreshIconBtn} ${cdEstimatesList.estimatesPageArchiveIconBtn}`}
-            disabled={disabled}
-            aria-label={
-              archiveView
-                ? 'Вернуться к основному списку расчётов'
-                : archiveCount > 0
-                  ? `Архив: ${archiveCount > 99 ? 'более 99' : archiveCount} расч. в архиве`
-                  : 'Архив: объекты и расчёты, отправленные в архив'
-            }
-            title={
-              archiveView
-                ? 'Вернуться к основному списку расчётов'
-                : archiveCount > 0
-                  ? `Архив (${archiveCount > 99 ? '99+' : archiveCount})`
-                  : 'Объекты с расчётами, отправленные в архив'
-            }
-            onClick={() => onNavigateArchiveView(!archiveView)}
-          >
-            {archiveView ? (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={18}
-                height={18}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M8 6h13" />
-                <path d="M8 12h13" />
-                <path d="M8 18h13" />
-                <path d="M3 6h.01" />
-                <path d="M3 12h.01" />
-                <path d="M3 18h.01" />
-              </svg>
-            ) : (
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                width={18}
-                height={18}
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth={2}
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                aria-hidden
-              >
-                <path d="M21 8v13H3V8" />
-                <path d="M23 3v5H1V3z" />
-                <path d="M10 12h4" />
-              </svg>
-            )}
-          </button>
-          {archiveCount > 0 ? (
-            <span className={toolbarBadgeStyles.badge} aria-hidden>
-              {archiveCount > 99 ? '99+' : archiveCount}
-            </span>
-          ) : null}
-        </span>
+        {iconActions('desktop')}
       </div>
     </div>
   );

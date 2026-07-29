@@ -15,6 +15,7 @@ import type { EstimatePipelineTab } from '../../../platform/estimates/estimatePi
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimateAddressGroupTableRow } from './EstimateAddressGroupTableRow';
 import { EstimatePresetTableRow } from './EstimatePresetTableRow';
+import { EstimatesListMobileCards } from './EstimatesListMobileCards';
 import type { EstimatesTableDisplayItem } from './estimatesListLayout';
 import type { EstimatesListSortBy, EstimatesListSortOrder } from './estimatesListSort';
 import { EstimatesListSortableTh } from './estimatesListTableUi';
@@ -95,7 +96,7 @@ export function EstimatesListTable({
     <div
       className={`${dataTableStyles.tableContainer} ${cdEstimatesList.contractsDirectoryTable} ${cdEstimatesList.estimatesDirectoryTable}${archiveView ? ` ${cdEstimatesList.estimatesDirectoryTableArchive}` : ''}`}
     >
-      <div className={dataTableStyles.tableWrapper}>
+      <div className={`${dataTableStyles.tableWrapper} ${cdEstimatesList.estimatesDesktopTable}`}>
         <div className={dataTableStyles.scrollContainer}>
           <table
             className={`${dataTableStyles.table} ${cdEstimatesList.contractsListTable} ${cdEstimatesList.estimatesListTable}`}
@@ -210,6 +211,37 @@ export function EstimatesListTable({
           </table>
         </div>
       </div>
+
+      <EstimatesListMobileCards
+        archiveView={archiveView}
+        pipelineTab={pipelineTab}
+        loading={loading}
+        refreshing={refreshing}
+        saving={saving}
+        visibleItemCount={visibleItemCount}
+        hasAnythingInArchive={hasAnythingInArchive}
+        hasActiveListFilters={hasActiveListFilters}
+        totalTableRows={totalTableRows}
+        paginatedDisplayItems={paginatedDisplayItems}
+        groups={groups}
+        items={items}
+        usageByEstimateId={usageByEstimateId}
+        groupIdsWithLockedEstimate={groupIdsWithLockedEstimate}
+        effectiveExpandedAddressKey={effectiveExpandedAddressKey}
+        onToggleAddressExpand={onToggleAddressExpand}
+        onAddressPipelineStage={onAddressPipelineStage}
+        onSetEstimatesArchivedByAddress={onSetEstimatesArchivedByAddress}
+        onGroupMarkupChange={onGroupMarkupChange}
+        router={router}
+        onPresetPipelineStage={onPresetPipelineStage}
+        onPresetArchived={onPresetArchived}
+        onPresetMarkupChange={onPresetMarkupChange}
+        onDetachEdit={onDetachEdit}
+        onCopyPreset={onCopyPreset}
+        onOpenWorkScopeSplit={onOpenWorkScopeSplit}
+        onTrashPreset={onTrashPreset}
+      />
+
       {!loading && !refreshing && totalTableRows > 0 ? (
         <AdminTablePagination
           page={page}

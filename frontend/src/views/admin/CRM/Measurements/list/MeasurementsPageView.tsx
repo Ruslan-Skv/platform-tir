@@ -16,6 +16,7 @@ import {
   type MeasurementsPageLimit,
 } from '../shared/measurementsListFilters';
 import { MeasurementsListFiltersPanel } from './MeasurementsListFiltersPanel';
+import { MeasurementsListMobileCards } from './MeasurementsListMobileCards';
 import { MeasurementsListRulesInfoTip } from './MeasurementsListRulesInfoTip';
 import styles from './MeasurementsPage.module.css';
 import type { MeasurementsPageModel } from './hooks/useMeasurementsPage';
@@ -161,23 +162,41 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
     <div className={styles.page}>
       <div className={styles.header}>
         <div className={styles.headerLeft}>
-          <div className={styles.headerTitleGroup}>
-            <h1 className={styles.title}>Замеры</h1>
-            <MeasurementsListRulesInfoTip />
+          <div className={styles.headerTitleRow}>
+            <div className={styles.headerTitleCluster}>
+              <div className={styles.headerTitleGroup}>
+                <h1 className={styles.title}>Замеры</h1>
+                <MeasurementsListRulesInfoTip />
+              </div>
+              <span className={styles.count} title={`${total} замеров`}>
+                <span className={styles.countDesktop}>{total} замеров</span>
+                <span className={styles.countMobile}>{total}</span>
+              </span>
+            </div>
+            <div className={styles.headerIconActionsMobile}>
+              <AdminListRefreshButton
+                onClick={() => void fetchData()}
+                disabled={loading}
+                busy={loading}
+                title="Обновить список замеров"
+                aria-label="Обновить список замеров"
+              />
+            </div>
           </div>
-          <span className={styles.count}>{total} замеров</span>
         </div>
         <div className={styles.headerActions}>
           <Link data-admin-mutation href="/admin/measurements/new" className={styles.addButton}>
             + Новый замер
           </Link>
-          <AdminListRefreshButton
-            onClick={() => void fetchData()}
-            disabled={loading}
-            busy={loading}
-            title="Обновить список замеров"
-            aria-label="Обновить список замеров"
-          />
+          <div className={styles.headerIconActionsDesktop}>
+            <AdminListRefreshButton
+              onClick={() => void fetchData()}
+              disabled={loading}
+              busy={loading}
+              title="Обновить список замеров"
+              aria-label="Обновить список замеров"
+            />
+          </div>
         </div>
       </div>
 
@@ -362,6 +381,14 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
           </div>
         </MeasurementsListFiltersPanel>
       </div>
+
+      <MeasurementsListMobileCards
+        data={data}
+        loading={loading}
+        directions={directions}
+        linksByMeasurementId={linksByMeasurementId}
+        onOpen={(m) => router.push(`/admin/measurements/${m.id}`)}
+      />
 
       <DataTable
         containerClassName={styles.directoryTable}
