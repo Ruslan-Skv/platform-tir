@@ -4,6 +4,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { AdminOrdersQueryService } from './admin-orders-query.service';
 import { AdminOrdersMutationsService } from './admin-orders-mutations.service';
+import { AdminOrdersTrashService } from './admin-orders-trash.service';
 import { AdminOrdersDeliverySettingsService } from './admin-orders-delivery-settings.service';
 
 @Injectable()
@@ -12,6 +13,7 @@ export class AdminOrdersService {
     private prisma: PrismaService,
     private query: AdminOrdersQueryService,
     private mutations: AdminOrdersMutationsService,
+    private trash: AdminOrdersTrashService,
     private deliverySettings: AdminOrdersDeliverySettingsService,
   ) {}
 
@@ -86,23 +88,23 @@ export class AdminOrdersService {
   }
 
   deleteOrder(id: string) {
-    return this.mutations.deleteOrder(id);
+    return this.trash.deleteOrder(id);
   }
 
   restoreOrder(id: string) {
-    return this.mutations.restoreOrder(id);
+    return this.trash.restoreOrder(id);
   }
 
   deleteServiceOrder(id: string) {
-    return this.mutations.deleteServiceOrder(id);
+    return this.trash.deleteServiceOrder(id);
   }
 
   restoreServiceOrder(id: string) {
-    return this.mutations.restoreServiceOrder(id);
+    return this.trash.restoreServiceOrder(id);
   }
 
   findTrash(params?: { search?: string; page?: number; limit?: number }) {
-    return this.mutations.findTrash(params);
+    return this.trash.findTrash(params);
   }
 
   updateOrderItem(
