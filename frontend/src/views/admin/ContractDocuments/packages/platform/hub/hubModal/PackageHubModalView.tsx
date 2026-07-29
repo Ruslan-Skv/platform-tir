@@ -42,8 +42,10 @@ export function PackageHubModalView({
         onClose={handleCloseMain}
         title={modalTitle}
         size="lg"
-        className={crmFormStyles.modalPanel}
+        className={`${crmFormStyles.modalPanel} ${hubStyles.modalPanel}`}
+        contentClassName={hubStyles.modalContent}
         showCloseButton
+        compactOnMobile
       >
         {hub.error ? <p data-modal-form-error>{hub.error}</p> : null}
         <div

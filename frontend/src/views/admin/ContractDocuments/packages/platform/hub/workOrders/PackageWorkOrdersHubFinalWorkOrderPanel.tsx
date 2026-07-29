@@ -38,7 +38,7 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
       {!isWindowsPackage ? (
         <div
           className={`${WO_FORM_GRID} ${cdEstimatesList.workOrderParamsBar}`}
-          style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'nowrap' }}
+          style={{ gap: '2px 6px', display: 'flex', alignItems: 'flex-end', flexWrap: 'wrap' }}
         >
           <PackageWorkOrderGradeButtons
             value={form.workOrder.gradeIncreasePercent}

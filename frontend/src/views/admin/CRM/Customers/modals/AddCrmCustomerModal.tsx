@@ -248,6 +248,8 @@ export function AddCrmCustomerModal({
       titleAside={fillPercentTitleAside}
       size="md"
       className={phoneStyles.modalPanel}
+      showCloseButton
+      compactOnMobile
     >
       <form className={phoneStyles.formShell} data-modal-form onSubmit={handleSubmit}>
         <CrmCustomerFormFields

@@ -16,11 +16,11 @@ export function PackageWorkOrdersHubListModal({
   onClose,
   onUpdated,
 }: PackageWorkOrdersHubListModalProps) {
-  if (!isOpen) return null;
   return (
     <PackageDocumentEditorPage
       packageId={packageId}
       workOrdersHubListSurface
+      workOrdersHubListSurfaceOpen={isOpen}
       onWorkOrdersHubListClose={onClose}
       onWorkOrdersHubListUpdated={onUpdated}
     />

@@ -1,5 +1,7 @@
 'use client';
 
+import { TrashIcon } from '@heroicons/react/24/outline';
+
 import cdBase from '../../../../styles/base.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import {
@@ -24,8 +26,8 @@ export function PackageIssueInvoiceLineRow({
   removeLine,
 }: PackageIssueInvoiceLineRowProps) {
   return (
-    <tr>
-      <td className={cdBase.invoiceLinesKindCol}>
+    <tr className={cdBase.invoiceLinesMobileRow}>
+      <td className={cdBase.invoiceLinesKindCol} data-label="Вид">
         <select
           value={line.lineKind}
           onChange={(e) =>
@@ -41,24 +43,24 @@ export function PackageIssueInvoiceLineRow({
           )}
         </select>
       </td>
-      <td className={cdBase.invoiceLinesNameCol}>
+      <td className={cdBase.invoiceLinesNameCol} data-label="Наименование">
         <input
           value={line.name}
           onChange={(e) => updateLine(index, { name: e.target.value })}
           placeholder="Дверные изделия"
         />
       </td>
-      <td>
+      <td data-label="Кол-во">
         <input
           value={line.quantity}
           onChange={(e) => updateLine(index, { quantity: e.target.value })}
           inputMode="decimal"
         />
       </td>
-      <td>
+      <td data-label="Ед.">
         <input value={line.unit} onChange={(e) => updateLine(index, { unit: e.target.value })} />
       </td>
-      <td>
+      <td data-label="НДС">
         <select
           value={line.vatLabel}
           onChange={(e) => updateLine(index, { vatLabel: e.target.value })}
@@ -68,29 +70,30 @@ export function PackageIssueInvoiceLineRow({
           <option value="10%">10%</option>
         </select>
       </td>
-      <td>
+      <td data-label="Цена">
         <input
           value={line.unitPrice}
           onChange={(e) => updateLine(index, { unitPrice: e.target.value })}
           inputMode="decimal"
         />
       </td>
-      <td>
+      <td data-label="Сумма">
         <input
           value={line.amount}
           onChange={(e) => updateLine(index, { amount: e.target.value })}
           inputMode="decimal"
         />
       </td>
-      <td>
+      <td data-label="Действие">
         <button
           data-admin-mutation
           type="button"
           className={cdWorkspace.dangerBtn}
           title="Удалить строку"
+          aria-label="Удалить позицию"
           onClick={() => removeLine(index)}
         >
-          ×
+          <TrashIcon className={cdBase.invoiceLinesDeleteIcon} aria-hidden />
         </button>
       </td>
     </tr>

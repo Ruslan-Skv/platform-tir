@@ -6,6 +6,7 @@ import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPe
 import {
   type ContractDocumentPackageKind,
   type ContractDocumentPackageStatus,
+  type ContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
@@ -55,24 +56,51 @@ import { usePackageTemplateEditorState } from './usePackageTemplateEditorState';
 export type UsePackageDocumentEditorControllerOptions = {
   packageId: string;
   workOrdersHubListSurface?: boolean;
+  workOrdersHubListSurfaceOpen?: boolean;
   onWorkOrdersHubListClose?: () => void;
   onWorkOrdersHubListUpdated?: () => void;
+  invoicesHubListSurface?: boolean;
+  invoicesHubListSurfaceOpen?: boolean;
+  onInvoicesHubListClose?: () => void;
+  onInvoicesHubListUpdated?: () => void;
 };
 
 export type PackageDocumentEditorControllerResult = {
   loading: boolean;
   workOrdersHubListSurface: boolean;
+  invoicesHubListSurface: boolean;
   workOrdersListSurfaceProps: ReturnType<
     typeof usePackageDocumentEditorUiProps
   >['workOrdersListSurfaceProps'];
+  invoicesListSurfaceProps: {
+    loading: boolean;
+    error: string | null;
+    invoicesHubOpen: boolean;
+    invoicesHubVisible: boolean;
+    onCloseInvoicesHub: () => void;
+    onAfterClose?: () => void;
+    onInvoicesChanged?: () => void;
+    packageId: string;
+    packageKind: ContractDocumentPackageKind;
+    form: PackageFormData;
+    onError: (message: string) => void;
+    contractTemplatePresets: ContractTemplatePreset[];
+    templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
+    selectedTemplateIds: Partial<Record<PackageDocumentTemplateTabId, string>>;
+  };
   mainViewProps: PackageDocumentEditorMainViewProps;
 };
 
 export function usePackageDocumentEditorController({
   packageId,
   workOrdersHubListSurface = false,
+  workOrdersHubListSurfaceOpen = false,
   onWorkOrdersHubListClose,
-  onWorkOrdersHubListUpdated,
+  onWorkOrdersHubListUpdated: _onWorkOrdersHubListUpdated,
+  invoicesHubListSurface = false,
+  invoicesHubListSurfaceOpen = false,
+  onInvoicesHubListClose,
+  onInvoicesHubListUpdated,
 }: UsePackageDocumentEditorControllerOptions) {
   const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
   const [packageKind, setPackageKind] = useState<ContractDocumentPackageKind>('REPAIR');
@@ -95,7 +123,12 @@ export function usePackageDocumentEditorController({
     setQuestionnairesHubOpen,
     questionnairesHubPanelTab,
     setQuestionnairesHubPanelTab,
-  } = usePackageEditorHubPanelState({ workOrdersHubListSurface });
+  } = usePackageEditorHubPanelState({
+    workOrdersHubListSurface,
+    workOrdersHubListSurfaceOpen,
+    invoicesHubListSurface,
+    invoicesHubListSurfaceOpen,
+  });
   const [activeFinalWorkOrderDocId, setActiveFinalWorkOrderDocId] = useState<string>('common');
   const activeAddendumSlot = useMemo(() => {
     const m = /^addendum([1-5])$/.exec(activeTab);
@@ -304,7 +337,6 @@ export function usePackageDocumentEditorController({
     setPackageHubOpen,
     workOrdersHubListSurface,
     onWorkOrdersHubListClose,
-    onWorkOrdersHubListUpdated,
     setWorkOrdersHubOpen,
   });
 
@@ -720,7 +752,27 @@ export function usePackageDocumentEditorController({
   return {
     loading,
     workOrdersHubListSurface,
-    workOrdersListSurfaceProps,
+    invoicesHubListSurface,
+    workOrdersListSurfaceProps: {
+      ...workOrdersListSurfaceProps,
+      workOrdersHubOpen: workOrdersHubOpen && !loading,
+    },
+    invoicesListSurfaceProps: {
+      loading,
+      error,
+      invoicesHubOpen,
+      invoicesHubVisible: invoicesHubOpen && !loading,
+      onCloseInvoicesHub: () => setInvoicesHubOpen(false),
+      onAfterClose: onInvoicesHubListClose,
+      onInvoicesChanged: onInvoicesHubListUpdated,
+      packageId,
+      packageKind,
+      form,
+      onError: (message: string) => setError(message),
+      contractTemplatePresets,
+      templateOverrides,
+      selectedTemplateIds,
+    },
     mainViewProps,
   };
 }

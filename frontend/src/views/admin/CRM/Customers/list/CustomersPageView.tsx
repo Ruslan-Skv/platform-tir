@@ -264,6 +264,85 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
 
       {error && <p className={styles.errorText}>{error}</p>}
 
+      <div className={styles.mobileCards} aria-label="Список заказчиков">
+        {loading && directoryRows.length === 0 ? (
+          <p className={styles.mobileLoading}>Загрузка…</p>
+        ) : directoryRows.length === 0 ? (
+          <p className={styles.mobileEmpty}>
+            {!loading && directoryTotal > 0
+              ? 'Нет строк на этой странице.'
+              : 'Нет записей. Добавьте клиента или измените поиск.'}
+          </p>
+        ) : (
+          directoryRows.map((row) => {
+            const phone = formatCrmPhoneOrDash(row.phone);
+            const contractParts: string[] = [];
+            if (row.lastContractNumber) contractParts.push(`№ ${row.lastContractNumber}`);
+            if (row.lastContractDate) contractParts.push(formatDateDdMmYyyy(row.lastContractDate));
+            const contractLabel =
+              contractParts.length > 0
+                ? contractParts.join(' · ')
+                : row.contractCount
+                  ? String(row.contractCount)
+                  : '—';
+            const authorLabel =
+              row.rowSource === 'customer'
+                ? formatCrmAuditActor(resolveCrmCreatedByActor({ createdBy: row.createdBy }))
+                : '—';
+            const selected = selectedDirectoryRowId === row.id;
+            return (
+              <button
+                key={row.id}
+                type="button"
+                className={`${styles.mobileCard}${selected ? ` ${styles.mobileCardSelected}` : ''}`}
+                onClick={() => {
+                  setSelectedDirectoryRowId((prev) => (prev === row.id ? null : row.id));
+                }}
+              >
+                <div className={styles.mobileCardTop}>
+                  <div>
+                    <div className={styles.mobileCardName}>{row.displayName}</div>
+                    {phone !== '—' ? <div className={styles.mobileCardMeta}>{phone}</div> : null}
+                    {row.email ? <div className={styles.mobileCardMeta}>{row.email}</div> : null}
+                  </div>
+                  <span className={styles.mobileCardType}>
+                    {formatCrmEntityType(row.entityType)}
+                  </span>
+                </div>
+                <dl className={styles.mobileCardRows}>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Создан</dt>
+                    <dd>{row.rowSource === 'customer' ? formatCrmDateTime(row.createdAt) : '—'}</dd>
+                  </div>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Посл. замер</dt>
+                    <dd>
+                      {row.lastMeasurementDate ? formatDateDdMmYyyy(row.lastMeasurementDate) : '—'}
+                    </dd>
+                  </div>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Договор</dt>
+                    <dd>{contractLabel}</dd>
+                  </div>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Сумма</dt>
+                    <dd>
+                      {row.totalAmount != null && row.totalAmount > 0
+                        ? formatCurrency(row.totalAmount)
+                        : '—'}
+                    </dd>
+                  </div>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Автор</dt>
+                    <dd>{authorLabel}</dd>
+                  </div>
+                </dl>
+              </button>
+            );
+          })
+        )}
+      </div>
+
       <DataTable
         containerClassName={styles.directoryTable}
         paginationClassName={styles.directoryPagination}
@@ -303,6 +382,7 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
         title="Заказчик по договорам (без отдельной карточки)"
         size="lg"
         showCloseButton
+        compactOnMobile
       >
         {selectedDirectoryRow?.rowSource === 'contract_only' &&
         selectedDirectoryRow.contractCustomer ? (

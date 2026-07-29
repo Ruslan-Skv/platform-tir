@@ -19,6 +19,7 @@ export function useContractsListModalsState() {
   );
   const [trashOpen, setTrashOpen] = useState(false);
   const [packageHubPackageId, setPackageHubPackageId] = useState<string | null>(null);
+  const [invoicesHubPackageId, setInvoicesHubPackageId] = useState<string | null>(null);
   const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
   const [actPhotosModal, setActPhotosModal] = useState<{
     items: ContractsListActPhotoItem[];
@@ -47,6 +48,8 @@ export function useContractsListModalsState() {
     setTrashOpen,
     packageHubPackageId,
     setPackageHubPackageId,
+    invoicesHubPackageId,
+    setInvoicesHubPackageId,
     workOrdersHubPackageId,
     setWorkOrdersHubPackageId,
     actPhotosModal,

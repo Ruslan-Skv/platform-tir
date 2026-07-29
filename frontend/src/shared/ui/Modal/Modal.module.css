@@ -11,18 +11,28 @@
 
 .dialog {
   position: relative;
-  z-index: 50;
+  z-index: 1000;
 }
 
 .backdrop {
   background: rgb(0 0 0 / 50%);
   inset: 0;
   position: fixed;
-  transition: opacity 0.28s ease-out;
+  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .backdrop[data-closed] {
   opacity: 0;
+}
+
+.backdrop[data-enter] {
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.backdrop[data-leave] {
+  transition-duration: 0.18s;
+  transition-timing-function: ease-in;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backdrop {
@@ -154,23 +164,33 @@
   font-size: var(--modal-fs-base);
   line-height: var(--modal-lh);
   margin: 0 auto;
-  max-height: 90vh;
+  max-height: min(90vh, 90dvh);
   overflow-y: auto;
   padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
   position: relative;
   scrollbar-gutter: stable;
   transform: scale(1) translateY(0);
   transition:
-    box-shadow 0.28s ease-out,
-    border-color 0.28s ease-out,
-    opacity 0.28s ease-out,
-    transform 0.28s ease-out;
+    box-shadow 0.22s ease-out,
+    border-color 0.22s ease-out,
+    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
   width: calc(100% - 2rem);
 }
 
 .panel[data-closed] {
   opacity: 0;
-  transform: scale(0.97) translateY(10px);
+  transform: scale(0.98) translateY(12px);
+}
+
+.panel[data-enter] {
+  transition-duration: 0.22s;
+  transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.panel[data-leave] {
+  transition-duration: 0.18s;
+  transition-timing-function: ease-in;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -1092,39 +1112,85 @@
   padding: var(--admin-space-xs, 4px) var(--admin-space-xl, 12px);
 }
 
-/* Мобильная адаптация */
-@media (width <= 767px) {
+/* Под мобильной/планшетной шапкой админки (≤1024px, z-index: 120) */
+@media (width <= 1024px) {
+  .dialog {
+    z-index: 110;
+  }
+
+  .backdrop,
   .container {
-    padding: var(--modal-space-xl) var(--modal-space-sm);
+    /* только top — не трогаем inset: 0 (right/bottom/left), иначе панель схлопывается */
+    top: var(--admin-header-height, 0px);
+  }
+
+  .container {
+    overflow: hidden;
   }
 
   .center {
-    align-items: center;
+    box-sizing: border-box;
+    height: 100%;
+    max-height: 100%;
+    min-height: 0;
+  }
+
+  .panel {
+    max-height: 100%;
+  }
+}
+
+/* Мобильная адаптация */
+@media (width <= 767px) {
+  .container {
+    overflow: hidden;
+    padding: 0;
+  }
+
+  .center {
+    align-items: stretch;
+    box-sizing: border-box;
     display: flex;
-    justify-content: center;
-    min-height: 100%;
-    min-height: 100dvh;
-    padding: var(--modal-space-sm);
+    height: 100%;
+    justify-content: flex-start;
+    max-height: 100%;
+    min-height: 0;
+    overflow: hidden;
+    padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom, 0px));
     width: 100%;
   }
 
   .center.centerAlignTop {
-    align-items: flex-start;
-    padding-top: var(--admin-space-3xl, 20px);
+    align-items: stretch;
+    padding-top: 0.5rem;
   }
 
   .panel {
     border-radius: var(--modal-radius);
+    display: flex;
+    flex-direction: column;
     margin: 0;
-    max-height: 95vh;
+    max-height: 100%;
     max-width: none !important;
+    min-height: 0;
+    overflow: hidden;
     padding: var(--modal-space-xl) var(--modal-space-sm);
     width: 100%;
   }
 
   .header {
+    flex-shrink: 0;
     margin-bottom: var(--modal-space-xl);
     padding: 0 var(--modal-space-sm);
+  }
+
+  .content {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
   }
 
   .closeButton {
@@ -1150,18 +1216,11 @@
 }
 
 @media (width <= 480px) {
-  .container {
-    padding: 0.75rem 0.35rem;
-  }
-
   .center {
-    min-height: 100%;
-    min-height: 100dvh;
-    padding: 0.35rem;
+    padding: 0.35rem 0.35rem max(0.35rem, env(safe-area-inset-bottom, 0px));
   }
 
   .panel {
-    max-height: 95vh;
     padding: 0.75rem 0.25rem;
   }
 

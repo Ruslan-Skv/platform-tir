@@ -26,6 +26,8 @@
   --admin-font-size-3xl: 1.35rem;
   --admin-font-size-4xl: 1.75rem;
   --admin-font-size-5xl: 2rem;
+  /* Заголовок страницы: на мобиле как у /admin/leads */
+  --admin-page-title-size: var(--admin-font-size-4xl);
   --admin-line-height-none: 0;
   --admin-line-height-flat: 1;
   --admin-line-height-2xs: 1.1;
@@ -765,6 +767,17 @@
   max-width: 100%;
   box-sizing: border-box;
   background-color: var(--admin-bg-page, #ffffff);
+}
+
+@media (max-width: 900px) {
+  .adminLayout {
+    --admin-page-title-size: var(--admin-font-size-2xl);
+  }
+
+  /* Единый размер H1 страниц (образец: /admin/leads) */
+  .content :global(h1) {
+    font-size: var(--admin-page-title-size) !important;
+  }
 }
 
 .contentLoading {

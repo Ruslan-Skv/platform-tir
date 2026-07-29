@@ -126,6 +126,14 @@
     color 0.2s;
 }
 
+.conversationItemTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
 .conversationItem:hover {
   border-color: var(--admin-border-strong);
 }
@@ -322,7 +330,7 @@
   border-radius: var(--admin-radius-xl);
   font-size: var(--admin-font-size-xs);
   font-weight: 500;
-  margin-left: var(--admin-space-md);
+  margin-left: 0;
 }
 
 .statusOPEN {
@@ -420,12 +428,182 @@
   color: var(--admin-text-muted);
 }
 
+.statusSelectRow {
+  display: none;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.statusSelect {
+  flex: 1;
+  min-width: 0;
+  min-height: 2.25rem;
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+}
+
+.statusSelect:focus {
+  outline: none;
+  border-color: var(--admin-info, #2563eb);
+}
+
+.backButton {
+  display: none;
+  align-items: center;
+  gap: var(--admin-space-2xs);
+  flex-shrink: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.backButton:hover {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+  color: var(--admin-text-primary);
+}
+
+.chatHeaderName {
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  word-break: break-word;
+}
+
+.chatHeaderEmail {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  word-break: break-all;
+}
+
 @media (max-width: 900px) {
-  .title {
-    font-size: var(--admin-font-size-2xl);
+  .page {
+    max-width: 100%;
+  }
+
+  .header {
+    gap: var(--admin-space-md);
+    margin-bottom: var(--admin-space-xl);
   }
 
   .layout {
     grid-template-columns: 1fr;
+    gap: 0;
+    min-height: calc(100dvh - 9.5rem);
   }
+
+  .layoutListOnly .chatArea {
+    display: none;
+  }
+
+  .layoutChatOpen .conversationList {
+    display: none;
+  }
+
+  .conversationList,
+  .chatArea {
+    min-height: calc(100dvh - 9.5rem);
+    border-radius: var(--admin-radius-lg);
+  }
+
+  .conversationListHeader {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .chipRow {
+    display: none;
+  }
+
+  .statusSelectRow {
+    display: flex;
+  }
+
+  .conversationListScroll {
+    padding: var(--admin-space-sm);
+  }
+
+  .conversationItem {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .backButton {
+    display: inline-flex;
+  }
+
+  .chatHeader {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+    gap: var(--admin-space-sm);
+    flex-wrap: nowrap;
+  }
+
+  .chatHeaderInfo {
+    flex: 1;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--admin-space-2xs);
+    min-width: 0;
+  }
+
+  .chatMessages {
+    padding: var(--admin-space-md) var(--admin-space-lg);
+    gap: var(--admin-space-md);
+  }
+
+  .chatMessage {
+    max-width: 92%;
+    padding: var(--admin-space-md) var(--admin-space-lg);
+    font-size: var(--admin-font-size-sm);
+  }
+
+  .chatInputRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .chatInputRow input {
+    width: 100%;
+    min-height: 2.5rem;
+  }
+
+  .chatInputRow button {
+    width: 100%;
+    min-height: 2.5rem;
+  }
+
+  .deleteButton {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .emptyState {
+    padding: var(--admin-space-4xl) var(--admin-space-xl);
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSelect {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .backButton:hover {
+  border-color: var(--admin-info-bright, #60a5fa);
+  color: var(--admin-text-primary);
 }

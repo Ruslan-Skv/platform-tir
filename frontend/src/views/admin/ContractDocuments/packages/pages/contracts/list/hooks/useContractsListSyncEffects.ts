@@ -46,6 +46,7 @@ export function useContractsListSyncEffects({
 }: UseContractsListSyncEffectsParams) {
   useEffect(() => {
     setPage(1);
+    setExpandedObjectId(null);
   }, [
     searchNorm,
     managerFilter,
@@ -56,11 +57,8 @@ export function useContractsListSyncEffects({
     dateTo,
     listViewMode,
     setPage,
+    setExpandedObjectId,
   ]);
-
-  useEffect(() => {
-    if (listViewMode === 'flat') setExpandedObjectId(null);
-  }, [listViewMode, setExpandedObjectId]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(totalVisible / limit));

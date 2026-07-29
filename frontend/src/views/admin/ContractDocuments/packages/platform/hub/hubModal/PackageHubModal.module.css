@@ -493,3 +493,137 @@
 .conductPanel :global(.paymentsFormHubRowCompact) {
   max-width: 100%;
 }
+
+.modalPanel {
+  width: min(96vw, 72rem);
+}
+
+.modalContent {
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .modalPanel {
+    width: 100%;
+    max-width: none;
+  }
+
+  .modalContent {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+
+  .hubFormShell {
+    gap: var(--admin-space-sm, 6px);
+    min-height: 0;
+  }
+
+  .hubModalSection {
+    padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+    border-radius: var(--admin-radius-md, 8px);
+  }
+
+  .pipelineSectionHead {
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--admin-space-xs, 4px);
+  }
+
+  .pipelineRefusalHeadBtn {
+    width: 100%;
+    margin-left: 0;
+    min-height: 2rem;
+    white-space: normal;
+  }
+
+  .pipelineIntro {
+    font-size: var(--admin-font-size-xs, 0.75rem);
+    line-height: 1.35;
+  }
+
+  .windowsDeadlineRow {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .windowsDeadlineDateValue {
+    font-size: var(--admin-font-size-sm, 0.8125rem);
+  }
+
+  .pipelineStepItem {
+    grid-template-columns: 1.2rem 1fr;
+    gap: var(--admin-space-sm, 6px);
+    padding-bottom: var(--admin-space-md, 8px);
+  }
+
+  .pipelineStepHeader {
+    gap: var(--admin-space-xs, 4px);
+  }
+
+  .pipelineStepTitle {
+    font-size: var(--admin-font-size-sm, 0.8125rem);
+  }
+
+  .pipelineStepDetail,
+  .pipelineStepHint,
+  .pipelineRevertHint {
+    font-size: var(--admin-font-size-xs, 0.75rem);
+    line-height: 1.3;
+  }
+
+  .pipelineStepActions,
+  .pipelineStepActionsSecondary {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--admin-space-xs, 4px);
+  }
+
+  .pipelineStepActions :global(button),
+  .pipelineStepActionsSecondary :global(button),
+  .pipelineStepActions :global(a),
+  .pipelineStepActionsSecondary :global(a) {
+    width: 100%;
+    min-height: 2rem;
+    justify-content: center;
+  }
+
+  .pipelinePaymentsBadges {
+    gap: 4px;
+  }
+
+  .pipelinePayBadge {
+    font-size: 0.6875rem;
+    padding: 2px 8px;
+  }
+
+  .pipelineAddendumGrid {
+    grid-template-columns: 1fr;
+    gap: var(--admin-space-sm, 6px);
+  }
+
+  .summaryPanel :global(.paymentsHubCompactCard),
+  .conductPanel :global(.paymentsFormCard),
+  .conductPanel :global(.paymentsHubConductFormWrap) {
+    overflow: hidden;
+  }
+
+  .summaryPanel :global(.paymentsHubBlockTitle),
+  .conductPanel :global(.paymentsHubBlockTitle) {
+    margin-bottom: var(--admin-space-sm, 6px);
+    font-size: var(--admin-font-size-sm, 0.8125rem);
+  }
+
+  .summaryPanel :global(.paymentsHubSummaryRow),
+  .conductPanel :global(.paymentsHubSummaryRow) {
+    grid-template-columns: 1fr;
+    gap: 2px;
+  }
+
+  .conductPanel :global(.paymentsFormHubRowCompact) {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--admin-space-xs, 4px);
+  }
+}

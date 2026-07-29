@@ -11,7 +11,6 @@ export type UsePackageEditorHubCallbacksOptions = {
   setPackageHubOpen: (open: boolean) => void;
   workOrdersHubListSurface: boolean;
   onWorkOrdersHubListClose?: () => void;
-  onWorkOrdersHubListUpdated?: () => void;
   setWorkOrdersHubOpen: (open: boolean) => void;
 };
 
@@ -24,7 +23,6 @@ export function usePackageEditorHubCallbacks({
   setPackageHubOpen,
   workOrdersHubListSurface,
   onWorkOrdersHubListClose,
-  onWorkOrdersHubListUpdated,
   setWorkOrdersHubOpen,
 }: UsePackageEditorHubCallbacksOptions) {
   const getLiveFormForHub = useCallback(() => formRef.current, [formRef]);
@@ -52,16 +50,10 @@ export function usePackageEditorHubCallbacks({
   const closeWorkOrdersHub = useCallback(() => {
     if (workOrdersHubListSurface) {
       onWorkOrdersHubListClose?.();
-      onWorkOrdersHubListUpdated?.();
       return;
     }
     setWorkOrdersHubOpen(false);
-  }, [
-    workOrdersHubListSurface,
-    onWorkOrdersHubListClose,
-    onWorkOrdersHubListUpdated,
-    setWorkOrdersHubOpen,
-  ]);
+  }, [workOrdersHubListSurface, onWorkOrdersHubListClose, setWorkOrdersHubOpen]);
 
   return {
     getLiveFormForHub,

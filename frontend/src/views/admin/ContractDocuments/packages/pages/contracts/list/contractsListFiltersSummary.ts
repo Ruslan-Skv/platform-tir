@@ -113,26 +113,3 @@ export function buildContractsListFiltersSummary(
 
   return items;
 }
-
-const FILTERS_COLLAPSED_STORAGE_KEY = 'admin_contract_documents_contracts_filters_collapsed_v1';
-
-export function loadContractsListFiltersCollapsed(): boolean {
-  if (typeof window === 'undefined') return true;
-  try {
-    const raw = window.localStorage.getItem(FILTERS_COLLAPSED_STORAGE_KEY);
-    if (raw === '0') return false;
-    if (raw === '1') return true;
-  } catch {
-    /* ignore */
-  }
-  return true;
-}
-
-export function persistContractsListFiltersCollapsed(collapsed: boolean): void {
-  if (typeof window === 'undefined') return;
-  try {
-    window.localStorage.setItem(FILTERS_COLLAPSED_STORAGE_KEY, collapsed ? '1' : '0');
-  } catch {
-    /* ignore */
-  }
-}

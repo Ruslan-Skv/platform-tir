@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
+import { type ReactNode, useId, useMemo, useState } from 'react';
 
 import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection } from '@/shared/api/admin-crm';
@@ -11,11 +11,7 @@ import type {
   ContractsListViewMode,
   ContractsPageLimit,
 } from './contractsListFilters';
-import {
-  buildContractsListFiltersSummary,
-  loadContractsListFiltersCollapsed,
-  persistContractsListFiltersCollapsed,
-} from './contractsListFiltersSummary';
+import { buildContractsListFiltersSummary } from './contractsListFiltersSummary';
 import type { ContractsListQueuePreset } from './contractsListScope';
 
 type ContractsListFiltersPanelProps = {
@@ -52,18 +48,8 @@ export function ContractsListFiltersPanel({
   children,
 }: ContractsListFiltersPanelProps) {
   const contentId = useId();
+  /** Всегда свёрнуто при открытии страницы. */
   const [collapsed, setCollapsed] = useState(true);
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setCollapsed(loadContractsListFiltersCollapsed());
-    setHydrated(true);
-  }, []);
-
-  useEffect(() => {
-    if (!hydrated) return;
-    persistContractsListFiltersCollapsed(collapsed);
-  }, [collapsed, hydrated]);
 
   const summaryItems = useMemo(
     () =>

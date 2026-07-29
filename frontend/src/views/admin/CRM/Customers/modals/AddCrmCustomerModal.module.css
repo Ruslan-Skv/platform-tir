@@ -220,6 +220,37 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
+@media (max-width: 900px) {
+  .modalPanel {
+    padding: var(--admin-space-xl, 12px) var(--admin-space-lg, 10px) !important;
+  }
+
+  .personNameRow,
+  .passportRow,
+  .personNameEmailRow {
+    grid-template-columns: 1fr;
+  }
+
+  .phoneToolbarRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .phoneSlot {
+    flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .formShell :global([data-modal-form-actions]) {
+    flex-direction: column-reverse;
+  }
+
+  .formShell :global([data-modal-btn='primary']),
+  .formShell :global([data-modal-btn='secondary']) {
+    width: 100%;
+  }
+}
+
 .formShell :global([data-modal-form-group]) {
   gap: 2px;
   margin-bottom: 2px;

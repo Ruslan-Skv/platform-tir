@@ -283,7 +283,7 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
       </section>
 
       <div className={cdBase.paymentsTableWrap}>
-        <table className={cdBase.paymentsTable}>
+        <table className={`${cdBase.paymentsTable} ${styles.desktopTable}`}>
           <thead>
             <tr>
               <th>Дата</th>
@@ -327,6 +327,58 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
             )}
           </tbody>
         </table>
+
+        <div className={styles.mobileCards} aria-label="Журнал рабочего дня">
+          {loading ? (
+            <p className={styles.emptyHint}>Загрузка…</p>
+          ) : rows.length === 0 ? (
+            <p className={styles.emptyHint}>Нет записей за выбранный период</p>
+          ) : (
+            rows.map((row) => {
+              const tone = workDayRowClassName(row, styles);
+              return (
+                <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
+                  <div className={styles.mobileCardTop}>
+                    <strong className={styles.mobileCardDate}>
+                      {formatWorkDayDate(row.workDate)}
+                    </strong>
+                    <span className={styles.mobileCardStatus}>
+                      {workDayStatusLabel(row.status)}
+                    </span>
+                  </div>
+                  <dl className={styles.mobileCardRows}>
+                    <div className={styles.mobileCardRow}>
+                      <dt>Офис</dt>
+                      <dd>{row.office?.name ?? '—'}</dd>
+                    </div>
+                    <div className={styles.mobileCardRow}>
+                      <dt>Приход</dt>
+                      <dd>{formatWorkDayTime(row.startedAt)}</dd>
+                    </div>
+                    <div className={styles.mobileCardRow}>
+                      <dt>Уход</dt>
+                      <dd>{row.endedAt ? formatWorkDayTime(row.endedAt) : '—'}</dd>
+                    </div>
+                    <div className={styles.mobileCardRow}>
+                      <dt>Опоздание</dt>
+                      <dd>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</dd>
+                    </div>
+                    <div className={styles.mobileCardRow}>
+                      <dt>Ранний уход</dt>
+                      <dd>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</dd>
+                    </div>
+                    <div className={styles.mobileCardRow}>
+                      <dt>По делам</dt>
+                      <dd>
+                        <AbsenceCell row={row} />
+                      </dd>
+                    </div>
+                  </dl>
+                </article>
+              );
+            })
+          )}
+        </div>
       </div>
 
       <MyWorkDayRequestModal

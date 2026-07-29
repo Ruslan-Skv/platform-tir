@@ -51,7 +51,9 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
   } = model;
 
   return (
-    <div className={`${cdBase.page} ${cdBase.pageWide} ${cdHub.contractsListPage}`}>
+    <div
+      className={`${cdBase.page} ${cdBase.pageWide} ${cdHub.contractsListPage} ${pageStyles.pageMobile}`}
+    >
       <div className={cdHub.editorHeader}>
         <div className={cdHub.contractsListHeaderLeft}>
           <div className={cdHub.contractsListHeaderTitleGroup}>
@@ -98,7 +100,9 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
       {error ? <p className={cdBase.errorBanner}>{error}</p> : null}
 
       <div className={cdBase.paymentsTableWrap}>
-        <table className={`${cdBase.paymentsTable} ${cdBase.repairContractsTable}`}>
+        <table
+          className={`${cdBase.paymentsTable} ${cdBase.repairContractsTable} ${pageStyles.desktopTable}`}
+        >
           <thead>
             <tr>
               <th>№ счёта</th>
@@ -150,6 +154,57 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
             )}
           </tbody>
         </table>
+
+        <div className={pageStyles.mobileCards} aria-label="Список счетов">
+          {loading ? (
+            <p className={cdBase.hint}>Загрузка…</p>
+          ) : rows.length === 0 ? (
+            <p className={cdBase.hint}>Счетов пока нет.</p>
+          ) : (
+            rows.map((row) => (
+              <article key={row.id} className={pageStyles.mobileCard}>
+                <div className={pageStyles.mobileCardTop}>
+                  <div className={pageStyles.mobileCardNumber}>№ {row.invoiceNumber}</div>
+                  <div className={pageStyles.mobileCardAmount}>{formatMoneyRub(row.amount)}</div>
+                </div>
+                <dl className={pageStyles.mobileCardRows}>
+                  <div className={pageStyles.mobileCardRow}>
+                    <dt>Дата</dt>
+                    <dd>{formatDateRu(row.invoiceDate)}</dd>
+                  </div>
+                  <div className={pageStyles.mobileCardRow}>
+                    <dt>Договор</dt>
+                    <dd>
+                      <Link
+                        href={`/admin/contract-documents/contracts/${row.packageId}`}
+                        className={pageStyles.mobileCardLink}
+                      >
+                        {row.contractNumber || '—'}
+                      </Link>
+                    </dd>
+                  </div>
+                  <div className={pageStyles.mobileCardRow}>
+                    <dt>Заказчик</dt>
+                    <dd>{row.customerName || '—'}</dd>
+                  </div>
+                  <div className={pageStyles.mobileCardRow}>
+                    <dt>Основание</dt>
+                    <dd>{row.basis}</dd>
+                  </div>
+                </dl>
+                <div className={pageStyles.mobileCardActions}>
+                  <button
+                    type="button"
+                    className={pageStyles.mobileCardActionBtn}
+                    onClick={() => openContractInvoices(row.packageId)}
+                  >
+                    Счета договора
+                  </button>
+                </div>
+              </article>
+            ))
+          )}
+        </div>
       </div>
 
       <Modal
@@ -159,6 +214,7 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
         size="lg"
         className={crmFormStyles.modalPanel}
         showCloseButton
+        compactOnMobile
       >
         <div data-modal-form data-modal-density="compact">
           <p data-modal-form-hint className={pageStyles.modalHint}>

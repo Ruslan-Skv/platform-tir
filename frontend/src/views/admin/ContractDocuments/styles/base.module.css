@@ -1049,6 +1049,155 @@
   gap: 6px;
 }
 
+.invoiceLinesMobileRow {
+  background: transparent;
+}
+
+.invoiceLinesDeleteIcon {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+@media (max-width: 720px) {
+  /* «Счета на оплату»: на мобиле кнопки лучше в столбик */
+  .invoiceLinesActions:not(.invoiceLinesLoadRow) {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .invoiceLinesActions:not(.invoiceLinesLoadRow) button {
+    width: 100%;
+  }
+
+  /* «Загрузить позиции из»: это блок с select + кнопка, его вертикально складывать не надо */
+  .invoiceLinesLoadRow {
+    flex-direction: row;
+    align-items: flex-end;
+    gap: 8px;
+  }
+
+  .invoiceIssuedRowActions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .invoiceIssuedRowActions button {
+    width: 100%;
+  }
+
+  /* «Товары и услуги»: компактнее ячейки для меньшей необходимости скролла */
+  .invoiceLinesTable th,
+  .invoiceLinesTable td {
+    padding: 4px 6px;
+  }
+
+  .invoiceLinesKindCol {
+    width: 72px;
+    min-width: 72px;
+  }
+
+  /* Мобильный режим ручной таблицы: каждая строка как карточка */
+  .invoiceLinesTable thead {
+    display: none;
+  }
+
+  .invoiceLinesTable,
+  .invoiceLinesTable tbody,
+  .invoiceLinesTable tr,
+  .invoiceLinesTable td {
+    display: block;
+    width: 100%;
+  }
+
+  .invoiceLinesTable tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .invoiceLinesGroupHeader {
+    display: table-row !important;
+  }
+
+  .invoiceLinesGroupHeader td {
+    display: table-cell !important;
+    width: auto !important;
+  }
+
+  .invoiceLinesMobileRow {
+    background: var(--admin-surface, #fff);
+    border: 1px solid var(--admin-border, #e5e7eb);
+    border-radius: var(--admin-radius-md, 8px);
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 6px;
+    position: relative;
+  }
+
+  .invoiceLinesMobileRow td {
+    border: none;
+    padding: 0;
+    margin-bottom: 0;
+  }
+
+  .invoiceLinesMobileRow td:nth-child(1),
+  .invoiceLinesMobileRow td:nth-child(2) {
+    grid-column: 1 / -1;
+  }
+
+  .invoiceLinesMobileRow td:nth-child(6),
+  .invoiceLinesMobileRow td:nth-child(7) {
+    grid-column: 1 / -1;
+  }
+
+  .invoiceLinesMobileRow td::before {
+    content: attr(data-label);
+    display: block;
+    color: var(--admin-text-muted, #6b7280);
+    font-size: var(--admin-font-size-2xs, 0.6875rem);
+    font-weight: 600;
+    line-height: 1.2;
+    margin-bottom: 2px;
+  }
+
+  .invoiceLinesMobileRow td[data-label='Действие'] {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: auto;
+    margin: 0;
+    padding: 0;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+  }
+
+  .invoiceLinesMobileRow td[data-label='Действие']::before {
+    display: none;
+  }
+
+  .invoiceLinesMobileRow td[data-label='Действие'] button {
+    width: 1.75rem;
+    min-width: 1.75rem;
+    min-height: 1.75rem;
+    padding: 0;
+    border: none !important;
+    background: transparent !important;
+    box-shadow: none !important;
+    border-radius: 999px;
+    line-height: 1;
+  }
+
+  .invoiceLinesMobileRow td:nth-child(1) {
+    padding-right: 2.25rem;
+  }
+
+  .invoiceLinesMobileRow td:nth-child(2) {
+    padding-right: 0;
+  }
+}
+
 .invoiceLinesLoadRow {
   align-items: flex-end;
   margin-bottom: 10px;
@@ -1382,6 +1531,20 @@
 
   .paymentsFormHubRowCompact {
     grid-template-columns: 1fr 1fr;
+    row-gap: var(--admin-space-sm, 6px);
+    column-gap: var(--admin-space-sm, 6px);
+    align-items: start;
+  }
+
+  /* Верхний блок модалки "Счета": на мобиле только одна колонка, иначе поля слишком тесные */
+  .paymentsFormHubRowCompact.paymentsFormHubRowInvoice {
+    grid-template-columns: minmax(0, 1fr) minmax(4.5rem, 5.75rem);
+  }
+
+  .paymentsFormHubRowCompact.paymentsFormHubRowInvoice > :nth-child(3),
+  .paymentsFormHubRowCompact.paymentsFormHubRowInvoice > :nth-child(4),
+  .paymentsFormHubRowCompact.paymentsFormHubRowInvoice > :nth-child(5) {
+    grid-column: 1 / -1;
   }
 
   .paymentsFormHubRowCompact .paymentsFormHubSubmitField {

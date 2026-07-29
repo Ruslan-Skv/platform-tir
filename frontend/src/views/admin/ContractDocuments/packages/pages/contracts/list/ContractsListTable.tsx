@@ -11,6 +11,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import { ContractListObjectRow } from './ContractListObjectRow';
 import { ContractListPackageRow } from './ContractListPackageRow';
+import { ContractsListMobileCards } from './ContractsListMobileCards';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
 import { type ContractsListColumnKey, isContractsListColumnVisible } from './contractsListColumns';
 import type { ContractsListDisplayItem } from './contractsListLayout';
@@ -44,6 +45,7 @@ type ContractsListTableProps = {
   onCopyPackage: (packageId: string) => void;
   onDeletePackage: (pkg: ContractDocumentPackage) => void;
   onOpenHub: (packageId: string) => void;
+  onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
   onOpenActPhotos: (payload: { items: ContractsListActPhotoItem[]; contractLabel: string }) => void;
 };
@@ -75,6 +77,7 @@ export function ContractsListTable({
   onCopyPackage,
   onDeletePackage,
   onOpenHub,
+  onOpenInvoicesHub,
   onOpenWorkOrdersHub,
   onOpenActPhotos,
 }: ContractsListTableProps) {
@@ -246,6 +249,7 @@ export function ContractsListTable({
                       onCopy={onCopyPackage}
                       onDelete={onDeletePackage}
                       onOpenHub={onOpenHub}
+                      onOpenInvoicesHub={onOpenInvoicesHub}
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}
                       onOpenActPhotos={onOpenActPhotos}
                     />
@@ -256,6 +260,29 @@ export function ContractsListTable({
           </table>
         </div>
       </div>
+
+      <ContractsListMobileCards
+        loading={loading}
+        rowsCount={rowsCount}
+        tableDisplayItemsCount={tableDisplayItemsCount}
+        emptyFilteredListMessage={emptyFilteredListMessage}
+        paginatedDisplayItems={paginatedDisplayItems}
+        addendumColumnCount={addendumColumnCount}
+        objectsById={objectsById}
+        expandedObjectId={expandedObjectId}
+        onToggleObjectExpand={onToggleObjectExpand}
+        crmUsers={crmUsers}
+        creating={creating}
+        copyingPackageId={copyingPackageId}
+        deletingPackageId={deletingPackageId}
+        router={router}
+        onCopyPackage={onCopyPackage}
+        onDeletePackage={onDeletePackage}
+        onOpenHub={onOpenHub}
+        onOpenInvoicesHub={onOpenInvoicesHub}
+        onOpenWorkOrdersHub={onOpenWorkOrdersHub}
+      />
+
       {!loading && totalVisible > 0 ? (
         <AdminTablePagination
           page={page}

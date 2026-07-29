@@ -234,23 +234,95 @@
   background: rgb(239 68 68 / 0.16);
 }
 
+.mobileCards {
+  display: none;
+}
+
+.mobileCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.mobileCardDate {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.mobileCardStatus {
+  flex-shrink: 0;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-pill);
+  background: var(--admin-surface-soft);
+  border: 1px solid var(--admin-border);
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.mobileCardRows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+}
+
+.mobileCardRow {
+  display: grid;
+  grid-template-columns: 6.25rem minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+.mobileCardRow dt {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.mobileCardRow dd {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.mobileCard.rowLate {
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  border-color: var(--admin-warning-border, #fcd34d);
+}
+
+.mobileCard.rowAuto {
+  background: var(--admin-danger-bg-soft, #fef2f2);
+  border-color: var(--admin-danger-border, #fecaca);
+}
+
 @media (max-width: 900px) {
   .header {
-    gap: var(--admin-space-sm) !important;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-md) !important;
     margin-bottom: var(--admin-space-md) !important;
     padding-bottom: var(--admin-space-sm) !important;
-    align-items: center;
   }
 
   .headerLeft {
     gap: var(--admin-space-md) !important;
     flex-wrap: wrap;
     min-width: 0;
-    flex: 1;
-  }
-
-  .header .title {
-    font-size: var(--admin-font-size-2xl);
+    width: 100%;
   }
 
   .header .count {
@@ -259,15 +331,35 @@
   }
 
   .headerActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--admin-space-sm);
-    flex-shrink: 0;
     width: 100%;
-    justify-content: flex-start;
+    justify-content: stretch;
   }
 
   .headerActions :global(button) {
+    width: 100%;
+    min-height: 2.5rem;
     font-size: var(--admin-font-size-xs);
-    padding: var(--admin-space-xs) var(--admin-space-md);
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  /* «Обновить» — компактная, в одной ячейке сетки */
+  .headerActions :global(button[aria-label*='Обновить']),
+  .headerActions :global(button[title='Обновить']) {
+    width: auto;
+    min-width: 2.5rem;
+    padding: var(--admin-space-sm);
+    justify-self: start;
+  }
+
+  .returnBtn {
+    width: 100%;
+    min-height: 2.5rem;
   }
 
   .ipHelpWrap {
@@ -299,6 +391,7 @@
   .dateInput {
     flex: 1 1 auto;
     width: 100%;
+    min-height: 2.5rem;
   }
 
   .stats {
@@ -310,4 +403,63 @@
     padding: 2px var(--admin-space-md);
     font-size: var(--admin-font-size-xs);
   }
+
+  .requestsSection {
+    margin-bottom: var(--admin-space-md);
+  }
+
+  .requestItem {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+  }
+
+  .requestMain {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--admin-space-xs);
+  }
+
+  .requestCancelBtn {
+    width: 100%;
+    min-height: 2.5rem;
+  }
+
+  .desktopTable {
+    display: none;
+  }
+
+  .mobileCards {
+    display: flex;
+    flex-direction: column;
+    gap: var(--admin-space-sm);
+    margin-top: var(--admin-space-sm);
+  }
+
+  .absenceCell {
+    min-width: 0;
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowLate {
+  background: rgb(245 158 11 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowAuto {
+  background: rgb(239 68 68 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardDate {
+  color: var(--admin-text-primary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardStatus {
+  background: var(--admin-text-secondary);
+  border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
 }

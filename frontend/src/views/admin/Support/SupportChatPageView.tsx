@@ -1,5 +1,7 @@
 'use client';
 
+import { ChevronLeftIcon } from '@heroicons/react/24/outline';
+
 import { useState } from 'react';
 
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
@@ -59,7 +61,9 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
           />
         </div>
       </header>
-      <div className={styles.layout}>
+      <div
+        className={`${styles.layout} ${selected ? styles.layoutChatOpen : styles.layoutListOnly}`}
+      >
         <div className={styles.conversationList}>
           <div className={styles.conversationListHeader}>
             <div className={styles.chipRow} role="group" aria-label="Статус диалога">
@@ -76,9 +80,27 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
                 </button>
               ))}
             </div>
+            <label className={styles.statusSelectRow}>
+              <span className={styles.chipRowLabel}>Статус</span>
+              <select
+                className={styles.statusSelect}
+                value={statusFilter}
+                disabled={refreshBusy}
+                aria-label="Статус диалога"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                {STATUS_FILTER_OPTIONS.map((opt) => (
+                  <option key={opt.value || 'all'} value={opt.value}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
           {loading ? (
             <div className={styles.loading}>Загрузка диалогов...</div>
+          ) : conversations.length === 0 ? (
+            <div className={styles.emptyState}>Диалогов пока нет</div>
           ) : (
             <div className={styles.conversationListScroll}>
               {conversations.map((c) => (
@@ -88,10 +110,12 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
                   className={`${styles.conversationItem} ${selected?.id === c.id ? styles.active : ''}`}
                   onClick={() => setSelected(c)}
                 >
-                  <span className={styles.conversationUser}>{userName(c)}</span>
-                  <span className={`${styles.statusBadge} ${styles[`status${c.status}`]}`}>
-                    {STATUS_LABELS[c.status] ?? c.status}
-                  </span>
+                  <div className={styles.conversationItemTop}>
+                    <span className={styles.conversationUser}>{userName(c)}</span>
+                    <span className={`${styles.statusBadge} ${styles[`status${c.status}`]}`}>
+                      {STATUS_LABELS[c.status] ?? c.status}
+                    </span>
+                  </div>
                   <div className={styles.conversationMeta}>{c.user.email}</div>
                   {c.messages?.[0] && (
                     <div className={styles.conversationPreview}>{c.messages[0].content}</div>
@@ -109,8 +133,18 @@ export function SupportChatPageView({ model }: SupportChatPageViewProps) {
           ) : (
             <>
               <div className={styles.chatHeader}>
+                <button
+                  type="button"
+                  className={styles.backButton}
+                  onClick={() => setSelected(null)}
+                  aria-label="К списку диалогов"
+                >
+                  <ChevronLeftIcon width={20} height={20} aria-hidden />
+                  <span>Диалоги</span>
+                </button>
                 <div className={styles.chatHeaderInfo}>
-                  {userName(selected)} · {selected.user.email}
+                  <span className={styles.chatHeaderName}>{userName(selected)}</span>
+                  <span className={styles.chatHeaderEmail}>{selected.user.email}</span>
                   <span className={`${styles.statusBadge} ${styles[`status${selected.status}`]}`}>
                     {STATUS_LABELS[selected.status] ?? selected.status}
                   </span>

@@ -50,7 +50,7 @@ export function ContractsListPageHeader({
           {objectGroupCount > 0 ? ` · ${objectGroupCount} объектов` : ''}
         </span>
       </div>
-      <div className={cdChrome.headerButtonsRow}>
+      <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
         <button
           data-admin-mutation
           type="button"
@@ -60,11 +60,13 @@ export function ContractsListPageHeader({
         >
           {creating ? 'Создание…' : '+ Новый договор'}
         </button>
-        <ContractsListColumnsSelector
-          visibleColumns={visibleColumns}
-          onVisibleColumnsChange={onVisibleColumnsChange}
-          disabled={loading}
-        />
+        <span className={cdHub.contractsListColumnsSelectorMobileHide}>
+          <ContractsListColumnsSelector
+            visibleColumns={visibleColumns}
+            onVisibleColumnsChange={onVisibleColumnsChange}
+            disabled={loading}
+          />
+        </span>
         <AdminListRefreshButton
           disabled={actionsBusy || loading}
           busy={loading}

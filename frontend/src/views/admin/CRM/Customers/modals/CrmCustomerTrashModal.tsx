@@ -99,6 +99,7 @@ export function CrmCustomerTrashModal({ isOpen, onClose, onRestored }: CrmCustom
       size="lg"
       className={`${panelStyles.modalPanel} ${styles.trashPanel}`}
       showCloseButton
+      compactOnMobile
     >
       <form
         className={`${panelStyles.formShell} ${styles.shell}`}

@@ -151,6 +151,7 @@ export function ContractsListPageView({
         onCopyPackage={(id) => void mutations.handleCopyPackage(id)}
         onDeletePackage={mutations.requestDeletePackage}
         onOpenHub={modals.setPackageHubPackageId}
+        onOpenInvoicesHub={modals.setInvoicesHubPackageId}
         onOpenWorkOrdersHub={modals.setWorkOrdersHubPackageId}
         onOpenActPhotos={modals.setActPhotosModal}
       />
@@ -179,6 +180,9 @@ export function ContractsListPageView({
         packageHubPackageId={modals.packageHubPackageId}
         onClosePackageHub={() => modals.setPackageHubPackageId(null)}
         onPackageHubUpdated={() => void load.load()}
+        invoicesHubPackageId={modals.invoicesHubPackageId}
+        onCloseInvoicesHub={() => modals.setInvoicesHubPackageId(null)}
+        onInvoicesHubUpdated={() => void load.load()}
         workOrdersHubPackageId={modals.workOrdersHubPackageId}
         onCloseWorkOrdersHub={() => modals.setWorkOrdersHubPackageId(null)}
         onWorkOrdersHubUpdated={() => void load.load()}

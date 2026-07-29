@@ -177,6 +177,23 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
               </button>
             ))}
           </div>
+          <label className={styles.statusSelectRow}>
+            <span className={styles.chipRowLabel}>Статус</span>
+            <select
+              className={styles.select}
+              value={statusFilter}
+              disabled={refreshBusy}
+              aria-label="Статус заявки"
+              onChange={(e) => setStatusFilter((e.target.value || '') as LeadStatus | '')}
+            >
+              <option value="">Все ({statusStats.total ?? total})</option>
+              {Object.entries(LEAD_STATUS_LABELS).map(([key, label]) => (
+                <option key={key} value={key}>
+                  {label} ({statusStats[key] ?? 0})
+                </option>
+              ))}
+            </select>
+          </label>
 
           {!isDirector ? (
             <>

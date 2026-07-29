@@ -9,10 +9,12 @@ import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalo
 import cdHubModals from '../../../../styles/hub-modals.module.css';
 import { packageKindUiLabel, packageKindsWithCreateEnabled } from '../../../config';
 import { PackageHubModal } from '../../../platform/hub/hubModal/PackageHubModal';
+import { PackageInvoicesHubListModal } from '../../../platform/hub/invoices/PackageInvoicesHubListModal';
 import { PackageWorkOrdersHubListModal } from '../../../platform/hub/workOrders/PackageWorkOrdersHubListModal';
 import createDirectionStyles from './ContractsCreateDirectionModal.module.css';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
 import { PackageContractTrashModal } from './modals/PackageContractTrashModal';
+import { useListModalPresence } from './useListModalPresence';
 
 type ContractsListModalsProps = {
   creating: boolean;
@@ -32,6 +34,9 @@ type ContractsListModalsProps = {
   packageHubPackageId: string | null;
   onClosePackageHub: () => void;
   onPackageHubUpdated: () => void;
+  invoicesHubPackageId: string | null;
+  onCloseInvoicesHub: () => void;
+  onInvoicesHubUpdated: () => void;
   workOrdersHubPackageId: string | null;
   onCloseWorkOrdersHub: () => void;
   onWorkOrdersHubUpdated: () => void;
@@ -55,10 +60,17 @@ export function ContractsListModals({
   packageHubPackageId,
   onClosePackageHub,
   onPackageHubUpdated,
+  invoicesHubPackageId,
+  onCloseInvoicesHub,
+  onInvoicesHubUpdated,
   workOrdersHubPackageId,
   onCloseWorkOrdersHub,
   onWorkOrdersHubUpdated,
 }: ContractsListModalsProps) {
+  const packageHub = useListModalPresence(packageHubPackageId);
+  const invoicesHub = useListModalPresence(invoicesHubPackageId);
+  const workOrdersHub = useListModalPresence(workOrdersHubPackageId);
+
   return (
     <>
       <Modal
@@ -179,21 +191,30 @@ export function ContractsListModals({
         onRestored={onTrashRestored}
       />
 
-      {packageHubPackageId ? (
+      {packageHub.mountedId ? (
         <PackageHubModal
-          packageId={packageHubPackageId}
-          isOpen
+          packageId={packageHub.mountedId}
+          isOpen={packageHub.open}
           onClose={onClosePackageHub}
           onUpdated={onPackageHubUpdated}
         />
       ) : null}
 
-      {workOrdersHubPackageId ? (
+      {workOrdersHub.mountedId ? (
         <PackageWorkOrdersHubListModal
-          packageId={workOrdersHubPackageId}
-          isOpen
+          packageId={workOrdersHub.mountedId}
+          isOpen={workOrdersHub.open}
           onClose={onCloseWorkOrdersHub}
           onUpdated={onWorkOrdersHubUpdated}
+        />
+      ) : null}
+
+      {invoicesHub.mountedId ? (
+        <PackageInvoicesHubListModal
+          packageId={invoicesHub.mountedId}
+          isOpen={invoicesHub.open}
+          onClose={onCloseInvoicesHub}
+          onUpdated={onInvoicesHubUpdated}
         />
       ) : null}
     </>

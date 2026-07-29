@@ -14,6 +14,8 @@ import { getDisplayContractNumber } from '@/views/admin/ContractDocuments/packag
 import { mergePackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import { PackageHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/PackageHubIcon';
 import { PACKAGE_HUB_MODAL_TITLE } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/packageHubConstants';
+import { PackageInvoicesHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageInvoicesHubIcon';
+import { PACKAGE_INVOICES_MODAL_TITLE } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageInvoicesModal';
 import { packageListPipelineStatusLabel } from '@/views/admin/ContractDocuments/packages/platform/hub/pipeline/packagePipeline';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
@@ -72,6 +74,7 @@ export type ContractListPackageRowProps = {
   onCopy: (packageId: string) => void;
   onDelete: (pkg: ContractDocumentPackage) => void;
   onOpenHub: (packageId: string) => void;
+  onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
   onOpenActPhotos: (payload: { items: ContractsListActPhotoItem[]; contractLabel: string }) => void;
 };
@@ -92,6 +95,7 @@ export function ContractListPackageRow({
   onCopy,
   onDelete,
   onOpenHub,
+  onOpenInvoicesHub,
   onOpenWorkOrdersHub,
   onOpenActPhotos,
 }: ContractListPackageRowProps) {
@@ -188,6 +192,18 @@ export function ContractListPackageRow({
         <div
           className={`${cdEstimatesList.estimatesCardActions} ${cdEstimatesList.contractsListActionsGrid}`}
         >
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            <AdminTableIconButton
+              disabled={
+                loading || creating || copyingPackageId !== null || deletingPackageId !== null
+              }
+              title={PACKAGE_INVOICES_MODAL_TITLE}
+              aria-label={`${PACKAGE_INVOICES_MODAL_TITLE} (${num})`}
+              onClick={() => onOpenInvoicesHub(pkg.id)}
+            >
+              <PackageInvoicesHubIcon />
+            </AdminTableIconButton>
+          </div>
           <div className={cdEstimatesList.contractsListActionsSlot}>
             <AdminTableIconButton
               disabled={

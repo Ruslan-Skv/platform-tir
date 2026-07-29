@@ -198,6 +198,7 @@ export function PackageInvoicesModal({
       size="lg"
       className={crmFormStyles.modalPanel}
       showCloseButton
+      compactOnMobile
     >
       <div
         data-modal-form

@@ -434,6 +434,7 @@ export function CrmCustomerDetailModal({
         size="lg"
         className={formStyles.modalPanel}
         showCloseButton
+        compactOnMobile
       >
         {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
         {error ? <p data-modal-form-error>{error}</p> : null}
@@ -692,6 +693,7 @@ export function CrmCustomerDetailModal({
         title="Удалить карточку клиента?"
         size="sm"
         showCloseButton
+        compactOnMobile
       >
         <div className={confirmModalStyles.content}>
           <p className={confirmModalStyles.message}>

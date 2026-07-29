@@ -10,7 +10,11 @@ import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdInteractiveEstimate from '../../../../styles/interactive-estimate.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import { printPackageWorkOrderHubTab } from '../../workOrders/packageWorkOrderHubPrint';
-import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
+import {
+  type PackageWorkOrderHubContextValue,
+  PackageWorkOrderHubProvider,
+  usePackageWorkOrderHub,
+} from './PackageWorkOrderHubContext';
 import hubStyles from './PackageWorkOrdersHubModal.module.css';
 import { PackageWorkOrdersHubPanels } from './PackageWorkOrdersHubPanels';
 import {
@@ -30,37 +34,26 @@ export type PackageWorkOrdersHubModalProps = {
   unassignedInteractiveRowsCount: number;
   headerContractNumberLabel?: string;
   headerContractDateLabel?: string;
+  loading?: boolean;
+  error?: string | null;
+  workOrderHubContextValue?: PackageWorkOrderHubContextValue | null;
 };
 
-export function PackageWorkOrdersHubModal({
-  isOpen,
-  onClose,
-  panelTab,
-  onPanelTabChange,
-  addendumSlotCount,
-  packageKind = 'REPAIR',
-  unassignedInteractiveRowsCount,
+function PackageWorkOrdersHubModalTitle({
   headerContractNumberLabel,
   headerContractDateLabel,
-}: PackageWorkOrdersHubModalProps) {
-  const hubCtx = usePackageWorkOrderHub();
-  const hubTabs = packageWorkOrderHubTabsForPackage(addendumSlotCount, packageKind);
-
-  const modalTitle = (
+  onClose,
+}: {
+  headerContractNumberLabel?: string;
+  headerContractDateLabel?: string;
+  onClose: () => void;
+}) {
+  return (
     <div className={hubStyles.modalHeaderRow}>
       <span className={hubStyles.modalHeaderTitle}>
         {formatPackageWorkOrderHubModalTitle(headerContractNumberLabel, headerContractDateLabel)}
       </span>
       <div className={hubStyles.modalHeaderActions}>
-        <button
-          type="button"
-          className={hubStyles.headerIconBtn}
-          title="Печать"
-          aria-label="Печать"
-          onClick={() => printPackageWorkOrderHubTab(panelTab, hubCtx)}
-        >
-          <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
-        </button>
         <button
           type="button"
           className={hubStyles.headerIconBtn}
@@ -72,17 +65,27 @@ export function PackageWorkOrdersHubModal({
       </div>
     </div>
   );
+}
+
+function PackageWorkOrdersHubReadyBody({
+  panelTab,
+  onPanelTabChange,
+  addendumSlotCount,
+  packageKind,
+  unassignedInteractiveRowsCount,
+}: {
+  panelTab: PackageWorkOrderHubTabId;
+  onPanelTabChange: (tab: PackageWorkOrderHubTabId) => void;
+  addendumSlotCount: number;
+  packageKind: ContractDocumentPackageKind;
+  unassignedInteractiveRowsCount: number;
+}) {
+  const hubCtx = usePackageWorkOrderHub();
+  const hubTabs = packageWorkOrderHubTabsForPackage(addendumSlotCount, packageKind);
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={modalTitle}
-      titleClassName={hubStyles.modalTitle}
-      size="lg"
-      showCloseButton={false}
-    >
-      <div className={hubStyles.modalBody} data-repair-work-orders-hub-modal>
+    <div className={hubStyles.modalBody} data-repair-work-orders-hub-modal>
+      <div className={hubStyles.hubToolbar}>
         <div
           className={`${cdChrome.tabBar} ${cdChrome.blockTabs} ${cdChrome.packageTabBarCompact} ${cdBase.blockTabs} ${cdBase.packageTabBarCompact} ${hubStyles.hubTabBar}`}
           role="tablist"
@@ -121,8 +124,87 @@ export function PackageWorkOrdersHubModal({
             </button>
           ))}
         </div>
+        <button
+          type="button"
+          className={hubStyles.headerIconBtn}
+          title="Печать"
+          aria-label="Печать"
+          onClick={() => printPackageWorkOrderHubTab(panelTab, hubCtx)}
+        >
+          <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
+        </button>
+      </div>
+      <div className={hubStyles.panelsScroll}>
         <PackageWorkOrdersHubPanels panelTab={panelTab} />
       </div>
+    </div>
+  );
+}
+
+/**
+ * Одна модалка на весь жизненный цикл (как «Настройки обучающей платформы»):
+ * без remount при окончании загрузки — плавное появление/исчезновение.
+ */
+export function PackageWorkOrdersHubModal({
+  isOpen,
+  onClose,
+  panelTab,
+  onPanelTabChange,
+  addendumSlotCount,
+  packageKind = 'REPAIR',
+  unassignedInteractiveRowsCount,
+  headerContractNumberLabel,
+  headerContractDateLabel,
+  loading = false,
+  error = null,
+  workOrderHubContextValue = null,
+}: PackageWorkOrdersHubModalProps) {
+  const showReady = !loading && !error;
+  const readyBody = showReady ? (
+    <PackageWorkOrdersHubReadyBody
+      panelTab={panelTab}
+      onPanelTabChange={onPanelTabChange}
+      addendumSlotCount={addendumSlotCount}
+      packageKind={packageKind}
+      unassignedInteractiveRowsCount={unassignedInteractiveRowsCount}
+    />
+  ) : null;
+
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={
+        <PackageWorkOrdersHubModalTitle
+          headerContractNumberLabel={headerContractNumberLabel}
+          headerContractDateLabel={headerContractDateLabel}
+          onClose={onClose}
+        />
+      }
+      titleClassName={hubStyles.modalTitle}
+      size="lg"
+      showCloseButton={false}
+      compactOnMobile
+      className={hubStyles.modalPanel}
+      contentClassName={hubStyles.modalContent}
+    >
+      {loading ? (
+        <p data-modal-form-hint style={{ margin: 0 }}>
+          Загрузка…
+        </p>
+      ) : null}
+      {error ? (
+        <p data-modal-form-error style={{ margin: 0 }}>
+          {error}
+        </p>
+      ) : null}
+      {workOrderHubContextValue != null ? (
+        <PackageWorkOrderHubProvider value={workOrderHubContextValue}>
+          {readyBody}
+        </PackageWorkOrderHubProvider>
+      ) : (
+        readyBody
+      )}
     </Modal>
   );
 }
