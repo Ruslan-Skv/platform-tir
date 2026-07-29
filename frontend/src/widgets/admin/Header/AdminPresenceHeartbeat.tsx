@@ -8,7 +8,7 @@ import { postAdminPresenceHeartbeat } from '@/shared/api/admin-presence';
 const INTERVAL_MS = 25_000;
 
 /**
- * Периодически сообщает серверу, что вкладка админки открыта — для списка «кто в админке» (супер-админ).
+ * Периодически сообщает серверу, что вкладка админки открыта — для списка «кто в админке».
  */
 export function AdminPresenceHeartbeat() {
   const { isAuthenticated, isLoading, token } = useAuth();

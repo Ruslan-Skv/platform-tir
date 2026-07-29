@@ -205,3 +205,8 @@ export function canUseAdminNotificationBell(role: string | null | undefined): bo
   if (!role) return false;
   return (ADMIN_NOTIFICATION_BELL_ROLES as readonly string[]).includes(role);
 }
+
+/** Те же роли, что и для колокольчика: все сотрудники админки кроме стажёра. */
+export function canSeeAdminOnlineAvatars(role: string | null | undefined): boolean {
+  return canUseAdminNotificationBell(role);
+}

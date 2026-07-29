@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { type AdminOnlineUser, getAdminOnlineAdmins } from '@/shared/api/admin-presence';
-import { getRoleLabel } from '@/shared/config/admin-roles';
+import { canSeeAdminOnlineAvatars, getRoleLabel } from '@/shared/config/admin-roles';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
 
 import styles from './AdminHeader.module.css';
@@ -23,7 +23,7 @@ function displayTitle(u: AdminOnlineUser): string {
 
 export function AdminOnlineAvatars() {
   const { isAuthenticated, isLoading, user } = useAuth();
-  const shouldLoadPresence = user?.role === 'SUPER_ADMIN';
+  const shouldLoadPresence = canSeeAdminOnlineAvatars(user?.role);
   const [online, setOnline] = useState<AdminOnlineUser[]>([]);
 
   const load = useCallback(async () => {
@@ -36,7 +36,10 @@ export function AdminOnlineAvatars() {
   }, []);
 
   useEffect(() => {
-    if (isLoading || !isAuthenticated || !shouldLoadPresence) return;
+    if (isLoading || !isAuthenticated || !shouldLoadPresence) {
+      setOnline([]);
+      return;
+    }
 
     const first = window.setTimeout(() => load(), 400);
     const id = window.setInterval(load, POLL_MS);
@@ -46,7 +49,7 @@ export function AdminOnlineAvatars() {
     };
   }, [isAuthenticated, isLoading, load, shouldLoadPresence]);
 
-  if (online.length === 0) {
+  if (!shouldLoadPresence || online.length === 0) {
     return null;
   }
 
