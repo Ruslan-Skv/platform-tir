@@ -101,8 +101,8 @@ const FOOTER_LINKS: { href: string; label: string; superAdminOnly?: boolean }[] 
   { href: '/admin/orders', label: 'Заказы' },
   { href: '/admin/support', label: 'Чат' },
   { href: '/admin/leads', label: 'Заявки' },
-  { href: '/admin/knowledge/analytics', label: 'Динамика обучения' },
-  { href: '/admin/crm/work-days', label: 'Рабочее время' },
+  { href: '/admin/knowledge/analytics', label: 'Динамика обучения', superAdminOnly: true },
+  { href: '/admin/crm/work-days', label: 'Рабочее время', superAdminOnly: true },
   { href: '/admin/knowledge/feedback', label: 'Обучение', superAdminOnly: true },
   { href: '/admin/content/site-feedback', label: 'Сайт', superAdminOnly: true },
 ];
@@ -777,25 +777,6 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                     <div className={styles.dropdownHeader}>
                       <span>Уведомления</span>
                       <div className={styles.dropdownHeaderActions}>
-                        <button
-                          type="button"
-                          className={styles.notificationSettingsLink}
-                          onClick={() => {
-                            setShowNotifications(false);
-                            setShowMyNotificationsModal(true);
-                          }}
-                        >
-                          Мои уведомления
-                        </button>
-                        {canOpenNotificationSettings ? (
-                          <Link
-                            href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                            className={styles.notificationSettingsLink}
-                            onClick={() => setShowNotifications(false)}
-                          >
-                            Настройки ролей
-                          </Link>
-                        ) : null}
                         {visibleNotificationItems.length > 0 ? (
                           <button
                             type="button"
