@@ -14,6 +14,8 @@ type SettingsSubPageViewProps = {
   headerVariant?: 'default' | 'badges';
   backLink?: { href: string; label: string };
   headerActions?: ReactNode;
+  /** Контент справа от заголовка (подсказка, бейдж и т.п.). */
+  titleAside?: ReactNode;
   /** Бейдж «Сохранено» справа от заголовка (как на странице замера). */
   saveNoticeVisible?: boolean;
   children: ReactNode;
@@ -26,6 +28,7 @@ export function SettingsSubPageView({
   headerVariant = 'default',
   backLink,
   headerActions,
+  titleAside,
   saveNoticeVisible = false,
   children,
 }: SettingsSubPageViewProps) {
@@ -50,6 +53,7 @@ export function SettingsSubPageView({
           <div className={styles.headerTop}>
             <div className={styles.headerTitleGroup}>
               <h1 className={styles.title}>{title}</h1>
+              {titleAside}
               <AdminSaveNotice visible={saveNoticeVisible} />
             </div>
             {headerActions ? <div className={styles.headerActions}>{headerActions}</div> : null}

@@ -186,19 +186,25 @@ export class AdminNotificationsController {
   }
 
   @Get('settings/by-role')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
   @ApiOperation({ summary: 'Получить настройки для конкретной роли (для страницы настроек)' })
   getSettingsByRole(@Query('role') role?: string) {
     return this.notifications.getSettingsByRole(role);
   }
 
   @Get('settings/all')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
   @ApiOperation({ summary: 'Список всех профилей настроек по ролям' })
   getAllSettings() {
     return this.notifications.getAllSettings();
   }
 
   @Patch('settings')
-  @ApiOperation({ summary: 'Обновить настройки уведомлений' })
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  @ApiOperation({ summary: 'Обновить настройки уведомлений по роли' })
   updateSettings(@Body() dto: UpdateAdminNotificationsDto) {
     return this.notifications.updateSettings(dto);
   }

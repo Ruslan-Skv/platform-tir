@@ -25,19 +25,14 @@ import type {
   AdminNotificationUser,
   CustomerNotificationSettings,
 } from '@/shared/api/admin-notifications';
+import { ADMIN_NOTIFICATION_BELL_ROLES } from '@/shared/config/admin-roles';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 
 import { ROLES_CONFIG } from '../shared/rolesConfig';
 import styles from './NotificationsSection.module.css';
 
-const ADMIN_ROLES = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'CONTENT_MANAGER',
-  'MODERATOR',
-  'SUPPORT',
-  'PARTNER',
-] as const;
+/** Роли, для которых SUPER_ADMIN настраивает события колокольчика (без стажёра). */
+const ADMIN_ROLES = ADMIN_NOTIFICATION_BELL_ROLES;
 
 const ROLE_OPTIONS: { value: string; label: string }[] = [
   { value: 'default', label: 'По умолчанию (для всех ролей)' },
@@ -207,7 +202,11 @@ export function NotificationsSection() {
       } else if (editMode === 'role' && formSettings) {
         const payload = {
           ...formSettings,
-          role: selectedRole === 'default' ? null : selectedRole,
+          role: isSuperAdmin
+            ? selectedRole === 'default'
+              ? null
+              : selectedRole
+            : (user?.role ?? null),
         };
         await updateAdminNotificationsSettings(payload);
       }
@@ -512,8 +511,9 @@ export function NotificationsSection() {
       <section className={styles.section}>
         <h2 className={styles.sectionTitle}>Уведомления в админке</h2>
         <p className={styles.sectionDescription}>
-          Настройте звуковые и браузерные уведомления при появлении новых отзывов, заказов и
-          сообщений в чате поддержки. Можно задать разные настройки для каждой роли.
+          Настройте звуковые и браузерные уведомления. Супер-администратор задаёт, какие события
+          показывать в колокольчике для каждой роли (кроме стажёра). Можно также переопределить
+          настройки для конкретного пользователя.
         </p>
         <form onSubmit={handleSave} className={styles.form}>
           {isSuperAdmin && (
@@ -550,7 +550,7 @@ export function NotificationsSection() {
               </div>
             </div>
           )}
-          {editMode === 'role' ? (
+          {isSuperAdmin && editMode === 'role' ? (
             <div className={styles.formRow}>
               <label htmlFor="roleSelector" className={styles.label}>
                 Настройки для роли
@@ -567,6 +567,20 @@ export function NotificationsSection() {
                   </option>
                 ))}
               </select>
+              <p className={styles.hint}>
+                Выберите роль и отметьте, какие события показывать в колокольчике и push для этой
+                роли. Стажёры колокольчик не получают.
+              </p>
+            </div>
+          ) : editMode === 'role' && !isSuperAdmin ? (
+            <div className={styles.formRow}>
+              <p className={styles.hint}>
+                Редактируются настройки вашей роли
+                {user?.role
+                  ? `: ${ROLES_CONFIG.find((c) => c.id === user.role)?.label ?? user.role}`
+                  : ''}
+                . Настройка событий по ролям доступна супер-администратору.
+              </p>
             </div>
           ) : editMode === 'user' ? (
             <div className={styles.formRow}>

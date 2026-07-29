@@ -39,7 +39,7 @@ import type { AdminReview } from '@/shared/api/admin-reviews';
 import { markSitePlatformFeedbackRead } from '@/shared/api/admin-site-feedback';
 import { getAdminSupportConversations } from '@/shared/api/admin-support';
 import type { AdminSupportConversation } from '@/shared/api/admin-support';
-import { getRoleLabel } from '@/shared/config/admin-roles';
+import { canUseAdminNotificationBell, getRoleLabel } from '@/shared/config/admin-roles';
 import {
   PUBLIC_SITE_EDIT_MODE_EVENT,
   canRoleEditCatalogOnPublicSite,
@@ -116,7 +116,8 @@ type AdminHeaderProps = {
 export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminHeaderProps = {}) {
   const { user, logout, isLoading: authLoading } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useAdminAccessibleResources();
-  const canLoadAdminNotifications = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
+  const canLoadAdminNotifications = !authLoading && canUseAdminNotificationBell(user?.role);
+  const canOpenNotificationSettings = !accessLoading && hasAccess(ADMIN_NOTIFICATIONS_RESOURCE_ID);
   const { isDarkTheme, toggleTheme } = useTheme();
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
@@ -774,13 +775,15 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                     <div className={styles.dropdownHeader}>
                       <span>Уведомления</span>
                       <div className={styles.dropdownHeaderActions}>
-                        <Link
-                          href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                          className={styles.notificationSettingsLink}
-                          onClick={() => setShowNotifications(false)}
-                        >
-                          Настройки
-                        </Link>
+                        {canOpenNotificationSettings ? (
+                          <Link
+                            href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                            className={styles.notificationSettingsLink}
+                            onClick={() => setShowNotifications(false)}
+                          >
+                            Настройки
+                          </Link>
+                        ) : null}
                         {visibleNotificationItems.length > 0 ? (
                           <button
                             type="button"
@@ -840,13 +843,15 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                       )}
                     </div>
                     <div className={styles.dropdownFooter}>
-                      <Link
-                        href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
-                        className={styles.notificationSettingsButton}
-                        onClick={() => setShowNotifications(false)}
-                      >
-                        Настройки уведомлений и push
-                      </Link>
+                      {canOpenNotificationSettings ? (
+                        <Link
+                          href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
+                          className={styles.notificationSettingsButton}
+                          onClick={() => setShowNotifications(false)}
+                        >
+                          Настройки уведомлений и push
+                        </Link>
+                      ) : null}
                       <div className={styles.footerChips}>
                         {FOOTER_LINKS.filter(
                           (link) => !link.superAdminOnly || user?.role === 'SUPER_ADMIN'

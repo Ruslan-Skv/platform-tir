@@ -175,6 +175,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
+    notifyOnWorkDays: data.notifyOnWorkDays,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -223,6 +224,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnKnowledgeFeedback: data.notifyOnKnowledgeFeedback,
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
+    notifyOnWorkDays: data.notifyOnWorkDays,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',

@@ -179,3 +179,29 @@ export function getRoleLabel(role: string | null | undefined): string {
   if (!role) return '';
   return ROLE_LABELS[role as BackendRole] ?? role;
 }
+
+/**
+ * Роли админки с колокольчиком уведомлений.
+ * Стажёр (TRAINEE) и покупатели/гости исключены.
+ */
+export const ADMIN_NOTIFICATION_BELL_ROLES: readonly BackendRole[] = [
+  'SUPER_ADMIN',
+  'ADMIN',
+  'CONTENT_MANAGER',
+  'MODERATOR',
+  'SUPPORT',
+  'MANAGER',
+  'TECHNOLOGIST',
+  'PARTNER',
+  'BRIGADIER',
+  'LEAD_SPECIALIST_FURNITURE',
+  'LEAD_SPECIALIST_WINDOWS_DOORS',
+  'SURVEYOR',
+  'DRIVER',
+  'INSTALLER',
+];
+
+export function canUseAdminNotificationBell(role: string | null | undefined): boolean {
+  if (!role) return false;
+  return (ADMIN_NOTIFICATION_BELL_ROLES as readonly string[]).includes(role);
+}
