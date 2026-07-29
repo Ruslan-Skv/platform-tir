@@ -29,6 +29,7 @@ import { AdminPushSubscribeDto } from '../../bell-push/dto/admin-push-subscribe.
 import { AdminPushSubscriptionsService } from '../../bell-push/admin-push-subscriptions.service';
 import { uploadsBaseUrl } from '../../common/utils/uploads-url';
 import { UpdateAdminNotificationsDto } from './dto/update-admin-notifications.dto';
+import { UpdateMyAdminNotificationDeliveryDto } from './dto/update-my-admin-notification-delivery.dto';
 import { UpdateExternalNotifySettingsDto } from '../external-notify/dto/update-external-notify-settings.dto';
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminBellDismissedService } from './admin-bell-dismissed.service';
@@ -92,6 +93,17 @@ export class AdminNotificationsController {
   @ApiOperation({ summary: 'Получить настройки уведомлений для текущего пользователя' })
   getSettings(@Req() req: RequestWithUser) {
     return this.notifications.getSettingsForUser(req.user?.id, req.user?.role ?? null);
+  }
+
+  @Patch('settings/me')
+  @ApiOperation({
+    summary: 'Личные prefs доставки (звук / desktop); события notify* остаются от роли',
+  })
+  updateMyDeliveryPrefs(
+    @Req() req: RequestWithUser,
+    @Body() dto: UpdateMyAdminNotificationDeliveryDto,
+  ) {
+    return this.notifications.updateMyDeliveryPrefs(req.user.id, req.user?.role ?? null, dto);
   }
 
   @SkipThrottle()

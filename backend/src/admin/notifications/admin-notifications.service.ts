@@ -40,31 +40,18 @@ export class AdminNotificationsService {
   }
 
   async getSettingsByUser(userId: string) {
-    const override = await this.prisma.userAdminNotificationOverride.findUnique({
-      where: { userId },
-    });
-    if (override) {
-      const u = await this.prisma.user.findUnique({
-        where: { id: userId },
-        select: { role: true },
-      });
-      return { ...override, role: u?.role ?? null };
-    }
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
     });
     const role = user?.role ?? null;
-    const block = role
-      ? ((await this.settingsReader.findBlockByRole(role)) ??
-        (await this.settingsReader.findBlockByRole(null)))
-      : await this.settingsReader.findBlockByRole(null);
-    if (!block) return { ...this.getDefaultSettings(), userId, role };
-    return { ...block, userId };
+    const settings = await this.settingsReader.getSettingsForUser(userId, role);
+    return { ...settings, userId, role };
   }
 
   updateSettingsByUser(userId: string, dto: UpdateAdminNotificationsDto) {
     const data = {
+      deliveryOnly: false,
       soundEnabled: dto.soundEnabled,
       soundVolume: dto.soundVolume,
       soundType: dto.soundType,
@@ -86,8 +73,10 @@ export class AdminNotificationsService {
       notifyOnWorkDays: dto.notifyOnWorkDays,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
+    updateData.deliveryOnly = false;
     const createData = {
       userId,
+      deliveryOnly: false,
       soundEnabled: dto.soundEnabled ?? true,
       soundVolume: dto.soundVolume ?? 70,
       soundType: dto.soundType ?? 'beep',
@@ -113,6 +102,57 @@ export class AdminNotificationsService {
       update: updateData,
       create: createData,
     });
+  }
+
+  /**
+   * Личные prefs доставки: не перетирают флаги событий роли (deliveryOnly=true).
+   */
+  async updateMyDeliveryPrefs(
+    userId: string,
+    userRole: string | null,
+    dto: {
+      soundEnabled?: boolean;
+      soundVolume?: number;
+      soundType?: string;
+      customSoundUrl?: string | null;
+      desktopNotifications?: boolean;
+      checkIntervalSeconds?: number;
+    },
+  ) {
+    const effective = await this.getSettingsForUser(userId, userRole);
+    const soundEnabled = dto.soundEnabled ?? effective.soundEnabled ?? true;
+    const soundVolume = dto.soundVolume ?? effective.soundVolume ?? 70;
+    const soundType = dto.soundType ?? effective.soundType ?? 'beep';
+    const customSoundUrl =
+      dto.customSoundUrl !== undefined ? dto.customSoundUrl : (effective.customSoundUrl ?? null);
+    const desktopNotifications =
+      dto.desktopNotifications ?? effective.desktopNotifications ?? false;
+    const checkIntervalSeconds = dto.checkIntervalSeconds ?? effective.checkIntervalSeconds ?? 60;
+
+    await this.prisma.userAdminNotificationOverride.upsert({
+      where: { userId },
+      update: {
+        deliveryOnly: true,
+        soundEnabled,
+        soundVolume,
+        soundType,
+        customSoundUrl,
+        desktopNotifications,
+        checkIntervalSeconds,
+      },
+      create: {
+        userId,
+        deliveryOnly: true,
+        soundEnabled,
+        soundVolume,
+        soundType,
+        customSoundUrl,
+        desktopNotifications,
+        checkIntervalSeconds,
+      },
+    });
+
+    return this.getSettingsForUser(userId, userRole);
   }
 
   getCustomers() {

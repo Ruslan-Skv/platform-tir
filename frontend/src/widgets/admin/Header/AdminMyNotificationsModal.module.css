@@ -1,0 +1,78 @@
+.modalPanel {
+  padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px) !important;
+}
+
+.modalPanel > div:first-child {
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: var(--admin-space-xl, 12px);
+}
+
+.formShell:global([data-modal-form]) {
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+  background: linear-gradient(
+    180deg,
+    var(--admin-info-bg-soft, #eff6ff) 0%,
+    var(--admin-surface-soft, #f8fafc) 100%
+  );
+  border-color: var(--admin-info-border-soft, #bfdbfe);
+}
+
+.formShell :global([data-modal-form-grid]) {
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-sm, 6px);
+}
+
+.formShell :global([data-modal-form-group]) {
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.formShell:global([data-modal-form]) :global(input:not([type='checkbox']):not([type='radio'])),
+.formShell:global([data-modal-form]) :global(select),
+.formShell:global([data-modal-form]) :global(textarea) {
+  min-height: 1.625rem !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+.formShell :global([data-modal-form-actions]) {
+  margin-top: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+  gap: var(--admin-space-sm, 6px);
+}
+
+.formShell :global([data-modal-btn='primary']),
+.formShell :global([data-modal-btn='secondary']) {
+  min-height: 1.75rem !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formShell:global([data-modal-form]) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136, rgb(37 99 235 / 0.14)) 0%,
+    var(--admin-overlay-color-021, rgb(37 99 235 / 0.06)) 100%
+  );
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+.toggleLabel {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.hint {
+  margin-top: 0;
+}
+
+.hintFlush {
+  margin-bottom: 0;
+}
+
+.error {
+  color: var(--admin-danger, #b91c1c);
+}

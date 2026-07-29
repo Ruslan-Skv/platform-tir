@@ -41,6 +41,24 @@ export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
     methods: ['GET', 'HEAD'],
     pathPattern: /^\/api\/v1\/admin\/crm-directions\/users\/me\/directions$/,
   },
+  // Колокольчик / личная доставка / push: JWT + роль админки, без admin.settings.notifications
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/notifications\/settings$/,
+  },
+  {
+    methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE'],
+    pathPattern: /^\/api\/v1\/admin\/notifications\/settings\/me$/,
+  },
+  {
+    methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE'],
+    pathPattern: /^\/api\/v1\/admin\/notifications\/(bell|push)(?:\/|$)/,
+  },
+  // Лента непромодерированных отзывов для колокольчика (не страница настроек отзывов)
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/reviews$/,
+  },
 ];
 
 /**

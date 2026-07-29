@@ -57,6 +57,7 @@ import { ProfileMenuIcon } from '@/shared/ui/icons/ProfileMenuIcon';
 import { ProfileUserSquareIcon } from '@/shared/ui/icons/ProfileUserSquareIcon';
 
 import styles from './AdminHeader.module.css';
+import { AdminMyNotificationsModal } from './AdminMyNotificationsModal';
 import { AdminOnlineAvatars } from './AdminOnlineAvatars';
 import {
   addDismissedNotificationKeys,
@@ -121,6 +122,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const { isDarkTheme, toggleTheme } = useTheme();
   const { canGoBack, canGoForward, goBack, goForward } = useBrowserHistoryNavigation();
   const [showNotifications, setShowNotifications] = useState(false);
+  const [showMyNotificationsModal, setShowMyNotificationsModal] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showProfileModal, setShowProfileModal] = useState(false);
   const headerRef = useRef<HTMLElement>(null);
@@ -775,13 +777,23 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                     <div className={styles.dropdownHeader}>
                       <span>Уведомления</span>
                       <div className={styles.dropdownHeaderActions}>
+                        <button
+                          type="button"
+                          className={styles.notificationSettingsLink}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            setShowMyNotificationsModal(true);
+                          }}
+                        >
+                          Мои уведомления
+                        </button>
                         {canOpenNotificationSettings ? (
                           <Link
                             href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
                             className={styles.notificationSettingsLink}
                             onClick={() => setShowNotifications(false)}
                           >
-                            Настройки
+                            Настройки ролей
                           </Link>
                         ) : null}
                         {visibleNotificationItems.length > 0 ? (
@@ -843,13 +855,39 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                       )}
                     </div>
                     <div className={styles.dropdownFooter}>
+                      {notificationSettings &&
+                      (!notificationSettings.desktopNotifications ||
+                        (typeof window !== 'undefined' &&
+                          'Notification' in window &&
+                          Notification.permission !== 'granted')) ? (
+                        <button
+                          type="button"
+                          className={styles.notificationSettingsButton}
+                          onClick={() => {
+                            setShowNotifications(false);
+                            setShowMyNotificationsModal(true);
+                          }}
+                        >
+                          Включить на рабочем столе
+                        </button>
+                      ) : null}
+                      <button
+                        type="button"
+                        className={styles.notificationSettingsButton}
+                        onClick={() => {
+                          setShowNotifications(false);
+                          setShowMyNotificationsModal(true);
+                        }}
+                      >
+                        Мои уведомления
+                      </button>
                       {canOpenNotificationSettings ? (
                         <Link
                           href={getSafeHref(NOTIFICATIONS_SETTINGS_HREF, '#')}
                           className={styles.notificationSettingsButton}
                           onClick={() => setShowNotifications(false)}
                         >
-                          Настройки уведомлений и push
+                          Настройки ролей
                         </Link>
                       ) : null}
                       <div className={styles.footerChips}>
@@ -942,6 +980,11 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       </div>
 
       <AdminProfileModal isOpen={showProfileModal} onClose={() => setShowProfileModal(false)} />
+      <AdminMyNotificationsModal
+        open={showMyNotificationsModal}
+        onClose={() => setShowMyNotificationsModal(false)}
+        onSaved={(settings) => setNotificationSettings(settings)}
+      />
     </header>
   );
 }

@@ -47,6 +47,43 @@ export async function getAdminNotificationsSettings(): Promise<AdminNotification
   return res.json();
 }
 
+export type MyAdminNotificationDeliveryPrefs = {
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  soundType?: NotificationSoundType;
+  customSoundUrl?: string | null;
+  desktopNotifications?: boolean;
+  checkIntervalSeconds?: number;
+};
+
+/** Личные prefs доставки (звук / desktop); события notify* остаются от роли. */
+export async function updateMyAdminNotificationDeliveryPrefs(
+  data: MyAdminNotificationDeliveryPrefs
+): Promise<AdminNotificationsSettings> {
+  const body = {
+    soundEnabled: data.soundEnabled,
+    soundVolume: data.soundVolume,
+    soundType: data.soundType,
+    customSoundUrl: data.customSoundUrl,
+    desktopNotifications: data.desktopNotifications,
+    checkIntervalSeconds: data.checkIntervalSeconds,
+  };
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/me`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    const message =
+      err?.message ||
+      (Array.isArray(err?.message) ? err.message.join(', ') : null) ||
+      'Не удалось сохранить настройки';
+    throw new Error(message);
+  }
+  return res.json();
+}
+
 export async function getAdminNotificationsSettingsByRole(
   role: string | null
 ): Promise<AdminNotificationsSettings> {

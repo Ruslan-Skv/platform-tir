@@ -2571,6 +2571,8 @@ model NotificationSound {
 model UserAdminNotificationOverride {
   id                        String   @id @default(cuid())
   userId                    String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  // true = только доставка (звук/desktop); события notify* берутся из роли
+  deliveryOnly              Boolean  @default(false)
   soundEnabled              Boolean  @default(true)
   soundVolume               Int      @default(70)
   soundType                 String   @default("beep")

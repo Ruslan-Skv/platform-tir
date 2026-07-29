@@ -58,3 +58,58 @@ describe('matchAdminApiResourceRule crm-directions shared reads', () => {
     });
   });
 });
+
+describe('matchAdminApiResourceRule notification bell personal routes', () => {
+  it('skips resource check for own settings, delivery prefs, bell and push', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/settings')).toBeNull();
+    expect(
+      matchAdminApiResourceRule('PATCH', '/api/v1/admin/notifications/settings/me'),
+    ).toBeNull();
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/bell/dismissed'),
+    ).toBeNull();
+    expect(
+      matchAdminApiResourceRule('POST', '/api/v1/admin/notifications/bell/dismissed'),
+    ).toBeNull();
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/bell/training'),
+    ).toBeNull();
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/push/vapid-public-key'),
+    ).toBeNull();
+    expect(
+      matchAdminApiResourceRule('POST', '/api/v1/admin/notifications/push/subscribe'),
+    ).toBeNull();
+  });
+
+  it('still guards role/user notification settings via admin.settings.notifications', () => {
+    expect(matchAdminApiResourceRule('PATCH', '/api/v1/admin/notifications/settings')).toEqual({
+      resourceId: 'admin.settings.notifications',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/settings/by-role'),
+    ).toEqual({
+      resourceId: 'admin.settings.notifications',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/notifications/settings/by-user/u1'),
+    ).toEqual({
+      resourceId: 'admin.settings.notifications',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+  });
+
+  it('skips resource check for reviews list used by bell, keeps settings protected', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/reviews')).toBeNull();
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/reviews/settings')).toEqual({
+      resourceId: 'admin.settings.reviews',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+    expect(matchAdminApiResourceRule('PATCH', '/api/v1/admin/reviews/r1/reply')).toEqual({
+      resourceId: 'admin.settings.reviews',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+  });
+});
