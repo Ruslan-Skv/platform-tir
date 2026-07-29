@@ -264,6 +264,18 @@ export async function getWorkDays(params?: {
   return res.json();
 }
 
+export async function deleteWorkDay(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось удалить запись');
+  }
+  return res.json();
+}
+
 export async function getWorkDaySettings(): Promise<WorkDaySettings> {
   const res = await apiFetch(`${API_URL}/admin/work-days/settings`, {
     headers: getAdminAuthHeaders(),

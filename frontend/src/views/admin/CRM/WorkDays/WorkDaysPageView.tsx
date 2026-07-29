@@ -1,5 +1,11 @@
 'use client';
 
+import { useState } from 'react';
+
+import type { WorkDayRecord } from '@/shared/api/admin-work-days';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+
 import styles from './WorkDaysPage.module.css';
 import type { WorkDaysPageModel } from './hooks/useWorkDaysPage';
 import {
@@ -26,9 +32,15 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     rows,
     offices,
     loading,
+    deletingId,
+    canDelete,
     error,
     stats,
+    handleDelete,
   } = model;
+
+  const [deleteTarget, setDeleteTarget] = useState<WorkDayRecord | null>(null);
+  const colSpan = canDelete ? 10 : 9;
 
   return (
     <div className={styles.page}>
@@ -82,12 +94,13 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                 <th>Ранний уход</th>
                 <th>По делам</th>
                 <th>Статус</th>
+                {canDelete ? <th className={styles.actionsCol} /> : null}
               </tr>
             </thead>
             <tbody>
               {rows.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className={styles.empty}>
+                  <td colSpan={colSpan} className={styles.empty}>
                     Нет записей за выбранный период
                   </td>
                 </tr>
@@ -105,6 +118,23 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                       <td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</td>
                       <td>{absence > 0 ? `${Math.round(absence)} мин` : '—'}</td>
                       <td>{workDayStatusLabel(row.status)}</td>
+                      {canDelete ? (
+                        <td className={styles.actionsCol}>
+                          <button
+                            data-admin-mutation
+                            type="button"
+                            className={styles.iconDeleteButton}
+                            disabled={deletingId === row.id}
+                            title={deletingId === row.id ? 'Удаление…' : 'Удалить запись'}
+                            aria-label={
+                              deletingId === row.id ? 'Удаление…' : 'Удалить запись рабочего дня'
+                            }
+                            onClick={() => setDeleteTarget(row)}
+                          >
+                            <DeleteIcon size={16} tone="inherit" />
+                          </button>
+                        </td>
+                      ) : null}
                     </tr>
                   );
                 })
@@ -113,6 +143,22 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
           </table>
         </div>
       )}
+
+      {deleteTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить запись рабочего дня?"
+          message={`Запись «${workDayUserName(deleteTarget)}» за ${formatWorkDayDate(deleteTarget.workDate)} будет удалена без возможности восстановления. Она также исчезнет из журнала сотрудника.`}
+          onConfirm={() => {
+            const target = deleteTarget;
+            setDeleteTarget(null);
+            void handleDelete(target);
+          }}
+          onClose={() => setDeleteTarget(null)}
+          confirmText={deletingId === deleteTarget.id ? 'Удаление…' : 'Удалить'}
+          variant="danger"
+        />
+      ) : null}
     </div>
   );
 }

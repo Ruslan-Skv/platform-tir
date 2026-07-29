@@ -298,8 +298,12 @@ export function LeadsInboxPageView({ model }: LeadsInboxPageViewProps) {
       {deleteTarget && handleDelete ? (
         <ConfirmModal
           isOpen
-          title="Удалить заявку?"
-          message={`«${deleteTarget.name}» (${deleteTarget.sourceLabel}) будет удалена без возможности восстановления.`}
+          title={isDirector ? 'Удалить письмо?' : 'Удалить заявку?'}
+          message={
+            isDirector
+              ? `Письмо от «${deleteTarget.name}» будет удалено без возможности восстановления.`
+              : `«${deleteTarget.name}» (${deleteTarget.sourceLabel}) будет удалена без возможности восстановления.`
+          }
           onConfirm={() => {
             const target = deleteTarget;
             setDeleteTarget(null);

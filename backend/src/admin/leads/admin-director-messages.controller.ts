@@ -1,7 +1,9 @@
-import { Body, Controller, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Query, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { SkipThrottle } from '@nestjs/throttler';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+import { RolesGuard } from '../../common/guards/roles.guard';
 import { UpdateLeadDto } from './dto/update-lead.dto';
 import { AdminLeadsService } from './admin-leads.service';
 import { isLeadStatus } from './lead.types';
@@ -48,5 +50,14 @@ export class AdminDirectorMessagesController {
   update(@Param('leadId') leadId: string, @Body() dto: UpdateLeadDto) {
     const allowedSources = this.adminLeads.resolveDirectorSources();
     return this.adminLeads.updateLead(decodeURIComponent(leadId), dto, allowedSources);
+  }
+
+  @Delete(':leadId')
+  @UseGuards(RolesGuard)
+  @Roles('SUPER_ADMIN')
+  @ApiOperation({ summary: 'Удалить письмо директору (только SUPER_ADMIN)' })
+  remove(@Param('leadId') leadId: string) {
+    const allowedSources = this.adminLeads.resolveDirectorSources();
+    return this.adminLeads.deleteLead(decodeURIComponent(leadId), allowedSources);
   }
 }

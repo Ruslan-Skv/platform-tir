@@ -2,20 +2,25 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import {
   type LeadSource,
   type LeadStatus,
   type UnifiedLeadItem,
+  deleteAdminDirectorMessage,
   getAdminDirectorMessages,
   updateAdminDirectorMessage,
 } from '@/shared/api/admin-leads';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 export function useDirectorMessagesPage() {
+  const { user } = useAuth();
+  const canDelete = user?.role === 'SUPER_ADMIN';
   const [leads, setLeads] = useState<UnifiedLeadItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [savingId, setSavingId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
@@ -89,11 +94,29 @@ export function useDirectorMessagesPage() {
     }
   };
 
+  const handleDelete = async (lead: UnifiedLeadItem) => {
+    if (!canDelete) return;
+    setDeletingId(lead.id);
+    try {
+      await deleteAdminDirectorMessage(lead.id);
+      setLeads((prev) => prev.filter((item) => item.id !== lead.id));
+      setTotal((prev) => Math.max(0, prev - 1));
+      showSaveSuccess();
+      await loadLeads();
+    } catch (err) {
+      showSaveError(err instanceof Error ? err.message : 'Не удалось удалить письмо');
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   return {
     leads,
     loading,
     refreshing,
     savingId,
+    deletingId,
+    canDelete,
     page,
     setPage,
     totalPages,
@@ -114,6 +137,7 @@ export function useDirectorMessagesPage() {
     loadLeads,
     handleStatusChange,
     handleNoteSave,
+    handleDelete,
     errorMessage,
     variant: 'director' as const,
   };

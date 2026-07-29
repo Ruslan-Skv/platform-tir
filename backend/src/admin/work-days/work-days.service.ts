@@ -510,6 +510,18 @@ export class WorkDaysService implements OnModuleInit {
     });
   }
 
+  async deleteWorkDay(workDayId: string) {
+    const existing = await this.prisma.workDay.findUnique({
+      where: { id: workDayId },
+      select: { id: true },
+    });
+    if (!existing) {
+      throw new NotFoundException('Запись рабочего дня не найдена');
+    }
+    await this.prisma.workDay.delete({ where: { id: workDayId } });
+    return { id: workDayId };
+  }
+
   async updateUserWorkSchedule(userId: string, dto: UpdateUserWorkScheduleDto) {
     await this.getUserWithOffice(userId);
     const data: Record<string, unknown> = {};

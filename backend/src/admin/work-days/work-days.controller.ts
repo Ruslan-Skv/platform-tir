@@ -1,4 +1,15 @@
-import { Body, Controller, Get, Param, Patch, Post, Query, Req, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common';
 import { UserRole } from '@prisma/client';
 import { Request } from 'express';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
@@ -190,5 +201,11 @@ export class WorkDaysController {
     @Query('userId') userId?: string,
   ) {
     return this.workDaysService.listWorkDays({ dateFrom, dateTo, officeId, userId });
+  }
+
+  @Delete(':id')
+  @Roles(UserRole.SUPER_ADMIN)
+  deleteWorkDay(@Param('id') id: string) {
+    return this.workDaysService.deleteWorkDay(id);
   }
 }

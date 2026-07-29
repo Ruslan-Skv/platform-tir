@@ -103,3 +103,33 @@
 .error {
   color: #dc2626;
 }
+
+.actionsCol {
+  width: 3rem;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.iconDeleteButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 0.4rem;
+  background: #fff;
+  color: #dc2626;
+  cursor: pointer;
+}
+
+.iconDeleteButton:hover:not(:disabled) {
+  border-color: #dc2626;
+  background: #fef2f2;
+}
+
+.iconDeleteButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
