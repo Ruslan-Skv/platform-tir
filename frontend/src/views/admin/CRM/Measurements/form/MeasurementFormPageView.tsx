@@ -20,6 +20,7 @@ import { MeasurementHistoryModal } from '../modals/MeasurementHistoryModal';
 import { getResultTabLabel } from '../shared/measurementResultTabs';
 import { MEASUREMENT_STATUS_OPTIONS as STATUS_OPTIONS } from '../shared/measurementStatuses';
 import styles from './MeasurementFormPage.module.css';
+import { MeasurementFormRulesInfoTip } from './MeasurementFormRulesInfoTip';
 import type { MeasurementFormPageModel } from './hooks/useMeasurementFormPage';
 import {
   MAX_ROOMS_COUNT,
@@ -169,9 +170,12 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
           </Link>
         </div>
         <div className={styles.titleRow}>
-          <h1 className={styles.title}>
-            {measurementId ? 'Редактирование замера' : 'Новый замер'}
-          </h1>
+          <div className={styles.titleGroup}>
+            <h1 className={styles.title}>
+              {measurementId ? 'Редактирование замера' : 'Новый замер'}
+            </h1>
+            <MeasurementFormRulesInfoTip />
+          </div>
           <div className={styles.titleControls}>
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
               <label className={styles.statusInlineLabel}>
