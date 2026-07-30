@@ -1,4 +1,5 @@
-/* Как бланк счёта на оплату (MeasurementFormPage.blankSheet) */
+/* Устарело: голубая оболочка формы теперь в shared Modal ([data-modal-form]).
+   Класс оставлен для обратной совместимости — дублирует те же правила. */
 .formBlueShell:global([data-modal-form]) {
   background: linear-gradient(
     180deg,

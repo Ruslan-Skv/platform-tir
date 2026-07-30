@@ -98,6 +98,14 @@
   flex-wrap: wrap;
 }
 
+.titleCluster {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .title {
   font-size: var(--admin-font-size-2xl);
   font-weight: 700;
@@ -1098,6 +1106,10 @@
   .titleRow {
     align-items: flex-start;
     gap: var(--admin-space-sm);
+  }
+
+  .titleCluster {
+    max-width: 100%;
   }
 
   .title {

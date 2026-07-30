@@ -7,8 +7,6 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import { serviceCatalogIconMap } from '@/shared/lib/serviceCatalogIcons';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
-import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
-import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import { SERVICE_ICON_OPTIONS } from '../shared/SERVICE_ICON_OPTIONS';
 import styles from './ServiceCatalogCategoryModal.module.css';
@@ -170,15 +168,9 @@ export function ServiceCatalogCategoryCreateModal({
       title="Новая категория"
       titleAside={<AdminSaveNotice visible={saveSuccessVisible}>Создано</AdminSaveNotice>}
       size="lg"
-      className={`${crmFormStyles.modalPanel} ${styles.modalPanel}`}
       showCloseButton
     >
-      <form
-        className={`${crmFormStyles.formShell} ${modalStyles.formBlueShell}`}
-        data-modal-form
-        data-modal-density="compact"
-        onSubmit={(e) => void handleSubmit(e)}
-      >
+      <form data-modal-form data-modal-density="compact" onSubmit={(e) => void handleSubmit(e)}>
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Категория задаёт раздел каталога ремонта квартир. Можно создать корневую категорию или
           вложить её в существующую родительскую.

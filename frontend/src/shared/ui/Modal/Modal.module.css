@@ -3,7 +3,9 @@
  *
  * Разметка контента (единый вид для CRM и др.):
  * — read-only: <div data-modal-readonly-panel data-modal-density="compact"?><dl data-modal-detail>…</dl></div> (как форма: серый фон снаружи, белая сетка, подпись + «поле» как input; compact — плотнее отступы и шрифты)
- * — форма: <form data-modal-form data-modal-density="compact"?><div data-modal-form-actions>…</div></form> (compact — плотнее; подсказки см. data-modal-footer-info)
+ * — форма: <form|div data-modal-form data-modal-density="compact"?><div data-modal-form-actions>…</div></form>
+ *   оболочка по умолчанию — голубой blank (как «Новая категория»); compact — плотнее; подсказки см. data-modal-footer-info
+ *   доп. formBlueShell / formShell из других модулей не нужны
  * — цветная плашка снизу (как «Заказ обратного звонка»): <div data-modal-footer-info data-modal-tone="success|info" role="status"><span data-modal-footer-info-icon aria-hidden="true" /><span data-modal-footer-info-text>…</span></div> — перед data-modal-form-actions или data-modal-actions
  * — нижние действия: <div data-modal-actions>…</div> или data-modal-align="center"
  * — кнопки/ссылки: data-modal-btn="primary" | "secondary" (в т.ч. внутри [data-modal-form], не только в data-modal-form-actions)
@@ -18,7 +20,7 @@
   background: rgb(0 0 0 / 50%);
   inset: 0;
   position: fixed;
-  transition: opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+  transition: opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .backdrop[data-closed] {
@@ -26,13 +28,13 @@
 }
 
 .backdrop[data-enter] {
-  transition-duration: 0.22s;
+  transition-duration: 0.28s;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .backdrop[data-leave] {
-  transition-duration: 0.18s;
-  transition-timing-function: ease-in;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .backdrop {
@@ -152,6 +154,9 @@
   --admin-accent-border-soft: rgb(var(--color-accent-rgb, 217 6 82) / 0.15);
   --admin-overlay-color-102: rgb(34 197 94 / 26%);
   --admin-overlay-color-014: rgb(var(--color-accent-rgb, 217 6 82) / 0.14);
+  --admin-overlay-color-021: rgb(37 99 235 / 0.06);
+  --admin-overlay-color-136: rgb(37 99 235 / 0.14);
+  --admin-info-light: #60a5fa;
 
   background: var(--modal-surface);
   border: 1px solid var(--modal-border);
@@ -166,31 +171,32 @@
   margin: 0 auto;
   max-height: min(90vh, 90dvh);
   overflow-y: auto;
-  padding: var(--admin-space-3xl, 20px) var(--admin-space-2xl, 16px);
+  /* Как modalPanel у «Новая категория» */
+  padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px);
   position: relative;
   scrollbar-gutter: stable;
   transform: scale(1) translateY(0);
   transition:
-    box-shadow 0.22s ease-out,
-    border-color 0.22s ease-out,
-    opacity 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+    box-shadow 0.28s ease-out,
+    border-color 0.28s ease-out,
+    opacity 0.28s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.28s cubic-bezier(0.16, 1, 0.3, 1);
   width: calc(100% - 2rem);
 }
 
 .panel[data-closed] {
   opacity: 0;
-  transform: scale(0.98) translateY(12px);
+  transform: scale(0.96) translateY(18px);
 }
 
 .panel[data-enter] {
-  transition-duration: 0.22s;
+  transition-duration: 0.28s;
   transition-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .panel[data-leave] {
-  transition-duration: 0.18s;
-  transition-timing-function: ease-in;
+  transition-duration: 0.2s;
+  transition-timing-function: cubic-bezier(0.4, 0, 1, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -228,8 +234,8 @@
 .header {
   align-items: flex-start;
   display: flex;
-  gap: var(--modal-space-md);
-  margin-bottom: var(--admin-space-3xl, 20px);
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: var(--admin-space-xl, 12px);
   padding: 0 var(--modal-space-sm);
 }
 
@@ -242,28 +248,28 @@
 }
 
 .titleRow {
-  align-items: flex-start;
+  align-items: center;
   display: flex;
   flex: 1;
-  gap: var(--modal-space-md);
+  gap: var(--admin-space-sm, 6px);
   min-width: 0;
   padding-right: var(--modal-space-2xl);
 }
 
 .titleRow .title {
-  flex: 1;
+  flex: 0 1 auto;
   min-width: 0;
   padding-right: 0;
 }
 
 .titleAside {
-  color: var(--modal-text-muted);
+  color: inherit;
   flex-shrink: 0;
-  font-size: var(--modal-fs-sm);
-  font-weight: 400;
+  font-size: inherit;
+  font-weight: inherit;
   line-height: var(--modal-lh-tight);
-  max-width: min(20rem, 46vw);
-  text-align: right;
+  max-width: none;
+  text-align: left;
   white-space: normal;
 }
 
@@ -595,10 +601,10 @@
   font-size: 0.6875rem;
 }
 
-/* Форма в модалке: <form data-modal-form> … */
+/* Форма в модалке: <form|div data-modal-form> — голубой blank по умолчанию */
 .content :where([data-modal-form]) {
-  background: var(--admin-surface-soft, #f3f4f6);
-  border: 1px solid var(--modal-border);
+  background: linear-gradient(180deg, var(--admin-info-bg-soft, #eff6ff) 0%, #f8fafc 100%);
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
   border-radius: var(--admin-radius-lg, 10px);
   box-sizing: border-box;
   display: flex;
@@ -662,11 +668,19 @@
   border: 1px solid var(--admin-border-strong, #d1d5db);
   border-radius: var(--admin-radius-md, 8px);
   box-sizing: border-box;
-  color: var(--modal-text);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный select/input тянет тёмный текст */
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
   font-size: var(--admin-font-size-base, 0.9375rem);
   min-height: 40px;
   padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
   width: 100%;
+}
+
+.content :where([data-modal-form] select option) {
+  background: var(--admin-surface, #ffffff);
+  color: var(--admin-text-primary, #111827);
 }
 
 .content
@@ -835,7 +849,7 @@
   --admin-info-text: #dbeafe;
   --admin-sidebar-text: rgba(255 255 255 / 0.72);
   --admin-text-inverse: #f9fafb;
-  --admin-overlay-color-136: rgb(6 182 212 / 0.2);
+  --admin-overlay-color-136: rgb(37 99 235 / 0.14);
   --admin-font-size-md: 0.875rem;
   --admin-font-size-2xs: 0.6875rem;
   --admin-font-size-lg: 1rem;
@@ -873,6 +887,8 @@
   --admin-accent-border-soft: rgb(var(--color-accent-rgb) / 0.35);
   --admin-overlay-color-102: rgb(34 197 94 / 0.32);
   --admin-overlay-color-014: rgb(var(--color-accent-rgb) / 0.2);
+  --admin-overlay-color-021: rgb(37 99 235 / 0.06);
+  --admin-overlay-color-136: rgb(37 99 235 / 0.14);
   color-scheme: dark;
 }
 
@@ -913,6 +929,36 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .content :where([data-modal-form-error]) {
   background: rgb(127 29 29 / 0.35);
   border-color: rgb(248 113 113 / 0.35);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .content :where([data-modal-form]) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-overlay-color-136, rgb(37 99 235 / 0.14)) 0%,
+    var(--admin-overlay-color-021, rgb(37 99 235 / 0.06)) 100%
+  );
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  :where(
+    [data-modal-form] input:not([type='checkbox']):not([type='radio']),
+    [data-modal-form] select,
+    [data-modal-form] textarea
+  ) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  border-color: var(--admin-sidebar-text, #9ca3af);
+  color: var(--admin-surface-muted, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted, #111827);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  :where([data-modal-form] select option) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  color: var(--admin-surface-muted, #111827);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -1035,21 +1081,21 @@
   opacity: 0.6;
 }
 
-/* Компактная форма в модалке (напр. «Новый заказчик в CRM») */
+/* Компактная форма в модалке (как «Новая категория» / CRM) */
 .content [data-modal-form][data-modal-density='compact'] {
   border-radius: var(--admin-radius-md, 8px);
-  gap: var(--admin-space-md, 8px);
-  padding: var(--admin-space-md, 8px);
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-form-grid] {
-  gap: var(--admin-space-sm, 6px);
-  padding: var(--admin-space-md, 8px);
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-sm, 6px);
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-form-group] {
   gap: 2px;
-  margin-bottom: var(--admin-space-xs, 4px);
+  margin-bottom: 2px;
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-form-group] > label {
@@ -1062,16 +1108,28 @@
   input:not([type='checkbox']):not([type='radio']),
 .content [data-modal-form][data-modal-density='compact'] select {
   border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
   font-size: 0.75rem;
-  min-height: 1.75rem;
-  padding: 3px var(--admin-space-md, 8px);
+  min-height: 1.625rem;
+  padding: 2px var(--admin-space-md, 8px);
+}
+
+.content [data-modal-form][data-modal-density='compact'] select option {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-primary, #111827);
 }
 
 .content [data-modal-form][data-modal-density='compact'] textarea {
   border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
   font-size: 0.75rem;
-  min-height: 3.25rem;
-  padding: 4px var(--admin-space-md, 8px);
+  min-height: 2.25rem;
+  padding: 2px var(--admin-space-md, 8px);
+  resize: vertical;
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-form-error] {
@@ -1099,17 +1157,39 @@
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-form-actions] {
-  gap: var(--admin-space-md, 8px);
-  margin-top: var(--admin-space-sm, 6px);
-  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  gap: var(--admin-space-sm, 6px);
+  margin-top: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
 }
 
 .content [data-modal-form][data-modal-density='compact'] [data-modal-btn='primary'],
 .content [data-modal-form][data-modal-density='compact'] [data-modal-btn='secondary'] {
   border-radius: var(--admin-radius-sm, 6px);
   font-size: 0.75rem;
-  min-height: 2rem;
-  padding: var(--admin-space-xs, 4px) var(--admin-space-xl, 12px);
+  min-height: 1.75rem;
+  padding: 2px var(--admin-space-xl, 12px);
+}
+
+@media (max-width: 900px) {
+  .panel {
+    padding: var(--admin-space-xl, 12px) var(--admin-space-md, 8px);
+  }
+
+  .header {
+    margin-bottom: var(--admin-space-md, 8px);
+  }
+
+  .titleRow {
+    align-items: stretch;
+    flex-direction: column;
+    gap: var(--admin-space-sm, 6px);
+    padding-right: 2.25rem;
+  }
+
+  .titleAside {
+    max-width: 100%;
+    text-align: left;
+  }
 }
 
 /* Под мобильной/планшетной шапкой админки (≤1024px, z-index: 120) */
@@ -1148,20 +1228,23 @@
   }
 
   .center {
-    align-items: stretch;
+    /* Не stretch по высоте — короткие формы (select + кнопки) иначе дают 70% пустоты */
+    align-items: center;
     box-sizing: border-box;
     display: flex;
     height: 100%;
-    justify-content: flex-start;
+    justify-content: center;
     max-height: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: hidden;
+    overflow-y: auto;
     padding: 0.5rem 0.5rem max(0.5rem, env(safe-area-inset-bottom, 0px));
     width: 100%;
   }
 
   .center.centerAlignTop {
-    align-items: stretch;
+    align-items: flex-start;
+    justify-content: flex-start;
     padding-top: 0.5rem;
   }
 
@@ -1169,6 +1252,8 @@
     border-radius: var(--modal-radius);
     display: flex;
     flex-direction: column;
+    flex: 0 1 auto;
+    height: auto;
     margin: 0;
     max-height: 100%;
     max-width: none !important;
@@ -1185,6 +1270,7 @@
   }
 
   .content {
+    /* Растёт только когда панель упёрлась в max-height (длинные формы) */
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;

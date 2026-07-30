@@ -903,6 +903,14 @@
   margin-bottom: var(--admin-space-xs);
 }
 
+.editorHeaderTitleCluster {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
 .title {
   margin: 0;
 }
@@ -1400,6 +1408,60 @@
   line-height: 1.35;
 }
 
+.contractsMobilePhoneRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--admin-space-sm);
+}
+
+.contractsMobilePhoneLink {
+  display: inline-block;
+  min-width: 0;
+  color: var(--admin-accent, #2563eb);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm, 1.25);
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.contractsMobilePhoneLink:hover {
+  text-decoration: underline;
+}
+
+.contractsMobileCall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface, #fff);
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.contractsMobileCall:hover {
+  border-color: var(--admin-accent, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.contractsMobileCall:focus-visible,
+.contractsMobilePhoneLink:focus-visible {
+  outline: 2px solid var(--admin-accent, #2563eb);
+  outline-offset: 2px;
+}
+
 .contractsMobileCard {
   display: flex;
   flex-direction: column;
@@ -1423,11 +1485,7 @@
   text-align: left;
   color: inherit;
   font: inherit;
-  cursor: pointer;
-}
-
-.contractsMobileCardMain:hover {
-  background: var(--admin-surface-soft);
+  cursor: default;
 }
 
 .contractsMobileCardTop {
@@ -1802,6 +1860,16 @@
   border-color: var(--admin-border);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsMobileCardMain:hover {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsMobilePhoneLink {
+  color: var(--admin-info-bright, #93c5fd);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsMobileCall {
   background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsMobileCall:hover {
+  border-color: var(--admin-info-light, #60a5fa);
+  background: var(--admin-overlay-color-136, rgb(37 99 235 / 0.14));
 }

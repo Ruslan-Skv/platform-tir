@@ -10,13 +10,13 @@ export interface ModalProps {
   onClose: () => void;
   children: React.ReactNode;
   title?: React.ReactNode;
-  /** Содержимое справа от заголовка (например индикатор заполнения). */
+  /** Содержимое справа от заголовка (например индикатор заполнения / «Создано»). */
   titleAside?: React.ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl';
   showCloseButton?: boolean;
   /** Уменьшает отступы панели и заголовка на экранах ≤767px */
   compactOnMobile?: boolean;
-  /** Доп. класс для панели (например компактная мобильная модалка) */
+  /** Доп. класс для панели */
   className?: string;
   /** Доп. класс для области контента под заголовком */
   contentClassName?: string;

@@ -1,14 +1,14 @@
 'use client';
 
-import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
-
 import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import type { CrmUser } from '@/shared/api/admin-crm';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
-import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
-import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
-import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
+import { CallCustomerIcon } from '@/shared/ui/icons/crm/CallCustomerIcon';
+import {
+  crmPhoneToTelHref,
+  formatCrmPhoneOrDash,
+} from '@/views/admin/CRM/Customers/shared/crmCustomerPhone';
 import { getDisplayContractNumber } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
 import { mergePackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import { PackageHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/PackageHubIcon';
@@ -19,7 +19,6 @@ import { packageListPipelineStatusLabel } from '@/views/admin/ContractDocuments/
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
 import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
-import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 
 import {
   formatContractsListMoney,
@@ -32,15 +31,42 @@ import {
   contractsListContractAndSignedAddendaTotalRub,
   contractsListContractTotalAmount,
   contractsListCustomerName,
+  contractsListCustomerPhone,
   contractsListManagerDisplayLabel,
   contractsListObjectAddress,
   contractsListPackageKindLabel,
+  contractsListPackagesCustomerPhone,
   contractsListPipelineStatus,
   contractsListRemainingToPayRub,
   formatSigningDateOnly,
-  isPackageDraftDeletionAllowed,
   sumPackagePaymentsRub,
 } from './contractsListUtils';
+
+function MobileCallCustomerControl({ phone }: { phone: string }) {
+  const phoneDisplay = formatCrmPhoneOrDash(phone);
+  const telHref = crmPhoneToTelHref(phone);
+  if (!telHref || !phoneDisplay || phoneDisplay === '—') return null;
+
+  return (
+    <div className={cdHub.contractsMobilePhoneRow}>
+      <a
+        href={telHref}
+        className={cdHub.contractsMobilePhoneLink}
+        aria-label={`Позвонить ${phoneDisplay}`}
+      >
+        {phoneDisplay}
+      </a>
+      <a
+        href={telHref}
+        className={cdHub.contractsMobileCall}
+        aria-label={`Позвонить заказчику ${phoneDisplay}`}
+        title={`Позвонить заказчику ${phoneDisplay}`}
+      >
+        <CallCustomerIcon size={22} />
+      </a>
+    </div>
+  );
+}
 
 type ContractsListMobileCardsProps = {
   loading: boolean;
@@ -54,11 +80,6 @@ type ContractsListMobileCardsProps = {
   onToggleObjectExpand: (objectId: string) => void;
   crmUsers: CrmUser[];
   creating: boolean;
-  copyingPackageId: string | null;
-  deletingPackageId: string | null;
-  router: AppRouterInstance;
-  onCopyPackage: (packageId: string) => void;
-  onDeletePackage: (pkg: ContractDocumentPackage) => void;
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
@@ -70,11 +91,6 @@ function PackageMobileCard({
   crmUsers,
   nested,
   creating,
-  copyingPackageId,
-  deletingPackageId,
-  router,
-  onCopyPackage,
-  onDeletePackage,
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
@@ -84,11 +100,6 @@ function PackageMobileCard({
   crmUsers: CrmUser[];
   nested?: boolean;
   creating: boolean;
-  copyingPackageId: string | null;
-  deletingPackageId: string | null;
-  router: AppRouterInstance;
-  onCopyPackage: (packageId: string) => void;
-  onDeletePackage: (pkg: ContractDocumentPackage) => void;
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
@@ -106,25 +117,20 @@ function PackageMobileCard({
   const paymentBaseRub = addendumColumnCount > 0 ? totalWithAddendaRub : totalRub;
   const remainingRub = contractsListRemainingToPayRub(paymentBaseRub, paidRub);
   const pipelineStatus = contractsListPipelineStatus(pkg);
-  const copyBusy = copyingPackageId === pkg.id;
-  const deleteBusy = deletingPackageId === pkg.id;
-  const canDeleteDraft = isPackageDraftDeletionAllowed(pkg);
-  const packageHref = adminContractDocumentsContractsPackageHref(pkg.id);
   const customer = contractsListCustomerName(fd);
   const address = contractsListObjectAddress(fd);
   const manager = contractsListManagerDisplayLabel(form, crmUsers, pkg);
   const kind = contractsListPackageKindLabel(pkg.kind);
   const dateLabel = formatSigningDateOnly(pkg) || '—';
+  const customerPhone = contractsListCustomerPhone(fd);
+  const actionsDisabled = creating;
 
   return (
     <article
       className={`${cdHub.contractsMobileCard}${nested ? ` ${cdHub.contractsMobileCardNested}` : ''}`}
     >
-      <button
-        type="button"
-        className={cdHub.contractsMobileCardMain}
-        onClick={() => router.push(packageHref)}
-      >
+      {/* На мобиле в сам договор не заходим — только просмотр списка и хабы (счета / наряды / оплаты). */}
+      <div className={cdHub.contractsMobileCardMain}>
         <div className={cdHub.contractsMobileCardTop}>
           <div className={cdHub.contractsMobileCardTitle}>
             {num ? `№ ${num}` : 'Без номера'}
@@ -134,6 +140,7 @@ function PackageMobileCard({
             {packageListPipelineStatusLabel(pipelineStatus)}
           </span>
         </div>
+        <MobileCallCustomerControl phone={nested ? '' : customerPhone} />
         <dl className={cdHub.contractsMobileCardRows}>
           <div className={cdHub.contractsMobileCardRow}>
             <dt>Дата</dt>
@@ -166,18 +173,10 @@ function PackageMobileCard({
             <dd>{formatContractsListMoney(remainingRub)}</dd>
           </div>
         </dl>
-      </button>
+      </div>
       <div className={cdHub.contractsMobileCardActions}>
         <AdminTableIconButton
-          disabled={creating || copyBusy || deleteBusy}
-          title={PACKAGE_HUB_MODAL_TITLE}
-          aria-label={`Открыть ${PACKAGE_HUB_MODAL_TITLE}`}
-          onClick={() => onOpenHub(pkg.id)}
-        >
-          <PackageHubIcon />
-        </AdminTableIconButton>
-        <AdminTableIconButton
-          disabled={creating || copyBusy || deleteBusy}
+          disabled={actionsDisabled}
           title={PACKAGE_INVOICES_MODAL_TITLE}
           aria-label={`Открыть ${PACKAGE_INVOICES_MODAL_TITLE}`}
           onClick={() => onOpenInvoicesHub(pkg.id)}
@@ -185,7 +184,7 @@ function PackageMobileCard({
           <PackageInvoicesHubIcon />
         </AdminTableIconButton>
         <AdminTableIconButton
-          disabled={creating || copyBusy || deleteBusy}
+          disabled={actionsDisabled}
           title={formatPackageWorkOrderHubModalTitle(num)}
           aria-label={`Открыть ${formatPackageWorkOrderHubModalTitle(num)}`}
           onClick={() => onOpenWorkOrdersHub(pkg.id)}
@@ -193,38 +192,12 @@ function PackageMobileCard({
           <PackageWorkOrdersHubIcon />
         </AdminTableIconButton>
         <AdminTableIconButton
-          disabled={creating || (copyingPackageId !== null && !copyBusy) || deleteBusy}
-          aria-busy={copyBusy}
-          aria-label={
-            copyBusy
-              ? 'Копирование договора…'
-              : 'Копировать договор (данные без прикреплённых расчётов)'
-          }
-          title="Копировать: все вкладки, без расчётов в смете и в Д/с"
-          onClick={() => onCopyPackage(pkg.id)}
+          disabled={actionsDisabled}
+          title={PACKAGE_HUB_MODAL_TITLE}
+          aria-label={`Открыть ${PACKAGE_HUB_MODAL_TITLE}`}
+          onClick={() => onOpenHub(pkg.id)}
         >
-          <CopyIcon className={copyBusy ? cdChrome.estimatesRefreshIconSpinning : undefined} />
-        </AdminTableIconButton>
-        <AdminTableIconButton
-          disabled={
-            !canDeleteDraft || creating || copyBusy || (deletingPackageId !== null && !deleteBusy)
-          }
-          aria-busy={deleteBusy}
-          aria-label={
-            deleteBusy
-              ? 'Перемещение в корзину…'
-              : canDeleteDraft
-                ? 'В корзину'
-                : 'Удаление недоступно: прикреплена смета или есть оплаты'
-          }
-          title={
-            canDeleteDraft
-              ? 'В корзину (если нет прикреплённой сметы и записей об оплатах)'
-              : 'В корзину нельзя: к договору прикреплена смета или в журнале есть оплаты'
-          }
-          onClick={() => onDeletePackage(pkg)}
-        >
-          <DeleteIcon className={deleteBusy ? cdChrome.estimatesRefreshIconSpinning : undefined} />
+          <PackageHubIcon />
         </AdminTableIconButton>
       </div>
     </article>
@@ -243,11 +216,6 @@ export function ContractsListMobileCards({
   onToggleObjectExpand,
   crmUsers,
   creating,
-  copyingPackageId,
-  deletingPackageId,
-  router,
-  onCopyPackage,
-  onDeletePackage,
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
@@ -292,6 +260,7 @@ export function ContractsListMobileCards({
           const agg = aggregateContractsListPackagesMoney(item.packages, addendumColumnCount);
           const paymentBase = addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
           const expanded = expandedObjectId === item.objectId;
+          const objectCustomerPhone = contractsListPackagesCustomerPhone(item.packages);
 
           return (
             <div key={`obj-${item.objectId}`} className={cdHub.contractsMobileObjectGroup}>
@@ -322,6 +291,7 @@ export function ContractsListMobileCards({
                         {paymentBase != null ? ` / ${formatContractsListMoney(paymentBase)}` : ''}
                       </span>
                     </div>
+                    <MobileCallCustomerControl phone={objectCustomerPhone} />
                   </div>
                 </div>
               </div>
@@ -334,11 +304,6 @@ export function ContractsListMobileCards({
                       addendumColumnCount={addendumColumnCount}
                       crmUsers={crmUsers}
                       creating={creating}
-                      copyingPackageId={copyingPackageId}
-                      deletingPackageId={deletingPackageId}
-                      router={router}
-                      onCopyPackage={onCopyPackage}
-                      onDeletePackage={onDeletePackage}
                       onOpenHub={onOpenHub}
                       onOpenInvoicesHub={onOpenInvoicesHub}
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}
@@ -361,11 +326,6 @@ export function ContractsListMobileCards({
             addendumColumnCount={addendumColumnCount}
             crmUsers={crmUsers}
             creating={creating}
-            copyingPackageId={copyingPackageId}
-            deletingPackageId={deletingPackageId}
-            router={router}
-            onCopyPackage={onCopyPackage}
-            onDeletePackage={onDeletePackage}
             onOpenHub={onOpenHub}
             onOpenInvoicesHub={onOpenInvoicesHub}
             onOpenWorkOrdersHub={onOpenWorkOrdersHub}

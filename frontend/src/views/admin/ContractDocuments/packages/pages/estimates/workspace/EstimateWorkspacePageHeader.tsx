@@ -4,6 +4,7 @@ import Link from 'next/link';
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { EstimateWorkspaceRulesInfoTip } from './EstimateWorkspaceRulesInfoTip';
 import { ESTIMATES_LIST_HREF } from './estimateWorkspaceUtils';
 
 export type EstimateWorkspacePageHeaderProps = {
@@ -80,14 +81,17 @@ export function EstimateWorkspacePageHeader({
         >
           ← К списку расчётов
         </Link>
-        <h1 className={`${cdWorkspace.title} ${cdWorkspace.estimateWorkspaceTitle}`}>
-          {estimateWorkspacePageTitle({
-            estimateIdFromUrl,
-            copyFromId,
-            splitInstanceFromUrl,
-            fromMeasurementId,
-          })}
-        </h1>
+        <div className={cdWorkspace.estimateWorkspaceTitleCluster}>
+          <h1 className={`${cdWorkspace.title} ${cdWorkspace.estimateWorkspaceTitle}`}>
+            {estimateWorkspacePageTitle({
+              estimateIdFromUrl,
+              copyFromId,
+              splitInstanceFromUrl,
+              fromMeasurementId,
+            })}
+          </h1>
+          <EstimateWorkspaceRulesInfoTip />
+        </div>
         {copyFromId && splitInstanceFromUrl ? (
           <p className={`${cdWorkspace.subtitle} ${cdWorkspace.estimateWorkspaceSubtitle}`}>
             {estimateWorkspaceSplitSubtitle({ newSplitBundleFromUrl, joinSplitBundleIdFromUrl })}

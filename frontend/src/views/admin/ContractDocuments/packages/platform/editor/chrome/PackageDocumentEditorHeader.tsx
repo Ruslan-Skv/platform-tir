@@ -14,6 +14,7 @@ import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { packageKindUiLabel } from '../../../config';
 import { PackageDocumentEditorHeaderActions } from './PackageDocumentEditorHeaderActions';
+import { PackageDocumentEditorRulesInfoTip } from './PackageDocumentEditorRulesInfoTip';
 
 export type PackageDocumentEditorHeaderProps = {
   packageKind: ContractDocumentPackageKind;
@@ -45,24 +46,27 @@ export function PackageDocumentEditorHeader(props: PackageDocumentEditorHeaderPr
           ← К списку договоров ({packageKindUiLabel(packageKind)})
         </Link>
         <div className={cdHub.editorHeaderTitleRow}>
-          <h1
-            className={cdWorkspace.title}
-            aria-label={
-              headerContractConcludedDateLabel
-                ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
-                : 'Пакет документов'
-            }
-          >
-            {headerContractNumberLabel}
-            {headerContractConcludedDateLabel ? (
-              <span
-                className={cdHub.packageHeaderContractSignedDate}
-                title="Дата присвоения статуса «Договор подписан»"
-              >
-                {` от ${headerContractConcludedDateLabel}`}
-              </span>
-            ) : null}
-          </h1>
+          <div className={cdHub.editorHeaderTitleCluster}>
+            <h1
+              className={cdWorkspace.title}
+              aria-label={
+                headerContractConcludedDateLabel
+                  ? `Договор ${headerContractNumberLabel} от ${headerContractConcludedDateLabel}`
+                  : 'Пакет документов'
+              }
+            >
+              {headerContractNumberLabel}
+              {headerContractConcludedDateLabel ? (
+                <span
+                  className={cdHub.packageHeaderContractSignedDate}
+                  title="Дата присвоения статуса «Договор подписан»"
+                >
+                  {` от ${headerContractConcludedDateLabel}`}
+                </span>
+              ) : null}
+            </h1>
+            <PackageDocumentEditorRulesInfoTip />
+          </div>
         </div>
       </div>
       <PackageDocumentEditorHeaderActions {...props} />

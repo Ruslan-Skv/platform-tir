@@ -94,6 +94,30 @@
   min-height: 28px;
 }
 
+@media (max-width: 900px) {
+  .estimateWorkspaceHeaderControls {
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .estimateWorkspaceHeaderControls .estimateWorkspaceActions {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: stretch;
+    width: 100%;
+    gap: var(--admin-space-sm);
+  }
+
+  .estimateWorkspaceHeaderControls .estimateWorkspaceActions :global(button) {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 2.5rem;
+    padding: var(--admin-space-sm) var(--admin-space-lg);
+    font-size: var(--admin-font-size-sm);
+    justify-content: center;
+  }
+}
+
 .estimateWorkspaceExitBtn {
   color: var(--admin-danger);
   background: linear-gradient(180deg, var(--admin-danger-bg) 0%, var(--admin-danger-bg-soft) 100%);

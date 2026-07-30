@@ -273,11 +273,6 @@ export function ContractsListTable({
         onToggleObjectExpand={onToggleObjectExpand}
         crmUsers={crmUsers}
         creating={creating}
-        copyingPackageId={copyingPackageId}
-        deletingPackageId={deletingPackageId}
-        router={router}
-        onCopyPackage={onCopyPackage}
-        onDeletePackage={onDeletePackage}
         onOpenHub={onOpenHub}
         onOpenInvoicesHub={onOpenInvoicesHub}
         onOpenWorkOrdersHub={onOpenWorkOrdersHub}

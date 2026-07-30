@@ -173,6 +173,29 @@ export function contractsListCustomerName(fd: Record<string, unknown>): string {
   return String(c.fullName ?? '').trim() || '—';
 }
 
+/** Основной телефон заказчика из formData пакета (для tel: на мобиле). */
+export function contractsListCustomerPhone(fd: Record<string, unknown>): string {
+  const form = mergePackageFormData(fd);
+  const primary = form.customer.phone?.trim() ?? '';
+  if (primary) return primary;
+  for (const slot of form.customer.phones ?? []) {
+    const t = slot.trim();
+    if (t) return t;
+  }
+  return '';
+}
+
+/** Первый доступный телефон заказчика среди пакетов объекта. */
+export function contractsListPackagesCustomerPhone(
+  packages: readonly ContractDocumentPackage[]
+): string {
+  for (const pkg of packages) {
+    const phone = contractsListCustomerPhone((pkg.formData ?? {}) as Record<string, unknown>);
+    if (phone) return phone;
+  }
+  return '';
+}
+
 export function contractsListObjectAddress(fd: Record<string, unknown>): string {
   const o = asObj(fd.object);
   return String(o?.objectAddress ?? '').trim() || '—';

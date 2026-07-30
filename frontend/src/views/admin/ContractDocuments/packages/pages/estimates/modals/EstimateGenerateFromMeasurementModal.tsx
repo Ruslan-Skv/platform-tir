@@ -1,8 +1,6 @@
 'use client';
 
-import cdBase from '../../../../styles/base.module.css';
-import cdDocPreview from '../../../../styles/documents-preview.module.css';
-import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { Modal } from '@/shared/ui/Modal';
 
 export type CompletedMeasurementOption = {
   id: string;
@@ -12,6 +10,7 @@ export type CompletedMeasurementOption = {
 };
 
 export function EstimateGenerateFromMeasurementModal({
+  isOpen,
   measurements,
   loading,
   selectedMeasurementId,
@@ -19,6 +18,7 @@ export function EstimateGenerateFromMeasurementModal({
   onClose,
   onCreate,
 }: {
+  isOpen: boolean;
   measurements: CompletedMeasurementOption[];
   loading: boolean;
   selectedMeasurementId: string;
@@ -27,47 +27,52 @@ export function EstimateGenerateFromMeasurementModal({
   onCreate: (measurementId: string) => void;
 }) {
   return (
-    <div
-      className={cdDocPreview.saveModalBackdrop}
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="generate-from-measurement-title"
-      onClick={onClose}
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Создание расчёта из выполненного замера"
+      size="md"
+      showCloseButton
     >
-      <div className={cdDocPreview.saveModalCard} onClick={(e) => e.stopPropagation()}>
-        <h3 className={cdDocPreview.saveModalTitle} id="generate-from-measurement-title">
-          Создание расчёта из выполненного замера
-        </h3>
+      <div data-modal-form data-modal-density="compact">
         {loading ? (
-          <p className={cdBase.hint}>Загрузка выполненных замеров…</p>
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Загрузка выполненных замеров…
+          </p>
         ) : measurements.length === 0 ? (
-          <p className={cdBase.hint}>
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
             Нет выполненных замеров с данными раздела «Замеры помещений».
           </p>
         ) : (
-          <label className={cdBase.field}>
-            <span>Выберите выполненный замер</span>
-            <select
-              value={selectedMeasurementId}
-              onChange={(e) => onSelectedMeasurementIdChange(e.target.value)}
-            >
-              {measurements.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.customerName} · {new Date(m.receptionDate).toLocaleDateString('ru-RU')}
-                  {m.customerAddress ? ` · ${m.customerAddress}` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
+          <>
+            <p data-modal-form-hint style={{ marginTop: 0 }}>
+              Выберите выполненный замер — по его данным откроется рабочая область нового расчёта.
+            </p>
+            <div data-modal-form-group>
+              <label htmlFor="generate-from-measurement-select">Выполненный замер</label>
+              <select
+                id="generate-from-measurement-select"
+                value={selectedMeasurementId}
+                onChange={(e) => onSelectedMeasurementIdChange(e.target.value)}
+              >
+                {measurements.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    {m.customerName} · {new Date(m.receptionDate).toLocaleDateString('ru-RU')}
+                    {m.customerAddress ? ` · ${m.customerAddress}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </>
         )}
-        <div className={cdDocPreview.saveModalActionsRow}>
-          <button type="button" className={cdBase.secondaryBtn} onClick={onClose}>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" onClick={onClose}>
             Отмена
           </button>
           <button
             data-admin-mutation
             type="button"
-            className={cdWorkspace.primaryBtn}
+            data-modal-btn="primary"
             disabled={!selectedMeasurementId || loading}
             onClick={() => {
               if (!selectedMeasurementId) return;
@@ -78,6 +83,6 @@ export function EstimateGenerateFromMeasurementModal({
           </button>
         </div>
       </div>
-    </div>
+    </Modal>
   );
 }

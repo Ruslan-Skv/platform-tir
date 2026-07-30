@@ -17,6 +17,7 @@ import {
 } from '@/views/admin/ui/AdminStickySaveButton';
 
 import styles from './OrderDetailPage.module.css';
+import { OrderDetailRulesInfoTip } from './OrderDetailRulesInfoTip';
 import { OrderHistoryModal } from './OrderHistoryModal';
 import type { OrderDetailPageModel } from './hooks/useOrderDetailPage';
 import { ORDER_DETAIL_STATUS_OPTIONS } from './order-detail-page.constants';
@@ -175,7 +176,10 @@ export function OrderDetailPageView({ model }: OrderDetailPageViewProps) {
         </div>
 
         <div className={styles.titleRow}>
-          <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
+          <div className={styles.titleCluster}>
+            <h1 className={styles.title}>Заказ {order.orderNumber}</h1>
+            <OrderDetailRulesInfoTip />
+          </div>
           <span className={styles.managerInline}>
             {order.processedByManager ? (
               <>

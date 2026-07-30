@@ -105,13 +105,12 @@ export function EstimatesListModals({
         />
       ) : null}
 
-      {detachEditOpen ? (
-        <EstimateDetachEditModal
-          saving={saving}
-          onCancel={onCancelDetachEdit}
-          onConfirm={onConfirmDetachEdit}
-        />
-      ) : null}
+      <EstimateDetachEditModal
+        isOpen={detachEditOpen}
+        saving={saving}
+        onCancel={onCancelDetachEdit}
+        onConfirm={onConfirmDetachEdit}
+      />
 
       <EstimateTrashConfirmModal
         state={trashConfirmModal}
@@ -122,16 +121,15 @@ export function EstimatesListModals({
 
       <EstimateTrashModal isOpen={trashOpen} onClose={onCloseTrash} onRestored={onTrashRestored} />
 
-      {isGenerateFromMeasurementOpen ? (
-        <EstimateGenerateFromMeasurementModal
-          measurements={completedMeasurements}
-          loading={completedMeasurementsBusy}
-          selectedMeasurementId={selectedMeasurementId}
-          onSelectedMeasurementIdChange={onSelectedMeasurementIdChange}
-          onClose={onCloseGenerateFromMeasurement}
-          onCreate={onCreateFromMeasurement}
-        />
-      ) : null}
+      <EstimateGenerateFromMeasurementModal
+        isOpen={isGenerateFromMeasurementOpen}
+        measurements={completedMeasurements}
+        loading={completedMeasurementsBusy}
+        selectedMeasurementId={selectedMeasurementId}
+        onSelectedMeasurementIdChange={onSelectedMeasurementIdChange}
+        onClose={onCloseGenerateFromMeasurement}
+        onCreate={onCreateFromMeasurement}
+      />
     </>
   );
 }

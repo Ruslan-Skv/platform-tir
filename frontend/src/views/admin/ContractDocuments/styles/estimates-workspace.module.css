@@ -46,6 +46,19 @@
   font-size: var(--admin-font-size-2xl);
 }
 
+.estimateWorkspaceTitleCluster {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+  flex-wrap: wrap;
+  width: 100%;
+}
+
+.estimateWorkspaceTitleCluster .estimateWorkspaceTitle {
+  margin-bottom: 0;
+}
+
 .estimateWorkspaceSubtitle {
   margin: 0;
   font-size: var(--admin-font-size-sm);
@@ -134,7 +147,7 @@
   padding: 0;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 900px) {
   .estimateWorkspaceTopRow {
     grid-template-columns: 1fr;
   }
@@ -159,6 +172,9 @@
   box-sizing: border-box;
   background: var(--admin-surface);
   color: var(--admin-text-primary);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный input тянет тёмный текст */
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 .estimateWorkspaceNameSearchInput:focus {
@@ -175,6 +191,8 @@
   background: var(--admin-surface-soft);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -280,7 +298,7 @@
   margin-bottom: 0;
 }
 
-@media (max-width: 720px) {
+@media (max-width: 900px) {
   .estimateWorkspaceCustomerFieldsRow {
     grid-template-columns: 1fr;
   }
@@ -526,6 +544,102 @@
 
 .estimateWorkspaceCalculatorError {
   margin: 0 0 var(--admin-space-md);
+}
+
+/* Мобильная адаптация «Новый расчёт» / workspace */
+@media (max-width: 900px) {
+  .estimateWorkspacePage.pageWide {
+    overflow-x: clip;
+    padding-left: var(--admin-space-sm);
+    padding-right: var(--admin-space-sm);
+  }
+
+  .estimateWorkspacePage .editorHeader {
+    flex-direction: column;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-sm);
+  }
+
+  .estimateWorkspacePage .editorHeader > div:first-child {
+    width: 100%;
+  }
+
+  .estimateWorkspacePage .title,
+  .estimateWorkspaceTitle {
+    font-size: var(--admin-font-size-lg);
+    line-height: 1.2;
+    margin-bottom: var(--admin-space-2xs);
+  }
+
+  .estimateWorkspacePage .subtitle,
+  .estimateWorkspaceSubtitle {
+    font-size: var(--admin-font-size-xs);
+    max-width: none;
+  }
+
+  .estimateWorkspacePage .backLink {
+    font-size: var(--admin-font-size-sm);
+    min-height: 2rem;
+    display: inline-flex;
+    align-items: center;
+  }
+
+  /* Save / Exit: полная ширина, удобные touch-targets */
+  .estimateWorkspacePage .editorHeader :global(button) {
+    width: 100%;
+    box-sizing: border-box;
+    min-height: 2.5rem;
+    padding: var(--admin-space-sm) var(--admin-space-lg);
+    font-size: var(--admin-font-size-sm);
+    justify-content: center;
+    text-align: center;
+  }
+
+  .estimateWorkspaceCategoriesCard,
+  .estimateWorkspaceCustomerCard {
+    padding: var(--admin-space-sm) var(--admin-space-md);
+  }
+
+  .estimateWorkspaceCategoryChip {
+    min-height: 2.25rem;
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .estimateWorkspaceNameSearchInput {
+    min-height: 2.5rem;
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    font-size: var(--admin-font-size-sm);
+  }
+
+  .estimateWorkspacePage .docPane {
+    padding: var(--admin-space-sm) var(--admin-space-md);
+  }
+
+  /* Вкладки категорий калькулятора — горизонтальный скролл */
+  .estimateWorkspacePage .estimateWorkspaceTabBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    width: 100%;
+    margin-bottom: var(--admin-space-sm);
+    gap: var(--admin-space-xs);
+  }
+
+  .estimateWorkspacePage .estimateWorkspaceTabBar :global(button) {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 2.25rem;
+    font-size: var(--admin-font-size-xs);
+    padding: var(--admin-space-xs) var(--admin-space-md);
+  }
+
+  .estimateWorkspacePage .estimateWorkspaceHeaderNameField {
+    min-width: 0;
+    width: 100%;
+  }
 }
 
 .pageWide {
