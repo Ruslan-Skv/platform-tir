@@ -10,9 +10,13 @@ export function normalizeSignatoryProfile(
   profile: ContractSignatoryProfile
 ): ContractSignatoryProfile {
   const crmUserId = profile.crmUserId?.trim();
+  const officeId = profile.officeId?.trim();
   return {
     ...profile,
     title: profile.title.trim(),
     ...(crmUserId ? { crmUserId } : {}),
+    ...(officeId ? { officeId } : { officeId: undefined }),
+    salesOffice: profile.salesOffice?.trim() || '',
+    officePhone: profile.officePhone?.trim() || '',
   };
 }

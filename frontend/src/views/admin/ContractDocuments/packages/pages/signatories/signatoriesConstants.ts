@@ -14,6 +14,7 @@ export const MANAGER_CRM_ROLES = [
 export const EMPTY_SIGNATORY_PROFILE: ContractSignatoryProfile = {
   title: '',
   crmUserId: '',
+  officeId: '',
   directorNameNominative: '',
   directorNameGenitive: '',
   basis: '',

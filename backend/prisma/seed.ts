@@ -972,17 +972,17 @@ async function main() {
 
   // CRM: направления по умолчанию
   const crmDirections = [
-    { name: 'Двери', slug: 'doors', sortOrder: 1 },
-    { name: 'Окна', slug: 'windows', sortOrder: 2 },
-    { name: 'Натяжные потолки', slug: 'stretch-ceilings', sortOrder: 3 },
-    { name: 'Жалюзи', slug: 'blinds', sortOrder: 4 },
-    { name: 'Мебель', slug: 'furniture', sortOrder: 5 },
-    { name: 'Ремонт', slug: 'repair', sortOrder: 6 },
+    { name: 'Двери', slug: 'doors', sortOrder: 1, numberLetter: 'д' },
+    { name: 'Окна', slug: 'windows', sortOrder: 2, numberLetter: 'о' },
+    { name: 'Натяжные потолки', slug: 'stretch-ceilings', sortOrder: 3, numberLetter: 'п' },
+    { name: 'Жалюзи', slug: 'blinds', sortOrder: 4, numberLetter: 'ж' },
+    { name: 'Мебель', slug: 'furniture', sortOrder: 5, numberLetter: 'м' },
+    { name: 'Ремонт', slug: 'repair', sortOrder: 6, numberLetter: 'р' },
   ];
   for (const d of crmDirections) {
     await prisma.crmDirection.upsert({
       where: { slug: d.slug },
-      update: { name: d.name, sortOrder: d.sortOrder },
+      update: { name: d.name, sortOrder: d.sortOrder, numberLetter: d.numberLetter },
       create: { ...d, isActive: true },
     });
   }

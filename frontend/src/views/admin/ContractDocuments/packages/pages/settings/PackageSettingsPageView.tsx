@@ -1,5 +1,7 @@
 'use client';
 
+import Link from 'next/link';
+
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
 import { SettingsPageLayout } from './SettingsPageLayout';
@@ -20,7 +22,9 @@ export function PackageSettingsPageView({
         <>
           Срок в рабочих днях для каждого направления. Подставляется в «Срок дог.» и в{' '}
           <code>{'{{contract.workPeriod}}'}</code>. После подписания срок не меняется; договоры с
-          ручным сроком в карточке массовое обновление не затрагивает.
+          ручным сроком в карточке массовое обновление не затрагивает. Буквы направлений для
+          нумерации — в разделе{' '}
+          <Link href="/admin/contract-documents/settings/numbering">Нумерация договоров</Link>.
         </>
       }
       error={error}

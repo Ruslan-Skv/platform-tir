@@ -131,6 +131,8 @@ model User {
   /// CRM-направления, которые ведёт сотрудник (менеджер / ведущий — несколько штук).
   crmDirections                           UserCrmDirection[]
   officeId                                String?
+  /// Код сотрудника в номере договора (например «1» в 77/1/3д-5). Уникален среди сотрудников.
+  employeeCode                            String?
   useCustomWorkSchedule                   Boolean                                  @default(false)
   workDayStartTime                        String?
   workDayEndTime                          String?
@@ -142,7 +144,9 @@ model User {
   workDays                                WorkDay[]
   workDayRequests                         WorkDayRequest[]                         @relation("WorkDayRequestUser")
   workDayRequestsReviewed                 WorkDayRequest[]                         @relation("WorkDayRequestReviewedBy")
+  contractDocumentNumberCounters          ContractDocumentNumberCounter[]
 
+  @@unique([employeeCode])
   @@index([officeId])
   @@map("users")
 }
@@ -2683,6 +2687,8 @@ model CrmDirection {
   id                              String                           @id @default(cuid())
   name                            String
   slug                            String                           @unique
+  /// Буква/код направления в номере договора (например «д» для Двери → …/3д-5).
+  numberLetter                    String?
   isActive                        Boolean                          @default(true)
   sortOrder                       Int                              @default(0)
   createdAt                       DateTime                         @default(now())
@@ -2691,6 +2697,7 @@ model CrmDirection {
   measurementAdditionalDirections MeasurementAdditionalDirection[]
   contracts                       Contract[]
   users                           UserCrmDirection[]
+  contractDocumentNumberCounters  ContractDocumentNumberCounter[]
 
   @@map("crm_directions")
 }
@@ -3078,6 +3085,21 @@ model ContractDocumentPaymentInvoiceCounter {
   value Int    @default(0)
 
   @@map("contract_document_payment_invoice_counter")
+}
+
+/// Порядковый номер договора: свой счётчик у каждого менеджера по каждому направлению.
+model ContractDocumentNumberCounter {
+  id            String @id @default(cuid())
+  managerUserId String
+  directionId   String
+  value         Int    @default(0)
+
+  manager   User         @relation(fields: [managerUserId], references: [id], onDelete: Cascade)
+  direction CrmDirection @relation(fields: [directionId], references: [id], onDelete: Cascade)
+
+  @@unique([managerUserId, directionId])
+  @@index([directionId])
+  @@map("contract_document_number_counters")
 }
 
 /// Снимок пакета документов (история версий при явном сохранении и при восстановлении).

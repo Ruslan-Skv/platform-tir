@@ -18,6 +18,6 @@ export const DEFAULT_WORK_DAY_SETTINGS: Omit<WorkDaySettings, 'createdAt' | 'upd
 };
 
 export const WORK_DAY_RECORD_INCLUDE = {
-  office: { select: { id: true, name: true } },
+  office: { select: { id: true, name: true, prefix: true } },
   absences: { orderBy: { startedAt: 'asc' as const } },
 } as const;

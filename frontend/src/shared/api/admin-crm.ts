@@ -17,6 +17,7 @@ export interface CrmDirection {
   id: string;
   name: string;
   slug: string;
+  numberLetter?: string | null;
   isActive: boolean;
   sortOrder: number;
 }
@@ -35,6 +36,8 @@ export interface CrmUser {
   firstName: string | null;
   lastName: string | null;
   role: string;
+  employeeCode?: string | null;
+  officeId?: string | null;
 }
 
 export async function getCrmUsers(): Promise<CrmUser[]> {
@@ -678,6 +681,7 @@ export async function createCrmDirection(data: {
   slug: string;
   isActive?: boolean;
   sortOrder?: number;
+  numberLetter?: string | null;
 }): Promise<CrmDirection> {
   const res = await apiFetch(`${API_URL}/admin/crm-directions`, {
     method: 'POST',
@@ -685,6 +689,28 @@ export async function createCrmDirection(data: {
     body: JSON.stringify(data),
   });
   if (!res.ok) throw new Error('Не удалось создать направление');
+  return res.json();
+}
+
+export async function updateCrmDirection(
+  id: string,
+  data: Partial<{
+    name: string;
+    slug: string;
+    isActive: boolean;
+    sortOrder: number;
+    numberLetter: string | null;
+  }>
+): Promise<CrmDirection> {
+  const res = await apiFetch(`${API_URL}/admin/crm-directions/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось обновить направление');
+  }
   return res.json();
 }
 

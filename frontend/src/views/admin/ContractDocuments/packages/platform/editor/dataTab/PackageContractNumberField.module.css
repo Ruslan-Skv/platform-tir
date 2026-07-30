@@ -1,0 +1,81 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  min-width: 0;
+  grid-column: 1 / -1;
+}
+
+.numberingRow {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  column-gap: var(--admin-space-md);
+  align-items: start;
+}
+
+.wrap :global(.field) select,
+.wrap :global(.field) input {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.customNumberInput {
+  margin-top: 6px;
+}
+
+.hintMuted,
+.hintError {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  min-width: 0;
+  max-width: 100%;
+  padding: 0.35rem 0.55rem;
+  border-radius: 0.4rem;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.hintMuted {
+  color: var(--admin-text-muted, #64748b);
+  background: var(--admin-surface-muted, #f8fafc);
+}
+
+.hintError {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+}
+
+.hintText {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.hintLink {
+  flex: 0 0 auto;
+  color: #b45309;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  white-space: nowrap;
+}
+
+.hintLink:hover {
+  color: #92400e;
+}
+
+@media (max-width: 720px) {
+  .numberingRow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hintText {
+    white-space: normal;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+  }
+}

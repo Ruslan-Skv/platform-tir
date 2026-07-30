@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+import { type Office, getOffices } from '@/shared/api/admin-crm';
 import cdEstimateTab from '@/views/admin/ContractDocuments/styles/estimate-tab.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
@@ -27,6 +30,33 @@ export function SignatoriesFormPanel({
   saving,
   setDraft,
 }: SignatoriesFormPanelProps) {
+  const [offices, setOffices] = useState<Office[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await getOffices();
+        if (!cancelled) setOffices(list.filter((o) => o.isActive));
+      } catch {
+        if (!cancelled) setOffices([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const applyOffice = (officeId: string) => {
+    const office = offices.find((o) => o.id === officeId);
+    setDraft((p) => ({
+      ...p,
+      officeId,
+      salesOffice: office?.name ?? '',
+      officePhone: office?.phone ?? '',
+    }));
+  };
+
   return (
     <div className={cdTemplates.sectionCard}>
       <div className={cdTemplates.sectionFields}>
@@ -49,12 +79,13 @@ export function SignatoriesFormPanel({
             {managerCrmUsers.map((u) => (
               <option key={u.id} value={u.id}>
                 {formatCrmUserLabel(u)}
+                {u.employeeCode ? ` · код ${u.employeeCode}` : ''}
               </option>
             ))}
           </select>
           <p className={cdTemplates.hint} style={{ marginTop: 4, marginBottom: 0 }}>
-            Обязательная привязка к учётной записи CRM для фильтра замеров и поля «Менеджер» в
-            бланке замера.
+            Обязательная привязка к учётной записи CRM. Код в номере договора задаётся в карточке
+            пользователя.
           </p>
         </div>
         <div className={cdEstimateTab.field}>
@@ -80,17 +111,31 @@ export function SignatoriesFormPanel({
           />
         </div>
         <div className={cdEstimateTab.field}>
-          <label>Офис продаж</label>
-          <input
-            value={draft.salesOffice ?? ''}
-            onChange={(e) => setDraft((p) => ({ ...p, salesOffice: e.target.value }))}
-          />
+          <label htmlFor="signatory_office">Офис продаж</label>
+          <select
+            id="signatory_office"
+            value={draft.officeId ?? ''}
+            onChange={(e) => applyOffice(e.target.value)}
+          >
+            <option value="">— Выберите офис —</option>
+            {offices.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+                {o.prefix ? ` (${o.prefix})` : ''}
+              </option>
+            ))}
+          </select>
+          <p className={cdTemplates.hint} style={{ marginTop: 4, marginBottom: 0 }}>
+            Название и телефон подставляются из справочника офисов. Для номера договора офис берётся
+            из открытого рабочего дня.
+          </p>
         </div>
         <div className={cdEstimateTab.field}>
           <label>Телефон офиса</label>
           <input
             value={draft.officePhone ?? ''}
             onChange={(e) => setDraft((p) => ({ ...p, officePhone: e.target.value }))}
+            placeholder="Заполняется из офиса, можно поправить"
           />
         </div>
       </div>

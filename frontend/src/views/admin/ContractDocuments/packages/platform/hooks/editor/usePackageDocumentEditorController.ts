@@ -595,6 +595,7 @@ export function usePackageDocumentEditorController({
         contractAndEstimateLocked,
         isSuperAdmin,
         isProductDirectionPackage,
+        packageKind,
         contractObjectBlockFieldClassName,
         updateContract,
         updateObject,

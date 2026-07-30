@@ -11,6 +11,7 @@ import { ContractDocumentPackageGlobalLibraryService } from './contract-document
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
+import { ContractDocumentNumberingService } from './numbering/contract-document-numbering.service';
 
 @Module({
   imports: [DatabaseModule],
@@ -25,7 +26,12 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
     ContractDocumentPackageCeilingsPriceListService,
     ContractDocumentPackagePaymentsService,
     ContractDocumentPaymentInvoicesService,
+    ContractDocumentNumberingService,
   ],
-  exports: [ContractDocumentPackagesService, ContractDocumentPaymentInvoicesService],
+  exports: [
+    ContractDocumentPackagesService,
+    ContractDocumentPaymentInvoicesService,
+    ContractDocumentNumberingService,
+  ],
 })
 export class ContractDocumentPackagesModule {}

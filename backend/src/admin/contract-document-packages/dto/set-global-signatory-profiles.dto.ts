@@ -35,6 +35,10 @@ export class SignatoryProfileDto {
 
   @IsOptional()
   @IsString()
+  officeId?: string;
+
+  @IsOptional()
+  @IsString()
   salesOffice?: string;
 
   @IsOptional()

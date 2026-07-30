@@ -46,9 +46,19 @@ export class CrmDirectionsService {
 
   async update(id: string, updateCrmDirectionDto: UpdateCrmDirectionDto) {
     await this.findOne(id);
+    const data = { ...updateCrmDirectionDto };
+    if (Object.prototype.hasOwnProperty.call(data, 'numberLetter')) {
+      const raw = data.numberLetter;
+      data.numberLetter =
+        raw === null || raw === undefined
+          ? null
+          : typeof raw === 'string'
+            ? raw.trim() || null
+            : null;
+    }
     return this.prisma.crmDirection.update({
       where: { id },
-      data: updateCrmDirectionDto,
+      data,
     });
   }
 
@@ -68,6 +78,8 @@ export class CrmDirectionsService {
         firstName: true,
         lastName: true,
         role: true,
+        employeeCode: true,
+        officeId: true,
       },
       orderBy: [{ role: 'asc' }, { email: 'asc' }],
     });

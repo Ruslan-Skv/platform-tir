@@ -1,6 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+
+import { type WorkDayOfficeSchedule, getWorkDayOffices } from '@/shared/api/admin-work-days';
 
 import { useWorkDay } from './WorkDayContext';
 import styles from './WorkDayGate.module.css';
@@ -35,6 +37,33 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
   const [actionError, setActionError] = useState<string | null>(null);
   const [forgottenTime, setForgottenTime] = useState('18:00');
   const [closingForgotten, setClosingForgotten] = useState(false);
+  const [offices, setOffices] = useState<WorkDayOfficeSchedule[]>([]);
+  const [selectedOfficeId, setSelectedOfficeId] = useState('');
+
+  useEffect(() => {
+    if (!status || status.canAccessAdmin || status.forgottenOpenDay) return;
+    let cancelled = false;
+    void (async () => {
+      try {
+        const list = await getWorkDayOffices();
+        if (cancelled) return;
+        const active = list.filter((o) => o.isActive);
+        setOffices(active);
+        setSelectedOfficeId((prev) => {
+          if (prev && active.some((o) => o.id === prev)) return prev;
+          if (status.office?.id && active.some((o) => o.id === status.office?.id)) {
+            return status.office.id;
+          }
+          return active[0]?.id ?? '';
+        });
+      } catch {
+        if (!cancelled) setOffices([]);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [status]);
 
   if (loading || !status) {
     return <>{children}</>;
@@ -53,9 +82,13 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
 
   const onStart = async () => {
     setActionError(null);
+    if (!selectedOfficeId) {
+      setActionError('Выберите офис, в котором открываете рабочий день');
+      return;
+    }
     setStarting(true);
     try {
-      await handleStartDay();
+      await handleStartDay(selectedOfficeId);
     } catch (e) {
       setActionError(e instanceof Error ? e.message : 'Ошибка');
     } finally {
@@ -110,8 +143,25 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
               <h2 className={styles.title}>Начните рабочий день</h2>
               <p className={styles.text}>
                 Чтобы работать в админке, отметьте начало рабочего дня с компьютера в офисе.
-                {status.office ? ` Офис: ${status.office.name}.` : ''}
+                Выберите офис, в котором вы сегодня работаете — он попадёт в нумерацию договоров.
               </p>
+              <label className={styles.label} htmlFor="work-day-office">
+                Офис *
+                <select
+                  id="work-day-office"
+                  className={styles.input}
+                  value={selectedOfficeId}
+                  onChange={(e) => setSelectedOfficeId(e.target.value)}
+                >
+                  <option value="">— Выберите офис —</option>
+                  {offices.map((o) => (
+                    <option key={o.id} value={o.id}>
+                      {o.name}
+                      {o.prefix ? ` (${o.prefix})` : ''}
+                    </option>
+                  ))}
+                </select>
+              </label>
               {!status.isWorkDayToday ? (
                 <p className={styles.hint}>Сегодня по вашему графику нерабочий день.</p>
               ) : null}
@@ -120,7 +170,7 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
                 type="button"
                 className={styles.primaryBtn}
                 onClick={() => void onStart()}
-                disabled={starting || !status.isWorkDayToday}
+                disabled={starting || !status.isWorkDayToday || !selectedOfficeId}
               >
                 {starting ? 'Открытие…' : 'Начать рабочий день'}
               </button>

@@ -7,6 +7,7 @@ export interface AdminUser {
   lastName: string | null;
   role: BackendRole;
   isActive: boolean;
+  employeeCode?: string | null;
   createdAt: string;
   updatedAt: string;
 }

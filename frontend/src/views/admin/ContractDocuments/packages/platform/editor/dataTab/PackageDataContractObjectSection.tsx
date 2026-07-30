@@ -6,6 +6,7 @@ import {
   DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
 } from '../../form/contractWorkPeriod';
 import { ContractDocumentsHelpTooltip } from '../../ui/ContractDocumentsHelpTooltip';
+import { PackageContractNumberField } from './PackageContractNumberField';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
 import {
@@ -25,6 +26,7 @@ export type PackageDataContractObjectSectionProps = Pick<
   | 'contractAndEstimateLocked'
   | 'isSuperAdmin'
   | 'isProductDirectionPackage'
+  | 'packageKind'
   | 'contractObjectBlockFieldClassName'
   | 'updateContract'
   | 'updateObject'
@@ -41,6 +43,7 @@ export function PackageDataContractObjectSection({
   contractAndEstimateLocked,
   isSuperAdmin,
   isProductDirectionPackage,
+  packageKind,
   contractObjectBlockFieldClassName,
   updateContract,
   updateObject,
@@ -61,18 +64,14 @@ export function PackageDataContractObjectSection({
           ) : null}
         </div>
         <div className={DATA_CONTRACT_COMPACT}>
+          <PackageContractNumberField
+            form={form}
+            packageKind={packageKind}
+            locked={contractAndEstimateLocked}
+            fieldClassName={contractObjectBlockFieldClassName('contract.number')}
+            updateContract={updateContract}
+          />
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractHeaderMetaRow}`}>
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="cn">Номер дог.</label>
-              <input
-                id="cn"
-                value={form.contract.number}
-                onChange={(e) => updateContract('number', e.target.value)}
-                autoComplete="off"
-                disabled={contractAndEstimateLocked}
-                className={contractObjectBlockFieldClassName('contract.number')}
-              />
-            </div>
             <ContractDocumentsHelpTooltip
               title={contractDateFieldHelp.title}
               steps={contractDateFieldHelp.steps}

@@ -32,6 +32,7 @@ export const USER_WORK_SCHEDULE_SELECT = {
 export const OFFICE_WORK_SCHEDULE_SELECT = {
   id: true,
   name: true,
+  prefix: true,
   isActive: true,
   allowedIps: true,
   skipWorkDayIpCheck: true,

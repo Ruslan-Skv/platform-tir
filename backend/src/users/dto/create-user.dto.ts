@@ -31,4 +31,12 @@ export class CreateUserDto {
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;
+
+  @ApiProperty({
+    required: false,
+    description: 'Код сотрудника в номере договора (например 1 в 77/1/3д-5)',
+  })
+  @IsOptional()
+  @IsString()
+  employeeCode?: string | null;
 }

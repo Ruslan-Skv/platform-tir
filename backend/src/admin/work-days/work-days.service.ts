@@ -310,12 +310,15 @@ export class WorkDaysService implements OnModuleInit {
       throw new BadRequestException('Рабочий день уже начат.');
     }
 
-    const officeId = dto.officeId ?? user.officeId;
+    const officeId = dto.officeId?.trim() || user.officeId;
     const office = officeId
       ? await this.prisma.office.findUnique({ where: { id: officeId } })
       : user.office;
     if (!office) {
-      throw new BadRequestException('Не указан офис для начала рабочего дня.');
+      throw new BadRequestException('Выберите офис для начала рабочего дня.');
+    }
+    if (!office.isActive) {
+      throw new BadRequestException('Выбранный офис неактивен.');
     }
 
     await this.validateStartAccess(user, settings, meta, office);

@@ -204,6 +204,8 @@ export interface ExecutorRequisiteProfile {
 export interface ContractSignatoryProfile {
   title: string;
   crmUserId?: string;
+  /** Ссылка на Office — подставляет название и телефон в бланк. */
+  officeId?: string;
   directorNameNominative?: string;
   directorNameGenitive?: string;
   basis?: string;
@@ -772,6 +774,64 @@ export async function putContractDocumentSignatoryProfiles(body: {
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось сохранить менеджеров');
+  }
+  return res.json();
+}
+
+export type ContractNumberPreview = {
+  ok: boolean;
+  recommendedNumber: string | null;
+  nextSequence: number | null;
+  error: string | null;
+  officePrefix: string | null;
+  managerCode: string | null;
+  surveyorCode: string | null;
+  directionLetter: string | null;
+  directionId: string | null;
+  directionName: string | null;
+  officeName: string | null;
+  managerName: string | null;
+  surveyorName: string | null;
+};
+
+export async function previewContractDocumentNumber(params: {
+  managerUserId: string;
+  surveyorUserId: string;
+  officeId: string;
+  kind: ContractDocumentPackageKind;
+}): Promise<ContractNumberPreview> {
+  const qs = new URLSearchParams({
+    managerUserId: params.managerUserId,
+    surveyorUserId: params.surveyorUserId,
+    officeId: params.officeId,
+    kind: params.kind,
+  });
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/preview?${qs}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json();
+}
+
+export async function allocateContractDocumentNumber(body: {
+  managerUserId: string;
+  surveyorUserId: string;
+  officeId: string;
+  kind: ContractDocumentPackageKind;
+}): Promise<ContractNumberPreview> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/allocate`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
   }
   return res.json();
 }

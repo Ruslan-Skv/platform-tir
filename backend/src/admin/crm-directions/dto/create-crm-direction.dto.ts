@@ -22,4 +22,11 @@ export class CreateCrmDirectionDto {
   @Transform(({ value }) => (value !== undefined ? parseInt(String(value), 10) : 0))
   @IsInt()
   sortOrder?: number = 0;
+
+  @ApiPropertyOptional({
+    description: 'Буква в номере договора (например «д» для Двери)',
+  })
+  @IsOptional()
+  @IsString()
+  numberLetter?: string | null;
 }

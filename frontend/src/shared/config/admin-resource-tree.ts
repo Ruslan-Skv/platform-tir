@@ -29,6 +29,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.contract-documents.signatories': 'admin.contract-documents',
   'admin.contract-documents.templates': 'admin.contract-documents',
   'admin.contract-documents.repair-settings': 'admin.contract-documents',
+  'admin.contract-documents.numbering': 'admin.contract-documents',
   'admin.contract-documents.markups': 'admin.contract-documents',
 
   'admin.content.home': 'admin.content',

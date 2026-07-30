@@ -46,7 +46,7 @@ export interface WorkDayRecord {
   lateMinutes: number;
   earlyLeaveMinutes: number;
   reportedEndAt: string | null;
-  office?: { id: string; name: string } | null;
+  office?: { id: string; name: string; prefix?: string | null } | null;
   absences?: WorkDayAbsence[];
   user?: {
     id: string;
@@ -105,6 +105,7 @@ export interface WorkDayMyStatus {
 export interface WorkDayOfficeSchedule {
   id: string;
   name: string;
+  prefix?: string | null;
   isActive: boolean;
   allowedIps: string[];
   skipWorkDayIpCheck: boolean;
@@ -140,11 +141,13 @@ export async function getWorkDayMyStatus(): Promise<WorkDayMyStatus> {
   return res.json();
 }
 
-export async function startWorkDay(): Promise<{ workDay: WorkDayRecord; greeting: string }> {
+export async function startWorkDay(
+  officeId: string
+): Promise<{ workDay: WorkDayRecord; greeting: string }> {
   const res = await apiFetch(`${API_URL}/admin/work-days/my/start`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
-    body: JSON.stringify({}),
+    body: JSON.stringify({ officeId }),
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

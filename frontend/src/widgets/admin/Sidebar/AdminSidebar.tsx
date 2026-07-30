@@ -606,6 +606,11 @@ const baseNavItems: NavItem[] = [
             resourceId: 'admin.contract-documents.repair-settings',
           },
           {
+            label: 'Нумерация договоров',
+            href: '/admin/contract-documents/settings/numbering',
+            resourceId: 'admin.contract-documents.numbering',
+          },
+          {
             label: 'Наценки договоров',
             href: '/admin/contract-documents/settings/markups',
             resourceId: 'admin.contract-documents.markups',

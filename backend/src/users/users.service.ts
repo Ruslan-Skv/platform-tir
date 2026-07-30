@@ -13,6 +13,15 @@ export class UsersService {
     if (data.password) {
       data.password = await hashPassword(data.password);
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'employeeCode')) {
+      const raw = data.employeeCode;
+      data.employeeCode =
+        raw === null || raw === undefined
+          ? null
+          : typeof raw === 'string'
+            ? raw.trim() || null
+            : null;
+    }
     return this.prisma.user.create({
       data,
       select: {
@@ -22,6 +31,7 @@ export class UsersService {
         lastName: true,
         role: true,
         isActive: true,
+        employeeCode: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -37,6 +47,7 @@ export class UsersService {
         lastName: true,
         role: true,
         isActive: true,
+        employeeCode: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -56,6 +67,7 @@ export class UsersService {
         isActive: true,
         isGuest: true,
         avatar: true,
+        employeeCode: true,
         createdAt: true,
         updatedAt: true,
       },
@@ -149,6 +161,15 @@ export class UsersService {
             ? raw.trim() || null
             : null;
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'employeeCode')) {
+      const raw = data.employeeCode;
+      data.employeeCode =
+        raw === null || raw === undefined
+          ? null
+          : typeof raw === 'string'
+            ? raw.trim() || null
+            : null;
+    }
     const updated = await this.prisma.user.update({
       where: { id },
       data,
@@ -161,6 +182,7 @@ export class UsersService {
         role: true,
         isActive: true,
         avatar: true,
+        employeeCode: true,
         createdAt: true,
         updatedAt: true,
       },

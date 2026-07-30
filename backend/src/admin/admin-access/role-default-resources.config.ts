@@ -99,6 +99,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.settings.roles',
     'admin.contract-documents.templates',
     'admin.contract-documents.repair-settings',
+    'admin.contract-documents.numbering',
     'admin.contract-documents.markups',
     'admin.users',
   ],

@@ -39,6 +39,7 @@ export function EditUserModal({
   const [lastName, setLastName] = useState(user.lastName ?? '');
   const [role, setRole] = useState<BackendRole>(user.role);
   const [isActive, setIsActive] = useState(user.isActive);
+  const [employeeCode, setEmployeeCode] = useState(user.employeeCode ?? '');
   const [submitting, setSubmitting] = useState(false);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [directionIds, setDirectionIds] = useState<string[]>([]);
@@ -95,6 +96,7 @@ export function EditUserModal({
           lastName: lastName.trim() || null,
           role,
           isActive,
+          employeeCode: employeeCode.trim() || null,
         }),
       });
       if (!res.ok) {
@@ -143,6 +145,21 @@ export function EditUserModal({
               onChange={(e) => setLastName(e.target.value)}
             />
           </div>
+        </div>
+        <div className={styles.formGroup}>
+          <label htmlFor="edit-employeeCode">Код в номере договора</label>
+          <input
+            id="edit-employeeCode"
+            type="text"
+            value={employeeCode}
+            onChange={(e) => setEmployeeCode(e.target.value)}
+            placeholder="Например: 1"
+            autoComplete="off"
+          />
+          <p style={{ marginTop: 4, marginBottom: 0, fontSize: '0.85rem', opacity: 0.75 }}>
+            Персональный код сотрудника (менеджер и замерщик) в номере вида 77/1/3д-5. Уникален для
+            каждого сотрудника.
+          </p>
         </div>
         <div className={styles.formGroup}>
           <label htmlFor="edit-role">Роль</label>

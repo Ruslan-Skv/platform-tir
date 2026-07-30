@@ -273,9 +273,9 @@
   gap: var(--admin-space-md);
 }
 
-/* Номер | дата | срок | скидка — четыре равные колонки */
+/* Дата | срок | скидка — после выноса номера в отдельный блок нумерации */
 .contractHeaderMetaRow {
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   column-gap: var(--admin-space-md);
   align-items: start;
 }

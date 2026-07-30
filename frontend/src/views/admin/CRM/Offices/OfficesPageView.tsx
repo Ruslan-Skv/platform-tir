@@ -101,7 +101,7 @@ export function OfficesPageView({ model }: OfficesPageViewProps) {
                     type="text"
                     value={newForm.prefix}
                     onChange={(e) => setNewForm((f) => ({ ...f, prefix: e.target.value }))}
-                    placeholder="Префикс"
+                    placeholder="Префикс (для № договора)"
                     className={styles.input}
                   />
                 </td>

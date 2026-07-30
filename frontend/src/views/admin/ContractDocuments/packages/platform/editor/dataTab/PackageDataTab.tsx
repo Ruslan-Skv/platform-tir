@@ -15,6 +15,7 @@ export type PackageDataTabProps = {
   contractAndEstimateLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
+  packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;
   contractObjectBlockFieldClassName: (
     fieldId: PackageContractObjectBlockFieldId
   ) => string | undefined;

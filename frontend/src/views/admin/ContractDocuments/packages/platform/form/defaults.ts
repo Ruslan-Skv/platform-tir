@@ -124,6 +124,8 @@ export function defaultPackageFormData(): PackageFormData {
       workPeriod: '',
       workPeriodIsManual: false,
       discountPercent: '',
+      officeId: '',
+      surveyorUserId: '',
     },
     estimate: {
       selectedPresetId: '',

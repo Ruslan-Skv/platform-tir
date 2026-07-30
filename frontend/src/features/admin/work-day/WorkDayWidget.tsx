@@ -44,6 +44,7 @@ export function WorkDayWidget() {
         <span className={styles.label}>
           {status.hasOpenAbsence ? 'По делам' : 'На работе'}
           {day ? ` с ${formatTime(day.startedAt)}` : ''}
+          {day?.office?.name ? ` · ${day.office.name}` : ''}
         </span>
       </div>
       <div className={styles.actions}>

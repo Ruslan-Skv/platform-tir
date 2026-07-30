@@ -27,7 +27,9 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
+import { ContractDocumentNumberingService } from './numbering/contract-document-numbering.service';
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/create-contract-document-payment-invoice.dto';
+import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
@@ -108,6 +110,7 @@ export class ContractDocumentPackagesController {
     private readonly service: ContractDocumentPackagesService,
     private readonly packagePayments: ContractDocumentPackagePaymentsService,
     private readonly paymentInvoices: ContractDocumentPaymentInvoicesService,
+    private readonly contractNumbering: ContractDocumentNumberingService,
   ) {}
 
   @Post()
@@ -746,6 +749,26 @@ export class ContractDocumentPackagesController {
   @Get('payment-invoices/next-number')
   peekPaymentInvoiceNumber() {
     return this.paymentInvoices.peekNextInvoiceNumber();
+  }
+
+  @Get('contract-number/preview')
+  previewContractNumber(
+    @Query('managerUserId') managerUserId: string,
+    @Query('surveyorUserId') surveyorUserId: string,
+    @Query('officeId') officeId: string,
+    @Query('kind') kind: string,
+  ) {
+    return this.contractNumbering.preview({
+      managerUserId,
+      surveyorUserId,
+      officeId,
+      kind: kind as ContractDocumentPackageKind,
+    });
+  }
+
+  @Post('contract-number/allocate')
+  allocateContractNumber(@Body() dto: PreviewContractNumberDto) {
+    return this.contractNumbering.allocate(dto);
   }
 
   @Get('payment-invoices')

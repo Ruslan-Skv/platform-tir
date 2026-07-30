@@ -25,6 +25,7 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   contractAndEstimateLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
+  packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;
   contractObjectBlockFieldClassName: PackageDataTabProps['contractObjectBlockFieldClassName'];
   updateContract: PackageDataTabProps['updateContract'];
   updateObject: PackageDataTabProps['updateObject'];
@@ -79,6 +80,7 @@ export function usePackageDocumentEditorTabProps({
   contractAndEstimateLocked,
   isSuperAdmin,
   isProductDirectionPackage,
+  packageKind,
   contractObjectBlockFieldClassName,
   updateContract,
   updateObject,
@@ -131,6 +133,7 @@ export function usePackageDocumentEditorTabProps({
       contractAndEstimateLocked,
       isSuperAdmin,
       isProductDirectionPackage,
+      packageKind,
       contractObjectBlockFieldClassName,
       updateContract,
       updateObject,
@@ -161,6 +164,7 @@ export function usePackageDocumentEditorTabProps({
       contractAndEstimateLocked,
       isSuperAdmin,
       isProductDirectionPackage,
+      packageKind,
       contractObjectBlockFieldClassName,
       updateContract,
       updateObject,

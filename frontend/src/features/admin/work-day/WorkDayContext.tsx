@@ -18,7 +18,7 @@ type WorkDayContextValue = {
   error: string | null;
   greeting: string | null;
   refresh: () => Promise<void>;
-  handleStartDay: () => Promise<void>;
+  handleStartDay: (officeId: string) => Promise<void>;
   handleEndDay: () => Promise<void>;
   handleStartAbsence: (reason?: string, comment?: string) => Promise<void>;
   handleEndAbsence: () => Promise<void>;
@@ -52,11 +52,14 @@ export function WorkDayProvider({ children }: { children: React.ReactNode }) {
     return () => clearInterval(id);
   }, [refresh]);
 
-  const handleStartDay = useCallback(async () => {
-    const result = await startWorkDay();
-    setGreeting(result.greeting);
-    await refresh();
-  }, [refresh]);
+  const handleStartDay = useCallback(
+    async (officeId: string) => {
+      const result = await startWorkDay(officeId);
+      setGreeting(result.greeting);
+      await refresh();
+    },
+    [refresh]
+  );
 
   const handleEndDay = useCallback(async () => {
     await endWorkDay();

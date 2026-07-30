@@ -4,6 +4,7 @@ import {
   IsEnum,
   IsIn,
   IsInt,
+  IsNotEmpty,
   IsObject,
   IsOptional,
   IsString,
@@ -135,9 +136,10 @@ export class UpdateOfficeWorkScheduleDto {
 }
 
 export class StartWorkDayDto {
-  @IsOptional()
+  /** Офис, в котором открывают рабочий день (для нумерации договоров и учёта). */
   @IsString()
-  officeId?: string;
+  @IsNotEmpty({ message: 'Выберите офис для начала рабочего дня' })
+  officeId: string;
 }
 
 export class StartAbsenceDto {
