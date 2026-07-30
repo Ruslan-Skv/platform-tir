@@ -10,5 +10,10 @@ export { usePublicSiteEditMode } from './usePublicSiteEditMode';
 export { useCanEditCatalogOnPublic } from './useCanEditCatalogOnPublic';
 export { useBrowserHistoryNavigation } from './useBrowserHistoryNavigation';
 export { useFaviconBadge } from './useFaviconBadge';
+export {
+  ADMIN_MOBILE_PAGE_LIMIT,
+  ADMIN_NARROW_VIEWPORT_MEDIA,
+  useAdminNarrowViewport,
+} from './useAdminNarrowViewport';
 export type { CategoryFromAPI, NavigationCategory } from './useDynamicCategories';
 export type { ServiceCategoryForNav } from './useDynamicServiceCategories';

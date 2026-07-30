@@ -119,7 +119,12 @@ export function MeasurementsListFiltersPanel({
           aria-label="Развернуть настройки списка"
         >
           {summaryItems.map((item) => (
-            <span key={item.key} className={styles.filtersSummaryChip} title={item.label}>
+            <span
+              key={item.key}
+              className={styles.filtersSummaryChip}
+              data-filter-key={item.key}
+              title={item.label}
+            >
               {item.label}
             </span>
           ))}

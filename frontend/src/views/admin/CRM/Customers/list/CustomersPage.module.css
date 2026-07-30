@@ -134,12 +134,20 @@
   border: 1px solid var(--admin-border, #e5e7eb);
   border-radius: var(--admin-radius-md, 8px);
   color: var(--admin-text-secondary, #374151);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-secondary, #374151);
   cursor: pointer;
   font-size: var(--admin-font-size-sm, 0.8125rem);
   line-height: 1.35;
   min-height: 2.25rem;
   min-width: 10.5rem;
   padding: var(--admin-space-xs, 4px) var(--admin-space-lg, 10px);
+}
+
+.pageLimitSelect option,
+.authorSelect option {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #374151);
 }
 
 .pageLimitSelect:focus {
@@ -170,6 +178,8 @@
   border: 1px solid var(--admin-border, #e5e7eb);
   border-radius: var(--admin-radius-md, 8px);
   color: var(--admin-text-secondary, #374151);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-secondary, #374151);
   cursor: pointer;
   font-size: var(--admin-font-size-sm, 0.8125rem);
   line-height: 1.35;
@@ -193,8 +203,12 @@
 }
 
 .searchInput {
+  background: var(--admin-surface, #fff);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-md);
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
   flex: 1 1 0;
   font-size: var(--admin-font-size-sm);
   line-height: 1.35;
@@ -356,15 +370,26 @@
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
   color: var(--admin-text-muted);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageLimitSelect {
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .authorSelect option,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageLimitSelect option {
+  background: var(--admin-text-secondary);
   color: var(--admin-surface-muted);
 }
 
@@ -380,6 +405,7 @@
   border-color: var(--admin-info-bright, #60a5fa);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
   color: var(--admin-text-primary, #f9fafb);
+  -webkit-text-fill-color: var(--admin-text-primary, #f9fafb);
   box-shadow:
     0 0 0 1px var(--admin-info-border, #93c5fd),
     inset 0 1px 0 rgb(255 255 255 / 0.06);
@@ -810,12 +836,14 @@
     width: 100%;
   }
 
-  .searchInput,
-  .authorSelect,
-  .pageLimitSelect {
+  .searchInput {
     width: 100%;
     max-width: none;
     min-width: 0;
+  }
+
+  .pageLimitSelect {
+    display: none;
   }
 
   .filtersTypeLimitRow {
@@ -826,12 +854,12 @@
     width: 100%;
   }
 
-  .filtersTypeLimitRow .authorSelect,
-  .filtersTypeLimitRow .pageLimitSelect {
+  .filtersTypeLimitRow .authorSelect {
     flex: 1 1 0;
     width: auto;
+    max-width: none;
     min-width: 0;
-    min-height: 2rem;
+    min-height: 2.25rem;
     padding: 2px var(--admin-space-md);
     font-size: var(--admin-font-size-xs);
     line-height: 1.25;

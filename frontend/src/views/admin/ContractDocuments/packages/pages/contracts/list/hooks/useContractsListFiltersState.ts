@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
+
 import {
   type ContractsListFiltersPersisted,
   type ContractsListScope,
@@ -23,6 +25,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   const listFiltersHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
   const roleDefaultsAppliedRef = useRef(false);
+  const isNarrowViewport = useAdminNarrowViewport();
 
   const [search, setSearch] = useState(initialListFiltersRef.current.search);
   const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
@@ -46,6 +49,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   );
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<ContractsPageLimit>(initialListFiltersRef.current.pageLimit);
+  const effectiveLimit = (isNarrowViewport ? ADMIN_MOBILE_PAGE_LIMIT : limit) as ContractsPageLimit;
   const [listViewMode, setListViewMode] = useState<ContractsListViewMode>(
     initialListFiltersRef.current.listViewMode
   );
@@ -220,7 +224,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     listSortOrder,
     page,
     setPage,
-    limit,
+    limit: effectiveLimit,
     setLimit,
     listViewMode,
     setListViewMode,

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
+
 import {
   type EstimatesListScope,
   type EstimatesListViewMode,
@@ -20,6 +22,7 @@ export function useEstimatesListFiltersState(
   const listFiltersHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
   const roleDefaultsAppliedRef = useRef(false);
+  const isNarrowViewport = useAdminNarrowViewport();
 
   const [search, setSearch] = useState(initialListFiltersRef.current.search);
   const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
@@ -40,6 +43,7 @@ export function useEstimatesListFiltersState(
   );
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<EstimatesPageLimit>(initialListFiltersRef.current.pageLimit);
+  const effectiveLimit = (isNarrowViewport ? ADMIN_MOBILE_PAGE_LIMIT : limit) as EstimatesPageLimit;
   const [expandedAddressKey, setExpandedAddressKey] = useState<string | null>(
     initialListFiltersRef.current.expandedAddressKey
   );
@@ -155,7 +159,7 @@ export function useEstimatesListFiltersState(
     listSortOrder,
     page,
     setPage,
-    limit,
+    limit: effectiveLimit,
     setLimit,
     expandedAddressKey,
     setExpandedAddressKey,

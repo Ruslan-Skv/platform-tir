@@ -360,8 +360,17 @@
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный select на телефоне тянет тёмный текст */
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
   min-width: 120px;
   cursor: pointer;
+}
+
+.contractsListSelect option {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
 }
 
 .contractsListSelect:disabled {
@@ -378,6 +387,9 @@
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 .contractsListSearchInput:focus,
@@ -414,15 +426,20 @@
 
 .contractsListDateInput {
   flex: 0 1 auto;
-  min-width: 0;
+  /* Иначе WebKit на телефоне сжимает datetime-edit и значение даты «пропадает» */
+  min-width: 11rem;
   width: auto;
-  max-width: none;
+  max-width: 100%;
   box-sizing: border-box;
   padding: var(--admin-space-sm) var(--admin-space-lg);
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный date тянет тёмный текст/фон */
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 /* Поле фильтра не в исходном состоянии */
@@ -1211,6 +1228,19 @@
   color: var(--admin-surface-muted);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSelect,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSearchInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListDateInput {
+  /* Поля светлые (#e5e7eb), не тёмный chrome ОС */
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListSelect option {
+  background: var(--admin-text-secondary);
+  color: var(--admin-surface-muted);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListChipActive {
   border-color: var(--admin-info-bright, #60a5fa);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
@@ -1267,6 +1297,7 @@
   border-color: var(--admin-info-bright, #60a5fa);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
   color: var(--admin-text-primary, #f9fafb);
+  -webkit-text-fill-color: var(--admin-text-primary, #f9fafb);
   box-shadow:
     0 0 0 1px var(--admin-info-border, #93c5fd),
     inset 0 1px 0 rgb(255 255 255 / 0.06);
@@ -1655,6 +1686,14 @@
     font-size: var(--admin-font-size-xs);
   }
 
+  .contractsListPageLimitSelect {
+    display: none;
+  }
+
+  .contractsListFiltersSummaryChip[data-filter-key='limit'] {
+    display: none;
+  }
+
   .contractsListDateFilters {
     grid-column: 1 / -1;
     width: 100%;
@@ -1677,8 +1716,8 @@
   .contractsListDateInput {
     flex: 1 1 auto;
     width: 100%;
-    max-width: none;
-    min-width: 0;
+    max-width: 100%;
+    min-width: min(100%, 11rem);
     min-height: 2.5rem;
     padding: var(--admin-space-sm) var(--admin-space-lg);
     font-size: var(--admin-font-size-sm);

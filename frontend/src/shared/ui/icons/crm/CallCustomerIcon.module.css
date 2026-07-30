@@ -1,0 +1,29 @@
+.wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.light,
+.dark {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.dark {
+  display: none;
+}
+
+:global(html[data-theme='dark']) .dark,
+:global([data-app-theme='dark']) .dark {
+  display: block;
+}
+
+:global(html[data-theme='dark']) .light,
+:global([data-app-theme='dark']) .light {
+  display: none;
+}

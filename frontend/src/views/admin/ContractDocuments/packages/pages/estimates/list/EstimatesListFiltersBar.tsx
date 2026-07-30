@@ -162,7 +162,7 @@ export function EstimatesListFiltersBar({
           value={limit}
           onChange={(e) => onLimitChange(Number(e.target.value) as EstimatesPageLimit)}
           disabled={disabled}
-          className={cdHub.contractsListSelect}
+          className={`${cdHub.contractsListSelect} ${cdHub.contractsListPageLimitSelect}`}
           aria-label="Количество строк на странице"
         >
           {ESTIMATES_PAGE_LIMIT_OPTIONS.map((n) => (

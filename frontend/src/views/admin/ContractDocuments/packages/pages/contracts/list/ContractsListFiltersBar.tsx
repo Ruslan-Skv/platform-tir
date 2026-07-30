@@ -275,7 +275,7 @@ export function ContractsListFiltersBar({
           value={limit}
           onChange={(e) => onLimitChange(Number(e.target.value) as ContractsPageLimit)}
           disabled={loading}
-          className={cdHub.contractsListSelect}
+          className={`${cdHub.contractsListSelect} ${cdHub.contractsListPageLimitSelect}`}
           aria-label="Количество строк на странице"
         >
           {CONTRACTS_PAGE_LIMIT_OPTIONS.map((n) => (

@@ -76,3 +76,4 @@ export {
   type TrainingStatisticsIconProps,
 } from './TrainingStatisticsIcon';
 export { VersionsHistoryIcon } from './VersionsHistoryIcon';
+export { CallCustomerIcon, type CallCustomerIconProps } from './crm/CallCustomerIcon';

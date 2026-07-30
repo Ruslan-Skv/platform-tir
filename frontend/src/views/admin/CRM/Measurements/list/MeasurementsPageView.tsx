@@ -328,40 +328,42 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
                 </option>
               ))}
             </select>
-            <label className={styles.dateLabel}>
-              <span className={styles.dateLabelText}>Дата от</span>
-              <input
-                type="date"
-                value={dateFrom}
-                onChange={(e) => {
-                  setDateFrom(e.target.value);
-                  setPage(1);
-                }}
-                className={measurementsFilterFieldClass(
-                  styles.dateInput,
-                  Boolean(dateFrom),
-                  styles.filterActive
-                )}
-                aria-label="Дата от"
-              />
-            </label>
-            <label className={styles.dateLabel}>
-              <span className={styles.dateLabelText}>Дата до</span>
-              <input
-                type="date"
-                value={dateTo}
-                onChange={(e) => {
-                  setDateTo(e.target.value);
-                  setPage(1);
-                }}
-                className={measurementsFilterFieldClass(
-                  styles.dateInput,
-                  Boolean(dateTo),
-                  styles.filterActive
-                )}
-                aria-label="Дата до"
-              />
-            </label>
+            <div className={styles.dateFilters}>
+              <label className={styles.dateLabel}>
+                <span className={styles.dateLabelText}>Дата от</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => {
+                    setDateFrom(e.target.value);
+                    setPage(1);
+                  }}
+                  className={measurementsFilterFieldClass(
+                    styles.dateInput,
+                    Boolean(dateFrom),
+                    styles.filterActive
+                  )}
+                  aria-label="Дата от"
+                />
+              </label>
+              <label className={styles.dateLabel}>
+                <span className={styles.dateLabelText}>Дата до</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => {
+                    setDateTo(e.target.value);
+                    setPage(1);
+                  }}
+                  className={measurementsFilterFieldClass(
+                    styles.dateInput,
+                    Boolean(dateTo),
+                    styles.filterActive
+                  )}
+                  aria-label="Дата до"
+                />
+              </label>
+            </div>
             <select
               value={limit}
               onChange={(e) => {

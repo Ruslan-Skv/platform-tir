@@ -21,6 +21,7 @@ import {
   getMeasurements,
   getMyCrmDirectionIds,
 } from '@/shared/api/admin-crm';
+import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
 
 import {
   type MeasurementListSortBy,
@@ -51,11 +52,15 @@ export function useMeasurementsPage() {
   const listStateHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
   const roleDefaultsAppliedRef = useRef(false);
+  const isMobileViewport = useAdminNarrowViewport();
 
   const [data, setData] = useState<Measurement[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(initialListState.page);
   const [limit, setLimit] = useState<MeasurementsPageLimit>(initialListState.pageLimit);
+  const effectiveLimit = (
+    isMobileViewport ? ADMIN_MOBILE_PAGE_LIMIT : limit
+  ) as MeasurementsPageLimit;
   const [loading, setLoading] = useState(true);
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [managerOptions, setManagerOptions] = useState<ContractSignatoryProfile[]>([]);
@@ -149,9 +154,9 @@ export function useMeasurementsPage() {
   ]);
 
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(total / limit));
+    const totalPages = Math.max(1, Math.ceil(total / effectiveLimit));
     if (page > totalPages) setPage(totalPages);
-  }, [total, limit, page]);
+  }, [total, effectiveLimit, page]);
 
   useEffect(() => {
     const q = searchParams.get('search');
@@ -240,7 +245,7 @@ export function useMeasurementsPage() {
     try {
       const res = await getMeasurements({
         page,
-        limit,
+        limit: effectiveLimit,
         status: statusFilter || undefined,
         managerId: listScope === 'mine' ? undefined : managerFilter || undefined,
         directionId: directionFilter || undefined,
@@ -269,7 +274,7 @@ export function useMeasurementsPage() {
     }
   }, [
     page,
-    limit,
+    effectiveLimit,
     statusFilter,
     managerFilter,
     directionFilter,
@@ -326,7 +331,7 @@ export function useMeasurementsPage() {
     total,
     page,
     setPage,
-    limit,
+    limit: effectiveLimit,
     setLimit,
     loading,
     directions,

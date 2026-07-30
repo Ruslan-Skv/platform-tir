@@ -126,6 +126,7 @@ export function ContractsListFiltersPanel({
             <span
               key={item.key}
               className={cdHub.contractsListFiltersSummaryChip}
+              data-filter-key={item.key}
               title={item.label}
             >
               {item.label}

@@ -104,3 +104,14 @@ export function formatCrmPhoneOrDash(phone: string | null | undefined): string {
   if (!t) return '—';
   return formatCrmPhoneDisplay(t) || t;
 }
+
+/** `tel:`-ссылка для звонка с телефона; `null`, если номер не распознан. */
+export function crmPhoneToTelHref(phone: string | null | undefined): string | null {
+  const t = phone?.trim();
+  if (!t) return null;
+  const normalized = normalizeCrmPhoneDigits(t);
+  if (normalized) return `tel:+${normalized}`;
+  const fallback = t.replace(/[^\d+]/g, '');
+  if (fallback.replace(/\D/g, '').length < 10) return null;
+  return `tel:${fallback}`;
+}

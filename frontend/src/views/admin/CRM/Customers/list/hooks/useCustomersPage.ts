@@ -10,6 +10,7 @@ import {
   getCrmCustomerTrash,
   getCrmUsers,
 } from '@/shared/api/admin-crm';
+import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 
 import { formatCrmUserOptionLabel } from '../../shared/crmCustomerDisplay';
@@ -28,6 +29,7 @@ export function useCustomersPage() {
   const initialListStateRef = useRef(loadCustomersDirectoryListState());
   const initialListState = initialListStateRef.current;
   const listStateHydratedRef = useRef(false);
+  const isNarrowViewport = useAdminNarrowViewport();
 
   const [searchInput, setSearchInput] = useState(initialListState.search);
   const [searchQuery, setSearchQuery] = useState(initialListState.search);
@@ -45,6 +47,9 @@ export function useCustomersPage() {
   const [directoryPageLimit, setDirectoryPageLimit] = useState<CustomersPageLimit>(
     initialListState.pageLimit
   );
+  const effectiveDirectoryPageLimit = (
+    isNarrowViewport ? ADMIN_MOBILE_PAGE_LIMIT : directoryPageLimit
+  ) as CustomersPageLimit;
   const [directoryTotal, setDirectoryTotal] = useState(0);
 
   const [selectedDirectoryRowId, setSelectedDirectoryRowId] = useState<string | null>(null);
@@ -99,9 +104,9 @@ export function useCustomersPage() {
   ]);
 
   useEffect(() => {
-    const totalPages = Math.max(1, Math.ceil(directoryTotal / directoryPageLimit));
+    const totalPages = Math.max(1, Math.ceil(directoryTotal / effectiveDirectoryPageLimit));
     if (directoryPage > totalPages) setDirectoryPage(totalPages);
-  }, [directoryTotal, directoryPageLimit, directoryPage]);
+  }, [directoryTotal, effectiveDirectoryPageLimit, directoryPage]);
 
   useEffect(() => {
     getCrmUsers()
@@ -151,7 +156,7 @@ export function useCustomersPage() {
     getClientDirectory({
       search: searchQuery || undefined,
       page: directoryPage,
-      limit: directoryPageLimit,
+      limit: effectiveDirectoryPageLimit,
       entityType: typeFilter === 'all' ? undefined : typeFilter,
       createdById: authorFilter || undefined,
       sortBy: directorySortBy,
@@ -179,7 +184,7 @@ export function useCustomersPage() {
     authorFilter,
     directorySortBy,
     directorySortOrder,
-    directoryPageLimit,
+    effectiveDirectoryPageLimit,
   ]);
 
   const selectedDirectoryRow = useMemo(
@@ -214,7 +219,7 @@ export function useCustomersPage() {
     directoryRows,
     directoryPage,
     setDirectoryPage,
-    directoryPageLimit,
+    directoryPageLimit: effectiveDirectoryPageLimit,
     setDirectoryPageLimit,
     directoryTotal,
     selectedDirectoryRowId,

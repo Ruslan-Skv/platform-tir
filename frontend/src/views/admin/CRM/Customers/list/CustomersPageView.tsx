@@ -224,30 +224,30 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
           />
         </div>
 
-        <select
-          id="customers-author-filter"
-          className={customersFilterFieldClass(
-            styles.authorSelect,
-            Boolean(authorFilter),
-            styles.filterActive
-          )}
-          value={authorFilter}
-          onChange={(e) => {
-            setAuthorFilter(e.target.value);
-            setDirectoryPage(1);
-          }}
-          aria-label="Автор карточки"
-        >
-          <option value="">Все авторы</option>
-          <option value="_none">Без автора</option>
-          {authorSelectOptions.map((u) => (
-            <option key={u.id} value={u.id}>
-              {formatCrmUserOptionLabel(u)}
-            </option>
-          ))}
-        </select>
-
         <div className={styles.filtersTypeLimitRow}>
+          <select
+            id="customers-author-filter"
+            className={customersFilterFieldClass(
+              styles.authorSelect,
+              Boolean(authorFilter),
+              styles.filterActive
+            )}
+            value={authorFilter}
+            onChange={(e) => {
+              setAuthorFilter(e.target.value);
+              setDirectoryPage(1);
+            }}
+            aria-label="Автор карточки"
+          >
+            <option value="">Все авторы</option>
+            <option value="_none">Без автора</option>
+            {authorSelectOptions.map((u) => (
+              <option key={u.id} value={u.id}>
+                {formatCrmUserOptionLabel(u)}
+              </option>
+            ))}
+          </select>
+
           <select
             id="customers-type-filter"
             value={typeFilter}

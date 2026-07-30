@@ -316,8 +316,18 @@
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный select на телефоне тянет тёмный текст */
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
   min-width: 10.5rem;
   cursor: pointer;
+}
+
+.pageLimitSelect option,
+.select option {
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
 }
 
 .pageLimitSelect:focus {
@@ -339,6 +349,10 @@
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 .searchInput:focus,
@@ -355,6 +369,9 @@
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
   background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
   min-width: 120px;
   cursor: pointer;
 }
@@ -363,6 +380,18 @@
   display: flex;
   align-items: center;
   gap: var(--admin-space-sm);
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.dateFilters {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  width: auto;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .dateLabelText {
@@ -376,6 +405,14 @@
   border: 1px solid var(--admin-border);
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-sm);
+  background: var(--admin-surface);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный date тянет тёмный текст/фон */
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
+  min-width: 11rem;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Поле фильтра не в исходном состоянии */
@@ -439,7 +476,6 @@
   border-radius: var(--admin-radius-lg);
   background: var(--admin-surface-soft);
   text-align: left;
-  cursor: pointer;
   color: inherit;
   font: inherit;
 }
@@ -457,8 +493,38 @@
 }
 
 .mobileCardMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
   min-width: 0;
   flex: 1 1 auto;
+}
+
+.mobileCardOpen,
+.mobileCardDetails {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.mobileCardOpen:focus-visible,
+.mobileCardDetails:focus-visible,
+.phoneLink:focus-visible,
+.mobileCardCall:focus-visible {
+  outline: 2px solid var(--admin-accent, #2563eb);
+  outline-offset: 2px;
+  border-radius: var(--admin-radius-sm);
 }
 
 .mobileCardName {
@@ -476,10 +542,58 @@
   word-break: break-word;
 }
 
+.phoneLink {
+  display: inline-block;
+  min-width: 0;
+  color: var(--admin-accent, #2563eb);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.phoneLink:hover {
+  text-decoration: underline;
+}
+
+.mobileCardPhoneRow {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  min-width: 0;
+}
+
+.mobileCardCall {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  margin-left: auto;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface, #fff);
+  color: inherit;
+  text-decoration: none;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.mobileCardCall:hover {
+  border-color: var(--admin-accent, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
 .mobileCardRows {
   display: grid;
   gap: 2px;
   margin: 0;
+  width: 100%;
 }
 
 .mobileCardRow {
@@ -572,31 +686,67 @@
   }
 
   .filters {
-    flex-direction: column;
-    align-items: stretch;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
     gap: var(--admin-space-sm);
+    align-items: end;
   }
 
-  .searchInput,
-  .select,
-  .pageLimitSelect,
-  .dateInput {
+  .searchInput {
+    grid-column: 1 / -1;
     width: 100%;
     max-width: none;
     min-width: 0;
     box-sizing: border-box;
   }
 
-  .dateLabel {
-    display: grid;
-    grid-template-columns: 4.5rem minmax(0, 1fr);
-    align-items: center;
-    gap: var(--admin-space-sm);
+  .select {
     width: 100%;
+    max-width: none;
+    min-width: 0;
+    min-height: 2.25rem;
+    padding: var(--admin-space-xs) var(--admin-space-md);
+    font-size: var(--admin-font-size-xs);
+    box-sizing: border-box;
+  }
+
+  .pageLimitSelect {
+    display: none;
+  }
+
+  .dateFilters {
+    grid-column: 1 / -1;
+    width: 100%;
+    gap: var(--admin-space-sm);
+  }
+
+  .dateInput {
+    width: 100%;
+    max-width: 100%;
+    min-width: min(100%, 11rem);
+    min-height: 2.5rem;
+    padding: var(--admin-space-sm) var(--admin-space-lg);
+    font-size: var(--admin-font-size-sm);
+    box-sizing: border-box;
+  }
+
+  .dateLabel {
+    display: flex;
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-xs);
+    min-width: 0;
+    width: auto;
   }
 
   .dateLabelText {
-    font-size: var(--admin-font-size-xs);
+    font-size: var(--admin-font-size-sm);
+    font-weight: 400;
+  }
+
+  .filtersSummaryChip[data-filter-key='limit'] {
+    display: none;
   }
 
   .header {
@@ -738,6 +888,8 @@
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .searchInput::placeholder {
@@ -751,9 +903,18 @@
   box-shadow: var(--admin-shadow-focus-soft);
 }
 
-:where(html[data-theme='dark'], [data-app-theme='dark']) .select {
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageLimitSelect {
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
+  color: var(--admin-surface-muted);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select option,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pageLimitSelect option {
+  background: var(--admin-text-secondary);
   color: var(--admin-surface-muted);
 }
 
@@ -765,6 +926,9 @@
   background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
   color: var(--admin-surface-muted);
+  /* Поле светлое (#e5e7eb), не тёмный chrome ОС */
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
 }
 
 /* Активный фильтр: выше специфичность, чем у базовых полей в тёмной теме */
@@ -774,6 +938,7 @@
   border-color: var(--admin-info-bright, #60a5fa);
   background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
   color: var(--admin-text-primary, #f9fafb);
+  -webkit-text-fill-color: var(--admin-text-primary, #f9fafb);
   box-shadow:
     0 0 0 1px var(--admin-info-border, #93c5fd),
     inset 0 1px 0 rgb(255 255 255 / 0.06);
@@ -866,4 +1031,18 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardMeta {
   color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .phoneLink {
+  color: var(--admin-info-bright, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardCall {
+  border-color: var(--admin-border);
+  background: var(--admin-surface-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardCall:hover {
+  border-color: var(--admin-info-bright, #60a5fa);
+  background: var(--admin-overlay-info-soft, rgb(59 130 246 / 0.24));
 }
