@@ -252,6 +252,30 @@ export function hasCrmCustomerFormErrors(errors: CrmCustomerFormFieldErrors): bo
   return Object.keys(errors).length > 0;
 }
 
+/** Минимум для кнопки «Создать»: как обязательные поля при mode=create. */
+export function isCrmCustomerCreateMinimumFilled(form: CrmCustomerFormState): boolean {
+  const isPerson = form.entityType === 'PERSON';
+
+  if (isPerson) {
+    const lastName = form.lastName.trim();
+    const firstName = form.firstName.trim();
+    const validLastName = hasMinText(lastName, 2);
+    const validFirstName = hasMinText(firstName, 2);
+    if (!validLastName && !validFirstName) return false;
+    if (lastName && !validLastName) return false;
+    if (firstName && !validFirstName) return false;
+  } else {
+    if (!hasMinText(form.organizationName, 2)) return false;
+    if (!hasMinText(form.repNom, 2)) return false;
+  }
+
+  return form.phones.some((raw) => {
+    const trimmed = raw.trim();
+    if (!trimmed) return false;
+    return isValidCrmPhone(formatCrmPhoneDisplay(trimmed));
+  });
+}
+
 export function getFirstCrmCustomerFormError(errors: CrmCustomerFormFieldErrors): string | null {
   const first = Object.values(errors).find(Boolean);
   return first ?? null;

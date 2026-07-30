@@ -6,6 +6,7 @@ import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPe
 import { createCrmCustomer } from '@/shared/api/admin-crm';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { Modal } from '@/shared/ui/Modal';
+import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import { CrmCustomerFormFields } from '../shared/CrmCustomerFormFields';
 import { normalizeObjectAddresses } from '../shared/crmCustomerExtendedProfile';
@@ -24,6 +25,7 @@ import {
   clearCrmCustomerFieldError,
   getFirstCrmCustomerFormError,
   hasCrmCustomerFormErrors,
+  isCrmCustomerCreateMinimumFilled,
   validateCrmCustomerForm,
 } from '../shared/crmCustomerFormValidation';
 import { buildPersonExtendedProfileFields, parseFullNameString } from '../shared/crmCustomerName';
@@ -107,6 +109,7 @@ export function AddCrmCustomerModal({
   }, []);
 
   const fillPercent = useMemo(() => computeCrmCustomerFormFillPercent(form), [form]);
+  const canCreate = useMemo(() => isCrmCustomerCreateMinimumFilled(form), [form]);
 
   const clearFieldError = useCallback((key: string) => {
     setFieldErrors((prev) => clearCrmCustomerFieldError(prev, key));
@@ -234,7 +237,12 @@ export function AddCrmCustomerModal({
           role="status"
         >
           <span data-modal-footer-info-icon aria-hidden="true" />
-          <span data-modal-footer-info-text>Данные заказчика заполнены на {fillPercent}%.</span>
+          <span data-modal-footer-info-text>
+            <span className={phoneStyles.fillBannerTextFull}>
+              Данные заказчика заполнены на {fillPercent}%.
+            </span>
+            <span className={phoneStyles.fillBannerTextShort}>Заполнено на {fillPercent}%</span>
+          </span>
         </div>
       </BadgeTooltip>
     </div>
@@ -246,12 +254,22 @@ export function AddCrmCustomerModal({
       onClose={handleClose}
       title={MODAL_TITLE}
       titleAside={fillPercentTitleAside}
-      size="md"
+      size="lg"
       className={phoneStyles.modalPanel}
       showCloseButton
       compactOnMobile
     >
-      <form className={phoneStyles.formShell} data-modal-form onSubmit={handleSubmit}>
+      <form
+        className={`${phoneStyles.formShell} ${modalStyles.formBlueShell}`}
+        data-modal-form
+        data-modal-density="compact"
+        onSubmit={handleSubmit}
+      >
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
+          Карточка сохраняется в справочнике клиентов. В сводке «По договорам» заказчик появится
+          после указания карточки на договоре.
+        </p>
+
         <CrmCustomerFormFields
           form={form}
           setForm={setForm}
@@ -266,14 +284,6 @@ export function AddCrmCustomerModal({
 
         {error ? <p data-modal-form-error>{error}</p> : null}
 
-        <div data-modal-footer-info data-modal-tone="success" role="status">
-          <span data-modal-footer-info-icon aria-hidden="true" />
-          <span data-modal-footer-info-text>
-            Карточка сохраняется в справочнике клиентов. В сводке «По договорам» заказчик появится
-            после указания карточки на договоре.
-          </span>
-        </div>
-
         <div data-modal-form-actions>
           <button
             type="button"
@@ -283,7 +293,12 @@ export function AddCrmCustomerModal({
           >
             Отмена
           </button>
-          <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={submitting}>
+          <button
+            data-admin-mutation
+            type="submit"
+            data-modal-btn="primary"
+            disabled={submitting || !canCreate}
+          >
             {submitting ? 'Сохранение…' : 'Создать'}
           </button>
         </div>

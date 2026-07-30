@@ -7,7 +7,8 @@ export const STATUS_SELECT_CLASS_BY_VALUE: Record<string, string> = {
 
 export const MEASUREMENT_STATUS_ORDER_HINT =
   'Все статусы менеджер выставляет вручную в этом списке, кроме «Выполнен»: его можно выбрать вручную ' +
-  'или он присваивается автоматически после сохранения замера по всем направлениям (кнопка «Сохранить замер» на каждой вкладке).';
+  'или он присваивается автоматически после фиксации замера по всем направлениям (кнопка «Зафиксировать вкладку»). ' +
+  'Чтобы записать бланк и результаты на сервер, нажмите «Сохранить замер» вверху страницы.';
 
 export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 export const REPAIR_MEASUREMENT_DATA_MARKER = '[REPAIR_MEASUREMENT_DATA_V1]';

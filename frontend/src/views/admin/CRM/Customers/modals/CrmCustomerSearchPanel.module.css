@@ -5,6 +5,11 @@
   border-radius: var(--admin-radius-sm);
   font-size: var(--admin-font-size-xs);
   box-sizing: border-box;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  /* Явный светлый chrome: при body color-scheme: light dark нативный search тянет тёмный текст/фон */
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
 }
 
 .searchInput:focus {
@@ -483,9 +488,11 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmPanel .searchInput,
 :where(html[data-theme='dark'], [data-app-theme='dark']) .customerCrmSearchRow .searchInput {
-  background: var(--admin-surface-soft);
+  background: var(--admin-text-secondary);
   border-color: var(--admin-sidebar-text);
-  color: var(--admin-text-primary);
+  color: var(--admin-surface-muted);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -560,4 +567,78 @@
   background: rgb(22 101 52 / 0.28);
   border-color: var(--admin-success-border);
   color: var(--admin-success-bright);
+}
+
+@media (max-width: 900px) {
+  .customerCrmPanel {
+    padding: var(--admin-space-sm);
+  }
+
+  .customerCrmPanelHead {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-xs);
+  }
+
+  .customerCrmActions {
+    flex-direction: column;
+    align-items: stretch;
+    margin-bottom: var(--admin-space-sm);
+  }
+
+  .customerCrmAddButton {
+    margin-left: 0;
+    width: 100%;
+    min-height: 2.5rem;
+  }
+
+  .customerCrmSearchRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .customerCrmSearchRow .searchInput,
+  .customerCrmSearchInput {
+    flex: 1 1 auto;
+    width: 100%;
+    min-height: 2.5rem;
+  }
+
+  .customerCrmClearButton {
+    width: 100%;
+    min-height: 2.25rem;
+  }
+
+  .customerCrmDropdown {
+    left: 0;
+    right: 0;
+    max-width: 100%;
+  }
+
+  .customerCrmResults {
+    max-height: min(50vh, calc(var(--customer-crm-result-row-height) * 8));
+  }
+
+  .customerCrmResultItem {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-xs);
+    padding-bottom: var(--admin-space-xs);
+  }
+
+  .customerCrmResultAside {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    width: 100%;
+    padding: 0 var(--admin-space-sm);
+    gap: var(--admin-space-xs);
+  }
+
+  .customerCrmResultEditBtn {
+    flex: 1 1 auto;
+    min-height: 2rem;
+    padding: var(--admin-space-xs) var(--admin-space-sm);
+  }
 }

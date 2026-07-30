@@ -18,6 +18,7 @@ import {
   updateMeasurement,
 } from '@/shared/api/admin-crm';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { measurementFieldsFromCrmCustomerDetail } from '../../shared/measurementCrmCustomer';
 import {
@@ -69,7 +70,11 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   const [status, setStatus] = useState('NEW');
   const [loading, setLoading] = useState(!!measurementId);
   const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(() =>
+    measurementId && searchParams.get('created') === '1'
+      ? { type: 'success', text: 'Замер создан' }
+      : null
+  );
   const [fieldErrors, setFieldErrors] = useState<Partial<Record<FieldKey, string>>>({});
   const [directions, setDirections] = useState<CrmDirection[]>([]);
   const [users, setUsers] = useState<CrmUser[]>([]);
@@ -91,9 +96,10 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   const [currentMeasurementId, setCurrentMeasurementId] = useState<string | null>(
     measurementId ?? null
   );
-  const lastSavedPayloadRef = useRef<string>('');
-  const autosaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const isInitialHydrationRef = useRef(true);
+  const pageHeaderRef = useRef<HTMLDivElement>(null);
+  const handleSaveMeasurementRef = useRef<() => Promise<void>>(async () => undefined);
+
+  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const clearFieldError = useCallback((field: FieldKey) => {
     setFieldErrors((prev) => {
@@ -104,8 +110,15 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   }, []);
 
   const showMessage = useCallback((type: 'success' | 'error', text: string) => {
+    if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 3000);
+    messageTimeoutRef.current = setTimeout(
+      () => {
+        setMessage(null);
+        messageTimeoutRef.current = null;
+      },
+      type === 'error' ? 6000 : 3500
+    );
   }, []);
 
   const loadMeasurement = useCallback(async () => {
@@ -150,13 +163,34 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   }, [measurementId, showMessage]);
 
   useEffect(() => {
-    loadMeasurement();
+    void loadMeasurement();
   }, [loadMeasurement]);
 
   useEffect(() => {
     if (measurementId && searchParams.get('created') === '1') {
+      try {
+        sessionStorage.removeItem('measurement-form-toast');
+      } catch {
+        /* ignore */
+      }
       showMessage('success', 'Замер создан');
       router.replace(`/admin/measurements/${measurementId}`, { scroll: false });
+      return;
+    }
+    try {
+      const raw = sessionStorage.getItem('measurement-form-toast');
+      if (!raw) return;
+      sessionStorage.removeItem('measurement-form-toast');
+      const parsed = JSON.parse(raw) as { type?: string; text?: string };
+      if (
+        (parsed.type === 'success' || parsed.type === 'error') &&
+        typeof parsed.text === 'string' &&
+        parsed.text.trim()
+      ) {
+        showMessage(parsed.type, parsed.text);
+      }
+    } catch {
+      /* ignore */
     }
   }, [measurementId, searchParams, router, showMessage]);
 
@@ -402,34 +436,48 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
       savedTabs?: Set<MeasurementResultTabId>;
       statusOverride?: string;
       successText?: string;
-    }) => {
+    }): Promise<boolean> => {
       const errors = collectValidationErrors();
       setFieldErrors(errors);
-      if (Object.keys(errors).length > 0) return;
+      const errorMessages = [...new Set(Object.values(errors).filter(Boolean))];
+      if (errorMessages.length > 0) {
+        showMessage(
+          'error',
+          errorMessages.length === 1
+            ? errorMessages[0]!
+            : `Не удалось сохранить. ${errorMessages.join('. ')}`
+        );
+        return false;
+      }
       const payload = buildPayload({
         savedTabs: opts?.savedTabs,
         statusOverride: opts?.statusOverride,
       });
-      const payloadKey = JSON.stringify(payload);
-      if (payloadKey === lastSavedPayloadRef.current) return;
       setSaving(true);
       try {
         if (currentMeasurementId) {
           await updateMeasurement(currentMeasurementId, payload);
+          showMessage('success', opts?.successText ?? 'Замер сохранён');
         } else {
           const created = await createMeasurement(payload);
           setCurrentMeasurementId(created.id);
-          router.replace(`/admin/measurements/${created.id}`, { scroll: false });
+          const successText = opts?.successText ?? 'Замер создан';
+          try {
+            sessionStorage.setItem(
+              'measurement-form-toast',
+              JSON.stringify({ type: 'success', text: successText })
+            );
+          } catch {
+            /* ignore */
+          }
+          showMessage('success', successText);
+          router.replace(`/admin/measurements/${created.id}?created=1`, { scroll: false });
         }
-        lastSavedPayloadRef.current = payloadKey;
-        setMessage({
-          type: 'success',
-          text: opts?.successText ?? 'Сохранено автоматически',
-        });
-        setTimeout(() => setMessage(null), opts?.successText ? 3000 : 1200);
+        return true;
       } catch (err) {
-        const msg = err instanceof Error ? err.message : 'Ошибка автосохранения';
+        const msg = err instanceof Error ? err.message : 'Ошибка сохранения';
         showMessage('error', msg);
+        return false;
       } finally {
         setSaving(false);
       }
@@ -437,21 +485,21 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
     [collectValidationErrors, buildPayload, currentMeasurementId, router, showMessage]
   );
 
-  useEffect(() => {
-    if (loading) return;
-    if (isInitialHydrationRef.current) {
-      isInitialHydrationRef.current = false;
-      lastSavedPayloadRef.current = JSON.stringify(buildPayload());
-      return;
-    }
-    if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    autosaveTimerRef.current = setTimeout(() => {
-      void persistMeasurement();
-    }, 700);
-    return () => {
-      if (autosaveTimerRef.current) clearTimeout(autosaveTimerRef.current);
-    };
-  }, [loading, buildPayload, persistMeasurement]);
+  const handleSaveMeasurement = useCallback(async () => {
+    await persistMeasurement({
+      successText: currentMeasurementId ? 'Замер сохранён' : 'Замер создан',
+    });
+  }, [persistMeasurement, currentMeasurementId]);
+
+  handleSaveMeasurementRef.current = handleSaveMeasurement;
+
+  const saveButtonState = useAdminStickySaveButton({
+    enabled: !loading,
+    loading,
+    saving,
+    pageHeaderRef,
+    onSave: () => void handleSaveMeasurementRef.current(),
+  });
 
   const updateRoom = useCallback(
     (roomId: string, updater: (room: RepairMeasurementRoom) => RepairMeasurementRoom) => {
@@ -500,6 +548,10 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
 
   const handleSaveResultTab = useCallback(
     async (tabId: MeasurementResultTabId) => {
+      if (!currentMeasurementId) {
+        showMessage('error', 'Сначала нажмите «Сохранить замер» вверху страницы');
+        return;
+      }
       if (!resultsSectionOpen) {
         showMessage('error', 'Сначала нажмите «Заполнить результаты замеров»');
         return;
@@ -522,11 +574,12 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
         statusOverride: nextStatus,
         successText:
           nextStatus === 'COMPLETED' && status !== 'COMPLETED'
-            ? 'Замер сохранен. Статус: Выполнен'
-            : 'Замер сохранен',
+            ? 'Вкладка зафиксирована. Статус: Выполнен'
+            : 'Вкладка зафиксирована',
       });
     },
     [
+      currentMeasurementId,
       repairMeasurementData.rooms,
       resultsSectionOpen,
       savedResultTabs,
@@ -549,7 +602,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
       await persistMeasurement({
         savedTabs: nextSaved,
         statusOverride: nextStatus,
-        successText: 'Сохранение отменено',
+        successText: 'Фиксация вкладки отменена',
       });
     },
     [savedResultTabs, status, visibleResultTabIds, persistMeasurement]
@@ -582,6 +635,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
     loading,
     saving,
     message,
+    setMessage,
     fieldErrors,
     directions,
     users,
@@ -612,6 +666,10 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
     visibleResultTabIds,
     orphanManagerLabel,
     surveyors,
+    pageHeaderRef,
+    saveButtonState,
+    handleHeaderSaveClick: saveButtonState.handleSaveClick,
+    handleSaveMeasurement,
     persistMeasurement,
     updateRoom,
     addRoom,

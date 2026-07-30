@@ -42,6 +42,9 @@
 }
 
 .saveButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   flex-shrink: 0;
   padding: var(--admin-space-sm, 0.5rem) var(--admin-space-lg, 1rem);
   border: 1px solid var(--admin-chart-cyan);
@@ -52,6 +55,7 @@
   font-size: var(--admin-font-size-xs, 0.75rem);
   cursor: pointer;
   box-shadow: 0 1px 6px var(--admin-overlay-color-129);
+  text-align: center;
   transition:
     background 0.15s ease,
     border-color 0.15s ease,

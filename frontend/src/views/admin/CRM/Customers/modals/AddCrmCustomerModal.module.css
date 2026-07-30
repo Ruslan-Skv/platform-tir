@@ -8,9 +8,14 @@
   margin-bottom: var(--admin-space-xl, 12px);
 }
 
-/* Индикатор заполнения справа от заголовка */
+/* Плашка заполнения справа от заголовка — как бейдж «Создано» у «Новая категория» */
 .modalPanel :global([class*='titleRow']) {
   align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.modalPanel :global([class*='titleRow'] [class*='title']) {
+  flex: 0 1 auto;
 }
 
 .modalPanel :global([class*='titleAside']) {
@@ -18,8 +23,8 @@
   flex-shrink: 0;
   font-size: inherit;
   font-weight: inherit;
-  max-width: min(22rem, 52vw);
-  text-align: right;
+  max-width: none;
+  text-align: left;
 }
 
 .fieldError {
@@ -134,6 +139,10 @@
   white-space: nowrap;
 }
 
+.fillBannerTextShort {
+  display: none;
+}
+
 .fillBannerLow {
   background: var(--admin-surface-soft, #f3f4f6);
   border: 1px solid var(--admin-border-strong, #d1d5db);
@@ -220,37 +229,6 @@
   grid-template-columns: repeat(4, minmax(0, 1fr));
 }
 
-@media (max-width: 900px) {
-  .modalPanel {
-    padding: var(--admin-space-xl, 12px) var(--admin-space-lg, 10px) !important;
-  }
-
-  .personNameRow,
-  .passportRow,
-  .personNameEmailRow {
-    grid-template-columns: 1fr;
-  }
-
-  .phoneToolbarRow {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .phoneSlot {
-    flex: 1 1 auto;
-    width: 100%;
-  }
-
-  .formShell :global([data-modal-form-actions]) {
-    flex-direction: column-reverse;
-  }
-
-  .formShell :global([data-modal-btn='primary']),
-  .formShell :global([data-modal-btn='secondary']) {
-    width: 100%;
-  }
-}
-
 .formShell :global([data-modal-form-group]) {
   gap: 2px;
   margin-bottom: 2px;
@@ -262,6 +240,15 @@
   min-height: 1.625rem !important;
   padding-top: 2px !important;
   padding-bottom: 2px !important;
+  /* Явный светлый chrome: при body color-scheme: light dark нативный input/select на телефоне тянет тёмный текст */
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
+}
+
+.formShell:global([data-modal-form]) :global(select option) {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-primary, #111827);
 }
 
 .formShell:global([data-modal-form]) :global(textarea) {
@@ -287,4 +274,146 @@
   min-height: 1.625rem !important;
   padding-top: 2px !important;
   padding-bottom: 2px !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(input:not([type='checkbox']):not([type='radio'])),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(select),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(textarea) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  border-color: var(--admin-sidebar-text, #9ca3af);
+  color: var(--admin-surface-muted, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted, #111827);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(select option) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  color: var(--admin-surface-muted, #111827);
+}
+
+@media (max-width: 900px) {
+  .modalPanel {
+    padding: var(--admin-space-xl, 12px) var(--admin-space-md, 8px) !important;
+  }
+
+  .modalPanel > div:first-child {
+    margin-bottom: var(--admin-space-md, 8px);
+  }
+
+  .modalPanel :global([class*='titleRow']) {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm, 6px);
+    padding-right: 2.25rem;
+  }
+
+  .modalPanel :global([class*='titleAside']) {
+    max-width: 100%;
+    text-align: left;
+  }
+
+  .fillBanner {
+    width: 100%;
+  }
+
+  .fillBanner :global([data-modal-footer-info-text]) {
+    white-space: normal;
+  }
+
+  .fillBannerTextFull {
+    display: none;
+  }
+
+  .fillBannerTextShort {
+    display: inline;
+  }
+
+  .formShell:global([data-modal-form]) {
+    gap: var(--admin-space-sm, 6px);
+    padding: 0;
+  }
+
+  .formShell :global([data-modal-form-grid]) {
+    gap: var(--admin-space-sm, 6px);
+    padding: var(--admin-space-sm, 6px) 0;
+  }
+
+  .formShell :global([data-modal-form-group]) {
+    gap: var(--admin-space-xs, 4px);
+    margin-bottom: var(--admin-space-xs, 4px);
+  }
+
+  .personNameRow,
+  .passportRow,
+  .personNameEmailRow {
+    grid-template-columns: 1fr;
+  }
+
+  .phoneToolbarRow {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .phoneSlot {
+    flex: 1 1 auto;
+    width: 100%;
+    align-items: stretch;
+  }
+
+  .phoneRemove {
+    align-self: stretch;
+  }
+
+  .addPhone {
+    width: 100%;
+    align-self: stretch;
+  }
+
+  .formShell:global([data-modal-form]) :global(input:not([type='checkbox']):not([type='radio'])),
+  .formShell:global([data-modal-form]) :global(select),
+  .formShell:global([data-modal-form]) :global(textarea) {
+    min-height: 2.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: var(--admin-font-size-sm, 0.875rem) !important;
+  }
+
+  .formShell:global([data-modal-form]) :global(textarea) {
+    min-height: 4rem !important;
+  }
+
+  .formShell .phoneRemove,
+  .formShell .addPhone {
+    min-height: 2.5rem !important;
+    padding-top: 0.375rem !important;
+    padding-bottom: 0.375rem !important;
+  }
+
+  .formShell :global([data-modal-form-actions]) {
+    flex-direction: column-reverse;
+    gap: var(--admin-space-sm, 6px);
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .formShell :global([data-modal-btn='primary']),
+  .formShell :global([data-modal-btn='secondary']) {
+    width: 100%;
+    min-height: 2.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+
+  .formShell :global([data-modal-footer-info]) {
+    font-size: var(--admin-font-size-xs, 0.75rem);
+    align-items: flex-start;
+  }
 }

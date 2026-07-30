@@ -368,7 +368,12 @@ export function CrmCustomerDetailModal({
             role="status"
           >
             <span data-modal-footer-info-icon aria-hidden="true" />
-            <span data-modal-footer-info-text>Данные заказчика заполнены на {fillPercent}%.</span>
+            <span data-modal-footer-info-text>
+              <span className={formStyles.fillBannerTextFull}>
+                Данные заказчика заполнены на {fillPercent}%.
+              </span>
+              <span className={formStyles.fillBannerTextShort}>Заполнено на {fillPercent}%</span>
+            </span>
           </div>
         </BadgeTooltip>
       </div>

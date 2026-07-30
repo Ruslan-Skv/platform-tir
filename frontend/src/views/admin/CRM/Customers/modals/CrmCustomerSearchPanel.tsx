@@ -176,12 +176,12 @@ export function CrmCustomerSearchPanel({
             <input
               type="search"
               className={`${styles.searchInput} ${styles.customerCrmSearchInput}`}
-              placeholder="Поиск: ФИО, телефон, e-mail, компания, адрес объекта (от 2 символов)"
+              placeholder="Поиск: ФИО, телефон, адрес…"
               value={crmSearchInput}
               onChange={(e) => setCrmSearchInput(e.target.value)}
               autoComplete="off"
               disabled={disabled}
-              aria-label="Поиск заказчика в базе"
+              aria-label="Поиск заказчика в базе по ФИО, телефону, e-mail, компании или адресу объекта (от 2 символов)"
               aria-expanded={crmSearchDebounced.length >= 2}
               aria-controls={listboxId}
             />

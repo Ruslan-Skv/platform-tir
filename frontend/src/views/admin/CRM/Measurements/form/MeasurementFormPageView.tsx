@@ -1,15 +1,20 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 import Link from 'next/link';
 
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
-import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
-import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers';
+import {
+  AdminStickyPageRoot,
+  AdminStickySaveButtonSlot,
+} from '@/views/admin/ui/AdminStickySaveButton';
 
 import { MeasurementHistoryModal } from '../modals/MeasurementHistoryModal';
 import { getResultTabLabel } from '../shared/measurementResultTabs';
@@ -32,6 +37,41 @@ import {
 type MeasurementFormPageViewProps = {
   model: MeasurementFormPageModel;
 };
+
+function MeasurementFormToast({
+  message,
+  onClose,
+}: {
+  message: { type: 'success' | 'error'; text: string };
+  onClose: () => void;
+}) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Внутрь admin shell — есть CSS-переменные; body их не наследует (тост становился невидимым).
+    setPortalRoot(document.querySelector<HTMLElement>('[data-admin-shell]') ?? document.body);
+  }, []);
+
+  if (!portalRoot) return null;
+
+  return createPortal(
+    <div
+      className={`${styles.toast} ${
+        message.type === 'success' ? styles.toastSuccess : styles.toastError
+      }`}
+      role={message.type === 'success' ? 'status' : 'alert'}
+    >
+      <span className={styles.toastIcon} aria-hidden>
+        {message.type === 'success' ? '✓' : '⚠'}
+      </span>
+      <span className={styles.toastMessage}>{message.text}</span>
+      <button type="button" className={styles.toastClose} onClick={onClose} aria-label="Закрыть">
+        ✕
+      </button>
+    </div>,
+    portalRoot
+  );
+}
 
 export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps) {
   const {
@@ -60,6 +100,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     loading,
     saving,
     message,
+    setMessage,
     fieldErrors,
     directions,
     users,
@@ -87,6 +128,9 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     visibleResultTabs,
     orphanManagerLabel,
     surveyors,
+    pageHeaderRef,
+    saveButtonState,
+    handleHeaderSaveClick,
     updateRoom,
     addRoom,
     removeRoom,
@@ -95,31 +139,39 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     handleUnsaveResultTab,
   } = model;
 
+  const toast =
+    message != null ? (
+      <MeasurementFormToast message={message} onClose={() => setMessage(null)} />
+    ) : null;
+
   if (loading) {
     return (
-      <div className={styles.page}>
-        <div className={styles.loading}>Загрузка...</div>
-      </div>
+      <>
+        <div className={styles.page}>
+          <div className={styles.loading}>Загрузка...</div>
+        </div>
+        {toast}
+      </>
     );
   }
 
   const isActiveResultTabLocked = savedResultTabs.has(activeResultTab);
-  const isAutosaveMessage =
-    message?.type === 'success' && message.text === 'Сохранено автоматически';
 
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <Link href="/admin/measurements" className={styles.backLink}>
-          ← К списку замеров
-        </Link>
+    <AdminStickyPageRoot
+      stickyTopPx={saveButtonState.saveButtonPinnedTopPx}
+      className={styles.page}
+    >
+      <div ref={pageHeaderRef} className={styles.header}>
+        <div className={styles.headerTop}>
+          <Link href="/admin/measurements" className={styles.backLink}>
+            ← К списку замеров
+          </Link>
+        </div>
         <div className={styles.titleRow}>
-          <div className={styles.titleWithAutosave}>
-            <h1 className={styles.title}>
-              {measurementId ? 'Редактирование замера' : 'Новый замер'}
-            </h1>
-            <AdminSaveNotice visible={isAutosaveMessage} />
-          </div>
+          <h1 className={styles.title}>
+            {measurementId ? 'Редактирование замера' : 'Новый замер'}
+          </h1>
           <div className={styles.titleControls}>
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
               <label className={styles.statusInlineLabel}>
@@ -154,13 +206,20 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                 <VersionsHistoryIcon />
               </button>
             ) : null}
+            <div className={styles.headerSave}>
+              <AdminStickySaveButtonSlot
+                state={saveButtonState}
+                saving={saving}
+                label="Сохранить замер"
+                savingLabel="Сохранение…"
+                onClick={handleHeaderSaveClick}
+              />
+            </div>
           </div>
         </div>
       </div>
 
-      {message && !isAutosaveMessage ? (
-        <AdminFormMessage type={message.type}>{message.text}</AdminFormMessage>
-      ) : null}
+      {toast}
 
       <div className={styles.form}>
         <section className={styles.formBlockSection}>
@@ -468,14 +527,14 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                 <div className={styles.measurementsHeaderActions}>
                   {visibleResultTabs.length === 0 ? null : isActiveResultTabLocked ? (
                     <>
-                      <span className={styles.measurementSavedBadge}>Замер сохранен</span>
+                      <span className={styles.measurementSavedBadge}>Вкладка зафиксирована</span>
                       <button
                         type="button"
                         className={`${styles.secondaryButton} ${styles.unsaveMeasurementButton}`}
                         onClick={() => void handleUnsaveResultTab(activeResultTab)}
                         disabled={saving}
                       >
-                        Отменить сохранение замера
+                        Отменить фиксацию вкладки
                       </button>
                     </>
                   ) : (
@@ -486,7 +545,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                       onClick={() => void handleSaveResultTab(activeResultTab)}
                       disabled={saving}
                     >
-                      Сохранить замер
+                      Зафиксировать вкладку
                     </button>
                   )}
                 </div>
@@ -529,7 +588,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                         {isSaved ? (
                           <span
                             className={styles.resultCategoryTabSavedMark}
-                            aria-label="Замер сохранен"
+                            aria-label="Вкладка зафиксирована"
                           >
                             ✓
                           </span>
@@ -541,8 +600,9 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
               </div>
               {visibleResultTabs.length > 0 && isActiveResultTabLocked ? (
                 <p className={styles.measurementsLockedHint} role="status">
-                  Раздел «{getResultTabLabel(activeResultTab, visibleResultTabs)}» сохранён и закрыт
-                  для редактирования. Чтобы изменить данные, нажмите «Отменить сохранение замера».
+                  Раздел «{getResultTabLabel(activeResultTab, visibleResultTabs)}» зафиксирован и
+                  закрыт для редактирования. Чтобы изменить данные, нажмите «Отменить фиксацию
+                  вкладки».
                 </p>
               ) : null}
               {visibleResultTabs.length > 0 && activeResultTab === 'repair' ? (
@@ -1139,6 +1199,6 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
           onClose={() => setShowHistory(false)}
         />
       )}
-    </div>
+    </AdminStickyPageRoot>
   );
 }
