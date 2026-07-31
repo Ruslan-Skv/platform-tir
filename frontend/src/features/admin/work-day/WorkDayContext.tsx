@@ -11,6 +11,7 @@ import {
   startWorkDay,
   startWorkDayAbsence,
 } from '@/shared/api/admin-work-days';
+import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
 
 type WorkDayContextValue = {
   status: WorkDayMyStatus | null;
@@ -48,8 +49,22 @@ export function WorkDayProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     void refresh();
-    const id = setInterval(() => void refresh(), 60_000);
-    return () => clearInterval(id);
+    const id = setInterval(() => {
+      if (!canRunBackgroundNetwork()) return;
+      void refresh();
+    }, 60_000);
+    const onWake = () => {
+      void whenOnlineSettled(() => {
+        void refresh();
+      });
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('online', onWake);
+    return () => {
+      clearInterval(id);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('online', onWake);
+    };
   }, [refresh]);
 
   const handleStartDay = useCallback(

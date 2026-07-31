@@ -48,6 +48,7 @@ import {
 } from '@/shared/lib/admin';
 import { ensureFreshAccessToken } from '@/shared/lib/auth-session';
 import { getAvatarUrl } from '@/shared/lib/avatar';
+import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
 import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
@@ -433,14 +434,22 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
 
     const intervalMs = (notificationSettings.checkIntervalSeconds ?? 60) * 1000;
     const run = () => {
+      if (!canRunBackgroundNetwork()) return;
       void loadAllNotifications();
     };
 
     const startDelay = window.setTimeout(run, 2_000);
     const interval = window.setInterval(run, intervalMs);
+    const onWake = () => {
+      void whenOnlineSettled(run);
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('online', onWake);
     return () => {
       window.clearTimeout(startDelay);
       window.clearInterval(interval);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('online', onWake);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- интервал только при смене настроек, не при каждом пересоздании loadAllNotifications
   }, [notificationSettings]);

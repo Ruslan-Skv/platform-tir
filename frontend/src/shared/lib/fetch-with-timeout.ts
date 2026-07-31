@@ -1,3 +1,5 @@
+import { NetworkUnavailableError, isBrowserOnline } from '@/shared/lib/browser-network';
+
 const DEFAULT_SERVER_FETCH_TIMEOUT_MS = 8_000;
 const DEFAULT_CLIENT_FETCH_TIMEOUT_MS = 15_000;
 
@@ -21,6 +23,11 @@ export async function fetchWithTimeout(
   init?: RequestInit,
   timeoutMs = DEFAULT_CLIENT_FETCH_TIMEOUT_MS
 ): Promise<Response> {
+  // Не зовём fetch в офлайне — иначе браузер пишет net::ERR_INTERNET_DISCONNECTED.
+  if (typeof window !== 'undefined' && !isBrowserOnline()) {
+    throw new NetworkUnavailableError();
+  }
+
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const signal = init?.signal ? mergeAbortSignals([init.signal, timeoutSignal]) : timeoutSignal;
 

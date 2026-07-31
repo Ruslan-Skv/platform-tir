@@ -6,6 +6,7 @@ import { useAuth } from '@/features/auth';
 import { type AdminOnlineUser, getAdminOnlineAdmins } from '@/shared/api/admin-presence';
 import { canSeeAdminOnlineAvatars, getRoleLabel } from '@/shared/config/admin-roles';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
+import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser-network';
 
 import styles from './AdminHeader.module.css';
 
@@ -27,6 +28,7 @@ export function AdminOnlineAvatars() {
   const [online, setOnline] = useState<AdminOnlineUser[]>([]);
 
   const load = useCallback(async () => {
+    if (!canRunBackgroundNetwork()) return;
     try {
       const data = await getAdminOnlineAdmins();
       setOnline(Array.isArray(data) ? data : []);
@@ -43,9 +45,18 @@ export function AdminOnlineAvatars() {
 
     const first = window.setTimeout(() => load(), 400);
     const id = window.setInterval(load, POLL_MS);
+    const onWake = () => {
+      void whenOnlineSettled(() => {
+        void load();
+      });
+    };
+    document.addEventListener('visibilitychange', onWake);
+    window.addEventListener('online', onWake);
     return () => {
       window.clearTimeout(first);
       window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onWake);
+      window.removeEventListener('online', onWake);
     };
   }, [isAuthenticated, isLoading, load, shouldLoadPresence]);
 

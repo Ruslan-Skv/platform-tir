@@ -16,6 +16,7 @@ import {
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
 } from '@/shared/lib/auth-session';
+import { canRunBackgroundNetwork } from '@/shared/lib/browser-network';
 import { formatAuthHttpError } from '@/shared/lib/nest-error-message';
 
 export type UserRole =
@@ -512,6 +513,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const tick = () => {
+      if (!canRunBackgroundNetwork()) return;
       const t = typeof window !== 'undefined' ? getStoredAccessToken() : null;
       if (!t) return;
       const exp = getJwtExpMs(t);

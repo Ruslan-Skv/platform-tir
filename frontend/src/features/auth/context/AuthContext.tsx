@@ -23,6 +23,7 @@ import {
   refreshAccessTokenSilently,
   revokeRefreshOnServer,
 } from '@/shared/lib/auth-session';
+import { canRunBackgroundNetwork } from '@/shared/lib/browser-network';
 import { formatAuthHttpError } from '@/shared/lib/nest-error-message';
 
 type AdminRole =
@@ -373,6 +374,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Продление access по refresh до истечения JWT (access короткоживущий).
   useEffect(() => {
     const tick = () => {
+      if (!canRunBackgroundNetwork()) return;
       const t = typeof window !== 'undefined' ? getStoredAccessToken() : null;
       if (!t) return;
       const exp = getJwtExpMs(t);

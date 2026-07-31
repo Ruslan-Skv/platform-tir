@@ -1,3 +1,4 @@
+import { isBrowserOnline, whenVisibleAndOnline } from '@/shared/lib/browser-network';
 import { fetchWithTimeout } from '@/shared/lib/fetch-with-timeout';
 
 type AccessTokenStore = {
@@ -345,6 +346,7 @@ export function persistTokenResponse(data: TokenLoginPayload): void {
 export async function refreshAccessTokenSilently(): Promise<boolean> {
   if (typeof window === 'undefined') return false;
   if (!canAttemptSilentRefresh()) return false;
+  if (!isBrowserOnline()) return false;
 
   const inFlight = getGlobalRefreshInFlight();
   if (inFlight) return inFlight;
@@ -441,6 +443,7 @@ export async function restoreAccessTokenFromSession(): Promise<string | null> {
 
 /**
  * В фоновой вкладке setInterval почти не работает — при возврате обновляем access до поллеров.
+ * Ждём online + короткую паузу, чтобы не ловить ERR_INTERNET_DISCONNECTED в консоли.
  * @returns cleanup
  */
 export function bindAuthRefreshOnPageVisible(minTtlMs = 120_000): () => void {
@@ -448,14 +451,18 @@ export function bindAuthRefreshOnPageVisible(minTtlMs = 120_000): () => void {
 
   const refreshIfVisible = () => {
     if (document.visibilityState !== 'visible') return;
-    void ensureFreshAccessToken(minTtlMs);
+    void whenVisibleAndOnline(() => {
+      void ensureFreshAccessToken(minTtlMs);
+    });
   };
 
   document.addEventListener('visibilitychange', refreshIfVisible);
   window.addEventListener('focus', refreshIfVisible);
+  window.addEventListener('online', refreshIfVisible);
   return () => {
     document.removeEventListener('visibilitychange', refreshIfVisible);
     window.removeEventListener('focus', refreshIfVisible);
+    window.removeEventListener('online', refreshIfVisible);
   };
 }
 
