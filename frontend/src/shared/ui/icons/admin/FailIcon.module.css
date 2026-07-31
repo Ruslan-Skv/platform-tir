@@ -1,0 +1,4 @@
+:global(.admin-action-icon-fail) {
+  color: var(--admin-icon-delete);
+  flex-shrink: 0;
+}

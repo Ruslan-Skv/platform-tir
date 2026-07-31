@@ -59,6 +59,11 @@ export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
     methods: ['GET', 'HEAD'],
     pathPattern: /^\/api\/v1\/admin\/reviews$/,
   },
+  // Водитель отмечает выполнение своего задания (права проверяет WaybillsService)
+  {
+    methods: ['POST'],
+    pathPattern: /^\/api\/v1\/admin\/waybills\/[^/]+\/(complete|fail)$/,
+  },
 ];
 
 /**

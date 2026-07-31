@@ -41,6 +41,7 @@ import { ContractDocumentPackagesModule } from './contract-document-packages/con
 import { InstallersModule } from './installers/installers.module';
 import { RecruitmentModule } from './recruitment/recruitment.module';
 import { WorkDaysModule } from './work-days/work-days.module';
+import { WaybillsModule } from './waybills/waybills.module';
 
 @Module({
   imports: [
@@ -52,6 +53,7 @@ import { WorkDaysModule } from './work-days/work-days.module';
     CustomersModule,
     CrmDirectionsModule,
     InstallersModule,
+    WaybillsModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
@@ -98,6 +100,7 @@ import { WorkDaysModule } from './work-days/work-days.module';
     CustomersModule,
     CrmDirectionsModule,
     InstallersModule,
+    WaybillsModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,

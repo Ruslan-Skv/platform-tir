@@ -175,6 +175,18 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installers',
   },
   {
+    label: 'Путевой лист',
+    href: '/admin/crm/waybills',
+    icon: '🚚',
+    resourceId: 'admin.crm.waybills',
+  },
+  {
+    label: 'Мой маршрут',
+    href: '/admin/crm/waybills/my',
+    icon: '🗺️',
+    resourceId: 'admin.crm.waybills.my',
+  },
+  {
     label: 'Бухгалтерия',
     href: '/admin/accounting/invoices',
     icon: '🧾',

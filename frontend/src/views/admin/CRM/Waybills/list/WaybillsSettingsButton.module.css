@@ -1,0 +1,222 @@
+.trigger {
+  min-width: 28px;
+  min-height: 28px;
+  padding: 0;
+}
+
+.modalPanel :global([class*='titleRow']) {
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+}
+
+.hint {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.4;
+  color: var(--admin-text-muted);
+}
+
+.layout {
+  display: grid;
+  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
+  gap: var(--admin-space-md);
+  min-height: 280px;
+}
+
+.driverList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-height: 420px;
+  overflow: auto;
+  padding-right: 2px;
+}
+
+.driverBtn {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.driverBtn:hover {
+  border-color: var(--admin-info-border-soft, #93c5fd);
+}
+
+.driverBtnActive {
+  border-color: var(--admin-accent, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.driverName {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary, var(--admin-text-secondary));
+}
+
+.driverMeta {
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  color: var(--admin-text-muted);
+}
+
+.editor {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  min-width: 0;
+}
+
+.checkRow {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.cycleHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.cycleTitle {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.cycleDays {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.cycleDay {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft, var(--admin-surface));
+}
+
+.cycleDayTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.cycleDayIndex {
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  min-width: 3.5rem;
+}
+
+.timeRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+}
+
+.timeRow label {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.preview {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.previewChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.previewChip {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 4.5rem;
+  padding: 4px 8px;
+  border-radius: var(--admin-radius-sm);
+  border: 1px solid var(--admin-border);
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.previewOn {
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+  color: #1b5e20;
+}
+
+.previewOff {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #616161;
+}
+
+.previewDate {
+  font-weight: 700;
+}
+
+.previewLabel {
+  opacity: 0.9;
+}
+
+@media (max-width: 720px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+
+  .driverList {
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    max-height: none;
+  }
+
+  .driverBtn {
+    min-width: 9rem;
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .driverBtnActive {
+  background: var(--admin-overlay-color-136, rgb(37 99 235 / 0.14));
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewOn {
+  background: rgb(46 125 50 / 0.2);
+  border-color: #2e7d32;
+  color: #a5d6a7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewOff {
+  background: var(--admin-surface-muted, #1f2937);
+  color: var(--admin-text-muted);
+}

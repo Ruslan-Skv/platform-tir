@@ -75,5 +75,11 @@ export {
   ADMIN_TRAINING_STATISTICS_ICON_SIZE,
   type TrainingStatisticsIconProps,
 } from './TrainingStatisticsIcon';
+export {
+  FailIcon,
+  ADMIN_ACTION_ICON_FAIL_CLASS,
+  ADMIN_FAIL_ICON_SIZE,
+  type FailIconProps,
+} from './admin/FailIcon';
 export { VersionsHistoryIcon } from './VersionsHistoryIcon';
 export { CallCustomerIcon, type CallCustomerIconProps } from './crm/CallCustomerIcon';
