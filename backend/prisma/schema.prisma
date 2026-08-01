@@ -150,6 +150,7 @@ model User {
   waybillTasksCompleted                   WaybillTask[]                            @relation("WaybillTaskCompletedBy")
   waybillTasksCreated                     WaybillTask[]                            @relation("WaybillTaskCreatedBy")
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
+  waybillTaskBellEvents                   WaybillTaskBellEvent[]
   driverDeliveryAvailability              DriverDeliveryAvailability?
 
   @@unique([employeeCode])
@@ -432,6 +433,10 @@ model ExternalNotifySettings {
   workDayNotifyEmails      Json? // string[]
   workDayNotifyTelegramIds Json? // string[]
   workDayNotifyMaxIds      Json? // string[]
+
+  waybillNotifyEmails      Json? // string[]
+  waybillNotifyTelegramIds Json? // string[]
+  waybillNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -2606,6 +2611,7 @@ model UserAdminNotificationOverride {
   notifyOnSiteFeedback      Boolean  @default(true)
   notifyOnKnowledgeTraining Boolean  @default(true)
   notifyOnWorkDays          Boolean  @default(true)
+  notifyOnWaybills          Boolean  @default(true)
   updatedAt                 DateTime @updatedAt
   user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2661,6 +2667,7 @@ model AdminNotificationsBlock {
   notifyOnSiteFeedback      Boolean  @default(true) // Обратная связь по публичному сайту
   notifyOnKnowledgeTraining Boolean  @default(true) // Динамика изучения материалов обучения
   notifyOnWorkDays          Boolean  @default(true) // Учёт рабочего времени
+  notifyOnWaybills          Boolean  @default(true) // Путевой лист / маршрут водителя
   updatedAt                 DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -2784,12 +2791,13 @@ model WaybillTask {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  contract    Contract? @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  responsible User?     @relation("WaybillTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  driver      User?     @relation("WaybillTaskDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
-  completedBy User?     @relation("WaybillTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
-  createdBy   User?     @relation("WaybillTaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedBy   User?     @relation("WaybillTaskDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  contract    Contract?              @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  responsible User?                  @relation("WaybillTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  driver      User?                  @relation("WaybillTaskDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
+  completedBy User?                  @relation("WaybillTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  createdBy   User?                  @relation("WaybillTaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy   User?                  @relation("WaybillTaskDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  bellEvents  WaybillTaskBellEvent[]
 
   @@index([date])
   @@index([driverUserId, date])
@@ -2798,6 +2806,25 @@ model WaybillTask {
   @@index([deletedAt])
   @@index([createdById])
   @@map("waybill_tasks")
+}
+
+/// Событие путевого листа для колокольчика (персонально водителю / ответственному).
+model WaybillTaskBellEvent {
+  id            String   @id @default(cuid())
+  recipientId   String
+  waybillTaskId String
+  kind          String /// created | updated | completed | failed
+  title         String
+  message       String   @db.Text
+  href          String
+  createdAt     DateTime @default(now())
+
+  recipient User        @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  task      WaybillTask @relation(fields: [waybillTaskId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([waybillTaskId])
+  @@map("waybill_task_bell_events")
 }
 
 /// Циклическая схема доступности водителя на доставках (не путать с учётом рабочего дня).
@@ -2809,6 +2836,8 @@ model DriverDeliveryAvailability {
   cycleAnchorDate DateTime @db.Date
   /// [{ kind: "ON"|"OFF", availableFrom?: "HH:mm", availableTo?: "HH:mm" }]
   cycleDays       Json
+  /// [{ kind: "VACATION"|"SICK", dateFrom: "YYYY-MM-DD", dateTo: "YYYY-MM-DD", note?: string }]
+  absenceBlocks   Json     @default("[]")
   notes           String?  @db.Text
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt

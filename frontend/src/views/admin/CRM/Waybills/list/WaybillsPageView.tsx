@@ -1,13 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 
-import type { Contract, CrmUser } from '@/shared/api/admin-crm';
-import {
-  type DriverAvailabilityStatus,
-  type WaybillTask,
-  resolveDriverDeliveryAvailability,
-} from '@/shared/api/admin-waybills';
+import type { WaybillTask } from '@/shared/api/admin-waybills';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import {
@@ -23,21 +18,22 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import styles from '../shared/Waybills.module.css';
 import { WAYBILL_TRASH_RETENTION_NOTICE } from '../shared/waybillTrashRetention';
-import type { WaybillFormValues, WaybillStatusFilter } from '../shared/waybills-page.types';
+import type { WaybillStatusFilter } from '../shared/waybills-page.types';
 import {
   STATUS_LABELS,
-  WAYBILL_DIRECTION_SUGGESTIONS,
   formatMoney,
   formatTimeRange,
   formatUserLabel,
   isLateEdit,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
+import { WaybillTaskForm } from './WaybillTaskForm';
 import { WaybillTaskRowActions } from './WaybillTaskRowActions';
 import { WaybillTrashModal } from './WaybillTrashModal';
 import { WaybillsListMobileCards } from './WaybillsListMobileCards';
 import { WaybillsRulesInfoTip } from './WaybillsRulesInfoTip';
 import { WaybillsSettingsButton } from './WaybillsSettingsButton';
+import { WaybillsWeekAvailabilityPanel } from './WaybillsWeekAvailabilityPanel';
 import type { WaybillsPageModel } from './hooks/useWaybillsPage';
 
 type WaybillsPageViewProps = {
@@ -91,6 +87,17 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     handleCompleteConfirm,
     handleFailConfirm,
     handleReopen,
+    openRescheduleModal,
+    closeRescheduleModal,
+    handleRescheduleConfirm,
+    rescheduleItem,
+    rescheduleDate,
+    setRescheduleDate,
+    rescheduleTimeFrom,
+    setRescheduleTimeFrom,
+    rescheduleTimeTo,
+    setRescheduleTimeTo,
+    rescheduleError,
     searchContracts,
     applyContract,
     refresh,
@@ -99,8 +106,12 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     trashCount,
     refreshTrashCount,
     currentUserId,
-    isSuperAdmin,
+    canManageWaybillSettings,
   } = model;
+
+  const [createDateBlocked, setCreateDateBlocked] = useState(false);
+  const [editDateBlocked, setEditDateBlocked] = useState(false);
+  const [weekPreviewRefreshToken, setWeekPreviewRefreshToken] = useState(0);
 
   const statusCounts = {
     ALL: tasks.length,
@@ -212,6 +223,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             setFailNote('');
             setFailItem(task);
           }}
+          onCopy={openRescheduleModal}
           onDelete={setDeleteItem}
           onReopen={(task) => void handleReopen(task)}
         />
@@ -235,7 +247,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           : cdHub.contractsHeaderIconActionsDesktop
       }
     >
-      {isSuperAdmin ? (
+      {canManageWaybillSettings ? (
         <WaybillsSettingsButton triggerClassName={toolbarButtonStyles.button} />
       ) : null}
       <AdminListRefreshButton
@@ -243,7 +255,10 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         busy={loading}
         title="Обновить список"
         aria-label={loading ? 'Обновление путевого листа' : 'Обновить путевой лист'}
-        onClick={() => void refresh()}
+        onClick={() => {
+          void refresh();
+          setWeekPreviewRefreshToken((n) => n + 1);
+        }}
       />
       <AdminToolbarTrashButton
         trashCount={trashCount}
@@ -291,6 +306,8 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           {message.text}
         </div>
       ) : null}
+
+      <WaybillsWeekAvailabilityPanel refreshToken={weekPreviewRefreshToken} />
 
       <div className={cdHub.contractsListFiltersPanel}>
         <div className={cdHub.contractsListFiltersStack}>
@@ -357,6 +374,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           setFailNote('');
           setFailItem(task);
         }}
+        onCopy={openRescheduleModal}
         onDelete={setDeleteItem}
         onReopen={(task) => void handleReopen(task)}
       />
@@ -381,7 +399,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             Задание появится в путевом листе на выбранную дату и в «Моём маршруте» у назначенного
             водителя.
           </p>
-          <WaybillForm
+          <WaybillTaskForm
             values={formValues}
             onChange={setFormValues}
             formError={formError}
@@ -391,8 +409,14 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             contractSearching={contractSearching}
             onSearchContracts={searchContracts}
             onApplyContract={applyContract}
+            onDateBlockedChange={setCreateDateBlocked}
           />
-          <ModalActions onCancel={closeCreateModal} submitting={submitting} submitLabel="Создать" />
+          <ModalActions
+            onCancel={closeCreateModal}
+            submitting={submitting}
+            submitLabel="Создать"
+            disabled={createDateBlocked}
+          />
         </form>
       </Modal>
 
@@ -407,7 +431,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           <p data-modal-form-hint className={styles.modalHintFlush}>
             Изменения сразу отобразятся в путевом листе и у водителя.
           </p>
-          <WaybillForm
+          <WaybillTaskForm
             values={formValues}
             onChange={setFormValues}
             formError={formError}
@@ -417,8 +441,13 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             contractSearching={contractSearching}
             onSearchContracts={searchContracts}
             onApplyContract={applyContract}
+            onDateBlockedChange={setEditDateBlocked}
           />
-          <ModalActions onCancel={closeEditModal} submitting={submitting} />
+          <ModalActions
+            onCancel={closeEditModal}
+            submitting={submitting}
+            disabled={editDateBlocked}
+          />
         </form>
       </Modal>
 
@@ -529,314 +558,76 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           </div>
         </div>
       </Modal>
-    </div>
-  );
-}
 
-function WaybillForm({
-  values,
-  onChange,
-  formError,
-  users,
-  drivers,
-  contractHits,
-  contractSearching,
-  onSearchContracts,
-  onApplyContract,
-}: {
-  values: WaybillFormValues;
-  onChange: (next: WaybillFormValues) => void;
-  formError: string | null;
-  users: CrmUser[];
-  drivers: CrmUser[];
-  contractHits: Contract[];
-  contractSearching: boolean;
-  onSearchContracts: (q: string) => void;
-  onApplyContract: (c: Contract) => void;
-}) {
-  const [availability, setAvailability] = useState<DriverAvailabilityStatus[]>([]);
-
-  useEffect(() => {
-    if (!values.date) {
-      setAvailability([]);
-      return;
-    }
-    let cancelled = false;
-    const t = window.setTimeout(() => {
-      void resolveDriverDeliveryAvailability({
-        date: values.date,
-        timeFrom: values.timeFrom || null,
-      })
-        .then((rows) => {
-          if (!cancelled) setAvailability(rows);
-        })
-        .catch(() => {
-          if (!cancelled) setAvailability([]);
-        });
-    }, 250);
-    return () => {
-      cancelled = true;
-      window.clearTimeout(t);
-    };
-  }, [values.date, values.timeFrom]);
-
-  const availabilityById = new Map(availability.map((a) => [a.userId, a]));
-  const selectedAvailability = values.driverUserId
-    ? availabilityById.get(values.driverUserId)
-    : undefined;
-  const driverWarning =
-    selectedAvailability &&
-    selectedAvailability.hasScheme &&
-    selectedAvailability.isActive &&
-    !selectedAvailability.available
-      ? selectedAvailability.kind === 'OFF'
-        ? 'По схеме в этот день у водителя выходной на доставках. Назначение всё равно возможно.'
-        : `По схеме водитель доступен ${selectedAvailability.label}. Время задания вне окна — назначение всё равно возможно.`
-      : null;
-
-  return (
-    <>
-      <div data-modal-form-grid>
-        <div data-modal-form-group>
-          <label htmlFor="wb-date">Дата *</label>
-          <input
-            id="wb-date"
-            type="date"
-            value={values.date}
-            onChange={(e) => onChange({ ...values, date: e.target.value })}
-            required
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-direction">Направление</label>
-          <input
-            id="wb-direction"
-            list="wb-direction-list"
-            value={values.direction}
-            onChange={(e) => onChange({ ...values, direction: e.target.value })}
-            placeholder="двери, бавария…"
-          />
-          <datalist id="wb-direction-list">
-            {WAYBILL_DIRECTION_SUGGESTIONS.map((d) => (
-              <option key={d} value={d} />
-            ))}
-          </datalist>
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-from">Время с</label>
-          <input
-            id="wb-from"
-            type="time"
-            value={values.timeFrom}
-            onChange={(e) => onChange({ ...values, timeFrom: e.target.value })}
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-to">Время по</label>
-          <input
-            id="wb-to"
-            type="time"
-            value={values.timeTo}
-            onChange={(e) => onChange({ ...values, timeTo: e.target.value })}
-          />
-        </div>
-        <div data-modal-form-group data-modal-span>
-          <label htmlFor="wb-task">Задание водителю *</label>
-          <textarea
-            id="wb-task"
-            value={values.taskText}
-            onChange={(e) => onChange({ ...values, taskText: e.target.value })}
-            required
-            rows={3}
-            placeholder="Склад, счёт, что проверить / купить…"
-          />
-        </div>
-        <div data-modal-form-group data-modal-span>
-          <label htmlFor="wb-contract">Договор (поиск по номеру)</label>
-          <input
-            id="wb-contract"
-            type="text"
-            value={values.contractSearch}
-            onChange={(e) => {
-              const contractSearch = e.target.value;
-              onChange({ ...values, contractSearch, contractId: '' });
-              void onSearchContracts(contractSearch);
-            }}
-            placeholder="371Д-463"
-          />
-          {contractSearching ? (
-            <span className={styles.fieldHint}>Поиск…</span>
-          ) : (
-            <span className={styles.fieldHint}>
-              Выберите договор — подставятся ФИО, адрес и телефон
-            </span>
-          )}
-          {contractHits.length > 0 ? (
-            <ul className={styles.contractHits}>
-              {contractHits.map((c) => (
-                <li key={c.id}>
-                  <button type="button" onClick={() => onApplyContract(c)}>
-                    {c.contractNumber} — {c.customerName || 'без имени'}
-                  </button>
-                </li>
-              ))}
-            </ul>
+      <Modal
+        isOpen={Boolean(rescheduleItem)}
+        onClose={closeRescheduleModal}
+        title="Копировать на другой день"
+        size="md"
+        showCloseButton
+      >
+        <div data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint className={styles.modalHintFlush}>
+            Будет создана копия задания на новую дату. Исходное задание не изменится — при
+            необходимости отметьте его «Не выполнено» вручную (например, «перенос на другой день»).
+          </p>
+          {rescheduleItem ? (
+            <p data-modal-form-hint>
+              {rescheduleItem.date.slice(0, 10)}
+              {rescheduleItem.direction ? ` · ${rescheduleItem.direction}` : ''}
+              {` · ${formatTimeRange(rescheduleItem.timeFrom, rescheduleItem.timeTo)}`}
+              <br />
+              {rescheduleItem.taskText}
+            </p>
           ) : null}
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-customer-name">ФИО</label>
-          <input
-            id="wb-customer-name"
-            type="text"
-            value={values.customerName}
-            onChange={(e) => onChange({ ...values, customerName: e.target.value })}
-            placeholder="Иванов Иван Иванович"
-          />
-        </div>
-        <div data-modal-form-group data-modal-span>
-          <label>Телефоны</label>
-          <div className={styles.phoneFields}>
-            {values.customerPhones.map((phone, index) => (
-              <div key={index} className={styles.phoneFieldRow}>
-                <input
-                  id={index === 0 ? 'wb-customer-phone' : undefined}
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => {
-                    const customerPhones = [...values.customerPhones];
-                    customerPhones[index] = e.target.value;
-                    onChange({ ...values, customerPhones });
-                  }}
-                  placeholder="+7(900)-000-00-00"
-                  aria-label={index === 0 ? 'Телефон' : `Телефон ${index + 1}`}
-                />
-                {values.customerPhones.length > 1 ? (
-                  <button
-                    data-admin-mutation
-                    type="button"
-                    data-modal-btn="secondary"
-                    className={styles.phoneRemoveBtn}
-                    onClick={() => {
-                      const customerPhones = values.customerPhones.filter((_, i) => i !== index);
-                      onChange({
-                        ...values,
-                        customerPhones: customerPhones.length > 0 ? customerPhones : [''],
-                      });
-                    }}
-                    aria-label={`Удалить телефон ${index + 1}`}
-                  >
-                    Удалить
-                  </button>
-                ) : null}
-              </div>
-            ))}
+          <div data-modal-form-grid>
+            <div data-modal-form-group>
+              <label htmlFor="reschedule-date">Новая дата *</label>
+              <input
+                id="reschedule-date"
+                type="date"
+                value={rescheduleDate}
+                onChange={(e) => setRescheduleDate(e.target.value)}
+                required
+              />
+            </div>
+            <div data-modal-form-group>
+              <label htmlFor="reschedule-from">Время с</label>
+              <input
+                id="reschedule-from"
+                type="time"
+                value={rescheduleTimeFrom}
+                onChange={(e) => setRescheduleTimeFrom(e.target.value)}
+              />
+            </div>
+            <div data-modal-form-group>
+              <label htmlFor="reschedule-to">Время по</label>
+              <input
+                id="reschedule-to"
+                type="time"
+                value={rescheduleTimeTo}
+                onChange={(e) => setRescheduleTimeTo(e.target.value)}
+              />
+            </div>
+          </div>
+          {rescheduleError ? <p data-modal-form-error>{rescheduleError}</p> : null}
+          <div data-modal-form-actions>
+            <button type="button" data-modal-btn="secondary" onClick={closeRescheduleModal}>
+              Отмена
+            </button>
             <button
               data-admin-mutation
               type="button"
-              data-modal-btn="secondary"
-              className={styles.phoneAddBtn}
-              onClick={() =>
-                onChange({ ...values, customerPhones: [...values.customerPhones, ''] })
-              }
+              data-modal-btn="primary"
+              disabled={submitting}
+              onClick={() => void handleRescheduleConfirm()}
             >
-              + Добавить телефон
+              {submitting ? 'Перенос…' : 'Скопировать'}
             </button>
           </div>
         </div>
-        <div data-modal-form-group data-modal-span>
-          <label htmlFor="wb-customer-address">Адрес</label>
-          <input
-            id="wb-customer-address"
-            type="text"
-            value={values.customerAddress}
-            onChange={(e) => onChange({ ...values, customerAddress: e.target.value })}
-            placeholder="Город, улица, дом…"
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-delivery-cost">Стоимость доставки</label>
-          <input
-            id="wb-delivery-cost"
-            type="number"
-            step="0.01"
-            value={values.deliveryCost}
-            onChange={(e) => onChange({ ...values, deliveryCost: e.target.value })}
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-delivery-payer">Кто платит (доставка)</label>
-          <input
-            id="wb-delivery-payer"
-            type="text"
-            value={values.deliveryPayer}
-            onChange={(e) => onChange({ ...values, deliveryPayer: e.target.value })}
-            placeholder="Заказчик / Привокзальная…"
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-movers-cost">Стоимость грузчиков</label>
-          <input
-            id="wb-movers-cost"
-            type="number"
-            step="0.01"
-            value={values.moversCost}
-            onChange={(e) => onChange({ ...values, moversCost: e.target.value })}
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-movers-payer">Кто платит (грузчики)</label>
-          <input
-            id="wb-movers-payer"
-            type="text"
-            value={values.moversPayer}
-            onChange={(e) => onChange({ ...values, moversPayer: e.target.value })}
-          />
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-responsible">Ответственный</label>
-          <select
-            id="wb-responsible"
-            value={values.responsibleUserId}
-            onChange={(e) => onChange({ ...values, responsibleUserId: e.target.value })}
-          >
-            <option value="">—</option>
-            {users.map((u) => (
-              <option key={u.id} value={u.id}>
-                {formatUserLabel(u)}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div data-modal-form-group>
-          <label htmlFor="wb-driver">Водитель</label>
-          <select
-            id="wb-driver"
-            value={values.driverUserId}
-            onChange={(e) => onChange({ ...values, driverUserId: e.target.value })}
-          >
-            <option value="">—</option>
-            {(drivers.length ? drivers : users).map((u) => {
-              const status = availabilityById.get(u.id);
-              const suffix = status?.hasScheme && status.isActive ? ` · ${status.label}` : '';
-              return (
-                <option key={u.id} value={u.id}>
-                  {formatUserLabel(u)}
-                  {u.role === 'DRIVER' ? ' (водитель)' : ''}
-                  {suffix}
-                </option>
-              );
-            })}
-          </select>
-          {selectedAvailability?.hasScheme && selectedAvailability.isActive ? (
-            <span className={styles.fieldHint}>
-              На {values.date}: {selectedAvailability.label}
-            </span>
-          ) : null}
-          {driverWarning ? <p data-modal-form-error>{driverWarning}</p> : null}
-        </div>
-      </div>
-      {formError ? <p data-modal-form-error>{formError}</p> : null}
-    </>
+      </Modal>
+    </div>
   );
 }
 
@@ -844,17 +635,24 @@ function ModalActions({
   onCancel,
   submitting,
   submitLabel = 'Сохранить',
+  disabled = false,
 }: {
   onCancel: () => void;
   submitting: boolean;
   submitLabel?: string;
+  disabled?: boolean;
 }) {
   return (
     <div data-modal-form-actions>
       <button type="button" data-modal-btn="secondary" onClick={onCancel} disabled={submitting}>
         Отмена
       </button>
-      <button data-admin-mutation type="submit" data-modal-btn="primary" disabled={submitting}>
+      <button
+        data-admin-mutation
+        type="submit"
+        data-modal-btn="primary"
+        disabled={submitting || disabled}
+      >
         {submitting ? `${submitLabel}…` : submitLabel}
       </button>
     </div>

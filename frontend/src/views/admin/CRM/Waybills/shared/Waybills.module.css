@@ -422,6 +422,73 @@
   line-height: 1.35;
 }
 
+.dateChipRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 6px;
+}
+
+.dateChip {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0;
+  min-width: 4.5rem;
+  margin: 0;
+  padding: 3px 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dateChip:disabled {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+.dateChipOn {
+  background: #e8f5e9;
+  border-color: #a5d6a7;
+  color: #1b5e20;
+}
+
+.dateChipOff {
+  background: #f5f5f5;
+  border-color: #e0e0e0;
+  color: #757575;
+}
+
+.dateChipAbsence {
+  background: #fff3e0;
+  border-color: #ffcc80;
+  color: #e65100;
+}
+
+.dateChipSelected {
+  outline: 2px solid var(--admin-accent, #2563eb);
+  outline-offset: 1px;
+}
+
+.dateChipDate {
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.dateChipLabel {
+  font-size: 10px;
+  line-height: 1.2;
+  max-width: 5.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .contractHits {
   list-style: none;
   margin: 6px 0 0;
@@ -621,4 +688,21 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobilePhoneLink {
   color: var(--admin-info-bright, #93c5fd);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateChipOn {
+  background: rgb(46 125 50 / 0.2);
+  border-color: #2e7d32;
+  color: #a5d6a7;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateChipOff {
+  background: var(--admin-surface-muted, #1f2937);
+  color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dateChipAbsence {
+  background: rgb(230 81 0 / 0.18);
+  border-color: #ef6c00;
+  color: #ffb74d;
 }

@@ -14,7 +14,8 @@ export type AdminBellNotificationType =
   | 'knowledgeFeedback'
   | 'siteFeedback'
   | 'knowledgeTraining'
-  | 'workDays';
+  | 'workDays'
+  | 'waybills';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -46,6 +47,17 @@ export type AdminBellWorkDayNotification = {
   workDate: string;
   lateMinutes: number;
   earlyLeaveMinutes: number;
+  occurredAt: string;
+};
+
+export type AdminBellWaybillNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'completed' | 'failed';
+  kindLabel: string;
+  waybillTaskId: string;
+  title: string;
+  message: string;
+  href: string;
   occurredAt: string;
 };
 
@@ -204,6 +216,18 @@ export function workDayToBellNotificationItem(
   };
 }
 
+export function waybillToBellNotificationItem(
+  item: AdminBellWaybillNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'waybills',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/crm/waybills',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -263,6 +287,13 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.work-days') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'waybills') {
+    return (
+      (hasAccess('admin.crm.waybills') || hasAccess('admin.crm.waybills.my')) &&
+      isBellTypeEnabled(item.type, settings)
+    );
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -297,6 +328,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnKnowledgeTraining !== false;
     case 'workDays':
       return settings.notifyOnWorkDays !== false;
+    case 'waybills':
+      return settings.notifyOnWaybills !== false;
     default:
       return false;
   }
@@ -361,6 +394,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'workDays':
       return {
         title: 'Учёт рабочего времени',
+        body: item.text,
+        tag,
+      };
+    case 'waybills':
+      return {
+        title: 'Путевой лист',
         body: item.text,
         tag,
       };

@@ -113,9 +113,19 @@ export async function getWaybillTasks(params?: {
   return res.json();
 }
 
-export async function getMyWaybillTasks(date?: string): Promise<WaybillTask[]> {
-  const q = date ? `?date=${encodeURIComponent(date)}` : '';
-  const res = await apiFetch(`${API_URL}/admin/waybills/my${q}`, {
+export async function getMyWaybillTasks(params?: {
+  date?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}): Promise<WaybillTask[]> {
+  const searchParams = new URLSearchParams();
+  if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
+  if (!params?.dateFrom && !params?.dateTo && params?.date) {
+    searchParams.set('date', params.date);
+  }
+  const q = searchParams.toString();
+  const res = await apiFetch(`${API_URL}/admin/waybills/my${q ? `?${q}` : ''}`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось загрузить маршрут');
@@ -170,6 +180,19 @@ export async function failWaybillTask(id: string, note: string): Promise<Waybill
     body: JSON.stringify({ note }),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось отметить невыполнение');
+  return res.json();
+}
+
+export async function rescheduleWaybillTask(
+  id: string,
+  data: { date: string; timeFrom?: string | null; timeTo?: string | null }
+): Promise<{ copy: WaybillTask }> {
+  const res = await apiFetch(`${API_URL}/admin/waybills/${id}/reschedule`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось скопировать задание');
   return res.json();
 }
 
@@ -231,12 +254,20 @@ export type DriverDeliveryCycleDay = {
   availableTo?: string | null;
 };
 
+export type DriverDeliveryAbsenceBlock = {
+  kind: 'VACATION' | 'SICK';
+  dateFrom: string;
+  dateTo: string;
+  note?: string | null;
+};
+
 export type DriverDeliveryAvailabilityScheme = {
   id: string;
   userId: string;
   isActive: boolean;
   cycleAnchorDate: string;
   cycleDays: DriverDeliveryCycleDay[];
+  absenceBlocks: DriverDeliveryAbsenceBlock[];
   notes: string | null;
   updatedAt: string;
 };
@@ -251,7 +282,7 @@ export type DriverAvailabilityStatus = {
   hasScheme: boolean;
   isActive: boolean;
   available: boolean;
-  kind: 'ON' | 'OFF' | 'NONE';
+  kind: 'ON' | 'OFF' | 'VACATION' | 'SICK' | 'NONE';
   availableFrom: string | null;
   availableTo: string | null;
   label: string;
@@ -262,6 +293,7 @@ export type UpsertDriverDeliveryAvailabilityInput = {
   isActive?: boolean;
   cycleAnchorDate: string;
   cycleDays: DriverDeliveryCycleDay[];
+  absenceBlocks?: DriverDeliveryAbsenceBlock[];
   notes?: string | null;
 };
 

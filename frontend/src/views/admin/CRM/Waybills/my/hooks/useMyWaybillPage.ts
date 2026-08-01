@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   type WaybillTask,
@@ -9,13 +9,15 @@ import {
   getMyWaybillTasks,
 } from '@/shared/api/admin-waybills';
 
-import type { WaybillsPageMessage } from '../../shared/waybills-page.types';
-import { todayIsoDate } from '../../shared/waybills-page.utils';
+import type { WaybillStatusFilter, WaybillsPageMessage } from '../../shared/waybills-page.types';
+import { todayIsoDate, weekAheadIsoDate } from '../../shared/waybills-page.utils';
 
 export function useMyWaybillPage() {
-  const [date, setDate] = useState(todayIsoDate);
+  const [dateFrom, setDateFrom] = useState(todayIsoDate);
+  const [dateTo, setDateTo] = useState(() => weekAheadIsoDate());
   const [tasks, setTasks] = useState<WaybillTask[]>([]);
   const [loading, setLoading] = useState(true);
+  const [statusFilter, setStatusFilter] = useState<WaybillStatusFilter>('ALL');
   const [message, setMessage] = useState<WaybillsPageMessage | null>(null);
   const [failItem, setFailItem] = useState<WaybillTask | null>(null);
   const [failNote, setFailNote] = useState('');
@@ -26,7 +28,7 @@ export function useMyWaybillPage() {
   const loadTasks = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await getMyWaybillTasks(date);
+      const data = await getMyWaybillTasks({ dateFrom, dateTo });
       setTasks(data);
     } catch (err) {
       setTasks([]);
@@ -37,11 +39,16 @@ export function useMyWaybillPage() {
     } finally {
       setLoading(false);
     }
-  }, [date]);
+  }, [dateFrom, dateTo]);
 
   useEffect(() => {
     void loadTasks();
   }, [loadTasks]);
+
+  const filtered = useMemo(() => {
+    if (statusFilter === 'ALL') return tasks;
+    return tasks.filter((t) => t.status === statusFilter);
+  }, [tasks, statusFilter]);
 
   const openCompleteModal = useCallback((item: WaybillTask) => {
     setCompleteNote('');
@@ -91,10 +98,15 @@ export function useMyWaybillPage() {
   }, [failItem, failNote, loadTasks]);
 
   return {
-    date,
-    setDate,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
     tasks,
+    filtered,
     loading,
+    statusFilter,
+    setStatusFilter,
     message,
     failItem,
     setFailItem,
@@ -108,6 +120,7 @@ export function useMyWaybillPage() {
     openCompleteModal,
     handleCompleteConfirm,
     handleFailConfirm,
+    refresh: loadTasks,
   };
 }
 

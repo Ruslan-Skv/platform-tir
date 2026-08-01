@@ -2,27 +2,45 @@
 
 import type { WaybillTask } from '@/shared/api/admin-waybills';
 import { Modal } from '@/shared/ui/Modal';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DataTable } from '@/shared/ui/admin/DataTable';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
-import { WaybillMobileCallControl } from '../shared/WaybillMobileCallControl';
 import styles from '../shared/Waybills.module.css';
+import type { WaybillStatusFilter } from '../shared/waybills-page.types';
 import {
   STATUS_LABELS,
+  formatMoney,
   formatTimeRange,
   formatUserLabel,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
+import { MyWaybillDriverActions } from './MyWaybillDriverActions';
+import { MyWaybillMobileCards } from './MyWaybillMobileCards';
 import type { MyWaybillPageModel } from './hooks/useMyWaybillPage';
 
 type MyWaybillPageViewProps = {
   model: MyWaybillPageModel;
 };
 
+function statusChipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
 export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
   const {
-    date,
-    setDate,
+    dateFrom,
+    setDateFrom,
+    dateTo,
+    setDateTo,
+    filtered,
     tasks,
     loading,
+    statusFilter,
+    setStatusFilter,
     message,
     failItem,
     setFailItem,
@@ -36,32 +54,173 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
     openCompleteModal,
     handleCompleteConfirm,
     handleFailConfirm,
+    refresh,
   } = model;
 
+  const statusCounts = {
+    ALL: tasks.length,
+    PLANNED: tasks.filter((t) => t.status === 'PLANNED').length,
+    DONE: tasks.filter((t) => t.status === 'DONE').length,
+    FAILED: tasks.filter((t) => t.status === 'FAILED').length,
+  };
+
+  const countTitle =
+    statusFilter === 'ALL'
+      ? `${tasks.length} заданий`
+      : `${filtered.length} из ${tasks.length} заданий`;
+
+  const statusOptions: { value: WaybillStatusFilter; label: string }[] = [
+    { value: 'ALL', label: 'Все' },
+    { value: 'PLANNED', label: 'В плане' },
+    { value: 'DONE', label: 'Выполнено' },
+    { value: 'FAILED', label: 'Не выполнено' },
+  ];
+
+  const iconsDisabled = loading || submitting;
+
+  const columns = [
+    {
+      key: 'date',
+      title: 'Дата',
+      render: (item: WaybillTask) => item.date.slice(0, 10),
+    },
+    {
+      key: 'time',
+      title: 'Время',
+      render: (item: WaybillTask) => formatTimeRange(item.timeFrom, item.timeTo),
+    },
+    {
+      key: 'direction',
+      title: 'Направление',
+      render: (item: WaybillTask) => item.direction || '—',
+    },
+    {
+      key: 'task',
+      title: 'Задание',
+      render: (item: WaybillTask) => <div className={styles.taskCell}>{item.taskText}</div>,
+    },
+    {
+      key: 'customer',
+      title: 'Заказчик',
+      render: (item: WaybillTask) => {
+        const customer = resolveWaybillCustomerFields(item);
+        if (
+          !customer.customerName &&
+          !customer.customerAddress &&
+          customer.customerPhones.length === 0
+        ) {
+          return '—';
+        }
+        const mapsUrl = customer.customerAddress
+          ? `https://yandex.ru/maps/?text=${encodeURIComponent(customer.customerAddress)}`
+          : null;
+        return (
+          <div className={styles.customerCell}>
+            <div>{customer.customerName || '—'}</div>
+            <div>
+              {customer.customerAddress || '—'}
+              {mapsUrl ? (
+                <>
+                  {' '}
+                  <a className={styles.mapLink} href={mapsUrl} target="_blank" rel="noreferrer">
+                    карта
+                  </a>
+                </>
+              ) : null}
+            </div>
+            {customer.customerPhones.length > 0 ? (
+              customer.customerPhones.map((phone) => <div key={phone}>{phone}</div>)
+            ) : (
+              <div>—</div>
+            )}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'delivery',
+      title: 'Доставка',
+      render: (item: WaybillTask) => formatMoney(item.deliveryCost, item.deliveryPayer),
+    },
+    {
+      key: 'movers',
+      title: 'Грузчики',
+      render: (item: WaybillTask) => formatMoney(item.moversCost, item.moversPayer),
+    },
+    {
+      key: 'responsible',
+      title: 'Отв.',
+      render: (item: WaybillTask) => formatUserLabel(item.responsible),
+    },
+    {
+      key: 'status',
+      title: 'Статус',
+      render: (item: WaybillTask) => (
+        <span>
+          <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
+            {STATUS_LABELS[item.status] ?? item.status}
+          </span>
+          {item.completionNote ? (
+            <div className={styles.cardMeta}>{item.completionNote}</div>
+          ) : null}
+        </span>
+      ),
+    },
+    {
+      key: 'actions',
+      title: 'Действия',
+      render: (item: WaybillTask) => (
+        <MyWaybillDriverActions
+          item={item}
+          onComplete={openCompleteModal}
+          onFail={(task) => {
+            setFailNote('');
+            setFailItem(task);
+          }}
+        />
+      ),
+    },
+  ];
+
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdHub.contractsHeaderIconActionsMobile
+          : cdHub.contractsHeaderIconActionsDesktop
+      }
+    >
+      <AdminListRefreshButton
+        disabled={iconsDisabled}
+        busy={loading}
+        title="Обновить маршрут"
+        aria-label={loading ? 'Обновление маршрута' : 'Обновить маршрут'}
+        onClick={() => void refresh()}
+      />
+    </div>
+  );
+
   return (
-    <div className={styles.page}>
-      <div className={styles.header}>
-        <div className={styles.headerLeft}>
-          <h1 className={styles.title}>Мой маршрут</h1>
-          <span className={styles.count}>{tasks.length}</span>
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={cdHub.title}>Мой маршрут</h1>
+              </div>
+              <span className={cdHub.contractsListCount} title={countTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+                <span className={cdHub.contractsListCountMobile}>{filtered.length}</span>
+              </span>
+            </div>
+            {iconActions('mobile')}
+          </div>
         </div>
-        <div className={styles.headerActions}>
-          <label className={styles.filterLabel}>
-            Дата:
-            <input
-              className={styles.dateInput}
-              type="date"
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </label>
+        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          {iconActions('desktop')}
         </div>
       </div>
-
-      <p className={styles.hint}>
-        Ваши задания на выбранный день. После доставки отметьте «Выполнено» или укажите причину,
-        если не удалось.
-      </p>
 
       {message ? (
         <div className={`${styles.message} ${styles[`message${message.type}`]}`}>
@@ -69,26 +228,76 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
         </div>
       ) : null}
 
-      {loading ? <div className={styles.empty}>Загрузка…</div> : null}
-
-      {!loading && tasks.length === 0 ? (
-        <div className={styles.empty}>На этот день заданий нет</div>
-      ) : null}
-
-      <div className={styles.cards}>
-        {tasks.map((item) => (
-          <WaybillCard
-            key={item.id}
-            item={item}
-            submitting={submitting}
-            onComplete={() => openCompleteModal(item)}
-            onFail={() => {
-              setFailNote('');
-              setFailItem(item);
-            }}
-          />
-        ))}
+      <div className={cdHub.contractsListFiltersPanel}>
+        <div className={cdHub.contractsListFiltersStack}>
+          <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус заданий">
+            <span className={cdHub.contractsListChipRowLabel}>Статус</span>
+            {statusOptions.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                disabled={loading}
+                className={statusChipClass(statusFilter === opt.value)}
+                onClick={() => setStatusFilter(opt.value)}
+              >
+                {opt.label} ({statusCounts[opt.value]})
+              </button>
+            ))}
+          </div>
+          <div className={cdHub.contractsListDateFilters} role="group" aria-label="Период маршрута">
+            <label className={cdHub.contractsListDateLabel}>
+              <span className={cdHub.contractsListDateLabelText}>Дата от</span>
+              <input
+                type="date"
+                value={dateFrom}
+                onChange={(e) => setDateFrom(e.target.value)}
+                disabled={loading}
+                className={
+                  dateFrom
+                    ? `${cdHub.contractsListDateInput} ${cdHub.contractsListFilterActive}`
+                    : cdHub.contractsListDateInput
+                }
+                aria-label="Дата от"
+              />
+            </label>
+            <label className={cdHub.contractsListDateLabel}>
+              <span className={cdHub.contractsListDateLabelText}>Дата до</span>
+              <input
+                type="date"
+                value={dateTo}
+                onChange={(e) => setDateTo(e.target.value)}
+                disabled={loading}
+                className={
+                  dateTo
+                    ? `${cdHub.contractsListDateInput} ${cdHub.contractsListFilterActive}`
+                    : cdHub.contractsListDateInput
+                }
+                aria-label="Дата до"
+              />
+            </label>
+          </div>
+        </div>
       </div>
+
+      <MyWaybillMobileCards
+        data={filtered}
+        loading={loading}
+        submitting={submitting}
+        onComplete={openCompleteModal}
+        onFail={(task) => {
+          setFailNote('');
+          setFailItem(task);
+        }}
+      />
+
+      <DataTable
+        containerClassName={styles.directoryTable}
+        data={filtered}
+        columns={columns}
+        keyExtractor={(item) => item.id}
+        loading={loading}
+        emptyMessage="На выбранный период заданий нет"
+      />
 
       <Modal
         isOpen={Boolean(completeItem)}
@@ -103,6 +312,7 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
           </p>
           {completeItem ? (
             <p data-modal-form-hint>
+              {completeItem.date.slice(0, 10)} ·{' '}
               {formatTimeRange(completeItem.timeFrom, completeItem.timeTo)}
               {completeItem.direction ? ` · ${completeItem.direction}` : ''}
               <br />
@@ -171,101 +381,5 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
         </div>
       </Modal>
     </div>
-  );
-}
-
-function WaybillCard({
-  item,
-  submitting,
-  onComplete,
-  onFail,
-}: {
-  item: WaybillTask;
-  submitting: boolean;
-  onComplete: () => void;
-  onFail: () => void;
-}) {
-  const customer = resolveWaybillCustomerFields(item);
-  const mapsUrl = customer.customerAddress
-    ? `https://yandex.ru/maps/?text=${encodeURIComponent(customer.customerAddress)}`
-    : null;
-
-  return (
-    <article className={styles.card}>
-      <div className={styles.cardHeader}>
-        <div>
-          <div className={styles.cardTime}>{formatTimeRange(item.timeFrom, item.timeTo)}</div>
-          <div className={styles.cardMeta}>
-            {item.direction || 'Без направления'}
-            {item.responsible ? ` · отв. ${formatUserLabel(item.responsible)}` : ''}
-          </div>
-        </div>
-        <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-          {STATUS_LABELS[item.status] ?? item.status}
-        </span>
-      </div>
-
-      <div className={styles.cardBody}>
-        <div>
-          <strong>Задание</strong>
-          <div>{item.taskText}</div>
-        </div>
-        {customer.customerName || customer.customerAddress || customer.customerPhones.length > 0 ? (
-          <div>
-            <strong>Заказчик</strong>
-            <dl className={styles.mobileCardRows}>
-              <div className={styles.mobileCardRow}>
-                <dt>ФИО</dt>
-                <dd>{customer.customerName || '—'}</dd>
-              </div>
-              <div className={styles.mobileCardRow}>
-                <dt>Адрес</dt>
-                <dd>{customer.customerAddress || '—'}</dd>
-              </div>
-              <div className={styles.mobileCardRow}>
-                <dt>Телефон</dt>
-                <dd>
-                  {customer.customerPhones.length > 0 ? customer.customerPhones.join(', ') : '—'}
-                </dd>
-              </div>
-            </dl>
-            <WaybillMobileCallControl phones={customer.customerPhones} />
-            {mapsUrl ? (
-              <div className={styles.cardLinks}>
-                <a className={styles.mapLink} href={mapsUrl} target="_blank" rel="noreferrer">
-                  На карте
-                </a>
-              </div>
-            ) : null}
-          </div>
-        ) : null}
-        {item.completionNote ? (
-          <div className={styles.cardMeta}>Комментарий: {item.completionNote}</div>
-        ) : null}
-      </div>
-
-      {item.status === 'PLANNED' ? (
-        <div className={styles.cardActions}>
-          <button
-            data-admin-mutation
-            type="button"
-            className={styles.addButton}
-            disabled={submitting}
-            onClick={onComplete}
-          >
-            Выполнено
-          </button>
-          <button
-            data-admin-mutation
-            type="button"
-            className={styles.failButton}
-            disabled={submitting}
-            onClick={onFail}
-          >
-            Не выполнено
-          </button>
-        </div>
-      ) : null}
-    </article>
   );
 }

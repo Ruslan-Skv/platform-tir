@@ -35,6 +35,7 @@ import { AdminExternalNotifyService } from '../external-notify/admin-external-no
 import { AdminBellDismissedService } from './admin-bell-dismissed.service';
 import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
 import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service';
+import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
@@ -63,6 +64,7 @@ export class AdminNotificationsController {
     private readonly bellDismissed: AdminBellDismissedService,
     private readonly bellTrainingFeed: AdminBellTrainingFeedService,
     private readonly bellWorkDayFeed: AdminBellWorkDayFeedService,
+    private readonly bellWaybillFeed: AdminBellWaybillFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -136,6 +138,14 @@ export class AdminNotificationsController {
   getBellWorkDayFeed(@Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellWorkDayFeed.listRecent(take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/waybills')
+  @ApiOperation({ summary: 'События путевого листа для колокольчика (персонально)' })
+  getBellWaybillFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellWaybillFeed.listForUser(req.user.id, take);
   }
 
   @Get('settings/by-user/:userId')

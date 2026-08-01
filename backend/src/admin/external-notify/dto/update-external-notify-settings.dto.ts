@@ -196,4 +196,31 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   workDayNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Email для уведомлений по путевому листу',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  waybillNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для уведомлений по путевому листу',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  waybillNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для уведомлений по путевому листу',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  waybillNotifyMaxIds?: string[];
 }

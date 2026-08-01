@@ -26,11 +26,13 @@ import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shar
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellTrainingNotifications,
+  getAdminBellWaybillNotifications,
   getAdminBellWorkDayNotifications,
   getAdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellTrainingNotification,
+  AdminBellWaybillNotification,
   AdminBellWorkDayNotification,
   AdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
@@ -75,6 +77,7 @@ import {
   reviewToBellNotificationItem,
   supportToBellNotificationItem,
   trainingToBellNotificationItem,
+  waybillToBellNotificationItem,
   workDayToBellNotificationItem,
 } from './admin-header-notifications.utils';
 
@@ -136,6 +139,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [workDayNotifications, setWorkDayNotifications] = useState<AdminBellWorkDayNotification[]>(
     []
   );
+  const [waybillNotifications, setWaybillNotifications] = useState<AdminBellWaybillNotification[]>(
+    []
+  );
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -148,6 +154,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     leads: number;
     training: number;
     workDays: number;
+    waybills: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -271,6 +278,13 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           ? getAdminBellWorkDayNotifications(20)
           : Promise.resolve([] as AdminBellWorkDayNotification[]);
 
+      const canAccessWaybills =
+        hasAccess('admin.crm.waybills') || hasAccess('admin.crm.waybills.my');
+      const loadWaybills =
+        settings?.notifyOnWaybills !== false && canAccessWaybills
+          ? getAdminBellWaybillNotifications(20)
+          : Promise.resolve([] as AdminBellWaybillNotification[]);
+
       const [
         reviewsResult,
         supportResult,
@@ -278,6 +292,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         directorResult,
         trainingResult,
         workDaysResult,
+        waybillsResult,
       ] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -293,6 +308,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           : Promise.resolve({ data: [] as UnifiedLeadItem[] }),
         loadTraining,
         loadWorkDays,
+        loadWaybills,
       ]);
 
       const newReviews =
@@ -316,6 +332,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       );
       const newTraining = trainingResult.status === 'fulfilled' ? (trainingResult.value ?? []) : [];
       const newWorkDays = workDaysResult.status === 'fulfilled' ? (workDaysResult.value ?? []) : [];
+      const newWaybills = waybillsResult.status === 'fulfilled' ? (waybillsResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -324,6 +341,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         leads: newLeads.length,
         training: newTraining.length,
         workDays: newWorkDays.length,
+        waybills: newWaybills.length,
       };
 
       const totalNew =
@@ -331,9 +349,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         activeSupport.length +
         newLeads.length +
         newTraining.length +
-        newWorkDays.length;
+        newWorkDays.length +
+        newWaybills.length;
       const prevTotal = prev
-        ? prev.reviews + prev.support + prev.leads + prev.training + prev.workDays
+        ? prev.reviews + prev.support + prev.leads + prev.training + prev.workDays + prev.waybills
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -373,6 +392,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...leadsToBellNotificationItems(newLeads),
             ...newTraining.map(trainingToBellNotificationItem),
             ...newWorkDays.map(workDayToBellNotificationItem),
+            ...newWaybills.map(waybillToBellNotificationItem),
           ]
             .filter((item) => isBellTypeEnabled(item.type, settings))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -389,6 +409,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setLeadNotifications(newLeads);
       setTrainingNotifications(newTraining);
       setWorkDayNotifications(newWorkDays);
+      setWaybillNotifications(newWaybills);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -561,6 +582,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...leadsToBellNotificationItems(leadNotifications),
     ...trainingNotifications.map(trainingToBellNotificationItem),
     ...workDayNotifications.map(workDayToBellNotificationItem),
+    ...waybillNotifications.map(waybillToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>

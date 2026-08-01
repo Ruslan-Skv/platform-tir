@@ -27,6 +27,7 @@ export interface AdminNotificationsSettings {
   notifyOnSiteFeedback: boolean;
   notifyOnKnowledgeTraining: boolean;
   notifyOnWorkDays: boolean;
+  notifyOnWaybills: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -213,6 +214,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
+    notifyOnWaybills: data.notifyOnWaybills,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -262,6 +264,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
+    notifyOnWaybills: data.notifyOnWaybills,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -414,6 +417,29 @@ export async function getAdminBellWorkDayNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по учёту рабочего времени');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellWaybillNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'completed' | 'failed';
+  kindLabel: string;
+  waybillTaskId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellWaybillNotifications(
+  limit = 20
+): Promise<AdminBellWaybillNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/waybills?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по путевым листам');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

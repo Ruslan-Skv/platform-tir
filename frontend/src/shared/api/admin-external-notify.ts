@@ -35,6 +35,9 @@ export interface ExternalNotifyChannelsSettings {
   workDayNotifyEmails: string[];
   workDayNotifyTelegramIds: string[];
   workDayNotifyMaxIds: string[];
+  waybillNotifyEmails: string[];
+  waybillNotifyTelegramIds: string[];
+  waybillNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -74,6 +77,9 @@ export async function updateAdminExternalNotifyChannels(
       | 'workDayNotifyEmails'
       | 'workDayNotifyTelegramIds'
       | 'workDayNotifyMaxIds'
+      | 'waybillNotifyEmails'
+      | 'waybillNotifyTelegramIds'
+      | 'waybillNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

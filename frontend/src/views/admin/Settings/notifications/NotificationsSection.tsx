@@ -322,6 +322,7 @@ export function NotificationsSection() {
     notifyOnSiteFeedback: true,
     notifyOnKnowledgeTraining: true,
     notifyOnWorkDays: true,
+    notifyOnWaybills: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -854,6 +855,19 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnWorkDays">
                   Учёт рабочего времени (опоздания, ранний уход, автозакрытие)
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnWaybills"
+                  checked={formSettings.notifyOnWaybills ?? true}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnWaybills: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnWaybills">
+                  Путевой лист (новые задания, правки, выполнение / невыполнение)
                 </label>
               </div>
               {isSuperAdmin ? (

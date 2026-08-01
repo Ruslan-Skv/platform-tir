@@ -20,7 +20,8 @@ export type AdminBellPushEvent =
   | 'knowledge_feedback'
   | 'site_feedback'
   | 'knowledge_training'
-  | 'work_day';
+  | 'work_day'
+  | 'waybill';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -75,6 +76,24 @@ export class AdminBellPushService {
     );
   }
 
+  /** Точечная рассылка конкретным пользователям (с учётом их prefs). */
+  async notifyUsers(userIds: string[], event: AdminBellPushEvent, payload: AdminPushPayload) {
+    if (!this.pushSubscriptions.isConfigured() || userIds.length === 0) return;
+    const uniqueIds = [...new Set(userIds.filter(Boolean))];
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: uniqueIds }, isActive: true },
+      select: { id: true, role: true },
+    });
+    await Promise.allSettled(
+      users.map(async (user) => {
+        const settings = await this.settingsReader.getSettingsForUser(user.id, user.role);
+        if (!settings.desktopNotifications) return;
+        if (!this.isEventEnabled(event, settings, user.role)) return;
+        await this.pushSubscriptions.sendToUser(user.id, payload);
+      }),
+    );
+  }
+
   private isEventEnabled(
     event: AdminBellPushEvent,
     settings: {
@@ -91,6 +110,7 @@ export class AdminBellPushService {
       notifyOnSiteFeedback?: boolean;
       notifyOnKnowledgeTraining?: boolean;
       notifyOnWorkDays?: boolean;
+      notifyOnWaybills?: boolean;
     },
     role: string,
   ) {
@@ -121,6 +141,8 @@ export class AdminBellPushService {
         return settings.notifyOnKnowledgeTraining !== false;
       case 'work_day':
         return settings.notifyOnWorkDays !== false;
+      case 'waybill':
+        return settings.notifyOnWaybills !== false;
       default:
         return false;
     }

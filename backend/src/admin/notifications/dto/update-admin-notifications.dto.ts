@@ -110,6 +110,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnWorkDays?: boolean;
 
+  @ApiPropertyOptional({ description: 'Путевой лист (новые задания, правки, выполнение)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnWaybills?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

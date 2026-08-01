@@ -20,6 +20,7 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
 import { FailWaybillTaskDto } from './dto/fail-waybill-task.dto';
+import { RescheduleWaybillTaskDto } from './dto/reschedule-waybill-task.dto';
 import { UpsertDriverDeliveryAvailabilityDto } from './dto/upsert-driver-delivery-availability.dto';
 import { UpdateWaybillTaskDto } from './dto/update-waybill-task.dto';
 import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
@@ -60,12 +61,6 @@ export class WaybillsController {
     private readonly driverAvailabilityService: DriverDeliveryAvailabilityService,
   ) {}
 
-  private assertSuperAdmin(role: string) {
-    if (role !== 'SUPER_ADMIN') {
-      throw new ForbiddenException('Только для супер-администратора');
-    }
-  }
-
   private assertPlanner(role: string) {
     if (!(PLANNER_ROLES as readonly string[]).includes(role)) {
       throw new ForbiddenException('Недостаточно прав');
@@ -94,7 +89,15 @@ export class WaybillsController {
   }
 
   @Get('my')
-  findMy(@Req() req: RequestWithUser, @Query('date') date?: string) {
+  findMy(
+    @Req() req: RequestWithUser,
+    @Query('date') date?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+  ) {
+    if (dateFrom?.trim() || dateTo?.trim()) {
+      return this.waybillsService.findMyByDateRange(req.user.id, { dateFrom, dateTo });
+    }
     return this.waybillsService.findMyByDate(req.user.id, date);
   }
 
@@ -141,13 +144,13 @@ export class WaybillsController {
     @Param('userId') userId: string,
     @Body() dto: UpsertDriverDeliveryAvailabilityDto,
   ) {
-    this.assertSuperAdmin(req.user.role);
+    this.assertPlanner(req.user.role);
     return this.driverAvailabilityService.upsert(userId, dto);
   }
 
   @Delete('driver-availability/:userId')
   removeDriverAvailability(@Req() req: RequestWithUser, @Param('userId') userId: string) {
-    this.assertSuperAdmin(req.user.role);
+    this.assertPlanner(req.user.role);
     return this.driverAvailabilityService.remove(userId);
   }
 
@@ -157,8 +160,8 @@ export class WaybillsController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: UpdateWaybillTaskDto) {
-    return this.waybillsService.update(id, dto);
+  update(@Param('id') id: string, @Req() req: RequestWithUser, @Body() dto: UpdateWaybillTaskDto) {
+    return this.waybillsService.update(id, dto, req.user.id);
   }
 
   @Delete(':id')
@@ -183,6 +186,16 @@ export class WaybillsController {
   @Post(':id/fail')
   fail(@Param('id') id: string, @Req() req: RequestWithUser, @Body() dto: FailWaybillTaskDto) {
     return this.waybillsService.fail(id, req.user.id, req.user.role, dto);
+  }
+
+  @Post(':id/reschedule')
+  reschedule(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+    @Body() dto: RescheduleWaybillTaskDto,
+  ) {
+    this.assertPlanner(req.user.role);
+    return this.waybillsService.reschedule(id, dto, req.user.id, req.user.role);
   }
 
   @Post(':id/reopen')

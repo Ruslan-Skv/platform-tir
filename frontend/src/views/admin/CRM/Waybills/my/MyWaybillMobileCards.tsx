@@ -9,43 +9,37 @@ import {
   formatMoney,
   formatTimeRange,
   formatUserLabel,
-  isLateEdit,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
-import { WaybillTaskRowActions } from './WaybillTaskRowActions';
+import { MyWaybillDriverActions } from './MyWaybillDriverActions';
 
-type WaybillsListMobileCardsProps = {
+type MyWaybillMobileCardsProps = {
   data: WaybillTask[];
   loading: boolean;
-  currentUserId: string | null;
-  onEdit: (item: WaybillTask) => void;
+  submitting: boolean;
   onComplete: (item: WaybillTask) => void;
   onFail: (item: WaybillTask) => void;
-  onCopy: (item: WaybillTask) => void;
-  onDelete: (item: WaybillTask) => void;
-  onReopen: (item: WaybillTask) => void;
 };
 
-export function WaybillsListMobileCards({
+export function MyWaybillMobileCards({
   data,
   loading,
-  currentUserId,
-  onEdit,
+  submitting,
   onComplete,
   onFail,
-  onCopy,
-  onDelete,
-  onReopen,
-}: WaybillsListMobileCardsProps) {
+}: MyWaybillMobileCardsProps) {
   return (
-    <div className={styles.mobileCards} aria-label="Список заданий путевого листа">
+    <div className={styles.mobileCards} aria-label="Мой маршрут">
       {loading && data.length === 0 ? (
         <p className={styles.mobileLoading}>Загрузка…</p>
       ) : data.length === 0 ? (
-        <p className={styles.mobileEmpty}>На этот день заданий нет</p>
+        <p className={styles.mobileEmpty}>На выбранный период заданий нет</p>
       ) : (
         data.map((item) => {
           const customer = resolveWaybillCustomerFields(item);
+          const mapsUrl = customer.customerAddress
+            ? `https://yandex.ru/maps/?text=${encodeURIComponent(customer.customerAddress)}`
+            : null;
           return (
             <article key={item.id} className={styles.mobileCard}>
               <div className={styles.mobileCardTop}>
@@ -56,7 +50,7 @@ export function WaybillsListMobileCards({
                   </span>
                   <span className={styles.mobileCardMeta}>
                     {formatTimeRange(item.timeFrom, item.timeTo)}
-                    {item.driver ? ` · ${formatUserLabel(item.driver)}` : ''}
+                    {item.responsible ? ` · отв. ${formatUserLabel(item.responsible)}` : ''}
                   </span>
                 </div>
                 <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
@@ -77,7 +71,22 @@ export function WaybillsListMobileCards({
                 </div>
                 <div className={styles.mobileCardRow}>
                   <dt>Адрес</dt>
-                  <dd className={styles.mobileCardTask}>{customer.customerAddress || '—'}</dd>
+                  <dd className={styles.mobileCardTask}>
+                    {customer.customerAddress || '—'}
+                    {mapsUrl ? (
+                      <>
+                        {' '}
+                        <a
+                          className={styles.mapLink}
+                          href={mapsUrl}
+                          target="_blank"
+                          rel="noreferrer"
+                        >
+                          На карте
+                        </a>
+                      </>
+                    ) : null}
+                  </dd>
                 </div>
                 <div className={styles.mobileCardRow}>
                   <dt>Телефон</dt>
@@ -93,18 +102,6 @@ export function WaybillsListMobileCards({
                   <dt>Грузчики</dt>
                   <dd>{formatMoney(item.moversCost, item.moversPayer)}</dd>
                 </div>
-                <div className={styles.mobileCardRow}>
-                  <dt>Отв.</dt>
-                  <dd>{formatUserLabel(item.responsible)}</dd>
-                </div>
-                {isLateEdit(item.date, item.updatedAt, item.createdAt) ? (
-                  <div className={styles.mobileCardRow}>
-                    <dt>Правка</dt>
-                    <dd>
-                      <span className={styles.lateFlagInline}>после 08:00</span>
-                    </dd>
-                  </div>
-                ) : null}
                 {item.completionNote ? (
                   <div className={styles.mobileCardRow}>
                     <dt>Коммент.</dt>
@@ -113,18 +110,11 @@ export function WaybillsListMobileCards({
                 ) : null}
               </dl>
 
-              <div className={styles.mobileCardActions}>
-                <WaybillTaskRowActions
-                  item={item}
-                  currentUserId={currentUserId}
-                  onEdit={onEdit}
-                  onComplete={onComplete}
-                  onFail={onFail}
-                  onCopy={onCopy}
-                  onDelete={onDelete}
-                  onReopen={onReopen}
-                />
-              </div>
+              {item.status === 'PLANNED' && !submitting ? (
+                <div className={styles.mobileCardActions}>
+                  <MyWaybillDriverActions item={item} onComplete={onComplete} onFail={onFail} />
+                </div>
+              ) : null}
             </article>
           );
         })

@@ -8,8 +8,11 @@ import { Prisma, WaybillTaskStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
+import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
 import { FailWaybillTaskDto } from './dto/fail-waybill-task.dto';
+import { RescheduleWaybillTaskDto } from './dto/reschedule-waybill-task.dto';
 import { UpdateWaybillTaskDto } from './dto/update-waybill-task.dto';
+import { WaybillNotifyService } from './waybill-notify.service';
 
 const PLANNER_ROLES = new Set([
   'SUPER_ADMIN',
@@ -54,7 +57,26 @@ const WAYBILL_TRASH_RETENTION_MS = WAYBILL_TRASH_RETENTION_DAYS * 24 * 60 * 60 *
 
 @Injectable()
 export class WaybillsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly driverAvailabilityService: DriverDeliveryAvailabilityService,
+    private readonly waybillNotify: WaybillNotifyService,
+  ) {}
+
+  private async assertDriverAcceptsDeliveriesOnDate(
+    driverUserId: string | null | undefined,
+    dateStr: string | null | undefined,
+  ) {
+    if (!driverUserId?.trim() || !dateStr?.trim()) return;
+    const statuses = await this.driverAvailabilityService.resolveAll(dateStr.trim());
+    const status = statuses.find((row) => row.userId === driverUserId);
+    if (!status?.hasScheme || !status.isActive) return;
+    if (status.kind === 'OFF' || status.kind === 'VACATION' || status.kind === 'SICK') {
+      throw new BadRequestException(
+        `Нельзя назначить задание: у водителя «${status.label}» на ${dateStr.trim()}`,
+      );
+    }
+  }
 
   private parseDateOnly(dateStr: string): Date {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
@@ -192,13 +214,15 @@ export class WaybillsService {
     };
   }
 
-  create(dto: CreateWaybillTaskDto, createdById: string) {
-    return this.buildCreateData(dto, createdById).then((data) =>
-      this.prisma.waybillTask.create({
-        data,
-        include: TASK_INCLUDE,
-      }),
-    );
+  async create(dto: CreateWaybillTaskDto, createdById: string) {
+    await this.assertDriverAcceptsDeliveriesOnDate(dto.driverUserId, dto.date);
+    const data = await this.buildCreateData(dto, createdById);
+    const task = await this.prisma.waybillTask.create({
+      data,
+      include: TASK_INCLUDE,
+    });
+    this.waybillNotify.onCreated(task, createdById);
+    return task;
   }
 
   findByDate(dateStr: string) {
@@ -225,11 +249,26 @@ export class WaybillsService {
   }
 
   findMyByDate(userId: string, dateStr?: string) {
-    const date = this.parseDateOnly(dateStr?.trim() || this.todayDateOnly());
+    const date = dateStr?.trim() || this.todayDateOnly();
+    return this.findMyByDateRange(userId, { dateFrom: date, dateTo: date });
+  }
+
+  findMyByDateRange(userId: string, params: { dateFrom?: string; dateTo?: string }) {
+    const fromStr = params.dateFrom?.trim();
+    const toStr = params.dateTo?.trim();
+    const dateFilter: Prisma.DateTimeFilter = {};
+    if (fromStr) dateFilter.gte = this.parseDateOnly(fromStr);
+    if (toStr) dateFilter.lte = this.parseDateOnly(toStr);
+    if (!fromStr && !toStr) {
+      const today = this.parseDateOnly(this.todayDateOnly());
+      dateFilter.gte = today;
+      dateFilter.lte = today;
+    }
+
     return this.prisma.waybillTask.findMany({
-      where: { date, driverUserId: userId, deletedAt: null },
+      where: { date: dateFilter, driverUserId: userId, deletedAt: null },
       include: TASK_INCLUDE,
-      orderBy: [{ timeFrom: 'asc' }, { createdAt: 'asc' }],
+      orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }, { createdAt: 'asc' }],
     });
   }
 
@@ -244,8 +283,12 @@ export class WaybillsService {
     return task;
   }
 
-  async update(id: string, dto: UpdateWaybillTaskDto) {
-    await this.findOne(id);
+  async update(id: string, dto: UpdateWaybillTaskDto, actorUserId?: string) {
+    const existing = await this.findOne(id);
+    const nextDate = dto.date !== undefined ? dto.date : existing.date.toISOString().slice(0, 10);
+    const nextDriverId = dto.driverUserId !== undefined ? dto.driverUserId : existing.driverUserId;
+    await this.assertDriverAcceptsDeliveriesOnDate(nextDriverId, nextDate);
+
     const data: Prisma.WaybillTaskUpdateInput = {};
 
     if (dto.date !== undefined) {
@@ -337,11 +380,15 @@ export class WaybillsService {
       }
     }
 
-    return this.prisma.waybillTask.update({
+    const updated = await this.prisma.waybillTask.update({
       where: { id },
       data,
       include: TASK_INCLUDE,
     });
+    if (actorUserId) {
+      this.waybillNotify.onUpdated(updated, actorUserId);
+    }
+    return updated;
   }
 
   async remove(id: string, userId: string) {
@@ -445,7 +492,7 @@ export class WaybillsService {
   async complete(id: string, userId: string, role: string, dto: CompleteWaybillTaskDto) {
     const task = await this.findOne(id);
     this.assertCanComplete(task, userId, role);
-    return this.prisma.waybillTask.update({
+    const updated = await this.prisma.waybillTask.update({
       where: { id },
       data: {
         status: WaybillTaskStatus.DONE,
@@ -455,12 +502,14 @@ export class WaybillsService {
       },
       include: TASK_INCLUDE,
     });
+    this.waybillNotify.onCompleted(updated, userId);
+    return updated;
   }
 
   async fail(id: string, userId: string, role: string, dto: FailWaybillTaskDto) {
     const task = await this.findOne(id);
     this.assertCanComplete(task, userId, role);
-    return this.prisma.waybillTask.update({
+    const updated = await this.prisma.waybillTask.update({
       where: { id },
       data: {
         status: WaybillTaskStatus.FAILED,
@@ -470,6 +519,61 @@ export class WaybillsService {
       },
       include: TASK_INCLUDE,
     });
+    this.waybillNotify.onFailed(updated, userId);
+    return updated;
+  }
+
+  /**
+   * Копия задания на новую дату/время. Оригинал не меняется —
+   * статус «Не выполнено» пользователь ставит вручную при необходимости.
+   */
+  async reschedule(id: string, dto: RescheduleWaybillTaskDto, actorUserId: string, role: string) {
+    if (!this.isPlanner(role)) {
+      throw new ForbiddenException('Переносить задание может только планировщик');
+    }
+    const source = await this.findOne(id);
+    if (source.status !== WaybillTaskStatus.PLANNED) {
+      throw new BadRequestException('Скопировать можно только задание со статусом «В плане»');
+    }
+    if (source.deletedAt) {
+      throw new BadRequestException('Нельзя копировать задание из корзины');
+    }
+
+    const newDate = dto.date.trim();
+    const timeFrom =
+      dto.timeFrom === undefined ? source.timeFrom : (this.emptyToNull(dto.timeFrom) ?? null);
+    const timeTo =
+      dto.timeTo === undefined ? source.timeTo : (this.emptyToNull(dto.timeTo) ?? null);
+
+    await this.assertDriverAcceptsDeliveriesOnDate(source.driverUserId, newDate);
+
+    const copy = await this.prisma.waybillTask.create({
+      data: {
+        date: this.parseDateOnly(newDate),
+        timeFrom,
+        timeTo,
+        direction: source.direction,
+        taskText: source.taskText,
+        customerInfoText: source.customerInfoText,
+        customerName: source.customerName,
+        customerAddress: source.customerAddress,
+        customerPhone: source.customerPhone,
+        customerPhones: source.customerPhones,
+        contractId: source.contractId,
+        deliveryCost: source.deliveryCost,
+        deliveryPayer: source.deliveryPayer,
+        moversCost: source.moversCost,
+        moversPayer: source.moversPayer,
+        responsibleUserId: source.responsibleUserId,
+        driverUserId: source.driverUserId,
+        status: WaybillTaskStatus.PLANNED,
+        createdById: actorUserId,
+      },
+      include: TASK_INCLUDE,
+    });
+
+    this.waybillNotify.onCreated(copy, actorUserId);
+    return { copy };
   }
 
   async reopen(id: string, role: string) {

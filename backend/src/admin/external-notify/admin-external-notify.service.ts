@@ -12,7 +12,8 @@ export type ExternalNotifyEvent =
   | 'review'
   | 'comment'
   | 'knowledge_training'
-  | 'work_day';
+  | 'work_day'
+  | 'waybill';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -102,6 +103,15 @@ export class AdminExternalNotifyService {
     if (dto.workDayNotifyMaxIds !== undefined) {
       data.workDayNotifyMaxIds = normalizeStringArray(dto.workDayNotifyMaxIds);
     }
+    if (dto.waybillNotifyEmails !== undefined) {
+      data.waybillNotifyEmails = normalizeStringArray(dto.waybillNotifyEmails);
+    }
+    if (dto.waybillNotifyTelegramIds !== undefined) {
+      data.waybillNotifyTelegramIds = normalizeStringArray(dto.waybillNotifyTelegramIds);
+    }
+    if (dto.waybillNotifyMaxIds !== undefined) {
+      data.waybillNotifyMaxIds = normalizeStringArray(dto.waybillNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -161,6 +171,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.workDayNotifyTelegramIds),
           maxIds: parseStringArray(block.workDayNotifyMaxIds),
         };
+      case 'waybill':
+        return {
+          emails: parseStringArray(block.waybillNotifyEmails),
+          telegramIds: parseStringArray(block.waybillNotifyTelegramIds),
+          maxIds: parseStringArray(block.waybillNotifyMaxIds),
+        };
     }
   }
 
@@ -197,6 +213,9 @@ export class AdminExternalNotifyService {
     workDayNotifyEmails: Prisma.JsonValue | null;
     workDayNotifyTelegramIds: Prisma.JsonValue | null;
     workDayNotifyMaxIds: Prisma.JsonValue | null;
+    waybillNotifyEmails: Prisma.JsonValue | null;
+    waybillNotifyTelegramIds: Prisma.JsonValue | null;
+    waybillNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -228,6 +247,9 @@ export class AdminExternalNotifyService {
       workDayNotifyEmails: parseStringArray(block.workDayNotifyEmails),
       workDayNotifyTelegramIds: parseStringArray(block.workDayNotifyTelegramIds),
       workDayNotifyMaxIds: parseStringArray(block.workDayNotifyMaxIds),
+      waybillNotifyEmails: parseStringArray(block.waybillNotifyEmails),
+      waybillNotifyTelegramIds: parseStringArray(block.waybillNotifyTelegramIds),
+      waybillNotifyMaxIds: parseStringArray(block.waybillNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

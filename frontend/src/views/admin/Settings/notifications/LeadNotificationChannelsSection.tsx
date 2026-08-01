@@ -61,7 +61,8 @@ type ChannelKey =
   | 'knowledgeTraining'
   | 'knowledgeFeedback'
   | 'siteFeedback'
-  | 'workDays';
+  | 'workDays'
+  | 'waybills';
 
 type TabId = 'forms' | 'quizzes' | 'other';
 
@@ -89,6 +90,7 @@ const INITIAL: ChannelsState = {
   knowledgeFeedback: { ...EMPTY },
   siteFeedback: { ...EMPTY },
   workDays: { ...EMPTY },
+  waybills: { ...EMPTY },
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
@@ -188,6 +190,12 @@ const EVENTS_BY_TAB: Record<
         'Опоздания, ранний уход, автозакрытие рабочего дня и закрытие с указанием времени ухода.',
     },
     {
+      key: 'waybills',
+      label: 'Путевой лист',
+      title: 'Путевой лист',
+      description: 'Новые задания, правки, выполнение и невыполнение по путевым листам.',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -219,6 +227,7 @@ function pickExternal(
     | 'knowledgeFeedback'
     | 'siteFeedback'
     | 'workDays'
+    | 'waybills'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -257,6 +266,12 @@ function pickExternal(
         notifyTelegramIds: settings.workDayNotifyTelegramIds,
         notifyMaxIds: settings.workDayNotifyMaxIds,
       };
+    case 'waybills':
+      return {
+        notifyEmails: settings.waybillNotifyEmails,
+        notifyTelegramIds: settings.waybillNotifyTelegramIds,
+        notifyMaxIds: settings.waybillNotifyMaxIds,
+      };
     case 'knowledgeFeedback':
       return {
         notifyEmails: settings.knowledgeFeedbackNotifyEmails,
@@ -292,6 +307,9 @@ function buildExternalPatch(channels: ChannelsState) {
     workDayNotifyEmails: channels.workDays.notifyEmails,
     workDayNotifyTelegramIds: channels.workDays.notifyTelegramIds,
     workDayNotifyMaxIds: channels.workDays.notifyMaxIds,
+    waybillNotifyEmails: channels.waybills.notifyEmails,
+    waybillNotifyTelegramIds: channels.waybills.notifyTelegramIds,
+    waybillNotifyMaxIds: channels.waybills.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -379,6 +397,7 @@ export function LeadNotificationChannelsSection() {
         knowledgeFeedback: pickExternal(external, 'knowledgeFeedback'),
         siteFeedback: pickExternal(external, 'siteFeedback'),
         workDays: pickExternal(external, 'workDays'),
+        waybills: pickExternal(external, 'waybills'),
       });
     } catch (err) {
       console.error('Failed to fetch notification channels:', err);

@@ -13,10 +13,13 @@ import {
   failWaybillTask,
   getWaybillTasks,
   getWaybillTrashCount,
+  listDriverDeliveryAvailability,
   reopenWaybillTask,
+  rescheduleWaybillTask,
   updateWaybillTask,
 } from '@/shared/api/admin-waybills';
 
+import { getBlockedDeliveryDayMessage } from '../../shared/driver-availability.utils';
 import type {
   WaybillFormValues,
   WaybillStatusFilter,
@@ -30,6 +33,13 @@ import {
   weekAheadIsoDate,
 } from '../../shared/waybills-page.utils';
 
+function addDaysIso(iso: string, days: number): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  if (!m) return iso;
+  const d = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
 export function useWaybillsPage() {
   const { user } = useAuth();
   const [dateFrom, setDateFrom] = useState(todayIsoDate);
@@ -47,6 +57,11 @@ export function useWaybillsPage() {
   const [failNote, setFailNote] = useState('');
   const [completeItem, setCompleteItem] = useState<WaybillTask | null>(null);
   const [completeNote, setCompleteNote] = useState('');
+  const [rescheduleItem, setRescheduleItem] = useState<WaybillTask | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleTimeFrom, setRescheduleTimeFrom] = useState('');
+  const [rescheduleTimeTo, setRescheduleTimeTo] = useState('');
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [trashCount, setTrashCount] = useState(0);
 
@@ -208,11 +223,27 @@ export function useWaybillsPage() {
     setContractHits([]);
   }, []);
 
+  const assertDriverDateAllowed = useCallback(async (values: WaybillFormValues) => {
+    if (!values.driverUserId.trim() || !values.date.trim()) return null;
+    try {
+      const items = await listDriverDeliveryAvailability();
+      const scheme = items.find((i) => i.user.id === values.driverUserId)?.scheme ?? null;
+      return getBlockedDeliveryDayMessage({ scheme, date: values.date });
+    } catch {
+      return null;
+    }
+  }, []);
+
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!formValues.taskText.trim()) {
         setFormError('Укажите задание водителю');
+        return;
+      }
+      const blocked = await assertDriverDateAllowed(formValues);
+      if (blocked) {
+        setFormError(blocked);
         return;
       }
       setSubmitting(true);
@@ -228,7 +259,7 @@ export function useWaybillsPage() {
         setSubmitting(false);
       }
     },
-    [closeCreateModal, formValues, loadTasks, toInput]
+    [assertDriverDateAllowed, closeCreateModal, formValues, loadTasks, toInput]
   );
 
   const handleEdit = useCallback(
@@ -237,6 +268,11 @@ export function useWaybillsPage() {
       if (!editItem) return;
       if (!formValues.taskText.trim()) {
         setFormError('Укажите задание водителю');
+        return;
+      }
+      const blocked = await assertDriverDateAllowed(formValues);
+      if (blocked) {
+        setFormError(blocked);
         return;
       }
       setSubmitting(true);
@@ -252,7 +288,7 @@ export function useWaybillsPage() {
         setSubmitting(false);
       }
     },
-    [closeEditModal, editItem, formValues, loadTasks, toInput]
+    [assertDriverDateAllowed, closeEditModal, editItem, formValues, loadTasks, toInput]
   );
 
   const handleDelete = useCallback(async () => {
@@ -321,6 +357,63 @@ export function useWaybillsPage() {
     }
   }, [failItem, failNote, loadTasks]);
 
+  const openRescheduleModal = useCallback((item: WaybillTask) => {
+    const sourceDate = item.date.slice(0, 10);
+    setRescheduleItem(item);
+    setRescheduleDate(addDaysIso(sourceDate, 1));
+    setRescheduleTimeFrom(item.timeFrom ?? '');
+    setRescheduleTimeTo(item.timeTo ?? '');
+    setRescheduleError(null);
+  }, []);
+
+  const closeRescheduleModal = useCallback(() => {
+    setRescheduleItem(null);
+    setRescheduleError(null);
+  }, []);
+
+  const handleRescheduleConfirm = useCallback(async () => {
+    if (!rescheduleItem) return;
+    if (!rescheduleDate.trim()) {
+      setRescheduleError('Укажите новую дату');
+      return;
+    }
+    setSubmitting(true);
+    setRescheduleError(null);
+    try {
+      await rescheduleWaybillTask(rescheduleItem.id, {
+        date: rescheduleDate,
+        timeFrom: rescheduleTimeFrom.trim() || null,
+        timeTo: rescheduleTimeTo.trim() || null,
+      });
+      setMessage({
+        type: 'success',
+        text: 'Задание скопировано на новую дату. Оригинал можно отметить «Не выполнено» вручную.',
+      });
+      closeRescheduleModal();
+      const nextFrom = rescheduleDate < dateFrom ? rescheduleDate : dateFrom;
+      const nextTo = rescheduleDate > dateTo ? rescheduleDate : dateTo;
+      if (nextFrom !== dateFrom) setDateFrom(nextFrom);
+      if (nextTo !== dateTo) setDateTo(nextTo);
+      if (nextFrom === dateFrom && nextTo === dateTo) {
+        await loadTasks();
+      }
+      // иначе loadTasks сработает из useEffect по смене dateFrom/dateTo
+    } catch (err) {
+      setRescheduleError(err instanceof Error ? err.message : 'Не удалось скопировать задание');
+    } finally {
+      setSubmitting(false);
+    }
+  }, [
+    closeRescheduleModal,
+    dateFrom,
+    dateTo,
+    loadTasks,
+    rescheduleDate,
+    rescheduleItem,
+    rescheduleTimeFrom,
+    rescheduleTimeTo,
+  ]);
+
   const handleReopen = useCallback(
     async (item: WaybillTask) => {
       try {
@@ -379,6 +472,17 @@ export function useWaybillsPage() {
     handleCompleteConfirm,
     handleFailConfirm,
     handleReopen,
+    openRescheduleModal,
+    closeRescheduleModal,
+    handleRescheduleConfirm,
+    rescheduleItem,
+    rescheduleDate,
+    setRescheduleDate,
+    rescheduleTimeFrom,
+    setRescheduleTimeFrom,
+    rescheduleTimeTo,
+    setRescheduleTimeTo,
+    rescheduleError,
     searchContracts,
     applyContract,
     refresh: loadTasks,
@@ -388,6 +492,20 @@ export function useWaybillsPage() {
     refreshTrashCount,
     currentUserId: user?.id ?? null,
     isSuperAdmin: user?.role === 'SUPER_ADMIN',
+    canManageWaybillSettings: Boolean(
+      user?.role &&
+      [
+        'SUPER_ADMIN',
+        'ADMIN',
+        'MODERATOR',
+        'SUPPORT',
+        'MANAGER',
+        'TECHNOLOGIST',
+        'BRIGADIER',
+        'LEAD_SPECIALIST_FURNITURE',
+        'LEAD_SPECIALIST_WINDOWS_DOORS',
+      ].includes(user.role)
+    ),
   };
 }
 

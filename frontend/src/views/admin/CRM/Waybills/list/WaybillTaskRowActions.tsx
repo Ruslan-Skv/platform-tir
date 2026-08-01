@@ -2,7 +2,7 @@
 
 import type { WaybillTask } from '@/shared/api/admin-waybills';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
-import { DeleteIcon, EditIcon, FailIcon, PublishIcon } from '@/shared/ui/icons';
+import { CopyIcon, DeleteIcon, EditIcon, FailIcon, PublishIcon } from '@/shared/ui/icons';
 
 import styles from '../shared/Waybills.module.css';
 
@@ -12,6 +12,7 @@ type WaybillTaskRowActionsProps = {
   onEdit: (item: WaybillTask) => void;
   onComplete: (item: WaybillTask) => void;
   onFail: (item: WaybillTask) => void;
+  onCopy: (item: WaybillTask) => void;
   onDelete: (item: WaybillTask) => void;
   onReopen: (item: WaybillTask) => void;
 };
@@ -22,6 +23,7 @@ export function WaybillTaskRowActions({
   onEdit,
   onComplete,
   onFail,
+  onCopy,
   onDelete,
   onReopen,
 }: WaybillTaskRowActionsProps) {
@@ -37,6 +39,14 @@ export function WaybillTaskRowActions({
       </AdminTableIconButton>
       {item.status === 'PLANNED' ? (
         <>
+          <AdminTableIconButton
+            data-admin-mutation
+            aria-label="Копировать / перенести"
+            title="Копировать на другой день"
+            onClick={() => onCopy(item)}
+          >
+            <CopyIcon />
+          </AdminTableIconButton>
           <AdminTableIconButton
             data-admin-mutation
             aria-label="Выполнено"

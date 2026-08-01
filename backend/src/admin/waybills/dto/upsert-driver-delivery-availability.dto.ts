@@ -31,6 +31,26 @@ export class DriverDeliveryCycleDayDto {
   availableTo?: string | null;
 }
 
+export class DriverDeliveryAbsenceBlockDto {
+  @ApiProperty({ enum: ['VACATION', 'SICK'] })
+  @IsIn(['VACATION', 'SICK'])
+  kind: 'VACATION' | 'SICK';
+
+  @ApiProperty({ example: '2026-08-01' })
+  @IsDateString()
+  dateFrom: string;
+
+  @ApiProperty({ example: '2026-08-14' })
+  @IsDateString()
+  dateTo: string;
+
+  @ApiPropertyOptional()
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  note?: string | null;
+}
+
 export class UpsertDriverDeliveryAvailabilityDto {
   @ApiPropertyOptional({ default: true })
   @IsOptional()
@@ -47,6 +67,13 @@ export class UpsertDriverDeliveryAvailabilityDto {
   @ValidateNested({ each: true })
   @Type(() => DriverDeliveryCycleDayDto)
   cycleDays: DriverDeliveryCycleDayDto[];
+
+  @ApiPropertyOptional({ type: [DriverDeliveryAbsenceBlockDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DriverDeliveryAbsenceBlockDto)
+  absenceBlocks?: DriverDeliveryAbsenceBlockDto[];
 
   @ApiPropertyOptional()
   @IsOptional()

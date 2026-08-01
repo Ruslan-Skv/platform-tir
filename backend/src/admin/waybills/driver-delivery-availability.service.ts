@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import {
+  DriverDeliveryAbsenceBlockDto,
   DriverDeliveryCycleDayDto,
   UpsertDriverDeliveryAvailabilityDto,
 } from './dto/upsert-driver-delivery-availability.dto';
@@ -12,12 +13,19 @@ export type DriverDeliveryCycleDay = {
   availableTo?: string | null;
 };
 
+export type DriverDeliveryAbsenceBlock = {
+  kind: 'VACATION' | 'SICK';
+  dateFrom: string;
+  dateTo: string;
+  note?: string | null;
+};
+
 export type DriverAvailabilityStatus = {
   userId: string;
   hasScheme: boolean;
   isActive: boolean;
   available: boolean;
-  kind: 'ON' | 'OFF' | 'NONE';
+  kind: 'ON' | 'OFF' | 'VACATION' | 'SICK' | 'NONE';
   availableFrom: string | null;
   availableTo: string | null;
   label: string;
@@ -32,9 +40,24 @@ const USER_SELECT = {
   role: true,
 } as const;
 
+/** Роли, которых можно назначать водителем в задании и для которых настраивается схема. */
+const ASSIGNABLE_DRIVER_ROLES = ['DRIVER', 'ADMIN', 'MANAGER'] as const;
+
+type ResolvedDay = Omit<DriverAvailabilityStatus, 'userId' | 'hasScheme' | 'isActive'>;
+
 @Injectable()
 export class DriverDeliveryAvailabilityService {
   constructor(private readonly prisma: PrismaService) {}
+
+  private assignableDriversWhere() {
+    return {
+      OR: [
+        { role: { in: [...ASSIGNABLE_DRIVER_ROLES] } },
+        { waybillTasksAsDriver: { some: {} } },
+        { driverDeliveryAvailability: { isNot: null } },
+      ],
+    };
+  }
 
   private parseDateOnly(dateStr: string): Date {
     const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
@@ -68,6 +91,26 @@ export class DriverDeliveryAvailabilityService {
     });
   }
 
+  private normalizeAbsenceBlocks(
+    blocks: DriverDeliveryAbsenceBlockDto[] | undefined,
+  ): DriverDeliveryAbsenceBlock[] {
+    if (!blocks?.length) return [];
+    return blocks.map((block, index) => {
+      const dateFrom = this.toIsoDate(this.parseDateOnly(block.dateFrom));
+      const dateTo = this.toIsoDate(this.parseDateOnly(block.dateTo));
+      if (dateFrom > dateTo) {
+        throw new BadRequestException(`absenceBlocks[${index}]: dateFrom must be <= dateTo`);
+      }
+      const note = block.note?.trim() ? block.note.trim() : null;
+      return {
+        kind: block.kind,
+        dateFrom,
+        dateTo,
+        note,
+      };
+    });
+  }
+
   private parseCycleDays(raw: Prisma.JsonValue): DriverDeliveryCycleDay[] {
     if (!Array.isArray(raw) || raw.length === 0) return [];
     return raw.map((item) => {
@@ -84,12 +127,91 @@ export class DriverDeliveryAvailabilityService {
     });
   }
 
+  private parseAbsenceBlocks(
+    raw: Prisma.JsonValue | undefined | null,
+  ): DriverDeliveryAbsenceBlock[] {
+    if (!Array.isArray(raw) || raw.length === 0) return [];
+    const out: DriverDeliveryAbsenceBlock[] = [];
+    for (const item of raw) {
+      const row = item as Record<string, unknown>;
+      if (row.kind !== 'VACATION' && row.kind !== 'SICK') continue;
+      if (typeof row.dateFrom !== 'string' || typeof row.dateTo !== 'string') continue;
+      try {
+        const dateFrom = this.toIsoDate(this.parseDateOnly(row.dateFrom));
+        const dateTo = this.toIsoDate(this.parseDateOnly(row.dateTo));
+        if (dateFrom > dateTo) continue;
+        out.push({
+          kind: row.kind,
+          dateFrom,
+          dateTo,
+          note: typeof row.note === 'string' && row.note.trim() ? row.note.trim() : null,
+        });
+      } catch {
+        // skip invalid rows
+      }
+    }
+    return out;
+  }
+
+  private findAbsence(
+    blocks: DriverDeliveryAbsenceBlock[],
+    date: Date,
+  ): DriverDeliveryAbsenceBlock | null {
+    const iso = this.toIsoDate(date);
+    for (const block of blocks) {
+      if (iso >= block.dateFrom && iso <= block.dateTo) {
+        return block;
+      }
+    }
+    return null;
+  }
+
+  private absenceLabel(block: DriverDeliveryAbsenceBlock): string {
+    const base = block.kind === 'VACATION' ? 'Отпуск' : 'Больничный';
+    return block.note ? `${base}: ${block.note}` : base;
+  }
+
+  private mapScheme(scheme: {
+    id: string;
+    userId: string;
+    isActive: boolean;
+    cycleAnchorDate: Date;
+    cycleDays: Prisma.JsonValue;
+    absenceBlocks?: Prisma.JsonValue | null;
+    notes: string | null;
+    updatedAt: Date;
+  }) {
+    return {
+      id: scheme.id,
+      userId: scheme.userId,
+      isActive: scheme.isActive,
+      cycleAnchorDate: this.toIsoDate(scheme.cycleAnchorDate),
+      cycleDays: this.parseCycleDays(scheme.cycleDays),
+      absenceBlocks: this.parseAbsenceBlocks(scheme.absenceBlocks),
+      notes: scheme.notes,
+      updatedAt: scheme.updatedAt.toISOString(),
+    };
+  }
+
   resolveDay(
     cycleAnchorDate: Date,
     cycleDays: DriverDeliveryCycleDay[],
     date: Date,
     timeFrom?: string | null,
-  ): Omit<DriverAvailabilityStatus, 'userId' | 'hasScheme' | 'isActive'> {
+    absenceBlocks: DriverDeliveryAbsenceBlock[] = [],
+  ): ResolvedDay {
+    const absence = this.findAbsence(absenceBlocks, date);
+    if (absence) {
+      return {
+        available: false,
+        kind: absence.kind,
+        availableFrom: null,
+        availableTo: null,
+        label: this.absenceLabel(absence),
+        outsideWindow: false,
+      };
+    }
+
     if (cycleDays.length === 0) {
       return {
         available: true,
@@ -133,9 +255,7 @@ export class DriverDeliveryAvailabilityService {
   async list() {
     const [drivers, schemes] = await Promise.all([
       this.prisma.user.findMany({
-        where: {
-          OR: [{ role: 'DRIVER' }, { waybillTasksAsDriver: { some: {} } }],
-        },
+        where: this.assignableDriversWhere(),
         select: USER_SELECT,
         orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }, { email: 'asc' }],
       }),
@@ -150,17 +270,7 @@ export class DriverDeliveryAvailabilityService {
       const scheme = byUserId.get(driver.id);
       return {
         user: driver,
-        scheme: scheme
-          ? {
-              id: scheme.id,
-              userId: scheme.userId,
-              isActive: scheme.isActive,
-              cycleAnchorDate: this.toIsoDate(scheme.cycleAnchorDate),
-              cycleDays: this.parseCycleDays(scheme.cycleDays),
-              notes: scheme.notes,
-              updatedAt: scheme.updatedAt.toISOString(),
-            }
-          : null,
+        scheme: scheme ? this.mapScheme(scheme) : null,
       };
     });
   }
@@ -174,6 +284,7 @@ export class DriverDeliveryAvailabilityService {
       throw new NotFoundException('Пользователь не найден');
     }
     const cycleDays = this.normalizeCycleDays(dto.cycleDays);
+    const absenceBlocks = this.normalizeAbsenceBlocks(dto.absenceBlocks);
     const cycleAnchorDate = this.parseDateOnly(dto.cycleAnchorDate);
     const notes = dto.notes === undefined ? undefined : dto.notes?.trim() ? dto.notes.trim() : null;
 
@@ -181,6 +292,7 @@ export class DriverDeliveryAvailabilityService {
       isActive: dto.isActive ?? true,
       cycleAnchorDate,
       cycleDays: cycleDays as unknown as Prisma.InputJsonValue,
+      absenceBlocks: absenceBlocks as unknown as Prisma.InputJsonValue,
       ...(notes !== undefined ? { notes } : {}),
     };
 
@@ -192,13 +304,7 @@ export class DriverDeliveryAvailabilityService {
     });
 
     return {
-      id: row.id,
-      userId: row.userId,
-      isActive: row.isActive,
-      cycleAnchorDate: this.toIsoDate(row.cycleAnchorDate),
-      cycleDays: this.parseCycleDays(row.cycleDays),
-      notes: row.notes,
-      updatedAt: row.updatedAt.toISOString(),
+      ...this.mapScheme(row),
       user: row.user,
     };
   }
@@ -218,9 +324,7 @@ export class DriverDeliveryAvailabilityService {
     const date = this.parseDateOnly(dateStr);
     const [drivers, schemes] = await Promise.all([
       this.prisma.user.findMany({
-        where: {
-          OR: [{ role: 'DRIVER' }, { waybillTasksAsDriver: { some: {} } }],
-        },
+        where: this.assignableDriversWhere(),
         select: { id: true },
       }),
       this.prisma.driverDeliveryAvailability.findMany(),
@@ -247,6 +351,7 @@ export class DriverDeliveryAvailabilityService {
         this.parseCycleDays(scheme.cycleDays),
         date,
         timeFrom,
+        this.parseAbsenceBlocks(scheme.absenceBlocks),
       );
       return {
         userId: d.id,
@@ -265,16 +370,15 @@ export class DriverDeliveryAvailabilityService {
       throw new NotFoundException('Схема не найдена');
     }
     const cycleDays = this.parseCycleDays(scheme.cycleDays);
+    const absenceBlocks = this.parseAbsenceBlocks(scheme.absenceBlocks);
     const from = this.parseDateOnly(fromDateStr);
-    const out: Array<
-      { date: string } & ReturnType<DriverDeliveryAvailabilityService['resolveDay']>
-    > = [];
+    const out: Array<{ date: string } & ResolvedDay> = [];
     for (let i = 0; i < days; i++) {
       const d = new Date(from);
       d.setUTCDate(d.getUTCDate() + i);
       out.push({
         date: this.toIsoDate(d),
-        ...this.resolveDay(scheme.cycleAnchorDate, cycleDays, d),
+        ...this.resolveDay(scheme.cycleAnchorDate, cycleDays, d, null, absenceBlocks),
       });
     }
     return {

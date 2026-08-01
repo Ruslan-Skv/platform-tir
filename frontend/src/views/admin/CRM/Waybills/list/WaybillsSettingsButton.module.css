@@ -9,31 +9,36 @@
   gap: var(--admin-space-sm);
 }
 
+.modalPanel :global([class*='content']) {
+  padding-top: var(--admin-space-sm);
+  padding-bottom: var(--admin-space-md);
+}
+
 .shell {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-sm);
 }
 
 .hint {
   margin: 0;
-  font-size: var(--admin-font-size-sm);
-  line-height: 1.4;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.35;
   color: var(--admin-text-muted);
 }
 
 .layout {
   display: grid;
-  grid-template-columns: minmax(10rem, 14rem) minmax(0, 1fr);
-  gap: var(--admin-space-md);
-  min-height: 280px;
+  grid-template-columns: minmax(8.5rem, 11rem) minmax(0, 1fr);
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  align-items: start;
 }
 
 .driverList {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  max-height: 420px;
+  gap: 3px;
+  max-height: min(52vh, 360px);
   overflow: auto;
   padding-right: 2px;
 }
@@ -42,12 +47,12 @@
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 2px;
+  gap: 0;
   width: 100%;
   margin: 0;
-  padding: var(--admin-space-sm) var(--admin-space-md);
+  padding: 5px 8px;
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface);
   color: inherit;
   font: inherit;
@@ -65,29 +70,86 @@
 }
 
 .driverName {
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs, 0.75rem);
   font-weight: 600;
   color: var(--admin-text-primary, var(--admin-text-secondary));
+  line-height: 1.25;
 }
 
 .driverMeta {
-  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-size: 11px;
   color: var(--admin-text-muted);
+  line-height: 1.2;
 }
 
 .editor {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-md);
+  gap: var(--admin-space-sm);
   min-width: 0;
+}
+
+.editorDriverTitle {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 650;
+  color: var(--admin-text-primary, var(--admin-text-secondary));
+  line-height: 1.3;
+}
+
+.copyRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.copyRow label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.copyRow select {
+  min-height: 1.85rem;
+  padding: 2px 8px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.editorTop {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-sm) var(--admin-space-md);
 }
 
 .checkRow {
   display: inline-flex;
   align-items: center;
-  gap: var(--admin-space-sm);
+  gap: 6px;
+  min-height: 2rem;
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
+}
+
+.anchorField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.anchorField label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+}
+
+.anchorField input {
+  min-height: 2rem;
+  padding: 2px 8px;
+  font-size: var(--admin-font-size-sm);
 }
 
 .cycleHeader {
@@ -98,75 +160,181 @@
 }
 
 .cycleTitle {
-  font-size: var(--admin-font-size-sm);
+  font-size: var(--admin-font-size-xs, 0.75rem);
   font-weight: 600;
   color: var(--admin-text-secondary);
+}
+
+.compactBtn {
+  min-height: 1.75rem !important;
+  padding: 2px 8px !important;
+  font-size: var(--admin-font-size-xs, 0.75rem) !important;
 }
 
 .cycleDays {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-sm);
+  gap: 4px;
 }
 
 .cycleDay {
-  padding: var(--admin-space-sm) var(--admin-space-md);
+  display: grid;
+  grid-template-columns: 1.25rem minmax(7rem, 9rem) minmax(0, 1fr) 1.75rem;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
   border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
+  border-radius: var(--admin-radius-sm);
   background: var(--admin-surface-soft, var(--admin-surface));
 }
 
-.cycleDayTop {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--admin-space-sm);
+.cycleDayIndex {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--admin-text-muted);
+  text-align: center;
 }
 
-.cycleDayIndex {
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-  color: var(--admin-text-muted);
-  min-width: 3.5rem;
+.cycleDay select {
+  min-height: 1.75rem;
+  padding: 1px 6px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
 }
 
 .timeRow {
   display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-md);
-  margin-top: var(--admin-space-sm);
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  min-width: 0;
 }
 
 .timeRow label {
   display: inline-flex;
   align-items: center;
-  gap: var(--admin-space-xs);
-  font-size: var(--admin-font-size-sm);
+  gap: 4px;
+  font-size: 11px;
   color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.timeRow input {
+  min-height: 1.75rem;
+  width: 6.5rem;
+  padding: 1px 4px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.dayOffPlaceholder {
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.dayRemoveSpacer {
+  width: 1.75rem;
+}
+
+.sectionHint {
+  margin: -2px 0 0;
+  font-size: 11px;
+  line-height: 1.3;
+  color: var(--admin-text-muted);
+}
+
+.emptyAbsences {
+  margin: 0;
+  font-size: 11px;
+  color: var(--admin-text-muted);
+}
+
+.absenceBlocks {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.absenceRow {
+  display: grid;
+  grid-template-columns: minmax(6.5rem, 7.5rem) auto auto minmax(0, 1fr) 1.75rem;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface-soft, var(--admin-surface));
+}
+
+.absenceRow select {
+  min-height: 1.75rem;
+  padding: 1px 6px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.absenceDate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--admin-text-secondary);
+  white-space: nowrap;
+}
+
+.absenceDate input {
+  min-height: 1.75rem;
+  padding: 1px 4px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.absenceNote {
+  min-height: 1.75rem;
+  min-width: 0;
+  padding: 1px 6px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.notesRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+}
+
+.notesRow label {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.notesRow input {
+  min-height: 1.85rem;
+  padding: 2px 8px;
+  font-size: var(--admin-font-size-sm);
 }
 
 .preview {
   display: flex;
   flex-direction: column;
-  gap: var(--admin-space-sm);
+  gap: 4px;
 }
 
 .previewChips {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
+  gap: 4px;
 }
 
 .previewChip {
   display: inline-flex;
   flex-direction: column;
-  gap: 1px;
-  min-width: 4.5rem;
-  padding: 4px 8px;
+  gap: 0;
+  min-width: 3.75rem;
+  padding: 2px 6px;
   border-radius: var(--admin-radius-sm);
   border: 1px solid var(--admin-border);
-  font-size: 11px;
-  line-height: 1.25;
+  font-size: 10px;
+  line-height: 1.2;
 }
 
 .previewOn {
@@ -181,12 +349,27 @@
   color: #616161;
 }
 
+.previewAbsence {
+  background: #fff3e0;
+  border-color: #ffcc80;
+  color: #e65100;
+}
+
 .previewDate {
   font-weight: 700;
 }
 
 .previewLabel {
   opacity: 0.9;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 5.5rem;
+}
+
+.actions {
+  margin-top: 2px;
+  padding-top: var(--admin-space-sm);
 }
 
 @media (max-width: 720px) {
@@ -202,7 +385,38 @@
   }
 
   .driverBtn {
-    min-width: 9rem;
+    min-width: 7.5rem;
+  }
+
+  .cycleDay {
+    grid-template-columns: 1.25rem minmax(0, 1fr) 1.75rem;
+    grid-template-rows: auto auto;
+  }
+
+  .cycleDay select {
+    grid-column: 2;
+  }
+
+  .timeRow,
+  .dayOffPlaceholder {
+    grid-column: 2;
+  }
+
+  .absenceRow {
+    grid-template-columns: minmax(0, 1fr) 1.75rem;
+    grid-template-rows: auto auto auto;
+  }
+
+  .absenceRow select {
+    grid-column: 1;
+  }
+
+  .absenceDate {
+    grid-column: 1;
+  }
+
+  .absenceNote {
+    grid-column: 1;
   }
 }
 
@@ -219,4 +433,10 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .previewOff {
   background: var(--admin-surface-muted, #1f2937);
   color: var(--admin-text-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .previewAbsence {
+  background: rgb(230 81 0 / 0.18);
+  border-color: #ef6c00;
+  color: #ffb74d;
 }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  type DriverDeliveryAbsenceBlock,
   type DriverDeliveryAvailabilityListItem,
   type DriverDeliveryCycleDay,
   deleteDriverDeliveryAvailability,
@@ -17,7 +18,11 @@ import {
   KnowledgePlatformSettingsIcon,
 } from '@/shared/ui/icons';
 
-import { defaultCycleDays, previewDriverCycle } from '../shared/driver-availability.utils';
+import {
+  defaultCycleDays,
+  emptyAbsenceBlock,
+  previewDriverCycle,
+} from '../shared/driver-availability.utils';
 import { formatUserLabel, todayIsoDate } from '../shared/waybills-page.utils';
 import styles from './WaybillsSettingsButton.module.css';
 
@@ -29,6 +34,7 @@ type EditorState = {
   isActive: boolean;
   cycleAnchorDate: string;
   cycleDays: DriverDeliveryCycleDay[];
+  absenceBlocks: DriverDeliveryAbsenceBlock[];
   notes: string;
 };
 
@@ -37,6 +43,7 @@ function emptyEditor(): EditorState {
     isActive: true,
     cycleAnchorDate: todayIsoDate(),
     cycleDays: defaultCycleDays(),
+    absenceBlocks: [],
     notes: '',
   };
 }
@@ -50,6 +57,7 @@ function editorFromItem(item: DriverDeliveryAvailabilityListItem): EditorState {
       item.scheme.cycleDays.length > 0
         ? item.scheme.cycleDays.map((d) => ({ ...d }))
         : defaultCycleDays(),
+    absenceBlocks: (item.scheme.absenceBlocks ?? []).map((b) => ({ ...b })),
     notes: item.scheme.notes ?? '',
   };
 }
@@ -101,19 +109,64 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
     [items, selectedUserId]
   );
 
+  const isDirty = useMemo(() => {
+    if (!selectedItem) return false;
+    const baseline = editorFromItem(selectedItem);
+    return JSON.stringify(baseline) !== JSON.stringify(editor);
+  }, [selectedItem, editor]);
+
+  const selectDriver = (userId: string) => {
+    if (userId === selectedUserId) return;
+    if (isDirty) {
+      const ok = window.confirm(
+        'Есть несохранённые изменения схемы. Переключить водителя без сохранения?'
+      );
+      if (!ok) return;
+    }
+    setSelectedUserId(userId);
+  };
+
+  const copyFromDriver = (fromUserId: string) => {
+    const source = items.find((i) => i.user.id === fromUserId);
+    if (!source?.scheme) {
+      setError('У выбранного водителя нет сохранённой схемы');
+      return;
+    }
+    setEditor({
+      isActive: source.scheme.isActive,
+      cycleAnchorDate: source.scheme.cycleAnchorDate.slice(0, 10),
+      cycleDays:
+        source.scheme.cycleDays.length > 0
+          ? source.scheme.cycleDays.map((d) => ({ ...d }))
+          : defaultCycleDays(),
+      absenceBlocks: [],
+      notes: source.scheme.notes ?? '',
+    });
+  };
+
   const preview = useMemo(
     () =>
       previewDriverCycle({
         cycleAnchorDate: editor.cycleAnchorDate,
         cycleDays: editor.cycleDays,
+        absenceBlocks: editor.absenceBlocks,
       }),
-    [editor.cycleAnchorDate, editor.cycleDays]
+    [editor.cycleAnchorDate, editor.cycleDays, editor.absenceBlocks]
   );
 
   const updateDay = (index: number, patch: Partial<DriverDeliveryCycleDay>) => {
     setEditor((prev) => {
       const cycleDays = prev.cycleDays.map((d, i) => (i === index ? { ...d, ...patch } : d));
       return { ...prev, cycleDays };
+    });
+  };
+
+  const updateAbsence = (index: number, patch: Partial<DriverDeliveryAbsenceBlock>) => {
+    setEditor((prev) => {
+      const absenceBlocks = prev.absenceBlocks.map((b, i) =>
+        i === index ? { ...b, ...patch } : b
+      );
+      return { ...prev, absenceBlocks };
     });
   };
 
@@ -126,6 +179,17 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
     if (editor.cycleDays.length < 1) {
       setError('Добавьте хотя бы один день цикла');
       return;
+    }
+    for (let i = 0; i < editor.absenceBlocks.length; i++) {
+      const block = editor.absenceBlocks[i]!;
+      if (!block.dateFrom || !block.dateTo) {
+        setError(`Укажите даты периода отсутствия #${i + 1}`);
+        return;
+      }
+      if (block.dateFrom > block.dateTo) {
+        setError(`В периоде #${i + 1} дата «с» должна быть не позже «по»`);
+        return;
+      }
     }
     setSaving(true);
     setError(null);
@@ -142,6 +206,12 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                 availableTo: d.availableTo || '23:59',
               }
         ),
+        absenceBlocks: editor.absenceBlocks.map((b) => ({
+          kind: b.kind,
+          dateFrom: b.dateFrom,
+          dateTo: b.dateTo,
+          note: b.note?.trim() || null,
+        })),
         notes: editor.notes.trim() || null,
       });
       setSavedFlash(true);
@@ -192,8 +262,9 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
       >
         <div className={styles.shell} data-modal-form data-modal-density="compact">
           <p className={styles.hint}>
-            Задайте циклическую схему, когда водитель доступен на доставках. Пример: 2 дня в работе
-            → выходной → день с 15:00. Дата начала цикла — день с индексом 0.
+            У каждого водителя своя схема: выберите сотрудника слева и задайте его цикл (например: 2
+            дня → выходной → с 15:00) и периоды отпуска/больничного. «Начало цикла» — день 1 этой
+            схемы.
           </p>
 
           {error ? <p data-modal-form-error>{error}</p> : null}
@@ -213,14 +284,14 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                       key={item.user.id}
                       type="button"
                       className={`${styles.driverBtn}${active ? ` ${styles.driverBtnActive}` : ''}`}
-                      onClick={() => setSelectedUserId(item.user.id)}
+                      onClick={() => selectDriver(item.user.id)}
                     >
                       <span className={styles.driverName}>{formatUserLabel(item.user)}</span>
                       <span className={styles.driverMeta}>
                         {item.scheme
                           ? item.scheme.isActive
-                            ? `${item.scheme.cycleDays.length} дн. цикл`
-                            : 'Выкл.'
+                            ? `Своя схема · ${item.scheme.cycleDays.length} дн.`
+                            : 'Схема выкл.'
                           : 'Нет схемы'}
                       </span>
                     </button>
@@ -231,27 +302,53 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
               <div className={styles.editor}>
                 {selectedItem ? (
                   <>
-                    <label className={styles.checkRow}>
-                      <input
-                        type="checkbox"
-                        checked={editor.isActive}
-                        onChange={(e) =>
-                          setEditor((prev) => ({ ...prev, isActive: e.target.checked }))
-                        }
-                      />
-                      Схема активна
-                    </label>
-
-                    <div data-modal-form-group>
-                      <label htmlFor="wb-av-anchor">Начало цикла (день 1)</label>
-                      <input
-                        id="wb-av-anchor"
-                        type="date"
-                        value={editor.cycleAnchorDate}
-                        onChange={(e) =>
-                          setEditor((prev) => ({ ...prev, cycleAnchorDate: e.target.value }))
-                        }
-                      />
+                    <div className={styles.editorDriverTitle}>
+                      Схема: {formatUserLabel(selectedItem.user)}
+                      {selectedItem.user.role === 'DRIVER' ? '' : ` · ${selectedItem.user.role}`}
+                    </div>
+                    <div className={styles.copyRow}>
+                      <label htmlFor="wb-av-copy">Скопировать цикл от</label>
+                      <select
+                        id="wb-av-copy"
+                        defaultValue=""
+                        onChange={(e) => {
+                          const fromId = e.target.value;
+                          e.target.value = '';
+                          if (fromId) copyFromDriver(fromId);
+                        }}
+                      >
+                        <option value="">—</option>
+                        {items
+                          .filter((i) => i.user.id !== selectedUserId && i.scheme)
+                          .map((i) => (
+                            <option key={i.user.id} value={i.user.id}>
+                              {formatUserLabel(i.user)}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    <div className={styles.editorTop}>
+                      <label className={styles.checkRow}>
+                        <input
+                          type="checkbox"
+                          checked={editor.isActive}
+                          onChange={(e) =>
+                            setEditor((prev) => ({ ...prev, isActive: e.target.checked }))
+                          }
+                        />
+                        Активна
+                      </label>
+                      <div className={styles.anchorField}>
+                        <label htmlFor="wb-av-anchor">Начало цикла</label>
+                        <input
+                          id="wb-av-anchor"
+                          type="date"
+                          value={editor.cycleAnchorDate}
+                          onChange={(e) =>
+                            setEditor((prev) => ({ ...prev, cycleAnchorDate: e.target.value }))
+                          }
+                        />
+                      </div>
                     </div>
 
                     <div className={styles.cycleHeader}>
@@ -259,6 +356,7 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                       <button
                         type="button"
                         data-modal-btn="secondary"
+                        className={styles.compactBtn}
                         onClick={() =>
                           setEditor((prev) => ({
                             ...prev,
@@ -276,43 +374,27 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                     <div className={styles.cycleDays}>
                       {editor.cycleDays.map((day, index) => (
                         <div key={index} className={styles.cycleDay}>
-                          <div className={styles.cycleDayTop}>
-                            <span className={styles.cycleDayIndex}>День {index + 1}</span>
-                            <select
-                              value={day.kind}
-                              aria-label={`Тип дня ${index + 1}`}
-                              onChange={(e) => {
-                                const kind = e.target.value as 'ON' | 'OFF';
-                                updateDay(
-                                  index,
-                                  kind === 'OFF'
-                                    ? { kind, availableFrom: null, availableTo: null }
-                                    : {
-                                        kind,
-                                        availableFrom: day.availableFrom || '00:00',
-                                        availableTo: day.availableTo || '23:59',
-                                      }
-                                );
-                              }}
-                            >
-                              <option value="ON">На доставках</option>
-                              <option value="OFF">Выходной</option>
-                            </select>
-                            {editor.cycleDays.length > 1 ? (
-                              <button
-                                type="button"
-                                data-modal-btn="secondary"
-                                onClick={() =>
-                                  setEditor((prev) => ({
-                                    ...prev,
-                                    cycleDays: prev.cycleDays.filter((_, i) => i !== index),
-                                  }))
-                                }
-                              >
-                                Удалить
-                              </button>
-                            ) : null}
-                          </div>
+                          <span className={styles.cycleDayIndex}>{index + 1}</span>
+                          <select
+                            value={day.kind}
+                            aria-label={`Тип дня ${index + 1}`}
+                            onChange={(e) => {
+                              const kind = e.target.value as 'ON' | 'OFF';
+                              updateDay(
+                                index,
+                                kind === 'OFF'
+                                  ? { kind, availableFrom: null, availableTo: null }
+                                  : {
+                                      kind,
+                                      availableFrom: day.availableFrom || '00:00',
+                                      availableTo: day.availableTo || '23:59',
+                                    }
+                              );
+                            }}
+                          >
+                            <option value="ON">На доставках</option>
+                            <option value="OFF">Выходной</option>
+                          </select>
                           {day.kind === 'ON' ? (
                             <div className={styles.timeRow}>
                               <label>
@@ -336,32 +418,138 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                                 />
                               </label>
                             </div>
-                          ) : null}
+                          ) : (
+                            <span className={styles.dayOffPlaceholder}>—</span>
+                          )}
+                          {editor.cycleDays.length > 1 ? (
+                            <button
+                              type="button"
+                              data-modal-btn="secondary"
+                              className={styles.compactBtn}
+                              onClick={() =>
+                                setEditor((prev) => ({
+                                  ...prev,
+                                  cycleDays: prev.cycleDays.filter((_, i) => i !== index),
+                                }))
+                              }
+                              aria-label={`Удалить день ${index + 1}`}
+                            >
+                              ×
+                            </button>
+                          ) : (
+                            <span className={styles.dayRemoveSpacer} />
+                          )}
                         </div>
                       ))}
                     </div>
 
-                    <div data-modal-form-group>
+                    <div className={styles.cycleHeader}>
+                      <span className={styles.cycleTitle}>Отпуск / больничный</span>
+                      <button
+                        type="button"
+                        data-modal-btn="secondary"
+                        className={styles.compactBtn}
+                        onClick={() =>
+                          setEditor((prev) => ({
+                            ...prev,
+                            absenceBlocks: [...prev.absenceBlocks, emptyAbsenceBlock()],
+                          }))
+                        }
+                      >
+                        + Период
+                      </button>
+                    </div>
+                    <p className={styles.sectionHint}>
+                      В эти даты доставки не принимаются (приоритет над циклом).
+                    </p>
+                    {editor.absenceBlocks.length === 0 ? (
+                      <p className={styles.emptyAbsences}>Периодов нет</p>
+                    ) : (
+                      <div className={styles.absenceBlocks}>
+                        {editor.absenceBlocks.map((block, index) => (
+                          <div key={index} className={styles.absenceRow}>
+                            <select
+                              value={block.kind}
+                              aria-label={`Тип периода ${index + 1}`}
+                              onChange={(e) =>
+                                updateAbsence(index, {
+                                  kind: e.target.value as 'VACATION' | 'SICK',
+                                })
+                              }
+                            >
+                              <option value="VACATION">Отпуск</option>
+                              <option value="SICK">Больничный</option>
+                            </select>
+                            <label className={styles.absenceDate}>
+                              с
+                              <input
+                                type="date"
+                                value={block.dateFrom}
+                                onChange={(e) => updateAbsence(index, { dateFrom: e.target.value })}
+                              />
+                            </label>
+                            <label className={styles.absenceDate}>
+                              по
+                              <input
+                                type="date"
+                                value={block.dateTo}
+                                onChange={(e) => updateAbsence(index, { dateTo: e.target.value })}
+                              />
+                            </label>
+                            <input
+                              type="text"
+                              className={styles.absenceNote}
+                              value={block.note ?? ''}
+                              placeholder="Комментарий"
+                              aria-label={`Комментарий периода ${index + 1}`}
+                              onChange={(e) =>
+                                updateAbsence(index, { note: e.target.value || null })
+                              }
+                            />
+                            <button
+                              type="button"
+                              data-modal-btn="secondary"
+                              className={styles.compactBtn}
+                              onClick={() =>
+                                setEditor((prev) => ({
+                                  ...prev,
+                                  absenceBlocks: prev.absenceBlocks.filter((_, i) => i !== index),
+                                }))
+                              }
+                              aria-label={`Удалить период ${index + 1}`}
+                            >
+                              ×
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    <div className={styles.notesRow}>
                       <label htmlFor="wb-av-notes">Заметка</label>
-                      <textarea
+                      <input
                         id="wb-av-notes"
-                        rows={2}
+                        type="text"
                         value={editor.notes}
                         onChange={(e) => setEditor((prev) => ({ ...prev, notes: e.target.value }))}
-                        placeholder="Например: сутки через трое на основной работе"
+                        placeholder="Сутки через трое на основной работе…"
                       />
                     </div>
 
                     <div className={styles.preview}>
-                      <div className={styles.cycleTitle}>Превью 14 дней</div>
+                      <div className={styles.cycleTitle}>Превью</div>
                       <div className={styles.previewChips}>
-                        {preview.map((p) => (
+                        {preview.slice(0, 7).map((p) => (
                           <span
                             key={p.date}
                             className={`${styles.previewChip} ${
-                              p.kind === 'OFF' ? styles.previewOff : styles.previewOn
+                              p.kind === 'VACATION' || p.kind === 'SICK'
+                                ? styles.previewAbsence
+                                : p.kind === 'OFF'
+                                  ? styles.previewOff
+                                  : styles.previewOn
                             }`}
-                            title={p.label}
+                            title={`${p.date}: ${p.label}`}
                           >
                             <span className={styles.previewDate}>{p.date.slice(5)}</span>
                             <span className={styles.previewLabel}>{p.label}</span>
@@ -370,7 +558,7 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                       </div>
                     </div>
 
-                    <div data-modal-form-actions>
+                    <div className={styles.actions} data-modal-form-actions>
                       {selectedItem.scheme ? (
                         <button
                           type="button"
@@ -378,7 +566,7 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                           disabled={saving}
                           onClick={() => void handleDelete()}
                         >
-                          Удалить схему
+                          Удалить
                         </button>
                       ) : (
                         <span />
