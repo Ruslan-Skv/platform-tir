@@ -107,12 +107,14 @@ function buildListSearchParams(params: AdminProductsListParams): URLSearchParams
 
 export async function fetchAdminProductsList(
   params: AdminProductsListParams,
-  headers?: HeadersInit
+  headers?: HeadersInit,
+  signal?: AbortSignal
 ): Promise<AdminProductsListResponse> {
   const qs = buildListSearchParams(params).toString();
   const res = await apiFetch(`${API_URL}/admin/catalog/products?${qs}`, {
     headers,
     cache: 'no-store',
+    signal,
   });
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));

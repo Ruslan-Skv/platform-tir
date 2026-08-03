@@ -57,6 +57,7 @@ import {
   type ProductEdits,
   addProductsSearchHistoryEntry,
   hrefToProductEdit,
+  normalizeProductsPageLimit,
   persistProductsSearchHistory,
   readProductsSearchHistory,
 } from '../products-page.constants';
@@ -97,7 +98,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
       const raw = localStorage.getItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY);
       if (!raw) return 20;
       const parsed = Number(raw);
-      return Number.isFinite(parsed) && parsed > 0 ? parsed : 20;
+      return Number.isFinite(parsed) && parsed > 0 ? normalizeProductsPageLimit(parsed) : 20;
     } catch {
       return 20;
     }
@@ -362,17 +363,21 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
 
   const {
     data: listResponse,
-    isLoading: loading,
+    isLoading,
     isFetching: refreshing,
+    isPlaceholderData,
     refetch: refetchProductsList,
   } = useQuery({
     queryKey: [ADMIN_PRODUCTS_LIST_QUERY_KEY, listQueryParams],
-    queryFn: () => fetchAdminProductsList(listQueryParams, getAuthHeaders()),
+    queryFn: ({ signal }) => fetchAdminProductsList(listQueryParams, getAuthHeaders(), signal),
+    // Keep previous rows to avoid layout jump; isPlaceholderData dims the table until fresh data arrives.
     placeholderData: keepPreviousData,
   });
 
+  const loading = isLoading || isPlaceholderData;
   const listProducts = useMemo(() => listResponse?.data ?? [], [listResponse?.data]);
   const totalProducts = listResponse?.total ?? 0;
+  const paginationLimit = listResponse?.limit ?? limit;
 
   useEffect(() => {
     for (const product of listProducts) {
@@ -428,6 +433,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     queryFn: () => fetchMergedCategoryAttributes(categoryIdsForAttributes),
     enabled: categoryIdsForAttributes.length > 0,
     staleTime: 5 * 60 * 1000,
+    placeholderData: keepPreviousData,
   });
 
   // Заголовок только по селекту: пустое значение = «Товары» без подзаголовка (не подставляем categoryId из URL).
@@ -666,8 +672,13 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
       const raw = localStorage.getItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY);
       if (!raw) return;
       const parsed = Number(raw);
-      if (Number.isFinite(parsed) && parsed > 0 && parsed !== limit) {
-        setLimit(parsed);
+      if (!Number.isFinite(parsed) || parsed <= 0) return;
+      const normalized = normalizeProductsPageLimit(parsed);
+      if (normalized !== limit) {
+        setLimit(normalized);
+      }
+      if (normalized !== parsed) {
+        localStorage.setItem(PRODUCTS_PAGE_LIMIT_STORAGE_KEY, String(normalized));
       }
     } catch {
       /* ignore */
@@ -1365,6 +1376,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     currentCategoryName,
     totalProducts,
     listProducts,
+    paginationLimit,
     loading,
     refreshing,
     refetchProductsList,

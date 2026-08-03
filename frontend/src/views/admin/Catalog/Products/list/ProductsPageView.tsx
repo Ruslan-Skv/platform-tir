@@ -23,6 +23,7 @@ import {
   type ColumnConfig,
   type Product,
   formatDate,
+  normalizeProductsPageLimit,
 } from './products-page.constants';
 
 const CATALOG_PRODUCTS_RESOURCE = 'admin.catalog.products';
@@ -56,6 +57,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setPage,
     limit,
     setLimit,
+    paginationLimit,
     activeFilter,
     setActiveFilter,
     featuredFilter,
@@ -934,7 +936,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         <select
           value={limit}
           onChange={(e) => {
-            setLimit(Number(e.target.value));
+            setLimit(normalizeProductsPageLimit(Number(e.target.value)));
             setPage(1);
           }}
           className={styles.select}
@@ -942,7 +944,6 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
           <option value={20}>20 на странице</option>
           <option value={50}>50 на странице</option>
           <option value={100}>100 на странице</option>
-          <option value={200}>200 на странице</option>
         </select>
         <button
           className={`${styles.filterToggleButton} ${showAdvancedFilters ? styles.active : ''} ${hasAdvancedFilters ? styles.hasFilters : ''}`}
@@ -1111,7 +1112,7 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
         emptyMessage="Товары не найдены"
         pagination={{
           page,
-          limit,
+          limit: paginationLimit,
           total: totalProducts,
           onPageChange: setPage,
         }}

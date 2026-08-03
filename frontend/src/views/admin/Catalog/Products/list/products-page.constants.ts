@@ -4,6 +4,15 @@ export const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001
 export const PRODUCTS_PAGE_LIMIT_STORAGE_KEY = 'admin_products_page_limit';
 export const PRODUCTS_SEARCH_HISTORY_STORAGE_KEY = 'admin_products_search_history';
 export const MAX_PRODUCTS_SEARCH_HISTORY = 10;
+/** Совпадает с backend MAX_LIST_LIMIT — UI не должен предлагать больше. */
+export const PRODUCTS_PAGE_MAX_LIMIT = 100;
+export const PRODUCTS_PAGE_LIMIT_OPTIONS = [20, 50, 100] as const;
+
+export function normalizeProductsPageLimit(value: number): number {
+  if ((PRODUCTS_PAGE_LIMIT_OPTIONS as readonly number[]).includes(value)) return value;
+  if (Number.isFinite(value) && value > PRODUCTS_PAGE_MAX_LIMIT) return PRODUCTS_PAGE_MAX_LIMIT;
+  return 20;
+}
 
 export function readProductsSearchHistory(): string[] {
   if (typeof window === 'undefined') return [];
