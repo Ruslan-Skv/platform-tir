@@ -1,5 +1,7 @@
 'use client';
 
+import type { CSSProperties } from 'react';
+
 import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
@@ -1355,23 +1357,25 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                     ? ` ${styles.priceUpdateProgressFillActive}`
                     : ''
                 }`}
-                style={{
-                  width: `${
-                    supplierPriceUpdateProgress.selectedTotal > 0
-                      ? Math.min(
-                          100,
-                          Math.round(
-                            ((supplierPriceUpdateProgress.selectedDone +
-                              (supplierPriceUpdateProgress.inFlight > 0
-                                ? supplierPriceUpdateProgress.inFlight * 0.35
-                                : 0)) /
-                              supplierPriceUpdateProgress.selectedTotal) *
-                              100
+                style={
+                  {
+                    '--price-update-progress': `${
+                      supplierPriceUpdateProgress.selectedTotal > 0
+                        ? Math.min(
+                            100,
+                            Math.round(
+                              ((supplierPriceUpdateProgress.selectedDone +
+                                (supplierPriceUpdateProgress.inFlight > 0
+                                  ? supplierPriceUpdateProgress.inFlight * 0.35
+                                  : 0)) /
+                                supplierPriceUpdateProgress.selectedTotal) *
+                                100
+                            )
                           )
-                        )
-                      : 0
-                  }%`,
-                }}
+                        : 0
+                    }%`,
+                  } as CSSProperties
+                }
               />
             </div>
             <p className={styles.priceUpdateProgressMeta}>
