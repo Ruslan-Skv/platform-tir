@@ -3,7 +3,6 @@
 import { useAdminResourcePermission } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import {
-  formatSupplierPriceUpdateMessage,
   getSupplierPriceErrorLabel,
   getSupplierPriceSyncError,
 } from '@/shared/lib/catalog/supplier-price-update-message';
@@ -116,7 +115,8 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     setShowDeleteConfirmModal,
     deleting,
     updatingSupplierPrices,
-    setUpdatingSupplierPrices,
+    supplierPriceUpdateProgress,
+    updateSelectedSupplierPrices,
     syncingSupplierPrices,
     setSyncingSupplierPrices,
     syncSupplierPricesMessage,
@@ -126,7 +126,6 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
     priceChangedIds,
     setPriceChangedIds,
     syncSupplierPricesMessageType,
-    setSyncSupplierPricesMessageType,
     persistedCategoryId,
     currentCategoryName,
     totalProducts,
@@ -725,50 +724,10 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
                     ? 'Сначала выберите товары в таблице'
                     : 'Для выбранных товаров с ссылкой на товар поставщика получить актуальную цену. Строки с изменившейся ценой подсветятся.'
                 }
-                onClick={async () => {
-                  if (!hasSelection) {
-                    showSelectionHint();
-                    return;
-                  }
-                  setUpdatingSupplierPrices(true);
-                  setSyncSupplierPricesMessage(null);
-                  try {
-                    const response = await apiFetch(
-                      `${API_URL}/products/admin/update-supplier-prices`,
-                      {
-                        method: 'POST',
-                        headers: {
-                          'Content-Type': 'application/json',
-                          ...getAuthHeaders(),
-                        },
-                        body: JSON.stringify({ productIds: selectedIds }),
-                      }
-                    );
-                    if (!response.ok) {
-                      const err = await response.json().catch(() => ({}));
-                      throw new Error(err.message || 'Ошибка обновления цен');
-                    }
-                    const data = await response.json();
-                    setPriceChangedIds(data.changedIds ?? []);
-                    const msg = formatSupplierPriceUpdateMessage(data);
-                    const hasErrors = (data.errors?.length ?? 0) > 0;
-                    const allFailed = hasErrors && data.updated === 0;
-                    setSyncSupplierPricesMessageType(
-                      allFailed ? 'error' : hasErrors ? 'warning' : 'success'
-                    );
-                    setSyncSupplierPricesMessage(msg);
-                    setTimeout(() => setSyncSupplierPricesMessage(null), hasErrors ? 8000 : 5000);
-                    invalidateProductsList();
-                  } catch (e) {
-                    setSyncSupplierPricesMessageType('error');
-                    setSyncSupplierPricesMessage(
-                      e instanceof Error ? e.message : 'Ошибка обновления цен поставщика'
-                    );
-                    setTimeout(() => setSyncSupplierPricesMessage(null), 5000);
-                  } finally {
-                    setUpdatingSupplierPrices(false);
-                  }
+                onClick={() => {
+                  void updateSelectedSupplierPrices();
                 }}
+                disabled={updatingSupplierPrices}
               >
                 {updatingSupplierPrices ? '⏳ Обновление...' : '📡 Обновить цены'}
               </button>
@@ -1357,6 +1316,74 @@ export function ProductsPageView({ model }: ProductsPageViewProps) {
           </button>
         </div>
       )}
+
+      <Modal
+        isOpen={Boolean(supplierPriceUpdateProgress)}
+        onClose={() => undefined}
+        title="Обновление цен поставщика"
+        size="sm"
+        showCloseButton={false}
+      >
+        {supplierPriceUpdateProgress ? (
+          <div className={styles.priceUpdateProgress}>
+            <p className={styles.priceUpdateProgressText}>
+              Получаем актуальные цены с сайта поставщика. Это может занять до минуты на каждый
+              товар — не закрывайте вкладку.
+            </p>
+            <p className={styles.priceUpdateProgressStats}>
+              {supplierPriceUpdateProgress.inFlight > 0
+                ? `Запрашиваем цены для товаров ${supplierPriceUpdateProgress.selectedDone + 1}–${
+                    supplierPriceUpdateProgress.selectedDone + supplierPriceUpdateProgress.inFlight
+                  } из ${supplierPriceUpdateProgress.selectedTotal}…`
+                : `Проверено выбранных: ${supplierPriceUpdateProgress.selectedDone} из ${supplierPriceUpdateProgress.selectedTotal}`}
+            </p>
+            <div
+              className={styles.priceUpdateProgressTrack}
+              role="progressbar"
+              aria-valuemin={0}
+              aria-valuemax={supplierPriceUpdateProgress.selectedTotal}
+              aria-valuenow={
+                supplierPriceUpdateProgress.selectedDone +
+                (supplierPriceUpdateProgress.inFlight > 0
+                  ? Math.min(1, supplierPriceUpdateProgress.inFlight)
+                  : 0)
+              }
+            >
+              <div
+                className={`${styles.priceUpdateProgressFill}${
+                  supplierPriceUpdateProgress.inFlight > 0
+                    ? ` ${styles.priceUpdateProgressFillActive}`
+                    : ''
+                }`}
+                style={{
+                  width: `${
+                    supplierPriceUpdateProgress.selectedTotal > 0
+                      ? Math.min(
+                          100,
+                          Math.round(
+                            ((supplierPriceUpdateProgress.selectedDone +
+                              (supplierPriceUpdateProgress.inFlight > 0
+                                ? supplierPriceUpdateProgress.inFlight * 0.35
+                                : 0)) /
+                              supplierPriceUpdateProgress.selectedTotal) *
+                              100
+                          )
+                        )
+                      : 0
+                  }%`,
+                }}
+              />
+            </div>
+            <p className={styles.priceUpdateProgressMeta}>
+              обновлено: {supplierPriceUpdateProgress.updated}
+              {' · '}
+              цена изменилась: {supplierPriceUpdateProgress.changed}
+              {' · '}
+              ошибок: {supplierPriceUpdateProgress.errorCount}
+            </p>
+          </div>
+        ) : null}
+      </Modal>
 
       {/* Selection required toast */}
       {selectionHintMessage && (

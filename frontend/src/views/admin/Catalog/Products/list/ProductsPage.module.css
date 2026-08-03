@@ -629,6 +629,60 @@
   cursor: not-allowed;
 }
 
+.priceUpdateProgress {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.priceUpdateProgressText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  line-height: 1.45;
+}
+
+.priceUpdateProgressStats {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.priceUpdateProgressTrack {
+  height: 0.45rem;
+  border-radius: 999px;
+  background: rgb(148 163 184 / 25%);
+  overflow: hidden;
+}
+
+.priceUpdateProgressFill {
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #3b82f6 0%, #2563eb 100%);
+  transition: width 0.35s ease;
+}
+
+.priceUpdateProgressFillActive {
+  animation: priceUpdatePulse 1.2s ease-in-out infinite;
+}
+
+@keyframes priceUpdatePulse {
+  0%,
+  100% {
+    filter: brightness(1);
+  }
+  50% {
+    filter: brightness(1.15);
+  }
+}
+
+.priceUpdateProgressMeta {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
 /* Modal */
 .modalOverlay {
   position: fixed;

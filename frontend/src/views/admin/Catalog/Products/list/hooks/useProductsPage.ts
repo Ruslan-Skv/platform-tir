@@ -39,7 +39,15 @@ import {
   isStroykomHandlesCategory,
   startStroykomHandlesImport,
 } from '@/shared/api/admin-stroykom-handles-import';
+import {
+  UPDATE_SUPPLIER_PRICES_BATCH_SIZE,
+  type UpdateSupplierPricesResponse,
+  chunkIds,
+  fetchUpdateSupplierPrices,
+  isFetchTimeoutError,
+} from '@/shared/api/admin-supplier-prices';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { formatSupplierPriceUpdateMessage } from '@/shared/lib/catalog/supplier-price-update-message';
 
 import {
   mergeProductsListFilters,
@@ -163,6 +171,14 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
 
   // Обновление цен поставщика (по ссылкам) и синхронизация (цена товара = цена поставщика)
   const [updatingSupplierPrices, setUpdatingSupplierPrices] = useState(false);
+  const [supplierPriceUpdateProgress, setSupplierPriceUpdateProgress] = useState<{
+    selectedTotal: number;
+    selectedDone: number;
+    inFlight: number;
+    updated: number;
+    changed: number;
+    errorCount: number;
+  } | null>(null);
   const [syncingSupplierPrices, setSyncingSupplierPrices] = useState(false);
   const [syncSupplierPricesMessage, setSyncSupplierPricesMessage] = useState<string | null>(null);
   const [selectionHintMessage, setSelectionHintMessage] = useState<string | null>(null);
@@ -173,6 +189,7 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
   >('success');
   const selectionHintTimeoutRef = useRef<number | null>(null);
   const selectedProductsCacheRef = useRef<Map<string, Product>>(new Map());
+  const syncMessageTimeoutRef = useRef<number | null>(null);
 
   const invalidateProductsList = useCallback(() => {
     void queryClient.invalidateQueries({ queryKey: [ADMIN_PRODUCTS_LIST_QUERY_KEY] });
@@ -212,8 +229,121 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
       if (selectionHintTimeoutRef.current) {
         window.clearTimeout(selectionHintTimeoutRef.current);
       }
+      if (syncMessageTimeoutRef.current) {
+        window.clearTimeout(syncMessageTimeoutRef.current);
+      }
     };
   }, []);
+
+  const showSyncSupplierPricesMessage = useCallback(
+    (message: string, type: 'success' | 'warning' | 'error', hideAfterMs = 5000) => {
+      setSyncSupplierPricesMessageType(type);
+      setSyncSupplierPricesMessage(message);
+      if (syncMessageTimeoutRef.current) {
+        window.clearTimeout(syncMessageTimeoutRef.current);
+      }
+      syncMessageTimeoutRef.current = window.setTimeout(() => {
+        setSyncSupplierPricesMessage(null);
+        syncMessageTimeoutRef.current = null;
+      }, hideAfterMs);
+    },
+    []
+  );
+
+  const updateSelectedSupplierPrices = useCallback(async () => {
+    if (selectedIds.length === 0) {
+      showSelectionHint();
+      return;
+    }
+    if (updatingSupplierPrices) return;
+
+    setUpdatingSupplierPrices(true);
+    setSyncSupplierPricesMessage(null);
+    setSupplierPriceUpdateProgress({
+      selectedTotal: selectedIds.length,
+      selectedDone: 0,
+      inFlight: 0,
+      updated: 0,
+      changed: 0,
+      errorCount: 0,
+    });
+
+    const batches = chunkIds(selectedIds, UPDATE_SUPPLIER_PRICES_BATCH_SIZE);
+    const aggregated: UpdateSupplierPricesResponse = {
+      total: 0,
+      updated: 0,
+      changed: 0,
+      changedIds: [],
+      errors: [],
+    };
+    let selectedDone = 0;
+    let fatalError: string | null = null;
+
+    try {
+      for (const batch of batches) {
+        setSupplierPriceUpdateProgress({
+          selectedTotal: selectedIds.length,
+          selectedDone,
+          inFlight: batch.length,
+          updated: aggregated.updated,
+          changed: aggregated.changed,
+          errorCount: aggregated.errors.length,
+        });
+        try {
+          const data = await fetchUpdateSupplierPrices(batch, getAuthHeaders());
+          aggregated.total += data.total;
+          aggregated.updated += data.updated;
+          aggregated.changed += data.changed;
+          aggregated.changedIds.push(...(data.changedIds ?? []));
+          aggregated.errors.push(...(data.errors ?? []));
+        } catch (e) {
+          fatalError = isFetchTimeoutError(e)
+            ? 'Превышено время ожидания ответа сервера при обновлении цен. Попробуйте меньше товаров за раз или повторите позже.'
+            : e instanceof Error
+              ? e.message
+              : 'Ошибка обновления цен поставщика';
+          break;
+        } finally {
+          selectedDone += batch.length;
+          setSupplierPriceUpdateProgress({
+            selectedTotal: selectedIds.length,
+            selectedDone,
+            inFlight: 0,
+            updated: aggregated.updated,
+            changed: aggregated.changed,
+            errorCount: aggregated.errors.length,
+          });
+        }
+      }
+
+      if (fatalError && aggregated.total === 0) {
+        showSyncSupplierPricesMessage(fatalError, 'error', 8000);
+        return;
+      }
+
+      setPriceChangedIds(aggregated.changedIds);
+      const msg =
+        (fatalError ? `${fatalError} ` : '') + formatSupplierPriceUpdateMessage(aggregated);
+      const hasErrors = aggregated.errors.length > 0 || Boolean(fatalError);
+      const allFailed = hasErrors && aggregated.updated === 0;
+      showSyncSupplierPricesMessage(
+        msg,
+        allFailed ? 'error' : hasErrors ? 'warning' : 'success',
+        hasErrors ? 8000 : 5000
+      );
+      invalidateProductsList();
+    } finally {
+      setUpdatingSupplierPrices(false);
+      setSupplierPriceUpdateProgress(null);
+    }
+  }, [
+    selectedIds,
+    updatingSupplierPrices,
+    getAuthHeaders,
+    showSelectionHint,
+    showSyncSupplierPricesMessage,
+    invalidateProductsList,
+  ]);
 
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -1361,6 +1491,8 @@ export function useProductsPage({ categoryId }: ProductsPageProps = {}) {
     setShowDeleteConfirmModal,
     deleting,
     updatingSupplierPrices,
+    supplierPriceUpdateProgress,
+    updateSelectedSupplierPrices,
     setUpdatingSupplierPrices,
     syncingSupplierPrices,
     setSyncingSupplierPrices,
