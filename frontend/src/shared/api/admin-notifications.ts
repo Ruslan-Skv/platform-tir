@@ -28,6 +28,7 @@ export interface AdminNotificationsSettings {
   notifyOnKnowledgeTraining: boolean;
   notifyOnWorkDays: boolean;
   notifyOnWaybills: boolean;
+  notifyOnInstallationSchedules: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -215,6 +216,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
     notifyOnWaybills: data.notifyOnWaybills,
+    notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -265,6 +267,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
     notifyOnWaybills: data.notifyOnWaybills,
+    notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -440,6 +443,32 @@ export async function getAdminBellWaybillNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по путевым листам');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellInstallationScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'completed' | 'failed';
+  kindLabel: string;
+  installationScheduleId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellInstallationScheduleNotifications(
+  limit = 20
+): Promise<AdminBellInstallationScheduleNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(
+    `${API_URL}/admin/notifications/bell/installation-schedules?${params}`,
+    {
+      headers: getAdminAuthHeaders(),
+    }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику монтажей');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

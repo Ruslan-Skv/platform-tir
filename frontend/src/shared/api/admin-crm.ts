@@ -98,6 +98,14 @@ export interface InstallerMaster {
   direction: InstallerDirection;
   fullName: string;
   grade: string;
+  userId: string | null;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -114,6 +122,7 @@ export async function createInstaller(data: {
   direction: InstallerDirection;
   fullName: string;
   grade: string;
+  userId?: string | null;
 }): Promise<InstallerMaster> {
   const res = await apiFetch(`${API_URL}/admin/installers`, {
     method: 'POST',
@@ -134,6 +143,7 @@ export async function updateInstaller(
     direction: InstallerDirection;
     fullName: string;
     grade: string;
+    userId: string | null;
   }>
 ): Promise<InstallerMaster> {
   const res = await apiFetch(`${API_URL}/admin/installers/${id}`, {

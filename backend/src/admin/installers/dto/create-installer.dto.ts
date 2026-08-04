@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsIn, IsString, MaxLength, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { IsIn, IsOptional, IsString, MaxLength, MinLength, ValidateIf } from 'class-validator';
 import { INSTALLER_DIRECTIONS } from '../installer-directions.constant';
 
 export class CreateInstallerDto {
@@ -19,4 +19,11 @@ export class CreateInstallerDto {
   @MinLength(1)
   @MaxLength(100)
   grade: string;
+
+  /** Опциональная привязка к аккаунту; null/пусто — работа только по ФИО. */
+  @ApiPropertyOptional({ nullable: true })
+  @IsOptional()
+  @ValidateIf((_, v) => v !== null && v !== undefined && v !== '')
+  @IsString()
+  userId?: string | null;
 }

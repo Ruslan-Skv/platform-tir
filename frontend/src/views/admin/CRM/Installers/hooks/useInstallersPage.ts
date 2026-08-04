@@ -3,10 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
+  type CrmUser,
   type InstallerDirection,
   type InstallerMaster,
   createInstaller,
   deleteInstaller,
+  getCrmUsers,
   getInstallers,
   updateInstaller,
 } from '@/shared/api/admin-crm';
@@ -20,8 +22,18 @@ import {
   isRepairInstallerDirection,
 } from '../installers-page.utils';
 
+function formatUserLabel(user: {
+  firstName?: string | null;
+  lastName?: string | null;
+  email?: string;
+}): string {
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ').trim();
+  return name || user.email || '—';
+}
+
 export function useInstallersPage() {
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
+  const [users, setUsers] = useState<CrmUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [directionFilter, setDirectionFilter] = useState<InstallerDirection | 'ALL'>('ALL');
   const [message, setMessage] = useState<InstallersPageMessage | null>(null);
@@ -54,6 +66,12 @@ export function useInstallersPage() {
     void loadInstallers();
   }, [loadInstallers]);
 
+  useEffect(() => {
+    void getCrmUsers()
+      .then(setUsers)
+      .catch(() => setUsers([]));
+  }, []);
+
   const filtered = useMemo(() => {
     const byDirection =
       directionFilter === 'ALL'
@@ -66,6 +84,17 @@ export function useInstallersPage() {
       return a.fullName.localeCompare(b.fullName, 'ru');
     });
   }, [installers, directionFilter]);
+
+  const userOptions = useMemo(() => {
+    const selectedId = formValues.userId.trim();
+    const sorted = [...users].sort((a, b) =>
+      formatUserLabel(a).localeCompare(formatUserLabel(b), 'ru')
+    );
+    if (!selectedId || sorted.some((u) => u.id === selectedId)) return sorted;
+    const orphan = installers.find((i) => i.userId === selectedId)?.user;
+    if (!orphan) return sorted;
+    return [orphan as CrmUser, ...sorted];
+  }, [users, formValues.userId, installers]);
 
   const resetForm = useCallback(() => {
     setFormValues(EMPTY_INSTALLER_FORM);
@@ -83,6 +112,7 @@ export function useInstallersPage() {
       direction: item.direction,
       fullName: item.fullName,
       grade: gradeForForm(item.direction, item.grade),
+      userId: item.userId ?? '',
     });
     setFormError(null);
     setSubmitting(false);
@@ -121,6 +151,7 @@ export function useInstallersPage() {
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
         grade: gradeForApi(formValues.direction, formValues.grade),
+        userId: formValues.userId.trim() || null,
       });
       setCreateModalOpen(false);
       resetForm();
@@ -148,6 +179,7 @@ export function useInstallersPage() {
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
         grade: gradeForApi(formValues.direction, formValues.grade),
+        userId: formValues.userId.trim() || null,
       });
       setEditItem(null);
       resetForm();
@@ -181,6 +213,7 @@ export function useInstallersPage() {
   return {
     installers,
     filtered,
+    users: userOptions,
     loading,
     directionFilter,
     setDirectionFilter,
@@ -200,6 +233,7 @@ export function useInstallersPage() {
     handleCreate,
     handleEdit,
     handleDelete,
+    formatUserLabel,
   };
 }
 

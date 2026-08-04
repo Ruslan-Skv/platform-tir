@@ -141,6 +141,17 @@
   border-color: var(--admin-danger-border, #fecaca);
 }
 
+.muted {
+  color: var(--admin-text-muted);
+}
+
+.fieldHint {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.4;
+}
+
 @media (max-width: 768px) {
   .headerActions {
     width: 100%;

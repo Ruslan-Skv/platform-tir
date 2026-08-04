@@ -15,7 +15,8 @@ export type AdminBellNotificationType =
   | 'siteFeedback'
   | 'knowledgeTraining'
   | 'workDays'
-  | 'waybills';
+  | 'waybills'
+  | 'installationSchedules';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -55,6 +56,17 @@ export type AdminBellWaybillNotification = {
   kind: 'created' | 'updated' | 'completed' | 'failed';
   kindLabel: string;
   waybillTaskId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellInstallationScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'completed' | 'failed';
+  kindLabel: string;
+  installationScheduleId: string;
   title: string;
   message: string;
   href: string;
@@ -228,6 +240,18 @@ export function waybillToBellNotificationItem(
   };
 }
 
+export function installationScheduleToBellNotificationItem(
+  item: AdminBellInstallationScheduleNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'installationSchedules',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/crm/installation-schedules',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -294,6 +318,14 @@ export function isNotificationItemEnabled(
     );
   }
 
+  if (item.type === 'installationSchedules') {
+    return (
+      (hasAccess('admin.crm.installation-schedules') ||
+        hasAccess('admin.crm.installation-schedules.my')) &&
+      isBellTypeEnabled(item.type, settings)
+    );
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -330,6 +362,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnWorkDays !== false;
     case 'waybills':
       return settings.notifyOnWaybills !== false;
+    case 'installationSchedules':
+      return settings.notifyOnInstallationSchedules !== false;
     default:
       return false;
   }
@@ -400,6 +434,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'waybills':
       return {
         title: 'Путевой лист',
+        body: item.text,
+        tag,
+      };
+    case 'installationSchedules':
+      return {
+        title: 'График монтажей',
         body: item.text,
         tag,
       };

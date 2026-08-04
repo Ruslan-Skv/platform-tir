@@ -42,6 +42,7 @@ import { InstallersModule } from './installers/installers.module';
 import { RecruitmentModule } from './recruitment/recruitment.module';
 import { WorkDaysModule } from './work-days/work-days.module';
 import { WaybillsModule } from './waybills/waybills.module';
+import { InstallationSchedulesModule } from './installation-schedules/installation-schedules.module';
 
 @Module({
   imports: [
@@ -54,6 +55,7 @@ import { WaybillsModule } from './waybills/waybills.module';
     CrmDirectionsModule,
     InstallersModule,
     WaybillsModule,
+    InstallationSchedulesModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
@@ -101,6 +103,7 @@ import { WaybillsModule } from './waybills/waybills.module';
     CrmDirectionsModule,
     InstallersModule,
     WaybillsModule,
+    InstallationSchedulesModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,

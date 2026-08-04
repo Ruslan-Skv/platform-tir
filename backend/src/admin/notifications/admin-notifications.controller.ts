@@ -36,6 +36,7 @@ import { AdminBellDismissedService } from './admin-bell-dismissed.service';
 import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
 import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service';
 import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
+import { AdminBellInstallationScheduleFeedService } from './admin-bell-installation-schedule-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
@@ -65,6 +66,7 @@ export class AdminNotificationsController {
     private readonly bellTrainingFeed: AdminBellTrainingFeedService,
     private readonly bellWorkDayFeed: AdminBellWorkDayFeedService,
     private readonly bellWaybillFeed: AdminBellWaybillFeedService,
+    private readonly bellInstallationScheduleFeed: AdminBellInstallationScheduleFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -146,6 +148,14 @@ export class AdminNotificationsController {
   getBellWaybillFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellWaybillFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/installation-schedules')
+  @ApiOperation({ summary: 'События графика монтажей для колокольчика (персонально)' })
+  getBellInstallationScheduleFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellInstallationScheduleFeed.listForUser(req.user.id, take);
   }
 
   @Get('settings/by-user/:userId')

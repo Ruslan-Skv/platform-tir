@@ -152,6 +152,11 @@ model User {
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
   waybillTaskBellEvents                   WaybillTaskBellEvent[]
   driverDeliveryAvailability              DriverDeliveryAvailability?
+  installationSchedulesCompleted          InstallationScheduleEntry[]              @relation("InstallationScheduleCompletedBy")
+  installationSchedulesCreated            InstallationScheduleEntry[]              @relation("InstallationScheduleCreatedBy")
+  installationSchedulesDeleted            InstallationScheduleEntry[]              @relation("InstallationScheduleDeletedBy")
+  installationScheduleBellEvents          InstallationScheduleBellEvent[]
+  installerMasterProfiles                 InstallerMaster[]                        @relation("InstallerMasterUser")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -437,6 +442,10 @@ model ExternalNotifySettings {
   waybillNotifyEmails      Json? // string[]
   waybillNotifyTelegramIds Json? // string[]
   waybillNotifyMaxIds      Json? // string[]
+
+  installationScheduleNotifyEmails      Json? // string[]
+  installationScheduleNotifyTelegramIds Json? // string[]
+  installationScheduleNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -2588,32 +2597,33 @@ model NotificationSound {
 }
 
 model UserAdminNotificationOverride {
-  id                        String   @id @default(cuid())
-  userId                    String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  id                            String   @id @default(cuid())
+  userId                        String   @unique // Персональные настройки для пользователя (переопределяют роль)
   // true = только доставка (звук/desktop); события notify* берутся из роли
-  deliveryOnly              Boolean  @default(false)
-  soundEnabled              Boolean  @default(true)
-  soundVolume               Int      @default(70)
-  soundType                 String   @default("beep")
-  customSoundUrl            String?
-  desktopNotifications      Boolean  @default(false)
-  checkIntervalSeconds      Int      @default(60)
-  notifyOnReviews           Boolean  @default(true)
-  notifyOnOrders            Boolean  @default(true)
-  notifyOnSupportChat       Boolean  @default(true)
-  notifyOnMeasurementForm   Boolean  @default(true)
-  notifyOnCallbackForm      Boolean  @default(true)
-  notifyOnDirectorForm      Boolean  @default(true)
-  notifyOnQuoteForm         Boolean  @default(true)
-  notifyOnQuizMebel         Boolean  @default(true)
-  notifyOnQuizRemont        Boolean  @default(true)
-  notifyOnKnowledgeFeedback Boolean  @default(true)
-  notifyOnSiteFeedback      Boolean  @default(true)
-  notifyOnKnowledgeTraining Boolean  @default(true)
-  notifyOnWorkDays          Boolean  @default(true)
-  notifyOnWaybills          Boolean  @default(true)
-  updatedAt                 DateTime @updatedAt
-  user                      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryOnly                  Boolean  @default(false)
+  soundEnabled                  Boolean  @default(true)
+  soundVolume                   Int      @default(70)
+  soundType                     String   @default("beep")
+  customSoundUrl                String?
+  desktopNotifications          Boolean  @default(false)
+  checkIntervalSeconds          Int      @default(60)
+  notifyOnReviews               Boolean  @default(true)
+  notifyOnOrders                Boolean  @default(true)
+  notifyOnSupportChat           Boolean  @default(true)
+  notifyOnMeasurementForm       Boolean  @default(true)
+  notifyOnCallbackForm          Boolean  @default(true)
+  notifyOnDirectorForm          Boolean  @default(true)
+  notifyOnQuoteForm             Boolean  @default(true)
+  notifyOnQuizMebel             Boolean  @default(true)
+  notifyOnQuizRemont            Boolean  @default(true)
+  notifyOnKnowledgeFeedback     Boolean  @default(true)
+  notifyOnSiteFeedback          Boolean  @default(true)
+  notifyOnKnowledgeTraining     Boolean  @default(true)
+  notifyOnWorkDays              Boolean  @default(true)
+  notifyOnWaybills              Boolean  @default(true)
+  notifyOnInstallationSchedules Boolean  @default(true)
+  updatedAt                     DateTime @updatedAt
+  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_admin_notification_override")
 }
@@ -2646,29 +2656,30 @@ model AdminBellDismissedNotification {
 }
 
 model AdminNotificationsBlock {
-  id                        String   @id @default(cuid())
-  role                      String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
-  soundEnabled              Boolean  @default(true) // Звук при событиях
-  soundVolume               Int      @default(70) // Громкость 0-100
-  soundType                 String   @default("beep") // beep, ding, chime, bell или custom
-  customSoundUrl            String? // URL загруженного звука (при soundType=custom)
-  desktopNotifications      Boolean  @default(false) // Браузерные уведомления
-  checkIntervalSeconds      Int      @default(60) // Интервал проверки (сек)
-  notifyOnReviews           Boolean  @default(true) // Уведомления о новых отзывах
-  notifyOnOrders            Boolean  @default(true) // Уведомления о новых заказах
-  notifyOnSupportChat       Boolean  @default(true) // Уведомления о сообщениях в чате
-  notifyOnMeasurementForm   Boolean  @default(true) // Уведомления о записи на замер
-  notifyOnCallbackForm      Boolean  @default(true) // Уведомления о заказе обратного звонка
-  notifyOnDirectorForm      Boolean  @default(true) // Уведомления о письме директору
-  notifyOnQuoteForm         Boolean  @default(true) // Уведомления о заявке на расчёт стоимости
-  notifyOnQuizMebel         Boolean  @default(true) // Заявки с квиза mebel-na-zakaz-51.ru
-  notifyOnQuizRemont        Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
-  notifyOnKnowledgeFeedback Boolean  @default(true) // Обратная связь по обучающей платформе
-  notifyOnSiteFeedback      Boolean  @default(true) // Обратная связь по публичному сайту
-  notifyOnKnowledgeTraining Boolean  @default(true) // Динамика изучения материалов обучения
-  notifyOnWorkDays          Boolean  @default(true) // Учёт рабочего времени
-  notifyOnWaybills          Boolean  @default(true) // Путевой лист / маршрут водителя
-  updatedAt                 DateTime @updatedAt
+  id                            String   @id @default(cuid())
+  role                          String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
+  soundEnabled                  Boolean  @default(true) // Звук при событиях
+  soundVolume                   Int      @default(70) // Громкость 0-100
+  soundType                     String   @default("beep") // beep, ding, chime, bell или custom
+  customSoundUrl                String? // URL загруженного звука (при soundType=custom)
+  desktopNotifications          Boolean  @default(false) // Браузерные уведомления
+  checkIntervalSeconds          Int      @default(60) // Интервал проверки (сек)
+  notifyOnReviews               Boolean  @default(true) // Уведомления о новых отзывах
+  notifyOnOrders                Boolean  @default(true) // Уведомления о новых заказах
+  notifyOnSupportChat           Boolean  @default(true) // Уведомления о сообщениях в чате
+  notifyOnMeasurementForm       Boolean  @default(true) // Уведомления о записи на замер
+  notifyOnCallbackForm          Boolean  @default(true) // Уведомления о заказе обратного звонка
+  notifyOnDirectorForm          Boolean  @default(true) // Уведомления о письме директору
+  notifyOnQuoteForm             Boolean  @default(true) // Уведомления о заявке на расчёт стоимости
+  notifyOnQuizMebel             Boolean  @default(true) // Заявки с квиза mebel-na-zakaz-51.ru
+  notifyOnQuizRemont            Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
+  notifyOnKnowledgeFeedback     Boolean  @default(true) // Обратная связь по обучающей платформе
+  notifyOnSiteFeedback          Boolean  @default(true) // Обратная связь по публичному сайту
+  notifyOnKnowledgeTraining     Boolean  @default(true) // Динамика изучения материалов обучения
+  notifyOnWorkDays              Boolean  @default(true) // Учёт рабочего времени
+  notifyOnWaybills              Boolean  @default(true) // Путевой лист / маршрут водителя
+  notifyOnInstallationSchedules Boolean  @default(true) // Графики монтажей
+  updatedAt                     DateTime @updatedAt
 
   @@map("admin_notifications_block")
 }
@@ -2748,10 +2759,16 @@ model InstallerMaster {
   direction String
   fullName  String
   grade     String
+  /// Опциональная привязка к аккаунту: без неё мастер работает только по ФИО (колокольчик не получает).
+  userId    String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  user                  User?                       @relation("InstallerMasterUser", fields: [userId], references: [id], onDelete: SetNull)
+  installationSchedules InstallationScheduleEntry[]
+
   @@index([direction])
+  @@index([userId])
   @@map("installer_masters")
 }
 
@@ -2806,6 +2823,81 @@ model WaybillTask {
   @@index([deletedAt])
   @@index([createdById])
   @@map("waybill_tasks")
+}
+
+enum InstallationScheduleStatus {
+  PLANNED
+  DONE
+  FAILED
+}
+
+/// Запись графика монтажей (одна строка дневного расписания мастера).
+model InstallationScheduleEntry {
+  id              String                     @id @default(cuid())
+  date            DateTime                   @db.Date
+  timeFrom        String?
+  timeTo          String?
+  timeText        String? /// свободный текст времени («к 10.00»)
+  direction       String /// REPAIR | WINDOWS | DOORS | CEILINGS | FURNITURE | BLINDS
+  orderInfo       String?                    @db.Text
+  note            String?                    @db.Text
+  installerId     String?
+  installerName   String? /// снимок / ручной ввод без привязки к справочнику
+  packageId       String?
+  contractId      String?
+  contractNumber  String? /// снимок / ручной ввод без пакета
+  workOrderKey    String? /// ключ вкладки заказ-наряда в пакете
+  workOrderLabel  String? /// подпись / ручной ввод без привязки
+  customerName    String?
+  customerAddress String?                    @db.Text
+  customerPhone   String?
+  customerPhones  String[]                   @default([])
+  status          InstallationScheduleStatus @default(PLANNED)
+  completionNote  String?                    @db.Text
+  completedAt     DateTime?
+  completedById   String?
+  createdById     String?
+  deletedAt       DateTime?                  @map("deleted_at")
+  deletedById     String?                    @map("deleted_by_id")
+  createdAt       DateTime                   @default(now())
+  updatedAt       DateTime                   @updatedAt
+
+  installer   InstallerMaster?                @relation(fields: [installerId], references: [id], onDelete: SetNull)
+  package     ContractDocumentPackage?        @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  contract    Contract?                       @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  completedBy User?                           @relation("InstallationScheduleCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  createdBy   User?                           @relation("InstallationScheduleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy   User?                           @relation("InstallationScheduleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  bellEvents  InstallationScheduleBellEvent[]
+
+  @@index([date])
+  @@index([direction, date])
+  @@index([installerId, date])
+  @@index([packageId])
+  @@index([contractId])
+  @@index([status])
+  @@index([deletedAt])
+  @@index([createdById])
+  @@map("installation_schedule_entries")
+}
+
+/// Событие графика монтажей для колокольчика (персонально автору / ответственному менеджеру пакета).
+model InstallationScheduleBellEvent {
+  id                     String   @id @default(cuid())
+  recipientId            String
+  installationScheduleId String
+  kind                   String /// created | updated | completed | failed
+  title                  String
+  message                String   @db.Text
+  href                   String
+  createdAt              DateTime @default(now())
+
+  recipient User                      @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  entry     InstallationScheduleEntry @relation(fields: [installationScheduleId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([installationScheduleId])
+  @@map("installation_schedule_bell_events")
 }
 
 /// Событие путевого листа для колокольчика (персонально водителю / ответственному).
@@ -2976,19 +3068,20 @@ model Contract {
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 
-  direction        CrmDirection?             @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  manager          User?                     @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
-  surveyor         User?                     @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  customer         Customer?                 @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  measurement      Measurement?              @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
-  office           Office?                   @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  complexObject    ComplexObject?            @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
-  advances         ContractAdvance[]
-  amendments       ContractAmendment[]
-  payments         ContractPayment[]
-  history          ContractHistory[]
-  documentPackages ContractDocumentPackage[]
-  waybillTasks     WaybillTask[]
+  direction             CrmDirection?               @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  manager               User?                       @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
+  surveyor              User?                       @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  customer              Customer?                   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  measurement           Measurement?                @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
+  office                Office?                     @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  complexObject         ComplexObject?              @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
+  advances              ContractAdvance[]
+  amendments            ContractAmendment[]
+  payments              ContractPayment[]
+  history               ContractHistory[]
+  documentPackages      ContractDocumentPackage[]
+  waybillTasks          WaybillTask[]
+  installationSchedules InstallationScheduleEntry[]
 
   @@index([managerId])
   @@index([status])
@@ -3113,14 +3206,15 @@ model ContractDocumentPackage {
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 
-  documentObject     ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
-  createdBy          User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  responsibleManager User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
-  deletedBy          User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract        Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
-  versions           ContractDocumentPackageVersion[]
-  payments           ContractDocumentPackagePayment[]
-  paymentInvoices    ContractDocumentPaymentInvoice[]
+  documentObject        ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy             User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  responsibleManager    User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
+  deletedBy             User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract           Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions              ContractDocumentPackageVersion[]
+  payments              ContractDocumentPackagePayment[]
+  paymentInvoices       ContractDocumentPaymentInvoice[]
+  installationSchedules InstallationScheduleEntry[]
 
   @@index([kind])
   @@index([createdAt])

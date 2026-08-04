@@ -21,7 +21,8 @@ export type AdminBellPushEvent =
   | 'site_feedback'
   | 'knowledge_training'
   | 'work_day'
-  | 'waybill';
+  | 'waybill'
+  | 'installation_schedule';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -111,6 +112,7 @@ export class AdminBellPushService {
       notifyOnKnowledgeTraining?: boolean;
       notifyOnWorkDays?: boolean;
       notifyOnWaybills?: boolean;
+      notifyOnInstallationSchedules?: boolean;
     },
     role: string,
   ) {
@@ -143,6 +145,8 @@ export class AdminBellPushService {
         return settings.notifyOnWorkDays !== false;
       case 'waybill':
         return settings.notifyOnWaybills !== false;
+      case 'installation_schedule':
+        return settings.notifyOnInstallationSchedules !== false;
       default:
         return false;
     }

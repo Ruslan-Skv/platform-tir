@@ -175,6 +175,18 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installers',
   },
   {
+    label: 'Графики монтажей',
+    href: '/admin/crm/installation-schedules',
+    icon: '📅',
+    resourceId: 'admin.crm.installation-schedules',
+  },
+  {
+    label: 'Мои монтажи',
+    href: '/admin/crm/installation-schedules/my',
+    icon: '🧰',
+    resourceId: 'admin.crm.installation-schedules.my',
+  },
+  {
     label: 'Путевой лист',
     href: '/admin/crm/waybills',
     icon: '🚚',

@@ -11,7 +11,8 @@ export type ExternalNotifyEvent =
   | 'comment'
   | 'knowledge_training'
   | 'work_day'
-  | 'waybill';
+  | 'waybill'
+  | 'installation_schedule';
 
 @Injectable()
 export class ExternalNotifySettingsService {
@@ -78,6 +79,12 @@ export class ExternalNotifySettingsService {
           emails: parseStringArray(block.waybillNotifyEmails),
           telegramIds: parseStringArray(block.waybillNotifyTelegramIds),
           maxIds: parseStringArray(block.waybillNotifyMaxIds),
+        };
+      case 'installation_schedule':
+        return {
+          emails: parseStringArray(block.installationScheduleNotifyEmails),
+          telegramIds: parseStringArray(block.installationScheduleNotifyTelegramIds),
+          maxIds: parseStringArray(block.installationScheduleNotifyMaxIds),
         };
     }
   }

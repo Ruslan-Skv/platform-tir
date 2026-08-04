@@ -13,7 +13,8 @@ export type ExternalNotifyEvent =
   | 'comment'
   | 'knowledge_training'
   | 'work_day'
-  | 'waybill';
+  | 'waybill'
+  | 'installation_schedule';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -112,6 +113,21 @@ export class AdminExternalNotifyService {
     if (dto.waybillNotifyMaxIds !== undefined) {
       data.waybillNotifyMaxIds = normalizeStringArray(dto.waybillNotifyMaxIds);
     }
+    if (dto.installationScheduleNotifyEmails !== undefined) {
+      data.installationScheduleNotifyEmails = normalizeStringArray(
+        dto.installationScheduleNotifyEmails,
+      );
+    }
+    if (dto.installationScheduleNotifyTelegramIds !== undefined) {
+      data.installationScheduleNotifyTelegramIds = normalizeStringArray(
+        dto.installationScheduleNotifyTelegramIds,
+      );
+    }
+    if (dto.installationScheduleNotifyMaxIds !== undefined) {
+      data.installationScheduleNotifyMaxIds = normalizeStringArray(
+        dto.installationScheduleNotifyMaxIds,
+      );
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -177,6 +193,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.waybillNotifyTelegramIds),
           maxIds: parseStringArray(block.waybillNotifyMaxIds),
         };
+      case 'installation_schedule':
+        return {
+          emails: parseStringArray(block.installationScheduleNotifyEmails),
+          telegramIds: parseStringArray(block.installationScheduleNotifyTelegramIds),
+          maxIds: parseStringArray(block.installationScheduleNotifyMaxIds),
+        };
     }
   }
 
@@ -216,6 +238,9 @@ export class AdminExternalNotifyService {
     waybillNotifyEmails: Prisma.JsonValue | null;
     waybillNotifyTelegramIds: Prisma.JsonValue | null;
     waybillNotifyMaxIds: Prisma.JsonValue | null;
+    installationScheduleNotifyEmails: Prisma.JsonValue | null;
+    installationScheduleNotifyTelegramIds: Prisma.JsonValue | null;
+    installationScheduleNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -250,6 +275,11 @@ export class AdminExternalNotifyService {
       waybillNotifyEmails: parseStringArray(block.waybillNotifyEmails),
       waybillNotifyTelegramIds: parseStringArray(block.waybillNotifyTelegramIds),
       waybillNotifyMaxIds: parseStringArray(block.waybillNotifyMaxIds),
+      installationScheduleNotifyEmails: parseStringArray(block.installationScheduleNotifyEmails),
+      installationScheduleNotifyTelegramIds: parseStringArray(
+        block.installationScheduleNotifyTelegramIds,
+      ),
+      installationScheduleNotifyMaxIds: parseStringArray(block.installationScheduleNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

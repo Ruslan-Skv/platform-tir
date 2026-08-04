@@ -1,6 +1,6 @@
 'use client';
 
-import type { InstallerDirection, InstallerMaster } from '@/shared/api/admin-crm';
+import type { CrmUser, InstallerDirection, InstallerMaster } from '@/shared/api/admin-crm';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -28,6 +28,7 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
   const {
     installers,
     filtered,
+    users,
     loading,
     directionFilter,
     setDirectionFilter,
@@ -47,6 +48,7 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
     handleCreate,
     handleEdit,
     handleDelete,
+    formatUserLabel,
   } = model;
 
   const columns = [
@@ -69,6 +71,12 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       title: 'Разряд',
       render: (item: InstallerMaster) =>
         isRepairInstallerDirection(item.direction) ? item.grade : '—',
+    },
+    {
+      key: 'user',
+      title: 'Аккаунт',
+      render: (item: InstallerMaster) =>
+        item.user ? formatUserLabel(item.user) : <span className={styles.muted}>Без привязки</span>,
     },
     {
       key: 'actions',
@@ -148,11 +156,18 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
 
       <Modal isOpen={createModalOpen} onClose={closeCreateModal} title="Добавить мастера" size="md">
         <form data-modal-form onSubmit={handleCreate}>
-          <InstallerForm values={formValues} onChange={setFormValues} formError={formError} />
+          <InstallerForm
+            values={formValues}
+            onChange={setFormValues}
+            formError={formError}
+            users={users}
+            formatUserLabel={formatUserLabel}
+          />
           <div data-modal-footer-info data-modal-tone="success" role="status">
             <span data-modal-footer-info-icon aria-hidden="true" />
             <span data-modal-footer-info-text>
-              Заполните карточку мастера для выбранного направления.
+              ФИО достаточно для графика. Аккаунт нужен только если мастер должен получать
+              уведомления в колокольчик.
             </span>
           </div>
           <ModalActions onCancel={closeCreateModal} submitting={submitting} />
@@ -161,10 +176,19 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
 
       <Modal isOpen={Boolean(editItem)} onClose={closeEditModal} title="Изменить мастера" size="md">
         <form data-modal-form onSubmit={handleEdit}>
-          <InstallerForm values={formValues} onChange={setFormValues} formError={formError} />
+          <InstallerForm
+            values={formValues}
+            onChange={setFormValues}
+            formError={formError}
+            users={users}
+            formatUserLabel={formatUserLabel}
+          />
           <div data-modal-footer-info data-modal-tone="success" role="status">
             <span data-modal-footer-info-icon aria-hidden="true" />
-            <span data-modal-footer-info-text>Изменения применятся сразу после сохранения.</span>
+            <span data-modal-footer-info-text>
+              Привязку к аккаунту можно снять в любой момент — мастер останется в справочнике по
+              ФИО.
+            </span>
           </div>
           <ModalActions onCancel={closeEditModal} submitting={submitting} />
         </form>
@@ -188,10 +212,18 @@ function InstallerForm({
   values,
   onChange,
   formError,
+  users,
+  formatUserLabel,
 }: {
   values: InstallerFormValues;
   onChange: (next: InstallerFormValues) => void;
   formError: string | null;
+  users: CrmUser[];
+  formatUserLabel: (user: {
+    firstName?: string | null;
+    lastName?: string | null;
+    email?: string;
+  }) => string;
 }) {
   const gradeApplies = isRepairInstallerDirection(values.direction);
 
@@ -249,6 +281,26 @@ function InstallerForm({
           onChange={(e) => onChange({ ...values, fullName: e.target.value })}
           placeholder="Иванов Иван Иванович"
         />
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="installer-user">Аккаунт в системе</label>
+        <select
+          id="installer-user"
+          value={values.userId}
+          onChange={(e) => onChange({ ...values, userId: e.target.value })}
+        >
+          <option value="">Без привязки</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {formatUserLabel(u)}
+              {u.email ? ` (${u.email})` : ''}
+            </option>
+          ))}
+        </select>
+        <p className={styles.fieldHint}>
+          Необязательно. С привязкой мастер получает уведомления по графику монтажей в колокольчик.
+        </p>
       </div>
 
       {formError ? <p data-modal-form-error>{formError}</p> : null}

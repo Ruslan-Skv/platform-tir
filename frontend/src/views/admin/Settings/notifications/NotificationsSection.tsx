@@ -323,6 +323,7 @@ export function NotificationsSection() {
     notifyOnKnowledgeTraining: true,
     notifyOnWorkDays: true,
     notifyOnWaybills: true,
+    notifyOnInstallationSchedules: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -868,6 +869,21 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnWaybills">
                   Путевой лист (новые задания, правки, выполнение / невыполнение)
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnInstallationSchedules"
+                  checked={formSettings.notifyOnInstallationSchedules ?? true}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, notifyOnInstallationSchedules: e.target.checked } : s
+                    )
+                  }
+                />
+                <label htmlFor="notifyOnInstallationSchedules">
+                  График монтажей (новые записи, правки, выполнение / невыполнение)
                 </label>
               </div>
               {isSuperAdmin ? (

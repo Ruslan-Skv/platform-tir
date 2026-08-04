@@ -64,6 +64,11 @@ export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
     methods: ['POST'],
     pathPattern: /^\/api\/v1\/admin\/waybills\/[^/]+\/(complete|fail)$/,
   },
+  // Монтажник отмечает выполнение своего монтажа (права проверяет InstallationSchedulesService)
+  {
+    methods: ['POST'],
+    pathPattern: /^\/api\/v1\/admin\/installation-schedules\/[^/]+\/(complete|fail)$/,
+  },
 ];
 
 /**

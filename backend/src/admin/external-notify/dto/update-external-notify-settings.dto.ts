@@ -223,4 +223,31 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   waybillNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Email для уведомлений по графику монтажей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  installationScheduleNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для уведомлений по графику монтажей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  installationScheduleNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для уведомлений по графику монтажей',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  installationScheduleNotifyMaxIds?: string[];
 }

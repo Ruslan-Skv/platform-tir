@@ -4,6 +4,8 @@ export type InstallerFormValues = {
   direction: InstallerDirection;
   fullName: string;
   grade: string;
+  /** Пустая строка = без привязки к аккаунту. */
+  userId: string;
 };
 
 export type InstallersPageMessage = {

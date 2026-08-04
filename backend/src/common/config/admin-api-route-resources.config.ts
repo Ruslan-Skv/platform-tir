@@ -8,6 +8,7 @@ export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/presence',
   '/api/v1/admin/work-days/my',
   '/api/v1/admin/waybills/my',
+  '/api/v1/admin/installation-schedules/my',
   // Свой профиль ЛК — не ресурс «Управление пользователями»
   '/api/v1/users/me',
 ] as const;
@@ -114,6 +115,10 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/measurements', resourceId: 'admin.crm.measurements' },
   { prefix: '/api/v1/admin/customers', resourceId: 'admin.crm.customers' },
   { prefix: '/api/v1/admin/installers', resourceId: 'admin.crm.installers' },
+  {
+    prefix: '/api/v1/admin/installation-schedules',
+    resourceId: 'admin.crm.installation-schedules',
+  },
   { prefix: '/api/v1/admin/waybills', resourceId: 'admin.crm.waybills' },
   { prefix: '/api/v1/admin/offices', resourceId: 'admin.crm.offices' },
   { prefix: '/api/v1/admin/tasks', resourceId: 'admin.crm.tasks' },

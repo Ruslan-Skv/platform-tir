@@ -38,6 +38,9 @@ export interface ExternalNotifyChannelsSettings {
   waybillNotifyEmails: string[];
   waybillNotifyTelegramIds: string[];
   waybillNotifyMaxIds: string[];
+  installationScheduleNotifyEmails: string[];
+  installationScheduleNotifyTelegramIds: string[];
+  installationScheduleNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -80,6 +83,9 @@ export async function updateAdminExternalNotifyChannels(
       | 'waybillNotifyEmails'
       | 'waybillNotifyTelegramIds'
       | 'waybillNotifyMaxIds'
+      | 'installationScheduleNotifyEmails'
+      | 'installationScheduleNotifyTelegramIds'
+      | 'installationScheduleNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

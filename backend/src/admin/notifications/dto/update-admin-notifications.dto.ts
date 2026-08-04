@@ -115,6 +115,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnWaybills?: boolean;
 
+  @ApiPropertyOptional({ description: 'График монтажей (новые записи, правки, выполнение)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnInstallationSchedules?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })
