@@ -678,6 +678,14 @@
   width: 100%;
 }
 
+/* Иначе -webkit-text-fill-color на input красит placeholder как заполненное значение */
+.content [data-modal-form] input:not([type='checkbox']):not([type='radio'])::placeholder,
+.content [data-modal-form] textarea::placeholder {
+  color: var(--admin-text-muted, #9ca3af);
+  -webkit-text-fill-color: var(--admin-text-muted, #9ca3af);
+  opacity: 0.55;
+}
+
 .content :where([data-modal-form] select option) {
   background: var(--admin-surface, #ffffff);
   color: var(--admin-text-primary, #111827);
@@ -952,6 +960,19 @@
   color: var(--admin-surface-muted, #111827);
   color-scheme: light;
   -webkit-text-fill-color: var(--admin-surface-muted, #111827);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  [data-modal-form]
+  input:not([type='checkbox']):not([type='radio'])::placeholder,
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .content
+  [data-modal-form]
+  textarea::placeholder {
+  color: var(--admin-text-muted, #6b7280);
+  -webkit-text-fill-color: var(--admin-text-muted, #6b7280);
+  opacity: 0.55;
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
