@@ -103,6 +103,10 @@
   grid-column: 1 / -1;
 }
 
+.formHintFlush {
+  margin-top: 0;
+}
+
 .createFormLabelRow {
   display: flex;
   align-items: center;

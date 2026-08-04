@@ -248,7 +248,7 @@ export function MyRepairSchedulesPageView({ model }: { model: MyRepairSchedulesP
             void submitEntry();
           }}
         >
-          <p data-modal-form-hint style={{ marginTop: 0 }}>
+          <p data-modal-form-hint className={styles.formHintFlush}>
             {entryProject?.contractNumber || 'Проект'} · {entryProject?.customerAddress || '—'}
           </p>
           <div data-modal-form-grid>

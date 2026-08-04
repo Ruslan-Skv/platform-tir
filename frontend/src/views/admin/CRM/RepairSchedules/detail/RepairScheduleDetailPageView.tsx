@@ -209,7 +209,7 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
                 ))}
               </select>
             </div>
-            <div data-modal-form-group style={{ gridColumn: '1 / -1' }}>
+            <div data-modal-form-group className={styles.createFormSpan}>
               <label htmlFor="rs-entry-text">Запись динамики</label>
               <textarea
                 id="rs-entry-text"

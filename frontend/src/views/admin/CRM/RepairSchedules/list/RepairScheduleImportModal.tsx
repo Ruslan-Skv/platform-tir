@@ -8,6 +8,8 @@ import {
 } from '@/shared/api/crm/admin-repair-schedules';
 import { Modal } from '@/shared/ui/Modal';
 
+import styles from '../shared/RepairSchedules.module.css';
+
 type Props = {
   isOpen: boolean;
   onClose: () => void;
@@ -55,7 +57,7 @@ export function RepairScheduleImportModal({ isOpen, onClose, onImported }: Props
   return (
     <Modal isOpen={isOpen} onClose={handleClose} title="Импорт из Excel / Google" size="md">
       <div data-modal-form data-modal-density="compact">
-        <p data-modal-form-hint style={{ marginTop: 0 }}>
+        <p data-modal-form-hint className={styles.formHintFlush}>
           Загрузите выгрузку Google Sheets или Excel «ГрафикРемонт». Импортируются колонки недель
           2025–2026: проекты upsert по № договора, ячейки недель — в таймлайн.
         </p>
