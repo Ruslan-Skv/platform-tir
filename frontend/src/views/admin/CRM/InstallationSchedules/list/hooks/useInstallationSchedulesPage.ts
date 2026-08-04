@@ -2,11 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-import {
-  type InstallerDirection,
-  type InstallerMaster,
-  getInstallers,
-} from '@/shared/api/admin-crm';
+import { type InstallerMaster, getInstallers } from '@/shared/api/admin-crm';
 import {
   type InstallationSchedule,
   type InstallationScheduleInput,
@@ -22,6 +18,7 @@ import {
 } from '@/shared/api/crm/admin-installation-schedules';
 
 import {
+  type InstallationScheduleDirection,
   type ViewMode,
   emptyForm,
   formFromSchedule,
@@ -40,7 +37,7 @@ export function useInstallationSchedulesPage() {
   );
   const [dateFrom, setDateFrom] = useState(today);
   const [dateTo, setDateTo] = useState(() => weekAheadIsoDate(today));
-  const [direction, setDirection] = useState<InstallerDirection | 'ALL'>('ALL');
+  const [direction, setDirection] = useState<InstallationScheduleDirection | 'ALL'>('ALL');
   const [items, setItems] = useState<InstallationSchedule[]>([]);
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
   const [loading, setLoading] = useState(true);

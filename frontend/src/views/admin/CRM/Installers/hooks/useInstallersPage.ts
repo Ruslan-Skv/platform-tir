@@ -218,6 +218,7 @@ export function useInstallersPage() {
     directionFilter,
     setDirectionFilter,
     message,
+    setMessage,
     createModalOpen,
     editItem,
     deleteItem,
@@ -234,6 +235,7 @@ export function useInstallersPage() {
     handleEdit,
     handleDelete,
     formatUserLabel,
+    refresh: loadInstallers,
   };
 }
 

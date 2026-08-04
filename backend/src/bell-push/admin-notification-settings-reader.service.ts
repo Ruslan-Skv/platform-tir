@@ -50,6 +50,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnWorkDays: true,
       notifyOnWaybills: true,
       notifyOnInstallationSchedules: true,
+      notifyOnRepairSchedules: true,
     };
   }
 

@@ -187,6 +187,18 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.installation-schedules.my',
   },
   {
+    label: 'План-график ремонта',
+    href: '/admin/crm/repair-schedules',
+    icon: '🏗️',
+    resourceId: 'admin.crm.repair-schedules',
+  },
+  {
+    label: 'Мои ремонты',
+    href: '/admin/crm/repair-schedules/my',
+    icon: '🔧',
+    resourceId: 'admin.crm.repair-schedules.my',
+  },
+  {
     label: 'Путевой лист',
     href: '/admin/crm/waybills',
     icon: '🚚',

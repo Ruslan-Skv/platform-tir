@@ -78,6 +78,8 @@ export interface ContractDocumentPackageCrmContract {
   customerAddress: string | null;
   customerPhone: string | null;
   totalAmount: string | number;
+  advanceAmount?: string | number | null;
+  actWorkStartDate?: string | null;
 }
 
 export interface ContractDocumentObjectRef {

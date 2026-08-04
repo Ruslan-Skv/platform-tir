@@ -29,6 +29,7 @@ export interface AdminNotificationsSettings {
   notifyOnWorkDays: boolean;
   notifyOnWaybills: boolean;
   notifyOnInstallationSchedules: boolean;
+  notifyOnRepairSchedules: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -217,6 +218,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnWorkDays: data.notifyOnWorkDays,
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
+    notifyOnRepairSchedules: data.notifyOnRepairSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -268,6 +270,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnWorkDays: data.notifyOnWorkDays,
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
+    notifyOnRepairSchedules: data.notifyOnRepairSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -469,6 +472,29 @@ export async function getAdminBellInstallationScheduleNotifications(
     }
   );
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику монтажей');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellRepairScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
+  kindLabel: string;
+  repairScheduleProjectId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellRepairScheduleNotifications(
+  limit = 20
+): Promise<AdminBellRepairScheduleNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/repair-schedules?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику ремонтов');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

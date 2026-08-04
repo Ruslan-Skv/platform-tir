@@ -16,7 +16,8 @@ export type AdminBellNotificationType =
   | 'knowledgeTraining'
   | 'workDays'
   | 'waybills'
-  | 'installationSchedules';
+  | 'installationSchedules'
+  | 'repairSchedules';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -67,6 +68,17 @@ export type AdminBellInstallationScheduleNotification = {
   kind: 'created' | 'updated' | 'completed' | 'failed';
   kindLabel: string;
   installationScheduleId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellRepairScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
+  kindLabel: string;
+  repairScheduleProjectId: string;
   title: string;
   message: string;
   href: string;
@@ -252,6 +264,18 @@ export function installationScheduleToBellNotificationItem(
   };
 }
 
+export function repairScheduleToBellNotificationItem(
+  item: AdminBellRepairScheduleNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'repairSchedules',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/crm/repair-schedules',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -326,6 +350,10 @@ export function isNotificationItemEnabled(
     );
   }
 
+  if (item.type === 'repairSchedules') {
+    return hasAccess('admin.crm.repair-schedules') && isBellTypeEnabled(item.type, settings);
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -364,6 +392,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnWaybills !== false;
     case 'installationSchedules':
       return settings.notifyOnInstallationSchedules !== false;
+    case 'repairSchedules':
+      return settings.notifyOnRepairSchedules !== false;
     default:
       return false;
   }
@@ -440,6 +470,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'installationSchedules':
       return {
         title: 'График монтажей',
+        body: item.text,
+        tag,
+      };
+    case 'repairSchedules':
+      return {
+        title: 'График ремонтов',
         body: item.text,
         tag,
       };

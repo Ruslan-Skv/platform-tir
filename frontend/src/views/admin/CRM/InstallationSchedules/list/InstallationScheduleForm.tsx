@@ -11,13 +11,13 @@ import {
   type InstallationWorkOrderOption,
   getInstallationWorkOrders,
 } from '@/shared/api/crm/admin-installation-schedules';
-import {
-  DIRECTION_LABELS,
-  DIRECTION_OPTIONS,
-} from '@/views/admin/CRM/Installers/installers-page.constants';
 
 import styles from '../shared/InstallationSchedules.module.css';
-import type { InstallationScheduleFormValues } from '../shared/installation-schedules';
+import {
+  DIRECTION_LABELS,
+  INSTALLATION_SCHEDULE_DIRECTION_OPTIONS,
+  type InstallationScheduleFormValues,
+} from '../shared/installation-schedules';
 
 type Props = {
   values: InstallationScheduleFormValues;
@@ -124,7 +124,7 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
               })
             }
           >
-            {DIRECTION_OPTIONS.map((option) => (
+            {INSTALLATION_SCHEDULE_DIRECTION_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>

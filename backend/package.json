@@ -25,7 +25,7 @@
     "secretlint": "node ./node_modules/secretlint/bin/secretlint.js \"src/**/*.{ts,js}\" \"prisma/**/*.ts\" \"*.{js,json}\" --format stylish",
     "prepare": "node -e \"if(process.env.HUSKY==='0'||process.env.CI){process.exit(0)}\" && cd .. && husky install backend/.husky || true",
     "husky:install": "cd .. && husky install backend/.husky",
-    "commit": "cd .. && git add -A && cd backend && cz && node ../scripts/print-precommit-summary.mjs",
+    "commit": "node ../scripts/run-commit.mjs",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",

@@ -120,6 +120,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnInstallationSchedules?: boolean;
 
+  @ApiPropertyOptional({ description: 'График ремонтов (проекты, записи и статусы)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnRepairSchedules?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

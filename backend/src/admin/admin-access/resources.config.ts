@@ -41,6 +41,16 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Мои монтажи',
     path: '/admin/crm/installation-schedules/my',
   },
+  {
+    id: 'admin.crm.repair-schedules',
+    label: 'План-график ремонта',
+    path: '/admin/crm/repair-schedules',
+  },
+  {
+    id: 'admin.crm.repair-schedules.my',
+    label: 'Мои ремонты',
+    path: '/admin/crm/repair-schedules/my',
+  },
   { id: 'admin.crm.waybills', label: 'Путевой лист', path: '/admin/crm/waybills' },
   {
     id: 'admin.crm.waybills.my',

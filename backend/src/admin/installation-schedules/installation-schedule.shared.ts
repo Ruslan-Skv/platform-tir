@@ -1,5 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
-import { INSTALLER_DIRECTIONS } from '../installers/installer-directions.constant';
+import { INSTALLATION_SCHEDULE_DIRECTIONS } from './installation-schedule-directions.constant';
 
 export const USER_SELECT = {
   id: true,
@@ -137,7 +137,7 @@ export function permanentDeleteAtIso(deletedAt: Date): string {
 }
 
 export function assertDirection(direction: string) {
-  if (!(INSTALLER_DIRECTIONS as readonly string[]).includes(direction)) {
+  if (!(INSTALLATION_SCHEDULE_DIRECTIONS as readonly string[]).includes(direction)) {
     throw new BadRequestException(`Неизвестное направление: ${direction}`);
   }
 }

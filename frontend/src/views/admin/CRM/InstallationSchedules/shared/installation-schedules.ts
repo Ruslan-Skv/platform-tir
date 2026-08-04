@@ -1,14 +1,27 @@
 import type { InstallerDirection } from '@/shared/api/admin-crm';
 import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
+import {
+  DIRECTION_OPTIONS as ALL_DIRECTION_OPTIONS,
+  DIRECTION_LABELS,
+} from '@/views/admin/CRM/Installers/installers-page.constants';
 
 export type ViewMode = 'table' | 'calendar';
+
+/** Направления разовых монтажей (без «Ремонт» — он ведётся в план-графике). */
+export type InstallationScheduleDirection = Exclude<InstallerDirection, 'REPAIR'>;
+
+export const INSTALLATION_SCHEDULE_DIRECTION_OPTIONS = ALL_DIRECTION_OPTIONS.filter(
+  (opt): opt is { value: InstallationScheduleDirection; label: string } => opt.value !== 'REPAIR'
+);
+
+export { DIRECTION_LABELS };
 
 export type InstallationScheduleFormValues = {
   date: string;
   timeFrom: string;
   timeTo: string;
   timeText: string;
-  direction: InstallerDirection;
+  direction: InstallationScheduleDirection;
   installerId: string;
   installerName: string;
   manualInstaller: boolean;
@@ -47,7 +60,7 @@ export function emptyForm(date = todayIsoDate()): InstallationScheduleFormValues
     timeFrom: '',
     timeTo: '',
     timeText: '',
-    direction: 'REPAIR',
+    direction: 'DOORS',
     installerId: '',
     installerName: '',
     manualInstaller: false,
@@ -66,12 +79,14 @@ export function emptyForm(date = todayIsoDate()): InstallationScheduleFormValues
 }
 
 export function formFromSchedule(item: InstallationSchedule): InstallationScheduleFormValues {
+  const direction =
+    item.direction === 'REPAIR' ? 'DOORS' : (item.direction as InstallationScheduleDirection);
   return {
     date: item.date.slice(0, 10),
     timeFrom: item.timeFrom ?? '',
     timeTo: item.timeTo ?? '',
     timeText: item.timeText ?? '',
-    direction: item.direction,
+    direction,
     installerId: item.installerId ?? '',
     installerName: item.installerName ?? '',
     manualInstaller: !item.installerId && Boolean(item.installerName),

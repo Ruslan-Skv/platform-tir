@@ -16,6 +16,8 @@ export const contractDocumentPackageInclude = {
       customerAddress: true,
       customerPhone: true,
       totalAmount: true,
+      advanceAmount: true,
+      actWorkStartDate: true,
     },
   },
   /**

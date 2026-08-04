@@ -1,6 +1,6 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsArray, IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
-import { INSTALLER_DIRECTIONS } from '../../installers/installer-directions.constant';
+import { INSTALLATION_SCHEDULE_DIRECTIONS } from '../installation-schedule-directions.constant';
 
 export class CreateInstallationScheduleDto {
   @ApiProperty({ example: '2026-08-04' })
@@ -25,9 +25,9 @@ export class CreateInstallationScheduleDto {
   @MaxLength(100)
   timeText?: string | null;
 
-  @ApiProperty({ example: 'DOORS', enum: INSTALLER_DIRECTIONS })
+  @ApiProperty({ example: 'DOORS', enum: INSTALLATION_SCHEDULE_DIRECTIONS })
   @IsString()
-  @IsIn([...INSTALLER_DIRECTIONS])
+  @IsIn([...INSTALLATION_SCHEDULE_DIRECTIONS])
   direction: string;
 
   @ApiPropertyOptional()

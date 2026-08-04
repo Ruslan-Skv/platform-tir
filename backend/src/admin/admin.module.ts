@@ -43,6 +43,7 @@ import { RecruitmentModule } from './recruitment/recruitment.module';
 import { WorkDaysModule } from './work-days/work-days.module';
 import { WaybillsModule } from './waybills/waybills.module';
 import { InstallationSchedulesModule } from './installation-schedules/installation-schedules.module';
+import { RepairSchedulesModule } from './repair-schedules/repair-schedules.module';
 
 @Module({
   imports: [
@@ -56,6 +57,7 @@ import { InstallationSchedulesModule } from './installation-schedules/installati
     InstallersModule,
     WaybillsModule,
     InstallationSchedulesModule,
+    RepairSchedulesModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
@@ -104,6 +106,7 @@ import { InstallationSchedulesModule } from './installation-schedules/installati
     InstallersModule,
     WaybillsModule,
     InstallationSchedulesModule,
+    RepairSchedulesModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,

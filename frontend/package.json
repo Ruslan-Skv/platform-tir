@@ -21,7 +21,7 @@
     "test:coverage": "jest --coverage",
     "test:e2e": "playwright test",
     "test:e2e:ui": "playwright test --ui",
-    "commit": "cd .. && git add -A && cd backend && cz"
+    "commit": "node ../scripts/run-commit.mjs"
   },
   "dependencies": {
     "@headlessui/react": "^2.2.9",

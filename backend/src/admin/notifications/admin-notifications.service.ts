@@ -73,6 +73,7 @@ export class AdminNotificationsService {
       notifyOnWorkDays: dto.notifyOnWorkDays,
       notifyOnWaybills: dto.notifyOnWaybills,
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules,
+      notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     updateData.deliveryOnly = false;
@@ -100,6 +101,7 @@ export class AdminNotificationsService {
       notifyOnWorkDays: dto.notifyOnWorkDays ?? true,
       notifyOnWaybills: dto.notifyOnWaybills ?? true,
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules ?? true,
+      notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -282,6 +284,7 @@ export class AdminNotificationsService {
       notifyOnWorkDays: dto.notifyOnWorkDays,
       notifyOnWaybills: dto.notifyOnWaybills,
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules,
+      notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -307,6 +310,7 @@ export class AdminNotificationsService {
       notifyOnWorkDays: dto.notifyOnWorkDays ?? true,
       notifyOnWaybills: dto.notifyOnWaybills ?? true,
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules ?? true,
+      notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

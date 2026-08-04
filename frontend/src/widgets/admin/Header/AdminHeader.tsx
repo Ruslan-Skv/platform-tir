@@ -26,6 +26,7 @@ import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shar
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellInstallationScheduleNotifications,
+  getAdminBellRepairScheduleNotifications,
   getAdminBellTrainingNotifications,
   getAdminBellWaybillNotifications,
   getAdminBellWorkDayNotifications,
@@ -33,6 +34,7 @@ import {
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellInstallationScheduleNotification,
+  AdminBellRepairScheduleNotification,
   AdminBellTrainingNotification,
   AdminBellWaybillNotification,
   AdminBellWorkDayNotification,
@@ -77,6 +79,7 @@ import {
   isBellTypeEnabled,
   isNotificationItemEnabled,
   leadsToBellNotificationItems,
+  repairScheduleToBellNotificationItem,
   reviewToBellNotificationItem,
   supportToBellNotificationItem,
   trainingToBellNotificationItem,
@@ -148,6 +151,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [installationScheduleNotifications, setInstallationScheduleNotifications] = useState<
     AdminBellInstallationScheduleNotification[]
   >([]);
+  const [repairScheduleNotifications, setRepairScheduleNotifications] = useState<
+    AdminBellRepairScheduleNotification[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -162,6 +168,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     workDays: number;
     waybills: number;
     installationSchedules: number;
+    repairSchedules: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -297,6 +304,11 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           hasAccess('admin.crm.installation-schedules.my'))
           ? getAdminBellInstallationScheduleNotifications(20)
           : Promise.resolve([] as AdminBellInstallationScheduleNotification[]);
+      const loadRepairSchedules =
+        settings?.notifyOnRepairSchedules !== false &&
+        (hasAccess('admin.crm.repair-schedules') || hasAccess('admin.crm.repair-schedules.my'))
+          ? getAdminBellRepairScheduleNotifications(20)
+          : Promise.resolve([] as AdminBellRepairScheduleNotification[]);
 
       const [
         reviewsResult,
@@ -307,6 +319,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         workDaysResult,
         waybillsResult,
         installationSchedulesResult,
+        repairSchedulesResult,
       ] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -324,6 +337,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadWorkDays,
         loadWaybills,
         loadInstallationSchedules,
+        loadRepairSchedules,
       ]);
 
       const newReviews =
@@ -352,6 +366,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installationSchedulesResult.status === 'fulfilled'
           ? (installationSchedulesResult.value ?? [])
           : [];
+      const newRepairSchedules =
+        repairSchedulesResult.status === 'fulfilled' ? (repairSchedulesResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -362,6 +378,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         workDays: newWorkDays.length,
         waybills: newWaybills.length,
         installationSchedules: newInstallationSchedules.length,
+        repairSchedules: newRepairSchedules.length,
       };
 
       const totalNew =
@@ -371,7 +388,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newTraining.length +
         newWorkDays.length +
         newWaybills.length +
-        newInstallationSchedules.length;
+        newInstallationSchedules.length +
+        newRepairSchedules.length;
       const prevTotal = prev
         ? prev.reviews +
           prev.support +
@@ -379,7 +397,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.training +
           prev.workDays +
           prev.waybills +
-          prev.installationSchedules
+          prev.installationSchedules +
+          prev.repairSchedules
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -421,6 +440,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newWorkDays.map(workDayToBellNotificationItem),
             ...newWaybills.map(waybillToBellNotificationItem),
             ...newInstallationSchedules.map(installationScheduleToBellNotificationItem),
+            ...newRepairSchedules.map(repairScheduleToBellNotificationItem),
           ]
             .filter((item) => isBellTypeEnabled(item.type, settings))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -439,6 +459,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setWorkDayNotifications(newWorkDays);
       setWaybillNotifications(newWaybills);
       setInstallationScheduleNotifications(newInstallationSchedules);
+      setRepairScheduleNotifications(newRepairSchedules);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -613,6 +634,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...workDayNotifications.map(workDayToBellNotificationItem),
     ...waybillNotifications.map(waybillToBellNotificationItem),
     ...installationScheduleNotifications.map(installationScheduleToBellNotificationItem),
+    ...repairScheduleNotifications.map(repairScheduleToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>

@@ -11,16 +11,16 @@ import {
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
-import {
-  DIRECTION_LABELS,
-  DIRECTION_OPTIONS,
-} from '@/views/admin/CRM/Installers/installers-page.constants';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../shared/InstallationSchedules.module.css';
+import {
+  DIRECTION_LABELS,
+  INSTALLATION_SCHEDULE_DIRECTION_OPTIONS,
+} from '../shared/installation-schedules';
 import {
   STATUS_LABELS,
   formatDate,
@@ -354,7 +354,7 @@ export function InstallationSchedulesPageView({
             >
               Все
             </button>
-            {DIRECTION_OPTIONS.map((option) => (
+            {INSTALLATION_SCHEDULE_DIRECTION_OPTIONS.map((option) => (
               <button
                 key={option.value}
                 type="button"
