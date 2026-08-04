@@ -21,6 +21,7 @@ import {
 import {
   defaultCycleDays,
   emptyAbsenceBlock,
+  formatIsoDayMonth,
   previewDriverCycle,
 } from '../shared/driver-availability.utils';
 import { formatUserLabel, todayIsoDate } from '../shared/waybills-page.utils';
@@ -551,7 +552,7 @@ export function WaybillsSettingsButton({ triggerClassName }: WaybillsSettingsBut
                             }`}
                             title={`${p.date}: ${p.label}`}
                           >
-                            <span className={styles.previewDate}>{p.date.slice(5)}</span>
+                            <span className={styles.previewDate}>{formatIsoDayMonth(p.date)}</span>
                             <span className={styles.previewLabel}>{p.label}</span>
                           </span>
                         ))}

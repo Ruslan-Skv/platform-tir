@@ -9,6 +9,7 @@ import {
   formatMoney,
   formatTimeRange,
   formatUserLabel,
+  formatWaybillDateDisplay,
   isLateEdit,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
@@ -51,7 +52,7 @@ export function WaybillsListMobileCards({
               <div className={styles.mobileCardTop}>
                 <div className={styles.mobileCardMain}>
                   <span className={styles.mobileCardName}>
-                    {item.date.slice(0, 10)}
+                    {formatWaybillDateDisplay(item.date)}
                     {item.direction ? ` · ${item.direction}` : ''}
                   </span>
                   <span className={styles.mobileCardMeta}>

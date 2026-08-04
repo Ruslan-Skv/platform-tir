@@ -5,6 +5,10 @@
   font-size: var(--admin-font-size-base);
 }
 
+.headerSuccessNotice {
+  min-width: 0;
+}
+
 .modalHintFlush {
   margin-top: 0;
 }

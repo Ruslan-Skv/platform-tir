@@ -78,8 +78,14 @@ export function isSundayIsoDate(iso: string): boolean {
   return parseIsoDateUtc(iso).getUTCDay() === 0;
 }
 
+export function formatIsoDayMonth(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return iso;
+  return `${m[3]}.${m[2]}`;
+}
+
 export function formatDayChipDate(iso: string): string {
-  return `${weekdayShortRu(iso)} ${iso.slice(5)}`;
+  return `${weekdayShortRu(iso)} ${formatIsoDayMonth(iso)}`;
 }
 
 export function previewDriverCycle(params: {

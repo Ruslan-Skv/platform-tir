@@ -16,6 +16,7 @@ import {
   formatMoney,
   formatTimeRange,
   formatUserLabel,
+  formatWaybillDateDisplay,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
 import { MyWaybillDriverActions } from './MyWaybillDriverActions';
@@ -82,7 +83,7 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
     {
       key: 'date',
       title: 'Дата',
-      render: (item: WaybillTask) => item.date.slice(0, 10),
+      render: (item: WaybillTask) => formatWaybillDateDisplay(item.date),
     },
     {
       key: 'time',

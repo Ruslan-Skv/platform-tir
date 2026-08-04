@@ -27,6 +27,13 @@ export function weekAheadIsoDate(fromIso = todayIsoDate()): string {
   return `${y}-${mo}-${d}`;
 }
 
+/** Отображение даты задания в списках: дд.мм.гг */
+export function formatWaybillDateDisplay(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!m) return iso;
+  return `${m[3]}.${m[2]}.${m[1].slice(2)}`;
+}
+
 export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillFormValues {
   return {
     date,

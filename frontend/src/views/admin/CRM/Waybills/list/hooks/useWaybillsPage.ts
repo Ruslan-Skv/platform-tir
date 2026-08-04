@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { type Contract, type CrmUser, getContracts, getCrmUsers } from '@/shared/api/admin-crm';
@@ -49,6 +49,32 @@ export function useWaybillsPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<WaybillStatusFilter>('ALL');
   const [message, setMessage] = useState<WaybillsPageMessage | null>(null);
+  const [headerSuccessText, setHeaderSuccessText] = useState('Задание добавлено');
+  const messageTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const flashMessage = useCallback((next: WaybillsPageMessage) => {
+    if (messageTimeoutRef.current) {
+      clearTimeout(messageTimeoutRef.current);
+      messageTimeoutRef.current = null;
+    }
+    if (next.type === 'success') {
+      setHeaderSuccessText(next.text);
+    }
+    setMessage(next);
+    messageTimeoutRef.current = setTimeout(
+      () => {
+        setMessage(null);
+        messageTimeoutRef.current = null;
+      },
+      next.type === 'success' ? 2000 : 4000
+    );
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (messageTimeoutRef.current) clearTimeout(messageTimeoutRef.current);
+    };
+  }, []);
 
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editItem, setEditItem] = useState<WaybillTask | null>(null);
@@ -80,14 +106,14 @@ export function useWaybillsPage() {
       setTasks(data);
     } catch (err) {
       setTasks([]);
-      setMessage({
+      flashMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Не удалось загрузить путевой лист',
       });
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo]);
+  }, [dateFrom, dateTo, flashMessage]);
 
   const refreshTrashCount = useCallback(async () => {
     try {
@@ -250,7 +276,7 @@ export function useWaybillsPage() {
       setFormError(null);
       try {
         await createWaybillTask(toInput(formValues));
-        setMessage({ type: 'success', text: 'Задание добавлено' });
+        flashMessage({ type: 'success', text: 'Задание добавлено' });
         closeCreateModal();
         await loadTasks();
       } catch (err) {
@@ -259,7 +285,7 @@ export function useWaybillsPage() {
         setSubmitting(false);
       }
     },
-    [assertDriverDateAllowed, closeCreateModal, formValues, loadTasks, toInput]
+    [assertDriverDateAllowed, closeCreateModal, flashMessage, formValues, loadTasks, toInput]
   );
 
   const handleEdit = useCallback(
@@ -279,7 +305,7 @@ export function useWaybillsPage() {
       setFormError(null);
       try {
         await updateWaybillTask(editItem.id, toInput(formValues));
-        setMessage({ type: 'success', text: 'Задание обновлено' });
+        flashMessage({ type: 'success', text: 'Задание обновлено' });
         closeEditModal();
         await loadTasks();
       } catch (err) {
@@ -288,7 +314,15 @@ export function useWaybillsPage() {
         setSubmitting(false);
       }
     },
-    [assertDriverDateAllowed, closeEditModal, editItem, formValues, loadTasks, toInput]
+    [
+      assertDriverDateAllowed,
+      closeEditModal,
+      editItem,
+      flashMessage,
+      formValues,
+      loadTasks,
+      toInput,
+    ]
   );
 
   const handleDelete = useCallback(async () => {
@@ -296,19 +330,19 @@ export function useWaybillsPage() {
     setSubmitting(true);
     try {
       await deleteWaybillTask(deleteItem.id);
-      setMessage({ type: 'success', text: 'Задание перемещено в корзину' });
+      flashMessage({ type: 'success', text: 'Задание перемещено в корзину' });
       setDeleteItem(null);
       await loadTasks();
       await refreshTrashCount();
     } catch (err) {
-      setMessage({
+      flashMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Не удалось удалить',
       });
     } finally {
       setSubmitting(false);
     }
-  }, [deleteItem, loadTasks, refreshTrashCount]);
+  }, [deleteItem, flashMessage, loadTasks, refreshTrashCount]);
 
   const openCompleteModal = useCallback((item: WaybillTask) => {
     setCompleteNote('');
@@ -320,42 +354,42 @@ export function useWaybillsPage() {
     setSubmitting(true);
     try {
       await completeWaybillTask(completeItem.id, completeNote.trim() || null);
-      setMessage({ type: 'success', text: 'Отмечено как выполнено' });
+      flashMessage({ type: 'success', text: 'Отмечено как выполнено' });
       setCompleteItem(null);
       setCompleteNote('');
       await loadTasks();
     } catch (err) {
-      setMessage({
+      flashMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Не удалось отметить',
       });
     } finally {
       setSubmitting(false);
     }
-  }, [completeItem, completeNote, loadTasks]);
+  }, [completeItem, completeNote, flashMessage, loadTasks]);
 
   const handleFailConfirm = useCallback(async () => {
     if (!failItem) return;
     if (!failNote.trim()) {
-      setMessage({ type: 'error', text: 'Укажите причину невыполнения' });
+      flashMessage({ type: 'error', text: 'Укажите причину невыполнения' });
       return;
     }
     setSubmitting(true);
     try {
       await failWaybillTask(failItem.id, failNote.trim());
-      setMessage({ type: 'success', text: 'Отмечено как не выполнено' });
+      flashMessage({ type: 'success', text: 'Отмечено как не выполнено' });
       setFailItem(null);
       setFailNote('');
       await loadTasks();
     } catch (err) {
-      setMessage({
+      flashMessage({
         type: 'error',
         text: err instanceof Error ? err.message : 'Не удалось отметить',
       });
     } finally {
       setSubmitting(false);
     }
-  }, [failItem, failNote, loadTasks]);
+  }, [failItem, failNote, flashMessage, loadTasks]);
 
   const openRescheduleModal = useCallback((item: WaybillTask) => {
     const sourceDate = item.date.slice(0, 10);
@@ -385,7 +419,7 @@ export function useWaybillsPage() {
         timeFrom: rescheduleTimeFrom.trim() || null,
         timeTo: rescheduleTimeTo.trim() || null,
       });
-      setMessage({
+      flashMessage({
         type: 'success',
         text: 'Задание скопировано на новую дату. Оригинал можно отметить «Не выполнено» вручную.',
       });
@@ -407,6 +441,7 @@ export function useWaybillsPage() {
     closeRescheduleModal,
     dateFrom,
     dateTo,
+    flashMessage,
     loadTasks,
     rescheduleDate,
     rescheduleItem,
@@ -418,16 +453,16 @@ export function useWaybillsPage() {
     async (item: WaybillTask) => {
       try {
         await reopenWaybillTask(item.id);
-        setMessage({ type: 'success', text: 'Задание возвращено в план' });
+        flashMessage({ type: 'success', text: 'Задание возвращено в план' });
         await loadTasks();
       } catch (err) {
-        setMessage({
+        flashMessage({
           type: 'error',
           text: err instanceof Error ? err.message : 'Не удалось вернуть',
         });
       }
     },
-    [loadTasks]
+    [flashMessage, loadTasks]
   );
 
   return {
@@ -441,6 +476,8 @@ export function useWaybillsPage() {
     statusFilter,
     setStatusFilter,
     message,
+    headerSuccessText,
+    headerSuccessVisible: message?.type === 'success',
     users,
     drivers,
     createModalOpen,

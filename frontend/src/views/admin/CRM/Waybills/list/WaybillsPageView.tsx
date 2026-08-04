@@ -5,6 +5,7 @@ import { useState } from 'react';
 import type { WaybillTask } from '@/shared/api/admin-waybills';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
@@ -24,6 +25,7 @@ import {
   formatMoney,
   formatTimeRange,
   formatUserLabel,
+  formatWaybillDateDisplay,
   isLateEdit,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
@@ -56,6 +58,8 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     statusFilter,
     setStatusFilter,
     message,
+    headerSuccessText,
+    headerSuccessVisible,
     users,
     drivers,
     createModalOpen,
@@ -129,7 +133,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     {
       key: 'date',
       title: 'Дата',
-      render: (item: WaybillTask) => item.date.slice(0, 10),
+      render: (item: WaybillTask) => formatWaybillDateDisplay(item.date),
     },
     {
       key: 'time',
@@ -283,6 +287,12 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
                 <span className={cdHub.contractsListCountMobile}>{filtered.length}</span>
               </span>
+              <AdminSaveNotice
+                visible={headerSuccessVisible}
+                className={styles.headerSuccessNotice}
+              >
+                {headerSuccessText}
+              </AdminSaveNotice>
             </div>
             {iconActions('mobile')}
           </div>
@@ -301,10 +311,8 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         </div>
       </div>
 
-      {message ? (
-        <div className={`${styles.message} ${styles[`message${message.type}`]}`}>
-          {message.text}
-        </div>
+      {message?.type === 'error' ? (
+        <div className={`${styles.message} ${styles.messageerror}`}>{message.text}</div>
       ) : null}
 
       <WaybillsWeekAvailabilityPanel refreshToken={weekPreviewRefreshToken} />
