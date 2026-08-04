@@ -34,6 +34,106 @@ export function formatWaybillDateDisplay(iso: string): string {
   return `${m[3]}.${m[2]}.${m[1].slice(2)}`;
 }
 
+export function parseIsoDateParts(iso: string): { y: number; m: number; d: number } | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso.trim());
+  if (!match) return null;
+  return { y: Number(match[1]), m: Number(match[2]), d: Number(match[3]) };
+}
+
+export function monthStartIso(year: number, monthIndex0: number): string {
+  const m = String(monthIndex0 + 1).padStart(2, '0');
+  return `${year}-${m}-01`;
+}
+
+export function monthEndIso(year: number, monthIndex0: number): string {
+  const last = new Date(Date.UTC(year, monthIndex0 + 1, 0));
+  const m = String(last.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(last.getUTCDate()).padStart(2, '0');
+  return `${last.getUTCFullYear()}-${m}-${d}`;
+}
+
+export function shiftMonth(
+  year: number,
+  monthIndex0: number,
+  delta: number
+): {
+  year: number;
+  monthIndex0: number;
+} {
+  const d = new Date(Date.UTC(year, monthIndex0 + delta, 1));
+  return { year: d.getUTCFullYear(), monthIndex0: d.getUTCMonth() };
+}
+
+export function formatMonthYearRu(year: number, monthIndex0: number): string {
+  const d = new Date(Date.UTC(year, monthIndex0, 1));
+  return d.toLocaleDateString('ru-RU', { month: 'long', year: 'numeric', timeZone: 'UTC' });
+}
+
+export type WaybillCalendarCell = {
+  iso: string;
+  day: number;
+  inMonth: boolean;
+};
+
+/** Сетка месяца, неделя с понедельника. */
+export function buildMonthCalendarCells(year: number, monthIndex0: number): WaybillCalendarCell[] {
+  const first = new Date(Date.UTC(year, monthIndex0, 1));
+  const firstWeekday = (first.getUTCDay() + 6) % 7; // 0 = Monday
+  const daysInMonth = new Date(Date.UTC(year, monthIndex0 + 1, 0)).getUTCDate();
+  const cells: WaybillCalendarCell[] = [];
+
+  for (let i = 0; i < firstWeekday; i++) {
+    const d = new Date(Date.UTC(year, monthIndex0, 1 - (firstWeekday - i)));
+    cells.push({
+      iso: d.toISOString().slice(0, 10),
+      day: d.getUTCDate(),
+      inMonth: false,
+    });
+  }
+
+  for (let day = 1; day <= daysInMonth; day++) {
+    const m = String(monthIndex0 + 1).padStart(2, '0');
+    const dd = String(day).padStart(2, '0');
+    cells.push({
+      iso: `${year}-${m}-${dd}`,
+      day,
+      inMonth: true,
+    });
+  }
+
+  while (cells.length % 7 !== 0) {
+    const last = cells[cells.length - 1]!;
+    const d = new Date(`${last.iso}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() + 1);
+    cells.push({
+      iso: d.toISOString().slice(0, 10),
+      day: d.getUTCDate(),
+      inMonth: false,
+    });
+  }
+
+  return cells;
+}
+
+export function readWaybillsViewMode(): 'table' | 'calendar' {
+  if (typeof window === 'undefined') return 'table';
+  try {
+    const raw = localStorage.getItem('admin_waybills_view_mode');
+    return raw === 'calendar' ? 'calendar' : 'table';
+  } catch {
+    return 'table';
+  }
+}
+
+export function writeWaybillsViewMode(mode: 'table' | 'calendar') {
+  if (typeof window === 'undefined') return;
+  try {
+    localStorage.setItem('admin_waybills_view_mode', mode);
+  } catch {
+    /* ignore */
+  }
+}
+
 export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillFormValues {
   return {
     date,

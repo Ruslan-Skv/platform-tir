@@ -23,3 +23,7 @@ export type WaybillsPageMessage = {
 };
 
 export type WaybillStatusFilter = 'ALL' | 'PLANNED' | 'DONE' | 'FAILED';
+
+export type WaybillsViewMode = 'table' | 'calendar';
+
+export const WAYBILLS_VIEW_MODE_STORAGE_KEY = 'admin_waybills_view_mode';

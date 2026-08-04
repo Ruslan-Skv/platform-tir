@@ -33,6 +33,7 @@ import { WaybillTaskForm } from './WaybillTaskForm';
 import { WaybillTaskRowActions } from './WaybillTaskRowActions';
 import { WaybillTrashModal } from './WaybillTrashModal';
 import { WaybillsListMobileCards } from './WaybillsListMobileCards';
+import { WaybillsMonthCalendar } from './WaybillsMonthCalendar';
 import { WaybillsRulesInfoTip } from './WaybillsRulesInfoTip';
 import { WaybillsSettingsButton } from './WaybillsSettingsButton';
 import { WaybillsWeekAvailabilityPanel } from './WaybillsWeekAvailabilityPanel';
@@ -52,6 +53,11 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     setDateFrom,
     dateTo,
     setDateTo,
+    viewMode,
+    setViewMode,
+    calendarYear,
+    calendarMonthIndex0,
+    setCalendarMonth,
     filtered,
     tasks,
     loading,
@@ -81,6 +87,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     contractHits,
     contractSearching,
     openCreateModal,
+    openCreateModalForDate,
     openEditModal,
     closeCreateModal,
     closeEditModal,
@@ -315,7 +322,28 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         <div className={`${styles.message} ${styles.messageerror}`}>{message.text}</div>
       ) : null}
 
-      <WaybillsWeekAvailabilityPanel refreshToken={weekPreviewRefreshToken} />
+      <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
+        <button
+          type="button"
+          className={`${styles.viewModeBtn}${viewMode === 'table' ? ` ${styles.viewModeBtnActive}` : ''}`}
+          onClick={() => setViewMode('table')}
+        >
+          Таблица
+        </button>
+        <button
+          type="button"
+          className={`${styles.viewModeBtn} ${styles.viewModeBtnCalendar}${
+            viewMode === 'calendar' ? ` ${styles.viewModeBtnActive}` : ''
+          }`}
+          onClick={() => setViewMode('calendar')}
+        >
+          Календарь
+        </button>
+      </div>
+
+      <div className={viewMode === 'table' ? undefined : styles.showOnlyMobile}>
+        <WaybillsWeekAvailabilityPanel refreshToken={weekPreviewRefreshToken} />
+      </div>
 
       <div className={cdHub.contractsListFiltersPanel}>
         <div className={cdHub.contractsListFiltersStack}>
@@ -334,7 +362,9 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             ))}
           </div>
           <div
-            className={cdHub.contractsListDateFilters}
+            className={`${cdHub.contractsListDateFilters}${
+              viewMode === 'calendar' ? ` ${styles.showOnlyMobile}` : ''
+            }`}
             role="group"
             aria-label="Период путевого листа"
           >
@@ -372,29 +402,56 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         </div>
       </div>
 
-      <WaybillsListMobileCards
-        data={filtered}
-        loading={loading}
-        currentUserId={currentUserId}
-        onEdit={openEditModal}
-        onComplete={openCompleteModal}
-        onFail={(task) => {
-          setFailNote('');
-          setFailItem(task);
-        }}
-        onCopy={openRescheduleModal}
-        onDelete={setDeleteItem}
-        onReopen={(task) => void handleReopen(task)}
-      />
+      <div className={styles.viewPanels}>
+        <div
+          className={`${styles.viewPanel} ${styles.viewPanelCalendar}${
+            viewMode === 'calendar' ? ` ${styles.viewPanelActive}` : ''
+          }`}
+          aria-hidden={viewMode !== 'calendar'}
+        >
+          <WaybillsMonthCalendar
+            year={calendarYear}
+            monthIndex0={calendarMonthIndex0}
+            onMonthChange={(year, monthIndex0) => setCalendarMonth(year, monthIndex0, true)}
+            tasks={filtered}
+            loading={loading}
+            onOpenTask={openEditModal}
+            onCreateForDate={openCreateModalForDate}
+            refreshToken={weekPreviewRefreshToken}
+          />
+        </div>
 
-      <DataTable
-        containerClassName={styles.directoryTable}
-        data={filtered}
-        columns={columns}
-        keyExtractor={(item) => item.id}
-        loading={loading}
-        emptyMessage="На этот день заданий нет"
-      />
+        <div
+          className={`${styles.viewPanel} ${styles.viewPanelTable}${
+            viewMode === 'table' ? ` ${styles.viewPanelActive}` : ''
+          }`}
+          aria-hidden={viewMode !== 'table'}
+        >
+          <WaybillsListMobileCards
+            data={filtered}
+            loading={loading}
+            currentUserId={currentUserId}
+            onEdit={openEditModal}
+            onComplete={openCompleteModal}
+            onFail={(task) => {
+              setFailNote('');
+              setFailItem(task);
+            }}
+            onCopy={openRescheduleModal}
+            onDelete={setDeleteItem}
+            onReopen={(task) => void handleReopen(task)}
+          />
+
+          <DataTable
+            containerClassName={styles.directoryTable}
+            data={filtered}
+            columns={columns}
+            keyExtractor={(item) => item.id}
+            loading={loading}
+            emptyMessage="На этот день заданий нет"
+          />
+        </div>
+      </div>
       <Modal
         isOpen={createModalOpen}
         onClose={closeCreateModal}

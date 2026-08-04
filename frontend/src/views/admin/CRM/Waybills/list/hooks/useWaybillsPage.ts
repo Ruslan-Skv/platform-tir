@@ -24,13 +24,19 @@ import type {
   WaybillFormValues,
   WaybillStatusFilter,
   WaybillsPageMessage,
+  WaybillsViewMode,
 } from '../../shared/waybills-page.types';
 import {
   emptyWaybillForm,
+  monthEndIso,
+  monthStartIso,
+  parseIsoDateParts,
   parseOptionalNumber,
+  readWaybillsViewMode,
   resolveWaybillCustomerFields,
   todayIsoDate,
   weekAheadIsoDate,
+  writeWaybillsViewMode,
 } from '../../shared/waybills-page.utils';
 
 function addDaysIso(iso: string, days: number): string {
@@ -42,8 +48,23 @@ function addDaysIso(iso: string, days: number): string {
 }
 export function useWaybillsPage() {
   const { user } = useAuth();
-  const [dateFrom, setDateFrom] = useState(todayIsoDate);
-  const [dateTo, setDateTo] = useState(() => weekAheadIsoDate());
+  const initialToday = todayIsoDate();
+  const initialParts = parseIsoDateParts(initialToday);
+  const initialYear = initialParts?.y ?? new Date().getFullYear();
+  const initialMonthIndex0 = initialParts ? initialParts.m - 1 : new Date().getMonth();
+  const initialViewMode = readWaybillsViewMode();
+
+  const [viewMode, setViewModeState] = useState<WaybillsViewMode>(initialViewMode);
+  const [calendarYear, setCalendarYear] = useState(initialYear);
+  const [calendarMonthIndex0, setCalendarMonthIndex0] = useState(initialMonthIndex0);
+  const [dateFrom, setDateFrom] = useState(() =>
+    initialViewMode === 'calendar' ? monthStartIso(initialYear, initialMonthIndex0) : initialToday
+  );
+  const [dateTo, setDateTo] = useState(() =>
+    initialViewMode === 'calendar'
+      ? monthEndIso(initialYear, initialMonthIndex0)
+      : weekAheadIsoDate(initialToday)
+  );
   const [tasks, setTasks] = useState<WaybillTask[]>([]);
   const [users, setUsers] = useState<CrmUser[]>([]);
   const [loading, setLoading] = useState(true);
@@ -98,9 +119,12 @@ export function useWaybillsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [contractHits, setContractHits] = useState<Contract[]>([]);
   const [contractSearching, setContractSearching] = useState(false);
+  const quietLoadRef = useRef(false);
 
   const loadTasks = useCallback(async () => {
-    setLoading(true);
+    const quiet = quietLoadRef.current;
+    quietLoadRef.current = false;
+    if (!quiet) setLoading(true);
     try {
       const data = await getWaybillTasks({ dateFrom, dateTo });
       setTasks(data);
@@ -111,7 +135,7 @@ export function useWaybillsPage() {
         text: err instanceof Error ? err.message : 'Не удалось загрузить путевой лист',
       });
     } finally {
-      setLoading(false);
+      if (!quiet) setLoading(false);
     }
   }, [dateFrom, dateTo, flashMessage]);
 
@@ -149,6 +173,36 @@ export function useWaybillsPage() {
 
   const defaultTaskDate = dateFrom || todayIsoDate();
 
+  const applyCalendarMonth = useCallback((year: number, monthIndex0: number, quiet = false) => {
+    if (quiet) quietLoadRef.current = true;
+    setCalendarYear(year);
+    setCalendarMonthIndex0(monthIndex0);
+    setDateFrom(monthStartIso(year, monthIndex0));
+    setDateTo(monthEndIso(year, monthIndex0));
+  }, []);
+
+  const setViewMode = useCallback(
+    (mode: WaybillsViewMode) => {
+      setViewModeState(mode);
+      writeWaybillsViewMode(mode);
+      if (mode === 'calendar') {
+        const parts = parseIsoDateParts(dateFrom) ?? parseIsoDateParts(todayIsoDate());
+        const year = parts?.y ?? new Date().getFullYear();
+        const monthIndex0 = parts ? parts.m - 1 : new Date().getMonth();
+        const nextFrom = monthStartIso(year, monthIndex0);
+        const nextTo = monthEndIso(year, monthIndex0);
+        if (nextFrom !== dateFrom || nextTo !== dateTo) {
+          applyCalendarMonth(year, monthIndex0, true);
+        } else {
+          setCalendarYear(year);
+          setCalendarMonthIndex0(monthIndex0);
+        }
+      }
+      // При возврате к таблице период не сбрасываем — без лишнего refetch и дёрганья.
+    },
+    [applyCalendarMonth, dateFrom, dateTo]
+  );
+
   const resetForm = useCallback(() => {
     setFormValues(emptyWaybillForm(defaultTaskDate, user?.id ?? ''));
     setFormError(null);
@@ -160,6 +214,17 @@ export function useWaybillsPage() {
     resetForm();
     setCreateModalOpen(true);
   }, [resetForm]);
+
+  const openCreateModalForDate = useCallback(
+    (isoDate: string) => {
+      setFormValues(emptyWaybillForm(isoDate, user?.id ?? ''));
+      setFormError(null);
+      setSubmitting(false);
+      setContractHits([]);
+      setCreateModalOpen(true);
+    },
+    [user?.id]
+  );
 
   const openEditModal = useCallback((item: WaybillTask) => {
     const customer = resolveWaybillCustomerFields(item);
@@ -470,6 +535,11 @@ export function useWaybillsPage() {
     setDateFrom,
     dateTo,
     setDateTo,
+    viewMode,
+    setViewMode,
+    calendarYear,
+    calendarMonthIndex0,
+    setCalendarMonth: applyCalendarMonth,
     tasks,
     filtered,
     loading,
@@ -499,6 +569,7 @@ export function useWaybillsPage() {
     contractHits,
     contractSearching,
     openCreateModal,
+    openCreateModalForDate,
     openEditModal,
     closeCreateModal,
     closeEditModal,

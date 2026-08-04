@@ -9,6 +9,95 @@
   min-width: 0;
 }
 
+.viewModeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  background: var(--admin-surface);
+}
+
+.viewModeBtn {
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.viewModeBtn + .viewModeBtn {
+  border-left: 1px solid var(--admin-border);
+}
+
+.viewModeBtn:hover {
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-muted);
+}
+
+.viewModeBtnActive {
+  color: var(--admin-text-primary);
+  background: var(--admin-accent-soft, #eff6ff);
+}
+
+.viewPanels {
+  position: relative;
+  display: grid;
+  margin-top: var(--admin-space-sm);
+}
+
+.viewPanel {
+  grid-area: 1 / 1;
+  min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    visibility 0.22s ease;
+}
+
+.viewPanelActive {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  z-index: 1;
+}
+
+@media (min-width: 961px) {
+  .showOnlyMobile {
+    display: none !important;
+  }
+}
+
+@media (max-width: 960px) {
+  .viewModeBtnCalendar {
+    display: none;
+  }
+
+  .viewPanelCalendar {
+    display: none !important;
+  }
+
+  .viewPanelTable {
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: none !important;
+    position: relative;
+    z-index: 1;
+  }
+}
+
 .modalHintFlush {
   margin-top: 0;
 }
