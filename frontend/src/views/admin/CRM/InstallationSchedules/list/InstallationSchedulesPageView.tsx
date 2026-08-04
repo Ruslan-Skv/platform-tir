@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from 'react';
 
-import type { InstallationSchedule } from '@/shared/api/admin-installation-schedules';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';

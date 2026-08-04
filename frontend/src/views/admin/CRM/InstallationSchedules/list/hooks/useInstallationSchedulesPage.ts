@@ -19,7 +19,7 @@ import {
   reopenInstallationSchedule,
   rescheduleInstallationSchedule,
   updateInstallationSchedule,
-} from '@/shared/api/admin-installation-schedules';
+} from '@/shared/api/crm/admin-installation-schedules';
 
 import {
   type ViewMode,

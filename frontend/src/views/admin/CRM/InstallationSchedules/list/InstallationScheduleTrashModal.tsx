@@ -6,7 +6,7 @@ import {
   type InstallationSchedule,
   getInstallationScheduleTrash,
   restoreInstallationSchedule,
-} from '@/shared/api/admin-installation-schedules';
+} from '@/shared/api/crm/admin-installation-schedules';
 import { Modal } from '@/shared/ui/Modal';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';

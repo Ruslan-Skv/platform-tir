@@ -1,6 +1,6 @@
 'use client';
 
-import type { InstallationSchedule } from '@/shared/api/admin-installation-schedules';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';

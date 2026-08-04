@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type { InstallationSchedule } from '@/shared/api/admin-installation-schedules';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 import { DIRECTION_LABELS } from '@/views/admin/CRM/Installers/installers-page.constants';
 
 import {

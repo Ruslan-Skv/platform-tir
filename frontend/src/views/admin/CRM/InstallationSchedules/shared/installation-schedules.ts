@@ -1,5 +1,5 @@
 import type { InstallerDirection } from '@/shared/api/admin-crm';
-import type { InstallationSchedule } from '@/shared/api/admin-installation-schedules';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 
 export type ViewMode = 'table' | 'calendar';
 

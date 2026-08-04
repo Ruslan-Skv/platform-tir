@@ -7,7 +7,7 @@ import {
   completeInstallationSchedule,
   failInstallationSchedule,
   getMyInstallationSchedules,
-} from '@/shared/api/admin-installation-schedules';
+} from '@/shared/api/crm/admin-installation-schedules';
 
 import { todayIsoDate, weekAheadIsoDate } from '../../shared/installation-schedules';
 

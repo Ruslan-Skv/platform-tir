@@ -1,6 +1,6 @@
 'use client';
 
-import type { InstallationSchedule } from '@/shared/api/admin-installation-schedules';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon, DeleteIcon, EditIcon, FailIcon, PublishIcon } from '@/shared/ui/icons';
 

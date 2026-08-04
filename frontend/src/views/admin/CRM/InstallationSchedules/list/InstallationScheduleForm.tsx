@@ -10,7 +10,7 @@ import { type InstallerMaster } from '@/shared/api/admin-crm';
 import {
   type InstallationWorkOrderOption,
   getInstallationWorkOrders,
-} from '@/shared/api/admin-installation-schedules';
+} from '@/shared/api/crm/admin-installation-schedules';
 import {
   DIRECTION_LABELS,
   DIRECTION_OPTIONS,

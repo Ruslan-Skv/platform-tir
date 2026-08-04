@@ -6,101 +6,32 @@ import {
 } from '@nestjs/common';
 import { InstallationScheduleStatus, Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
-import { INSTALLER_DIRECTIONS } from '../installers/installer-directions.constant';
 import { CompleteInstallationScheduleDto } from './dto/complete-installation-schedule.dto';
 import { CreateInstallationScheduleDto } from './dto/create-installation-schedule.dto';
 import { FailInstallationScheduleDto } from './dto/fail-installation-schedule.dto';
 import { RescheduleInstallationScheduleDto } from './dto/reschedule-installation-schedule.dto';
 import { UpdateInstallationScheduleDto } from './dto/update-installation-schedule.dto';
 import { InstallationScheduleNotifyService } from './installation-schedule-notify.service';
+import {
+  ENTRY_INCLUDE,
+  INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS,
+  TRASH_RETENTION_MS,
+  WORK_ORDER_KEYS,
+  WORK_ORDER_LABELS,
+  addendumSlotCount,
+  asFormDataRecord,
+  assertDirection,
+  customerFromFormData,
+  emptyToNull,
+  isPlanner,
+  normalizeCustomerPhones,
+  parseDateOnly,
+  permanentDeleteAtIso,
+  selectedInstallerIds,
+  todayDateOnly,
+} from './installation-schedule.shared';
 
-const PLANNER_ROLES = new Set([
-  'SUPER_ADMIN',
-  'ADMIN',
-  'MODERATOR',
-  'SUPPORT',
-  'MANAGER',
-  'TECHNOLOGIST',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-]);
-
-const USER_SELECT = {
-  id: true,
-  email: true,
-  firstName: true,
-  lastName: true,
-  role: true,
-} as const;
-
-const ENTRY_INCLUDE = {
-  installer: {
-    select: {
-      id: true,
-      fullName: true,
-      direction: true,
-      grade: true,
-      userId: true,
-    },
-  },
-  package: {
-    select: {
-      id: true,
-      kind: true,
-      title: true,
-      status: true,
-      formData: true,
-      crmContractId: true,
-      crmContract: {
-        select: {
-          id: true,
-          contractNumber: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-        },
-      },
-    },
-  },
-  contract: {
-    select: {
-      id: true,
-      contractNumber: true,
-      customerName: true,
-      customerAddress: true,
-      customerPhone: true,
-    },
-  },
-  completedBy: { select: USER_SELECT },
-  createdBy: { select: USER_SELECT },
-  deletedBy: { select: USER_SELECT },
-} as const;
-
-export const INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS = 30;
-const TRASH_RETENTION_MS = INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
-
-const WORK_ORDER_KEYS = [
-  'workOrder',
-  'workOrderAddendum1',
-  'workOrderAddendum2',
-  'workOrderAddendum3',
-  'workOrderAddendum4',
-  'workOrderAddendum5',
-  'interactiveFinalEstimate',
-  'finalWorkOrder',
-] as const;
-
-const WORK_ORDER_LABELS: Record<(typeof WORK_ORDER_KEYS)[number], string> = {
-  workOrder: 'Заказ-наряд',
-  workOrderAddendum1: 'ЗН доп. 1',
-  workOrderAddendum2: 'ЗН доп. 2',
-  workOrderAddendum3: 'ЗН доп. 3',
-  workOrderAddendum4: 'ЗН доп. 4',
-  workOrderAddendum5: 'ЗН доп. 5',
-  interactiveFinalEstimate: 'Интерактивная итоговая смета',
-  finalWorkOrder: 'Итоговый заказ-наряд',
-};
+export { INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS } from './installation-schedule.shared';
 
 @Injectable()
 export class InstallationSchedulesService {
@@ -109,65 +40,14 @@ export class InstallationSchedulesService {
     private readonly scheduleNotify: InstallationScheduleNotifyService,
   ) {}
 
-  private isPlanner(role: string): boolean {
-    return PLANNER_ROLES.has(role);
-  }
-
   private assertCanComplete(
     entry: { installer: { userId: string | null } | null },
     userId: string,
     role: string,
   ) {
-    if (this.isPlanner(role)) return;
+    if (isPlanner(role)) return;
     if (entry.installer?.userId && entry.installer.userId === userId) return;
     throw new ForbiddenException('Нет прав отметить выполнение этого монтажа');
-  }
-
-  private parseDateOnly(dateStr: string): Date {
-    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());
-    if (!m) {
-      throw new BadRequestException('date must be YYYY-MM-DD');
-    }
-    return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
-  }
-
-  private todayDateOnly(): string {
-    const now = new Date();
-    const y = now.getFullYear();
-    const mo = String(now.getMonth() + 1).padStart(2, '0');
-    const d = String(now.getDate()).padStart(2, '0');
-    return `${y}-${mo}-${d}`;
-  }
-
-  private emptyToNull(value?: string | null): string | null | undefined {
-    if (value === undefined) return undefined;
-    if (value === null) return null;
-    const trimmed = value.trim();
-    return trimmed === '' ? null : trimmed;
-  }
-
-  private normalizeCustomerPhones(
-    phones?: string[] | null,
-    fallbackPhone?: string | null,
-  ): string[] {
-    const fromList = (phones ?? []).map((p) => p?.trim()).filter((p): p is string => Boolean(p));
-    if (fromList.length > 0) {
-      const seen = new Set<string>();
-      const unique: string[] = [];
-      for (const p of fromList) {
-        const key = p.replace(/\D/g, '');
-        if (key && seen.has(key)) continue;
-        if (key) seen.add(key);
-        unique.push(p);
-      }
-      return unique;
-    }
-    const single = fallbackPhone?.trim();
-    return single ? [single] : [];
-  }
-
-  private permanentDeleteAtIso(deletedAt: Date): string {
-    return new Date(deletedAt.getTime() + TRASH_RETENTION_MS).toISOString();
   }
 
   private async purgeExpiredTrash(): Promise<void> {
@@ -177,51 +57,6 @@ export class InstallationSchedulesService {
     });
   }
 
-  private assertDirection(direction: string) {
-    if (!(INSTALLER_DIRECTIONS as readonly string[]).includes(direction)) {
-      throw new BadRequestException(`Неизвестное направление: ${direction}`);
-    }
-  }
-
-  private asFormDataRecord(formData: unknown): Record<string, unknown> {
-    if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return {};
-    return formData as Record<string, unknown>;
-  }
-
-  private addendumSlotCount(formData: Record<string, unknown>): number {
-    const raw = formData.addendumSlotCount;
-    if (typeof raw === 'number' && Number.isFinite(raw)) return Math.max(0, Math.min(5, raw));
-    if (typeof raw === 'string' && raw.trim()) {
-      const n = Number(raw);
-      if (Number.isFinite(n)) return Math.max(0, Math.min(5, n));
-    }
-    return 0;
-  }
-
-  private selectedInstallerIds(formData: Record<string, unknown>): string[] {
-    const raw = formData.selectedRepairInstallerIds;
-    if (!Array.isArray(raw)) return [];
-    return raw.map((v) => (typeof v === 'string' ? v.trim() : '')).filter(Boolean);
-  }
-
-  private customerFromFormData(formData: Record<string, unknown>): {
-    customerName: string | null;
-    customerAddress: string | null;
-    customerPhone: string | null;
-    contractNumber: string | null;
-  } {
-    const str = (key: string) => {
-      const v = formData[key];
-      return typeof v === 'string' && v.trim() ? v.trim() : null;
-    };
-    return {
-      customerName: str('customerName') ?? str('clientFullName') ?? str('fio'),
-      customerAddress: str('customerAddress') ?? str('objectAddress') ?? str('address'),
-      customerPhone: str('customerPhone') ?? str('clientPhone') ?? str('phone'),
-      contractNumber: str('contractNumber') ?? str('dogovorNumber'),
-    };
-  }
-
   async listPackageWorkOrders(params: { packageId: string; installerId?: string | null }) {
     const pkg = await this.prisma.contractDocumentPackage.findFirst({
       where: { id: params.packageId, deletedAt: null },
@@ -229,9 +64,9 @@ export class InstallationSchedulesService {
     });
     if (!pkg) throw new NotFoundException('Пакет документов не найден');
 
-    const formData = this.asFormDataRecord(pkg.formData);
-    const slotCount = this.addendumSlotCount(formData);
-    const assignedIds = this.selectedInstallerIds(formData);
+    const formData = asFormDataRecord(pkg.formData);
+    const slotCount = addendumSlotCount(formData);
+    const assignedIds = selectedInstallerIds(formData);
     const installerId = params.installerId?.trim() || null;
     const installerAssigned =
       !installerId || assignedIds.length === 0 || assignedIds.includes(installerId);
@@ -256,10 +91,10 @@ export class InstallationSchedulesService {
   }
 
   private async buildCreateData(dto: CreateInstallationScheduleDto, createdById: string) {
-    this.assertDirection(dto.direction);
+    assertDirection(dto.direction);
 
-    const installerId = this.emptyToNull(dto.installerId) ?? null;
-    let installerName = this.emptyToNull(dto.installerName) ?? null;
+    const installerId = emptyToNull(dto.installerId) ?? null;
+    let installerName = emptyToNull(dto.installerName) ?? null;
     if (installerId) {
       const installer = await this.prisma.installerMaster.findUnique({
         where: { id: installerId },
@@ -269,12 +104,12 @@ export class InstallationSchedulesService {
       if (!installerName) installerName = installer.fullName;
     }
 
-    const packageId = this.emptyToNull(dto.packageId) ?? null;
-    let contractId = this.emptyToNull(dto.contractId) ?? null;
-    let contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
-    let customerName = this.emptyToNull(dto.customerName) ?? null;
-    let customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
-    let customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
+    const packageId = emptyToNull(dto.packageId) ?? null;
+    let contractId = emptyToNull(dto.contractId) ?? null;
+    let contractNumber = emptyToNull(dto.contractNumber) ?? null;
+    let customerName = emptyToNull(dto.customerName) ?? null;
+    let customerAddress = emptyToNull(dto.customerAddress) ?? null;
+    let customerPhones = normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
 
     if (packageId) {
       const pkg = await this.prisma.contractDocumentPackage.findFirst({
@@ -297,7 +132,7 @@ export class InstallationSchedulesService {
       if (!pkg) throw new BadRequestException('Пакет документов не найден');
 
       if (!contractId && pkg.crmContractId) contractId = pkg.crmContractId;
-      const fromForm = this.customerFromFormData(this.asFormDataRecord(pkg.formData));
+      const fromForm = customerFromFormData(asFormDataRecord(pkg.formData));
       if (!contractNumber) {
         contractNumber = pkg.crmContract?.contractNumber?.trim() || fromForm.contractNumber;
       }
@@ -332,20 +167,20 @@ export class InstallationSchedulesService {
     }
 
     return {
-      date: this.parseDateOnly(dto.date),
-      timeFrom: this.emptyToNull(dto.timeFrom) ?? null,
-      timeTo: this.emptyToNull(dto.timeTo) ?? null,
-      timeText: this.emptyToNull(dto.timeText) ?? null,
+      date: parseDateOnly(dto.date),
+      timeFrom: emptyToNull(dto.timeFrom) ?? null,
+      timeTo: emptyToNull(dto.timeTo) ?? null,
+      timeText: emptyToNull(dto.timeText) ?? null,
       direction: dto.direction,
-      orderInfo: this.emptyToNull(dto.orderInfo) ?? null,
-      note: this.emptyToNull(dto.note) ?? null,
+      orderInfo: emptyToNull(dto.orderInfo) ?? null,
+      note: emptyToNull(dto.note) ?? null,
       installerId,
       installerName,
       packageId,
       contractId,
       contractNumber,
-      workOrderKey: this.emptyToNull(dto.workOrderKey) ?? null,
-      workOrderLabel: this.emptyToNull(dto.workOrderLabel) ?? null,
+      workOrderKey: emptyToNull(dto.workOrderKey) ?? null,
+      workOrderLabel: emptyToNull(dto.workOrderLabel) ?? null,
       customerName,
       customerAddress,
       customerPhone: customerPhones[0] ?? null,
@@ -373,16 +208,16 @@ export class InstallationSchedulesService {
     const fromStr = params.dateFrom?.trim();
     const toStr = params.dateTo?.trim();
     const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = this.parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = this.parseDateOnly(toStr);
+    if (fromStr) dateFilter.gte = parseDateOnly(fromStr);
+    if (toStr) dateFilter.lte = parseDateOnly(toStr);
     if (!fromStr && !toStr) {
-      const today = this.parseDateOnly(this.todayDateOnly());
+      const today = parseDateOnly(todayDateOnly());
       dateFilter.gte = today;
       dateFilter.lte = today;
     }
 
     const direction = params.direction?.trim();
-    if (direction) this.assertDirection(direction);
+    if (direction) assertDirection(direction);
 
     return this.prisma.installationScheduleEntry.findMany({
       where: {
@@ -397,7 +232,7 @@ export class InstallationSchedulesService {
   }
 
   findMyByDate(userId: string, dateStr?: string) {
-    const date = dateStr?.trim() || this.todayDateOnly();
+    const date = dateStr?.trim() || todayDateOnly();
     return this.findMyByDateRange(userId, { dateFrom: date, dateTo: date });
   }
 
@@ -405,10 +240,10 @@ export class InstallationSchedulesService {
     const fromStr = params.dateFrom?.trim();
     const toStr = params.dateTo?.trim();
     const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = this.parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = this.parseDateOnly(toStr);
+    if (fromStr) dateFilter.gte = parseDateOnly(fromStr);
+    if (toStr) dateFilter.lte = parseDateOnly(toStr);
     if (!fromStr && !toStr) {
-      const today = this.parseDateOnly(this.todayDateOnly());
+      const today = parseDateOnly(todayDateOnly());
       dateFilter.gte = today;
       dateFilter.lte = today;
     }
@@ -440,37 +275,37 @@ export class InstallationSchedulesService {
 
     const data: Prisma.InstallationScheduleEntryUpdateInput = {};
 
-    if (dto.date !== undefined) data.date = this.parseDateOnly(dto.date);
-    if (dto.timeFrom !== undefined) data.timeFrom = this.emptyToNull(dto.timeFrom) ?? null;
-    if (dto.timeTo !== undefined) data.timeTo = this.emptyToNull(dto.timeTo) ?? null;
-    if (dto.timeText !== undefined) data.timeText = this.emptyToNull(dto.timeText) ?? null;
+    if (dto.date !== undefined) data.date = parseDateOnly(dto.date);
+    if (dto.timeFrom !== undefined) data.timeFrom = emptyToNull(dto.timeFrom) ?? null;
+    if (dto.timeTo !== undefined) data.timeTo = emptyToNull(dto.timeTo) ?? null;
+    if (dto.timeText !== undefined) data.timeText = emptyToNull(dto.timeText) ?? null;
     if (dto.direction !== undefined) {
-      this.assertDirection(dto.direction);
+      assertDirection(dto.direction);
       data.direction = dto.direction;
     }
-    if (dto.orderInfo !== undefined) data.orderInfo = this.emptyToNull(dto.orderInfo) ?? null;
-    if (dto.note !== undefined) data.note = this.emptyToNull(dto.note) ?? null;
+    if (dto.orderInfo !== undefined) data.orderInfo = emptyToNull(dto.orderInfo) ?? null;
+    if (dto.note !== undefined) data.note = emptyToNull(dto.note) ?? null;
     if (dto.workOrderKey !== undefined) {
-      data.workOrderKey = this.emptyToNull(dto.workOrderKey) ?? null;
+      data.workOrderKey = emptyToNull(dto.workOrderKey) ?? null;
     }
     if (dto.workOrderLabel !== undefined) {
-      data.workOrderLabel = this.emptyToNull(dto.workOrderLabel) ?? null;
+      data.workOrderLabel = emptyToNull(dto.workOrderLabel) ?? null;
     }
     if (dto.contractNumber !== undefined) {
-      data.contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+      data.contractNumber = emptyToNull(dto.contractNumber) ?? null;
     }
     if (dto.customerName !== undefined) {
-      data.customerName = this.emptyToNull(dto.customerName) ?? null;
+      data.customerName = emptyToNull(dto.customerName) ?? null;
     }
     if (dto.customerAddress !== undefined) {
-      data.customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
+      data.customerAddress = emptyToNull(dto.customerAddress) ?? null;
     }
 
     if (dto.installerId !== undefined || dto.installerName !== undefined) {
       const installerId =
-        dto.installerId !== undefined ? (this.emptyToNull(dto.installerId) ?? null) : undefined;
+        dto.installerId !== undefined ? (emptyToNull(dto.installerId) ?? null) : undefined;
       let installerName =
-        dto.installerName !== undefined ? (this.emptyToNull(dto.installerName) ?? null) : undefined;
+        dto.installerName !== undefined ? (emptyToNull(dto.installerName) ?? null) : undefined;
       if (installerId) {
         const installer = await this.prisma.installerMaster.findUnique({
           where: { id: installerId },
@@ -488,7 +323,7 @@ export class InstallationSchedulesService {
     }
 
     if (dto.packageId !== undefined) {
-      const packageId = this.emptyToNull(dto.packageId) ?? null;
+      const packageId = emptyToNull(dto.packageId) ?? null;
       if (packageId) {
         const pkg = await this.prisma.contractDocumentPackage.findFirst({
           where: { id: packageId, deletedAt: null },
@@ -505,7 +340,7 @@ export class InstallationSchedulesService {
     }
 
     if (dto.contractId !== undefined) {
-      const contractId = this.emptyToNull(dto.contractId) ?? null;
+      const contractId = emptyToNull(dto.contractId) ?? null;
       if (contractId) {
         const contract = await this.prisma.contract.findUnique({
           where: { id: contractId },
@@ -522,8 +357,8 @@ export class InstallationSchedulesService {
     if (phonesTouched) {
       const nextPhones =
         dto.customerPhones !== undefined
-          ? this.normalizeCustomerPhones(dto.customerPhones, null)
-          : this.normalizeCustomerPhones(null, dto.customerPhone);
+          ? normalizeCustomerPhones(dto.customerPhones, null)
+          : normalizeCustomerPhones(null, dto.customerPhone);
       data.customerPhones = nextPhones;
       data.customerPhone = nextPhones[0] ?? null;
     }
@@ -544,18 +379,7 @@ export class InstallationSchedulesService {
     if (entry.status !== InstallationScheduleStatus.PLANNED) {
       throw new BadRequestException('Удалить можно только запланированную запись');
     }
-    const plannerRoles = new Set([
-      'SUPER_ADMIN',
-      'ADMIN',
-      'MODERATOR',
-      'SUPPORT',
-      'MANAGER',
-      'TECHNOLOGIST',
-      'BRIGADIER',
-      'LEAD_SPECIALIST_FURNITURE',
-      'LEAD_SPECIALIST_WINDOWS_DOORS',
-    ]);
-    if (entry.createdById && entry.createdById !== actorUserId && !plannerRoles.has(actorRole)) {
+    if (entry.createdById && entry.createdById !== actorUserId && !isPlanner(actorRole)) {
       throw new ForbiddenException('Удалить может только автор или планировщик');
     }
     return this.prisma.installationScheduleEntry.update({
@@ -604,7 +428,7 @@ export class InstallationSchedulesService {
     return {
       data: items.map((row) => ({
         ...row,
-        permanentDeleteAt: row.deletedAt ? this.permanentDeleteAtIso(row.deletedAt) : null,
+        permanentDeleteAt: row.deletedAt ? permanentDeleteAtIso(row.deletedAt) : null,
       })),
       total,
       page,
@@ -639,7 +463,7 @@ export class InstallationSchedulesService {
       where: { id },
       data: {
         status: InstallationScheduleStatus.DONE,
-        completionNote: this.emptyToNull(dto.note) ?? null,
+        completionNote: emptyToNull(dto.note) ?? null,
         completedAt: new Date(),
         completedById: actorUserId,
       },
@@ -674,10 +498,10 @@ export class InstallationSchedulesService {
     const updated = await this.prisma.installationScheduleEntry.update({
       where: { id },
       data: {
-        date: this.parseDateOnly(dto.date),
-        ...(dto.timeFrom !== undefined ? { timeFrom: this.emptyToNull(dto.timeFrom) ?? null } : {}),
-        ...(dto.timeTo !== undefined ? { timeTo: this.emptyToNull(dto.timeTo) ?? null } : {}),
-        ...(dto.timeText !== undefined ? { timeText: this.emptyToNull(dto.timeText) ?? null } : {}),
+        date: parseDateOnly(dto.date),
+        ...(dto.timeFrom !== undefined ? { timeFrom: emptyToNull(dto.timeFrom) ?? null } : {}),
+        ...(dto.timeTo !== undefined ? { timeTo: emptyToNull(dto.timeTo) ?? null } : {}),
+        ...(dto.timeText !== undefined ? { timeText: emptyToNull(dto.timeText) ?? null } : {}),
         status: InstallationScheduleStatus.PLANNED,
         completionNote: null,
         completedAt: null,
