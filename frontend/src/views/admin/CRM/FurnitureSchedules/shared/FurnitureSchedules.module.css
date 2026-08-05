@@ -55,12 +55,16 @@
   border-left: 1px solid var(--admin-border);
 }
 
-.viewModeBtn:hover {
-  color: var(--admin-text-primary);
-  background: var(--admin-surface-muted);
+/* Only real hover devices — sticky :hover on touch overrides active otherwise */
+@media (hover: hover) and (pointer: fine) {
+  .viewModeBtn:hover {
+    color: var(--admin-text-primary);
+    background: var(--admin-surface-muted);
+  }
 }
 
-.viewModeBtnActive {
+.viewModeBtn.viewModeBtnActive,
+.viewModeBtn.viewModeBtnActive:hover {
   color: var(--admin-text-primary);
   background: var(--admin-accent-soft, #eff6ff);
 }

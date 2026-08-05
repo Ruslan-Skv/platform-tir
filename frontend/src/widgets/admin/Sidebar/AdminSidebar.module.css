@@ -634,6 +634,9 @@
   }
 
   .label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
     line-height: var(--admin-line-height-md);
   }
 
@@ -712,12 +715,13 @@
     background: rgb(0 0 0 / 0.16);
   }
 
-  /* Мобильная сетка 3× — квадратные плитки верхнего уровня */
+  /* Мобильная сетка 3× — плитки растут по высоте вместе с подписью */
   .mobileGrid .navMobileGrid {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: var(--admin-space-sm);
     align-content: start;
+    align-items: stretch;
   }
 
   .mobileGrid .navMobileGrid > .navItem {
@@ -728,8 +732,9 @@
   }
 
   .mobileGrid .navMobileGrid > .navItem > .navLinkRow {
-    flex: 1;
+    flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
   }
 
   .mobileGrid .navMobileGrid > .navItem .navLink {
@@ -739,30 +744,34 @@
     align-items: center;
     gap: var(--admin-space-xs);
     text-align: center;
-    aspect-ratio: 1;
-    min-height: 0;
+    /* Не фиксируем квадрат: иначе 2-я строка названия обрезается overflow */
+    aspect-ratio: auto;
+    min-height: 5.75rem;
     height: 100%;
     padding: var(--admin-space-sm);
     width: 100%;
+    box-sizing: border-box;
   }
 
   .mobileGrid .navMobileGrid > .navItem .icon {
     font-size: 1.5rem;
     min-width: 0;
     line-height: 1;
+    flex-shrink: 0;
   }
 
   .mobileGrid .navMobileGrid > .navItem .label {
-    flex: 0 1 auto;
+    flex: 0 0 auto;
+    width: 100%;
+    max-width: 100%;
     white-space: normal;
-    display: -webkit-box;
-    -webkit-line-clamp: 3;
-    line-clamp: 3;
-    -webkit-box-orient: vertical;
-    overflow: hidden;
+    overflow: visible;
+    text-overflow: unset;
+    display: block;
     font-size: 0.7rem;
     line-height: 1.25;
     font-weight: 600;
+    word-break: break-word;
   }
 
   .mobileGrid .navMobileGrid > .navItem .arrow {
@@ -779,8 +788,6 @@
   }
 
   .mobileGrid.hideIcons .navMobileGrid > .navItem .label {
-    -webkit-line-clamp: 4;
-    line-clamp: 4;
     font-size: 0.75rem;
   }
 
