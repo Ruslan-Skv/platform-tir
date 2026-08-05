@@ -237,11 +237,12 @@ export function RepairSchedulesGanttTimeline({ items, loading, onOpenProject }: 
                 }
                 onClick={() => onOpenProject(row.item.id)}
               >
-                <strong>{row.item.contractNumber || 'Без номера'}</strong>
-                <span className={styles.labelMeta}>
-                  {[row.item.installerName, row.item.customerAddress || row.item.customerName]
-                    .filter(Boolean)
-                    .join(' · ') || '—'}
+                <strong className={styles.labelContract}>
+                  {row.item.contractNumber || 'Без номера'}
+                </strong>
+                <span className={styles.labelMaster}>{row.item.installerName?.trim() || '—'}</span>
+                <span className={styles.labelAddress}>
+                  {row.item.customerAddress?.trim() || '—'}
                 </span>
                 <RepairDeadlineWarningBadge
                   level={row.item.deadlineWarning}

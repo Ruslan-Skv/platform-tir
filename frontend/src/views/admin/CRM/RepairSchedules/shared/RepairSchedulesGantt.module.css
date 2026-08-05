@@ -47,7 +47,7 @@
 }
 
 .grid {
-  --gantt-label-width: 220px;
+  --gantt-label-width: 240px;
   --gantt-min-track: 720px;
   display: grid;
   grid-template-columns: var(--gantt-label-width) minmax(var(--gantt-min-track), 1fr);
@@ -139,20 +139,27 @@
   border-left-color: rgb(100 116 139 / 0.45);
 }
 
-.labelCell:hover strong {
+.labelCell:hover .labelContract {
   color: var(--admin-accent, #2563eb);
 }
 
-.labelCell strong {
+.labelContract {
   font-size: var(--admin-font-size-sm);
+  font-weight: 700;
   line-height: 1.3;
 }
 
-.labelMeta {
+.labelMaster,
+.labelAddress {
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
   line-height: 1.3;
   word-break: break-word;
+}
+
+.labelMaster {
+  font-weight: 500;
+  color: var(--admin-text-secondary, #475569);
 }
 
 .track {
@@ -274,7 +281,7 @@
 
 @media (max-width: 960px) {
   .grid {
-    --gantt-label-width: 150px;
+    --gantt-label-width: 168px;
     --gantt-min-track: 560px;
   }
 
