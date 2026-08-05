@@ -353,23 +353,31 @@ export function buildRepairContractMeta(input: {
 }): RepairContractMeta {
   const fromPkg = input.packageFormData ? extractPackageContractTerms(input.packageFormData) : null;
 
+  const storedWorkPeriodDays =
+    typeof input.workPeriodDays === 'number' ? input.workPeriodDays : null;
+  const storedWorkStartActDate =
+    typeof input.workStartActDate === 'string'
+      ? parseIsoDateOnly(input.workStartActDate)
+      : dateToIso(input.workStartActDate);
+  const storedWorkCloseActDate =
+    typeof input.workCloseActDate === 'string'
+      ? parseIsoDateOnly(input.workCloseActDate)
+      : dateToIso(input.workCloseActDate);
+
+  /** Сохранённые на проекте поля имеют приоритет — правки в план-графике не затираются пакетом. */
   const workPeriodDays =
+    storedWorkPeriodDays ??
     fromPkg?.workPeriodDays ??
-    (typeof input.workPeriodDays === 'number' ? input.workPeriodDays : null) ??
     (typeof input.crmContractDurationDays === 'number' ? input.crmContractDurationDays : null);
 
   const workStartActDate =
+    storedWorkStartActDate ??
     fromPkg?.workStartActDate ??
-    (typeof input.workStartActDate === 'string'
-      ? parseIsoDateOnly(input.workStartActDate)
-      : dateToIso(input.workStartActDate)) ??
     dateToIso(input.crmActWorkStartDate ?? null);
 
   const workCloseActDate =
+    storedWorkCloseActDate ??
     fromPkg?.workCloseActDate ??
-    (typeof input.workCloseActDate === 'string'
-      ? parseIsoDateOnly(input.workCloseActDate)
-      : dateToIso(input.workCloseActDate)) ??
     dateToIso(input.crmActWorkEndDate ?? null);
 
   const addendums = fromPkg?.addendums ?? [];

@@ -105,6 +105,26 @@ export type RepairScheduleProject = {
     grade: string;
     userId: string | null;
   } | null;
+  package?: {
+    id: string;
+    kind?: string;
+    title: string | null;
+    status?: string;
+    formData?: Record<string, unknown>;
+    crmContractId?: string | null;
+    crmContract?: {
+      id: string;
+      contractNumber: string;
+      customerName: string | null;
+      customerAddress: string | null;
+      customerPhone: string | null;
+      totalAmount?: string | number;
+      advanceAmount?: string | number | null;
+      actWorkStartDate?: string | null;
+      actWorkEndDate?: string | null;
+      contractDurationDays?: number | null;
+    } | null;
+  } | null;
 };
 
 export type RepairScheduleProjectInput = {

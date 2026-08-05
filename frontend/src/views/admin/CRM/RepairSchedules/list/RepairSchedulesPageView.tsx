@@ -1,25 +1,23 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
-import type { RepairScheduleProject } from '@/shared/api/crm/admin-repair-schedules';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
-import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
-import { DataTable } from '@/shared/ui/admin/DataTable';
-import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
-import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
-import { REPAIR_STATUS_LABELS, formatDate, formatMoney } from '../shared/repair-schedules';
+import { REPAIR_STATUS_LABELS } from '../shared/repair-schedules';
+import { buildRepairObjectGroups } from '../shared/repairObjectGroups';
 import { RepairProjectForm } from './RepairProjectForm';
 import { RepairScheduleImportModal } from './RepairScheduleImportModal';
+import { RepairSchedulesGanttTimeline } from './RepairSchedulesGanttTimeline';
+import { RepairSchedulesGroupedList } from './RepairSchedulesGroupedList';
 import { RepairSchedulesRulesInfoTip } from './RepairSchedulesRulesInfoTip';
 import type {
   RepairDeadlineFilter,
@@ -48,6 +46,8 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     setStatusFilter,
     deadlineFilter,
     setDeadlineFilter,
+    viewMode,
+    setViewMode,
     staleOnly,
     setStaleOnly,
     search,
@@ -82,7 +82,6 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
 
   useEffect(() => {
     if (!message) return;
-    // errors stay in banner; successes flashed separately via wrap
   }, [message]);
 
   const flashSuccess = (text: string) => {
@@ -91,137 +90,16 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     window.setTimeout(() => setSuccessVisible(false), 2800);
   };
 
+  const objectGroups = useMemo(() => buildRepairObjectGroups(items), [items]);
+  const clusterCount = objectGroups.filter((g) => g.isCluster).length;
   const countTitle =
-    statusFilter === 'ALL' ? `${items.length} проектов` : `${items.length} в выборке`;
+    clusterCount > 0
+      ? `${items.length} договоров · ${objectGroups.length} объектов`
+      : statusFilter === 'ALL'
+        ? `${items.length} проектов`
+        : `${items.length} в выборке`;
 
   const iconsDisabled = loading || submitting;
-
-  const columns = [
-    {
-      key: 'contract',
-      title: 'Договор',
-      render: (item: RepairScheduleProject) => (
-        <button type="button" className={styles.cellMain} onClick={() => openProject(item.id)}>
-          <strong>{item.contractNumber || 'Без номера'}</strong>
-          {item.workScope ? <span className={styles.subline}>{item.workScope}</span> : null}
-        </button>
-      ),
-    },
-    {
-      key: 'installer',
-      title: 'Мастер',
-      render: (item: RepairScheduleProject) => item.installerName || '—',
-    },
-    {
-      key: 'customer',
-      title: 'Заказчик / адрес',
-      render: (item: RepairScheduleProject) => (
-        <div className={styles.cellMain}>
-          <div>{item.customerName || '—'}</div>
-          {item.customerAddress ? (
-            <span className={styles.subline}>{item.customerAddress}</span>
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      key: 'sum',
-      title: 'Стоимость',
-      render: (item: RepairScheduleProject) => formatMoney(item.contractSum),
-    },
-    {
-      key: 'deadline',
-      title: 'Срок окончания',
-      render: (item: RepairScheduleProject) => (
-        <div className={styles.cellMain}>
-          <div>{formatDate(item.calculatedEndDate)}</div>
-          <RepairDeadlineWarningBadge
-            level={item.deadlineWarning}
-            daysLeft={item.deadlineDaysLeft}
-          />
-        </div>
-      ),
-    },
-    {
-      key: 'latest',
-      title: 'Последняя запись',
-      render: (item: RepairScheduleProject) => (
-        <div className={styles.cellMain}>
-          {item.latestEntry ? (
-            <>
-              <div>{formatDate(item.latestEntry.date)}</div>
-              <span className={styles.subline}>{item.latestEntry.text.slice(0, 80)}</span>
-            </>
-          ) : (
-            '—'
-          )}
-          {item.stale ? (
-            <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
-          ) : null}
-        </div>
-      ),
-    },
-    {
-      key: 'status',
-      title: 'Статус',
-      render: (item: RepairScheduleProject) => (
-        <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-          {REPAIR_STATUS_LABELS[item.status]}
-        </span>
-      ),
-    },
-    {
-      key: 'actions',
-      title: 'Действия',
-      render: (item: RepairScheduleProject) => (
-        <div className={styles.actions}>
-          <AdminTableIconButton
-            aria-label="Открыть"
-            title="Открыть карточку"
-            onClick={() => openProject(item.id)}
-          >
-            <EditIcon />
-          </AdminTableIconButton>
-          {item.status === 'NEW' ? (
-            <AdminTableIconButton
-              data-admin-mutation
-              aria-label="В работу"
-              title="Перевести в работу"
-              onClick={() => {
-                void moveStatus(item, 'IN_PROGRESS').then((ok) => {
-                  if (ok) flashSuccess('Проект в работе');
-                });
-              }}
-            >
-              <PublishIcon />
-            </AdminTableIconButton>
-          ) : null}
-          {item.status === 'IN_PROGRESS' ? (
-            <AdminTableIconButton
-              data-admin-mutation
-              aria-label="Закрыть"
-              title="Закрыть договор"
-              onClick={() => {
-                void moveStatus(item, 'CLOSED').then((ok) => {
-                  if (ok) flashSuccess('Договор закрыт');
-                });
-              }}
-            >
-              <PublishIcon />
-            </AdminTableIconButton>
-          ) : null}
-          <AdminTableIconButton
-            data-admin-mutation
-            aria-label="Удалить"
-            title="Удалить"
-            onClick={() => setDeleteItem(item)}
-          >
-            <DeleteIcon />
-          </AdminTableIconButton>
-        </div>
-      ),
-    },
-  ];
 
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -292,29 +170,45 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         </div>
       ) : null}
 
+      <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
+        <button
+          type="button"
+          className={`${styles.viewModeBtn}${viewMode === 'list' ? ` ${styles.viewModeBtnActive}` : ''}`}
+          onClick={() => setViewMode('list')}
+        >
+          Список
+        </button>
+        <button
+          type="button"
+          className={`${styles.viewModeBtn}${viewMode === 'timeline' ? ` ${styles.viewModeBtnActive}` : ''}`}
+          onClick={() => setViewMode('timeline')}
+        >
+          Таймлайн
+        </button>
+      </div>
+
       <div className={cdHub.contractsListFiltersPanel}>
         <div className={cdHub.contractsListFiltersStack}>
           <div className={cdHub.contractsListChipRow} role="group" aria-label="Статус">
             <span className={cdHub.contractsListChipRowLabel}>Статус</span>
             <button
               type="button"
-              disabled={loading}
+              disabled={loading || viewMode === 'timeline'}
               className={chipClass(statusFilter === 'ALL')}
               onClick={() => setStatusFilter('ALL')}
             >
-              Все
+              Все ({statusCounts.ALL})
             </button>
             {(Object.keys(REPAIR_STATUS_LABELS) as Array<keyof typeof REPAIR_STATUS_LABELS>).map(
               (key) => (
                 <button
                   key={key}
                   type="button"
-                  disabled={loading}
+                  disabled={loading || (viewMode === 'timeline' && key !== 'IN_PROGRESS')}
                   className={chipClass(statusFilter === key)}
                   onClick={() => setStatusFilter(key)}
                 >
-                  {REPAIR_STATUS_LABELS[key]}
-                  {statusFilter === 'ALL' || statusFilter === key ? ` (${statusCounts[key]})` : ''}
+                  {REPAIR_STATUS_LABELS[key]} ({statusCounts[key]})
                 </button>
               )
             )}
@@ -363,65 +257,32 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         </div>
       </div>
 
-      <div className={styles.mobileCards} aria-label="Проекты ремонта">
-        {loading && items.length === 0 ? (
-          <p>Загрузка…</p>
-        ) : items.length === 0 ? (
-          <p>Проектов нет</p>
-        ) : (
-          items.map((item) => (
-            <article key={item.id} className={styles.mobileCard}>
-              <div className={styles.mobileCardTop}>
-                <div>
-                  <div className={styles.mobileCardName}>{item.contractNumber || 'Без номера'}</div>
-                  <div className={styles.mobileCardMeta}>
-                    {item.installerName || 'Без мастера'}
-                    {item.workScope ? ` · ${item.workScope}` : ''}
-                  </div>
-                </div>
-                <span className={`${styles.badge} ${styles[`badge${item.status}`]}`}>
-                  {REPAIR_STATUS_LABELS[item.status]}
-                </span>
-              </div>
-              {item.latestEntry ? (
-                <div className={styles.mobileCardMeta}>
-                  {formatDate(item.latestEntry.date)}: {item.latestEntry.text.slice(0, 100)}
-                </div>
-              ) : null}
-              {item.calculatedEndDate ? (
-                <div className={styles.mobileCardMeta}>
-                  Срок: {formatDate(item.calculatedEndDate)}
-                </div>
-              ) : null}
-              <RepairDeadlineWarningBadge
-                level={item.deadlineWarning}
-                daysLeft={item.deadlineDaysLeft}
-              />
-              {item.stale ? (
-                <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
-              ) : null}
-              <div className={styles.mobileCardActions}>
-                <AdminTableIconButton
-                  aria-label="Открыть"
-                  title="Открыть"
-                  onClick={() => openProject(item.id)}
-                >
-                  <EditIcon />
-                </AdminTableIconButton>
-              </div>
-            </article>
-          ))
-        )}
+      <div className={styles.viewPanels}>
+        <div
+          className={`${styles.viewPanel}${viewMode === 'timeline' ? ` ${styles.viewPanelActive}` : ''}`}
+          aria-hidden={viewMode !== 'timeline'}
+        >
+          <RepairSchedulesGanttTimeline
+            items={items}
+            loading={loading}
+            onOpenProject={openProject}
+          />
+        </div>
+        <div
+          className={`${styles.viewPanel}${viewMode === 'list' ? ` ${styles.viewPanelActive}` : ''}`}
+          aria-hidden={viewMode !== 'list'}
+        >
+          <RepairSchedulesGroupedList
+            items={items}
+            loading={loading}
+            submitting={submitting}
+            openProject={openProject}
+            moveStatus={moveStatus}
+            onDelete={setDeleteItem}
+            flashSuccess={flashSuccess}
+          />
+        </div>
       </div>
-
-      <DataTable
-        containerClassName={styles.directoryTable}
-        data={items}
-        columns={columns}
-        keyExtractor={(item) => item.id}
-        loading={loading}
-        emptyMessage="Проектов нет"
-      />
 
       <RepairScheduleImportModal
         isOpen={importOpen}
@@ -437,6 +298,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         onClose={() => setCreateOpen(false)}
         title="Новый проект ремонта"
         size="lg"
+        showCloseButton
       >
         <form
           data-modal-form

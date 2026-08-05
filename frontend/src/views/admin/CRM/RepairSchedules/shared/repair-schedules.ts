@@ -223,3 +223,126 @@ export function emptyRepairProjectForm(): RepairProjectFormValues {
     note: '',
   };
 }
+
+export function formValuesFromProject(project: {
+  status: RepairProjectFormValues['status'];
+  contractNumber: string | null;
+  workScope: string | null;
+  installerId: string | null;
+  installerName: string | null;
+  packageId: string | null;
+  contractId: string | null;
+  customerName: string | null;
+  customerAddress: string | null;
+  customerPhone: string | null;
+  contractSum: string | number | null;
+  payoutSum: string | number | null;
+  workPeriodDays: number | null;
+  workStartActDate: string | null;
+  workCloseActDate: string | null;
+  plannedStartDate: string | null;
+  note: string | null;
+  package?: { title?: string | null; crmContract?: { contractNumber?: string } | null } | null;
+}): RepairProjectFormValues {
+  return {
+    status: project.status,
+    contractNumber: project.contractNumber || '',
+    workScope: project.workScope || '',
+    installerId: project.installerId || '',
+    installerName: project.installerName || '',
+    manualInstaller: !project.installerId && Boolean(project.installerName?.trim()),
+    packageId: project.packageId || '',
+    packageSearch:
+      project.package?.crmContract?.contractNumber ||
+      project.package?.title ||
+      project.contractNumber ||
+      '',
+    contractId: project.contractId || '',
+    customerName: project.customerName || '',
+    customerAddress: project.customerAddress || '',
+    customerPhone: project.customerPhone || '',
+    contractSum: moneyToInputValue(project.contractSum),
+    payoutSum: moneyToInputValue(project.payoutSum),
+    workPeriodDays: project.workPeriodDays != null ? String(project.workPeriodDays) : '',
+    workStartActDate: isoDateInput(project.workStartActDate),
+    workCloseActDate: isoDateInput(project.workCloseActDate),
+    plannedStartDate: isoDateInput(project.plannedStartDate),
+    note: project.note || '',
+  };
+}
+
+function normText(value: string | null | undefined): string {
+  return (value ?? '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function normMoney(value: string | null | undefined): string {
+  const n = moneyToInputValue(value);
+  if (!n) return '';
+  const num = Number(n);
+  return Number.isFinite(num) ? String(num) : n;
+}
+
+function normDays(value: string | null | undefined): string {
+  const s = (value ?? '').trim();
+  if (!s) return '';
+  const n = Number(s);
+  return Number.isFinite(n) ? String(Math.trunc(n)) : s;
+}
+
+/**
+ * Сравнивает значения формы с полями привязанного пакета.
+ * Возвращает подписи полей, где пакет задаёт значение, а форма ему противоречит.
+ */
+export function findRepairPackageConflicts(
+  values: RepairProjectFormValues,
+  pkg: ContractDocumentPackage
+): string[] {
+  const fromPkg = fieldsFromPackage(pkg);
+  const conflicts: string[] = [];
+
+  const pushIfConflict = (
+    label: string,
+    formValue: string,
+    packageValue: string | undefined,
+    normalize: (v: string) => string
+  ) => {
+    const pkgVal = (packageValue ?? '').trim();
+    if (!pkgVal) return;
+    if (normalize(formValue) !== normalize(pkgVal)) {
+      conflicts.push(`${label}: в форме «${formValue.trim() || '—'}», в пакете «${pkgVal}»`);
+    }
+  };
+
+  pushIfConflict('№ договора', values.contractNumber, fromPkg.contractNumber, normText);
+  pushIfConflict('Заказчик', values.customerName, fromPkg.customerName, normText);
+  pushIfConflict('Адрес', values.customerAddress, fromPkg.customerAddress, normText);
+  pushIfConflict('Телефон', values.customerPhone, fromPkg.customerPhone, normText);
+  pushIfConflict('Стоимость договора', values.contractSum, fromPkg.contractSum, normMoney);
+  pushIfConflict('Предоплата', values.payoutSum, fromPkg.payoutSum, normMoney);
+  pushIfConflict(
+    'Срок договора (раб. дни)',
+    values.workPeriodDays,
+    fromPkg.workPeriodDays,
+    normDays
+  );
+  pushIfConflict(
+    'Акт начала работ',
+    values.workStartActDate,
+    fromPkg.workStartActDate,
+    (v) => isoDateInput(v) || normText(v)
+  );
+  pushIfConflict(
+    'Акт сдачи-приёмки',
+    values.workCloseActDate,
+    fromPkg.workCloseActDate,
+    (v) => isoDateInput(v) || normText(v)
+  );
+  pushIfConflict(
+    'Планируемое начало',
+    values.plannedStartDate,
+    fromPkg.plannedStartDate,
+    (v) => isoDateInput(v) || normText(v)
+  );
+
+  return conflicts;
+}

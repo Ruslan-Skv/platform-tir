@@ -6,6 +6,8 @@ import type {
   RepairContractTimelineEvent,
   RepairScheduleEntry,
 } from '@/shared/api/crm/admin-repair-schedules';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DeleteIcon } from '@/shared/ui/icons';
@@ -14,6 +16,7 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { RepairProjectForm } from '../list/RepairProjectForm';
 import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
 import {
@@ -54,6 +57,17 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
     setEntryKind,
     entryText,
     setEntryText,
+    editOpen,
+    editValues,
+    setEditValues,
+    editError,
+    pendingConflicts,
+    setPendingConflicts,
+    repairInstallers,
+    openEdit,
+    closeEdit,
+    requestSaveEdit,
+    confirmConflictSave,
     refresh,
     addEntry,
     removeEntry,
@@ -92,7 +106,7 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
   if (loading && !project) {
     return (
       <div className={`${cdBase.page} ${cdWorkspace.pageWide}`}>
-        <p>Загрузка…</p>
+        <p className={styles.emptyState}>Загрузка…</p>
       </div>
     );
   }
@@ -100,9 +114,9 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
   if (!project) {
     return (
       <div className={`${cdBase.page} ${cdWorkspace.pageWide}`}>
-        <p>{message || 'Проект не найден'}</p>
-        <button type="button" onClick={back}>
-          К списку
+        <p className={styles.emptyState}>{message || 'Проект не найден'}</p>
+        <button type="button" className={styles.headerSecondaryBtn} onClick={back}>
+          ← К списку
         </button>
       </div>
     );
@@ -123,7 +137,10 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
                 {REPAIR_STATUS_LABELS[project.status]}
               </span>
               {project.syncedFromPackage ? (
-                <span className={styles.syncBadge} title="Срок, акты и Д/с подтягиваются из пакета">
+                <span
+                  className={styles.syncBadge}
+                  title="Привязан к пакету документов: Д/с и пустые поля синхронизируются; правки паспорта сохраняются отдельно"
+                >
                   Из пакета
                 </span>
               ) : null}
@@ -138,8 +155,17 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
           </div>
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          <button type="button" data-modal-btn="secondary" onClick={back}>
-            К списку
+          <button type="button" className={styles.headerSecondaryBtn} onClick={back}>
+            ← К списку
+          </button>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.headerSecondaryBtn}
+            disabled={submitting}
+            onClick={openEdit}
+          >
+            Редактировать
           </button>
           {project.status === 'NEW' ? (
             <button
@@ -195,7 +221,18 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
 
       <div className={styles.detailGrid}>
         <aside className={styles.passport}>
-          <h2 className={styles.passportTitle}>Паспорт</h2>
+          <div className={styles.passportTitleRow}>
+            <h2 className={styles.passportTitle}>Паспорт</h2>
+            <button
+              data-admin-mutation
+              type="button"
+              className={styles.passportEditBtn}
+              disabled={submitting}
+              onClick={openEdit}
+            >
+              Изменить
+            </button>
+          </div>
           <dl className={styles.passportRows}>
             <div>
               <dt>Договор</dt>
@@ -247,15 +284,12 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
             <div>
               <dt>Расчётный срок окончания</dt>
               <dd>
-                {formatDate(project.calculatedEndDate)}
+                <div>{formatDate(project.calculatedEndDate)}</div>
                 {project.deadlineWarning ? (
-                  <>
-                    {' '}
-                    <RepairDeadlineWarningBadge
-                      level={project.deadlineWarning}
-                      daysLeft={project.deadlineDaysLeft}
-                    />
-                  </>
+                  <RepairDeadlineWarningBadge
+                    level={project.deadlineWarning}
+                    daysLeft={project.deadlineDaysLeft}
+                  />
                 ) : null}
               </dd>
             </div>
@@ -306,49 +340,51 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
 
         <section className={styles.timeline}>
           <h2 className={styles.timelineTitle}>Таймлайн</h2>
-          <div className={styles.timelineForm} data-modal-form-grid>
-            <div data-modal-form-group>
-              <label htmlFor="rs-entry-date">Дата</label>
-              <input
-                id="rs-entry-date"
-                type="date"
-                value={entryDate}
-                onChange={(e) => setEntryDate(e.target.value)}
-              />
+          <div className={styles.pageForm}>
+            <div className={styles.pageFormGrid}>
+              <div className={styles.pageFormGroup}>
+                <label htmlFor="rs-entry-date">Дата</label>
+                <input
+                  id="rs-entry-date"
+                  type="date"
+                  value={entryDate}
+                  onChange={(e) => setEntryDate(e.target.value)}
+                />
+              </div>
+              <div className={styles.pageFormGroup}>
+                <label htmlFor="rs-entry-kind">Тип</label>
+                <select
+                  id="rs-entry-kind"
+                  value={entryKind}
+                  onChange={(e) => setEntryKind(e.target.value as typeof entryKind)}
+                >
+                  {(
+                    Object.entries(ENTRY_KIND_LABELS) as Array<
+                      [keyof typeof ENTRY_KIND_LABELS, string]
+                    >
+                  ).map(([key, label]) => (
+                    <option key={key} value={key}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className={`${styles.pageFormGroup} ${styles.pageFormSpan}`}>
+                <label htmlFor="rs-entry-text">Запись динамики</label>
+                <textarea
+                  id="rs-entry-text"
+                  rows={3}
+                  value={entryText}
+                  onChange={(e) => setEntryText(e.target.value)}
+                  placeholder="Например: работают, материал закупают, акт подписан…"
+                />
+              </div>
             </div>
-            <div data-modal-form-group>
-              <label htmlFor="rs-entry-kind">Тип</label>
-              <select
-                id="rs-entry-kind"
-                value={entryKind}
-                onChange={(e) => setEntryKind(e.target.value as typeof entryKind)}
-              >
-                {(
-                  Object.entries(ENTRY_KIND_LABELS) as Array<
-                    [keyof typeof ENTRY_KIND_LABELS, string]
-                  >
-                ).map(([key, label]) => (
-                  <option key={key} value={key}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div data-modal-form-group className={styles.createFormSpan}>
-              <label htmlFor="rs-entry-text">Запись динамики</label>
-              <textarea
-                id="rs-entry-text"
-                rows={3}
-                value={entryText}
-                onChange={(e) => setEntryText(e.target.value)}
-                placeholder="Например: работают, материал закупают, акт подписан…"
-              />
-            </div>
-            <div>
+            <div className={styles.pageFormActions}>
               <button
                 data-admin-mutation
                 type="button"
-                data-modal-btn="primary"
+                className={styles.pagePrimaryBtn}
                 disabled={submitting}
                 onClick={() => void addEntry()}
               >
@@ -358,7 +394,7 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
           </div>
 
           {timelineRows.length === 0 ? (
-            <p className={styles.subline}>
+            <p className={styles.emptyState}>
               Записей пока нет — добавьте еженедельный статус или привяжите пакет с актами/Д/с.
             </p>
           ) : (
@@ -411,6 +447,72 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
           )}
         </section>
       </div>
+
+      <Modal
+        isOpen={editOpen && Boolean(editValues)}
+        onClose={closeEdit}
+        title="Редактировать договор"
+        size="lg"
+        showCloseButton
+      >
+        {editValues ? (
+          <form
+            data-modal-form
+            data-modal-density="compact"
+            onSubmit={(e) => {
+              e.preventDefault();
+              void requestSaveEdit();
+            }}
+          >
+            {project.syncedFromPackage || editValues.packageId ? (
+              <p data-modal-form-hint className={styles.formHintFlush}>
+                Проект привязан к пакету документов. Если поля будут отличаться от данных пакета,
+                перед сохранением появится предупреждение.
+              </p>
+            ) : null}
+            <RepairProjectForm
+              values={editValues}
+              onChange={setEditValues}
+              installers={repairInstallers}
+              error={editError}
+            />
+            <div data-modal-form-actions>
+              <button type="button" data-modal-btn="secondary" onClick={closeEdit}>
+                Отмена
+              </button>
+              <button
+                data-admin-mutation
+                type="submit"
+                data-modal-btn="primary"
+                disabled={submitting}
+              >
+                {submitting ? 'Сохранение…' : 'Сохранить'}
+              </button>
+            </div>
+          </form>
+        ) : null}
+      </Modal>
+
+      <ConfirmModal
+        isOpen={Boolean(pendingConflicts?.length)}
+        onClose={() => setPendingConflicts(null)}
+        title="Данные отличаются от пакета"
+        message={
+          pendingConflicts && pendingConflicts.length > 0
+            ? `Сохраняемые данные противоречат пакету документов:\n\n${pendingConflicts
+                .map((line) => `• ${line}`)
+                .join('\n')}\n\nВсё равно сохранить изменения в план-графике?`
+            : ''
+        }
+        confirmText={submitting ? 'Сохранение…' : 'Сохранить всё равно'}
+        cancelText="Вернуться к правкам"
+        variant="default"
+        closeOnConfirm={false}
+        confirmLoading={submitting}
+        onConfirm={() => {
+          void confirmConflictSave();
+        }}
+      />
     </div>
   );
 }

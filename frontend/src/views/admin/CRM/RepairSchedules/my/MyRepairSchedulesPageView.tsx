@@ -58,7 +58,7 @@ export function MyRepairSchedulesPageView({ model }: { model: MyRepairSchedulesP
       key: 'contract',
       title: 'Договор',
       render: (item: RepairScheduleProject) => (
-        <button type="button" className={styles.cellMain} onClick={() => openProject(item.id)}>
+        <button type="button" className={styles.contractCell} onClick={() => openProject(item.id)}>
           <strong>{item.contractNumber || 'Без номера'}</strong>
           {item.workScope ? <span className={styles.subline}>{item.workScope}</span> : null}
         </button>
@@ -67,7 +67,9 @@ export function MyRepairSchedulesPageView({ model }: { model: MyRepairSchedulesP
     {
       key: 'customer',
       title: 'Адрес',
-      render: (item: RepairScheduleProject) => item.customerAddress || '—',
+      render: (item: RepairScheduleProject) => (
+        <div className={styles.customerCell}>{item.customerAddress || '—'}</div>
+      ),
     },
     {
       key: 'sum',

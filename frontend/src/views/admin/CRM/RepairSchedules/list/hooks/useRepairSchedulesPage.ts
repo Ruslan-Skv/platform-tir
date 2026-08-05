@@ -22,12 +22,28 @@ import {
 
 export type RepairDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
 
+export type RepairSchedulesViewMode = 'list' | 'timeline';
+
+const VIEW_MODE_STORAGE_KEY = 'admin_repair_schedules_view_mode';
+
+function readStoredViewMode(): RepairSchedulesViewMode {
+  if (typeof window === 'undefined') return 'list';
+  try {
+    return localStorage.getItem(VIEW_MODE_STORAGE_KEY) === 'timeline' ? 'timeline' : 'list';
+  } catch {
+    return 'list';
+  }
+}
+
 export function useRepairSchedulesPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
     'IN_PROGRESS'
   );
   const [deadlineFilter, setDeadlineFilter] = useState<RepairDeadlineFilter>('ALL');
+  const [viewMode, setViewModeState] = useState<RepairSchedulesViewMode>(() =>
+    readStoredViewMode()
+  );
   const [staleOnly, setStaleOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [items, setItems] = useState<RepairScheduleProject[]>([]);
@@ -117,6 +133,18 @@ export function useRepairSchedulesPage() {
     setCreateOpen(true);
   };
 
+  const setViewMode = (mode: RepairSchedulesViewMode) => {
+    setViewModeState(mode);
+    try {
+      localStorage.setItem(VIEW_MODE_STORAGE_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+    if (mode === 'timeline' && statusFilter !== 'IN_PROGRESS') {
+      setStatusFilter('IN_PROGRESS');
+    }
+  };
+
   const saveCreate = async () => {
     if (!formValues.contractNumber.trim() && !formValues.packageId.trim()) {
       setFormError('Укажите номер договора или выберите пакет');
@@ -191,6 +219,8 @@ export function useRepairSchedulesPage() {
     setStatusFilter,
     deadlineFilter,
     setDeadlineFilter,
+    viewMode,
+    setViewMode,
     staleOnly,
     setStaleOnly,
     search,
