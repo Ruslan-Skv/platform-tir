@@ -226,7 +226,44 @@ export function RepairProjectForm({ values, onChange, installers, error }: Props
       </div>
 
       <div data-modal-form-group>
-        <label htmlFor="rs-start">Начало работ</label>
+        <label htmlFor="rs-period">Срок договора (раб. дни)</label>
+        <input
+          id="rs-period"
+          type="number"
+          min={1}
+          value={values.workPeriodDays}
+          onChange={(e) => update({ workPeriodDays: e.target.value })}
+          placeholder="60"
+        />
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="rs-start-act">Акт начала работ</label>
+        <input
+          id="rs-start-act"
+          type="date"
+          value={values.workStartActDate}
+          onChange={(e) =>
+            update({
+              workStartActDate: e.target.value,
+              plannedStartDate: e.target.value || values.plannedStartDate,
+            })
+          }
+        />
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="rs-close-act">Акт сдачи-приёмки</label>
+        <input
+          id="rs-close-act"
+          type="date"
+          value={values.workCloseActDate}
+          onChange={(e) => update({ workCloseActDate: e.target.value })}
+        />
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="rs-start">Планируемое начало работ</label>
         <input
           id="rs-start"
           type="date"

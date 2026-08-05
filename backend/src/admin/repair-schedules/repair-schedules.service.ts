@@ -19,6 +19,7 @@ import {
   customerFromFormData,
   decimalOrNull,
   emptyToNull,
+  extractPackageContractTerms,
   moneyFromFormContract,
   moneyFromUnknown,
   parseDateOnly,
@@ -103,6 +104,8 @@ export class RepairSchedulesService {
             totalAmount: true,
             advanceAmount: true,
             actWorkStartDate: true,
+            actWorkEndDate: true,
+            contractDurationDays: true,
           },
         },
       },
@@ -110,6 +113,7 @@ export class RepairSchedulesService {
     if (!pkg) throw new BadRequestException('Пакет документов не найден');
     const form = asFormDataRecord(pkg.formData);
     const fromForm = customerFromFormData(form);
+    const terms = extractPackageContractTerms(pkg.formData);
     const contractSum =
       moneyFromUnknown(pkg.crmContract?.totalAmount) ??
       moneyFromFormContract(form, 'totalAmount') ??
@@ -117,6 +121,15 @@ export class RepairSchedulesService {
     const payoutSum =
       moneyFromUnknown(pkg.crmContract?.advanceAmount) ??
       moneyFromFormContract(form, 'prepaymentAmount');
+    const workStartActDate =
+      (terms.workStartActDate ? parseDateOnly(terms.workStartActDate) : null) ??
+      pkg.crmContract?.actWorkStartDate ??
+      null;
+    const workCloseActDate =
+      (terms.workCloseActDate ? parseDateOnly(terms.workCloseActDate) : null) ??
+      pkg.crmContract?.actWorkEndDate ??
+      null;
+    const workPeriodDays = terms.workPeriodDays ?? pkg.crmContract?.contractDurationDays ?? null;
     return {
       packageId: pkg.id,
       contractId: pkg.crmContractId,
@@ -126,7 +139,10 @@ export class RepairSchedulesService {
       customerPhone: pkg.crmContract?.customerPhone?.trim() || fromForm.customerPhone,
       contractSum,
       payoutSum,
-      plannedStartDate: pkg.crmContract?.actWorkStartDate ?? null,
+      workPeriodDays,
+      workStartActDate,
+      workCloseActDate,
+      plannedStartDate: workStartActDate,
     };
   }
 
@@ -145,6 +161,12 @@ export class RepairSchedulesService {
     let contractSum = dto.contractSum;
     let payoutSum = dto.payoutSum;
     let plannedStartDate = dto.plannedStartDate ? parseDateOnly(dto.plannedStartDate) : null;
+    let workPeriodDays =
+      dto.workPeriodDays !== undefined && dto.workPeriodDays !== null
+        ? Math.trunc(dto.workPeriodDays)
+        : null;
+    let workStartActDate = dto.workStartActDate ? parseDateOnly(dto.workStartActDate) : null;
+    let workCloseActDate = dto.workCloseActDate ? parseDateOnly(dto.workCloseActDate) : null;
 
     if (packageId) {
       const fromPkg = await this.enrichFromPackage(packageId);
@@ -156,6 +178,15 @@ export class RepairSchedulesService {
       if (!customerPhone) customerPhone = fromPkg.customerPhone;
       if (contractSum === undefined || contractSum === null) contractSum = fromPkg.contractSum;
       if (payoutSum === undefined || payoutSum === null) payoutSum = fromPkg.payoutSum;
+      if (workPeriodDays == null && fromPkg.workPeriodDays != null) {
+        workPeriodDays = fromPkg.workPeriodDays;
+      }
+      if (!workStartActDate && fromPkg.workStartActDate) {
+        workStartActDate = fromPkg.workStartActDate;
+      }
+      if (!workCloseActDate && fromPkg.workCloseActDate) {
+        workCloseActDate = fromPkg.workCloseActDate;
+      }
       if (!plannedStartDate && fromPkg.plannedStartDate) {
         plannedStartDate = fromPkg.plannedStartDate;
       }
@@ -171,6 +202,8 @@ export class RepairSchedulesService {
           totalAmount: true,
           advanceAmount: true,
           actWorkStartDate: true,
+          actWorkEndDate: true,
+          contractDurationDays: true,
         },
       });
       if (!contract) throw new BadRequestException('Договор не найден');
@@ -184,9 +217,22 @@ export class RepairSchedulesService {
       if (payoutSum === undefined || payoutSum === null) {
         payoutSum = moneyFromUnknown(contract.advanceAmount);
       }
+      if (workPeriodDays == null && contract.contractDurationDays != null) {
+        workPeriodDays = contract.contractDurationDays;
+      }
+      if (!workStartActDate && contract.actWorkStartDate) {
+        workStartActDate = contract.actWorkStartDate;
+      }
+      if (!workCloseActDate && contract.actWorkEndDate) {
+        workCloseActDate = contract.actWorkEndDate;
+      }
       if (!plannedStartDate && contract.actWorkStartDate) {
         plannedStartDate = contract.actWorkStartDate;
       }
+    }
+
+    if (!plannedStartDate && workStartActDate) {
+      plannedStartDate = workStartActDate;
     }
 
     const status = dto.status ?? RepairScheduleProjectStatus.NEW;
@@ -205,6 +251,9 @@ export class RepairSchedulesService {
         contractSum: decimalOrNull(contractSum) ?? null,
         payoutSum: decimalOrNull(payoutSum) ?? null,
         furnitureInfo: emptyToNull(dto.furnitureInfo) ?? null,
+        workPeriodDays,
+        workStartActDate,
+        workCloseActDate,
         plannedStartDate,
         note: emptyToNull(dto.note) ?? null,
         closedAt: status === RepairScheduleProjectStatus.CLOSED ? new Date() : null,
@@ -330,6 +379,21 @@ export class RepairSchedulesService {
     if (dto.plannedStartDate !== undefined) {
       data.plannedStartDate = dto.plannedStartDate ? parseDateOnly(dto.plannedStartDate) : null;
     }
+    if (dto.workPeriodDays !== undefined) {
+      data.workPeriodDays =
+        dto.workPeriodDays === null || dto.workPeriodDays === undefined
+          ? null
+          : Math.trunc(dto.workPeriodDays);
+    }
+    if (dto.workStartActDate !== undefined) {
+      data.workStartActDate = dto.workStartActDate ? parseDateOnly(dto.workStartActDate) : null;
+      if (dto.plannedStartDate === undefined && dto.workStartActDate) {
+        data.plannedStartDate = parseDateOnly(dto.workStartActDate);
+      }
+    }
+    if (dto.workCloseActDate !== undefined) {
+      data.workCloseActDate = dto.workCloseActDate ? parseDateOnly(dto.workCloseActDate) : null;
+    }
 
     if (dto.installerId !== undefined || dto.installerName !== undefined) {
       const resolved = await this.resolveInstaller(
@@ -376,6 +440,15 @@ export class RepairSchedulesService {
         }
         if (dto.plannedStartDate === undefined && fromPkg.plannedStartDate) {
           data.plannedStartDate = fromPkg.plannedStartDate;
+        }
+        if (dto.workPeriodDays === undefined && fromPkg.workPeriodDays != null) {
+          data.workPeriodDays = fromPkg.workPeriodDays;
+        }
+        if (dto.workStartActDate === undefined && fromPkg.workStartActDate) {
+          data.workStartActDate = fromPkg.workStartActDate;
+        }
+        if (dto.workCloseActDate === undefined && fromPkg.workCloseActDate) {
+          data.workCloseActDate = fromPkg.workCloseActDate;
         }
       } else {
         data.package = { disconnect: true };

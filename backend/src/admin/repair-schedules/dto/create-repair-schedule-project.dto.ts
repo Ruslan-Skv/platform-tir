@@ -93,6 +93,29 @@ export class CreateRepairScheduleProjectDto {
   @IsDateString()
   plannedStartDate?: string | null;
 
+  @ApiPropertyOptional({ description: 'Срок договора в рабочих днях' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsNumber()
+  @Min(1)
+  workPeriodDays?: number | null;
+
+  @ApiPropertyOptional({
+    example: '2026-08-15',
+    description: 'Дата подписания акта начала работ',
+  })
+  @IsOptional()
+  @IsDateString()
+  workStartActDate?: string | null;
+
+  @ApiPropertyOptional({
+    example: '2026-10-15',
+    description: 'Дата подписания акта сдачи-приёмки',
+  })
+  @IsOptional()
+  @IsDateString()
+  workCloseActDate?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()

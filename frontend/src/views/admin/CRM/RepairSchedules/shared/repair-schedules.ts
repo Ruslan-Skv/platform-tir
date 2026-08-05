@@ -12,6 +12,62 @@ export const ENTRY_KIND_LABELS = {
   NOTE: 'Заметка',
 } as const;
 
+export const CONTRACT_EVENT_LABELS = {
+  WORK_START_ACT: 'Акт начала',
+  ADDENDUM: 'Д/с',
+  CALCULATED_END_BASE: 'Срок (базовый)',
+  CALCULATED_END: 'Срок окончания',
+  WORK_CLOSE_ACT: 'Акт сдачи',
+} as const;
+
+export const ADDENDUM_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Открыто',
+  SIGNED: 'Подписано',
+  PAID: 'Оплачено',
+};
+
+export type RepairDeadlineWarningLevel = 'D20' | 'D10' | 'D3' | 'OVERDUE';
+
+export const DEADLINE_WARNING_LABELS: Record<RepairDeadlineWarningLevel, string> = {
+  D20: 'Срок через ≤20 дн.',
+  D10: 'Срок через ≤10 дн.',
+  D3: 'Срок через ≤3 дн.',
+  OVERDUE: 'Срок просрочен',
+};
+
+export function deadlineWarningShortLabel(
+  level: RepairDeadlineWarningLevel,
+  daysLeft: number | null | undefined
+): string {
+  if (level === 'OVERDUE') {
+    const overdue = daysLeft != null && daysLeft < 0 ? Math.abs(daysLeft) : null;
+    return overdue != null ? `Просрочен на ${overdue} дн.` : 'Просрочен';
+  }
+  if (daysLeft != null && daysLeft >= 0) {
+    if (daysLeft === 0) return 'Срок сегодня';
+    if (daysLeft === 1) return 'Срок завтра';
+    return `Срок через ${daysLeft} дн.`;
+  }
+  return DEADLINE_WARNING_LABELS[level];
+}
+
+export function matchesDeadlineFilter(
+  item: {
+    deadlineDaysLeft?: number | null;
+    deadlineWarning?: RepairDeadlineWarningLevel | null;
+  },
+  filter: 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE'
+): boolean {
+  if (filter === 'ALL') return true;
+  const days = item.deadlineDaysLeft;
+  if (days == null && !item.deadlineWarning) return false;
+  if (filter === 'OVERDUE') return item.deadlineWarning === 'OVERDUE' || (days != null && days < 0);
+  if (filter === 'LE3') return days != null && days <= 3;
+  if (filter === 'LE10') return days != null && days <= 10;
+  if (filter === 'LE20') return days != null && days <= 20;
+  return false;
+}
+
 export function todayIsoDate() {
   return new Date().toLocaleDateString('en-CA');
 }
@@ -82,6 +138,14 @@ export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairP
   const prepayment =
     moneyToInputValue(contract?.advanceAmount) || moneyToInputValue(formContract.prepaymentAmount);
 
+  const workStartActDate =
+    isoDateInput(form.repairWorkStartActSignedAt) || isoDateInput(contract?.actWorkStartDate);
+  const workCloseActDate = isoDateInput(form.repairContractCloseActSignedAt);
+  const workPeriodDays =
+    typeof formContract.workPeriod === 'string' || typeof formContract.workPeriod === 'number'
+      ? String(formContract.workPeriod).trim()
+      : '';
+
   return {
     packageId: pkg.id,
     packageSearch: contract?.contractNumber || pkg.title || pkg.id,
@@ -107,7 +171,10 @@ export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairP
     ),
     contractSum,
     payoutSum: prepayment,
-    plannedStartDate: isoDateInput(contract?.actWorkStartDate),
+    workPeriodDays,
+    workStartActDate,
+    workCloseActDate,
+    plannedStartDate: workStartActDate || isoDateInput(contract?.actWorkStartDate),
   };
 }
 
@@ -126,6 +193,9 @@ export type RepairProjectFormValues = {
   customerPhone: string;
   contractSum: string;
   payoutSum: string;
+  workPeriodDays: string;
+  workStartActDate: string;
+  workCloseActDate: string;
   plannedStartDate: string;
   note: string;
 };
@@ -146,6 +216,9 @@ export function emptyRepairProjectForm(): RepairProjectFormValues {
     customerPhone: '',
     contractSum: '',
     payoutSum: '',
+    workPeriodDays: '',
+    workStartActDate: '',
+    workCloseActDate: '',
     plannedStartDate: '',
     note: '',
   };

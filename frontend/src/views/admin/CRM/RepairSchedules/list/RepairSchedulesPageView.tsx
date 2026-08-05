@@ -15,11 +15,16 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
 import { REPAIR_STATUS_LABELS, formatDate, formatMoney } from '../shared/repair-schedules';
 import { RepairProjectForm } from './RepairProjectForm';
 import { RepairScheduleImportModal } from './RepairScheduleImportModal';
-import type { RepairSchedulesPageModel } from './hooks/useRepairSchedulesPage';
+import { RepairSchedulesRulesInfoTip } from './RepairSchedulesRulesInfoTip';
+import type {
+  RepairDeadlineFilter,
+  RepairSchedulesPageModel,
+} from './hooks/useRepairSchedulesPage';
 
 function chipClass(active: boolean): string {
   return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
@@ -29,10 +34,20 @@ function searchFieldClass(base: string, active: boolean, activeClass: string): s
   return active ? `${base} ${activeClass}` : base;
 }
 
+const DEADLINE_FILTERS: Array<{ key: RepairDeadlineFilter; label: string }> = [
+  { key: 'ALL', label: 'Все' },
+  { key: 'LE20', label: '≤20 дн.' },
+  { key: 'LE10', label: '≤10 дн.' },
+  { key: 'LE3', label: '≤3 дн.' },
+  { key: 'OVERDUE', label: 'Просрочен' },
+];
+
 export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageModel }) {
   const {
     statusFilter,
     setStatusFilter,
+    deadlineFilter,
+    setDeadlineFilter,
     staleOnly,
     setStaleOnly,
     search,
@@ -53,6 +68,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
     formError,
     submitting,
     statusCounts,
+    deadlineCounts,
     refresh,
     openCreate,
     saveCreate,
@@ -112,6 +128,19 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
       key: 'sum',
       title: 'Стоимость',
       render: (item: RepairScheduleProject) => formatMoney(item.contractSum),
+    },
+    {
+      key: 'deadline',
+      title: 'Срок окончания',
+      render: (item: RepairScheduleProject) => (
+        <div className={styles.cellMain}>
+          <div>{formatDate(item.calculatedEndDate)}</div>
+          <RepairDeadlineWarningBadge
+            level={item.deadlineWarning}
+            daysLeft={item.deadlineDaysLeft}
+          />
+        </div>
+      ),
     },
     {
       key: 'latest',
@@ -202,6 +231,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>План-график ремонта</h1>
+                <RepairSchedulesRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
@@ -289,6 +319,21 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
               )
             )}
           </div>
+          <div className={cdHub.contractsListChipRow} role="group" aria-label="Срок окончания">
+            <span className={cdHub.contractsListChipRowLabel}>Срок</span>
+            {DEADLINE_FILTERS.map(({ key, label }) => (
+              <button
+                key={key}
+                type="button"
+                disabled={loading}
+                className={chipClass(deadlineFilter === key)}
+                onClick={() => setDeadlineFilter(key)}
+              >
+                {label}
+                {key !== 'ALL' ? ` (${deadlineCounts[key]})` : ''}
+              </button>
+            ))}
+          </div>
           <div className={cdHub.contractsListFilters}>
             <input
               type="search"
@@ -343,6 +388,15 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
                   {formatDate(item.latestEntry.date)}: {item.latestEntry.text.slice(0, 100)}
                 </div>
               ) : null}
+              {item.calculatedEndDate ? (
+                <div className={styles.mobileCardMeta}>
+                  Срок: {formatDate(item.calculatedEndDate)}
+                </div>
+              ) : null}
+              <RepairDeadlineWarningBadge
+                level={item.deadlineWarning}
+                daysLeft={item.deadlineDaysLeft}
+              />
               {item.stale ? (
                 <div className={styles.stale}>Нет записи &gt; {item.staleDays} дн.</div>
               ) : null}
@@ -382,7 +436,7 @@ export function RepairSchedulesPageView({ model }: { model: RepairSchedulesPageM
         isOpen={createOpen}
         onClose={() => setCreateOpen(false)}
         title="Новый проект ремонта"
-        size="md"
+        size="lg"
       >
         <form
           data-modal-form

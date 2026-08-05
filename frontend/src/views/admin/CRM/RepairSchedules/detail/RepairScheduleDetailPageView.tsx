@@ -1,5 +1,11 @@
 'use client';
 
+import { useMemo } from 'react';
+
+import type {
+  RepairContractTimelineEvent,
+  RepairScheduleEntry,
+} from '@/shared/api/crm/admin-repair-schedules';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DeleteIcon } from '@/shared/ui/icons';
@@ -8,14 +14,32 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { RepairDeadlineWarningBadge } from '../shared/RepairDeadlineWarningBadge';
 import styles from '../shared/RepairSchedules.module.css';
 import {
+  ADDENDUM_STATUS_LABELS,
+  CONTRACT_EVENT_LABELS,
   ENTRY_KIND_LABELS,
   REPAIR_STATUS_LABELS,
   formatDate,
   formatMoney,
 } from '../shared/repair-schedules';
 import type { RepairScheduleDetailPageModel } from './hooks/useRepairScheduleDetailPage';
+
+type TimelineRow =
+  | { key: string; date: string; sort: string; type: 'entry'; entry: RepairScheduleEntry }
+  | {
+      key: string;
+      date: string;
+      sort: string;
+      type: 'contract';
+      event: RepairContractTimelineEvent;
+    };
+
+function isoSortKey(date: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(date);
+  return m ? `${m[1]}-${m[2]}-${m[3]}` : date.slice(0, 10);
+}
 
 export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleDetailPageModel }) {
   const {
@@ -37,6 +61,34 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
     back,
   } = model;
 
+  const timelineRows = useMemo((): TimelineRow[] => {
+    if (!project) return [];
+    const rows: TimelineRow[] = [];
+    for (const entry of project.entries ?? []) {
+      rows.push({
+        key: `entry:${entry.id}`,
+        date: entry.date,
+        sort: isoSortKey(entry.date),
+        type: 'entry',
+        entry,
+      });
+    }
+    for (const event of project.contractTimelineEvents ?? []) {
+      rows.push({
+        key: event.id,
+        date: event.date,
+        sort: isoSortKey(event.date),
+        type: 'contract',
+        event,
+      });
+    }
+    rows.sort((a, b) => {
+      if (a.sort === b.sort) return a.key < b.key ? 1 : -1;
+      return a.sort < b.sort ? 1 : -1;
+    });
+    return rows;
+  }, [project]);
+
   if (loading && !project) {
     return (
       <div className={`${cdBase.page} ${cdWorkspace.pageWide}`}>
@@ -56,7 +108,7 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
     );
   }
 
-  const entries = project.entries ?? [];
+  const addendums = project.addendums ?? [];
 
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -70,6 +122,15 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
               <span className={`${styles.badge} ${styles[`badge${project.status}`]}`}>
                 {REPAIR_STATUS_LABELS[project.status]}
               </span>
+              {project.syncedFromPackage ? (
+                <span className={styles.syncBadge} title="Срок, акты и Д/с подтягиваются из пакета">
+                  Из пакета
+                </span>
+              ) : null}
+              <RepairDeadlineWarningBadge
+                level={project.deadlineWarning}
+                daysLeft={project.deadlineDaysLeft}
+              />
               {project.stale ? (
                 <span className={styles.stale}>Нет записи &gt; {project.staleDays} дн.</span>
               ) : null}
@@ -169,7 +230,48 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
               <dd>{formatMoney(project.payoutSum)}</dd>
             </div>
             <div>
-              <dt>Планируемое начало работ</dt>
+              <dt>Срок договора</dt>
+              <dd>
+                {project.workPeriodDays != null ? `${project.workPeriodDays} раб. дн.` : '—'}
+                {project.effectiveWorkPeriodDays != null &&
+                project.workPeriodDays != null &&
+                project.effectiveWorkPeriodDays !== project.workPeriodDays
+                  ? ` → ${project.effectiveWorkPeriodDays} с учётом Д/с`
+                  : null}
+              </dd>
+            </div>
+            <div>
+              <dt>Акт начала работ</dt>
+              <dd>{formatDate(project.workStartActDate)}</dd>
+            </div>
+            <div>
+              <dt>Расчётный срок окончания</dt>
+              <dd>
+                {formatDate(project.calculatedEndDate)}
+                {project.deadlineWarning ? (
+                  <>
+                    {' '}
+                    <RepairDeadlineWarningBadge
+                      level={project.deadlineWarning}
+                      daysLeft={project.deadlineDaysLeft}
+                    />
+                  </>
+                ) : null}
+              </dd>
+            </div>
+            {project.calculatedEndDateBase &&
+            project.calculatedEndDateBase !== project.calculatedEndDate ? (
+              <div>
+                <dt>Срок без Д/с</dt>
+                <dd>{formatDate(project.calculatedEndDateBase)}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>Акт сдачи-приёмки</dt>
+              <dd>{formatDate(project.workCloseActDate)}</dd>
+            </div>
+            <div>
+              <dt>Планируемое начало</dt>
               <dd>{formatDate(project.plannedStartDate)}</dd>
             </div>
             <div>
@@ -177,6 +279,29 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
               <dd>{project.note || '—'}</dd>
             </div>
           </dl>
+
+          {addendums.length > 0 ? (
+            <div className={styles.addendumBlock}>
+              <h3 className={styles.addendumTitle}>Доп. соглашения</h3>
+              <ul className={styles.addendumList}>
+                {addendums.map((item) => (
+                  <li key={item.number}>
+                    <strong>Д/с №{item.number}</strong>
+                    <span>
+                      {ADDENDUM_STATUS_LABELS[item.status] || item.status}
+                      {item.documentDate ? ` · ${item.documentDate}` : ''}
+                    </span>
+                    {item.workPeriodChangeDays != null ? (
+                      <span className={styles.subline}>
+                        {item.workPeriodChangeDays > 0 ? '+' : ''}
+                        {item.workPeriodChangeDays} раб. дн. к сроку
+                      </span>
+                    ) : null}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
         </aside>
 
         <section className={styles.timeline}>
@@ -232,34 +357,56 @@ export function RepairScheduleDetailPageView({ model }: { model: RepairScheduleD
             </div>
           </div>
 
-          {entries.length === 0 ? (
-            <p className={styles.subline}>Записей пока нет — добавьте еженедельный статус.</p>
+          {timelineRows.length === 0 ? (
+            <p className={styles.subline}>
+              Записей пока нет — добавьте еженедельный статус или привяжите пакет с актами/Д/с.
+            </p>
           ) : (
             <ul className={styles.timelineList}>
-              {entries.map((entry) => (
-                <li key={entry.id} className={styles.timelineItem}>
-                  <div className={styles.timelineDate}>{formatDate(entry.date)}</div>
-                  <div className={styles.timelineBody}>
-                    <span className={styles.timelineKind}>{ENTRY_KIND_LABELS[entry.kind]}</span>
-                    <p className={styles.timelineText}>{entry.text}</p>
-                    <div className={styles.timelineMeta}>
-                      {entry.createdBy
-                        ? [entry.createdBy.firstName, entry.createdBy.lastName]
-                            .filter(Boolean)
-                            .join(' ') || entry.createdBy.email
-                        : null}
-                      <AdminTableIconButton
-                        data-admin-mutation
-                        aria-label="Удалить запись"
-                        title="Удалить запись"
-                        onClick={() => void removeEntry(entry.id)}
-                      >
-                        <DeleteIcon />
-                      </AdminTableIconButton>
+              {timelineRows.map((row) =>
+                row.type === 'contract' ? (
+                  <li
+                    key={row.key}
+                    className={`${styles.timelineItem} ${styles.timelineItemContract}`}
+                  >
+                    <div className={styles.timelineDate}>{formatDate(row.date)}</div>
+                    <div className={styles.timelineBody}>
+                      <span className={`${styles.timelineKind} ${styles.timelineKindContract}`}>
+                        {CONTRACT_EVENT_LABELS[row.event.eventType]}
+                      </span>
+                      <p className={styles.timelineText}>{row.event.text}</p>
+                      {project.syncedFromPackage ? (
+                        <div className={styles.timelineMeta}>из пакета документов</div>
+                      ) : null}
                     </div>
-                  </div>
-                </li>
-              ))}
+                  </li>
+                ) : (
+                  <li key={row.key} className={styles.timelineItem}>
+                    <div className={styles.timelineDate}>{formatDate(row.date)}</div>
+                    <div className={styles.timelineBody}>
+                      <span className={styles.timelineKind}>
+                        {ENTRY_KIND_LABELS[row.entry.kind]}
+                      </span>
+                      <p className={styles.timelineText}>{row.entry.text}</p>
+                      <div className={styles.timelineMeta}>
+                        {row.entry.createdBy
+                          ? [row.entry.createdBy.firstName, row.entry.createdBy.lastName]
+                              .filter(Boolean)
+                              .join(' ') || row.entry.createdBy.email
+                          : null}
+                        <AdminTableIconButton
+                          data-admin-mutation
+                          aria-label="Удалить запись"
+                          title="Удалить запись"
+                          onClick={() => void removeEntry(row.entry.id)}
+                        >
+                          <DeleteIcon />
+                        </AdminTableIconButton>
+                      </div>
+                    </div>
+                  </li>
+                )
+              )}
             </ul>
           )}
         </section>

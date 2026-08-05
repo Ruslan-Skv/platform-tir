@@ -17,13 +17,17 @@ import {
 import {
   type RepairProjectFormValues,
   emptyRepairProjectForm,
+  matchesDeadlineFilter,
 } from '../../shared/repair-schedules';
+
+export type RepairDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
 
 export function useRepairSchedulesPage() {
   const router = useRouter();
   const [statusFilter, setStatusFilter] = useState<RepairScheduleProjectStatus | 'ALL'>(
     'IN_PROGRESS'
   );
+  const [deadlineFilter, setDeadlineFilter] = useState<RepairDeadlineFilter>('ALL');
   const [staleOnly, setStaleOnly] = useState(false);
   const [search, setSearch] = useState('');
   const [items, setItems] = useState<RepairScheduleProject[]>([]);
@@ -69,6 +73,11 @@ export function useRepairSchedulesPage() {
       .catch(() => setInstallers([]));
   }, []);
 
+  const statusScopedItems = useMemo(() => {
+    if (statusFilter === 'ALL') return items;
+    return items.filter((i) => i.status === statusFilter);
+  }, [items, statusFilter]);
+
   const statusCounts = useMemo(
     () => ({
       ALL: items.length,
@@ -80,10 +89,27 @@ export function useRepairSchedulesPage() {
     [items]
   );
 
+  const deadlineCounts = useMemo(
+    () => ({
+      LE20: statusScopedItems.filter((i) => matchesDeadlineFilter(i, 'LE20')).length,
+      LE10: statusScopedItems.filter((i) => matchesDeadlineFilter(i, 'LE10')).length,
+      LE3: statusScopedItems.filter((i) => matchesDeadlineFilter(i, 'LE3')).length,
+      OVERDUE: statusScopedItems.filter((i) => matchesDeadlineFilter(i, 'OVERDUE')).length,
+    }),
+    [statusScopedItems]
+  );
+
   const visibleItems = useMemo(() => {
-    if (statusFilter === 'ALL') return items;
-    return items.filter((i) => i.status === statusFilter);
-  }, [items, statusFilter]);
+    let rows = statusScopedItems.filter((i) => matchesDeadlineFilter(i, deadlineFilter));
+    if (deadlineFilter !== 'ALL') {
+      rows = [...rows].sort((a, b) => {
+        const da = a.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
+        const db = b.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
+        return da - db;
+      });
+    }
+    return rows;
+  }, [statusScopedItems, deadlineFilter]);
 
   const openCreate = () => {
     setFormValues(emptyRepairProjectForm());
@@ -112,6 +138,9 @@ export function useRepairSchedulesPage() {
         customerPhone: formValues.customerPhone.trim() || null,
         contractSum: formValues.contractSum.trim() ? Number(formValues.contractSum) : null,
         payoutSum: formValues.payoutSum.trim() ? Number(formValues.payoutSum) : null,
+        workPeriodDays: formValues.workPeriodDays.trim() ? Number(formValues.workPeriodDays) : null,
+        workStartActDate: formValues.workStartActDate.trim() || null,
+        workCloseActDate: formValues.workCloseActDate.trim() || null,
         plannedStartDate: formValues.plannedStartDate.trim() || null,
         note: formValues.note.trim() || null,
       });
@@ -160,6 +189,8 @@ export function useRepairSchedulesPage() {
   return {
     statusFilter,
     setStatusFilter,
+    deadlineFilter,
+    setDeadlineFilter,
     staleOnly,
     setStaleOnly,
     search,
@@ -180,6 +211,7 @@ export function useRepairSchedulesPage() {
     formError,
     submitting,
     statusCounts,
+    deadlineCounts,
     refresh,
     openCreate,
     saveCreate,

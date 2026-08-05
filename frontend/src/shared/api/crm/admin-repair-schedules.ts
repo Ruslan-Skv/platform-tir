@@ -20,6 +20,30 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
 export type RepairScheduleProjectStatus = 'NEW' | 'IN_PROGRESS' | 'CLOSED';
 export type RepairScheduleEntryKind = 'WEEKLY' | 'MILESTONE' | 'NOTE';
 
+export type RepairContractAddendumMeta = {
+  number: number;
+  documentDate: string | null;
+  status: 'OPEN' | 'SIGNED' | 'PAID' | string;
+  workPeriodChangeDays: number | null;
+  signedAt: string | null;
+  paidAt: string | null;
+};
+
+export type RepairContractTimelineEventType =
+  | 'WORK_START_ACT'
+  | 'ADDENDUM'
+  | 'CALCULATED_END_BASE'
+  | 'CALCULATED_END'
+  | 'WORK_CLOSE_ACT';
+
+export type RepairContractTimelineEvent = {
+  id: string;
+  date: string;
+  kind: 'CONTRACT';
+  eventType: RepairContractTimelineEventType;
+  text: string;
+};
+
 export type RepairScheduleEntry = {
   id: string;
   projectId: string;
@@ -52,6 +76,9 @@ export type RepairScheduleProject = {
   contractSum: string | number | null;
   payoutSum: string | number | null;
   furnitureInfo: string | null;
+  workPeriodDays: number | null;
+  workStartActDate: string | null;
+  workCloseActDate: string | null;
   plannedStartDate: string | null;
   closedAt: string | null;
   note: string | null;
@@ -60,6 +87,16 @@ export type RepairScheduleProject = {
   latestEntry: RepairScheduleEntry | null;
   stale: boolean;
   staleDays: number;
+  calculatedEndDateBase?: string | null;
+  calculatedEndDate?: string | null;
+  effectiveWorkPeriodDays?: number | null;
+  syncedFromPackage?: boolean;
+  /** Календарных дней до расчётного окончания; < 0 — просрочен. */
+  deadlineDaysLeft?: number | null;
+  /** Уровень предупреждения: ≤20 / ≤10 / ≤3 дн. или просрочка. */
+  deadlineWarning?: 'D20' | 'D10' | 'D3' | 'OVERDUE' | null;
+  addendums?: RepairContractAddendumMeta[];
+  contractTimelineEvents?: RepairContractTimelineEvent[];
   entries?: RepairScheduleEntry[];
   installer?: {
     id: string;
@@ -84,6 +121,9 @@ export type RepairScheduleProjectInput = {
   contractSum?: number | null;
   payoutSum?: number | null;
   furnitureInfo?: string | null;
+  workPeriodDays?: number | null;
+  workStartActDate?: string | null;
+  workCloseActDate?: string | null;
   plannedStartDate?: string | null;
   note?: string | null;
 };

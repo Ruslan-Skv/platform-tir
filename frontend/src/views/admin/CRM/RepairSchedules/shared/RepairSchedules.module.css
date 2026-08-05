@@ -74,6 +74,31 @@
   font-weight: 600;
 }
 
+.deadlineWarn {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: var(--admin-radius-sm, 4px);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.deadlineWarnSoft {
+  background: #fff7ed;
+  color: #c2410c;
+}
+
+.deadlineWarnHigh {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.deadlineWarnUrgent {
+  background: var(--admin-error-bg, #fee2e2);
+  color: var(--admin-error-text, #b91c1c);
+}
+
 .subline {
   display: block;
   color: var(--admin-text-muted);
@@ -325,6 +350,53 @@
   margin-top: 0.25rem;
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
+}
+
+.timelineItemContract .timelineBody {
+  border-left-color: var(--admin-accent, #2563eb);
+}
+
+.timelineKindContract {
+  color: var(--admin-text, #0f172a);
+  background: var(--admin-accent-soft, #eff6ff);
+  padding: 0.1rem 0.4rem;
+  border-radius: var(--admin-radius-sm, 4px);
+}
+
+.syncBadge {
+  display: inline-block;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xl, 12px);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  background: var(--admin-surface-muted, #f1f5f9);
+  color: var(--admin-text-muted);
+}
+
+.addendumBlock {
+  margin-top: var(--admin-space-xl);
+  padding-top: var(--admin-space-lg);
+  border-top: 1px solid var(--admin-border);
+}
+
+.addendumTitle {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--admin-font-size-base);
+  font-weight: 700;
+}
+
+.addendumList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--admin-space-md);
+}
+
+.addendumList li {
+  display: grid;
+  gap: 0.15rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 @media (max-width: 960px) {

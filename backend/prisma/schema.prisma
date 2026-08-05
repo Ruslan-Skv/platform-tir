@@ -2935,6 +2935,12 @@ model RepairScheduleProject {
   contractSum      Decimal?                    @db.Decimal(12, 2)
   payoutSum        Decimal?                    @db.Decimal(12, 2) /// сумма к выплате / мастеру
   furnitureInfo    String?                     @db.Text
+  /// Срок договора в рабочих днях (из пакета `contract.workPeriod` или вручную).
+  workPeriodDays   Int?
+  /// Дата подписания акта начала работ — от неё считается срок.
+  workStartActDate DateTime?                   @db.Date
+  /// Фактическое окончание по акту сдачи-приёмки.
+  workCloseActDate DateTime?                   @db.Date
   plannedStartDate DateTime?                   @db.Date
   closedAt         DateTime?
   note             String?                     @db.Text
