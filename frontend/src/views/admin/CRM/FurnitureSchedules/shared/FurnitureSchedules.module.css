@@ -361,6 +361,20 @@ button.cellMain:focus-visible {
   color: var(--admin-text-secondary);
 }
 
+/* Нативный checkbox: без явного color-scheme на телефоне в светлой теме рисуется тёмный chrome */
+.staleToggle input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 1.0625rem;
+  height: 1.0625rem;
+  margin: 0;
+  accent-color: var(--admin-accent, #2563eb);
+  color-scheme: light;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .staleToggle input[type='checkbox'] {
+  color-scheme: dark;
+}
+
 .mobileCards {
   display: none;
 }
@@ -426,6 +440,19 @@ button.cellMain:focus-visible {
   align-items: center;
   gap: 0.4rem;
   font-size: var(--admin-font-size-sm);
+}
+
+.checkLabel input[type='checkbox'] {
+  flex-shrink: 0;
+  width: 1.0625rem;
+  height: 1.0625rem;
+  margin: 0;
+  accent-color: var(--admin-accent, #2563eb);
+  color-scheme: light;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .checkLabel input[type='checkbox'] {
+  color-scheme: dark;
 }
 
 .contractHits {
