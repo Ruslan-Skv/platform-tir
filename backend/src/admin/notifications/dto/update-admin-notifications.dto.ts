@@ -125,6 +125,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnRepairSchedules?: boolean;
 
+  @ApiPropertyOptional({ description: 'График мебели (проекты, записи и статусы)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnFurnitureSchedules?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

@@ -325,6 +325,7 @@ export function NotificationsSection() {
     notifyOnWaybills: true,
     notifyOnInstallationSchedules: true,
     notifyOnRepairSchedules: true,
+    notifyOnFurnitureSchedules: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -901,6 +902,19 @@ export function NotificationsSection() {
                 <label htmlFor="notifyOnRepairSchedules">
                   График ремонтов (проекты, записи и изменение статусов)
                 </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnFurnitureSchedules"
+                  checked={formSettings.notifyOnFurnitureSchedules ?? true}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, notifyOnFurnitureSchedules: e.target.checked } : s
+                    )
+                  }
+                />
+                <label htmlFor="notifyOnFurnitureSchedules">План-график мебели</label>
               </div>
               {isSuperAdmin ? (
                 <div className={styles.checkboxRow}>

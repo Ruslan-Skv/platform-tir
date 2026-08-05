@@ -17,7 +17,8 @@ export type AdminBellNotificationType =
   | 'workDays'
   | 'waybills'
   | 'installationSchedules'
-  | 'repairSchedules';
+  | 'repairSchedules'
+  | 'furnitureSchedules';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -79,6 +80,17 @@ export type AdminBellRepairScheduleNotification = {
   kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
   kindLabel: string;
   repairScheduleProjectId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellFurnitureScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
+  kindLabel: string;
+  furnitureScheduleProjectId: string;
   title: string;
   message: string;
   href: string;
@@ -276,6 +288,18 @@ export function repairScheduleToBellNotificationItem(
   };
 }
 
+export function furnitureScheduleToBellNotificationItem(
+  item: AdminBellFurnitureScheduleNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'furnitureSchedules',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/crm/furniture-schedules',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -354,6 +378,10 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.repair-schedules') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'furnitureSchedules') {
+    return hasAccess('admin.crm.furniture-schedules') && isBellTypeEnabled(item.type, settings);
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -394,6 +422,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnInstallationSchedules !== false;
     case 'repairSchedules':
       return settings.notifyOnRepairSchedules !== false;
+    case 'furnitureSchedules':
+      return settings.notifyOnFurnitureSchedules !== false;
     default:
       return false;
   }
@@ -476,6 +506,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'repairSchedules':
       return {
         title: 'График ремонтов',
+        body: item.text,
+        tag,
+      };
+    case 'furnitureSchedules':
+      return {
+        title: 'План-график мебели',
         body: item.text,
         tag,
       };

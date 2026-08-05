@@ -38,6 +38,7 @@ import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service'
 import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
 import { AdminBellInstallationScheduleFeedService } from './admin-bell-installation-schedule-feed.service';
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
+import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
@@ -69,6 +70,7 @@ export class AdminNotificationsController {
     private readonly bellWaybillFeed: AdminBellWaybillFeedService,
     private readonly bellInstallationScheduleFeed: AdminBellInstallationScheduleFeedService,
     private readonly bellRepairScheduleFeed: AdminBellRepairScheduleFeedService,
+    private readonly bellFurnitureScheduleFeed: AdminBellFurnitureScheduleFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -166,6 +168,14 @@ export class AdminNotificationsController {
   getBellRepairScheduleFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellRepairScheduleFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/furniture-schedules')
+  @ApiOperation({ summary: 'События графика мебели для колокольчика (персонально)' })
+  getBellFurnitureScheduleFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellFurnitureScheduleFeed.listForUser(req.user.id, take);
   }
 
   @Get('settings/by-user/:userId')

@@ -30,6 +30,7 @@ export interface AdminNotificationsSettings {
   notifyOnWaybills: boolean;
   notifyOnInstallationSchedules: boolean;
   notifyOnRepairSchedules: boolean;
+  notifyOnFurnitureSchedules: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -219,6 +220,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
+    notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -271,6 +273,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
+    notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -495,6 +498,29 @@ export async function getAdminBellRepairScheduleNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику ремонтов');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellFurnitureScheduleNotification = {
+  id: string;
+  kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
+  kindLabel: string;
+  furnitureScheduleProjectId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellFurnitureScheduleNotifications(
+  limit = 20
+): Promise<AdminBellFurnitureScheduleNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/furniture-schedules?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику мебели');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

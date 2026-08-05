@@ -23,7 +23,8 @@ export type AdminBellPushEvent =
   | 'work_day'
   | 'waybill'
   | 'installation_schedule'
-  | 'repair_schedule';
+  | 'repair_schedule'
+  | 'furniture_schedule';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -115,6 +116,7 @@ export class AdminBellPushService {
       notifyOnWaybills?: boolean;
       notifyOnInstallationSchedules?: boolean;
       notifyOnRepairSchedules?: boolean;
+      notifyOnFurnitureSchedules?: boolean;
     },
     role: string,
   ) {
@@ -151,6 +153,8 @@ export class AdminBellPushService {
         return settings.notifyOnInstallationSchedules !== false;
       case 'repair_schedule':
         return settings.notifyOnRepairSchedules !== false;
+      case 'furniture_schedule':
+        return settings.notifyOnFurnitureSchedules !== false;
       default:
         return false;
     }

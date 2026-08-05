@@ -51,6 +51,21 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Мои ремонты',
     path: '/admin/crm/repair-schedules/my',
   },
+  {
+    id: 'admin.crm.furniture-schedules',
+    label: 'План-график мебели',
+    path: '/admin/crm/furniture-schedules',
+  },
+  {
+    id: 'admin.crm.furniture-schedules.my',
+    label: 'Моя мебель',
+    path: '/admin/crm/furniture-schedules/my',
+  },
+  {
+    id: 'admin.crm.joint-objects',
+    label: 'Совместные объекты',
+    path: '/admin/crm/joint-objects',
+  },
   { id: 'admin.crm.waybills', label: 'Путевой лист', path: '/admin/crm/waybills' },
   {
     id: 'admin.crm.waybills.my',

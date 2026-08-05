@@ -157,10 +157,14 @@ model User {
   installationSchedulesDeleted            InstallationScheduleEntry[]              @relation("InstallationScheduleDeletedBy")
   installationScheduleBellEvents          InstallationScheduleBellEvent[]
   repairScheduleBellEvents                RepairScheduleBellEvent[]
+  furnitureScheduleBellEvents             FurnitureScheduleBellEvent[]
   installerMasterProfiles                 InstallerMaster[]                        @relation("InstallerMasterUser")
   repairScheduleProjectsCreated           RepairScheduleProject[]                  @relation("RepairScheduleProjectCreatedBy")
   repairScheduleProjectsUpdated           RepairScheduleProject[]                  @relation("RepairScheduleProjectUpdatedBy")
   repairScheduleEntriesCreated            RepairScheduleEntry[]                    @relation("RepairScheduleEntryCreatedBy")
+  furnitureScheduleProjectsCreated        FurnitureScheduleProject[]               @relation("FurnitureScheduleProjectCreatedBy")
+  furnitureScheduleProjectsUpdated        FurnitureScheduleProject[]               @relation("FurnitureScheduleProjectUpdatedBy")
+  furnitureScheduleEntriesCreated         FurnitureScheduleEntry[]                 @relation("FurnitureScheduleEntryCreatedBy")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -2627,6 +2631,7 @@ model UserAdminNotificationOverride {
   notifyOnWaybills              Boolean  @default(true)
   notifyOnInstallationSchedules Boolean  @default(true)
   notifyOnRepairSchedules       Boolean  @default(true)
+  notifyOnFurnitureSchedules    Boolean  @default(true)
   updatedAt                     DateTime @updatedAt
   user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2685,6 +2690,7 @@ model AdminNotificationsBlock {
   notifyOnWaybills              Boolean  @default(true) // Путевой лист / маршрут водителя
   notifyOnInstallationSchedules Boolean  @default(true) // Графики монтажей
   notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта
+  notifyOnFurnitureSchedules    Boolean  @default(true) // План-график мебели
   updatedAt                     DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -2770,9 +2776,10 @@ model InstallerMaster {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  user                   User?                       @relation("InstallerMasterUser", fields: [userId], references: [id], onDelete: SetNull)
-  installationSchedules  InstallationScheduleEntry[]
-  repairScheduleProjects RepairScheduleProject[]
+  user                      User?                       @relation("InstallerMasterUser", fields: [userId], references: [id], onDelete: SetNull)
+  installationSchedules     InstallationScheduleEntry[]
+  repairScheduleProjects    RepairScheduleProject[]
+  furnitureScheduleProjects FurnitureScheduleProject[]
 
   @@index([direction])
   @@index([userId])
@@ -3003,6 +3010,120 @@ model RepairScheduleBellEvent {
   @@map("repair_schedule_bell_events")
 }
 
+enum FurnitureScheduleProjectStatus {
+  NEW
+  IN_PROGRESS
+  CLAIMS
+  CLOSED
+}
+
+enum FurnitureScheduleEntryKind {
+  WEEKLY
+  MILESTONE
+  NOTE
+}
+
+/// Проект план-графика мебели (изготовление / монтаж / техника).
+model FurnitureScheduleProject {
+  id                         String                         @id @default(cuid())
+  status                     FurnitureScheduleProjectStatus @default(NEW)
+  /// № договора изготовления (основной)
+  contractNumber             String?
+  /// № договора монтаж
+  installationContractNumber String?
+  /// № договора техника
+  appliancesContractNumber   String?
+  /// Связанный ремонт / примечания (потолки, окна, двери)
+  repairInfo                 String?                        @db.Text
+  /// ОТЗЫВ
+  reviewInfo                 String?
+  workScope                  String?                        @db.Text
+  installerId                String?
+  /// Бригада / мастер (ФИО текстом)
+  installerName              String?
+  packageId                  String?
+  contractId                 String?
+  customerName               String?
+  customerAddress            String?                        @db.Text
+  customerPhone              String?
+  contractSum                Decimal?                       @db.Decimal(12, 2)
+  payoutSum                  Decimal?                       @db.Decimal(12, 2)
+  /// Дата договора
+  contractDate               DateTime?                      @db.Date
+  /// Дата КЗ или флаг «кз»
+  kzInfo                     String?
+  /// Дата временной остановки
+  pauseStartDate             DateTime?                      @db.Date
+  /// Дата возобновления срока
+  pauseResumeDate            DateTime?                      @db.Date
+  /// Срок договора в рабочих днях
+  workPeriodDays             Int?
+  /// Дата начала срока с учётом КЗ
+  workStartActDate           DateTime?                      @db.Date
+  /// Дата окончания / акт сдачи
+  workCloseActDate           DateTime?                      @db.Date
+  plannedStartDate           DateTime?                      @db.Date
+  closedAt                   DateTime?
+  note                       String?                        @db.Text
+  createdById                String?
+  updatedById                String?
+  createdAt                  DateTime                       @default(now())
+  updatedAt                  DateTime                       @updatedAt
+
+  installer  InstallerMaster?             @relation(fields: [installerId], references: [id], onDelete: SetNull)
+  package    ContractDocumentPackage?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
+  contract   Contract?                    @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  createdBy  User?                        @relation("FurnitureScheduleProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?                        @relation("FurnitureScheduleProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+  entries    FurnitureScheduleEntry[]
+  bellEvents FurnitureScheduleBellEvent[]
+
+  @@index([status])
+  @@index([installerId])
+  @@index([packageId])
+  @@index([contractId])
+  @@index([updatedAt])
+  @@map("furniture_schedule_projects")
+}
+
+/// Запись динамики по проекту мебели (еженедельный статус / веха / заметка).
+model FurnitureScheduleEntry {
+  id          String                     @id @default(cuid())
+  projectId   String
+  date        DateTime                   @db.Date
+  kind        FurnitureScheduleEntryKind @default(WEEKLY)
+  text        String                     @db.Text
+  createdById String?
+  createdAt   DateTime                   @default(now())
+  updatedAt   DateTime                   @updatedAt
+
+  project   FurnitureScheduleProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  createdBy User?                    @relation("FurnitureScheduleEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([projectId, date])
+  @@index([date])
+  @@map("furniture_schedule_entries")
+}
+
+/// Событие план-графика мебели для колокольчика.
+model FurnitureScheduleBellEvent {
+  id                         String   @id @default(cuid())
+  recipientId                String
+  furnitureScheduleProjectId String
+  kind                       String /// created | updated | status_changed | entry_added
+  title                      String
+  message                    String   @db.Text
+  href                       String
+  createdAt                  DateTime @default(now())
+
+  recipient User                     @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  project   FurnitureScheduleProject @relation(fields: [furnitureScheduleProjectId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([furnitureScheduleProjectId])
+  @@map("furniture_schedule_bell_events")
+}
+
 /// Событие путевого листа для колокольчика (персонально водителю / ответственному).
 model WaybillTaskBellEvent {
   id            String   @id @default(cuid())
@@ -3171,21 +3292,22 @@ model Contract {
   createdAt                DateTime       @default(now())
   updatedAt                DateTime       @updatedAt
 
-  direction              CrmDirection?               @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  manager                User?                       @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
-  surveyor               User?                       @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  customer               Customer?                   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  measurement            Measurement?                @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
-  office                 Office?                     @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  complexObject          ComplexObject?              @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
-  advances               ContractAdvance[]
-  amendments             ContractAmendment[]
-  payments               ContractPayment[]
-  history                ContractHistory[]
-  documentPackages       ContractDocumentPackage[]
-  waybillTasks           WaybillTask[]
-  installationSchedules  InstallationScheduleEntry[]
-  repairScheduleProjects RepairScheduleProject[]
+  direction                 CrmDirection?               @relation(fields: [directionId], references: [id], onDelete: SetNull)
+  manager                   User?                       @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
+  surveyor                  User?                       @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  customer                  Customer?                   @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  measurement               Measurement?                @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
+  office                    Office?                     @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  complexObject             ComplexObject?              @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
+  advances                  ContractAdvance[]
+  amendments                ContractAmendment[]
+  payments                  ContractPayment[]
+  history                   ContractHistory[]
+  documentPackages          ContractDocumentPackage[]
+  waybillTasks              WaybillTask[]
+  installationSchedules     InstallationScheduleEntry[]
+  repairScheduleProjects    RepairScheduleProject[]
+  furnitureScheduleProjects FurnitureScheduleProject[]
 
   @@index([managerId])
   @@index([status])
@@ -3310,16 +3432,17 @@ model ContractDocumentPackage {
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 
-  documentObject         ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
-  createdBy              User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  responsibleManager     User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
-  deletedBy              User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract            Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
-  versions               ContractDocumentPackageVersion[]
-  payments               ContractDocumentPackagePayment[]
-  paymentInvoices        ContractDocumentPaymentInvoice[]
-  installationSchedules  InstallationScheduleEntry[]
-  repairScheduleProjects RepairScheduleProject[]
+  documentObject            ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy                 User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  responsibleManager        User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
+  deletedBy                 User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract               Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  versions                  ContractDocumentPackageVersion[]
+  payments                  ContractDocumentPackagePayment[]
+  paymentInvoices           ContractDocumentPaymentInvoice[]
+  installationSchedules     InstallationScheduleEntry[]
+  repairScheduleProjects    RepairScheduleProject[]
+  furnitureScheduleProjects FurnitureScheduleProject[]
 
   @@index([kind])
   @@index([createdAt])

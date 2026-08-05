@@ -44,6 +44,8 @@ import { WorkDaysModule } from './work-days/work-days.module';
 import { WaybillsModule } from './waybills/waybills.module';
 import { InstallationSchedulesModule } from './installation-schedules/installation-schedules.module';
 import { RepairSchedulesModule } from './repair-schedules/repair-schedules.module';
+import { FurnitureSchedulesModule } from './furniture-schedules/furniture-schedules.module';
+import { JointObjectsModule } from './joint-objects/joint-objects.module';
 
 @Module({
   imports: [
@@ -58,6 +60,8 @@ import { RepairSchedulesModule } from './repair-schedules/repair-schedules.modul
     WaybillsModule,
     InstallationSchedulesModule,
     RepairSchedulesModule,
+    FurnitureSchedulesModule,
+    JointObjectsModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
@@ -107,6 +111,8 @@ import { RepairSchedulesModule } from './repair-schedules/repair-schedules.modul
     WaybillsModule,
     InstallationSchedulesModule,
     RepairSchedulesModule,
+    FurnitureSchedulesModule,
+    JointObjectsModule,
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,

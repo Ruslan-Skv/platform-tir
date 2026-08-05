@@ -10,6 +10,7 @@ export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/waybills/my',
   '/api/v1/admin/installation-schedules/my',
   '/api/v1/admin/repair-schedules/my',
+  '/api/v1/admin/furniture-schedules/my',
   // Свой профиль ЛК — не ресурс «Управление пользователями»
   '/api/v1/users/me',
 ] as const;
@@ -123,6 +124,14 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   {
     prefix: '/api/v1/admin/repair-schedules',
     resourceId: 'admin.crm.repair-schedules',
+  },
+  {
+    prefix: '/api/v1/admin/furniture-schedules',
+    resourceId: 'admin.crm.furniture-schedules',
+  },
+  {
+    prefix: '/api/v1/admin/joint-objects',
+    resourceId: 'admin.crm.joint-objects',
   },
   { prefix: '/api/v1/admin/waybills', resourceId: 'admin.crm.waybills' },
   { prefix: '/api/v1/admin/offices', resourceId: 'admin.crm.offices' },

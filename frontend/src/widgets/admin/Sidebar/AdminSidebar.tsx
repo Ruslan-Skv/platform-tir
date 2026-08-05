@@ -199,6 +199,24 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.repair-schedules.my',
   },
   {
+    label: 'План-график мебели',
+    href: '/admin/crm/furniture-schedules',
+    icon: '🪑',
+    resourceId: 'admin.crm.furniture-schedules',
+  },
+  {
+    label: 'Моя мебель',
+    href: '/admin/crm/furniture-schedules/my',
+    icon: '🛋️',
+    resourceId: 'admin.crm.furniture-schedules.my',
+  },
+  {
+    label: 'Совместные объекты',
+    href: '/admin/crm/joint-objects',
+    icon: '🧩',
+    resourceId: 'admin.crm.joint-objects',
+  },
+  {
     label: 'Путевой лист',
     href: '/admin/crm/waybills',
     icon: '🚚',
