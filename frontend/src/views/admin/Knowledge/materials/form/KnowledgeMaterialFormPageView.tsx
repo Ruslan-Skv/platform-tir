@@ -1,7 +1,6 @@
 'use client';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { VideoPlayer } from '@/shared/ui/VideoPlayer';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { BlogPostEditor } from '@/views/admin/Content/Blog';
 import {
@@ -14,6 +13,7 @@ import {
   getMaterialTypeLabel,
 } from '../../shared/knowledge-utils';
 import { KnowledgeAttachmentsEditor } from '../../shared/material/KnowledgeAttachmentsEditor';
+import { KnowledgeVideoPlayer } from '../../shared/material/KnowledgeVideoPlayer';
 import { KnowledgeQuizEditor } from '../../shared/quiz/KnowledgeQuizEditor';
 import { KnowledgeBackLink } from '../../shared/ui/KnowledgeBackLink';
 import styles from './KnowledgeMaterialFormPage.module.css';
@@ -509,7 +509,12 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
             {videoUrl.trim() ? (
               <div className={styles.preview}>
                 <p className={styles.previewLabel}>Предпросмотр</p>
-                <VideoPlayer url={videoUrl} title={title || 'Видео'} />
+                <KnowledgeVideoPlayer
+                  materialId={materialId || 'preview'}
+                  url={videoUrl}
+                  title={title || 'Видео'}
+                  canTrackProgress={false}
+                />
               </div>
             ) : null}
             <div className={styles.field}>
