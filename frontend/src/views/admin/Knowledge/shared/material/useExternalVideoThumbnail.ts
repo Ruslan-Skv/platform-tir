@@ -32,7 +32,8 @@ async function loadAsyncThumbnail(videoUrl: string): Promise<string | null> {
 }
 
 /**
- * Синхронное превью (YouTube) сразу; Rutube / Vimeo / VK — через API с кэшем.
+ * Синхронное превью (YouTube) сразу; Rutube / Vimeo — через API с кэшем.
+ * VK не резолвим — нестабильные превью.
  */
 export function useExternalVideoThumbnail(videoUrl: string | null | undefined): string | null {
   const trimmed = videoUrl?.trim() || '';

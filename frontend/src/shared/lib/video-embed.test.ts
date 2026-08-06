@@ -121,16 +121,16 @@ describe('getSyncVideoThumbnailUrl', () => {
 });
 
 describe('needsAsyncVideoThumbnail', () => {
-  it('is true for Rutube, Vimeo and VK', () => {
+  it('is true for Rutube and Vimeo', () => {
     expect(
       needsAsyncVideoThumbnail('https://rutube.ru/video/6b111aab772dbd7c3fd8f7b40ecfbc64/')
     ).toBe(true);
     expect(needsAsyncVideoThumbnail('https://vimeo.com/76979871')).toBe(true);
-    expect(needsAsyncVideoThumbnail('https://vk.com/video-48622702_456239374')).toBe(true);
   });
 
-  it('is false for YouTube', () => {
+  it('is false for YouTube and VK', () => {
     expect(needsAsyncVideoThumbnail('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(false);
+    expect(needsAsyncVideoThumbnail('https://vk.com/video-48622702_456239374')).toBe(false);
   });
 });
 

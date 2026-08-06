@@ -189,11 +189,17 @@ export function getSyncVideoThumbnailUrl(url: string): string | null {
   return getYoutubeThumbnailUrl(url);
 }
 
-/** Нужен ли async-запрос за превью (Rutube / Vimeo / VK). */
+export function isVkVideoUrl(url: string): boolean {
+  return parseVideoEmbed(url)?.provider === 'vk';
+}
+
+/** Нужен ли async-запрос за превью (Rutube / Vimeo). VK даёт нестабильные превью — иконка. */
 export function needsAsyncVideoThumbnail(url: string): boolean {
-  if (getSyncVideoThumbnailUrl(url) || isNativeVideoFileUrl(url)) return false;
+  if (getSyncVideoThumbnailUrl(url) || isNativeVideoFileUrl(url) || isVkVideoUrl(url)) {
+    return false;
+  }
   const parsed = parseVideoEmbed(url);
-  return parsed?.provider === 'rutube' || parsed?.provider === 'vimeo' || parsed?.provider === 'vk';
+  return parsed?.provider === 'rutube' || parsed?.provider === 'vimeo';
 }
 
 /** URL загруженного видеофайла без media-fragment (кадр берём через seek в UI). */

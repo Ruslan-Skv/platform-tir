@@ -328,7 +328,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     if (isEdit) void loadMaterial();
   }, [isEdit, loadMaterial]);
 
-  // Подтянуть обложку для Rutube/VK/Vimeo, если своей нет.
+  // Подтянуть обложку для Rutube/Vimeo, если своей нет (VK — только иконка).
   useEffect(() => {
     const url = videoUrl.trim();
     if (type !== 'VIDEO' || !url || thumbnailUrl.trim() || isNativeVideoFileUrl(url)) return;

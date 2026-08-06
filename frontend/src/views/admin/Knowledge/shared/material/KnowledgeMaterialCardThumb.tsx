@@ -4,7 +4,11 @@ import { useEffect, useState } from 'react';
 
 import type { KnowledgeMaterialType } from '@/shared/api/admin-knowledge';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { getNativeVideoPosterSrc, isNativeVideoFileUrl } from '@/shared/lib/video-embed';
+import {
+  getNativeVideoPosterSrc,
+  isNativeVideoFileUrl,
+  isVkVideoUrl,
+} from '@/shared/lib/video-embed';
 
 import { getMaterialTypeIcon } from '../knowledge-utils';
 import { KnowledgeNativeVideoThumb } from './KnowledgeNativeVideoThumb';
@@ -28,20 +32,22 @@ export function KnowledgeMaterialCardThumb({
   const [imageFailed, setImageFailed] = useState(false);
   const isNativeVideo =
     type === 'VIDEO' && Boolean(videoUrl) && isNativeVideoFileUrl(videoUrl ?? '');
+  const isVkVideo = type === 'VIDEO' && Boolean(videoUrl) && isVkVideoUrl(videoUrl ?? '');
 
-  // Для MP4 всегда кадр из файла (сохранённая обложка часто бывает чёрной с начала ролика).
-  // Для Rutube/VK/Vimeo — API-превью, даже если своей обложки нет.
+  // VK: стабильной обложки нет — всегда иконка (автопревью часто даёт мусор).
+  // MP4: кадр из файла. Rutube/Vimeo/YouTube: превью.
   const externalThumb = useExternalVideoThumbnail(
-    !isNativeVideo && type === 'VIDEO' ? videoUrl : null
+    !isNativeVideo && !isVkVideo && type === 'VIDEO' ? videoUrl : null
   );
 
-  const preferredSrc = isNativeVideo
-    ? null
-    : thumbnailUrl
-      ? publicUploadUrl(thumbnailUrl)
-      : externalThumb
-        ? externalThumb
-        : null;
+  const preferredSrc =
+    isNativeVideo || isVkVideo
+      ? null
+      : thumbnailUrl
+        ? publicUploadUrl(thumbnailUrl)
+        : externalThumb
+          ? externalThumb
+          : null;
 
   useEffect(() => {
     setImageFailed(false);
@@ -49,6 +55,10 @@ export function KnowledgeMaterialCardThumb({
 
   const placeholderIcon = <span aria-hidden>{getMaterialTypeIcon(type)}</span>;
   const imageSrc = !imageFailed ? preferredSrc : null;
+
+  if (isVkVideo) {
+    return <div className={placeholderClassName}>{placeholderIcon}</div>;
+  }
 
   if (isNativeVideo && videoUrl) {
     const posterSrc = getNativeVideoPosterSrc(publicUploadUrl(videoUrl));
