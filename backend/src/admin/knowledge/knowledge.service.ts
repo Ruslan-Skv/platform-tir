@@ -63,30 +63,6 @@ export class KnowledgeService {
     private videoThumbnailService: KnowledgeVideoThumbnailService,
   ) {}
 
-  private isNativeVideoFileUrl(url: string): boolean {
-    const trimmed = url.trim();
-    return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(trimmed) || trimmed.startsWith('/uploads/');
-  }
-
-  /** Для внешних видео без обложки подтягиваем превью (Rutube/VK/Vimeo/YouTube). */
-  private async resolveExternalThumbnailIfNeeded(
-    type: KnowledgeMaterialType,
-    videoUrl: string | null | undefined,
-    thumbnailUrl: string | null | undefined,
-  ): Promise<string | null> {
-    const existing = thumbnailUrl?.trim() || null;
-    if (existing) return existing;
-    if (type !== KnowledgeMaterialType.VIDEO) return null;
-    const url = videoUrl?.trim();
-    if (!url || this.isNativeVideoFileUrl(url)) return null;
-    try {
-      const resolved = await this.videoThumbnailService.resolveThumbnailUrl(url);
-      return resolved.thumbnailUrl?.trim() || null;
-    } catch {
-      return null;
-    }
-  }
-
   findAllTargetAudiences() {
     return this.targetAudienceService.findAllTargetAudiences();
   }
@@ -132,7 +108,7 @@ export class KnowledgeService {
     const status = dto.status ?? PageStatus.DRAFT;
     assertMaterialPayload(dto.type, dto, status);
 
-    const thumbnailUrl = await this.resolveExternalThumbnailIfNeeded(
+    const thumbnailUrl = await this.videoThumbnailService.resolveForMaterial(
       dto.type,
       dto.videoUrl,
       dto.thumbnailUrl,
@@ -362,7 +338,7 @@ export class KnowledgeService {
     let nextThumbnailUrl =
       dto.thumbnailUrl !== undefined ? dto.thumbnailUrl?.trim() || null : existing.thumbnailUrl;
     if (!nextThumbnailUrl) {
-      nextThumbnailUrl = await this.resolveExternalThumbnailIfNeeded(
+      nextThumbnailUrl = await this.videoThumbnailService.resolveForMaterial(
         nextType,
         nextVideoUrl,
         nextThumbnailUrl,

@@ -1,4 +1,5 @@
 import { BadRequestException, Injectable, Logger } from '@nestjs/common';
+import { KnowledgeMaterialType } from '@prisma/client';
 
 const RUTUBE_VIDEO_ID = /[a-f0-9]{32}/i;
 const VK_HOST = /(?:^|\/\/)(?:[\w-]+\.)?(?:vk\.com|vkvideo\.ru|vkontakte\.ru)\b/i;
@@ -44,6 +45,33 @@ export class KnowledgeVideoThumbnailService {
       );
       return { thumbnailUrl: null };
     }
+  }
+
+  /**
+   * Для внешних VIDEO без обложки подтягиваем превью (Rutube/VK/Vimeo/YouTube).
+   * Нативные MP4 не трогаем — кадр берётся на клиенте.
+   */
+  async resolveForMaterial(
+    type: KnowledgeMaterialType,
+    videoUrl: string | null | undefined,
+    thumbnailUrl: string | null | undefined,
+  ): Promise<string | null> {
+    const existing = thumbnailUrl?.trim() || null;
+    if (existing) return existing;
+    if (type !== KnowledgeMaterialType.VIDEO) return null;
+    const url = videoUrl?.trim();
+    if (!url || this.isNativeVideoFileUrl(url)) return null;
+    try {
+      const resolved = await this.resolveThumbnailUrl(url);
+      return resolved.thumbnailUrl?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
+
+  private isNativeVideoFileUrl(url: string): boolean {
+    const trimmed = url.trim();
+    return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(trimmed) || trimmed.startsWith('/uploads/');
   }
 
   private getYoutubeId(url: string): string | null {
