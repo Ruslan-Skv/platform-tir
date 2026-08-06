@@ -103,7 +103,8 @@ export function buildRepairObjectGroups(projects: RepairScheduleProject[]): Repa
     });
   }
 
-  // Стабильный порядок: по первому появлению проекта в исходном списке
+  // Стабильный порядок групп: по первому появлению проекта в исходном списке
+  // (список уже отсортирован хронологически → объекты идут целиком).
   const order = new Map(projects.map((p, i) => [p.id, i]));
   groups.sort((a, b) => {
     const ai = Math.min(...a.projects.map((p) => order.get(p.id) ?? 0));
@@ -111,7 +112,44 @@ export function buildRepairObjectGroups(projects: RepairScheduleProject[]): Repa
     return ai - bi;
   });
 
+  // Внутри объекта сохраняем порядок исходного списка (хронология / срок).
+  for (const group of groups) {
+    group.projects.sort((a, b) => (order.get(a.id) ?? 0) - (order.get(b.id) ?? 0));
+  }
+
   return groups;
+}
+
+/** Сравнение по дате создания проекта (прокси даты заключения / заведения). */
+export function compareRepairProjectsByAge(
+  a: RepairScheduleProject,
+  b: RepairScheduleProject,
+  newestFirst: boolean
+): number {
+  const ta = projectTimeMs(a.createdAt);
+  const tb = projectTimeMs(b.createdAt);
+  if (ta !== tb) return newestFirst ? tb - ta : ta - tb;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? -1 : 1;
+}
+
+function projectTimeMs(value: string | null | undefined): number {
+  if (!value) return 0;
+  const t = Date.parse(value);
+  return Number.isFinite(t) ? t : 0;
+}
+
+/** Сравнение по дате закрытия (позднее закрытые — выше при newestFirst). */
+export function compareRepairProjectsByClosedAt(
+  a: RepairScheduleProject,
+  b: RepairScheduleProject,
+  newestFirst: boolean
+): number {
+  const ta = projectTimeMs(a.closedAt) || projectTimeMs(a.updatedAt) || projectTimeMs(a.createdAt);
+  const tb = projectTimeMs(b.closedAt) || projectTimeMs(b.updatedAt) || projectTimeMs(b.createdAt);
+  if (ta !== tb) return newestFirst ? tb - ta : ta - tb;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? -1 : 1;
 }
 
 export function repairObjectGroupSumLabel(projects: RepairScheduleProject[]): string {

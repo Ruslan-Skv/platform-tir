@@ -12,6 +12,10 @@ import {
 } from '@/shared/api/crm/admin-furniture-schedules';
 
 import { todayIsoDate } from '../../shared/furniture-schedules';
+import {
+  compareFurnitureProjectsByAge,
+  compareFurnitureProjectsByClosedAt,
+} from '../../shared/furnitureObjectGroups';
 
 export function useMyFurnitureSchedulesPage() {
   const router = useRouter();
@@ -44,8 +48,15 @@ export function useMyFurnitureSchedulesPage() {
   }, [refresh]);
 
   const visibleItems = useMemo(() => {
-    if (statusFilter === 'ALL') return items;
-    return items.filter((i) => i.status === statusFilter);
+    const rows =
+      statusFilter === 'ALL' ? [...items] : items.filter((i) => i.status === statusFilter);
+    if (statusFilter === 'CLOSED') {
+      return rows.sort((a, b) => compareFurnitureProjectsByClosedAt(a, b, true));
+    }
+    if (statusFilter === 'ALL') {
+      return rows.sort((a, b) => compareFurnitureProjectsByAge(a, b, true));
+    }
+    return rows.sort((a, b) => compareFurnitureProjectsByAge(a, b, false));
   }, [items, statusFilter]);
 
   const statusCounts = useMemo(

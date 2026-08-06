@@ -19,6 +19,10 @@ import {
   emptyFurnitureProjectForm,
   matchesDeadlineFilter,
 } from '../../shared/furniture-schedules';
+import {
+  compareFurnitureProjectsByAge,
+  compareFurnitureProjectsByClosedAt,
+} from '../../shared/furnitureObjectGroups';
 
 export type FurnitureDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
 
@@ -123,11 +127,24 @@ export function useFurnitureSchedulesPage() {
       rows = [...rows].sort((a, b) => {
         const da = a.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         const db = b.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
-        return da - db;
+        if (da !== db) return da - db;
+        return statusFilter === 'CLOSED'
+          ? compareFurnitureProjectsByClosedAt(a, b, true)
+          : compareFurnitureProjectsByAge(a, b, statusFilter === 'ALL');
       });
+    } else if (statusFilter === 'CLOSED' || statusFilter === 'ALL') {
+      // Закрытые / Все: сверху новые (для закрытых — по дате закрытия).
+      rows = [...rows].sort((a, b) =>
+        statusFilter === 'CLOSED'
+          ? compareFurnitureProjectsByClosedAt(a, b, true)
+          : compareFurnitureProjectsByAge(a, b, true)
+      );
+    } else {
+      // На очереди / В работе / Рекламации: сверху старые, снизу новые.
+      rows = [...rows].sort((a, b) => compareFurnitureProjectsByAge(a, b, false));
     }
     return rows;
-  }, [statusScopedItems, deadlineFilter]);
+  }, [statusScopedItems, deadlineFilter, statusFilter]);
 
   const openCreate = () => {
     setFormValues(emptyFurnitureProjectForm());

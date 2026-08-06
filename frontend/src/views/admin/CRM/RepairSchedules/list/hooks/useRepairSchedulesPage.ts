@@ -19,6 +19,10 @@ import {
   emptyRepairProjectForm,
   matchesDeadlineFilter,
 } from '../../shared/repair-schedules';
+import {
+  compareRepairProjectsByAge,
+  compareRepairProjectsByClosedAt,
+} from '../../shared/repairObjectGroups';
 
 export type RepairDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE';
 
@@ -121,11 +125,22 @@ export function useRepairSchedulesPage() {
       rows = [...rows].sort((a, b) => {
         const da = a.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
         const db = b.deadlineDaysLeft ?? Number.POSITIVE_INFINITY;
-        return da - db;
+        if (da !== db) return da - db;
+        return statusFilter === 'CLOSED'
+          ? compareRepairProjectsByClosedAt(a, b, true)
+          : compareRepairProjectsByAge(a, b, statusFilter === 'ALL');
       });
+    } else if (statusFilter === 'CLOSED') {
+      // Закрытые: сверху закрытые позднее всего.
+      rows = [...rows].sort((a, b) => compareRepairProjectsByClosedAt(a, b, true));
+    } else {
+      // Новые / В работе — старые сверху; Все — новые сверху.
+      // Группировка по объекту потом держит договоры вместе по первому появлению.
+      const newestFirst = statusFilter === 'ALL';
+      rows = [...rows].sort((a, b) => compareRepairProjectsByAge(a, b, newestFirst));
     }
     return rows;
-  }, [statusScopedItems, deadlineFilter]);
+  }, [statusScopedItems, deadlineFilter, statusFilter]);
 
   const openCreate = () => {
     setFormValues(emptyRepairProjectForm());
