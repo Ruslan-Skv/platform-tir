@@ -717,24 +717,75 @@ export async function uploadKnowledgeAttachment(file: File): Promise<{
   return res.json();
 }
 
-export async function uploadKnowledgeVideo(file: File): Promise<{ videoUrl: string }> {
+type UploadKnowledgeVideoOptions = {
+  onProgress?: (percent: number) => void;
+};
+
+export async function uploadKnowledgeVideo(
+  file: File,
+  options?: UploadKnowledgeVideoOptions
+): Promise<{ videoUrl: string }> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await apiFetch(
-    `${API_URL}/admin/knowledge/upload-video`,
-    {
-      method: 'POST',
-      headers: getAuthHeadersMultipart(),
-      body: formData,
-    },
-    KNOWLEDGE_VIDEO_UPLOAD_TIMEOUT_MS
-  );
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
-    const message = Array.isArray(err.message) ? err.message.join(', ') : err.message;
-    throw new Error(message || 'Не удалось загрузить видео');
-  }
-  return res.json() as Promise<{ videoUrl: string }>;
+
+  return new Promise<{ videoUrl: string }>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `${API_URL}/admin/knowledge/upload-video`);
+    xhr.timeout = KNOWLEDGE_VIDEO_UPLOAD_TIMEOUT_MS;
+    xhr.withCredentials = true;
+
+    const token = getStoredAccessToken();
+    if (token) {
+      xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    }
+
+    xhr.upload.onprogress = (event) => {
+      if (!event.lengthComputable || event.total <= 0) return;
+      const percent = Math.min(100, Math.round((event.loaded / event.total) * 100));
+      options?.onProgress?.(percent);
+    };
+
+    xhr.upload.onload = () => {
+      options?.onProgress?.(100);
+    };
+
+    xhr.onload = () => {
+      let body: { videoUrl?: string; message?: string | string[] } = {};
+      try {
+        body = JSON.parse(xhr.responseText || '{}') as typeof body;
+      } catch {
+        body = {};
+      }
+
+      if (xhr.status < 200 || xhr.status >= 300) {
+        const message = Array.isArray(body.message) ? body.message.join(', ') : body.message;
+        reject(new Error(message || 'Не удалось загрузить видео'));
+        return;
+      }
+
+      if (!body.videoUrl) {
+        reject(new Error('Не удалось загрузить видео'));
+        return;
+      }
+
+      resolve({ videoUrl: body.videoUrl });
+    };
+
+    xhr.onerror = () => {
+      reject(new Error('Не удалось загрузить видео'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new DOMException('signal timed out', 'TimeoutError'));
+    };
+
+    xhr.onabort = () => {
+      reject(new DOMException('Upload aborted', 'AbortError'));
+    };
+
+    options?.onProgress?.(0);
+    xhr.send(formData);
+  });
 }
 
 export async function resolveKnowledgeVideoThumbnail(

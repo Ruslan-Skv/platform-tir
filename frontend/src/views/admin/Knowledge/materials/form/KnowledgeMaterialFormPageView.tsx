@@ -33,6 +33,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     saving,
     uploadingThumbnail,
     uploadingVideo,
+    videoUploadPercent,
     message,
     categories,
     modules,
@@ -478,7 +479,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                   onClick={() => videoInputRef.current?.click()}
                   disabled={uploadingVideo}
                 >
-                  {uploadingVideo ? 'Загрузка…' : 'Загрузить MP4'}
+                  {uploadingVideo ? `Загрузка ${videoUploadPercent}%` : 'Загрузить MP4'}
                 </button>
                 {videoUrl.trim() ? (
                   <button
@@ -492,6 +493,24 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                   </button>
                 ) : null}
               </div>
+              {uploadingVideo ? (
+                <div
+                  className={styles.videoUploadProgress}
+                  role="progressbar"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={videoUploadPercent}
+                  aria-label="Прогресс загрузки видео"
+                >
+                  <div className={styles.videoUploadProgressTrack}>
+                    <div
+                      className={styles.videoUploadProgressFill}
+                      style={{ width: `${videoUploadPercent}%` }}
+                    />
+                  </div>
+                  <span className={styles.videoUploadProgressLabel}>{videoUploadPercent}%</span>
+                </div>
+              ) : null}
               <input
                 id="videoUrl"
                 type="text"

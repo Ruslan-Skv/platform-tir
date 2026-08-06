@@ -302,6 +302,38 @@
   margin-bottom: var(--admin-space-sm);
 }
 
+.videoUploadProgress {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
+}
+
+.videoUploadProgressTrack {
+  flex: 1;
+  min-width: 120px;
+  height: 8px;
+  background: var(--admin-border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.videoUploadProgressFill {
+  height: 100%;
+  background: var(--admin-overlay-color-108, #2e7d32);
+  border-radius: 999px;
+  transition: width 0.15s ease-out;
+}
+
+.videoUploadProgressLabel {
+  flex-shrink: 0;
+  min-width: 2.5rem;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+  text-align: right;
+}
+
 .hiddenInput {
   display: none;
 }

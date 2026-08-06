@@ -88,6 +88,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const [saving, setSaving] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
   const [uploadingVideo, setUploadingVideo] = useState(false);
+  const [videoUploadPercent, setVideoUploadPercent] = useState(0);
   const [message, setMessage] = useState<KnowledgeMaterialFormPageMessage | null>(null);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
   const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
@@ -369,9 +370,12 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       return;
     }
     setUploadingVideo(true);
+    setVideoUploadPercent(0);
     try {
       const shouldAutoCover = !thumbnailUrl.trim();
-      const { videoUrl: uploadedUrl } = await uploadKnowledgeVideo(file);
+      const { videoUrl: uploadedUrl } = await uploadKnowledgeVideo(file, {
+        onProgress: setVideoUploadPercent,
+      });
       setVideoUrl(publicUploadUrl(uploadedUrl));
 
       if (shouldAutoCover) {
@@ -400,6 +404,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       );
     } finally {
       setUploadingVideo(false);
+      setVideoUploadPercent(0);
       if (videoInputRef.current) videoInputRef.current.value = '';
     }
   };
@@ -552,6 +557,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     saving,
     uploadingThumbnail,
     uploadingVideo,
+    videoUploadPercent,
     message,
     categories,
     modules,
