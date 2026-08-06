@@ -7,6 +7,7 @@ import {
   type KnowledgeVideoProgress,
   updateKnowledgeVideoProgress,
 } from '@/shared/api/admin-knowledge';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { isNativeVideoFileUrl, parseVideoEmbed } from '@/shared/lib/video-embed';
 
 import styles from './KnowledgeVideoPlayer.module.css';
@@ -152,7 +153,7 @@ export function KnowledgeVideoPlayer({
     player = (
       <video
         ref={videoRef}
-        src={parsed.nativeUrl}
+        src={publicUploadUrl(parsed.nativeUrl)}
         controls
         className={styles.native}
         onTimeUpdate={handleNativeTimeUpdate}

@@ -19,7 +19,9 @@ import {
   publishKnowledgeMaterial,
   updateKnowledgeMaterial,
   uploadKnowledgeThumbnail,
+  uploadKnowledgeVideo,
 } from '@/shared/api/admin-knowledge';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import {
@@ -72,6 +74,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const router = useRouter();
   const isEdit = Boolean(materialId);
   const thumbnailInputRef = useRef<HTMLInputElement>(null);
+  const videoInputRef = useRef<HTMLInputElement>(null);
   const quizEditorRef = useRef<KnowledgeQuizEditorHandle | null>(null);
   const pageHeaderRef = useRef<HTMLDivElement>(null);
   const lastSavedMaterialSnapshotRef = useRef('');
@@ -83,6 +86,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+  const [uploadingVideo, setUploadingVideo] = useState(false);
   const [message, setMessage] = useState<KnowledgeMaterialFormPageMessage | null>(null);
   const [categories, setCategories] = useState<AdminKnowledgeCategory[]>([]);
   const [modules, setModules] = useState<AdminKnowledgeModule[]>([]);
@@ -349,6 +353,33 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     if (thumbnailInputRef.current) thumbnailInputRef.current.value = '';
   };
 
+  const handleVideoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!/\.mp4$/i.test(file.name)) {
+      showMessage('error', 'Допустим только файл MP4');
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      return;
+    }
+    const maxBytes = 300 * 1024 * 1024;
+    if (file.size > maxBytes) {
+      showMessage('error', 'Размер видео не должен превышать 300 МБ');
+      if (videoInputRef.current) videoInputRef.current.value = '';
+      return;
+    }
+    setUploadingVideo(true);
+    try {
+      const { videoUrl: uploadedUrl } = await uploadKnowledgeVideo(file);
+      setVideoUrl(publicUploadUrl(uploadedUrl));
+      showMessage('success', 'Видео загружено');
+    } catch (err) {
+      showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки видео');
+    } finally {
+      setUploadingVideo(false);
+      if (videoInputRef.current) videoInputRef.current.value = '';
+    }
+  };
+
   const handleContentImageUpload = useCallback(async (file: File): Promise<string> => {
     const { imageUrl } = await uploadKnowledgeThumbnail(file);
     return imageUrl;
@@ -496,6 +527,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     loading,
     saving,
     uploadingThumbnail,
+    uploadingVideo,
     message,
     categories,
     modules,
@@ -541,6 +573,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     status,
     setStatus,
     thumbnailInputRef,
+    videoInputRef,
     quizEditorRef,
     pageHeaderRef,
     saveButtonState,
@@ -554,6 +587,7 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     handleTitleChange,
     handleThumbnailUpload,
     handleRemoveThumbnail,
+    handleVideoUpload,
     handleContentImageUpload,
     handleContentImageUploadError,
   };

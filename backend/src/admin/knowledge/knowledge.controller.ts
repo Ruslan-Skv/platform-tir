@@ -644,4 +644,28 @@ export class KnowledgeController {
     const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
     return this.knowledgeService.uploadAttachment(file, baseUrl);
   }
+
+  @Post('upload-video')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: knowledgeUploadStorage,
+      limits: { fileSize: 300 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowedExt = /\.mp4$/i.test(file.originalname);
+        const allowedMime =
+          !file.mimetype ||
+          file.mimetype === 'video/mp4' ||
+          file.mimetype === 'application/octet-stream';
+        if (!allowedExt || !allowedMime) {
+          cb(new BadRequestException('Допустим только видеофайл MP4 (до 300 МБ)'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadVideo(@UploadedFile() file: Express.Multer.File, @Req() req: ExpressRequest) {
+    const baseUrl = process.env.API_BASE_URL || `${req.protocol}://${req.get('host')}`;
+    return this.knowledgeService.uploadVideo(file, baseUrl);
+  }
 }

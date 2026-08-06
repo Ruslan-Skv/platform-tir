@@ -32,6 +32,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     loading,
     saving,
     uploadingThumbnail,
+    uploadingVideo,
     message,
     categories,
     modules,
@@ -76,6 +77,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     status,
     setStatus,
     thumbnailInputRef,
+    videoInputRef,
     quizEditorRef,
     pageHeaderRef,
     saveButtonState,
@@ -89,6 +91,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
     handleTitleChange,
     handleThumbnailUpload,
     handleRemoveThumbnail,
+    handleVideoUpload,
     handleContentImageUpload,
     handleContentImageUploadError,
   } = model;
@@ -461,16 +464,46 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
               <label htmlFor="videoUrl" className={styles.label}>
                 Ссылка на видео *
               </label>
+              <div className={styles.videoUploadRow}>
+                <input
+                  ref={videoInputRef}
+                  type="file"
+                  accept="video/mp4,.mp4"
+                  onChange={handleVideoUpload}
+                  className={styles.hiddenInput}
+                />
+                <button
+                  type="button"
+                  className={styles.uploadBtn}
+                  onClick={() => videoInputRef.current?.click()}
+                  disabled={uploadingVideo}
+                >
+                  {uploadingVideo ? 'Загрузка…' : 'Загрузить MP4'}
+                </button>
+                {videoUrl.trim() ? (
+                  <button
+                    data-admin-mutation
+                    type="button"
+                    className={styles.clearBtn}
+                    onClick={() => setVideoUrl('')}
+                    disabled={uploadingVideo}
+                  >
+                    Очистить
+                  </button>
+                ) : null}
+              </div>
               <input
                 id="videoUrl"
-                type="url"
+                type="text"
                 value={videoUrl}
                 onChange={(e) => setVideoUrl(e.target.value)}
                 className={styles.input}
                 placeholder="https://www.youtube.com/watch?v=..., Rutube, VK, Vimeo или прямой URL"
+                disabled={uploadingVideo}
               />
               <p className={styles.hint}>
-                Поддерживаются YouTube, Rutube, VK, Vimeo и прямые ссылки на видеофайлы
+                Загрузите MP4 (до 300 МБ) или вставьте ссылку YouTube, Rutube, VK, Vimeo либо прямой
+                URL на видеофайл
               </p>
             </div>
             {videoUrl.trim() ? (

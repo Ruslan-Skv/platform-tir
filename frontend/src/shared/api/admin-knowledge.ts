@@ -714,6 +714,22 @@ export async function uploadKnowledgeAttachment(file: File): Promise<{
   return res.json();
 }
 
+export async function uploadKnowledgeVideo(file: File): Promise<{ videoUrl: string }> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const res = await apiFetch(`${API_URL}/admin/knowledge/upload-video`, {
+    method: 'POST',
+    headers: getAuthHeadersMultipart(),
+    body: formData,
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const message = Array.isArray(err.message) ? err.message.join(', ') : err.message;
+    throw new Error(message || 'Не удалось загрузить видео');
+  }
+  return res.json() as Promise<{ videoUrl: string }>;
+}
+
 export async function toggleKnowledgeMaterialPin(id: string) {
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}/pin`, {
     method: 'PATCH',

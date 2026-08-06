@@ -572,4 +572,8 @@ export class KnowledgeService {
   uploadAttachment(file: Express.Multer.File, baseUrl: string) {
     return this.uploadService.uploadAttachment(file, baseUrl);
   }
+
+  uploadVideo(file: Express.Multer.File, baseUrl: string) {
+    return this.uploadService.uploadVideo(file, baseUrl);
+  }
 }

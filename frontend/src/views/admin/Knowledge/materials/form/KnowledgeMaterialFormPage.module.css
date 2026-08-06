@@ -294,6 +294,14 @@
   align-items: center;
 }
 
+.videoUploadRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+  margin-bottom: var(--admin-space-sm);
+}
+
 .hiddenInput {
   display: none;
 }

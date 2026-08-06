@@ -43,4 +43,9 @@ export class KnowledgeUploadService {
       mimeType: file.mimetype,
     };
   }
+
+  uploadVideo(file: Express.Multer.File, baseUrl: string): { videoUrl: string } {
+    const result = this.saveUploadedFile(file, baseUrl, 'video');
+    return { videoUrl: result.imageUrl };
+  }
 }
