@@ -386,7 +386,18 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
 
       showMessage('success', 'Видео загружено');
     } catch (err) {
-      showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки видео');
+      const isTimeout =
+        err instanceof DOMException
+          ? err.name === 'TimeoutError' || err.name === 'AbortError'
+          : err instanceof Error && /timed out|aborted/i.test(err.message);
+      showMessage(
+        'error',
+        isTimeout
+          ? 'Превышено время ожидания загрузки. Попробуйте ещё раз или уменьшите размер файла.'
+          : err instanceof Error
+            ? err.message
+            : 'Ошибка загрузки видео'
+      );
     } finally {
       setUploadingVideo(false);
       if (videoInputRef.current) videoInputRef.current.value = '';

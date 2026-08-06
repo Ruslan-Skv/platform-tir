@@ -697,6 +697,9 @@ export async function uploadKnowledgeThumbnail(file: File): Promise<{ imageUrl: 
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
+/** До 10 мин — как proxy_read_timeout для /admin/knowledge/upload-video в nginx. */
+export const KNOWLEDGE_VIDEO_UPLOAD_TIMEOUT_MS = 600_000;
+
 export async function uploadKnowledgeAttachment(file: File): Promise<{
   fileUrl: string;
   fileName: string;
@@ -717,11 +720,15 @@ export async function uploadKnowledgeAttachment(file: File): Promise<{
 export async function uploadKnowledgeVideo(file: File): Promise<{ videoUrl: string }> {
   const formData = new FormData();
   formData.append('file', file);
-  const res = await apiFetch(`${API_URL}/admin/knowledge/upload-video`, {
-    method: 'POST',
-    headers: getAuthHeadersMultipart(),
-    body: formData,
-  });
+  const res = await apiFetch(
+    `${API_URL}/admin/knowledge/upload-video`,
+    {
+      method: 'POST',
+      headers: getAuthHeadersMultipart(),
+      body: formData,
+    },
+    KNOWLEDGE_VIDEO_UPLOAD_TIMEOUT_MS
+  );
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
     const message = Array.isArray(err.message) ? err.message.join(', ') : err.message;
