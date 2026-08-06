@@ -173,7 +173,15 @@ export class KnowledgeVideoThumbnailService {
     embedUrl: string;
     pageUrl: string;
   }): Promise<string | null> {
-    for (const page of [vk.embedUrl, vk.pageUrl, `https://vkvideo.ru/video${vk.oid}_${vk.id}`]) {
+    const pages = [
+      vk.embedUrl,
+      vk.pageUrl,
+      `https://m.vk.com/video${vk.oid}_${vk.id}`,
+      `https://vkvideo.ru/video${vk.oid}_${vk.id}`,
+      `https://vk.com/video_ext.php?oid=${encodeURIComponent(vk.oid)}&id=${encodeURIComponent(vk.id)}&hd=2`,
+    ];
+
+    for (const page of pages) {
       const html = await this.fetchHtml(page);
       if (!html) continue;
       const found = this.extractImageFromHtml(html);
@@ -187,11 +195,13 @@ export class KnowledgeVideoThumbnailService {
       const res = await fetch(url, {
         headers: {
           'User-Agent':
-            'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-          Accept: 'text/html,application/xhtml+xml',
+            'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/16.0 Mobile/15E148 Safari/604.1',
+          Accept: 'text/html,application/xhtml+xml,application/json',
           'Accept-Language': 'ru-RU,ru;q=0.9,en;q=0.8',
+          Referer: 'https://vk.com/',
         },
-        signal: AbortSignal.timeout(8000),
+        redirect: 'follow',
+        signal: AbortSignal.timeout(10000),
       });
       if (!res.ok) return null;
       return await res.text();
@@ -206,10 +216,13 @@ export class KnowledgeVideoThumbnailService {
       /content=["']([^"']+)["'][^>]*property=["']og:image["']/i,
       /property=["']og:image:secure_url["'][^>]*content=["']([^"']+)["']/i,
       /name=["']twitter:image["'][^>]*content=["']([^"']+)["']/i,
+      /itemprop=["']thumbnailUrl["'][^>]*content=["']([^"']+)["']/i,
+      /content=["']([^"']+)["'][^>]*itemprop=["']thumbnailUrl["']/i,
       /background-image:\s*url\((['"]?)(https?:\/\/[^)'"]+)\1\)/i,
       /id=["']player_thumb["'][^>]*src=["'](https?:\/\/[^"']+)["']/i,
-      /"(?:thumb(?:Url|nail)?|preview(?:Url)?|photo_800|photo_640|photo_320|image_src)"\s*:\s*"(https?:\\\/\\\/[^"]+)"/i,
-      /(https?:\/\/(?:sun\d+-\d+\.userapi\.com|vkuservideo\.(?:net|ru)|vksport\.mycdn\.me)\/[^"'\\\s>]+\.(?:jpg|jpeg|png|webp))/i,
+      /data-(?:thumb|src|image)=["'](https?:\/\/[^"']+)["']/i,
+      /"(?:thumb(?:Url|nail)?|preview(?:Url)?|photo_1280|photo_800|photo_640|photo_320|image_src|first_frame_320|first_frame_160)"\s*:\s*"(https?:\\\/\\\/[^"]+|https?:\/\/[^"]+)"/i,
+      /(https?:\/\/(?:sun\d+(?:-\d+)?\.userapi\.com|vkuservideo\.(?:net|ru)|vksport\.mycdn\.me|vki.*\.mycdn\.me)\/[^"'\\\s>]+\.(?:jpg|jpeg|png|webp)[^"'\\\s>]*)/i,
     ];
 
     for (const pattern of patterns) {
@@ -217,7 +230,9 @@ export class KnowledgeVideoThumbnailService {
       const raw = match?.[2] || match?.[1];
       if (!raw) continue;
       const normalized = this.normalizeHttpUrl(raw.replace(/\\\//g, '/'));
-      if (normalized) return normalized;
+      if (normalized && !normalized.includes('favicon') && !normalized.includes('logo')) {
+        return normalized;
+      }
     }
 
     return null;

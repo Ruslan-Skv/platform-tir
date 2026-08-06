@@ -26,6 +26,7 @@ import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
 import { KnowledgeTrashService } from './knowledge-trash.service';
 import { KnowledgeUploadService } from './knowledge-upload.service';
+import { KnowledgeVideoThumbnailService } from './services/knowledge-video-thumbnail.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
 import { CreateKnowledgeModuleDto } from './dto/create-knowledge-module.dto';
 import { CreateKnowledgeMaterialDto } from './dto/create-knowledge-material.dto';
@@ -59,7 +60,32 @@ export class KnowledgeService {
     private knowledgeMaterialEngagementService: KnowledgeMaterialEngagementService,
     private knowledgeTrainingNotify: KnowledgeTrainingNotifyService,
     private knowledgeTrainingCelebration: KnowledgeTrainingCelebrationService,
+    private videoThumbnailService: KnowledgeVideoThumbnailService,
   ) {}
+
+  private isNativeVideoFileUrl(url: string): boolean {
+    const trimmed = url.trim();
+    return /\.(mp4|webm|ogg|mov)(\?|$)/i.test(trimmed) || trimmed.startsWith('/uploads/');
+  }
+
+  /** Для внешних видео без обложки подтягиваем превью (Rutube/VK/Vimeo/YouTube). */
+  private async resolveExternalThumbnailIfNeeded(
+    type: KnowledgeMaterialType,
+    videoUrl: string | null | undefined,
+    thumbnailUrl: string | null | undefined,
+  ): Promise<string | null> {
+    const existing = thumbnailUrl?.trim() || null;
+    if (existing) return existing;
+    if (type !== KnowledgeMaterialType.VIDEO) return null;
+    const url = videoUrl?.trim();
+    if (!url || this.isNativeVideoFileUrl(url)) return null;
+    try {
+      const resolved = await this.videoThumbnailService.resolveThumbnailUrl(url);
+      return resolved.thumbnailUrl?.trim() || null;
+    } catch {
+      return null;
+    }
+  }
 
   findAllTargetAudiences() {
     return this.targetAudienceService.findAllTargetAudiences();
@@ -106,6 +132,12 @@ export class KnowledgeService {
     const status = dto.status ?? PageStatus.DRAFT;
     assertMaterialPayload(dto.type, dto, status);
 
+    const thumbnailUrl = await this.resolveExternalThumbnailIfNeeded(
+      dto.type,
+      dto.videoUrl,
+      dto.thumbnailUrl,
+    );
+
     const material = await this.prisma.knowledgeMaterial.create({
       data: {
         categoryId: dto.categoryId,
@@ -120,7 +152,7 @@ export class KnowledgeService {
         managerPracticalAssignment: dto.managerPracticalAssignment?.trim() || null,
         videoUrl: dto.videoUrl?.trim() || null,
         externalUrl: dto.externalUrl?.trim() || null,
-        thumbnailUrl: dto.thumbnailUrl?.trim() || null,
+        thumbnailUrl,
         thumbnailDisplay: dto.thumbnailDisplay ?? KnowledgeThumbnailDisplay.COVER,
         sortOrder: dto.sortOrder ?? 0,
         isPinned: dto.isPinned ?? false,
@@ -325,6 +357,18 @@ export class KnowledgeService {
       await this.targetAudienceService.syncTargetAudiences(id, dto.targetAudienceIds);
     }
 
+    const nextVideoUrl =
+      dto.videoUrl !== undefined ? dto.videoUrl?.trim() || null : existing.videoUrl;
+    let nextThumbnailUrl =
+      dto.thumbnailUrl !== undefined ? dto.thumbnailUrl?.trim() || null : existing.thumbnailUrl;
+    if (!nextThumbnailUrl) {
+      nextThumbnailUrl = await this.resolveExternalThumbnailIfNeeded(
+        nextType,
+        nextVideoUrl,
+        nextThumbnailUrl,
+      );
+    }
+
     const material = await this.prisma.knowledgeMaterial.update({
       where: { id },
       data: {
@@ -346,8 +390,8 @@ export class KnowledgeService {
           : {}),
         ...(dto.videoUrl !== undefined ? { videoUrl: dto.videoUrl?.trim() || null } : {}),
         ...(dto.externalUrl !== undefined ? { externalUrl: dto.externalUrl?.trim() || null } : {}),
-        ...(dto.thumbnailUrl !== undefined
-          ? { thumbnailUrl: dto.thumbnailUrl?.trim() || null }
+        ...(dto.thumbnailUrl !== undefined || nextThumbnailUrl !== existing.thumbnailUrl
+          ? { thumbnailUrl: nextThumbnailUrl }
           : {}),
         ...(dto.thumbnailDisplay !== undefined ? { thumbnailDisplay: dto.thumbnailDisplay } : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),

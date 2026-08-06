@@ -17,12 +17,14 @@ import {
   getKnowledgeModules,
   getKnowledgeTargetAudiences,
   publishKnowledgeMaterial,
+  resolveKnowledgeVideoThumbnail,
   updateKnowledgeMaterial,
   uploadKnowledgeThumbnail,
   uploadKnowledgeVideo,
 } from '@/shared/api/admin-knowledge';
 import { captureVideoFileFrame } from '@/shared/lib/capture-video-file-frame';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { isNativeVideoFileUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video-embed';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import {
@@ -325,6 +327,23 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
   useEffect(() => {
     if (isEdit) void loadMaterial();
   }, [isEdit, loadMaterial]);
+
+  // Подтянуть обложку для Rutube/VK/Vimeo, если своей нет.
+  useEffect(() => {
+    const url = videoUrl.trim();
+    if (type !== 'VIDEO' || !url || thumbnailUrl.trim() || isNativeVideoFileUrl(url)) return;
+    if (!needsAsyncVideoThumbnail(url)) return;
+
+    let cancelled = false;
+    void resolveKnowledgeVideoThumbnail(url).then((result) => {
+      if (cancelled || !result.thumbnailUrl) return;
+      setThumbnailUrl(publicUploadUrl(result.thumbnailUrl));
+    });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [type, videoUrl, thumbnailUrl]);
 
   const handleTitleChange = (value: string) => {
     setTitle(value);

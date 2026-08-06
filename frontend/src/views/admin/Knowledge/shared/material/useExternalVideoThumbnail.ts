@@ -5,12 +5,12 @@ import { useEffect, useState } from 'react';
 import { resolveKnowledgeVideoThumbnail } from '@/shared/api/admin-knowledge';
 import { getSyncVideoThumbnailUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video-embed';
 
-const thumbnailCache = new Map<string, string | null>();
+const thumbnailCache = new Map<string, string>();
 const inflight = new Map<string, Promise<string | null>>();
 
 async function loadAsyncThumbnail(videoUrl: string): Promise<string | null> {
   const cached = thumbnailCache.get(videoUrl);
-  if (cached !== undefined) return cached;
+  if (cached) return cached;
 
   const pending = inflight.get(videoUrl);
   if (pending) return pending;
@@ -18,13 +18,11 @@ async function loadAsyncThumbnail(videoUrl: string): Promise<string | null> {
   const request = resolveKnowledgeVideoThumbnail(videoUrl)
     .then((result) => {
       const value = result.thumbnailUrl?.trim() || null;
-      thumbnailCache.set(videoUrl, value);
+      // Не кэшируем null — иначе после деплоя фикса превью не подтянется до перезагрузки.
+      if (value) thumbnailCache.set(videoUrl, value);
       return value;
     })
-    .catch(() => {
-      thumbnailCache.set(videoUrl, null);
-      return null;
-    })
+    .catch(() => null)
     .finally(() => {
       inflight.delete(videoUrl);
     });
@@ -51,7 +49,7 @@ export function useExternalVideoThumbnail(videoUrl: string | null | undefined): 
     }
 
     const cached = thumbnailCache.get(trimmed);
-    if (cached !== undefined) {
+    if (cached) {
       setAsyncThumb(cached);
       return;
     }

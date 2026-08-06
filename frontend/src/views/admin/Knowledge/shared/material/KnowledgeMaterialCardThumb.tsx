@@ -26,36 +26,31 @@ export function KnowledgeMaterialCardThumb({
   placeholderClassName,
 }: KnowledgeMaterialCardThumbProps) {
   const [imageFailed, setImageFailed] = useState(false);
+  const isNativeVideo =
+    type === 'VIDEO' && Boolean(videoUrl) && isNativeVideoFileUrl(videoUrl ?? '');
+
+  // Для MP4 всегда кадр из файла (сохранённая обложка часто бывает чёрной с начала ролика).
+  // Для Rutube/VK/Vimeo — API-превью, даже если своей обложки нет.
   const externalThumb = useExternalVideoThumbnail(
-    !thumbnailUrl && type === 'VIDEO' ? videoUrl : null
+    !isNativeVideo && type === 'VIDEO' ? videoUrl : null
   );
 
-  const preferredSrc = thumbnailUrl
-    ? publicUploadUrl(thumbnailUrl)
-    : externalThumb
-      ? externalThumb
-      : null;
+  const preferredSrc = isNativeVideo
+    ? null
+    : thumbnailUrl
+      ? publicUploadUrl(thumbnailUrl)
+      : externalThumb
+        ? externalThumb
+        : null;
 
   useEffect(() => {
     setImageFailed(false);
-  }, [preferredSrc]);
+  }, [preferredSrc, videoUrl]);
 
   const placeholderIcon = <span aria-hidden>{getMaterialTypeIcon(type)}</span>;
   const imageSrc = !imageFailed ? preferredSrc : null;
 
-  if (imageSrc) {
-    return (
-      <img
-        key={imageSrc}
-        src={imageSrc}
-        alt=""
-        className={imageClassName}
-        onError={() => setImageFailed(true)}
-      />
-    );
-  }
-
-  if (type === 'VIDEO' && videoUrl && isNativeVideoFileUrl(videoUrl)) {
+  if (isNativeVideo && videoUrl) {
     const posterSrc = getNativeVideoPosterSrc(publicUploadUrl(videoUrl));
     if (posterSrc) {
       return (
@@ -67,6 +62,18 @@ export function KnowledgeMaterialCardThumb({
         />
       );
     }
+  }
+
+  if (imageSrc) {
+    return (
+      <img
+        key={imageSrc}
+        src={imageSrc}
+        alt=""
+        className={imageClassName}
+        onError={() => setImageFailed(true)}
+      />
+    );
   }
 
   return <div className={placeholderClassName}>{placeholderIcon}</div>;
