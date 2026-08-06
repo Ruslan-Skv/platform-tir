@@ -126,3 +126,78 @@ export function isEmbeddedVideoProvider(url: string): boolean {
   const parsed = parseVideoEmbed(url);
   return parsed !== null && parsed.provider !== 'native';
 }
+
+export function getYoutubeVideoId(url: string): string | null {
+  const trimmed = url.trim();
+  const ytMatch =
+    trimmed.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/) ||
+    trimmed.match(/youtube\.com\/embed\/([a-zA-Z0-9_-]+)/);
+  return ytMatch?.[1] ?? null;
+}
+
+export function getVimeoVideoId(url: string): string | null {
+  const match = url.trim().match(/vimeo\.com\/(?:video\/)?(\d+)/);
+  return match?.[1] ?? null;
+}
+
+export function getRutubeVideoId(url: string): string | null {
+  const trimmed = url.trim();
+  const rutubeMatch = trimmed.match(
+    /rutube\.ru\/(?:video(?:\/private)?|play\/embed|shorts)\/([a-f0-9]{32})/i
+  );
+  if (rutubeMatch?.[1]) return rutubeMatch[1].toLowerCase();
+  if (RUTUBE_VIDEO_ID.test(trimmed) && /rutube\.ru/i.test(trimmed)) {
+    const idMatch = trimmed.match(RUTUBE_VIDEO_ID);
+    return idMatch?.[0]?.toLowerCase() ?? null;
+  }
+  return null;
+}
+
+export function getVkVideoRef(url: string): { oid: string; id: string; embedUrl: string } | null {
+  const parsed = parseVkVideoEmbed(url.trim());
+  if (!parsed || parsed.provider !== 'vk') return null;
+  try {
+    const embed = new URL(parsed.embedUrl);
+    const oid = embed.searchParams.get('oid');
+    const id = embed.searchParams.get('id');
+    if (!oid || !id) return null;
+    return { oid, id, embedUrl: parsed.embedUrl };
+  } catch {
+    return null;
+  }
+}
+
+/** Прямой URL превью для YouTube (если распознан). */
+export function getYoutubeThumbnailUrl(url: string): string | null {
+  const id = getYoutubeVideoId(url);
+  if (!id) return null;
+  return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
+}
+
+/** Прямой URL превью Rutube (CDN). */
+export function getRutubeThumbnailUrl(url: string): string | null {
+  const id = getRutubeVideoId(url);
+  if (!id || id.length < 4) return null;
+  return `https://pic.rutubelist.ru/video/${id.slice(0, 2)}/${id.slice(2, 4)}/${id}.jpg`;
+}
+
+/** Синхронные превью без доп. запросов (YouTube, Rutube). */
+export function getSyncVideoThumbnailUrl(url: string): string | null {
+  return getYoutubeThumbnailUrl(url) ?? getRutubeThumbnailUrl(url);
+}
+
+/** Нужен ли async-запрос за превью (Vimeo / VK). */
+export function needsAsyncVideoThumbnail(url: string): boolean {
+  if (getSyncVideoThumbnailUrl(url) || isNativeVideoFileUrl(url)) return false;
+  const parsed = parseVideoEmbed(url);
+  return parsed?.provider === 'vimeo' || parsed?.provider === 'vk';
+}
+
+/** URL кадра из загруженного видеофайла (media fragment). */
+export function getNativeVideoPosterSrc(url: string): string | null {
+  if (!isNativeVideoFileUrl(url)) return null;
+  const base = url.trim();
+  if (!base) return null;
+  const withoutHash = base.replace(/#.*$/, '');
+  return `${withoutHash}#t=1`;
+}

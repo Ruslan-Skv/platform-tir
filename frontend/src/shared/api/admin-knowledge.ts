@@ -730,6 +730,17 @@ export async function uploadKnowledgeVideo(file: File): Promise<{ videoUrl: stri
   return res.json() as Promise<{ videoUrl: string }>;
 }
 
+export async function resolveKnowledgeVideoThumbnail(
+  videoUrl: string
+): Promise<{ thumbnailUrl: string | null }> {
+  const searchParams = new URLSearchParams({ url: videoUrl });
+  const res = await apiFetch(`${API_URL}/admin/knowledge/video-thumbnail?${searchParams}`, {
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) return { thumbnailUrl: null };
+  return res.json() as Promise<{ thumbnailUrl: string | null }>;
+}
+
 export async function toggleKnowledgeMaterialPin(id: string) {
   const res = await apiFetch(`${API_URL}/admin/knowledge/materials/${id}/pin`, {
     method: 'PATCH',

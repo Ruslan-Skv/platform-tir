@@ -23,6 +23,7 @@ import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytic
 import { KnowledgeMyTrainingProgressService } from './services/knowledge-my-training-progress.service';
 import { KnowledgeTrainingCelebrationService } from './services/knowledge-training-celebration.service';
 import { KnowledgeUploadService } from './knowledge-upload.service';
+import { KnowledgeVideoThumbnailService } from './services/knowledge-video-thumbnail.service';
 
 @Module({
   imports: [DatabaseModule, AdminNotificationsModule, AdminAccessModule, ExternalNotifyModule],
@@ -44,6 +45,7 @@ import { KnowledgeUploadService } from './knowledge-upload.service';
     KnowledgeTargetAudienceService,
     KnowledgeTrashService,
     KnowledgeUploadService,
+    KnowledgeVideoThumbnailService,
     KnowledgeTrainingAnalyticsService,
     KnowledgeMyTrainingProgressService,
     KnowledgeTrainingCelebrationService,

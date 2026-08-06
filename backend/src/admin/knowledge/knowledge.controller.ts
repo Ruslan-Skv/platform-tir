@@ -43,6 +43,7 @@ import { UpdateKnowledgeMaterialDto } from './dto/update-knowledge-material.dto'
 import { UpdateVideoProgressDto } from './dto/update-video-progress.dto';
 import { KnowledgeTrainingAnalyticsService } from './knowledge-training-analytics.service';
 import { KnowledgeMyTrainingProgressService } from './services/knowledge-my-training-progress.service';
+import { KnowledgeVideoThumbnailService } from './services/knowledge-video-thumbnail.service';
 import { AdminAccessService } from '../admin-access/admin-access.service';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
@@ -73,6 +74,7 @@ export class KnowledgeController {
     private readonly knowledgePlatformSettingsService: KnowledgePlatformSettingsService,
     private readonly trainingAnalyticsService: KnowledgeTrainingAnalyticsService,
     private readonly myTrainingProgressService: KnowledgeMyTrainingProgressService,
+    private readonly videoThumbnailService: KnowledgeVideoThumbnailService,
     private readonly adminAccessService: AdminAccessService,
   ) {}
 
@@ -193,6 +195,11 @@ export class KnowledgeController {
     }
     const stats = await this.knowledgeService.getStats();
     return { ...stats, myFavoritesCount };
+  }
+
+  @Get('video-thumbnail')
+  getVideoThumbnail(@Query('url') url?: string) {
+    return this.videoThumbnailService.resolveThumbnailUrl(url ?? '');
   }
 
   @Get('training-analytics')

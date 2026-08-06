@@ -12,7 +12,6 @@ import type {
   KnowledgeMaterialSearchSuggestion,
 } from '@/shared/api/admin-knowledge';
 import { buildPaginationPageSlots } from '@/shared/lib/pagination-page-slots';
-import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
@@ -37,7 +36,6 @@ import {
   formatVideoDuration,
   getKnowledgeTopicDisplayNumber,
   getMaterialReadingTime,
-  getMaterialTypeIcon,
   getMaterialTypeLabel,
   getMaterialVideoDuration,
   getStatusLabel,
@@ -47,6 +45,7 @@ import {
   sortKnowledgeMaterialsForCategory,
   sortKnowledgeMaterialsNewestFirst,
 } from '../shared/knowledge-utils';
+import { KnowledgeMaterialCardThumb } from '../shared/material/KnowledgeMaterialCardThumb';
 import { KnowledgeMaterialInterestingBadge } from '../shared/material/KnowledgeMaterialInterestingBadge';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/material/knowledge-comments.constants';
 import { KnowledgePlatformFeedbackButton } from '../shared/platform/KnowledgePlatformFeedbackButton';
@@ -128,13 +127,13 @@ function MaterialCard({
             ★ {likeCount}
           </KnowledgeMaterialInterestingBadge>
         ) : null}
-        {m.thumbnailUrl ? (
-          <img src={publicUploadUrl(m.thumbnailUrl)} alt="" className={s.cardImage} />
-        ) : (
-          <div className={s.cardPlaceholder}>
-            <span aria-hidden>{getMaterialTypeIcon(m.type)}</span>
-          </div>
-        )}
+        <KnowledgeMaterialCardThumb
+          type={m.type}
+          thumbnailUrl={m.thumbnailUrl}
+          videoUrl={m.videoUrl}
+          imageClassName={s.cardImage}
+          placeholderClassName={s.cardPlaceholder}
+        />
         <span className={s.typeBadge}>{getMaterialTypeLabel(m.type)}</span>
         {canEdit && m.status !== 'PUBLISHED' && (
           <span className={s.statusBadge}>{getStatusLabel(m.status)}</span>

@@ -21,6 +21,7 @@ import {
   uploadKnowledgeThumbnail,
   uploadKnowledgeVideo,
 } from '@/shared/api/admin-knowledge';
+import { captureVideoFileFrame } from '@/shared/lib/capture-video-file-frame';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
@@ -369,8 +370,20 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
     }
     setUploadingVideo(true);
     try {
+      const shouldAutoCover = !thumbnailUrl.trim();
       const { videoUrl: uploadedUrl } = await uploadKnowledgeVideo(file);
       setVideoUrl(publicUploadUrl(uploadedUrl));
+
+      if (shouldAutoCover) {
+        try {
+          const frame = await captureVideoFileFrame(file);
+          const { imageUrl } = await uploadKnowledgeThumbnail(frame);
+          setThumbnailUrl(publicUploadUrl(imageUrl));
+        } catch {
+          // Обложка опциональна: видео уже загружено
+        }
+      }
+
       showMessage('success', 'Видео загружено');
     } catch (err) {
       showMessage('error', err instanceof Error ? err.message : 'Ошибка загрузки видео');
