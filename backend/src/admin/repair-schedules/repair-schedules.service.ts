@@ -146,7 +146,8 @@ export class RepairSchedulesService {
     };
   }
 
-  async create(dto: CreateRepairScheduleProjectDto, createdById: string) {
+  async create(dto: CreateRepairScheduleProjectDto, createdById?: string | null) {
+    const actorId = emptyToNull(createdById) ?? null;
     const { installerId, installerName } = await this.resolveInstaller(
       dto.installerId,
       dto.installerName,
@@ -257,12 +258,14 @@ export class RepairSchedulesService {
         plannedStartDate,
         note: emptyToNull(dto.note) ?? null,
         closedAt: status === RepairScheduleProjectStatus.CLOSED ? new Date() : null,
-        createdById,
-        updatedById: createdById,
+        createdById: actorId,
+        updatedById: actorId,
       },
       include: PROJECT_INCLUDE,
     });
-    this.notify.onCreated(this.toNotifyPayload(project), createdById);
+    if (actorId) {
+      this.notify.onCreated(this.toNotifyPayload(project), actorId);
+    }
     return withDerived(project);
   }
 

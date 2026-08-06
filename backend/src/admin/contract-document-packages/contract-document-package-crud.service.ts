@@ -1,7 +1,8 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
@@ -12,10 +13,13 @@ import { ContractDocumentPackageKindSettingsService } from './contract-document-
 
 @Injectable()
 export class ContractDocumentPackageCrudService {
+  private readonly logger = new Logger(ContractDocumentPackageCrudService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
+    private readonly repairScheduleFromPackage: RepairScheduleFromPackageService,
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -145,6 +149,9 @@ export class ContractDocumentPackageCrudService {
             )
           : undefined;
     const recordVersion = dto.recordVersion === true;
+    const becomingConcluded =
+      dto.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
+      row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED;
     const updated = await this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {
@@ -167,6 +174,19 @@ export class ContractDocumentPackageCrudService {
         },
         savedById ?? null,
       );
+    }
+    if (becomingConcluded && updated.kind === ContractDocumentPackageKind.REPAIR) {
+      try {
+        await this.repairScheduleFromPackage.ensureFromConcludedRepairPackage(
+          updated.id,
+          savedById ?? null,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Автосоздание проекта план-графика ремонта после подписания пакета ${updated.id} не удалось: ${message}`,
+        );
+      }
     }
     return this.findOne(id);
   }

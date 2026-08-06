@@ -1046,6 +1046,7 @@ export interface ContractCustomerContractRow {
   contractNumber: string | null;
   contractDate: string | null;
   totalAmount: number;
+  direction?: { id: string; name: string; slug: string } | null;
 }
 
 /** Блок «Заказчик» из последней версии пакета «Ремонт» по договору (если есть). */

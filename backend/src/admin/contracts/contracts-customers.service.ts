@@ -66,6 +66,7 @@ export class ContractsCustomersService {
         totalAmount: true,
         contractDate: true,
         contractNumber: true,
+        direction: { select: { id: true, name: true, slug: true } },
         manager: { select: { id: true, firstName: true, lastName: true } },
       },
       orderBy: { contractDate: 'desc' },
@@ -92,6 +93,7 @@ export class ContractsCustomersService {
           contractNumber: string | null;
           contractDate: Date | null;
           totalAmount: number;
+          direction: { id: string; name: string; slug: string } | null;
         }[];
       }
     >();
@@ -105,6 +107,7 @@ export class ContractsCustomersService {
         contractNumber: c.contractNumber,
         contractDate: c.contractDate,
         totalAmount,
+        direction: c.direction,
       };
       if (!existing) {
         map.set(k, {
@@ -145,6 +148,7 @@ export class ContractsCustomersService {
         contractNumber: row.contractNumber,
         contractDate: row.contractDate?.toISOString().slice(0, 10) ?? null,
         totalAmount: row.totalAmount,
+        direction: row.direction,
       })),
       manager: v.manager
         ? {

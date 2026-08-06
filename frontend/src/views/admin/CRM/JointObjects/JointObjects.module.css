@@ -51,8 +51,10 @@
 
 .metaLine {
   margin: 0;
+  min-height: 1.2em;
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
+  line-height: 1.2;
 }
 
 .emptyState {

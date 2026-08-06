@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { type JointObjectsListResult, getJointObjects } from '@/shared/api/crm/admin-joint-objects';
 
@@ -9,13 +9,17 @@ export type JointObjectsPageModel = ReturnType<typeof useJointObjectsPage>;
 export function useJointObjectsPage() {
   const [data, setData] = useState<JointObjectsListResult | null>(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [search, setSearch] = useState('');
   const [includeClosed, setIncludeClosed] = useState(false);
   const [expandedId, setExpandedId] = useState<string | null>(null);
+  const hasLoadedRef = useRef(false);
 
   const refresh = useCallback(async () => {
-    setLoading(true);
+    const isInitial = !hasLoadedRef.current;
+    if (isInitial) setLoading(true);
+    else setRefreshing(true);
     setMessage(null);
     try {
       const result = await getJointObjects({
@@ -23,14 +27,16 @@ export function useJointObjectsPage() {
         includeClosed,
       });
       setData(result);
-      if (result.objects.length === 1) {
+      hasLoadedRef.current = true;
+      if (isInitial && result.objects.length === 1) {
         setExpandedId(result.objects[0].id);
       }
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Не удалось загрузить');
-      setData(null);
+      if (isInitial) setData(null);
     } finally {
       setLoading(false);
+      setRefreshing(false);
     }
   }, [search, includeClosed]);
 
@@ -47,6 +53,7 @@ export function useJointObjectsPage() {
   return {
     data,
     loading,
+    refreshing,
     message,
     setMessage,
     search,

@@ -6,7 +6,12 @@ import {
   type ContractDocumentPackage,
   getContractDocumentPackages,
 } from '@/shared/api/admin-contract-document-packages';
-import type { InstallerMaster } from '@/shared/api/admin-crm';
+import {
+  type ContractCustomer,
+  type ContractCustomerContractRow,
+  type InstallerMaster,
+  getContractCustomers,
+} from '@/shared/api/admin-crm';
 
 import styles from '../shared/FurnitureSchedules.module.css';
 import {
@@ -22,9 +27,48 @@ type Props = {
   error: string | null;
 };
 
+function normalizePhone(value: string): string {
+  return value.replace(/\D/g, '');
+}
+
+function pickCustomerMatch(
+  customers: ContractCustomer[],
+  name: string,
+  phone: string,
+  contractId: string
+): ContractCustomer | null {
+  if (customers.length === 0) return null;
+  if (contractId) {
+    const byContract = customers.find((c) => c.contracts.some((row) => row.id === contractId));
+    if (byContract) return byContract;
+  }
+  const nameKey = name.trim().toLowerCase();
+  const phoneKey = normalizePhone(phone);
+  const exact = customers.find((c) => {
+    const sameName = c.customerName.trim().toLowerCase() === nameKey;
+    if (!sameName) return false;
+    if (!phoneKey) return true;
+    return normalizePhone(c.customerPhone) === phoneKey;
+  });
+  if (exact) return exact;
+  if (nameKey) {
+    const byName = customers.find((c) => c.customerName.trim().toLowerCase() === nameKey);
+    if (byName) return byName;
+  }
+  return customers.length === 1 ? customers[0]! : null;
+}
+
+function formatContractPreviewLabel(row: ContractCustomerContractRow): string {
+  const number = row.contractNumber?.trim() ? `№ ${row.contractNumber.trim()}` : 'Без номера';
+  const direction = row.direction?.name?.trim();
+  return direction ? `${number} · ${direction}` : number;
+}
+
 export function FurnitureProjectForm({ values, onChange, installers, error }: Props) {
   const [hits, setHits] = useState<ContractDocumentPackage[]>([]);
   const [searching, setSearching] = useState(false);
+  const [customerContracts, setCustomerContracts] = useState<ContractCustomerContractRow[]>([]);
+  const [contractsLoading, setContractsLoading] = useState(false);
 
   const update = (patch: Partial<FurnitureProjectFormValues>) => onChange({ ...values, ...patch });
 
@@ -44,10 +88,36 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
     return () => window.clearTimeout(timer);
   }, [values.packageSearch, values.packageId]);
 
+  useEffect(() => {
+    const name = values.customerName.trim();
+    const phone = values.customerPhone.trim();
+    const phoneDigits = normalizePhone(phone);
+    if (name.length < 2 && phoneDigits.length < 6) {
+      setCustomerContracts([]);
+      setContractsLoading(false);
+      return;
+    }
+    const search = [name, phone].filter(Boolean).join(' ');
+    const timer = window.setTimeout(() => {
+      setContractsLoading(true);
+      void getContractCustomers(search)
+        .then(({ customers }) => {
+          const match = pickCustomerMatch(customers, name, phone, values.contractId);
+          setCustomerContracts(match?.contracts ?? []);
+        })
+        .catch(() => setCustomerContracts([]))
+        .finally(() => setContractsLoading(false));
+    }, 300);
+    return () => window.clearTimeout(timer);
+  }, [values.customerName, values.customerPhone, values.contractId]);
+
   const applyPackage = (pkg: ContractDocumentPackage) => {
     update(fieldsFromPackage(pkg));
     setHits([]);
   };
+
+  const customerLookupReady =
+    values.customerName.trim().length >= 2 || normalizePhone(values.customerPhone).length >= 6;
 
   return (
     <div data-modal-form-grid>
@@ -150,14 +220,34 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
         />
       </div>
 
-      <div data-modal-form-group>
-        <label htmlFor="rs-repair">Ремонт (связанный)</label>
-        <input
-          id="rs-repair"
-          value={values.repairInfo}
-          onChange={(e) => update({ repairInfo: e.target.value })}
-          placeholder="наш; потолки…"
-        />
+      <div data-modal-form-group className={styles.createFormSpan}>
+        <div className={styles.createFormLabelRow}>
+          <label>Договоры заказчика</label>
+          {contractsLoading ? <span className={styles.createFormInlineHint}>Загрузка…</span> : null}
+        </div>
+        {!customerLookupReady ? (
+          <p className={styles.customerContractsHint}>
+            Привяжите пакет или укажите заказчика — покажем номера договоров по всем направлениям
+          </p>
+        ) : customerContracts.length === 0 && !contractsLoading ? (
+          <p className={styles.customerContractsHint}>Договоры с этим заказчиком не найдены</p>
+        ) : customerContracts.length > 0 ? (
+          <ul className={styles.customerContractsPreview} aria-label="Договоры заказчика">
+            {customerContracts.map((row) => (
+              <li
+                key={row.id}
+                className={
+                  values.contractId && row.id === values.contractId
+                    ? styles.customerContractsPreviewCurrent
+                    : undefined
+                }
+                title={formatContractPreviewLabel(row)}
+              >
+                {formatContractPreviewLabel(row)}
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
 
       <div data-modal-form-group>

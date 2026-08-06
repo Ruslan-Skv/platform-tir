@@ -55,6 +55,7 @@ export function JointObjectsPageView({ model }: Props) {
   const {
     data,
     loading,
+    refreshing,
     message,
     setMessage,
     search,
@@ -67,6 +68,7 @@ export function JointObjectsPageView({ model }: Props) {
   } = model;
 
   const objects = data?.objects ?? [];
+  const busy = loading || refreshing;
   const countTitle = loading
     ? 'Загрузка…'
     : `${data?.totalObjects ?? 0} объектов · ${data?.totalItems ?? 0} событий`;
@@ -88,8 +90,8 @@ export function JointObjectsPageView({ model }: Props) {
             </div>
             <div className={cdHub.contractsHeaderIconActionsMobile}>
               <AdminListRefreshButton
-                disabled={loading}
-                busy={loading}
+                disabled={busy}
+                busy={busy}
                 title="Обновить"
                 aria-label="Обновить"
                 onClick={() => void refresh()}
@@ -100,8 +102,8 @@ export function JointObjectsPageView({ model }: Props) {
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
             <AdminListRefreshButton
-              disabled={loading}
-              busy={loading}
+              disabled={busy}
+              busy={busy}
               title="Обновить"
               aria-label="Обновить"
               onClick={() => void refresh()}
@@ -131,7 +133,6 @@ export function JointObjectsPageView({ model }: Props) {
               )}
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              disabled={loading}
               placeholder="Поиск по адресу, заказчику, договору, направлению…"
               aria-label="Поиск по адресу, заказчику, договору, направлению"
             />
@@ -140,28 +141,25 @@ export function JointObjectsPageView({ model }: Props) {
                 type="checkbox"
                 checked={includeClosed}
                 onChange={(e) => setIncludeClosed(e.target.checked)}
-                disabled={loading}
               />
               Включать закрытые ремонт/мебель
             </label>
           </div>
-          {data?.meta ? (
-            <p className={styles.metaLine}>
-              Монтажи: {formatDate(data.meta.installFrom)}–{formatDate(data.meta.installTo)} ·
-              Доставки: {formatDate(data.meta.waybillFrom)}–{formatDate(data.meta.waybillTo)}
-            </p>
-          ) : null}
+          <p className={styles.metaLine} aria-hidden={!data?.meta}>
+            {data?.meta
+              ? `Монтажи: ${formatDate(data.meta.installFrom)}–${formatDate(data.meta.installTo)} · Доставки: ${formatDate(data.meta.waybillFrom)}–${formatDate(data.meta.waybillTo)}`
+              : '\u00a0'}
+          </p>
         </div>
       </div>
 
-      {!loading && objects.length === 0 ? (
-        <p className={styles.emptyState}>
-          Пока нет объектов, где одновременно встречаются ≥2 направления (окна, двери, потолки,
-          жалюзи, ремонт, мебель). Заведите связанные договоры с общим адресом или заказчиком.
-        </p>
-      ) : null}
-
-      <div className={styles.list}>
+      <div className={styles.list} aria-busy={busy}>
+        {!loading && objects.length === 0 ? (
+          <p className={styles.emptyState}>
+            Пока нет объектов, где одновременно встречаются ≥2 направления (окна, двери, потолки,
+            жалюзи, ремонт, мебель). Заведите связанные договоры с общим адресом или заказчиком.
+          </p>
+        ) : null}
         {objects.map((object) => {
           const open = expandedId === object.id;
           return (

@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../../database/database.module';
+import { RepairSchedulesModule } from '../repair-schedules/repair-schedules.module';
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesController } from './contract-document-packages.controller';
@@ -14,7 +15,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
 import { ContractDocumentNumberingService } from './numbering/contract-document-numbering.service';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, RepairSchedulesModule],
   controllers: [ContractDocumentPackagesController],
   providers: [
     ContractDocumentPackagesService,
