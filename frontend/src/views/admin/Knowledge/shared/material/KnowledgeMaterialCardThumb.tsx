@@ -1,10 +1,13 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
 import type { KnowledgeMaterialType } from '@/shared/api/admin-knowledge';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { getNativeVideoPosterSrc, isNativeVideoFileUrl } from '@/shared/lib/video-embed';
 
 import { getMaterialTypeIcon } from '../knowledge-utils';
+import { KnowledgeNativeVideoThumb } from './KnowledgeNativeVideoThumb';
 import { useExternalVideoThumbnail } from './useExternalVideoThumbnail';
 
 type KnowledgeMaterialCardThumbProps = {
@@ -22,40 +25,49 @@ export function KnowledgeMaterialCardThumb({
   imageClassName,
   placeholderClassName,
 }: KnowledgeMaterialCardThumbProps) {
+  const [imageFailed, setImageFailed] = useState(false);
   const externalThumb = useExternalVideoThumbnail(
     !thumbnailUrl && type === 'VIDEO' ? videoUrl : null
   );
 
-  if (thumbnailUrl) {
-    return <img src={publicUploadUrl(thumbnailUrl)} alt="" className={imageClassName} />;
+  const preferredSrc = thumbnailUrl
+    ? publicUploadUrl(thumbnailUrl)
+    : externalThumb
+      ? externalThumb
+      : null;
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [preferredSrc]);
+
+  const placeholderIcon = <span aria-hidden>{getMaterialTypeIcon(type)}</span>;
+  const imageSrc = !imageFailed ? preferredSrc : null;
+
+  if (imageSrc) {
+    return (
+      <img
+        key={imageSrc}
+        src={imageSrc}
+        alt=""
+        className={imageClassName}
+        onError={() => setImageFailed(true)}
+      />
+    );
   }
 
-  if (type === 'VIDEO' && videoUrl) {
-    if (externalThumb) {
-      return <img src={externalThumb} alt="" className={imageClassName} />;
-    }
-
-    if (isNativeVideoFileUrl(videoUrl)) {
-      const posterSrc = getNativeVideoPosterSrc(publicUploadUrl(videoUrl));
-      if (posterSrc) {
-        return (
-          <video
-            src={posterSrc}
-            muted
-            playsInline
-            preload="metadata"
-            className={imageClassName}
-            style={{ pointerEvents: 'none' }}
-            aria-hidden
-          />
-        );
-      }
+  if (type === 'VIDEO' && videoUrl && isNativeVideoFileUrl(videoUrl)) {
+    const posterSrc = getNativeVideoPosterSrc(publicUploadUrl(videoUrl));
+    if (posterSrc) {
+      return (
+        <KnowledgeNativeVideoThumb
+          src={posterSrc}
+          className={imageClassName}
+          placeholderClassName={placeholderClassName}
+          placeholder={placeholderIcon}
+        />
+      );
     }
   }
 
-  return (
-    <div className={placeholderClassName}>
-      <span aria-hidden>{getMaterialTypeIcon(type)}</span>
-    </div>
-  );
+  return <div className={placeholderClassName}>{placeholderIcon}</div>;
 }

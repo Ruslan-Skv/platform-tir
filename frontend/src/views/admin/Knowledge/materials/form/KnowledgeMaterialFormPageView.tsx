@@ -1,6 +1,7 @@
 'use client';
 
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { VideoProgressFill } from '@/shared/ui/VideoProgressFill/VideoProgressFill';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import { BlogPostEditor } from '@/views/admin/Content/Blog';
 import {
@@ -503,9 +504,9 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                   aria-label="Прогресс загрузки видео"
                 >
                   <div className={styles.videoUploadProgressTrack}>
-                    <div
+                    <VideoProgressFill
+                      percent={videoUploadPercent}
                       className={styles.videoUploadProgressFill}
-                      style={{ width: `${videoUploadPercent}%` }}
                     />
                   </div>
                   <span className={styles.videoUploadProgressLabel}>{videoUploadPercent}%</span>

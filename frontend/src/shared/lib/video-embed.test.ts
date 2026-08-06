@@ -109,35 +109,35 @@ describe('getRutubeThumbnailUrl', () => {
 });
 
 describe('getSyncVideoThumbnailUrl', () => {
-  it('prefers YouTube sync preview', () => {
+  it('returns YouTube sync preview', () => {
     expect(getSyncVideoThumbnailUrl('https://youtu.be/dQw4w9WgXcQ')).toContain('ytimg.com');
   });
 
-  it('returns Rutube sync preview', () => {
+  it('does not sync-resolve Rutube (async API)', () => {
     expect(
       getSyncVideoThumbnailUrl('https://rutube.ru/play/embed/6b111aab772dbd7c3fd8f7b40ecfbc64')
-    ).toContain('rutubelist.ru');
+    ).toBeNull();
   });
 });
 
 describe('needsAsyncVideoThumbnail', () => {
-  it('is true for Vimeo and VK', () => {
+  it('is true for Rutube, Vimeo and VK', () => {
+    expect(
+      needsAsyncVideoThumbnail('https://rutube.ru/video/6b111aab772dbd7c3fd8f7b40ecfbc64/')
+    ).toBe(true);
     expect(needsAsyncVideoThumbnail('https://vimeo.com/76979871')).toBe(true);
     expect(needsAsyncVideoThumbnail('https://vk.com/video-48622702_456239374')).toBe(true);
   });
 
-  it('is false for YouTube and Rutube', () => {
+  it('is false for YouTube', () => {
     expect(needsAsyncVideoThumbnail('https://www.youtube.com/watch?v=dQw4w9WgXcQ')).toBe(false);
-    expect(
-      needsAsyncVideoThumbnail('https://rutube.ru/video/6b111aab772dbd7c3fd8f7b40ecfbc64/')
-    ).toBe(false);
   });
 });
 
 describe('getNativeVideoPosterSrc', () => {
-  it('appends media fragment for mp4', () => {
+  it('returns mp4 url without media fragment', () => {
     expect(getNativeVideoPosterSrc('https://cdn.example.com/clip.mp4')).toBe(
-      'https://cdn.example.com/clip.mp4#t=1'
+      'https://cdn.example.com/clip.mp4'
     );
   });
 

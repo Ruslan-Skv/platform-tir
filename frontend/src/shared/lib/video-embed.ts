@@ -174,30 +174,32 @@ export function getYoutubeThumbnailUrl(url: string): string | null {
   return `https://i.ytimg.com/vi/${id}/hqdefault.jpg`;
 }
 
-/** Прямой URL превью Rutube (CDN). */
+/**
+ * @deprecated Нестабильный CDN-шаблон; превью Rutube лучше брать через API.
+ * Оставлено для тестов совместимости.
+ */
 export function getRutubeThumbnailUrl(url: string): string | null {
   const id = getRutubeVideoId(url);
   if (!id || id.length < 4) return null;
   return `https://pic.rutubelist.ru/video/${id.slice(0, 2)}/${id.slice(2, 4)}/${id}.jpg`;
 }
 
-/** Синхронные превью без доп. запросов (YouTube, Rutube). */
+/** Синхронные превью без доп. запросов (только YouTube — стабильный CDN). */
 export function getSyncVideoThumbnailUrl(url: string): string | null {
-  return getYoutubeThumbnailUrl(url) ?? getRutubeThumbnailUrl(url);
+  return getYoutubeThumbnailUrl(url);
 }
 
-/** Нужен ли async-запрос за превью (Vimeo / VK). */
+/** Нужен ли async-запрос за превью (Rutube / Vimeo / VK). */
 export function needsAsyncVideoThumbnail(url: string): boolean {
   if (getSyncVideoThumbnailUrl(url) || isNativeVideoFileUrl(url)) return false;
   const parsed = parseVideoEmbed(url);
-  return parsed?.provider === 'vimeo' || parsed?.provider === 'vk';
+  return parsed?.provider === 'rutube' || parsed?.provider === 'vimeo' || parsed?.provider === 'vk';
 }
 
-/** URL кадра из загруженного видеофайла (media fragment). */
+/** URL загруженного видеофайла без media-fragment (кадр берём через seek в UI). */
 export function getNativeVideoPosterSrc(url: string): string | null {
   if (!isNativeVideoFileUrl(url)) return null;
   const base = url.trim();
   if (!base) return null;
-  const withoutHash = base.replace(/#.*$/, '');
-  return `${withoutHash}#t=1`;
+  return base.replace(/#.*$/, '');
 }

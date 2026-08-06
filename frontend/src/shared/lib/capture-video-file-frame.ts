@@ -17,9 +17,10 @@ export async function captureVideoFileFrame(file: File, seekSeconds = 1): Promis
     });
 
     const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    // Берём кадр ближе к 15% ролика — в начале часто чёрный экран / заставка.
     const target =
       duration > 0
-        ? Math.min(Math.max(seekSeconds, 0.1), Math.max(duration - 0.1, 0.1))
+        ? Math.min(Math.max(duration * 0.15, seekSeconds), Math.max(duration - 0.25, 0.1))
         : seekSeconds;
 
     if (video.readyState < 1) {
