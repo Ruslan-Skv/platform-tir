@@ -25,6 +25,7 @@ import {
   ENTRY_KIND_LABELS,
   FURNITURE_STATUS_LABELS,
   formatDate,
+  formatFurnitureKzInfoDisplay,
   formatMoney,
 } from '../shared/furniture-schedules';
 import type { FurnitureScheduleDetailPageModel } from './hooks/useFurnitureScheduleDetailPage';
@@ -271,6 +272,14 @@ export function FurnitureScheduleDetailPageView({
               <dd>{formatMoney(project.payoutSum)}</dd>
             </div>
             <div>
+              <dt>Дата договора</dt>
+              <dd>{formatDate(project.contractDate)}</dd>
+            </div>
+            <div>
+              <dt>КЗ</dt>
+              <dd>{formatFurnitureKzInfoDisplay(project.kzInfo)}</dd>
+            </div>
+            <div>
               <dt>Срок договора</dt>
               <dd>
                 {project.workPeriodDays != null ? `${project.workPeriodDays} раб. дн.` : '—'}
@@ -282,8 +291,21 @@ export function FurnitureScheduleDetailPageView({
               </dd>
             </div>
             <div>
-              <dt>Акт начала работ</dt>
+              <dt>Начало срока</dt>
               <dd>{formatDate(project.workStartActDate)}</dd>
+            </div>
+            <div>
+              <dt>Временная остановка</dt>
+              <dd>{formatDate(project.pauseStartDate)}</dd>
+            </div>
+            <div>
+              <dt>Возобновление срока</dt>
+              <dd>
+                {formatDate(project.pauseResumeDate)}
+                {project.pauseCalendarDays != null && project.pauseCalendarDays > 0
+                  ? ` · пауза ${project.pauseCalendarDays} календ. дн.`
+                  : null}
+              </dd>
             </div>
             <div>
               <dt>Расчётный срок окончания</dt>
@@ -307,10 +329,6 @@ export function FurnitureScheduleDetailPageView({
             <div>
               <dt>Акт сдачи-приёмки</dt>
               <dd>{formatDate(project.workCloseActDate)}</dd>
-            </div>
-            <div>
-              <dt>Планируемое начало</dt>
-              <dd>{formatDate(project.plannedStartDate)}</dd>
             </div>
             <div>
               <dt>Примечание</dt>

@@ -112,7 +112,10 @@ function kzInfoValue(value: unknown): string | null {
   const t = cellText(value);
   if (!t) return null;
   const iso = excelHeaderToIsoDate(value) ?? excelHeaderToIsoDate(t);
-  if (iso) return iso;
+  if (iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+    return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
+  }
   return t.toLowerCase() === 'кз' || t.toLowerCase() === 'o' || t.toLowerCase() === 'о'
     ? t.toLowerCase() === 'o' || t.toLowerCase() === 'о'
       ? null

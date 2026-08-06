@@ -22,6 +22,7 @@ import {
   extractPackageContractTerms,
   moneyFromFormContract,
   moneyFromUnknown,
+  normalizeFurnitureKzInfo,
   parseDateOnly,
   withDerived,
 } from './furniture-schedule.shared';
@@ -258,7 +259,7 @@ export class FurnitureSchedulesService {
         contractSum: decimalOrNull(contractSum) ?? null,
         payoutSum: decimalOrNull(payoutSum) ?? null,
         contractDate,
-        kzInfo: emptyToNull(dto.kzInfo) ?? null,
+        kzInfo: normalizeFurnitureKzInfo(dto.kzInfo),
         pauseStartDate,
         pauseResumeDate,
         workPeriodDays,
@@ -396,7 +397,7 @@ export class FurnitureSchedulesService {
     if (dto.customerPhone !== undefined) {
       data.customerPhone = emptyToNull(dto.customerPhone) ?? null;
     }
-    if (dto.kzInfo !== undefined) data.kzInfo = emptyToNull(dto.kzInfo) ?? null;
+    if (dto.kzInfo !== undefined) data.kzInfo = normalizeFurnitureKzInfo(dto.kzInfo);
     if (dto.contractDate !== undefined) {
       data.contractDate = dto.contractDate ? parseDateOnly(dto.contractDate) : null;
     }

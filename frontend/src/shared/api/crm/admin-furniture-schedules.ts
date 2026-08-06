@@ -34,7 +34,9 @@ export type RepairContractTimelineEventType =
   | 'ADDENDUM'
   | 'CALCULATED_END_BASE'
   | 'CALCULATED_END'
-  | 'WORK_CLOSE_ACT';
+  | 'WORK_CLOSE_ACT'
+  | 'PAUSE_START'
+  | 'PAUSE_RESUME';
 
 export type RepairContractTimelineEvent = {
   id: string;
@@ -97,6 +99,8 @@ export type FurnitureScheduleProject = {
   calculatedEndDateBase?: string | null;
   calculatedEndDate?: string | null;
   effectiveWorkPeriodDays?: number | null;
+  /** Календарных дней паузы (остановка → возобновление). */
+  pauseCalendarDays?: number | null;
   syncedFromPackage?: boolean;
   /** Календарных дней до расчётного окончания; < 0 — просрочен. */
   deadlineDaysLeft?: number | null;

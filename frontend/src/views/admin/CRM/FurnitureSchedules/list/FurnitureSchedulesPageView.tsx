@@ -193,7 +193,7 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
             <span className={cdHub.contractsListChipRowLabel}>Статус</span>
             <button
               type="button"
-              disabled={loading || viewMode === 'timeline'}
+              disabled={loading}
               className={chipClass(statusFilter === 'ALL')}
               onClick={() => setStatusFilter('ALL')}
             >
@@ -205,7 +205,13 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
               <button
                 key={key}
                 type="button"
-                disabled={loading || (viewMode === 'timeline' && key !== 'IN_PROGRESS')}
+                disabled={
+                  loading ||
+                  (viewMode === 'timeline' &&
+                    key !== 'IN_PROGRESS' &&
+                    key !== 'NEW' &&
+                    key !== 'CLAIMS')
+                }
                 className={chipClass(statusFilter === key)}
                 onClick={() => setStatusFilter(key)}
               >

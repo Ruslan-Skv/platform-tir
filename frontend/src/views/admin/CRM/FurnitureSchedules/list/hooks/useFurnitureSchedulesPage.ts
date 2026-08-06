@@ -18,6 +18,8 @@ import {
   type FurnitureProjectFormValues,
   emptyFurnitureProjectForm,
   matchesDeadlineFilter,
+  normalizeFurnitureKzInfo,
+  resolveFurnitureTermStartDate,
 } from '../../shared/furniture-schedules';
 import {
   compareFurnitureProjectsByAge,
@@ -159,8 +161,15 @@ export function useFurnitureSchedulesPage() {
     } catch {
       /* ignore */
     }
-    if (mode === 'timeline' && statusFilter !== 'IN_PROGRESS') {
-      setStatusFilter('IN_PROGRESS');
+    if (mode === 'timeline') {
+      if (
+        statusFilter !== 'NEW' &&
+        statusFilter !== 'IN_PROGRESS' &&
+        statusFilter !== 'CLAIMS' &&
+        statusFilter !== 'ALL'
+      ) {
+        setStatusFilter('ALL');
+      }
     }
   };
 
@@ -190,13 +199,23 @@ export function useFurnitureSchedulesPage() {
         contractSum: formValues.contractSum.trim() ? Number(formValues.contractSum) : null,
         payoutSum: formValues.payoutSum.trim() ? Number(formValues.payoutSum) : null,
         contractDate: formValues.contractDate.trim() || null,
-        kzInfo: formValues.kzInfo.trim() || null,
+        kzInfo: normalizeFurnitureKzInfo(formValues.kzInfo) || null,
         pauseStartDate: formValues.pauseStartDate.trim() || null,
         pauseResumeDate: formValues.pauseResumeDate.trim() || null,
         workPeriodDays: formValues.workPeriodDays.trim() ? Number(formValues.workPeriodDays) : null,
-        workStartActDate: formValues.workStartActDate.trim() || null,
+        workStartActDate:
+          resolveFurnitureTermStartDate(
+            formValues.contractDate,
+            formValues.kzInfo,
+            formValues.workStartActDate
+          ) || null,
         workCloseActDate: formValues.workCloseActDate.trim() || null,
-        plannedStartDate: formValues.plannedStartDate.trim() || null,
+        plannedStartDate:
+          resolveFurnitureTermStartDate(
+            formValues.contractDate,
+            formValues.kzInfo,
+            formValues.workStartActDate
+          ) || null,
         note: formValues.note.trim() || null,
       });
       setCreateOpen(false);

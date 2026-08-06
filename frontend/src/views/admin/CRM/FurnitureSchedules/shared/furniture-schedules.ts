@@ -14,11 +14,13 @@ export const ENTRY_KIND_LABELS = {
 } as const;
 
 export const CONTRACT_EVENT_LABELS = {
-  WORK_START_ACT: 'Акт начала',
+  WORK_START_ACT: 'Начало срока',
   ADDENDUM: 'Д/с',
   CALCULATED_END_BASE: 'Срок (базовый)',
   CALCULATED_END: 'Срок окончания',
   WORK_CLOSE_ACT: 'Акт сдачи',
+  PAUSE_START: 'Остановка',
+  PAUSE_RESUME: 'Возобновление',
 } as const;
 
 export const ADDENDUM_STATUS_LABELS: Record<string, string> = {
@@ -123,6 +125,82 @@ function isoDateInput(value: unknown): string {
   return m ? `${m[1]}-${m[2]}-${m[3]}` : '';
 }
 
+function isoToDdMmYyyy(iso: string): string {
+  const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(iso);
+  return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
+}
+
+/** Разбор КЗ: дата проведения, ожидание или не требуется. */
+export function parseFurnitureKzInfo(kzInfo: string | null | undefined): {
+  kind: 'none' | 'pending' | 'date';
+  date: string | null;
+} {
+  const raw = (kzInfo ?? '').trim();
+  if (!raw) return { kind: 'none', date: null };
+  const iso = isoDateInput(raw);
+  if (iso) return { kind: 'date', date: iso };
+  const dmy = /^(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})$/.exec(raw);
+  if (dmy) {
+    const day = Number(dmy[1]);
+    const month = Number(dmy[2]);
+    let year = Number(dmy[3]);
+    if (year < 100) year += 2000;
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      const mm = String(month).padStart(2, '0');
+      const dd = String(day).padStart(2, '0');
+      return { kind: 'date', date: `${year}-${mm}-${dd}` };
+    }
+  }
+  const lower = raw.toLowerCase();
+  if (
+    lower === 'кз' ||
+    lower === 'kz' ||
+    lower.includes('контрол') ||
+    lower.includes('к.з') ||
+    lower.includes('к/з')
+  ) {
+    return { kind: 'pending', date: null };
+  }
+  return { kind: 'pending', date: null };
+}
+
+/** Дата КЗ в виде дд.мм.гггг; «кз» и прочий текст без изменений. */
+export function normalizeFurnitureKzInfo(kzInfo: string | null | undefined): string {
+  const raw = (kzInfo ?? '').trim();
+  if (!raw) return '';
+  const parsed = parseFurnitureKzInfo(raw);
+  if (parsed.kind === 'date' && parsed.date) return isoToDdMmYyyy(parsed.date);
+  return raw;
+}
+
+/** Отображение КЗ в паспорте / списках. */
+export function formatFurnitureKzInfoDisplay(kzInfo: string | null | undefined): string {
+  const normalized = normalizeFurnitureKzInfo(kzInfo);
+  return normalized || '—';
+}
+
+/** Начало срока: дата КЗ, иначе дата договора; при ожидании КЗ — пусто. */
+export function resolveFurnitureTermStartDate(
+  contractDate: string | null | undefined,
+  kzInfo: string | null | undefined,
+  fallbackStart?: string | null
+): string {
+  const kz = parseFurnitureKzInfo(kzInfo);
+  if (kz.kind === 'date') return kz.date || '';
+  if (kz.kind === 'pending') return '';
+  const fromContract = isoDateInput(contractDate ?? '');
+  if (fromContract) return fromContract;
+  return isoDateInput(fallbackStart ?? '') || '';
+}
+
+export function furnitureTermStartHint(contractDate: string, kzInfo: string): string {
+  const kz = parseFurnitureKzInfo(kzInfo);
+  if (kz.kind === 'date') return 'С даты контрольного замера (КЗ)';
+  if (kz.kind === 'pending') return 'Ожидается КЗ — срок ещё не начат';
+  if (contractDate.trim()) return 'С даты договора (КЗ не требуется)';
+  return 'Укажите дату договора или дату КЗ';
+}
+
 /** Подтягивает поля проекта из пакета/договора CRM и formData. */
 export function fieldsFromPackage(
   pkg: ContractDocumentPackage
@@ -141,13 +219,18 @@ export function fieldsFromPackage(
   const prepayment =
     moneyToInputValue(contract?.advanceAmount) || moneyToInputValue(formContract.prepaymentAmount);
 
-  const workStartActDate =
-    isoDateInput(form.repairWorkStartActSignedAt) || isoDateInput(contract?.actWorkStartDate);
   const workCloseActDate = isoDateInput(form.repairContractCloseActSignedAt);
   const workPeriodDays =
     typeof formContract.workPeriod === 'string' || typeof formContract.workPeriod === 'number'
       ? String(formContract.workPeriod).trim()
       : '';
+  const contractDate =
+    isoDateInput(contract?.contractDate) || isoDateInput(formContract.date) || '';
+  const workStartActDate = resolveFurnitureTermStartDate(
+    contractDate,
+    '',
+    isoDateInput(form.repairWorkStartActSignedAt) || isoDateInput(contract?.actWorkStartDate)
+  );
 
   return {
     packageId: pkg.id,
@@ -174,10 +257,11 @@ export function fieldsFromPackage(
     ),
     contractSum,
     payoutSum: prepayment,
+    contractDate,
     workPeriodDays,
     workStartActDate,
     workCloseActDate,
-    plannedStartDate: workStartActDate || isoDateInput(contract?.actWorkStartDate),
+    plannedStartDate: workStartActDate,
   };
 }
 
@@ -295,7 +379,7 @@ export function formValuesFromProject(project: {
     contractSum: moneyToInputValue(project.contractSum),
     payoutSum: moneyToInputValue(project.payoutSum),
     contractDate: isoDateInput(project.contractDate),
-    kzInfo: project.kzInfo || '',
+    kzInfo: normalizeFurnitureKzInfo(project.kzInfo),
     pauseStartDate: isoDateInput(project.pauseStartDate),
     pauseResumeDate: isoDateInput(project.pauseResumeDate),
     workPeriodDays: project.workPeriodDays != null ? String(project.workPeriodDays) : '',
@@ -361,21 +445,9 @@ export function findRepairPackageConflicts(
     normDays
   );
   pushIfConflict(
-    'Акт начала работ',
-    values.workStartActDate,
-    fromPkg.workStartActDate,
-    (v) => isoDateInput(v) || normText(v)
-  );
-  pushIfConflict(
     'Акт сдачи-приёмки',
     values.workCloseActDate,
     fromPkg.workCloseActDate,
-    (v) => isoDateInput(v) || normText(v)
-  );
-  pushIfConflict(
-    'Планируемое начало',
-    values.plannedStartDate,
-    fromPkg.plannedStartDate,
     (v) => isoDateInput(v) || normText(v)
   );
 

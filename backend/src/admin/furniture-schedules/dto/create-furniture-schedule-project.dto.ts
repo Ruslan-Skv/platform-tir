@@ -111,7 +111,7 @@ export class CreateFurnitureScheduleProjectDto {
   @IsDateString()
   contractDate?: string | null;
 
-  @ApiPropertyOptional({ description: 'Дата КЗ или флаг «кз»' })
+  @ApiPropertyOptional({ description: 'Дата КЗ (дд.мм.гггг) или флаг «кз»' })
   @IsOptional()
   @IsString()
   @MaxLength(100)

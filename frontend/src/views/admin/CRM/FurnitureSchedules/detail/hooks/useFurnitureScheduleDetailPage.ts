@@ -20,6 +20,8 @@ import {
   type FurnitureProjectFormValues,
   findRepairPackageConflicts,
   formValuesFromProject,
+  normalizeFurnitureKzInfo,
+  resolveFurnitureTermStartDate,
   todayIsoDate,
 } from '../../shared/furniture-schedules';
 
@@ -105,13 +107,23 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
         contractSum: values.contractSum.trim() ? Number(values.contractSum) : null,
         payoutSum: values.payoutSum.trim() ? Number(values.payoutSum) : null,
         contractDate: values.contractDate.trim() || null,
-        kzInfo: values.kzInfo.trim() || null,
+        kzInfo: normalizeFurnitureKzInfo(values.kzInfo) || null,
         pauseStartDate: values.pauseStartDate.trim() || null,
         pauseResumeDate: values.pauseResumeDate.trim() || null,
         workPeriodDays: values.workPeriodDays.trim() ? Number(values.workPeriodDays) : null,
-        workStartActDate: values.workStartActDate.trim() || null,
+        workStartActDate:
+          resolveFurnitureTermStartDate(
+            values.contractDate,
+            values.kzInfo,
+            values.workStartActDate
+          ) || null,
         workCloseActDate: values.workCloseActDate.trim() || null,
-        plannedStartDate: values.plannedStartDate.trim() || null,
+        plannedStartDate:
+          resolveFurnitureTermStartDate(
+            values.contractDate,
+            values.kzInfo,
+            values.workStartActDate
+          ) || null,
         note: values.note.trim() || null,
       });
       setProject(updated);

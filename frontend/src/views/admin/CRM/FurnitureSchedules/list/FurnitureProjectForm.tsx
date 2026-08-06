@@ -18,6 +18,9 @@ import {
   FURNITURE_STATUS_LABELS,
   type FurnitureProjectFormValues,
   fieldsFromPackage,
+  furnitureTermStartHint,
+  normalizeFurnitureKzInfo,
+  resolveFurnitureTermStartDate,
 } from '../shared/furniture-schedules';
 
 type Props = {
@@ -331,7 +334,17 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
           id="rs-contract-date"
           type="date"
           value={values.contractDate}
-          onChange={(e) => update({ contractDate: e.target.value })}
+          onChange={(e) => {
+            const contractDate = e.target.value;
+            update({
+              contractDate,
+              workStartActDate: resolveFurnitureTermStartDate(
+                contractDate,
+                values.kzInfo,
+                values.workStartActDate
+              ),
+            });
+          }}
         />
       </div>
 
@@ -340,8 +353,30 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
         <input
           id="rs-kz"
           value={values.kzInfo}
-          onChange={(e) => update({ kzInfo: e.target.value })}
-          placeholder="кз или дата"
+          onChange={(e) => {
+            const kzInfo = e.target.value;
+            update({
+              kzInfo,
+              workStartActDate: resolveFurnitureTermStartDate(
+                values.contractDate,
+                kzInfo,
+                values.workStartActDate
+              ),
+            });
+          }}
+          onBlur={() => {
+            const kzInfo = normalizeFurnitureKzInfo(values.kzInfo);
+            if (kzInfo === values.kzInfo) return;
+            update({
+              kzInfo,
+              workStartActDate: resolveFurnitureTermStartDate(
+                values.contractDate,
+                kzInfo,
+                values.workStartActDate
+              ),
+            });
+          }}
+          placeholder="кз или дд.мм.гггг"
         />
       </div>
 
@@ -380,17 +415,42 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
       </div>
 
       <div data-modal-form-group>
-        <label htmlFor="rs-start-act">Начало срока (с учётом КЗ)</label>
+        <label htmlFor="rs-start-act">Начало срока</label>
         <input
           id="rs-start-act"
           type="date"
-          value={values.workStartActDate}
-          onChange={(e) =>
-            update({
-              workStartActDate: e.target.value,
-              plannedStartDate: e.target.value || values.plannedStartDate,
-            })
+          value={
+            resolveFurnitureTermStartDate(
+              values.contractDate,
+              values.kzInfo,
+              values.workStartActDate
+            ) || values.workStartActDate
           }
+          readOnly
+          title={furnitureTermStartHint(values.contractDate, values.kzInfo)}
+        />
+        <span className={styles.createFormInlineHint}>
+          {furnitureTermStartHint(values.contractDate, values.kzInfo)}
+        </span>
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="rs-pause-start">Дата временной остановки</label>
+        <input
+          id="rs-pause-start"
+          type="date"
+          value={values.pauseStartDate}
+          onChange={(e) => update({ pauseStartDate: e.target.value })}
+        />
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="rs-pause-resume">Дата возобновления срока</label>
+        <input
+          id="rs-pause-resume"
+          type="date"
+          value={values.pauseResumeDate}
+          onChange={(e) => update({ pauseResumeDate: e.target.value })}
         />
       </div>
 
@@ -401,16 +461,6 @@ export function FurnitureProjectForm({ values, onChange, installers, error }: Pr
           type="date"
           value={values.workCloseActDate}
           onChange={(e) => update({ workCloseActDate: e.target.value })}
-        />
-      </div>
-
-      <div data-modal-form-group>
-        <label htmlFor="rs-start">Планируемое начало работ</label>
-        <input
-          id="rs-start"
-          type="date"
-          value={values.plannedStartDate}
-          onChange={(e) => update({ plannedStartDate: e.target.value })}
         />
       </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 
 import type { FurnitureScheduleProject } from '@/shared/api/crm/admin-furniture-schedules';
 
@@ -21,6 +21,13 @@ type AxisTick = {
   leftPct: number;
 };
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+/** Ширина трека на календарный день — длинные периоды уходят в горизонтальный скролл. */
+const PX_PER_DAY = 12;
+const MIN_TRACK_PX = 720;
+const MIN_TICK_GAP_PX = 72;
+const LABEL_WIDTH_PX = 240;
+
 function parseDayMs(value: string | null | undefined): number | null {
   if (!value) return null;
   const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(value.trim());
@@ -34,12 +41,17 @@ function todayUtcMs(): number {
 }
 
 function addUtcDays(ms: number, days: number): number {
-  return ms + days * 24 * 60 * 60 * 1000;
+  return ms + days * DAY_MS;
 }
 
 function formatAxisLabel(ms: number): string {
   const d = new Date(ms);
   return d.toLocaleDateString('ru-RU', { day: '2-digit', month: 'short' });
+}
+
+function formatMonthLabel(ms: number): string {
+  const d = new Date(ms);
+  return d.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' });
 }
 
 function clampPct(n: number): number {
@@ -54,17 +66,31 @@ function barToneClass(warning: FurnitureScheduleProject['deadlineWarning']): str
   return styles.barOk;
 }
 
+function termStartMs(item: FurnitureScheduleProject): number | null {
+  return parseDayMs(item.workStartActDate);
+}
+
+function termEndMs(item: FurnitureScheduleProject): number | null {
+  return parseDayMs(item.calculatedEndDate) ?? parseDayMs(item.workCloseActDate);
+}
+
 export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject }: Props) {
-  const inProgress = useMemo(() => items.filter((item) => item.status === 'IN_PROGRESS'), [items]);
+  const timelineItems = useMemo(
+    () =>
+      items.filter(
+        (item) => item.status === 'IN_PROGRESS' || item.status === 'NEW' || item.status === 'CLAIMS'
+      ),
+    [items]
+  );
 
   const chart = useMemo(() => {
     const today = todayUtcMs();
     const starts: number[] = [];
     const ends: number[] = [];
 
-    for (const item of inProgress) {
-      const start = parseDayMs(item.workStartActDate) ?? parseDayMs(item.plannedStartDate);
-      const end = parseDayMs(item.calculatedEndDate) ?? parseDayMs(item.workCloseActDate);
+    for (const item of timelineItems) {
+      const start = termStartMs(item);
+      const end = termEndMs(item);
       if (start != null) starts.push(start);
       if (end != null) ends.push(end);
     }
@@ -73,41 +99,41 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
     let rangeEnd = ends.length ? Math.max(...ends) : addUtcDays(today, 60);
     rangeStart = Math.min(rangeStart, today);
     rangeEnd = Math.max(rangeEnd, today);
-    // запас по краям
     rangeStart = addUtcDays(rangeStart, -7);
     rangeEnd = addUtcDays(rangeEnd, 14);
     if (rangeEnd <= rangeStart) {
       rangeEnd = addUtcDays(rangeStart, 30);
     }
 
+    const daySpan = Math.max(1, Math.ceil((rangeEnd - rangeStart) / DAY_MS));
+    const trackWidthPx = Math.max(MIN_TRACK_PX, daySpan * PX_PER_DAY);
     const totalMs = rangeEnd - rangeStart;
     const toPct = (ms: number) => clampPct(((ms - rangeStart) / totalMs) * 100);
+    const minTickGapPct = (MIN_TICK_GAP_PX / trackWidthPx) * 100;
 
-    const ticks: AxisTick[] = [];
+    const rawTicks: AxisTick[] = [];
     const cursor = new Date(rangeStart);
     cursor.setUTCDate(1);
     if (cursor.getTime() < rangeStart) {
       cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
-    // месячные риски
-    for (let i = 0; i < 24; i++) {
+    for (let i = 0; i < 48; i++) {
       const ms = Date.UTC(cursor.getUTCFullYear(), cursor.getUTCMonth(), 1);
       if (ms > rangeEnd) break;
       if (ms >= rangeStart) {
-        ticks.push({
+        rawTicks.push({
           key: `m-${ms}`,
-          label: cursor.toLocaleDateString('ru-RU', { month: 'short', year: '2-digit' }),
+          label: formatMonthLabel(ms),
           leftPct: toPct(ms),
         });
       }
       cursor.setUTCMonth(cursor.getUTCMonth() + 1);
     }
-    // если диапазон короткий — недельные риски
-    if (ticks.length < 2) {
-      ticks.length = 0;
+    if (rawTicks.length < 2) {
+      rawTicks.length = 0;
       let week = rangeStart;
       while (week <= rangeEnd) {
-        ticks.push({
+        rawTicks.push({
           key: `w-${week}`,
           label: formatAxisLabel(week),
           leftPct: toPct(week),
@@ -116,13 +142,17 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
       }
     }
 
-    const endMsOf = (item: FurnitureScheduleProject) =>
-      parseDayMs(item.calculatedEndDate) ??
-      parseDayMs(item.workCloseActDate) ??
-      Number.POSITIVE_INFINITY;
+    const ticks: AxisTick[] = [];
+    let lastLeft = -Infinity;
+    for (const tick of rawTicks) {
+      if (tick.leftPct - lastLeft < minTickGapPct) continue;
+      ticks.push(tick);
+      lastLeft = tick.leftPct;
+    }
 
-    // Договоры одного объекта рядом; группы — по ближайшему сроку окончания
-    const objectGroups = buildRepairObjectGroups(inProgress)
+    const endMsOf = (item: FurnitureScheduleProject) => termEndMs(item) ?? Number.POSITIVE_INFINITY;
+
+    const objectGroups = buildRepairObjectGroups(timelineItems)
       .map((group) => ({
         ...group,
         projects: [...group.projects].sort((a, b) => endMsOf(a) - endMsOf(b)),
@@ -136,8 +166,8 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
     const rows = objectGroups.flatMap((group, groupIndex) => {
       const objectTint = groupIndex % 2;
       return group.projects.map((item) => {
-        const startMs = parseDayMs(item.workStartActDate) ?? parseDayMs(item.plannedStartDate);
-        const endMs = parseDayMs(item.calculatedEndDate) ?? parseDayMs(item.workCloseActDate);
+        const startMs = termStartMs(item);
+        const endMs = termEndMs(item);
         if (startMs == null || endMs == null) {
           return {
             item,
@@ -180,22 +210,83 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
       rangeStart,
       rangeEnd,
       todayPct: toPct(today),
+      todayPx: (toPct(today) / 100) * trackWidthPx,
       ticks,
       rows,
+      trackWidthPx,
     };
-  }, [inProgress]);
+  }, [timelineItems]);
 
-  if (loading && inProgress.length === 0) {
+  const scrollRef = useRef<HTMLDivElement>(null);
+  const topScrollRef = useRef<HTMLDivElement>(null);
+  const syncingScroll = useRef(false);
+
+  useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || timelineItems.length === 0) return;
+
+    const centerToday = () => {
+      const grid = el.querySelector(`.${styles.grid}`) as HTMLElement | null;
+      const labelHead = el.querySelector(`.${styles.labelColHead}`) as HTMLElement | null;
+      const labelWidth =
+        labelHead?.offsetWidth ||
+        (grid
+          ? parseFloat(getComputedStyle(grid).getPropertyValue('--gantt-label-width')) ||
+            LABEL_WIDTH_PX
+          : LABEL_WIDTH_PX);
+      const viewport = el.clientWidth;
+      const todayLeft = labelWidth + chart.todayPx;
+      const next = Math.max(0, todayLeft - viewport / 2);
+      el.scrollLeft = next;
+      const top = topScrollRef.current;
+      if (top) top.scrollLeft = next;
+    };
+
+    centerToday();
+    const raf = window.requestAnimationFrame(centerToday);
+    return () => window.cancelAnimationFrame(raf);
+  }, [chart.todayPx, chart.trackWidthPx, timelineItems.length]);
+
+  useEffect(() => {
+    const main = scrollRef.current;
+    const top = topScrollRef.current;
+    if (!main || !top || timelineItems.length === 0) return;
+
+    const onMainScroll = () => {
+      if (syncingScroll.current) return;
+      syncingScroll.current = true;
+      top.scrollLeft = main.scrollLeft;
+      syncingScroll.current = false;
+    };
+    const onTopScroll = () => {
+      if (syncingScroll.current) return;
+      syncingScroll.current = true;
+      main.scrollLeft = top.scrollLeft;
+      syncingScroll.current = false;
+    };
+
+    main.addEventListener('scroll', onMainScroll, { passive: true });
+    top.addEventListener('scroll', onTopScroll, { passive: true });
+    return () => {
+      main.removeEventListener('scroll', onMainScroll);
+      top.removeEventListener('scroll', onTopScroll);
+    };
+  }, [timelineItems.length, chart.trackWidthPx]);
+
+  if (loading && timelineItems.length === 0) {
     return <p className={styles.empty}>Загрузка…</p>;
   }
 
-  if (inProgress.length === 0) {
+  if (timelineItems.length === 0) {
     return (
       <p className={styles.empty}>
-        Нет договоров «В работе» для таймлайна. Выберите статус «В работе» или снимите фильтры.
+        Нет договоров «На очереди» / «В работе» / «Рекламации» для таймлайна. Выберите статус «Все»,
+        «На очереди», «В работе» или «Рекламации».
       </p>
     );
   }
+
+  const scrollContentWidth = LABEL_WIDTH_PX + chart.trackWidthPx;
 
   return (
     <div className={styles.root}>
@@ -206,9 +297,24 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
         <span className={`${styles.legendSwatch} ${styles.barUrgent}`} /> ≤3 дн. / просрочен
         <span className={styles.legendToday}>| сегодня</span>
       </div>
+      <p className={styles.scrollHint}>
+        Горизонтальная прокрутка — полосы сверху и снизу панели; список договоров прокручивается
+        внутри панели.
+      </p>
 
-      <div className={styles.scroll}>
-        <div className={styles.grid}>
+      <div
+        className={styles.scrollTop}
+        ref={topScrollRef}
+        aria-label="Горизонтальная прокрутка таймлайна"
+      >
+        <div className={styles.scrollTopInner} style={{ width: scrollContentWidth }} />
+      </div>
+
+      <div className={styles.scroll} ref={scrollRef}>
+        <div
+          className={styles.grid}
+          style={{ ['--gantt-min-track' as string]: `${chart.trackWidthPx}px` }}
+        >
           <div className={styles.labelColHead}>Договор</div>
           <div className={styles.axis}>
             {chart.ticks.map((tick) => (
@@ -239,6 +345,11 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
               >
                 <strong className={styles.labelContract}>
                   {row.item.contractNumber || 'Без номера'}
+                  {row.item.status === 'NEW' ? (
+                    <span className={styles.labelStatus}> · очередь</span>
+                  ) : row.item.status === 'CLAIMS' ? (
+                    <span className={styles.labelStatus}> · рекламация</span>
+                  ) : null}
                 </strong>
                 <span className={styles.labelMaster}>{row.item.installerName?.trim() || '—'}</span>
                 <span className={styles.labelAddress}>
@@ -262,7 +373,7 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
                     className={`${styles.bar} ${barToneClass(row.item.deadlineWarning)}`}
                     style={{ left: `${row.leftPct}%`, width: `${row.widthPct}%` }}
                     title={`${row.item.contractNumber || 'Договор'}: ${formatDate(
-                      row.item.workStartActDate || row.item.plannedStartDate
+                      row.item.workStartActDate
                     )} → ${formatDate(row.item.calculatedEndDate)}`}
                     onClick={() => onOpenProject(row.item.id)}
                   >
@@ -273,7 +384,7 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
                     />
                     <span className={styles.barLabel}>
                       <span className={styles.barDates}>
-                        {formatDate(row.item.workStartActDate || row.item.plannedStartDate)}
+                        {formatDate(row.item.workStartActDate)}
                         {' → '}
                         {formatDate(row.item.calculatedEndDate)}
                       </span>
@@ -288,7 +399,8 @@ export function FurnitureSchedulesGanttTimeline({ items, loading, onOpenProject 
                   </button>
                 ) : (
                   <div className={styles.barMissing}>
-                    Нет дат начала/окончания — заполните акт начала и срок
+                    Нет начала/окончания срока — укажите дату договора (или дату КЗ) и срок в раб.
+                    днях
                   </div>
                 )}
               </div>

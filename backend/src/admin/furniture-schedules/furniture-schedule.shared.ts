@@ -28,6 +28,7 @@ export const PROJECT_INCLUDE: Prisma.FurnitureScheduleProjectInclude = {
         select: {
           id: true,
           contractNumber: true,
+          contractDate: true,
           customerName: true,
           customerAddress: true,
           customerPhone: true,
@@ -44,6 +45,7 @@ export const PROJECT_INCLUDE: Prisma.FurnitureScheduleProjectInclude = {
     select: {
       id: true,
       contractNumber: true,
+      contractDate: true,
       customerName: true,
       customerAddress: true,
       customerPhone: true,
@@ -191,7 +193,9 @@ export type RepairContractTimelineEventType =
   | 'ADDENDUM'
   | 'CALCULATED_END_BASE'
   | 'CALCULATED_END'
-  | 'WORK_CLOSE_ACT';
+  | 'WORK_CLOSE_ACT'
+  | 'PAUSE_START'
+  | 'PAUSE_RESUME';
 
 export type RepairContractTimelineEvent = {
   id: string;
@@ -208,6 +212,8 @@ export type RepairContractMeta = {
   calculatedEndDateBase: string | null;
   calculatedEndDate: string | null;
   effectiveWorkPeriodDays: number | null;
+  /** Календарных дней паузы (остановка → возобновление), учтены в расчётном окончании. */
+  pauseCalendarDays: number | null;
   syncedFromPackage: boolean;
   addendums: RepairContractAddendumMeta[];
   contractTimelineEvents: RepairContractTimelineEvent[];
@@ -276,6 +282,32 @@ export function addWorkingDaysExcludingWeekends(
   return null;
 }
 
+/** Сдвиг даты на N календарных дней (может быть 0). */
+export function addCalendarDays(startIso: string, days: number): string | null {
+  const n = Math.trunc(days);
+  const base = parseIsoDateOnly(startIso);
+  if (!base) return null;
+  if (n === 0) return base;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(base);
+  if (!m) return null;
+  const cursor = new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
+  cursor.setUTCDate(cursor.getUTCDate() + n);
+  return dateToIso(cursor);
+}
+
+/** Календарных дней между датами (resume − start); 0 если некорректно. */
+export function calendarDaysBetween(startIso: string, endIso: string): number {
+  const a = parseIsoDateOnly(startIso);
+  const b = parseIsoDateOnly(endIso);
+  if (!a || !b) return 0;
+  const am = /^(\d{4})-(\d{2})-(\d{2})$/.exec(a)!;
+  const bm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(b)!;
+  const start = Date.UTC(Number(am[1]), Number(am[2]) - 1, Number(am[3]));
+  const end = Date.UTC(Number(bm[1]), Number(bm[2]) - 1, Number(bm[3]));
+  const days = Math.round((end - start) / (24 * 60 * 60 * 1000));
+  return days > 0 ? days : 0;
+}
+
 function formatRuDate(iso: string): string {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
   return m ? `${m[3]}.${m[2]}.${m[1]}` : iso;
@@ -302,6 +334,92 @@ function workPeriodUnit(days: number): string {
   if (n1 === 1) return 'день';
   if (n1 >= 2 && n1 <= 4) return 'дня';
   return 'дней';
+}
+
+function parseFlexibleDateOnly(value: unknown): string | null {
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    return dateToIso(value);
+  }
+  if (typeof value !== 'string') return null;
+  const t = value.trim();
+  if (!t) return null;
+  const iso = parseIsoDateOnly(t);
+  if (iso) return iso;
+  const dmy = /^(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})$/.exec(t);
+  if (!dmy) return null;
+  const day = Number(dmy[1]);
+  const month = Number(dmy[2]);
+  let year = Number(dmy[3]);
+  if (year < 100) year += 2000;
+  if (month < 1 || month > 12 || day < 1 || day > 31) return null;
+  return dateToIso(new Date(Date.UTC(year, month - 1, day)));
+}
+
+export type FurnitureKzKind = 'none' | 'pending' | 'date';
+
+/** Разбор поля КЗ: дата проведения, ожидание КЗ или КЗ не требуется. */
+export function parseFurnitureKzInfo(kzInfo: string | null | undefined): {
+  kind: FurnitureKzKind;
+  date: string | null;
+} {
+  const raw = (kzInfo ?? '').trim();
+  if (!raw) return { kind: 'none', date: null };
+  const asDate = parseFlexibleDateOnly(raw);
+  if (asDate) return { kind: 'date', date: asDate };
+  const lower = raw.toLowerCase();
+  if (
+    lower === 'кз' ||
+    lower === 'kz' ||
+    lower.includes('контрол') ||
+    lower.includes('к.з') ||
+    lower.includes('к/з')
+  ) {
+    return { kind: 'pending', date: null };
+  }
+  // Любой нераспознанный текст считаем «КЗ ещё не проведён».
+  return { kind: 'pending', date: null };
+}
+
+/** Нормализация КЗ для хранения: дата как дд.мм.гггг. */
+export function normalizeFurnitureKzInfo(kzInfo: string | null | undefined): string | null {
+  const raw = (kzInfo ?? '').trim();
+  if (!raw) return null;
+  const parsed = parseFurnitureKzInfo(raw);
+  if (parsed.kind === 'date' && parsed.date) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})/.exec(parsed.date);
+    return m ? `${m[3]}.${m[2]}.${m[1]}` : parsed.date;
+  }
+  return raw;
+}
+
+/**
+ * Начало срока мебели: дата КЗ, иначе дата договора (если КЗ не требуется).
+ * Пока КЗ ожидается — срока ещё нет. Legacy workStartActDate — запасной вариант.
+ */
+export function resolveFurnitureTermStartDate(input: {
+  contractDate?: Date | string | null;
+  kzInfo?: string | null;
+  workStartActDate?: Date | string | null;
+}): string | null {
+  const kz = parseFurnitureKzInfo(
+    typeof input.kzInfo === 'string'
+      ? input.kzInfo
+      : input.kzInfo == null
+        ? null
+        : String(input.kzInfo),
+  );
+  if (kz.kind === 'date') return kz.date;
+  if (kz.kind === 'pending') return null;
+
+  const contractDate =
+    typeof input.contractDate === 'string'
+      ? parseFlexibleDateOnly(input.contractDate)
+      : dateToIso(input.contractDate ?? null);
+  if (contractDate) return contractDate;
+
+  return typeof input.workStartActDate === 'string'
+    ? parseFlexibleDateOnly(input.workStartActDate)
+    : dateToIso(input.workStartActDate ?? null);
 }
 
 export function extractPackageContractTerms(formData: unknown): {
@@ -342,43 +460,64 @@ export function extractPackageContractTerms(formData: unknown): {
   return { workPeriodDays, workStartActDate, workCloseActDate, addendums };
 }
 
-export function buildRepairContractMeta(input: {
+export function buildFurnitureContractMeta(input: {
   workPeriodDays: number | null | undefined;
+  contractDate?: Date | string | null;
+  kzInfo?: string | null;
+  pauseStartDate?: Date | string | null;
+  pauseResumeDate?: Date | string | null;
   workStartActDate: Date | string | null | undefined;
   workCloseActDate: Date | string | null | undefined;
   packageFormData?: unknown;
   crmActWorkStartDate?: Date | null;
   crmActWorkEndDate?: Date | null;
   crmContractDurationDays?: number | null;
+  crmContractDate?: Date | null;
 }): RepairContractMeta {
   const fromPkg = input.packageFormData ? extractPackageContractTerms(input.packageFormData) : null;
 
   const storedWorkPeriodDays =
     typeof input.workPeriodDays === 'number' ? input.workPeriodDays : null;
-  const storedWorkStartActDate =
-    typeof input.workStartActDate === 'string'
-      ? parseIsoDateOnly(input.workStartActDate)
-      : dateToIso(input.workStartActDate);
   const storedWorkCloseActDate =
     typeof input.workCloseActDate === 'string'
       ? parseIsoDateOnly(input.workCloseActDate)
       : dateToIso(input.workCloseActDate);
 
-  /** Сохранённые на проекте поля имеют приоритет — правки в план-графике не затираются пакетом. */
   const workPeriodDays =
     storedWorkPeriodDays ??
     fromPkg?.workPeriodDays ??
     (typeof input.crmContractDurationDays === 'number' ? input.crmContractDurationDays : null);
 
-  const workStartActDate =
-    storedWorkStartActDate ??
-    fromPkg?.workStartActDate ??
-    dateToIso(input.crmActWorkStartDate ?? null);
+  const contractDate =
+    (typeof input.contractDate === 'string'
+      ? parseFlexibleDateOnly(input.contractDate)
+      : dateToIso(input.contractDate ?? null)) ?? dateToIso(input.crmContractDate ?? null);
+
+  /** Начало срока: КЗ / дата договора; не акт начала работ (его у мебели нет). */
+  const termStartDate = resolveFurnitureTermStartDate({
+    contractDate,
+    kzInfo: input.kzInfo,
+    workStartActDate:
+      input.workStartActDate ??
+      fromPkg?.workStartActDate ??
+      dateToIso(input.crmActWorkStartDate ?? null),
+  });
 
   const workCloseActDate =
     storedWorkCloseActDate ??
     fromPkg?.workCloseActDate ??
     dateToIso(input.crmActWorkEndDate ?? null);
+
+  const pauseStartDate =
+    typeof input.pauseStartDate === 'string'
+      ? parseFlexibleDateOnly(input.pauseStartDate)
+      : dateToIso(input.pauseStartDate ?? null);
+  const pauseResumeDate =
+    typeof input.pauseResumeDate === 'string'
+      ? parseFlexibleDateOnly(input.pauseResumeDate)
+      : dateToIso(input.pauseResumeDate ?? null);
+  const pauseCalendarDays =
+    pauseStartDate && pauseResumeDate ? calendarDaysBetween(pauseStartDate, pauseResumeDate) : null;
 
   const addendums = fromPkg?.addendums ?? [];
   const signedChangeDays = addendums
@@ -388,28 +527,47 @@ export function buildRepairContractMeta(input: {
   const effectiveWorkPeriodDays =
     workPeriodDays != null ? Math.max(1, workPeriodDays + signedChangeDays) : null;
 
+  const endWithoutPauseBase =
+    termStartDate && workPeriodDays != null
+      ? addWorkingDaysExcludingWeekends(termStartDate, workPeriodDays)
+      : null;
+  const endWithoutPause =
+    termStartDate && effectiveWorkPeriodDays != null
+      ? addWorkingDaysExcludingWeekends(termStartDate, effectiveWorkPeriodDays)
+      : null;
+
+  const pauseShift = pauseCalendarDays && pauseCalendarDays > 0 ? pauseCalendarDays : 0;
   const calculatedEndDateBase =
-    workStartActDate && workPeriodDays != null
-      ? addWorkingDaysExcludingWeekends(workStartActDate, workPeriodDays)
-      : null;
+    endWithoutPauseBase && pauseShift > 0
+      ? addCalendarDays(endWithoutPauseBase, pauseShift)
+      : endWithoutPauseBase;
   const calculatedEndDate =
-    workStartActDate && effectiveWorkPeriodDays != null
-      ? addWorkingDaysExcludingWeekends(workStartActDate, effectiveWorkPeriodDays)
-      : null;
+    endWithoutPause && pauseShift > 0
+      ? addCalendarDays(endWithoutPause, pauseShift)
+      : endWithoutPause;
 
   const events: RepairContractTimelineEvent[] = [];
+  const kz = parseFurnitureKzInfo(
+    typeof input.kzInfo === 'string'
+      ? input.kzInfo
+      : input.kzInfo == null
+        ? null
+        : String(input.kzInfo),
+  );
 
-  if (workStartActDate) {
+  if (termStartDate) {
+    const sourceHint =
+      kz.kind === 'date' ? 'с даты контрольного замера (КЗ)' : 'с даты договора (КЗ не требуется)';
     const termHint =
       workPeriodDays != null
-        ? ` — от этой даты считается срок договора (${workPeriodDays} раб. ${workPeriodUnit(workPeriodDays)})`
+        ? ` — от этой даты считается срок (${workPeriodDays} раб. ${workPeriodUnit(workPeriodDays)})`
         : '';
     events.push({
       id: 'contract:work-start-act',
-      date: workStartActDate,
+      date: termStartDate,
       kind: 'CONTRACT',
       eventType: 'WORK_START_ACT',
-      text: `Акт начала работ подписан${termHint}`,
+      text: `Начало срока (${sourceHint})${termHint}`,
     });
   }
 
@@ -437,6 +595,29 @@ export function buildRepairContractMeta(input: {
     });
   }
 
+  if (pauseStartDate) {
+    events.push({
+      id: 'contract:pause-start',
+      date: pauseStartDate,
+      kind: 'CONTRACT',
+      eventType: 'PAUSE_START',
+      text: `Временная остановка срока по заявлению заказчика (${formatRuDate(pauseStartDate)})`,
+    });
+  }
+  if (pauseResumeDate) {
+    const pauseHint =
+      pauseCalendarDays && pauseCalendarDays > 0
+        ? ` — пауза ${pauseCalendarDays} календ. ${workPeriodUnit(pauseCalendarDays)}`
+        : '';
+    events.push({
+      id: 'contract:pause-resume',
+      date: pauseResumeDate,
+      kind: 'CONTRACT',
+      eventType: 'PAUSE_RESUME',
+      text: `Возобновление срока по заявлению заказчика (${formatRuDate(pauseResumeDate)})${pauseHint}`,
+    });
+  }
+
   if (calculatedEndDateBase && calculatedEndDateBase !== calculatedEndDate) {
     events.push({
       id: 'contract:calculated-end-base',
@@ -448,15 +629,20 @@ export function buildRepairContractMeta(input: {
   }
 
   if (calculatedEndDate) {
-    const withDs = signedChangeDays !== 0 ? ' с учётом Д/с' : workPeriodDays != null ? '' : '';
+    const parts: string[] = [];
+    if (signedChangeDays !== 0) parts.push('с учётом Д/с');
+    if (pauseShift > 0) parts.push('с учётом паузы');
+    const withExtras = parts.length ? ` ${parts.join(' и ')}` : '';
     events.push({
       id: 'contract:calculated-end',
       date: calculatedEndDate,
       kind: 'CONTRACT',
       eventType: 'CALCULATED_END',
-      text: `Расчётный срок окончания договора${withDs}: ${formatRuDate(calculatedEndDate)}${
+      text: `Расчётный срок окончания договора${withExtras}: ${formatRuDate(calculatedEndDate)}${
         effectiveWorkPeriodDays != null
-          ? ` (${effectiveWorkPeriodDays} раб. ${workPeriodUnit(effectiveWorkPeriodDays)})`
+          ? ` (${effectiveWorkPeriodDays} раб. ${workPeriodUnit(effectiveWorkPeriodDays)}${
+              pauseShift > 0 ? ` + ${pauseShift} календ. паузы` : ''
+            })`
           : ''
       }`,
     });
@@ -479,15 +665,23 @@ export function buildRepairContractMeta(input: {
 
   return {
     workPeriodDays: workPeriodDays ?? null,
-    workStartActDate,
+    workStartActDate: termStartDate,
     workCloseActDate,
     calculatedEndDateBase,
     calculatedEndDate,
     effectiveWorkPeriodDays,
+    pauseCalendarDays: pauseCalendarDays && pauseCalendarDays > 0 ? pauseCalendarDays : null,
     syncedFromPackage: Boolean(fromPkg),
     addendums,
     contractTimelineEvents: events,
   };
+}
+
+/** @deprecated use buildFurnitureContractMeta */
+export function buildRepairContractMeta(
+  input: Parameters<typeof buildFurnitureContractMeta>[0],
+): RepairContractMeta {
+  return buildFurnitureContractMeta(input);
 }
 
 /** Пороги предупреждения о скором окончании срока договора (календарные дни). */
@@ -546,17 +740,23 @@ export function withDerived<
   T extends {
     status: FurnitureScheduleProjectStatus;
     workPeriodDays?: number | null;
+    contractDate?: Date | null;
+    kzInfo?: string | null;
+    pauseStartDate?: Date | null;
+    pauseResumeDate?: Date | null;
     workStartActDate?: Date | null;
     workCloseActDate?: Date | null;
     package?: {
       formData?: unknown;
       crmContract?: {
+        contractDate?: Date | null;
         actWorkStartDate?: Date | null;
         actWorkEndDate?: Date | null;
         contractDurationDays?: number | null;
       } | null;
     } | null;
     contract?: {
+      contractDate?: Date | null;
       actWorkStartDate?: Date | null;
       actWorkEndDate?: Date | null;
       contractDurationDays?: number | null;
@@ -571,11 +771,17 @@ export function withDerived<
       Date.now() - latestEntry.date.getTime() >
         FURNITURE_SCHEDULE_STALE_DAYS * 24 * 60 * 60 * 1000);
 
-  const contractMeta = buildRepairContractMeta({
+  const contractMeta = buildFurnitureContractMeta({
     workPeriodDays: project.workPeriodDays,
+    contractDate: project.contractDate,
+    kzInfo: project.kzInfo,
+    pauseStartDate: project.pauseStartDate,
+    pauseResumeDate: project.pauseResumeDate,
     workStartActDate: project.workStartActDate,
     workCloseActDate: project.workCloseActDate,
     packageFormData: project.package?.formData,
+    crmContractDate:
+      project.package?.crmContract?.contractDate ?? project.contract?.contractDate ?? null,
     crmActWorkStartDate:
       project.package?.crmContract?.actWorkStartDate ?? project.contract?.actWorkStartDate ?? null,
     crmActWorkEndDate:
