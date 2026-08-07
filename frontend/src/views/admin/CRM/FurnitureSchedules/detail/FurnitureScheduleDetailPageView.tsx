@@ -10,7 +10,7 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
-import { DeleteIcon } from '@/shared/ui/icons';
+import { DeleteIcon, EditIcon } from '@/shared/ui/icons';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -62,6 +62,9 @@ export function FurnitureScheduleDetailPageView({
     setEntryKind,
     entryText,
     setEntryText,
+    editingEntryId,
+    startEditEntry,
+    cancelEditEntry,
     editOpen,
     editValues,
     setEditValues,
@@ -74,7 +77,7 @@ export function FurnitureScheduleDetailPageView({
     requestSaveEdit,
     confirmConflictSave,
     refresh,
-    addEntry,
+    saveEntry,
     removeEntry,
     moveStatus,
     back,
@@ -392,7 +395,9 @@ export function FurnitureScheduleDetailPageView({
                 </select>
               </div>
               <div className={`${styles.pageFormGroup} ${styles.pageFormSpan}`}>
-                <label htmlFor="rs-entry-text">Запись динамики</label>
+                <label htmlFor="rs-entry-text">
+                  {editingEntryId ? 'Редактирование записи динамики' : 'Запись динамики'}
+                </label>
                 <textarea
                   id="rs-entry-text"
                   rows={3}
@@ -403,14 +408,28 @@ export function FurnitureScheduleDetailPageView({
               </div>
             </div>
             <div className={styles.pageFormActions}>
+              {editingEntryId ? (
+                <button
+                  type="button"
+                  className={styles.headerSecondaryBtn}
+                  disabled={submitting}
+                  onClick={cancelEditEntry}
+                >
+                  Отмена
+                </button>
+              ) : null}
               <button
                 data-admin-mutation
                 type="button"
                 className={styles.pagePrimaryBtn}
                 disabled={submitting}
-                onClick={() => void addEntry()}
+                onClick={() => void saveEntry()}
               >
-                {submitting ? 'Сохранение…' : 'Добавить запись'}
+                {submitting
+                  ? 'Сохранение…'
+                  : editingEntryId
+                    ? 'Сохранить изменения'
+                    : 'Добавить запись'}
               </button>
             </div>
           </div>
@@ -439,7 +458,12 @@ export function FurnitureScheduleDetailPageView({
                     </div>
                   </li>
                 ) : (
-                  <li key={row.key} className={styles.timelineItem}>
+                  <li
+                    key={row.key}
+                    className={`${styles.timelineItem}${
+                      editingEntryId === row.entry.id ? ` ${styles.timelineItemEditing}` : ''
+                    }`}
+                  >
                     <div className={styles.timelineDate}>{formatDate(row.date)}</div>
                     <div className={styles.timelineBody}>
                       <span className={styles.timelineKind}>
@@ -454,8 +478,23 @@ export function FurnitureScheduleDetailPageView({
                           : null}
                         <AdminTableIconButton
                           data-admin-mutation
+                          aria-label="Редактировать запись"
+                          title="Редактировать запись"
+                          disabled={submitting}
+                          onClick={() => {
+                            startEditEntry(row.entry);
+                            const field = document.getElementById('rs-entry-text');
+                            field?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                            field?.focus();
+                          }}
+                        >
+                          <EditIcon />
+                        </AdminTableIconButton>
+                        <AdminTableIconButton
+                          data-admin-mutation
                           aria-label="Удалить запись"
                           title="Удалить запись"
+                          disabled={submitting}
                           onClick={() => void removeEntry(row.entry.id)}
                         >
                           <DeleteIcon />

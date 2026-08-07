@@ -789,6 +789,15 @@ button.cellMain:focus-visible {
   position: relative;
 }
 
+.timelineItemEditing .timelineBody {
+  border-left-color: var(--admin-accent);
+  background: var(--admin-accent-soft, #eff6ff);
+  border-radius: 0 var(--admin-radius-sm, 6px) var(--admin-radius-sm, 6px) 0;
+  padding-top: var(--admin-space-sm);
+  padding-bottom: var(--admin-space-sm);
+  padding-right: var(--admin-space-sm);
+}
+
 .timelineDate {
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);

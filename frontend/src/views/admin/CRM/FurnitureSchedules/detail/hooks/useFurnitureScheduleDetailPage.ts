@@ -7,12 +7,14 @@ import { useRouter } from 'next/navigation';
 import { getContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import { type InstallerMaster, getInstallers } from '@/shared/api/admin-crm';
 import {
+  type FurnitureScheduleEntry,
   type FurnitureScheduleEntryKind,
   type FurnitureScheduleProject,
   addFurnitureScheduleEntry,
   deleteFurnitureScheduleEntry,
   getFurnitureScheduleProject,
   setFurnitureScheduleProjectStatus,
+  updateFurnitureScheduleEntry,
   updateFurnitureScheduleProject,
 } from '@/shared/api/crm/admin-furniture-schedules';
 
@@ -34,6 +36,7 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
   const [entryDate, setEntryDate] = useState(todayIsoDate);
   const [entryKind, setEntryKind] = useState<FurnitureScheduleEntryKind>('WEEKLY');
   const [entryText, setEntryText] = useState('');
+  const [editingEntryId, setEditingEntryId] = useState<string | null>(null);
 
   const [editOpen, setEditOpen] = useState(false);
   const [editValues, setEditValues] = useState<FurnitureProjectFormValues | null>(null);
@@ -169,24 +172,60 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
     return persistEdit(editValues);
   };
 
-  const addEntry = async () => {
+  const resetEntryForm = () => {
+    setEditingEntryId(null);
+    setEntryDate(todayIsoDate());
+    setEntryKind('WEEKLY');
+    setEntryText('');
+  };
+
+  const startEditEntry = (entry: FurnitureScheduleEntry) => {
+    setEditingEntryId(entry.id);
+    setEntryDate(entry.date.slice(0, 10));
+    setEntryKind(entry.kind);
+    setEntryText(entry.text);
+    setMessage(null);
+  };
+
+  const cancelEditEntry = () => {
+    if (submitting) return;
+    resetEntryForm();
+  };
+
+  const saveEntry = async () => {
     if (!entryText.trim()) {
       setMessage('Укажите текст записи');
       return false;
     }
     setSubmitting(true);
     try {
-      setProject(
-        await addFurnitureScheduleEntry(projectId, {
-          date: entryDate,
-          kind: entryKind,
-          text: entryText.trim(),
-        })
-      );
-      setEntryText('');
+      if (editingEntryId) {
+        setProject(
+          await updateFurnitureScheduleEntry(projectId, editingEntryId, {
+            date: entryDate,
+            kind: entryKind,
+            text: entryText.trim(),
+          })
+        );
+      } else {
+        setProject(
+          await addFurnitureScheduleEntry(projectId, {
+            date: entryDate,
+            kind: entryKind,
+            text: entryText.trim(),
+          })
+        );
+      }
+      resetEntryForm();
       return true;
     } catch (err) {
-      setMessage(err instanceof Error ? err.message : 'Не удалось добавить запись');
+      setMessage(
+        err instanceof Error
+          ? err.message
+          : editingEntryId
+            ? 'Не удалось обновить запись'
+            : 'Не удалось добавить запись'
+      );
       return false;
     } finally {
       setSubmitting(false);
@@ -197,6 +236,7 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
     setSubmitting(true);
     try {
       setProject(await deleteFurnitureScheduleEntry(projectId, entryId));
+      if (editingEntryId === entryId) resetEntryForm();
       return true;
     } catch (err) {
       setMessage(err instanceof Error ? err.message : 'Не удалось удалить запись');
@@ -231,6 +271,9 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
     setEntryKind,
     entryText,
     setEntryText,
+    editingEntryId,
+    startEditEntry,
+    cancelEditEntry,
     editOpen,
     editValues,
     setEditValues,
@@ -243,7 +286,7 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
     requestSaveEdit,
     confirmConflictSave,
     refresh,
-    addEntry,
+    saveEntry,
     removeEntry,
     moveStatus,
     back: () => router.push('/admin/crm/furniture-schedules'),

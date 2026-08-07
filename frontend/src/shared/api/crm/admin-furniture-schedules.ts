@@ -252,6 +252,23 @@ export async function addFurnitureScheduleEntry(
   return res.json();
 }
 
+export async function updateFurnitureScheduleEntry(
+  projectId: string,
+  entryId: string,
+  data: { date?: string; kind?: FurnitureScheduleEntryKind; text?: string }
+): Promise<FurnitureScheduleProject> {
+  const res = await apiFetch(
+    `${API_URL}/admin/furniture-schedules/${projectId}/entries/${entryId}`,
+    {
+      method: 'PATCH',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(data),
+    }
+  );
+  if (!res.ok) await throwApiError(res, 'Не удалось обновить запись');
+  return res.json();
+}
+
 export async function deleteFurnitureScheduleEntry(
   projectId: string,
   entryId: string
