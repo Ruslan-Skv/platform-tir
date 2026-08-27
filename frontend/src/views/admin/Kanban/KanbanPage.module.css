@@ -374,6 +374,29 @@
   gap: var(--admin-space-lg);
 }
 
+.cardModalTabs {
+  display: flex;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-lg);
+}
+
+.cardModalTab {
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cardModalTabActive {
+  border-color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-text-primary);
+}
+
 .cardModalSide {
   display: flex;
   flex-direction: column;

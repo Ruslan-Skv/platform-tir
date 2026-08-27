@@ -6,6 +6,7 @@ import type { KanbanCard, KanbanCardPriority } from '@/shared/api/kanban/admin-k
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
+import { MessengerThreadPanel } from '@/views/admin/Messenger/MessengerThreadPanel';
 
 import styles from '../KanbanPage.module.css';
 import { PRIORITY_LABELS, formatKanbanUser } from '../kanban.utils';
@@ -124,6 +125,7 @@ function KanbanCardModalBody({
   const [commentDraft, setCommentDraft] = useState('');
   const [checklistDraft, setChecklistDraft] = useState('');
   const [labelDraft, setLabelDraft] = useState('');
+  const [panelTab, setPanelTab] = useState<'card' | 'chat'>('card');
 
   return (
     <div
@@ -132,160 +134,190 @@ function KanbanCardModalBody({
       data-modal-density="compact"
     >
       <div>
-        <div data-modal-form-grid>
-          <div data-modal-form-group data-modal-span>
-            <label htmlFor="kanban-card-title">Заголовок</label>
-            <input
-              id="kanban-card-title"
-              type="text"
-              value={title}
-              disabled={!canEdit || busy}
-              onChange={(e) => setTitle(e.target.value)}
-              onBlur={() => {
-                if (canEdit && title.trim() && title.trim() !== card.title) {
-                  onSave({ title: title.trim() });
-                }
-              }}
-            />
-          </div>
+        <div className={styles.cardModalTabs} role="tablist" aria-label="Разделы карточки">
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panelTab === 'card'}
+            className={`${styles.cardModalTab} ${panelTab === 'card' ? styles.cardModalTabActive : ''}`}
+            onClick={() => setPanelTab('card')}
+          >
+            Карточка
+          </button>
+          <button
+            type="button"
+            role="tab"
+            aria-selected={panelTab === 'chat'}
+            className={`${styles.cardModalTab} ${panelTab === 'chat' ? styles.cardModalTabActive : ''}`}
+            onClick={() => setPanelTab('chat')}
+          >
+            Чат задачи
+          </button>
+        </div>
 
+        {panelTab === 'chat' ? (
           <div data-modal-form-group data-modal-span>
-            <label htmlFor="kanban-card-description">Описание</label>
-            <textarea
-              id="kanban-card-description"
-              value={description}
-              disabled={!canEdit || busy}
-              rows={4}
-              placeholder="Детали, бриф, ссылки..."
-              onChange={(e) => setDescription(e.target.value)}
-              onBlur={() => {
-                if (!canEdit) return;
-                const next = description.trim() || null;
-                if (next !== (card.description ?? null)) onSave({ description: next });
-              }}
-            />
+            <p data-modal-form-hint>
+              Отдельный тред по карточке. Комментарии карточки остаются на вкладке «Карточка».
+            </p>
+            <MessengerThreadPanel cardId={card.id} enabled />
           </div>
-
-          <div data-modal-form-group data-modal-span>
-            <label>Чек-лист</label>
-            <div className={styles.checklist}>
-              {(card.checklist ?? []).map((item) => (
-                <label
-                  key={item.id}
-                  className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`}
-                >
-                  <input
-                    type="checkbox"
-                    checked={item.done}
-                    disabled={!canEdit || busy}
-                    onChange={() => onToggleChecklist(item.id)}
-                  />
-                  <span>{item.text}</span>
-                </label>
-              ))}
+        ) : (
+          <div data-modal-form-grid>
+            <div data-modal-form-group data-modal-span>
+              <label htmlFor="kanban-card-title">Заголовок</label>
+              <input
+                id="kanban-card-title"
+                type="text"
+                value={title}
+                disabled={!canEdit || busy}
+                onChange={(e) => setTitle(e.target.value)}
+                onBlur={() => {
+                  if (canEdit && title.trim() && title.trim() !== card.title) {
+                    onSave({ title: title.trim() });
+                  }
+                }}
+              />
             </div>
-            {canEdit ? (
+
+            <div data-modal-form-group data-modal-span>
+              <label htmlFor="kanban-card-description">Описание</label>
+              <textarea
+                id="kanban-card-description"
+                value={description}
+                disabled={!canEdit || busy}
+                rows={4}
+                placeholder="Детали, бриф, ссылки..."
+                onChange={(e) => setDescription(e.target.value)}
+                onBlur={() => {
+                  if (!canEdit) return;
+                  const next = description.trim() || null;
+                  if (next !== (card.description ?? null)) onSave({ description: next });
+                }}
+              />
+            </div>
+
+            <div data-modal-form-group data-modal-span>
+              <label>Чек-лист</label>
+              <div className={styles.checklist}>
+                {(card.checklist ?? []).map((item) => (
+                  <label
+                    key={item.id}
+                    className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={item.done}
+                      disabled={!canEdit || busy}
+                      onChange={() => onToggleChecklist(item.id)}
+                    />
+                    <span>{item.text}</span>
+                  </label>
+                ))}
+              </div>
+              {canEdit ? (
+                <div className={styles.inlineRow}>
+                  <input
+                    type="text"
+                    value={checklistDraft}
+                    disabled={busy}
+                    placeholder="Новый пункт"
+                    onChange={(e) => setChecklistDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && checklistDraft.trim()) {
+                        e.preventDefault();
+                        void Promise.resolve(onAddChecklist(checklistDraft.trim())).then(() =>
+                          setChecklistDraft('')
+                        );
+                      }
+                    }}
+                  />
+                  <button
+                    type="button"
+                    data-modal-btn="secondary"
+                    disabled={busy || !checklistDraft.trim()}
+                    onClick={() => {
+                      if (!checklistDraft.trim()) return;
+                      void Promise.resolve(onAddChecklist(checklistDraft.trim())).then(() =>
+                        setChecklistDraft('')
+                      );
+                    }}
+                  >
+                    Добавить
+                  </button>
+                </div>
+              ) : null}
+            </div>
+
+            <div data-modal-form-group data-modal-span>
+              <label>Комментарии</label>
+              <div className={styles.comments}>
+                {card.comments.length === 0 ? (
+                  <p data-modal-form-hint>Пока нет обсуждения</p>
+                ) : (
+                  card.comments.map((comment) => (
+                    <div key={comment.id} className={styles.comment}>
+                      <div className={styles.commentMeta}>
+                        <span>{formatKanbanUser(comment.author)}</span>
+                        <span>
+                          {new Date(comment.createdAt).toLocaleString('ru-RU', {
+                            day: 'numeric',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                          {canEdit ? (
+                            <>
+                              {' · '}
+                              <button
+                                type="button"
+                                className={styles.labelRemove}
+                                onClick={() => onRemoveComment(comment.id)}
+                              >
+                                удалить
+                              </button>
+                            </>
+                          ) : null}
+                        </span>
+                      </div>
+                      <p className={styles.commentBody}>{comment.body}</p>
+                    </div>
+                  ))
+                )}
+              </div>
               <div className={styles.inlineRow}>
                 <input
                   type="text"
-                  value={checklistDraft}
+                  value={commentDraft}
                   disabled={busy}
-                  placeholder="Новый пункт"
-                  onChange={(e) => setChecklistDraft(e.target.value)}
+                  placeholder="Написать комментарий"
+                  onChange={(e) => setCommentDraft(e.target.value)}
                   onKeyDown={(e) => {
-                    if (e.key === 'Enter' && checklistDraft.trim()) {
+                    if (e.key === 'Enter' && commentDraft.trim()) {
                       e.preventDefault();
-                      void Promise.resolve(onAddChecklist(checklistDraft.trim())).then(() =>
-                        setChecklistDraft('')
+                      void Promise.resolve(onPostComment(commentDraft.trim())).then(() =>
+                        setCommentDraft('')
                       );
                     }
                   }}
                 />
                 <button
                   type="button"
-                  data-modal-btn="secondary"
-                  disabled={busy || !checklistDraft.trim()}
+                  data-modal-btn="primary"
+                  disabled={busy || !commentDraft.trim()}
                   onClick={() => {
-                    if (!checklistDraft.trim()) return;
-                    void Promise.resolve(onAddChecklist(checklistDraft.trim())).then(() =>
-                      setChecklistDraft('')
-                    );
-                  }}
-                >
-                  Добавить
-                </button>
-              </div>
-            ) : null}
-          </div>
-
-          <div data-modal-form-group data-modal-span>
-            <label>Комментарии</label>
-            <div className={styles.comments}>
-              {card.comments.length === 0 ? (
-                <p data-modal-form-hint>Пока нет обсуждения</p>
-              ) : (
-                card.comments.map((comment) => (
-                  <div key={comment.id} className={styles.comment}>
-                    <div className={styles.commentMeta}>
-                      <span>{formatKanbanUser(comment.author)}</span>
-                      <span>
-                        {new Date(comment.createdAt).toLocaleString('ru-RU', {
-                          day: 'numeric',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                        {canEdit ? (
-                          <>
-                            {' · '}
-                            <button
-                              type="button"
-                              className={styles.labelRemove}
-                              onClick={() => onRemoveComment(comment.id)}
-                            >
-                              удалить
-                            </button>
-                          </>
-                        ) : null}
-                      </span>
-                    </div>
-                    <p className={styles.commentBody}>{comment.body}</p>
-                  </div>
-                ))
-              )}
-            </div>
-            <div className={styles.inlineRow}>
-              <input
-                type="text"
-                value={commentDraft}
-                disabled={busy}
-                placeholder="Написать комментарий"
-                onChange={(e) => setCommentDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && commentDraft.trim()) {
-                    e.preventDefault();
+                    if (!commentDraft.trim()) return;
                     void Promise.resolve(onPostComment(commentDraft.trim())).then(() =>
                       setCommentDraft('')
                     );
-                  }
-                }}
-              />
-              <button
-                type="button"
-                data-modal-btn="primary"
-                disabled={busy || !commentDraft.trim()}
-                onClick={() => {
-                  if (!commentDraft.trim()) return;
-                  void Promise.resolve(onPostComment(commentDraft.trim())).then(() =>
-                    setCommentDraft('')
-                  );
-                }}
-              >
-                Отправить
-              </button>
+                  }}
+                >
+                  Отправить
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
 
       <aside className={styles.cardModalSide}>

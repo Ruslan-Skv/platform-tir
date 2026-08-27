@@ -82,6 +82,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
     'admin.kanban',
+    'admin.messenger',
     'admin.settings',
     'admin.settings.product-templates',
     'admin.settings.appearance',
@@ -153,6 +154,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
     'admin.kanban',
+    'admin.messenger',
   ],
   MODERATOR: [
     'admin',
@@ -170,6 +172,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
     'admin.kanban',
+    'admin.messenger',
   ],
   SUPPORT: [
     'admin',
@@ -184,6 +187,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.analytics',
     'admin.analytics.sales',
     'admin.kanban',
+    'admin.messenger',
   ],
   MANAGER: [
     'admin',
@@ -217,6 +221,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.accounting',
     'admin.accounting.invoices',
     'admin.kanban',
+    'admin.messenger',
   ],
   TECHNOLOGIST: [
     'admin',
@@ -244,6 +249,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.accounting',
     'admin.accounting.invoices',
     'admin.kanban',
+    'admin.messenger',
   ],
   PARTNER: [
     'admin',

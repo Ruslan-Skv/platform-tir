@@ -514,6 +514,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.kanban',
   },
   {
+    label: 'Мессенджер',
+    href: '/admin/messenger',
+    icon: '💬',
+    resourceId: 'admin.messenger',
+  },
+  {
     label: 'Настройки',
     href: '/admin/settings',
     icon: '⚙️',
