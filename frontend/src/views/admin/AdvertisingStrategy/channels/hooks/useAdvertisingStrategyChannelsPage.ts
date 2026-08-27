@@ -9,7 +9,7 @@ import {
   getMarketingChannels,
   getMarketingStrategy,
   updateMarketingChannel,
-} from '@/shared/api/admin-marketing';
+} from '@/shared/api/marketing/admin-marketing';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 import {

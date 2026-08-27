@@ -11,7 +11,7 @@ import {
   getMarketingMetrics,
   getMarketingStats,
   upsertMarketingMetric,
-} from '@/shared/api/admin-marketing';
+} from '@/shared/api/marketing/admin-marketing';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
 
 import { todayIsoDate } from '../../shared/advertising-strategy.utils';
