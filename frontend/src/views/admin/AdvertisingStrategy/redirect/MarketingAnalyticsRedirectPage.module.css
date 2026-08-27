@@ -1,0 +1,4 @@
+.message {
+  padding: 24px;
+  color: var(--admin-text-muted);
+}
