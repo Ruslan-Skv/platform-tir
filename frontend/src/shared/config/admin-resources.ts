@@ -234,6 +234,21 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   { id: 'admin.analytics.managers', label: 'KPI менеджеров', path: '/admin/analytics/managers' },
   { id: 'admin.analytics.marketing', label: 'Маркетинг', path: '/admin/analytics/marketing' },
+  {
+    id: 'admin.advertising-strategy',
+    label: 'Рекламная стратегия',
+    path: '/admin/advertising-strategy',
+  },
+  {
+    id: 'admin.advertising-strategy.channels',
+    label: 'Каналы продвижения',
+    path: '/admin/advertising-strategy/channels',
+  },
+  {
+    id: 'admin.advertising-strategy.metrics',
+    label: 'Статистика каналов',
+    path: '/admin/advertising-strategy/metrics',
+  },
   { id: 'admin.settings', label: 'Настройки', path: '/admin/settings' },
   {
     id: 'admin.settings.appearance',

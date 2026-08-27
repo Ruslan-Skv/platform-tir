@@ -502,6 +502,12 @@ const baseNavItems: NavItem[] = [
     ],
   },
   {
+    label: 'Рекламная стратегия',
+    href: '/admin/advertising-strategy',
+    icon: '🎯',
+    resourceId: 'admin.advertising-strategy',
+  },
+  {
     label: 'Настройки',
     href: '/admin/settings',
     icon: '⚙️',

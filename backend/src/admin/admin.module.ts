@@ -22,6 +22,7 @@ import { PartnersModule } from './partners/partners.module';
 import { AdminProductsModule } from './catalog/products/admin-products.module';
 import { AdminOrdersModule } from './orders/admin-orders.module';
 import { AnalyticsModule } from './analytics/analytics.module';
+import { MarketingModule } from './marketing/marketing.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminFormsModule } from './forms/admin-forms.module';
@@ -101,6 +102,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     WorkDaysModule,
     // Analytics
     AnalyticsModule,
+    MarketingModule,
   ],
   exports: [
     AdminAccessModule,
@@ -148,6 +150,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     RecruitmentModule,
     WorkDaysModule,
     AnalyticsModule,
+    MarketingModule,
   ],
 })
 export class AdminModule {}

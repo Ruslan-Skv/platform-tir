@@ -89,6 +89,9 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.analytics.managers': 'admin.analytics',
   'admin.analytics.marketing': 'admin.analytics',
 
+  'admin.advertising-strategy.channels': 'admin.advertising-strategy',
+  'admin.advertising-strategy.metrics': 'admin.advertising-strategy',
+
   // Настройки
   'admin.settings.appearance': 'admin.settings',
   'admin.settings.product-templates': 'admin.settings',
