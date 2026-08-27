@@ -162,6 +162,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/service-catalog', resourceId: 'admin.service-catalog' },
   { prefix: '/api/v1/admin/recruitment', resourceId: 'admin.recruitment' },
   { prefix: '/api/v1/admin/analytics', resourceId: 'admin.analytics' },
+  { prefix: '/api/v1/admin/kanban', resourceId: 'admin.kanban' },
   { prefix: '/api/v1/admin/notifications', resourceId: 'admin.settings.notifications' },
   { prefix: '/api/v1/admin/user-cabinet', resourceId: 'admin.settings.user-cabinet' },
   { prefix: '/api/v1/admin/reviews', resourceId: 'admin.settings.reviews' },

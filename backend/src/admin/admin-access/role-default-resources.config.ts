@@ -81,6 +81,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy',
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
+    'admin.kanban',
     'admin.settings',
     'admin.settings.product-templates',
     'admin.settings.appearance',
@@ -151,6 +152,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy',
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
+    'admin.kanban',
   ],
   MODERATOR: [
     'admin',
@@ -167,6 +169,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.advertising-strategy',
     'admin.advertising-strategy.channels',
     'admin.advertising-strategy.metrics',
+    'admin.kanban',
   ],
   SUPPORT: [
     'admin',
@@ -180,6 +183,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.forms.director',
     'admin.analytics',
     'admin.analytics.sales',
+    'admin.kanban',
   ],
   MANAGER: [
     'admin',
@@ -212,6 +216,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.estimates',
     'admin.accounting',
     'admin.accounting.invoices',
+    'admin.kanban',
   ],
   TECHNOLOGIST: [
     'admin',
@@ -238,6 +243,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.estimates',
     'admin.accounting',
     'admin.accounting.invoices',
+    'admin.kanban',
   ],
   PARTNER: [
     'admin',

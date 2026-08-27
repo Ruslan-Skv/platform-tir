@@ -70,6 +70,7 @@ export function AdvertisingStrategyOverviewPageView({
     <AdvertisingStrategyPageShell
       subtitle={OVERVIEW_SUBTITLE}
       countLabel={`${summary.activeChannels} каналов`}
+      countValue={summary.activeChannels}
       saveNoticeVisible={saveNoticeVisible}
     >
       {errorMessage ? <AdminFormMessage type="error">{errorMessage}</AdminFormMessage> : null}

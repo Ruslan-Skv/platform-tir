@@ -508,6 +508,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.advertising-strategy',
   },
   {
+    label: 'Канбан-доска',
+    href: '/admin/kanban',
+    icon: '📋',
+    resourceId: 'admin.kanban',
+  },
+  {
     label: 'Настройки',
     href: '/admin/settings',
     icon: '⚙️',

@@ -40,6 +40,7 @@ export function AdvertisingStrategyMetricsPageView({
     <AdvertisingStrategyPageShell
       subtitle="Фиксация визитов, лидов, заказов, выручки и затрат по каналам для расчёта ROI."
       countLabel={`${metrics.length} записей`}
+      countValue={metrics.length}
       saveNoticeVisible={saveNoticeVisible}
       headerActions={
         <AdminListRefreshButton

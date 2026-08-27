@@ -250,6 +250,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Статистика каналов',
     path: '/admin/advertising-strategy/metrics',
   },
+  { id: 'admin.kanban', label: 'Канбан-доска', path: '/admin/kanban' },
   { id: 'admin.settings', label: 'Настройки', path: '/admin/settings' },
   {
     id: 'admin.settings.appearance',

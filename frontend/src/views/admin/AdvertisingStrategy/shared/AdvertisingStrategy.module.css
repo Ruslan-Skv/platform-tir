@@ -34,6 +34,10 @@
   justify-content: flex-end;
 }
 
+.headerMetaSlot {
+  display: contents;
+}
+
 .headerActionsSlot {
   flex-shrink: 0;
   min-width: 0;
@@ -49,20 +53,6 @@
   align-items: center;
   justify-content: flex-end;
   gap: var(--admin-space-sm);
-}
-
-.countBadge {
-  background: var(--admin-border);
-  padding: var(--admin-space-xs) var(--admin-space-xl);
-  border-radius: var(--admin-radius-3xl);
-  font-size: var(--admin-font-size-sm);
-  color: var(--admin-text-muted);
-  white-space: nowrap;
-}
-
-:where(html[data-theme='dark'], [data-app-theme='dark']) .countBadge {
-  background: var(--admin-text-secondary);
-  color: var(--admin-text-muted);
 }
 
 .subtitleSlot {

@@ -4,7 +4,7 @@ import { Logo } from '@/shared/ui/Logo';
 
 import styles from './AdminPlatformBrand.module.css';
 
-const PLATFORM_TITLE = 'Цифровая платформа';
+const PLATFORM_TITLE = 'Виртуальный офис';
 
 type AdminPlatformBrandProps = {
   /** Только знак (сайдбар в свёрнутом виде). */

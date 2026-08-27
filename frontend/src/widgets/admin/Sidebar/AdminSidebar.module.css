@@ -105,7 +105,7 @@
   align-self: center;
 }
 
-/* По вертикали — на уровне логотипа (над заголовком «Цифровая платформа») */
+/* По вертикали — на уровне логотипа (над заголовком «Виртуальный офис») */
 .sidebar:not(.collapsed) .toggleBtn {
   top: calc(var(--admin-space-md) + 1.625rem / 2);
   transform: translateY(-50%);

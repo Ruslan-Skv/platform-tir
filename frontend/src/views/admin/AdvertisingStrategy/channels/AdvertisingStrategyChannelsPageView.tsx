@@ -41,6 +41,7 @@ export function AdvertisingStrategyChannelsPageView({
     <AdvertisingStrategyPageShell
       subtitle="Приоритеты, бюджеты (₽ и доли) и роли каналов в рекламной стратегии."
       countLabel={`${channels.length} каналов`}
+      countValue={channels.length}
       saveNoticeVisible={saveNoticeVisible}
       headerActions={
         <button type="button" className={styles.primaryButton} onClick={openCreate}>
