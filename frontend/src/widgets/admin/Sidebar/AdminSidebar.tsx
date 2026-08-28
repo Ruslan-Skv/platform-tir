@@ -1013,14 +1013,9 @@ export function AdminSidebar({
           />
         )}
         <div className={styles.header}>
-          <Link
-            href={getSafeHref('/', '/')}
-            className={styles.logo}
-            title="Вернуться на публичный сайт"
-            aria-label="Вернуться на публичный сайт"
-          >
-            <AdminPlatformBrand collapsed={collapsed} />
-          </Link>
+          <div className={styles.logo}>
+            <AdminPlatformBrand collapsed={collapsed} publicSiteHref="/" />
+          </div>
           <button
             type="button"
             className={styles.toggleBtn}

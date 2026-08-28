@@ -89,8 +89,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--admin-space-md) calc(var(--admin-space-md) + 28px) var(--admin-space-md)
-    var(--admin-space-md);
+  padding: var(--admin-space-md);
   border-bottom: none;
 }
 
@@ -105,9 +104,9 @@
   align-self: center;
 }
 
-/* По вертикали — на уровне логотипа (над заголовком «Виртуальный офис») */
+/* По вертикали — на уровне логотипа (под заголовком «Виртуальный офис») */
 .sidebar:not(.collapsed) .toggleBtn {
-  top: calc(var(--admin-space-md) + 1.625rem / 2);
+  top: calc(var(--admin-space-md) + 1.35rem + 0.375rem + 1.625rem / 2);
   transform: translateY(-50%);
 }
 
@@ -120,6 +119,10 @@
   color: var(--admin-sidebar-text-strong);
   text-decoration: none;
   overflow: hidden;
+}
+
+.sidebar:not(.collapsed) .logo {
+  justify-content: flex-start;
 }
 
 .toggleBtn {
