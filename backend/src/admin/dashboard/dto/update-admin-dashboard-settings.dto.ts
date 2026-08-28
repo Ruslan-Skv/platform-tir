@@ -55,6 +55,13 @@ export class UpdateAdminDashboardSettingsDto {
   calendarVisible?: boolean;
 
   @ApiPropertyOptional({
+    description: 'Показывать блок выбора периода (даты «с» / «по» и быстрые пресеты)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  dateToolbarVisible?: boolean;
+
+  @ApiPropertyOptional({
     type: [String],
     description: 'Порядок секций на дашборде',
     example: ['trainingDynamics', 'catalogActivity', 'calendar', 'quickLinks'],

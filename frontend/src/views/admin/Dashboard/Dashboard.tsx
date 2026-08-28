@@ -267,7 +267,7 @@ export function Dashboard() {
   const showCatalogWidget = settings.catalogActivityVisible;
   const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
   const showCalendarWidget = settings.calendarVisible && hasCalendarAccess;
-  const showDateToolbar = showCatalogWidget || showTrainingWidget;
+  const showDateToolbar = settings.dateToolbarVisible && (showCatalogWidget || showTrainingWidget);
 
   useEffect(() => {
     void getAdminDashboardSettings()

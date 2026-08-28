@@ -45,6 +45,7 @@ export interface AdminDashboardSettings {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
+  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLink[];
 }
@@ -65,6 +66,7 @@ export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
   catalogActivityVisible: false,
   trainingDynamicsVisible: true,
   calendarVisible: false,
+  dateToolbarVisible: true,
   sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
     id: `default-${index}`,
@@ -115,6 +117,8 @@ function normalizeAdminDashboardSettings(
     trainingDynamicsVisible:
       data?.trainingDynamicsVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
     calendarVisible: data?.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+    dateToolbarVisible:
+      data?.dateToolbarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
     sectionOrder: normalizeAdminDashboardSectionOrder(data?.sectionOrder),
     quickLinks,
   };
@@ -136,6 +140,7 @@ export type AdminDashboardSettingsUpdate = {
   catalogActivityVisible?: boolean;
   trainingDynamicsVisible?: boolean;
   calendarVisible?: boolean;
+  dateToolbarVisible?: boolean;
   sectionOrder?: AdminDashboardSectionId[];
   quickLinks?: Array<{
     label: string;

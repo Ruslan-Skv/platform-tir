@@ -40,6 +40,7 @@ type DashboardSettingsDraft = {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
+  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: QuickLinkDraft[];
 };
@@ -48,6 +49,7 @@ type SavedDashboardSettingsSnapshot = {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
+  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: Array<{ label: string; href: string; isEnabled: boolean }>;
 };
@@ -57,6 +59,7 @@ function settingsToDraft(settings: AdminDashboardSettings): DashboardSettingsDra
     catalogActivityVisible: settings.catalogActivityVisible,
     trainingDynamicsVisible: settings.trainingDynamicsVisible,
     calendarVisible: settings.calendarVisible,
+    dateToolbarVisible: settings.dateToolbarVisible,
     sectionOrder: [...settings.sectionOrder],
     quickLinks: settings.quickLinks.map((link, index) => ({
       key: link.id || `link-${index}`,
@@ -72,6 +75,7 @@ function toSavedSnapshot(draft: DashboardSettingsDraft): SavedDashboardSettingsS
     catalogActivityVisible: draft.catalogActivityVisible,
     trainingDynamicsVisible: draft.trainingDynamicsVisible,
     calendarVisible: draft.calendarVisible,
+    dateToolbarVisible: draft.dateToolbarVisible,
     sectionOrder: [...draft.sectionOrder],
     quickLinks: draft.quickLinks.map((link) => ({
       label: link.label.trim(),
@@ -88,6 +92,7 @@ function snapshotsEqual(
   if (left.catalogActivityVisible !== right.catalogActivityVisible) return false;
   if (left.trainingDynamicsVisible !== right.trainingDynamicsVisible) return false;
   if (left.calendarVisible !== right.calendarVisible) return false;
+  if (left.dateToolbarVisible !== right.dateToolbarVisible) return false;
   if (left.sectionOrder.length !== right.sectionOrder.length) return false;
   if (left.quickLinks.length !== right.quickLinks.length) return false;
 
@@ -180,6 +185,9 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
   const [calendarVisible, setCalendarVisible] = useState(
     DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible
   );
+  const [dateToolbarVisible, setDateToolbarVisible] = useState(
+    DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible
+  );
   const [sectionOrder, setSectionOrder] = useState<AdminDashboardSectionId[]>(
     DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder
   );
@@ -198,10 +206,18 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
       catalogActivityVisible,
       trainingDynamicsVisible,
       calendarVisible,
+      dateToolbarVisible,
       sectionOrder,
       quickLinks,
     }),
-    [catalogActivityVisible, trainingDynamicsVisible, calendarVisible, sectionOrder, quickLinks]
+    [
+      catalogActivityVisible,
+      trainingDynamicsVisible,
+      calendarVisible,
+      dateToolbarVisible,
+      sectionOrder,
+      quickLinks,
+    ]
   );
 
   const clearSaveSuccess = useCallback(() => {
@@ -241,6 +257,7 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
       setCatalogActivityVisible(nextDraft.catalogActivityVisible);
       setTrainingDynamicsVisible(nextDraft.trainingDynamicsVisible);
       setCalendarVisible(nextDraft.calendarVisible);
+      setDateToolbarVisible(nextDraft.dateToolbarVisible);
       setSectionOrder(nextDraft.sectionOrder);
       setQuickLinks(nextDraft.quickLinks);
       setSavedSettings(toSavedSnapshot(nextDraft));
@@ -331,6 +348,7 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
         catalogActivityVisible,
         trainingDynamicsVisible,
         calendarVisible,
+        dateToolbarVisible,
         sectionOrder,
         quickLinks: quickLinks.map((link) => ({
           label: link.label.trim(),
@@ -342,6 +360,7 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
       setCatalogActivityVisible(nextDraft.catalogActivityVisible);
       setTrainingDynamicsVisible(nextDraft.trainingDynamicsVisible);
       setCalendarVisible(nextDraft.calendarVisible);
+      setDateToolbarVisible(nextDraft.dateToolbarVisible);
       setSectionOrder(nextDraft.sectionOrder);
       setQuickLinks(nextDraft.quickLinks);
       setSavedSettings(toSavedSnapshot(nextDraft));
@@ -389,6 +408,28 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
                 Настройте блоки, их порядок и быстрые ссылки на главной странице админ-панели.
                 Изменения видны всем пользователям.
               </p>
+
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Выбор периода</h3>
+                <p className={styles.sectionHint}>
+                  Блок с датами «С» / «По», кнопкой «Показать» и быстрыми пресетами. Имеет смысл,
+                  если включены виджеты «Товары» или «Динамика обучения».
+                </p>
+                <label className={styles.checkboxRow}>
+                  <input
+                    type="checkbox"
+                    checked={dateToolbarVisible}
+                    onChange={(e) => setDateToolbarVisible(e.target.checked)}
+                  />
+                  <span>
+                    <strong>Показывать блок выбора дат</strong>
+                    <span className={styles.itemHint}>
+                      Если скрыть, виджеты с периодом загружаются по умолчанию (с начала текущего
+                      месяца).
+                    </span>
+                  </span>
+                </label>
+              </section>
 
               <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Блоки и порядок на дашборде</h3>

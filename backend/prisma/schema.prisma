@@ -2568,6 +2568,7 @@ model AdminDashboardBlock {
   catalogActivityVisible  Boolean                   @default(false)
   trainingDynamicsVisible Boolean                   @default(true)
   calendarVisible         Boolean                   @default(false)
+  dateToolbarVisible      Boolean                   @default(true)
   sectionOrder            Json?
   updatedAt               DateTime                  @updatedAt
   quickLinks              AdminDashboardQuickLink[]

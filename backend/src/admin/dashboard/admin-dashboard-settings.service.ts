@@ -21,6 +21,7 @@ export const DEFAULT_ADMIN_DASHBOARD_SETTINGS = {
   catalogActivityVisible: false,
   trainingDynamicsVisible: true,
   calendarVisible: false,
+  dateToolbarVisible: true,
   sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: [...DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS],
 } as const;
@@ -37,6 +38,7 @@ export type AdminDashboardSettingsRecord = {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
+  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLinkRecord[];
 };
@@ -58,6 +60,7 @@ export class AdminDashboardSettingsService {
         catalogActivityVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
         trainingDynamicsVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
         calendarVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+        dateToolbarVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
         sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder],
         quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
           id: `default-${index}`,
@@ -90,6 +93,7 @@ export class AdminDashboardSettingsService {
       catalogActivityVisible: row.catalogActivityVisible,
       trainingDynamicsVisible: row.trainingDynamicsVisible,
       calendarVisible: row.calendarVisible,
+      dateToolbarVisible: row.dateToolbarVisible,
       sectionOrder: normalizeAdminDashboardSectionOrder(row.sectionOrder),
       quickLinks,
     };
@@ -122,6 +126,9 @@ export class AdminDashboardSettingsService {
           ...(dto.calendarVisible !== undefined && {
             calendarVisible: dto.calendarVisible,
           }),
+          ...(dto.dateToolbarVisible !== undefined && {
+            dateToolbarVisible: dto.dateToolbarVisible,
+          }),
           ...(dto.sectionOrder !== undefined && {
             sectionOrder: normalizeAdminDashboardSectionOrder(dto.sectionOrder),
           }),
@@ -133,6 +140,8 @@ export class AdminDashboardSettingsService {
           trainingDynamicsVisible:
             dto.trainingDynamicsVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
           calendarVisible: dto.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+          dateToolbarVisible:
+            dto.dateToolbarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
           sectionOrder:
             dto.sectionOrder !== undefined
               ? normalizeAdminDashboardSectionOrder(dto.sectionOrder)
@@ -164,6 +173,7 @@ export class AdminDashboardSettingsService {
         catalogActivityVisible: block.catalogActivityVisible,
         trainingDynamicsVisible: block.trainingDynamicsVisible,
         calendarVisible: block.calendarVisible,
+        dateToolbarVisible: block.dateToolbarVisible,
         sectionOrder: normalizeAdminDashboardSectionOrder(block.sectionOrder),
         quickLinks: quickLinks.map((link) => ({
           id: link.id,
