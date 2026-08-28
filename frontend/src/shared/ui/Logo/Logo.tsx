@@ -5,8 +5,8 @@ import Link from 'next/link';
 import styles from './Logo.module.css';
 
 const FULL_VIEWBOX = '0 0 847.15 237.78';
-/** Только домик (без «ТИР» и «Территория интерьерных решений»). */
-const MARK_VIEWBOX = '0 0 194.48 237.78';
+/** Только домик (без «ТИР» и «Территория интерьерных решений»). Небольшой inset — чтобы края не срезались при масштабе. */
+const MARK_VIEWBOX = '-3 -3 200.48 243.78';
 
 export type LogoProps = {
   href?: string;
@@ -19,20 +19,13 @@ export type LogoProps = {
   ariaLabel?: string;
 };
 
-function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boolean }) {
+const HOUSE_PATH =
+  'M194.48 88.67 111.63 5.82C108.46 2.6 104.24.86 99.71.86S90.97 2.6 87.79 5.82L4.96 88.67C1.74 91.84 0 96.06 0 100.59v120.33c0 9.26 7.57 16.87 16.87 16.87h165.69c9.31 0 16.87-7.61 16.87-16.87V100.59c0-4.52-1.74-8.74-4.96-11.92Zm-2 132.24c0 5.44-4.44 9.92-9.91 9.92H16.87c-5.48 0-9.91-4.48-9.91-9.92V100.58c0-2.61 1.04-5.17 2.87-7l82.88-82.84c3.74-3.78 10.26-3.74 14 0l82.84 82.84c1.91 1.87 2.91 4.35 2.91 7v120.33Z';
+
+function LogoHouseShapes() {
   return (
-    <svg
-      className={[styles.logo, className].filter(Boolean).join(' ')}
-      viewBox={markOnly ? MARK_VIEWBOX : FULL_VIEWBOX}
-      fill="none"
-      xmlns="http://www.w3.org/2000/svg"
-      preserveAspectRatio="xMidYMid meet"
-      aria-hidden
-    >
-      <path
-        d="M194.48 88.67 111.63 5.82C108.46 2.6 104.24.86 99.71.86S90.97 2.6 87.79 5.82L4.96 88.67C1.74 91.84 0 96.06 0 100.59v120.33c0 9.26 7.57 16.87 16.87 16.87h165.69c9.31 0 16.87-7.61 16.87-16.87V100.59c0-4.52-1.74-8.74-4.96-11.92Zm-2 132.24c0 5.44-4.44 9.92-9.91 9.92H16.87c-5.48 0-9.91-4.48-9.91-9.92V100.58c0-2.61 1.04-5.17 2.87-7l82.88-82.84c3.74-3.78 10.26-3.74 14 0l82.84 82.84c1.91 1.87 2.91 4.35 2.91 7v120.33Z"
-        className={styles.color5}
-      />
+    <>
+      <path d={HOUSE_PATH} className={styles.color5} />
       <rect
         width="50.4"
         height="49.13"
@@ -69,6 +62,36 @@ function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boole
         rx="12.18"
         ry="12.18"
       />
+    </>
+  );
+}
+
+function LogoMarkSvg({ className }: { className?: string }) {
+  return (
+    <svg
+      className={[styles.logo, styles.logoMark, className].filter(Boolean).join(' ')}
+      viewBox={MARK_VIEWBOX}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden
+    >
+      <LogoHouseShapes />
+    </svg>
+  );
+}
+
+function LogoFullSvg({ className }: { className?: string }) {
+  return (
+    <svg
+      className={[styles.logo, className].filter(Boolean).join(' ')}
+      viewBox={FULL_VIEWBOX}
+      fill="none"
+      xmlns="http://www.w3.org/2000/svg"
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden
+    >
+      <LogoHouseShapes />
       <rect
         width="29.29"
         height="28.55"
@@ -112,6 +135,10 @@ function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boole
       />
     </svg>
   );
+}
+
+function LogoSvg({ className, markOnly }: { className?: string; markOnly?: boolean }) {
+  return markOnly ? <LogoMarkSvg className={className} /> : <LogoFullSvg className={className} />;
 }
 
 export const Logo: React.FC<LogoProps> = ({

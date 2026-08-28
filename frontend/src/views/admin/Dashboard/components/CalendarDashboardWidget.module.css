@@ -12,13 +12,18 @@
   align-items: flex-start;
   justify-content: space-between;
   gap: var(--admin-space-md);
-  margin-bottom: var(--admin-space-lg);
+  margin-bottom: var(--admin-space-md);
 }
 
 .headMain {
   display: flex;
   align-items: flex-start;
   gap: var(--admin-space-md);
+  min-width: 0;
+  flex: 1 1 12rem;
+}
+
+.headText {
   min-width: 0;
 }
 
@@ -73,10 +78,71 @@
   font-size: var(--admin-font-size-sm);
 }
 
+.filtersWrap {
+  position: relative;
+  margin-bottom: var(--admin-space-md);
+}
+
+.filtersWrap::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1.25rem;
+  pointer-events: none;
+  background: linear-gradient(to left, var(--admin-surface) 10%, transparent);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.filterChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: 1.2;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.filterChipActive {
+  border-color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-text-primary);
+}
+
+.filterDot {
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+.filterLabel {
+  min-width: 0;
+}
+
 .calendarWrap {
   display: flex;
   flex-direction: column;
   gap: var(--admin-space-md);
+}
+
+.toolbar {
+  gap: var(--admin-space-sm);
 }
 
 .rangeTitle {
@@ -85,12 +151,21 @@
   font-weight: 600;
   color: var(--admin-text-secondary);
   text-transform: capitalize;
+  line-height: var(--admin-line-height-sm);
 }
 
 .toolbarActions {
   display: inline-flex;
   align-items: center;
   gap: var(--admin-space-sm);
+  flex-shrink: 0;
+}
+
+.loadingHint {
+  margin: 0;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  white-space: nowrap;
 }
 
 .todayBtn,
@@ -131,17 +206,135 @@
   pointer-events: none;
 }
 
-@media (max-width: 640px) {
-  .root {
-    padding: var(--admin-space-lg);
+.mobileEventMark {
+  display: block;
+  width: 100%;
+  height: 0.35rem;
+  border-radius: 2px;
+  text-decoration: none;
+}
+
+.eventCount {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1rem;
+  height: 1rem;
+  padding: 0 0.2rem;
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-muted);
+  font-size: 0.625rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+@media (max-width: 900px) {
+  .filtersWrap::after {
+    opacity: 1;
+  }
+
+  .filters {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: var(--admin-space-2xs);
+    margin: 0 calc(-1 * var(--admin-space-xs));
+    padding-left: var(--admin-space-xs);
+    padding-right: var(--admin-space-xs);
+  }
+
+  .filters::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filterChip {
+    flex-shrink: 0;
+    padding: 0.35rem 0.55rem;
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .filterDot {
+    width: 0.45rem;
+    height: 0.45rem;
   }
 
   .fortnightDay,
   .padDay {
-    min-height: 4.5rem !important;
+    min-height: 3.75rem !important;
+  }
+
+  .toolbar {
+    flex-direction: column;
+    align-items: stretch !important;
   }
 
   .rangeTitle {
+    font-size: var(--admin-font-size-sm);
+  }
+
+  .toolbarActions {
+    width: 100%;
+    justify-content: flex-start;
+  }
+
+  .weekday {
+    padding: 0.2rem 0.1rem !important;
+    font-size: 0.625rem !important;
+  }
+
+  .dayNum {
+    font-size: 0.6875rem !important;
+  }
+
+  .pills {
+    gap: 1px !important;
+  }
+
+  .more {
+    font-size: 0.6rem !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .root {
+    padding: var(--admin-space-md);
+  }
+
+  .head {
+    align-items: center;
+    margin-bottom: var(--admin-space-sm);
+  }
+
+  .icon {
+    font-size: 1.25rem;
+  }
+
+  .title {
     font-size: var(--admin-font-size-base);
+  }
+
+  .subtitle {
+    display: none;
+  }
+
+  .openLink {
+    padding: var(--admin-space-xs) var(--admin-space-md);
+    font-size: var(--admin-font-size-xs);
+  }
+
+  .filtersWrap {
+    margin-bottom: var(--admin-space-sm);
+  }
+
+  .fortnightDay,
+  .padDay {
+    min-height: 3.25rem !important;
+    padding: 0.2rem !important;
+  }
+
+  .grid {
+    border-radius: var(--admin-radius-sm);
   }
 }

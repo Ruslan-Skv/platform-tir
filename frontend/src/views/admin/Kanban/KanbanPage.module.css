@@ -64,26 +64,178 @@
   cursor: not-allowed;
 }
 
-.filters {
-  margin-bottom: var(--admin-space-xl);
+.headerActionsDesktop {
+  display: flex;
 }
 
-.filterLabel {
-  flex: 0 1 auto;
+.viewModeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  background: var(--admin-surface);
+}
+
+.viewModeBtn {
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.viewModeBtn + .viewModeBtn {
+  border-left: 1px solid var(--admin-border);
+}
+
+.viewModeBtn:hover {
+  color: var(--admin-text-primary);
+  background: var(--admin-surface-muted);
+}
+
+.viewModeBtnActive {
+  color: var(--admin-text-primary);
+  background: var(--admin-accent-soft, #eff6ff);
+}
+
+.viewPanels {
+  position: relative;
+  display: grid;
+  margin-top: var(--admin-space-sm);
+}
+
+.viewPanel {
+  grid-area: 1 / 1;
   min-width: 0;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(4px);
+  transition:
+    opacity 0.22s ease,
+    transform 0.22s ease,
+    visibility 0.22s ease;
 }
 
-.filterField {
-  flex: 0 1 auto;
-  min-width: 10rem;
-  width: auto;
-  max-width: 100%;
+.viewPanelActive {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: translateY(0);
+  z-index: 1;
+}
+
+.mobileCards {
+  display: none;
+}
+
+.mobileCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft, var(--admin-surface));
+  text-align: left;
+  color: inherit;
+  font: inherit;
   box-sizing: border-box;
+  cursor: pointer;
 }
 
-.filterSearch {
-  flex: 1 1 14rem;
-  min-width: 12rem;
+.mobileCard:hover {
+  border-color: var(--admin-border-strong, var(--admin-border));
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.mobileCardMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobileCardName {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-primary, var(--admin-text-secondary));
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.mobileCardMeta {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mobileCardColumnDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: var(--admin-radius-pill);
+  flex: 0 0 auto;
+}
+
+.mobileCardLabels {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+}
+
+.mobileCardFooter {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+}
+
+.mobileCardOverdue {
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 700;
+  color: var(--admin-danger, #b91c1c);
+}
+
+.mobileLoading,
+.mobileEmpty {
+  margin: 0;
+  padding: var(--admin-space-lg);
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+.viewPanelList .mobileCards {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+@media (min-width: 901px) {
+  .viewPanelList .mobileCards {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(18rem, 1fr));
+  }
 }
 
 .emptyHint {
@@ -491,7 +643,7 @@
 }
 
 @media (max-width: 900px) {
-  .header {
+  .kanbanPage .header {
     flex-direction: column;
     align-items: stretch;
     gap: var(--admin-space-md) !important;
@@ -499,66 +651,93 @@
     padding-bottom: var(--admin-space-sm) !important;
   }
 
-  .headerLeft {
+  .kanbanPage .headerLeft {
     gap: 0 !important;
     flex-wrap: nowrap;
     min-width: 0;
     width: 100%;
   }
 
-  .title {
+  .kanbanPage .title {
     font-size: var(--admin-font-size-2xl);
   }
 
-  .header .count {
+  .kanbanPage .header .count {
     padding: 2px 8px !important;
     font-size: var(--admin-font-size-xs) !important;
   }
 
-  .headerActions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: var(--admin-space-sm);
-    width: 100%;
-    justify-content: stretch;
+  .headerActionsDesktop {
+    display: none !important;
   }
 
-  .headerActions :global(button) {
-    width: 100%;
-    min-height: 2.5rem;
-    font-size: var(--admin-font-size-xs);
-    padding: var(--admin-space-sm) var(--admin-space-md);
-    white-space: normal;
-    text-align: center;
-    line-height: 1.25;
-  }
-
-  .filters {
-    margin-bottom: var(--admin-space-md);
-    flex-wrap: wrap;
-  }
-
-  .filterLabel {
-    flex: 1 1 calc(50% - var(--admin-space-sm));
+  .viewPanelList .mobileCards {
+    display: flex;
     flex-direction: column;
-    align-items: stretch;
-    gap: var(--admin-space-xs);
+    gap: var(--admin-space-sm);
+    margin-bottom: var(--admin-space-md);
   }
 
-  .filterField,
-  .filterSearch {
-    width: 100%;
-    min-width: 0;
-    min-height: 2.5rem;
+  .board {
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    gap: var(--admin-space-sm);
+    min-height: calc(100dvh - 15rem);
+    padding-bottom: var(--admin-space-md);
+    margin: 0 calc(-1 * var(--admin-space-xs));
+    padding-inline: var(--admin-space-xs);
   }
 
   .column {
-    flex-basis: 16.5rem;
-    width: 16.5rem;
+    flex: 0 0 min(88vw, 18.5rem);
+    width: min(88vw, 18.5rem);
+    max-height: calc(100dvh - 15rem);
+    scroll-snap-align: start;
+  }
+
+  .columnBody {
+    max-height: calc(100dvh - 18rem);
+  }
+
+  .card {
+    cursor: pointer;
   }
 
   .cardModalLayout {
     grid-template-columns: 1fr;
+  }
+
+  .cardModalTabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding-bottom: var(--admin-space-2xs);
+  }
+
+  .cardModalTabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .cardModalTab {
+    flex-shrink: 0;
+    padding: var(--admin-space-xs) var(--admin-space-md);
+    font-size: var(--admin-font-size-xs);
+  }
+}
+
+@media (max-width: 640px) {
+  .kanbanPage .title {
+    font-size: var(--admin-font-size-xl);
+  }
+
+  .board {
+    min-height: calc(100dvh - 14rem);
+  }
+
+  .column {
+    flex-basis: 92vw;
+    width: 92vw;
   }
 }
 
@@ -578,4 +757,17 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .emptyState {
   background: var(--admin-surface-muted);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardName {
+  color: var(--admin-surface-muted, #f3f4f6);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardMeta {
+  color: var(--admin-text-muted);
 }

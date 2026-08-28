@@ -3,7 +3,7 @@
 import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
 import { Modal } from '@/shared/ui/Modal';
 
-import { KANBAN_TRASH_RETENTION_NOTICE } from '../kanbanTrashRetention';
+import { KANBAN_TRASH_RETENTION_NOTICE } from '../shared/kanbanTrashRetention';
 
 type KanbanDeleteBoardModalProps = {
   open: boolean;

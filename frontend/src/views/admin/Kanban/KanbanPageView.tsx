@@ -1,8 +1,9 @@
 'use client';
 
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties, useCallback, useMemo, useState } from 'react';
 
 import type { KanbanCardPriority, KanbanColumn } from '@/shared/api/kanban/admin-kanban';
+import { useAdminNarrowViewport } from '@/shared/lib/hooks/useAdminNarrowViewport';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import {
   AdminListRefreshButton,
@@ -17,6 +18,13 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 import styles from './KanbanPage.module.css';
 import { KanbanRulesInfoTip } from './KanbanRulesInfoTip';
 import type { KanbanPageModel } from './hooks/useKanbanPage';
+import { KanbanMobileCards } from './list/KanbanMobileCards';
+import { KanbanBoardModal } from './modals/KanbanBoardModal';
+import { KanbanCardModal } from './modals/KanbanCardModal';
+import { KanbanColumnModal } from './modals/KanbanColumnModal';
+import { KanbanDeleteBoardModal } from './modals/KanbanDeleteBoardModal';
+import { KanbanDeleteColumnModal } from './modals/KanbanDeleteColumnModal';
+import { KanbanTrashModal } from './modals/KanbanTrashModal';
 import {
   PRIORITY_LABELS,
   checklistProgress,
@@ -24,21 +32,37 @@ import {
   formatKanbanUser,
   isOverdue,
   userInitials,
-} from './kanban.utils';
-import { KanbanBoardModal } from './modals/KanbanBoardModal';
-import { KanbanCardModal } from './modals/KanbanCardModal';
-import { KanbanColumnModal } from './modals/KanbanColumnModal';
-import { KanbanDeleteBoardModal } from './modals/KanbanDeleteBoardModal';
-import { KanbanDeleteColumnModal } from './modals/KanbanDeleteColumnModal';
-import { KanbanTrashModal } from './modals/KanbanTrashModal';
+} from './shared/kanban.utils';
 
 type Props = { model: KanbanPageModel };
+type ViewMode = 'board' | 'list';
+type PriorityFilter = KanbanCardPriority | '';
+
+const KANBAN_VIEW_MODE_KEY = 'admin_kanban_view_mode';
+
+function filterChipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
+function cardMatchesBaseFilters(
+  card: { title: string; description?: string | null; labels: string[]; assigneeId: string | null },
+  q: string,
+  assigneeFilter: string,
+  labelFilter: string
+): boolean {
+  if (assigneeFilter && card.assigneeId !== assigneeFilter) return false;
+  if (labelFilter && !card.labels.includes(labelFilter)) return false;
+  if (!q) return true;
+  const hay = `${card.title} ${card.description ?? ''} ${card.labels.join(' ')}`.toLowerCase();
+  return hay.includes(q);
+}
 
 export function KanbanPageView({ model }: Props) {
   const {
     canEdit,
     boards,
     board,
+    rawBoard,
     selectedBoardId,
     users,
     loading,
@@ -109,12 +133,78 @@ export function KanbanPageView({ model }: Props) {
 
   const [dragCardId, setDragCardId] = useState<string | null>(null);
   const [dragOverColumnId, setDragOverColumnId] = useState<string | null>(null);
+  const [viewModeState, setViewModeState] = useState<ViewMode>(() =>
+    typeof window !== 'undefined' && localStorage.getItem(KANBAN_VIEW_MODE_KEY) === 'list'
+      ? 'list'
+      : 'board'
+  );
+  const isNarrow = useAdminNarrowViewport();
+
+  const setViewMode = useCallback((mode: ViewMode) => {
+    setViewModeState(mode);
+    localStorage.setItem(KANBAN_VIEW_MODE_KEY, mode);
+  }, []);
 
   const cardsCount = board?.columns.reduce((sum, col) => sum + col.cards.length, 0) ?? 0;
   const boardTitle = board?.name ?? 'Канбан-доска';
+  const searchQuery = search.trim().toLowerCase();
+
+  const cardsForFilterCounts = useMemo(() => {
+    if (!rawBoard) return [];
+    return rawBoard.columns
+      .flatMap((col) => col.cards)
+      .filter((card) => cardMatchesBaseFilters(card, searchQuery, assigneeFilter, labelFilter));
+  }, [rawBoard, searchQuery, assigneeFilter, labelFilter]);
+
+  const priorityCounts = useMemo(() => {
+    const priorities = Object.keys(PRIORITY_LABELS) as KanbanCardPriority[];
+    return {
+      '': cardsForFilterCounts.length,
+      ...Object.fromEntries(
+        priorities.map((priority) => [
+          priority,
+          cardsForFilterCounts.filter((card) => card.priority === priority).length,
+        ])
+      ),
+    } as Record<PriorityFilter, number>;
+  }, [cardsForFilterCounts]);
+
+  const assigneeCounts = useMemo(() => {
+    const counts: Record<string, number> = { '': cardsForFilterCounts.length };
+    for (const user of users) {
+      counts[user.id] = cardsForFilterCounts.filter((card) => card.assigneeId === user.id).length;
+    }
+    return counts;
+  }, [cardsForFilterCounts, users]);
+
+  const labelCounts = useMemo(() => {
+    const counts: Record<string, number> = { '': cardsForFilterCounts.length };
+    for (const label of allLabels) {
+      counts[label] = cardsForFilterCounts.filter((card) => card.labels.includes(label)).length;
+    }
+    return counts;
+  }, [allLabels, cardsForFilterCounts]);
+
+  const mobileListItems = useMemo(() => {
+    if (!board) return [];
+    return board.columns.flatMap((col) =>
+      col.cards.map((card) => ({
+        card,
+        columnName: col.name,
+        columnColor: col.color || '#64748b',
+      }))
+    );
+  }, [board]);
+
+  const countTitle =
+    cardsCount === (rawBoard?.columns.reduce((sum, col) => sum + col.cards.length, 0) ?? 0)
+      ? `${cardsCount} карточек`
+      : `${cardsCount} из ${rawBoard?.columns.reduce((sum, col) => sum + col.cards.length, 0) ?? 0} карточек`;
 
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+    <div
+      className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage} ${styles.kanbanPage}`}
+    >
       <div className={`${cdHub.editorHeader} ${styles.header}`}>
         <div className={`${cdHub.contractsListHeaderLeft} ${styles.headerLeft}`}>
           <div className={cdHub.contractsHeaderTitleRow}>
@@ -123,21 +213,12 @@ export function KanbanPageView({ model }: Props) {
                 <h1 className={`${cdHub.title} ${styles.title}`}>{boardTitle}</h1>
                 <KanbanRulesInfoTip />
               </div>
-              <span
-                className={`${cdHub.contractsListCount} ${styles.count}`}
-                title={`${cardsCount} карточек`}
-              >
-                <span className={cdHub.contractsListCountDesktop}>{cardsCount} карточек</span>
+              <span className={`${cdHub.contractsListCount} ${styles.count}`} title={countTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
                 <span className={cdHub.contractsListCountMobile}>{cardsCount}</span>
               </span>
             </div>
             <div className={cdHub.contractsHeaderIconActionsMobile}>
-              <AdminToolbarTrashButton
-                trashCount={trashCount}
-                onClick={() => setTrashOpen(true)}
-                title="Корзина канбан-досок"
-                aria-label="Корзина канбан-досок"
-              />
               <AdminListRefreshButton
                 disabled={loading || busy}
                 busy={loading}
@@ -145,10 +226,18 @@ export function KanbanPageView({ model }: Props) {
                 aria-label={loading ? 'Обновление доски' : 'Обновить доску'}
                 onClick={() => void reload()}
               />
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина канбан-досок"
+                aria-label="Корзина канбан-досок"
+              />
             </div>
           </div>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${styles.headerActions}`}>
+        <div
+          className={`${cdChrome.headerButtonsRow} ${styles.headerActions} ${styles.headerActionsDesktop}`}
+        >
           {canEdit ? (
             <>
               <button
@@ -233,141 +322,204 @@ export function KanbanPageView({ model }: Props) {
         </div>
       ) : (
         <>
-          <div className={`${cdHub.contractsListFilters} ${styles.filters}`}>
-            <label className={`${cdHub.contractsListDateLabel} ${styles.filterLabel}`}>
-              <span className={cdHub.contractsListDateLabelText}>Доска</span>
-              <select
-                value={selectedBoardId ?? ''}
-                onChange={(e) => void selectBoard(e.target.value)}
-                disabled={loading || busy}
-                className={contractsListFilterFieldClass(
-                  `${cdHub.contractsListDateInput} ${styles.filterField}`,
-                  Boolean(selectedBoardId),
-                  cdHub.contractsListFilterActive
-                )}
-                aria-label="Выбор доски"
-              >
-                {boards.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name} ({b.cardsCount})
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={`${cdHub.contractsListDateLabel} ${styles.filterLabel}`}>
-              <span className={cdHub.contractsListDateLabelText}>Поиск</span>
-              <input
-                type="search"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                placeholder="По карточкам..."
-                className={contractsListFilterFieldClass(
-                  `${cdHub.contractsListDateInput} ${styles.filterSearch}`,
-                  Boolean(search.trim()),
-                  cdHub.contractsListFilterActive
-                )}
-                aria-label="Поиск по карточкам"
-              />
-            </label>
-
-            <label className={`${cdHub.contractsListDateLabel} ${styles.filterLabel}`}>
-              <span className={cdHub.contractsListDateLabelText}>Приоритет</span>
-              <select
-                value={priorityFilter}
-                onChange={(e) => setPriorityFilter(e.target.value as KanbanCardPriority | '')}
-                className={contractsListFilterFieldClass(
-                  `${cdHub.contractsListDateInput} ${styles.filterField}`,
-                  Boolean(priorityFilter),
-                  cdHub.contractsListFilterActive
-                )}
-                aria-label="Фильтр приоритета"
-              >
-                <option value="">Все</option>
-                {(Object.keys(PRIORITY_LABELS) as KanbanCardPriority[]).map((p) => (
-                  <option key={p} value={p}>
-                    {PRIORITY_LABELS[p]}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={`${cdHub.contractsListDateLabel} ${styles.filterLabel}`}>
-              <span className={cdHub.contractsListDateLabelText}>Исполнитель</span>
-              <select
-                value={assigneeFilter}
-                onChange={(e) => setAssigneeFilter(e.target.value)}
-                className={contractsListFilterFieldClass(
-                  `${cdHub.contractsListDateInput} ${styles.filterField}`,
-                  Boolean(assigneeFilter),
-                  cdHub.contractsListFilterActive
-                )}
-                aria-label="Фильтр исполнителя"
-              >
-                <option value="">Все</option>
-                {users.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {formatKanbanUser(u)}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label className={`${cdHub.contractsListDateLabel} ${styles.filterLabel}`}>
-              <span className={cdHub.contractsListDateLabelText}>Метка</span>
-              <select
-                value={labelFilter}
-                onChange={(e) => setLabelFilter(e.target.value)}
-                className={contractsListFilterFieldClass(
-                  `${cdHub.contractsListDateInput} ${styles.filterField}`,
-                  Boolean(labelFilter),
-                  cdHub.contractsListFilterActive
-                )}
-                aria-label="Фильтр метки"
-              >
-                <option value="">Все</option>
-                {allLabels.map((label) => (
-                  <option key={label} value={label}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className={styles.viewModeRow} role="group" aria-label="Режим отображения">
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${styles.viewModeBtnBoard}${
+                viewModeState === 'board' ? ` ${styles.viewModeBtnActive}` : ''
+              }`}
+              onClick={() => setViewMode('board')}
+            >
+              Доска
+            </button>
+            <button
+              type="button"
+              className={`${styles.viewModeBtn} ${styles.viewModeBtnList}${
+                viewModeState === 'list' ? ` ${styles.viewModeBtnActive}` : ''
+              }`}
+              onClick={() => setViewMode('list')}
+            >
+              Список
+            </button>
           </div>
 
-          <div className={styles.board}>
-            {board.columns.map((column) => (
-              <ColumnView
-                key={column.id}
-                column={column}
-                canEdit={canEdit}
-                busy={busy}
-                dragCardId={dragCardId}
-                dragOverColumnId={dragOverColumnId}
-                creatingInColumnId={creatingInColumnId}
-                newCardTitle={newCardTitle}
-                setNewCardTitle={setNewCardTitle}
-                onStartCreate={() => startQuickCreate(column.id)}
-                onCancelCreate={() => setCreatingInColumnId(null)}
-                onSubmitCreate={submitQuickCreate}
-                onEditColumn={() => openEditColumn(column)}
-                onRemoveColumn={() => openDeleteColumn(column)}
-                canDeleteColumn={canEdit && column.cards.length === 0 && board.columns.length > 1}
+          <div className={cdHub.contractsListFiltersPanel}>
+            <div className={cdHub.contractsListFiltersStack}>
+              <div
+                className={cdHub.contractsListDateFilters}
+                role="group"
+                aria-label="Доска и поиск"
+              >
+                <label className={cdHub.contractsListDateLabel}>
+                  <span className={cdHub.contractsListDateLabelText}>Доска</span>
+                  <select
+                    value={selectedBoardId ?? ''}
+                    onChange={(e) => void selectBoard(e.target.value)}
+                    disabled={loading || busy}
+                    className={contractsListFilterFieldClass(
+                      cdHub.contractsListDateInput,
+                      Boolean(selectedBoardId),
+                      cdHub.contractsListFilterActive
+                    )}
+                    aria-label="Выбор доски"
+                  >
+                    {boards.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.name} ({b.cardsCount})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className={cdHub.contractsListDateLabel}>
+                  <span className={cdHub.contractsListDateLabelText}>Поиск</span>
+                  <input
+                    type="search"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="По карточкам..."
+                    disabled={loading || busy}
+                    className={contractsListFilterFieldClass(
+                      cdHub.contractsListDateInput,
+                      Boolean(search.trim()),
+                      cdHub.contractsListFilterActive
+                    )}
+                    aria-label="Поиск по карточкам"
+                  />
+                </label>
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Приоритет">
+                <span className={cdHub.contractsListChipRowLabel}>Приоритет</span>
+                <button
+                  type="button"
+                  disabled={loading || busy}
+                  className={filterChipClass(!priorityFilter)}
+                  onClick={() => setPriorityFilter('')}
+                >
+                  Все ({priorityCounts['']})
+                </button>
+                {(Object.keys(PRIORITY_LABELS) as KanbanCardPriority[]).map((priority) => (
+                  <button
+                    key={priority}
+                    type="button"
+                    disabled={loading || busy}
+                    className={filterChipClass(priorityFilter === priority)}
+                    onClick={() => setPriorityFilter(priority)}
+                  >
+                    {PRIORITY_LABELS[priority]} ({priorityCounts[priority]})
+                  </button>
+                ))}
+              </div>
+
+              {users.length > 0 ? (
+                <div className={cdHub.contractsListChipRow} role="group" aria-label="Исполнитель">
+                  <span className={cdHub.contractsListChipRowLabel}>Исполнитель</span>
+                  <button
+                    type="button"
+                    disabled={loading || busy}
+                    className={filterChipClass(!assigneeFilter)}
+                    onClick={() => setAssigneeFilter('')}
+                  >
+                    Все ({assigneeCounts['']})
+                  </button>
+                  {users.map((user) => (
+                    <button
+                      key={user.id}
+                      type="button"
+                      disabled={loading || busy}
+                      className={filterChipClass(assigneeFilter === user.id)}
+                      onClick={() => setAssigneeFilter(user.id)}
+                    >
+                      {formatKanbanUser(user)} ({assigneeCounts[user.id] ?? 0})
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+
+              {allLabels.length > 0 ? (
+                <div className={cdHub.contractsListChipRow} role="group" aria-label="Метка">
+                  <span className={cdHub.contractsListChipRowLabel}>Метка</span>
+                  <button
+                    type="button"
+                    disabled={loading || busy}
+                    className={filterChipClass(!labelFilter)}
+                    onClick={() => setLabelFilter('')}
+                  >
+                    Все ({labelCounts['']})
+                  </button>
+                  {allLabels.map((label) => (
+                    <button
+                      key={label}
+                      type="button"
+                      disabled={loading || busy}
+                      className={filterChipClass(labelFilter === label)}
+                      onClick={() => setLabelFilter(label)}
+                    >
+                      {label} ({labelCounts[label] ?? 0})
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+          </div>
+
+          <div className={styles.viewPanels}>
+            <div
+              className={`${styles.viewPanel} ${styles.viewPanelBoard}${
+                viewModeState === 'board' ? ` ${styles.viewPanelActive}` : ''
+              }`}
+              aria-hidden={viewModeState !== 'board'}
+            >
+              <div className={styles.board}>
+                {board.columns.map((column) => (
+                  <ColumnView
+                    key={column.id}
+                    column={column}
+                    canEdit={canEdit}
+                    enableDrag={canEdit && viewModeState === 'board' && !isNarrow}
+                    busy={busy}
+                    dragCardId={dragCardId}
+                    dragOverColumnId={dragOverColumnId}
+                    creatingInColumnId={creatingInColumnId}
+                    newCardTitle={newCardTitle}
+                    setNewCardTitle={setNewCardTitle}
+                    onStartCreate={() => startQuickCreate(column.id)}
+                    onCancelCreate={() => setCreatingInColumnId(null)}
+                    onSubmitCreate={submitQuickCreate}
+                    onEditColumn={() => openEditColumn(column)}
+                    onRemoveColumn={() => openDeleteColumn(column)}
+                    canDeleteColumn={
+                      canEdit && column.cards.length === 0 && board.columns.length > 1
+                    }
+                    onOpenCard={(id) => setSelectedCardId(id)}
+                    onDragStart={(id) => setDragCardId(id)}
+                    onDragEnd={() => {
+                      setDragCardId(null);
+                      setDragOverColumnId(null);
+                    }}
+                    onDragOverColumn={() => setDragOverColumnId(column.id)}
+                    onDropCard={(sortOrder) => {
+                      if (!dragCardId) return;
+                      void moveCardOptimistic(dragCardId, column.id, sortOrder);
+                      setDragCardId(null);
+                      setDragOverColumnId(null);
+                    }}
+                  />
+                ))}
+              </div>
+            </div>
+            <div
+              className={`${styles.viewPanel} ${styles.viewPanelList}${
+                viewModeState === 'list' ? ` ${styles.viewPanelActive}` : ''
+              }`}
+              aria-hidden={viewModeState !== 'list'}
+            >
+              <KanbanMobileCards
+                items={mobileListItems}
+                loading={loading}
                 onOpenCard={(id) => setSelectedCardId(id)}
-                onDragStart={(id) => setDragCardId(id)}
-                onDragEnd={() => {
-                  setDragCardId(null);
-                  setDragOverColumnId(null);
-                }}
-                onDragOverColumn={() => setDragOverColumnId(column.id)}
-                onDropCard={(sortOrder) => {
-                  if (!dragCardId) return;
-                  void moveCardOptimistic(dragCardId, column.id, sortOrder);
-                  setDragCardId(null);
-                  setDragOverColumnId(null);
-                }}
               />
-            ))}
+            </div>
           </div>
         </>
       )}
@@ -466,6 +618,7 @@ export function KanbanPageView({ model }: Props) {
 function ColumnView({
   column,
   canEdit,
+  enableDrag,
   busy,
   dragCardId,
   dragOverColumnId,
@@ -486,6 +639,7 @@ function ColumnView({
 }: {
   column: KanbanColumn;
   canEdit: boolean;
+  enableDrag: boolean;
   busy: boolean;
   dragCardId: string | null;
   dragOverColumnId: string | null;
@@ -552,12 +706,12 @@ function ColumnView({
           dragOverColumnId === column.id ? styles.columnBodyDragOver : ''
         }`}
         onDragOver={(e) => {
-          if (!canEdit) return;
+          if (!enableDrag) return;
           e.preventDefault();
           onDragOverColumn();
         }}
         onDrop={(e) => {
-          if (!canEdit) return;
+          if (!enableDrag) return;
           e.preventDefault();
           onDropCard(
             column.cards.length > 0 ? Math.max(...column.cards.map((c) => c.sortOrder)) + 1 : 0
@@ -568,17 +722,17 @@ function ColumnView({
           <article
             key={card.id}
             className={`${styles.card} ${dragCardId === card.id ? styles.cardDragging : ''}`}
-            draggable={canEdit}
+            draggable={enableDrag}
             onDragStart={() => onDragStart(card.id)}
             onDragEnd={onDragEnd}
             onDragOver={(e) => {
-              if (!canEdit) return;
+              if (!enableDrag) return;
               e.preventDefault();
               e.stopPropagation();
               onDragOverColumn();
             }}
             onDrop={(e) => {
-              if (!canEdit) return;
+              if (!enableDrag) return;
               e.preventDefault();
               e.stopPropagation();
               onDropCard(card.sortOrder);

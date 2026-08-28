@@ -28,7 +28,7 @@ import {
   updateKanbanColumn,
 } from '@/shared/api/kanban/admin-kanban';
 
-import { newChecklistId } from '../kanban.utils';
+import { newChecklistId } from '../shared/kanban.utils';
 
 export type KanbanPageModel = ReturnType<typeof useKanbanPage>;
 

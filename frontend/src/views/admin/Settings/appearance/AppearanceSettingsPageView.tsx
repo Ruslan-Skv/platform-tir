@@ -2,7 +2,11 @@
 
 import { useState } from 'react';
 
-import { type AdminSidebarMobileLayout, useAdminSidebarUiPrefs } from '@/shared/lib/admin';
+import {
+  type AdminSidebarDesktopLayout,
+  type AdminSidebarMobileLayout,
+  useAdminSidebarUiPrefs,
+} from '@/shared/lib/admin';
 import pageStyles from '@/views/admin/Settings/shared/SettingsPage.module.css';
 import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
 
@@ -24,6 +28,11 @@ export function AppearanceSettingsPageView() {
 
   const setMobileLayout = (mobileLayout: AdminSidebarMobileLayout) => {
     updatePrefs({ mobileLayout });
+    flashSaved();
+  };
+
+  const setDesktopLayout = (desktopLayout: AdminSidebarDesktopLayout) => {
+    updatePrefs({ desktopLayout });
     flashSaved();
   };
 
@@ -54,6 +63,45 @@ export function AppearanceSettingsPageView() {
             </span>
           </span>
         </label>
+
+        <fieldset className={styles.fieldset}>
+          <legend className={styles.legend}>Десктопное меню</legend>
+          <p className={styles.fieldsetHint}>
+            Как показывать пункты верхнего уровня в развёрнутом сайдбаре на экранах шире
+            1024&nbsp;px. В свёрнутой рейке всегда остаются иконки.
+          </p>
+
+          <label className={styles.radioRow}>
+            <input
+              type="radio"
+              name="desktop-sidebar-layout"
+              checked={prefs.desktopLayout === 'list'}
+              onChange={() => setDesktopLayout('list')}
+            />
+            <span>
+              <strong className={styles.optionTitle}>Список</strong>
+              <span className={styles.optionHint}>
+                Классический вертикальный список с раскрывающимися подменю.
+              </span>
+            </span>
+          </label>
+
+          <label className={styles.radioRow}>
+            <input
+              type="radio"
+              name="desktop-sidebar-layout"
+              checked={prefs.desktopLayout === 'grid2'}
+              onChange={() => setDesktopLayout('grid2')}
+            />
+            <span>
+              <strong className={styles.optionTitle}>Сетка 2×</strong>
+              <span className={styles.optionHint}>
+                Плитки по 2 в ряд. Раздел с подменю открывается отдельным экраном со списком и
+                кнопкой «Назад».
+              </span>
+            </span>
+          </label>
+        </fieldset>
 
         <fieldset className={styles.fieldset}>
           <legend className={styles.legend}>Мобильное меню</legend>
@@ -95,7 +143,7 @@ export function AppearanceSettingsPageView() {
 
         <p className={styles.liveHint}>
           Изменения сохраняются в аккаунте и сразу применяются. На узком экране откройте меню (☰),
-          чтобы увидеть выбранный вид.
+          на десктопе — разверните сайдбар, чтобы увидеть выбранный вид.
         </p>
       </section>
     </SettingsSubPageView>

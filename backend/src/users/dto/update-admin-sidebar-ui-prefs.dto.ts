@@ -14,4 +14,12 @@ export class UpdateAdminSidebarUiPrefsDto {
   @IsOptional()
   @IsIn(['list', 'grid3'])
   mobileLayout?: 'list' | 'grid3';
+
+  @ApiPropertyOptional({
+    description: 'Вид десктопного админ-меню',
+    enum: ['list', 'grid2'],
+  })
+  @IsOptional()
+  @IsIn(['list', 'grid2'])
+  desktopLayout?: 'list' | 'grid2';
 }

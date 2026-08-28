@@ -805,6 +805,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         >
           <Logo
             href="/"
+            markOnly
             ariaLabel="На главную — Территория интерьерных решений"
             className={styles.headerLogoSvg}
             linkClassName={styles.headerLogo}

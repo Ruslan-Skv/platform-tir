@@ -12,11 +12,11 @@ import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';
 import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/shared/crmCustomerDisplay';
 
-import { formatKanbanUser } from '../kanban.utils';
+import { formatKanbanUser } from '../shared/kanban.utils';
 import {
   KANBAN_TRASH_RETENTION_NOTICE,
   kanbanTrashPermanentDeleteAtIso,
-} from '../kanbanTrashRetention';
+} from '../shared/kanbanTrashRetention';
 
 const PAGE_SIZE = 15;
 

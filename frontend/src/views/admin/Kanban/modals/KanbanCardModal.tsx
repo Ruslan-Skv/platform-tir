@@ -9,7 +9,7 @@ import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalo
 import { MessengerThreadPanel } from '@/views/admin/Messenger';
 
 import styles from '../KanbanPage.module.css';
-import { PRIORITY_LABELS, formatKanbanUser } from '../kanban.utils';
+import { PRIORITY_LABELS, formatKanbanUser } from '../shared/kanban.utils';
 
 type UserOption = {
   id: string;

@@ -765,12 +765,19 @@ export function AdminSidebar({
   const [gridNavStack, setGridNavStack] = useState<GridNavFrame[]>([]);
   const resizeStartX = useRef<number>(0);
   const resizeStartWidth = useRef<number>(0);
-  const { prefs: sidebarUiPrefs } = useAdminSidebarUiPrefs();
+  const { prefs: sidebarUiPrefs, ready: sidebarUiPrefsReady } = useAdminSidebarUiPrefs();
 
   const isSuperAdmin = currentUser?.role === 'SUPER_ADMIN';
   /** На свёрнутой десктопной рейке иконки нужны всегда. */
   const showNavIcons = !sidebarUiPrefs.hideIcons || collapsed;
-  const useMobileGrid = isMobileViewport && sidebarUiPrefs.mobileLayout === 'grid3';
+  const useMobileGrid =
+    sidebarUiPrefsReady && isMobileViewport && sidebarUiPrefs.mobileLayout === 'grid3';
+  const useDesktopGrid =
+    sidebarUiPrefsReady &&
+    !isMobileViewport &&
+    !collapsed &&
+    sidebarUiPrefs.desktopLayout === 'grid2';
+  const useGridNav = useMobileGrid || useDesktopGrid;
   const gridDrillFrame = gridNavStack.length > 0 ? gridNavStack[gridNavStack.length - 1] : null;
   const isAccessFocus = useCallback(
     (resourceId?: string) => Boolean(resourceId && accessModalResourceId === resourceId),
@@ -786,10 +793,14 @@ export function AdminSidebar({
   }, []);
 
   useEffect(() => {
-    if (!mobileOpen || !useMobileGrid) {
+    if (isMobileViewport && !mobileOpen) {
+      setGridNavStack([]);
+      return;
+    }
+    if (!useGridNav) {
       setGridNavStack([]);
     }
-  }, [mobileOpen, useMobileGrid]);
+  }, [mobileOpen, useGridNav, isMobileViewport]);
 
   useEffect(() => {
     setGridNavStack([]);
@@ -998,7 +1009,8 @@ export function AdminSidebar({
         />
       ) : null}
       <aside
-        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing || !transitionsEnabled ? styles.resizing : ''} ${sidebarUiPrefs.hideIcons ? styles.hideIcons : ''} ${useMobileGrid ? styles.mobileGrid : ''}`}
+        data-admin-sidebar
+        className={`${styles.sidebar} ${collapsed ? styles.collapsed : ''} ${mobileOpen ? styles.open : ''} ${isResizing || !transitionsEnabled ? styles.resizing : ''} ${sidebarUiPrefs.hideIcons ? styles.hideIcons : ''} ${useMobileGrid ? styles.mobileGrid : ''} ${useDesktopGrid ? styles.desktopGrid : ''}`}
         style={
           isMobileViewport || !applyInlineWidth ? undefined : collapsed ? undefined : { width }
         }
@@ -1040,9 +1052,9 @@ export function AdminSidebar({
         </div>
 
         <nav
-          className={`${styles.nav} ${useMobileGrid && !gridDrillFrame ? styles.navMobileGrid : ''} ${useMobileGrid && gridDrillFrame ? styles.navMobileDrill : ''}`}
+          className={`${styles.nav} ${useGridNav && !gridDrillFrame ? (useMobileGrid ? styles.navMobileGrid : styles.navDesktopGrid) : ''} ${useGridNav && gridDrillFrame ? styles.navGridDrill : ''}`}
         >
-          {useMobileGrid && gridDrillFrame ? (
+          {useGridNav && gridDrillFrame ? (
             <>
               <div className={styles.gridDrillHeader}>
                 <button
@@ -1173,7 +1185,7 @@ export function AdminSidebar({
                             isActive(item.href) || isChildActive(item.children) ? styles.active : ''
                           }`}
                           onClick={() => {
-                            if (useMobileGrid) {
+                            if (useGridNav) {
                               pushGridNavFrame({
                                 title: item.label,
                                 items: item.children!,
@@ -1187,23 +1199,25 @@ export function AdminSidebar({
                           {showNavIcons ? <span className={styles.icon}>{item.icon}</span> : null}
                           {!collapsed && (
                             <>
-                              <span className={styles.label}>{item.label}</span>
+                              <span className={styles.label} title={item.label}>
+                                {item.label}
+                              </span>
                               <span
                                 className={`${styles.arrow} ${
-                                  !useMobileGrid && isItemExpanded ? styles.expanded : ''
+                                  !useGridNav && isItemExpanded ? styles.expanded : ''
                                 }`}
                               >
-                                {useMobileGrid ? '›' : '▼'}
+                                {useGridNav ? '›' : '▼'}
                               </span>
                             </>
                           )}
                         </button>
-                        {!collapsed && !useMobileGrid && isSuperAdmin && item.resourceId && (
+                        {!collapsed && isSuperAdmin && item.resourceId && (
                           <button
                             type="button"
                             className={`${styles.accessIcon}${
-                              isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''
-                            }`}
+                              useGridNav ? ` ${styles.accessIconGrid}` : ''
+                            }${isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''}`}
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
@@ -1212,11 +1226,11 @@ export function AdminSidebar({
                             title="Доступ"
                             aria-label={`Управление доступом: ${item.label}`}
                           >
-                            <AdminAccessIcon size={16} />
+                            <AdminAccessIcon size={useGridNav ? 14 : 16} />
                           </button>
                         )}
                       </div>
-                      {!useMobileGrid && !collapsed && isItemExpanded && (
+                      {!useGridNav && !collapsed && isItemExpanded && (
                         <div className={styles.submenu}>
                           {item.children.map((child) =>
                             child.children ? (
@@ -1371,14 +1385,18 @@ export function AdminSidebar({
                         }}
                       >
                         {showNavIcons ? <span className={styles.icon}>{item.icon}</span> : null}
-                        {!collapsed && <span className={styles.label}>{item.label}</span>}
+                        {!collapsed && (
+                          <span className={styles.label} title={item.label}>
+                            {item.label}
+                          </span>
+                        )}
                       </Link>
-                      {!collapsed && !useMobileGrid && isSuperAdmin && item.resourceId && (
+                      {!collapsed && isSuperAdmin && item.resourceId && (
                         <button
                           type="button"
                           className={`${styles.accessIcon}${
-                            isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''
-                          }`}
+                            useGridNav ? ` ${styles.accessIconGrid}` : ''
+                          }${isAccessFocus(item.resourceId) ? ` ${styles.accessIconActive}` : ''}`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
@@ -1387,7 +1405,7 @@ export function AdminSidebar({
                           title="Доступ"
                           aria-label={`Управление доступом: ${item.label}`}
                         >
-                          <AdminAccessIcon size={16} />
+                          <AdminAccessIcon size={useGridNav ? 14 : 16} />
                         </button>
                       )}
                     </div>

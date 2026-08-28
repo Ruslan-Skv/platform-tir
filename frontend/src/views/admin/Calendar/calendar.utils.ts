@@ -11,6 +11,18 @@ export const CALENDAR_TYPE_LABELS: Record<CalendarEventType, string> = {
   custom: 'Событие',
 };
 
+/** Короткие подписи для фильтров на узком экране (дашборд, мобильный календарь). */
+export const CALENDAR_TYPE_SHORT_LABELS: Record<CalendarEventType, string> = {
+  installation: 'Монтаж',
+  waybill: 'Накладная',
+  measurement: 'Замер',
+  contract: 'Договор',
+  delivery: 'Доставка',
+  contract_install: 'Монтаж дог.',
+  work_day: 'Раб. день',
+  custom: 'Событие',
+};
+
 export const ALL_CALENDAR_TYPES = Object.keys(CALENDAR_TYPE_LABELS) as CalendarEventType[];
 
 const TYPE_DOT: Record<CalendarEventType, string> = {

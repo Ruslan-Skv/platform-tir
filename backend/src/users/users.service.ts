@@ -219,12 +219,14 @@ export class UsersService {
   async getAdminSidebarUiPrefs(userId: string): Promise<{
     hideIcons: boolean;
     mobileLayout: 'list' | 'grid3';
+    desktopLayout: 'list' | 'grid2';
   }> {
     const user = await this.prisma.user.findUnique({
       where: { id: userId },
       select: {
         adminSidebarHideIcons: true,
         adminSidebarMobileLayout: true,
+        adminSidebarDesktopLayout: true,
       },
     });
     if (!user) {
@@ -233,27 +235,41 @@ export class UsersService {
     return {
       hideIcons: Boolean(user.adminSidebarHideIcons),
       mobileLayout: user.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
+      desktopLayout: user.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
     };
   }
 
   async updateAdminSidebarUiPrefs(
     userId: string,
-    data: { hideIcons?: boolean; mobileLayout?: 'list' | 'grid3' },
-  ): Promise<{ hideIcons: boolean; mobileLayout: 'list' | 'grid3' }> {
+    data: {
+      hideIcons?: boolean;
+      mobileLayout?: 'list' | 'grid3';
+      desktopLayout?: 'list' | 'grid2';
+    },
+  ): Promise<{
+    hideIcons: boolean;
+    mobileLayout: 'list' | 'grid3';
+    desktopLayout: 'list' | 'grid2';
+  }> {
     const updated = await this.prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.hideIcons !== undefined && { adminSidebarHideIcons: data.hideIcons }),
         ...(data.mobileLayout !== undefined && { adminSidebarMobileLayout: data.mobileLayout }),
+        ...(data.desktopLayout !== undefined && {
+          adminSidebarDesktopLayout: data.desktopLayout,
+        }),
       },
       select: {
         adminSidebarHideIcons: true,
         adminSidebarMobileLayout: true,
+        adminSidebarDesktopLayout: true,
       },
     });
     return {
       hideIcons: Boolean(updated.adminSidebarHideIcons),
       mobileLayout: updated.adminSidebarMobileLayout === 'grid3' ? 'grid3' : 'list',
+      desktopLayout: updated.adminSidebarDesktopLayout === 'grid2' ? 'grid2' : 'list',
     };
   }
 

@@ -1,9 +1,13 @@
 'use client';
 
-import { type FormEvent, useEffect, useRef } from 'react';
+import { type FormEvent, useEffect, useRef, useState } from 'react';
 
+import { useAdminNarrowViewport } from '@/shared/lib/hooks/useAdminNarrowViewport';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
-import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import {
+  AdminListRefreshButton,
+  AdminToolbarIconButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
@@ -63,10 +67,34 @@ export function MessengerPageView({ model }: Props) {
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
   const inputRef = useRef<HTMLTextAreaElement | null>(null);
+  const isNarrow = useAdminNarrowViewport();
+  const [mobileChatOpen, setMobileChatOpen] = useState(false);
+
+  useEffect(() => {
+    if (!isNarrow) setMobileChatOpen(false);
+  }, [isNarrow]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages, selectedId]);
+
+  const showListPane = !isNarrow || !mobileChatOpen;
+  const showChatPane = !isNarrow || mobileChatOpen;
+
+  const handleSelectConversation = (id: string) => {
+    void selectConversation(id);
+    if (isNarrow) setMobileChatOpen(true);
+  };
+
+  const handleListTabChange = (tab: 'channels' | 'direct') => {
+    setListTab(tab);
+    if (isNarrow) setMobileChatOpen(false);
+  };
+
+  const handleOpenCreate = () => {
+    if (listTab === 'channels') openChannelModal();
+    else openDmModal();
+  };
 
   const memberNames =
     activeDetail?.members
@@ -80,15 +108,37 @@ export function MessengerPageView({ model }: Props) {
   };
 
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+    <div
+      className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage} ${styles.messengerPage}`}
+    >
       <div className={cdHub.editorHeader}>
         <div className={cdHub.contractsListHeaderLeft}>
           <div className={cdHub.contractsHeaderTitleRow}>
             <h1 className={styles.title}>Мессенджер</h1>
             <MessengerRulesInfoTip />
+            <div className={cdHub.contractsHeaderIconActionsMobile}>
+              {showListPane ? (
+                <AdminToolbarIconButton
+                  type="button"
+                  disabled={busy || (listTab === 'channels' ? !canEdit : false)}
+                  title={listTab === 'channels' ? 'Новый канал' : 'Новый чат'}
+                  aria-label={listTab === 'channels' ? 'Новый канал' : 'Новый чат'}
+                  onClick={handleOpenCreate}
+                >
+                  +
+                </AdminToolbarIconButton>
+              ) : null}
+              <AdminListRefreshButton
+                onClick={() => void reload()}
+                disabled={loading || busy}
+                busy={loading}
+                title="Обновить"
+                aria-label="Обновить мессенджер"
+              />
+            </div>
           </div>
         </div>
-        <div className={cdHub.contractsListHeaderActions}>
+        <div className={`${cdHub.contractsListHeaderActions} ${styles.headerActionsDesktop}`}>
           <AdminListRefreshButton
             onClick={() => void reload()}
             disabled={loading || busy}
@@ -102,14 +152,14 @@ export function MessengerPageView({ model }: Props) {
       {errorMessage ? <AdminFormMessage type="error">{errorMessage}</AdminFormMessage> : null}
 
       <div className={styles.layout}>
-        <aside className={styles.sidebar}>
+        <aside className={`${styles.sidebar} ${showListPane ? '' : styles.paneHidden}`}>
           <div className={styles.tabs} role="tablist" aria-label="Тип чатов">
             <button
               type="button"
               role="tab"
               aria-selected={listTab === 'channels'}
               className={`${styles.tab} ${listTab === 'channels' ? styles.tabActive : ''}`}
-              onClick={() => setListTab('channels')}
+              onClick={() => handleListTabChange('channels')}
             >
               Каналы
             </button>
@@ -118,7 +168,7 @@ export function MessengerPageView({ model }: Props) {
               role="tab"
               aria-selected={listTab === 'direct'}
               className={`${styles.tab} ${listTab === 'direct' ? styles.tabActive : ''}`}
-              onClick={() => setListTab('direct')}
+              onClick={() => handleListTabChange('direct')}
             >
               Личные
             </button>
@@ -131,7 +181,8 @@ export function MessengerPageView({ model }: Props) {
                 disabled={!canEdit || busy}
                 onClick={openChannelModal}
               >
-                + Новый канал
+                <span className={styles.sideActionLabelFull}>+ Новый канал</span>
+                <span className={styles.sideActionLabelShort}>+ Канал</span>
               </button>
             ) : (
               <button
@@ -140,7 +191,8 @@ export function MessengerPageView({ model }: Props) {
                 disabled={busy}
                 onClick={openDmModal}
               >
-                + Новый чат
+                <span className={styles.sideActionLabelFull}>+ Новый чат</span>
+                <span className={styles.sideActionLabelShort}>+ Чат</span>
               </button>
             )}
           </div>
@@ -157,7 +209,7 @@ export function MessengerPageView({ model }: Props) {
                   key={item.id}
                   type="button"
                   className={`${styles.listItem} ${selectedId === item.id ? styles.listItemActive : ''}`}
-                  onClick={() => void selectConversation(item.id)}
+                  onClick={() => handleSelectConversation(item.id)}
                 >
                   <div className={styles.listItemTitleRow}>
                     <span className={styles.listItemTitle}>
@@ -180,23 +232,39 @@ export function MessengerPageView({ model }: Props) {
           </div>
         </aside>
 
-        <section className={styles.chatPane}>
+        <section className={`${styles.chatPane} ${showChatPane ? '' : styles.paneHidden}`}>
           {!selectedId || !activeDetail ? (
             <div className={styles.messages}>
-              <p className={styles.emptyList}>Выберите чат слева</p>
+              <p className={styles.emptyList}>
+                {isNarrow ? 'Выберите чат из списка' : 'Выберите чат слева'}
+              </p>
             </div>
           ) : (
             <>
               <header className={styles.chatHeader}>
-                <h2 className={styles.chatTitle}>
-                  {activeDetail.type === 'CHANNEL' ? `# ${activeDetail.title}` : activeDetail.title}
-                </h2>
-                <p className={styles.chatMeta}>
-                  {activeDetail.members.length} участник
-                  {activeDetail.members.length === 1 ? '' : 'а'}
-                  {memberNames ? `: ${memberNames}` : ''}
-                  {activeDetail.members.length > 8 ? '…' : ''}
-                </p>
+                {isNarrow ? (
+                  <button
+                    type="button"
+                    className={styles.backBtn}
+                    onClick={() => setMobileChatOpen(false)}
+                    aria-label="К списку чатов"
+                  >
+                    ‹
+                  </button>
+                ) : null}
+                <div className={styles.chatHeaderMain}>
+                  <h2 className={styles.chatTitle}>
+                    {activeDetail.type === 'CHANNEL'
+                      ? `# ${activeDetail.title}`
+                      : activeDetail.title}
+                  </h2>
+                  <p className={styles.chatMeta}>
+                    {activeDetail.members.length} участник
+                    {activeDetail.members.length === 1 ? '' : 'а'}
+                    {!isNarrow && memberNames ? `: ${memberNames}` : ''}
+                    {!isNarrow && activeDetail.members.length > 8 ? '…' : ''}
+                  </p>
+                </div>
               </header>
               <div className={styles.messages}>
                 {loadingMessages ? <p className={styles.emptyList}>Загрузка сообщений…</p> : null}
@@ -252,8 +320,13 @@ export function MessengerPageView({ model }: Props) {
                   type="submit"
                   className={styles.primaryBtn}
                   disabled={sending || !input.trim()}
+                  aria-label="Отправить"
+                  title="Отправить"
                 >
-                  Отправить
+                  <span className={styles.sendBtnLabelFull}>Отправить</span>
+                  <span className={styles.sendBtnLabelShort} aria-hidden>
+                    ↑
+                  </span>
                 </button>
               </form>
             </>
@@ -270,7 +343,11 @@ export function MessengerPageView({ model }: Props) {
         onTitleChange={setChannelTitle}
         onMemberIdsChange={setChannelMemberIds}
         onClose={() => setChannelModalOpen(false)}
-        onSubmit={() => void submitChannel()}
+        onSubmit={() => {
+          void submitChannel().then(() => {
+            if (isNarrow) setMobileChatOpen(true);
+          });
+        }}
       />
       <MessengerDirectModal
         open={dmModalOpen}
@@ -279,7 +356,11 @@ export function MessengerPageView({ model }: Props) {
         users={users}
         onUserIdChange={setDmUserId}
         onClose={() => setDmModalOpen(false)}
-        onSubmit={() => void submitDm()}
+        onSubmit={() => {
+          void submitDm().then(() => {
+            if (isNarrow) setMobileChatOpen(true);
+          });
+        }}
       />
     </div>
   );

@@ -113,8 +113,11 @@
 }
 
 .headerLogoSvg {
-  height: 1.75rem;
-  max-width: min(9.5rem, 42vw);
+  --admin-logo-mark-height: 1.75rem;
+  height: var(--admin-logo-mark-height);
+  width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
+  max-width: none;
+  flex-shrink: 0;
 }
 
 /* Поиск сразу слева после истории — не пересекается с кнопками справа */
@@ -992,8 +995,10 @@
 
   /* Размер как у публичного Logo на мобиле */
   .headerLogoSvg {
-    height: 1.75rem;
-    max-width: clamp(9.5rem, 5.7rem + 17vw, 16.75rem);
+    --admin-logo-mark-height: 1.75rem;
+    height: var(--admin-logo-mark-height);
+    width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
+    max-width: none;
   }
 
   .mobileMenuButton {

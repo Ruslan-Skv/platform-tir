@@ -8,6 +8,7 @@ import {
 export type AdminSidebarUiPrefsDto = {
   hideIcons: boolean;
   mobileLayout: 'list' | 'grid3';
+  desktopLayout: 'list' | 'grid2';
 };
 
 function getAuthHeaders(): HeadersInit {
@@ -23,6 +24,7 @@ function normalizePrefs(data: Partial<AdminSidebarUiPrefsDto>): AdminSidebarUiPr
   return {
     hideIcons: Boolean(data.hideIcons),
     mobileLayout: data.mobileLayout === 'grid3' ? 'grid3' : 'list',
+    desktopLayout: data.desktopLayout === 'grid2' ? 'grid2' : 'list',
   };
 }
 

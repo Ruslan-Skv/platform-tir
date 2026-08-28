@@ -1,4 +1,3 @@
-import Image from 'next/image';
 import Link from 'next/link';
 
 import { getSafeHref } from '@/shared/lib/sanitize';
@@ -24,25 +23,24 @@ export function AdminPlatformBrand({
   publicSiteHref,
   className,
 }: AdminPlatformBrandProps) {
-  const showHouseOnly = collapsed && size === 'sidebar';
+  const showTitle = size === 'sidebar' && !collapsed;
+  const markClassName = size === 'login' ? styles.logoLoginMark : styles.logoSidebarMark;
 
-  const logoNode = showHouseOnly ? (
-    <span className={styles.logoWrap}>
-      <Image
-        src="/favicon.svg"
-        alt=""
-        width={28}
-        height={34}
-        className={styles.houseMark}
-        aria-hidden
-      />
-    </span>
+  const houseMark = (
+    <Logo markOnly unlinked className={markClassName} linkClassName={styles.logoWrap} />
+  );
+
+  const linkedHouseMark = publicSiteHref ? (
+    <Link
+      href={getSafeHref(publicSiteHref, '/')}
+      className={styles.logoLink}
+      title="Вернуться на публичный сайт"
+      aria-label="Вернуться на публичный сайт"
+    >
+      {houseMark}
+    </Link>
   ) : (
-    <Logo
-      unlinked
-      className={size === 'login' ? styles.logoLogin : styles.logoSidebar}
-      linkClassName={styles.logoWrap}
-    />
+    houseMark
   );
 
   return (
@@ -51,25 +49,28 @@ export function AdminPlatformBrand({
         styles.brand,
         size === 'login' ? styles.login : styles.sidebar,
         collapsed ? styles.collapsed : '',
+        showTitle ? styles.withTitle : '',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
     >
-      {!showHouseOnly && size === 'sidebar' && (
-        <span className={styles.platformTitle}>{PLATFORM_TITLE}</span>
-      )}
-      {publicSiteHref ? (
-        <Link
-          href={getSafeHref(publicSiteHref, '/')}
-          className={styles.logoLink}
-          title="Вернуться на публичный сайт"
-          aria-label="Вернуться на публичный сайт"
-        >
-          {logoNode}
-        </Link>
+      {showTitle ? (
+        <span className={styles.brandRow}>
+          {linkedHouseMark}
+          <span className={styles.platformTitle} title={PLATFORM_TITLE}>
+            {PLATFORM_TITLE}
+          </span>
+        </span>
+      ) : size === 'login' ? (
+        <span className={`${styles.brandRow} ${styles.loginBrandRow}`}>
+          {linkedHouseMark}
+          <span className={styles.platformTitle} title={PLATFORM_TITLE}>
+            {PLATFORM_TITLE}
+          </span>
+        </span>
       ) : (
-        logoNode
+        linkedHouseMark
       )}
     </span>
   );

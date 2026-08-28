@@ -1,8 +1,12 @@
 'use client';
 
 import type { CalendarEvent } from '@/shared/api/calendar/admin-calendar';
+import { useAdminNarrowViewport } from '@/shared/lib/hooks/useAdminNarrowViewport';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
-import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import {
+  AdminListRefreshButton,
+  AdminToolbarIconButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -13,6 +17,7 @@ import { CalendarRulesInfoTip } from './CalendarRulesInfoTip';
 import {
   ALL_CALENDAR_TYPES,
   CALENDAR_TYPE_LABELS,
+  CALENDAR_TYPE_SHORT_LABELS,
   buildMonthCalendarCells,
   formatEventDateRu,
   formatMonthYearRu,
@@ -26,7 +31,8 @@ import type { CalendarPageModel } from './hooks/useCalendarPage';
 import { CalendarCreateEventModal } from './modals/CalendarCreateEventModal';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
-const MAX_PILLS = 4;
+const MAX_PILLS_DESKTOP = 4;
+const MAX_PILLS_MOBILE = 2;
 
 type Props = { model: CalendarPageModel };
 
@@ -99,18 +105,48 @@ export function CalendarPageView({ model }: Props) {
     submitCreate,
   } = model;
 
+  const isNarrow = useAdminNarrowViewport();
+  const maxPills = isNarrow ? MAX_PILLS_MOBILE : MAX_PILLS_DESKTOP;
   const cells = buildMonthCalendarCells(year, monthIndex0);
 
+  const openCreateToday = () => {
+    const n = new Date();
+    const iso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
+    openCreate(iso);
+  };
+
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+    <div
+      className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage} ${styles.calendarPage}`}
+    >
       <div className={cdHub.editorHeader}>
         <div className={cdHub.contractsListHeaderLeft}>
           <div className={cdHub.contractsHeaderTitleRow}>
             <h1 className={styles.title}>Календарь</h1>
             <CalendarRulesInfoTip />
+            <div className={cdHub.contractsHeaderIconActionsMobile}>
+              <AdminToolbarIconButton
+                type="button"
+                disabled={busy}
+                title="Добавить событие"
+                aria-label="Добавить событие"
+                onClick={openCreateToday}
+              >
+                +
+              </AdminToolbarIconButton>
+              <AdminListRefreshButton
+                onClick={() => void reload()}
+                disabled={loading || busy}
+                busy={loading}
+                title="Обновить"
+                aria-label="Обновить календарь"
+              />
+            </div>
           </div>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+        <div
+          className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions} ${styles.headerActions}`}
+        >
           <button
             type="button"
             className={styles.secondaryBtn}
@@ -126,11 +162,7 @@ export function CalendarPageView({ model }: Props) {
             type="button"
             className={styles.primaryBtn}
             disabled={busy}
-            onClick={() => {
-              const n = new Date();
-              const iso = `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
-              openCreate(iso);
-            }}
+            onClick={openCreateToday}
           >
             + Событие
           </button>
@@ -148,22 +180,26 @@ export function CalendarPageView({ model }: Props) {
 
       {errorMessage ? <AdminFormMessage type="error">{errorMessage}</AdminFormMessage> : null}
 
-      <div className={styles.filters} role="group" aria-label="Типы событий">
-        {ALL_CALENDAR_TYPES.map((type) => {
-          const active = enabledTypes.includes(type);
-          return (
-            <button
-              key={type}
-              type="button"
-              className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
-              onClick={() => toggleType(type)}
-              aria-pressed={active}
-            >
-              <span className={`${styles.filterDot} ${styles[typeDotClass(type)]}`} aria-hidden />
-              {CALENDAR_TYPE_LABELS[type]}
-            </button>
-          );
-        })}
+      <div className={styles.filtersWrap}>
+        <div className={styles.filters} role="group" aria-label="Типы событий">
+          {ALL_CALENDAR_TYPES.map((type) => {
+            const active = enabledTypes.includes(type);
+            const label = isNarrow ? CALENDAR_TYPE_SHORT_LABELS[type] : CALENDAR_TYPE_LABELS[type];
+            return (
+              <button
+                key={type}
+                type="button"
+                className={`${styles.filterChip} ${active ? styles.filterChipActive : ''}`}
+                onClick={() => toggleType(type)}
+                aria-pressed={active}
+                title={CALENDAR_TYPE_LABELS[type]}
+              >
+                <span className={`${styles.filterDot} ${styles[typeDotClass(type)]}`} aria-hidden />
+                <span className={styles.filterLabel}>{label}</span>
+              </button>
+            );
+          })}
+        </div>
       </div>
 
       <section className={styles.root} aria-busy={loading}>
@@ -204,17 +240,22 @@ export function CalendarPageView({ model }: Props) {
           ))}
           {cells.map((cell) => {
             const dayItems = eventsByDate.get(cell.isoDate) ?? [];
-            const visible = dayItems.slice(0, MAX_PILLS);
+            const visible = dayItems.slice(0, maxPills);
             const rest = dayItems.length - visible.length;
             return (
               <div
                 key={cell.isoDate}
                 className={`${styles.day}${cell.inMonth ? '' : ` ${styles.dayOutside}`}${
                   cell.isToday ? ` ${styles.dayToday}` : ''
-                }`}
+                }${isNarrow ? ` ${styles.dayNarrow}` : ''}`}
               >
                 <div className={styles.dayHeader}>
                   <span className={styles.dayNum}>{cell.day}</span>
+                  {isNarrow && dayItems.length > 0 ? (
+                    <span className={styles.eventCount} aria-label={`${dayItems.length} событий`}>
+                      {dayItems.length}
+                    </span>
+                  ) : null}
                   {cell.inMonth ? (
                     <button
                       type="button"
@@ -228,17 +269,29 @@ export function CalendarPageView({ model }: Props) {
                   ) : null}
                 </div>
                 <div className={styles.pills}>
-                  {visible.map((ev) => (
-                    <a
-                      key={ev.id}
-                      href={ev.href}
-                      className={`${styles.pill} ${styles[typePillClass(ev.type)]}`}
-                    >
-                      <span className={styles.pillText}>{pillLabel(ev)}</span>
-                      <EventTooltip ev={ev} />
-                    </a>
-                  ))}
-                  {rest > 0 ? <div className={styles.more}>ещё {rest}</div> : null}
+                  {visible.map((ev) =>
+                    isNarrow ? (
+                      <a
+                        key={ev.id}
+                        href={ev.href}
+                        className={`${styles.mobileEventMark} ${styles[typePillClass(ev.type)]}`}
+                        title={pillLabel(ev)}
+                        aria-label={pillLabel(ev)}
+                      />
+                    ) : (
+                      <a
+                        key={ev.id}
+                        href={ev.href}
+                        className={`${styles.pill} ${styles[typePillClass(ev.type)]}`}
+                      >
+                        <span className={styles.pillText}>{pillLabel(ev)}</span>
+                        <EventTooltip ev={ev} />
+                      </a>
+                    )
+                  )}
+                  {rest > 0 ? (
+                    <div className={styles.more}>{isNarrow ? `+${rest}` : `ещё ${rest}`}</div>
+                  ) : null}
                 </div>
               </div>
             );

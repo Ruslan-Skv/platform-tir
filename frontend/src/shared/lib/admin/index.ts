@@ -5,6 +5,7 @@ export {
   readAdminSidebarUiPrefs,
   useAdminSidebarUiPrefs,
   writeAdminSidebarUiPrefs,
+  type AdminSidebarDesktopLayout,
   type AdminSidebarMobileLayout,
   type AdminSidebarUiPrefs,
 } from './sidebar-ui-prefs';
