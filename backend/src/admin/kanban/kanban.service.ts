@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { KanbanCardPriority, Prisma } from '@prisma/client';
+import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
 import { PrismaService } from '../../database/prisma.service';
 import {
   CreateKanbanBoardDto,
@@ -44,7 +45,10 @@ const cardInclude = {
 
 @Injectable()
 export class KanbanService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly adminBellPush: AdminBellPushService,
+  ) {}
 
   private async purgeExpiredTrash() {
     const cutoff = new Date(Date.now() - KANBAN_TRASH_RETENTION_MS);
@@ -302,12 +306,12 @@ export class KanbanService {
   }
 
   async createCard(columnId: string, userId: string, dto: CreateKanbanCardDto) {
-    await this.ensureColumn(columnId);
+    const column = await this.ensureColumn(columnId);
     const maxSort = await this.prisma.kanbanCard.aggregate({
       where: { columnId },
       _max: { sortOrder: true },
     });
-    return this.prisma.kanbanCard.create({
+    const card = await this.prisma.kanbanCard.create({
       data: {
         columnId,
         title: dto.title.trim(),
@@ -328,11 +332,32 @@ export class KanbanService {
       },
       include: cardInclude,
     });
+
+    if (card.assigneeId) {
+      await this.notifyCardEvent({
+        actorId: userId,
+        cardId: card.id,
+        boardId: column.boardId,
+        kind: 'assigned',
+        title: `Вас назначили: «${card.title}»`,
+        message: 'Новая карточка на доске канбана',
+        recipientIds: [card.assigneeId],
+      });
+    }
+
+    return card;
   }
 
-  async updateCard(cardId: string, dto: UpdateKanbanCardDto) {
-    await this.ensureCard(cardId);
-    return this.prisma.kanbanCard.update({
+  async updateCard(cardId: string, actorId: string, dto: UpdateKanbanCardDto) {
+    const before = await this.prisma.kanbanCard.findUnique({
+      where: { id: cardId },
+      include: {
+        column: { select: { boardId: true, name: true } },
+      },
+    });
+    if (!before) throw new NotFoundException('Карточка не найдена');
+
+    const card = await this.prisma.kanbanCard.update({
       where: { id: cardId },
       data: {
         ...(dto.title !== undefined ? { title: dto.title.trim() } : {}),
@@ -360,6 +385,56 @@ export class KanbanService {
       },
       include: cardInclude,
     });
+
+    const boardId = before.column.boardId;
+    const interested = [card.assigneeId, card.createdById].filter(Boolean) as string[];
+
+    if (dto.assigneeId !== undefined && card.assigneeId && card.assigneeId !== before.assigneeId) {
+      await this.notifyCardEvent({
+        actorId,
+        cardId: card.id,
+        boardId,
+        kind: 'assigned',
+        title: `Вас назначили: «${card.title}»`,
+        message: 'Изменился исполнитель карточки',
+        recipientIds: [card.assigneeId],
+      });
+    }
+
+    if (dto.dueDate !== undefined) {
+      const prevDue = before.dueDate?.toISOString() ?? null;
+      const nextDue = card.dueDate?.toISOString() ?? null;
+      if (prevDue !== nextDue) {
+        const dueLabel = card.dueDate ? card.dueDate.toISOString().slice(0, 10) : 'срок снят';
+        await this.notifyCardEvent({
+          actorId,
+          cardId: card.id,
+          boardId,
+          kind: 'due_changed',
+          title: `Срок: «${card.title}»`,
+          message: dueLabel,
+          recipientIds: interested,
+        });
+      }
+    }
+
+    if (
+      dto.priority !== undefined &&
+      card.priority !== before.priority &&
+      (card.priority === KanbanCardPriority.HIGH || card.priority === KanbanCardPriority.URGENT)
+    ) {
+      await this.notifyCardEvent({
+        actorId,
+        cardId: card.id,
+        boardId,
+        kind: 'priority',
+        title: `Приоритет: «${card.title}»`,
+        message: card.priority === KanbanCardPriority.URGENT ? 'Срочно' : 'Высокий',
+        recipientIds: interested,
+      });
+    }
+
+    return card;
   }
 
   async deleteCard(cardId: string) {
@@ -368,12 +443,19 @@ export class KanbanService {
     return { ok: true };
   }
 
-  async moveCard(cardId: string, dto: MoveKanbanCardDto) {
-    const card = await this.ensureCard(cardId);
+  async moveCard(cardId: string, actorId: string, dto: MoveKanbanCardDto) {
+    const card = await this.prisma.kanbanCard.findUnique({
+      where: { id: cardId },
+      include: {
+        column: { select: { id: true, name: true, boardId: true } },
+      },
+    });
+    if (!card) throw new NotFoundException('Карточка не найдена');
     const targetColumn = await this.ensureColumn(dto.columnId);
 
     const sourceColumnId = card.columnId;
     const targetColumnId = targetColumn.id;
+    const sourceColumnName = card.column.name;
 
     const targetCards = await this.prisma.kanbanCard.findMany({
       where: { columnId: targetColumnId, NOT: { id: cardId } },
@@ -421,15 +503,37 @@ export class KanbanService {
       );
     });
 
-    return this.prisma.kanbanCard.findUniqueOrThrow({
+    const updated = await this.prisma.kanbanCard.findUniqueOrThrow({
       where: { id: cardId },
       include: cardInclude,
     });
+
+    if (sourceColumnId !== targetColumnId) {
+      await this.notifyCardEvent({
+        actorId,
+        cardId: updated.id,
+        boardId: targetColumn.boardId,
+        kind: 'moved',
+        title: `Перемещена: «${updated.title}»`,
+        message: `${sourceColumnName} → ${targetColumn.name}`,
+        recipientIds: [updated.assigneeId, updated.createdById].filter(Boolean) as string[],
+      });
+    }
+
+    return updated;
   }
 
   async addComment(cardId: string, authorId: string, dto: CreateKanbanCommentDto) {
-    await this.ensureCard(cardId);
-    return this.prisma.kanbanCardComment.create({
+    const card = await this.prisma.kanbanCard.findUnique({
+      where: { id: cardId },
+      include: {
+        column: { select: { boardId: true } },
+        comments: { select: { authorId: true } },
+      },
+    });
+    if (!card) throw new NotFoundException('Карточка не найдена');
+
+    const comment = await this.prisma.kanbanCardComment.create({
       data: {
         cardId,
         authorId,
@@ -441,6 +545,28 @@ export class KanbanService {
         },
       },
     });
+
+    const authorName =
+      `${comment.author.firstName || ''} ${comment.author.lastName || ''}`.trim() ||
+      comment.author.email;
+    const preview = comment.body.length > 160 ? `${comment.body.slice(0, 157)}…` : comment.body;
+    const recipientIds = [
+      card.assigneeId,
+      card.createdById,
+      ...card.comments.map((c) => c.authorId),
+    ].filter(Boolean) as string[];
+
+    await this.notifyCardEvent({
+      actorId: authorId,
+      cardId: card.id,
+      boardId: card.column.boardId,
+      kind: 'commented',
+      title: `${authorName}: «${card.title}»`,
+      message: preview,
+      recipientIds,
+    });
+
+    return comment;
   }
 
   async deleteComment(commentId: string) {
@@ -450,6 +576,44 @@ export class KanbanService {
     if (!comment) throw new NotFoundException('Комментарий не найден');
     await this.prisma.kanbanCardComment.delete({ where: { id: commentId } });
     return { ok: true };
+  }
+
+  private async notifyCardEvent(params: {
+    actorId: string;
+    cardId: string;
+    boardId: string;
+    kind: 'assigned' | 'moved' | 'commented' | 'due_changed' | 'priority';
+    title: string;
+    message: string;
+    recipientIds: string[];
+  }) {
+    const recipientIds = [
+      ...new Set(params.recipientIds.filter((id) => Boolean(id) && id !== params.actorId)),
+    ];
+    if (recipientIds.length === 0) return;
+
+    const href = `/admin/kanban?board=${params.boardId}&card=${params.cardId}`;
+    await this.prisma.kanbanCardBellEvent.createMany({
+      data: recipientIds.map((recipientId) => ({
+        recipientId,
+        cardId: params.cardId,
+        kind: params.kind,
+        title: params.title,
+        message: params.message,
+        href,
+      })),
+    });
+
+    await Promise.all(
+      recipientIds.map((recipientId) =>
+        this.adminBellPush.notifyUsers([recipientId], 'kanban_card', {
+          title: params.title,
+          body: params.message,
+          url: href,
+          tag: `kanban-${params.kind}-${params.cardId}-${recipientId}`,
+        }),
+      ),
+    );
   }
 
   private async ensureBoard(boardId: string) {

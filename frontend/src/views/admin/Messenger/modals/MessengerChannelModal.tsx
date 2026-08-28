@@ -8,7 +8,7 @@ import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModa
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import styles from '../MessengerPage.module.css';
-import { formatMessengerUser } from '../messenger.utils';
+import { formatMessengerUser } from '../shared/messenger.utils';
 
 type Props = {
   open: boolean;

@@ -18,7 +18,9 @@ import {
   leaveMessengerConversation,
 } from '@/shared/api/messenger/messenger-socket';
 
-import styles from './MessengerPage.module.css';
+import styles from '../MessengerPage.module.css';
+import { MessengerEmojiPicker } from './MessengerEmojiPicker';
+import { insertTextAtCursor } from './messenger-composer.utils';
 import { formatMessageTime, formatMessengerUser, messengerUserInitials } from './messenger.utils';
 
 type Props = {
@@ -40,6 +42,7 @@ export function MessengerThreadPanel({ cardId, enabled }: Props) {
   const socketRef = useRef<Socket | null>(null);
   const conversationIdRef = useRef<string | null>(null);
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     conversationIdRef.current = conversationId;
@@ -158,20 +161,27 @@ export function MessengerThreadPanel({ cardId, enabled }: Props) {
         <div ref={bottomRef} />
       </div>
       <form className={styles.composer} onSubmit={onSubmit}>
-        <textarea
-          className={styles.composerInput}
-          rows={2}
-          value={input}
-          disabled={sending || !conversationId}
-          placeholder="Сообщение по задаче…"
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-        />
+        <div className={styles.composerField}>
+          <MessengerEmojiPicker
+            disabled={sending || !conversationId}
+            onPick={(emoji) => insertTextAtCursor(inputRef.current, input, emoji, setInput)}
+          />
+          <textarea
+            ref={inputRef}
+            className={styles.composerInput}
+            rows={2}
+            value={input}
+            disabled={sending || !conversationId}
+            placeholder="Сообщение по задаче…"
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+          />
+        </div>
         <button
           type="submit"
           className={styles.primaryBtn}

@@ -120,13 +120,21 @@ export class KanbanController {
   }
 
   @Patch('cards/:id')
-  updateCard(@Param('id') id: string, @Body() dto: UpdateKanbanCardDto) {
-    return this.kanbanService.updateCard(id, dto);
+  updateCard(
+    @Param('id') id: string,
+    @Body() dto: UpdateKanbanCardDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.kanbanService.updateCard(id, req.user.id, dto);
   }
 
   @Post('cards/:id/move')
-  moveCard(@Param('id') id: string, @Body() dto: MoveKanbanCardDto) {
-    return this.kanbanService.moveCard(id, dto);
+  moveCard(
+    @Param('id') id: string,
+    @Body() dto: MoveKanbanCardDto,
+    @Request() req: RequestWithUser,
+  ) {
+    return this.kanbanService.moveCard(id, req.user.id, dto);
   }
 
   @Delete('cards/:id')

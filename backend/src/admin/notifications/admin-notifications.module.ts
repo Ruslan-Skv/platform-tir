@@ -8,6 +8,9 @@ import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
 import { AdminBellInstallationScheduleFeedService } from './admin-bell-installation-schedule-feed.service';
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
+import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
+import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
+import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminNotificationsController } from './admin-notifications.controller';
 import { AdminNotificationsService } from './admin-notifications.service';
@@ -25,6 +28,9 @@ import { AdminNotificationsService } from './admin-notifications.service';
     AdminBellInstallationScheduleFeedService,
     AdminBellRepairScheduleFeedService,
     AdminBellFurnitureScheduleFeedService,
+    AdminBellCalendarFeedService,
+    AdminBellMessengerFeedService,
+    AdminBellKanbanFeedService,
   ],
   exports: [AdminNotificationsService, BellPushModule],
 })

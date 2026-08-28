@@ -9,16 +9,18 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from './MessengerPage.module.css';
-import { MessengerRulesInfoTip } from './MessengerRulesInfoTip';
 import type { MessengerPageModel } from './hooks/useMessengerPage';
+import { MessengerChannelModal } from './modals/MessengerChannelModal';
+import { MessengerDirectModal } from './modals/MessengerDirectModal';
+import { MessengerEmojiPicker } from './shared/MessengerEmojiPicker';
+import { MessengerRulesInfoTip } from './shared/MessengerRulesInfoTip';
+import { insertTextAtCursor } from './shared/messenger-composer.utils';
 import {
   formatMessageTime,
   formatMessengerUser,
   messengerUserInitials,
   previewBody,
-} from './messenger.utils';
-import { MessengerChannelModal } from './modals/MessengerChannelModal';
-import { MessengerDirectModal } from './modals/MessengerDirectModal';
+} from './shared/messenger.utils';
 
 type Props = { model: MessengerPageModel };
 
@@ -60,6 +62,7 @@ export function MessengerPageView({ model }: Props) {
   } = model;
 
   const bottomRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -224,20 +227,27 @@ export function MessengerPageView({ model }: Props) {
                 <div ref={bottomRef} />
               </div>
               <form className={styles.composer} onSubmit={onSubmit}>
-                <textarea
-                  className={styles.composerInput}
-                  rows={2}
-                  value={input}
-                  disabled={sending}
-                  placeholder="Сообщение…"
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendMessage();
-                    }
-                  }}
-                />
+                <div className={styles.composerField}>
+                  <MessengerEmojiPicker
+                    disabled={sending}
+                    onPick={(emoji) => insertTextAtCursor(inputRef.current, input, emoji, setInput)}
+                  />
+                  <textarea
+                    ref={inputRef}
+                    className={styles.composerInput}
+                    rows={2}
+                    value={input}
+                    disabled={sending}
+                    placeholder="Сообщение…"
+                    onChange={(e) => setInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        void sendMessage();
+                      }
+                    }}
+                  />
+                </div>
                 <button
                   type="submit"
                   className={styles.primaryBtn}

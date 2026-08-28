@@ -18,7 +18,10 @@ export type AdminBellNotificationType =
   | 'waybills'
   | 'installationSchedules'
   | 'repairSchedules'
-  | 'furnitureSchedules';
+  | 'furnitureSchedules'
+  | 'calendar'
+  | 'messenger'
+  | 'kanban';
 
 export type AdminBellTrainingNotification = {
   id: string;
@@ -91,6 +94,39 @@ export type AdminBellFurnitureScheduleNotification = {
   kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
   kindLabel: string;
   furnitureScheduleProjectId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellCalendarNotification = {
+  id: string;
+  kind: 'created';
+  kindLabel: string;
+  calendarEventId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellMessengerNotification = {
+  id: string;
+  kind: 'message';
+  kindLabel: string;
+  messageId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellKanbanNotification = {
+  id: string;
+  kind: 'assigned' | 'moved' | 'commented' | 'due_changed' | 'priority';
+  kindLabel: string;
+  cardId: string;
   title: string;
   message: string;
   href: string;
@@ -300,6 +336,42 @@ export function furnitureScheduleToBellNotificationItem(
   };
 }
 
+export function calendarToBellNotificationItem(
+  item: AdminBellCalendarNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'calendar',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/calendar',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
+export function messengerToBellNotificationItem(
+  item: AdminBellMessengerNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'messenger',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/messenger',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
+export function kanbanToBellNotificationItem(
+  item: AdminBellKanbanNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'kanban',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/kanban',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -382,6 +454,18 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.furniture-schedules') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'calendar') {
+    return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
+  }
+
+  if (item.type === 'messenger') {
+    return hasAccess('admin.messenger') && isBellTypeEnabled(item.type, settings);
+  }
+
+  if (item.type === 'kanban') {
+    return hasAccess('admin.kanban') && isBellTypeEnabled(item.type, settings);
+  }
+
   return isBellTypeEnabled(item.type, settings);
 }
 
@@ -424,6 +508,12 @@ export function isBellTypeEnabled(
       return settings.notifyOnRepairSchedules !== false;
     case 'furnitureSchedules':
       return settings.notifyOnFurnitureSchedules !== false;
+    case 'calendar':
+      return true;
+    case 'messenger':
+      return true;
+    case 'kanban':
+      return true;
     default:
       return false;
   }
@@ -512,6 +602,24 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'furnitureSchedules':
       return {
         title: 'План-график мебели',
+        body: item.text,
+        tag,
+      };
+    case 'calendar':
+      return {
+        title: 'Календарь',
+        body: item.text,
+        tag,
+      };
+    case 'messenger':
+      return {
+        title: 'Мессенджер',
+        body: item.text,
+        tag,
+      };
+    case 'kanban':
+      return {
+        title: 'Канбан',
         body: item.text,
         tag,
       };

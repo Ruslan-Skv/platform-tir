@@ -524,3 +524,72 @@ export async function getAdminBellFurnitureScheduleNotifications(
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }
+
+export type AdminBellCalendarNotification = {
+  id: string;
+  kind: 'created';
+  kindLabel: string;
+  calendarEventId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellCalendarNotifications(
+  limit = 20
+): Promise<AdminBellCalendarNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/calendar?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления календаря');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellMessengerNotification = {
+  id: string;
+  kind: 'message';
+  kindLabel: string;
+  messageId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellMessengerNotifications(
+  limit = 20
+): Promise<AdminBellMessengerNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/messenger?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления мессенджера');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellKanbanNotification = {
+  id: string;
+  kind: 'assigned' | 'moved' | 'commented' | 'due_changed' | 'priority';
+  kindLabel: string;
+  cardId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellKanbanNotifications(
+  limit = 20
+): Promise<AdminBellKanbanNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/kanban?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления канбана');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}

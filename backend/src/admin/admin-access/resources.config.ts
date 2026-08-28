@@ -252,6 +252,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
   },
   { id: 'admin.kanban', label: 'Канбан-доска', path: '/admin/kanban' },
   { id: 'admin.messenger', label: 'Мессенджер', path: '/admin/messenger' },
+  { id: 'admin.calendar', label: 'Календарь', path: '/admin/calendar' },
   { id: 'admin.settings', label: 'Настройки', path: '/admin/settings' },
   {
     id: 'admin.settings.appearance',

@@ -170,9 +170,14 @@ model User {
   kanbanCardsAssigned                     KanbanCard[]                             @relation("KanbanCardAssignee")
   kanbanCardsCreated                      KanbanCard[]                             @relation("KanbanCardCreatedBy")
   kanbanCardComments                      KanbanCardComment[]                      @relation("KanbanCardCommentAuthor")
+  kanbanCardBellEvents                    KanbanCardBellEvent[]                    @relation("KanbanCardBellRecipient")
   messengerConversationsCreated           MessengerConversation[]                  @relation("MessengerConversationCreatedBy")
   messengerMemberships                    MessengerMember[]                        @relation("MessengerMemberUser")
   messengerMessages                       MessengerMessage[]                       @relation("MessengerMessageAuthor")
+  messengerMessageBellEvents              MessengerMessageBellEvent[]              @relation("MessengerMessageBellRecipient")
+  calendarCustomEventsCreated             CalendarCustomEvent[]                    @relation("CalendarCustomEventCreatedBy")
+  calendarCustomEventRecipients           CalendarCustomEventRecipient[]           @relation("CalendarCustomEventRecipientUser")
+  calendarCustomEventBellEvents           CalendarCustomEventBellEvent[]           @relation("CalendarCustomEventBellRecipient")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -4230,11 +4235,30 @@ model KanbanCard {
   createdBy       User                   @relation("KanbanCardCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
   comments        KanbanCardComment[]
   messengerThread MessengerConversation?
+  bellEvents      KanbanCardBellEvent[]
 
   @@index([columnId, sortOrder])
   @@index([assigneeId])
   @@index([dueDate])
   @@map("kanban_cards")
+}
+
+/// Персональные события колокольчика по карточкам канбана.
+model KanbanCardBellEvent {
+  id          String     @id @default(cuid())
+  recipientId String
+  cardId      String
+  kind        String /// assigned | moved | commented | due_changed | priority
+  title       String
+  message     String     @db.Text
+  href        String
+  createdAt   DateTime   @default(now())
+  recipient   User       @relation("KanbanCardBellRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  card        KanbanCard @relation(fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([cardId])
+  @@map("kanban_card_bell_events")
 }
 
 model KanbanCardComment {
@@ -4293,16 +4317,86 @@ model MessengerMember {
 }
 
 model MessengerMessage {
-  id             String                @id @default(cuid())
+  id             String                      @id @default(cuid())
   conversationId String
   authorId       String
-  body           String                @db.Text
-  createdAt      DateTime              @default(now())
+  body           String                      @db.Text
+  createdAt      DateTime                    @default(now())
   deletedAt      DateTime?
-  conversation   MessengerConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  author         User                  @relation("MessengerMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  conversation   MessengerConversation       @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  author         User                        @relation("MessengerMessageAuthor", fields: [authorId], references: [id], onDelete: Restrict)
+  bellEvents     MessengerMessageBellEvent[]
 
   @@index([conversationId, createdAt])
   @@index([authorId])
   @@map("messenger_messages")
+}
+
+/// Персональные события колокольчика о новых сообщениях мессенджера.
+model MessengerMessageBellEvent {
+  id          String           @id @default(cuid())
+  recipientId String
+  messageId   String
+  kind        String /// message
+  title       String
+  message     String           @db.Text
+  href        String
+  createdAt   DateTime         @default(now())
+  recipient   User             @relation("MessengerMessageBellRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  source      MessengerMessage @relation(fields: [messageId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([messageId])
+  @@map("messenger_message_bell_events")
+}
+
+/// Пользовательские события единого календаря админки (с уведомлениями участникам).
+model CalendarCustomEvent {
+  id          String                         @id @default(cuid())
+  title       String
+  body        String?                        @db.Text
+  date        DateTime                       @db.Date
+  timeFrom    String?
+  timeTo      String?
+  createdById String
+  createdAt   DateTime                       @default(now())
+  updatedAt   DateTime                       @updatedAt
+  deletedAt   DateTime?
+  createdBy   User                           @relation("CalendarCustomEventCreatedBy", fields: [createdById], references: [id], onDelete: Restrict)
+  recipients  CalendarCustomEventRecipient[]
+  bellEvents  CalendarCustomEventBellEvent[]
+
+  @@index([date])
+  @@index([createdById])
+  @@map("calendar_custom_events")
+}
+
+model CalendarCustomEventRecipient {
+  id        String              @id @default(cuid())
+  eventId   String
+  userId    String
+  createdAt DateTime            @default(now())
+  event     CalendarCustomEvent @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user      User                @relation("CalendarCustomEventRecipientUser", fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, userId])
+  @@index([userId])
+  @@map("calendar_custom_event_recipients")
+}
+
+model CalendarCustomEventBellEvent {
+  id              String              @id @default(cuid())
+  recipientId     String
+  calendarEventId String
+  kind            String /// created
+  title           String
+  message         String              @db.Text
+  href            String
+  createdAt       DateTime            @default(now())
+  recipient       User                @relation("CalendarCustomEventBellRecipient", fields: [recipientId], references: [id], onDelete: Cascade)
+  event           CalendarCustomEvent @relation(fields: [calendarEventId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([calendarEventId])
+  @@map("calendar_custom_event_bell_events")
 }

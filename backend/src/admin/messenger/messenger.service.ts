@@ -7,6 +7,7 @@ import {
   forwardRef,
 } from '@nestjs/common';
 import { MessengerConversationType, Prisma } from '@prisma/client';
+import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
 import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
 import { PrismaService } from '../../database/prisma.service';
 import {
@@ -34,6 +35,7 @@ export class MessengerService {
     private readonly prisma: PrismaService,
     @Inject(forwardRef(() => MessengerGateway))
     private readonly gateway: MessengerGateway,
+    private readonly adminBellPush: AdminBellPushService,
   ) {}
 
   async listUsers(currentUserId: string) {
@@ -308,6 +310,18 @@ export class MessengerService {
       throw new BadRequestException('Сообщение не может быть пустым');
     }
 
+    const conversation = await this.prisma.messengerConversation.findUnique({
+      where: { id: conversationId },
+      include: {
+        members: {
+          include: { user: { select: USER_SELECT } },
+        },
+      },
+    });
+    if (!conversation) {
+      throw new NotFoundException('Чат не найден');
+    }
+
     const message = await this.prisma.messengerMessage.create({
       data: {
         conversationId,
@@ -333,6 +347,43 @@ export class MessengerService {
       conversationId,
       lastMessage: mapped,
     });
+
+    const recipientIds = conversation.members.map((m) => m.userId).filter((id) => id !== userId);
+    if (recipientIds.length > 0) {
+      const authorName =
+        `${message.author.firstName || ''} ${message.author.lastName || ''}`.trim() ||
+        message.author.email;
+      const chatTitle = this.resolveTitle(conversation, userId);
+      const preview = body.length > 160 ? `${body.slice(0, 157)}…` : body;
+      const href = `/admin/messenger?c=${conversationId}`;
+      const bellTitle =
+        conversation.type === MessengerConversationType.KANBAN_CARD
+          ? `${authorName} в чате задачи «${chatTitle}»`
+          : `${authorName} в «${chatTitle}»`;
+
+      await this.prisma.messengerMessageBellEvent.createMany({
+        data: recipientIds.map((recipientId) => ({
+          recipientId,
+          messageId: message.id,
+          kind: 'message',
+          title: bellTitle,
+          message: preview,
+          href,
+        })),
+      });
+
+      await Promise.all(
+        recipientIds.map((recipientId) =>
+          this.adminBellPush.notifyUsers([recipientId], 'messenger_message', {
+            title: bellTitle,
+            body: preview,
+            url: href,
+            tag: `messenger-message-${message.id}-${recipientId}`,
+          }),
+        ),
+      );
+    }
+
     return mapped;
   }
 

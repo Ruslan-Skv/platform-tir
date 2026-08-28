@@ -25,6 +25,7 @@ import { AnalyticsModule } from './analytics/analytics.module';
 import { MarketingModule } from './marketing/marketing.module';
 import { KanbanModule } from './kanban/kanban.module';
 import { MessengerModule } from './messenger/messenger.module';
+import { CalendarModule } from './calendar/calendar.module';
 import { AdminReviewsModule } from './reviews/admin-reviews.module';
 import { AdminNotificationsModule } from './notifications/admin-notifications.module';
 import { AdminFormsModule } from './forms/admin-forms.module';
@@ -107,6 +108,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     MarketingModule,
     KanbanModule,
     MessengerModule,
+    CalendarModule,
   ],
   exports: [
     AdminAccessModule,
@@ -157,6 +159,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     MarketingModule,
     KanbanModule,
     MessengerModule,
+    CalendarModule,
   ],
 })
 export class AdminModule {}

@@ -275,6 +275,18 @@ export function useKanbanPage() {
     try {
       const list = await loadBoards();
       await refreshTrashCount();
+
+      const params =
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+      const boardParam = params?.get('board');
+      const cardParam = params?.get('card');
+
+      if (boardParam && list.some((b) => b.id === boardParam)) {
+        await loadBoard(boardParam);
+        if (cardParam) setSelectedCardId(cardParam);
+        return;
+      }
+
       if (selectedBoardId && list.some((b) => b.id === selectedBoardId)) {
         await loadBoard(selectedBoardId);
       } else if (list.length > 0) {

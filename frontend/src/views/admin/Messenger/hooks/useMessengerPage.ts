@@ -13,6 +13,7 @@ import {
   type MessengerUserRef,
   createMessengerChannel,
   createMessengerDirect,
+  getMessengerConversation,
   listMessengerConversations,
   listMessengerMessages,
   listMessengerUsers,
@@ -103,7 +104,20 @@ export function useMessengerPage() {
       setSelectedId(id);
       joinMessengerConversation(socketRef.current, id);
       const summary = conversationsRef.current.find((c) => c.id === id);
-      if (summary) applySummaryAsDetail(summary);
+      if (summary) {
+        applySummaryAsDetail(summary);
+        if (summary.type === 'CHANNEL') setListTab('channels');
+        else if (summary.type === 'DIRECT') setListTab('direct');
+      } else {
+        try {
+          const detail = await getMessengerConversation(id);
+          setActiveDetail(detail);
+          if (detail.type === 'CHANNEL') setListTab('channels');
+          else if (detail.type === 'DIRECT') setListTab('direct');
+        } catch {
+          /* keep previous detail if fetch fails */
+        }
+      }
       await loadMessages(id);
     },
     [applySummaryAsDetail, loadMessages]
@@ -124,6 +138,34 @@ export function useMessengerPage() {
         listMessengerUsers().catch(() => [] as MessengerUserRef[]),
       ]);
       setUsers(userList);
+
+      const queryConversationId =
+        typeof window !== 'undefined' ? new URLSearchParams(window.location.search).get('c') : null;
+
+      if (queryConversationId) {
+        const inList = list.find((c) => c.id === queryConversationId);
+        if (inList) {
+          setSelectedId(inList.id);
+          joinMessengerConversation(socketRef.current, inList.id);
+          applySummaryAsDetail(inList);
+          if (inList.type === 'CHANNEL') setListTab('channels');
+          else if (inList.type === 'DIRECT') setListTab('direct');
+          await loadMessages(inList.id);
+          return;
+        }
+        try {
+          const detail = await getMessengerConversation(queryConversationId);
+          setSelectedId(detail.id);
+          joinMessengerConversation(socketRef.current, detail.id);
+          setActiveDetail(detail);
+          if (detail.type === 'CHANNEL') setListTab('channels');
+          else if (detail.type === 'DIRECT') setListTab('direct');
+          await loadMessages(detail.id);
+          return;
+        } catch {
+          /* fall through to default selection */
+        }
+      }
 
       const currentId = selectedIdRef.current;
       if (currentId) {

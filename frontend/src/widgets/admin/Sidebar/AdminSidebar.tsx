@@ -520,6 +520,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.messenger',
   },
   {
+    label: 'Календарь',
+    href: '/admin/calendar',
+    icon: '📅',
+    resourceId: 'admin.calendar',
+  },
+  {
     label: 'Настройки',
     href: '/admin/settings',
     icon: '⚙️',

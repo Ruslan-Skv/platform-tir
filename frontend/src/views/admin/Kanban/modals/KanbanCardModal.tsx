@@ -6,7 +6,7 @@ import type { KanbanCard, KanbanCardPriority } from '@/shared/api/kanban/admin-k
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
-import { MessengerThreadPanel } from '@/views/admin/Messenger/MessengerThreadPanel';
+import { MessengerThreadPanel } from '@/views/admin/Messenger';
 
 import styles from '../KanbanPage.module.css';
 import { PRIORITY_LABELS, formatKanbanUser } from '../kanban.utils';

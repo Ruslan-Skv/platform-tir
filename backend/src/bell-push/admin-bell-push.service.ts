@@ -24,7 +24,10 @@ export type AdminBellPushEvent =
   | 'waybill'
   | 'installation_schedule'
   | 'repair_schedule'
-  | 'furniture_schedule';
+  | 'furniture_schedule'
+  | 'calendar_event'
+  | 'messenger_message'
+  | 'kanban_card';
 
 const ADMIN_ROLES: UserRole[] = [
   'SUPER_ADMIN',
@@ -155,6 +158,12 @@ export class AdminBellPushService {
         return settings.notifyOnRepairSchedules !== false;
       case 'furniture_schedule':
         return settings.notifyOnFurnitureSchedules !== false;
+      case 'calendar_event':
+        return true;
+      case 'messenger_message':
+        return true;
+      case 'kanban_card':
+        return true;
       default:
         return false;
     }

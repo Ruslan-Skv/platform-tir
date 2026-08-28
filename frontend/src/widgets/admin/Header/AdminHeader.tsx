@@ -25,8 +25,11 @@ import { markKnowledgePlatformFeedbackRead } from '@/shared/api/admin-knowledge'
 import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shared/api/admin-leads';
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
+  getAdminBellCalendarNotifications,
   getAdminBellFurnitureScheduleNotifications,
   getAdminBellInstallationScheduleNotifications,
+  getAdminBellKanbanNotifications,
+  getAdminBellMessengerNotifications,
   getAdminBellRepairScheduleNotifications,
   getAdminBellTrainingNotifications,
   getAdminBellWaybillNotifications,
@@ -34,8 +37,11 @@ import {
   getAdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import type {
+  AdminBellCalendarNotification,
   AdminBellFurnitureScheduleNotification,
   AdminBellInstallationScheduleNotification,
+  AdminBellKanbanNotification,
+  AdminBellMessengerNotification,
   AdminBellRepairScheduleNotification,
   AdminBellTrainingNotification,
   AdminBellWaybillNotification,
@@ -76,12 +82,15 @@ import {
 import {
   type AdminBellNotificationItem,
   buildDesktopNotification,
+  calendarToBellNotificationItem,
   filterNotifiableLeads,
   furnitureScheduleToBellNotificationItem,
   installationScheduleToBellNotificationItem,
   isBellTypeEnabled,
   isNotificationItemEnabled,
+  kanbanToBellNotificationItem,
   leadsToBellNotificationItems,
+  messengerToBellNotificationItem,
   repairScheduleToBellNotificationItem,
   reviewToBellNotificationItem,
   supportToBellNotificationItem,
@@ -160,6 +169,13 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [furnitureScheduleNotifications, setFurnitureScheduleNotifications] = useState<
     AdminBellFurnitureScheduleNotification[]
   >([]);
+  const [calendarNotifications, setCalendarNotifications] = useState<
+    AdminBellCalendarNotification[]
+  >([]);
+  const [messengerNotifications, setMessengerNotifications] = useState<
+    AdminBellMessengerNotification[]
+  >([]);
+  const [kanbanNotifications, setKanbanNotifications] = useState<AdminBellKanbanNotification[]>([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -176,6 +192,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     installationSchedules: number;
     repairSchedules: number;
     furnitureSchedules: number;
+    calendar: number;
+    messenger: number;
+    kanban: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -322,6 +341,15 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           hasAccess('admin.crm.furniture-schedules.my'))
           ? getAdminBellFurnitureScheduleNotifications(20)
           : Promise.resolve([] as AdminBellFurnitureScheduleNotification[]);
+      const loadCalendar = hasAccess('admin.calendar')
+        ? getAdminBellCalendarNotifications(20)
+        : Promise.resolve([] as AdminBellCalendarNotification[]);
+      const loadMessenger = hasAccess('admin.messenger')
+        ? getAdminBellMessengerNotifications(20)
+        : Promise.resolve([] as AdminBellMessengerNotification[]);
+      const loadKanban = hasAccess('admin.kanban')
+        ? getAdminBellKanbanNotifications(20)
+        : Promise.resolve([] as AdminBellKanbanNotification[]);
 
       const [
         reviewsResult,
@@ -334,6 +362,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installationSchedulesResult,
         repairSchedulesResult,
         furnitureSchedulesResult,
+        calendarResult,
+        messengerResult,
+        kanbanResult,
       ] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -353,6 +384,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadInstallationSchedules,
         loadRepairSchedules,
         loadFurnitureSchedules,
+        loadCalendar,
+        loadMessenger,
+        loadKanban,
       ]);
 
       const newReviews =
@@ -387,6 +421,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedulesResult.status === 'fulfilled'
           ? (furnitureSchedulesResult.value ?? [])
           : [];
+      const newCalendar = calendarResult.status === 'fulfilled' ? (calendarResult.value ?? []) : [];
+      const newMessenger =
+        messengerResult.status === 'fulfilled' ? (messengerResult.value ?? []) : [];
+      const newKanban = kanbanResult.status === 'fulfilled' ? (kanbanResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -399,6 +437,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installationSchedules: newInstallationSchedules.length,
         repairSchedules: newRepairSchedules.length,
         furnitureSchedules: newFurnitureSchedules.length,
+        calendar: newCalendar.length,
+        messenger: newMessenger.length,
+        kanban: newKanban.length,
       };
 
       const totalNew =
@@ -410,7 +451,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newWaybills.length +
         newInstallationSchedules.length +
         newRepairSchedules.length +
-        newFurnitureSchedules.length;
+        newFurnitureSchedules.length +
+        newCalendar.length +
+        newMessenger.length +
+        newKanban.length;
       const prevTotal = prev
         ? prev.reviews +
           prev.support +
@@ -420,7 +464,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.waybills +
           prev.installationSchedules +
           prev.repairSchedules +
-          prev.furnitureSchedules
+          prev.furnitureSchedules +
+          prev.calendar +
+          prev.messenger +
+          prev.kanban
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -464,6 +511,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newInstallationSchedules.map(installationScheduleToBellNotificationItem),
             ...newRepairSchedules.map(repairScheduleToBellNotificationItem),
             ...newFurnitureSchedules.map(furnitureScheduleToBellNotificationItem),
+            ...newCalendar.map(calendarToBellNotificationItem),
+            ...newMessenger.map(messengerToBellNotificationItem),
+            ...newKanban.map(kanbanToBellNotificationItem),
           ]
             .filter((item) => isBellTypeEnabled(item.type, settings))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -484,6 +534,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setInstallationScheduleNotifications(newInstallationSchedules);
       setRepairScheduleNotifications(newRepairSchedules);
       setFurnitureScheduleNotifications(newFurnitureSchedules);
+      setCalendarNotifications(newCalendar);
+      setMessengerNotifications(newMessenger);
+      setKanbanNotifications(newKanban);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -660,6 +713,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...installationScheduleNotifications.map(installationScheduleToBellNotificationItem),
     ...repairScheduleNotifications.map(repairScheduleToBellNotificationItem),
     ...furnitureScheduleNotifications.map(furnitureScheduleToBellNotificationItem),
+    ...calendarNotifications.map(calendarToBellNotificationItem),
+    ...messengerNotifications.map(messengerToBellNotificationItem),
+    ...kanbanNotifications.map(kanbanToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>

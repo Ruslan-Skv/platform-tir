@@ -1,0 +1,24 @@
+.helpPanel {
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.note {
+  margin: 0;
+}
+
+.list {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.list li + li {
+  margin-top: 4px;
+}
