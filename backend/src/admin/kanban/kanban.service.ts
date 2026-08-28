@@ -1,6 +1,5 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { KanbanCardPriority, Prisma } from '@prisma/client';
-import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
 import { PrismaService } from '../../database/prisma.service';
 import {
   CreateKanbanBoardDto,
@@ -12,7 +11,9 @@ import {
   UpdateKanbanCardDto,
   UpdateKanbanColumnDto,
 } from './dto/kanban.dto';
+import { KanbanNotifyService } from './kanban-notify.service';
 import {
+  KANBAN_CARD_INCLUDE,
   KANBAN_TRASH_RETENTION_DAYS,
   KANBAN_TRASH_RETENTION_MS,
   KANBAN_USER_SELECT,
@@ -26,28 +27,11 @@ const DEFAULT_COLUMNS: Array<{ name: string; color: string; wipLimit: number | n
   { name: 'Готово', color: '#16a34a', wipLimit: null },
 ];
 
-const cardInclude = {
-  assignee: {
-    select: { id: true, firstName: true, lastName: true, email: true, avatar: true },
-  },
-  createdBy: {
-    select: { id: true, firstName: true, lastName: true, email: true },
-  },
-  comments: {
-    orderBy: { createdAt: 'asc' as const },
-    include: {
-      author: {
-        select: { id: true, firstName: true, lastName: true, email: true, avatar: true },
-      },
-    },
-  },
-} satisfies Prisma.KanbanCardInclude;
-
 @Injectable()
 export class KanbanService {
   constructor(
     private readonly prisma: PrismaService,
-    private readonly adminBellPush: AdminBellPushService,
+    private readonly kanbanNotify: KanbanNotifyService,
   ) {}
 
   private async purgeExpiredTrash() {
@@ -112,7 +96,7 @@ export class KanbanService {
       include: {
         columns: {
           orderBy: { sortOrder: 'asc' },
-          include: { cards: { include: cardInclude, orderBy: { sortOrder: 'asc' } } },
+          include: { cards: { include: KANBAN_CARD_INCLUDE, orderBy: { sortOrder: 'asc' } } },
         },
       },
     });
@@ -127,7 +111,7 @@ export class KanbanService {
           include: {
             cards: {
               orderBy: { sortOrder: 'asc' },
-              include: cardInclude,
+              include: KANBAN_CARD_INCLUDE,
             },
           },
         },
@@ -248,7 +232,7 @@ export class KanbanService {
         wipLimit: dto.wipLimit ?? null,
         sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
       },
-      include: { cards: { include: cardInclude, orderBy: { sortOrder: 'asc' } } },
+      include: { cards: { include: KANBAN_CARD_INCLUDE, orderBy: { sortOrder: 'asc' } } },
     });
   }
 
@@ -262,7 +246,7 @@ export class KanbanService {
         ...(dto.wipLimit !== undefined ? { wipLimit: dto.wipLimit } : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       },
-      include: { cards: { include: cardInclude, orderBy: { sortOrder: 'asc' } } },
+      include: { cards: { include: KANBAN_CARD_INCLUDE, orderBy: { sortOrder: 'asc' } } },
     });
   }
 
@@ -330,11 +314,11 @@ export class KanbanService {
         sortOrder: (maxSort._max.sortOrder ?? -1) + 1,
         createdById: userId,
       },
-      include: cardInclude,
+      include: KANBAN_CARD_INCLUDE,
     });
 
     if (card.assigneeId) {
-      await this.notifyCardEvent({
+      await this.kanbanNotify.notifyCardEvent({
         actorId: userId,
         cardId: card.id,
         boardId: column.boardId,
@@ -383,14 +367,14 @@ export class KanbanService {
           : {}),
         ...(dto.sortOrder !== undefined ? { sortOrder: dto.sortOrder } : {}),
       },
-      include: cardInclude,
+      include: KANBAN_CARD_INCLUDE,
     });
 
     const boardId = before.column.boardId;
     const interested = [card.assigneeId, card.createdById].filter(Boolean) as string[];
 
     if (dto.assigneeId !== undefined && card.assigneeId && card.assigneeId !== before.assigneeId) {
-      await this.notifyCardEvent({
+      await this.kanbanNotify.notifyCardEvent({
         actorId,
         cardId: card.id,
         boardId,
@@ -406,7 +390,7 @@ export class KanbanService {
       const nextDue = card.dueDate?.toISOString() ?? null;
       if (prevDue !== nextDue) {
         const dueLabel = card.dueDate ? card.dueDate.toISOString().slice(0, 10) : 'срок снят';
-        await this.notifyCardEvent({
+        await this.kanbanNotify.notifyCardEvent({
           actorId,
           cardId: card.id,
           boardId,
@@ -423,7 +407,7 @@ export class KanbanService {
       card.priority !== before.priority &&
       (card.priority === KanbanCardPriority.HIGH || card.priority === KanbanCardPriority.URGENT)
     ) {
-      await this.notifyCardEvent({
+      await this.kanbanNotify.notifyCardEvent({
         actorId,
         cardId: card.id,
         boardId,
@@ -505,11 +489,11 @@ export class KanbanService {
 
     const updated = await this.prisma.kanbanCard.findUniqueOrThrow({
       where: { id: cardId },
-      include: cardInclude,
+      include: KANBAN_CARD_INCLUDE,
     });
 
     if (sourceColumnId !== targetColumnId) {
-      await this.notifyCardEvent({
+      await this.kanbanNotify.notifyCardEvent({
         actorId,
         cardId: updated.id,
         boardId: targetColumn.boardId,
@@ -556,7 +540,7 @@ export class KanbanService {
       ...card.comments.map((c) => c.authorId),
     ].filter(Boolean) as string[];
 
-    await this.notifyCardEvent({
+    await this.kanbanNotify.notifyCardEvent({
       actorId: authorId,
       cardId: card.id,
       boardId: card.column.boardId,
@@ -576,44 +560,6 @@ export class KanbanService {
     if (!comment) throw new NotFoundException('Комментарий не найден');
     await this.prisma.kanbanCardComment.delete({ where: { id: commentId } });
     return { ok: true };
-  }
-
-  private async notifyCardEvent(params: {
-    actorId: string;
-    cardId: string;
-    boardId: string;
-    kind: 'assigned' | 'moved' | 'commented' | 'due_changed' | 'priority';
-    title: string;
-    message: string;
-    recipientIds: string[];
-  }) {
-    const recipientIds = [
-      ...new Set(params.recipientIds.filter((id) => Boolean(id) && id !== params.actorId)),
-    ];
-    if (recipientIds.length === 0) return;
-
-    const href = `/admin/kanban?board=${params.boardId}&card=${params.cardId}`;
-    await this.prisma.kanbanCardBellEvent.createMany({
-      data: recipientIds.map((recipientId) => ({
-        recipientId,
-        cardId: params.cardId,
-        kind: params.kind,
-        title: params.title,
-        message: params.message,
-        href,
-      })),
-    });
-
-    await Promise.all(
-      recipientIds.map((recipientId) =>
-        this.adminBellPush.notifyUsers([recipientId], 'kanban_card', {
-          title: params.title,
-          body: params.message,
-          url: href,
-          tag: `kanban-${params.kind}-${params.cardId}-${recipientId}`,
-        }),
-      ),
-    );
   }
 
   private async ensureBoard(boardId: string) {

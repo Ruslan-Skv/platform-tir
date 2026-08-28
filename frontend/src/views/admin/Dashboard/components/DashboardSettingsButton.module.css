@@ -176,7 +176,7 @@
 
 .quickLinkRow {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
+  grid-template-columns: auto auto minmax(0, 1fr) minmax(0, 1.2fr) auto;
   gap: var(--admin-space-sm);
   align-items: end;
   padding: var(--admin-space-md);
@@ -262,4 +262,69 @@
 .removeBtn:hover {
   color: var(--admin-danger);
   border-color: var(--admin-danger);
+}
+
+.orderList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.orderRow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  align-items: start;
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft);
+}
+
+.orderControls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  padding-top: 0.15rem;
+}
+
+.orderBtn {
+  width: 2rem;
+  height: 2rem;
+  flex-shrink: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1;
+  cursor: pointer;
+}
+
+.orderBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.orderBtn:not(:disabled):hover {
+  border-color: var(--admin-border-strong, var(--admin-border));
+  color: var(--admin-text-primary);
+}
+
+.orderBody {
+  min-width: 0;
+}
+
+.staticSectionRow strong {
+  display: block;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-primary);
+}
+
+.staticSectionRow .itemHint {
+  display: block;
+  margin-top: var(--admin-space-2xs);
 }

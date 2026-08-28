@@ -248,6 +248,13 @@
   width: 100%;
 }
 
+.sections {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-3xl);
+  width: 100%;
+}
+
 @media (max-width: 900px) {
   .toolbarRow {
     flex-direction: column;
@@ -1016,8 +1023,8 @@
 }
 
 .quickLinks {
-  padding: var(--admin-space-3xl) var(--admin-space-0) var(--admin-space-0);
-  border-top: 1px solid var(--admin-border);
+  padding: var(--admin-space-0);
+  border-top: none;
 }
 
 .quickTitle {

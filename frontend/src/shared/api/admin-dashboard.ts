@@ -1,3 +1,8 @@
+import {
+  type AdminDashboardSectionId,
+  DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER,
+  normalizeAdminDashboardSectionOrder,
+} from '@/shared/lib/admin-dashboard-sections';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -39,8 +44,12 @@ export interface AdminDashboardQuickLink {
 export interface AdminDashboardSettings {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
+  calendarVisible: boolean;
+  sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLink[];
 }
+
+export type { AdminDashboardSectionId };
 
 export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS: Omit<
   AdminDashboardQuickLink,
@@ -55,6 +64,8 @@ export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS: Omit<
 export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
   catalogActivityVisible: false,
   trainingDynamicsVisible: true,
+  calendarVisible: false,
+  sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
     id: `default-${index}`,
     sortOrder: index,
@@ -103,6 +114,8 @@ function normalizeAdminDashboardSettings(
       data?.catalogActivityVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
     trainingDynamicsVisible:
       data?.trainingDynamicsVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
+    calendarVisible: data?.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+    sectionOrder: normalizeAdminDashboardSectionOrder(data?.sectionOrder),
     quickLinks,
   };
 }
@@ -122,6 +135,8 @@ export async function getAdminDashboardSettings(): Promise<AdminDashboardSetting
 export type AdminDashboardSettingsUpdate = {
   catalogActivityVisible?: boolean;
   trainingDynamicsVisible?: boolean;
+  calendarVisible?: boolean;
+  sectionOrder?: AdminDashboardSectionId[];
   quickLinks?: Array<{
     label: string;
     href: string;

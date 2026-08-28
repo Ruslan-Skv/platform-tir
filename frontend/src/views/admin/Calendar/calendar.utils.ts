@@ -48,6 +48,7 @@ export type CalendarCell = {
   day: number;
   inMonth: boolean;
   isToday: boolean;
+  isPadding?: boolean;
 };
 
 export function todayIsoDate(): string {
@@ -77,6 +78,78 @@ export function monthRangeIso(year: number, monthIndex0: number): { from: string
   const lastDay = new Date(year, monthIndex0 + 1, 0).getDate();
   const to = `${year}-${String(monthIndex0 + 1).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
   return { from, to };
+}
+
+function dateToIsoDate(d: Date): string {
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+function startOfLocalDay(d: Date): Date {
+  return new Date(d.getFullYear(), d.getMonth(), d.getDate());
+}
+
+/** Окно «−7 / +7» дней от якорной даты (по умолчанию — сегодня). */
+export function dashboardFortnightRangeIso(anchor: Date = new Date()): {
+  from: string;
+  to: string;
+} {
+  const base = startOfLocalDay(anchor);
+  const from = new Date(base);
+  from.setDate(from.getDate() - 7);
+  const to = new Date(base);
+  to.setDate(to.getDate() + 7);
+  return { from: dateToIsoDate(from), to: dateToIsoDate(to) };
+}
+
+export function formatDashboardFortnightRangeRu(anchor: Date = new Date()): string {
+  const { from, to } = dashboardFortnightRangeIso(anchor);
+  return `${formatEventDateRu(from)} — ${formatEventDateRu(to)}`;
+}
+
+/** Сетка календаря на ~2 недели вокруг якорной даты (выравнивание по пн–вс). */
+export function buildFortnightCalendarCells(anchor: Date = new Date()): CalendarCell[] {
+  const today = todayIsoDate();
+  const base = startOfLocalDay(anchor);
+  const start = new Date(base);
+  start.setDate(start.getDate() - 7);
+  const end = new Date(base);
+  end.setDate(end.getDate() + 7);
+  const startWeekday = (start.getDay() + 6) % 7;
+  const cells: CalendarCell[] = [];
+
+  for (let i = 0; i < startWeekday; i++) {
+    cells.push({
+      isoDate: `pad-start-${i}`,
+      day: 0,
+      inMonth: false,
+      isToday: false,
+      isPadding: true,
+    });
+  }
+
+  const cur = new Date(start);
+  while (cur <= end) {
+    const iso = dateToIsoDate(cur);
+    cells.push({
+      isoDate: iso,
+      day: cur.getDate(),
+      inMonth: true,
+      isToday: iso === today,
+    });
+    cur.setDate(cur.getDate() + 1);
+  }
+
+  while (cells.length % 7 !== 0) {
+    cells.push({
+      isoDate: `pad-end-${cells.length}`,
+      day: 0,
+      inMonth: false,
+      isToday: false,
+      isPadding: true,
+    });
+  }
+
+  return cells;
 }
 
 export function buildMonthCalendarCells(year: number, monthIndex0: number): CalendarCell[] {

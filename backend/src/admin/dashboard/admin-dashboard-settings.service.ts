@@ -1,5 +1,10 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
+import {
+  DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER,
+  normalizeAdminDashboardSectionOrder,
+  type AdminDashboardSectionId,
+} from './admin-dashboard-section-order';
 import { UpdateAdminDashboardSettingsDto } from './dto/update-admin-dashboard-settings.dto';
 
 const SETTINGS_ID = 'main';
@@ -15,6 +20,8 @@ export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS = [
 export const DEFAULT_ADMIN_DASHBOARD_SETTINGS = {
   catalogActivityVisible: false,
   trainingDynamicsVisible: true,
+  calendarVisible: false,
+  sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: [...DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS],
 } as const;
 
@@ -29,6 +36,8 @@ export type AdminDashboardQuickLinkRecord = {
 export type AdminDashboardSettingsRecord = {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
+  calendarVisible: boolean;
+  sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLinkRecord[];
 };
 
@@ -48,6 +57,8 @@ export class AdminDashboardSettingsService {
       return {
         catalogActivityVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
         trainingDynamicsVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
+        calendarVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+        sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder],
         quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
           id: `default-${index}`,
           label: link.label,
@@ -78,6 +89,8 @@ export class AdminDashboardSettingsService {
     return {
       catalogActivityVisible: row.catalogActivityVisible,
       trainingDynamicsVisible: row.trainingDynamicsVisible,
+      calendarVisible: row.calendarVisible,
+      sectionOrder: normalizeAdminDashboardSectionOrder(row.sectionOrder),
       quickLinks,
     };
   }
@@ -85,6 +98,15 @@ export class AdminDashboardSettingsService {
   async updateSettings(dto: UpdateAdminDashboardSettingsDto) {
     if (dto.quickLinks && dto.quickLinks.length > MAX_QUICK_LINKS) {
       throw new BadRequestException(`Не более ${MAX_QUICK_LINKS} быстрых ссылок`);
+    }
+
+    if (dto.sectionOrder !== undefined) {
+      const normalized = normalizeAdminDashboardSectionOrder(dto.sectionOrder);
+      if (normalized.length !== dto.sectionOrder.length) {
+        throw new BadRequestException(
+          'Порядок секций содержит дубликаты или неизвестные идентификаторы',
+        );
+      }
     }
 
     return this.prisma.$transaction(async (tx) => {
@@ -97,6 +119,12 @@ export class AdminDashboardSettingsService {
           ...(dto.trainingDynamicsVisible !== undefined && {
             trainingDynamicsVisible: dto.trainingDynamicsVisible,
           }),
+          ...(dto.calendarVisible !== undefined && {
+            calendarVisible: dto.calendarVisible,
+          }),
+          ...(dto.sectionOrder !== undefined && {
+            sectionOrder: normalizeAdminDashboardSectionOrder(dto.sectionOrder),
+          }),
         },
         create: {
           id: SETTINGS_ID,
@@ -104,6 +132,11 @@ export class AdminDashboardSettingsService {
             dto.catalogActivityVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
           trainingDynamicsVisible:
             dto.trainingDynamicsVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
+          calendarVisible: dto.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
+          sectionOrder:
+            dto.sectionOrder !== undefined
+              ? normalizeAdminDashboardSectionOrder(dto.sectionOrder)
+              : [...DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder],
         },
       });
 
@@ -130,6 +163,8 @@ export class AdminDashboardSettingsService {
       return {
         catalogActivityVisible: block.catalogActivityVisible,
         trainingDynamicsVisible: block.trainingDynamicsVisible,
+        calendarVisible: block.calendarVisible,
+        sectionOrder: normalizeAdminDashboardSectionOrder(block.sectionOrder),
         quickLinks: quickLinks.map((link) => ({
           id: link.id,
           label: link.label,

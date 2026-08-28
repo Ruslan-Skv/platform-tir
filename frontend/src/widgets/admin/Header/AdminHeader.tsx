@@ -800,7 +800,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   return (
     <header className={styles.header} ref={headerRef}>
       <div className={styles.headerStart}>
-        <span className={`${styles.headerRevealHost} ${styles.headerReveal}`}>
+        <span
+          className={`${styles.headerRevealHost} ${styles.headerLogoHost} ${styles.headerReveal}`}
+        >
           <Logo
             href="/"
             ariaLabel="На главную — Территория интерьерных решений"

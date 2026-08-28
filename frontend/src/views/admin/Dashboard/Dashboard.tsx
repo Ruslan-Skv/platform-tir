@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
+import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { useAuth } from '@/features/auth';
 import {
   type AdminDashboardSettings,
@@ -15,10 +16,12 @@ import {
   getCatalogActivity,
   getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
+import type { AdminDashboardSectionId } from '@/shared/lib/admin-dashboard-sections';
 import { getInitials } from '@/shared/lib/avatar';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './Dashboard.module.css';
+import { CalendarDashboardWidget } from './components/CalendarDashboardWidget';
 import { DashboardSettingsButton } from './components/DashboardSettingsButton';
 import { TrainingDynamicsWidget } from './components/TrainingDynamicsWidget';
 
@@ -237,8 +240,10 @@ function CatalogActivityWidget({
 
 export function Dashboard() {
   const { user } = useAuth();
+  const { hasAccess } = useAdminAccessibleResources();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const isTrainee = user?.role === 'TRAINEE';
+  const hasCalendarAccess = hasAccess('admin.calendar');
 
   const defaultRange = useMemo(() => {
     const now = new Date();
@@ -261,6 +266,7 @@ export function Dashboard() {
 
   const showCatalogWidget = settings.catalogActivityVisible;
   const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
+  const showCalendarWidget = settings.calendarVisible && hasCalendarAccess;
   const showDateToolbar = showCatalogWidget || showTrainingWidget;
 
   useEffect(() => {
@@ -355,6 +361,49 @@ export function Dashboard() {
     [settings.quickLinks]
   );
 
+  const hasAnyVisibleSection = useMemo(() => {
+    if (showTrainingWidget || showCatalogWidget || showCalendarWidget) return true;
+    return enabledQuickLinks.length > 0;
+  }, [showTrainingWidget, showCatalogWidget, showCalendarWidget, enabledQuickLinks.length]);
+
+  const renderDashboardSection = (sectionId: AdminDashboardSectionId) => {
+    switch (sectionId) {
+      case 'trainingDynamics':
+        return showTrainingWidget ? (
+          <TrainingDynamicsWidget key={sectionId} data={trainingData} loading={trainingLoading} />
+        ) : null;
+      case 'catalogActivity':
+        return showCatalogWidget ? (
+          <CatalogActivityWidget
+            key={sectionId}
+            loading={catalogLoading}
+            rows={catalogData?.products ?? []}
+          />
+        ) : null;
+      case 'calendar':
+        return showCalendarWidget ? <CalendarDashboardWidget key={sectionId} /> : null;
+      case 'quickLinks':
+        return enabledQuickLinks.length > 0 ? (
+          <section key={sectionId} className={styles.quickLinks}>
+            <h2 className={styles.quickTitle}>Быстрые ссылки</h2>
+            <div className={styles.quickGrid}>
+              {enabledQuickLinks.map((link) => (
+                <Link
+                  key={link.id}
+                  href={getSafeHref(link.href, '/admin')}
+                  className={styles.quickLink}
+                >
+                  {link.label}
+                </Link>
+              ))}
+            </div>
+          </section>
+        ) : null;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={styles.page}>
       <header className={styles.hero}>
@@ -435,38 +484,16 @@ export function Dashboard() {
         </p>
       )}
 
-      {!showCatalogWidget && !showTrainingWidget && settingsLoaded && (
+      {!hasAnyVisibleSection && settingsLoaded && (
         <p className={styles.emptyState}>
           На дашборде не включено ни одного блока.
           {isSuperAdmin ? ' Откройте «Настройки» и выберите нужные виджеты.' : null}
         </p>
       )}
 
-      <div className={styles.grid}>
-        {showTrainingWidget ? (
-          <TrainingDynamicsWidget data={trainingData} loading={trainingLoading} />
-        ) : null}
-        {showCatalogWidget ? (
-          <CatalogActivityWidget loading={catalogLoading} rows={catalogData?.products ?? []} />
-        ) : null}
+      <div className={styles.sections}>
+        {settings.sectionOrder.map((sectionId) => renderDashboardSection(sectionId))}
       </div>
-
-      {enabledQuickLinks.length > 0 ? (
-        <section className={styles.quickLinks}>
-          <h2 className={styles.quickTitle}>Быстрые ссылки</h2>
-          <div className={styles.quickGrid}>
-            {enabledQuickLinks.map((link) => (
-              <Link
-                key={link.id}
-                href={getSafeHref(link.href, '/admin')}
-                className={styles.quickLink}
-              >
-                {link.label}
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
     </div>
   );
 }

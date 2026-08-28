@@ -82,6 +82,11 @@
   display: inline-flex;
 }
 
+/* Логотип в шапке — только мобильная вёрстка; на десктопе он в сайдбаре */
+.headerRevealHost.headerLogoHost {
+  display: none;
+}
+
 .headerReveal {
   opacity: 0;
 }
@@ -102,7 +107,6 @@
 }
 
 .headerLogo {
-  display: none;
   flex-shrink: 0;
   padding-right: 0.25rem;
   overflow: visible;
@@ -975,6 +979,10 @@
   .actions {
     flex: 0 0 auto;
     margin-left: 0;
+  }
+
+  .headerRevealHost.headerLogoHost:has(> *) {
+    display: inline-flex;
   }
 
   .headerLogo {
