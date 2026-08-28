@@ -25,3 +25,11 @@ export {
   touchPublicSiteEditModeActivity,
 } from './public-site-edit-mode';
 export { parseRolesShowAdminLinkFromApi } from './site-public-admin-link';
+export {
+  ADMIN_DASHBOARD_SECTION_IDS,
+  ADMIN_DASHBOARD_SECTION_LABELS,
+  DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER,
+  moveItemInArray,
+  normalizeAdminDashboardSectionOrder,
+  type AdminDashboardSectionId,
+} from './admin-dashboard-sections';

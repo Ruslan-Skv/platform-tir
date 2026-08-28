@@ -12,7 +12,7 @@ import {
   ADMIN_DASHBOARD_SECTION_LABELS,
   type AdminDashboardSectionId,
   moveItemInArray,
-} from '@/shared/lib/admin-dashboard-sections';
+} from '@/shared/lib/admin/admin-dashboard-sections';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import {

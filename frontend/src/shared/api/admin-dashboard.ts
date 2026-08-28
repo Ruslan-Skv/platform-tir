@@ -2,7 +2,7 @@ import {
   type AdminDashboardSectionId,
   DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER,
   normalizeAdminDashboardSectionOrder,
-} from '@/shared/lib/admin-dashboard-sections';
+} from '@/shared/lib/admin/admin-dashboard-sections';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';

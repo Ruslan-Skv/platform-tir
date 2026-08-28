@@ -16,7 +16,7 @@ import {
   getCatalogActivity,
   getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
-import type { AdminDashboardSectionId } from '@/shared/lib/admin-dashboard-sections';
+import type { AdminDashboardSectionId } from '@/shared/lib/admin/admin-dashboard-sections';
 import { getInitials } from '@/shared/lib/avatar';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
