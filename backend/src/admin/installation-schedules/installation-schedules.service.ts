@@ -14,12 +14,6 @@ import { UpdateInstallationScheduleDto } from './dto/update-installation-schedul
 import { InstallationScheduleNotifyService } from './installation-schedule-notify.service';
 import {
   ENTRY_INCLUDE,
-  INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS,
-  TRASH_RETENTION_MS,
-  WORK_ORDER_KEYS,
-  WORK_ORDER_LABELS,
-  addendumSlotCount,
-  asFormDataRecord,
   assertDirection,
   customerFromFormData,
   emptyToNull,
@@ -27,12 +21,16 @@ import {
   normalizeContactPersons,
   normalizeCustomerPhones,
   parseDateOnly,
-  permanentDeleteAtIso,
   resolveDateEnd,
   overlappingDateRangeWhere,
   selectedInstallerIds,
   todayDateOnly,
+  addendumSlotCount,
+  asFormDataRecord,
+  WORK_ORDER_KEYS,
+  WORK_ORDER_LABELS,
 } from './installation-schedule.shared';
+import { InstallationSchedulesTrashService } from './installation-schedules-trash.service';
 
 export { INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS } from './installation-schedule.shared';
 
@@ -41,6 +39,7 @@ export class InstallationSchedulesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly scheduleNotify: InstallationScheduleNotifyService,
+    private readonly trash: InstallationSchedulesTrashService,
   ) {}
 
   private async assertCanComplete(
@@ -114,13 +113,6 @@ export class InstallationSchedulesService {
       installerIds: [],
       installerName: names.length ? names.join(', ') : null,
     };
-  }
-
-  private async purgeExpiredTrash(): Promise<void> {
-    const cutoff = new Date(Date.now() - TRASH_RETENTION_MS);
-    await this.prisma.installationScheduleEntry.deleteMany({
-      where: { deletedAt: { lt: cutoff } },
-    });
   }
 
   async listPackageWorkOrders(params: { packageId: string; installerId?: string | null }) {
@@ -469,62 +461,15 @@ export class InstallationSchedulesService {
   }
 
   async trashCount() {
-    await this.purgeExpiredTrash();
-    return this.prisma.installationScheduleEntry.count({
-      where: { deletedAt: { not: null } },
-    });
+    return this.trash.trashCount();
   }
 
   async findTrash(params: { search?: string; page?: number; limit?: number }) {
-    await this.purgeExpiredTrash();
-    const page = Math.max(1, params.page ?? 1);
-    const limit = Math.min(100, Math.max(1, params.limit ?? 20));
-    const search = params.search?.trim();
-    const where: Prisma.InstallationScheduleEntryWhereInput = {
-      deletedAt: { not: null },
-      ...(search
-        ? {
-            OR: [
-              { installerName: { contains: search, mode: 'insensitive' } },
-              { contractNumber: { contains: search, mode: 'insensitive' } },
-              { customerName: { contains: search, mode: 'insensitive' } },
-              { workOrderLabel: { contains: search, mode: 'insensitive' } },
-              { orderInfo: { contains: search, mode: 'insensitive' } },
-            ],
-          }
-        : {}),
-    };
-    const [items, total] = await Promise.all([
-      this.prisma.installationScheduleEntry.findMany({
-        where,
-        include: ENTRY_INCLUDE,
-        orderBy: { deletedAt: 'desc' },
-        skip: (page - 1) * limit,
-        take: limit,
-      }),
-      this.prisma.installationScheduleEntry.count({ where }),
-    ]);
-    return {
-      data: items.map((row) => ({
-        ...row,
-        permanentDeleteAt: row.deletedAt ? permanentDeleteAtIso(row.deletedAt) : null,
-      })),
-      total,
-      page,
-      limit,
-      totalPages: Math.max(1, Math.ceil(total / limit)),
-      trashRetentionDays: INSTALLATION_SCHEDULE_TRASH_RETENTION_DAYS,
-    };
+    return this.trash.findTrash(params);
   }
 
   async restore(id: string) {
-    const entry = await this.findOne(id, { includeDeleted: true });
-    if (!entry.deletedAt) throw new BadRequestException('Запись не в корзине');
-    return this.prisma.installationScheduleEntry.update({
-      where: { id },
-      data: { deletedAt: null, deletedById: null },
-      include: ENTRY_INCLUDE,
-    });
+    return this.trash.restore(id);
   }
 
   async complete(

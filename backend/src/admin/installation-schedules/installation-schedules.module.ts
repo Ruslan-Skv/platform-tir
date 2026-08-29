@@ -5,11 +5,16 @@ import { ExternalNotifyModule } from '../../external-notify/external-notify.modu
 import { InstallationScheduleNotifyService } from './installation-schedule-notify.service';
 import { InstallationSchedulesController } from './installation-schedules.controller';
 import { InstallationSchedulesService } from './installation-schedules.service';
+import { InstallationSchedulesTrashService } from './installation-schedules-trash.service';
 
 @Module({
   imports: [DatabaseModule, BellPushModule, ExternalNotifyModule],
   controllers: [InstallationSchedulesController],
-  providers: [InstallationSchedulesService, InstallationScheduleNotifyService],
+  providers: [
+    InstallationSchedulesService,
+    InstallationSchedulesTrashService,
+    InstallationScheduleNotifyService,
+  ],
   exports: [InstallationSchedulesService],
 })
 export class InstallationSchedulesModule {}
