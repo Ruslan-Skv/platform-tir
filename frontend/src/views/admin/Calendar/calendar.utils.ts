@@ -209,6 +209,50 @@ export function formatEventDateRu(iso: string): string {
   return d.toLocaleDateString('ru-RU', { day: 'numeric', month: 'short', year: 'numeric' });
 }
 
+/** Коды направлений CRM → русские подписи (для тултипа / деталей). */
+const CALENDAR_DIRECTION_LABELS: Record<string, string> = {
+  REPAIR: 'Ремонт',
+  WINDOWS: 'Окна',
+  DOORS: 'Двери',
+  CEILINGS: 'Натяжные потолки',
+  FURNITURE: 'Мебель',
+  BLINDS: 'Жалюзи',
+  DELIVERY: 'Доставка',
+};
+
+/** Статусы событий календаря → русские подписи. */
+const CALENDAR_STATUS_LABELS: Record<string, string> = {
+  PLANNED: 'В плане',
+  DONE: 'Выполнено',
+  FAILED: 'Не выполнено',
+  NEW: 'Новый',
+  ASSIGNED: 'Назначен',
+  IN_PROGRESS: 'В работе',
+  COMPLETED: 'Выполнен',
+  CANCELLED: 'Отказ',
+  CONVERTED: 'Договор',
+  DRAFT: 'Черновик',
+  ACTIVE: 'Активен',
+  EXPIRED: 'Истёк',
+  OPEN: 'Открыт',
+  CLOSED: 'Закрыт',
+  AUTO_CLOSED: 'Авто-закрыт',
+};
+
+export function formatCalendarStatusLabel(status: string | null | undefined): string {
+  if (!status) return '—';
+  return CALENDAR_STATUS_LABELS[status] ?? status;
+}
+
+/** Подменяет коды направлений (DOORS и т.п.) в строке деталей на русские названия. */
+export function formatCalendarSubtitle(subtitle: string | null | undefined): string {
+  if (!subtitle) return '—';
+  return subtitle
+    .split(' · ')
+    .map((part) => CALENDAR_DIRECTION_LABELS[part.trim()] ?? part)
+    .join(' · ');
+}
+
 export function pillLabel(ev: {
   timeFrom: string | null;
   timeTo: string | null;

@@ -10,6 +10,7 @@ import {
   listCalendarEvents,
 } from '@/shared/api/calendar/admin-calendar';
 import { useAdminNarrowViewport } from '@/shared/lib/hooks/useAdminNarrowViewport';
+import { CalendarEventTooltip } from '@/views/admin/Calendar/CalendarEventTooltip';
 import calendarStyles from '@/views/admin/Calendar/CalendarPage.module.css';
 import {
   ALL_CALENDAR_TYPES,
@@ -233,6 +234,7 @@ export function CalendarDashboardWidget() {
                         className={`${calendarStyles.pill} ${calendarStyles[typePillClass(event.type)]}`}
                       >
                         <span className={calendarStyles.pillText}>{pillLabel(event)}</span>
+                        <CalendarEventTooltip ev={event} />
                       </Link>
                     )
                   )}

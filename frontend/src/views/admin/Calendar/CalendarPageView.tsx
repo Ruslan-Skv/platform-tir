@@ -1,6 +1,5 @@
 'use client';
 
-import type { CalendarEvent } from '@/shared/api/calendar/admin-calendar';
 import { useAdminNarrowViewport } from '@/shared/lib/hooks/useAdminNarrowViewport';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
 import {
@@ -12,6 +11,7 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { CalendarEventTooltip } from './CalendarEventTooltip';
 import styles from './CalendarPage.module.css';
 import { CalendarRulesInfoTip } from './CalendarRulesInfoTip';
 import {
@@ -19,9 +19,7 @@ import {
   CALENDAR_TYPE_LABELS,
   CALENDAR_TYPE_SHORT_LABELS,
   buildMonthCalendarCells,
-  formatEventDateRu,
   formatMonthYearRu,
-  formatTimeRange,
   pillLabel,
   shiftMonth,
   typeDotClass,
@@ -35,44 +33,6 @@ const MAX_PILLS_DESKTOP = 4;
 const MAX_PILLS_MOBILE = 2;
 
 type Props = { model: CalendarPageModel };
-
-function EventTooltip({ ev }: { ev: CalendarEvent }) {
-  return (
-    <div className={styles.tooltip} role="tooltip">
-      <div className={styles.tooltipTitle}>
-        {formatEventDateRu(ev.date)} · {CALENDAR_TYPE_LABELS[ev.type]}
-      </div>
-      <div className={styles.tooltipGrid}>
-        <div className={styles.tooltipField}>
-          <span>Время</span>
-          <strong>{formatTimeRange(ev.timeFrom, ev.timeTo)}</strong>
-        </div>
-        {ev.status ? (
-          <div className={styles.tooltipField}>
-            <span>Статус</span>
-            <strong>{ev.status}</strong>
-          </div>
-        ) : null}
-        <div className={`${styles.tooltipField} ${styles.tooltipFieldWide}`}>
-          <span>Событие</span>
-          <strong className={styles.tooltipMultiline}>{ev.title}</strong>
-        </div>
-        {ev.subtitle ? (
-          <div className={`${styles.tooltipField} ${styles.tooltipFieldWide}`}>
-            <span>Детали</span>
-            <strong className={styles.tooltipMultiline}>{ev.subtitle}</strong>
-          </div>
-        ) : null}
-        {ev.body ? (
-          <div className={`${styles.tooltipField} ${styles.tooltipFieldWide}`}>
-            <span>Описание</span>
-            <strong className={styles.tooltipMultiline}>{ev.body}</strong>
-          </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
 
 export function CalendarPageView({ model }: Props) {
   const {
@@ -285,7 +245,7 @@ export function CalendarPageView({ model }: Props) {
                         className={`${styles.pill} ${styles[typePillClass(ev.type)]}`}
                       >
                         <span className={styles.pillText}>{pillLabel(ev)}</span>
-                        <EventTooltip ev={ev} />
+                        <CalendarEventTooltip ev={ev} />
                       </a>
                     )
                   )}

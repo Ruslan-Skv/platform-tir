@@ -39,6 +39,47 @@ const ALL_TYPES: CalendarEventType[] = [
   'custom',
 ];
 
+/** Направления монтажей / доставок (коды из CRM). */
+const DIRECTION_LABELS: Record<string, string> = {
+  REPAIR: 'Ремонт',
+  WINDOWS: 'Окна',
+  DOORS: 'Двери',
+  CEILINGS: 'Натяжные потолки',
+  FURNITURE: 'Мебель',
+  BLINDS: 'Жалюзи',
+  DELIVERY: 'Доставка',
+};
+
+const INSTALL_WAYBILL_STATUS_LABELS: Record<string, string> = {
+  PLANNED: 'В плане',
+  DONE: 'Выполнено',
+  FAILED: 'Не выполнено',
+};
+
+const MEASUREMENT_STATUS_LABELS: Record<string, string> = {
+  NEW: 'Новый',
+  ASSIGNED: 'Назначен',
+  IN_PROGRESS: 'В работе',
+  COMPLETED: 'Выполнен',
+  CANCELLED: 'Отказ',
+  CONVERTED: 'Договор',
+};
+
+const CONTRACT_STATUS_LABELS: Record<string, string> = {
+  DRAFT: 'Черновик',
+  ACTIVE: 'Активен',
+  IN_PROGRESS: 'В работе',
+  COMPLETED: 'Завершён',
+  EXPIRED: 'Истёк',
+  CANCELLED: 'Отменён',
+};
+
+const WORK_DAY_STATUS_LABELS: Record<string, string> = {
+  OPEN: 'Открыт',
+  CLOSED: 'Закрыт',
+  AUTO_CLOSED: 'Авто-закрыт',
+};
+
 @Injectable()
 export class CalendarService {
   constructor(
@@ -240,8 +281,10 @@ export class CalendarService {
       timeTo: row.timeTo,
       title: row.customerName?.trim() || row.contractNumber || 'Монтаж',
       subtitle:
-        [row.direction, row.installerName, row.customerAddress].filter(Boolean).join(' · ') || null,
-      status: row.status,
+        [this.labelDirection(row.direction), row.installerName, row.customerAddress]
+          .filter(Boolean)
+          .join(' · ') || null,
+      status: this.labelStatus(row.status, INSTALL_WAYBILL_STATUS_LABELS),
       href: `/admin/crm/installation-schedules?date=${this.toIso(row.date)}`,
     }));
   }
@@ -275,10 +318,14 @@ export class CalendarService {
         timeTo: row.timeTo,
         title: row.customerName?.trim() || row.contract?.contractNumber || 'Доставка',
         subtitle:
-          [row.direction, driver !== '—' ? driver : null, row.taskText?.slice(0, 80)]
+          [
+            this.labelDirection(row.direction),
+            driver !== '—' ? driver : null,
+            row.taskText?.slice(0, 80),
+          ]
             .filter(Boolean)
             .join(' · ') || null,
-        status: row.status,
+        status: this.labelStatus(row.status, INSTALL_WAYBILL_STATUS_LABELS),
         href: `/admin/crm/waybills?date=${this.toIso(row.date)}`,
       };
     });
@@ -314,7 +361,7 @@ export class CalendarService {
         timeTo: null,
         title: row.customerName?.trim() || 'Замер',
         subtitle: [row.direction?.name, row.customerAddress].filter(Boolean).join(' · ') || null,
-        status: row.status,
+        status: this.labelStatus(row.status, MEASUREMENT_STATUS_LABELS),
         href: `/admin/measurements/${row.id}`,
       });
     }
@@ -363,7 +410,7 @@ export class CalendarService {
           timeTo: null,
           title: `Договор ${baseTitle}`,
           subtitle,
-          status: row.status,
+          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
           href: `/admin/contract-documents/contracts`,
         });
       }
@@ -376,7 +423,7 @@ export class CalendarService {
           timeTo: null,
           title: `Доставка · ${baseTitle}`,
           subtitle,
-          status: row.status,
+          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
           href: `/admin/contract-documents/contracts`,
         });
       }
@@ -393,7 +440,7 @@ export class CalendarService {
           timeTo: null,
           title: `Монтаж (договор) · ${baseTitle}`,
           subtitle,
-          status: row.status,
+          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
           href: `/admin/contract-documents/contracts`,
         });
       }
@@ -423,9 +470,23 @@ export class CalendarService {
       timeTo: null,
       title: this.formatUser(row.user),
       subtitle: row.office?.name || null,
-      status: row.status,
+      status: this.labelStatus(row.status, WORK_DAY_STATUS_LABELS),
       href: `/admin/crm/work-days`,
     }));
+  }
+
+  private labelDirection(value: string | null | undefined): string | null {
+    const raw = value?.trim();
+    if (!raw) return null;
+    return DIRECTION_LABELS[raw] ?? raw;
+  }
+
+  private labelStatus(
+    value: string | null | undefined,
+    map: Record<string, string>,
+  ): string | null {
+    if (!value) return null;
+    return map[value] ?? value;
   }
 
   private parseTypes(raw?: string): Set<CalendarEventType> {

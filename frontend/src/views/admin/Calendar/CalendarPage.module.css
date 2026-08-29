@@ -247,6 +247,20 @@
   cursor: pointer;
   overflow: visible;
   color: #fff;
+  text-decoration: none;
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+/* Перебиваем globals `a:hover { color: … }` — иначе текст сливается с фоном бейджа */
+.pill:hover,
+.pill:focus,
+.pill:focus-visible,
+.pill:visited,
+.pill:active {
+  color: #fff;
+  text-decoration: none;
 }
 
 .pillText {
@@ -254,39 +268,87 @@
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #fff;
 }
 
 .pillInstallation {
   background: #2563eb;
   border-color: #1d4ed8;
 }
+.pillInstallation:hover,
+.pillInstallation:focus-visible {
+  background: #1d4ed8;
+  border-color: #1e3a8a;
+}
+
 .pillWaybill {
   background: #0d9488;
   border-color: #0f766e;
 }
+.pillWaybill:hover,
+.pillWaybill:focus-visible {
+  background: #0f766e;
+  border-color: #115e59;
+}
+
 .pillMeasurement {
   background: #d97706;
   border-color: #b45309;
 }
+.pillMeasurement:hover,
+.pillMeasurement:focus-visible {
+  background: #b45309;
+  border-color: #92400e;
+}
+
 .pillContract {
   background: #7c3aed;
   border-color: #6d28d9;
 }
+.pillContract:hover,
+.pillContract:focus-visible {
+  background: #6d28d9;
+  border-color: #5b21b6;
+}
+
 .pillDelivery {
   background: #059669;
   border-color: #047857;
 }
+.pillDelivery:hover,
+.pillDelivery:focus-visible {
+  background: #047857;
+  border-color: #065f46;
+}
+
 .pillContractInstall {
   background: #1d4ed8;
   border-color: #1e40af;
 }
+.pillContractInstall:hover,
+.pillContractInstall:focus-visible {
+  background: #1e40af;
+  border-color: #1e3a8a;
+}
+
 .pillWorkDay {
   background: #64748b;
   border-color: #475569;
 }
+.pillWorkDay:hover,
+.pillWorkDay:focus-visible {
+  background: #475569;
+  border-color: #334155;
+}
+
 .pillCustom {
   background: #db2777;
   border-color: #be185d;
+}
+.pillCustom:hover,
+.pillCustom:focus-visible {
+  background: #be185d;
+  border-color: #9d174d;
 }
 
 .more {
@@ -349,6 +411,7 @@
   font-size: var(--admin-font-size-sm);
   font-weight: 700;
   line-height: 1.3;
+  color: var(--admin-text-primary);
 }
 
 .tooltipGrid {
