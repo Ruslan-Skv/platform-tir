@@ -25,6 +25,7 @@ const DIRECTION_LABELS: Record<string, string> = {
 export type InstallationScheduleNotifyEntry = {
   id: string;
   date: Date;
+  dateEnd?: Date | null;
   timeFrom: string | null;
   timeTo: string | null;
   timeText: string | null;
@@ -104,6 +105,12 @@ export class InstallationScheduleNotifyService {
     return d.toISOString().slice(0, 10);
   }
 
+  private formatDateSpan(entry: InstallationScheduleNotifyEntry): string {
+    const start = this.formatDate(entry.date);
+    if (!entry.dateEnd || entry.dateEnd.getTime() <= entry.date.getTime()) return start;
+    return `${start}–${this.formatDate(entry.dateEnd)}`;
+  }
+
   private formatTime(entry: InstallationScheduleNotifyEntry): string {
     if (entry.timeText?.trim()) return entry.timeText.trim();
     if (entry.timeFrom && entry.timeTo) return `${entry.timeFrom}–${entry.timeTo}`;
@@ -121,7 +128,7 @@ export class InstallationScheduleNotifyService {
     entry: InstallationScheduleNotifyEntry,
   ): string {
     const parts = [
-      this.formatDate(entry.date),
+      this.formatDateSpan(entry),
       this.formatTime(entry),
       this.directionLabel(entry.direction),
       entry.installerName?.trim() || null,
@@ -180,12 +187,12 @@ export class InstallationScheduleNotifyService {
         actor?.email ||
         actorUserId;
       await this.externalNotify.send(channels, {
-        subject: `${title} (${this.formatDate(entry.date)})`,
+        subject: `${title} (${this.formatDateSpan(entry)})`,
         text: [
           'График монтажей',
           '',
           `Событие: ${title}`,
-          `Дата: ${this.formatDate(entry.date)}`,
+          `Дата: ${this.formatDateSpan(entry)}`,
           `Время: ${this.formatTime(entry)}`,
           `Направление: ${this.directionLabel(entry.direction)}`,
           entry.installerName?.trim() ? `Монтажник: ${entry.installerName.trim()}` : null,

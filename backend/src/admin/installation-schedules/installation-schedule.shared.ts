@@ -1,4 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { INSTALLATION_SCHEDULE_DIRECTIONS } from './installation-schedule-directions.constant';
 
 export const USER_SELECT = {
@@ -97,6 +98,42 @@ export function parseDateOnly(dateStr: string): Date {
   return new Date(Date.UTC(Number(m[1]), Number(m[2]) - 1, Number(m[3])));
 }
 
+/** Нормализует dateEnd: null если пусто или совпадает с date; иначе проверяет dateEnd >= date. */
+export function resolveDateEnd(date: Date, dateEndRaw?: string | null): Date | null {
+  if (dateEndRaw === undefined || dateEndRaw === null) return null;
+  const trimmed = String(dateEndRaw).trim();
+  if (!trimmed) return null;
+  const end = parseDateOnly(trimmed);
+  if (end.getTime() < date.getTime()) {
+    throw new BadRequestException('dateEnd must be >= date');
+  }
+  if (end.getTime() === date.getTime()) return null;
+  return end;
+}
+
+/** Записи, пересекающие окно [dateFrom, dateTo] (по date…dateEnd). */
+export function overlappingDateRangeWhere(params: {
+  dateFrom?: string;
+  dateTo?: string;
+}): Prisma.InstallationScheduleEntryWhereInput {
+  const fromStr = params.dateFrom?.trim();
+  const toStr = params.dateTo?.trim();
+  let from = fromStr ? parseDateOnly(fromStr) : null;
+  let to = toStr ? parseDateOnly(toStr) : null;
+  if (!from && !to) {
+    const today = parseDateOnly(todayDateOnly());
+    from = today;
+    to = today;
+  }
+  if (!from) from = to!;
+  if (!to) to = from;
+
+  return {
+    date: { lte: to },
+    OR: [{ dateEnd: null, date: { gte: from } }, { dateEnd: { gte: from } }],
+  };
+}
+
 export function todayDateOnly(): string {
   const now = new Date();
   const y = now.getFullYear();
@@ -130,6 +167,24 @@ export function normalizeCustomerPhones(
   }
   const single = fallbackPhone?.trim();
   return single ? [single] : [];
+}
+
+export type InstallationContactPerson = { name: string; phones: string[] };
+
+/** Нормализует контактных лиц: без пустых записей, уникальные телефоны. */
+export function normalizeContactPersons(
+  raw?: Array<{ name?: string | null; phones?: string[] | null }> | null,
+): InstallationContactPerson[] {
+  if (!Array.isArray(raw)) return [];
+  const result: InstallationContactPerson[] = [];
+  for (const entry of raw) {
+    if (!entry || typeof entry !== 'object') continue;
+    const name = typeof entry.name === 'string' ? entry.name.trim() : '';
+    const phones = normalizeCustomerPhones(entry.phones ?? null, null);
+    if (!name && phones.length === 0) continue;
+    result.push({ name: name || 'Контактное лицо', phones });
+  }
+  return result;
 }
 
 export function permanentDeleteAtIso(deletedAt: Date): string {

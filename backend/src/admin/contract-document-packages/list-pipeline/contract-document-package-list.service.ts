@@ -121,39 +121,8 @@ export class ContractDocumentPackageListService {
           ? { responsibleManagerId: filters.responsibleManagerId }
           : {}),
         ...(statuses.length > 0 ? { status: { in: statuses } } : {}),
-        ...(searchNorm
-          ? {
-              OR: [
-                { title: { contains: filters!.search!.trim(), mode: 'insensitive' } },
-                {
-                  documentObject: {
-                    is: {
-                      OR: [
-                        {
-                          name: {
-                            contains: filters!.search!.trim(),
-                            mode: 'insensitive',
-                          },
-                        },
-                        {
-                          customerName: {
-                            contains: filters!.search!.trim(),
-                            mode: 'insensitive',
-                          },
-                        },
-                        {
-                          address: {
-                            contains: filters!.search!.trim(),
-                            mode: 'insensitive',
-                          },
-                        },
-                      ],
-                    },
-                  },
-                },
-              ],
-            }
-          : {}),
+        // Поиск по номеру договора / заказчику — в formData и crmContract;
+        // узкий Prisma OR по title/object отсекал такие пакеты до in-memory фильтра.
       },
       orderBy: { updatedAt: 'desc' },
       include: {
@@ -453,6 +422,10 @@ export class ContractDocumentPackageListService {
     pkg: {
       title: string | null;
       formData: unknown;
+      crmContract?: {
+        contractNumber?: string | null;
+        customerName?: string | null;
+      } | null;
       documentObject?: {
         name?: string | null;
         customerName?: string | null;
@@ -463,6 +436,8 @@ export class ContractDocumentPackageListService {
   ): boolean {
     const haystack = [
       pkg.title ?? '',
+      pkg.crmContract?.contractNumber ?? '',
+      pkg.crmContract?.customerName ?? '',
       pkg.documentObject?.name ?? '',
       pkg.documentObject?.customerName ?? '',
       pkg.documentObject?.address ?? '',
@@ -471,7 +446,8 @@ export class ContractDocumentPackageListService {
       this.objectAddressFromFormData(pkg.formData),
     ]
       .join(' ')
-      .toLowerCase();
+      .toLowerCase()
+      .replace(/\s+/g, ' ');
     return haystack.includes(searchNorm);
   }
 

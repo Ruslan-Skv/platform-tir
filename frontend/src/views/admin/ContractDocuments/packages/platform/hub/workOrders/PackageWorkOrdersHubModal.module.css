@@ -111,6 +111,49 @@
   padding-bottom: 4px;
 }
 
+.hubToolbarActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-xs, 4px);
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+.shareChannelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.shareChannelRow > button {
+  flex: 1 1 auto;
+  min-width: 6.5rem;
+}
+
+.shareCopyBtnInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.shareHintMobile {
+  display: none;
+}
+
+.shareMessageTextarea {
+  max-height: 14rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.sharePdfHint {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
 .hubTabActive {
   background: var(--admin-info-bg-soft, #eff6ff);
   border-color: var(--admin-info-border-soft, #bfdbfe);
@@ -118,25 +161,37 @@
   font-weight: 600;
 }
 
+.finalDocTabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
 @media (max-width: 767px) {
   .modalPanel {
     width: 100%;
     max-width: none;
+    height: 100%;
     max-height: 100%;
+    min-height: 0;
   }
 
   .modalContent {
     display: flex;
     flex-direction: column;
+    flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
     /* скролл только в .panelsScroll, иначе A4 перекрывает вкладки/кнопки */
     overflow: hidden !important;
   }
 
   .modalBody {
-    gap: var(--admin-space-sm, 6px);
+    gap: var(--admin-space-xs, 4px);
     flex: 1 1 auto;
     min-height: 0;
+    height: 100%;
     overflow: hidden;
   }
 
@@ -147,35 +202,51 @@
     overflow-y: auto;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    padding-bottom: max(0.5rem, env(safe-area-inset-bottom, 0px));
   }
 
   .modalHeaderRow {
-    gap: var(--admin-space-sm, 6px);
-    align-items: center;
+    gap: var(--admin-space-xs, 4px);
+    align-items: flex-start;
   }
 
   .modalHeaderTitle {
     font-size: var(--admin-font-size-sm, 0.8125rem);
     font-weight: 600;
-    line-height: 1.3;
+    line-height: 1.25;
     word-break: break-word;
+    padding-right: 0.25rem;
+  }
+
+  .modalHeaderActions {
+    margin-top: -0.125rem;
   }
 
   .headerIconBtn {
-    padding: 5px;
-    min-width: 2.25rem;
-    min-height: 2.25rem;
+    padding: 0.125rem;
+    min-width: 1.625rem;
+    min-height: 1.625rem;
+    border-radius: var(--admin-radius-sm, 6px);
   }
 
   .headerIcon {
-    width: 1.125rem;
-    height: 1.125rem;
+    width: 0.9375rem;
+    height: 0.9375rem;
   }
 
   .hubToolbar {
+    flex-wrap: nowrap;
     margin-bottom: var(--admin-space-xs, 4px);
     padding-bottom: 6px;
     align-items: center;
+    flex-shrink: 0;
+    gap: 4px;
+  }
+
+  .hubToolbarActions {
+    gap: 4px;
+    margin-left: 0;
+    flex-shrink: 0;
   }
 
   .hubTabBar {
@@ -199,6 +270,65 @@
     padding: 4px 8px;
     min-height: 2rem;
     line-height: 1.2;
+  }
+
+  .finalDocTabBar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
+  .finalDocTabBar :global(button) {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font-size: var(--admin-font-size-2xs, 0.6875rem);
+    padding: 4px 8px;
+    min-height: 2rem;
+  }
+
+  .shareHintDesktop {
+    display: none;
+  }
+
+  .shareHintMobile {
+    display: block;
+  }
+
+  .shareMessageTextarea {
+    max-height: min(28vh, 9.5rem) !important;
+    min-height: 5.5rem !important;
+  }
+
+  .shareChannelRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--admin-space-sm, 6px);
+  }
+
+  .shareChannelRow > button {
+    flex: unset;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 2.5rem;
+  }
+
+  .shareChannelRow > button:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .shareModalActions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-top: var(--admin-space-sm, 6px);
+    padding-top: var(--admin-space-sm, 6px) !important;
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid var(--admin-border, #e5e7eb);
+    background: var(--admin-surface, #fff);
   }
 
   /* Контент панелей: плотнее и без горизонтального разъезда */
@@ -335,5 +465,23 @@
 
   .modalBody :global([class*='estimateA4Table']) th {
     font-size: var(--admin-font-size-2xs, 0.6875rem);
+  }
+}
+
+@media (max-width: 480px) {
+  .headerIconBtn {
+    padding: 0.1rem;
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  .headerIcon {
+    width: 0.875rem;
+    height: 0.875rem;
+  }
+
+  .modalHeaderTitle {
+    font-size: var(--admin-font-size-xs, 0.75rem);
+    line-height: 1.2;
   }
 }

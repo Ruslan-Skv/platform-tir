@@ -1,6 +1,13 @@
-import { printDocumentHtml } from '../../../core/printDocument';
+import {
+  buildDocumentPdfBlob,
+  downloadDocumentPdf,
+  printDocumentHtml,
+} from '../../../core/printDocument';
 import { pickWindowsPackagePrintDocumentOptions } from '../../families/product-like/print/productPackagePrint';
-import type { PackageWorkOrderHubContextValue } from '../hub/workOrders/PackageWorkOrderHubContext';
+import type {
+  PackagePerInstallerWorkOrder,
+  PackageWorkOrderHubContextValue,
+} from '../hub/workOrders/PackageWorkOrderHubContext';
 import {
   PACKAGE_WORK_ORDER_HUB_MODAL_TITLE,
   type PackageWorkOrderHubTabId,
@@ -13,6 +20,7 @@ import {
   buildAllFinalWorkOrdersPrintHtml,
   buildFinalWorkOrderPrintEmbedHtml,
 } from './packageWorkOrderPrintEmbedHtml';
+import { buildWorkOrderInstallationMetaLines } from './workOrderInstallationMeta';
 
 export const BODY_PRINT_ESTIMATE_CLASS = 'body-print-estimate-sheet';
 
@@ -34,6 +42,10 @@ function isPackageWorkOrderTemplateHubTab(tab: PackageWorkOrderHubTabId): boolea
   return tab === 'workOrder' || isPackageWorkOrderAddendumTab(tab);
 }
 
+export function isPackageWorkOrderShareableHubTab(tab: PackageWorkOrderHubTabId): boolean {
+  return isPackageWorkOrderTemplateHubTab(tab) || tab === 'finalWorkOrder';
+}
+
 /** Вкладки заказ-нарядов для пакетной печати (без интерактивной сметы). */
 export function packageWorkOrderHubTabsForBatchPrint(
   addendumSlotCount: number,
@@ -47,12 +59,18 @@ export function packageWorkOrderHubTabsForBatchPrint(
 function buildFinalWorkOrderPrintInput(
   ctx: PackageWorkOrderHubContextValue
 ): FinalWorkOrderPrintEmbedInput {
+  const installation = ctx.linkedInstallationSchedule
+    ? buildWorkOrderInstallationMetaLines(ctx.linkedInstallationSchedule)
+    : null;
   return {
     contractNum: ctx.estimateAppendixContractRef.num,
     contractDate: ctx.estimateAppendixContractRef.date,
     objectAddress: ctx.form.object.objectAddress,
     customerFullName: ctx.form.customer.fullName,
     customerPhone: ctx.form.customer.phone,
+    installationDateTime: installation?.dateTime ?? null,
+    installationInstaller: installation?.installer ?? null,
+    installationContacts: installation?.contacts ?? [],
     showInstallerGrades: !ctx.isWindowsPackage,
     showLineAmounts: ctx.form.workOrder.showLineAmounts,
     formatMoneyValue: ctx.formatMoneyValue,
@@ -80,6 +98,159 @@ function workOrderHubPrintOptions(
     : undefined;
 }
 
+function resolveFinalWorkOrderVariant(
+  ctx: PackageWorkOrderHubContextValue
+): 'common' | PackagePerInstallerWorkOrder {
+  if (ctx.activeFinalWorkOrderDocId === 'common') return 'common';
+  return (
+    ctx.perInstallerWorkOrders.find((d) => d.installer.id === ctx.activeFinalWorkOrderDocId) ??
+    'common'
+  );
+}
+
+function sanitizeFilePart(value: string): string {
+  return (
+    value
+      .trim()
+      .replace(/[^\dA-Za-zА-Яа-яЁё_-]+/g, '_')
+      .replace(/^_+|_+$/g, '') || 'doc'
+  );
+}
+
+export type PackageWorkOrderHubSharePayload = {
+  html: string;
+  documentTitle: string;
+  fileName: string;
+  message: string;
+  /** Телефон конкретного мастера (если отправляется его лист). */
+  installerPhone: string;
+  installerLabel: string | null;
+};
+
+function installerPrimaryPhone(installer: {
+  phone?: string | null;
+  phones?: string[] | null;
+}): string {
+  const fromList = installer.phones?.map((p) => p.trim()).find(Boolean);
+  if (fromList) return fromList;
+  return installer.phone?.trim() || '';
+}
+
+function buildHubShareMessage(
+  ctx: PackageWorkOrderHubContextValue,
+  documentTitle: string,
+  installerFullName: string | null
+): string {
+  const lines: string[] = [documentTitle];
+  if (installerFullName) {
+    lines.push(`Монтажник: ${installerFullName}`);
+  }
+  lines.push(
+    `Договор: № ${ctx.estimateAppendixContractRef.num} от ${ctx.estimateAppendixContractRef.date}`
+  );
+  if (ctx.form.object.objectAddress?.trim()) {
+    lines.push(`Адрес: ${ctx.form.object.objectAddress.trim()}`);
+  }
+  if (ctx.form.customer.fullName?.trim()) {
+    lines.push(`Заказчик: ${ctx.form.customer.fullName.trim()}`);
+  }
+  if (ctx.form.customer.phone?.trim()) {
+    lines.push(`Телефон заказчика: ${ctx.form.customer.phone.trim()}`);
+  }
+  if (ctx.linkedInstallationSchedule) {
+    const meta = buildWorkOrderInstallationMetaLines(ctx.linkedInstallationSchedule);
+    lines.push(`Дата и время монтажа: ${meta.dateTime}`);
+    if (meta.installer) lines.push(`Монтажник (график): ${meta.installer}`);
+    for (const contact of meta.contacts) lines.push(contact);
+  }
+  lines.push('', 'Во вложении — PDF заказ-наряда.');
+  return lines.join('\n');
+}
+
+/** Готовит HTML/метаданные для отправки текущего заказ-наряда из hub. */
+export function buildPackageWorkOrderHubSharePayload(
+  panelTab: PackageWorkOrderHubTabId,
+  ctx: PackageWorkOrderHubContextValue
+): PackageWorkOrderHubSharePayload {
+  const contractPart = sanitizeFilePart(ctx.estimateAppendixContractRef.num);
+  const datePart = sanitizeFilePart(ctx.estimateAppendixContractRef.date);
+
+  if (isPackageWorkOrderTemplateHubTab(panelTab)) {
+    const html = ctx.getTemplatePreviewHtml(panelTab).trim();
+    if (!html) {
+      throw new Error('Нет данных для этого заказ-наряда');
+    }
+    const documentTitle = packageWorkOrderHubTabLabel(panelTab, false, ctx.packageKind);
+    return {
+      html: wrapTemplateWorkOrderHtml(html, ctx.isWindowsPackage),
+      documentTitle,
+      fileName: `Zakaz-naryad_${contractPart}_${datePart}.pdf`,
+      message: buildHubShareMessage(ctx, documentTitle, null),
+      installerPhone: '',
+      installerLabel: null,
+    };
+  }
+
+  if (panelTab !== 'finalWorkOrder') {
+    throw new Error('Отправка для этой вкладки недоступна');
+  }
+
+  const input = buildFinalWorkOrderPrintInput(ctx);
+  if (input.finalWorkOrderComputed.rooms.length === 0) {
+    throw new Error('Нет данных для итогового заказ-наряда');
+  }
+
+  const variant = resolveFinalWorkOrderVariant(ctx);
+  const html = buildFinalWorkOrderPrintEmbedHtml(input, variant, ctx.isWindowsPackage);
+  const isInstallerSheet = variant !== 'common';
+  const installerFullName = isInstallerSheet ? variant.installer.fullName : null;
+  const documentTitle = isInstallerSheet
+    ? `Заказ-наряд мастера: ${ctx.formatInstallerNameShort(variant.installer.fullName)}`
+    : 'Общий итоговый заказ-наряд';
+  const installerPart = isInstallerSheet
+    ? sanitizeFilePart(ctx.formatInstallerNameShort(variant.installer.fullName))
+    : 'obshiy';
+
+  return {
+    html,
+    documentTitle,
+    fileName: `Zakaz-naryad_${installerPart}_${contractPart}_${datePart}.pdf`,
+    message: buildHubShareMessage(ctx, documentTitle, installerFullName),
+    installerPhone: isInstallerSheet ? installerPrimaryPhone(variant.installer) : '',
+    installerLabel: installerFullName,
+  };
+}
+
+export async function downloadPackageWorkOrderHubTabPdf(
+  panelTab: PackageWorkOrderHubTabId,
+  ctx: PackageWorkOrderHubContextValue
+): Promise<void> {
+  const payload = buildPackageWorkOrderHubSharePayload(panelTab, ctx);
+  await downloadDocumentPdf(
+    payload.html,
+    payload.documentTitle,
+    payload.fileName,
+    workOrderHubPrintOptions(ctx)
+  );
+}
+
+export async function buildPackageWorkOrderHubTabPdfFile(
+  panelTab: PackageWorkOrderHubTabId,
+  ctx: PackageWorkOrderHubContextValue
+): Promise<{ file: File; payload: PackageWorkOrderHubSharePayload }> {
+  const payload = buildPackageWorkOrderHubSharePayload(panelTab, ctx);
+  const { blob, fileName } = await buildDocumentPdfBlob(
+    payload.html,
+    payload.documentTitle,
+    payload.fileName,
+    workOrderHubPrintOptions(ctx)
+  );
+  return {
+    file: new File([blob], fileName, { type: 'application/pdf' }),
+    payload,
+  };
+}
+
 function printTemplateWorkOrderTab(
   tab: PackageWorkOrderHubTabId,
   ctx: PackageWorkOrderHubContextValue
@@ -103,11 +274,7 @@ function printFinalWorkOrderTab(ctx: PackageWorkOrderHubContextValue): void {
     return;
   }
 
-  const variant =
-    ctx.activeFinalWorkOrderDocId === 'common'
-      ? 'common'
-      : (ctx.perInstallerWorkOrders.find((d) => d.installer.id === ctx.activeFinalWorkOrderDocId) ??
-        'common');
+  const variant = resolveFinalWorkOrderVariant(ctx);
 
   printDocumentHtml(
     buildFinalWorkOrderPrintEmbedHtml(input, variant, ctx.isWindowsPackage),

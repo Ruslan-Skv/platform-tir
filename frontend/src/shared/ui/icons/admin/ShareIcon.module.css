@@ -1,0 +1,4 @@
+:global(.admin-action-icon-share) {
+  color: var(--admin-icon-share);
+  flex-shrink: 0;
+}

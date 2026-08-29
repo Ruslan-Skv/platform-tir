@@ -13,7 +13,7 @@ import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.mod
 import { formatCrmDateTimeLocale } from '@/views/admin/CRM/Customers/shared/crmCustomerDisplay';
 import { DIRECTION_LABELS } from '@/views/admin/CRM/Installers/installers-page.constants';
 
-import { formatTime } from '../shared/installation-schedules';
+import { formatDateRange, formatTime } from '../shared/installation-schedules';
 import {
   INSTALLATION_SCHEDULE_TRASH_RETENTION_NOTICE,
   installationScheduleTrashPermanentDeleteAtIso,
@@ -163,6 +163,10 @@ export function InstallationScheduleTrashModal({
                 row.customerName,
                 row.customerAddress,
                 ...(row.customerPhones ?? []),
+                ...(row.contactPersons ?? []).flatMap((person) => [
+                  person.name ? `конт. ${person.name}` : null,
+                  ...(person.phones ?? []),
+                ]),
               ]
                 .filter(Boolean)
                 .join(' · ');
@@ -171,7 +175,7 @@ export function InstallationScheduleTrashModal({
                   <div className={styles.entryMain}>
                     <div className={styles.entryMeta}>
                       <span className={styles.entryName}>
-                        {row.date.slice(0, 10)}
+                        {formatDateRange(row)}
                         {` · ${DIRECTION_LABELS[row.direction] ?? row.direction}`}
                         {` · ${formatTime(row)}`}
                         {row.installerName ? ` · ${row.installerName}` : ''}

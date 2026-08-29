@@ -82,6 +82,41 @@ export class MeasurementsCrudService {
     return formatMeasurementResponse(created);
   }
 
+  /** Замеры, где текущий пользователь назначен замерщиком. */
+  findMy(
+    userId: string,
+    params?: {
+      status?: string;
+      directionId?: string;
+      search?: string;
+      dateFrom?: string;
+      dateTo?: string;
+      includeCounts?: boolean;
+      page?: number;
+      limit?: number;
+      sortBy?: 'receptionDate' | 'executionDate' | 'status';
+      sortOrder?: 'asc' | 'desc';
+    },
+  ) {
+    const id = userId.trim();
+    if (!id) {
+      return Promise.resolve({
+        data: [],
+        total: 0,
+        page: params?.page ?? 1,
+        limit: params?.limit ?? 20,
+        totalPages: 0,
+      });
+    }
+    return this.findAll({
+      ...params,
+      surveyorId: id,
+      scope: 'all',
+      includeCounts: params?.includeCounts ?? true,
+      countsUserId: id,
+    });
+  }
+
   async findAll(params?: {
     status?: string;
     managerId?: string;

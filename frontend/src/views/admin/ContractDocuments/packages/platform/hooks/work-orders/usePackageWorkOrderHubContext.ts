@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type {
   ContractDocumentPackageKind,
@@ -8,6 +8,10 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
+import {
+  type InstallationSchedule,
+  getInstallationSchedulesByPackage,
+} from '@/shared/api/crm/admin-installation-schedules';
 
 import { formatPackageMoneyValue } from '../../editor/estimateTab/estimateTabUi';
 import {
@@ -21,10 +25,12 @@ import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateSt
 import type { PackageFormData } from '../../form/packageForm';
 import type { PackageWorkOrderHubContextValue } from '../../hub/workOrders/PackageWorkOrderHubContext';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
+import { pickLinkedInstallationSchedule } from '../../workOrders/workOrderInstallationMeta';
 import { usePackageContractInstallers } from '../contract/usePackageContractInstallers';
 import { usePackageFinalEstimateWorkOrders } from '../estimate/usePackageFinalEstimateWorkOrders';
 
 export type UsePackageWorkOrderHubContextOptions = {
+  packageId: string;
   packageKind: ContractDocumentPackageKind;
   isProductDirectionPackage: boolean;
   windowsWorkOrderMarkupPercent: number;
@@ -50,6 +56,7 @@ export type UsePackageWorkOrderHubContextOptions = {
 
 export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubContextOptions) {
   const {
+    packageId,
     packageKind,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,
@@ -113,6 +120,27 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
     ]
   );
 
+  const [linkedInstallationSchedule, setLinkedInstallationSchedule] =
+    useState<InstallationSchedule | null>(null);
+
+  useEffect(() => {
+    if (!packageId.trim()) {
+      setLinkedInstallationSchedule(null);
+      return;
+    }
+    let cancelled = false;
+    void getInstallationSchedulesByPackage(packageId)
+      .then((rows) => {
+        if (!cancelled) setLinkedInstallationSchedule(pickLinkedInstallationSchedule(rows));
+      })
+      .catch(() => {
+        if (!cancelled) setLinkedInstallationSchedule(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageId]);
+
   const workOrderHubContextValue = useMemo((): PackageWorkOrderHubContextValue => {
     return {
       packageKind,
@@ -140,6 +168,8 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
       perInstallerWorkOrders: finalEstimate.perInstallerWorkOrders,
       activeInstallerWorkOrder: finalEstimate.activeInstallerWorkOrder,
       estimateAppendixContractRef,
+      packageId,
+      linkedInstallationSchedule,
       formatMoneyValue: formatPackageMoneyValue,
       formatMoneyRubShort,
       formatInstallerNameShort,
@@ -160,6 +190,8 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
     activeFinalWorkOrderDocId,
     setActiveFinalWorkOrderDocId,
     estimateAppendixContractRef,
+    packageId,
+    linkedInstallationSchedule,
   ]);
 
   return {

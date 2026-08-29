@@ -2814,6 +2814,10 @@ model InstallerMaster {
   direction String
   fullName  String
   grade     String
+  /// Основной телефон (первый из phones)
+  phone     String?
+  /// Все номера телефонов мастера
+  phones    String[] @default([])
   /// Опциональная привязка к аккаунту: без неё мастер работает только по ФИО (колокольчик не получает).
   userId    String?
   createdAt DateTime @default(now())
@@ -2891,7 +2895,8 @@ enum InstallationScheduleStatus {
 /// Запись графика монтажей (одна строка дневного расписания мастера).
 model InstallationScheduleEntry {
   id              String                     @id @default(cuid())
-  date            DateTime                   @db.Date
+  date            DateTime                   @db.Date /// дата начала (включительно)
+  dateEnd         DateTime?                  @db.Date /// дата окончания; null = один день (= date)
   timeFrom        String?
   timeTo          String?
   timeText        String? /// свободный текст времени («к 10.00»)
@@ -2899,7 +2904,9 @@ model InstallationScheduleEntry {
   orderInfo       String?                    @db.Text
   note            String?                    @db.Text
   installerId     String?
-  installerName   String? /// снимок / ручной ввод без привязки к справочнику
+  installerName   String? /// снимок / ручной ввод; несколько — через «, »
+  /// ID монтажников из справочника (включая installerId); для «Мои монтажи» и прав
+  installerIds    String[]                   @default([])
   packageId       String?
   contractId      String?
   contractNumber  String? /// снимок / ручной ввод без пакета
@@ -2909,6 +2916,8 @@ model InstallationScheduleEntry {
   customerAddress String?                    @db.Text
   customerPhone   String?
   customerPhones  String[]                   @default([])
+  /// Контактные лица на объекте: [{ name: string, phones: string[] }]
+  contactPersons  Json                       @default("[]")
   status          InstallationScheduleStatus @default(PLANNED)
   completionNote  String?                    @db.Text
   completedAt     DateTime?
@@ -2928,6 +2937,7 @@ model InstallationScheduleEntry {
   bellEvents  InstallationScheduleBellEvent[]
 
   @@index([date])
+  @@index([dateEnd])
   @@index([direction, date])
   @@index([installerId, date])
   @@index([packageId])

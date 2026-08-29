@@ -102,6 +102,41 @@ export class MeasurementsController {
     });
   }
 
+  /** Замеры текущего пользователя как замерщика (аналог «Мои монтажи»). */
+  @Get('my')
+  findMy(
+    @Req() req: RequestWithUser,
+    @Query('status') status?: string,
+    @Query('directionId') directionId?: string,
+    @Query('search') search?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('includeCounts') includeCounts?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+    @Query('sortBy') sortBy?: string,
+    @Query('sortOrder') sortOrder?: string,
+  ) {
+    const truthy = (v?: string) => v === '1' || v === 'true' || v === 'yes';
+    const sortByNorm =
+      sortBy === 'receptionDate' || sortBy === 'executionDate' || sortBy === 'status'
+        ? sortBy
+        : undefined;
+    const sortOrderNorm = sortOrder === 'asc' || sortOrder === 'desc' ? sortOrder : undefined;
+    return this.measurementsService.findMy(req.user?.id ?? '', {
+      status,
+      directionId,
+      search,
+      dateFrom,
+      dateTo,
+      includeCounts: includeCounts === undefined ? true : truthy(includeCounts),
+      page: page ? parseInt(page, 10) : 1,
+      limit: limit ? parseInt(limit, 10) : 20,
+      sortBy: sortByNorm,
+      sortOrder: sortOrderNorm,
+    });
+  }
+
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.measurementsService.getHistory(id);

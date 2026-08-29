@@ -5,13 +5,15 @@ import { DIRECTION_LABELS } from '@/views/admin/CRM/Installers/installers-page.c
 import { WaybillMobileCallControl } from '@/views/admin/CRM/Waybills/shared/WaybillMobileCallControl';
 
 import styles from '../shared/InstallationSchedules.module.css';
-import { STATUS_LABELS, formatDate, formatTime } from '../shared/installation-schedules';
+import { STATUS_LABELS, formatDateRange, formatTime } from '../shared/installation-schedules';
 import { InstallationScheduleRowActions } from './InstallationScheduleRowActions';
 
 type Props = {
   data: InstallationSchedule[];
   loading: boolean;
   onEdit: (item: InstallationSchedule) => void;
+  onOpenWorkOrders: (item: InstallationSchedule) => void;
+  onShare: (item: InstallationSchedule) => void;
   onComplete: (item: InstallationSchedule) => void;
   onFail: (item: InstallationSchedule) => void;
   onReschedule: (item: InstallationSchedule) => void;
@@ -23,6 +25,8 @@ export function InstallationSchedulesListMobileCards({
   data,
   loading,
   onEdit,
+  onOpenWorkOrders,
+  onShare,
   onComplete,
   onFail,
   onReschedule,
@@ -43,12 +47,14 @@ export function InstallationSchedulesListMobileCards({
               : item.customerPhone
                 ? [item.customerPhone]
                 : [];
+          const contactPhones = item.contactPersons?.flatMap((person) => person.phones ?? []) ?? [];
+          const allPhones = [...phones, ...contactPhones];
           return (
             <article key={item.id} className={styles.mobileCard}>
               <div className={styles.mobileCardTop}>
                 <div className={styles.mobileCardMain}>
                   <span className={styles.mobileCardName}>
-                    {formatDate(item.date)} · {DIRECTION_LABELS[item.direction]}
+                    {formatDateRange(item)} · {DIRECTION_LABELS[item.direction]}
                   </span>
                   <span className={styles.mobileCardMeta}>
                     {formatTime(item)}
@@ -60,7 +66,7 @@ export function InstallationSchedulesListMobileCards({
                 </span>
               </div>
 
-              <WaybillMobileCallControl phones={phones} />
+              <WaybillMobileCallControl phones={allPhones} />
 
               <dl className={styles.mobileCardRows}>
                 <div className={styles.mobileCardRow}>
@@ -79,6 +85,17 @@ export function InstallationSchedulesListMobileCards({
                   <dt>Адрес</dt>
                   <dd className={styles.mobileCardTask}>{item.customerAddress || '—'}</dd>
                 </div>
+                {item.contactPersons?.length
+                  ? item.contactPersons.map((person, index) => (
+                      <div className={styles.mobileCardRow} key={`${person.name}-${index}`}>
+                        <dt>Контакт</dt>
+                        <dd className={styles.mobileCardTask}>
+                          {[person.name, ...(person.phones ?? [])].filter(Boolean).join(' · ') ||
+                            '—'}
+                        </dd>
+                      </div>
+                    ))
+                  : null}
                 {item.orderInfo ? (
                   <div className={styles.mobileCardRow}>
                     <dt>Заказ</dt>
@@ -103,6 +120,8 @@ export function InstallationSchedulesListMobileCards({
                 <InstallationScheduleRowActions
                   item={item}
                   onEdit={onEdit}
+                  onOpenWorkOrders={onOpenWorkOrders}
+                  onShare={onShare}
                   onComplete={onComplete}
                   onFail={onFail}
                   onReschedule={onReschedule}

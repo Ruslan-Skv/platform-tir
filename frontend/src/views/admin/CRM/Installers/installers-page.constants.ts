@@ -27,5 +27,6 @@ export const EMPTY_INSTALLER_FORM: InstallerFormValues = {
   direction: 'REPAIR',
   fullName: '',
   grade: '',
+  phones: [''],
   userId: '',
 };

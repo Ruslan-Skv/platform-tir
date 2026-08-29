@@ -23,6 +23,8 @@ import {
   emptyForm,
   formFromSchedule,
   monthBounds,
+  scheduleDateEnd,
+  serializeContactPersons,
   todayIsoDate,
   weekAheadIsoDate,
 } from '../../shared/installation-schedules';
@@ -50,6 +52,7 @@ export function useInstallationSchedulesPage() {
   const [rescheduleItem, setRescheduleItem] = useState<InstallationSchedule | null>(null);
   const [statusNote, setStatusNote] = useState('');
   const [rescheduleDate, setRescheduleDate] = useState('');
+  const [rescheduleDateEnd, setRescheduleDateEnd] = useState('');
   const [formValues, setFormValues] = useState(() => emptyForm(today));
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -115,26 +118,42 @@ export function useInstallationSchedulesPage() {
         setFormError('Укажите дату монтажа');
         return false;
       }
-      if (!formValues.manualInstaller && !formValues.installerId) {
-        setFormError('Выберите монтажника или включите ручной ввод');
+      if (formValues.dateEnd && formValues.dateEnd < formValues.date) {
+        setFormError('Дата окончания не может быть раньше даты начала');
         return false;
       }
-      if (formValues.manualInstaller && !formValues.installerName.trim()) {
+      if (!formValues.manualInstaller && formValues.installerIds.length === 0) {
+        setFormError('Выберите хотя бы одного монтажника или включите ручной ввод');
+        return false;
+      }
+      if (
+        formValues.manualInstaller &&
+        !formValues.manualInstallerNames.some((name) => name.trim())
+      ) {
         setFormError('Укажите имя монтажника');
         return false;
       }
       const phones = formValues.customerPhones.map((phone) => phone.trim()).filter(Boolean);
-      const selectedInstaller = installers.find((row) => row.id === formValues.installerId);
+      const selectedInstallers = formValues.installerIds
+        .map((id) => installers.find((row) => row.id === id))
+        .filter((row): row is NonNullable<typeof row> => Boolean(row));
+      const dateEnd =
+        formValues.dateEnd && formValues.dateEnd !== formValues.date ? formValues.dateEnd : null;
       const input: InstallationScheduleInput = {
         date: formValues.date,
+        dateEnd,
         timeFrom: formValues.timeFrom || null,
         timeTo: formValues.timeTo || null,
         timeText: formValues.timeText.trim() || null,
         direction: formValues.direction,
-        installerId: formValues.manualInstaller ? null : formValues.installerId || null,
+        installerId: formValues.manualInstaller ? null : selectedInstallers[0]?.id || null,
+        installerIds: formValues.manualInstaller ? [] : formValues.installerIds,
         installerName: formValues.manualInstaller
-          ? formValues.installerName.trim()
-          : selectedInstaller?.fullName || formValues.installerName.trim() || null,
+          ? formValues.manualInstallerNames
+              .map((name) => name.trim())
+              .filter(Boolean)
+              .join(', ')
+          : selectedInstallers.map((row) => row.fullName).join(', ') || null,
         packageId: formValues.packageId || null,
         contractId: formValues.contractId || null,
         contractNumber: formValues.contractNumber.trim() || null,
@@ -144,6 +163,7 @@ export function useInstallationSchedulesPage() {
         customerAddress: formValues.customerAddress.trim() || null,
         customerPhone: phones[0] || null,
         customerPhones: phones,
+        contactPersons: serializeContactPersons(formValues.contactPersons),
         orderInfo: formValues.orderInfo.trim() || null,
         note: formValues.note.trim() || null,
       };
@@ -236,6 +256,8 @@ export function useInstallationSchedulesPage() {
     setStatusNote,
     rescheduleDate,
     setRescheduleDate,
+    rescheduleDateEnd,
+    setRescheduleDateEnd,
     formValues,
     setFormValues,
     formError,
@@ -280,14 +302,37 @@ export function useInstallationSchedulesPage() {
     reopen: (item: InstallationSchedule) => run(() => reopenInstallationSchedule(item.id)),
     openReschedule: (item: InstallationSchedule) => {
       setRescheduleItem(item);
-      const date = new Date(`${item.date.slice(0, 10)}T00:00:00`);
-      date.setDate(date.getDate() + 1);
-      setRescheduleDate(date.toLocaleDateString('en-CA'));
+      const start = item.date.slice(0, 10);
+      const end = scheduleDateEnd(item);
+      const next = new Date(`${start}T00:00:00`);
+      next.setDate(next.getDate() + 1);
+      const nextStart = next.toLocaleDateString('en-CA');
+      if (end > start) {
+        const spanDays = Math.round(
+          (new Date(`${end}T00:00:00`).getTime() - new Date(`${start}T00:00:00`).getTime()) /
+            (24 * 60 * 60 * 1000)
+        );
+        const nextEnd = new Date(`${nextStart}T00:00:00`);
+        nextEnd.setDate(nextEnd.getDate() + spanDays);
+        setRescheduleDate(nextStart);
+        setRescheduleDateEnd(nextEnd.toLocaleDateString('en-CA'));
+      } else {
+        setRescheduleDate(nextStart);
+        setRescheduleDateEnd('');
+      }
     },
     confirmReschedule: async () => {
       if (!rescheduleItem || !rescheduleDate) return false;
+      if (rescheduleDateEnd && rescheduleDateEnd < rescheduleDate) {
+        setMessage('Дата окончания не может быть раньше даты начала');
+        return false;
+      }
       const ok = await run(() =>
-        rescheduleInstallationSchedule(rescheduleItem.id, { date: rescheduleDate })
+        rescheduleInstallationSchedule(rescheduleItem.id, {
+          date: rescheduleDate,
+          dateEnd:
+            rescheduleDateEnd && rescheduleDateEnd !== rescheduleDate ? rescheduleDateEnd : null,
+        })
       );
       if (ok) setRescheduleItem(null);
       return ok;

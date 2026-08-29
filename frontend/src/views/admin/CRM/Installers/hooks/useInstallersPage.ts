@@ -108,10 +108,13 @@ export function useInstallersPage() {
   }, [resetForm]);
 
   const openEditModal = useCallback((item: InstallerMaster) => {
+    const phones =
+      item.phones?.length > 0 ? [...item.phones] : item.phone?.trim() ? [item.phone.trim()] : [''];
     setFormValues({
       direction: item.direction,
       fullName: item.fullName,
       grade: gradeForForm(item.direction, item.grade),
+      phones,
       userId: item.userId ?? '',
     });
     setFormError(null);
@@ -137,6 +140,8 @@ export function useInstallersPage() {
     return null;
   }, [formValues]);
 
+  const phonesPayload = () => formValues.phones.map((phone) => phone.trim()).filter(Boolean);
+
   const handleCreate = async (e: React.FormEvent) => {
     e.preventDefault();
     const error = validateForm();
@@ -147,10 +152,13 @@ export function useInstallersPage() {
     setSubmitting(true);
     setFormError(null);
     try {
+      const phones = phonesPayload();
       await createInstaller({
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
         grade: gradeForApi(formValues.direction, formValues.grade),
+        phones,
+        phone: phones[0] ?? null,
         userId: formValues.userId.trim() || null,
       });
       setCreateModalOpen(false);
@@ -175,10 +183,13 @@ export function useInstallersPage() {
     setSubmitting(true);
     setFormError(null);
     try {
+      const phones = phonesPayload();
       await updateInstaller(editItem.id, {
         direction: formValues.direction,
         fullName: formValues.fullName.trim(),
         grade: gradeForApi(formValues.direction, formValues.grade),
+        phones,
+        phone: phones[0] ?? null,
         userId: formValues.userId.trim() || null,
       });
       setEditItem(null);

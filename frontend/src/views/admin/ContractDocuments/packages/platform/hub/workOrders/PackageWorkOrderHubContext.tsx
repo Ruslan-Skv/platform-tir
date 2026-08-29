@@ -4,6 +4,7 @@ import { type ReactNode, createContext, useContext } from 'react';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import type { InstallerMaster } from '@/shared/api/admin-crm';
+import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 
 import type { PackageFormData } from '../../form/packageForm';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
@@ -88,6 +89,9 @@ export type PackageWorkOrderHubContextValue = {
   perInstallerWorkOrders: PackagePerInstallerWorkOrder[];
   activeInstallerWorkOrder: PackagePerInstallerWorkOrder | null;
   estimateAppendixContractRef: { num: string; date: string };
+  /** Id пакета — для подгрузки привязанного монтажа в шапку заказ-наряда. */
+  packageId: string;
+  linkedInstallationSchedule: InstallationSchedule | null;
   formatMoneyValue: (n: number) => string;
   formatMoneyRubShort: (n: number) => string;
   formatInstallerNameShort: (name: string) => string;

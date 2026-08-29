@@ -98,6 +98,8 @@ export interface InstallerMaster {
   direction: InstallerDirection;
   fullName: string;
   grade: string;
+  phone: string | null;
+  phones: string[];
   userId: string | null;
   user?: {
     id: string;
@@ -122,6 +124,8 @@ export async function createInstaller(data: {
   direction: InstallerDirection;
   fullName: string;
   grade: string;
+  phone?: string | null;
+  phones?: string[];
   userId?: string | null;
 }): Promise<InstallerMaster> {
   const res = await apiFetch(`${API_URL}/admin/installers`, {
@@ -143,6 +147,8 @@ export async function updateInstaller(
     direction: InstallerDirection;
     fullName: string;
     grade: string;
+    phone: string | null;
+    phones: string[];
     userId: string | null;
   }>
 ): Promise<InstallerMaster> {
@@ -810,6 +816,45 @@ export async function getMeasurements(params?: {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить замеры');
+  return res.json();
+}
+
+/** Замеры текущего пользователя как замерщика (`GET /admin/measurements/my`). */
+export async function getMyMeasurements(params?: {
+  status?: string;
+  directionId?: string;
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  includeCounts?: boolean;
+  page?: number;
+  limit?: number;
+  sortBy?: MeasurementListSortBy;
+  sortOrder?: 'asc' | 'desc';
+}): Promise<{
+  data: Measurement[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  counts?: MeasurementsListCounts;
+}> {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set('status', params.status);
+  if (params?.directionId) searchParams.set('directionId', params.directionId);
+  if (params?.search) searchParams.set('search', params.search);
+  if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
+  if (params?.includeCounts !== false) searchParams.set('includeCounts', 'true');
+  searchParams.set('page', String(params?.page ?? 1));
+  searchParams.set('limit', String(params?.limit ?? 20));
+  if (params?.sortBy) searchParams.set('sortBy', params.sortBy);
+  if (params?.sortOrder) searchParams.set('sortOrder', params.sortOrder);
+
+  const res = await apiFetch(`${API_URL}/admin/measurements/my?${searchParams}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить мои замеры');
   return res.json();
 }
 

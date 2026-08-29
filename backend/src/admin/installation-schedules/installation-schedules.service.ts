@@ -24,9 +24,12 @@ import {
   customerFromFormData,
   emptyToNull,
   isPlanner,
+  normalizeContactPersons,
   normalizeCustomerPhones,
   parseDateOnly,
   permanentDeleteAtIso,
+  resolveDateEnd,
+  overlappingDateRangeWhere,
   selectedInstallerIds,
   todayDateOnly,
 } from './installation-schedule.shared';
@@ -40,14 +43,77 @@ export class InstallationSchedulesService {
     private readonly scheduleNotify: InstallationScheduleNotifyService,
   ) {}
 
-  private assertCanComplete(
-    entry: { installer: { userId: string | null } | null },
+  private async assertCanComplete(
+    entry: {
+      installerId: string | null;
+      installerIds: string[];
+      installer: { userId: string | null } | null;
+    },
     userId: string,
     role: string,
   ) {
     if (isPlanner(role)) return;
     if (entry.installer?.userId && entry.installer.userId === userId) return;
+    const ids = [
+      ...new Set(
+        [...(entry.installerIds ?? []), entry.installerId].filter((id): id is string =>
+          Boolean(id),
+        ),
+      ),
+    ];
+    if (ids.length > 0) {
+      const linked = await this.prisma.installerMaster.findFirst({
+        where: { id: { in: ids }, userId },
+        select: { id: true },
+      });
+      if (linked) return;
+    }
     throw new ForbiddenException('Нет прав отметить выполнение этого монтажа');
+  }
+
+  private async resolveInstallers(input: {
+    installerId?: string | null;
+    installerIds?: string[] | null;
+    installerName?: string | null;
+  }): Promise<{
+    installerId: string | null;
+    installerIds: string[];
+    installerName: string | null;
+  }> {
+    const fromList = (input.installerIds ?? [])
+      .map((id) => (typeof id === 'string' ? id.trim() : ''))
+      .filter(Boolean);
+    const primary = emptyToNull(input.installerId) ?? null;
+    const ids = [...new Set(primary ? [primary, ...fromList] : fromList)];
+
+    if (ids.length > 0) {
+      const masters = await this.prisma.installerMaster.findMany({
+        where: { id: { in: ids } },
+        select: { id: true, fullName: true },
+      });
+      const byId = new Map(masters.map((row) => [row.id, row]));
+      const ordered = ids
+        .map((id) => byId.get(id))
+        .filter((row): row is NonNullable<typeof row> => Boolean(row));
+      if (ordered.length !== ids.length) {
+        throw new BadRequestException('Один или несколько монтажников не найдены');
+      }
+      return {
+        installerId: ordered[0].id,
+        installerIds: ordered.map((row) => row.id),
+        installerName: ordered.map((row) => row.fullName).join(', '),
+      };
+    }
+
+    const names = (emptyToNull(input.installerName) ?? '')
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    return {
+      installerId: null,
+      installerIds: [],
+      installerName: names.length ? names.join(', ') : null,
+    };
   }
 
   private async purgeExpiredTrash(): Promise<void> {
@@ -93,16 +159,11 @@ export class InstallationSchedulesService {
   private async buildCreateData(dto: CreateInstallationScheduleDto, createdById: string) {
     assertDirection(dto.direction);
 
-    const installerId = emptyToNull(dto.installerId) ?? null;
-    let installerName = emptyToNull(dto.installerName) ?? null;
-    if (installerId) {
-      const installer = await this.prisma.installerMaster.findUnique({
-        where: { id: installerId },
-        select: { id: true, fullName: true, direction: true },
-      });
-      if (!installer) throw new BadRequestException('Мастер не найден');
-      if (!installerName) installerName = installer.fullName;
-    }
+    const { installerId, installerIds, installerName } = await this.resolveInstallers({
+      installerId: dto.installerId,
+      installerIds: dto.installerIds,
+      installerName: dto.installerName,
+    });
 
     const packageId = emptyToNull(dto.packageId) ?? null;
     let contractId = emptyToNull(dto.contractId) ?? null;
@@ -166,8 +227,10 @@ export class InstallationSchedulesService {
       }
     }
 
+    const date = parseDateOnly(dto.date);
     return {
-      date: parseDateOnly(dto.date),
+      date,
+      dateEnd: resolveDateEnd(date, dto.dateEnd),
       timeFrom: emptyToNull(dto.timeFrom) ?? null,
       timeTo: emptyToNull(dto.timeTo) ?? null,
       timeText: emptyToNull(dto.timeText) ?? null,
@@ -175,6 +238,7 @@ export class InstallationSchedulesService {
       orderInfo: emptyToNull(dto.orderInfo) ?? null,
       note: emptyToNull(dto.note) ?? null,
       installerId,
+      installerIds,
       installerName,
       packageId,
       contractId,
@@ -185,6 +249,7 @@ export class InstallationSchedulesService {
       customerAddress,
       customerPhone: customerPhones[0] ?? null,
       customerPhones,
+      contactPersons: normalizeContactPersons(dto.contactPersons),
       createdById,
     };
   }
@@ -205,27 +270,31 @@ export class InstallationSchedulesService {
     direction?: string;
     installerId?: string;
   }) {
-    const fromStr = params.dateFrom?.trim();
-    const toStr = params.dateTo?.trim();
-    const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = parseDateOnly(toStr);
-    if (!fromStr && !toStr) {
-      const today = parseDateOnly(todayDateOnly());
-      dateFilter.gte = today;
-      dateFilter.lte = today;
-    }
-
     const direction = params.direction?.trim();
     if (direction) assertDirection(direction);
 
     return this.prisma.installationScheduleEntry.findMany({
       where: {
-        date: dateFilter,
+        ...overlappingDateRangeWhere(params),
         deletedAt: null,
         ...(direction ? { direction } : {}),
-        ...(params.installerId?.trim() ? { installerId: params.installerId.trim() } : {}),
+        ...(params.installerId?.trim()
+          ? {
+              OR: [
+                { installerId: params.installerId.trim() },
+                { installerIds: { has: params.installerId.trim() } },
+              ],
+            }
+          : {}),
       },
+      include: ENTRY_INCLUDE,
+      orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }, { createdAt: 'asc' }],
+    });
+  }
+
+  findByPackageId(packageId: string) {
+    return this.prisma.installationScheduleEntry.findMany({
+      where: { packageId, deletedAt: null },
       include: ENTRY_INCLUDE,
       orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }, { createdAt: 'asc' }],
     });
@@ -236,23 +305,23 @@ export class InstallationSchedulesService {
     return this.findMyByDateRange(userId, { dateFrom: date, dateTo: date });
   }
 
-  findMyByDateRange(userId: string, params: { dateFrom?: string; dateTo?: string }) {
-    const fromStr = params.dateFrom?.trim();
-    const toStr = params.dateTo?.trim();
-    const dateFilter: Prisma.DateTimeFilter = {};
-    if (fromStr) dateFilter.gte = parseDateOnly(fromStr);
-    if (toStr) dateFilter.lte = parseDateOnly(toStr);
-    if (!fromStr && !toStr) {
-      const today = parseDateOnly(todayDateOnly());
-      dateFilter.gte = today;
-      dateFilter.lte = today;
-    }
+  async findMyByDateRange(userId: string, params: { dateFrom?: string; dateTo?: string }) {
+    const myInstallerIds = (
+      await this.prisma.installerMaster.findMany({
+        where: { userId },
+        select: { id: true },
+      })
+    ).map((row) => row.id);
+    if (myInstallerIds.length === 0) return [];
 
     return this.prisma.installationScheduleEntry.findMany({
       where: {
-        date: dateFilter,
+        ...overlappingDateRangeWhere(params),
         deletedAt: null,
-        installer: { userId },
+        OR: [
+          { installerId: { in: myInstallerIds } },
+          { installerIds: { hasSome: myInstallerIds } },
+        ],
       },
       include: ENTRY_INCLUDE,
       orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }, { createdAt: 'asc' }],
@@ -271,11 +340,19 @@ export class InstallationSchedulesService {
   }
 
   async update(id: string, dto: UpdateInstallationScheduleDto, actorUserId?: string) {
-    await this.findOne(id);
+    const current = await this.findOne(id);
 
     const data: Prisma.InstallationScheduleEntryUpdateInput = {};
 
     if (dto.date !== undefined) data.date = parseDateOnly(dto.date);
+    if (dto.dateEnd !== undefined || dto.date !== undefined) {
+      const nextDate = dto.date !== undefined ? parseDateOnly(dto.date) : current.date;
+      if (dto.dateEnd !== undefined) {
+        data.dateEnd = resolveDateEnd(nextDate, dto.dateEnd);
+      } else if (current.dateEnd && current.dateEnd.getTime() < nextDate.getTime()) {
+        data.dateEnd = null;
+      }
+    }
     if (dto.timeFrom !== undefined) data.timeFrom = emptyToNull(dto.timeFrom) ?? null;
     if (dto.timeTo !== undefined) data.timeTo = emptyToNull(dto.timeTo) ?? null;
     if (dto.timeText !== undefined) data.timeText = emptyToNull(dto.timeText) ?? null;
@@ -301,25 +378,23 @@ export class InstallationSchedulesService {
       data.customerAddress = emptyToNull(dto.customerAddress) ?? null;
     }
 
-    if (dto.installerId !== undefined || dto.installerName !== undefined) {
-      const installerId =
-        dto.installerId !== undefined ? (emptyToNull(dto.installerId) ?? null) : undefined;
-      let installerName =
-        dto.installerName !== undefined ? (emptyToNull(dto.installerName) ?? null) : undefined;
-      if (installerId) {
-        const installer = await this.prisma.installerMaster.findUnique({
-          where: { id: installerId },
-          select: { fullName: true },
-        });
-        if (!installer) throw new BadRequestException('Мастер не найден');
-        data.installer = { connect: { id: installerId } };
-        if (installerName === undefined || installerName === null) {
-          installerName = installer.fullName;
-        }
-      } else if (installerId === null) {
+    if (
+      dto.installerId !== undefined ||
+      dto.installerIds !== undefined ||
+      dto.installerName !== undefined
+    ) {
+      const resolved = await this.resolveInstallers({
+        installerId: dto.installerId,
+        installerIds: dto.installerIds,
+        installerName: dto.installerName,
+      });
+      if (resolved.installerId) {
+        data.installer = { connect: { id: resolved.installerId } };
+      } else {
         data.installer = { disconnect: true };
       }
-      if (installerName !== undefined) data.installerName = installerName;
+      data.installerIds = resolved.installerIds;
+      data.installerName = resolved.installerName;
     }
 
     if (dto.packageId !== undefined) {
@@ -361,6 +436,10 @@ export class InstallationSchedulesService {
           : normalizeCustomerPhones(null, dto.customerPhone);
       data.customerPhones = nextPhones;
       data.customerPhone = nextPhones[0] ?? null;
+    }
+
+    if (dto.contactPersons !== undefined) {
+      data.contactPersons = normalizeContactPersons(dto.contactPersons);
     }
 
     const updated = await this.prisma.installationScheduleEntry.update({
@@ -455,7 +534,7 @@ export class InstallationSchedulesService {
     role: string,
   ) {
     const entry = await this.findOne(id);
-    this.assertCanComplete(entry, actorUserId, role);
+    await this.assertCanComplete(entry, actorUserId, role);
     if (entry.status !== InstallationScheduleStatus.PLANNED) {
       throw new BadRequestException('Запись уже закрыта');
     }
@@ -475,7 +554,7 @@ export class InstallationSchedulesService {
 
   async fail(id: string, dto: FailInstallationScheduleDto, actorUserId: string, role: string) {
     const entry = await this.findOne(id);
-    this.assertCanComplete(entry, actorUserId, role);
+    await this.assertCanComplete(entry, actorUserId, role);
     if (entry.status !== InstallationScheduleStatus.PLANNED) {
       throw new BadRequestException('Запись уже закрыта');
     }
@@ -494,11 +573,26 @@ export class InstallationSchedulesService {
   }
 
   async reschedule(id: string, dto: RescheduleInstallationScheduleDto, actorUserId?: string) {
-    await this.findOne(id);
+    const entry = await this.findOne(id);
+    const nextDate = parseDateOnly(dto.date);
+    let nextDateEnd: Date | null;
+    if (dto.dateEnd !== undefined) {
+      nextDateEnd = resolveDateEnd(nextDate, dto.dateEnd);
+    } else if (entry.dateEnd) {
+      const spanDays = Math.round(
+        (entry.dateEnd.getTime() - entry.date.getTime()) / (24 * 60 * 60 * 1000),
+      );
+      nextDateEnd = new Date(nextDate);
+      nextDateEnd.setUTCDate(nextDateEnd.getUTCDate() + spanDays);
+    } else {
+      nextDateEnd = null;
+    }
+
     const updated = await this.prisma.installationScheduleEntry.update({
       where: { id },
       data: {
-        date: parseDateOnly(dto.date),
+        date: nextDate,
+        dateEnd: nextDateEnd,
         ...(dto.timeFrom !== undefined ? { timeFrom: emptyToNull(dto.timeFrom) ?? null } : {}),
         ...(dto.timeTo !== undefined ? { timeTo: emptyToNull(dto.timeTo) ?? null } : {}),
         ...(dto.timeText !== undefined ? { timeText: emptyToNull(dto.timeText) ?? null } : {}),

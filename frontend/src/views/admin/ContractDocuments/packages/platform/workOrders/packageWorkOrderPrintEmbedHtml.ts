@@ -31,6 +31,10 @@ export type FinalWorkOrderPrintEmbedInput = {
   objectAddress: string;
   customerFullName: string;
   customerPhone: string;
+  /** Блок монтажа из графика (если назначен). */
+  installationDateTime?: string | null;
+  installationInstaller?: string | null;
+  installationContacts?: string[];
   showInstallerGrades: boolean;
   showLineAmounts: boolean;
   formatMoneyValue: (n: number) => string;
@@ -51,11 +55,34 @@ export type FinalWorkOrderPrintEmbedInput = {
 };
 
 function buildMetaBlock(input: FinalWorkOrderPrintEmbedInput): string {
+  const installationLines: string[] = [];
+  if (input.installationDateTime) {
+    installationLines.push(
+      `<p><strong>Дата и время монтажа:</strong> ${escapeHtml(input.installationDateTime)}</p>`
+    );
+  }
+  if (input.installationInstaller) {
+    installationLines.push(
+      `<p><strong>Монтажник:</strong> ${escapeHtml(input.installationInstaller)}</p>`
+    );
+  }
+  for (const contact of input.installationContacts ?? []) {
+    const sep = contact.indexOf(':');
+    if (sep > 0) {
+      installationLines.push(
+        `<p><strong>${escapeHtml(contact.slice(0, sep + 1))}</strong>${escapeHtml(contact.slice(sep + 1))}</p>`
+      );
+    } else {
+      installationLines.push(`<p>${escapeHtml(contact)}</p>`);
+    }
+  }
+
   return `<div class="estimateA4Meta packageFinalWorkOrderPrintMeta">
   <p><strong>Договор:</strong> № ${escapeHtml(input.contractNum)} от ${escapeHtml(input.contractDate)}</p>
   <p><strong>Адрес:</strong> ${escapeHtml(input.objectAddress || '—')}</p>
   <p><strong>Заказчик:</strong> ${escapeHtml(input.customerFullName || '—')}</p>
   <p><strong>Телефон заказчика:</strong> ${escapeHtml(input.customerPhone || '—')}</p>
+  ${installationLines.join('\n  ')}
 </div>`;
 }
 

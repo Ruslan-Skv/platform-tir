@@ -256,10 +256,15 @@ export class CalendarService {
 
   private async loadInstallations(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {
     const rows = await this.prisma.installationScheduleEntry.findMany({
-      where: { deletedAt: null, date: range },
+      where: {
+        deletedAt: null,
+        date: { lte: range.lte },
+        OR: [{ dateEnd: null, date: { gte: range.gte } }, { dateEnd: { gte: range.gte } }],
+      },
       select: {
         id: true,
         date: true,
+        dateEnd: true,
         timeFrom: true,
         timeTo: true,
         status: true,
@@ -273,20 +278,47 @@ export class CalendarService {
       take: 5000,
     });
 
-    return rows.map((row) => ({
-      id: `installation:${row.id}`,
-      type: 'installation' as const,
-      date: this.toIso(row.date),
-      timeFrom: row.timeFrom,
-      timeTo: row.timeTo,
-      title: row.customerName?.trim() || row.contractNumber || 'Монтаж',
-      subtitle:
+    const events: CalendarEventDto[] = [];
+    for (const row of rows) {
+      const start = row.date;
+      const end = row.dateEnd && row.dateEnd > row.date ? row.dateEnd : row.date;
+      const title = row.customerName?.trim() || row.contractNumber || 'Монтаж';
+      const subtitle =
         [this.labelDirection(row.direction), row.installerName, row.customerAddress]
           .filter(Boolean)
-          .join(' · ') || null,
-      status: this.labelStatus(row.status, INSTALL_WAYBILL_STATUS_LABELS),
-      href: `/admin/crm/installation-schedules?date=${this.toIso(row.date)}`,
-    }));
+          .join(' · ') || null;
+      const status = this.labelStatus(row.status, INSTALL_WAYBILL_STATUS_LABELS);
+      const href = `/admin/crm/installation-schedules?date=${this.toIso(row.date)}`;
+
+      for (const day of this.eachDayInRange(start, end, range)) {
+        events.push({
+          id: `installation:${row.id}:${day}`,
+          type: 'installation' as const,
+          date: day,
+          timeFrom: row.timeFrom,
+          timeTo: row.timeTo,
+          title,
+          subtitle,
+          status,
+          href,
+        });
+      }
+    }
+    return events;
+  }
+
+  /** Дни монтажа, пересекающие запрошенное окно календаря. */
+  private eachDayInRange(start: Date, end: Date, range: { gte: Date; lte: Date }): string[] {
+    const from = start > range.gte ? start : range.gte;
+    const to = end < range.lte ? end : range.lte;
+    if (from > to) return [];
+    const days: string[] = [];
+    const cur = new Date(from);
+    while (cur <= to) {
+      days.push(this.toIso(cur));
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+    return days;
   }
 
   private async loadWaybills(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {

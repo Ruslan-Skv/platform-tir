@@ -491,6 +491,8 @@
   --admin-icon-copy: var(--admin-chart-series-2);
   --admin-icon-delete: var(--admin-chart-series-6);
   --admin-icon-edit: var(--admin-chart-series-1);
+  --admin-icon-reschedule: var(--admin-chart-series-3);
+  --admin-icon-share: var(--admin-chart-series-5);
   --admin-icon-pin: var(--admin-chart-series-4);
   --admin-icon-pin-active: var(--admin-chart-series-2);
   --admin-icon-publish: var(--admin-success-lime);
@@ -933,6 +935,8 @@
   --admin-icon-copy: var(--admin-chart-series-2);
   --admin-icon-delete: var(--admin-chart-series-6);
   --admin-icon-edit: var(--admin-chart-series-1);
+  --admin-icon-reschedule: var(--admin-chart-series-3);
+  --admin-icon-share: var(--admin-chart-series-5);
   --admin-icon-pin: var(--admin-chart-series-4);
   --admin-icon-pin-active: var(--admin-chart-series-2);
   --admin-icon-publish: var(--admin-success-lime);

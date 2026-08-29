@@ -429,14 +429,14 @@
 
 .tooltipField span {
   font-size: 0.65rem;
-  color: var(--admin-text-muted);
+  color: var(--admin-text-primary);
   font-weight: 600;
 }
 
 .tooltipField strong {
   font-size: 0.75rem;
-  font-weight: 600;
-  color: var(--admin-text-primary);
+  font-weight: 400;
+  color: var(--admin-text-secondary);
   word-break: break-word;
 }
 

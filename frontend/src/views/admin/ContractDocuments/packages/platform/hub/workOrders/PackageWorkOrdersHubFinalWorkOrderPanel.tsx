@@ -3,8 +3,10 @@
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
+import { buildWorkOrderInstallationMetaLines } from '../../workOrders/workOrderInstallationMeta';
 import { PackageWorkOrderGradeButtons } from './PackageWorkOrderGradeButtons';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
+import hubStyles from './PackageWorkOrdersHubModal.module.css';
 import {
   WO_A4_WRAP,
   WO_FORM_GRID,
@@ -27,11 +29,16 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
     perInstallerWorkOrders,
     activeInstallerWorkOrder,
     estimateAppendixContractRef,
+    linkedInstallationSchedule,
     formatMoneyValue,
     formatMoneyRubShort,
     formatInstallerNameShort,
     formatInstallerGradeShort,
   } = usePackageWorkOrderHub();
+
+  const installationMeta = linkedInstallationSchedule
+    ? buildWorkOrderInstallationMetaLines(linkedInstallationSchedule)
+    : null;
 
   return (
     <div className={woPanelRootClass(isWindowsPackage)}>
@@ -56,10 +63,7 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
               ? 'Формируется из счёт-заказа и доп. соглашений с учётом назначенных мастеров.'
               : 'Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».'}
           </p>
-          <div
-            className={cdChrome.tabBar}
-            style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginBottom: 10 }}
-          >
+          <div className={`${cdChrome.tabBar} ${hubStyles.finalDocTabBar}`}>
             <button
               type="button"
               className={`${cdChrome.tab} ${activeFinalWorkOrderDocId === 'common' ? cdChrome.tabActive : ''}`}
@@ -94,9 +98,38 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
                 <p style={{ margin: '0 0 3px' }}>
                   <strong>Заказчик:</strong> {form.customer.fullName || '—'}
                 </p>
-                <p style={{ margin: 0 }}>
+                <p style={{ margin: installationMeta ? '0 0 3px' : 0 }}>
                   <strong>Телефон заказчика:</strong> {form.customer.phone || '—'}
                 </p>
+                {installationMeta ? (
+                  <>
+                    <p style={{ margin: '0 0 3px' }}>
+                      <strong>Дата и время монтажа:</strong> {installationMeta.dateTime}
+                    </p>
+                    {installationMeta.installer ? (
+                      <p style={{ margin: '0 0 3px' }}>
+                        <strong>Монтажник:</strong> {installationMeta.installer}
+                      </p>
+                    ) : null}
+                    {installationMeta.contacts.map((line, index) => (
+                      <p
+                        key={`${line}-${index}`}
+                        style={{
+                          margin: index === installationMeta.contacts.length - 1 ? 0 : '0 0 3px',
+                        }}
+                      >
+                        {line.includes(':') ? (
+                          <>
+                            <strong>{line.slice(0, line.indexOf(':') + 1)}</strong>
+                            {line.slice(line.indexOf(':') + 1)}
+                          </>
+                        ) : (
+                          line
+                        )}
+                      </p>
+                    ))}
+                  </>
+                ) : null}
               </div>
               {finalWorkOrderComputed.rooms.length === 0 ? (
                 <p className={cdDocPreview.estimateA4Empty}>

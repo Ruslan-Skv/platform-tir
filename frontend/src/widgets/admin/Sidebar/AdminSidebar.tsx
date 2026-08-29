@@ -260,6 +260,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.measurements',
   },
   {
+    label: 'Мои замеры',
+    href: '/admin/measurements/my',
+    icon: '📐',
+    resourceId: 'admin.crm.measurements.my',
+  },
+  {
     label: 'Заказчики',
     href: '/admin/customers',
     icon: '👤',

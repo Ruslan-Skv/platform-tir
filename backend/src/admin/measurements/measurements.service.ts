@@ -19,6 +19,10 @@ export class MeasurementsService {
     return this.crud.findAll(params);
   }
 
+  findMy(userId: string, params?: Parameters<MeasurementsCrudService['findMy']>[1]) {
+    return this.crud.findMy(userId, params);
+  }
+
   findOne(id: string) {
     return this.crud.findOne(id);
   }

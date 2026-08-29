@@ -20,9 +20,15 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
 
 export type InstallationScheduleStatus = 'PLANNED' | 'DONE' | 'FAILED';
 
+export type InstallationContactPerson = {
+  name: string;
+  phones: string[];
+};
+
 export type InstallationSchedule = {
   id: string;
   date: string;
+  dateEnd: string | null;
   timeFrom: string | null;
   timeTo: string | null;
   timeText: string | null;
@@ -30,6 +36,7 @@ export type InstallationSchedule = {
   orderInfo: string | null;
   note: string | null;
   installerId: string | null;
+  installerIds?: string[];
   installerName: string | null;
   packageId: string | null;
   contractId: string | null;
@@ -40,6 +47,7 @@ export type InstallationSchedule = {
   customerAddress: string | null;
   customerPhone: string | null;
   customerPhones: string[];
+  contactPersons: InstallationContactPerson[];
   status: InstallationScheduleStatus;
   completionNote: string | null;
   createdAt: string;
@@ -59,6 +67,7 @@ export type InstallationSchedule = {
 
 export type InstallationScheduleInput = {
   date: string;
+  dateEnd?: string | null;
   timeFrom?: string | null;
   timeTo?: string | null;
   timeText?: string | null;
@@ -66,6 +75,7 @@ export type InstallationScheduleInput = {
   orderInfo?: string | null;
   note?: string | null;
   installerId?: string | null;
+  installerIds?: string[] | null;
   installerName?: string | null;
   packageId?: string | null;
   contractId?: string | null;
@@ -76,6 +86,7 @@ export type InstallationScheduleInput = {
   customerAddress?: string | null;
   customerPhone?: string | null;
   customerPhones?: string[] | null;
+  contactPersons?: InstallationContactPerson[] | null;
 };
 
 export type InstallationWorkOrderOption = {
@@ -99,6 +110,18 @@ export async function getInstallationSchedules(params?: {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось загрузить график монтажей');
+  return res.json();
+}
+
+/** Монтажи, привязанные к пакету документов (без фильтра по датам). */
+export async function getInstallationSchedulesByPackage(
+  packageId: string
+): Promise<InstallationSchedule[]> {
+  const search = new URLSearchParams({ packageId });
+  const res = await apiFetch(`${API_URL}/admin/installation-schedules/by-package?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить монтажи по договору');
   return res.json();
 }
 
@@ -150,7 +173,13 @@ export const reopenInstallationSchedule = (id: string) =>
   mutate<InstallationSchedule>(`${id}/reopen`, 'POST', {});
 export const rescheduleInstallationSchedule = (
   id: string,
-  data: { date: string; timeFrom?: string | null; timeTo?: string | null; timeText?: string | null }
+  data: {
+    date: string;
+    dateEnd?: string | null;
+    timeFrom?: string | null;
+    timeTo?: string | null;
+    timeText?: string | null;
+  }
 ) => mutate<InstallationSchedule>(`${id}/reschedule`, 'POST', data);
 
 export async function getInstallationWorkOrders(params: {

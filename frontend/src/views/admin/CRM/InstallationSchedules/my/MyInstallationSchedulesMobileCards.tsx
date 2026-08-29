@@ -5,7 +5,7 @@ import { DIRECTION_LABELS } from '@/views/admin/CRM/Installers/installers-page.c
 import { WaybillMobileCallControl } from '@/views/admin/CRM/Waybills/shared/WaybillMobileCallControl';
 
 import styles from '../shared/InstallationSchedules.module.css';
-import { STATUS_LABELS, formatDate, formatTime } from '../shared/installation-schedules';
+import { STATUS_LABELS, formatDateRange, formatTime } from '../shared/installation-schedules';
 import { MyInstallationScheduleActions } from './MyInstallationScheduleActions';
 
 type Props = {
@@ -37,6 +37,8 @@ export function MyInstallationSchedulesMobileCards({
               : item.customerPhone
                 ? [item.customerPhone]
                 : [];
+          const contactPhones = item.contactPersons?.flatMap((person) => person.phones ?? []) ?? [];
+          const allPhones = [...phones, ...contactPhones];
           const mapsUrl = item.customerAddress
             ? `https://yandex.ru/maps/?text=${encodeURIComponent(item.customerAddress)}`
             : null;
@@ -45,7 +47,7 @@ export function MyInstallationSchedulesMobileCards({
               <div className={styles.mobileCardTop}>
                 <div className={styles.mobileCardMain}>
                   <span className={styles.mobileCardName}>
-                    {formatDate(item.date)} · {DIRECTION_LABELS[item.direction]}
+                    {formatDateRange(item)} · {DIRECTION_LABELS[item.direction]}
                   </span>
                   <span className={styles.mobileCardMeta}>{formatTime(item)}</span>
                 </div>
@@ -54,7 +56,7 @@ export function MyInstallationSchedulesMobileCards({
                 </span>
               </div>
 
-              <WaybillMobileCallControl phones={phones} />
+              <WaybillMobileCallControl phones={allPhones} />
 
               <dl className={styles.mobileCardRows}>
                 <div className={styles.mobileCardRow}>
@@ -88,6 +90,17 @@ export function MyInstallationSchedulesMobileCards({
                     ) : null}
                   </dd>
                 </div>
+                {item.contactPersons?.length
+                  ? item.contactPersons.map((person, index) => (
+                      <div className={styles.mobileCardRow} key={`${person.name}-${index}`}>
+                        <dt>Контакт</dt>
+                        <dd className={styles.mobileCardTask}>
+                          {[person.name, ...(person.phones ?? [])].filter(Boolean).join(' · ') ||
+                            '—'}
+                        </dd>
+                      </div>
+                    ))
+                  : null}
                 <div className={styles.mobileCardRow}>
                   <dt>Телефон</dt>
                   <dd>{phones.length > 0 ? phones.join(', ') : '—'}</dd>

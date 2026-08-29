@@ -26,6 +26,28 @@ export class InstallersService {
     return trimmed || null;
   }
 
+  /** Порядок как в `phones`, затем одиночный `phone` без дублей; `phone` в БД = первый номер. */
+  private normalizePhones(params: { phone?: string | null; phones?: string[] | null }): {
+    phone: string | null;
+    phones: string[];
+  } {
+    if (params.phone === null && params.phones === undefined) {
+      return { phone: null, phones: [] };
+    }
+    const out: string[] = [];
+    const add = (s: string | null | undefined) => {
+      const t = (s ?? '').trim();
+      if (t && !out.includes(t)) out.push(t);
+    };
+    if (params.phones != null) {
+      for (const p of params.phones) add(p);
+    }
+    if (params.phone !== undefined && params.phone !== null) {
+      add(params.phone);
+    }
+    return { phone: out[0] ?? null, phones: out };
+  }
+
   private async resolveUserId(
     userId: string | null | undefined,
   ): Promise<string | null | undefined> {
@@ -47,11 +69,14 @@ export class InstallersService {
 
   async create(dto: CreateInstallerDto) {
     const userId = await this.resolveUserId(dto.userId);
+    const { phone, phones } = this.normalizePhones({ phone: dto.phone, phones: dto.phones });
     return this.prisma.installerMaster.create({
       data: {
         direction: dto.direction,
         fullName: dto.fullName.trim(),
         grade: dto.grade.trim(),
+        phone,
+        phones,
         ...(userId !== undefined ? { userId } : {}),
       },
       include: INSTALLER_INCLUDE,
@@ -79,12 +104,17 @@ export class InstallersService {
   async update(id: string, dto: UpdateInstallerDto) {
     await this.findOne(id);
     const userId = dto.userId !== undefined ? await this.resolveUserId(dto.userId) : undefined;
+    const phonesPatch =
+      dto.phone !== undefined || dto.phones !== undefined
+        ? this.normalizePhones({ phone: dto.phone, phones: dto.phones })
+        : null;
     return this.prisma.installerMaster.update({
       where: { id },
       data: {
         ...(dto.direction !== undefined ? { direction: dto.direction } : {}),
         ...(dto.fullName !== undefined ? { fullName: dto.fullName.trim() } : {}),
         ...(dto.grade !== undefined ? { grade: dto.grade.trim() } : {}),
+        ...(phonesPatch ? { phone: phonesPatch.phone, phones: phonesPatch.phones } : {}),
         ...(userId !== undefined ? { userId } : {}),
       },
       include: INSTALLER_INCLUDE,

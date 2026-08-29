@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 
 import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
@@ -11,6 +12,12 @@ import {
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import modalShellStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
+import { useListModalPresence } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/useListModalPresence';
+import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
+import { PackageWorkOrdersHubListModal } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubListModal';
+import { formatPackageWorkOrderHubModalTitle } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/packageWorkOrderHubTabs';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -23,15 +30,21 @@ import {
 } from '../shared/installation-schedules';
 import {
   STATUS_LABELS,
-  formatDate,
+  formatDateRange,
   formatTime,
   monthBounds,
   todayIsoDate,
   weekAheadIsoDate,
 } from '../shared/installation-schedules';
+import {
+  computeInstallationScheduleFormFillPercent,
+  getInstallationScheduleFillBannerToneClass,
+  installationScheduleFillPercentHint,
+} from '../shared/installationScheduleFillPercent';
 import { INSTALLATION_SCHEDULE_TRASH_RETENTION_NOTICE } from '../shared/installationScheduleTrashRetention';
 import { InstallationScheduleForm } from './InstallationScheduleForm';
 import { InstallationScheduleRowActions } from './InstallationScheduleRowActions';
+import { InstallationScheduleShareModal } from './InstallationScheduleShareModal';
 import { InstallationScheduleTrashModal } from './InstallationScheduleTrashModal';
 import { InstallationSchedulesListMobileCards } from './InstallationSchedulesListMobileCards';
 import { InstallationSchedulesMonthCalendar } from './InstallationSchedulesMonthCalendar';
@@ -78,6 +91,8 @@ export function InstallationSchedulesPageView({
     setStatusNote,
     rescheduleDate,
     setRescheduleDate,
+    rescheduleDateEnd,
+    setRescheduleDateEnd,
     formValues,
     setFormValues,
     formError,
@@ -103,11 +118,66 @@ export function InstallationSchedulesPageView({
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('ALL');
   const [successVisible, setSuccessVisible] = useState(false);
   const [successText, setSuccessText] = useState('');
+  const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
+  const [shareItem, setShareItem] = useState<InstallationSchedule | null>(null);
+  const workOrdersHub = useListModalPresence(workOrdersHubPackageId);
 
   const flashSuccess = (text: string) => {
     setSuccessText(text);
     setSuccessVisible(true);
     window.setTimeout(() => setSuccessVisible(false), 2800);
+  };
+
+  const fillPercent = useMemo(
+    () => computeInstallationScheduleFormFillPercent(formValues),
+    [formValues]
+  );
+
+  const fillPercentHintText = installationScheduleFillPercentHint();
+
+  const fillPercentTitleAside = (
+    <div className={panelStyles.fillBannerTooltipWrap}>
+      <BadgeTooltip content={fillPercentHintText} side="left">
+        <div
+          className={`${panelStyles.fillBanner} ${getInstallationScheduleFillBannerToneClass(fillPercent)}`}
+          data-modal-footer-info
+          role="status"
+        >
+          <span data-modal-footer-info-icon aria-hidden="true" />
+          <span data-modal-footer-info-text>
+            <span className={panelStyles.fillBannerTextFull}>
+              Данные монтажа заполнены на {fillPercent}%.
+            </span>
+            <span className={panelStyles.fillBannerTextShort}>Заполнено на {fillPercent}%</span>
+          </span>
+        </div>
+      </BadgeTooltip>
+    </div>
+  );
+
+  const workOrderTitle = (label: string) => {
+    const packageId = formValues.packageId.trim();
+    const active = Boolean(packageId);
+    const title = formatPackageWorkOrderHubModalTitle(formValues.contractNumber || undefined);
+    return (
+      <span className={styles.titleWithActions}>
+        {label}
+        <button
+          type="button"
+          className={`${styles.workOrderTitleBtn}${active ? ` ${styles.workOrderTitleBtnActive}` : ''}`}
+          disabled={!active}
+          title={active ? title : 'Сначала выберите заказ — заказ-наряд прикрепится автоматически'}
+          aria-label={
+            active ? `Открыть ${title}` : 'Заказ-наряд станет доступен после выбора заказа'
+          }
+          onClick={() => {
+            if (packageId) setWorkOrdersHubPackageId(packageId);
+          }}
+        >
+          <PackageWorkOrdersHubIcon size={16} />
+        </button>
+      </span>
+    );
   };
 
   const setPeriod = (kind: 'today' | 'week' | 'month') => {
@@ -152,7 +222,7 @@ export function InstallationSchedulesPageView({
     {
       key: 'date',
       title: 'Дата',
-      render: (item: InstallationSchedule) => formatDate(item.date),
+      render: (item: InstallationSchedule) => formatDateRange(item),
     },
     {
       key: 'time',
@@ -190,6 +260,14 @@ export function InstallationSchedulesPageView({
           {item.customerAddress ? (
             <span className={styles.subline}>{item.customerAddress}</span>
           ) : null}
+          {item.contactPersons?.length
+            ? item.contactPersons.map((person, index) => (
+                <span className={styles.subline} key={`${person.name}-${index}`}>
+                  Контакт: {person.name}
+                  {person.phones?.length ? ` · ${person.phones.join(', ')}` : ''}
+                </span>
+              ))
+            : null}
         </div>
       ),
     },
@@ -214,6 +292,10 @@ export function InstallationSchedulesPageView({
         <InstallationScheduleRowActions
           item={item}
           onEdit={openEdit}
+          onOpenWorkOrders={(row) => {
+            if (row.packageId) setWorkOrdersHubPackageId(row.packageId);
+          }}
+          onShare={setShareItem}
           onComplete={(row) => {
             setStatusNote('');
             setCompleteItem(row);
@@ -471,6 +553,10 @@ export function InstallationSchedulesPageView({
             data={filtered}
             loading={loading}
             onEdit={openEdit}
+            onOpenWorkOrders={(row) => {
+              if (row.packageId) setWorkOrdersHubPackageId(row.packageId);
+            }}
+            onShare={setShareItem}
             onComplete={(row) => {
               setStatusNote('');
               setCompleteItem(row);
@@ -496,8 +582,18 @@ export function InstallationSchedulesPageView({
         </div>
       </div>
 
-      <Modal isOpen={createOpen} onClose={closeForm} title="Новый монтаж" size="lg" showCloseButton>
+      <Modal
+        isOpen={createOpen}
+        onClose={closeForm}
+        title={workOrderTitle('Новый монтаж')}
+        titleAside={fillPercentTitleAside}
+        size="lg"
+        className={panelStyles.modalPanel}
+        showCloseButton
+        compactOnMobile
+      >
         <form
+          className={`${panelStyles.formShell} ${modalShellStyles.formBlueShell}`}
           data-modal-form
           data-modal-density="compact"
           onSubmit={(event) => {
@@ -507,8 +603,8 @@ export function InstallationSchedulesPageView({
           }}
         >
           <p data-modal-form-hint className={styles.modalHintFlush}>
-            Запись появится в графике на выбранную дату. Можно привязать пакет договора и
-            заказ-наряд или указать данные вручную.
+            Найдите заказ в блоке «Поиск заказа» — заказ-наряд прикрепится автоматически. Открыть
+            его можно иконкой рядом с заголовком. Для многодневного монтажа укажите «Дата по».
           </p>
           <InstallationScheduleForm
             values={formValues}
@@ -523,11 +619,15 @@ export function InstallationSchedulesPageView({
       <Modal
         isOpen={Boolean(editItem)}
         onClose={closeForm}
-        title="Изменить монтаж"
+        title={workOrderTitle('Изменить монтаж')}
+        titleAside={fillPercentTitleAside}
         size="lg"
+        className={panelStyles.modalPanel}
         showCloseButton
+        compactOnMobile
       >
         <form
+          className={`${panelStyles.formShell} ${modalShellStyles.formBlueShell}`}
           data-modal-form
           data-modal-density="compact"
           onSubmit={(event) => {
@@ -536,6 +636,9 @@ export function InstallationSchedulesPageView({
             });
           }}
         >
+          <p data-modal-form-hint className={styles.modalHintFlush}>
+            Измените данные монтажа. Заказ-наряд открывается иконкой рядом с заголовком.
+          </p>
           <InstallationScheduleForm
             values={formValues}
             onChange={setFormValues}
@@ -607,14 +710,32 @@ export function InstallationSchedulesPageView({
         showCloseButton
       >
         <div data-modal-form>
-          <div data-modal-form-group>
-            <label htmlFor="is-reschedule-date">Новая дата *</label>
-            <input
-              id="is-reschedule-date"
-              type="date"
-              value={rescheduleDate}
-              onChange={(e) => setRescheduleDate(e.target.value)}
-            />
+          <div data-modal-form-grid>
+            <div data-modal-form-group>
+              <label htmlFor="is-reschedule-date">Новая дата с *</label>
+              <input
+                id="is-reschedule-date"
+                type="date"
+                value={rescheduleDate}
+                onChange={(e) => {
+                  const date = e.target.value;
+                  setRescheduleDate(date);
+                  if (rescheduleDateEnd && rescheduleDateEnd < date) {
+                    setRescheduleDateEnd(date);
+                  }
+                }}
+              />
+            </div>
+            <div data-modal-form-group>
+              <label htmlFor="is-reschedule-date-end">Новая дата по</label>
+              <input
+                id="is-reschedule-date-end"
+                type="date"
+                value={rescheduleDateEnd}
+                min={rescheduleDate || undefined}
+                onChange={(e) => setRescheduleDateEnd(e.target.value)}
+              />
+            </div>
           </div>
           <div data-modal-form-actions>
             <button
@@ -637,6 +758,38 @@ export function InstallationSchedulesPageView({
           </div>
         </div>
       </Modal>
+
+      {workOrdersHub.mountedId ? (
+        <PackageWorkOrdersHubListModal
+          packageId={workOrdersHub.mountedId}
+          isOpen={workOrdersHub.open}
+          onClose={() => setWorkOrdersHubPackageId(null)}
+        />
+      ) : null}
+
+      <InstallationScheduleShareModal
+        item={shareItem}
+        isOpen={Boolean(shareItem)}
+        onClose={() => setShareItem(null)}
+        initialInstallerPhone={
+          shareItem
+            ? (() => {
+                const ids = shareItem.installerIds?.length
+                  ? shareItem.installerIds
+                  : shareItem.installerId
+                    ? [shareItem.installerId]
+                    : [];
+                for (const id of ids) {
+                  const master = installers.find((row) => row.id === id);
+                  const phone =
+                    master?.phones?.find((p) => p.trim()) || master?.phone?.trim() || '';
+                  if (phone) return phone;
+                }
+                return '';
+              })()
+            : ''
+        }
+      />
     </div>
   );
 }

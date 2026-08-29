@@ -452,6 +452,7 @@ export function usePackageDocumentEditorController({
     finalEstimateRooms,
     unassignedInteractiveRowsCount,
   } = usePackageWorkOrderHubContext({
+    packageId,
     packageKind,
     isProductDirectionPackage,
     windowsWorkOrderMarkupPercent,

@@ -1,13 +1,15 @@
 'use client';
 
-import { useMemo } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 import type { InstallationSchedule } from '@/shared/api/crm/admin-installation-schedules';
 import { DIRECTION_LABELS } from '@/views/admin/CRM/Installers/installers-page.constants';
 
 import {
   STATUS_LABELS,
-  formatDate,
+  eachScheduleDay,
+  formatDateRange,
   formatMonth,
   formatTime,
   todayIsoDate,
@@ -16,6 +18,8 @@ import styles from './InstallationSchedulesMonthCalendar.module.css';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
 const MAX_VISIBLE_PILLS = 3;
+const TOOLTIP_VIEWPORT_PAD = 8;
+const TOOLTIP_GAP = 4;
 
 type Props = {
   year: number;
@@ -30,17 +34,18 @@ type Props = {
 function pillLabel(item: InstallationSchedule): string {
   const parts = [
     formatTime(item) !== '—' ? formatTime(item) : null,
+    item.customerName?.trim() || null,
     item.installerName?.split(' ')[0] || null,
     item.contractNumber || null,
   ].filter(Boolean);
   return parts.join(' · ') || 'Монтаж';
 }
 
-function ItemTooltip({ item }: { item: InstallationSchedule }) {
+function ItemTooltipBody({ item }: { item: InstallationSchedule }) {
   return (
-    <div className={styles.tooltip} role="tooltip">
+    <>
       <div className={styles.tooltipTitle}>
-        {formatDate(item.date)} · {DIRECTION_LABELS[item.direction]}
+        {formatDateRange(item)} · {DIRECTION_LABELS[item.direction]}
       </div>
       <div className={styles.tooltipGrid}>
         <div className={styles.tooltipField}>
@@ -71,6 +76,18 @@ function ItemTooltip({ item }: { item: InstallationSchedule }) {
               .join('\n') || '—'}
           </strong>
         </div>
+        {item.contactPersons?.length ? (
+          <div className={`${styles.tooltipField} ${styles.tooltipFieldWide}`}>
+            <span>Контактные лица</span>
+            <strong className={styles.tooltipMultiline}>
+              {item.contactPersons
+                .map((person) =>
+                  [person.name, ...(person.phones ?? [])].filter(Boolean).join(' · ')
+                )
+                .join('\n')}
+            </strong>
+          </div>
+        ) : null}
         {item.orderInfo ? (
           <div className={`${styles.tooltipField} ${styles.tooltipFieldWide}`}>
             <span>Информация</span>
@@ -78,7 +95,103 @@ function ItemTooltip({ item }: { item: InstallationSchedule }) {
           </div>
         ) : null}
       </div>
-    </div>
+    </>
+  );
+}
+
+function CalendarPill({
+  item,
+  onOpen,
+}: {
+  item: InstallationSchedule;
+  onOpen: (item: InstallationSchedule) => void;
+}) {
+  const btnRef = useRef<HTMLButtonElement>(null);
+  const tipRef = useRef<HTMLDivElement>(null);
+  const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+
+    const place = () => {
+      const btn = btnRef.current;
+      const tip = tipRef.current;
+      if (!btn || !tip) return;
+
+      const btnRect = btn.getBoundingClientRect();
+      const tipRect = tip.getBoundingClientRect();
+      const tipH = tipRect.height || tip.offsetHeight;
+      const tipW = tipRect.width || tip.offsetWidth;
+      const spaceBelow = window.innerHeight - btnRect.bottom - TOOLTIP_GAP - TOOLTIP_VIEWPORT_PAD;
+      const spaceAbove = btnRect.top - TOOLTIP_GAP - TOOLTIP_VIEWPORT_PAD;
+      const placeAbove = tipH > spaceBelow && spaceAbove >= spaceBelow;
+
+      let top = placeAbove ? btnRect.top - TOOLTIP_GAP - tipH : btnRect.bottom + TOOLTIP_GAP;
+      let left = btnRect.left;
+
+      if (left + tipW > window.innerWidth - TOOLTIP_VIEWPORT_PAD) {
+        left = btnRect.right - tipW;
+      }
+      left = Math.max(
+        TOOLTIP_VIEWPORT_PAD,
+        Math.min(left, window.innerWidth - tipW - TOOLTIP_VIEWPORT_PAD)
+      );
+      top = Math.max(
+        TOOLTIP_VIEWPORT_PAD,
+        Math.min(top, window.innerHeight - tipH - TOOLTIP_VIEWPORT_PAD)
+      );
+
+      setCoords({ top, left });
+    };
+
+    place();
+    window.addEventListener('scroll', place, true);
+    window.addEventListener('resize', place);
+    return () => {
+      window.removeEventListener('scroll', place, true);
+      window.removeEventListener('resize', place);
+    };
+  }, [open]);
+
+  return (
+    <>
+      <button
+        type="button"
+        ref={btnRef}
+        className={`${styles.pill} ${styles[`pill${item.status}`]}`}
+        onClick={() => onOpen(item)}
+        onMouseEnter={() => setOpen(true)}
+        onMouseLeave={() => {
+          setOpen(false);
+          setCoords(null);
+        }}
+        onFocus={() => setOpen(true)}
+        onBlur={() => {
+          setOpen(false);
+          setCoords(null);
+        }}
+      >
+        <span className={styles.pillText}>{pillLabel(item)}</span>
+      </button>
+      {open && typeof document !== 'undefined'
+        ? createPortal(
+            <div
+              ref={tipRef}
+              className={styles.tooltip}
+              role="tooltip"
+              style={{
+                top: coords?.top ?? 0,
+                left: coords?.left ?? 0,
+                visibility: coords ? 'visible' : 'hidden',
+              }}
+            >
+              <ItemTooltipBody item={item} />
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }
 
@@ -111,8 +224,9 @@ export function InstallationSchedulesMonthCalendar({
   const byDate = useMemo(() => {
     const map = new Map<string, InstallationSchedule[]>();
     for (const item of items) {
-      const key = item.date.slice(0, 10);
-      map.set(key, [...(map.get(key) ?? []), item]);
+      for (const key of eachScheduleDay(item)) {
+        map.set(key, [...(map.get(key) ?? []), item]);
+      }
     }
     map.forEach((day) => day.sort((a, b) => formatTime(a).localeCompare(formatTime(b), 'ru')));
     return map;
@@ -185,15 +299,7 @@ export function InstallationSchedulesMonthCalendar({
               </div>
               <div className={styles.pills}>
                 {visible.map((item) => (
-                  <button
-                    type="button"
-                    key={item.id}
-                    className={`${styles.pill} ${styles[`pill${item.status}`]}`}
-                    onClick={() => onOpen(item)}
-                  >
-                    <span className={styles.pillText}>{pillLabel(item)}</span>
-                    <ItemTooltip item={item} />
-                  </button>
+                  <CalendarPill key={item.id} item={item} onOpen={onOpen} />
                 ))}
                 {rest > 0 ? <div className={styles.more}>ещё {rest}</div> : null}
               </div>

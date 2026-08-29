@@ -119,6 +119,18 @@
   font-size: var(--admin-font-size-xs);
 }
 
+.pageError {
+  margin: 0 0 var(--admin-space-md, 8px);
+  color: var(--admin-danger-text, #b91c1c);
+  font-size: var(--admin-font-size-xs);
+}
+
+.pageLead {
+  margin: 0 0 var(--admin-space-md, 8px);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+}
+
 .linkStateOk,
 .linkStateDone,
 .linkStatePending {

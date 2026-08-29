@@ -173,6 +173,17 @@ export class InstallationSchedulesController {
     return this.service.listPackageWorkOrders({ packageId, installerId });
   }
 
+  @Get('by-package')
+  findByPackage(@Req() req: RequestWithUser, @Query('packageId') packageId?: string) {
+    this.assertPlanner(req.user.role);
+
+    if (!packageId?.trim()) {
+      throw new BadRequestException('packageId is required');
+    }
+
+    return this.service.findByPackageId(packageId.trim());
+  }
+
   @Get('trash/count')
   trashCount(@Req() req: RequestWithUser) {
     this.assertPlanner(req.user.role);

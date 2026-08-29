@@ -1303,6 +1303,30 @@ export async function downloadDocumentPdf(
   downloadFileName: string,
   options?: PrintDocumentOptions
 ): Promise<void> {
+  const { blob, fileName } = await buildDocumentPdfBlob(
+    innerHtml,
+    documentTitle,
+    downloadFileName,
+    options
+  );
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = fileName;
+  link.rel = 'noopener';
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/** PDF как Blob (для Web Share / прикрепления в мессенджер). */
+export async function buildDocumentPdfBlob(
+  innerHtml: string,
+  documentTitle: string,
+  downloadFileName: string,
+  options?: PrintDocumentOptions
+): Promise<{ blob: Blob; fileName: string }> {
   const fullHtml = buildPrintableHtmlDocument(innerHtml, documentTitle, options);
   const fileName = sanitizeDownloadFileName(downloadFileName, 'pdf');
 
@@ -1346,7 +1370,7 @@ export async function downloadDocumentPdf(
   const html2pdf = (await import('html2pdf.js')).default;
 
   try {
-    await html2pdf()
+    const worker = html2pdf()
       .set({
         margin: [10, 10, 10, 10],
         filename: fileName,
@@ -1365,8 +1389,9 @@ export async function downloadDocumentPdf(
           orientation: landscape ? 'landscape' : 'portrait',
         },
       })
-      .from(doc.body)
-      .save();
+      .from(doc.body);
+    const blob = (await worker.outputPdf('blob')) as Blob;
+    return { blob, fileName };
   } finally {
     iframe.remove();
   }

@@ -6,6 +6,18 @@ export {
   type CopyIconProps,
 } from './CopyIcon';
 export {
+  RescheduleIcon,
+  ADMIN_ACTION_ICON_RESCHEDULE_CLASS,
+  ADMIN_RESCHEDULE_ICON_SIZE,
+  type RescheduleIconProps,
+} from './admin/RescheduleIcon';
+export {
+  ShareIcon,
+  ADMIN_ACTION_ICON_SHARE_CLASS,
+  ADMIN_SHARE_ICON_SIZE,
+  type ShareIconProps,
+} from './admin/ShareIcon';
+export {
   DeleteIcon,
   ADMIN_ACTION_ICON_DELETE_CLASS,
   ADMIN_DELETE_ICON_SIZE,

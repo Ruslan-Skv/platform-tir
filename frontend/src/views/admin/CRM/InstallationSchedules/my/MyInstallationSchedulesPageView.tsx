@@ -11,7 +11,7 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../shared/InstallationSchedules.module.css';
-import { STATUS_LABELS, formatDate, formatTime } from '../shared/installation-schedules';
+import { STATUS_LABELS, formatDateRange, formatTime } from '../shared/installation-schedules';
 import { MyInstallationScheduleActions } from './MyInstallationScheduleActions';
 import { MyInstallationSchedulesMobileCards } from './MyInstallationSchedulesMobileCards';
 import type {
@@ -79,7 +79,7 @@ export function MyInstallationSchedulesPageView({ model }: Props) {
     {
       key: 'date',
       title: 'Дата',
-      render: (item: InstallationSchedule) => formatDate(item.date),
+      render: (item: InstallationSchedule) => formatDateRange(item),
     },
     {
       key: 'time',
@@ -113,7 +113,15 @@ export function MyInstallationSchedulesPageView({ model }: Props) {
             : item.customerPhone
               ? [item.customerPhone]
               : [];
-        if (!item.customerName && !item.customerAddress && phones.length === 0) return '—';
+        const contacts = item.contactPersons ?? [];
+        if (
+          !item.customerName &&
+          !item.customerAddress &&
+          phones.length === 0 &&
+          contacts.length === 0
+        ) {
+          return '—';
+        }
         const mapsUrl = item.customerAddress
           ? `https://yandex.ru/maps/?text=${encodeURIComponent(item.customerAddress)}`
           : null;
@@ -136,6 +144,12 @@ export function MyInstallationSchedulesPageView({ model }: Props) {
             ) : (
               <div>—</div>
             )}
+            {contacts.map((person, index) => (
+              <span className={styles.subline} key={`${person.name}-${index}`}>
+                Контакт: {person.name}
+                {person.phones?.length ? ` · ${person.phones.join(', ')}` : ''}
+              </span>
+            ))}
           </div>
         );
       },
@@ -300,7 +314,7 @@ export function MyInstallationSchedulesPageView({ model }: Props) {
           </p>
           {completeItem ? (
             <p data-modal-form-hint>
-              {formatDate(completeItem.date)} · {formatTime(completeItem)} ·{' '}
+              {formatDateRange(completeItem)} · {formatTime(completeItem)} ·{' '}
               {DIRECTION_LABELS[completeItem.direction]}
               <br />
               {completeItem.workOrderLabel || completeItem.contractNumber || 'Монтаж'}

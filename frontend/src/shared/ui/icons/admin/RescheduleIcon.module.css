@@ -1,0 +1,4 @@
+:global(.admin-action-icon-reschedule) {
+  color: var(--admin-icon-reschedule);
+  flex-shrink: 0;
+}

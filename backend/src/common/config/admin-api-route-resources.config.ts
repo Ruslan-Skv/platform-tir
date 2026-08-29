@@ -11,6 +11,7 @@ export const ADMIN_API_SKIPPED_PREFIXES = [
   '/api/v1/admin/installation-schedules/my',
   '/api/v1/admin/repair-schedules/my',
   '/api/v1/admin/furniture-schedules/my',
+  '/api/v1/admin/measurements/my',
   // Свой профиль ЛК — не ресурс «Управление пользователями»
   '/api/v1/users/me',
 ] as const;

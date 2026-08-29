@@ -23,6 +23,43 @@
   min-width: 0;
 }
 
+.titleWithActions {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.workOrderTitleBtn {
+  align-items: center;
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: not-allowed;
+  display: inline-flex;
+  height: 1.75rem;
+  justify-content: center;
+  opacity: 0.55;
+  padding: 0;
+  vertical-align: middle;
+  width: 1.75rem;
+}
+
+.workOrderTitleBtnActive {
+  color: var(--admin-info-strong, #1d4ed8);
+  cursor: pointer;
+  opacity: 1;
+  border-color: var(--admin-info-border, #93c5fd);
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.workOrderTitleBtnActive:hover {
+  border-color: var(--admin-info, #3b82f6);
+  color: var(--admin-info, #2563eb);
+  background: var(--admin-info-bg, #dbeafe);
+}
+
 .viewModeRow {
   display: inline-flex;
   align-items: center;
@@ -318,30 +355,390 @@
   color: var(--admin-text-secondary);
 }
 
-.contractHits {
-  list-style: none;
-  margin: 6px 0 0;
-  padding: 0;
-  border: 1px solid var(--admin-border-strong, #d1d5db);
+.formSection {
+  margin-top: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
   border-radius: var(--admin-radius-md, 8px);
-  background: var(--admin-surface, #ffffff);
-  max-height: 180px;
-  overflow: auto;
+  background: var(--admin-surface, #fff);
+  box-sizing: border-box;
 }
 
-.contractHits li button {
+.formSection:first-of-type {
+  margin-top: var(--admin-space-xs, 4px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
+  background: var(--admin-surface-soft, #1f2937);
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+.formSectionTitle {
+  margin: 0 0 var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 700;
+  color: var(--admin-text-secondary, #374151);
+}
+
+.formSectionHint {
+  margin: 0 0 var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+.compactFieldsRow,
+.customerTopRow,
+.contactPersonFields,
+.directionInstallerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  align-items: flex-end;
+}
+
+.compactField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.compactField > label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.compactFieldDate {
+  flex: 0 0 9.5rem;
+  width: 9.5rem;
+}
+
+.compactFieldTime {
+  flex: 0 0 7.25rem;
+  width: 7.25rem;
+}
+
+.compactFieldMid {
+  flex: 0 1 14rem;
+  width: 14rem;
+  max-width: 100%;
+}
+
+.compactFieldGrow {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.customerFields,
+.extraFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.directionField {
+  flex: 0 0 11rem;
+  width: 11rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.directionField > label,
+.installerFieldHead > label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.installerField {
+  flex: 1 1 16rem;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.installerFieldHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.checkLabelInline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+}
+
+.installerChecklist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  max-height: 7.5rem;
+  overflow: auto;
+  padding: 6px 8px;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface, #fff);
+}
+
+.installerCheckItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 0.75rem;
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.manualInstallerList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inlinePhoneRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+.inlinePhoneItem {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.inlinePhoneItem input[type='tel'],
+.inlinePhoneRow > input,
+.manualInstallerList input {
+  width: 9.5rem;
+  max-width: 100%;
+}
+
+.orderAttachedHint {
+  margin: 6px 0 0;
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-text-muted);
+}
+
+.contactPersonFields {
+  align-items: flex-start;
+}
+
+.orderSearchPanel {
+  --order-search-result-row-height: 2.75rem;
+
+  display: flex;
+  flex-direction: column;
+  position: relative;
   width: 100%;
-  text-align: left;
-  padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
+  margin-bottom: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md);
+  background: linear-gradient(
+    152deg,
+    var(--admin-info-bg, #dbeafe) 0%,
+    var(--admin-info-border-soft, #bfdbfe) 32%,
+    var(--admin-info-bg-soft, #eff6ff) 58%,
+    var(--admin-surface) 88%
+  );
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.7),
+    0 2px 12px rgb(37 99 235 / 0.12);
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+.orderSearchPanelHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.orderSearchTitle {
+  margin: 0 0 var(--admin-space-2xs, 2px);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+}
+
+.orderSearchHint {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+.orderSearchLinkedBadge {
+  flex-shrink: 0;
+  padding: 3px var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm);
+  background: rgb(22 163 74 / 0.12);
+  color: #15803d;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.orderSearchWrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  margin-top: var(--admin-space-sm);
+  padding-bottom: 0.5rem;
+}
+
+.orderSearchRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+  align-items: center;
+}
+
+.orderSearchInput {
+  flex: 1 1 220px;
+  min-width: 0;
+  width: 100%;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  font-size: var(--admin-font-size-xs);
+  box-sizing: border-box;
+  background: var(--admin-surface);
+  color: var(--admin-text-primary);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary);
+}
+
+.orderSearchInput:focus {
+  outline: none;
+  border-color: var(--admin-accent);
+  box-shadow: 0 0 0 2px rgba(var(--admin-overlay-color-144), 0.2);
+}
+
+.orderSearchClearButton {
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.orderSearchClearButton:hover {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border, #93c5fd);
+}
+
+.orderSearchDropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 40;
+}
+
+.orderSearchDropdown .orderSearchMuted,
+.orderSearchDropdown .orderSearchError {
+  margin: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  box-shadow: 0 6px 18px rgb(37 99 235 / 0.16);
+}
+
+.orderSearchMuted {
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-text-muted);
+}
+
+.orderSearchError {
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+.orderSearchResults {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: calc(var(--order-search-result-row-height) * 10);
+  overflow-x: hidden;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  box-shadow: 0 6px 18px rgb(37 99 235 / 0.16);
+}
+
+.orderSearchResults li + li {
+  border-top: 1px solid var(--admin-border);
+}
+
+.orderSearchResultItem {
+  min-height: var(--order-search-result-row-height);
+}
+
+.orderSearchResultButton {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 1px;
+  width: 100%;
+  min-width: 0;
+  padding: var(--admin-space-xs) var(--admin-space-sm);
+  margin: 0;
   border: none;
   background: transparent;
+  text-align: left;
   cursor: pointer;
-  font-size: var(--admin-font-size-sm, 0.8125rem);
-  color: var(--admin-text-primary, #111827);
+  font: inherit;
+  color: inherit;
+  box-sizing: border-box;
 }
 
-.contractHits li button:hover {
-  background: var(--admin-border, #e5e7eb);
+.orderSearchResultButton:hover {
+  background: var(--admin-info-bg, #dbeafe);
+}
+
+.orderSearchResultName {
+  font-weight: 600;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  color: var(--admin-text-secondary);
+}
+
+.orderSearchResultMeta,
+.orderSearchResultAddress {
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-text-muted);
+}
+
+.orderSearchResultAddress {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
 }
 
 .phoneFields {
@@ -360,6 +757,37 @@
 .phoneFieldRow input {
   flex: 1 1 12rem;
   min-width: 0;
+}
+
+.contactPersons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-sm);
+}
+
+.contactPersonCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  max-width: 36rem;
+  padding: var(--admin-space-md);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-muted, #f9fafb);
+}
+
+.contactPersonHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm);
+}
+
+.contactPersonHeader strong {
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  color: var(--admin-text-primary, #111827);
 }
 
 .cardMeta {
@@ -432,4 +860,88 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardActions {
   border-top-color: var(--admin-border);
+}
+
+.shareModalBody {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.shareHintMobile {
+  display: none;
+}
+
+.shareMessageTextarea {
+  max-height: 14rem;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.shareChannelRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.shareChannelRow > button {
+  flex: 1 1 auto;
+  min-width: 6.5rem;
+}
+
+.shareCopyBtnInner {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.sharePdfHint {
+  margin: 0;
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+@media (max-width: 900px) {
+  .shareHintDesktop {
+    display: none;
+  }
+
+  .shareHintMobile {
+    display: block;
+  }
+
+  .shareMessageTextarea {
+    max-height: min(28vh, 9.5rem) !important;
+    min-height: 5.5rem !important;
+  }
+
+  .shareChannelRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--admin-space-sm, 6px);
+  }
+
+  .shareChannelRow > button {
+    flex: unset;
+    width: 100% !important;
+    min-width: 0;
+    min-height: 2.5rem;
+  }
+
+  .shareChannelRow > button:only-child {
+    grid-column: 1 / -1;
+  }
+
+  .shareModalActions {
+    position: sticky;
+    bottom: 0;
+    z-index: 1;
+    margin-top: var(--admin-space-sm, 6px);
+    padding-top: var(--admin-space-sm, 6px) !important;
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom, 0px)) !important;
+    border-top: 1px solid var(--admin-border, #e5e7eb);
+    background: var(--admin-surface, #fff);
+  }
 }

@@ -90,6 +90,31 @@
   color: var(--admin-text-muted);
 }
 
+.phoneCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--admin-font-size-sm, 0.875rem);
+}
+
+.phoneFields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.phoneRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+  align-items: center;
+}
+
+.phoneRow input {
+  flex: 1 1 12rem;
+  min-width: 0;
+}
+
 .fieldHint {
   margin: var(--admin-space-sm) 0 0;
   font-size: var(--admin-font-size-sm);

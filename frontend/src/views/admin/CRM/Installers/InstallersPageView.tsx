@@ -10,6 +10,10 @@ import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { DeleteIcon, EditIcon } from '@/shared/ui/icons';
+import {
+  formatCrmPhoneDisplay,
+  formatCrmPhoneInput,
+} from '@/views/admin/CRM/Customers/shared/crmCustomerPhone';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -24,6 +28,18 @@ import { isRepairInstallerDirection } from './installers-page.utils';
 type InstallersPageViewProps = {
   model: InstallersPageModel;
 };
+
+function installerPhonesList(item: InstallerMaster): string[] {
+  if (item.phones?.length) return item.phones.map((p) => p.trim()).filter(Boolean);
+  if (item.phone?.trim()) return [item.phone.trim()];
+  return [];
+}
+
+function formatInstallerPhones(item: InstallerMaster): string {
+  const phones = installerPhonesList(item);
+  if (!phones.length) return '—';
+  return phones.map((p) => formatCrmPhoneDisplay(p) || p).join(', ');
+}
 
 const DIRECTION_BADGE_CLASS: Record<InstallerDirection, string> = {
   REPAIR: styles.badgeRepair,
@@ -116,6 +132,21 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       key: 'fullName',
       title: 'ФИО',
       render: (item: InstallerMaster) => item.fullName,
+    },
+    {
+      key: 'phone',
+      title: 'Телефон',
+      render: (item: InstallerMaster) => {
+        const phones = installerPhonesList(item);
+        if (!phones.length) return <span className={styles.muted}>—</span>;
+        return (
+          <div className={styles.phoneCell}>
+            {phones.map((phone) => (
+              <span key={phone}>{formatCrmPhoneDisplay(phone) || phone}</span>
+            ))}
+          </div>
+        );
+      },
     },
     {
       key: 'grade',
@@ -264,6 +295,10 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
                 </span>
               </div>
               <dl className={styles.mobileCardRows}>
+                <div className={styles.mobileCardRow}>
+                  <dt>Телефон</dt>
+                  <dd>{formatInstallerPhones(item)}</dd>
+                </div>
                 <div className={styles.mobileCardRow}>
                   <dt>Аккаунт</dt>
                   <dd>{item.user ? formatUserLabel(item.user) : 'Без привязки'}</dd>
@@ -430,6 +465,52 @@ function InstallerForm({
           onChange={(e) => onChange({ ...values, fullName: e.target.value })}
           placeholder="Иванов Иван Иванович"
         />
+      </div>
+
+      <div data-modal-form-group>
+        <label>Телефоны</label>
+        <p className={styles.fieldHint}>
+          Формат: +7(000)-000-00-00. Можно указать несколько номеров.
+        </p>
+        <div className={styles.phoneFields}>
+          {values.phones.map((phone, index) => (
+            <div key={`installer-phone-${index}`} className={styles.phoneRow}>
+              <input
+                id={index === 0 ? 'installer-phone' : undefined}
+                type="tel"
+                value={phone}
+                onChange={(e) => {
+                  const phones = [...values.phones];
+                  phones[index] = formatCrmPhoneInput(e.target.value);
+                  onChange({ ...values, phones });
+                }}
+                placeholder="+7(000)-000-00-00"
+                autoComplete="tel"
+              />
+              {values.phones.length > 1 ? (
+                <button
+                  type="button"
+                  data-modal-btn="secondary"
+                  onClick={() =>
+                    onChange({
+                      ...values,
+                      phones: values.phones.filter((_, i) => i !== index),
+                    })
+                  }
+                >
+                  Удалить
+                </button>
+              ) : null}
+            </div>
+          ))}
+          <button
+            type="button"
+            data-modal-btn="secondary"
+            onClick={() => onChange({ ...values, phones: [...values.phones, ''] })}
+          >
+            + Ещё телефон
+          </button>
+        </div>
       </div>
 
       <div data-modal-form-group>

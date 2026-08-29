@@ -170,7 +170,9 @@
   line-height: var(--modal-lh);
   margin: 0 auto;
   max-height: min(90vh, 90dvh);
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
   /* Как modalPanel у «Новая категория» */
   padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px);
   position: relative;
@@ -234,9 +236,13 @@
 .header {
   align-items: flex-start;
   display: flex;
+  flex-shrink: 0;
   gap: var(--admin-space-sm, 6px);
   margin-bottom: var(--admin-space-xl, 12px);
   padding: 0 var(--modal-space-sm);
+  position: relative;
+  z-index: 2;
+  background: var(--modal-surface);
 }
 
 .headerWithTitle {
@@ -323,6 +329,11 @@
 /* Контент: базовая типографика без отдельных модулей в каждой модалке */
 .content {
   position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .content :where(p) {
@@ -1312,13 +1323,28 @@
 
   .header.headerCompactMobile {
     margin-bottom: 0.625rem;
+    /* Место под компактный крестик, чтобы не наезжал на контент */
+    min-height: 1.75rem;
+    padding-top: 0.125rem;
+  }
+
+  .panel.panelCompactMobile .closeButton {
+    top: 0.2rem;
+    right: 0.2rem;
+    padding: 0.125rem;
+    border-radius: var(--admin-radius-sm, 6px);
+  }
+
+  .panel.panelCompactMobile .closeIcon {
+    width: 0.9375rem;
+    height: 0.9375rem;
   }
 
   .title.titleCompactMobile {
     font-size: var(--admin-font-size-base, 0.9375rem);
     font-weight: 600;
     line-height: var(--modal-lh-tight);
-    padding-right: 2.25rem;
+    padding-right: 1.75rem;
   }
 }
 
@@ -1341,12 +1367,24 @@
 
   .header.headerCompactMobile {
     margin-bottom: 0.5rem;
+    min-height: 1.625rem;
+  }
+
+  .panel.panelCompactMobile .closeButton {
+    top: 0.125rem;
+    right: 0.125rem;
+    padding: 0.1rem;
+  }
+
+  .panel.panelCompactMobile .closeIcon {
+    width: 0.875rem;
+    height: 0.875rem;
   }
 
   .title.titleCompactMobile {
     font-size: var(--admin-font-size-sm, 0.8125rem);
     line-height: 1.2rem;
-    padding-right: 2rem;
+    padding-right: 1.5rem;
   }
 }
 

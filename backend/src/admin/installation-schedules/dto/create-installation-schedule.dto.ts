@@ -1,11 +1,42 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsArray, IsDateString, IsIn, IsOptional, IsString, MaxLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDateString,
+  IsIn,
+  IsOptional,
+  IsString,
+  MaxLength,
+  ValidateNested,
+} from 'class-validator';
 import { INSTALLATION_SCHEDULE_DIRECTIONS } from '../installation-schedule-directions.constant';
 
+export class InstallationContactPersonDto {
+  @ApiProperty({ example: 'Иванов Иван' })
+  @IsString()
+  @MaxLength(500)
+  name: string;
+
+  @ApiPropertyOptional({ type: [String], example: ['+79001234567'] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  @MaxLength(50, { each: true })
+  phones?: string[];
+}
+
 export class CreateInstallationScheduleDto {
-  @ApiProperty({ example: '2026-08-04' })
+  @ApiProperty({ example: '2026-08-04', description: 'Дата начала монтажа (YYYY-MM-DD)' })
   @IsDateString()
   date: string;
+
+  @ApiPropertyOptional({
+    example: '2026-08-06',
+    description: 'Дата окончания (включительно). Пусто / равно date — один день',
+  })
+  @IsOptional()
+  @IsDateString()
+  dateEnd?: string | null;
 
   @ApiPropertyOptional({ example: '10:00' })
   @IsOptional()
@@ -47,10 +78,21 @@ export class CreateInstallationScheduleDto {
   @IsString()
   installerId?: string | null;
 
-  @ApiPropertyOptional({ description: 'ФИО мастера вручную (без привязки к справочнику)' })
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Несколько монтажников из справочника (приоритетнее installerId)',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  installerIds?: string[] | null;
+
+  @ApiPropertyOptional({
+    description: 'ФИО монтажника(ов) вручную; несколько — через запятую',
+  })
   @IsOptional()
   @IsString()
-  @MaxLength(500)
+  @MaxLength(2000)
   installerName?: string | null;
 
   @ApiPropertyOptional({ description: 'Пакет документов договора' })
@@ -105,4 +147,14 @@ export class CreateInstallationScheduleDto {
   @IsString({ each: true })
   @MaxLength(50, { each: true })
   customerPhones?: string[] | null;
+
+  @ApiPropertyOptional({
+    type: [InstallationContactPersonDto],
+    description: 'Контактные лица на объекте (принимают монтажников вместо заказчика)',
+  })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => InstallationContactPersonDto)
+  contactPersons?: InstallationContactPersonDto[] | null;
 }

@@ -1,6 +1,8 @@
 'use client';
 
-import { PrinterIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { PaperAirplaneIcon, PrinterIcon, XMarkIcon } from '@heroicons/react/24/outline';
+
+import { useState } from 'react';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
@@ -9,12 +11,16 @@ import cdBase from '../../../../styles/base.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdInteractiveEstimate from '../../../../styles/interactive-estimate.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
-import { printPackageWorkOrderHubTab } from '../../workOrders/packageWorkOrderHubPrint';
+import {
+  isPackageWorkOrderShareableHubTab,
+  printPackageWorkOrderHubTab,
+} from '../../workOrders/packageWorkOrderHubPrint';
 import {
   type PackageWorkOrderHubContextValue,
   PackageWorkOrderHubProvider,
   usePackageWorkOrderHub,
 } from './PackageWorkOrderHubContext';
+import { PackageWorkOrderShareModal } from './PackageWorkOrderShareModal';
 import hubStyles from './PackageWorkOrdersHubModal.module.css';
 import { PackageWorkOrdersHubPanels } from './PackageWorkOrdersHubPanels';
 import {
@@ -82,6 +88,12 @@ function PackageWorkOrdersHubReadyBody({
 }) {
   const hubCtx = usePackageWorkOrderHub();
   const hubTabs = packageWorkOrderHubTabsForPackage(addendumSlotCount, packageKind);
+  const [shareOpen, setShareOpen] = useState(false);
+  const canShare = isPackageWorkOrderShareableHubTab(panelTab);
+  const shareTitle =
+    panelTab === 'finalWorkOrder' && hubCtx.activeFinalWorkOrderDocId !== 'common'
+      ? 'Отправить заказ-наряд выбранного мастера'
+      : 'Отправить заказ-наряд';
 
   return (
     <div className={hubStyles.modalBody} data-repair-work-orders-hub-modal>
@@ -124,19 +136,38 @@ function PackageWorkOrdersHubReadyBody({
             </button>
           ))}
         </div>
-        <button
-          type="button"
-          className={hubStyles.headerIconBtn}
-          title="Печать"
-          aria-label="Печать"
-          onClick={() => printPackageWorkOrderHubTab(panelTab, hubCtx)}
-        >
-          <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
-        </button>
+        <div className={hubStyles.hubToolbarActions}>
+          {canShare ? (
+            <button
+              type="button"
+              className={hubStyles.headerIconBtn}
+              title={shareTitle}
+              aria-label={shareTitle}
+              onClick={() => setShareOpen(true)}
+            >
+              <PaperAirplaneIcon className={hubStyles.headerIcon} aria-hidden />
+            </button>
+          ) : null}
+          <button
+            type="button"
+            className={hubStyles.headerIconBtn}
+            title="Печать"
+            aria-label="Печать"
+            onClick={() => printPackageWorkOrderHubTab(panelTab, hubCtx)}
+          >
+            <PrinterIcon className={hubStyles.headerIcon} aria-hidden />
+          </button>
+        </div>
       </div>
       <div className={hubStyles.panelsScroll}>
         <PackageWorkOrdersHubPanels panelTab={panelTab} />
       </div>
+      <PackageWorkOrderShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        panelTab={panelTab}
+        hubCtx={hubCtx}
+      />
     </div>
   );
 }
@@ -185,6 +216,7 @@ export function PackageWorkOrdersHubModal({
       size="lg"
       showCloseButton={false}
       compactOnMobile
+      alignTop
       className={hubStyles.modalPanel}
       contentClassName={hubStyles.modalContent}
     >
