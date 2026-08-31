@@ -1,0 +1,196 @@
+.headerSuccessNotice {
+  min-width: 0;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md, 8px);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+}
+
+.message button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.messageerror {
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+}
+
+.directoryTable {
+  margin-top: var(--admin-space-sm);
+}
+
+.directoryTable :global(td:last-child) {
+  width: 1%;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xl, 12px);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+}
+
+.badgeCompany {
+  background: var(--admin-info-bg);
+  color: var(--admin-info-text);
+}
+
+.badgeEntrepreneur {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+}
+
+.muted {
+  color: var(--admin-text-muted);
+}
+
+.subline {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.fieldHint {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.4;
+}
+
+.mobileCards {
+  display: none;
+}
+
+.mobileCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  width: 100%;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft, var(--admin-surface));
+  text-align: left;
+  color: inherit;
+  font: inherit;
+  box-sizing: border-box;
+}
+
+.mobileCardTop {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.mobileCardMain {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.mobileCardName {
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-primary, var(--admin-text-secondary));
+  line-height: 1.3;
+  word-break: break-word;
+}
+
+.mobileCardMeta {
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+  word-break: break-word;
+}
+
+.mobileCardRows {
+  display: grid;
+  gap: 2px;
+  margin: 0;
+  width: 100%;
+}
+
+.mobileCardRow {
+  display: grid;
+  grid-template-columns: 5.5rem minmax(0, 1fr);
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.35;
+}
+
+.mobileCardRow dt {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-weight: 500;
+}
+
+.mobileCardRow dd {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  min-width: 0;
+  word-break: break-word;
+}
+
+.mobileCardActions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--admin-space-xs);
+}
+
+.mobileLoading,
+.mobileEmpty {
+  margin: 0;
+  padding: var(--admin-space-2xl);
+  text-align: center;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+@media (max-width: 960px) {
+  .mobileCards {
+    display: grid;
+    gap: var(--admin-space-md);
+    margin-top: var(--admin-space-sm);
+  }
+
+  .directoryTable :global([class*='tableWrapper']) {
+    display: none;
+  }
+
+  .directoryTable {
+    margin: 0;
+  }
+}
