@@ -130,6 +130,11 @@
   text-align: center;
 }
 
+.revisionSubtitle {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
 .textBody {
   font-size: 0.95rem;
   line-height: 1.65;
