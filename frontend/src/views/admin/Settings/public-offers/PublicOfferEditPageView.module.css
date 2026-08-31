@@ -136,3 +136,63 @@
   font-size: var(--admin-font-size-sm);
   color: var(--admin-text-secondary);
 }
+
+.versionsBlock {
+  display: grid;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-muted, var(--admin-surface));
+}
+
+.versionsTitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.versionsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: var(--admin-space-md);
+}
+
+.versionsItem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding-top: var(--admin-space-sm);
+  border-top: 1px solid var(--admin-border);
+}
+
+.versionsItem:first-child {
+  border-top: none;
+  padding-top: 0;
+}
+
+.versionsMeta {
+  display: grid;
+  gap: 0.2rem;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.versionsNote {
+  color: var(--admin-text-muted);
+}
+
+.versionsActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+}
+
+.versionsActions a {
+  color: var(--admin-accent);
+}

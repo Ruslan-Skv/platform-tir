@@ -27,3 +27,20 @@ export async function loadPublicOfferBySlug(slug: string): Promise<PublicOfferIn
     return null;
   }
 }
+
+export async function loadPublicOfferRevision(
+  slug: string,
+  versionNumber: number
+): Promise<import('@/shared/lib/legal/public-offer').PublicOfferVersionDetail | null> {
+  try {
+    const res = await serverFetch(
+      `${getServerApiBaseUrl()}/public-offers/${encodeURIComponent(slug)}/revisions/${versionNumber}`,
+      { cache: 'no-store' }
+    );
+    if (res.status === 404) return null;
+    if (!res.ok) return null;
+    return res.json();
+  } catch {
+    return null;
+  }
+}

@@ -717,19 +717,20 @@ model ContactSalonManager {
 }
 
 model PublicOffer {
-  id           String             @id @default(cuid())
-  slug         String             @unique
-  title        String             @default("Публичная оферта")
-  name         String             @default("Публичная оферта")
+  id           String               @id @default(cuid())
+  slug         String               @unique
+  title        String               @default("Публичная оферта")
+  name         String               @default("Публичная оферта")
   offerUrl     String?
-  offerContent String?            @db.Text
-  acceptText   String             @default("Я принимаю условия публичной оферты")
-  isPublished  Boolean            @default(false)
-  isDefault    Boolean            @default(false)
-  sortOrder    Int                @default(0)
-  createdAt    DateTime           @default(now())
-  updatedAt    DateTime           @updatedAt
+  offerContent String?              @db.Text
+  acceptText   String               @default("Я принимаю условия публичной оферты")
+  isPublished  Boolean              @default(false)
+  isDefault    Boolean              @default(false)
+  sortOrder    Int                  @default(0)
+  createdAt    DateTime             @default(now())
+  updatedAt    DateTime             @updatedAt
   scopes       PublicOfferScope[]
+  versions     PublicOfferVersion[]
 
   @@map("public_offers")
 }
@@ -744,6 +745,22 @@ model PublicOfferScope {
   @@unique([offerId, scopeType, scopeId])
   @@index([scopeType, scopeId])
   @@map("public_offer_scopes")
+}
+
+/// Архивные редакции оферты (текущая всегда в PublicOffer).
+model PublicOfferVersion {
+  id            String      @id @default(cuid())
+  offerId       String
+  versionNumber Int
+  offerUrl      String?
+  offerContent  String?     @db.Text
+  note          String?
+  createdAt     DateTime    @default(now())
+  offer         PublicOffer @relation(fields: [offerId], references: [id], onDelete: Cascade)
+
+  @@unique([offerId, versionNumber])
+  @@index([offerId, createdAt])
+  @@map("public_offer_versions")
 }
 
 model NavigationItem {

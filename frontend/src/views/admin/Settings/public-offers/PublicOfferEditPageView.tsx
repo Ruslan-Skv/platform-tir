@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import {
+  type PublicOfferVersionSummary,
   createAdminPublicOffer,
   getAdminPublicOffer,
+  restoreAdminPublicOfferVersion,
   updateAdminPublicOffer,
   uploadAdminPublicOfferPdf,
 } from '@/shared/api/public-offer';
@@ -15,7 +17,9 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 import {
   type PublicOfferScopeInfo,
   type PublicOfferScopeType,
+  isPublicOfferPdfUrl,
   publicOfferPath,
+  resolvePublicOfferEmbedUrl,
 } from '@/shared/lib/legal/public-offer';
 import { isRichTextEmpty, toRichTextEditorHtml } from '@/shared/lib/sanitize';
 import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
@@ -119,6 +123,8 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
   const [loading, setLoading] = useState(!isNew);
   const [saving, setSaving] = useState(false);
   const [uploadingPdf, setUploadingPdf] = useState(false);
+  const [versions, setVersions] = useState<PublicOfferVersionSummary[]>([]);
+  const [restoringVersion, setRestoringVersion] = useState<number | null>(null);
   const [currentOfferId, setCurrentOfferId] = useState(offerId ?? '');
   const [autoSlug, setAutoSlug] = useState(isNew);
   const { saveNoticeVisible, errorMessage, showSaveSuccess, showSaveError, resetSaveFeedback } =
@@ -141,23 +147,28 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
     }
   }, []);
 
-  const loadOffer = useCallback(async () => {
-    if (!offerId) return;
-    const data = await getAdminPublicOffer(offerId);
-    setCurrentOfferId(data.id);
-    setForm({
-      slug: data.slug,
-      pageTitle: data.pageTitle,
-      name: data.name,
-      offerUrl: data.offerUrl ?? '',
-      offerContent: data.offerContent ?? '',
-      acceptText: data.acceptText,
-      isPublished: data.isPublished,
-      isDefault: data.isDefault ?? false,
-      sortOrder: data.sortOrder ?? 0,
-      ...scopesToForm(data.scopes),
-    });
-  }, [offerId]);
+  const loadOffer = useCallback(
+    async (idOverride?: string) => {
+      const id = idOverride || offerId;
+      if (!id) return;
+      const data = await getAdminPublicOffer(id);
+      setCurrentOfferId(data.id);
+      setForm({
+        slug: data.slug,
+        pageTitle: data.pageTitle,
+        name: data.name,
+        offerUrl: data.offerUrl ?? '',
+        offerContent: data.offerContent ?? '',
+        acceptText: data.acceptText,
+        isPublished: data.isPublished,
+        isDefault: data.isDefault ?? false,
+        sortOrder: data.sortOrder ?? 0,
+        ...scopesToForm(data.scopes),
+      });
+      setVersions(data.versions ?? []);
+    },
+    [offerId]
+  );
 
   useEffect(() => {
     loadMeta();
@@ -279,11 +290,47 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
       const id = await ensureOfferSaved();
       const { offerUrl } = await uploadAdminPublicOfferPdf(id, file);
       updateField('offerUrl', offerUrl);
+      await loadOffer(id);
       showSaveSuccess();
     } catch (err) {
       showSaveError(err instanceof Error ? err.message : 'Ошибка загрузки PDF');
     } finally {
       setUploadingPdf(false);
+    }
+  };
+
+  const handleRestoreVersion = async (versionNumber: number) => {
+    if (!currentOfferId) return;
+    if (
+      !window.confirm(
+        `Восстановить редакцию №${versionNumber} как текущую? Текущий документ будет сохранён в истории.`
+      )
+    ) {
+      return;
+    }
+    setRestoringVersion(versionNumber);
+    resetSaveFeedback();
+    try {
+      const data = await restoreAdminPublicOfferVersion(currentOfferId, versionNumber);
+      setForm((prev) => ({
+        ...prev,
+        offerUrl: data.offerUrl ?? '',
+        offerContent: data.offerContent ?? '',
+      }));
+      setVersions(data.versions ?? []);
+      showSaveSuccess();
+    } catch (err) {
+      showSaveError(err instanceof Error ? err.message : 'Не удалось восстановить редакцию');
+    } finally {
+      setRestoringVersion(null);
+    }
+  };
+
+  const formatVersionDate = (iso: string) => {
+    try {
+      return new Date(iso).toLocaleString('ru-RU');
+    } catch {
+      return iso;
     }
   };
 
@@ -401,7 +448,57 @@ export function PublicOfferEditPageView({ offerId }: PublicOfferEditPageViewProp
               placeholder="/uploads/offer/offer-….pdf"
               emptyHint="PDF не загружен"
             />
+            <p className={styles.fieldHint}>
+              При загрузке нового PDF текущая редакция автоматически сохраняется в истории — старый
+              файл не удаляется.
+            </p>
           </label>
+
+          {!isNew && versions.length > 0 ? (
+            <div className={styles.versionsBlock}>
+              <h4 className={styles.versionsTitle}>История редакций</h4>
+              <ul className={styles.versionsList}>
+                {versions.map((version) => {
+                  const pdfHref =
+                    version.offerUrl && isPublicOfferPdfUrl(version.offerUrl)
+                      ? resolvePublicOfferEmbedUrl(version.offerUrl)
+                      : null;
+                  return (
+                    <li key={version.id} className={styles.versionsItem}>
+                      <div className={styles.versionsMeta}>
+                        <strong>Редакция №{version.versionNumber}</strong>
+                        <span>{formatVersionDate(version.createdAt)}</span>
+                        {version.note ? (
+                          <span className={styles.versionsNote}>{version.note}</span>
+                        ) : null}
+                      </div>
+                      <div className={styles.versionsActions}>
+                        {pdfHref ? (
+                          <a href={pdfHref} target="_blank" rel="noopener noreferrer">
+                            Открыть PDF
+                          </a>
+                        ) : version.hasContent ? (
+                          <span>Текст сохранён</span>
+                        ) : (
+                          <span>Нет файла</span>
+                        )}
+                        <button
+                          type="button"
+                          data-modal-btn="secondary"
+                          disabled={restoringVersion !== null}
+                          onClick={() => void handleRestoreVersion(version.versionNumber)}
+                        >
+                          {restoringVersion === version.versionNumber
+                            ? 'Восстановление…'
+                            : 'Сделать текущей'}
+                        </button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
 
           <div className={styles.field}>
             <span>Текст оферты (если без PDF)</span>

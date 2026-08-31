@@ -25,6 +25,25 @@ export interface PublicOfferData {
   isDefault: boolean;
   sortOrder: number;
   scopes: PublicOfferScopeInput[];
+  /** Архивные редакции (без текущей). Новее — первыми. */
+  versions?: PublicOfferVersionSummary[];
+}
+
+export interface PublicOfferVersionSummary {
+  id: string;
+  versionNumber: number;
+  offerUrl: string | null;
+  /** Есть ли сохранённый HTML/текст (без тела в списке). */
+  hasContent: boolean;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PublicOfferVersionDetail extends PublicOfferVersionSummary {
+  offerContent: string | null;
+  pageTitle: string;
+  name: string;
+  slug: string;
 }
 
 export interface PublicOfferListItem {

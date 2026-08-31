@@ -76,6 +76,20 @@ export class PublicOffersController {
     return this.publicOffer.resolveForCart(dto, req.user?.id);
   }
 
+  @Get(':slug/revisions/:versionNumber')
+  @ApiOperation({ summary: 'Архивная редакция оферты по slug и номеру версии' })
+  async getRevision(@Param('slug') slug: string, @Param('versionNumber') versionNumberRaw: string) {
+    const versionNumber = Number(versionNumberRaw);
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new BadRequestException('Некорректный номер версии');
+    }
+    const data = await this.publicOffer.getPublicRevision(slug, versionNumber);
+    if (!data) {
+      throw new NotFoundException('Редакция оферты не найдена');
+    }
+    return data;
+  }
+
   @Get(':slug')
   @ApiOperation({ summary: 'Публичная оферта по slug' })
   async getBySlug(@Param('slug') slug: string) {
@@ -127,6 +141,22 @@ export class AdminPublicOffersController {
   @ApiOperation({ summary: 'Создать оферту' })
   create(@Body() dto: CreatePublicOfferDto) {
     return this.publicOffer.create(dto);
+  }
+
+  @Get(':id/versions')
+  @ApiOperation({ summary: 'История редакций оферты' })
+  listVersions(@Param('id') id: string) {
+    return this.publicOffer.listAdminVersions(id);
+  }
+
+  @Post(':id/versions/:versionNumber/restore')
+  @ApiOperation({ summary: 'Восстановить архивную редакцию как текущую' })
+  restoreVersion(@Param('id') id: string, @Param('versionNumber') versionNumberRaw: string) {
+    const versionNumber = Number(versionNumberRaw);
+    if (!Number.isInteger(versionNumber) || versionNumber < 1) {
+      throw new BadRequestException('Некорректный номер версии');
+    }
+    return this.publicOffer.restoreVersion(id, versionNumber);
   }
 
   @Get(':id')

@@ -4,6 +4,8 @@ import type {
   PublicOfferInfo,
   PublicOfferListItem,
   PublicOfferScopeInfo,
+  PublicOfferVersionDetail,
+  PublicOfferVersionSummary,
 } from '@/shared/lib/legal/public-offer';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
@@ -18,7 +20,13 @@ function getAdminAuthHeaders(): HeadersInit {
   return headers;
 }
 
-export type { PublicOfferInfo, PublicOfferListItem, PublicOfferScopeInfo };
+export type {
+  PublicOfferInfo,
+  PublicOfferListItem,
+  PublicOfferScopeInfo,
+  PublicOfferVersionDetail,
+  PublicOfferVersionSummary,
+};
 
 export type ResolvePublicOffersParams = {
   productCategoryIds?: string[];
@@ -147,7 +155,7 @@ export async function deleteAdminPublicOffer(id: string): Promise<void> {
 export async function uploadAdminPublicOfferPdf(
   id: string,
   file: File
-): Promise<{ offerUrl: string }> {
+): Promise<{ offerUrl: string; archived: boolean }> {
   const formData = new FormData();
   formData.append('file', file);
   const res = await apiFetch(`${API_URL}/admin/settings/public-offers/${id}/upload`, {
@@ -159,5 +167,42 @@ export async function uploadAdminPublicOfferPdf(
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Ошибка загрузки PDF');
   }
+  return res.json();
+}
+
+export async function listAdminPublicOfferVersions(
+  id: string
+): Promise<PublicOfferVersionSummary[]> {
+  const res = await apiFetch(`${API_URL}/admin/settings/public-offers/${id}/versions`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить историю редакций');
+  return res.json();
+}
+
+export async function restoreAdminPublicOfferVersion(
+  id: string,
+  versionNumber: number
+): Promise<PublicOfferInfo> {
+  const res = await apiFetch(
+    `${API_URL}/admin/settings/public-offers/${id}/versions/${versionNumber}/restore`,
+    { method: 'POST', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось восстановить редакцию');
+  }
+  return res.json();
+}
+
+export async function getPublicOfferRevision(
+  slug: string,
+  versionNumber: number
+): Promise<PublicOfferVersionDetail | null> {
+  const res = await apiFetch(
+    `${API_URL}/public-offers/${encodeURIComponent(slug)}/revisions/${versionNumber}`
+  );
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error('Не удалось загрузить редакцию оферты');
   return res.json();
 }

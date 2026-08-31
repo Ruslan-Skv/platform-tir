@@ -4,12 +4,114 @@
   background: #525659;
 }
 
+.pdfShell {
+  min-height: 100vh;
+  margin: 0;
+  background: #f3f4f6;
+}
+
+.pdfToolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.75rem 1.25rem;
+  padding: 0.85rem 1.25rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pdfTitle {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.pdfMeta {
+  margin: 0.2rem 0 0;
+  font-size: 0.8125rem;
+  color: #6b7280;
+}
+
+.pdfToolbarLinks {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.pdfToolbarLinks a {
+  color: #d90652;
+  text-decoration: none;
+}
+
+.pdfToolbarLinks a:hover {
+  text-decoration: underline;
+}
+
 .pdfFrame {
   display: block;
   width: 100%;
   height: 100vh;
   height: 100dvh;
   border: none;
+}
+
+.pdfFrameInShell {
+  display: block;
+  width: 100%;
+  height: min(78vh, 900px);
+  border: none;
+  background: #525659;
+}
+
+.revisions {
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+.revisionsTitle {
+  margin: 0 0 0.35rem;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #111827;
+}
+
+.revisionsHint {
+  margin: 0 0 1rem;
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.revisionsList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.revisionsList li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
+  align-items: baseline;
+  font-size: 0.9375rem;
+}
+
+.revisionsList a {
+  color: #d90652;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.revisionsList a:hover {
+  text-decoration: underline;
+}
+
+.revisionsDate {
+  color: #6b7280;
+  font-size: 0.875rem;
 }
 
 .textPage {
@@ -101,5 +203,19 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .textPage {
+  color: #f3f4f6;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pdfShell {
+  background: #111827;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pdfToolbar {
+  background: #1f2937;
+  border-bottom-color: #374151;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .pdfTitle,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .revisionsTitle {
   color: #f3f4f6;
 }

@@ -30,6 +30,23 @@ export interface PublicOfferInfo {
   isDefault?: boolean;
   sortOrder?: number;
   scopes?: PublicOfferScopeInfo[];
+  versions?: PublicOfferVersionSummary[];
+}
+
+export interface PublicOfferVersionSummary {
+  id: string;
+  versionNumber: number;
+  offerUrl: string | null;
+  hasContent: boolean;
+  note: string | null;
+  createdAt: string;
+}
+
+export interface PublicOfferVersionDetail extends PublicOfferVersionSummary {
+  offerContent: string | null;
+  pageTitle: string;
+  name: string;
+  slug: string;
 }
 
 export interface PublicOfferListItem {

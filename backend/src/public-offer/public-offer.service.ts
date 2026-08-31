@@ -18,6 +18,8 @@ import {
   type PublicOfferListItem,
   type PublicOfferScopeInput,
   type PublicOfferScopeType,
+  type PublicOfferVersionDetail,
+  type PublicOfferVersionSummary,
 } from './public-offer.types';
 
 const DEFAULT_ACCEPT_TEXT = 'Я принимаю условия публичной оферты';
@@ -36,7 +38,7 @@ type OfferWithScopes = {
   scopes: { scopeType: string; scopeId: string }[];
 };
 
-function mapOffer(offer: OfferWithScopes): PublicOfferData {
+function mapOffer(offer: OfferWithScopes, versions?: PublicOfferVersionSummary[]): PublicOfferData {
   const offerUrl = offer.offerUrl?.trim() || null;
   const offerContent = offer.offerContent?.trim() || null;
   const title = offer.title.trim() || 'Публичная оферта';
@@ -59,6 +61,25 @@ function mapOffer(offer: OfferWithScopes): PublicOfferData {
       scopeType: scope.scopeType as PublicOfferScopeType,
       scopeId: scope.scopeId || null,
     })),
+    ...(versions ? { versions } : {}),
+  };
+}
+
+function mapVersionSummary(row: {
+  id: string;
+  versionNumber: number;
+  offerUrl: string | null;
+  offerContent: string | null;
+  note: string | null;
+  createdAt: Date;
+}): PublicOfferVersionSummary {
+  return {
+    id: row.id,
+    versionNumber: row.versionNumber,
+    offerUrl: row.offerUrl?.trim() || null,
+    hasContent: Boolean(row.offerContent?.trim()),
+    note: row.note?.trim() || null,
+    createdAt: row.createdAt.toISOString(),
   };
 }
 
@@ -181,6 +202,100 @@ export class PublicOfferService {
       }));
   }
 
+  private async listVersionSummaries(offerId: string): Promise<PublicOfferVersionSummary[]> {
+    const rows = await this.prisma.publicOfferVersion.findMany({
+      where: { offerId },
+      orderBy: { versionNumber: 'desc' },
+    });
+    return rows.map(mapVersionSummary);
+  }
+
+  /** Сохраняет текущий документ оферты в архив версий (если есть что архивировать). */
+  private async archiveCurrentDocument(offerId: string, note?: string | null): Promise<boolean> {
+    const offer = await this.prisma.publicOffer.findUnique({ where: { id: offerId } });
+    if (!offer) return false;
+    const offerUrl = offer.offerUrl?.trim() || null;
+    const offerContent = offer.offerContent?.trim() || null;
+    if (!offerUrl && !offerContent) return false;
+
+    const latest = await this.prisma.publicOfferVersion.findFirst({
+      where: { offerId },
+      orderBy: { versionNumber: 'desc' },
+      select: { versionNumber: true },
+    });
+    const versionNumber = (latest?.versionNumber ?? 0) + 1;
+
+    await this.prisma.publicOfferVersion.create({
+      data: {
+        offerId,
+        versionNumber,
+        offerUrl,
+        offerContent,
+        note: note?.trim() || null,
+      },
+    });
+    return true;
+  }
+
+  async listAdminVersions(offerId: string): Promise<PublicOfferVersionSummary[]> {
+    await this.findOfferOrThrow(offerId);
+    return this.listVersionSummaries(offerId);
+  }
+
+  async getPublicRevision(
+    slug: string,
+    versionNumber: number,
+  ): Promise<PublicOfferVersionDetail | null> {
+    const offer = await this.prisma.publicOffer.findUnique({
+      where: { slug },
+      select: { id: true, slug: true, title: true, name: true, isPublished: true },
+    });
+    if (!offer || !offer.isPublished) return null;
+
+    const row = await this.prisma.publicOfferVersion.findUnique({
+      where: {
+        offerId_versionNumber: { offerId: offer.id, versionNumber },
+      },
+    });
+    if (!row) return null;
+    const summary = mapVersionSummary(row);
+    if (!summary.offerUrl && !summary.hasContent) return null;
+
+    return {
+      ...summary,
+      offerContent: row.offerContent?.trim() || null,
+      pageTitle: offer.title.trim() || 'Публичная оферта',
+      name: offer.name.trim() || offer.title.trim() || 'Публичная оферта',
+      slug: offer.slug,
+    };
+  }
+
+  async restoreVersion(offerId: string, versionNumber: number): Promise<PublicOfferData> {
+    const offer = await this.findOfferOrThrow(offerId);
+    const row = await this.prisma.publicOfferVersion.findUnique({
+      where: { offerId_versionNumber: { offerId, versionNumber } },
+    });
+    if (!row) {
+      throw new NotFoundException('Версия оферты не найдена');
+    }
+
+    await this.archiveCurrentDocument(
+      offerId,
+      `Архив перед восстановлением редакции №${versionNumber}`,
+    );
+
+    await this.prisma.publicOffer.update({
+      where: { id: offerId },
+      data: {
+        offerUrl: row.offerUrl?.trim() || null,
+        offerContent: row.offerContent?.trim() || null,
+      },
+    });
+
+    void offer;
+    return this.getAdminById(offerId);
+  }
+
   async getPublicBySlug(slug: string): Promise<PublicOfferData | null> {
     const offer = await this.prisma.publicOffer.findUnique({
       where: { slug },
@@ -189,11 +304,18 @@ export class PublicOfferService {
     if (!offer || !offer.isPublished) {
       return null;
     }
-    const mapped = mapOffer(offer);
+    const versions = await this.listVersionSummaries(offer.id);
+    const mapped = mapOffer(offer, versions);
     if (!mapped.isConfigured) {
       return null;
     }
     return mapped;
+  }
+
+  async getAdminById(id: string): Promise<PublicOfferData> {
+    const offer = await this.findOfferOrThrow(id);
+    const versions = await this.listVersionSummaries(id);
+    return mapOffer(offer, versions);
   }
 
   /** @deprecated Используйте getPublicBySlug или listPublic */
@@ -203,7 +325,7 @@ export class PublicOfferService {
       include: { scopes: true },
       orderBy: [{ isDefault: 'desc' }, { sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
-    const configured = offers.map(mapOffer).filter((offer) => offer.isConfigured);
+    const configured = offers.map((offer) => mapOffer(offer)).filter((offer) => offer.isConfigured);
     return configured[0] ?? null;
   }
 
@@ -212,12 +334,7 @@ export class PublicOfferService {
       include: { scopes: true },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
     });
-    return offers.map(mapOffer);
-  }
-
-  async getAdminById(id: string): Promise<PublicOfferData> {
-    const offer = await this.findOfferOrThrow(id);
-    return mapOffer(offer);
+    return offers.map((offer) => mapOffer(offer));
   }
 
   async create(dto: CreatePublicOfferDto): Promise<PublicOfferData> {
@@ -252,8 +369,13 @@ export class PublicOfferService {
     return this.getAdminById(offer.id);
   }
 
-  async update(id: string, dto: UpdatePublicOfferDto): Promise<PublicOfferData> {
+  async remove(id: string): Promise<void> {
     await this.findOfferOrThrow(id);
+    await this.prisma.publicOffer.delete({ where: { id } });
+  }
+
+  async update(id: string, dto: UpdatePublicOfferDto): Promise<PublicOfferData> {
+    const current = await this.findOfferOrThrow(id);
 
     if (dto.slug !== undefined) {
       const slug = dto.slug.trim().toLowerCase();
@@ -267,6 +389,20 @@ export class PublicOfferService {
 
     if (dto.isDefault) {
       await this.clearOtherDefaults(id);
+    }
+
+    const nextUrl =
+      dto.offerUrl !== undefined ? dto.offerUrl?.trim() || null : current.offerUrl?.trim() || null;
+    const nextContent =
+      dto.offerContent !== undefined
+        ? dto.offerContent?.trim() || null
+        : current.offerContent?.trim() || null;
+    const documentChanging =
+      (dto.offerUrl !== undefined && nextUrl !== (current.offerUrl?.trim() || null)) ||
+      (dto.offerContent !== undefined && nextContent !== (current.offerContent?.trim() || null));
+
+    if (documentChanging) {
+      await this.archiveCurrentDocument(id, 'Архив перед обновлением документа');
     }
 
     await this.prisma.publicOffer.update({
@@ -295,16 +431,11 @@ export class PublicOfferService {
     return this.getAdminById(id);
   }
 
-  async remove(id: string): Promise<void> {
-    await this.findOfferOrThrow(id);
-    await this.prisma.publicOffer.delete({ where: { id } });
-  }
-
   async uploadOfferPdf(
     id: string,
     file: Express.Multer.File,
     baseUrl: string,
-  ): Promise<{ offerUrl: string }> {
+  ): Promise<{ offerUrl: string; archived: boolean }> {
     if (!file?.path) {
       throw new BadRequestException('Файл не загружен');
     }
@@ -315,12 +446,14 @@ export class PublicOfferService {
     const prefix = uploadsBaseUrl(baseUrl);
     const fullUrl = prefix ? `${prefix}${offerUrl}` : offerUrl;
 
+    const archived = await this.archiveCurrentDocument(id, 'Архив перед загрузкой нового PDF');
+
     await this.prisma.publicOffer.update({
       where: { id },
       data: { offerUrl },
     });
 
-    return { offerUrl: fullUrl };
+    return { offerUrl: fullUrl, archived };
   }
 
   async resolveForCart(dto: ResolvePublicOffersDto, userId?: string): Promise<PublicOfferData[]> {
