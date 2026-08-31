@@ -2,6 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import Link from 'next/link';
+
 import { useAuth } from '@/features/auth';
 import {
   type AdminHubPreviewProductRef,
@@ -13,6 +15,14 @@ import {
   type AdminProductListItem,
   fetchAdminProductsList,
 } from '@/shared/api/admin-products-list';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DeleteIcon } from '@/shared/ui/icons';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import sectionStyles from './CatalogHubPreviewSection.module.css';
 
@@ -152,13 +162,14 @@ function ProductPickEditor({
                   <div className={sectionStyles.pickItemMeta}>Артикул: {product.sku}</div>
                 ) : null}
               </div>
-              <button
+              <AdminTableIconButton
                 type="button"
-                className={sectionStyles.secondaryButton}
+                aria-label="Убрать товар"
+                title="Убрать"
                 onClick={() => removeProduct(product.id)}
               >
-                Убрать
-              </button>
+                <DeleteIcon />
+              </AdminTableIconButton>
             </div>
           ))}
         </div>
@@ -225,14 +236,27 @@ export function CatalogHubPreviewSection() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [successVisible, setSuccessVisible] = useState(false);
+  const [successText, setSuccessText] = useState('');
+
+  useEffect(() => {
+    if (!message) return;
+    if (message.type === 'success') {
+      setSuccessText(message.text);
+      setSuccessVisible(true);
+      const timer = window.setTimeout(() => setSuccessVisible(false), 2800);
+      setMessage(null);
+      return () => window.clearTimeout(timer);
+    }
+  }, [message]);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
-    setTimeout(() => setMessage(null), 4000);
   };
 
   const load = useCallback(async () => {
     setLoading(true);
+    setMessage(null);
     try {
       const data = await getAdminCatalogHubPreview(getAuthHeaders());
       setProductsPerGroup(data.productsPerGroup);
@@ -248,8 +272,7 @@ export function CatalogHubPreviewSection() {
         }))
       );
     } catch (error) {
-      console.error(error);
-      showMessage('error', 'Ошибка загрузки настроек');
+      showMessage('error', error instanceof Error ? error.message : 'Ошибка загрузки настроек');
     } finally {
       setLoading(false);
     }
@@ -336,159 +359,240 @@ export function CatalogHubPreviewSection() {
     }
   };
 
-  if (loading) {
-    return <p>Загрузка…</p>;
-  }
+  const busy = loading || saving;
+  const activeCount = sections.filter((s) => s.isActive).length;
+  const countTitle =
+    sections.length === 0
+      ? 'Автоподбор'
+      : `${sections.length} разделов · ${activeCount} активных · ${productsPerGroup} в группе`;
 
   const usedCategoryIds = new Set(sections.map((section) => section.categoryId).filter(Boolean));
 
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdHub.contractsHeaderIconActionsMobile
+          : cdHub.contractsHeaderIconActionsDesktop
+      }
+    >
+      <AdminListRefreshButton
+        disabled={busy}
+        busy={loading}
+        title="Обновить настройки"
+        aria-label={loading ? 'Обновление настроек' : 'Обновить настройки'}
+        onClick={() => void load()}
+      />
+    </div>
+  );
+
   return (
-    <div>
-      {message ? (
-        <div
-          className={`${sectionStyles.toast} ${
-            message.type === 'success' ? sectionStyles.toastSuccess : sectionStyles.toastError
-          }`}
-        >
-          {message.text}
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <Link className={cdChrome.backLink} href="/admin/settings">
+        ← Настройки
+      </Link>
+
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={cdHub.title}>Превью каталога</h1>
+              </div>
+              <span className={cdHub.contractsListCount} title={countTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+                <span className={cdHub.contractsListCountMobile}>{sections.length}</span>
+              </span>
+              <AdminSaveNotice
+                visible={successVisible}
+                className={sectionStyles.headerSuccessNotice}
+              >
+                {successText}
+              </AdminSaveNotice>
+            </div>
+            {iconActions('mobile')}
+          </div>
+        </div>
+        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={busy}
+            onClick={() => void handleSave()}
+          >
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+          {iconActions('desktop')}
+        </div>
+      </div>
+
+      {message?.type === 'error' ? (
+        <div className={`${sectionStyles.message} ${sectionStyles.messageerror}`}>
+          <span>{message.text}</span>
+          <button type="button" onClick={() => setMessage(null)} aria-label="Закрыть">
+            ×
+          </button>
         </div>
       ) : null}
 
-      <div className={sectionStyles.formRow}>
-        <label htmlFor="productsPerGroup">Товаров в каждом разделе</label>
-        <input
-          id="productsPerGroup"
-          type="number"
-          min={1}
-          max={12}
-          className={sectionStyles.numberInput}
-          value={productsPerGroup}
-          onChange={(e) => setProductsPerGroup(Number(e.target.value) || 6)}
-        />
-        <p className={sectionStyles.hint}>От 1 до 12 карточек в строке превью (по умолчанию 6).</p>
+      <div className={`${cdHub.contractsListFiltersPanel} ${sectionStyles.helpPanel}`}>
+        <p className={sectionStyles.helpText}>
+          Блок превью каталога на главной: до 4 разделов с категориями и ручным подбором популярных
+          товаров и новинок. Без настроек на сайте покажутся первые 4 корневые категории с
+          автоподбором.
+        </p>
       </div>
 
-      <div className={sectionStyles.toolbar}>
-        <button
-          data-admin-mutation
-          type="button"
-          className={sectionStyles.secondaryButton}
-          onClick={addSection}
-          disabled={sections.length >= 4}
-        >
-          Добавить раздел
-        </button>
-      </div>
+      {loading ? (
+        <p className={sectionStyles.loading}>Загрузка…</p>
+      ) : (
+        <>
+          <div className={cdHub.contractsListFiltersPanel}>
+            <div className={sectionStyles.settingsRow}>
+              <label className={sectionStyles.settingsField} htmlFor="productsPerGroup">
+                Товаров в каждом разделе
+                <input
+                  id="productsPerGroup"
+                  type="number"
+                  min={1}
+                  max={12}
+                  className={sectionStyles.numberInput}
+                  value={productsPerGroup}
+                  onChange={(e) => setProductsPerGroup(Number(e.target.value) || 6)}
+                />
+              </label>
+              <p className={sectionStyles.hint}>
+                От 1 до 12 карточек в строке превью (по умолчанию 6).
+              </p>
+              <button
+                data-admin-mutation
+                type="button"
+                className={sectionStyles.secondaryButton}
+                onClick={addSection}
+                disabled={busy || sections.length >= 4}
+              >
+                + Раздел
+              </button>
+            </div>
+          </div>
 
-      <div className={sectionStyles.sectionList}>
-        {sections.length === 0 ? (
-          <p className={sectionStyles.hint}>
-            Разделы не настроены — на сайте покажутся первые 4 корневые категории с автоподбором
-            товаров.
-          </p>
-        ) : null}
+          <div className={sectionStyles.sectionList}>
+            {sections.length === 0 ? (
+              <p className={sectionStyles.hint}>
+                Разделы не настроены — на сайте покажутся первые 4 корневые категории с автоподбором
+                товаров. Нажмите «+ Раздел», чтобы задать вручную.
+              </p>
+            ) : null}
 
-        {sections.map((section, index) => {
-          const categoryName =
-            availableCategories.find((c) => c.id === section.categoryId)?.name ||
-            `Раздел ${index + 1}`;
+            {sections.map((section, index) => {
+              const categoryName =
+                availableCategories.find((c) => c.id === section.categoryId)?.name ||
+                `Раздел ${index + 1}`;
 
-          return (
-            <article key={section.localKey} className={sectionStyles.sectionCard}>
-              <div className={sectionStyles.sectionCardHeader}>
-                <h3 className={sectionStyles.sectionCardTitle}>{categoryName}</h3>
-                <div className={sectionStyles.sectionControls}>
-                  <button
-                    type="button"
-                    className={sectionStyles.secondaryButton}
-                    onClick={() => moveSection(section.localKey, -1)}
-                    disabled={index === 0}
-                  >
-                    ↑
-                  </button>
-                  <button
-                    type="button"
-                    className={sectionStyles.secondaryButton}
-                    onClick={() => moveSection(section.localKey, 1)}
-                    disabled={index === sections.length - 1}
-                  >
-                    ↓
-                  </button>
-                  <button
-                    data-admin-mutation
-                    type="button"
-                    className={sectionStyles.secondaryButton}
-                    onClick={() => removeSection(section.localKey)}
-                  >
-                    Удалить
-                  </button>
-                </div>
-              </div>
+              return (
+                <article key={section.localKey} className={sectionStyles.sectionCard}>
+                  <div className={sectionStyles.sectionCardHeader}>
+                    <div>
+                      <h3 className={sectionStyles.sectionCardTitle}>{categoryName}</h3>
+                      <span
+                        className={`${sectionStyles.badge} ${
+                          section.isActive ? sectionStyles.badgeActive : sectionStyles.badgeInactive
+                        }`}
+                      >
+                        {section.isActive ? 'На витрине' : 'Скрыт'}
+                      </span>
+                    </div>
+                    <div className={sectionStyles.sectionControls}>
+                      <button
+                        type="button"
+                        className={sectionStyles.secondaryButton}
+                        onClick={() => moveSection(section.localKey, -1)}
+                        disabled={index === 0}
+                      >
+                        ↑
+                      </button>
+                      <button
+                        type="button"
+                        className={sectionStyles.secondaryButton}
+                        onClick={() => moveSection(section.localKey, 1)}
+                        disabled={index === sections.length - 1}
+                      >
+                        ↓
+                      </button>
+                      <AdminTableIconButton
+                        data-admin-mutation
+                        type="button"
+                        aria-label="Удалить раздел"
+                        title="Удалить раздел"
+                        onClick={() => removeSection(section.localKey)}
+                      >
+                        <DeleteIcon />
+                      </AdminTableIconButton>
+                    </div>
+                  </div>
 
-              <div className={sectionStyles.formRow}>
-                <label>Категория раздела</label>
-                <select
-                  className={sectionStyles.select}
-                  value={section.categoryId}
-                  onChange={(e) => updateSection(section.localKey, { categoryId: e.target.value })}
-                >
-                  <option value="">— Выберите категорию —</option>
-                  {availableCategories.map((category) => (
-                    <option
-                      key={category.id}
-                      value={category.id}
-                      disabled={
-                        category.id !== section.categoryId && usedCategoryIds.has(category.id)
+                  <div className={sectionStyles.formRow}>
+                    <label htmlFor={`hub-preview-category-${section.localKey}`}>
+                      Категория раздела
+                    </label>
+                    <select
+                      id={`hub-preview-category-${section.localKey}`}
+                      className={sectionStyles.select}
+                      value={section.categoryId}
+                      onChange={(e) =>
+                        updateSection(section.localKey, { categoryId: e.target.value })
                       }
                     >
-                      {category.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
+                      <option value="">— Выберите категорию —</option>
+                      {availableCategories.map((category) => (
+                        <option
+                          key={category.id}
+                          value={category.id}
+                          disabled={
+                            category.id !== section.categoryId && usedCategoryIds.has(category.id)
+                          }
+                        >
+                          {category.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-              <label className={sectionStyles.checkboxLabel}>
-                <input
-                  type="checkbox"
-                  checked={section.isActive}
-                  onChange={(e) => updateSection(section.localKey, { isActive: e.target.checked })}
-                />
-                Показывать на витрине
-              </label>
+                  <label className={sectionStyles.checkboxLabel}>
+                    <input
+                      type="checkbox"
+                      checked={section.isActive}
+                      onChange={(e) =>
+                        updateSection(section.localKey, { isActive: e.target.checked })
+                      }
+                    />
+                    Показывать на витрине
+                  </label>
 
-              <ProductPickEditor
-                title="Популярное — ручной подбор"
-                mode="featured"
-                categoryId={section.categoryId}
-                products={section.featuredProducts}
-                onChange={(featuredProducts) =>
-                  updateSection(section.localKey, { featuredProducts })
-                }
-              />
+                  <ProductPickEditor
+                    title="Популярное — ручной подбор"
+                    mode="featured"
+                    categoryId={section.categoryId}
+                    products={section.featuredProducts}
+                    onChange={(featuredProducts) =>
+                      updateSection(section.localKey, { featuredProducts })
+                    }
+                  />
 
-              <ProductPickEditor
-                title="Новинки — ручной подбор"
-                mode="new"
-                categoryId={section.categoryId}
-                products={section.newProducts}
-                onChange={(newProducts) => updateSection(section.localKey, { newProducts })}
-              />
-            </article>
-          );
-        })}
-      </div>
-
-      <div className={sectionStyles.toolbar}>
-        <button
-          data-admin-mutation
-          type="button"
-          className={sectionStyles.saveButton}
-          onClick={() => void handleSave()}
-          disabled={saving}
-        >
-          {saving ? 'Сохранение…' : 'Сохранить'}
-        </button>
-      </div>
+                  <ProductPickEditor
+                    title="Новинки — ручной подбор"
+                    mode="new"
+                    categoryId={section.categoryId}
+                    products={section.newProducts}
+                    onChange={(newProducts) => updateSection(section.localKey, { newProducts })}
+                  />
+                </article>
+              );
+            })}
+          </div>
+        </>
+      )}
     </div>
   );
 }

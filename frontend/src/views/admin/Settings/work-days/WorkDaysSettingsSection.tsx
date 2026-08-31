@@ -2,6 +2,8 @@
 
 import { type CSSProperties, useCallback, useEffect, useState } from 'react';
 
+import Link from 'next/link';
+
 import { WorkDaysIpHelp } from '@/features/admin/work-day/WorkDaysIpHelp';
 import { useAuth } from '@/features/auth';
 import {
@@ -15,16 +17,26 @@ import {
   updateWorkDaySettings,
   updateWorkDayUser,
 } from '@/shared/api/admin-work-days';
-import { AdminFormMessage } from '@/shared/ui/admin/AdminFormMessage';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { useAdminSaveFeedback } from '@/shared/ui/admin/useAdminSaveFeedback';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 import { ROLES_CONFIG } from '@/views/admin/Settings';
-import { SettingsSubPageView } from '@/views/admin/Settings';
 
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 import styles from './WorkDaysSettingsSection.module.css';
 import { type WeeklySchedule, normalizeWeeklySchedule } from './weekly-schedule.utils';
 
 type Tab = 'general' | 'offices' | 'users';
+
+const TABS: { id: Tab; label: string }[] = [
+  { id: 'general', label: 'Общие' },
+  { id: 'offices', label: 'Офисы' },
+  { id: 'users', label: 'Сотрудники' },
+];
 
 const OFFICE_ACCENT_COLORS = [
   '#2563eb',
@@ -57,11 +69,12 @@ export function WorkDaysSettingsSection() {
   const [savingGeneral, setSavingGeneral] = useState(false);
   const [savingOffices, setSavingOffices] = useState(false);
   const [savingUsers, setSavingUsers] = useState(false);
-  const { saveNoticeVisible, errorMessage, showSaveSuccess, showSaveError } =
+  const { saveNoticeVisible, errorMessage, showSaveSuccess, showSaveError, resetSaveFeedback } =
     useAdminSaveFeedback();
 
   const load = useCallback(async () => {
     setLoading(true);
+    resetSaveFeedback();
     try {
       const [s, o, u] = await Promise.all([
         getWorkDaySettings(),
@@ -76,7 +89,7 @@ export function WorkDaysSettingsSection() {
     } finally {
       setLoading(false);
     }
-  }, [showSaveError]);
+  }, [resetSaveFeedback, showSaveError]);
 
   useEffect(() => {
     void load();
@@ -100,17 +113,7 @@ export function WorkDaysSettingsSection() {
     return payload;
   };
 
-  if (user?.role !== 'SUPER_ADMIN') {
-    return (
-      <p className={styles.denied}>
-        Настройки учёта рабочего времени доступны только супер-администратору.
-      </p>
-    );
-  }
-
-  if (loading || !settings) {
-    return <p className={styles.loading}>Загрузка…</p>;
-  }
+  const busy = loading || savingGeneral || savingOffices || savingUsers;
 
   const saveSettings = async (patch: Partial<WorkDaySettings>) => {
     setSavingGeneral(true);
@@ -126,6 +129,7 @@ export function WorkDaysSettingsSection() {
   };
 
   const toggleRole = (role: string) => {
+    if (!settings) return;
     const tracked = settings.trackedRoles.includes(role as WorkDaySettings['trackedRoles'][number])
       ? settings.trackedRoles.filter((r) => r !== role)
       : [...settings.trackedRoles, role as WorkDaySettings['trackedRoles'][number]];
@@ -178,211 +182,303 @@ export function WorkDaysSettingsSection() {
     }
   };
 
-  return (
-    <SettingsSubPageView
-      title="Учёт рабочего времени"
-      subtitle="Настройка графиков, IP-адресов офисов и ролей, для которых включён учёт рабочего дня."
-      backLink={{ href: '/admin/settings', label: '← Настройки' }}
-      saveNoticeVisible={saveNoticeVisible}
-      wide
+  if (user?.role !== 'SUPER_ADMIN') {
+    return (
+      <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+        <Link className={cdChrome.backLink} href="/admin/settings">
+          ← Настройки
+        </Link>
+        <div className={cdHub.editorHeader}>
+          <div className={cdHub.contractsListHeaderLeft}>
+            <h1 className={cdHub.title}>Учёт рабочего времени</h1>
+          </div>
+        </div>
+        <p className={styles.denied}>
+          Настройки учёта рабочего времени доступны только супер-администратору.
+        </p>
+      </div>
+    );
+  }
+
+  const countTitle =
+    tab === 'offices'
+      ? `${offices.length} офисов`
+      : tab === 'users'
+        ? `${users.length} сотрудников`
+        : `${settings?.trackedRoles.length ?? 0} ролей`;
+
+  const countMobile =
+    tab === 'offices'
+      ? offices.length
+      : tab === 'users'
+        ? users.length
+        : (settings?.trackedRoles.length ?? 0);
+
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdHub.contractsHeaderIconActionsMobile
+          : cdHub.contractsHeaderIconActionsDesktop
+      }
     >
+      <AdminListRefreshButton
+        disabled={busy}
+        busy={loading}
+        title="Обновить настройки"
+        aria-label={loading ? 'Обновление настроек' : 'Обновить настройки'}
+        onClick={() => void load()}
+      />
+    </div>
+  );
+
+  return (
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <Link className={cdChrome.backLink} href="/admin/settings">
+        ← Настройки
+      </Link>
+
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={cdHub.title}>Учёт рабочего времени</h1>
+              </div>
+              <span className={cdHub.contractsListCount} title={countTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+                <span className={cdHub.contractsListCountMobile}>{countMobile}</span>
+              </span>
+              <AdminSaveNotice visible={saveNoticeVisible} className={styles.headerSuccessNotice}>
+                Сохранено
+              </AdminSaveNotice>
+            </div>
+            {iconActions('mobile')}
+          </div>
+        </div>
+        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          {tab === 'offices' ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={cdChrome.contractsListHeaderAddBtn}
+              disabled={busy || offices.length === 0}
+              onClick={() => void saveAllOffices()}
+            >
+              {savingOffices ? 'Сохранение…' : 'Сохранить офисы'}
+            </button>
+          ) : null}
+          {tab === 'users' ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={cdChrome.contractsListHeaderAddBtn}
+              disabled={busy || users.length === 0}
+              onClick={() => void saveAllUsers()}
+            >
+              {savingUsers ? 'Сохранение…' : 'Сохранить сотрудников'}
+            </button>
+          ) : null}
+          {iconActions('desktop')}
+        </div>
+      </div>
+
       {errorMessage ? (
-        <AdminFormMessage type="error" className={styles.feedback}>
-          {errorMessage}
-        </AdminFormMessage>
+        <div className={`${styles.message} ${styles.messageerror}`}>
+          <span>{errorMessage}</span>
+          <button type="button" onClick={resetSaveFeedback} aria-label="Закрыть">
+            ×
+          </button>
+        </div>
       ) : null}
 
-      <div className={styles.tabs}>
-        {(
-          [
-            ['general', 'Общие'],
-            ['offices', 'Офисы'],
-            ['users', 'Сотрудники'],
-          ] as const
-        ).map(([id, label]) => (
+      <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
+        <p className={styles.helpText}>
+          Настройка графиков, IP-адресов офисов и ролей, для которых включён учёт рабочего дня.
+        </p>
+      </div>
+
+      <div className={styles.viewModeRow} role="group" aria-label="Раздел настроек">
+        {TABS.map((item) => (
           <button
-            key={id}
+            key={item.id}
             type="button"
-            className={tab === id ? styles.tabActive : styles.tab}
-            onClick={() => setTab(id)}
+            className={`${styles.viewModeBtn}${tab === item.id ? ` ${styles.viewModeBtnActive}` : ''}`}
+            onClick={() => setTab(item.id)}
           >
-            {label}
+            {item.label}
           </button>
         ))}
       </div>
 
-      {tab === 'general' && (
-        <section className={styles.section}>
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={settings.isEnabled}
-              onChange={(e) => void saveSettings({ isEnabled: e.target.checked })}
-              disabled={savingGeneral}
-            />
-            Учёт рабочего дня включён
-          </label>
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={settings.blockAdminWithoutWorkDay}
-              onChange={(e) => void saveSettings({ blockAdminWithoutWorkDay: e.target.checked })}
-              disabled={savingGeneral}
-            />
-            Блокировать админку без начала рабочего дня
-          </label>
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={settings.requireOfficeIp}
-              onChange={(e) => void saveSettings({ requireOfficeIp: e.target.checked })}
-              disabled={savingGeneral}
-            />
-            Разрешать начало дня только с IP офиса
-          </label>
-          <label className={styles.checkRow}>
-            <input
-              type="checkbox"
-              checked={settings.blockMobileDevices}
-              onChange={(e) => void saveSettings({ blockMobileDevices: e.target.checked })}
-              disabled={savingGeneral}
-            />
-            Запретить начало дня с мобильных устройств
-          </label>
-
-          <div className={styles.row}>
-            <label>
-              Авто-закрытие в
-              <input
-                type="time"
-                className={styles.input}
-                value={`${String(settings.autoCloseHour).padStart(2, '0')}:${String(settings.autoCloseMinute).padStart(2, '0')}`}
-                onChange={(e) => {
-                  const [h, m] = e.target.value.split(':');
-                  void saveSettings({
-                    autoCloseHour: parseInt(h || '22', 10),
-                    autoCloseMinute: parseInt(m || '0', 10),
-                  });
-                }}
-                disabled={savingGeneral}
-              />
-            </label>
-            <label>
-              Допуск опоздания (мин)
-              <input
-                type="number"
-                className={styles.input}
-                min={0}
-                max={120}
-                value={settings.defaultGracePeriodMinutes}
-                onChange={(e) =>
-                  void saveSettings({
-                    defaultGracePeriodMinutes: parseInt(e.target.value, 10) || 0,
-                  })
-                }
-                disabled={savingGeneral}
-              />
-            </label>
-          </div>
-
-          <h3 className={styles.subheading}>Роли с учётом рабочего дня</h3>
-          <div className={styles.rolesGrid}>
-            {ROLES_CONFIG.filter(
-              (r) => r.id !== 'SUPER_ADMIN' && r.id !== 'GUEST' && r.id !== 'USER'
-            ).map((role) => (
-              <label key={role.id} className={styles.checkRow}>
+      {loading || !settings ? (
+        <p className={styles.loading}>Загрузка…</p>
+      ) : (
+        <>
+          {tab === 'general' ? (
+            <section className={`${styles.section} ${styles.sectionCard}`}>
+              <label className={styles.checkRow}>
                 <input
                   type="checkbox"
-                  checked={settings.trackedRoles.includes(role.id)}
-                  onChange={() => toggleRole(role.id)}
+                  checked={settings.isEnabled}
+                  onChange={(e) => void saveSettings({ isEnabled: e.target.checked })}
                   disabled={savingGeneral}
                 />
-                {role.label}
+                Учёт рабочего дня включён
               </label>
-            ))}
-          </div>
+              <label className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={settings.blockAdminWithoutWorkDay}
+                  onChange={(e) =>
+                    void saveSettings({ blockAdminWithoutWorkDay: e.target.checked })
+                  }
+                  disabled={savingGeneral}
+                />
+                Блокировать админку без начала рабочего дня
+              </label>
+              <label className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={settings.requireOfficeIp}
+                  onChange={(e) => void saveSettings({ requireOfficeIp: e.target.checked })}
+                  disabled={savingGeneral}
+                />
+                Разрешать начало дня только с IP офиса
+              </label>
+              <label className={styles.checkRow}>
+                <input
+                  type="checkbox"
+                  checked={settings.blockMobileDevices}
+                  onChange={(e) => void saveSettings({ blockMobileDevices: e.target.checked })}
+                  disabled={savingGeneral}
+                />
+                Запретить начало дня с мобильных устройств
+              </label>
 
-          <h3 className={styles.subheading}>Приветствия при начале дня</h3>
-          <textarea
-            className={styles.textarea}
-            rows={4}
-            value={settings.greetingMessages.join('\n')}
-            onChange={(e) =>
-              setSettings({
-                ...settings,
-                greetingMessages: e.target.value.split('\n').filter((l) => l.trim()),
-              })
-            }
-            onBlur={() => void saveSettings({ greetingMessages: settings.greetingMessages })}
-          />
-          <p className={styles.hint}>
-            По одной фразе на строку. Используйте <code>{'{имя}'}</code> для обращения по имени. При
-            начале дня показывается случайная фраза.
-          </p>
-        </section>
-      )}
+              <div className={styles.row}>
+                <label>
+                  Авто-закрытие в
+                  <input
+                    type="time"
+                    className={styles.input}
+                    value={`${String(settings.autoCloseHour).padStart(2, '0')}:${String(settings.autoCloseMinute).padStart(2, '0')}`}
+                    onChange={(e) => {
+                      const [h, m] = e.target.value.split(':');
+                      void saveSettings({
+                        autoCloseHour: parseInt(h || '22', 10),
+                        autoCloseMinute: parseInt(m || '0', 10),
+                      });
+                    }}
+                    disabled={savingGeneral}
+                  />
+                </label>
+                <label>
+                  Допуск опоздания (мин)
+                  <input
+                    type="number"
+                    className={styles.input}
+                    min={0}
+                    max={120}
+                    value={settings.defaultGracePeriodMinutes}
+                    onChange={(e) =>
+                      void saveSettings({
+                        defaultGracePeriodMinutes: parseInt(e.target.value, 10) || 0,
+                      })
+                    }
+                    disabled={savingGeneral}
+                  />
+                </label>
+              </div>
 
-      {tab === 'offices' && (
-        <section className={styles.section}>
-          <div className={styles.tabToolbar}>
-            <p className={styles.hint}>
-              График по дням недели, проверка IP и разрешённые адреса для каждого офиса.
-            </p>
-            <button
-              type="button"
-              className={styles.saveBtn}
-              onClick={() => void saveAllOffices()}
-              disabled={savingOffices || offices.length === 0}
-            >
-              {savingOffices ? 'Сохранение…' : 'Сохранить офисы'}
-            </button>
-          </div>
-          <WorkDaysIpHelp />
-          {offices.map((office) => (
-            <OfficeCard
-              key={office.id}
-              office={office}
-              onChange={(patch) =>
-                setOffices((prev) => prev.map((o) => (o.id === office.id ? { ...o, ...patch } : o)))
-              }
-            />
-          ))}
-        </section>
-      )}
+              <h3 className={styles.subheading}>Роли с учётом рабочего дня</h3>
+              <div className={styles.rolesGrid}>
+                {ROLES_CONFIG.filter(
+                  (r) => r.id !== 'SUPER_ADMIN' && r.id !== 'GUEST' && r.id !== 'USER'
+                ).map((role) => (
+                  <label key={role.id} className={styles.checkRow}>
+                    <input
+                      type="checkbox"
+                      checked={settings.trackedRoles.includes(role.id)}
+                      onChange={() => toggleRole(role.id)}
+                      disabled={savingGeneral}
+                    />
+                    {role.label}
+                  </label>
+                ))}
+              </div>
 
-      {tab === 'users' && (
-        <section className={styles.section}>
-          <div className={styles.tabToolbar}>
-            <p className={styles.hint}>
-              Все активные сотрудники админки. Учёт по роли включается на вкладке «Общие», но для
-              каждого сотрудника его можно отключить отдельно.
-            </p>
-            <button
-              type="button"
-              className={styles.saveBtn}
-              onClick={() => void saveAllUsers()}
-              disabled={savingUsers || users.length === 0}
-            >
-              {savingUsers ? 'Сохранение…' : 'Сохранить сотрудников'}
-            </button>
-          </div>
-          <div className={styles.userCardsGrid}>
-            {users.map((u) => (
-              <UserCard
-                key={u.id}
-                user={u}
-                offices={offices}
-                onChange={(patch) =>
-                  setUsers((prev) =>
-                    prev.map((item) => (item.id === u.id ? { ...item, ...patch } : item))
-                  )
+              <h3 className={styles.subheading}>Приветствия при начале дня</h3>
+              <textarea
+                className={styles.textarea}
+                rows={4}
+                value={settings.greetingMessages.join('\n')}
+                onChange={(e) =>
+                  setSettings({
+                    ...settings,
+                    greetingMessages: e.target.value.split('\n').filter((l) => l.trim()),
+                  })
                 }
+                onBlur={() => void saveSettings({ greetingMessages: settings.greetingMessages })}
               />
-            ))}
-          </div>
-        </section>
+              <p className={styles.hint}>
+                По одной фразе на строку. Используйте <code>{'{имя}'}</code> для обращения по имени.
+                При начале дня показывается случайная фраза.
+              </p>
+            </section>
+          ) : null}
+
+          {tab === 'offices' ? (
+            <section className={styles.section}>
+              <div className={cdHub.contractsListFiltersPanel}>
+                <div className={styles.tabToolbar}>
+                  <p className={styles.hint}>
+                    График по дням недели, проверка IP и разрешённые адреса для каждого офиса.
+                  </p>
+                </div>
+                <WorkDaysIpHelp />
+              </div>
+              {offices.map((office) => (
+                <OfficeCard
+                  key={office.id}
+                  office={office}
+                  onChange={(patch) =>
+                    setOffices((prev) =>
+                      prev.map((o) => (o.id === office.id ? { ...o, ...patch } : o))
+                    )
+                  }
+                />
+              ))}
+            </section>
+          ) : null}
+
+          {tab === 'users' ? (
+            <section className={styles.section}>
+              <div className={cdHub.contractsListFiltersPanel}>
+                <p className={styles.hint}>
+                  Все активные сотрудники админки. Учёт по роли включается на вкладке «Общие», но
+                  для каждого сотрудника его можно отключить отдельно.
+                </p>
+              </div>
+              <div className={styles.userCardsGrid}>
+                {users.map((u) => (
+                  <UserCard
+                    key={u.id}
+                    user={u}
+                    offices={offices}
+                    onChange={(patch) =>
+                      setUsers((prev) =>
+                        prev.map((item) => (item.id === u.id ? { ...item, ...patch } : item))
+                      )
+                    }
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null}
+        </>
       )}
-    </SettingsSubPageView>
+    </div>
   );
 }
 

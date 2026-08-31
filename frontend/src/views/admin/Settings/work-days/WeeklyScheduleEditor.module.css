@@ -5,19 +5,20 @@
 .table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: var(--admin-font-size-sm);
 }
 
 .table th,
 .table td {
   padding: 0.4rem 0.5rem;
-  border-bottom: 1px solid var(--admin-border, #e2e8f0);
+  border-bottom: 1px solid var(--admin-border);
   text-align: left;
 }
 
 .table th {
   font-weight: 600;
-  background: #f8fafc;
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
 }
 
 .rowOff td:not(:first-child):not(:nth-child(2)) {
@@ -27,8 +28,10 @@
 .timeInput,
 .numInput {
   padding: 0.3rem 0.4rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
-  border-radius: 0.35rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  color: inherit;
   font: inherit;
 }
 

@@ -1,73 +1,143 @@
-.tabs {
-  display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1.25rem;
+.headerSuccessNotice {
+  min-width: 0;
 }
 
-.tab,
-.tabActive {
-  padding: 0.45rem 0.9rem;
-  border-radius: 0.5rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md, 8px);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+}
+
+.message button {
+  border: 0;
   background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.messageerror {
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+}
+
+.viewModeRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0;
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  overflow: hidden;
+  background: var(--admin-surface);
+}
+
+.viewModeBtn {
+  margin: 0;
+  padding: 0.35rem 0.85rem;
+  border: 0;
+  background: transparent;
+  color: var(--admin-text-muted);
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
   cursor: pointer;
 }
 
-.tabActive {
-  background: #2563eb;
-  border-color: #2563eb;
-  color: #fff;
+.viewModeBtn + .viewModeBtn {
+  border-left: 1px solid var(--admin-border);
+}
+
+.viewModeBtn:hover {
+  color: var(--admin-text-secondary);
+  background: var(--admin-surface-soft);
+}
+
+.viewModeBtnActive {
+  color: var(--admin-info-text, var(--admin-info, #1d4ed8));
+  background: var(--admin-info-bg-soft, var(--admin-accent-soft, #eff6ff));
+  font-weight: 600;
+}
+
+.helpPanel {
+  margin-bottom: var(--admin-space-md);
+}
+
+.helpText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
 }
 
 .section {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: var(--admin-space-md);
+}
+
+.sectionCard {
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface-soft, var(--admin-surface));
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md);
 }
 
 .card {
-  padding: 1rem 1.1rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
-  border-radius: 0.75rem;
-  background: var(--admin-surface, #fff);
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
 }
 
 .cardTitle {
-  margin: 0 0 0.35rem;
-  font-size: 1rem;
+  margin: 0 0 var(--admin-space-xs);
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
 }
 
 .meta {
-  margin: 0 0 0.75rem;
-  color: #64748b;
-  font-size: 0.85rem;
+  margin: 0 0 var(--admin-space-md);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
 }
 
 .row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  gap: var(--admin-space-md);
 }
 
 .row label,
 .fullWidth {
   display: flex;
   flex-direction: column;
-  gap: 0.3rem;
-  font-size: 0.85rem;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
 }
 
 .fullWidth {
-  margin-bottom: 0.75rem;
+  margin-top: var(--admin-space-sm);
 }
 
 .input,
 .textarea {
-  padding: 0.45rem 0.6rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
-  border-radius: 0.45rem;
+  padding: 0.4rem 0.55rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  color: inherit;
   font: inherit;
+  font-size: var(--admin-font-size-sm);
 }
 
 .textarea {
@@ -77,67 +147,39 @@
 
 .checkRow {
   display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  font-size: 0.9rem;
+  align-items: flex-start;
+  gap: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.4;
 }
 
 .rolesGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(14rem, 1fr));
-  gap: 0.35rem 1rem;
+  gap: var(--admin-space-xs) var(--admin-space-md);
 }
 
 .subheading {
-  margin: 0.5rem 0 0;
-  font-size: 0.95rem;
-}
-
-.weekdays {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.75rem;
-  margin-bottom: 0.75rem;
-}
-
-.weekday {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  font-size: 0.85rem;
-}
-
-.saveBtn {
-  align-self: flex-start;
-  padding: 0.45rem 0.9rem;
-  border: none;
-  border-radius: 0.45rem;
-  background: #2563eb;
-  color: #fff;
-  cursor: pointer;
-}
-
-.saveBtn:disabled {
-  opacity: 0.6;
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
 }
 
 .fieldHint {
   display: block;
-  margin-bottom: 0.35rem;
-  font-size: 0.8rem;
+  margin-bottom: var(--admin-space-xs);
+  font-size: var(--admin-font-size-xs);
   font-weight: 400;
-  color: #64748b;
+  color: var(--admin-text-muted);
   line-height: 1.4;
 }
 
 .hint {
   margin: 0;
-  color: #64748b;
-  font-size: 0.85rem;
-}
-
-.feedback {
-  margin-bottom: 0.75rem;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.45;
 }
 
 .tabToolbar {
@@ -145,26 +187,25 @@
   flex-wrap: wrap;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 0.75rem 1rem;
-  margin-bottom: 0.25rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-xs);
 }
 
 .tabToolbar .hint {
   flex: 1 1 16rem;
-  margin: 0;
 }
 
 .userCardsGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
-  gap: 0.65rem;
+  gap: var(--admin-space-md);
 }
 
 .userCard {
-  padding: 0.65rem 0.75rem;
+  padding: var(--admin-space-md) var(--admin-space-lg);
   display: flex;
   flex-direction: column;
-  gap: 0.45rem;
+  gap: var(--admin-space-sm);
 }
 
 .userCardExpanded {
@@ -172,50 +213,50 @@
 }
 
 .userCardAssigned {
-  border-color: color-mix(in srgb, var(--user-office-accent) 50%, var(--admin-border, #e2e8f0));
-  background: color-mix(in srgb, var(--user-office-accent) 11%, var(--admin-surface, #fff));
+  border-color: color-mix(in srgb, var(--user-office-accent) 50%, var(--admin-border));
+  background: color-mix(in srgb, var(--user-office-accent) 11%, var(--admin-surface));
   box-shadow: inset 3px 0 0 var(--user-office-accent);
 }
 
 .userCardAssigned .userSelect {
-  border-color: color-mix(in srgb, var(--user-office-accent) 40%, var(--admin-border, #e2e8f0));
-  background: color-mix(in srgb, var(--user-office-accent) 6%, var(--admin-surface, #fff));
+  border-color: color-mix(in srgb, var(--user-office-accent) 40%, var(--admin-border));
+  background: color-mix(in srgb, var(--user-office-accent) 6%, var(--admin-surface));
 }
 
 .userCardHead {
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  gap: 0.5rem;
+  gap: var(--admin-space-sm);
   min-width: 0;
 }
 
 .userCardHeadMeta {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
+  gap: var(--admin-space-xs);
   flex-shrink: 0;
 }
 
 .userScheduleToggle {
   padding: 0.1rem 0.4rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
-  border-radius: 0.25rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
   background: transparent;
-  color: #2563eb;
+  color: var(--admin-info, #2563eb);
   font: inherit;
-  font-size: 0.72rem;
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   white-space: nowrap;
 }
 
 .userScheduleToggle:hover {
-  background: #eff6ff;
+  background: var(--admin-info-bg-soft, #eff6ff);
 }
 
 .userCardName {
   margin: 0;
-  font-size: 0.9rem;
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,25 +265,25 @@
 
 .userCardRole {
   flex-shrink: 0;
-  font-size: 0.72rem;
-  color: #64748b;
-  background: #f1f5f9;
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+  background: var(--admin-surface-soft);
   padding: 0.1rem 0.4rem;
-  border-radius: 0.25rem;
+  border-radius: var(--admin-radius-sm, 6px);
 }
 
 .userCardBody {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.35rem 0.65rem;
+  gap: var(--admin-space-xs) var(--admin-space-md);
 }
 
 .userCheck {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.78rem;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
   cursor: pointer;
   white-space: nowrap;
 }
@@ -250,8 +291,8 @@
 .userOffice {
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.78rem;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-xs);
   flex: 1 1 9rem;
   min-width: 0;
 }
@@ -260,19 +301,32 @@
   flex: 1;
   min-width: 0;
   padding: 0.25rem 0.35rem;
-  border: 1px solid var(--admin-border, #e2e8f0);
-  border-radius: 0.35rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  color: inherit;
   font: inherit;
-  font-size: 0.78rem;
-}
-
-.error {
-  color: #dc2626;
+  font-size: var(--admin-font-size-xs);
 }
 
 .denied,
 .loading {
-  padding: 1rem 0;
+  margin: 0;
+  padding: var(--admin-space-2xl);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+}
+
+@media (max-width: 960px) {
+  .viewModeRow {
+    display: flex;
+    width: 100%;
+  }
+
+  .viewModeBtn {
+    flex: 1 1 0;
+    text-align: center;
+  }
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .userCardAssigned {
@@ -284,5 +338,5 @@
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .userScheduleToggle:hover {
-  background: color-mix(in srgb, #2563eb 18%, var(--admin-surface, #1e293b));
+  background: color-mix(in srgb, var(--admin-info, #2563eb) 18%, var(--admin-surface, #1e293b));
 }

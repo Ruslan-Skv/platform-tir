@@ -28,61 +28,19 @@
   color: var(--admin-error-text);
 }
 
-.viewModeRow {
-  display: inline-flex;
-  align-items: center;
-  gap: 0;
-  margin: var(--admin-space-sm) 0 var(--admin-space-md);
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-md);
-  overflow: hidden;
-  background: var(--admin-surface);
-}
-
-.viewModeBtn {
-  margin: 0;
-  padding: 0.35rem 0.85rem;
-  border: 0;
-  background: transparent;
-  color: var(--admin-text-muted);
-  font: inherit;
-  font-size: var(--admin-font-size-sm);
-  cursor: pointer;
-}
-
-.viewModeBtn + .viewModeBtn {
-  border-left: 1px solid var(--admin-border);
-}
-
-.viewModeBtn:hover {
-  color: var(--admin-text-secondary);
-  background: var(--admin-surface-soft);
-}
-
-.viewModeBtnActive {
-  color: var(--admin-info-text, var(--admin-info, #1d4ed8));
-  background: var(--admin-info-bg-soft, var(--admin-accent-soft, #eff6ff));
-  font-weight: 600;
-}
-
 .helpPanel {
   margin-bottom: var(--admin-space-md);
 }
 
-.helpSteps {
+.helpText {
   margin: 0 0 var(--admin-space-md);
-  padding-left: 1.25rem;
-  line-height: 1.55;
-  color: var(--admin-text-muted);
   font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
 }
 
-.helpSteps li + li {
-  margin-top: 0.35rem;
-}
-
-.helpSteps strong {
-  color: var(--admin-text-secondary);
+.helpText code {
+  font-size: 0.95em;
 }
 
 .relatedLinks {
@@ -101,10 +59,6 @@
   text-decoration: underline;
 }
 
-.code {
-  font-size: 0.95em;
-}
-
 .directoryTable {
   margin-top: var(--admin-space-sm);
 }
@@ -113,16 +67,6 @@
   width: 1%;
   white-space: nowrap;
   vertical-align: middle;
-}
-
-.actions {
-  display: inline-flex;
-  flex-wrap: nowrap;
-  align-items: center;
-  gap: 2px;
-  width: max-content;
-  max-width: none;
-  white-space: nowrap;
 }
 
 .input {
@@ -141,40 +85,6 @@
   cursor: not-allowed;
 }
 
-.searchInput {
-  width: min(100%, 20rem);
-  padding: 0.4rem 0.65rem;
-  border: 1px solid var(--admin-border);
-  border-radius: var(--admin-radius-sm, 6px);
-  background: var(--admin-surface);
-  color: inherit;
-  font: inherit;
-  font-size: var(--admin-font-size-sm);
-}
-
-.searchInput.contractsListFilterActive,
-.searchInput:not(:placeholder-shown) {
-  border-color: var(--admin-info-border, #93c5fd);
-}
-
-.badge {
-  display: inline-block;
-  padding: var(--admin-space-2xs) var(--admin-space-md);
-  border-radius: var(--admin-radius-xl, 12px);
-  font-size: var(--admin-font-size-xs);
-  font-weight: 600;
-}
-
-.badgeActive {
-  background: var(--admin-success-bg-soft, #dcfce7);
-  color: var(--admin-success-text-strong, #166534);
-}
-
-.badgeInactive {
-  background: var(--admin-surface-soft);
-  color: var(--admin-text-muted);
-}
-
 .muted {
   color: var(--admin-text-muted);
 }
@@ -185,7 +95,6 @@
   font-size: var(--admin-font-size-xs, 0.75rem);
   color: var(--admin-text-muted);
   line-height: 1.35;
-  word-break: break-word;
 }
 
 .saveBtn {
@@ -266,7 +175,6 @@
   font-size: var(--admin-font-size-xs, 0.75rem);
   color: var(--admin-text-muted);
   line-height: 1.35;
-  word-break: break-word;
 }
 
 .mobileCardRows {
@@ -278,7 +186,7 @@
 
 .mobileCardRow {
   display: grid;
-  grid-template-columns: 5.5rem minmax(0, 1fr);
+  grid-template-columns: 7rem minmax(0, 1fr);
   gap: var(--admin-space-sm);
   align-items: center;
   font-size: var(--admin-font-size-xs, 0.75rem);
@@ -295,7 +203,6 @@
   margin: 0;
   color: var(--admin-text-secondary);
   min-width: 0;
-  word-break: break-word;
 }
 
 .mobileCardActions {
@@ -326,15 +233,5 @@
 
   .directoryTable {
     margin: 0;
-  }
-
-  .viewModeRow {
-    display: flex;
-    width: 100%;
-  }
-
-  .viewModeBtn {
-    flex: 1 1 0;
-    text-align: center;
   }
 }

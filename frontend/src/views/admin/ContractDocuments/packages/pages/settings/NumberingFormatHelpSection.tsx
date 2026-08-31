@@ -2,17 +2,20 @@
 
 import Link from 'next/link';
 
-import cdTemplates from '@/views/admin/ContractDocuments/styles/templates-library.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 
 import styles from './NumberingSettingsPage.module.css';
 
 export function NumberingFormatHelpSection() {
   return (
-    <section className={cdTemplates.sectionCard}>
-      <h3 className={cdTemplates.sectionTitle} style={{ marginTop: 0 }}>
-        Как собирается номер
+    <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
+      <h3
+        className={cdHub.contractsListChipRowLabel}
+        style={{ margin: '0 0 0.5rem', display: 'block' }}
+      >
+        Как собирается номер <code className={styles.code}>77/1/3д-5</code>
       </h3>
-      <ol className={styles.steps}>
+      <ol className={styles.helpSteps}>
         <li>
           <strong>Офис</strong> — префикс офиса, в котором менеджер открыл рабочий день.
         </li>
@@ -31,12 +34,12 @@ export function NumberingFormatHelpSection() {
         </li>
       </ol>
       <div className={styles.relatedLinks}>
-        <Link href="/admin/contract-documents/signatories">Менеджеры (карточки)</Link>
+        <Link href="/admin/contract-documents/signatories">Менеджеры</Link>
         <Link href="/admin/crm/my-work-day">Мой рабочий день</Link>
-        <Link href="/admin/crm/offices">Офисы (полный справочник)</Link>
-        <Link href="/admin/settings/work-days">Графики / закрепление за офисом</Link>
+        <Link href="/admin/crm/offices">Офисы</Link>
+        <Link href="/admin/settings/work-days">Графики / офис</Link>
         <Link href="/admin/users">Пользователи</Link>
       </div>
-    </section>
+    </div>
   );
 }

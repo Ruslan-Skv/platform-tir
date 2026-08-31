@@ -2,15 +2,50 @@
 
 import { useState } from 'react';
 
+import Link from 'next/link';
+
 import {
   type AdminSidebarDesktopLayout,
   type AdminSidebarMobileLayout,
   useAdminSidebarUiPrefs,
 } from '@/shared/lib/admin';
-import pageStyles from '@/views/admin/Settings/shared/SettingsPage.module.css';
-import { SettingsSubPageView } from '@/views/admin/Settings/shared/SettingsSubPageView';
+import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from './AppearanceSettingsPage.module.css';
+
+function chipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
+const DESKTOP_OPTIONS: { value: AdminSidebarDesktopLayout; label: string; hint: string }[] = [
+  {
+    value: 'list',
+    label: 'Список',
+    hint: 'Классический вертикальный список с раскрывающимися подменю.',
+  },
+  {
+    value: 'grid2',
+    label: 'Сетка 2×',
+    hint: 'Плитки по 2 в ряд. Раздел с подменю открывается отдельным экраном.',
+  },
+];
+
+const MOBILE_OPTIONS: { value: AdminSidebarMobileLayout; label: string; hint: string }[] = [
+  {
+    value: 'list',
+    label: 'Список',
+    hint: 'Вертикальный список карточек с подменю.',
+  },
+  {
+    value: 'grid3',
+    label: 'Сетка 3×',
+    hint: 'Квадратные плитки по 3 в ряд с отдельным экраном подменю.',
+  },
+];
 
 export function AppearanceSettingsPageView() {
   const { prefs, updatePrefs } = useAdminSidebarUiPrefs();
@@ -36,116 +71,122 @@ export function AppearanceSettingsPageView() {
     flashSaved();
   };
 
+  const desktopLabel =
+    DESKTOP_OPTIONS.find((o) => o.value === prefs.desktopLayout)?.label ?? prefs.desktopLayout;
+  const mobileLabel =
+    MOBILE_OPTIONS.find((o) => o.value === prefs.mobileLayout)?.label ?? prefs.mobileLayout;
+  const countTitle = `Десктоп: ${desktopLabel} · Мобильный: ${mobileLabel}`;
+
   return (
-    <SettingsSubPageView
-      title="Внешний вид админки"
-      subtitle="Настройки сохраняются в вашем аккаунте и применяются на всех устройствах."
-      saveNoticeVisible={saveNoticeVisible}
-      backLink={{ href: '/admin/settings', label: '← К списку настроек' }}
-    >
-      <section className={pageStyles.section}>
-        <h2 className={pageStyles.sectionTitle}>Сайдбар</h2>
-        <p className={pageStyles.sectionDescription}>
-          Управление отображением бокового меню. На узкой десктопной рейке (свёрнутый сайдбар)
-          иконки пунктов остаются видимыми, чтобы меню оставалось узнаваемым.
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <Link className={cdChrome.backLink} href="/admin/settings">
+        ← Настройки
+      </Link>
+
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={cdHub.title}>Внешний вид админки</h1>
+              </div>
+              <span className={cdHub.contractsListCount} title={countTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
+                <span className={cdHub.contractsListCountMobile}>Сайдбар</span>
+              </span>
+              <AdminSaveNotice visible={saveNoticeVisible} className={styles.headerSuccessNotice}>
+                Сохранено
+              </AdminSaveNotice>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
+        <p className={styles.helpText}>
+          Настройки сохраняются в вашем аккаунте и применяются на всех устройствах. Изменения сразу
+          видны в сайдбаре.
         </p>
+      </div>
 
-        <label className={styles.checkboxRow}>
-          <input
-            type="checkbox"
-            checked={prefs.hideIcons}
-            onChange={(e) => setHideIcons(e.target.checked)}
-          />
-          <span>
-            <strong className={styles.optionTitle}>Скрыть иконки пунктов меню</strong>
-            <span className={styles.optionHint}>
-              Убирает эмодзи перед названиями в развёрнутом сайдбаре и в мобильном меню.
+      <div className={styles.stack}>
+        <section className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle}>Иконки меню</h2>
+          <p className={styles.sectionHint}>
+            На узкой десктопной рейке (свёрнутый сайдбар) иконки пунктов остаются видимыми, чтобы
+            меню оставалось узнаваемым.
+          </p>
+          <label className={styles.checkboxRow}>
+            <input
+              type="checkbox"
+              checked={prefs.hideIcons}
+              onChange={(e) => setHideIcons(e.target.checked)}
+            />
+            <span>
+              <strong className={styles.optionTitle}>Скрыть иконки пунктов меню</strong>
+              <span className={styles.optionHint}>
+                Убирает эмодзи перед названиями в развёрнутом сайдбаре и в мобильном меню.
+              </span>
             </span>
-          </span>
-        </label>
+          </label>
+        </section>
 
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Десктопное меню</legend>
-          <p className={styles.fieldsetHint}>
+        <section className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle}>Десктопное меню</h2>
+          <p className={styles.sectionHint}>
             Как показывать пункты верхнего уровня в развёрнутом сайдбаре на экранах шире
             1024&nbsp;px. В свёрнутой рейке всегда остаются иконки.
           </p>
+          <div className={styles.chipRow} role="group" aria-label="Макет десктопного меню">
+            {DESKTOP_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={chipClass(prefs.desktopLayout === opt.value)}
+                onClick={() => setDesktopLayout(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className={styles.optionHint}>
+            {DESKTOP_OPTIONS.find((o) => o.value === prefs.desktopLayout)?.hint}
+          </p>
+        </section>
 
-          <label className={styles.radioRow}>
-            <input
-              type="radio"
-              name="desktop-sidebar-layout"
-              checked={prefs.desktopLayout === 'list'}
-              onChange={() => setDesktopLayout('list')}
-            />
-            <span>
-              <strong className={styles.optionTitle}>Список</strong>
-              <span className={styles.optionHint}>
-                Классический вертикальный список с раскрывающимися подменю.
-              </span>
-            </span>
-          </label>
-
-          <label className={styles.radioRow}>
-            <input
-              type="radio"
-              name="desktop-sidebar-layout"
-              checked={prefs.desktopLayout === 'grid2'}
-              onChange={() => setDesktopLayout('grid2')}
-            />
-            <span>
-              <strong className={styles.optionTitle}>Сетка 2×</strong>
-              <span className={styles.optionHint}>
-                Плитки по 2 в ряд. Раздел с подменю открывается отдельным экраном со списком и
-                кнопкой «Назад».
-              </span>
-            </span>
-          </label>
-        </fieldset>
-
-        <fieldset className={styles.fieldset}>
-          <legend className={styles.legend}>Мобильное меню</legend>
-          <p className={styles.fieldsetHint}>
+        <section className={styles.sectionCard}>
+          <h2 className={styles.sectionTitle}>Мобильное меню</h2>
+          <p className={styles.sectionHint}>
             Как показывать пункты верхнего уровня на экранах до 1024&nbsp;px.
           </p>
-
-          <label className={styles.radioRow}>
-            <input
-              type="radio"
-              name="mobile-sidebar-layout"
-              checked={prefs.mobileLayout === 'list'}
-              onChange={() => setMobileLayout('list')}
-            />
-            <span>
-              <strong className={styles.optionTitle}>Список</strong>
-              <span className={styles.optionHint}>
-                Текущий вид: вертикальный список карточек с подменю.
-              </span>
-            </span>
-          </label>
-
-          <label className={styles.radioRow}>
-            <input
-              type="radio"
-              name="mobile-sidebar-layout"
-              checked={prefs.mobileLayout === 'grid3'}
-              onChange={() => setMobileLayout('grid3')}
-            />
-            <span>
-              <strong className={styles.optionTitle}>Сетка 3×</strong>
-              <span className={styles.optionHint}>
-                Квадратные плитки по 3 в ряд. Раздел с подменю открывается отдельным экраном со
-                списком и кнопкой «Назад» — сетка не ломается.
-              </span>
-            </span>
-          </label>
-        </fieldset>
+          <div className={styles.chipRow} role="group" aria-label="Макет мобильного меню">
+            {MOBILE_OPTIONS.map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                className={chipClass(prefs.mobileLayout === opt.value)}
+                onClick={() => setMobileLayout(opt.value)}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+          <p className={styles.optionHint}>
+            {MOBILE_OPTIONS.find((o) => o.value === prefs.mobileLayout)?.hint}
+          </p>
+        </section>
 
         <p className={styles.liveHint}>
-          Изменения сохраняются в аккаунте и сразу применяются. На узком экране откройте меню (☰),
-          на десктопе — разверните сайдбар, чтобы увидеть выбранный вид.
+          На узком экране откройте меню (☰), на десктопе — разверните сайдбар, чтобы увидеть
+          выбранный вид.
+          {prefs.hideIcons ? (
+            <>
+              {' '}
+              <span className={styles.summaryBadge}>Иконки скрыты</span>
+            </>
+          ) : null}
         </p>
-      </section>
-    </SettingsSubPageView>
+      </div>
+    </div>
   );
 }

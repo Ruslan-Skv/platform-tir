@@ -1,79 +1,210 @@
+.headerSuccessNotice {
+  min-width: 0;
+}
+
+.message {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border-radius: var(--admin-radius-md, 8px);
+  margin-bottom: var(--admin-space-2xl);
+  font-size: var(--admin-font-size-base);
+}
+
+.message button {
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 1.25rem;
+  line-height: 1;
+  opacity: 0.75;
+}
+
+.messageerror {
+  background: var(--admin-error-bg);
+  color: var(--admin-error-text);
+}
+
+.helpPanel {
+  margin-bottom: var(--admin-space-md);
+}
+
+.helpText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.5;
+}
+
+.settingsRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--admin-space-md);
+}
+
+.settingsField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.numberInput,
+.select,
+.input {
+  padding: 0.4rem 0.65rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  color: inherit;
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+}
+
+.numberInput {
+  width: 7rem;
+}
+
+.select,
+.input {
+  width: 100%;
+  max-width: 100%;
+}
+
+.hint {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.45;
+}
+
 .sectionList {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
-  margin-top: 1.5rem;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
 }
 
 .sectionCard {
-  background: #fff;
-  border: 1px solid #e2e8f0;
-  border-radius: 12px;
-  padding: 1.25rem;
+  padding: var(--admin-space-lg) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
 }
 
 .sectionCardHeader {
-  align-items: center;
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 1rem;
+  align-items: center;
   justify-content: space-between;
-  margin-bottom: 1rem;
+  gap: var(--admin-space-md);
+  margin-bottom: var(--admin-space-md);
 }
 
 .sectionCardTitle {
-  font-size: 1.0625rem;
-  font-weight: 600;
   margin: 0;
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--admin-text-secondary);
 }
 
 .sectionControls {
-  display: flex;
+  display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
+  align-items: center;
+  gap: 2px;
+}
+
+.formRow {
+  margin-bottom: var(--admin-space-md);
+}
+
+.formRow label {
+  display: block;
+  margin-bottom: var(--admin-space-2xs);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 500;
+  color: var(--admin-text-secondary);
+}
+
+.checkboxLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.badge {
+  display: inline-block;
+  padding: var(--admin-space-2xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-xl, 12px);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+}
+
+.badgeActive {
+  background: var(--admin-success-bg-soft);
+  color: var(--admin-success-text);
+}
+
+.badgeInactive {
+  background: var(--admin-surface-soft);
+  color: var(--admin-text-muted);
 }
 
 .pickBlock {
-  margin-top: 1rem;
+  margin-top: var(--admin-space-md);
+  padding-top: var(--admin-space-md);
+  border-top: 1px solid var(--admin-border);
 }
 
 .pickBlockTitle {
-  font-size: 0.9375rem;
+  margin: 0 0 var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
   font-weight: 600;
-  margin: 0 0 0.5rem;
+  color: var(--admin-text-secondary);
 }
 
 .pickList {
   display: flex;
   flex-direction: column;
-  gap: 0.375rem;
-  margin-bottom: 0.75rem;
+  gap: var(--admin-space-xs);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .pickItem {
-  align-items: center;
-  background: #f7fafc;
-  border-radius: 8px;
   display: flex;
-  gap: 0.5rem;
+  align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
+  gap: var(--admin-space-sm);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface-soft);
 }
 
 .pickItemName {
-  font-size: 0.875rem;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
 }
 
 .pickItemMeta {
-  color: #718096;
-  font-size: 0.75rem;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
 }
 
 .searchRow {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  margin-bottom: 0.5rem;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .searchInput {
@@ -82,24 +213,28 @@
 }
 
 .searchResults {
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
   max-height: 200px;
   overflow: auto;
+  background: var(--admin-surface);
 }
 
 .searchResultItem {
-  align-items: center;
-  background: #fff;
-  border: none;
-  border-bottom: 1px solid #edf2f7;
-  cursor: pointer;
   display: flex;
-  font-size: 0.875rem;
+  align-items: center;
   justify-content: space-between;
-  padding: 0.5rem 0.75rem;
-  text-align: left;
+  gap: var(--admin-space-sm);
   width: 100%;
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: none;
+  border-bottom: 1px solid var(--admin-border);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: var(--admin-font-size-sm);
+  text-align: left;
+  cursor: pointer;
 }
 
 .searchResultItem:last-child {
@@ -107,115 +242,50 @@
 }
 
 .searchResultItem:hover {
-  background: #f7fafc;
+  background: var(--admin-surface-soft);
 }
 
 .searchError {
-  color: #c53030;
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
+  margin: var(--admin-space-xs) 0 0;
+  color: var(--admin-error-text, #c53030);
+  font-size: var(--admin-font-size-sm);
 }
 
-.searchEmpty {
-  color: #718096;
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
-}
-
+.searchEmpty,
 .emptyPick {
-  color: #718096;
-  font-size: 0.875rem;
-  margin: 0 0 0.5rem;
+  margin: 0 0 var(--admin-space-sm);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
 }
 
-.toolbar {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 1.5rem;
-}
-
-.formRow {
-  margin-bottom: 1rem;
-}
-
-.formRow label {
-  display: block;
-  font-size: 0.9375rem;
-  font-weight: 500;
-  margin-bottom: 0.375rem;
-}
-
-.select,
-.numberInput {
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  max-width: 100%;
-  padding: 0.5rem 0.75rem;
-}
-
-.numberInput {
-  width: 120px;
-}
-
-.hint {
-  color: #718096;
-  font-size: 0.875rem;
-  margin: 0.25rem 0 0;
-}
-
-.input {
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  font-size: 0.9375rem;
-  padding: 0.5rem 0.75rem;
-  width: 100%;
-}
-
-.secondaryButton,
-.saveButton {
-  background: #fff;
-  border: 1px solid #cbd5e0;
-  border-radius: 8px;
-  color: #2d3748;
+.secondaryButton {
+  margin: 0;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font: inherit;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
   cursor: pointer;
-  font-size: 0.875rem;
-  font-weight: 500;
-  padding: 0.5rem 0.875rem;
+  white-space: nowrap;
 }
 
-.saveButton {
-  background: #4f46e5;
-  border-color: #4f46e5;
-  color: #fff;
+.secondaryButton:hover:not(:disabled) {
+  border-color: var(--admin-info-border, #93c5fd);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-info, #2563eb);
 }
 
-.saveButton:disabled,
 .secondaryButton:disabled {
+  opacity: 0.55;
   cursor: not-allowed;
-  opacity: 0.6;
 }
 
-.toast {
-  border-radius: 8px;
-  margin-bottom: 1rem;
-  padding: 0.75rem 1rem;
-}
-
-.toastSuccess {
-  background: #f0fff4;
-  color: #276749;
-}
-
-.toastError {
-  background: #fff5f5;
-  color: #c53030;
-}
-
-.checkboxLabel {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+.loading {
+  margin: 0;
+  padding: var(--admin-space-2xl);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-sm);
 }
