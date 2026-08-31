@@ -1331,6 +1331,14 @@
 }
 
 /* ——— Мобильный список договоров ——— */
+.contractsListRemoteSigningHint {
+  margin-top: 0.25rem;
+  font-size: 0.75rem;
+  line-height: 1.25;
+  color: var(--admin-info-strong, #1d4ed8);
+  font-weight: 600;
+}
+
 .contractsMobileCards,
 .contractsMobileEmpty {
   display: none;

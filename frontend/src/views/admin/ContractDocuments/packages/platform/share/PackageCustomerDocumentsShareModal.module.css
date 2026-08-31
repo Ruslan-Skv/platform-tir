@@ -1,0 +1,85 @@
+.shareModalBody {
+  min-width: 0;
+}
+
+.docListHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: 4px;
+}
+
+.docListHeader label {
+  margin: 0;
+}
+
+.docListHeaderActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.docListLinkBtn {
+  appearance: none;
+  background: none;
+  border: 0;
+  color: var(--admin-link, #2563eb);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  padding: 0;
+  text-decoration: underline;
+}
+
+.docListLinkBtn:hover {
+  color: var(--admin-link-hover, #1d4ed8);
+}
+
+.docList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-height: min(40vh, 16rem);
+  overflow: auto;
+  border: 1px solid rgb(17 24 39 / 0.08);
+  border-radius: var(--admin-radius-md, 8px);
+  padding: 4px;
+  background: var(--admin-surface-soft, #f9fafb);
+}
+
+.docItem {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: 0;
+  padding: 6px 8px;
+  border-radius: var(--admin-radius-sm, 6px);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  line-height: 1.35;
+}
+
+.docItem:hover {
+  background: rgb(37 99 235 / 0.06);
+}
+
+.docItemSelected {
+  background: rgb(37 99 235 / 0.1);
+}
+
+.docItem input {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+.docItemHint {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+@media (max-width: 640px) {
+  .docList {
+    max-height: min(36vh, 14rem);
+  }
+}

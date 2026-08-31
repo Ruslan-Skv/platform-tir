@@ -32,6 +32,8 @@ export type PackageDocumentEditorHeaderProps = {
   onOpenWorkOrdersHub: (defaultTab: PackageWorkOrderHubTabId) => void;
   onOpenQuestionnairesHub: (defaultTab: PackageQuestionnaireHubTabId) => void;
   onOpenVersionsHistory: () => void;
+  onOpenCustomerShare: () => void;
+  onOpenRemoteSigning: () => void;
   onRefreshFromServer: () => void;
   onPrint: () => void;
 };

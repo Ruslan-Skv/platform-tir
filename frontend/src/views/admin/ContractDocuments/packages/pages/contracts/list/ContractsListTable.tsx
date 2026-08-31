@@ -47,6 +47,8 @@ type ContractsListTableProps = {
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
+  onOpenCustomerShare: (packageId: string) => void;
+  onOpenRemoteSigning: (packageId: string) => void;
   onOpenActPhotos: (payload: { items: ContractsListActPhotoItem[]; contractLabel: string }) => void;
 };
 
@@ -79,6 +81,8 @@ export function ContractsListTable({
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
   onOpenActPhotos,
 }: ContractsListTableProps) {
   const col = (key: ContractsListColumnKey) => isContractsListColumnVisible(visibleColumns, key);
@@ -251,6 +255,8 @@ export function ContractsListTable({
                       onOpenHub={onOpenHub}
                       onOpenInvoicesHub={onOpenInvoicesHub}
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}
+                      onOpenCustomerShare={onOpenCustomerShare}
+                      onOpenRemoteSigning={onOpenRemoteSigning}
                       onOpenActPhotos={onOpenActPhotos}
                     />
                   );
@@ -276,6 +282,8 @@ export function ContractsListTable({
         onOpenHub={onOpenHub}
         onOpenInvoicesHub={onOpenInvoicesHub}
         onOpenWorkOrdersHub={onOpenWorkOrdersHub}
+        onOpenCustomerShare={onOpenCustomerShare}
+        onOpenRemoteSigning={onOpenRemoteSigning}
       />
 
       {!loading && totalVisible > 0 ? (

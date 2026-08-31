@@ -21,6 +21,8 @@ export function useContractsListModalsState() {
   const [packageHubPackageId, setPackageHubPackageId] = useState<string | null>(null);
   const [invoicesHubPackageId, setInvoicesHubPackageId] = useState<string | null>(null);
   const [workOrdersHubPackageId, setWorkOrdersHubPackageId] = useState<string | null>(null);
+  const [customerSharePackageId, setCustomerSharePackageId] = useState<string | null>(null);
+  const [remoteSigningPackageId, setRemoteSigningPackageId] = useState<string | null>(null);
   const [actPhotosModal, setActPhotosModal] = useState<{
     items: ContractsListActPhotoItem[];
     contractLabel: string;
@@ -52,6 +54,10 @@ export function useContractsListModalsState() {
     setInvoicesHubPackageId,
     workOrdersHubPackageId,
     setWorkOrdersHubPackageId,
+    customerSharePackageId,
+    setCustomerSharePackageId,
+    remoteSigningPackageId,
+    setRemoteSigningPackageId,
     actPhotosModal,
     setActPhotosModal,
     actionsBusy,

@@ -34,6 +34,7 @@ export function usePackageIssueInvoicePanel({
   saving = false,
   showIssuedTable = true,
   onReprint,
+  onShare,
 }: PackageIssueInvoicePanelProps) {
   const [basisKey, setBasisKey] = useState<PackagePaymentBasisOptionKey | ''>('');
 
@@ -111,6 +112,7 @@ export function usePackageIssueInvoicePanel({
     showIssuedTable,
     onDownload,
     onReprint,
+    onShare,
     ...issueForm,
     basisKey,
     setBasisKey,

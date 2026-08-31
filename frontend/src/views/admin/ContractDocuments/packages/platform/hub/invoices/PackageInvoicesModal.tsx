@@ -33,6 +33,10 @@ import {
   printPackagePaymentInvoice,
 } from '../../payments/packageInvoicePrint';
 import type { PackagePaymentBasisOption } from '../../payments/packagePaymentBasisOptions';
+import {
+  type PackageInvoiceShareLiveInput,
+  PackageInvoiceShareModal,
+} from '../../share/PackageInvoiceShareModal';
 import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '../../tabs/packageActPrintTabs';
 import { PackageIssueInvoicePanel } from './PackageIssueInvoicePanel';
 
@@ -69,6 +73,7 @@ export function PackageInvoicesModal({
   const [contentReady, setContentReady] = useState(false);
   const invoicesContentReadyRef = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [shareInvoice, setShareInvoice] = useState<ContractDocumentPaymentInvoice | null>(null);
 
   useEffect(() => {
     invoicesContentReadyRef.current = false;
@@ -181,6 +186,15 @@ export function PackageInvoicesModal({
     });
   };
 
+  const shareLiveInput: PackageInvoiceShareLiveInput = {
+    packageId,
+    packageKind,
+    form,
+    contractTemplatePresets,
+    templateOverrides,
+    selectedTemplateIds,
+  };
+
   const modalTitle = (
     <span className={crmDetailStyles.titleWithEdit}>
       <span>Счета на оплату по договору</span>
@@ -191,48 +205,58 @@ export function PackageInvoicesModal({
   );
 
   return (
-    <Modal
-      isOpen={isOpen}
-      onClose={onClose}
-      title={modalTitle}
-      size="lg"
-      className={crmFormStyles.modalPanel}
-      showCloseButton
-      compactOnMobile
-    >
-      <div
-        data-modal-form
-        data-modal-density="compact"
-        style={{ minHeight: 'min(60vh, 28rem)', position: 'relative' }}
-        aria-busy={loading && !contentReady}
+    <>
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        title={modalTitle}
+        size="lg"
+        className={crmFormStyles.modalPanel}
+        showCloseButton
+        compactOnMobile
       >
-        <p data-modal-form-hint style={{ marginTop: 0 }}>
-          Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в{' '}
-          <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. «Скачать
-          PDF» — файл счёта для отправки клиенту или оплаты по QR. Оплату проводите в «Оплаты и
-          этапы».
-        </p>
-        {loading && !contentReady ? (
-          <p data-modal-form-hint style={{ margin: '12px 0 0' }}>
-            Загрузка…
+        <div
+          data-modal-form
+          data-modal-density="compact"
+          style={{ minHeight: 'min(60vh, 28rem)', position: 'relative' }}
+          aria-busy={loading && !contentReady}
+        >
+          <p data-modal-form-hint style={{ marginTop: 0 }}>
+            Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в{' '}
+            <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. «Скачать
+            PDF» — файл счёта для отправки клиенту или оплаты по QR. Оплату проводите в «Оплаты и
+            этапы».
           </p>
-        ) : null}
-        {contentReady ? (
-          <PackageIssueInvoicePanel
-            packageId={packageId}
-            packageKind={packageKind}
-            form={form}
-            issuedRows={issuedRows}
-            paymentRows={paymentRows}
-            onError={onError}
-            onIssue={handleIssue}
-            onPrint={printConduct}
-            onDownload={downloadConduct}
-            saving={saving}
-            onReprint={reprintIssued}
-          />
-        ) : null}
-      </div>
-    </Modal>
+          {loading && !contentReady ? (
+            <p data-modal-form-hint style={{ margin: '12px 0 0' }}>
+              Загрузка…
+            </p>
+          ) : null}
+          {contentReady ? (
+            <PackageIssueInvoicePanel
+              packageId={packageId}
+              packageKind={packageKind}
+              form={form}
+              issuedRows={issuedRows}
+              paymentRows={paymentRows}
+              onError={onError}
+              onIssue={handleIssue}
+              onPrint={printConduct}
+              onDownload={downloadConduct}
+              saving={saving}
+              onReprint={reprintIssued}
+              onShare={setShareInvoice}
+            />
+          ) : null}
+        </div>
+      </Modal>
+
+      <PackageInvoiceShareModal
+        isOpen={shareInvoice != null}
+        onClose={() => setShareInvoice(null)}
+        invoice={shareInvoice}
+        liveInput={shareLiveInput}
+      />
+    </>
   );
 }

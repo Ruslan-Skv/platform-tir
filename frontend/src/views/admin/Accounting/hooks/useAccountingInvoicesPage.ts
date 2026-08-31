@@ -58,6 +58,7 @@ export function useAccountingInvoicesPage() {
   const [issueSaving, setIssueSaving] = useState(false);
   const [contractEditorOpen, setContractEditorOpen] = useState(false);
   const [contractEditorPackageId, setContractEditorPackageId] = useState('');
+  const [shareInvoice, setShareInvoice] = useState<ContractDocumentPaymentInvoice | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -153,6 +154,14 @@ export function useAccountingInvoicesPage() {
     setContractEditorOpen(false);
     setContractEditorPackageId('');
     void load();
+  };
+
+  const openShareInvoice = (invoice: ContractDocumentPaymentInvoice) => {
+    setShareInvoice(invoice);
+  };
+
+  const closeShareInvoice = () => {
+    setShareInvoice(null);
   };
 
   const handleIssueInvoice = async (
@@ -253,6 +262,9 @@ export function useAccountingInvoicesPage() {
     closeIssueModal,
     openContractInvoices,
     closeContractInvoices,
+    shareInvoice,
+    openShareInvoice,
+    closeShareInvoice,
     handleIssueInvoice,
     handlePrintInvoice,
     handleDownloadInvoice,

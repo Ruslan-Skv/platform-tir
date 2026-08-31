@@ -43,6 +43,8 @@ export type PackageDocumentEditorMainViewProps = {
   onOpenWorkOrdersHub: (defaultTab: PackageWorkOrderHubTabId) => void;
   onOpenQuestionnairesHub: (defaultTab: PackageQuestionnaireHubTabId) => void;
   onOpenVersionsHistory: () => void;
+  onOpenCustomerShare: () => void;
+  onOpenRemoteSigning: () => void;
   onRefreshFromServer: () => void;
   onPrint: () => void;
   packageFlowStatus: ContractDocumentPackageStatus;
@@ -81,6 +83,8 @@ export function PackageDocumentEditorMainView({
   onOpenWorkOrdersHub,
   onOpenQuestionnairesHub,
   onOpenVersionsHistory,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
   onRefreshFromServer,
   onPrint,
   packageFlowStatus,
@@ -121,6 +125,8 @@ export function PackageDocumentEditorMainView({
           onOpenWorkOrdersHub={onOpenWorkOrdersHub}
           onOpenQuestionnairesHub={onOpenQuestionnairesHub}
           onOpenVersionsHistory={onOpenVersionsHistory}
+          onOpenCustomerShare={onOpenCustomerShare}
+          onOpenRemoteSigning={onOpenRemoteSigning}
           onRefreshFromServer={onRefreshFromServer}
           onPrint={onPrint}
         />

@@ -12,6 +12,7 @@ import { UsersModule } from './users/users.module';
 import { ProductsModule } from './products/products.module';
 import { CategoriesModule } from './categories/categories.module';
 import { OrdersModule } from './orders/orders.module';
+import { ContractDocumentSigningModule } from './contract-document-signing/contract-document-signing.module';
 import { AdminModule } from './admin/admin.module';
 import { AdminAccessModule } from './admin/admin-access/admin-access.module';
 import { AdminResourceInterceptor } from './admin/admin-access/admin-resource.interceptor';
@@ -83,6 +84,7 @@ import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exce
     ProductsModule,
     CategoriesModule,
     OrdersModule,
+    ContractDocumentSigningModule,
     AdminModule,
     WishlistModule,
     CompareModule,

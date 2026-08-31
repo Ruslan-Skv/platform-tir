@@ -3,10 +3,12 @@
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
+import { remoteSigningStatusLabel } from '@/shared/api/admin-contract-document-signing';
 import type { CrmUser } from '@/shared/api/admin-crm';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
+import { ShareIcon } from '@/shared/ui/icons';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
@@ -76,6 +78,8 @@ export type ContractListPackageRowProps = {
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
+  onOpenCustomerShare: (packageId: string) => void;
+  onOpenRemoteSigning: (packageId: string) => void;
   onOpenActPhotos: (payload: { items: ContractsListActPhotoItem[]; contractLabel: string }) => void;
 };
 
@@ -97,6 +101,8 @@ export function ContractListPackageRow({
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
   onOpenActPhotos,
 }: ContractListPackageRowProps) {
   const col = (key: ContractsListColumnKey) => isContractsListColumnVisible(visibleColumns, key);
@@ -153,6 +159,21 @@ export function ContractListPackageRow({
           <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
             {packageListPipelineStatusLabel(pipelineStatus)}
           </span>
+          {(() => {
+            const remote = (fd as Record<string, unknown>)._remoteSigning;
+            if (!remote || typeof remote !== 'object' || Array.isArray(remote)) return null;
+            const status =
+              typeof (remote as { status?: unknown }).status === 'string'
+                ? (remote as { status: string }).status
+                : '';
+            const label = remoteSigningStatusLabel(status);
+            if (!label || (status !== 'PENDING' && status !== 'VIEWED')) return null;
+            return (
+              <div className={cdHub.contractsListRemoteSigningHint} title={label}>
+                {label}
+              </div>
+            );
+          })()}
         </td>
       ) : null}
       {col('customer') ? <td>{contractsListCustomerName(fd)}</td> : null}
@@ -226,6 +247,30 @@ export function ContractListPackageRow({
               onClick={() => onOpenWorkOrdersHub(pkg.id)}
             >
               <PackageWorkOrdersHubIcon />
+            </AdminTableIconButton>
+          </div>
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            <AdminTableIconButton
+              disabled={
+                loading || creating || copyingPackageId !== null || deletingPackageId !== null
+              }
+              title="Отправить заказчику (Telegram, WhatsApp, MAX, почта)"
+              aria-label={`Отправить документы заказчику (договор ${num})`}
+              onClick={() => onOpenCustomerShare(pkg.id)}
+            >
+              <ShareIcon />
+            </AdminTableIconButton>
+          </div>
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            <AdminTableIconButton
+              disabled={
+                loading || creating || copyingPackageId !== null || deletingPackageId !== null
+              }
+              title="Отправить на дистанционное подписание"
+              aria-label={`Отправить на подписание (договор ${num})`}
+              onClick={() => onOpenRemoteSigning(pkg.id)}
+            >
+              <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>ЭП</span>
             </AdminTableIconButton>
           </div>
           <div className={cdEstimatesList.contractsListActionsSlot}>

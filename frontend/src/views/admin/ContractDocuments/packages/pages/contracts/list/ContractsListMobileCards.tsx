@@ -2,8 +2,10 @@
 
 import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
+import { remoteSigningStatusLabel } from '@/shared/api/admin-contract-document-signing';
 import type { CrmUser } from '@/shared/api/admin-crm';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
+import { ShareIcon } from '@/shared/ui/icons';
 import { CallCustomerIcon } from '@/shared/ui/icons/crm/CallCustomerIcon';
 import {
   crmPhoneToTelHref,
@@ -83,6 +85,8 @@ type ContractsListMobileCardsProps = {
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
+  onOpenCustomerShare: (packageId: string) => void;
+  onOpenRemoteSigning: (packageId: string) => void;
 };
 
 function PackageMobileCard({
@@ -94,6 +98,8 @@ function PackageMobileCard({
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
 }: {
   pkg: ContractDocumentPackage;
   addendumColumnCount: number;
@@ -103,6 +109,8 @@ function PackageMobileCard({
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
+  onOpenCustomerShare: (packageId: string) => void;
+  onOpenRemoteSigning: (packageId: string) => void;
 }) {
   const fd = pkg.formData ?? {};
   const form = mergePackageFormData(fd);
@@ -136,9 +144,22 @@ function PackageMobileCard({
             {num ? `№ ${num}` : 'Без номера'}
             {kind ? <span className={cdHub.contractsMobileCardKind}>{kind}</span> : null}
           </div>
-          <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
-            {packageListPipelineStatusLabel(pipelineStatus)}
-          </span>
+          <div>
+            <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
+              {packageListPipelineStatusLabel(pipelineStatus)}
+            </span>
+            {(() => {
+              const remote = (fd as Record<string, unknown>)._remoteSigning;
+              if (!remote || typeof remote !== 'object' || Array.isArray(remote)) return null;
+              const status =
+                typeof (remote as { status?: unknown }).status === 'string'
+                  ? (remote as { status: string }).status
+                  : '';
+              const label = remoteSigningStatusLabel(status);
+              if (!label || (status !== 'PENDING' && status !== 'VIEWED')) return null;
+              return <div className={cdHub.contractsListRemoteSigningHint}>{label}</div>;
+            })()}
+          </div>
         </div>
         <MobileCallCustomerControl phone={nested ? '' : customerPhone} />
         <dl className={cdHub.contractsMobileCardRows}>
@@ -193,6 +214,22 @@ function PackageMobileCard({
         </AdminTableIconButton>
         <AdminTableIconButton
           disabled={actionsDisabled}
+          title="Отправить заказчику (Telegram, WhatsApp, MAX, почта)"
+          aria-label={`Отправить документы заказчику (договор ${num})`}
+          onClick={() => onOpenCustomerShare(pkg.id)}
+        >
+          <ShareIcon />
+        </AdminTableIconButton>
+        <AdminTableIconButton
+          disabled={actionsDisabled}
+          title="Отправить на дистанционное подписание"
+          aria-label={`Отправить на подписание (договор ${num})`}
+          onClick={() => onOpenRemoteSigning(pkg.id)}
+        >
+          <span style={{ fontSize: 11, fontWeight: 700, lineHeight: 1 }}>ЭП</span>
+        </AdminTableIconButton>
+        <AdminTableIconButton
+          disabled={actionsDisabled}
           title={PACKAGE_HUB_MODAL_TITLE}
           aria-label={`Открыть ${PACKAGE_HUB_MODAL_TITLE}`}
           onClick={() => onOpenHub(pkg.id)}
@@ -219,6 +256,8 @@ export function ContractsListMobileCards({
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
 }: ContractsListMobileCardsProps) {
   if (loading && rowsCount === 0) {
     return <p className={cdHub.contractsMobileEmpty}>Загрузка…</p>;
@@ -307,6 +346,8 @@ export function ContractsListMobileCards({
                       onOpenHub={onOpenHub}
                       onOpenInvoicesHub={onOpenInvoicesHub}
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}
+                      onOpenCustomerShare={onOpenCustomerShare}
+                      onOpenRemoteSigning={onOpenRemoteSigning}
                     />
                   ))
                 : null}
@@ -329,6 +370,8 @@ export function ContractsListMobileCards({
             onOpenHub={onOpenHub}
             onOpenInvoicesHub={onOpenInvoicesHub}
             onOpenWorkOrdersHub={onOpenWorkOrdersHub}
+            onOpenCustomerShare={onOpenCustomerShare}
+            onOpenRemoteSigning={onOpenRemoteSigning}
           />
         );
       })}

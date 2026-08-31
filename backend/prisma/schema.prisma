@@ -121,6 +121,7 @@ model User {
   contractDocumentPackagesCreated         ContractDocumentPackage[]                @relation("ContractDocumentPackagesCreated")
   contractDocumentPackagesResponsible     ContractDocumentPackage[]                @relation("ContractDocumentPackagesResponsible")
   contractDocumentPackagesDeleted         ContractDocumentPackage[]                @relation("ContractDocumentPackagesDeleted")
+  contractDocumentSigningSessionsCreated  ContractDocumentSigningSession[]         @relation("ContractDocumentSigningSessionsCreated")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]         @relation("ContractDocumentPackagePaymentRecordedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
   contractDocumentGlobalTemplatesUpdated  ContractDocumentGlobalTemplate[]         @relation("GlobalContractTemplateUpdatedBy")
@@ -3496,6 +3497,7 @@ model ContractDocumentPackage {
   installationSchedules     InstallationScheduleEntry[]
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
+  signingSessions           ContractDocumentSigningSession[]
 
   @@index([kind])
   @@index([createdAt])
@@ -3581,6 +3583,54 @@ model ContractDocumentNumberCounter {
   @@unique([managerUserId, directionId])
   @@index([directionId])
   @@map("contract_document_number_counters")
+}
+
+/// Статус сессии дистанционного ознакомления / подписания пакета документов.
+enum ContractDocumentSigningSessionStatus {
+  PENDING
+  VIEWED
+  SIGNED
+  REJECTED
+  EXPIRED
+  CANCELLED
+}
+
+/// Сессия удалённого согласования и подписания документов заказчиком (ПЭП: ссылка + OTP).
+model ContractDocumentSigningSession {
+  id              String                               @id @default(cuid())
+  packageId       String
+  /// Публичный токен в ссылке (уникальный, непрозрачный).
+  token           String                               @unique
+  status          ContractDocumentSigningSessionStatus @default(PENDING)
+  customerName    String?
+  customerPhone   String?
+  customerEmail   String?
+  /// Состав документов: [{ tabId, label, fileUrl, fileName }]
+  documents       Json                                 @default("[]")
+  managerNote     String?                              @db.Text
+  /// Хэш OTP (sha256 hex); plaintext отдаётся менеджеру один раз при создании и (опционально) в письмо.
+  otpCodeHash     String
+  otpExpiresAt    DateTime
+  otpAttempts     Int                                  @default(0)
+  expiresAt       DateTime
+  viewedAt        DateTime?
+  signedAt        DateTime?
+  rejectedAt      DateTime?
+  rejectionReason String?                              @db.Text
+  signedName      String?
+  signedIp        String?
+  signedUserAgent String?                              @db.Text
+  createdById     String?
+  createdAt       DateTime                             @default(now())
+  updatedAt       DateTime                             @updatedAt
+
+  package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdBy User?                   @relation("ContractDocumentSigningSessionsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([packageId, createdAt])
+  @@index([status])
+  @@index([expiresAt])
+  @@map("contract_document_signing_sessions")
 }
 
 /// Снимок пакета документов (история версий при явном сохранении и при восстановлении).

@@ -29,6 +29,8 @@ export function usePackageEditorHubPanelState({
   const [questionnairesHubOpen, setQuestionnairesHubOpen] = useState(false);
   const [questionnairesHubPanelTab, setQuestionnairesHubPanelTab] =
     useState<PackageQuestionnaireHubTabId>('questionnaire1');
+  const [customerShareOpen, setCustomerShareOpen] = useState(false);
+  const [remoteSigningOpen, setRemoteSigningOpen] = useState(false);
 
   useEffect(() => {
     if (!invoicesHubListSurface) return;
@@ -55,5 +57,9 @@ export function usePackageEditorHubPanelState({
     setQuestionnairesHubOpen,
     questionnairesHubPanelTab,
     setQuestionnairesHubPanelTab,
+    customerShareOpen,
+    setCustomerShareOpen,
+    remoteSigningOpen,
+    setRemoteSigningOpen,
   };
 }

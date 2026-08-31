@@ -9,7 +9,7 @@ import type { PackageIssueInvoicePanelModel } from './usePackageIssueInvoicePane
 
 export type PackageIssueInvoiceIssuedTableSectionProps = Pick<
   PackageIssueInvoicePanelModel,
-  'issuedRows' | 'onReprint' | 'onDownload' | 'downloadBusy' | 'handleReprintDownload'
+  'issuedRows' | 'onReprint' | 'onDownload' | 'downloadBusy' | 'handleReprintDownload' | 'onShare'
 >;
 
 export function PackageIssueInvoiceIssuedTableSection({
@@ -18,6 +18,7 @@ export function PackageIssueInvoiceIssuedTableSection({
   onDownload,
   downloadBusy,
   handleReprintDownload,
+  onShare,
 }: PackageIssueInvoiceIssuedTableSectionProps) {
   return (
     <section data-modal-readonly-panel data-modal-density="compact">
@@ -42,7 +43,7 @@ export function PackageIssueInvoiceIssuedTableSection({
 
                 <th className={cdBase.paymentsHubSummaryNumCol}>Сумма</th>
 
-                {onReprint ? <th></th> : null}
+                {onReprint || onShare ? <th></th> : null}
               </tr>
             </thead>
 
@@ -61,16 +62,18 @@ export function PackageIssueInvoiceIssuedTableSection({
                     {formatPackageIssuedInvoiceAmountRub(Number(row.amount))} ₽
                   </td>
 
-                  {onReprint ? (
+                  {onReprint || onShare ? (
                     <td>
                       <div className={cdBase.invoiceIssuedRowActions}>
-                        <button
-                          type="button"
-                          className={cdBase.paymentsHubConductSecondaryBtn}
-                          onClick={() => onReprint(row)}
-                        >
-                          Печать
-                        </button>
+                        {onReprint ? (
+                          <button
+                            type="button"
+                            className={cdBase.paymentsHubConductSecondaryBtn}
+                            onClick={() => onReprint(row)}
+                          >
+                            Печать
+                          </button>
+                        ) : null}
                         {onDownload ? (
                           <button
                             type="button"
@@ -79,6 +82,16 @@ export function PackageIssueInvoiceIssuedTableSection({
                             onClick={() => handleReprintDownload(row)}
                           >
                             {downloadBusy ? 'PDF…' : 'PDF'}
+                          </button>
+                        ) : null}
+                        {onShare ? (
+                          <button
+                            type="button"
+                            className={cdBase.paymentsHubConductSecondaryBtn}
+                            onClick={() => onShare(row)}
+                            title="Отправить заказчику (Telegram, WhatsApp, MAX, почта)"
+                          >
+                            Отправить
                           </button>
                         ) : null}
                       </div>

@@ -20,6 +20,8 @@ import { PackageQuestionnairesHubModal } from '../../hub/questionnaires/PackageQ
 import type { PackageQuestionnaireHubTabId } from '../../hub/questionnaires/packageQuestionnaireHubTabs';
 import { PackageWorkOrdersHubModal } from '../../hub/workOrders/PackageWorkOrdersHubModal';
 import type { PackageWorkOrderHubTabId } from '../../hub/workOrders/packageWorkOrderHubTabs';
+import { PackageCustomerDocumentsShareModal } from '../../share/PackageCustomerDocumentsShareModal';
+import { PackageRemoteSigningModal } from '../../share/PackageRemoteSigningModal';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
 
 export type PackageDocumentEditorModalsProps = {
@@ -49,6 +51,10 @@ export type PackageDocumentEditorModalsProps = {
   onCloseInvoicesHub: () => void;
   onPaymentInvoiceCountChange: (count: number) => void;
   onError: (message: string | null) => void;
+  customerShareOpen: boolean;
+  onCloseCustomerShare: () => void;
+  remoteSigningOpen: boolean;
+  onCloseRemoteSigning: () => void;
   contractTemplatePresets: ContractTemplatePreset[];
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   selectedTemplateIds: Partial<Record<PackageDocumentTemplateTabId, string>>;
@@ -91,6 +97,10 @@ export function PackageDocumentEditorModals({
   onCloseInvoicesHub,
   onPaymentInvoiceCountChange,
   onError,
+  customerShareOpen,
+  onCloseCustomerShare,
+  remoteSigningOpen,
+  onCloseRemoteSigning,
   contractTemplatePresets,
   templateOverrides,
   selectedTemplateIds,
@@ -174,6 +184,16 @@ export function PackageDocumentEditorModals({
         contractTemplatePresets={contractTemplatePresets}
         templateOverrides={templateOverrides}
         selectedTemplateIds={selectedTemplateIds}
+      />
+      <PackageCustomerDocumentsShareModal
+        isOpen={customerShareOpen}
+        onClose={onCloseCustomerShare}
+        packageId={packageId}
+      />
+      <PackageRemoteSigningModal
+        isOpen={remoteSigningOpen}
+        onClose={onCloseRemoteSigning}
+        packageId={packageId}
       />
     </>
   );

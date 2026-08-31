@@ -11,6 +11,8 @@ import { packageKindUiLabel, packageKindsWithCreateEnabled } from '../../../conf
 import { PackageHubModal } from '../../../platform/hub/hubModal/PackageHubModal';
 import { PackageInvoicesHubListModal } from '../../../platform/hub/invoices/PackageInvoicesHubListModal';
 import { PackageWorkOrdersHubListModal } from '../../../platform/hub/workOrders/PackageWorkOrdersHubListModal';
+import { PackageCustomerDocumentsShareModal } from '../../../platform/share/PackageCustomerDocumentsShareModal';
+import { PackageRemoteSigningModal } from '../../../platform/share/PackageRemoteSigningModal';
 import createDirectionStyles from './ContractsCreateDirectionModal.module.css';
 import type { ContractsListActPhotoItem } from './contractsListActPhotos';
 import { PackageContractTrashModal } from './modals/PackageContractTrashModal';
@@ -40,6 +42,11 @@ type ContractsListModalsProps = {
   workOrdersHubPackageId: string | null;
   onCloseWorkOrdersHub: () => void;
   onWorkOrdersHubUpdated: () => void;
+  customerSharePackageId: string | null;
+  onCloseCustomerShare: () => void;
+  remoteSigningPackageId: string | null;
+  onCloseRemoteSigning: () => void;
+  onRemoteSigningCreated?: () => void;
 };
 
 export function ContractsListModals({
@@ -66,6 +73,11 @@ export function ContractsListModals({
   workOrdersHubPackageId,
   onCloseWorkOrdersHub,
   onWorkOrdersHubUpdated,
+  customerSharePackageId,
+  onCloseCustomerShare,
+  remoteSigningPackageId,
+  onCloseRemoteSigning,
+  onRemoteSigningCreated,
 }: ContractsListModalsProps) {
   const packageHub = useListModalPresence(packageHubPackageId);
   const invoicesHub = useListModalPresence(invoicesHubPackageId);
@@ -217,6 +229,18 @@ export function ContractsListModals({
           onUpdated={onInvoicesHubUpdated}
         />
       ) : null}
+
+      <PackageCustomerDocumentsShareModal
+        isOpen={customerSharePackageId != null}
+        onClose={onCloseCustomerShare}
+        packageId={customerSharePackageId}
+      />
+      <PackageRemoteSigningModal
+        isOpen={remoteSigningPackageId != null}
+        onClose={onCloseRemoteSigning}
+        packageId={remoteSigningPackageId}
+        onCreated={onRemoteSigningCreated}
+      />
     </>
   );
 }

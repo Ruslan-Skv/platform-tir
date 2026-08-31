@@ -39,6 +39,8 @@ export type PackageIssueInvoicePanelProps = {
   showIssuedTable?: boolean;
 
   onReprint?: (row: ContractDocumentPaymentInvoice) => void;
+
+  onShare?: (row: ContractDocumentPaymentInvoice) => void;
 };
 
 export function PackageIssueInvoicePanel(props: PackageIssueInvoicePanelProps) {

@@ -10,6 +10,8 @@ export type UsePackageEditorHeaderHubActionsOptions = {
   setQuestionnairesHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setInvoicesHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setIsVersionsHistoryOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setCustomerShareOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  setRemoteSigningOpen: React.Dispatch<React.SetStateAction<boolean>>;
 };
 
 export function usePackageEditorHeaderHubActions({
@@ -19,6 +21,8 @@ export function usePackageEditorHeaderHubActions({
   setQuestionnairesHubOpen,
   setInvoicesHubOpen,
   setIsVersionsHistoryOpen,
+  setCustomerShareOpen,
+  setRemoteSigningOpen,
 }: UsePackageEditorHeaderHubActionsOptions) {
   const onOpenInvoicesHub = useCallback(() => {
     setInvoicesHubOpen(true);
@@ -44,13 +48,30 @@ export function usePackageEditorHeaderHubActions({
     setIsVersionsHistoryOpen(true);
   }, [setIsVersionsHistoryOpen]);
 
+  const onOpenCustomerShare = useCallback(() => {
+    setCustomerShareOpen(true);
+  }, [setCustomerShareOpen]);
+
+  const onOpenRemoteSigning = useCallback(() => {
+    setRemoteSigningOpen(true);
+  }, [setRemoteSigningOpen]);
+
   return useMemo(
     () => ({
       onOpenInvoicesHub,
       onOpenWorkOrdersHub,
       onOpenQuestionnairesHub,
       onOpenVersionsHistory,
+      onOpenCustomerShare,
+      onOpenRemoteSigning,
     }),
-    [onOpenInvoicesHub, onOpenWorkOrdersHub, onOpenQuestionnairesHub, onOpenVersionsHistory]
+    [
+      onOpenInvoicesHub,
+      onOpenWorkOrdersHub,
+      onOpenQuestionnairesHub,
+      onOpenVersionsHistory,
+      onOpenCustomerShare,
+      onOpenRemoteSigning,
+    ]
   );
 }

@@ -6,6 +6,7 @@ import { Modal } from '@/shared/ui/Modal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageIssueInvoicePanel';
+import { PackageInvoiceShareModal } from '@/views/admin/ContractDocuments/packages/platform/share/PackageInvoiceShareModal';
 
 import { contractsListFilterFieldClass } from '../ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
 import cdBase from '../ContractDocuments/styles/base.module.css';
@@ -45,6 +46,9 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
     closeIssueModal,
     openContractInvoices,
     closeContractInvoices,
+    shareInvoice,
+    openShareInvoice,
+    closeShareInvoice,
     handleIssueInvoice,
     handlePrintInvoice,
     handleDownloadInvoice,
@@ -141,13 +145,23 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
                   <td>{row.basis}</td>
                   <td className={cdBase.paymentsHubSummaryNumCol}>{formatMoneyRub(row.amount)}</td>
                   <td>
-                    <button
-                      type="button"
-                      className={cdBase.paymentsHubConductSecondaryBtn}
-                      onClick={() => openContractInvoices(row.packageId)}
-                    >
-                      Счета договора
-                    </button>
+                    <div className={cdBase.invoiceIssuedRowActions}>
+                      <button
+                        type="button"
+                        className={cdBase.paymentsHubConductSecondaryBtn}
+                        onClick={() => openShareInvoice(row)}
+                        title="Отправить заказчику (Telegram, WhatsApp, MAX, почта)"
+                      >
+                        Отправить
+                      </button>
+                      <button
+                        type="button"
+                        className={cdBase.paymentsHubConductSecondaryBtn}
+                        onClick={() => openContractInvoices(row.packageId)}
+                      >
+                        Счета договора
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))
@@ -193,6 +207,13 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
                   </div>
                 </dl>
                 <div className={pageStyles.mobileCardActions}>
+                  <button
+                    type="button"
+                    className={pageStyles.mobileCardActionBtn}
+                    onClick={() => openShareInvoice(row)}
+                  >
+                    Отправить
+                  </button>
                   <button
                     type="button"
                     className={pageStyles.mobileCardActionBtn}
@@ -265,6 +286,12 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
           onInvoicesChanged={() => void load()}
         />
       ) : null}
+
+      <PackageInvoiceShareModal
+        isOpen={shareInvoice != null}
+        onClose={closeShareInvoice}
+        invoice={shareInvoice}
+      />
     </div>
   );
 }

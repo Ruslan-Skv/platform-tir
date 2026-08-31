@@ -44,6 +44,10 @@ export type UsePackageDocumentEditorModalsPropsOptions = {
   setInvoicesHubOpen: React.Dispatch<React.SetStateAction<boolean>>;
   setPaymentInvoiceCount: React.Dispatch<React.SetStateAction<number>>;
   setError: React.Dispatch<React.SetStateAction<string | null>>;
+  customerShareOpen: boolean;
+  setCustomerShareOpen: React.Dispatch<React.SetStateAction<boolean>>;
+  remoteSigningOpen: boolean;
+  setRemoteSigningOpen: React.Dispatch<React.SetStateAction<boolean>>;
   contractTemplatePresets: ContractTemplatePreset[];
   templateOverrides: Partial<Record<PackageDocumentTemplateTabId, string>>;
   selectedTemplateIds: Partial<Record<PackageDocumentTemplateTabId, string>>;
@@ -86,6 +90,10 @@ export function usePackageDocumentEditorModalsProps({
   setInvoicesHubOpen,
   setPaymentInvoiceCount,
   setError,
+  customerShareOpen,
+  setCustomerShareOpen,
+  remoteSigningOpen,
+  setRemoteSigningOpen,
   contractTemplatePresets,
   templateOverrides,
   selectedTemplateIds,
@@ -111,6 +119,14 @@ export function usePackageDocumentEditorModalsProps({
   const onCloseInvoicesHub = useCallback(() => {
     setInvoicesHubOpen(false);
   }, [setInvoicesHubOpen]);
+
+  const onCloseCustomerShare = useCallback(() => {
+    setCustomerShareOpen(false);
+  }, [setCustomerShareOpen]);
+
+  const onCloseRemoteSigning = useCallback(() => {
+    setRemoteSigningOpen(false);
+  }, [setRemoteSigningOpen]);
 
   const onCloseVersionsHistory = useCallback(() => {
     setIsVersionsHistoryOpen(false);
@@ -148,6 +164,10 @@ export function usePackageDocumentEditorModalsProps({
       onCloseInvoicesHub,
       onPaymentInvoiceCountChange: setPaymentInvoiceCount,
       onError: setError,
+      customerShareOpen,
+      onCloseCustomerShare,
+      remoteSigningOpen,
+      onCloseRemoteSigning,
       contractTemplatePresets,
       templateOverrides,
       selectedTemplateIds,
@@ -189,6 +209,10 @@ export function usePackageDocumentEditorModalsProps({
       onCloseInvoicesHub,
       setPaymentInvoiceCount,
       setError,
+      customerShareOpen,
+      onCloseCustomerShare,
+      remoteSigningOpen,
+      onCloseRemoteSigning,
       contractTemplatePresets,
       templateOverrides,
       selectedTemplateIds,

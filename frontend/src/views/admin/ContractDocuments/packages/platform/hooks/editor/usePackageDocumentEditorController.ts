@@ -123,6 +123,10 @@ export function usePackageDocumentEditorController({
     setQuestionnairesHubOpen,
     questionnairesHubPanelTab,
     setQuestionnairesHubPanelTab,
+    customerShareOpen,
+    setCustomerShareOpen,
+    remoteSigningOpen,
+    setRemoteSigningOpen,
   } = usePackageEditorHubPanelState({
     workOrdersHubListSurface,
     workOrdersHubListSurfaceOpen,
@@ -587,6 +591,8 @@ export function usePackageDocumentEditorController({
     setQuestionnairesHubOpen,
     setInvoicesHubOpen,
     setIsVersionsHistoryOpen,
+    setCustomerShareOpen,
+    setRemoteSigningOpen,
   });
 
   const { workOrdersListSurfaceProps, orderedVisibleTabs, tabContentProps, editorModalsProps } =
@@ -670,6 +676,10 @@ export function usePackageDocumentEditorController({
         setInvoicesHubOpen,
         setPaymentInvoiceCount,
         setError,
+        customerShareOpen,
+        setCustomerShareOpen,
+        remoteSigningOpen,
+        setRemoteSigningOpen,
         contractTemplatePresets,
         templateOverrides,
         selectedTemplateIds,
@@ -731,6 +741,8 @@ export function usePackageDocumentEditorController({
     onOpenWorkOrdersHub: headerHubActions.onOpenWorkOrdersHub,
     onOpenQuestionnairesHub: headerHubActions.onOpenQuestionnairesHub,
     onOpenVersionsHistory: headerHubActions.onOpenVersionsHistory,
+    onOpenCustomerShare: headerHubActions.onOpenCustomerShare,
+    onOpenRemoteSigning: headerHubActions.onOpenRemoteSigning,
     onRefreshFromServer: refreshPackageFromServer,
     onPrint: handlePrint,
     packageFlowStatus,

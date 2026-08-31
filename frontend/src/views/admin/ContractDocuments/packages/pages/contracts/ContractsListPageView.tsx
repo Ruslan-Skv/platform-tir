@@ -153,6 +153,8 @@ export function ContractsListPageView({
         onOpenHub={modals.setPackageHubPackageId}
         onOpenInvoicesHub={modals.setInvoicesHubPackageId}
         onOpenWorkOrdersHub={modals.setWorkOrdersHubPackageId}
+        onOpenCustomerShare={modals.setCustomerSharePackageId}
+        onOpenRemoteSigning={modals.setRemoteSigningPackageId}
         onOpenActPhotos={modals.setActPhotosModal}
       />
 
@@ -186,6 +188,11 @@ export function ContractsListPageView({
         workOrdersHubPackageId={modals.workOrdersHubPackageId}
         onCloseWorkOrdersHub={() => modals.setWorkOrdersHubPackageId(null)}
         onWorkOrdersHubUpdated={() => void load.load()}
+        customerSharePackageId={modals.customerSharePackageId}
+        onCloseCustomerShare={() => modals.setCustomerSharePackageId(null)}
+        remoteSigningPackageId={modals.remoteSigningPackageId}
+        onCloseRemoteSigning={() => modals.setRemoteSigningPackageId(null)}
+        onRemoteSigningCreated={() => void load.load()}
       />
     </div>
   );

@@ -1,5 +1,6 @@
 'use client';
 
+import { ShareIcon } from '@/shared/ui/icons';
 import { VersionsHistoryIcon } from '@/shared/ui/icons/VersionsHistoryIcon';
 import { PackageHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/PackageHubIcon';
 import { PACKAGE_HUB_MODAL_TITLE } from '@/views/admin/ContractDocuments/packages/platform/hub/hubModal/packageHubConstants';
@@ -33,6 +34,8 @@ type PackageDocumentEditorHeaderActionsProps = Pick<
   | 'onOpenWorkOrdersHub'
   | 'onOpenQuestionnairesHub'
   | 'onOpenVersionsHistory'
+  | 'onOpenCustomerShare'
+  | 'onOpenRemoteSigning'
   | 'onRefreshFromServer'
   | 'onPrint'
 >;
@@ -59,6 +62,8 @@ export function PackageDocumentEditorHeaderActions({
   onOpenWorkOrdersHub,
   onOpenQuestionnairesHub,
   onOpenVersionsHistory,
+  onOpenCustomerShare,
+  onOpenRemoteSigning,
   onRefreshFromServer,
   onPrint,
 }: PackageDocumentEditorHeaderActionsProps) {
@@ -157,6 +162,40 @@ export function PackageDocumentEditorHeaderActions({
           >
             <PackageQuestionnairesHubIcon />
             <span className={cdDataTab.packageEditorHubBtnLabel}>Анкеты</span>
+          </button>
+        ) : null}
+        {!loading ? (
+          <button
+            type="button"
+            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}`}
+            onClick={onOpenCustomerShare}
+            title={
+              headerContractNumberLabel
+                ? `Отправить заказчику документы договора №${headerContractNumberLabel}`
+                : 'Отправить заказчику'
+            }
+            aria-label={
+              headerContractNumberLabel
+                ? `Отправить заказчику документы договора №${headerContractNumberLabel}`
+                : 'Отправить заказчику (Telegram, WhatsApp, MAX, почта)'
+            }
+          >
+            <ShareIcon />
+          </button>
+        ) : null}
+        {!loading ? (
+          <button
+            type="button"
+            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}`}
+            onClick={onOpenRemoteSigning}
+            title={
+              headerContractNumberLabel
+                ? `Отправить на подписание договор №${headerContractNumberLabel}`
+                : 'Отправить на подписание'
+            }
+            aria-label="Отправить на дистанционное подписание"
+          >
+            <span style={{ fontSize: 12, fontWeight: 700 }}>ЭП</span>
           </button>
         ) : null}
         {!loading ? (
