@@ -1120,7 +1120,7 @@ export {
   getContractDocumentEstimatePresetsTrash,
   restoreContractEstimatePreset,
   trashContractEstimatePreset,
-} from './admin-contract-document-estimate-presets-trash';
+} from './contract-documents/admin-contract-document-estimate-presets-trash';
 
 export async function putContractDocumentEstimatePresets(body: {
   kind: ContractDocumentPackageKind;

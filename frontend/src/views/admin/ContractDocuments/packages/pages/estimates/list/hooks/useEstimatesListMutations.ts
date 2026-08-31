@@ -3,7 +3,6 @@ import { type Dispatch, type SetStateAction, useCallback } from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
-import { trashContractEstimatePreset } from '@/shared/api/admin-contract-document-estimate-presets-trash';
 import type {
   ContractEstimateGroup,
   ContractEstimatePreset,
@@ -12,6 +11,7 @@ import {
   getContractDocumentPackages,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
+import { trashContractEstimatePreset } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 
 import { clampEstimateAdditionalMarkupPercent } from '../../../../platform/estimates/applyEstimatePresetIds';
 import { persistPackageAfterRemovingEstimatePreset } from '../../../../platform/estimates/detachEstimatePresetFromPackages';

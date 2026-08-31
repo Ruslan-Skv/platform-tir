@@ -1,7 +1,7 @@
 import { useCallback, useMemo } from 'react';
 
 import { getContractDocumentTemplatePresets } from '@/shared/api/admin-contract-document-packages';
-import { trashContractTemplatePreset } from '@/shared/api/admin-contract-document-template-presets-trash';
+import { trashContractTemplatePreset } from '@/shared/api/contract-documents/admin-contract-document-template-presets-trash';
 import { packageLibraryTemplateTabIdFromPreset } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
 import {

@@ -3,8 +3,8 @@
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
-import { remoteSigningStatusLabel } from '@/shared/api/admin-contract-document-signing';
 import type { CrmUser } from '@/shared/api/admin-crm';
+import { remoteSigningStatusLabel } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';

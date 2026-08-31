@@ -1,6 +1,6 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 
-import type { ContractDocumentPackageUserRef } from './admin-contract-document-packages';
+import type { ContractDocumentPackageUserRef } from '../admin-contract-document-packages';
 
 const API_FALLBACK = 'http://localhost:3001/api/v1';
 
@@ -40,23 +40,22 @@ async function readAdminContractPackagesError(res: Response): Promise<string> {
   return `Запрос не выполнен (HTTP ${res.status})`;
 }
 
-export interface ContractEstimatePresetTrashRow {
+export interface ContractTemplatePresetTrashRow {
   id: string;
   title: string;
-  categoryName: string;
-  groupTitle: string | null;
+  tabId: string;
+  tabLabel: string;
   deletedAt: string;
-  /** ISO — дата безвозвратного удаления (deletedAt + срок хранения в корзине). */
   permanentDeleteAt: string | null;
   deletedBy: ContractDocumentPackageUserRef | null;
 }
 
-export async function getContractDocumentEstimatePresetsTrash(params?: {
+export async function getContractDocumentTemplatePresetsTrash(params?: {
   search?: string;
   page?: number;
   limit?: number;
 }): Promise<{
-  data: ContractEstimatePresetTrashRow[];
+  data: ContractTemplatePresetTrashRow[];
   total: number;
   page: number;
   limit: number;
@@ -68,26 +67,26 @@ export async function getContractDocumentEstimatePresetsTrash(params?: {
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/trash?${search}`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-templates/trash?${search}`,
     { headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
   return res.json();
 }
 
-export async function trashContractEstimatePreset(presetId: string): Promise<void> {
+export async function trashContractTemplatePreset(presetId: string): Promise<void> {
   const qs = new URLSearchParams({ kind: 'REPAIR' });
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/${encodeURIComponent(presetId)}?${qs}`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-templates/${encodeURIComponent(presetId)}?${qs}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
 }
 
-export async function restoreContractEstimatePreset(presetId: string): Promise<void> {
+export async function restoreContractTemplatePreset(presetId: string): Promise<void> {
   const qs = new URLSearchParams({ kind: 'REPAIR' });
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/${encodeURIComponent(presetId)}/restore?${qs}`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/contract-templates/${encodeURIComponent(presetId)}/restore?${qs}`,
     { method: 'POST', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readAdminContractPackagesError(res));

@@ -2,12 +2,12 @@
 
 import { useCallback, useEffect, useState } from 'react';
 
+import type { ContractDocumentPackageUserRef } from '@/shared/api/admin-contract-document-packages';
 import {
   type ContractEstimatePresetTrashRow,
   getContractDocumentEstimatePresetsTrash,
   restoreContractEstimatePreset,
-} from '@/shared/api/admin-contract-document-estimate-presets-trash';
-import type { ContractDocumentPackageUserRef } from '@/shared/api/admin-contract-document-packages';
+} from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 import { Modal } from '@/shared/ui/Modal';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';

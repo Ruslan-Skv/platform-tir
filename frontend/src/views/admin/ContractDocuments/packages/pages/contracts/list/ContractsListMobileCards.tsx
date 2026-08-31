@@ -2,8 +2,8 @@
 
 import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
-import { remoteSigningStatusLabel } from '@/shared/api/admin-contract-document-signing';
 import type { CrmUser } from '@/shared/api/admin-crm';
+import { remoteSigningStatusLabel } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { ShareIcon } from '@/shared/ui/icons';
 import { CallCustomerIcon } from '@/shared/ui/icons/crm/CallCustomerIcon';

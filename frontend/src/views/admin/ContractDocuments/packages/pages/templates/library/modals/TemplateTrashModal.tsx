@@ -7,7 +7,7 @@ import {
   type ContractTemplatePresetTrashRow,
   getContractDocumentTemplatePresetsTrash,
   restoreContractTemplatePreset,
-} from '@/shared/api/admin-contract-document-template-presets-trash';
+} from '@/shared/api/contract-documents/admin-contract-document-template-presets-trash';
 import { Modal } from '@/shared/ui/Modal';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';

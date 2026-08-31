@@ -9,7 +9,7 @@ import {
   getContractDocumentSignatoryProfiles,
   getContractDocumentTemplatePresets,
 } from '@/shared/api/admin-contract-document-packages';
-import { getContractDocumentTemplatePresetsTrash } from '@/shared/api/admin-contract-document-template-presets-trash';
+import { getContractDocumentTemplatePresetsTrash } from '@/shared/api/contract-documents/admin-contract-document-template-presets-trash';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { ensureCeilingsContractTemplatePresets } from '@/views/admin/ContractDocuments/packages/families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
 import { fixMisassignedProductLibraryPresets } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateSelection';

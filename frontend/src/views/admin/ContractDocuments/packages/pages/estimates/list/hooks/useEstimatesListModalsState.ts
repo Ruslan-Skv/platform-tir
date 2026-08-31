@@ -1,7 +1,7 @@
 import { useCallback, useMemo, useState } from 'react';
 
-import { getContractDocumentEstimatePresetsTrash } from '@/shared/api/admin-contract-document-estimate-presets-trash';
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import { getContractDocumentEstimatePresetsTrash } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';

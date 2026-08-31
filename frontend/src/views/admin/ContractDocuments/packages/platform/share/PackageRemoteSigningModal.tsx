@@ -6,7 +6,7 @@ import {
   type ContractDocumentSigningSessionCreated,
   createPackageSigningSession,
   remoteSigningStatusLabel,
-} from '@/shared/api/admin-contract-document-signing';
+} from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { Modal } from '@/shared/ui/Modal';
 import { CopyIcon } from '@/shared/ui/icons';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';

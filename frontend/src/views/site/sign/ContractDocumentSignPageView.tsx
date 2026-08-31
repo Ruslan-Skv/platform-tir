@@ -12,7 +12,7 @@ import {
   rejectPublicSigningSession,
   remoteSigningStatusLabel,
   signPublicSigningSession,
-} from '@/shared/api/admin-contract-document-signing';
+} from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './ContractDocumentSignPage.module.css';
