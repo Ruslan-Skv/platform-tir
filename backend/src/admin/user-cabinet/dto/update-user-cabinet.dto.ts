@@ -7,7 +7,7 @@ export class UpdateUserCabinetDto {
   @IsBoolean()
   showProfileSection?: boolean;
 
-  @ApiPropertyOptional({ description: 'Показывать раздел «Мои заказы»' })
+  @ApiPropertyOptional({ description: 'Показывать раздел «История» (заказы, договоры, оплаты)' })
   @IsOptional()
   @IsBoolean()
   showOrdersSection?: boolean;

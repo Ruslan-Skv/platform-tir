@@ -67,6 +67,7 @@ export class UsersService {
         isActive: true,
         isGuest: true,
         avatar: true,
+        phone: true,
         employeeCode: true,
         createdAt: true,
         updatedAt: true,
@@ -170,6 +171,15 @@ export class UsersService {
             ? raw.trim() || null
             : null;
     }
+    if (Object.prototype.hasOwnProperty.call(data, 'phone')) {
+      const raw = data.phone;
+      data.phone =
+        raw === null || raw === undefined
+          ? null
+          : typeof raw === 'string'
+            ? raw.trim() || null
+            : null;
+    }
     const updated = await this.prisma.user.update({
       where: { id },
       data,
@@ -182,6 +192,7 @@ export class UsersService {
         role: true,
         isActive: true,
         avatar: true,
+        phone: true,
         employeeCode: true,
         createdAt: true,
         updatedAt: true,

@@ -955,7 +955,7 @@ async function main() {
   }
   console.log('✅ Promotions: акции созданы');
 
-  // UserCabinetBlock — настройки личного кабинета пользователя
+  // UserCabinetBlock — настройки личного кабинета (showOrdersSection = вкладка «История»)
   await prisma.userCabinetBlock.upsert({
     where: { id: 'main' },
     update: {},

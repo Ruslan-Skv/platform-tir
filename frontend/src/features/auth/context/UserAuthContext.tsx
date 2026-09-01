@@ -47,6 +47,8 @@ export interface User {
   jobTitle?: string | null;
   role: UserRole;
   avatar?: string | null;
+  /** Телефон для связи и сопоставления договоров в «Истории» */
+  phone?: string | null;
 }
 
 interface UserAuthContextType {
@@ -69,6 +71,7 @@ interface UserAuthContextType {
     lastName?: string;
     email?: string;
     avatar?: string | null;
+    phone?: string | null;
   }) => Promise<{ success: boolean; error?: string }>;
   uploadAvatar: (file: File) => Promise<{ success: boolean; error?: string }>;
   getAuthHeaders: () => { Authorization: string } | Record<string, string>;
@@ -399,6 +402,7 @@ export function UserAuthProvider({ children }: { children: React.ReactNode }) {
       lastName?: string;
       email?: string;
       avatar?: string | null;
+      phone?: string | null;
     }) => {
       if (!token || !user) {
         return {

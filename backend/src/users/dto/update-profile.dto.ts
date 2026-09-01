@@ -26,4 +26,13 @@ export class UpdateProfileDto {
   @ApiPropertyOptional({ description: 'URL аватарки (или null для удаления)' })
   @IsOptional()
   avatar?: string | null;
+
+  @ApiPropertyOptional({
+    description: 'Телефон (необязательно); null или пустая строка — удалить',
+  })
+  @ValidateIf((_, v) => v !== null && v !== undefined)
+  @IsOptional()
+  @IsString()
+  @MaxLength(32)
+  phone?: string | null;
 }

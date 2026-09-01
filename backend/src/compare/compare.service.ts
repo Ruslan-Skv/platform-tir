@@ -30,7 +30,21 @@ export class CompareService {
     });
 
     if (existingItem) {
-      throw new ConflictException('Product already in compare');
+      return this.prisma.compareItem.findUniqueOrThrow({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        include: {
+          product: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
     }
 
     // Проверяем лимит сравнения (максимум 10 активных товаров)

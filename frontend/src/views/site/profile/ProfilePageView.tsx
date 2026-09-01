@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useCallback, useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,7 @@ import { useRouter } from 'next/navigation';
 import { useUserAuth } from '@/features/auth/context/UserAuthContext';
 import { getUserCabinetSettings } from '@/shared/api/user-cabinet';
 import type { UserCabinetSettings } from '@/shared/api/user-cabinet';
+import { type HistoryItem, fetchUserHistory } from '@/shared/api/user-history';
 import {
   getUserNotificationHistory,
   getUserNotificationSettings,
@@ -17,39 +18,46 @@ import type {
   UserNotification,
   UserNotificationHistoryResponse,
 } from '@/shared/api/user-notifications';
-import { type UserOrder, getUserOrders } from '@/shared/api/user-orders';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getAvatarUrl, getInitials } from '@/shared/lib/avatar';
+import {
+  PHONE_FORMAT_HINT,
+  PHONE_PLACEHOLDER,
+  digitsOnlyPhone,
+  formatPhoneDisplay,
+  formatPhoneInput,
+  getOptionalPhoneValidationMessage,
+  isValidPhone,
+  normalizePhoneForStorage,
+} from '@/shared/lib/phone';
 import { getSafeHref } from '@/shared/lib/sanitize';
 
 import styles from './ProfilePage.module.css';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
-type Tab = 'profile' | 'orders' | 'notifications' | 'notificationHistory' | 'password';
+type Tab = 'profile' | 'history' | 'notifications' | 'notificationHistory' | 'password';
 
 const PROFILE_TABS: { id: Tab; label: string }[] = [
   { id: 'profile', label: 'Личные данные' },
-  { id: 'orders', label: 'Мои заказы' },
+  { id: 'history', label: 'История' },
   { id: 'notifications', label: 'Уведомления' },
   { id: 'notificationHistory', label: 'История уведомлений' },
   { id: 'password', label: 'Смена пароля' },
 ];
 
-const ORDER_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Ожидает',
-  PROCESSING: 'В обработке',
-  SHIPPED: 'Отправлен',
-  DELIVERED: 'Доставлен',
-  CANCELLED: 'Отменён',
-  REFUNDED: 'Возврат',
+const HISTORY_TYPE_LABELS: Record<HistoryItem['type'], string> = {
+  order: 'Заказ',
+  service_order: 'Услуги',
+  contract: 'Договор',
+  payment: 'Оплата',
 };
 
-const PAYMENT_STATUS_LABELS: Record<string, string> = {
-  PENDING: 'Ожидает оплаты',
-  PAID: 'Оплачен',
-  FAILED: 'Ошибка',
-  REFUNDED: 'Возврат',
+const PAYMENT_TYPE_LABELS: Record<string, string> = {
+  PREPAYMENT: 'Предоплата',
+  ADVANCE: 'Аванс',
+  FINAL: 'Окончательный расчёт',
+  AMENDMENT: 'По доп. соглашению',
 };
 
 function formatDate(dateStr: string) {
@@ -79,14 +87,23 @@ export function ProfilePageView() {
   const [cabinetSettings, setCabinetSettings] = useState<UserCabinetSettings | null>(null);
 
   // Profile
-  const [formData, setFormData] = useState({ email: '', firstName: '', lastName: '' });
+  const [formData, setFormData] = useState({
+    email: '',
+    firstName: '',
+    lastName: '',
+    phone: '',
+  });
   const [profileError, setProfileError] = useState('');
   const [profileSuccess, setProfileSuccess] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  const [phoneTouched, setPhoneTouched] = useState(false);
 
-  // Orders
-  const [orders, setOrders] = useState<UserOrder[]>([]);
-  const [ordersLoading, setOrdersLoading] = useState(false);
+  // History
+  const [historyItems, setHistoryItems] = useState<HistoryItem[]>([]);
+  const [historyLoading, setHistoryLoading] = useState(false);
+  const [historyLoadingMore, setHistoryLoadingMore] = useState(false);
+  const [historyHasMore, setHistoryHasMore] = useState(false);
+  const [historyPage, setHistoryPage] = useState(1);
 
   // Notifications
   const [notifLoading, setNotifLoading] = useState(false);
@@ -136,20 +153,52 @@ export function ProfilePageView() {
         email: user.email || '',
         firstName: user.firstName || '',
         lastName: user.lastName || '',
+        phone: user.phone ? formatPhoneDisplay(user.phone) : '',
       });
+      setPhoneTouched(false);
       setAvatarLoadError(false);
     }
   }, [user]);
 
-  const loadOrders = useCallback(async () => {
-    setOrdersLoading(true);
+  const comparableProfilePhone = (phone: string) => {
+    const trimmed = phone.trim();
+    if (!trimmed) return '';
+    return normalizePhoneForStorage(trimmed) || trimmed;
+  };
+
+  const phoneValidationError = getOptionalPhoneValidationMessage(formData.phone);
+  const showPhoneError =
+    phoneValidationError &&
+    (phoneTouched || (digitsOnlyPhone(formData.phone).length > 0 && !isValidPhone(formData.phone)));
+
+  const isProfileDirty = useMemo(() => {
+    if (!user) return false;
+    return (
+      (formData.firstName || '') !== (user.firstName || '') ||
+      (formData.lastName || '') !== (user.lastName || '') ||
+      comparableProfilePhone(formData.phone) !== comparableProfilePhone(user.phone || '')
+    );
+  }, [user, formData.firstName, formData.lastName, formData.phone]);
+
+  const isProfileSaveDisabled = isSaving || !isProfileDirty || !!phoneValidationError;
+
+  const loadHistory = useCallback(async (page: number, append: boolean) => {
+    if (append) {
+      setHistoryLoadingMore(true);
+    } else {
+      setHistoryLoading(true);
+    }
     try {
-      const data = await getUserOrders();
-      setOrders(data);
+      const data = await fetchUserHistory(page, 20);
+      setHistoryItems((prev) => (append ? [...prev, ...data.data] : data.data));
+      setHistoryHasMore(data.meta.hasMore);
+      setHistoryPage(page);
     } catch {
-      setOrders([]);
+      if (!append) setHistoryItems([]);
+      setHistoryHasMore(false);
     } finally {
-      setOrdersLoading(false);
+      setHistoryLoading(false);
+      setHistoryLoadingMore(false);
     }
   }, []);
 
@@ -178,8 +227,8 @@ export function ProfilePageView() {
   }, []);
 
   useEffect(() => {
-    if (activeTab === 'orders' && isAuthenticated) loadOrders();
-  }, [activeTab, isAuthenticated, loadOrders]);
+    if (activeTab === 'history' && isAuthenticated) loadHistory(1, false);
+  }, [activeTab, isAuthenticated, loadHistory]);
 
   useEffect(() => {
     if (activeTab === 'notifications' && isAuthenticated) loadNotifSettings();
@@ -195,7 +244,7 @@ export function ProfilePageView() {
     if (!cabinetSettings) return;
     const visibleTabs = PROFILE_TABS.filter((t) => {
       if (t.id === 'profile') return cabinetSettings.showProfileSection;
-      if (t.id === 'orders') return cabinetSettings.showOrdersSection;
+      if (t.id === 'history') return cabinetSettings.showOrdersSection;
       if (t.id === 'notifications') return cabinetSettings.showNotificationsSection;
       if (t.id === 'notificationHistory') return cabinetSettings.showNotificationHistory !== false;
       if (t.id === 'password') return cabinetSettings.showPasswordSection;
@@ -242,13 +291,19 @@ export function ProfilePageView() {
   };
 
   const handleSaveProfile = async () => {
+    if (!isProfileDirty || phoneValidationError) {
+      setPhoneTouched(true);
+      return;
+    }
     setProfileError('');
     setProfileSuccess('');
     setIsSaving(true);
     try {
+      const phoneStored = normalizePhoneForStorage(formData.phone);
       const result = await updateProfile({
         firstName: formData.firstName || undefined,
         lastName: formData.lastName || undefined,
+        phone: phoneStored || null,
       });
       if (result.success) {
         setProfileSuccess('Профиль обновлён');
@@ -338,7 +393,7 @@ export function ProfilePageView() {
   const tabs = cabinetSettings
     ? allTabs.filter((t) => {
         if (t.id === 'profile') return cabinetSettings.showProfileSection;
-        if (t.id === 'orders') return cabinetSettings.showOrdersSection;
+        if (t.id === 'history') return cabinetSettings.showOrdersSection;
         if (t.id === 'notifications') return cabinetSettings.showNotificationsSection;
         if (t.id === 'notificationHistory')
           return cabinetSettings.showNotificationHistory !== false;
@@ -468,11 +523,44 @@ export function ProfilePageView() {
                 />
               </div>
 
+              <div className={`${styles.field} ${styles.fieldShort}`}>
+                <label className={styles.label} htmlFor="profile-phone">
+                  Телефон
+                </label>
+                <input
+                  id="profile-phone"
+                  type="tel"
+                  inputMode="tel"
+                  value={formData.phone}
+                  onChange={(e) =>
+                    setFormData({ ...formData, phone: formatPhoneInput(e.target.value) })
+                  }
+                  onBlur={() => setPhoneTouched(true)}
+                  className={`${styles.input} ${showPhoneError ? styles.inputInvalid : ''}`}
+                  placeholder={PHONE_PLACEHOLDER}
+                  autoComplete="tel"
+                  aria-invalid={showPhoneError ? true : undefined}
+                  aria-describedby={
+                    showPhoneError ? 'profile-phone-hint profile-phone-error' : 'profile-phone-hint'
+                  }
+                />
+                <p id="profile-phone-hint" className={styles.fieldHint}>
+                  Необязательно. Помогает находить ваши договоры и оплаты в разделе «История».{' '}
+                  {PHONE_FORMAT_HINT}
+                </p>
+                {showPhoneError ? (
+                  <p id="profile-phone-error" className={styles.fieldError} role="alert">
+                    {phoneValidationError}
+                  </p>
+                ) : null}
+              </div>
+
               <div className={styles.actions}>
                 <button
+                  type="button"
                   onClick={handleSaveProfile}
                   className={styles.saveButton}
-                  disabled={isSaving}
+                  disabled={isProfileSaveDisabled}
                 >
                   {isSaving ? 'Сохранение...' : 'Сохранить'}
                 </button>
@@ -480,53 +568,98 @@ export function ProfilePageView() {
             </section>
           )}
 
-          {activeTab === 'orders' && cabinetSettings?.showOrdersSection !== false && (
+          {activeTab === 'history' && cabinetSettings?.showOrdersSection !== false && (
             <section className={styles.section}>
-              <h2 className={styles.sectionTitle}>Мои заказы</h2>
-              {ordersLoading ? (
-                <p className={styles.loading}>Загрузка заказов...</p>
-              ) : orders.length === 0 ? (
+              <h2 className={styles.sectionTitle}>История</h2>
+              <p className={styles.readOnlyHint}>
+                Заказы, договоры и оплаты, связанные с вашим аккаунтом.
+              </p>
+              {historyLoading ? (
+                <p className={styles.loading}>Загрузка истории...</p>
+              ) : historyItems.length === 0 ? (
                 <p className={styles.empty}>
-                  У вас пока нет заказов. <Link href="/catalog/products">Перейти в каталог</Link>
+                  Пока нет событий. <Link href="/catalog/products">Перейти в каталог</Link>
                 </p>
               ) : (
-                <div className={styles.ordersList}>
-                  {orders.map((order) => (
-                    <div key={order.id} className={styles.orderCard}>
-                      <div className={styles.orderHeader}>
-                        <span className={styles.orderNumber}>{order.orderNumber}</span>
-                        <span className={styles.orderDate}>{formatDate(order.createdAt)}</span>
-                        <span
-                          className={`${styles.orderStatus} ${styles[`status_${order.status}`]}`}
-                        >
-                          {ORDER_STATUS_LABELS[order.status] ?? order.status}
-                        </span>
-                      </div>
-                      <div className={styles.orderBody}>
-                        <div className={styles.orderItems}>
-                          {order.items.slice(0, 3).map((item) => (
-                            <span key={item.id} className={styles.orderItemName}>
-                              {item.product?.name ?? 'Товар'} × {item.quantity}
+                <>
+                  <div className={styles.historyTimeline}>
+                    {historyItems.map((item) => (
+                      <article key={item.id} className={styles.historyItem}>
+                        <div className={styles.historyMarker} aria-hidden />
+                        <div className={styles.historyCard}>
+                          <div className={styles.historyHeader}>
+                            <span className={styles.historyTypeBadge}>
+                              {HISTORY_TYPE_LABELS[item.type]}
                             </span>
-                          ))}
-                          {order.items.length > 3 && (
-                            <span className={styles.orderItemMore}>
-                              и ещё {order.items.length - 3}
-                            </span>
+                            <time className={styles.historyDate} dateTime={item.occurredAt}>
+                              {formatDate(item.occurredAt)}
+                            </time>
+                            {item.statusLabel && (
+                              <span
+                                className={`${styles.orderStatus} ${item.status ? styles[`status_${item.status}`] : ''}`}
+                              >
+                                {item.statusLabel}
+                              </span>
+                            )}
+                          </div>
+                          <h3 className={styles.historyTitle}>{item.title}</h3>
+                          {item.subtitle && (
+                            <p className={styles.historySubtitle}>{item.subtitle}</p>
                           )}
+                          {item.type === 'order' && item.meta.itemsPreview.length > 0 && (
+                            <div className={styles.orderItems}>
+                              {item.meta.itemsPreview.slice(0, 3).map((line) => (
+                                <span key={line.id} className={styles.orderItemName}>
+                                  {line.name} × {line.quantity}
+                                </span>
+                              ))}
+                              {item.meta.itemsTotal > 3 && (
+                                <span className={styles.orderItemMore}>
+                                  и ещё {item.meta.itemsTotal - 3}
+                                </span>
+                              )}
+                            </div>
+                          )}
+                          {item.type === 'payment' && item.meta.paymentType && (
+                            <p className={styles.historySubtitle}>
+                              {PAYMENT_TYPE_LABELS[item.meta.paymentType] ?? item.meta.paymentType}
+                            </p>
+                          )}
+                          <div className={styles.historyFooter}>
+                            {item.amount != null && (
+                              <span className={styles.orderTotal}>{formatPrice(item.amount)}</span>
+                            )}
+                            {item.type === 'order' && (
+                              <Link
+                                href={`/checkout?orderId=${encodeURIComponent(item.meta.orderId)}`}
+                                className={styles.historyActionLink}
+                              >
+                                Подробнее
+                              </Link>
+                            )}
+                            {item.type === 'contract' && item.meta.signUrl && (
+                              <Link href={item.meta.signUrl} className={styles.historyActionLink}>
+                                Подписать договор
+                              </Link>
+                            )}
+                          </div>
                         </div>
-                        <div className={styles.orderFooter}>
-                          <span className={styles.orderTotal}>
-                            Итого: {formatPrice(order.total)}
-                          </span>
-                          <span className={styles.orderPayment}>
-                            {PAYMENT_STATUS_LABELS[order.paymentStatus] ?? order.paymentStatus}
-                          </span>
-                        </div>
-                      </div>
+                      </article>
+                    ))}
+                  </div>
+                  {historyHasMore && (
+                    <div className={styles.historyLoadMore}>
+                      <button
+                        type="button"
+                        className={styles.saveButton}
+                        disabled={historyLoadingMore}
+                        onClick={() => loadHistory(historyPage + 1, true)}
+                      >
+                        {historyLoadingMore ? 'Загрузка...' : 'Показать ещё'}
+                      </button>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </section>
           )}

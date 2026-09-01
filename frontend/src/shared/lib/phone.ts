@@ -90,3 +90,11 @@ export function getPhoneValidationMessage(phone: string): string | null {
   if (!isValidPhone(trimmed)) return PHONE_FORMAT_HINT;
   return null;
 }
+
+/** Необязательное поле: пустое значение допустимо, неполный/неверный — подсказка формата. */
+export function getOptionalPhoneValidationMessage(phone: string): string | null {
+  const trimmed = phone.trim();
+  if (!trimmed) return null;
+  if (!isValidPhone(trimmed)) return PHONE_FORMAT_HINT;
+  return null;
+}

@@ -50,11 +50,19 @@ export function WishlistProvider({ children }: { children: React.ReactNode }) {
       const guestIds = wishlistApi.readGuestWishlistIds();
       if (guestIds.length > 0) {
         wishlistApi.clearGuestWishlistIds();
+        let serverIds = new Set<string>();
+        try {
+          const existing = await wishlistApi.getWishlist();
+          serverIds = new Set(existing.map((p) => p.id));
+        } catch {
+          /* merge после ошибки загрузки — только новые id из guest */
+        }
         for (const id of guestIds) {
+          if (serverIds.has(id)) continue;
           try {
             await wishlistApi.addToWishlist(id);
           } catch {
-            /* дубликат или сеть */
+            /* лимит или сеть */
           }
         }
       }

@@ -130,7 +130,9 @@ export function UserCabinetSection() {
                 setSettings((s) => (s ? { ...s, showOrdersSection: e.target.checked } : s))
               }
             />
-            <label htmlFor="showOrdersSection">Показывать раздел «Мои заказы»</label>
+            <label htmlFor="showOrdersSection">
+              Показывать раздел «История (заказы, договоры, оплаты)»
+            </label>
           </div>
           <div className={styles.checkboxRow}>
             <input

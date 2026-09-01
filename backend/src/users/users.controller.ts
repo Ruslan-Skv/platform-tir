@@ -101,7 +101,7 @@ export class UsersController {
   }
 
   @Patch('me')
-  @ApiOperation({ summary: 'Обновить свой профиль (имя, фамилия, должность, аватарка)' })
+  @ApiOperation({ summary: 'Обновить свой профиль (имя, фамилия, телефон, должность, аватарка)' })
   updateProfile(@Request() req: RequestWithUser, @Body() dto: UpdateProfileDto) {
     return this.usersService.update(req.user.id, dto);
   }

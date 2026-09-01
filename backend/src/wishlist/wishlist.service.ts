@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 import { ProductsService } from '../products/products.service';
 
@@ -30,7 +30,21 @@ export class WishlistService {
     });
 
     if (existingItem) {
-      throw new ConflictException('Product already in wishlist');
+      return this.prisma.wishlistItem.findUniqueOrThrow({
+        where: {
+          userId_productId: {
+            userId,
+            productId,
+          },
+        },
+        include: {
+          product: {
+            include: {
+              category: true,
+            },
+          },
+        },
+      });
     }
 
     return this.prisma.wishlistItem.create({

@@ -64,11 +64,19 @@ export function CompareProvider({ children }: { children: React.ReactNode }) {
       const guestIds = compareApi.readGuestCompareIds();
       if (guestIds.length > 0) {
         compareApi.clearGuestCompareIds();
+        let serverIds = new Set<string>();
+        try {
+          const existing = await compareApi.getCompare();
+          serverIds = new Set(existing.map((p) => p.id));
+        } catch {
+          /* merge после ошибки загрузки — только новые id из guest */
+        }
         for (const id of guestIds) {
+          if (serverIds.has(id)) continue;
           try {
             await compareApi.addToCompare(id);
           } catch {
-            /* дубликат, лимит или сеть */
+            /* лимит или сеть */
           }
         }
       }
