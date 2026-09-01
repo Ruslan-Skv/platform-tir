@@ -1,4 +1,10 @@
 /** Шаблон вкладки «Договор» (ремонт). Плейсхолдеры: {{customer.*}}, {{executor.*}}, {{object.*}}, {{contract.*}}. Для реквизитов Исполнителя удобно {{executor.innKppRegLine}} (ЮЛ: ИНН, КПП, ОГРН; ИП: ИНН, ОГРНИП). */
+import {
+  buildContractMessengerClauseHtml,
+  buildContractRemoteSigningClausesHtml,
+  buildRepairActStartPepClauseHtml,
+} from './contractTemplateRemoteSigningSection';
+
 export const packageTemplateContract = `
 <div class="docPrint">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 12pt;">
@@ -45,7 +51,7 @@ export const packageTemplateContract = `
     расчёт — по факту подписания акта приёма выполненных работ (или иной порядок, согласованный Сторонами).
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    2.3. Оплата производится безналичным перечислением на расчётный счёт Подрядчика, указанный в разделе 11 настоящего
+    2.3. Оплата производится безналичным перечислением на расчётный счёт Подрядчика, указанный в разделе 12 настоящего
     Договора, либо иным способом по согласованию Сторон.
   </p>
 
@@ -98,19 +104,24 @@ export const packageTemplateContract = `
     ответчика, если иное не предусмотлено императивными нормами РФ.
   </p>
 
-  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">9. ПРОЧИЕ УСЛОВИЯ</h2>
+  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">9. ДИСТАНЦИОННОЕ НАПРАВЛЕНИЕ И ПОДПИСАНИЕ ДОКУМЕНТОВ</h2>
+  ${buildContractMessengerClauseHtml('9.1.')}
+  ${buildContractRemoteSigningClausesHtml({ startNumber: 9.2, contractorLabel: 'Подрядчик' })}
+  ${buildRepairActStartPepClauseHtml('9.11.')}
+
+  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">10. ПРОЧИЕ УСЛОВИЯ</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    9.1. Договор вступает в силу с момента подписания и действует до полного исполнения Сторонами обязательств, если
+    10.1. Договор вступает в силу с момента подписания и действует до полного исполнения Сторонами обязательств, если
     иное не указано в Договоре.
   </p>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    9.2. Все изменения и дополнения действительны при условии их письменного оформления и подписания уполномоченными
+    10.2. Все изменения и дополнения действительны при условии их письменного оформления и подписания уполномоченными
     представителями Сторон.
   </p>
 
-  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">10. ПРИЛОЖЕНИЯ</h2>
+  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">11. ПРИЛОЖЕНИЯ</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    10.1. Неотъемлемой частью Договора являются: локальная смета / калькуляция (при наличии), иные приложения по
+    11.1. Неотъемлемой частью Договора являются: локальная смета / калькуляция (при наличии), иные приложения по
     согласованию Сторон.
   </p>
   <p style="text-align: justify; margin: 0 0 8pt;">
@@ -123,7 +134,7 @@ export const packageTemplateContract = `
     Примечание к смете: <em>{{estimate.notes}}</em>
   </p>
 
-  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">11. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
+  <h2 style="text-align: center; font-size: 12pt; margin: 16pt 0 8pt;">12. РЕКВИЗИТЫ И ПОДПИСИ СТОРОН</h2>
   <table class="contractRequisitesBlock" style="width: 100%; border-collapse: collapse; font-size: 10pt; margin-top: 6pt; page-break-inside: auto;">
     <tr>
       <td style="width: 50%; vertical-align: top; padding: 10px 12px 10px 0; border-right: 1px solid #bbb;">

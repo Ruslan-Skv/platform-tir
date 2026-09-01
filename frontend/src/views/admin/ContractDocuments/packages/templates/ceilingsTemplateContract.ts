@@ -1,4 +1,9 @@
 /** Шаблон вкладки «Договор» (направление «Натяжные потолки»). */
+import {
+  buildContractMessengerClauseHtml,
+  buildContractRemoteSigningClausesHtml,
+} from './contractTemplateRemoteSigningSection';
+
 export const ceilingsTemplateContract = `
 <div class="docPrint docPrintContractCompact">
   <h1 style="text-align: center; font-size: 14pt; margin: 0 0 12pt;">
@@ -208,10 +213,8 @@ export const ceilingsTemplateContract = `
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
     8.2. Все изменения спецификации оформляются письменно и могут повлиять на стоимость и сроки.
   </p>
-  <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
-    8.3. Переписка в мессенджерах (WhatsApp, Telegram) по номерам телефонов, указанным в договоре, имеет юридическую
-    силу для уведомлений и согласований.
-  </p>
+  ${buildContractMessengerClauseHtml('8.3.')}
+  ${buildContractRemoteSigningClausesHtml({ startNumber: 8.4 })}
 
   <h2 style="text-align: center; font-size: 12pt; margin: 14pt 0 8pt;">9. ПРИЛОЖЕНИЯ (неотъемлемая часть договора)</h2>
   <p style="text-align: justify; text-indent: 1.25cm; margin: 0 0 8pt;">
