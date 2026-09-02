@@ -75,7 +75,7 @@ export function NumberingOfficePrefixesSection({
           value={officeDrafts[o.id] ?? ''}
           onChange={(e) => onDraftChange(o.id, e.target.value)}
           disabled={!isSuperAdmin}
-          placeholder="77"
+          placeholder="напр. 77"
           autoComplete="off"
           aria-label={`Префикс офиса ${o.name}`}
         />
@@ -125,7 +125,7 @@ export function NumberingOfficePrefixesSection({
                       value={officeDrafts[o.id] ?? ''}
                       onChange={(e) => onDraftChange(o.id, e.target.value)}
                       disabled={!isSuperAdmin}
-                      placeholder="77"
+                      placeholder="напр. 77"
                       autoComplete="off"
                     />
                   </dd>

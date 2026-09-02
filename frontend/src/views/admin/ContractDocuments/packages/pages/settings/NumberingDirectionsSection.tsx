@@ -64,7 +64,7 @@ export function NumberingDirectionsSection({
           value={directionDrafts[d.id] ?? ''}
           onChange={(e) => onDraftChange(d.id, e.target.value)}
           disabled={!isSuperAdmin}
-          placeholder="д"
+          placeholder="напр. д"
           autoComplete="off"
           aria-label={`Буква направления ${d.name}`}
         />
@@ -106,7 +106,7 @@ export function NumberingDirectionsSection({
                       value={directionDrafts[d.id] ?? ''}
                       onChange={(e) => onDraftChange(d.id, e.target.value)}
                       disabled={!isSuperAdmin}
-                      placeholder="д"
+                      placeholder="напр. д"
                       autoComplete="off"
                     />
                   </dd>

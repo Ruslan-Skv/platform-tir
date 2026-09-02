@@ -76,7 +76,7 @@ export function NumberingEmployeeCodesSection({
           value={userDrafts[u.id] ?? ''}
           onChange={(e) => onDraftChange(u.id, e.target.value)}
           disabled={!isSuperAdmin}
-          placeholder="1"
+          placeholder="напр. 1"
           autoComplete="off"
           aria-label={`Код сотрудника ${formatNumberingUserLabel(u)}`}
         />
@@ -121,7 +121,7 @@ export function NumberingEmployeeCodesSection({
                       value={userDrafts[u.id] ?? ''}
                       onChange={(e) => onDraftChange(u.id, e.target.value)}
                       disabled={!isSuperAdmin}
-                      placeholder="1"
+                      placeholder="напр. 1"
                       autoComplete="off"
                     />
                   </dd>
