@@ -1,5 +1,9 @@
 'use client';
 
+import { useEffect, useMemo, useState } from 'react';
+
+import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
+
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
@@ -38,6 +42,14 @@ export type PackageDataContractObjectSectionProps = Pick<
   | 'workPeriodFieldHelp'
 >;
 
+function formatSignatoryProfileLabel(
+  title: string,
+  crmUserId: string | undefined,
+  codeByUserId: Map<string, string>
+): string {
+  const code = crmUserId?.trim() ? codeByUserId.get(crmUserId.trim()) : undefined;
+  return code ? `${title} (${code})` : title;
+}
 export function PackageDataContractObjectSection({
   form,
   contractAndEstimateLocked,
@@ -54,6 +66,31 @@ export function PackageDataContractObjectSection({
   contractDateFieldHelp,
   workPeriodFieldHelp,
 }: PackageDataContractObjectSectionProps) {
+  const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void getCrmUsers()
+      .then((users) => {
+        if (!cancelled) setCrmUsers(users);
+      })
+      .catch(() => {
+        if (!cancelled) setCrmUsers([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const employeeCodeByUserId = useMemo(() => {
+    const map = new Map<string, string>();
+    for (const user of crmUsers) {
+      const code = user.employeeCode?.trim();
+      if (code) map.set(user.id, code);
+    }
+    return map;
+  }, [crmUsers]);
+
   return (
     <div className={DATA_TOP_BLOCK}>
       <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET}`}>
@@ -216,7 +253,11 @@ export function PackageDataContractObjectSection({
                 <option value="">— выбрать карточку —</option>
                 {signatoryProfiles.map((profile) => (
                   <option key={profile.title} value={profile.title}>
-                    {profile.title}
+                    {formatSignatoryProfileLabel(
+                      profile.title,
+                      profile.crmUserId,
+                      employeeCodeByUserId
+                    )}
                   </option>
                 ))}
               </select>
