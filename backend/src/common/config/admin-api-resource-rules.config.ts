@@ -19,9 +19,9 @@ export type AdminApiResourceRule = {
 
  * Shared-read маршруты без проверки resourceId (достаточно JwtAuth + @Roles).
 
- * Направления/список CRM-пользователей нужны топ-разделам (Договора, Замеры, Заказчики),
+ * Справочные GET-списки (направления, сотрудники, офисы, мастера, категории услуг)
 
- * даже если хаб admin.crm явно закрыт — DENIED с хаба не наследуется на эти разделы.
+ * нужны топ-разделам (Договора, Замеры), даже если хаб CRM / каталог услуг закрыт.
 
  */
 
@@ -40,6 +40,18 @@ export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
   {
     methods: ['GET', 'HEAD'],
     pathPattern: /^\/api\/v1\/admin\/crm-directions\/users\/me\/directions$/,
+  },
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/offices$/,
+  },
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/installers$/,
+  },
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/service-catalog\/categories$/,
   },
   // Колокольчик / личная доставка / push: JWT + роль админки, без admin.settings.notifications
   {

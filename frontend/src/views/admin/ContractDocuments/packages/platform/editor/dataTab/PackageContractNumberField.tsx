@@ -71,17 +71,13 @@ export function PackageContractNumberField({
   useEffect(() => {
     let cancelled = false;
     void (async () => {
-      try {
-        const [officeList, users] = await Promise.all([getOffices(), getCrmUsers()]);
-        if (cancelled) return;
-        setOffices(officeList.filter((o) => o.isActive !== false));
-        setCrmUsers(users);
-      } catch {
-        if (!cancelled) {
-          setOffices([]);
-          setCrmUsers([]);
-        }
-      }
+      const [officeList, users] = await Promise.all([
+        getOffices().catch(() => [] as Office[]),
+        getCrmUsers().catch(() => [] as CrmUser[]),
+      ]);
+      if (cancelled) return;
+      setOffices(officeList.filter((o) => o.isActive !== false));
+      setCrmUsers(users);
     })();
     return () => {
       cancelled = true;

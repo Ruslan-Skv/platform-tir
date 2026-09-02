@@ -45,6 +45,49 @@ describe('matchAdminApiResourceRule crm-directions shared reads', () => {
     ).toBeNull();
   });
 
+  it('skips resource check for shared office list lookup', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/offices')).toBeNull();
+    expect(
+      matchAdminApiResourceRule('GET', '/api/v1/admin/offices?includeInactive=true'),
+    ).toBeNull();
+  });
+
+  it('skips resource check for shared installer and service-catalog category lookups', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/installers')).toBeNull();
+    expect(
+      matchAdminApiResourceRule(
+        'GET',
+        '/api/v1/admin/service-catalog/categories?includeInactive=true',
+      ),
+    ).toBeNull();
+  });
+
+  it('still guards office detail and mutations via admin.crm.offices', () => {
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/offices/office-1')).toEqual({
+      resourceId: 'admin.crm.offices',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+    expect(matchAdminApiResourceRule('POST', '/api/v1/admin/offices')).toEqual({
+      resourceId: 'admin.crm.offices',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+  });
+
+  it('still guards installer/service-catalog mutations and nested routes', () => {
+    expect(matchAdminApiResourceRule('POST', '/api/v1/admin/installers')).toEqual({
+      resourceId: 'admin.crm.installers',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+    expect(matchAdminApiResourceRule('GET', '/api/v1/admin/installers/i1')).toEqual({
+      resourceId: 'admin.crm.installers',
+      level: AdminResourcePermissionLevel.VIEW,
+    });
+    expect(matchAdminApiResourceRule('POST', '/api/v1/admin/service-catalog/categories')).toEqual({
+      resourceId: 'admin.service-catalog',
+      level: AdminResourcePermissionLevel.EDIT,
+    });
+  });
+
   it('still guards CRM direction mutations via admin.crm', () => {
     expect(matchAdminApiResourceRule('POST', '/api/v1/admin/crm-directions')).toEqual({
       resourceId: 'admin.crm',
