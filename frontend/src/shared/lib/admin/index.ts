@@ -34,3 +34,4 @@ export {
   normalizeAdminDashboardSectionOrder,
   type AdminDashboardSectionId,
 } from './admin-dashboard-sections';
+export { filterCrmDirectionsForContractCreate } from './crm-directions-for-contract-create';

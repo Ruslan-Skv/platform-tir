@@ -17,8 +17,8 @@ import {
   getMeasurement,
   updateMeasurement,
 } from '@/shared/api/admin-crm';
+import { filterCrmDirectionsForContractCreate } from '@/shared/lib/admin/crm-directions-for-contract-create';
 import { apiFetch } from '@/shared/lib/api-fetch';
-import { filterCrmDirectionsForContractCreate } from '@/shared/lib/crm-directions-for-contract-create';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { measurementFieldsFromCrmCustomerDetail } from '../../shared/measurementCrmCustomer';
