@@ -65,7 +65,7 @@ export function useFurnitureSchedulesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const repairInstallers = useMemo(
-    () => installers.filter((i) => i.direction === 'FURNITURE'),
+    () => installers.filter((i) => i.directions?.includes('FURNITURE')),
     [installers]
   );
 

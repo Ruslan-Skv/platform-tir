@@ -1,17 +1,41 @@
 import type { InstallerDirection } from '@/shared/api/admin-crm';
 
-import { INSTALLER_GRADE_NOT_USED } from './installers-page.constants';
+import { DIRECTION_OPTIONS, INSTALLER_GRADE_NOT_USED } from './installers-page.constants';
 
-export function isRepairInstallerDirection(direction: InstallerDirection): boolean {
-  return direction === 'REPAIR';
+export function isRepairInstallerDirection(
+  directions: InstallerDirection | InstallerDirection[]
+): boolean {
+  if (Array.isArray(directions)) return directions.includes('REPAIR');
+  return directions === 'REPAIR';
 }
 
-export function gradeForApi(direction: InstallerDirection, grade: string): string {
-  return isRepairInstallerDirection(direction) ? grade.trim() : INSTALLER_GRADE_NOT_USED;
+export function installerHasDirection(
+  directions: InstallerDirection[] | undefined | null,
+  direction: InstallerDirection
+): boolean {
+  return (directions ?? []).includes(direction);
 }
 
-export function gradeForForm(direction: InstallerDirection, grade: string): string {
-  if (!isRepairInstallerDirection(direction)) return '';
+/** Направления в каноническом порядке справочника. */
+export function normalizeInstallerDirections(
+  directions: InstallerDirection[]
+): InstallerDirection[] {
+  const set = new Set(directions);
+  return DIRECTION_OPTIONS.map((opt) => opt.value).filter((value) => set.has(value));
+}
+
+export function gradeForApi(
+  directions: InstallerDirection | InstallerDirection[],
+  grade: string
+): string {
+  return isRepairInstallerDirection(directions) ? grade.trim() : INSTALLER_GRADE_NOT_USED;
+}
+
+export function gradeForForm(
+  directions: InstallerDirection | InstallerDirection[],
+  grade: string
+): string {
+  if (!isRepairInstallerDirection(directions)) return '';
   if (grade === INSTALLER_GRADE_NOT_USED) return '';
   return grade;
 }

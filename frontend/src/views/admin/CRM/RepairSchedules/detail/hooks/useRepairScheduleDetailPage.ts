@@ -61,7 +61,7 @@ export function useRepairScheduleDetailPage(projectId: string) {
       .catch(() => setInstallers([]));
   }, []);
 
-  const repairInstallers = installers.filter((i) => i.direction === 'REPAIR');
+  const repairInstallers = installers.filter((i) => i.directions?.includes('REPAIR'));
 
   const openEdit = () => {
     if (!project) return;

@@ -112,7 +112,7 @@ export type FurnitureScheduleProject = {
   installer?: {
     id: string;
     fullName: string;
-    direction: string;
+    directions: string[];
     grade: string;
     userId: string | null;
   } | null;

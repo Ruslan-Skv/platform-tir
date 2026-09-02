@@ -29,7 +29,7 @@ export function usePackageContractInstallers({
 }: UsePackageContractInstallersOptions) {
   const installersForContract = useMemo(() => {
     const direction = isProductDirectionPackageKind(packageKind) ? packageKind : 'REPAIR';
-    return contractInstallers.filter((installer) => installer.direction === direction);
+    return contractInstallers.filter((installer) => installer.directions?.includes(direction));
   }, [contractInstallers, packageKind]);
 
   const selectedInstallers = useMemo(() => {

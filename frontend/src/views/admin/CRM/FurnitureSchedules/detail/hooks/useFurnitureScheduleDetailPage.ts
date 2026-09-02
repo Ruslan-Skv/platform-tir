@@ -66,7 +66,7 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
       .catch(() => setInstallers([]));
   }, []);
 
-  const repairInstallers = installers.filter((i) => i.direction === 'FURNITURE');
+  const repairInstallers = installers.filter((i) => i.directions?.includes('FURNITURE'));
 
   const openEdit = () => {
     if (!project) return;

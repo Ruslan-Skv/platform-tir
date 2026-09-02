@@ -28,7 +28,7 @@ export class RepairSchedulesImportService {
     }
 
     const installers = await this.prisma.installerMaster.findMany({
-      where: { direction: 'REPAIR' },
+      where: { directions: { has: 'REPAIR' } },
       select: { id: true, fullName: true },
     });
 

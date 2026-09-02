@@ -1,7 +1,7 @@
 import type { InstallerDirection } from '@/shared/api/admin-crm';
 
 export type InstallerFormValues = {
-  direction: InstallerDirection;
+  directions: InstallerDirection[];
   fullName: string;
   grade: string;
   phones: string[];

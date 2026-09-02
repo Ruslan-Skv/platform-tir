@@ -65,17 +65,7 @@ export function CartComponentItemCard({
   const componentId = item.componentId!;
 
   return (
-    <div className={styles.cartItem}>
-      <Link href={`/product/${item.component.product.slug}`} className={styles.itemImage}>
-        <img
-          src={item.component.image || '/images/products/door-placeholder.jpg'}
-          alt={item.component.name}
-          width={88}
-          height={88}
-          className={styles.image}
-        />
-      </Link>
-
+    <div className={`${styles.cartItem} ${styles.cartItemNoImage}`}>
       <div className={styles.itemInfo}>
         <Link href={`/product/${item.component.product.slug}`} className={styles.itemName}>
           {item.component.name}

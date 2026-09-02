@@ -1,6 +1,7 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import {
   ArrayMaxSize,
+  ArrayMinSize,
   IsArray,
   IsIn,
   IsOptional,
@@ -12,10 +13,13 @@ import {
 import { INSTALLER_DIRECTIONS } from '../installer-directions.constant';
 
 export class CreateInstallerDto {
-  @ApiProperty({ enum: INSTALLER_DIRECTIONS })
-  @IsString()
-  @IsIn(INSTALLER_DIRECTIONS)
-  direction: string;
+  @ApiProperty({ enum: INSTALLER_DIRECTIONS, isArray: true })
+  @IsArray()
+  @ArrayMinSize(1)
+  @ArrayMaxSize(INSTALLER_DIRECTIONS.length)
+  @IsString({ each: true })
+  @IsIn(INSTALLER_DIRECTIONS, { each: true })
+  directions: string[];
 
   @ApiProperty()
   @IsString()

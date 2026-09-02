@@ -19,7 +19,9 @@ import {
   extractGradeRank,
   gradeForApi,
   gradeForForm,
+  installerHasDirection,
   isRepairInstallerDirection,
+  normalizeInstallerDirections,
 } from '../installers-page.utils';
 
 function formatUserLabel(user: {
@@ -76,7 +78,7 @@ export function useInstallersPage() {
     const byDirection =
       directionFilter === 'ALL'
         ? installers
-        : installers.filter((item) => item.direction === directionFilter);
+        : installers.filter((item) => installerHasDirection(item.directions, directionFilter));
 
     return [...byDirection].sort((a, b) => {
       const gradeDiff = extractGradeRank(a.grade) - extractGradeRank(b.grade);
@@ -110,10 +112,11 @@ export function useInstallersPage() {
   const openEditModal = useCallback((item: InstallerMaster) => {
     const phones =
       item.phones?.length > 0 ? [...item.phones] : item.phone?.trim() ? [item.phone.trim()] : [''];
+    const directions = normalizeInstallerDirections(item.directions ?? []);
     setFormValues({
-      direction: item.direction,
+      directions: directions.length > 0 ? directions : ['REPAIR'],
       fullName: item.fullName,
-      grade: gradeForForm(item.direction, item.grade),
+      grade: gradeForForm(directions, item.grade),
       phones,
       userId: item.userId ?? '',
     });
@@ -134,7 +137,8 @@ export function useInstallersPage() {
 
   const validateForm = useCallback(() => {
     if (!formValues.fullName.trim()) return 'Укажите ФИО мастера';
-    if (isRepairInstallerDirection(formValues.direction) && !formValues.grade.trim()) {
+    if (formValues.directions.length === 0) return 'Укажите хотя бы одно направление';
+    if (isRepairInstallerDirection(formValues.directions) && !formValues.grade.trim()) {
       return 'Укажите разряд мастера';
     }
     return null;
@@ -153,10 +157,11 @@ export function useInstallersPage() {
     setFormError(null);
     try {
       const phones = phonesPayload();
+      const directions = normalizeInstallerDirections(formValues.directions);
       await createInstaller({
-        direction: formValues.direction,
+        directions,
         fullName: formValues.fullName.trim(),
-        grade: gradeForApi(formValues.direction, formValues.grade),
+        grade: gradeForApi(directions, formValues.grade),
         phones,
         phone: phones[0] ?? null,
         userId: formValues.userId.trim() || null,
@@ -184,10 +189,11 @@ export function useInstallersPage() {
     setFormError(null);
     try {
       const phones = phonesPayload();
+      const directions = normalizeInstallerDirections(formValues.directions);
       await updateInstaller(editItem.id, {
-        direction: formValues.direction,
+        directions,
         fullName: formValues.fullName.trim(),
-        grade: gradeForApi(formValues.direction, formValues.grade),
+        grade: gradeForApi(directions, formValues.grade),
         phones,
         phone: phones[0] ?? null,
         userId: formValues.userId.trim() || null,

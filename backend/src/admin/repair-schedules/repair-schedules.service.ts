@@ -76,10 +76,10 @@ export class RepairSchedulesService {
     if (id) {
       const installer = await this.prisma.installerMaster.findUnique({
         where: { id },
-        select: { id: true, fullName: true, direction: true },
+        select: { id: true, fullName: true, directions: true },
       });
       if (!installer) throw new BadRequestException('Мастер не найден');
-      if (installer.direction !== 'REPAIR') {
+      if (!installer.directions.includes('REPAIR')) {
         throw new BadRequestException('Для план-графика ремонта нужен мастер направления «Ремонт»');
       }
       if (!name) name = installer.fullName;

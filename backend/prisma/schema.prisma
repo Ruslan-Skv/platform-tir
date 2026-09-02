@@ -2828,25 +2828,25 @@ model MeasurementAdditionalDirection {
 }
 
 model InstallerMaster {
-  id        String   @id @default(cuid())
-  direction String
-  fullName  String
-  grade     String
+  id         String   @id @default(cuid())
+  /// Направления мастера: REPAIR | WINDOWS | DOORS | CEILINGS | FURNITURE | BLINDS (можно несколько).
+  directions String[]
+  fullName   String
+  grade      String
   /// Основной телефон (первый из phones)
-  phone     String?
+  phone      String?
   /// Все номера телефонов мастера
-  phones    String[] @default([])
+  phones     String[] @default([])
   /// Опциональная привязка к аккаунту: без неё мастер работает только по ФИО (колокольчик не получает).
-  userId    String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  userId     String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 
   user                      User?                       @relation("InstallerMasterUser", fields: [userId], references: [id], onDelete: SetNull)
   installationSchedules     InstallationScheduleEntry[]
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
 
-  @@index([direction])
   @@index([userId])
   @@map("installer_masters")
 }

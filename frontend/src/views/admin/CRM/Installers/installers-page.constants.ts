@@ -24,7 +24,7 @@ export const DIRECTION_OPTIONS: Array<{ value: InstallerDirection; label: string
 export const INSTALLER_GRADE_NOT_USED = '—';
 
 export const EMPTY_INSTALLER_FORM: InstallerFormValues = {
-  direction: 'REPAIR',
+  directions: ['REPAIR'],
   fullName: '',
   grade: '',
   phones: [''],

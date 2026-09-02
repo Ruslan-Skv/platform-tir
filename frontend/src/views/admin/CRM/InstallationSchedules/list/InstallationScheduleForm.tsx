@@ -152,7 +152,7 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
   /** Поиск только после действий пользователя — не при открытии «Изменить» с уже заполненным текстом. */
   const [searchInteractive, setSearchInteractive] = useState(false);
   const filteredInstallers = useMemo(
-    () => installers.filter((installer) => installer.direction === values.direction),
+    () => installers.filter((installer) => installer.directions?.includes(values.direction)),
     [installers, values.direction]
   );
 
@@ -226,7 +226,7 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
     const assignedIds = new Set(packageAssignedInstallerIds(pkg));
     const matchingInstallers = installers.filter(
       (installer) =>
-        installer.direction === nextDirection &&
+        installer.directions?.includes(nextDirection) &&
         (assignedIds.size === 0 || assignedIds.has(installer.id))
     );
     const nextInstallerIds =

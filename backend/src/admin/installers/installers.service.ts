@@ -3,6 +3,7 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateInstallerDto } from './dto/create-installer.dto';
 import { UpdateInstallerDto } from './dto/update-installer.dto';
+import { INSTALLER_DIRECTIONS } from './installer-directions.constant';
 
 const INSTALLER_INCLUDE = {
   user: {
@@ -24,6 +25,16 @@ export class InstallersService {
     if (value === undefined || value === null) return null;
     const trimmed = value.trim();
     return trimmed || null;
+  }
+
+  /** Уникальные направления в каноническом порядке справочника. */
+  private normalizeDirections(raw: string[]): string[] {
+    const set = new Set(raw.map((d) => d.trim()).filter(Boolean));
+    const ordered = INSTALLER_DIRECTIONS.filter((d) => set.has(d));
+    if (ordered.length === 0) {
+      throw new BadRequestException('Укажите хотя бы одно направление');
+    }
+    return [...ordered];
   }
 
   /** Порядок как в `phones`, затем одиночный `phone` без дублей; `phone` в БД = первый номер. */
@@ -72,7 +83,7 @@ export class InstallersService {
     const { phone, phones } = this.normalizePhones({ phone: dto.phone, phones: dto.phones });
     return this.prisma.installerMaster.create({
       data: {
-        direction: dto.direction,
+        directions: this.normalizeDirections(dto.directions),
         fullName: dto.fullName.trim(),
         grade: dto.grade.trim(),
         phone,
@@ -86,7 +97,7 @@ export class InstallersService {
   findAll() {
     return this.prisma.installerMaster.findMany({
       include: INSTALLER_INCLUDE,
-      orderBy: [{ direction: 'asc' }, { fullName: 'asc' }],
+      orderBy: [{ fullName: 'asc' }],
     });
   }
 
@@ -111,7 +122,9 @@ export class InstallersService {
     return this.prisma.installerMaster.update({
       where: { id },
       data: {
-        ...(dto.direction !== undefined ? { direction: dto.direction } : {}),
+        ...(dto.directions !== undefined
+          ? { directions: this.normalizeDirections(dto.directions) }
+          : {}),
         ...(dto.fullName !== undefined ? { fullName: dto.fullName.trim() } : {}),
         ...(dto.grade !== undefined ? { grade: dto.grade.trim() } : {}),
         ...(phonesPatch ? { phone: phonesPatch.phone, phones: phonesPatch.phones } : {}),

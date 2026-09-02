@@ -62,7 +62,7 @@ export function useRepairSchedulesPage() {
   const [submitting, setSubmitting] = useState(false);
 
   const repairInstallers = useMemo(
-    () => installers.filter((i) => i.direction === 'REPAIR'),
+    () => installers.filter((i) => i.directions?.includes('REPAIR')),
     [installers]
   );
 

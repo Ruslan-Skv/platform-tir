@@ -16,28 +16,6 @@ type CartOrderServiceGroupCardProps = {
   index: number;
 };
 
-function ServiceItemIcon() {
-  return (
-    <div className={styles.serviceItemIcon} aria-hidden>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        fill="none"
-        viewBox="0 0 24 24"
-        strokeWidth={1.5}
-        stroke="currentColor"
-        width={40}
-        height={40}
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9.813 15.904L9 18.75l-.813-2.846a4.5 4.5 0 00-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 003.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 003.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 00-3.09 3.09z"
-        />
-      </svg>
-    </div>
-  );
-}
-
 export function CartOrderServiceGroupCard({
   group,
   sectionId,
@@ -65,9 +43,8 @@ export function CartOrderServiceGroupCard({
   const positionCount = group.rooms.reduce((sum, room) => sum + room.items.length, 0);
 
   return (
-    <div className={styles.cartItem}>
+    <div className={`${styles.cartItem} ${styles.cartItemNoImage}`}>
       <Link href={orderServiceHref} className={styles.serviceItemLink}>
-        <ServiceItemIcon />
         <div className={styles.itemInfo}>
           <span className={styles.itemName}>
             {group.categoryName} ({positionCount})

@@ -15,7 +15,7 @@ export const ENTRY_INCLUDE = {
     select: {
       id: true,
       fullName: true,
-      direction: true,
+      directions: true,
       grade: true,
       userId: true,
     },

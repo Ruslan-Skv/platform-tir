@@ -14,7 +14,7 @@ export const USER_SELECT = {
 
 export const PROJECT_INCLUDE: Prisma.FurnitureScheduleProjectInclude = {
   installer: {
-    select: { id: true, fullName: true, direction: true, grade: true, userId: true },
+    select: { id: true, fullName: true, directions: true, grade: true, userId: true },
   },
   package: {
     select: {

@@ -194,6 +194,10 @@
   position: relative;
 }
 
+.cartItemNoImage {
+  grid-template-columns: 1fr auto auto;
+}
+
 .itemQuantityAndTotal {
   display: flex;
   align-items: center;
@@ -263,6 +267,10 @@
   color: inherit;
   min-width: 0;
   cursor: pointer;
+}
+
+.cartItemNoImage .serviceItemLink {
+  grid-column: 1;
 }
 
 .serviceItemLink:hover .itemName {
@@ -1366,6 +1374,22 @@
     grid-template-rows: auto auto;
     gap: 0.35rem;
     padding: 0.4rem 0.5rem;
+  }
+
+  .cartItemNoImage {
+    grid-template-columns: 1fr auto;
+  }
+
+  .cartItemNoImage .itemInfo {
+    grid-column: 1;
+  }
+
+  .cartItemNoImage .itemQuantityAndTotal {
+    grid-column: 1;
+  }
+
+  .cartItemNoImage .itemActionsColumn {
+    grid-column: 2;
   }
 
   .itemImage {

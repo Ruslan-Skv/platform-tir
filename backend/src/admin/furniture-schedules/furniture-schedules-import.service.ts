@@ -23,7 +23,7 @@ export class FurnitureSchedulesImportService {
     }
 
     const installers = await this.prisma.installerMaster.findMany({
-      where: { direction: 'FURNITURE' },
+      where: { directions: { has: 'FURNITURE' } },
       select: { id: true, fullName: true },
     });
 

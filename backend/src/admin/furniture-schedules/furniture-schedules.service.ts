@@ -77,10 +77,10 @@ export class FurnitureSchedulesService {
     if (id) {
       const installer = await this.prisma.installerMaster.findUnique({
         where: { id },
-        select: { id: true, fullName: true, direction: true },
+        select: { id: true, fullName: true, directions: true },
       });
       if (!installer) throw new BadRequestException('Мастер не найден');
-      if (installer.direction !== 'FURNITURE') {
+      if (!installer.directions.includes('FURNITURE')) {
         throw new BadRequestException('Для план-графика мебели нужен мастер направления «Мебель»');
       }
       if (!name) name = installer.fullName;

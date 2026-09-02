@@ -23,7 +23,7 @@ import styles from './InstallersPage.module.css';
 import type { InstallersPageModel } from './hooks/useInstallersPage';
 import { DIRECTION_LABELS, DIRECTION_OPTIONS } from './installers-page.constants';
 import type { InstallerFormValues } from './installers-page.types';
-import { isRepairInstallerDirection } from './installers-page.utils';
+import { isRepairInstallerDirection, normalizeInstallerDirections } from './installers-page.utils';
 
 type InstallersPageViewProps = {
   model: InstallersPageModel;
@@ -39,6 +39,23 @@ function formatInstallerPhones(item: InstallerMaster): string {
   const phones = installerPhonesList(item);
   if (!phones.length) return '—';
   return phones.map((p) => formatCrmPhoneDisplay(p) || p).join(', ');
+}
+
+function installerDirectionsList(item: InstallerMaster): InstallerDirection[] {
+  return normalizeInstallerDirections(item.directions ?? []);
+}
+
+function DirectionBadges({ directions }: { directions: InstallerDirection[] }) {
+  if (directions.length === 0) return <span className={styles.muted}>—</span>;
+  return (
+    <div className={styles.badgeList}>
+      {directions.map((direction) => (
+        <span key={direction} className={`${styles.badge} ${DIRECTION_BADGE_CLASS[direction]}`}>
+          {DIRECTION_LABELS[direction]}
+        </span>
+      ))}
+    </div>
+  );
 }
 
 const DIRECTION_BADGE_CLASS: Record<InstallerDirection, string> = {
@@ -107,7 +124,11 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       FURNITURE: 0,
       BLINDS: 0,
     };
-    for (const item of installers) counts[item.direction] += 1;
+    for (const item of installers) {
+      for (const direction of installerDirectionsList(item)) {
+        counts[direction] += 1;
+      }
+    }
     return counts;
   }, [installers]);
 
@@ -123,9 +144,7 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       key: 'direction',
       title: 'Направление',
       render: (item: InstallerMaster) => (
-        <span className={`${styles.badge} ${DIRECTION_BADGE_CLASS[item.direction]}`}>
-          {DIRECTION_LABELS[item.direction]}
-        </span>
+        <DirectionBadges directions={installerDirectionsList(item)} />
       ),
     },
     {
@@ -152,7 +171,7 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
       key: 'grade',
       title: 'Разряд',
       render: (item: InstallerMaster) =>
-        isRepairInstallerDirection(item.direction) ? item.grade : '—',
+        isRepairInstallerDirection(item.directions ?? []) ? item.grade : '—',
     },
     {
       key: 'user',
@@ -280,52 +299,53 @@ export function InstallersPageView({ model }: InstallersPageViewProps) {
         ) : filtered.length === 0 ? (
           <p className={styles.mobileEmpty}>Мастера не найдены</p>
         ) : (
-          filtered.map((item) => (
-            <article key={item.id} className={styles.mobileCard}>
-              <div className={styles.mobileCardTop}>
-                <div className={styles.mobileCardMain}>
-                  <span className={styles.mobileCardName}>{item.fullName}</span>
-                  <span className={styles.mobileCardMeta}>
-                    {DIRECTION_LABELS[item.direction]}
-                    {isRepairInstallerDirection(item.direction) ? ` · ${item.grade}` : ''}
-                  </span>
+          filtered.map((item) => {
+            const directions = installerDirectionsList(item);
+            return (
+              <article key={item.id} className={styles.mobileCard}>
+                <div className={styles.mobileCardTop}>
+                  <div className={styles.mobileCardMain}>
+                    <span className={styles.mobileCardName}>{item.fullName}</span>
+                    <span className={styles.mobileCardMeta}>
+                      {directions.map((d) => DIRECTION_LABELS[d]).join(', ') || '—'}
+                      {isRepairInstallerDirection(directions) ? ` · ${item.grade}` : ''}
+                    </span>
+                  </div>
+                  <DirectionBadges directions={directions} />
                 </div>
-                <span className={`${styles.badge} ${DIRECTION_BADGE_CLASS[item.direction]}`}>
-                  {DIRECTION_LABELS[item.direction]}
-                </span>
-              </div>
-              <dl className={styles.mobileCardRows}>
-                <div className={styles.mobileCardRow}>
-                  <dt>Телефон</dt>
-                  <dd>{formatInstallerPhones(item)}</dd>
+                <dl className={styles.mobileCardRows}>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Телефон</dt>
+                    <dd>{formatInstallerPhones(item)}</dd>
+                  </div>
+                  <div className={styles.mobileCardRow}>
+                    <dt>Аккаунт</dt>
+                    <dd>{item.user ? formatUserLabel(item.user) : 'Без привязки'}</dd>
+                  </div>
+                </dl>
+                <div className={styles.mobileCardActions}>
+                  <div className={styles.actions}>
+                    <AdminTableIconButton
+                      data-admin-mutation
+                      aria-label="Изменить"
+                      title="Изменить"
+                      onClick={() => openEditModal(item)}
+                    >
+                      <EditIcon />
+                    </AdminTableIconButton>
+                    <AdminTableIconButton
+                      data-admin-mutation
+                      aria-label="Удалить"
+                      title="Удалить"
+                      onClick={() => setDeleteItem(item)}
+                    >
+                      <DeleteIcon />
+                    </AdminTableIconButton>
+                  </div>
                 </div>
-                <div className={styles.mobileCardRow}>
-                  <dt>Аккаунт</dt>
-                  <dd>{item.user ? formatUserLabel(item.user) : 'Без привязки'}</dd>
-                </div>
-              </dl>
-              <div className={styles.mobileCardActions}>
-                <div className={styles.actions}>
-                  <AdminTableIconButton
-                    data-admin-mutation
-                    aria-label="Изменить"
-                    title="Изменить"
-                    onClick={() => openEditModal(item)}
-                  >
-                    <EditIcon />
-                  </AdminTableIconButton>
-                  <AdminTableIconButton
-                    data-admin-mutation
-                    aria-label="Удалить"
-                    title="Удалить"
-                    onClick={() => setDeleteItem(item)}
-                  >
-                    <DeleteIcon />
-                  </AdminTableIconButton>
-                </div>
-              </div>
-            </article>
-          ))
+              </article>
+            );
+          })
         )}
       </div>
 
@@ -409,51 +429,61 @@ function InstallerForm({
     email?: string;
   }) => string;
 }) {
-  const gradeApplies = isRepairInstallerDirection(values.direction);
+  const gradeApplies = isRepairInstallerDirection(values.directions);
 
-  const handleDirectionChange = (direction: InstallerDirection) => {
+  const toggleDirection = (direction: InstallerDirection, checked: boolean) => {
+    const next = checked
+      ? normalizeInstallerDirections([...values.directions, direction])
+      : values.directions.filter((d) => d !== direction);
     onChange({
       ...values,
-      direction,
-      grade: isRepairInstallerDirection(direction) ? values.grade : '',
+      directions: next,
+      grade: isRepairInstallerDirection(next) ? values.grade : '',
     });
   };
 
   return (
     <>
-      <div data-modal-form-grid>
-        <div data-modal-form-group>
-          <label htmlFor="installer-direction">Направление *</label>
-          <select
-            id="installer-direction"
-            value={values.direction}
-            onChange={(e) => handleDirectionChange(e.target.value as InstallerDirection)}
-          >
-            {DIRECTION_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>
-                {opt.label}
-              </option>
-            ))}
-          </select>
+      <div data-modal-form-group>
+        <span id="installer-directions-label">Направления *</span>
+        <div
+          className={styles.directionChecks}
+          role="group"
+          aria-labelledby="installer-directions-label"
+        >
+          {DIRECTION_OPTIONS.map((opt) => {
+            const checked = values.directions.includes(opt.value);
+            return (
+              <label key={opt.value} className={styles.directionCheck}>
+                <input
+                  type="checkbox"
+                  checked={checked}
+                  onChange={(e) => toggleDirection(opt.value, e.target.checked)}
+                />
+                <span>{opt.label}</span>
+              </label>
+            );
+          })}
         </div>
+        <p className={styles.fieldHint}>Можно выбрать несколько направлений для одного мастера.</p>
+      </div>
 
-        <div data-modal-form-group>
-          <label htmlFor="installer-grade">Разряд{gradeApplies ? ' *' : ''}</label>
-          <input
-            id="installer-grade"
-            type="text"
-            value={values.grade}
-            disabled={!gradeApplies}
-            readOnly={!gradeApplies}
-            onChange={(e) => onChange({ ...values, grade: e.target.value })}
-            placeholder={gradeApplies ? 'Например: 4 разряд' : 'Только для направления «Ремонт»'}
-            title={
-              gradeApplies
-                ? undefined
-                : 'Разряд указывается только для мастеров направления «Ремонт»'
-            }
-          />
-        </div>
+      <div data-modal-form-group>
+        <label htmlFor="installer-grade">Разряд{gradeApplies ? ' *' : ''}</label>
+        <input
+          id="installer-grade"
+          type="text"
+          value={values.grade}
+          disabled={!gradeApplies}
+          readOnly={!gradeApplies}
+          onChange={(e) => onChange({ ...values, grade: e.target.value })}
+          placeholder={gradeApplies ? 'Например: 4 разряд' : 'Только если выбрано «Ремонт»'}
+          title={
+            gradeApplies
+              ? undefined
+              : 'Разряд указывается только для мастеров с направлением «Ремонт»'
+          }
+        />
       </div>
 
       <div data-modal-form-group>

@@ -95,7 +95,7 @@ export type InstallerDirection =
 
 export interface InstallerMaster {
   id: string;
-  direction: InstallerDirection;
+  directions: InstallerDirection[];
   fullName: string;
   grade: string;
   phone: string | null;
@@ -121,7 +121,7 @@ export async function getInstallers(): Promise<InstallerMaster[]> {
 }
 
 export async function createInstaller(data: {
-  direction: InstallerDirection;
+  directions: InstallerDirection[];
   fullName: string;
   grade: string;
   phone?: string | null;
@@ -144,7 +144,7 @@ export async function createInstaller(data: {
 export async function updateInstaller(
   id: string,
   data: Partial<{
-    direction: InstallerDirection;
+    directions: InstallerDirection[];
     fullName: string;
     grade: string;
     phone: string | null;

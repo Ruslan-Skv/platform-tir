@@ -56,6 +56,34 @@
   font-weight: 600;
 }
 
+.badgeList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-2xs, 4px);
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.directionChecks {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--admin-space-sm, 6px) var(--admin-space-md);
+  margin-top: var(--admin-space-sm, 6px);
+}
+
+.directionCheck {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-sm, 6px);
+  font-size: var(--admin-font-size-sm, 0.875rem);
+  cursor: pointer;
+  user-select: none;
+}
+
+.directionCheck input {
+  margin: 0;
+}
+
 .badgeRepair {
   background: var(--admin-accent-soft);
   color: var(--admin-accent);
