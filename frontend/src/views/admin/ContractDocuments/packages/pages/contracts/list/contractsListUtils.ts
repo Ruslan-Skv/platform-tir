@@ -5,6 +5,7 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
 
+import { PACKAGE_KIND_DIRECTION_SLUG } from '../../../config';
 import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '../../../config/contractDocumentsListKinds';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { applyPackageContractDiscountToNullableBase } from '../../../platform/form/packageContractDiscount';
@@ -285,15 +286,6 @@ export function contractsListManagerDisplayLabel(
   }
   return '—';
 }
-
-const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
-  REPAIR: 'repair',
-  WINDOWS: 'windows',
-  DOORS: 'doors',
-  CEILINGS: 'stretch-ceilings',
-  BLINDS: 'blinds',
-  FURNITURE: 'furniture',
-};
 
 function contractsListAttachedPresetIds(fd: Record<string, unknown>): string[] {
   const est = asObj(fd.estimate);

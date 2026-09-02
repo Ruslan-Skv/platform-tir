@@ -6,6 +6,7 @@ export type {
 
 export {
   PACKAGE_DIRECTION_REGISTRY_LIST,
+  PACKAGE_KIND_DIRECTION_SLUG,
   getPackageDirectionConfig,
   getPackageDirectionFamily,
   isProductLikePackageKind,

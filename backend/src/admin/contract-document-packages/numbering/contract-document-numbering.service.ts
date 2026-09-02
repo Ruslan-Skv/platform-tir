@@ -1,17 +1,10 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ContractDocumentPackageKind, type Prisma } from '@prisma/client';
 
+import { PACKAGE_KIND_DIRECTION_SLUG } from '../../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../../database/prisma.service';
 
-/** Пакет kind → slug CRM-направления (как в list-pipeline). */
-export const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
-  REPAIR: 'repair',
-  WINDOWS: 'windows',
-  DOORS: 'doors',
-  CEILINGS: 'stretch-ceilings',
-  BLINDS: 'blinds',
-  FURNITURE: 'furniture',
-};
+export { PACKAGE_KIND_DIRECTION_SLUG };
 
 export type ContractNumberPreviewInput = {
   managerUserId: string;

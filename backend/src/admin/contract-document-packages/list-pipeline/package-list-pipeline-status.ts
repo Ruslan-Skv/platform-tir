@@ -494,14 +494,9 @@ export function packageMatchesDateRange(
   });
 }
 
-export const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
-  REPAIR: 'repair',
-  WINDOWS: 'windows',
-  DOORS: 'doors',
-  CEILINGS: 'stretch-ceilings',
-  BLINDS: 'blinds',
-  FURNITURE: 'furniture',
-};
+import { PACKAGE_KIND_DIRECTION_SLUG } from '../../../common/config/package-direction-registry.config';
+
+export { PACKAGE_KIND_DIRECTION_SLUG };
 
 export function packageMatchesDirectionIds(
   kind: ContractDocumentPackageKind,

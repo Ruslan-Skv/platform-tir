@@ -1,4 +1,5 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
+import { PACKAGE_DIRECTION_REGISTRY } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 
 const CRM_USER_ROLES = [
@@ -28,10 +29,41 @@ export class CrmDirectionsService {
     });
   }
 
-  findAll() {
+  async findAll() {
+    await this.ensureRegistryDirections();
     return this.prisma.crmDirection.findMany({
       orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     });
+  }
+
+  /** Синхронизирует CRM-направления с реестром пакетов договоров (без удаления лишних). */
+  private async ensureRegistryDirections() {
+    for (const def of PACKAGE_DIRECTION_REGISTRY) {
+      const existing = await this.prisma.crmDirection.findUnique({
+        where: { slug: def.slug },
+        select: { id: true, numberLetter: true },
+      });
+      if (!existing) {
+        await this.prisma.crmDirection.create({
+          data: {
+            name: def.name,
+            slug: def.slug,
+            numberLetter: def.numberLetter,
+            sortOrder: def.sortOrder,
+            isActive: true,
+          },
+        });
+        continue;
+      }
+      await this.prisma.crmDirection.update({
+        where: { slug: def.slug },
+        data: {
+          name: def.name,
+          sortOrder: def.sortOrder,
+          ...(existing.numberLetter?.trim() ? {} : { numberLetter: def.numberLetter }),
+        },
+      });
+    }
   }
 
   async findOne(id: string) {

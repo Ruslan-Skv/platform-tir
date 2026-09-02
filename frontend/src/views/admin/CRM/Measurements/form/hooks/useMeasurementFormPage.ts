@@ -18,6 +18,7 @@ import {
   updateMeasurement,
 } from '@/shared/api/admin-crm';
 import { apiFetch } from '@/shared/lib/api-fetch';
+import { filterCrmDirectionsForContractCreate } from '@/shared/lib/crm-directions-for-contract-create';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { measurementFieldsFromCrmCustomerDetail } from '../../shared/measurementCrmCustomer';
@@ -200,7 +201,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
 
   useEffect(() => {
     getCrmDirections()
-      .then(setDirections)
+      .then((list) => setDirections(filterCrmDirectionsForContractCreate(list)))
       .catch(() => setDirections([]));
     getCrmUsers()
       .then(setUsers)

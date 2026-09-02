@@ -183,4 +183,14 @@ export function packageKindsWithCreateEnabled(): ContractDocumentPackageKind[] {
   );
 }
 
+/** Пакет kind → slug CRM-направления (единый маппинг с backend). */
+export const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
+  REPAIR: 'repair',
+  WINDOWS: 'windows',
+  DOORS: 'doors',
+  CEILINGS: 'stretch-ceilings',
+  BLINDS: 'blinds',
+  FURNITURE: 'furniture',
+};
+
 export const PACKAGE_DIRECTION_REGISTRY_LIST = Object.values(PACKAGE_DIRECTION_REGISTRY);
