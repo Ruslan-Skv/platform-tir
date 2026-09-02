@@ -81,6 +81,7 @@ export function NumberingDirectionsSection({
   return (
     <>
       <p className={styles.sectionHint}>
+        Те же направления, что в «Новом оформлении договора» (только с включённым созданием пакета).
         Формат: 77/1/3<strong>д</strong>-5 — буква направления (д = Двери, о = Окна, …).
       </p>
 

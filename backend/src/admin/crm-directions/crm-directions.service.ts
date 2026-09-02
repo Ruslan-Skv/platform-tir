@@ -39,31 +39,34 @@ export class CrmDirectionsService {
   /** Синхронизирует CRM-направления с реестром пакетов договоров (без удаления лишних). */
   private async ensureRegistryDirections() {
     for (const def of PACKAGE_DIRECTION_REGISTRY) {
-      const existing = await this.prisma.crmDirection.findUnique({
+      await this.prisma.crmDirection.upsert({
         where: { slug: def.slug },
-        select: { id: true, numberLetter: true },
-      });
-      if (!existing) {
-        await this.prisma.crmDirection.create({
-          data: {
-            name: def.name,
-            slug: def.slug,
-            numberLetter: def.numberLetter,
-            sortOrder: def.sortOrder,
-            isActive: true,
-          },
-        });
-        continue;
-      }
-      await this.prisma.crmDirection.update({
-        where: { slug: def.slug },
-        data: {
+        create: {
+          name: def.name,
+          slug: def.slug,
+          numberLetter: def.numberLetter,
+          sortOrder: def.sortOrder,
+          isActive: true,
+        },
+        update: {
           name: def.name,
           sortOrder: def.sortOrder,
-          ...(existing.numberLetter?.trim() ? {} : { numberLetter: def.numberLetter }),
         },
       });
     }
+
+    // Подставить букву по умолчанию только там, где она ещё не задана.
+    await Promise.all(
+      PACKAGE_DIRECTION_REGISTRY.map((def) =>
+        this.prisma.crmDirection.updateMany({
+          where: {
+            slug: def.slug,
+            OR: [{ numberLetter: null }, { numberLetter: '' }],
+          },
+          data: { numberLetter: def.numberLetter },
+        }),
+      ),
+    );
   }
 
   async findOne(id: string) {

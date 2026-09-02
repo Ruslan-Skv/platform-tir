@@ -1,53 +1,25 @@
 'use client';
 
+import Link from 'next/link';
+
 import type { Office } from '@/shared/api/admin-crm';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
 import styles from './NumberingSettingsPage.module.css';
 
 type NumberingOfficePrefixesSectionProps = {
-  isSuperAdmin: boolean;
   offices: Office[];
-  officeDrafts: Record<string, string>;
-  officeSavingId: string | null;
   loading: boolean;
-  onDraftChange: (id: string, value: string) => void;
-  onSave: (id: string) => void;
 };
 
-function officeSaveButton({
-  isSuperAdmin,
-  office,
-  officeSavingId,
-  onSave,
-}: {
-  isSuperAdmin: boolean;
-  office: Office;
-  officeSavingId: string | null;
-  onSave: (id: string) => void;
-}) {
-  if (!isSuperAdmin) return <span className={styles.muted}>—</span>;
-  return (
-    <button
-      type="button"
-      data-admin-mutation
-      className={styles.saveBtn}
-      disabled={officeSavingId === office.id}
-      onClick={() => onSave(office.id)}
-    >
-      {officeSavingId === office.id ? '…' : 'Сохранить'}
-    </button>
-  );
+function formatOfficePrefix(prefix: string | null | undefined): string {
+  const value = prefix?.trim();
+  return value ? value : '—';
 }
 
 export function NumberingOfficePrefixesSection({
-  isSuperAdmin,
   offices,
-  officeDrafts,
-  officeSavingId,
   loading,
-  onDraftChange,
-  onSave,
 }: NumberingOfficePrefixesSectionProps) {
   const columns = [
     {
@@ -70,29 +42,22 @@ export function NumberingOfficePrefixesSection({
       key: 'prefix',
       title: 'Префикс',
       render: (o: Office) => (
-        <input
-          className={styles.input}
-          value={officeDrafts[o.id] ?? ''}
-          onChange={(e) => onDraftChange(o.id, e.target.value)}
-          disabled={!isSuperAdmin}
-          placeholder="напр. 77"
-          autoComplete="off"
-          aria-label={`Префикс офиса ${o.name}`}
-        />
+        <span className={o.prefix?.trim() ? undefined : styles.muted}>
+          {formatOfficePrefix(o.prefix)}
+        </span>
       ),
-    },
-    {
-      key: 'actions',
-      title: 'Действия',
-      render: (o: Office) => officeSaveButton({ isSuperAdmin, office: o, officeSavingId, onSave }),
     },
   ];
 
   return (
     <>
       <p className={styles.sectionHint}>
-        Первая часть номера (например, <code className={styles.code}>77</code>). У активных офисов
-        префикс лучше задавать всегда.
+        Первая часть номера (например, <code className={styles.code}>77</code>). Задаётся в
+        справочнике{' '}
+        <Link href="/admin/crm/offices" className={styles.inlineLink}>
+          CRM → Офисы
+        </Link>
+        .
       </p>
 
       <div className={styles.mobileCards} aria-label="Префиксы офисов">
@@ -119,21 +84,11 @@ export function NumberingOfficePrefixesSection({
               <dl className={styles.mobileCardRows}>
                 <div className={styles.mobileCardRow}>
                   <dt>Префикс</dt>
-                  <dd>
-                    <input
-                      className={styles.input}
-                      value={officeDrafts[o.id] ?? ''}
-                      onChange={(e) => onDraftChange(o.id, e.target.value)}
-                      disabled={!isSuperAdmin}
-                      placeholder="напр. 77"
-                      autoComplete="off"
-                    />
+                  <dd className={o.prefix?.trim() ? undefined : styles.muted}>
+                    {formatOfficePrefix(o.prefix)}
                   </dd>
                 </div>
               </dl>
-              <div className={styles.mobileCardActions}>
-                {officeSaveButton({ isSuperAdmin, office: o, officeSavingId, onSave })}
-              </div>
             </article>
           ))
         )}

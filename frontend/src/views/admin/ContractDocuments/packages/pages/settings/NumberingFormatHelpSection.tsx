@@ -17,7 +17,8 @@ export function NumberingFormatHelpSection() {
       </h3>
       <ol className={styles.helpSteps}>
         <li>
-          <strong>Офис</strong> — префикс офиса, в котором менеджер открыл рабочий день.
+          <strong>Офис</strong> — префикс офиса, в котором менеджер открыл рабочий день (задаётся в{' '}
+          <Link href="/admin/crm/offices">CRM → Офисы</Link>).
         </li>
         <li>
           <strong>Менеджер</strong> — персональный код сотрудника (карточка менеджера → пользователь

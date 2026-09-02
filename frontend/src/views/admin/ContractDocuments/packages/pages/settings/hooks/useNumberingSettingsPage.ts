@@ -11,8 +11,8 @@ import {
   getCrmUsers,
   getOffices,
   updateCrmDirection,
-  updateOffice,
 } from '@/shared/api/admin-crm';
+import { filterCrmDirectionsForNumbering } from '@/shared/lib/admin/crm-directions-for-contract-create';
 import { apiFetch } from '@/shared/lib/api-fetch';
 
 import {
@@ -30,8 +30,6 @@ export function useNumberingSettingsPage() {
   const [message, setMessage] = useState<NumberingPageMessage | null>(null);
 
   const [offices, setOffices] = useState<Office[]>([]);
-  const [officeDrafts, setOfficeDrafts] = useState<Record<string, string>>({});
-  const [officeSavingId, setOfficeSavingId] = useState<string | null>(null);
   const [officeStatusFilter, setOfficeStatusFilter] = useState<NumberingOfficeStatusFilter>('ALL');
 
   const [users, setUsers] = useState<CrmUser[]>([]);
@@ -49,30 +47,60 @@ export function useNumberingSettingsPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const [officeList, userList, directionList] = await Promise.all([
+      const [officeResult, userResult, directionResult] = await Promise.allSettled([
         getOffices(true),
         getCrmUsers(),
         getCrmDirections(),
       ]);
-      setOffices(
-        officeList.slice().sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
-      );
-      setOfficeDrafts(Object.fromEntries(officeList.map((o) => [o.id, o.prefix ?? ''])));
-      setUsers(
-        userList
-          .slice()
-          .sort((a, b) =>
-            formatNumberingUserLabel(a).localeCompare(formatNumberingUserLabel(b), 'ru')
-          )
-      );
-      setUserDrafts(Object.fromEntries(userList.map((u) => [u.id, u.employeeCode ?? ''])));
-      const sortedDirections = directionList
-        .slice()
-        .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name, 'ru'));
-      setDirections(sortedDirections);
-      setDirectionDrafts(
-        Object.fromEntries(sortedDirections.map((d) => [d.id, d.numberLetter ?? '']))
-      );
+
+      const errors: string[] = [];
+
+      if (officeResult.status === 'fulfilled') {
+        const officeList = officeResult.value;
+        setOffices(
+          officeList
+            .slice()
+            .sort((a, b) => a.sortOrder - b.sortOrder || a.name.localeCompare(b.name))
+        );
+      } else {
+        setOffices([]);
+        errors.push('офисы');
+      }
+
+      if (userResult.status === 'fulfilled') {
+        const userList = userResult.value;
+        setUsers(
+          userList
+            .slice()
+            .sort((a, b) =>
+              formatNumberingUserLabel(a).localeCompare(formatNumberingUserLabel(b), 'ru')
+            )
+        );
+        setUserDrafts(Object.fromEntries(userList.map((u) => [u.id, u.employeeCode ?? ''])));
+      } else {
+        setUsers([]);
+        setUserDrafts({});
+        errors.push('сотрудники');
+      }
+
+      if (directionResult.status === 'fulfilled') {
+        const sortedDirections = filterCrmDirectionsForNumbering(directionResult.value);
+        setDirections(sortedDirections);
+        setDirectionDrafts(
+          Object.fromEntries(sortedDirections.map((d) => [d.id, d.numberLetter ?? '']))
+        );
+      } else {
+        setDirections([]);
+        setDirectionDrafts({});
+        errors.push('направления');
+      }
+
+      if (errors.length > 0) {
+        setMessage({
+          type: 'error',
+          text: `Не удалось загрузить: ${errors.join(', ')}`,
+        });
+      }
     } catch (e) {
       setMessage({
         type: 'error',
@@ -113,10 +141,6 @@ export function useNumberingSettingsPage() {
     });
   }, [users, userFilter]);
 
-  const setOfficeDraft = useCallback((id: string, value: string) => {
-    setOfficeDrafts((prev) => ({ ...prev, [id]: value }));
-  }, []);
-
   const setUserDraft = useCallback((id: string, value: string) => {
     setUserDrafts((prev) => ({ ...prev, [id]: value }));
   }, []);
@@ -124,29 +148,6 @@ export function useNumberingSettingsPage() {
   const setDirectionDraft = useCallback((id: string, value: string) => {
     setDirectionDrafts((prev) => ({ ...prev, [id]: value.slice(0, 4) }));
   }, []);
-
-  const saveOfficePrefix = useCallback(
-    async (id: string) => {
-      if (!isSuperAdmin) return;
-      setOfficeSavingId(id);
-      try {
-        const updated = await updateOffice(id, {
-          prefix: officeDrafts[id]?.trim() || null,
-        });
-        setOffices((prev) => prev.map((o) => (o.id === id ? updated : o)));
-        setOfficeDrafts((prev) => ({ ...prev, [id]: updated.prefix ?? '' }));
-        setMessage({ type: 'success', text: `Префикс офиса «${updated.name}» сохранён` });
-      } catch (e) {
-        setMessage({
-          type: 'error',
-          text: e instanceof Error ? e.message : 'Не удалось сохранить префикс офиса',
-        });
-      } finally {
-        setOfficeSavingId(null);
-      }
-    },
-    [isSuperAdmin, officeDrafts]
-  );
 
   const saveUserCode = useCallback(
     async (id: string) => {
@@ -217,17 +218,13 @@ export function useNumberingSettingsPage() {
     loading,
     message,
     officeCounts,
-    officeDrafts,
-    officeSavingId,
     officeStatusFilter,
     offices,
     refresh: load,
     saveDirectionLetter,
-    saveOfficePrefix,
     saveUserCode,
     setDirectionDraft,
     setMessage,
-    setOfficeDraft,
     setOfficeStatusFilter,
     setUserDraft,
     setUserFilter,

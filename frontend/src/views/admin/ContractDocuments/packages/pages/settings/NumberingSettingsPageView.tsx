@@ -49,16 +49,12 @@ export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
     loading,
     message,
     officeCounts,
-    officeDrafts,
-    officeSavingId,
     officeStatusFilter,
     refresh,
     saveDirectionLetter,
-    saveOfficePrefix,
     saveUserCode,
     setDirectionDraft,
     setMessage,
-    setOfficeDraft,
     setOfficeStatusFilter,
     setUserDraft,
     setUserFilter,
@@ -101,7 +97,7 @@ export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
         ? filteredUsers.length
         : directions.length;
 
-  const iconsDisabled = loading || Boolean(officeSavingId || userSavingId || directionSavingId);
+  const iconsDisabled = loading || Boolean(userSavingId || directionSavingId);
 
   const iconActions = (placement: 'desktop' | 'mobile') => (
     <div
@@ -214,15 +210,7 @@ export function NumberingSettingsPageView(model: NumberingSettingsPageModel) {
       ) : null}
 
       {section === 'offices' ? (
-        <NumberingOfficePrefixesSection
-          isSuperAdmin={isSuperAdmin}
-          offices={filteredOffices}
-          officeDrafts={officeDrafts}
-          officeSavingId={officeSavingId}
-          loading={loading}
-          onDraftChange={setOfficeDraft}
-          onSave={(id) => void saveOfficePrefix(id)}
-        />
+        <NumberingOfficePrefixesSection offices={filteredOffices} loading={loading} />
       ) : null}
 
       {section === 'employees' ? (

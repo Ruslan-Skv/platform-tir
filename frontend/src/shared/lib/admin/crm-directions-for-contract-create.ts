@@ -5,7 +5,7 @@ import {
 } from '@/views/admin/ContractDocuments/packages/config';
 
 /**
- * Направления замера = те же, что в модалке «Новое оформление договора»
+ * Направления = те же, что в модалке «Новое оформление договора»
  * (реестр пакетов с createEnabled).
  */
 export function filterCrmDirectionsForContractCreate(directions: CrmDirection[]): CrmDirection[] {
@@ -17,3 +17,6 @@ export function filterCrmDirectionsForContractCreate(directions: CrmDirection[])
     .filter((d) => slugOrder.has(d.slug) && d.isActive !== false)
     .sort((a, b) => (slugOrder.get(a.slug) ?? 0) - (slugOrder.get(b.slug) ?? 0));
 }
+
+/** Алиас: нумерация использует тот же набор, что и создание договора. */
+export const filterCrmDirectionsForNumbering = filterCrmDirectionsForContractCreate;

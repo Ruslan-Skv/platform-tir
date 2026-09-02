@@ -101,6 +101,15 @@
   text-decoration: underline;
 }
 
+.inlineLink {
+  color: var(--admin-link, #2563eb);
+  text-decoration: none;
+}
+
+.inlineLink:hover {
+  text-decoration: underline;
+}
+
 .code {
   font-size: 0.95em;
 }
