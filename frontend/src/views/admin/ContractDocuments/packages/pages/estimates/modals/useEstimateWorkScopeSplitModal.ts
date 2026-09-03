@@ -1,5 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import type {
+  ContractEstimateGroup,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
+
 import { generateSplitBundleId } from '../../../platform/estimates/estimateSplitBundle';
 import {
   type WorkScopeCategoryRow,
@@ -13,8 +18,19 @@ import {
   resolveSplitBundleId,
   selectionIntersectsSiblingClaims,
 } from '../../../platform/estimates/estimateWorkScopeTree';
-import type { EstimateWorkScopeSplitModalProps } from './EstimateWorkScopeSplitModal';
 import { isLineKeyClaimedBySibling } from './estimateWorkScopeSplitUtils';
+
+export type UseEstimateWorkScopeSplitModalParams = {
+  preset: ContractEstimatePreset;
+  groups: ContractEstimateGroup[];
+  allPresets: ContractEstimatePreset[];
+  saving: boolean;
+  onClose: () => void;
+  onSave: (payload: {
+    splitBundleId: string;
+    estimateWorkScopeKeys: string[];
+  }) => void | Promise<void>;
+};
 
 export function useEstimateWorkScopeSplitModal({
   preset,
@@ -23,7 +39,7 @@ export function useEstimateWorkScopeSplitModal({
   saving,
   onClose,
   onSave,
-}: EstimateWorkScopeSplitModalProps) {
+}: UseEstimateWorkScopeSplitModalParams) {
   const [tree, setTree] = useState<WorkScopeCategoryRow[]>([]);
   const [treeLoading, setTreeLoading] = useState(true);
   const [workScopeSplitHint, setWorkScopeSplitHint] = useState<

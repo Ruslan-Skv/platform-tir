@@ -4,6 +4,7 @@ import type { ContractEstimatePreset } from '@/shared/api/admin-contract-documen
 import { getContractDocumentEstimatePresetsTrash } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 
+import type { EstimateArchiveConfirmState } from '../../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';
 import type { EstimatePackageUsage } from '../estimatesListUtils';
 
@@ -15,6 +16,8 @@ export function useEstimatesListModalsState(items: ContractEstimatePreset[]) {
   const [trashConfirmModal, setTrashConfirmModal] = useState<EstimateTrashConfirmState | null>(
     null
   );
+  const [archiveConfirmModal, setArchiveConfirmModal] =
+    useState<EstimateArchiveConfirmState | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
   const [copyChoicePresetId, setCopyChoicePresetId] = useState<string | null>(null);
@@ -44,6 +47,8 @@ export function useEstimatesListModalsState(items: ContractEstimatePreset[]) {
     setDetachEditModal,
     trashConfirmModal,
     setTrashConfirmModal,
+    archiveConfirmModal,
+    setArchiveConfirmModal,
     trashOpen,
     setTrashOpen,
     workScopeModalPresetId,

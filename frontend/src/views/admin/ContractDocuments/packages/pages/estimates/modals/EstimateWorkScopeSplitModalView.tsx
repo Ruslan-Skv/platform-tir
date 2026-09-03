@@ -7,8 +7,11 @@ import { formatEstimatePresetTotalRub } from '../list/estimatesListUtils';
 import { EstimateWorkScopeSplitTree } from './EstimateWorkScopeSplitTree';
 import type { EstimateWorkScopeSplitModalModel } from './useEstimateWorkScopeSplitModal';
 
-export function EstimateWorkScopeSplitModalView(props: EstimateWorkScopeSplitModalModel) {
+export function EstimateWorkScopeSplitModalView(
+  props: EstimateWorkScopeSplitModalModel & { isOpen: boolean }
+) {
   const {
+    isOpen,
     preset,
     saving,
     onClose,
@@ -38,13 +41,14 @@ export function EstimateWorkScopeSplitModalView(props: EstimateWorkScopeSplitMod
 
   return (
     <Modal
-      isOpen
+      isOpen={isOpen}
       onClose={() => {
         if (!saving) onClose();
       }}
       title="Разделение сметы по договорам"
       size="lg"
       showCloseButton
+      alignTop
     >
       <form
         className={cdBase.workScopeSplitModalForm}

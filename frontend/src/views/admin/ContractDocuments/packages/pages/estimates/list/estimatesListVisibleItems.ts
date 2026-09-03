@@ -94,13 +94,21 @@ export function countEstimatesListScopes(
 
 export function countEstimatesPipelineTabs(
   items: ContractEstimatePreset[],
-  groups: ContractEstimateGroup[]
+  groups: ContractEstimateGroup[],
+  listScope: EstimatesListScope,
+  currentUserId: string | null,
+  managerIdsByPresetId: Map<string, Set<string>>
 ): { active: number; prospect: number } {
   let active = 0;
   let prospect = 0;
   for (const it of items) {
     const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
     if (Boolean(it.archived) || Boolean(g?.archived)) continue;
+    if (listScope === 'mine') {
+      if (!currentUserId || !estimateBelongsToUser(it, currentUserId, managerIdsByPresetId)) {
+        continue;
+      }
+    }
     if (presetMatchesPipelineTab(it, groups, 'prospect')) prospect += 1;
     else active += 1;
   }

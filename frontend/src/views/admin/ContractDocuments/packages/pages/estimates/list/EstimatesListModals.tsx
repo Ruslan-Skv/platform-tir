@@ -5,6 +5,8 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { EstimateArchiveConfirmModal } from '../modals/EstimateArchiveConfirmModal';
+import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import { EstimateCopyChoiceModal } from '../modals/EstimateCopyChoiceModal';
 import { EstimateDetachEditModal } from '../modals/EstimateDetachEditModal';
 import {
@@ -39,6 +41,9 @@ export type EstimatesListModalsProps = {
   trashConfirmModal: EstimateTrashConfirmState | null;
   onCloseTrashConfirm: () => void;
   onConfirmTrashMove: () => void;
+  archiveConfirmModal: EstimateArchiveConfirmState | null;
+  onCloseArchiveConfirm: () => void;
+  onConfirmArchive: () => void;
   trashOpen: boolean;
   onCloseTrash: () => void;
   onTrashRestored: () => void;
@@ -69,6 +74,9 @@ export function EstimatesListModals({
   trashConfirmModal,
   onCloseTrashConfirm,
   onConfirmTrashMove,
+  archiveConfirmModal,
+  onCloseArchiveConfirm,
+  onConfirmArchive,
   trashOpen,
   onCloseTrash,
   onTrashRestored,
@@ -82,28 +90,26 @@ export function EstimatesListModals({
 }: EstimatesListModalsProps) {
   return (
     <>
-      {workScopePreset ? (
-        <EstimateWorkScopeSplitModal
-          preset={workScopePreset}
-          groups={groups}
-          allPresets={items}
-          saving={saving}
-          onClose={onCloseWorkScope}
-          onSave={(payload) => onWorkScopeSave(workScopePreset.id, payload)}
-        />
-      ) : null}
+      <EstimateWorkScopeSplitModal
+        isOpen={workScopePreset != null}
+        preset={workScopePreset}
+        groups={groups}
+        allPresets={items}
+        saving={saving}
+        onClose={onCloseWorkScope}
+        onSave={onWorkScopeSave}
+      />
 
-      {copyChoicePreset ? (
-        <EstimateCopyChoiceModal
-          preset={copyChoicePreset}
-          allPresets={items}
-          archiveView={archiveView}
-          hasLockedUsage={copyChoiceHasLockedUsage}
-          saving={saving}
-          onClose={onCloseCopyChoice}
-          onChoose={onCopyChoose}
-        />
-      ) : null}
+      <EstimateCopyChoiceModal
+        isOpen={copyChoicePreset != null}
+        preset={copyChoicePreset}
+        allPresets={items}
+        archiveView={archiveView}
+        hasLockedUsage={copyChoiceHasLockedUsage}
+        saving={saving}
+        onClose={onCloseCopyChoice}
+        onChoose={onCopyChoose}
+      />
 
       <EstimateDetachEditModal
         isOpen={detachEditOpen}
@@ -117,6 +123,13 @@ export function EstimatesListModals({
         saving={saving}
         onClose={onCloseTrashConfirm}
         onConfirm={onConfirmTrashMove}
+      />
+
+      <EstimateArchiveConfirmModal
+        state={archiveConfirmModal}
+        saving={saving}
+        onClose={onCloseArchiveConfirm}
+        onConfirm={onConfirmArchive}
       />
 
       <EstimateTrashModal isOpen={trashOpen} onClose={onCloseTrash} onRestored={onTrashRestored} />

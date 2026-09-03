@@ -144,8 +144,8 @@ export function useEstimatesListDerivedData({
   );
 
   const pipelineTabCounts = useMemo(
-    () => countEstimatesPipelineTabs(items, groups),
-    [items, groups]
+    () => countEstimatesPipelineTabs(items, groups, listScope, currentUserId, managerIdsByPresetId),
+    [items, groups, listScope, currentUserId, managerIdsByPresetId]
   );
 
   const archiveCount = useMemo(() => countArchivedEstimates(items, groups), [items, groups]);

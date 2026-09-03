@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 import { Modal } from '@/shared/ui/Modal';
@@ -30,7 +30,12 @@ function linkedTargetForCopyKind(
   return null;
 }
 
+/**
+ * Одна модалка на весь жизненный цикл (как «Настройки обучающей платформы»):
+ * без remount при открытии/закрытии — плавное появление/исчезновение.
+ */
 export function EstimateCopyChoiceModal({
+  isOpen,
   preset,
   allPresets,
   archiveView,
@@ -39,6 +44,46 @@ export function EstimateCopyChoiceModal({
   onClose,
   onChoose,
 }: {
+  isOpen: boolean;
+  preset: ContractEstimatePreset | null;
+  allPresets: ContractEstimatePreset[];
+  archiveView: boolean;
+  hasLockedUsage: boolean;
+  saving: boolean;
+  onClose: () => void;
+  onChoose: (choice: EstimateCopyChoiceResult) => void;
+}) {
+  const cachedPresetRef = useRef<ContractEstimatePreset | null>(null);
+  if (preset) cachedPresetRef.current = preset;
+  const cachedPreset = cachedPresetRef.current;
+
+  if (!cachedPreset) return null;
+
+  return (
+    <EstimateCopyChoiceModalOpened
+      isOpen={isOpen}
+      preset={cachedPreset}
+      allPresets={allPresets}
+      archiveView={archiveView}
+      hasLockedUsage={hasLockedUsage}
+      saving={saving}
+      onClose={onClose}
+      onChoose={onChoose}
+    />
+  );
+}
+
+function EstimateCopyChoiceModalOpened({
+  isOpen,
+  preset,
+  allPresets,
+  archiveView,
+  hasLockedUsage,
+  saving,
+  onClose,
+  onChoose,
+}: {
+  isOpen: boolean;
   preset: ContractEstimatePreset;
   allPresets: ContractEstimatePreset[];
   archiveView: boolean;
@@ -70,9 +115,10 @@ export function EstimateCopyChoiceModal({
     (Boolean(linkedDisabledReason) || (copyKind === 'linked_join' && !joinBundleId.trim()));
 
   useEffect(() => {
+    if (!isOpen) return;
     setCopyKind('plain');
     setJoinBundleId(joinableBundles[0]?.bundleId ?? '');
-  }, [preset.id, joinableBundles]);
+  }, [isOpen, preset.id, joinableBundles]);
 
   const renderLinkedOption = (
     kind: Exclude<EstimateCopyKind, 'plain'>,
@@ -124,7 +170,7 @@ export function EstimateCopyChoiceModal({
 
   return (
     <Modal
-      isOpen
+      isOpen={isOpen}
       onClose={() => {
         if (saving) return;
         onClose();

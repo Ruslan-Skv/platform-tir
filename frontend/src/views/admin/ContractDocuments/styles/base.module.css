@@ -1661,8 +1661,9 @@
   box-sizing: border-box;
   display: flex;
   flex-direction: column;
+  /* Фиксируем высоту слота, чтобы при загрузке дерева панель не дёргалась */
   max-height: min(52vh, 480px);
-  min-height: 0;
+  min-height: min(36vh, 280px);
   overflow: hidden;
   padding: var(--admin-space-md);
 }

@@ -31,6 +31,7 @@ export type EstimatePresetRowActionsProps = Pick<
   | 'router'
   | 'onPresetPipelineStage'
   | 'onPresetArchived'
+  | 'onArchivePreset'
   | 'onDetachEdit'
   | 'onCopyPreset'
   | 'onOpenWorkScopeSplit'
@@ -51,6 +52,7 @@ export function EstimatePresetRowActions({
   router,
   onPresetPipelineStage,
   onPresetArchived,
+  onArchivePreset,
   onDetachEdit,
   onCopyPreset,
   onOpenWorkScopeSplit,
@@ -107,7 +109,12 @@ export function EstimatePresetRowActions({
             disabled={saving}
             aria-label="В архив"
             title="Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров"
-            onClick={() => onPresetArchived(it.id, true)}
+            onClick={() =>
+              onArchivePreset({
+                estimateId: it.id,
+                title: it.title.trim() || 'Расчёт',
+              })
+            }
           >
             <EstimatesArchiveIcon />
           </button>

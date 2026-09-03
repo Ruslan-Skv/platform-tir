@@ -22,6 +22,7 @@ import {
   applyPresetPipelineTab,
 } from '../../../../platform/estimates/estimatePipelineStage';
 import { applySplitBundleSaveToPresets } from '../../../../platform/estimates/estimateWorkScopeTree';
+import type { EstimateArchiveConfirmState } from '../../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';
 import {
   type EstimatesListWorkspacePackage,
@@ -50,6 +51,8 @@ export type UseEstimatesListMutationsParams = {
   >;
   trashConfirmModal: EstimateTrashConfirmState | null;
   setTrashConfirmModal: Dispatch<SetStateAction<EstimateTrashConfirmState | null>>;
+  archiveConfirmModal: EstimateArchiveConfirmState | null;
+  setArchiveConfirmModal: Dispatch<SetStateAction<EstimateArchiveConfirmState | null>>;
   setWorkScopeModalPresetId: Dispatch<SetStateAction<string | null>>;
   router: AppRouterInstance;
   refreshTrashCount: () => void;
@@ -76,6 +79,8 @@ export function useEstimatesListMutations({
   setDetachEditModal,
   trashConfirmModal,
   setTrashConfirmModal,
+  archiveConfirmModal,
+  setArchiveConfirmModal,
   setWorkScopeModalPresetId,
   router,
   refreshTrashCount,
@@ -311,6 +316,19 @@ export function useEstimatesListMutations({
     trashConfirmModal,
   ]);
 
+  const handleConfirmArchive = useCallback(async () => {
+    if (!archiveConfirmModal) return;
+    const { estimateId } = archiveConfirmModal;
+    const it = items.find((x) => x.id === estimateId);
+    if (!it) {
+      setArchiveConfirmModal(null);
+      return;
+    }
+    setArchiveConfirmModal(null);
+    setPresetArchived(estimateId, true);
+    showOkMessage('Расчёт отправлен в архив.', 3000);
+  }, [archiveConfirmModal, items, setArchiveConfirmModal, setPresetArchived, showOkMessage]);
+
   const updateGroupAdditionalMarkupPercent = useCallback(
     (groupId: string, raw: string) => {
       if (groupIdsWithLockedEstimate.has(groupId)) return;
@@ -384,6 +402,7 @@ export function useEstimatesListMutations({
     setPresetArchived,
     handleConfirmDetachEdit,
     handleConfirmTrashMove,
+    handleConfirmArchive,
     updateGroupAdditionalMarkupPercent,
     updatePresetAdditionalMarkupPercent,
   };

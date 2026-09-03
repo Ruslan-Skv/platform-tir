@@ -20,6 +20,7 @@ import {
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
+import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import { EstimatePresetRowMarkupCell } from './EstimatePresetRowMarkupCell';
@@ -47,6 +48,7 @@ export type EstimatePresetTableRowProps = {
   router: AppRouterInstance;
   onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
   onPresetArchived: (presetId: string, archived: boolean) => void;
+  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -68,6 +70,7 @@ export function EstimatePresetTableRow({
   router,
   onPresetPipelineStage,
   onPresetArchived,
+  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -191,6 +194,7 @@ export function EstimatePresetTableRow({
         router={router}
         onPresetPipelineStage={onPresetPipelineStage}
         onPresetArchived={onPresetArchived}
+        onArchivePreset={onArchivePreset}
         onDetachEdit={onDetachEdit}
         onCopyPreset={onCopyPreset}
         onOpenWorkScopeSplit={onOpenWorkScopeSplit}

@@ -91,6 +91,8 @@ export function useEstimatesListPage() {
     setDetachEditModal: modals.setDetachEditModal,
     trashConfirmModal: modals.trashConfirmModal,
     setTrashConfirmModal: modals.setTrashConfirmModal,
+    archiveConfirmModal: modals.archiveConfirmModal,
+    setArchiveConfirmModal: modals.setArchiveConfirmModal,
     setWorkScopeModalPresetId: modals.setWorkScopeModalPresetId,
     router,
     refreshTrashCount: modals.refreshTrashCount,

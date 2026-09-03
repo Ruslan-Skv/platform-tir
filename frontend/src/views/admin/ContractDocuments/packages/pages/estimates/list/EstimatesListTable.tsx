@@ -12,6 +12,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import type { EstimatePipelineTab } from '../../../platform/estimates/estimatePipelineStage';
+import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimateAddressGroupTableRow } from './EstimateAddressGroupTableRow';
 import { EstimatePresetTableRow } from './EstimatePresetTableRow';
@@ -47,6 +48,7 @@ export type EstimatesListTableProps = {
   router: AppRouterInstance;
   onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
   onPresetArchived: (presetId: string, archived: boolean) => void;
+  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -83,6 +85,7 @@ export function EstimatesListTable({
   router,
   onPresetPipelineStage,
   onPresetArchived,
+  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -198,6 +201,7 @@ export function EstimatesListTable({
                       router={router}
                       onPresetPipelineStage={onPresetPipelineStage}
                       onPresetArchived={onPresetArchived}
+                      onArchivePreset={onArchivePreset}
                       onPresetMarkupChange={onPresetMarkupChange}
                       onDetachEdit={onDetachEdit}
                       onCopyPreset={onCopyPreset}
@@ -235,6 +239,7 @@ export function EstimatesListTable({
         router={router}
         onPresetPipelineStage={onPresetPipelineStage}
         onPresetArchived={onPresetArchived}
+        onArchivePreset={onArchivePreset}
         onPresetMarkupChange={onPresetMarkupChange}
         onDetachEdit={onDetachEdit}
         onCopyPreset={onCopyPreset}

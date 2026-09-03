@@ -5,6 +5,7 @@ import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import { EstimatesListFiltersBar } from './EstimatesListFiltersBar';
+import { EstimatesListFiltersPanel } from './EstimatesListFiltersPanel';
 import { EstimatesListModals } from './EstimatesListModals';
 import { EstimatesListPageHeader } from './EstimatesListPageHeader';
 import { EstimatesListTable } from './EstimatesListTable';
@@ -64,29 +65,40 @@ export function EstimatesListPageView({
       {error ? <p className={cdDocPreview.error}>{error}</p> : null}
       {ok && ok !== 'Сохранено.' ? <p className={cdDocPreview.success}>{ok}</p> : null}
 
-      <EstimatesListFiltersBar
-        loading={load.loading}
-        saving={saving}
-        search={filters.search}
-        onSearchChange={filters.setSearch}
+      <EstimatesListFiltersPanel
         listScope={filters.listScope}
-        onListScopeChange={filters.setListScope}
-        scopeCounts={derived.scopeCounts}
+        search={filters.search}
         listViewMode={filters.listViewMode}
-        onListViewModeChange={filters.setListViewMode}
         managerFilter={filters.managerFilter}
-        onManagerFilterChange={filters.setManagerFilter}
         managerOptions={load.managerOptions}
         dateFrom={filters.dateFrom}
-        onDateFromChange={filters.setDateFrom}
         dateTo={filters.dateTo}
-        onDateToChange={filters.setDateTo}
         limit={filters.limit}
-        onLimitChange={(nextLimit) => {
-          filters.setLimit(nextLimit);
-          filters.setPage(1);
-        }}
-      />
+      >
+        <EstimatesListFiltersBar
+          loading={load.loading}
+          saving={saving}
+          search={filters.search}
+          onSearchChange={filters.setSearch}
+          listScope={filters.listScope}
+          onListScopeChange={filters.setListScope}
+          scopeCounts={derived.scopeCounts}
+          listViewMode={filters.listViewMode}
+          onListViewModeChange={filters.setListViewMode}
+          managerFilter={filters.managerFilter}
+          onManagerFilterChange={filters.setManagerFilter}
+          managerOptions={load.managerOptions}
+          dateFrom={filters.dateFrom}
+          onDateFromChange={filters.setDateFrom}
+          dateTo={filters.dateTo}
+          onDateToChange={filters.setDateTo}
+          limit={filters.limit}
+          onLimitChange={(nextLimit) => {
+            filters.setLimit(nextLimit);
+            filters.setPage(1);
+          }}
+        />
+      </EstimatesListFiltersPanel>
 
       <EstimatesListTable
         archiveView={archiveView}
@@ -116,6 +128,7 @@ export function EstimatesListPageView({
         router={router}
         onPresetPipelineStage={mutations.setPresetPipelineStage}
         onPresetArchived={mutations.setPresetArchived}
+        onArchivePreset={modals.setArchiveConfirmModal}
         onPresetMarkupChange={mutations.updatePresetAdditionalMarkupPercent}
         onDetachEdit={(estimateId, usages) => modals.setDetachEditModal({ estimateId, usages })}
         onCopyPreset={modals.setCopyChoicePresetId}
@@ -160,6 +173,9 @@ export function EstimatesListPageView({
         trashConfirmModal={modals.trashConfirmModal}
         onCloseTrashConfirm={() => modals.setTrashConfirmModal(null)}
         onConfirmTrashMove={mutations.handleConfirmTrashMove}
+        archiveConfirmModal={modals.archiveConfirmModal}
+        onCloseArchiveConfirm={() => modals.setArchiveConfirmModal(null)}
+        onConfirmArchive={mutations.handleConfirmArchive}
         trashOpen={modals.trashOpen}
         onCloseTrash={() => {
           modals.setTrashOpen(false);

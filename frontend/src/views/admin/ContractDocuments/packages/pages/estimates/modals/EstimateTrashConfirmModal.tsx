@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 import confirmModalStyles from '@/shared/ui/ConfirmModal/ConfirmModal.module.css';
 import { Modal } from '@/shared/ui/Modal';
 
@@ -24,6 +26,10 @@ export function EstimateTrashConfirmModal({
   onClose: () => void;
   onConfirm: () => void | Promise<void>;
 }) {
+  const cachedStateRef = useRef<EstimateTrashConfirmState | null>(null);
+  if (state) cachedStateRef.current = state;
+  const cachedState = cachedStateRef.current;
+
   return (
     <Modal
       isOpen={state != null}
@@ -35,19 +41,19 @@ export function EstimateTrashConfirmModal({
       size="sm"
       showCloseButton
     >
-      {state ? (
+      {cachedState ? (
         <div className={confirmModalStyles.content}>
           <p className={confirmModalStyles.message}>
-            Расчёт «<strong>{state.title}</strong>» будет скрыт из общего списка. Восстановить его
-            можно из корзины на этой странице. {ESTIMATE_TRASH_RETENTION_NOTICE}
+            Расчёт «<strong>{cachedState.title}</strong>» будет скрыт из общего списка. Восстановить
+            его можно из корзины на этой странице. {ESTIMATE_TRASH_RETENTION_NOTICE}
           </p>
-          {state.detachedUsages.length > 0 ? (
+          {cachedState.detachedUsages.length > 0 ? (
             <p className={confirmModalStyles.message}>
               Расчёт прикреплён к смете договора или к дополнительному соглашению. При перемещении в
               корзину привязка будет снята автоматически.
             </p>
           ) : null}
-          {state.inSplitBundle ? (
+          {cachedState.inSplitBundle ? (
             <p className={confirmModalStyles.message}>
               Расчёт входит в связку разделения сметы: после перемещения в корзину остальные
               экземпляры связки останутся; их набор выбранных позиций не пересчитается

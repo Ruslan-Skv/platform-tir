@@ -19,6 +19,7 @@ import {
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
+import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import type { EstimatesTableDisplayItem } from './estimatesListLayout';
@@ -61,6 +62,7 @@ export type EstimatesListMobileCardsProps = {
   router: AppRouterInstance;
   onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
   onPresetArchived: (presetId: string, archived: boolean) => void;
+  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -80,6 +82,7 @@ function EstimateMobileCard({
   router,
   onPresetPipelineStage,
   onPresetArchived,
+  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -99,6 +102,7 @@ function EstimateMobileCard({
   | 'router'
   | 'onPresetPipelineStage'
   | 'onPresetArchived'
+  | 'onArchivePreset'
   | 'onPresetMarkupChange'
   | 'onDetachEdit'
   | 'onCopyPreset'
@@ -251,6 +255,7 @@ function EstimateMobileCard({
           router={router}
           onPresetPipelineStage={onPresetPipelineStage}
           onPresetArchived={onPresetArchived}
+          onArchivePreset={onArchivePreset}
           onDetachEdit={onDetachEdit}
           onCopyPreset={onCopyPreset}
           onOpenWorkScopeSplit={onOpenWorkScopeSplit}
@@ -284,6 +289,7 @@ export function EstimatesListMobileCards({
   router,
   onPresetPipelineStage,
   onPresetArchived,
+  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -465,6 +471,7 @@ export function EstimatesListMobileCards({
                       router={router}
                       onPresetPipelineStage={onPresetPipelineStage}
                       onPresetArchived={onPresetArchived}
+                      onArchivePreset={onArchivePreset}
                       onPresetMarkupChange={onPresetMarkupChange}
                       onDetachEdit={onDetachEdit}
                       onCopyPreset={onCopyPreset}
@@ -490,6 +497,7 @@ export function EstimatesListMobileCards({
             router={router}
             onPresetPipelineStage={onPresetPipelineStage}
             onPresetArchived={onPresetArchived}
+            onArchivePreset={onArchivePreset}
             onPresetMarkupChange={onPresetMarkupChange}
             onDetachEdit={onDetachEdit}
             onCopyPreset={onCopyPreset}
