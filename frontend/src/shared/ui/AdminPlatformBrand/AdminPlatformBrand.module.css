@@ -75,11 +75,33 @@
   flex-shrink: 0;
 }
 
+.logoHeaderMark {
+  --admin-logo-mark-height: 1.75rem;
+  height: var(--admin-logo-mark-height);
+  width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
+  max-width: none;
+  flex-shrink: 0;
+}
+
 .logoLoginMark {
   --admin-logo-mark-height: 2.5rem;
   height: var(--admin-logo-mark-height);
   width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
   max-width: none;
+}
+
+.header {
+  width: auto;
+  max-width: 100%;
+  gap: 0;
+  opacity: 1;
+  animation: none;
+}
+
+.headerBrandRow {
+  width: auto;
+  gap: 0.375rem;
+  align-items: center;
 }
 
 .logoLink {
@@ -136,6 +158,28 @@
   text-overflow: ellipsis;
 }
 
+.platformTitle.platformTitleStacked {
+  display: flex;
+  flex-direction: column;
+  flex: 0 1 auto;
+  gap: 0;
+  font-size: 0.625rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: 0.04em;
+  white-space: normal;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: center;
+  text-shadow:
+    0 1px 0 #2563eb,
+    0 1px 6px rgb(37 99 235 / 0.22);
+}
+
+.platformTitleLine {
+  display: block;
+}
+
 .login .platformTitle {
   text-align: center;
   width: 100%;
@@ -159,6 +203,13 @@
     0 2px 0 #0284c7,
     0 3px 12px rgb(56 189 248 / 0.35);
   animation-name: platformTitleColorDark;
+}
+
+:global(:where(html[data-theme='dark'], [data-app-theme='dark']))
+  .platformTitle.platformTitleStacked {
+  text-shadow:
+    0 1px 0 #0ea5e9,
+    0 1px 8px rgb(56 189 248 / 0.3);
 }
 
 @keyframes platformTitleColorDark {

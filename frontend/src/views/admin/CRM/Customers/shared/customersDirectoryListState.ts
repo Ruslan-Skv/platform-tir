@@ -1,5 +1,7 @@
 import type { ClientDirectorySortBy, CrmCustomerEntityType } from '@/shared/api/admin-crm';
 
+import type { CustomersListScope } from './customersListScope';
+
 export type CustomerTypeFilter = 'all' | CrmCustomerEntityType;
 
 export type DirectorySortOrder = 'asc' | 'desc';
@@ -15,9 +17,13 @@ export interface CustomersDirectoryListPersisted {
   sortOrder: DirectorySortOrder;
   page: number;
   pageLimit: CustomersPageLimit;
+  listScope: CustomersListScope;
+  /** Пользователь сам менял область — не перезаписывать ролевым дефолтом. */
+  scopeTouched: boolean;
 }
 
-const STORAGE_KEY = 'admin_customers_directory_list_v1';
+const STORAGE_KEY = 'admin_customers_directory_list_v2';
+const LEGACY_STORAGE_KEY = 'admin_customers_directory_list_v1';
 const LEGACY_SORT_STORAGE_KEY = 'admin_customers_directory_sort';
 
 const TYPE_FILTER_VALUES = new Set<CustomerTypeFilter>([
@@ -27,6 +33,8 @@ const TYPE_FILTER_VALUES = new Set<CustomerTypeFilter>([
   'COMPANY',
 ]);
 
+const LIST_SCOPE_VALUES = new Set<CustomersListScope>(['mine', 'all']);
+
 const EMPTY: CustomersDirectoryListPersisted = {
   search: '',
   typeFilter: 'all',
@@ -35,6 +43,8 @@ const EMPTY: CustomersDirectoryListPersisted = {
   sortOrder: 'asc',
   page: 1,
   pageLimit: 20,
+  listScope: 'all',
+  scopeTouched: false,
 };
 
 function normalizePageLimit(raw: unknown): CustomersPageLimit {
@@ -42,7 +52,6 @@ function normalizePageLimit(raw: unknown): CustomersPageLimit {
   if (CUSTOMERS_PAGE_LIMIT_OPTIONS.includes(n as CustomersPageLimit)) {
     return n as CustomersPageLimit;
   }
-  // Ранее в справочнике было фиксированно 25 строк
   if (n === 25) return 20;
   return EMPTY.pageLimit;
 }
@@ -95,6 +104,11 @@ function normalizePersisted(
   const hasSortInPayload = typeof raw.sortBy === 'string';
   const legacy = !hasSortInPayload ? loadLegacySortOnly() : null;
 
+  const listScope =
+    typeof raw.listScope === 'string' && LIST_SCOPE_VALUES.has(raw.listScope as CustomersListScope)
+      ? (raw.listScope as CustomersListScope)
+      : EMPTY.listScope;
+
   return {
     search: typeof raw.search === 'string' ? raw.search : '',
     typeFilter,
@@ -108,6 +122,8 @@ function normalizePersisted(
         : (legacy?.sortOrder ?? EMPTY.sortOrder),
     page: normalizePage(raw.page),
     pageLimit: normalizePageLimit(raw.pageLimit),
+    listScope,
+    scopeTouched: raw.scopeTouched === true,
   };
 }
 
@@ -116,11 +132,22 @@ let memoryCache: CustomersDirectoryListPersisted | null = null;
 function readFromLocalStorage(): CustomersDirectoryListPersisted {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      const legacy = loadLegacySortOnly();
-      return legacy ? { ...EMPTY, ...legacy } : { ...EMPTY };
+    if (raw) {
+      return normalizePersisted(JSON.parse(raw) as Partial<CustomersDirectoryListPersisted>);
     }
-    return normalizePersisted(JSON.parse(raw) as Partial<CustomersDirectoryListPersisted>);
+    const legacyRaw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyRaw) {
+      const migrated = normalizePersisted(
+        JSON.parse(legacyRaw) as Partial<CustomersDirectoryListPersisted>
+      );
+      // v1 не знал scope — даём ролевому дефолту сработать, если автор не выбран вручную
+      if (migrated.authorFilter) {
+        return { ...migrated, listScope: 'all', scopeTouched: true };
+      }
+      return { ...migrated, listScope: 'all', scopeTouched: false };
+    }
+    const legacy = loadLegacySortOnly();
+    return legacy ? { ...EMPTY, ...legacy } : { ...EMPTY };
   } catch {
     return { ...EMPTY };
   }
@@ -148,6 +175,7 @@ export function persistCustomersDirectoryListState(state: CustomersDirectoryList
   if (typeof window === 'undefined') return;
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    localStorage.removeItem(LEGACY_STORAGE_KEY);
     localStorage.removeItem(LEGACY_SORT_STORAGE_KEY);
   } catch {
     /* ignore quota / private mode */

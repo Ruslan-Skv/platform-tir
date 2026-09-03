@@ -106,18 +106,10 @@
   animation-name: adminHeaderSearchIn;
 }
 
-.headerLogo {
+.headerBrand {
   flex-shrink: 0;
-  padding-right: 0.25rem;
+  padding-right: 0.125rem;
   overflow: visible;
-}
-
-.headerLogoSvg {
-  --admin-logo-mark-height: 1.75rem;
-  height: var(--admin-logo-mark-height);
-  width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
-  max-width: none;
-  flex-shrink: 0;
 }
 
 /* Поиск сразу слева после истории — не пересекается с кнопками справа */
@@ -988,17 +980,9 @@
     display: inline-flex;
   }
 
-  .headerLogo {
+  .headerBrand {
     display: inline-flex;
-    padding-right: 0.25rem;
-  }
-
-  /* Размер как у публичного Logo на мобиле */
-  .headerLogoSvg {
-    --admin-logo-mark-height: 1.75rem;
-    height: var(--admin-logo-mark-height);
-    width: calc(var(--admin-logo-mark-height) * 194.48 / 237.78);
-    max-width: none;
+    padding-right: 0.125rem;
   }
 
   .mobileMenuButton {

@@ -66,7 +66,7 @@ import { canRunBackgroundNetwork, whenOnlineSettled } from '@/shared/lib/browser
 import { useBrowserHistoryNavigation, useFaviconBadge } from '@/shared/lib/hooks';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
 import { getSafeHref } from '@/shared/lib/sanitize';
-import { Logo } from '@/shared/ui/Logo';
+import { AdminPlatformBrand } from '@/shared/ui/AdminPlatformBrand';
 import { NotificationBellIcon } from '@/shared/ui/icons/NotificationBellIcon';
 import { ProfileMenuIcon } from '@/shared/ui/icons/ProfileMenuIcon';
 import { ProfileUserSquareIcon } from '@/shared/ui/icons/ProfileUserSquareIcon';
@@ -803,13 +803,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         <span
           className={`${styles.headerRevealHost} ${styles.headerLogoHost} ${styles.headerReveal}`}
         >
-          <Logo
-            href="/"
-            markOnly
-            ariaLabel="На главную — Территория интерьерных решений"
-            className={styles.headerLogoSvg}
-            linkClassName={styles.headerLogo}
-          />
+          <AdminPlatformBrand size="header" publicSiteHref="/" className={styles.headerBrand} />
         </span>
         <div
           className={`${styles.historyNav} ${styles.headerReveal}`}

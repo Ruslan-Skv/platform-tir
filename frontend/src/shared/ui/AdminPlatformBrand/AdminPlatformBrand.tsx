@@ -10,8 +10,8 @@ const PLATFORM_TITLE = 'Виртуальный офис';
 type AdminPlatformBrandProps = {
   /** Только знак (сайдбар в свёрнутом виде). */
   collapsed?: boolean;
-  /** Крупнее для экрана входа. */
-  size?: 'sidebar' | 'login';
+  /** `header` — компактная подпись в мобильной шапке (две строки). */
+  size?: 'sidebar' | 'login' | 'header';
   /** Ссылка на публичный сайт — только для логотипа. */
   publicSiteHref?: string;
   className?: string;
@@ -23,8 +23,13 @@ export function AdminPlatformBrand({
   publicSiteHref,
   className,
 }: AdminPlatformBrandProps) {
-  const showTitle = size === 'sidebar' && !collapsed;
-  const markClassName = size === 'login' ? styles.logoLoginMark : styles.logoSidebarMark;
+  const showTitle = (size === 'sidebar' && !collapsed) || size === 'header' || size === 'login';
+  const markClassName =
+    size === 'login'
+      ? styles.logoLoginMark
+      : size === 'header'
+        ? styles.logoHeaderMark
+        : styles.logoSidebarMark;
 
   const houseMark = (
     <Logo markOnly unlinked className={markClassName} linkClassName={styles.logoWrap} />
@@ -43,31 +48,41 @@ export function AdminPlatformBrand({
     houseMark
   );
 
+  const title =
+    size === 'header' ? (
+      <span
+        className={`${styles.platformTitle} ${styles.platformTitleStacked}`}
+        title={PLATFORM_TITLE}
+      >
+        <span className={styles.platformTitleLine}>Виртуальный</span>
+        <span className={styles.platformTitleLine}>офис</span>
+      </span>
+    ) : (
+      <span className={styles.platformTitle} title={PLATFORM_TITLE}>
+        {PLATFORM_TITLE}
+      </span>
+    );
+
   return (
     <span
       className={[
         styles.brand,
-        size === 'login' ? styles.login : styles.sidebar,
+        size === 'login' ? styles.login : size === 'header' ? styles.header : styles.sidebar,
         collapsed ? styles.collapsed : '',
-        showTitle ? styles.withTitle : '',
+        showTitle && size !== 'login' ? styles.withTitle : '',
         className,
       ]
         .filter(Boolean)
         .join(' ')}
     >
       {showTitle ? (
-        <span className={styles.brandRow}>
+        <span
+          className={`${styles.brandRow} ${size === 'login' ? styles.loginBrandRow : ''} ${
+            size === 'header' ? styles.headerBrandRow : ''
+          }`}
+        >
           {linkedHouseMark}
-          <span className={styles.platformTitle} title={PLATFORM_TITLE}>
-            {PLATFORM_TITLE}
-          </span>
-        </span>
-      ) : size === 'login' ? (
-        <span className={`${styles.brandRow} ${styles.loginBrandRow}`}>
-          {linkedHouseMark}
-          <span className={styles.platformTitle} title={PLATFORM_TITLE}>
-            {PLATFORM_TITLE}
-          </span>
+          {title}
         </span>
       ) : (
         linkedHouseMark

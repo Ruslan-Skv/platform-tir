@@ -22,7 +22,9 @@ import {
   resolveCrmCreatedByActor,
 } from '../shared/crmCustomerDisplay';
 import { formatCrmPhoneOrDash } from '../shared/crmCustomerPhone';
-import type { CustomerTypeFilter, CustomersPageLimit } from '../shared/customersDirectoryListState';
+import type { CustomersPageLimit } from '../shared/customersDirectoryListState';
+import { CustomersListFiltersPanel } from './CustomersListFiltersPanel';
+import { CustomersListRulesInfoTip } from './CustomersListRulesInfoTip';
 import styles from './CustomersPage.module.css';
 import { TYPE_FILTER_OPTIONS } from './customers-page.constants';
 import {
@@ -36,6 +38,10 @@ type CustomersPageViewProps = {
   model: CustomersPageModel;
 };
 
+function chipClass(active: boolean): string {
+  return `${styles.chip}${active ? ` ${styles.chipActive}` : ''}`;
+}
+
 export function CustomersPageView({ model }: CustomersPageViewProps) {
   const {
     searchInput,
@@ -46,6 +52,9 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
     setTypeFilter,
     authorFilter,
     setAuthorFilter,
+    listScope,
+    setListScope,
+    scopeCounts,
     directoryRows,
     directoryPage,
     setDirectoryPage,
@@ -70,6 +79,8 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
     bumpListRefresh,
     pageLimitOptions,
   } = model;
+
+  const showAuthorFilter = listScope !== 'mine';
 
   const directoryColumns = useMemo(
     () => [
@@ -158,7 +169,10 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
         <div className={styles.headerLeft}>
           <div className={styles.headerTitleRow}>
             <div className={styles.headerTitleCluster}>
-              <h1 className={styles.title}>Заказчики и клиенты</h1>
+              <div className={styles.headerTitleGroup}>
+                <h1 className={styles.title}>Заказчики и клиенты</h1>
+                <CustomersListRulesInfoTip />
+              </div>
               <span className={styles.count} title={`${directoryTotal} записей`}>
                 <span className={styles.countDesktop}>{directoryTotal} записей</span>
                 <span className={styles.countMobile}>{directoryTotal}</span>
@@ -208,84 +222,109 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
         </div>
       </div>
 
-      <div className={styles.filters}>
-        <div className={styles.searchGroup}>
-          <input
-            type="search"
-            placeholder="Поиск: ФИО, телефон, e-mail, компания, адрес…"
-            value={searchInput}
-            onChange={(e) => setSearchInput(e.target.value)}
-            className={customersFilterFieldClass(
-              styles.searchInput,
-              Boolean(searchInput.trim()),
-              styles.filterActive
-            )}
-            aria-label="Поиск по справочнику"
-          />
-        </div>
+      <div className={styles.filtersStack}>
+        <CustomersListFiltersPanel
+          listScope={listScope}
+          typeFilter={typeFilter}
+          search={searchInput}
+          authorFilter={authorFilter}
+          authorOptions={authorSelectOptions}
+          limit={directoryPageLimit}
+        >
+          <div className={styles.chipRow} role="group" aria-label="Область списка заказчиков">
+            <span className={styles.chipRowLabel}>Очередь</span>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(listScope === 'mine')}
+              onClick={() => setListScope('mine')}
+            >
+              Мои ({scopeCounts.mine ?? 0})
+            </button>
+            <button
+              type="button"
+              disabled={loading}
+              className={chipClass(listScope === 'all')}
+              onClick={() => setListScope('all')}
+            >
+              Все ({scopeCounts.all ?? 0})
+            </button>
+          </div>
 
-        <div className={styles.filtersTypeLimitRow}>
-          <select
-            id="customers-author-filter"
-            className={customersFilterFieldClass(
-              styles.authorSelect,
-              Boolean(authorFilter),
-              styles.filterActive
-            )}
-            value={authorFilter}
-            onChange={(e) => {
-              setAuthorFilter(e.target.value);
-              setDirectoryPage(1);
-            }}
-            aria-label="Автор карточки"
-          >
-            <option value="">Все авторы</option>
-            <option value="_none">Без автора</option>
-            {authorSelectOptions.map((u) => (
-              <option key={u.id} value={u.id}>
-                {formatCrmUserOptionLabel(u)}
-              </option>
-            ))}
-          </select>
-
-          <select
-            id="customers-type-filter"
-            value={typeFilter}
-            onChange={(e) => {
-              setTypeFilter(e.target.value as CustomerTypeFilter);
-              setDirectoryPage(1);
-            }}
-            className={customersFilterFieldClass(
-              styles.authorSelect,
-              typeFilter !== 'all',
-              styles.filterActive
-            )}
-            aria-label="Тип заказчика"
-          >
+          <div className={styles.chipRow} role="group" aria-label="Тип заказчика">
+            <span className={styles.chipRowLabel}>Тип</span>
             {TYPE_FILTER_OPTIONS.map(({ value, label }) => (
-              <option key={value} value={value}>
+              <button
+                key={value}
+                type="button"
+                disabled={loading}
+                className={chipClass(typeFilter === value)}
+                onClick={() => setTypeFilter(value)}
+              >
                 {label}
-              </option>
+              </button>
             ))}
-          </select>
+          </div>
 
-          <select
-            value={directoryPageLimit}
-            onChange={(e) => {
-              setDirectoryPageLimit(Number(e.target.value) as CustomersPageLimit);
-              setDirectoryPage(1);
-            }}
-            disabled={loading}
-            className={styles.pageLimitSelect}
-            aria-label="Количество строк на странице"
-          >
-            {pageLimitOptions.map((n) => (
-              <option key={n} value={n}>
-                {n} на странице
-              </option>
-            ))}
-          </select>
-        </div>
+          <div className={styles.filters}>
+            <div className={styles.searchGroup}>
+              <input
+                type="search"
+                placeholder="Поиск: ФИО, телефон, e-mail, компания, адрес…"
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                className={customersFilterFieldClass(
+                  styles.searchInput,
+                  Boolean(searchInput.trim()),
+                  styles.filterActive
+                )}
+                aria-label="Поиск по справочнику"
+              />
+            </div>
+
+            {showAuthorFilter ? (
+              <select
+                id="customers-author-filter"
+                className={customersFilterFieldClass(
+                  styles.authorSelect,
+                  Boolean(authorFilter),
+                  styles.filterActive
+                )}
+                value={authorFilter}
+                onChange={(e) => {
+                  setAuthorFilter(e.target.value);
+                  setDirectoryPage(1);
+                }}
+                aria-label="Автор карточки"
+              >
+                <option value="">Все авторы</option>
+                <option value="_none">Без автора</option>
+                {authorSelectOptions.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {formatCrmUserOptionLabel(u)}
+                  </option>
+                ))}
+              </select>
+            ) : null}
+
+            <select
+              value={directoryPageLimit}
+              onChange={(e) => {
+                setDirectoryPageLimit(Number(e.target.value) as CustomersPageLimit);
+                setDirectoryPage(1);
+              }}
+              disabled={loading}
+              className={styles.pageLimitSelect}
+              aria-label="Количество строк на странице"
+            >
+              {pageLimitOptions.map((n) => (
+                <option key={n} value={n}>
+                  {n} на странице
+                </option>
+              ))}
+            </select>
+          </div>
+        </CustomersListFiltersPanel>
       </div>
 
       {error && <p className={styles.errorText}>{error}</p>}

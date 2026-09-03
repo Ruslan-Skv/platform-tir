@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type ClientDirectoryRow,
   type ClientDirectorySortBy,
@@ -24,11 +25,20 @@ import {
   persistCustomersDirectoryListState,
   reloadCustomersDirectoryListStateFromStorage,
 } from '../../shared/customersDirectoryListState';
+import {
+  type CustomersListScope,
+  getCustomersListRoleDefaults,
+} from '../../shared/customersListScope';
+
+const EMPTY_SCOPE_COUNTS = { mine: 0, all: 0 };
 
 export function useCustomersPage() {
+  const { user } = useAuth();
   const initialListStateRef = useRef(loadCustomersDirectoryListState());
   const initialListState = initialListStateRef.current;
   const listStateHydratedRef = useRef(false);
+  const skipListFiltersPersistRef = useRef(true);
+  const roleDefaultsAppliedRef = useRef(false);
   const isNarrowViewport = useAdminNarrowViewport();
 
   const [searchInput, setSearchInput] = useState(initialListState.search);
@@ -38,8 +48,13 @@ export function useCustomersPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const [typeFilter, setTypeFilter] = useState<CustomerTypeFilter>(initialListState.typeFilter);
+  const [typeFilter, setTypeFilterState] = useState<CustomerTypeFilter>(
+    initialListState.typeFilter
+  );
   const [authorFilter, setAuthorFilter] = useState(initialListState.authorFilter);
+  const [listScope, setListScopeState] = useState<CustomersListScope>(initialListState.listScope);
+  const [scopeTouched, setScopeTouched] = useState(initialListState.scopeTouched);
+  const [scopeCounts, setScopeCounts] = useState(EMPTY_SCOPE_COUNTS);
   const [crmUsers, setCrmUsers] = useState<CrmUser[]>([]);
 
   const [directoryRows, setDirectoryRows] = useState<ClientDirectoryRow[]>([]);
@@ -69,21 +84,46 @@ export function useCustomersPage() {
     initialListState.sortOrder
   );
 
+  const setListScope = useCallback((scope: CustomersListScope) => {
+    setListScopeState(scope);
+    setScopeTouched(true);
+    setDirectoryPage(1);
+  }, []);
+
+  const setTypeFilter = useCallback((next: CustomerTypeFilter) => {
+    setTypeFilterState(next);
+    setDirectoryPage(1);
+  }, []);
+
   useEffect(() => {
     const saved = reloadCustomersDirectoryListStateFromStorage();
     setSearchInput(saved.search);
     setSearchQuery(saved.search);
-    setTypeFilter(saved.typeFilter);
+    setTypeFilterState(saved.typeFilter);
     setAuthorFilter(saved.authorFilter);
     setDirectorySortBy(saved.sortBy);
     setDirectorySortOrder(saved.sortOrder);
     setDirectoryPage(saved.page);
     setDirectoryPageLimit(saved.pageLimit);
+    setListScopeState(saved.listScope);
+    setScopeTouched(saved.scopeTouched);
     listStateHydratedRef.current = true;
   }, []);
 
   useEffect(() => {
+    if (scopeTouched || roleDefaultsAppliedRef.current) return;
+    if (!user?.role) return;
+    const defaults = getCustomersListRoleDefaults(user.role);
+    setListScopeState(defaults.listScope);
+    roleDefaultsAppliedRef.current = true;
+  }, [user?.role, scopeTouched]);
+
+  useEffect(() => {
     if (!listStateHydratedRef.current) return;
+    if (skipListFiltersPersistRef.current) {
+      skipListFiltersPersistRef.current = false;
+      return;
+    }
     persistCustomersDirectoryListState({
       search: searchInput,
       typeFilter,
@@ -92,6 +132,8 @@ export function useCustomersPage() {
       sortOrder: directorySortOrder,
       page: directoryPage,
       pageLimit: directoryPageLimit,
+      listScope,
+      scopeTouched,
     });
   }, [
     searchInput,
@@ -101,6 +143,8 @@ export function useCustomersPage() {
     directorySortOrder,
     directoryPage,
     directoryPageLimit,
+    listScope,
+    scopeTouched,
   ]);
 
   useEffect(() => {
@@ -149,23 +193,64 @@ export function useCustomersPage() {
     setDirectoryPage(1);
   }, []);
 
+  const resolveCreatedById = useCallback((): string | undefined => {
+    if (listScope === 'mine') {
+      const id = user?.id?.trim();
+      return id || undefined;
+    }
+    return authorFilter || undefined;
+  }, [listScope, user?.id, authorFilter]);
+
   useEffect(() => {
     let cancelled = false;
+
+    if (listScope === 'mine' && !user?.id?.trim()) {
+      setDirectoryRows([]);
+      setDirectoryTotal(0);
+      setScopeCounts(EMPTY_SCOPE_COUNTS);
+      setLoading(false);
+      return;
+    }
+
     setLoading(true);
     setError(null);
-    getClientDirectory({
+
+    const entityType = typeFilter === 'all' ? undefined : typeFilter;
+    const createdById = resolveCreatedById();
+    const countBase = {
+      search: searchQuery || undefined,
+      entityType,
+      page: 1,
+      limit: 1 as const,
+    };
+
+    const mainPromise = getClientDirectory({
       search: searchQuery || undefined,
       page: directoryPage,
       limit: effectiveDirectoryPageLimit,
-      entityType: typeFilter === 'all' ? undefined : typeFilter,
-      createdById: authorFilter || undefined,
+      entityType,
+      createdById,
       sortBy: directorySortBy,
       sortOrder: directorySortOrder,
-    })
-      .then((res) => {
+    });
+
+    const mineUserId = user?.id?.trim();
+    const countsPromise = Promise.all([
+      mineUserId
+        ? getClientDirectory({ ...countBase, createdById: mineUserId })
+        : Promise.resolve({ total: 0 }),
+      getClientDirectory(countBase),
+    ]);
+
+    Promise.all([mainPromise, countsPromise])
+      .then(([res, [mineRes, allRes]]) => {
         if (cancelled) return;
         setDirectoryRows(res.data ?? []);
         setDirectoryTotal(res.total ?? 0);
+        setScopeCounts({
+          mine: mineRes.total ?? 0,
+          all: allRes.total ?? 0,
+        });
       })
       .catch((e) => {
         if (!cancelled) setError(e instanceof Error ? e.message : 'Ошибка загрузки справочника');
@@ -173,6 +258,7 @@ export function useCustomersPage() {
       .finally(() => {
         if (!cancelled) setLoading(false);
       });
+
     return () => {
       cancelled = true;
     };
@@ -182,6 +268,9 @@ export function useCustomersPage() {
     listRefreshKey,
     typeFilter,
     authorFilter,
+    listScope,
+    user?.id,
+    resolveCreatedById,
     directorySortBy,
     directorySortOrder,
     effectiveDirectoryPageLimit,
@@ -216,6 +305,9 @@ export function useCustomersPage() {
     setTypeFilter,
     authorFilter,
     setAuthorFilter,
+    listScope,
+    setListScope,
+    scopeCounts,
     directoryRows,
     directoryPage,
     setDirectoryPage,
