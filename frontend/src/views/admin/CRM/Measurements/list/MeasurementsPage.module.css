@@ -125,10 +125,30 @@
   font-size: var(--admin-font-size-xs);
 }
 
+.pageSuccess {
+  margin: 0 0 var(--admin-space-md, 8px);
+  color: var(--admin-success-text-strong, #166534);
+  font-size: var(--admin-font-size-xs);
+}
+
 .pageLead {
   margin: 0 0 var(--admin-space-md, 8px);
   color: var(--admin-text-muted);
   font-size: var(--admin-font-size-xs);
+}
+
+.actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 2px;
+  width: max-content;
+  max-width: none;
+  white-space: nowrap;
+}
+
+.modalHintFlush {
+  margin-top: 0;
 }
 
 .linkStateOk,
@@ -492,6 +512,23 @@
   font: inherit;
 }
 
+.mobileCardActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--admin-space-xs);
+  padding-top: var(--admin-space-xs);
+  border-top: 1px solid var(--admin-border);
+}
+
+.mobileCardActions .actions {
+  flex-wrap: wrap;
+  width: auto;
+  max-width: 100%;
+  gap: var(--admin-space-xs);
+}
+
 .mobileCard:hover {
   border-color: var(--admin-info-border-soft, #93c5fd);
   background: var(--admin-surface-muted);
@@ -852,6 +889,11 @@
     flex-direction: column;
     gap: var(--admin-space-sm);
     margin-bottom: var(--admin-space-md);
+  }
+
+  .mobileCardActions :global(button) {
+    min-width: 2.25rem;
+    min-height: 2.25rem;
   }
 
   /* Таблица скрыта, пагинация DataTable остаётся */

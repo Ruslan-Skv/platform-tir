@@ -7,6 +7,10 @@ import {
   formatCrmPhoneOrDash,
 } from '@/views/admin/CRM/Customers/shared/crmCustomerPhone';
 
+import {
+  MyMeasurementSurveyorActions,
+  canCompleteMyMeasurement,
+} from '../my/MyMeasurementSurveyorActions';
 import { getMeasurementStatusLabel } from '../shared/measurementStatuses';
 import styles from './MeasurementsPage.module.css';
 import type { MeasurementLinksInfo } from './measurements-page.types';
@@ -18,6 +22,9 @@ type MeasurementsListMobileCardsProps = {
   directions: CrmDirection[];
   linksByMeasurementId: Record<string, MeasurementLinksInfo | undefined>;
   onOpen: (measurement: Measurement) => void;
+  /** Только для «Мои замеры»: отметить выполненным. */
+  onComplete?: (measurement: Measurement) => void;
+  completeDisabled?: boolean;
 };
 
 function renderDirection(m: Measurement, directions: CrmDirection[]): string {
@@ -39,6 +46,8 @@ export function MeasurementsListMobileCards({
   directions,
   linksByMeasurementId,
   onOpen,
+  onComplete,
+  completeDisabled = false,
 }: MeasurementsListMobileCardsProps) {
   return (
     <div className={styles.mobileCards} aria-label="Список замеров">
@@ -51,6 +60,7 @@ export function MeasurementsListMobileCards({
           const links = linksByMeasurementId[m.id];
           const phoneDisplay = m.customerPhone ? formatCrmPhoneOrDash(m.customerPhone) : null;
           const telHref = crmPhoneToTelHref(m.customerPhone);
+          const showComplete = Boolean(onComplete) && canCompleteMyMeasurement(m.status);
           return (
             <article key={m.id} className={styles.mobileCard}>
               <div className={styles.mobileCardTop}>
@@ -139,6 +149,15 @@ export function MeasurementsListMobileCards({
                   </div>
                 </dl>
               </button>
+              {showComplete ? (
+                <div className={styles.mobileCardActions}>
+                  <MyMeasurementSurveyorActions
+                    item={m}
+                    onComplete={onComplete!}
+                    disabled={completeDisabled}
+                  />
+                </div>
+              ) : null}
             </article>
           );
         })

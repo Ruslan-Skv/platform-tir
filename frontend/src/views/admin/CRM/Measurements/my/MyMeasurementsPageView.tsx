@@ -1,6 +1,7 @@
 'use client';
 
 import type { Measurement } from '@/shared/api/admin-crm';
+import { Modal } from '@/shared/ui/Modal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -16,6 +17,7 @@ import {
   getMeasurementStatusLabel,
 } from '../shared/measurementStatuses';
 import type { MeasurementsPageLimit } from '../shared/measurementsListFilters';
+import { MyMeasurementSurveyorActions } from './MyMeasurementSurveyorActions';
 import type { MyMeasurementsPageModel } from './hooks/useMyMeasurementsPage';
 
 type Props = {
@@ -52,9 +54,14 @@ export function MyMeasurementsPageView({ model }: Props) {
     statusCounts,
     linksByMeasurementId,
     message,
+    completeItem,
+    setCompleteItem,
+    submitting,
     fetchData,
     handleSortChange,
     openMeasurement,
+    openCompleteModal,
+    handleCompleteConfirm,
   } = model;
 
   const renderDirection = (m: Measurement) => {
@@ -141,6 +148,17 @@ export function MyMeasurementsPageView({ model }: Props) {
         );
       },
     },
+    {
+      key: 'actions',
+      title: '',
+      render: (m: Measurement) => (
+        <MyMeasurementSurveyorActions
+          item={m}
+          onComplete={openCompleteModal}
+          disabled={submitting}
+        />
+      ),
+    },
   ];
 
   const countTitle = `${total} замеров`;
@@ -184,13 +202,17 @@ export function MyMeasurementsPageView({ model }: Props) {
       </div>
 
       {message ? (
-        <p className={styles.pageError} role="alert">
-          {message}
+        <p
+          className={message.type === 'success' ? styles.pageSuccess : styles.pageError}
+          role={message.type === 'success' ? 'status' : 'alert'}
+        >
+          {message.text}
         </p>
       ) : null}
 
       <p className={styles.pageLead}>
-        Показаны замеры, где вы назначены замерщиком. Откройте карточку, чтобы внести результаты.
+        Показаны замеры, где вы назначены замерщиком. Галочка отмечает статус «Выполнен»; карточку
+        можно открыть, чтобы внести результаты.
       </p>
 
       <div className={styles.filtersStack}>
@@ -299,6 +321,8 @@ export function MyMeasurementsPageView({ model }: Props) {
         directions={directions}
         linksByMeasurementId={linksByMeasurementId}
         onOpen={openMeasurement}
+        onComplete={openCompleteModal}
+        completeDisabled={submitting}
       />
 
       <DataTable
@@ -322,6 +346,45 @@ export function MyMeasurementsPageView({ model }: Props) {
           onPageChange: setPage,
         }}
       />
+
+      <Modal
+        isOpen={Boolean(completeItem)}
+        onClose={() => setCompleteItem(null)}
+        title="Подтвердить выполнение"
+        size="md"
+        showCloseButton
+      >
+        <div data-modal-form data-modal-density="compact">
+          <p data-modal-form-hint className={styles.modalHintFlush}>
+            Отметить замер как выполненный?
+          </p>
+          {completeItem ? (
+            <p data-modal-form-hint>
+              {completeItem.customerName || 'Без ФИО'}
+              {completeItem.customerAddress ? (
+                <>
+                  <br />
+                  {completeItem.customerAddress}
+                </>
+              ) : null}
+            </p>
+          ) : null}
+          <div data-modal-form-actions>
+            <button type="button" data-modal-btn="secondary" onClick={() => setCompleteItem(null)}>
+              Отмена
+            </button>
+            <button
+              data-admin-mutation
+              type="button"
+              data-modal-btn="primary"
+              disabled={submitting}
+              onClick={() => void handleCompleteConfirm()}
+            >
+              {submitting ? 'Сохранение…' : 'Выполнено'}
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

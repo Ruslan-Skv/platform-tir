@@ -15,6 +15,7 @@ import {
   type Measurement,
   getCrmDirections,
   getMyMeasurements,
+  updateMeasurement,
 } from '@/shared/api/admin-crm';
 import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
 
@@ -57,7 +58,9 @@ export function useMyMeasurementsPage() {
   const [linksByMeasurementId, setLinksByMeasurementId] = useState<
     Record<string, MeasurementLinksInfo>
   >({});
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [completeItem, setCompleteItem] = useState<Measurement | null>(null);
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     void getCrmDirections()
@@ -149,7 +152,10 @@ export function useMyMeasurementsPage() {
       setTotal(0);
       setStatusCounts({});
       setLinksByMeasurementId({});
-      setMessage(err instanceof Error ? err.message : 'Не удалось загрузить мои замеры');
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Не удалось загрузить мои замеры',
+      });
     } finally {
       setLoading(false);
     }
@@ -185,6 +191,29 @@ export function useMyMeasurementsPage() {
     },
     [router]
   );
+
+  const openCompleteModal = useCallback((item: Measurement) => {
+    setCompleteItem(item);
+  }, []);
+
+  const handleCompleteConfirm = useCallback(async () => {
+    if (!completeItem) return;
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      await updateMeasurement(completeItem.id, { status: 'COMPLETED' });
+      setMessage({ type: 'success', text: 'Замер отмечен как выполненный' });
+      setCompleteItem(null);
+      await fetchData();
+    } catch (err) {
+      setMessage({
+        type: 'error',
+        text: err instanceof Error ? err.message : 'Не удалось отметить замер',
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  }, [completeItem, fetchData]);
 
   return {
     data,
@@ -226,9 +255,14 @@ export function useMyMeasurementsPage() {
     statusCounts,
     linksByMeasurementId,
     message,
+    completeItem,
+    setCompleteItem,
+    submitting,
     fetchData,
     handleSortChange,
     openMeasurement,
+    openCompleteModal,
+    handleCompleteConfirm,
   };
 }
 
