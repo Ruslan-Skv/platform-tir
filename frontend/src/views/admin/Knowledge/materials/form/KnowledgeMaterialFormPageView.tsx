@@ -522,7 +522,7 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                 disabled={uploadingVideo}
               />
               <p className={styles.hint}>
-                Загрузите MP4 (до 300 МБ) или вставьте ссылку YouTube, Rutube, VK, Vimeo либо прямой
+                Загрузите MP4 (до 500 МБ) или вставьте ссылку YouTube, Rutube, VK, Vimeo либо прямой
                 URL на видеофайл
               </p>
             </div>

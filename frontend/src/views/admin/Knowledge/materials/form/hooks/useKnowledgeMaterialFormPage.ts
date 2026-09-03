@@ -382,9 +382,9 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
       if (videoInputRef.current) videoInputRef.current.value = '';
       return;
     }
-    const maxBytes = 300 * 1024 * 1024;
+    const maxBytes = 500 * 1024 * 1024;
     if (file.size > maxBytes) {
-      showMessage('error', 'Размер видео не должен превышать 300 МБ');
+      showMessage('error', 'Размер видео не должен превышать 500 МБ');
       if (videoInputRef.current) videoInputRef.current.value = '';
       return;
     }

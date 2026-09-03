@@ -656,7 +656,7 @@ export class KnowledgeController {
   @UseInterceptors(
     FileInterceptor('file', {
       storage: knowledgeUploadStorage,
-      limits: { fileSize: 300 * 1024 * 1024 },
+      limits: { fileSize: 500 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
         const allowedExt = /\.mp4$/i.test(file.originalname);
         const allowedMime =
@@ -664,7 +664,7 @@ export class KnowledgeController {
           file.mimetype === 'video/mp4' ||
           file.mimetype === 'application/octet-stream';
         if (!allowedExt || !allowedMime) {
-          cb(new BadRequestException('Допустим только видеофайл MP4 (до 300 МБ)'), false);
+          cb(new BadRequestException('Допустим только видеофайл MP4 (до 500 МБ)'), false);
           return;
         }
         cb(null, true);
