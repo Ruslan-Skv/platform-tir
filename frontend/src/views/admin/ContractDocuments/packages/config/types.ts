@@ -3,8 +3,12 @@ import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-do
 import type { PackageDocumentTabId } from '../platform/tabs/packageDocumentTabs';
 import type { PackageLibraryTemplateTabId } from '../platform/tabs/packageLibraryTemplateTabs';
 
-/** Семейство пакета: ремонтный конвейер или «товарное» направление (окна, двери, …). */
-export type PackageDirectionFamily = 'REPAIR_LIKE' | 'PRODUCT_LIKE' | 'UNIMPLEMENTED';
+/** Семейство пакета: ремонтный конвейер, «товарное» направление или мебель (до 3 договоров). */
+export type PackageDirectionFamily =
+  | 'REPAIR_LIKE'
+  | 'PRODUCT_LIKE'
+  | 'FURNITURE_LIKE'
+  | 'UNIMPLEMENTED';
 
 export type PackageTabLabelOverride = {
   full: string;

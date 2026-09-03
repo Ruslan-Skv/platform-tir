@@ -1,8 +1,10 @@
+import type { FurniturePackageBlock } from '../../directions/furniture/furnitureLegs';
 import type { ProductAddendumSpecificationLine } from '../../families/product-like/addendum/addendumSpecification';
 import type { CeilingsSpecification } from '../../families/product-like/ceilings/ceilingsSpecification';
 import type { DoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 
 export type { ProductAddendumSpecificationLine, DoorsSpecificationLine };
+export type { FurniturePackageBlock };
 
 /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП (КПП в форме обычно пустой). */
 export type PackageExecutorKind = 'COMPANY' | 'ENTREPRENEUR';
@@ -325,6 +327,11 @@ export interface PackageFormData {
   doorsSpecificationDiscountPercent: string;
   /** Спецификация натяжных потолков (карточки потолков объекта). */
   ceilingsSpecification: CeilingsSpecification;
+  /**
+   * Пакет «Мебель»: до трёх договоров (изготовление / монтаж / техника) с отдельными исполнителями.
+   * `contract` / `executor` шапки синхронизируются с ногой «Изготовление» для списков и шаблонов.
+   */
+  furniture: FurniturePackageBlock;
   /**
    * Номер договора на момент создания копии пакета (из поля «Номер договора»).
    * Пока совпадает с `contract.number`, к отображаемому номеру добавляется слово «копия».

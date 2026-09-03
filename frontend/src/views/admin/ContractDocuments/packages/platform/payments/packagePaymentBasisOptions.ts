@@ -1,6 +1,14 @@
-﻿import type { ContractDocumentPackagePayment } from '@/shared/api/admin-contract-document-packages';
+﻿import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+import type { ContractDocumentPackagePayment } from '@/shared/api/admin-contract-document-packages';
 import type { ContractDocumentPackagePaymentKind } from '@/shared/api/admin-contract-document-packages';
 
+import { isFurnitureLikePackageKind } from '../../config';
+import type { FurniturePackageLegId } from '../../directions/furniture/furnitureLegs';
+import {
+  furniturePaymentBasisLabel,
+  resolveFurniturePaymentLeg,
+  sumFurnitureLegPaidRub,
+} from '../../directions/furniture/furniturePaymentLeg';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../form/packageForm';
 import type { PackagePayableBreakdown } from './packagePaymentTotals';
 
@@ -16,18 +24,22 @@ export function packageAddendumPartialBasisLabel(addendumNumber: number): string
   return `частичная оплата по д/с ${addendumNumber}`;
 }
 
+export type PackageFurniturePaymentBasisKind = 'prepayment' | 'partial' | 'final';
+
 export type PackagePaymentBasisOptionKey =
   | 'contract_prepayment'
   | 'contract_partial'
   | 'contract_final'
   | `addendum_${number}`
-  | `addendum_partial_${number}`;
+  | `addendum_partial_${number}`
+  | `furniture_${FurniturePackageLegId}_${PackageFurniturePaymentBasisKind}`;
 
 export type PackagePaymentBasisOption = {
   key: PackagePaymentBasisOptionKey;
   label: string;
   paymentType: ContractDocumentPackagePaymentKind;
   addendumNumber?: number;
+  furnitureLeg?: FurniturePackageLegId;
   disabled: boolean;
 };
 
@@ -58,13 +70,26 @@ function hasContractBasisPayment(
   });
 }
 
+function hasFurnitureLegBasisPayment(
+  rows: ContractDocumentPackagePayment[],
+  leg: FurniturePackageLegId,
+  paymentType: ContractDocumentPackagePaymentKind,
+  label: string
+): boolean {
+  return rows.some((r) => {
+    if (resolveFurniturePaymentLeg(r) !== leg) return false;
+    if (basisTextMatches(r, label)) return true;
+    return r.paymentType === paymentType;
+  });
+}
+
 /** Старые формулировки в журнале до фиксированного списка. */
 function inferLegacyContractBasisMatch(
   row: ContractDocumentPackagePayment,
   paymentType: ContractDocumentPackagePaymentKind
 ): boolean {
   const b = (row.basis ?? '').toLowerCase();
-  if (paymentType === 'PREPAYMENT') return /предоплат|аванс/i.test(b);
+  if (paymentType === 'PREPAYMENT') return /предоплат|аванс|полная оплата/i.test(b);
   if (paymentType === 'FINAL') return /окончательн|приёмк|приемк|сдач/i.test(b);
   if (paymentType === 'ADVANCE')
     return /частичн/i.test(b) || (!/д\/с|доп\.?\s*соглашен/i.test(b) && /оплат/i.test(b));
@@ -110,32 +135,12 @@ function isAddendumBasisSatisfied(
   return paid >= totalRub - PAYMENT_AMOUNT_TOLERANCE_RUB;
 }
 
-export function buildPackagePaymentBasisOptions(
+function appendAddendumBasisOptions(
+  options: PackagePaymentBasisOption[],
   form: PackageFormData,
   rows: ContractDocumentPackagePayment[],
   breakdown: PackagePayableBreakdown
-): PackagePaymentBasisOption[] {
-  const options: PackagePaymentBasisOption[] = [
-    {
-      key: 'contract_prepayment',
-      label: PACKAGE_BASIS_LABEL_PREPAYMENT,
-      paymentType: 'PREPAYMENT',
-      disabled: hasContractBasisPayment(rows, 'PREPAYMENT', PACKAGE_BASIS_LABEL_PREPAYMENT),
-    },
-    {
-      key: 'contract_partial',
-      label: PACKAGE_BASIS_LABEL_PARTIAL,
-      paymentType: 'ADVANCE',
-      disabled: false,
-    },
-    {
-      key: 'contract_final',
-      label: PACKAGE_BASIS_LABEL_FINAL,
-      paymentType: 'FINAL',
-      disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FINAL),
-    },
-  ];
-
+): void {
   const count = Math.min(5, clampPackageAddendumSlotCount(form.addendumSlotCount));
   for (let i = 0; i < count; i++) {
     const n = i + 1;
@@ -162,7 +167,88 @@ export function buildPackagePaymentBasisOptions(
       });
     }
   }
+}
 
+function buildFurniturePaymentBasisOptions(
+  form: PackageFormData,
+  rows: ContractDocumentPackagePayment[],
+  breakdown: PackagePayableBreakdown
+): PackagePaymentBasisOption[] {
+  const options: PackagePaymentBasisOption[] = [];
+  const legs = breakdown.furnitureLegs ?? [];
+
+  for (const leg of legs) {
+    const prepayLabel = furniturePaymentBasisLabel(leg.legId, 'prepayment');
+    const partialLabel = furniturePaymentBasisLabel(leg.legId, 'partial');
+    const finalLabel = furniturePaymentBasisLabel(leg.legId, 'final');
+    const paid = sumFurnitureLegPaidRub(rows, leg.legId);
+    const total = leg.totalRub;
+    const fullyPaid =
+      total != null &&
+      Number.isFinite(total) &&
+      total > 0 &&
+      paid >= total - PAYMENT_AMOUNT_TOLERANCE_RUB;
+
+    options.push({
+      key: `furniture_${leg.legId}_prepayment`,
+      label: prepayLabel,
+      paymentType: 'PREPAYMENT',
+      furnitureLeg: leg.legId,
+      disabled:
+        hasFurnitureLegBasisPayment(rows, leg.legId, 'PREPAYMENT', prepayLabel) || fullyPaid,
+    });
+    options.push({
+      key: `furniture_${leg.legId}_partial`,
+      label: partialLabel,
+      paymentType: 'ADVANCE',
+      furnitureLeg: leg.legId,
+      disabled: fullyPaid,
+    });
+    options.push({
+      key: `furniture_${leg.legId}_final`,
+      label: finalLabel,
+      paymentType: 'FINAL',
+      furnitureLeg: leg.legId,
+      disabled: hasFurnitureLegBasisPayment(rows, leg.legId, 'FINAL', finalLabel) || fullyPaid,
+    });
+  }
+
+  appendAddendumBasisOptions(options, form, rows, breakdown);
+  return options;
+}
+
+export function buildPackagePaymentBasisOptions(
+  form: PackageFormData,
+  rows: ContractDocumentPackagePayment[],
+  breakdown: PackagePayableBreakdown,
+  packageKind: ContractDocumentPackageKind = 'REPAIR'
+): PackagePaymentBasisOption[] {
+  if (isFurnitureLikePackageKind(packageKind)) {
+    return buildFurniturePaymentBasisOptions(form, rows, breakdown);
+  }
+
+  const options: PackagePaymentBasisOption[] = [
+    {
+      key: 'contract_prepayment',
+      label: PACKAGE_BASIS_LABEL_PREPAYMENT,
+      paymentType: 'PREPAYMENT',
+      disabled: hasContractBasisPayment(rows, 'PREPAYMENT', PACKAGE_BASIS_LABEL_PREPAYMENT),
+    },
+    {
+      key: 'contract_partial',
+      label: PACKAGE_BASIS_LABEL_PARTIAL,
+      paymentType: 'ADVANCE',
+      disabled: false,
+    },
+    {
+      key: 'contract_final',
+      label: PACKAGE_BASIS_LABEL_FINAL,
+      paymentType: 'FINAL',
+      disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FINAL),
+    },
+  ];
+
+  appendAddendumBasisOptions(options, form, rows, breakdown);
   return options;
 }
 

@@ -7,7 +7,8 @@ export function computePackageHubConductSuggestedAmountRub(
   breakdown: PackagePayableBreakdown,
   journalPaidRub: number,
   contractPaidRub: number,
-  addendumPaidByNumber?: ReadonlyMap<number, number>
+  addendumPaidByNumber?: ReadonlyMap<number, number>,
+  furnitureLegPaidById?: ReadonlyMap<string, number>
 ): number | null {
   const addendumNum = option.addendumNumber;
   if (option.key.startsWith('addendum_partial_') && addendumNum != null) {
@@ -23,6 +24,26 @@ export function computePackageHubConductSuggestedAmountRub(
     const totalRub = entry?.totalRub;
     if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return null;
     return roundRub(totalRub);
+  }
+
+  if (option.furnitureLeg) {
+    const leg = breakdown.furnitureLegs?.find((l) => l.legId === option.furnitureLeg);
+    const totalRub = leg?.totalRub;
+    if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return null;
+    const paid = furnitureLegPaidById?.get(option.furnitureLeg) ?? 0;
+    const remainder = Math.max(0, totalRub - paid);
+    if (option.key.endsWith('_prepayment')) {
+      if (option.furnitureLeg === 'appliances') return roundRub(remainder > 0 ? totalRub : 0);
+      const recommended = leg?.recommendedPrepaymentRub;
+      if (recommended != null && Number.isFinite(recommended) && recommended > 0) {
+        return roundRub(Math.min(recommended, remainder));
+      }
+      return roundRub(Math.min(totalRub * 0.7, remainder));
+    }
+    if (option.key.endsWith('_final') || option.key.endsWith('_partial')) {
+      return roundRub(remainder);
+    }
+    return null;
   }
 
   const mainContractRub = breakdown.mainContractRub;

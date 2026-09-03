@@ -1,0 +1,42 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0 16px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.subTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.table input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.amount {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.total {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}

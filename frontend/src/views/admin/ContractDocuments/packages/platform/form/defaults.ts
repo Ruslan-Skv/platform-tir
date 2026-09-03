@@ -1,3 +1,4 @@
+import { defaultFurniturePackageBlock } from '../../directions/furniture/furnitureLegs';
 import { defaultCeilingsSpecification } from '../../families/product-like/ceilings/ceilingsSpecification';
 import { newDoorsSpecificationLine } from '../../families/product-like/specification/doorsSpecification';
 import type {
@@ -161,6 +162,7 @@ export function defaultPackageFormData(): PackageFormData {
     doorsSpecificationLines: [newDoorsSpecificationLine()],
     doorsSpecificationDiscountPercent: '',
     ceilingsSpecification: defaultCeilingsSpecification(),
+    furniture: defaultFurniturePackageBlock(),
     issuedInvoices: [],
   };
 }

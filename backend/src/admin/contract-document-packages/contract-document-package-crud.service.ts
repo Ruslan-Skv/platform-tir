@@ -37,7 +37,8 @@ export class ContractDocumentPackageCrudService {
       dto.kind === ContractDocumentPackageKind.WINDOWS ||
       dto.kind === ContractDocumentPackageKind.DOORS ||
       dto.kind === ContractDocumentPackageKind.BLINDS ||
-      dto.kind === ContractDocumentPackageKind.CEILINGS
+      dto.kind === ContractDocumentPackageKind.CEILINGS ||
+      dto.kind === ContractDocumentPackageKind.FURNITURE
     ) {
       const defaultDays = await this.kindSettings.resolveDefaultWorkPeriodDays(dto.kind);
       formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
@@ -407,7 +408,24 @@ export class ContractDocumentPackageCrudService {
         ? (fd.contract as Record<string, unknown>)
         : null;
     const num = typeof contract?.number === 'string' ? contract.number.trim() : '';
-    return num || '—';
+    if (num) return num;
+    const furniture = fd.furniture;
+    if (furniture && typeof furniture === 'object') {
+      const legs = furniture as Record<string, unknown>;
+      const parts: string[] = [];
+      for (const key of ['manufacture', 'montage', 'appliances'] as const) {
+        const leg = legs[key];
+        if (!leg || typeof leg !== 'object') continue;
+        const enabled = (leg as { enabled?: unknown }).enabled;
+        if (key !== 'manufacture' && enabled !== true) continue;
+        const legContract = (leg as { contract?: unknown }).contract;
+        if (!legContract || typeof legContract !== 'object') continue;
+        const legNum = (legContract as { number?: unknown }).number;
+        if (typeof legNum === 'string' && legNum.trim()) parts.push(legNum.trim());
+      }
+      if (parts.length > 0) return parts.join(' / ');
+    }
+    return '—';
   }
 
   private customerNameFromFormData(formData: unknown): string {

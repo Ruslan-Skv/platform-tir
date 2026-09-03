@@ -114,6 +114,7 @@ export function PackageContractPaymentsTabView({
           loading={loading}
           rows={rows}
           grandTotalRub={grandTotalRub}
+          packageKind={packageKind}
         />
       ) : null}
     </div>

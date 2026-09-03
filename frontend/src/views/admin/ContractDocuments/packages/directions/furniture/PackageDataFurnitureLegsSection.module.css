@@ -1,0 +1,87 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.lead {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  color: #64748b;
+}
+
+.legCard {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 12px;
+  background: #fff;
+}
+
+.legHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 10px;
+}
+
+.legTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.legBadge {
+  font-size: 12px;
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.enableLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.disabledHint {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}
+
+.legGrid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 12px;
+}
+
+.numberBlock {
+  min-width: 0;
+}
+
+.numberRow {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hintError {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #b91c1c;
+}
+
+@media (max-width: 900px) {
+  .legGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .legHeader {
+    flex-wrap: wrap;
+  }
+}

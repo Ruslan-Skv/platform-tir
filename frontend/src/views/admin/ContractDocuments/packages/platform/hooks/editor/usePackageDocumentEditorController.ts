@@ -280,12 +280,15 @@ export function usePackageDocumentEditorController({
     packageKind,
     editorTabOrder,
     addendumSlotCount: form.addendumSlotCount,
+    furnitureMontageEnabled: form.furniture?.montage?.enabled === true,
+    furnitureAppliancesEnabled: form.furniture?.appliances?.enabled === true,
   });
 
   const { resolveTemplateHtml } = usePackageTemplatePresetResolution({
     packageKind,
     contractTemplatePresets,
     selectedTemplateIds,
+    furnitureActiveDocLeg: form.furniture?.activeDocLeg ?? 'manufacture',
   });
 
   const { templateLoadSetters } = usePackageTemplateEditorState();
@@ -599,6 +602,8 @@ export function usePackageDocumentEditorController({
     usePackageDocumentEditorUiProps({
       tab: {
         form,
+        setForm,
+        touchPackageData,
         contractAndEstimateLocked,
         isSuperAdmin,
         isProductDirectionPackage,

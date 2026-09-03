@@ -1,0 +1,28 @@
+.wrap {
+  display: flex;
+  gap: 8px;
+  padding: 8px 0 4px;
+  flex-wrap: wrap;
+}
+
+.btn,
+.active {
+  border: 1px solid #cbd5e1;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.active {
+  border-color: #0f766e;
+  background: #ecfdf5;
+  font-weight: 600;
+}
+
+.btn:disabled,
+.active:disabled {
+  opacity: 0.6;
+  cursor: default;
+}

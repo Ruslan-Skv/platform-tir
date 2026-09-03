@@ -1,5 +1,9 @@
 /** Пакет документов: данные для подписи «к какому договору прикреплён расчёт». */
 import { contractDateToDdMmYyyy } from '../../../core/contractDateFormat';
+import {
+  furnitureEnabledContractNumbers,
+  normalizeFurniturePackageBlock,
+} from '../../directions/furniture/furnitureLegs';
 import type { PackageFormData } from '../form/packageForm';
 
 export type PackageContractSource = {
@@ -27,25 +31,39 @@ function contractNumberWithCopySuffix(formNumTrimmed: string, baselineRaw: unkno
   return base;
 }
 
+function furnitureDisplayNumberFromFormData(formData: Record<string, unknown>): string {
+  const furniture = normalizeFurniturePackageBlock(formData.furniture);
+  const nums = furnitureEnabledContractNumbers(furniture);
+  if (nums.length === 0) return '';
+  return nums.join(' / ');
+}
+
 /**
  * Номер для подписей в списках: как `{{contract.number}}` — из данных пакета («Номер договора»).
  * Для пакета, созданного копированием: если номер не менялся относительно снимка при копии,
  * к отображению добавляется слово «копия» (не меняет сохранённое значение поля).
+ * Для «Мебель»: при пустом `contract.number` — номера включённых ног через « / ».
  */
 export function getDisplayContractNumber(pkg: PackageContractSource): string {
   const fd = pkg.formData ?? {};
   const c = packageFormContractBlock(fd);
   const formNum = typeof c?.number === 'string' ? c.number.trim() : '';
   const baselineRaw = (fd as Record<string, unknown>)[REPAIR_COPY_CONTRACT_NUMBER_BASELINE_KEY];
-  return contractNumberWithCopySuffix(formNum, baselineRaw);
+  if (formNum) return contractNumberWithCopySuffix(formNum, baselineRaw);
+  const furnitureJoined = furnitureDisplayNumberFromFormData(fd);
+  if (furnitureJoined) return furnitureJoined;
+  return contractNumberWithCopySuffix('', baselineRaw);
 }
 
 /** Номер договора для UI редактора (с суффиксом «копия» при неизменённом номере после копирования). */
 export function getPackageContractNumberDisplayForForm(form: PackageFormData): string {
-  return contractNumberWithCopySuffix(
-    form.contract.number.trim(),
-    form._repairCopyContractNumberBaseline
-  );
+  const primary = form.contract.number.trim();
+  if (primary) {
+    return contractNumberWithCopySuffix(primary, form._repairCopyContractNumberBaseline);
+  }
+  const furnitureJoined = furnitureEnabledContractNumbers(form.furniture).join(' / ');
+  if (furnitureJoined) return furnitureJoined;
+  return contractNumberWithCopySuffix('', form._repairCopyContractNumberBaseline);
 }
 
 /**

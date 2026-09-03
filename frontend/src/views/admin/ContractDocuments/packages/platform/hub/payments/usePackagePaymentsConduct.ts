@@ -17,6 +17,7 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 
 import { amountToRussianWords } from '../../../../core/amountToRussianWords';
+import { encodeFurniturePaymentLegNotes } from '../../../directions/furniture/furniturePaymentLeg';
 import { type PackageFormData } from '../../form/packageForm';
 import { type PackageCashOrderConductDraft } from '../../payments/packageCashOrderPrint';
 import {
@@ -58,6 +59,7 @@ export type UsePackagePaymentsConductParams = {
   paidAllocations: {
     contractPaidRub: number;
     byAddendum: Map<number, number>;
+    byFurnitureLeg?: Map<string, number>;
   };
   hubFixedBasisOptions: PackagePaymentBasisOption[];
 };
@@ -138,6 +140,7 @@ export function usePackagePaymentsConduct({
       paymentForm: draft.paymentForm,
       paymentBasis: option.label,
       prepaymentAmount: amount,
+      furnitureLeg: option.furnitureLeg,
     };
   }, [hubFixedBasisOptions, hubBasisKey, conductAmount, draft.paymentDate, draft.paymentForm]);
 
@@ -194,7 +197,8 @@ export function usePackagePaymentsConduct({
       payableBreakdown,
       journalPaidRub,
       paidAllocations.contractPaidRub,
-      paidAllocations.byAddendum
+      paidAllocations.byAddendum,
+      paidAllocations.byFurnitureLeg
     );
     if (suggested != null && suggested > 0) {
       setConductAmount(formatPackageHubConductAmountInput(suggested));
@@ -285,6 +289,9 @@ export function usePackagePaymentsConduct({
     if (option.addendumNumber != null) {
       body.addendumNumber = option.addendumNumber;
     }
+    if (option.furnitureLeg) {
+      body.notes = encodeFurniturePaymentLegNotes(option.furnitureLeg);
+    }
     setSaving(true);
     try {
       const created = await createContractDocumentPackagePayment(packageId, body);
@@ -296,6 +303,7 @@ export function usePackagePaymentsConduct({
         paymentForm: draft.paymentForm,
         paymentBasis: option.label,
         prepaymentAmount: conductAmount.trim(),
+        furnitureLeg: option.furnitureLeg,
       };
       syncHubConductToContractForPko(conduct);
       onJournalChanged?.();

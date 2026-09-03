@@ -9,6 +9,7 @@ export {
   PACKAGE_KIND_DIRECTION_SLUG,
   getPackageDirectionConfig,
   getPackageDirectionFamily,
+  isFurnitureLikePackageKind,
   isProductLikePackageKind,
   isRepairLikePackageKind,
   packageKindUiLabel,

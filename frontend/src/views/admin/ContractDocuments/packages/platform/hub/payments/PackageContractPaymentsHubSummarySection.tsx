@@ -9,6 +9,7 @@ import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import {
   formatHubDiscountCell,
@@ -132,6 +133,31 @@ export function PackageContractPaymentsHubSummarySection({
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                     </tr>
                   </>
+                ) : isFurnitureLikePackageKind(packageKind) &&
+                  (payableBreakdown.furnitureLegs?.length ?? 0) > 0 ? (
+                  payableBreakdown.furnitureLegs!.map((leg) => {
+                    const paidRub = paidAllocations.byFurnitureLeg?.get(leg.legId) ?? 0;
+                    return (
+                      <tr key={`pay_hub_furniture_${leg.legId}`}>
+                        <td>{leg.label}</td>
+                        <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
+                        <td className={cdBase.paymentsHubSummaryNumCol}>
+                          {formatMoneyRub(leg.totalRub)}
+                        </td>
+                        <td
+                          className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
+                        >
+                          {formatMoneyRub(leg.recommendedPrepaymentRub)}
+                        </td>
+                        <td className={cdBase.paymentsHubSummaryNumCol}>
+                          {loading ? '…' : renderHubPaidValue(paidRub, leg.totalRub)}
+                        </td>
+                        <td className={cdBase.paymentsHubSummaryNumCol}>
+                          {loading ? '…' : renderHubRemainderValue(paidRub, leg.totalRub)}
+                        </td>
+                      </tr>
+                    );
+                  })
                 ) : (
                   <tr>
                     <td>Договор</td>

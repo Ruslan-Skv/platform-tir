@@ -5,6 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
+import { isFurnitureLikePackageKind } from '../../../config/packageDirectionRegistry';
 import {
   DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
   DEFAULT_PRODUCT_CONTRACT_WORK_PERIOD_DAYS,
@@ -107,6 +108,7 @@ export function PackageDataContractObjectSection({
             locked={contractAndEstimateLocked}
             fieldClassName={contractObjectBlockFieldClassName('contract.number')}
             updateContract={updateContract}
+            omitNumberField={isFurnitureLikePackageKind(packageKind)}
           />
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractHeaderMetaRow}`}>
             <ContractDocumentsHelpTooltip
@@ -222,23 +224,25 @@ export function PackageDataContractObjectSection({
             </div>
           </div>
           <div className={`${cdDataTab.contractInlineRow} ${cdDataTab.contractProfilesRow}`}>
-            <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-              <label htmlFor="e_profile">Исполнители (из справочника)</label>
-              <select
-                id="e_profile"
-                value={form.executor.selectedProfileTitle}
-                onChange={(e) => applyExecutorProfile(e.target.value)}
-                disabled={contractAndEstimateLocked}
-                className={contractObjectBlockFieldClassName('executor.selectedProfileTitle')}
-              >
-                <option value="">— выбрать набор —</option>
-                {executorProfiles.map((profile) => (
-                  <option key={profile.title} value={profile.title}>
-                    {profile.title}
-                  </option>
-                ))}
-              </select>
-            </div>
+            {isFurnitureLikePackageKind(packageKind) ? null : (
+              <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+                <label htmlFor="e_profile">Исполнители (из справочника)</label>
+                <select
+                  id="e_profile"
+                  value={form.executor.selectedProfileTitle}
+                  onChange={(e) => applyExecutorProfile(e.target.value)}
+                  disabled={contractAndEstimateLocked}
+                  className={contractObjectBlockFieldClassName('executor.selectedProfileTitle')}
+                >
+                  <option value="">— выбрать набор —</option>
+                  {executorProfiles.map((profile) => (
+                    <option key={profile.title} value={profile.title}>
+                      {profile.title}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
             <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
               <label htmlFor="s_profile">Карточка менеджера (из справочника)</label>
               <select

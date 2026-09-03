@@ -5,8 +5,10 @@ import type {
   ContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
 import { packageDocumentTemplateFallbackHtml } from '../../../templates';
 import { libraryTemplateFallbackHtml } from '../../../templates';
+import { furnitureDocumentTemplateHtml } from '../../../templates/furniture';
 import { PACKAGE_TEMPLATE_TAB_IDS } from '../../editor/template/packageTemplateTabUtils';
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import { isPackageLibraryTemplateTabId } from '../../tabs/packageLibraryTemplateTabs';
@@ -22,7 +24,10 @@ export function usePackageTemplatePresetResolution({
   packageKind,
   contractTemplatePresets,
   selectedTemplateIds,
-}: UsePackageTemplatePresetResolutionOptions) {
+  furnitureActiveDocLeg = 'manufacture',
+}: UsePackageTemplatePresetResolutionOptions & {
+  furnitureActiveDocLeg?: FurnitureActiveDocLeg;
+}) {
   const templatePresetsByTab = useMemo(() => {
     const map = new Map<PackageDocumentTemplateTabId, ContractTemplatePreset[]>();
     for (const tab of PACKAGE_TEMPLATE_TAB_IDS) map.set(tab, []);
@@ -43,12 +48,16 @@ export function usePackageTemplatePresetResolution({
       if (selected?.html?.trim()) return selected.html;
       const fallback = list.find((it) => it.isDefault) ?? list[0];
       if (fallback?.html?.trim()) return fallback.html;
+      if (packageKind === 'FURNITURE') {
+        const furnitureHtml = furnitureDocumentTemplateHtml(tab, furnitureActiveDocLeg);
+        if (furnitureHtml) return furnitureHtml;
+      }
       if (isPackageLibraryTemplateTabId(tab)) {
         return libraryTemplateFallbackHtml(packageKind, tab);
       }
       return packageDocumentTemplateFallbackHtml(packageKind, tab);
     },
-    [templatePresetsByTab, selectedTemplateIds, packageKind]
+    [templatePresetsByTab, selectedTemplateIds, packageKind, furnitureActiveDocLeg]
   );
 
   return { templatePresetsByTab, resolveTemplateHtml };

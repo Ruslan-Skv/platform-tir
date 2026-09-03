@@ -1,0 +1,79 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 8px 0 16px;
+}
+
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hint {
+  margin: 0;
+  font-size: 13px;
+  color: #64748b;
+  line-height: 1.4;
+}
+
+.subTitle {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.specTable input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.amountCell {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.checkCell {
+  text-align: center;
+}
+
+.total {
+  margin: 0;
+  font-weight: 600;
+  text-align: right;
+}
+
+.fileBlock {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fff;
+}
+
+.fileHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.fileActions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fileMeta {
+  margin: 0;
+  font-size: 13px;
+}
+
+.fileEmpty {
+  margin: 0;
+  font-size: 13px;
+  color: #94a3b8;
+}

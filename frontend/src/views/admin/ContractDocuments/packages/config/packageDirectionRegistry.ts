@@ -104,25 +104,38 @@ function productLikeWithLineSpecification(
   };
 }
 
-function unimplementedConfig(
+function furnitureLikeConfig(
   kind: ContractDocumentPackageKind,
   label: string
 ): PackageDirectionConfig {
   return {
     kind,
-    family: 'UNIMPLEMENTED',
+    family: 'FURNITURE_LIKE',
     label,
-    createEnabled: false,
-    hiddenEditorTabs: [...PRODUCT_LIKE_HIDDEN_EDITOR_TABS, 'specification'],
-    memoTabVisible: false,
-    deliveryNoteTabVisible: false,
+    createEnabled: true,
+    /** Этап 4: deliveryNote = Переч техники — видна при включённой ноге (см. resolvePackageEditorVisibleTabs). */
+    hiddenEditorTabs: [
+      ...PRODUCT_LIKE_HIDDEN_EDITOR_TABS.filter((id) => id !== 'actStart'),
+      'questionnaire1',
+      'questionnaire2',
+    ],
+    memoTabVisible: true,
+    deliveryNoteTabVisible: true,
     lineSpecificationEnabled: false,
-    tabLabelOverrides: {},
+    tabLabelOverrides: {
+      memo: { full: 'Инструкция', short: 'Инструкция' },
+      specification: { full: 'Спецификация', short: 'Спецификация' },
+      actAcceptance: { full: 'Акт сдачи-приёмки', short: 'Акт приём.' },
+      estimate: { full: 'Счёт-заказ (монтаж)', short: 'Счёт-заказ' },
+      actStart: { full: 'Акт готовности к монтажу', short: 'Акт ГкМ' },
+      workOrder: { full: 'Заказ-наряд', short: 'З-наряд' },
+      deliveryNote: { full: 'Перечень товара', short: 'Перечень' },
+    },
     profilesKind: 'REPAIR',
-    settingsKind: 'REPAIR',
+    settingsKind: kind,
     estimateCatalogKind: 'REPAIR',
     templatePresetsKind: kind,
-    excludedLibraryTemplateTabs: PRODUCT_LIBRARY_EXCLUDED,
+    excludedLibraryTemplateTabs: ['productionLog', 'deliveryNote'],
   };
 }
 
@@ -136,7 +149,7 @@ const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDir
     excludedLibraryTemplateTabs: CEILINGS_LIBRARY_EXCLUDED,
   },
   BLINDS: productLikeWithLineSpecification('BLINDS', 'Жалюзи'),
-  FURNITURE: unimplementedConfig('FURNITURE', 'Мебель'),
+  FURNITURE: furnitureLikeConfig('FURNITURE', 'Мебель'),
 };
 
 export function getPackageDirectionConfig(
@@ -163,6 +176,13 @@ export function isRepairLikePackageKind(
 ): boolean {
   if (!kind) return false;
   return getPackageDirectionConfig(kind).family === 'REPAIR_LIKE';
+}
+
+export function isFurnitureLikePackageKind(
+  kind: ContractDocumentPackageKind | undefined | null
+): boolean {
+  if (!kind) return false;
+  return getPackageDirectionConfig(kind).family === 'FURNITURE_LIKE';
 }
 
 /** Спецификация строками + накладная из этих строк (Двери, Жалюзи, …). */

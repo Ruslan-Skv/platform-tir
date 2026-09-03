@@ -801,6 +801,8 @@ export async function previewContractDocumentNumber(params: {
   surveyorUserId: string;
   officeId: string;
   kind: ContractDocumentPackageKind;
+  /** Переопределение буквы направления (мебель: м / с / т). */
+  numberLetterOverride?: string;
 }): Promise<ContractNumberPreview> {
   const qs = new URLSearchParams({
     managerUserId: params.managerUserId,
@@ -808,6 +810,9 @@ export async function previewContractDocumentNumber(params: {
     officeId: params.officeId,
     kind: params.kind,
   });
+  if (params.numberLetterOverride?.trim()) {
+    qs.set('numberLetterOverride', params.numberLetterOverride.trim());
+  }
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/preview?${qs}`,
     { headers: getAdminAuthHeaders() }
@@ -823,6 +828,7 @@ export async function allocateContractDocumentNumber(body: {
   surveyorUserId: string;
   officeId: string;
   kind: ContractDocumentPackageKind;
+  numberLetterOverride?: string;
 }): Promise<ContractNumberPreview> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/contract-number/allocate`,

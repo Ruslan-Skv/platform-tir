@@ -96,4 +96,43 @@ describe('resolvePackageEditorVisibleTabs', () => {
     expect(tabs).not.toContain('productionLog');
     expect(tabs).not.toContain('workOrderAddendum1');
   });
+
+  it('stage-3 FURNITURE shows montage tabs only when enabled', () => {
+    const withoutMontage = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'FURNITURE',
+      addendumSlotCount: 0,
+      furnitureMontageEnabled: false,
+      furnitureAppliancesEnabled: false,
+    });
+    expect(withoutMontage).toContain('specification');
+    expect(withoutMontage).not.toContain('estimate');
+    expect(withoutMontage).not.toContain('actStart');
+    expect(withoutMontage).not.toContain('workOrder');
+    expect(withoutMontage).not.toContain('deliveryNote');
+
+    const withMontage = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'FURNITURE',
+      addendumSlotCount: 0,
+      furnitureMontageEnabled: true,
+      furnitureAppliancesEnabled: false,
+    });
+    expect(withMontage).toContain('estimate');
+    expect(withMontage).toContain('actStart');
+    expect(withMontage).toContain('workOrder');
+    expect(withMontage).not.toContain('deliveryNote');
+  });
+
+  it('stage-4 FURNITURE shows appliances list only when enabled', () => {
+    const withAppliances = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'FURNITURE',
+      addendumSlotCount: 0,
+      furnitureMontageEnabled: false,
+      furnitureAppliancesEnabled: true,
+    });
+    expect(withAppliances).toContain('deliveryNote');
+    expect(withAppliances).not.toContain('estimate');
+  });
 });

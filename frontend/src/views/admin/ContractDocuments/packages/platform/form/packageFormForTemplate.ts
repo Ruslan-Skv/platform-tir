@@ -45,6 +45,46 @@ import {
   toPercentValue,
 } from './workOrderHtml';
 
+function applyFurnitureActiveDocLegToForm(
+  form: PackageFormData,
+  packageKind: ContractDocumentPackageKind | undefined
+): PackageFormData {
+  if (packageKind !== 'FURNITURE') return form;
+  const furniture = form.furniture;
+  if (!furniture) return form;
+
+  const legId = furniture.activeDocLeg;
+  const leg =
+    legId === 'montage'
+      ? furniture.montage?.enabled
+        ? furniture.montage
+        : null
+      : legId === 'appliances'
+        ? furniture.appliances?.enabled
+          ? furniture.appliances
+          : null
+        : furniture.manufacture;
+  if (!leg) return form;
+
+  return {
+    ...form,
+    contract: {
+      ...form.contract,
+      number: leg.contract.number || form.contract.number,
+      totalAmount: leg.contract.totalAmount || form.contract.totalAmount,
+      recommendedPrepayment:
+        leg.contract.recommendedPrepayment || form.contract.recommendedPrepayment,
+      prepaymentAmount: leg.contract.prepaymentAmount || form.contract.prepaymentAmount,
+      paymentBasis: leg.contract.paymentBasis || form.contract.paymentBasis,
+      workPeriod: leg.contract.workPeriod || form.contract.workPeriod,
+    },
+    executor: {
+      ...form.executor,
+      ...leg.executor,
+    },
+  };
+}
+
 /** Данные для подстановки в HTML: добавляет вычисляемое поле `executor.innKppRegLine`. */
 export function packageFormForTemplate(
   form: PackageFormData,
@@ -111,6 +151,7 @@ export function packageFormForTemplate(
   };
 } {
   const estimateGroupsForTpl = options?.estimateGroups ?? [];
+  form = applyFurnitureActiveDocLegToForm(form, options?.packageKind);
   const { executor } = form;
   const { estimate } = form;
   const isIp = executor.executorKind === 'ENTREPRENEUR';
@@ -469,6 +510,17 @@ export function packageFormForTemplate(
     meta: {
       /** Текущая календарная дата в формате дд.мм.гггг (момент предпросмотра/печати). Шаблон: `{{meta.currentDate}}`. */
       currentDate: todayContractDateDdMmYyyy(),
+    },
+    /** Плейсхолдеры: {{furniture.manufactureNumber}} / {{furniture.montageNumber}} / {{furniture.appliancesNumber}}. */
+    furniture: {
+      ...form.furniture,
+      manufactureNumber: form.furniture?.manufacture?.contract?.number ?? '',
+      montageNumber: form.furniture?.montage?.contract?.number ?? '',
+      appliancesNumber: form.furniture?.appliances?.contract?.number ?? '',
+    } as PackageFormData['furniture'] & {
+      manufactureNumber: string;
+      montageNumber: string;
+      appliancesNumber: string;
     },
     contract: contractForTemplate,
     executor: {

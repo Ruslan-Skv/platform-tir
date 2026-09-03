@@ -1,3 +1,4 @@
+import { normalizeFurniturePackageBlock } from '../../directions/furniture/furnitureLegs';
 import {
   normalizeProductAddendumSpecificationLines,
   windowsAddendumSlotHasSpecificationContent,
@@ -515,6 +516,9 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
         : '',
     ceilingsSpecification: normalizeCeilingsSpecification(
       (merged as unknown as Record<string, unknown>).ceilingsSpecification
+    ),
+    furniture: normalizeFurniturePackageBlock(
+      (merged as unknown as Record<string, unknown>).furniture
     ),
     estimateObjectGroupKey:
       typeof (merged as unknown as Record<string, unknown>).estimateObjectGroupKey === 'string'

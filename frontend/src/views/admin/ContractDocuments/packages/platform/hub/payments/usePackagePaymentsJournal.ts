@@ -7,6 +7,7 @@ import {
   getContractDocumentPackagePayments,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { resolveFurniturePaymentLeg } from '../../../directions/furniture/furniturePaymentLeg';
 import { type PackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import { formatPercentOfGrandTotal } from './packageContractPaymentsFormat';
 
@@ -46,6 +47,7 @@ export function usePackagePaymentsJournal({
   const paidAllocations = useMemo(() => {
     let contractPaidRub = 0;
     const byAddendum = new Map<number, number>();
+    const byFurnitureLeg = new Map<string, number>();
     for (const r of rows) {
       const n = Number.parseFloat(r.amount);
       if (!Number.isFinite(n)) continue;
@@ -53,9 +55,13 @@ export function usePackagePaymentsJournal({
         byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
       } else {
         contractPaidRub += n;
+        const leg = resolveFurniturePaymentLeg(r);
+        if (leg) {
+          byFurnitureLeg.set(leg, (byFurnitureLeg.get(leg) ?? 0) + n);
+        }
       }
     }
-    return { contractPaidRub, byAddendum };
+    return { contractPaidRub, byAddendum, byFurnitureLeg };
   }, [rows]);
 
   const journalPaidRub = useMemo(

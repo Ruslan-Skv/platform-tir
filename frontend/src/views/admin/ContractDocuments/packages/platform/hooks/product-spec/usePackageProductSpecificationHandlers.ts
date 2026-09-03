@@ -66,6 +66,49 @@ export function usePackageProductSpecificationHandlers({
     [setForm, touchPackageData]
   );
 
+  const onFurnitureManufactureDocsChange = useCallback(
+    (manufactureDocs: PackageFormData['furniture']['manufactureDocs']) => {
+      setForm((p) => {
+        const total = manufactureDocs.specificationLines.reduce((sum, line) => {
+          const qty = Number.parseFloat(line.quantity.replace(/\s/g, '').replace(',', '.'));
+          const price = Number.parseFloat(line.unitPrice.replace(/\s/g, '').replace(',', '.'));
+          if (Number.isFinite(qty) && Number.isFinite(price)) {
+            return sum + Math.round(qty * price * 100) / 100;
+          }
+          return sum;
+        }, 0);
+        const totalStr = total > 0 ? String(total) : p.furniture.manufacture.contract.totalAmount;
+        const recommended =
+          total > 0
+            ? String(Math.round(total * 0.7 * 100) / 100)
+            : p.furniture.manufacture.contract.recommendedPrepayment;
+        return {
+          ...p,
+          furniture: {
+            ...p.furniture,
+            manufactureDocs,
+            manufacture: {
+              ...p.furniture.manufacture,
+              contract: {
+                ...p.furniture.manufacture.contract,
+                totalAmount: totalStr,
+                recommendedPrepayment: recommended,
+              },
+            },
+          },
+          contract: {
+            ...p.contract,
+            totalAmount: totalStr || p.contract.totalAmount,
+            recommendedPrepayment: recommended || p.contract.recommendedPrepayment,
+          },
+          productSpecificationAmount: totalStr || p.productSpecificationAmount,
+        };
+      });
+      touchPackageData();
+    },
+    [setForm, touchPackageData]
+  );
+
   return {
     onProductSpecificationAmountChange,
     onProductSpecificationFileAttached,
@@ -73,6 +116,7 @@ export function usePackageProductSpecificationHandlers({
     onDoorsSpecificationLinesChange,
     onDoorsSpecificationDiscountPercentChange,
     onCeilingsSpecificationChange,
+    onFurnitureManufactureDocsChange,
     onError: setError,
   };
 }

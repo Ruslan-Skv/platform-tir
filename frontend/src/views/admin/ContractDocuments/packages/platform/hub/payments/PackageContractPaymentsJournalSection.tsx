@@ -3,6 +3,8 @@
 import cdBase from '../../../../styles/base.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import { isFurnitureLikePackageKind } from '../../../config';
+import { furniturePaymentLegDisplayLabel } from '../../../directions/furniture/furniturePaymentLeg';
 import { PACKAGE_PAYMENT_FORM_LABELS } from '../../payments/packagePaymentFormLabels';
 import {
   formatDateRu,
@@ -13,7 +15,7 @@ import type { PackageContractPaymentsTabModel } from './usePackageContractPaymen
 
 export type PackageContractPaymentsJournalSectionProps = Pick<
   PackageContractPaymentsTabModel,
-  'layout' | 'loading' | 'rows' | 'grandTotalRub'
+  'layout' | 'loading' | 'rows' | 'grandTotalRub' | 'packageKind'
 >;
 
 export function PackageContractPaymentsJournalSection({
@@ -21,7 +23,10 @@ export function PackageContractPaymentsJournalSection({
   loading,
   rows,
   grandTotalRub,
+  packageKind = 'REPAIR',
 }: PackageContractPaymentsJournalSectionProps) {
+  const showFurnitureLeg = isFurnitureLikePackageKind(packageKind);
+
   return (
     <div
       className={`${cdTemplates.sectionCard} ${cdBase.paymentsTableCard} ${cdBase.paymentsBlockAccentJournal}`}
@@ -41,6 +46,7 @@ export function PackageContractPaymentsJournalSection({
             <thead>
               <tr>
                 <th>Дата</th>
+                {showFurnitureLeg ? <th>Договор</th> : null}
                 <th>Сумма</th>
                 <th className={cdBase.paymentsTablePctCol}>% от итого</th>
                 <th>Способ оплаты</th>
@@ -56,6 +62,7 @@ export function PackageContractPaymentsJournalSection({
                 return (
                   <tr key={r.id}>
                     <td>{formatDateRu(r.paymentDate)}</td>
+                    {showFurnitureLeg ? <td>{furniturePaymentLegDisplayLabel(r)}</td> : null}
                     <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
                     <td className={cdBase.paymentsTablePctCol}>{rowPct ?? '—'}</td>
                     <td>{PACKAGE_PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>

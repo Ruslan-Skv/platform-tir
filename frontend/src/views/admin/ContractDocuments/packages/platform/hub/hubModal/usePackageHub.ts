@@ -16,8 +16,11 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
+import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
 import { ensureCeilingsContractTemplatePresets } from '../../../families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
+import { furnitureDocumentTemplateHtml } from '../../../templates/furniture';
 import { packageTemplatePresetsKind } from '../../catalogKinds';
 import {
   type BuildPersistedFormDataOptions,
@@ -203,7 +206,11 @@ export function usePackageHub({
         templateItems = ensured.items;
       }
       setContractTemplatePresets(templateItems);
-      if (row.kind !== 'REPAIR' && !isProductDirectionPackageKind(row.kind)) {
+      if (
+        row.kind !== 'REPAIR' &&
+        !isProductDirectionPackageKind(row.kind) &&
+        !isFurnitureLikePackageKind(row.kind)
+      ) {
         setError('Этот пакет относится к другому направлению.');
         setPaymentRows([]);
         setPackageKind('REPAIR');
@@ -359,25 +366,33 @@ export function usePackageHub({
     [persistForm, notifyUpdated, hubFormBase]
   );
 
-  const resolveCashOrderTemplateHtml = useCallback((): string => {
-    return resolvePackageTemplateHtml(
-      PACKAGE_CASH_ORDER_TEMPLATE_TAB,
-      contractTemplatePresets,
-      selectedTemplateIdsRef.current,
-      templateOverridesRef.current,
-      packageKind
-    );
-  }, [contractTemplatePresets, packageKind]);
+  const resolveCashOrderTemplateHtml = useCallback(
+    (furnitureLeg: FurnitureActiveDocLeg = 'manufacture'): string => {
+      if (isFurnitureLikePackageKind(packageKind)) {
+        const furnitureHtml = furnitureDocumentTemplateHtml('cashOrder', furnitureLeg);
+        if (furnitureHtml?.trim()) return furnitureHtml;
+      }
+      return resolvePackageTemplateHtml(
+        PACKAGE_CASH_ORDER_TEMPLATE_TAB,
+        contractTemplatePresets,
+        selectedTemplateIdsRef.current,
+        templateOverridesRef.current,
+        packageKind
+      );
+    },
+    [contractTemplatePresets, packageKind]
+  );
 
   const buildCashOrderPrintHtml = useCallback(
     (conduct?: PackageCashOrderConductDraft | null): string => {
       return buildPackageCashOrderPrintHtml(
         formRef.current,
-        resolveCashOrderTemplateHtml(),
-        conduct
+        resolveCashOrderTemplateHtml(conduct?.furnitureLeg ?? 'manufacture'),
+        conduct,
+        packageKind
       );
     },
-    [resolveCashOrderTemplateHtml]
+    [resolveCashOrderTemplateHtml, packageKind]
   );
 
   const printCashOrder = useCallback(

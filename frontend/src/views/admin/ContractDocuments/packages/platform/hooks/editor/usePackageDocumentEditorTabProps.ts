@@ -22,6 +22,8 @@ type FieldHelp = { title: string; steps: readonly string[]; note?: string };
 
 export type UsePackageDocumentEditorTabPropsOptions = {
   form: PackageFormData;
+  setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
+  touchPackageData: () => void;
   contractAndEstimateLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
@@ -77,6 +79,8 @@ export type UsePackageDocumentEditorTabPropsOptions = {
 
 export function usePackageDocumentEditorTabProps({
   form,
+  setForm,
+  touchPackageData,
   contractAndEstimateLocked,
   isSuperAdmin,
   isProductDirectionPackage,
@@ -130,6 +134,8 @@ export function usePackageDocumentEditorTabProps({
   const dataTabProps = useMemo(
     (): PackageDataTabProps => ({
       form,
+      setForm,
+      touchPackageData,
       contractAndEstimateLocked,
       isSuperAdmin,
       isProductDirectionPackage,
@@ -161,6 +167,8 @@ export function usePackageDocumentEditorTabProps({
     }),
     [
       form,
+      setForm,
+      touchPackageData,
       contractAndEstimateLocked,
       isSuperAdmin,
       isProductDirectionPackage,
@@ -272,6 +280,7 @@ export function usePackageDocumentEditorTabProps({
       doorsSpecificationLines: form.doorsSpecificationLines,
       doorsSpecificationDiscountPercent: form.doorsSpecificationDiscountPercent,
       ceilingsSpecification: form.ceilingsSpecification,
+      furnitureManufactureDocs: form.furniture.manufactureDocs,
       ...productSpecificationHandlers,
     }),
     [
@@ -285,6 +294,7 @@ export function usePackageDocumentEditorTabProps({
       form.doorsSpecificationLines,
       form.doorsSpecificationDiscountPercent,
       form.ceilingsSpecification,
+      form.furniture.manufactureDocs,
       productSpecificationHandlers,
     ]
   );

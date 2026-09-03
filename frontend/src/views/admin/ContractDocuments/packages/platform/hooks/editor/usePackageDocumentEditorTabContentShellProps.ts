@@ -45,8 +45,18 @@ export function usePackageDocumentEditorTabContentShellProps({
         tabOrder: editorTabOrder,
         packageKind,
         addendumSlotCount,
+        furnitureMontageEnabled:
+          editorTabProps.dataTabProps.form.furniture?.montage?.enabled === true,
+        furnitureAppliancesEnabled:
+          editorTabProps.dataTabProps.form.furniture?.appliances?.enabled === true,
       }),
-    [editorTabOrder, packageKind, addendumSlotCount]
+    [
+      editorTabOrder,
+      packageKind,
+      addendumSlotCount,
+      editorTabProps.dataTabProps.form.furniture?.montage?.enabled,
+      editorTabProps.dataTabProps.form.furniture?.appliances?.enabled,
+    ]
   );
 
   const tabContentProps = useMemo(
@@ -61,6 +71,9 @@ export function usePackageDocumentEditorTabContentShellProps({
       isProductDirectionPackage,
       onOpenPackageHub,
       addendumEditor,
+      form: editorTabProps.dataTabProps.form,
+      setForm: editorTabProps.dataTabProps.setForm,
+      touchPackageData: editorTabProps.dataTabProps.touchPackageData,
       ...editorTabProps,
     }),
     [

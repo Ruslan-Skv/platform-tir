@@ -1,6 +1,11 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
+import { isFurnitureLikePackageKind } from '../../config';
 import { isProductDirectionPackageKind } from '../../config/productDirectionPackageKind';
+import {
+  FURNITURE_LEG_LABEL,
+  type FurniturePackageLegId,
+} from '../../directions/furniture/furnitureLegs';
 import { computeProductContractCostBreakdown } from '../../families/product-like/cost/productContractCostBreakdown';
 import {
   applyPackageContractDiscountToAmount,
@@ -22,6 +27,13 @@ export function parseRubAmountString(raw: string | undefined | null): number | n
   return n;
 }
 
+export type PackageFurnitureLegPayable = {
+  legId: FurniturePackageLegId;
+  label: string;
+  totalRub: number | null;
+  recommendedPrepaymentRub: number | null;
+};
+
 export interface PackagePayableBreakdown {
   /** Сумма по основному договору (поле «Стоимость дог.»). */
   mainContractRub: number | null;
@@ -29,6 +41,8 @@ export interface PackagePayableBreakdown {
   addendumTotalsRub: Array<{ slotIndex1: number; totalRub: number | null }>;
   /** Стоимость договора + суммы по Д/с, где в пакете уже заполнена смета (см. комментарий в расчёте). */
   grandTotalRub: number | null;
+  /** Мебель: включённые ноги с суммами (для сводки и оснований ПКО). */
+  furnitureLegs?: PackageFurnitureLegPayable[];
 }
 
 /**
@@ -80,10 +94,61 @@ export function computeProductPayableBreakdown(form: PackageFormData): PackagePa
   return { mainContractRub, addendumTotalsRub, grandTotalRub };
 }
 
+/** К оплате по пакету «Мебель»: сумма включённых ног + Д/с. */
+export function computeFurniturePayableBreakdown(form: PackageFormData): PackagePayableBreakdown {
+  const furniture = form.furniture;
+  const furnitureLegs: PackageFurnitureLegPayable[] = [];
+  let legsSum = 0;
+  let hasAnyLegTotal = false;
+
+  const pushLeg = (legId: FurniturePackageLegId, enabled: boolean) => {
+    if (!enabled || !furniture) return;
+    const leg = furniture[legId];
+    const totalRub = parseRubAmountString(leg.contract.totalAmount);
+    const recommendedPrepaymentRub = parseRubAmountString(leg.contract.recommendedPrepayment);
+    furnitureLegs.push({
+      legId,
+      label: FURNITURE_LEG_LABEL[legId],
+      totalRub,
+      recommendedPrepaymentRub,
+    });
+    if (totalRub != null) {
+      legsSum += totalRub;
+      hasAnyLegTotal = true;
+    }
+  };
+
+  pushLeg('manufacture', true);
+  pushLeg('montage', furniture?.montage?.enabled === true);
+  pushLeg('appliances', furniture?.appliances?.enabled === true);
+
+  const mainContractRub = hasAnyLegTotal ? legsSum : null;
+  const discountPct = parsePackageContractDiscountPercent(form.contract.discountPercent);
+  const addendumTotalsRub: PackagePayableBreakdown['addendumTotalsRub'] = [];
+  const count = clampPackageAddendumSlotCount(form.addendumSlotCount);
+  let addendumSumKnown = 0;
+  for (let i = 0; i < count; i++) {
+    const slot = form.addendumSlots[i];
+    const t = slot?.snapshot?.total;
+    const rawTotal = typeof t === 'number' && Number.isFinite(t) ? t : null;
+    const totalRub =
+      rawTotal != null ? applyPackageContractDiscountToAmount(rawTotal, discountPct) : null;
+    addendumTotalsRub.push({ slotIndex1: i + 1, totalRub });
+    if (totalRub != null) {
+      addendumSumKnown += totalRub;
+    }
+  }
+  const grandTotalRub = mainContractRub != null ? mainContractRub + addendumSumKnown : null;
+  return { mainContractRub, addendumTotalsRub, grandTotalRub, furnitureLegs };
+}
+
 export function computePackagePayableBreakdown(
   form: PackageFormData,
   packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): PackagePayableBreakdown {
+  if (isFurnitureLikePackageKind(packageKind)) {
+    return computeFurniturePayableBreakdown(form);
+  }
   if (isProductDirectionPackageKind(packageKind)) {
     return computeProductPayableBreakdown(form);
   }

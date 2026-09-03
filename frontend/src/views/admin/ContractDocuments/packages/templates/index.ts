@@ -15,6 +15,10 @@ import { doorsTemplateActAcceptance } from './doorsActAcceptance';
 import { doorsTemplateContract } from './doorsTemplateContract';
 import { doorsTemplateDeliveryNote } from './doorsTemplateDeliveryNote';
 import { doorsTemplateMemo } from './doorsTemplateMemo';
+import { furnitureTemplateActAcceptance } from './furniture/furnitureTemplateActAcceptance';
+import { furnitureTemplateContract } from './furniture/furnitureTemplateContract';
+import { furnitureTemplateMemo } from './furniture/furnitureTemplateMemo';
+import { furnitureDocumentTemplateHtml } from './furniture/furnitureTemplateResolve';
 import { packageLibraryFallbackStub } from './libraryFallbackStub';
 import { windowsTemplateMemo } from './memo';
 import { packageTemplatePaymentInvoice } from './paymentInvoice';
@@ -68,11 +72,24 @@ const CEILINGS_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplate
   memo: ceilingsTemplateMemo,
 };
 
+const FURNITURE_LIBRARY_TEMPLATE_OVERRIDES: Partial<Record<PackageLibraryTemplateTabId, string>> = {
+  contract: furnitureTemplateContract,
+  actAcceptance: furnitureTemplateActAcceptance,
+  memo: furnitureTemplateMemo,
+  actStart: furnitureDocumentTemplateHtml('actStart') ?? '',
+};
+
 /** Резервный HTML вкладки библиотеки с учётом направления пакета. */
 export function libraryTemplateFallbackHtml(
   kind: ContractDocumentPackageKind,
   tab: PackageLibraryTemplateTabId
 ): string {
+  if (kind === 'FURNITURE') {
+    const furnitureHtml =
+      furnitureDocumentTemplateHtml(tab, 'manufacture') ??
+      FURNITURE_LIBRARY_TEMPLATE_OVERRIDES[tab];
+    if (furnitureHtml) return furnitureHtml;
+  }
   if (kind === 'CEILINGS') {
     const ceilingsHtml = CEILINGS_LIBRARY_TEMPLATE_OVERRIDES[tab];
     if (ceilingsHtml) return ceilingsHtml;
@@ -131,6 +148,10 @@ export function packageDocumentTemplateFallbackHtml(
   kind: ContractDocumentPackageKind,
   tab: PackageDocumentTemplateTabId
 ): string {
+  if (kind === 'FURNITURE') {
+    const furnitureHtml = furnitureDocumentTemplateHtml(tab, 'manufacture');
+    if (furnitureHtml) return furnitureHtml;
+  }
   if (kind === 'CEILINGS') {
     const ceilingsDocHtml = PRODUCT_LINE_SPEC_DOCUMENT_TEMPLATE_OVERRIDES[tab];
     if (ceilingsDocHtml) return ceilingsDocHtml;

@@ -26,6 +26,8 @@ type PackageContractNumberFieldProps = {
   locked: boolean;
   fieldClassName?: string;
   updateContract: (key: keyof PackageFormData['contract'], value: string) => void;
+  /** Только офис и замерщик (номер выдаётся в другом блоке, напр. ноги «Мебель»). */
+  omitNumberField?: boolean;
 };
 
 function formatCrmUserLabel(u: CrmUser): string {
@@ -47,6 +49,7 @@ export function PackageContractNumberField({
   locked,
   fieldClassName,
   updateContract,
+  omitNumberField = false,
 }: PackageContractNumberFieldProps) {
   const { status: workDayStatus } = useWorkDay();
   const [offices, setOffices] = useState<Office[]>([]);
@@ -235,59 +238,61 @@ export function PackageContractNumberField({
             ))}
           </select>
         </div>
-        <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
-          <label htmlFor="cn">Номер дог.</label>
-          {locked ? (
-            <input
-              id="cn"
-              value={form.contract.number}
-              readOnly
-              disabled
-              className={DATA_AUTO_FILLED}
-            />
-          ) : (
-            <>
-              <select
+        {omitNumberField ? null : (
+          <div className={`${DATA_FIELD} ${cdDataTab.contractInlineField}`}>
+            <label htmlFor="cn">Номер дог.</label>
+            {locked ? (
+              <input
                 id="cn"
-                value={selectValue}
-                onChange={(e) => onSelectChange(e.target.value)}
-                disabled={allocating || previewLoading}
-                className={fieldClassName}
-                title={hintText ?? undefined}
-                aria-invalid={isBlockingError || undefined}
-              >
-                <option value="">
-                  {previewLoading
-                    ? 'Загрузка…'
-                    : preview?.recommendedNumber
-                      ? `Рекомендуемый: ${preview.recommendedNumber}`
-                      : '— Нет рекомендации —'}
-                </option>
-                {preview?.recommendedNumber ? (
-                  <option value={preview.recommendedNumber}>
-                    {preview.recommendedNumber} (выдать)
+                value={form.contract.number}
+                readOnly
+                disabled
+                className={DATA_AUTO_FILLED}
+              />
+            ) : (
+              <>
+                <select
+                  id="cn"
+                  value={selectValue}
+                  onChange={(e) => onSelectChange(e.target.value)}
+                  disabled={allocating || previewLoading}
+                  className={fieldClassName}
+                  title={hintText ?? undefined}
+                  aria-invalid={isBlockingError || undefined}
+                >
+                  <option value="">
+                    {previewLoading
+                      ? 'Загрузка…'
+                      : preview?.recommendedNumber
+                        ? `Рекомендуемый: ${preview.recommendedNumber}`
+                        : '— Нет рекомендации —'}
                   </option>
+                  {preview?.recommendedNumber ? (
+                    <option value={preview.recommendedNumber}>
+                      {preview.recommendedNumber} (выдать)
+                    </option>
+                  ) : null}
+                  <option value={CUSTOM_VALUE}>Свой номер…</option>
+                </select>
+                {numberMode === 'custom' || selectValue === CUSTOM_VALUE ? (
+                  <input
+                    value={form.contract.number}
+                    onChange={(e) => {
+                      setNumberMode('custom');
+                      updateContract('number', e.target.value);
+                    }}
+                    autoComplete="off"
+                    placeholder="Введите номер"
+                    className={`${fieldClassName ?? ''} ${styles.customNumberInput}`.trim()}
+                  />
                 ) : null}
-                <option value={CUSTOM_VALUE}>Свой номер…</option>
-              </select>
-              {numberMode === 'custom' || selectValue === CUSTOM_VALUE ? (
-                <input
-                  value={form.contract.number}
-                  onChange={(e) => {
-                    setNumberMode('custom');
-                    updateContract('number', e.target.value);
-                  }}
-                  autoComplete="off"
-                  placeholder="Введите номер"
-                  className={`${fieldClassName ?? ''} ${styles.customNumberInput}`.trim()}
-                />
-              ) : null}
-            </>
-          )}
-        </div>
+              </>
+            )}
+          </div>
+        )}
       </div>
 
-      {hintText ? (
+      {!omitNumberField && hintText ? (
         <div
           className={isBlockingError ? styles.hintError : styles.hintMuted}
           title={hintText}

@@ -58,7 +58,7 @@ export const PACKAGE_DIRECTION_REGISTRY: readonly PackageDirectionDefinition[] =
     name: 'Мебель',
     numberLetter: 'м',
     sortOrder: 6,
-    createEnabled: false,
+    createEnabled: true,
   },
 ] as const;
 

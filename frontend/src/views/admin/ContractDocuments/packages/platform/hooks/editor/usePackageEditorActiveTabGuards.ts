@@ -14,6 +14,8 @@ export type UsePackageEditorActiveTabGuardsOptions = {
   packageKind: ContractDocumentPackageKind;
   editorTabOrder: PackageDocumentTabId[];
   addendumSlotCount: PackageFormData['addendumSlotCount'];
+  furnitureMontageEnabled?: boolean;
+  furnitureAppliancesEnabled?: boolean;
 };
 
 /** Keeps `activeTab` on a valid, visible editor tab as flow state and tab order change. */
@@ -23,15 +25,18 @@ export function usePackageEditorActiveTabGuards({
   packageKind,
   editorTabOrder,
   addendumSlotCount,
+  furnitureMontageEnabled = false,
+  furnitureAppliancesEnabled = false,
 }: UsePackageEditorActiveTabGuardsOptions): void {
   useEffect(() => {
     if (activeTab === 'payments') setActiveTab('data');
   }, [activeTab, setActiveTab]);
 
   useEffect(() => {
+    if (packageKind === 'FURNITURE' && activeTab === 'workOrder') return;
     if (!isPackageWorkOrderHubTabHiddenFromPackageEditor(activeTab)) return;
     setActiveTab('estimate');
-  }, [activeTab, setActiveTab]);
+  }, [activeTab, packageKind, setActiveTab]);
 
   useEffect(() => {
     if (!isPackageQuestionnaireHubTabHiddenFromPackageEditor(activeTab)) return;
@@ -43,9 +48,19 @@ export function usePackageEditorActiveTabGuards({
       tabOrder: editorTabOrder,
       packageKind,
       addendumSlotCount,
+      furnitureMontageEnabled,
+      furnitureAppliancesEnabled,
     });
     if (!visible.includes(activeTab)) setActiveTab('data');
-  }, [activeTab, editorTabOrder, packageKind, addendumSlotCount, setActiveTab]);
+  }, [
+    activeTab,
+    editorTabOrder,
+    packageKind,
+    addendumSlotCount,
+    furnitureMontageEnabled,
+    furnitureAppliancesEnabled,
+    setActiveTab,
+  ]);
 
   useEffect(() => {
     const m = /^addendum(\d+)$/.exec(activeTab);

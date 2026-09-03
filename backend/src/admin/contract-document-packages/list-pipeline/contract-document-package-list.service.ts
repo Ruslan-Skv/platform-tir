@@ -469,7 +469,24 @@ export class ContractDocumentPackageListService {
         ? (fd.contract as Record<string, unknown>)
         : null;
     const num = typeof contract?.number === 'string' ? contract.number.trim() : '';
-    return num || '—';
+    if (num) return num;
+    const furniture = fd.furniture;
+    if (furniture && typeof furniture === 'object') {
+      const legs = furniture as Record<string, unknown>;
+      const parts: string[] = [];
+      for (const key of ['manufacture', 'montage', 'appliances'] as const) {
+        const leg = legs[key];
+        if (!leg || typeof leg !== 'object') continue;
+        const enabled = (leg as { enabled?: unknown }).enabled;
+        if (key !== 'manufacture' && enabled !== true) continue;
+        const legContract = (leg as { contract?: unknown }).contract;
+        if (!legContract || typeof legContract !== 'object') continue;
+        const legNum = (legContract as { number?: unknown }).number;
+        if (typeof legNum === 'string' && legNum.trim()) parts.push(legNum.trim());
+      }
+      if (parts.length > 0) return parts.join(' / ');
+    }
+    return '—';
   }
 
   private customerNameFromFormData(formData: unknown): string {

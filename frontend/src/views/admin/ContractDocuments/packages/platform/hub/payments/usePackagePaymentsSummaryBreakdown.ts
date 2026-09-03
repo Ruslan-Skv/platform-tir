@@ -64,8 +64,8 @@ export function usePackagePaymentsSummaryBreakdown({
   );
 
   const hubFixedBasisOptions = useMemo(
-    () => buildPackagePaymentBasisOptions(form, rows, payableBreakdown),
-    [form, rows, payableBreakdown]
+    () => buildPackagePaymentBasisOptions(form, rows, payableBreakdown, packageKind),
+    [form, rows, payableBreakdown, packageKind]
   );
 
   return {

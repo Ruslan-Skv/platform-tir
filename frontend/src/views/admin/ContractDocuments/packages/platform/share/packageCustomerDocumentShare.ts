@@ -23,6 +23,7 @@ import {
   isProductDirectionPackageKind,
   packageUsesLineSpecification,
 } from '@/views/admin/ContractDocuments/packages/config';
+import { buildFurnitureAppliancesSheetHtml } from '@/views/admin/ContractDocuments/packages/directions/furniture/furnitureAppliancesDocs';
 import { buildCeilingsSpecificationSheetHtml } from '@/views/admin/ContractDocuments/packages/families/product-like/ceilings/ceilingsSpecification';
 import {
   WINDOWS_PACKAGE_UNIFIED_PRINT_CLASS,
@@ -341,6 +342,14 @@ export function buildPackageCustomerDocumentHtml(
   if (tab === 'estimate') return buildEstimateHtml(ctx);
   if (tab === 'finalEstimate') return buildFinalEstimateSheetHtml(ctx);
   if (tab === 'specification') return buildSpecificationSheetHtml(ctx);
+  if (tab === 'deliveryNote' && ctx.packageKind === 'FURNITURE') {
+    const furniture = ctx.form.furniture;
+    if (!furniture?.appliances?.enabled) return '';
+    return buildFurnitureAppliancesSheetHtml(furniture.appliancesDocs, {
+      contractNumber: furniture.appliances.contract.number || ctx.form.contract.number,
+      contractDate: ctx.form.contract.date,
+    });
+  }
 
   const html = buildPackageTemplatePreviewHtml(tab, {
     form: ctx.form,
@@ -388,6 +397,8 @@ export function listPackageCustomerShareableDocuments(
     tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
     packageKind,
     addendumSlotCount: form.addendumSlotCount,
+    furnitureMontageEnabled: form.furniture?.montage?.enabled === true,
+    furnitureAppliancesEnabled: form.furniture?.appliances?.enabled === true,
   });
 
   const out: PackageCustomerShareableDocument[] = [];

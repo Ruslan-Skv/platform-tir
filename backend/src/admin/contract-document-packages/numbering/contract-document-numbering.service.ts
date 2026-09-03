@@ -11,6 +11,8 @@ export type ContractNumberPreviewInput = {
   surveyorUserId: string;
   officeId: string;
   kind: ContractDocumentPackageKind;
+  /** Если задано — подставляется вместо буквы CRM-направления. */
+  numberLetterOverride?: string;
 };
 
 export type ContractNumberParts = {
@@ -208,7 +210,8 @@ export class ContractDocumentNumberingService {
     const officePrefix = office.prefix?.trim() ?? '';
     const managerCode = manager.employeeCode?.trim() ?? '';
     const surveyorCode = surveyor.employeeCode?.trim() ?? '';
-    const directionLetter = direction.numberLetter?.trim() ?? '';
+    const overrideLetter = input.numberLetterOverride?.trim() ?? '';
+    const directionLetter = overrideLetter || direction.numberLetter?.trim() || '';
     const managerName = formatUserName(manager);
     const surveyorName = formatUserName(surveyor);
 

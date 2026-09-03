@@ -1,9 +1,11 @@
-'use client';
+﻿'use client';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
-import { packageUsesLineSpecification } from '../../../config';
+import { isFurnitureLikePackageKind, packageUsesLineSpecification } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { FurnitureSpecificationTabContent } from '../../../directions/furniture/FurnitureSpecificationTabContent';
+import type { FurnitureManufactureDocs } from '../../../directions/furniture/furnitureManufactureDocs';
 import { CeilingsSpecificationTabContent } from '../../../families/product-like/ceilings/CeilingsSpecificationTabContent';
 import type { CeilingsSpecification } from '../../../families/product-like/ceilings/ceilingsSpecification';
 import { DoorsSpecificationTabContent } from '../../../families/product-like/specification/DoorsSpecificationTabContent';
@@ -24,16 +26,18 @@ export type ProductSpecificationTabProps = {
   doorsSpecificationLines: DoorsSpecificationLine[];
   doorsSpecificationDiscountPercent: string;
   ceilingsSpecification: CeilingsSpecification;
+  furnitureManufactureDocs: FurnitureManufactureDocs;
   onProductSpecificationAmountChange: (value: string) => void;
   onProductSpecificationFileAttached: (payload: { fileUrl: string; fileName: string }) => void;
   onProductSpecificationFileClear: () => void;
   onDoorsSpecificationLinesChange: (lines: DoorsSpecificationLine[]) => void;
   onDoorsSpecificationDiscountPercentChange: (value: string) => void;
   onCeilingsSpecificationChange: (spec: CeilingsSpecification) => void;
+  onFurnitureManufactureDocsChange: (docs: FurnitureManufactureDocs) => void;
   onError: (message: string) => void;
 };
 
-/** Вкладка «Спецификация» для товарных направлений (Окна, Двери, Жалюзи, Потолки…). */
+/** Вкладка «Спецификация» для товарных направлений и мебели. */
 export function ProductSpecificationTab({
   packageKind,
   packageId,
@@ -48,14 +52,29 @@ export function ProductSpecificationTab({
   doorsSpecificationLines,
   doorsSpecificationDiscountPercent,
   ceilingsSpecification,
+  furnitureManufactureDocs,
   onProductSpecificationAmountChange,
   onProductSpecificationFileAttached,
   onProductSpecificationFileClear,
   onDoorsSpecificationLinesChange,
   onDoorsSpecificationDiscountPercentChange,
   onCeilingsSpecificationChange,
+  onFurnitureManufactureDocsChange,
   onError,
 }: ProductSpecificationTabProps) {
+  if (isFurnitureLikePackageKind(packageKind)) {
+    return (
+      <FurnitureSpecificationTabContent
+        packageId={packageId}
+        docs={furnitureManufactureDocs}
+        contractNumberLabel={contractNumberLabel}
+        disabled={disabled}
+        onChange={onFurnitureManufactureDocsChange}
+        onError={onError}
+      />
+    );
+  }
+
   if (!isProductDirectionPackageKind(packageKind)) {
     return null;
   }

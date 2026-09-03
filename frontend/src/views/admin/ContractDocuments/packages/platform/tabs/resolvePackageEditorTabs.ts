@@ -1,12 +1,24 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
-import { getPackageDirectionConfig, isProductLikePackageKind } from '../../config';
+import {
+  getPackageDirectionConfig,
+  isFurnitureLikePackageKind,
+  isProductLikePackageKind,
+} from '../../config';
 import { isPackageEditorTabBarTab } from './isPackageEditorTabBarTab';
 import { type PackageDocumentTabId, isPackageAddendumTabVisible } from './packageDocumentTabs';
 
 const REPAIR_SUMMARY_TAIL_TAB_IDS: readonly PackageDocumentTabId[] = ['finalEstimate'];
 
 const PRODUCT_SPEC_TAB_ID: PackageDocumentTabId = 'specification';
+
+const FURNITURE_MONTAGE_ONLY_TABS: readonly PackageDocumentTabId[] = [
+  'estimate',
+  'actStart',
+  'workOrder',
+];
+
+const FURNITURE_APPLIANCES_ONLY_TABS: readonly PackageDocumentTabId[] = ['deliveryNote'];
 
 function reorderProductLikeEditorTabs(tabs: PackageDocumentTabId[]): PackageDocumentTabId[] {
   const next = [...tabs];
@@ -58,19 +70,20 @@ function reorderProductLikeEditorTabs(tabs: PackageDocumentTabId[]): PackageDocu
 function summaryTailTabIds(
   packageKind: ContractDocumentPackageKind
 ): readonly PackageDocumentTabId[] {
-  return isProductLikePackageKind(packageKind)
-    ? [PRODUCT_SPEC_TAB_ID]
-    : REPAIR_SUMMARY_TAIL_TAB_IDS;
+  if (isProductLikePackageKind(packageKind)) return [PRODUCT_SPEC_TAB_ID];
+  if (isFurnitureLikePackageKind(packageKind)) return [PRODUCT_SPEC_TAB_ID];
+  return REPAIR_SUMMARY_TAIL_TAB_IDS;
 }
 
 /** Видимые вкладки редактора с учётом направления, hub-скрытий и порядка PRODUCT_LIKE. */
-
 export function resolvePackageEditorVisibleTabs(input: {
   tabOrder: readonly PackageDocumentTabId[];
-
   packageKind: ContractDocumentPackageKind;
-
   addendumSlotCount: number;
+  /** Мебель: вкладки монтажа только при включённой ноге. */
+  furnitureMontageEnabled?: boolean;
+  /** Мебель: перечень техники только при включённой ноге. */
+  furnitureAppliancesEnabled?: boolean;
 }): PackageDocumentTabId[] {
   const config = getPackageDirectionConfig(input.packageKind);
 
@@ -78,16 +91,35 @@ export function resolvePackageEditorVisibleTabs(input: {
 
   const tailIds = summaryTailTabIds(input.packageKind);
 
+  const montageEnabled = input.furnitureMontageEnabled === true;
+  const appliancesEnabled = input.furnitureAppliancesEnabled === true;
+
   const visible = input.tabOrder.filter((id) => {
     if (id === 'payments') return false;
 
-    if (!isPackageEditorTabBarTab(id)) return false;
+    if (!isPackageEditorTabBarTab(id, input.packageKind)) return false;
 
     if (id === 'memo' && !config.memoTabVisible) return false;
 
     if (id === 'deliveryNote' && !config.deliveryNoteTabVisible) return false;
 
     if (hidden.has(id)) return false;
+
+    if (
+      isFurnitureLikePackageKind(input.packageKind) &&
+      (FURNITURE_MONTAGE_ONLY_TABS as readonly string[]).includes(id) &&
+      !montageEnabled
+    ) {
+      return false;
+    }
+
+    if (
+      isFurnitureLikePackageKind(input.packageKind) &&
+      (FURNITURE_APPLIANCES_ONLY_TABS as readonly string[]).includes(id) &&
+      !appliancesEnabled
+    ) {
+      return false;
+    }
 
     return isPackageAddendumTabVisible(id, input.addendumSlotCount);
   });

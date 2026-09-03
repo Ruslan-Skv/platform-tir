@@ -12,6 +12,8 @@ import { PackageDataTabView } from './PackageDataTabView';
 
 export type PackageDataTabProps = {
   form: PackageFormData;
+  setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
+  touchPackageData: () => void;
   contractAndEstimateLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;

@@ -757,12 +757,14 @@ export class ContractDocumentPackagesController {
     @Query('surveyorUserId') surveyorUserId: string,
     @Query('officeId') officeId: string,
     @Query('kind') kind: string,
+    @Query('numberLetterOverride') numberLetterOverride?: string,
   ) {
     return this.contractNumbering.preview({
       managerUserId,
       surveyorUserId,
       officeId,
       kind: kind as ContractDocumentPackageKind,
+      numberLetterOverride,
     });
   }
 
