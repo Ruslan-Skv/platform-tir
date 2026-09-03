@@ -109,6 +109,7 @@ export function EstimateWorkspacePageView({
         categories={session.estimateCategories}
         activeCategorySlug={session.activeCategorySlug}
         onActiveCategoryChange={(slug) => {
+          window.dispatchEvent(new Event('estimate-calculator-flush-draft'));
           syncRoomsForCategorySwitch(
             session.activeCategorySlug,
             slug,

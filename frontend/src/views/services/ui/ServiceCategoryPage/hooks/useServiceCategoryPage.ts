@@ -90,6 +90,12 @@ export function useServiceCategoryPage({
   /** Пока true — не пишем черновик в localStorage (первая гидрация URL/хранилища). */
   const skipPersistCalculatorDraftRef = useRef(true);
   const prevSlugForCalculatorRef = useRef<string | null>(null);
+  const calculationsRef = useRef(calculations);
+  const activeCalcIdRef = useRef(activeCalcId);
+  const draftCustomItemsRef = useRef(draftCustomItems);
+  calculationsRef.current = calculations;
+  activeCalcIdRef.current = activeCalcId;
+  draftCustomItemsRef.current = draftCustomItems;
 
   /*
    * Свёрнутые группы: одна синхронная фаза — чтение из LS + пересечение с актуальными секциями.
@@ -169,6 +175,10 @@ export function useServiceCategoryPage({
   useLayoutEffect(() => {
     if (!data || data.slug !== slug) return;
 
+    // Пока гидрация не применена в state — не даём persist-эффекту затереть LS пустым
+    // дефолтом «Помещение 1» (гонка mount → empty write → потеря комнат/позиций).
+    skipPersistCalculatorDraftRef.current = true;
+
     const roomPresets = decodeRoomsParam(roomsParam);
     if (roomPresets.length > 0) {
       const idToItem = new Map(data.items.map((i) => [i.id, i]));
@@ -199,58 +209,76 @@ export function useServiceCategoryPage({
         setCalculations(nextCalculations);
         setActiveCalcId(nextCalculations[0].id);
       }
-      skipPersistCalculatorDraftRef.current = false;
-      return;
-    }
-
-    const presetItems = parsePresetParam(presetRaw);
-    if (presetItems.length > 0) {
-      const idToItem = new Map(data.items.map((i) => [i.id, i]));
-      const lines: CalculatorLine[] = [];
-      for (const { itemId, quantity } of presetItems) {
-        const item = idToItem.get(itemId);
-        if (item && item.price !== undefined) {
-          lines.push({
-            itemId: item.id,
-            name: item.name,
-            unit: item.unit,
-            price: item.price,
-            quantity,
+    } else {
+      const presetItems = parsePresetParam(presetRaw);
+      if (presetItems.length > 0) {
+        const idToItem = new Map(data.items.map((i) => [i.id, i]));
+        const lines: CalculatorLine[] = [];
+        for (const { itemId, quantity } of presetItems) {
+          const item = idToItem.get(itemId);
+          if (item && item.price !== undefined) {
+            lines.push({
+              itemId: item.id,
+              name: item.name,
+              unit: item.unit,
+              price: item.price,
+              quantity,
+            });
+          }
+        }
+        if (lines.length > 0) {
+          setCalculations((prev) => {
+            if (prev.length === 0) {
+              const id = newCalcId();
+              setActiveCalcId(id);
+              return [
+                {
+                  id,
+                  name: 'Помещение 1',
+                  lines,
+                  result: null,
+                  loading: false,
+                  collapsed: false,
+                },
+              ];
+            }
+            return prev.map((calc, index) =>
+              index === 0 ? { ...calc, lines, result: null } : calc
+            );
           });
+        } else {
+          const restored = hydrateCalculatorDraftFromStorage(slug, data);
+          if (restored) {
+            setCalculations(restored.calculations);
+            setActiveCalcId(restored.activeCalcId);
+            setDraftCustomItems(restored.customItems);
+          } else {
+            setDraftCustomItems({});
+          }
+        }
+      } else {
+        const restored = hydrateCalculatorDraftFromStorage(slug, data);
+        if (restored) {
+          setCalculations(restored.calculations);
+          setActiveCalcId(restored.activeCalcId);
+          setDraftCustomItems(restored.customItems);
+        } else {
+          setDraftCustomItems({});
         }
       }
-      if (lines.length > 0) {
-        setCalculations((prev) => {
-          if (prev.length === 0) {
-            const id = newCalcId();
-            setActiveCalcId(id);
-            return [
-              {
-                id,
-                name: 'Помещение 1',
-                lines,
-                result: null,
-                loading: false,
-                collapsed: false,
-              },
-            ];
-          }
-          return prev.map((calc, index) => (index === 0 ? { ...calc, lines, result: null } : calc));
-        });
-        skipPersistCalculatorDraftRef.current = false;
-        return;
-      }
     }
 
-    const restored = hydrateCalculatorDraftFromStorage(slug, data);
-    if (restored) {
-      setCalculations(restored.calculations);
-      setActiveCalcId(restored.activeCalcId);
-      setDraftCustomItems(restored.customItems);
-    } else {
-      setDraftCustomItems({});
-    }
-    skipPersistCalculatorDraftRef.current = false;
+    // Включаем persist после того, как setState из layout уже закоммитился в refs.
+    const enablePersistTimer = window.setTimeout(() => {
+      skipPersistCalculatorDraftRef.current = false;
+      writeCalculatorDraftToStorage(
+        slug,
+        calculationsRef.current,
+        activeCalcIdRef.current,
+        draftCustomItemsRef.current
+      );
+    }, 0);
+    return () => window.clearTimeout(enablePersistTimer);
   }, [data, presetRaw, roomsParam, slug]);
 
   useEffect(() => {
@@ -258,6 +286,34 @@ export function useServiceCategoryPage({
     if (skipPersistCalculatorDraftRef.current) return;
     writeCalculatorDraftToStorage(slug, calculations, activeCalcId, draftCustomItems);
   }, [slug, data, calculations, activeCalcId, draftCustomItems]);
+
+  // Принудительный flush перед сменой вкладки категории в workspace расчёта.
+  useEffect(() => {
+    const onFlush = () => {
+      if (skipPersistCalculatorDraftRef.current) return;
+      writeCalculatorDraftToStorage(
+        slug,
+        calculationsRef.current,
+        activeCalcIdRef.current,
+        draftCustomItemsRef.current
+      );
+    };
+    window.addEventListener('estimate-calculator-flush-draft', onFlush);
+    return () => window.removeEventListener('estimate-calculator-flush-draft', onFlush);
+  }, [slug]);
+
+  // При уходе со вкладки категории сразу сбрасываем актуальный черновик в LS.
+  useEffect(() => {
+    return () => {
+      if (skipPersistCalculatorDraftRef.current) return;
+      writeCalculatorDraftToStorage(
+        slug,
+        calculationsRef.current,
+        activeCalcIdRef.current,
+        draftCustomItemsRef.current
+      );
+    };
+  }, [slug]);
 
   useEffect(() => {
     if (!activeCalcId && calculations.length > 0) {
