@@ -322,6 +322,8 @@ export function useServiceCategoryPage({
   }, [activeCalcId, calculations]);
 
   const requireDetachFromCart = async () => {
+    // В workspace админ-расчёта корзина не используется — не блокируем правку модалкой.
+    if (hideAddToCart) return true;
     if (!data || detachedFromCart) return true;
     const cartItem = cartServiceItems.find(
       (item) => item.serviceCatalogCategoryId === data.id || item.category?.id === data.id
