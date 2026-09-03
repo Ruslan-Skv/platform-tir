@@ -23,6 +23,10 @@ import {
   uploadKnowledgeVideo,
 } from '@/shared/api/admin-knowledge';
 import { captureVideoFileFrame } from '@/shared/lib/capture-video-file-frame';
+import {
+  probeVideoDurationSeconds,
+  videoDurationSecondsToMinutes,
+} from '@/shared/lib/probe-video-duration';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { isNativeVideoFileUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video-embed';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
@@ -276,6 +280,20 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         }))
       );
       setStatus(m.status);
+
+      if (
+        m.type === 'VIDEO' &&
+        !(m.readingTimeMinutes != null && m.readingTimeMinutes > 0) &&
+        m.videoUrl &&
+        isNativeVideoFileUrl(m.videoUrl)
+      ) {
+        void probeVideoDurationSeconds(publicUploadUrl(m.videoUrl)).then((seconds) => {
+          if (seconds == null || seconds <= 0) return;
+          setReadingTimeMinutes((current) =>
+            current === '' || current == null ? videoDurationSecondsToMinutes(seconds) : current
+          );
+        });
+      }
       lastSavedMaterialSnapshotRef.current = serializeMaterialPayload({
         categoryId: m.categoryId,
         moduleId: m.moduleId || null,
@@ -396,6 +414,15 @@ export function useKnowledgeMaterialFormPage({ materialId }: UseKnowledgeMateria
         onProgress: setVideoUploadPercent,
       });
       setVideoUrl(publicUploadUrl(uploadedUrl));
+
+      try {
+        const durationSec = await probeVideoDurationSeconds(file);
+        if (durationSec != null && durationSec > 0) {
+          setReadingTimeMinutes(videoDurationSecondsToMinutes(durationSec));
+        }
+      } catch {
+        // Длительность опциональна — видео уже загружено
+      }
 
       if (shouldAutoCover) {
         try {

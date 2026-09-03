@@ -4,6 +4,7 @@ import {
   compareKnowledgeMaterialsForAdminList,
   compareKnowledgeMaterialsForCategoryList,
   formatVideoDuration,
+  formatVideoDurationClock,
   sortKnowledgeMaterialGroupsDraftsLast,
   sortKnowledgeMaterialsForCategory,
   sortKnowledgeMaterialsNewestFirst,
@@ -66,6 +67,13 @@ describe('formatVideoDuration', () => {
   it('formats duration with просмотра suffix', () => {
     expect(formatVideoDuration(5)).toBe('5 минут просмотра');
     expect(formatVideoDuration(1)).toBe('1 минута просмотра');
+  });
+});
+
+describe('formatVideoDurationClock', () => {
+  it('formats mm:ss and h:mm:ss', () => {
+    expect(formatVideoDurationClock(65)).toBe('1:05');
+    expect(formatVideoDurationClock(3723)).toBe('1:02:03');
   });
 });
 

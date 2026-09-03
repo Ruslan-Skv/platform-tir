@@ -17,12 +17,10 @@ import {
   formatDate,
   formatReadingTime,
   formatTargetAudiences,
-  formatVideoDuration,
   getKnowledgeThumbnailDisplayClass,
   getMaterialReadingTime,
   getMaterialTypeIcon,
   getMaterialTypeLabel,
-  getMaterialVideoDuration,
   getStatusLabel,
   hasTargetAudiences,
   isKnowledgeRichTextEmpty,
@@ -32,6 +30,10 @@ import {
 import { KnowledgeAttachmentsList } from '../shared/material/KnowledgeAttachmentsList';
 import { KnowledgeMaterialComments } from '../shared/material/KnowledgeMaterialComments';
 import { KnowledgeMaterialInterestingBadge } from '../shared/material/KnowledgeMaterialInterestingBadge';
+import {
+  KnowledgeMaterialVideoDurationTag,
+  materialMayShowVideoDuration,
+} from '../shared/material/KnowledgeMaterialVideoDurationTag';
 import { KnowledgeVideoPlayer } from '../shared/material/KnowledgeVideoPlayer';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/material/knowledge-comments.constants';
 import { KnowledgeMaterialQuiz } from '../shared/quiz/KnowledgeMaterialQuiz';
@@ -240,7 +242,7 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
           </div>
         ) : null}
         {material.type === 'VIDEO' &&
-        (hasTargetAudiences(material.targetAudiences) || getMaterialVideoDuration(material)) ? (
+        (hasTargetAudiences(material.targetAudiences) || materialMayShowVideoDuration(material)) ? (
           <div className={styles.articleMeta}>
             {targetAudiencesText ? (
               <span className={styles.articleMetaItem}>
@@ -248,12 +250,13 @@ export function KnowledgeMaterialViewPageView({ model }: KnowledgeMaterialViewPa
                 {targetAudiencesText}
               </span>
             ) : null}
-            {formatVideoDuration(getMaterialVideoDuration(material)) ? (
-              <span className={styles.articleMetaItem}>
-                <span className={styles.articleMetaLabel}>Длительность:</span>{' '}
-                {formatVideoDuration(getMaterialVideoDuration(material))}
-              </span>
-            ) : null}
+            <KnowledgeMaterialVideoDurationTag
+              type={material.type}
+              videoUrl={material.videoUrl}
+              readingTimeMinutes={material.readingTimeMinutes}
+              className={styles.articleMetaItem}
+              labelPrefix={<span className={styles.articleMetaLabel}>Длительность:</span>}
+            />
           </div>
         ) : null}
         <div className={styles.meta}>

@@ -413,6 +413,28 @@ export function formatVideoDuration(minutes: number | null | undefined): string 
   return formatMinutesRu(minutes, 'просмотра');
 }
 
+/** Длительность ролика в формате M:SS / H:MM:SS. */
+export function formatVideoDurationClock(seconds: number | null | undefined): string | null {
+  if (seconds == null || !Number.isFinite(seconds) || seconds <= 0) return null;
+  const total = Math.round(seconds);
+  const h = Math.floor(total / 3600);
+  const m = Math.floor((total % 3600) / 60);
+  const s = total % 60;
+  const mm = h > 0 ? String(m).padStart(2, '0') : String(m);
+  const ss = String(s).padStart(2, '0');
+  return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+}
+
+/** Подпись для карточки: часы из секунд или минуты из сохранённого поля. */
+export function formatVideoDurationLabel(params: {
+  minutes?: number | null;
+  seconds?: number | null;
+}): string | null {
+  const fromSeconds = formatVideoDurationClock(params.seconds);
+  if (fromSeconds) return fromSeconds;
+  return formatVideoDuration(params.minutes);
+}
+
 export function formatTargetAudiences(
   audiences: { label: string }[] | null | undefined
 ): string | null {

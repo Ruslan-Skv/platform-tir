@@ -348,13 +348,13 @@ export function KnowledgeMaterialFormPageView({ model }: KnowledgeMaterialFormPa
                     )
                   }
                   className={styles.input}
-                  placeholder={type === 'ARTICLE' ? 'Авто' : 'Например: 5'}
+                  placeholder={type === 'ARTICLE' ? 'Авто' : 'Авто из MP4'}
                   title={
                     type === 'ARTICLE'
                       ? estimatedReadingTime
                         ? `Автоподсчёт: ~${estimatedReadingTime} мин`
                         : 'Заполнится после добавления текста'
-                      : 'Длительность ролика для карточки в списке материалов'
+                      : 'Подставляется из MP4 при загрузке; можно изменить вручную'
                   }
                 />
               </div>

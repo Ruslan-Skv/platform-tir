@@ -33,11 +33,9 @@ import { AccessModal } from '@/widgets/admin/Sidebar/AccessModal';
 import {
   formatDate,
   formatReadingTime,
-  formatVideoDuration,
   getKnowledgeTopicDisplayNumber,
   getMaterialReadingTime,
   getMaterialTypeLabel,
-  getMaterialVideoDuration,
   getStatusLabel,
   hasTargetAudiences,
   slugify,
@@ -47,6 +45,10 @@ import {
 } from '../shared/knowledge-utils';
 import { KnowledgeMaterialCardThumb } from '../shared/material/KnowledgeMaterialCardThumb';
 import { KnowledgeMaterialInterestingBadge } from '../shared/material/KnowledgeMaterialInterestingBadge';
+import {
+  KnowledgeMaterialVideoDurationTag,
+  materialMayShowVideoDuration,
+} from '../shared/material/KnowledgeMaterialVideoDurationTag';
 import { KNOWLEDGE_MATERIAL_COMMENTS_SECTION_ID } from '../shared/material/knowledge-comments.constants';
 import { KnowledgePlatformFeedbackButton } from '../shared/platform/KnowledgePlatformFeedbackButton';
 import { KnowledgePlatformInfoTip } from '../shared/platform/KnowledgePlatformInfoTip';
@@ -148,7 +150,7 @@ function MaterialCard({
         {(m.type === 'ARTICLE' || m.type === 'VIDEO') &&
         (hasTargetAudiences(m.targetAudiences) ||
           (m.type === 'ARTICLE' && (getMaterialReadingTime(m) || m.myQuizStatus?.hasQuiz)) ||
-          (m.type === 'VIDEO' && getMaterialVideoDuration(m))) ? (
+          (m.type === 'VIDEO' && materialMayShowVideoDuration(m))) ? (
           <div className={s.cardTags}>
             {m.targetAudiences?.map((audience) => (
               <span key={audience.id} className={s.cardTag}>
@@ -158,10 +160,13 @@ function MaterialCard({
             {m.type === 'ARTICLE' && formatReadingTime(getMaterialReadingTime(m)) ? (
               <span className={s.cardTag}>⏱ {formatReadingTime(getMaterialReadingTime(m))}</span>
             ) : null}
-            {m.type === 'VIDEO' && formatVideoDuration(getMaterialVideoDuration(m)) ? (
-              <span className={s.cardTag}>
-                ⏱ {formatVideoDuration(getMaterialVideoDuration(m))}
-              </span>
+            {m.type === 'VIDEO' ? (
+              <KnowledgeMaterialVideoDurationTag
+                type={m.type}
+                videoUrl={m.videoUrl}
+                readingTimeMinutes={m.readingTimeMinutes}
+                className={s.cardTag}
+              />
             ) : null}
             {m.type === 'ARTICLE' && m.myQuizStatus?.hasQuiz ? (
               <span
