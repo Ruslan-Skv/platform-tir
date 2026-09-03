@@ -112,6 +112,8 @@ export class MeasurementsCrudService {
       ...params,
       surveyorId: id,
       scope: 'all',
+      /** Сначала незавершённые (NEW/ASSIGNED/IN_PROGRESS), затем выполненные и прочие. */
+      openFirst: true,
       includeCounts: params?.includeCounts ?? true,
       countsUserId: id,
     });
@@ -142,6 +144,8 @@ export class MeasurementsCrudService {
     limit?: number;
     sortBy?: 'receptionDate' | 'executionDate' | 'status';
     sortOrder?: 'asc' | 'desc';
+    /** Сначала открытые статусы (порядок enum), затем выбранная сортировка. */
+    openFirst?: boolean;
   }) {
     const {
       status,
@@ -163,6 +167,7 @@ export class MeasurementsCrudService {
       limit = 20,
       sortBy = 'receptionDate',
       sortOrder = 'desc',
+      openFirst = false,
     } = params || {};
 
     const skip = (page - 1) * limit;
@@ -181,12 +186,18 @@ export class MeasurementsCrudService {
       myDirectionIds,
     });
 
-    const orderBy: Prisma.MeasurementOrderByWithRelationInput =
+    const secondaryOrder: Prisma.MeasurementOrderByWithRelationInput =
       sortBy === 'executionDate'
         ? { executionDate: sortOrder }
         : sortBy === 'status'
           ? { status: sortOrder }
           : { receptionDate: sortOrder };
+
+    // Enum: NEW → ASSIGNED → IN_PROGRESS → COMPLETED → CANCELLED → CONVERTED
+    const orderBy:
+      | Prisma.MeasurementOrderByWithRelationInput
+      | Prisma.MeasurementOrderByWithRelationInput[] =
+      openFirst && sortBy !== 'status' ? [{ status: 'asc' }, secondaryOrder] : secondaryOrder;
 
     const [rows, total, counts] = await Promise.all([
       this.prisma.measurement.findMany({

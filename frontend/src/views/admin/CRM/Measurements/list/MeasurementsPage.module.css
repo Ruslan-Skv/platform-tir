@@ -498,6 +498,26 @@
   display: none;
 }
 
+.mobileCardGroup {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+.mobileCardGroup + .mobileCardGroup {
+  margin-top: var(--admin-space-md);
+}
+
+.mobileCardGroupTitle {
+  margin: 0;
+  padding: 0 var(--admin-space-2xs);
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
 .mobileCard {
   display: flex;
   flex-direction: column;
@@ -889,6 +909,10 @@
     flex-direction: column;
     gap: var(--admin-space-sm);
     margin-bottom: var(--admin-space-md);
+  }
+
+  .mobileCardGroup {
+    gap: var(--admin-space-sm);
   }
 
   .mobileCardActions :global(button) {
