@@ -36,7 +36,7 @@ export function useEstimatesListPage() {
   const load = useEstimatesListLoad(handleLoadError);
   const filters = useEstimatesListFiltersState(archiveView, user?.role);
   const navigation = useEstimatesListNavigation(pathname, router, searchParams, filters.setPage);
-  const modals = useEstimatesListModalsState(load.items);
+  const modals = useEstimatesListModalsState(load.items, filters.listScope);
   const generateFromMeasurement = useEstimatesListGenerateFromMeasurement(setError);
 
   const derived = useEstimatesListDerivedData({

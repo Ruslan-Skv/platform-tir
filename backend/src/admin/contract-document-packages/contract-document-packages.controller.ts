@@ -360,15 +360,28 @@ export class ContractDocumentPackagesController {
     @Query('search') search?: string,
     @Query('page') page?: string,
     @Query('limit') limit?: string,
+    @Query('mine') mine?: string,
+    @Req() req?: RequestWithUser,
   ) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
     if (!kind || !allowed.has(kind)) {
       throw new BadRequestException('Укажите корректный query-параметр kind');
     }
+    const mineOnly = mine === '1' || mine === 'true';
+    if (mineOnly && !req?.user?.id) {
+      return {
+        data: [],
+        total: 0,
+        page: page ? parseInt(page, 10) || 1 : 1,
+        limit: limit ? parseInt(limit, 10) || 25 : 25,
+        totalPages: 1,
+      };
+    }
     return this.service.findEstimatePresetsTrash(kind as ContractDocumentPackageKind, {
       search,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 25,
+      createdById: mineOnly ? req?.user?.id : undefined,
     });
   }
 

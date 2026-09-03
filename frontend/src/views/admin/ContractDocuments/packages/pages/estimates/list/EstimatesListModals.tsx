@@ -45,6 +45,7 @@ export type EstimatesListModalsProps = {
   onCloseArchiveConfirm: () => void;
   onConfirmArchive: () => void;
   trashOpen: boolean;
+  trashMineOnly?: boolean;
   onCloseTrash: () => void;
   onTrashRestored: () => void;
   isGenerateFromMeasurementOpen: boolean;
@@ -78,6 +79,7 @@ export function EstimatesListModals({
   onCloseArchiveConfirm,
   onConfirmArchive,
   trashOpen,
+  trashMineOnly = false,
   onCloseTrash,
   onTrashRestored,
   isGenerateFromMeasurementOpen,
@@ -132,7 +134,12 @@ export function EstimatesListModals({
         onConfirm={onConfirmArchive}
       />
 
-      <EstimateTrashModal isOpen={trashOpen} onClose={onCloseTrash} onRestored={onTrashRestored} />
+      <EstimateTrashModal
+        isOpen={trashOpen}
+        onClose={onCloseTrash}
+        onRestored={onTrashRestored}
+        mineOnly={trashMineOnly}
+      />
 
       <EstimateGenerateFromMeasurementModal
         isOpen={isGenerateFromMeasurementOpen}

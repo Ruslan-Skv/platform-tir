@@ -140,7 +140,7 @@ export class ContractDocumentPackagesService {
 
   findEstimatePresetsTrash(
     kind: ContractDocumentPackageKind,
-    params?: { search?: string; page?: number; limit?: number },
+    params?: { search?: string; page?: number; limit?: number; createdById?: string },
   ) {
     return this.estimatePresets.findEstimatePresetsTrash(kind, params);
   }

@@ -148,7 +148,10 @@ export function useEstimatesListDerivedData({
     [items, groups, listScope, currentUserId, managerIdsByPresetId]
   );
 
-  const archiveCount = useMemo(() => countArchivedEstimates(items, groups), [items, groups]);
+  const archiveCount = useMemo(
+    () => countArchivedEstimates(items, groups, listScope, currentUserId, managerIdsByPresetId),
+    [items, groups, listScope, currentUserId, managerIdsByPresetId]
+  );
 
   const addressGroupCount = useMemo(
     () => countEstimatesAddressGroups(visibleItems, listViewMode),

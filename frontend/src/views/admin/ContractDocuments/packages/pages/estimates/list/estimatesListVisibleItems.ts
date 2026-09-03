@@ -117,10 +117,18 @@ export function countEstimatesPipelineTabs(
 
 export function countArchivedEstimates(
   items: ContractEstimatePreset[],
-  groups: ContractEstimateGroup[]
+  groups: ContractEstimateGroup[],
+  listScope: EstimatesListScope,
+  currentUserId: string | null,
+  managerIdsByPresetId: Map<string, Set<string>>
 ): number {
   return items.filter((it) => {
     const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    return Boolean(it.archived) || Boolean(g?.archived);
+    if (!(Boolean(it.archived) || Boolean(g?.archived))) return false;
+    if (listScope === 'mine') {
+      if (!currentUserId) return false;
+      return estimateBelongsToUser(it, currentUserId, managerIdsByPresetId);
+    }
+    return true;
   }).length;
 }

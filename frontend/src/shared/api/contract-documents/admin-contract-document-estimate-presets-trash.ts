@@ -55,6 +55,8 @@ export async function getContractDocumentEstimatePresetsTrash(params?: {
   search?: string;
   page?: number;
   limit?: number;
+  /** Только расчёты текущего пользователя (автор). */
+  mine?: boolean;
 }): Promise<{
   data: ContractEstimatePresetTrashRow[];
   total: number;
@@ -67,6 +69,7 @@ export async function getContractDocumentEstimatePresetsTrash(params?: {
   if (params?.search?.trim()) search.set('search', params.search.trim());
   search.set('page', String(params?.page ?? 1));
   search.set('limit', String(Math.min(params?.limit ?? 25, 100)));
+  if (params?.mine) search.set('mine', '1');
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/trash?${search}`,
     { headers: getAdminAuthHeaders() }

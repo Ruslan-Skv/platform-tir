@@ -161,7 +161,7 @@ export class ContractDocumentPackageEstimatePresetsService {
 
   async findEstimatePresetsTrash(
     kind: ContractDocumentPackageKind,
-    params?: { search?: string; page?: number; limit?: number },
+    params?: { search?: string; page?: number; limit?: number; createdById?: string },
   ) {
     await this.purgeExpiredTrashedEstimatePresets(kind);
     const raw = await this.loadGlobalEstimatePresetsBlobInternal(kind);
@@ -169,8 +169,12 @@ export class ContractDocumentPackageEstimatePresetsService {
     const limit = Math.min(Math.max(params?.limit ?? 25, 1), 100);
     const skip = (page - 1) * limit;
     const searchNorm = params?.search?.trim().toLowerCase() ?? '';
+    const createdById = params?.createdById?.trim() ?? '';
 
     let trashed = raw.items.filter((item) => this.isEstimatePresetTrashed(item));
+    if (createdById) {
+      trashed = trashed.filter((item) => (item.createdById?.trim() ?? '') === createdById);
+    }
     trashed.sort((a, b) => {
       const ta = Date.parse(a.deletedAt ?? '') || 0;
       const tb = Date.parse(b.deletedAt ?? '') || 0;

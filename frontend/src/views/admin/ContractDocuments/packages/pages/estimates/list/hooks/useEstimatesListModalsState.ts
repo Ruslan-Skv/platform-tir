@@ -6,9 +6,13 @@ import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 
 import type { EstimateArchiveConfirmState } from '../../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';
+import type { EstimatesListScope } from '../estimatesListFilters';
 import type { EstimatePackageUsage } from '../estimatesListUtils';
 
-export function useEstimatesListModalsState(items: ContractEstimatePreset[]) {
+export function useEstimatesListModalsState(
+  items: ContractEstimatePreset[],
+  listScope: EstimatesListScope
+) {
   const [detachEditModal, setDetachEditModal] = useState<{
     estimateId: string;
     usages: EstimatePackageUsage[];
@@ -22,11 +26,21 @@ export function useEstimatesListModalsState(items: ContractEstimatePreset[]) {
   const [workScopeModalPresetId, setWorkScopeModalPresetId] = useState<string | null>(null);
   const [copyChoicePresetId, setCopyChoicePresetId] = useState<string | null>(null);
 
+  const trashMineOnly = listScope === 'mine';
+
   const fetchEstimateTrashTotal = useCallback(
-    () => getContractDocumentEstimatePresetsTrash({ page: 1, limit: 1 }),
-    []
+    () =>
+      getContractDocumentEstimatePresetsTrash({
+        page: 1,
+        limit: 1,
+        mine: trashMineOnly,
+      }),
+    [trashMineOnly]
   );
-  const { trashCount, refreshTrashCount } = useAdminTrashCount(fetchEstimateTrashTotal);
+  const { trashCount, refreshTrashCount } = useAdminTrashCount(
+    fetchEstimateTrashTotal,
+    trashMineOnly
+  );
 
   const workScopePreset = useMemo(
     () =>
@@ -57,6 +71,7 @@ export function useEstimatesListModalsState(items: ContractEstimatePreset[]) {
     setCopyChoicePresetId,
     trashCount,
     refreshTrashCount,
+    trashMineOnly,
     workScopePreset,
     copyChoicePreset,
   };

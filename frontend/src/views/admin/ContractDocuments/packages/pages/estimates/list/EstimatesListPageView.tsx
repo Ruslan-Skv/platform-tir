@@ -177,6 +177,7 @@ export function EstimatesListPageView({
         onCloseArchiveConfirm={() => modals.setArchiveConfirmModal(null)}
         onConfirmArchive={mutations.handleConfirmArchive}
         trashOpen={modals.trashOpen}
+        trashMineOnly={modals.trashMineOnly}
         onCloseTrash={() => {
           modals.setTrashOpen(false);
           void modals.refreshTrashCount();

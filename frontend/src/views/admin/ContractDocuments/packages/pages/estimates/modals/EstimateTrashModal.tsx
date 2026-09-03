@@ -30,9 +30,16 @@ interface EstimateTrashModalProps {
   isOpen: boolean;
   onClose: () => void;
   onRestored?: () => void;
+  /** Только расчёты текущего пользователя (как чип «Мои»). */
+  mineOnly?: boolean;
 }
 
-export function EstimateTrashModal({ isOpen, onClose, onRestored }: EstimateTrashModalProps) {
+export function EstimateTrashModal({
+  isOpen,
+  onClose,
+  onRestored,
+  mineOnly = false,
+}: EstimateTrashModalProps) {
   const [searchInput, setSearchInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
@@ -67,6 +74,7 @@ export function EstimateTrashModal({ isOpen, onClose, onRestored }: EstimateTras
         search: searchQuery || undefined,
         page,
         limit: PAGE_SIZE,
+        mine: mineOnly,
       });
       setRows(res.data ?? []);
       setTotal(res.total ?? 0);
@@ -75,7 +83,7 @@ export function EstimateTrashModal({ isOpen, onClose, onRestored }: EstimateTras
     } finally {
       setLoading(false);
     }
-  }, [isOpen, page, searchQuery]);
+  }, [isOpen, page, searchQuery, mineOnly]);
 
   useEffect(() => {
     void loadTrash();
