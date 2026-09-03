@@ -411,6 +411,7 @@ export function usePackageDocumentEditorController({
     attachableForSelectedGroup,
     attachableAddendumEstimatePresets,
     attachableAddendumExcludedEstimatePresets,
+    attachBlockedByCrmMismatch,
   } = usePackageEstimateAttachCatalog({
     packageId,
     form,
@@ -641,6 +642,7 @@ export function usePackageDocumentEditorController({
         attachEstimatePickMeta,
         attachableForSelectedGroup,
         attachableEstimatePresets,
+        attachBlockedByCrmMismatch,
         estimatePresets,
         estimateUsageById,
         draggingEstimatePresetId,

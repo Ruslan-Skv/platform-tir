@@ -299,18 +299,26 @@ export function isContractEstimatePresetAttachable(
   return isEstimatePresetAttachableToContract(preset, groups);
 }
 
-/** Для пакета «Окна» — только расчёты карточки заказчика, привязанной к договору. */
+/** Для product-пакетов (окна, двери, …) — расчёты карточки заказчика, привязанной к договору. */
 export function isEstimatePresetForLinkedContractCustomer(
   preset: ContractEstimatePreset,
   options: {
     filterByLinkedCustomer: boolean;
     linkedCrmCustomerId: string | null | undefined;
+    /** Адрес объекта из пакета — запасной матч для старых расчётов без `crmCustomerId`. */
+    packageObjectAddress?: string | null | undefined;
   }
 ): boolean {
   if (!options.filterByLinkedCustomer) return true;
   const linkedId = options.linkedCrmCustomerId?.trim();
   if (!linkedId) return false;
-  return (preset.crmCustomerId ?? '').trim() === linkedId;
+  const presetCrmId = (preset.crmCustomerId ?? '').trim();
+  if (presetCrmId) return presetCrmId === linkedId;
+
+  // Legacy: расчёт сохранён с адресом, но без id карточки CRM.
+  const packageAddr = (options.packageObjectAddress ?? '').trim().toLowerCase();
+  const presetAddr = (preset.objectAddress ?? '').trim().toLowerCase();
+  return Boolean(packageAddr && presetAddr && packageAddr === presetAddr);
 }
 
 /** Объект сметы договора: по первому прикреплённому расчёту или по полю формы до прикрепления. */

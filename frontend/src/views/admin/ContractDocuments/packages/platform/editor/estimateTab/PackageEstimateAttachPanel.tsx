@@ -20,6 +20,7 @@ export type PackageEstimateAttachPanelProps = Pick<
   | 'attachEstimatePickMeta'
   | 'attachableForSelectedGroup'
   | 'attachableEstimatePresets'
+  | 'attachBlockedByCrmMismatch'
   | 'estimatePresets'
   | 'estimateUsageById'
   | 'draggingEstimatePresetId'
@@ -43,6 +44,7 @@ export function PackageEstimateAttachPanel({
   attachEstimatePickMeta,
   attachableForSelectedGroup,
   attachableEstimatePresets,
+  attachBlockedByCrmMismatch,
   estimatePresets,
   estimateUsageById,
   draggingEstimatePresetId,
@@ -140,9 +142,11 @@ export function PackageEstimateAttachPanel({
               <p className={ESTIMATE_TAB_HINT}>
                 {isProductDirectionPackage && !linkedCrmCustomerId?.trim()
                   ? 'Выберите заказчика на вкладке «Данные».'
-                  : isProductDirectionPackage
-                    ? 'Нет свободных расчётов этого заказчика для прикрепления (проверьте раздел «Расчёты» и статус «В работе»).'
-                    : 'Нет свободных расчётов для прикрепления.'}
+                  : attachBlockedByCrmMismatch
+                    ? 'Есть расчёты с этим адресом, но у другой карточки заказчика в CRM. Откройте расчёт и выберите того же заказчика, что в договоре (через поиск в базе), либо в договоре выберите ту же карточку, что в расчёте.'
+                    : isProductDirectionPackage
+                      ? 'Нет свободных расчётов этого заказчика для прикрепления (проверьте раздел «Расчёты» и статус «В работе»).'
+                      : 'Нет свободных расчётов для прикрепления.'}
               </p>
             ) : (
               <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>

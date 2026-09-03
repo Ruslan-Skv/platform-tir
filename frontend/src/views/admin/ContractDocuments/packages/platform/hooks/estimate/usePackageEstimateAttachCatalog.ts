@@ -13,6 +13,10 @@ import {
   isEstimatePresetForLinkedContractCustomer,
 } from '../../estimates/applyEstimatePresetIds';
 import {
+  findAttachGroupKeyForPackageObjectAddress,
+  normalizeAddressMatchKey,
+} from '../../estimates/estimateObjectGroupSync';
+import {
   getDisplayContractDate,
   getDisplayContractNumber,
 } from '../../form/packageContractDisplay';
@@ -93,12 +97,15 @@ export function usePackageEstimateAttachCatalog({
     return map;
   }, [workspacePackages, packageId]);
 
+  const packageObjectAddress = form.object?.objectAddress ?? '';
+
   const estimateCustomerFilter = useMemo(
     () => ({
       filterByLinkedCustomer: isProductDirectionPackage,
       linkedCrmCustomerId,
+      packageObjectAddress,
     }),
-    [isProductDirectionPackage, linkedCrmCustomerId]
+    [isProductDirectionPackage, linkedCrmCustomerId, packageObjectAddress]
   );
 
   const attachableEstimatePresets = useMemo(() => {
@@ -125,6 +132,32 @@ export function usePackageEstimateAttachCatalog({
     form.estimate.selectedPresetIds,
     form.addendumSlots,
     estimateCustomerFilter,
+  ]);
+
+  /** Есть свободные расчёты с тем же адресом, но другой карточкой CRM — типичная путаница. */
+  const attachBlockedByCrmMismatch = useMemo(() => {
+    if (!isProductDirectionPackage || !linkedCrmCustomerId?.trim()) return false;
+    if (attachableEstimatePresets.length > 0) return false;
+    const addrKey = normalizeAddressMatchKey(packageObjectAddress);
+    if (!addrKey) return false;
+    const selected = new Set(form.estimate.selectedPresetIds ?? []);
+    return estimatePresets.some((preset) => {
+      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
+      if (selected.has(preset.id)) return false;
+      if ((estimateUsageById.get(preset.id)?.length ?? 0) !== 0) return false;
+      if (normalizeAddressMatchKey(preset.objectAddress ?? '') !== addrKey) return false;
+      const presetCrm = (preset.crmCustomerId ?? '').trim();
+      return Boolean(presetCrm && presetCrm !== linkedCrmCustomerId.trim());
+    });
+  }, [
+    isProductDirectionPackage,
+    linkedCrmCustomerId,
+    attachableEstimatePresets.length,
+    packageObjectAddress,
+    form.estimate.selectedPresetIds,
+    estimatePresets,
+    estimateGroups,
+    estimateUsageById,
   ]);
 
   const contractEstimateObjectKey = useMemo(
@@ -279,17 +312,35 @@ export function usePackageEstimateAttachCatalog({
       if (k && k !== estimateAttachGroupKey) setEstimateAttachGroupKey(k);
       return;
     }
-    const k = (form.estimateObjectGroupKey || '').trim();
-    if (k && k !== estimateAttachGroupKey) {
-      setEstimateAttachGroupKey(k);
+    const fromForm = (form.estimateObjectGroupKey || '').trim();
+    if (fromForm) {
+      if (fromForm !== estimateAttachGroupKey) setEstimateAttachGroupKey(fromForm);
+      return;
     }
+    // Подставляем объект по адресу из «Данных», чтобы расчёт сразу появился в списке.
+    if (estimateAttachGroupKey) return;
+    const fromAddress = findAttachGroupKeyForPackageObjectAddress({
+      packageObjectAddress,
+      attachablePresets: attachableEstimatePresets,
+      groups: estimateGroups,
+    });
+    if (fromAddress) setEstimateAttachGroupKey(fromAddress);
   }, [
     form.estimate.selectedPresetIds,
     form.estimateObjectGroupKey,
     contractEstimateObjectKey,
     estimateAttachGroupKey,
     setEstimateAttachGroupKey,
+    packageObjectAddress,
+    attachableEstimatePresets,
+    estimateGroups,
   ]);
+
+  useEffect(() => {
+    if (estimatePresetToAttach) return;
+    if (attachableForSelectedGroup.length !== 1) return;
+    setEstimatePresetToAttach(attachableForSelectedGroup[0].id);
+  }, [attachableForSelectedGroup, estimatePresetToAttach, setEstimatePresetToAttach]);
 
   return {
     estimateUsageById,
@@ -299,5 +350,6 @@ export function usePackageEstimateAttachCatalog({
     attachableForSelectedGroup,
     attachableAddendumEstimatePresets,
     attachableAddendumExcludedEstimatePresets,
+    attachBlockedByCrmMismatch,
   };
 }

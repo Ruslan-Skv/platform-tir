@@ -3,8 +3,39 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-function normalizeAddressMatchKey(address: string): string {
+/** Ключ сравнения адресов объекта (пакет ↔ группа/расчёт). */
+export function normalizeAddressMatchKey(address: string): string {
   return address.trim().toLowerCase();
+}
+
+/**
+ * Ключ «Объект» для прикрепления сметы/счёт-заказа по адресу из вкладки «Данные».
+ * Сравнивает адрес пакета с `objectAddress` расчёта и с заголовком группы.
+ */
+export function findAttachGroupKeyForPackageObjectAddress(params: {
+  packageObjectAddress: string;
+  attachablePresets: Array<{ groupId?: string | null; objectAddress?: string | null }>;
+  groups: Array<{ id: string; title: string }>;
+}): string {
+  const addrKey = normalizeAddressMatchKey(params.packageObjectAddress);
+  if (!addrKey) return '';
+
+  const byPresetAddress = params.attachablePresets.find(
+    (p) => normalizeAddressMatchKey(p.objectAddress ?? '') === addrKey
+  );
+  if (byPresetAddress) {
+    const gid = byPresetAddress.groupId?.trim();
+    if (!gid) return '__ungrouped__';
+    if (params.groups.some((g) => g.id === gid)) return gid;
+  }
+
+  const groupIdsWithAttachable = new Set(
+    params.attachablePresets.map((p) => p.groupId).filter((id): id is string => Boolean(id?.trim()))
+  );
+  const byGroupTitle = params.groups.find(
+    (g) => groupIdsWithAttachable.has(g.id) && normalizeAddressMatchKey(g.title) === addrKey
+  );
+  return byGroupTitle?.id ?? '';
 }
 
 function newGroupId(): string {
