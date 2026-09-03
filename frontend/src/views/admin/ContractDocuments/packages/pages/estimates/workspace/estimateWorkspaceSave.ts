@@ -12,7 +12,7 @@ import {
   computeInGroupListOrderAfterPreset,
   countCalculatorSelectedLines,
   encodePrimaryDraftWithMultiMeta,
-  normalizeUniqueCategorySlugs,
+  uniqueCategorySlugsInOrder,
 } from './estimateWorkspaceUtils';
 
 export type EstimateWorkspaceSaveFieldErrors = {
@@ -54,7 +54,7 @@ export function validateEstimateWorkspaceSave(
         'Укажите адрес объекта в карточке заказчика или выберите строку с адресом в поиске.',
     };
   }
-  const selectedSlugs = normalizeUniqueCategorySlugs(params.estimateCategorySlugs);
+  const selectedSlugs = uniqueCategorySlugsInOrder(params.estimateCategorySlugs);
   if (selectedSlugs.length === 0) {
     return { error: 'Выберите хотя бы одну категорию работ.' };
   }

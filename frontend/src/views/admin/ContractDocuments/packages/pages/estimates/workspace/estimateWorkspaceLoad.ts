@@ -19,9 +19,9 @@ import {
   calculatorDraftStorageKey,
   clearStoredCalculatorStateForNewEstimate,
   extractMultiCategoryMetaFromDraft,
-  normalizeUniqueCategorySlugs,
   parseMeasurementRooms,
   resolveEstimateCustomerFieldsFromPreset,
+  uniqueCategorySlugsInOrder,
 } from './estimateWorkspaceUtils';
 
 export type EstimateWorkspaceLoadParams = {
@@ -93,7 +93,7 @@ export async function loadEstimateWorkspaceSession(
     if (source) {
       clearStoredCalculatorStateForNewEstimate(cats.map((c) => c.slug));
       const sourceMeta = extractMultiCategoryMetaFromDraft(source.calculatorDraft);
-      const sourceSlugs = normalizeUniqueCategorySlugs(
+      const sourceSlugs = uniqueCategorySlugsInOrder(
         sourceMeta?.slugs?.length ? sourceMeta.slugs : [source.categorySlug]
       );
       for (const slug of sourceSlugs) {
@@ -120,7 +120,7 @@ export async function loadEstimateWorkspaceSession(
     const preset = loadedItems.find((it) => it.id === estimateIdFromUrl);
     if (preset) {
       const presetMeta = extractMultiCategoryMetaFromDraft(preset.calculatorDraft);
-      const presetSlugs = normalizeUniqueCategorySlugs(
+      const presetSlugs = uniqueCategorySlugsInOrder(
         presetMeta?.slugs?.length ? presetMeta.slugs : [preset.categorySlug]
       );
       for (const slug of presetSlugs) {

@@ -11,7 +11,7 @@ import { EstimateWorkspaceCustomerCard } from './EstimateWorkspaceCustomerCard';
 import { EstimateWorkspaceExitModal } from './EstimateWorkspaceExitModal';
 import { EstimateWorkspacePageHeader } from './EstimateWorkspacePageHeader';
 import { syncRoomsForCategorySwitch } from './estimateWorkspaceCategorySwitch';
-import { normalizeUniqueCategorySlugs } from './estimateWorkspaceUtils';
+import { uniqueCategorySlugsInOrder } from './estimateWorkspaceUtils';
 import type { EstimateWorkspacePageModel } from './hooks/useEstimateWorkspacePage';
 
 export function EstimateWorkspaceLoadingState() {
@@ -73,10 +73,19 @@ export function EstimateWorkspacePageView({
             categories={session.estimateCategories}
             selectedSlugs={session.estimateCategorySlugs}
             onToggleCategory={(slug) => {
-              session.setEstimateCategorySlugs((prev) => {
-                if (prev.includes(slug)) return prev.filter((x) => x !== slug);
-                return normalizeUniqueCategorySlugs([...prev, slug]);
-              });
+              const alreadySelected = session.estimateCategorySlugs.includes(slug);
+              if (alreadySelected) {
+                session.setEstimateCategorySlugs((prev) => prev.filter((x) => x !== slug));
+                return;
+              }
+              window.dispatchEvent(new Event('estimate-calculator-flush-draft'));
+              const nextSlugs = uniqueCategorySlugsInOrder([
+                slug,
+                ...session.estimateCategorySlugs,
+              ]);
+              syncRoomsForCategorySwitch(session.activeCategorySlug, slug, nextSlugs);
+              session.setEstimateCategorySlugs(nextSlugs);
+              session.setActiveCategorySlug(slug);
             }}
           />
         </div>

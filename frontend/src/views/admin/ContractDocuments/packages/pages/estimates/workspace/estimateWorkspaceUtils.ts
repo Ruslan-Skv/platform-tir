@@ -271,7 +271,7 @@ export async function buildDraftsFromMeasurement(
     [...bySlug.entries()].map(([slug, draft]) => [slug, JSON.stringify(draft)])
   ) as Record<string, string>;
   return {
-    draftSlugs: normalizeUniqueCategorySlugs(Object.keys(draftsByCategory)),
+    draftSlugs: uniqueCategorySlugsInOrder(Object.keys(draftsByCategory)),
     draftsByCategory,
   };
 }
@@ -280,6 +280,19 @@ export function normalizeUniqueCategorySlugs(slugs: string[]): string[] {
   return [...new Set(slugs.map((x) => x.trim()).filter(Boolean))].sort((a, b) =>
     a.localeCompare(b, 'ru')
   );
+}
+
+/** Уникальные slug без сортировки — порядок как при добавлении (новые слева — через prepend). */
+export function uniqueCategorySlugsInOrder(slugs: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const raw of slugs) {
+    const slug = typeof raw === 'string' ? raw.trim() : '';
+    if (!slug || seen.has(slug)) continue;
+    seen.add(slug);
+    out.push(slug);
+  }
+  return out;
 }
 
 export function countCalculatorSelectedLines(draftsByCategory: Record<string, string>): number {
@@ -396,7 +409,7 @@ export function extractMultiCategoryMetaFromDraft(draft: string): AdminMultiCate
     if (!Array.isArray(m.slugs) || !m.draftsByCategory || typeof m.draftsByCategory !== 'object') {
       return null;
     }
-    const slugs = normalizeUniqueCategorySlugs(
+    const slugs = uniqueCategorySlugsInOrder(
       m.slugs.filter((x): x is string => typeof x === 'string')
     );
     const draftsByCategory: Record<string, string> = {};
