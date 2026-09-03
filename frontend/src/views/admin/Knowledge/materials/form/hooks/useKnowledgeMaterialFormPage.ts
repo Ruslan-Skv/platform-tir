@@ -22,13 +22,13 @@ import {
   uploadKnowledgeThumbnail,
   uploadKnowledgeVideo,
 } from '@/shared/api/admin-knowledge';
-import { captureVideoFileFrame } from '@/shared/lib/capture-video-file-frame';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { captureVideoFileFrame } from '@/shared/lib/video/capture-video-file-frame';
 import {
   probeVideoDurationSeconds,
   videoDurationSecondsToMinutes,
-} from '@/shared/lib/probe-video-duration';
-import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { isNativeVideoFileUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video-embed';
+} from '@/shared/lib/video/probe-video-duration';
+import { isNativeVideoFileUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video/video-embed';
 import { useAdminStickySaveButton } from '@/views/admin/ui/AdminStickySaveButton';
 
 import {

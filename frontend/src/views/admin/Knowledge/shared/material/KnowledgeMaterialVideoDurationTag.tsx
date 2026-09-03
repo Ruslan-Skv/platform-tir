@@ -2,9 +2,9 @@
 
 import { type ReactNode, useEffect, useState } from 'react';
 
-import { probeVideoDurationSeconds } from '@/shared/lib/probe-video-duration';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { isNativeVideoFileUrl } from '@/shared/lib/video-embed';
+import { probeVideoDurationSeconds } from '@/shared/lib/video/probe-video-duration';
+import { isNativeVideoFileUrl } from '@/shared/lib/video/video-embed';
 
 import { formatVideoDurationLabel, getMaterialVideoDuration } from '../knowledge-utils';
 

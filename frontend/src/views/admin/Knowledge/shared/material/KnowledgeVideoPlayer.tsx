@@ -8,7 +8,7 @@ import {
   updateKnowledgeVideoProgress,
 } from '@/shared/api/admin-knowledge';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
-import { isNativeVideoFileUrl, parseVideoEmbed } from '@/shared/lib/video-embed';
+import { isNativeVideoFileUrl, parseVideoEmbed } from '@/shared/lib/video/video-embed';
 
 import styles from './KnowledgeVideoPlayer.module.css';
 

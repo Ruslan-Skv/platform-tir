@@ -8,7 +8,7 @@ import {
   getNativeVideoPosterSrc,
   isNativeVideoFileUrl,
   isVkVideoUrl,
-} from '@/shared/lib/video-embed';
+} from '@/shared/lib/video/video-embed';
 
 import { getMaterialTypeIcon } from '../knowledge-utils';
 import { KnowledgeNativeVideoThumb } from './KnowledgeNativeVideoThumb';

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import { resolveKnowledgeVideoThumbnail } from '@/shared/api/admin-knowledge';
-import { getSyncVideoThumbnailUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video-embed';
+import { getSyncVideoThumbnailUrl, needsAsyncVideoThumbnail } from '@/shared/lib/video/video-embed';
 
 const thumbnailCache = new Map<string, string>();
 const inflight = new Map<string, Promise<string | null>>();
