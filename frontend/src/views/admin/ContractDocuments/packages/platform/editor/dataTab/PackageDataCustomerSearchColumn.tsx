@@ -5,6 +5,7 @@ import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/modals/Crm
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import { ProductContractCostFields } from '../../../families/product-like/cost/ProductContractCostFields';
+import { packageCustomerBlockHasContent } from '../../questionnaires/applyCrmContractToForm';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
 import {
@@ -36,6 +37,9 @@ export function PackageDataCustomerSearchColumn({
   isProductDirectionPackage,
   productContractCostBreakdown,
 }: PackageDataCustomerSearchColumnProps) {
+  const hasOrphanCustomerFields =
+    !linkedCrmCustomerId?.trim() && packageCustomerBlockHasContent(form.customer);
+
   return (
     <div className={`${DATA_TOP_BLOCK} ${cdDataTab.dataTopBlockCustomerCol}`}>
       <div
@@ -51,6 +55,7 @@ export function PackageDataCustomerSearchColumn({
           onCustomerApplied={onCrmCustomerApplied}
           onClear={onCrmCustomerClear}
           onError={onCrmError}
+          showClearButton={hasOrphanCustomerFields}
         />
       </div>
       {isProductDirectionPackage && productContractCostBreakdown ? (

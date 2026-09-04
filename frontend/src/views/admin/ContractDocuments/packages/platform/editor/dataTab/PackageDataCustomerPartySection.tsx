@@ -1,5 +1,7 @@
 'use client';
 
+import { crmCustomerFillPercentHint } from '@/views/admin/CRM/Customers/shared/crmCustomerFillPercent';
+
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
 import type { PackageDataTabProps } from './PackageDataTab';
@@ -22,6 +24,7 @@ export type PackageDataCustomerPartySectionProps = Pick<
   PackageDataTabProps,
   | 'form'
   | 'contractAndEstimateLocked'
+  | 'linkedCrmCustomerId'
   | 'customerSectionCompletionPercent'
   | 'customerDataSectionExpanded'
   | 'setCustomerDataSectionExpanded'
@@ -31,11 +34,14 @@ export type PackageDataCustomerPartySectionProps = Pick<
 export function PackageDataCustomerPartySection({
   form,
   contractAndEstimateLocked,
+  linkedCrmCustomerId,
   customerSectionCompletionPercent,
   customerDataSectionExpanded,
   setCustomerDataSectionExpanded,
   customerPhonesReadonlyDisplay,
 }: PackageDataCustomerPartySectionProps) {
+  const fillHint = crmCustomerFillPercentHint(form.customer.type);
+
   return (
     <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET} ${styles.packageDataPartySection}`}>
       <div className={styles.packageDataPartySectionHeader}>
@@ -48,7 +54,7 @@ export function PackageDataCustomerPartySection({
         <div className={styles.packageDataPartySectionHeaderActions}>
           <span
             className={styles.packageDataPartySectionCompletion}
-            title="Процент заполненности блока"
+            title={fillHint}
             style={packageCompletionBadgeStyle(customerSectionCompletionPercent)}
           >
             {customerSectionCompletionPercent}%
@@ -64,9 +70,9 @@ export function PackageDataCustomerPartySection({
       {customerDataSectionExpanded ? (
         <>
           <p className={`${DATA_HINT} ${styles.packageDataPartySectionIntroHint}`}>
-            Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе».
-            Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите «Добавить
-            нового заказчика» в блоке поиска.
+            {linkedCrmCustomerId?.trim()
+              ? 'Данные подставляются из карточки заказчика в блоке «Поиск заказчика в базе». Редактировать здесь нельзя. Чтобы завести карточку и указать телефоны, нажмите «Добавить нового заказчика» в блоке поиска.'
+              : 'Карточка CRM не выбрана. Если поля ниже всё ещё заполнены, нажмите «Снять выбор» в блоке «Поиск заказчика в базе», затем выберите карточку заново. Редактировать поля здесь нельзя.'}
           </p>
           <div id="repair-data-customer-section-body" className={DATA_SECTION_FIELDS}>
             {form.customer.type === 'PERSON' ? (

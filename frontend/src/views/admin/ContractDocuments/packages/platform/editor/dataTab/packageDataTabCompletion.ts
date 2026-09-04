@@ -1,36 +1,64 @@
+import { computeCrmCustomerFormFillPercent } from '@/views/admin/CRM/Customers/shared/crmCustomerFillPercent';
+import {
+  type CrmCustomerFormState,
+  emptyCrmCustomerForm,
+} from '@/views/admin/CRM/Customers/shared/crmCustomerForm';
+import { parseFullNameString } from '@/views/admin/CRM/Customers/shared/crmCustomerName';
+
 import type { PackageFormData } from '../../form/packageForm';
 import { calcPackageSectionCompletionPercent } from './packageDataTabUi';
 
-export function packageCustomerSectionCompletionPercent(
-  form: PackageFormData,
-  linkedCrmCustomerId: string | null
-): number {
-  if (!linkedCrmCustomerId) return 0;
-  if (form.customer.type === 'PERSON') {
-    return calcPackageSectionCompletionPercent([
-      form.customer.fullName,
-      form.customer.address,
-      form.customer.email,
-      form.customer.phones,
-      form.customer.passportSeriesNumber,
-      form.customer.passportIssuedBy,
-      form.customer.passportIssueDate,
-      form.customer.bankDetails,
-    ]);
+/** Блок «Заказчик» → форма CRM для того же % заполненности, что в «Карточках клиента». */
+export function packageFormToCrmCustomerFillState(form: PackageFormData): CrmCustomerFormState {
+  const c = form.customer;
+  const phones = (c.phones ?? []).map((p) => p.trim()).filter(Boolean);
+  const phone = (c.phone ?? '').trim();
+  const mergedPhones = [...phones];
+  if (phone && !mergedPhones.includes(phone)) mergedPhones.unshift(phone);
+
+  const objectAddress = (form.object.objectAddress ?? '').trim();
+  const base = emptyCrmCustomerForm();
+
+  if (c.type === 'PERSON') {
+    const name = parseFullNameString(c.fullName ?? '');
+    return {
+      ...base,
+      entityType: 'PERSON',
+      email: c.email ?? '',
+      phones: mergedPhones.length > 0 ? mergedPhones : [''],
+      lastName: name.lastName,
+      firstName: name.firstName,
+      patronymic: name.patronymic,
+      address: c.address ?? '',
+      objectAddresses: objectAddress ? [objectAddress] : [],
+      bankDetails: c.bankDetails ?? '',
+      passportSeriesNumber: c.passportSeriesNumber ?? '',
+      passportIssuedBy: c.passportIssuedBy ?? '',
+      passportIssueDate: c.passportIssueDate ?? '',
+    };
   }
-  return calcPackageSectionCompletionPercent([
-    form.customer.representativeFullNameNominative,
-    form.customer.representativeFullNameGenitive,
-    form.customer.organizationName,
-    form.customer.representativePositionNominative,
-    form.customer.representativePositionGenitive,
-    form.customer.inn,
-    form.customer.ogrn,
-    form.customer.address,
-    form.customer.email,
-    form.customer.phones,
-    form.customer.bankDetails,
-  ]);
+
+  return {
+    ...base,
+    entityType: c.type,
+    email: c.email ?? '',
+    phones: mergedPhones.length > 0 ? mergedPhones : [''],
+    repNom: c.representativeFullNameNominative ?? '',
+    repGen: c.representativeFullNameGenitive ?? '',
+    organizationName: c.organizationName ?? '',
+    posNom: c.representativePositionNominative ?? '',
+    posGen: c.representativePositionGenitive ?? '',
+    inn: c.inn ?? '',
+    ogrn: c.ogrn ?? '',
+    address: c.address ?? '',
+    objectAddresses: objectAddress ? [objectAddress] : [],
+    bankDetails: c.bankDetails ?? '',
+  };
+}
+
+/** Как % в карточке клиента CRM (паспорт не учитывается; для физлица — ФИО по частям). */
+export function packageCustomerSectionCompletionPercent(form: PackageFormData): number {
+  return computeCrmCustomerFormFillPercent(packageFormToCrmCustomerFillState(form));
 }
 
 export function packageExecutorSectionCompletionPercent(form: PackageFormData): number {

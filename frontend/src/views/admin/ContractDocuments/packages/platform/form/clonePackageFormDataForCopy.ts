@@ -1,3 +1,4 @@
+import { parseLinkedCrmCustomerIdFromFormData } from '../questionnaires/crmManagerQuestionnaire1';
 import { defaultPackageFormData } from './defaults';
 import { buildPersistedFormData, mergeFormDataFromStorage } from './formDataTemplateStorage';
 import type { PackageFormData } from './types';
@@ -8,6 +9,7 @@ import type { PackageFormData } from './types';
  */
 export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknown> {
   const { form, templateOverrides, templatePresetIds } = mergeFormDataFromStorage(raw);
+  const linkedCrmCustomerId = parseLinkedCrmCustomerIdFromFormData(raw);
   const blankSlots = defaultPackageFormData().addendumSlots;
   const addendumSlots = form.addendumSlots.map((cur, i) => ({
     ...blankSlots[i],
@@ -47,7 +49,9 @@ export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknow
     issuedInvoices: [],
   };
 
-  const fd = buildPersistedFormData(next, templateOverrides, templatePresetIds);
+  const fd = buildPersistedFormData(next, templateOverrides, templatePresetIds, {
+    linkedCrmCustomerId,
+  });
   delete fd.repairContractClosed;
   delete fd.contractClosed;
   delete fd.repairContractClientRefused;

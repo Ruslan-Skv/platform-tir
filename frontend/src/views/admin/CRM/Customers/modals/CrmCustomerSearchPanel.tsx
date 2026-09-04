@@ -33,6 +33,11 @@ export type CrmCustomerSearchPanelProps = {
   onCustomerApplied: (detail: CrmCustomerDetail, context?: CrmCustomerAppliedContext) => void;
   onClear: () => void;
   onError?: (message: string) => void;
+  /**
+   * Показать «Снять выбор», даже если `customerId` пуст
+   * (например в форме договора остались поля заказчика без привязки к карточке).
+   */
+  showClearButton?: boolean;
   addCustomerDraft?: {
     fullName?: string;
     phone?: string;
@@ -48,6 +53,7 @@ export function CrmCustomerSearchPanel({
   onCustomerApplied,
   onClear,
   onError,
+  showClearButton = false,
   addCustomerDraft,
 }: CrmCustomerSearchPanelProps) {
   const [crmSearchInput, setCrmSearchInput] = useState('');
@@ -185,7 +191,7 @@ export function CrmCustomerSearchPanel({
               aria-expanded={crmSearchDebounced.length >= 2}
               aria-controls={listboxId}
             />
-            {customerId ? (
+            {customerId || showClearButton ? (
               <button
                 type="button"
                 className={styles.customerCrmClearButton}

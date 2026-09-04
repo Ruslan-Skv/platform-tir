@@ -137,6 +137,29 @@ export function clearPackageFormCrmCustomerFields(prev: PackageFormData): Packag
   };
 }
 
+/** Есть ли в блоке «Заказчик» данные (в т.ч. без привязки `_linkedCrmCustomerId`). */
+export function packageCustomerBlockHasContent(customer: PackageCustomerBlock): boolean {
+  const phones = (customer.phones ?? []).map((p) => p.trim()).filter(Boolean);
+  return Boolean(
+    customer.fullName?.trim() ||
+    customer.representativeFullNameNominative?.trim() ||
+    customer.representativeFullNameGenitive?.trim() ||
+    customer.organizationName?.trim() ||
+    customer.representativePositionNominative?.trim() ||
+    customer.representativePositionGenitive?.trim() ||
+    customer.inn?.trim() ||
+    customer.ogrn?.trim() ||
+    customer.address?.trim() ||
+    customer.phone?.trim() ||
+    phones.length > 0 ||
+    customer.email?.trim() ||
+    customer.bankDetails?.trim() ||
+    customer.passportSeriesNumber?.trim() ||
+    customer.passportIssuedBy?.trim() ||
+    customer.passportIssueDate?.trim()
+  );
+}
+
 /**
  * Подстановка данных пакета по договору CRM и строке поиска.
  * Блок «Заказчик» **полностью** берётся из `documentCustomer` строки поиска (если есть),

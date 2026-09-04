@@ -1,5 +1,5 @@
 .helpPanel {
-  max-height: min(70vh, 560px);
+  max-height: min(78vh, 640px);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
