@@ -10,6 +10,7 @@ import { injectDefaultWorkPeriodIntoFormData } from './repair-contract-work-peri
 import { buildPackageVersionKeyMoments } from './package-version-key-moments';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
+import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
 
 @Injectable()
 export class ContractDocumentPackageCrudService {
@@ -20,6 +21,7 @@ export class ContractDocumentPackageCrudService {
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
     private readonly repairScheduleFromPackage: RepairScheduleFromPackageService,
+    private readonly contractNumbering: ContractDocumentNumberingService,
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -59,6 +61,14 @@ export class ContractDocumentPackageCrudService {
       },
       include: contractDocumentPackageInclude,
     });
+    try {
+      await this.contractNumbering.syncNumberAssignmentsForPackage(created.id, formDataInput);
+    } catch (err) {
+      await this.prisma.contractDocumentPackage
+        .delete({ where: { id: created.id } })
+        .catch(() => undefined);
+      throw err;
+    }
     await this.appendPackageVersion(
       created.id,
       {
@@ -153,11 +163,34 @@ export class ContractDocumentPackageCrudService {
     const becomingConcluded =
       dto.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
       row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED;
+
+    let formDataToSave: Prisma.InputJsonValue | undefined =
+      dto.formData !== undefined ? (dto.formData as Prisma.InputJsonValue) : undefined;
+    if (becomingConcluded) {
+      const baseForm =
+        dto.formData !== undefined ? dto.formData : row.formData !== undefined ? row.formData : {};
+      try {
+        formDataToSave = (await this.contractNumbering.finalizeFormDataNumbersOnConclude(
+          row.kind,
+          baseForm,
+          id,
+        )) as Prisma.InputJsonValue;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(`Резерв номера при подписании пакета ${id} не выполнен: ${message}`);
+        formDataToSave = baseForm as Prisma.InputJsonValue;
+      }
+    }
+
+    if (formDataToSave !== undefined) {
+      await this.contractNumbering.syncNumberAssignmentsForPackage(id, formDataToSave);
+    }
+
     const updated = await this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
-        ...(dto.formData !== undefined ? { formData: dto.formData as Prisma.InputJsonValue } : {}),
+        ...(formDataToSave !== undefined ? { formData: formDataToSave } : {}),
         ...(dto.crmContractId !== undefined ? { crmContractId: dto.crmContractId } : {}),
         ...(responsibleManagerId !== undefined ? { responsibleManagerId } : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
@@ -272,6 +305,8 @@ export class ContractDocumentPackageCrudService {
         );
       }
     }
+    await this.contractNumbering.releaseNumberAssignmentsForPackage(id);
+    await this.contractNumbering.releaseActiveHoldsForPackage(id);
     return this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {
@@ -290,6 +325,7 @@ export class ContractDocumentPackageCrudService {
     if (row.kind === ContractDocumentPackageKind.REPAIR && row.formData !== undefined) {
       await this.assertRepairEstimatePresetsExclusive(id, row.formData);
     }
+    await this.contractNumbering.syncNumberAssignmentsForPackage(id, row.formData);
     return this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {

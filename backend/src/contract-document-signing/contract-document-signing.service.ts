@@ -16,6 +16,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 import { PrismaService } from '../database/prisma.service';
+import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
 
 export type SigningSessionDocumentMeta = {
   tabId: string;
@@ -46,6 +47,7 @@ export class ContractDocumentSigningService {
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
     private readonly mailer: MailerService,
+    private readonly contractNumbering: ContractDocumentNumberingService,
   ) {}
 
   private siteUrl(): string {
@@ -103,7 +105,7 @@ export class ContractDocumentSigningService {
   ) {
     const pkg = await this.prisma.contractDocumentPackage.findUnique({ where: { id: packageId } });
     if (!pkg) return;
-    const formData =
+    let formData =
       pkg.formData && typeof pkg.formData === 'object' && !Array.isArray(pkg.formData)
         ? { ...(pkg.formData as Record<string, unknown>) }
         : {};
@@ -113,6 +115,18 @@ export class ContractDocumentSigningService {
         typeof formData.contractConcludedAt === 'string' && formData.contractConcludedAt.trim()
           ? formData.contractConcludedAt
           : new Date().toISOString();
+      if (pkg.status === ContractDocumentPackageStatus.IN_PROGRESS) {
+        try {
+          formData = await this.contractNumbering.finalizeFormDataNumbersOnConclude(
+            pkg.kind,
+            formData,
+            packageId,
+          );
+          await this.contractNumbering.syncNumberAssignmentsForPackage(packageId, formData);
+        } catch {
+          /* номер останется черновым; статус всё равно фиксируем */
+        }
+      }
     }
 
     const data: Prisma.ContractDocumentPackageUpdateInput = {
@@ -176,8 +190,8 @@ export class ContractDocumentSigningService {
     });
     if (!pkg) throw new NotFoundException('Пакет документов не найден');
 
-    // Cancel previous active sessions for this package
-    await this.prisma.contractDocumentSigningSession.updateMany({
+    // Cancel previous active sessions for this package and release their number holds
+    const previousActive = await this.prisma.contractDocumentSigningSession.findMany({
       where: {
         packageId: input.packageId,
         status: {
@@ -187,8 +201,17 @@ export class ContractDocumentSigningService {
           ],
         },
       },
-      data: { status: ContractDocumentSigningSessionStatus.CANCELLED },
+      select: { id: true },
     });
+    if (previousActive.length > 0) {
+      await this.prisma.contractDocumentSigningSession.updateMany({
+        where: { id: { in: previousActive.map((s) => s.id) } },
+        data: { status: ContractDocumentSigningSessionStatus.CANCELLED },
+      });
+      for (const s of previousActive) {
+        await this.contractNumbering.releaseHoldsForSession(s.id);
+      }
+    }
 
     const token = randomToken();
     const otpCode = randomOtpCode();
@@ -215,6 +238,18 @@ export class ContractDocumentSigningService {
         createdById: input.createdById,
       },
     });
+
+    try {
+      await this.contractNumbering.softReserveNumbersForSigning({
+        packageId: input.packageId,
+        sessionId: session.id,
+        kind: pkg.kind,
+        formData: pkg.formData,
+        expiresAt,
+      });
+    } catch {
+      /* без кодов нумерации сессия всё равно создаётся */
+    }
 
     const signUrl = this.buildSignUrl(token);
     await this.patchPackageRemoteSigningMarker(input.packageId, {
@@ -340,6 +375,7 @@ export class ContractDocumentSigningService {
       where: { id: sessionId },
       data: { status: ContractDocumentSigningSessionStatus.CANCELLED },
     });
+    await this.contractNumbering.releaseHoldsForSession(sessionId);
     await this.patchPackageRemoteSigningMarker(packageId, {
       sessionId: updated.id,
       status: updated.status,
@@ -372,6 +408,7 @@ export class ContractDocumentSigningService {
           where: { id: row.id },
           data: { status: ContractDocumentSigningSessionStatus.EXPIRED },
         });
+        await this.contractNumbering.releaseHoldsForSession(row.id);
       }
       throw new ForbiddenException('Срок действия ссылки истёк');
     }
@@ -516,6 +553,7 @@ export class ContractDocumentSigningService {
         viewedAt: row.viewedAt ?? new Date(),
       },
     });
+    await this.contractNumbering.releaseHoldsForSession(row.id);
     await this.patchPackageRemoteSigningMarker(row.packageId, {
       sessionId: updated.id,
       status: updated.status,

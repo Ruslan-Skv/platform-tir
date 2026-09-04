@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../../database/database.module';
+import { ContractDocumentNumberingModule } from '../../contract-document-numbering/contract-document-numbering.module';
 import { RepairSchedulesModule } from '../repair-schedules/repair-schedules.module';
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
@@ -12,10 +13,9 @@ import { ContractDocumentPackageGlobalLibraryService } from './contract-document
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
-import { ContractDocumentNumberingService } from './numbering/contract-document-numbering.service';
 
 @Module({
-  imports: [DatabaseModule, RepairSchedulesModule],
+  imports: [DatabaseModule, RepairSchedulesModule, ContractDocumentNumberingModule],
   controllers: [ContractDocumentPackagesController],
   providers: [
     ContractDocumentPackagesService,
@@ -27,12 +27,11 @@ import { ContractDocumentNumberingService } from './numbering/contract-document-
     ContractDocumentPackageCeilingsPriceListService,
     ContractDocumentPackagePaymentsService,
     ContractDocumentPaymentInvoicesService,
-    ContractDocumentNumberingService,
   ],
   exports: [
     ContractDocumentPackagesService,
     ContractDocumentPaymentInvoicesService,
-    ContractDocumentNumberingService,
+    ContractDocumentNumberingModule,
   ],
 })
 export class ContractDocumentPackagesModule {}

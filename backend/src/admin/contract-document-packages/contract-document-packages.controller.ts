@@ -27,7 +27,7 @@ import type { RequestWithUser } from '../../common/types/request-with-user.types
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
-import { ContractDocumentNumberingService } from './numbering/contract-document-numbering.service';
+import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/create-contract-document-payment-invoice.dto';
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';

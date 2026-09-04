@@ -8,7 +8,6 @@ import { useWorkDay } from '@/features/admin/work-day';
 import {
   type ContractDocumentPackageKind,
   type ContractNumberPreview,
-  allocateContractDocumentNumber,
   previewContractDocumentNumber,
 } from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, type Office, getCrmUsers, getOffices } from '@/shared/api/admin-crm';
@@ -57,7 +56,6 @@ export function PackageContractNumberField({
   const [preview, setPreview] = useState<ContractNumberPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [allocating, setAllocating] = useState(false);
   const [numberMode, setNumberMode] = useState<'recommended' | 'custom'>(
     form.contract.number ? 'custom' : 'recommended'
   );
@@ -152,29 +150,10 @@ export function PackageContractNumberField({
     return preview?.recommendedNumber ?? '';
   }, [numberMode, form.contract.number, preview]);
 
-  const applyRecommended = async () => {
-    if (!canPreview) return;
-    setAllocating(true);
-    setPreviewError(null);
-    try {
-      const allocated = await allocateContractDocumentNumber({
-        managerUserId,
-        surveyorUserId,
-        officeId,
-        kind: packageKind,
-      });
-      if (!allocated.ok || !allocated.recommendedNumber) {
-        setPreviewError(allocated.error || 'Не удалось выдать номер');
-        return;
-      }
-      setPreview(allocated);
-      setNumberMode('recommended');
-      updateContract('number', allocated.recommendedNumber);
-    } catch (e) {
-      setPreviewError(e instanceof Error ? e.message : 'Не удалось выдать номер');
-    } finally {
-      setAllocating(false);
-    }
+  const applyRecommended = () => {
+    if (!preview?.recommendedNumber) return;
+    setNumberMode('recommended');
+    updateContract('number', preview.recommendedNumber);
   };
 
   const onSelectChange = (value: string) => {
@@ -183,7 +162,7 @@ export function PackageContractNumberField({
       return;
     }
     if (value && value === preview?.recommendedNumber) {
-      void applyRecommended();
+      applyRecommended();
       return;
     }
     if (value) {
@@ -255,7 +234,7 @@ export function PackageContractNumberField({
                   id="cn"
                   value={selectValue}
                   onChange={(e) => onSelectChange(e.target.value)}
-                  disabled={allocating || previewLoading}
+                  disabled={previewLoading}
                   className={fieldClassName}
                   title={hintText ?? undefined}
                   aria-invalid={isBlockingError || undefined}
@@ -268,9 +247,7 @@ export function PackageContractNumberField({
                         : '— Нет рекомендации —'}
                   </option>
                   {preview?.recommendedNumber ? (
-                    <option value={preview.recommendedNumber}>
-                      {preview.recommendedNumber} (выдать)
-                    </option>
+                    <option value={preview.recommendedNumber}>{preview.recommendedNumber}</option>
                   ) : null}
                   <option value={CUSTOM_VALUE}>Свой номер…</option>
                 </select>

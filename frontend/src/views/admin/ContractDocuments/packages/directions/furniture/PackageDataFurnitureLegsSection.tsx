@@ -5,7 +5,6 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   type ContractDocumentPackageKind,
   type ContractNumberPreview,
-  allocateContractDocumentNumber,
   previewContractDocumentNumber,
 } from '@/shared/api/admin-contract-document-packages';
 
@@ -65,7 +64,6 @@ function FurnitureLegNumberControl({
   const [preview, setPreview] = useState<ContractNumberPreview | null>(null);
   const [previewError, setPreviewError] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [allocating, setAllocating] = useState(false);
   const [custom, setCustom] = useState(Boolean(numberValue));
 
   const canPreview = Boolean(managerUserId && surveyorUserId && officeId && packageKind);
@@ -116,30 +114,10 @@ function FurnitureLegNumberControl({
     return () => window.clearTimeout(t);
   }, [locked, refreshPreview]);
 
-  const applyRecommended = async () => {
-    if (!canPreview) return;
-    setAllocating(true);
-    setPreviewError(null);
-    try {
-      const allocated = await allocateContractDocumentNumber({
-        managerUserId,
-        surveyorUserId,
-        officeId,
-        kind: packageKind,
-        numberLetterOverride: letter,
-      });
-      if (!allocated.ok || !allocated.recommendedNumber) {
-        setPreviewError(allocated.error || 'Не удалось выдать номер');
-        return;
-      }
-      setPreview(allocated);
-      setCustom(false);
-      onNumberChange(allocated.recommendedNumber);
-    } catch (e) {
-      setPreviewError(e instanceof Error ? e.message : 'Не удалось выдать номер');
-    } finally {
-      setAllocating(false);
-    }
+  const applyRecommended = () => {
+    if (!preview?.recommendedNumber) return;
+    setCustom(false);
+    onNumberChange(preview.recommendedNumber);
   };
 
   const inputId = `furniture_leg_number_${legId}`;
@@ -170,7 +148,7 @@ function FurnitureLegNumberControl({
                     return;
                   }
                   if (v && v === preview?.recommendedNumber) {
-                    void applyRecommended();
+                    applyRecommended();
                     return;
                   }
                   if (v) {
@@ -178,7 +156,7 @@ function FurnitureLegNumberControl({
                     onNumberChange(v);
                   }
                 }}
-                disabled={allocating || previewLoading}
+                disabled={previewLoading}
               >
                 <option value="">
                   {previewLoading
@@ -188,9 +166,7 @@ function FurnitureLegNumberControl({
                       : '— Нет рекомендации —'}
                 </option>
                 {preview?.recommendedNumber ? (
-                  <option value={preview.recommendedNumber}>
-                    {preview.recommendedNumber} (выдать)
-                  </option>
+                  <option value={preview.recommendedNumber}>{preview.recommendedNumber}</option>
                 ) : null}
                 <option value="__custom__">Свой номер…</option>
               </select>

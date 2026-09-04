@@ -148,6 +148,7 @@ model User {
   workDayRequests                         WorkDayRequest[]                         @relation("WorkDayRequestUser")
   workDayRequestsReviewed                 WorkDayRequest[]                         @relation("WorkDayRequestReviewedBy")
   contractDocumentNumberCounters          ContractDocumentNumberCounter[]
+  contractDocumentNumberHolds             ContractDocumentNumberHold[]
   waybillTasksAsResponsible               WaybillTask[]                            @relation("WaybillTaskResponsible")
   waybillTasksAsDriver                    WaybillTask[]                            @relation("WaybillTaskDriver")
   waybillTasksCompleted                   WaybillTask[]                            @relation("WaybillTaskCompletedBy")
@@ -2795,6 +2796,7 @@ model CrmDirection {
   contracts                       Contract[]
   users                           UserCrmDirection[]
   contractDocumentNumberCounters  ContractDocumentNumberCounter[]
+  contractDocumentNumberHolds     ContractDocumentNumberHold[]
 
   @@map("crm_directions")
 }
@@ -3503,11 +3505,11 @@ model ContractDocumentPackage {
   createdAt            DateTime                      @default(now())
   updatedAt            DateTime                      @updatedAt
 
-  documentObject            ContractDocumentObject?          @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
-  createdBy                 User?                            @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
-  responsibleManager        User?                            @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
-  deletedBy                 User?                            @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract               Contract?                        @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
+  documentObject            ContractDocumentObject?            @relation(fields: [documentObjectId], references: [id], onDelete: SetNull)
+  createdBy                 User?                              @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  responsibleManager        User?                              @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
+  deletedBy                 User?                              @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
+  crmContract               Contract?                          @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
   versions                  ContractDocumentPackageVersion[]
   payments                  ContractDocumentPackagePayment[]
   paymentInvoices           ContractDocumentPaymentInvoice[]
@@ -3515,6 +3517,8 @@ model ContractDocumentPackage {
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
   signingSessions           ContractDocumentSigningSession[]
+  numberHolds               ContractDocumentNumberHold[]
+  numberAssignments         ContractDocumentNumberAssignment[]
 
   @@index([kind])
   @@index([createdAt])
@@ -3602,6 +3606,51 @@ model ContractDocumentNumberCounter {
   @@map("contract_document_number_counters")
 }
 
+/// Временный резерв порядкового номера (например, на время сессии ЭП до подписания).
+model ContractDocumentNumberHold {
+  id             String    @id @default(cuid())
+  managerUserId  String
+  directionId    String
+  sequence       Int
+  /// Полный номер на момент резерва (для сверки с formData).
+  composedNumber String
+  numberLetter   String?
+  packageId      String
+  sessionId      String?
+  expiresAt      DateTime
+  releasedAt     DateTime?
+  consumedAt     DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  manager   User                            @relation(fields: [managerUserId], references: [id], onDelete: Cascade)
+  direction CrmDirection                    @relation(fields: [directionId], references: [id], onDelete: Cascade)
+  package   ContractDocumentPackage         @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  session   ContractDocumentSigningSession? @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+
+  @@index([managerUserId, directionId, releasedAt, consumedAt])
+  @@index([packageId])
+  @@index([sessionId])
+  @@index([expiresAt])
+  @@map("contract_document_number_holds")
+}
+
+/// Глобальная занятость номеров договоров (уникальность по всей системе).
+model ContractDocumentNumberAssignment {
+  id            String   @id @default(cuid())
+  /// Ключ сравнения: trim, без схлопывания регистра цифр/букв кода.
+  numberKey     String   @unique
+  displayNumber String
+  packageId     String
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  package ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([packageId])
+  @@map("contract_document_number_assignments")
+}
+
 /// Статус сессии дистанционного ознакомления / подписания пакета документов.
 enum ContractDocumentSigningSessionStatus {
   PENDING
@@ -3641,8 +3690,9 @@ model ContractDocumentSigningSession {
   createdAt       DateTime                             @default(now())
   updatedAt       DateTime                             @updatedAt
 
-  package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  createdBy User?                   @relation("ContractDocumentSigningSessionsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  package     ContractDocumentPackage      @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  createdBy   User?                        @relation("ContractDocumentSigningSessionsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+  numberHolds ContractDocumentNumberHold[]
 
   @@index([packageId, createdAt])
   @@index([status])
