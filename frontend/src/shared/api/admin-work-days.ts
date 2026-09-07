@@ -300,7 +300,7 @@ export async function updateWorkDaySettings(
 }
 
 export async function getWorkDayOffices(): Promise<WorkDayOfficeSchedule[]> {
-  const res = await apiFetch(`${API_URL}/admin/work-days/offices`, {
+  const res = await apiFetch(`${API_URL}/admin/work-days/my/offices`, {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить офисы');

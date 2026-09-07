@@ -84,6 +84,11 @@ export class WorkDaysController {
     return this.workDaysService.updateUserWorkSchedule(userId, dto);
   }
 
+  @Get('my/offices')
+  listMyOffices() {
+    return this.workDaysService.listMyOffices();
+  }
+
   @Get('my/status')
   getMyStatus(@Req() req: RequestWithUser) {
     return this.workDaysService.getMyStatus(req.user.id, req.user.role as UserRole);

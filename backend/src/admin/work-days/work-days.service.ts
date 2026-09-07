@@ -586,4 +586,17 @@ export class WorkDaysService implements OnModuleInit {
       select: OFFICE_WORK_SCHEDULE_SELECT,
     });
   }
+
+  /**
+   * Активные офисы для выбора в модалке «Начните рабочий день».
+   * Отдельный маршрут под /my/* (вне проверки прав настроек),
+   * чтобы любой отслеживаемый сотрудник мог выбрать офис при открытии дня.
+   */
+  async listMyOffices() {
+    return this.prisma.office.findMany({
+      where: { isActive: true },
+      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+      select: OFFICE_WORK_SCHEDULE_SELECT,
+    });
+  }
 }
