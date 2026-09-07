@@ -3,6 +3,7 @@ import { BellPushModule } from '../../bell-push/bell-push.module';
 import { DatabaseModule } from '../../database/database.module';
 import { ExternalNotifyModule } from '../../external-notify/external-notify.module';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
+import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { WorkDaysController } from './work-days.controller';
 import { WorkDaysService } from './work-days.service';
@@ -10,7 +11,7 @@ import { WorkDaysService } from './work-days.service';
 @Module({
   imports: [DatabaseModule, BellPushModule, ExternalNotifyModule],
   controllers: [WorkDaysController],
-  providers: [WorkDaysService, WorkDayNotifyService, WorkDayRequestsService],
+  providers: [WorkDaysService, WorkDayNotifyService, WorkDayRequestsService, WorkDayOfficesService],
   exports: [WorkDaysService, WorkDayRequestsService],
 })
 export class WorkDaysModule {}

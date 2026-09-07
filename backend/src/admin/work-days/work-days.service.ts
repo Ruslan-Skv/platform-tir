@@ -20,7 +20,6 @@ import {
   CloseForgottenWorkDayDto,
   StartAbsenceDto,
   StartWorkDayDto,
-  UpdateOfficeWorkScheduleDto,
   UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
@@ -43,7 +42,6 @@ import { WorkDayNotifyService } from './services/work-day-notify.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
 import {
-  OFFICE_WORK_SCHEDULE_SELECT,
   USER_WORK_SCHEDULE_SELECT,
   legacyFieldsFromWeeklySchedule,
 } from './work-day-schedule.helpers';
@@ -552,23 +550,6 @@ export class WorkDaysService implements OnModuleInit {
     });
   }
 
-  async updateOfficeWorkSchedule(officeId: string, dto: UpdateOfficeWorkScheduleDto) {
-    const office = await this.prisma.office.findUnique({ where: { id: officeId } });
-    if (!office) throw new NotFoundException('Офис не найден');
-    const data: Record<string, unknown> = { ...dto };
-    if (dto.workDayWeeklySchedule !== undefined) {
-      Object.assign(
-        data,
-        legacyFieldsFromWeeklySchedule(dto.workDayWeeklySchedule as WeeklySchedule),
-      );
-    }
-    return this.prisma.office.update({
-      where: { id: officeId },
-      data,
-      select: OFFICE_WORK_SCHEDULE_SELECT,
-    });
-  }
-
   async listTrackedUsers() {
     return this.prisma.user.findMany({
       where: {
@@ -577,26 +558,6 @@ export class WorkDaysService implements OnModuleInit {
       },
       select: USER_WORK_SCHEDULE_SELECT,
       orderBy: [{ lastName: 'asc' }, { firstName: 'asc' }],
-    });
-  }
-
-  async listOfficesWithSchedule() {
-    return this.prisma.office.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      select: OFFICE_WORK_SCHEDULE_SELECT,
-    });
-  }
-
-  /**
-   * Активные офисы для выбора в модалке «Начните рабочий день».
-   * Отдельный маршрут под /my/* (вне проверки прав настроек),
-   * чтобы любой отслеживаемый сотрудник мог выбрать офис при открытии дня.
-   */
-  async listMyOffices() {
-    return this.prisma.office.findMany({
-      where: { isActive: true },
-      orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
-      select: OFFICE_WORK_SCHEDULE_SELECT,
     });
   }
 }

@@ -27,6 +27,7 @@ import {
   UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
+import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { WorkDaysService } from './work-days.service';
 
@@ -46,6 +47,7 @@ export class WorkDaysController {
   constructor(
     private readonly workDaysService: WorkDaysService,
     private readonly workDayRequests: WorkDayRequestsService,
+    private readonly workDayOffices: WorkDayOfficesService,
   ) {}
 
   @Get('settings')
@@ -63,13 +65,13 @@ export class WorkDaysController {
   @Get('offices')
   @Roles(UserRole.SUPER_ADMIN)
   listOffices() {
-    return this.workDaysService.listOfficesWithSchedule();
+    return this.workDayOffices.listOfficesWithSchedule();
   }
 
   @Patch('offices/:officeId')
   @Roles(UserRole.SUPER_ADMIN)
   updateOffice(@Param('officeId') officeId: string, @Body() dto: UpdateOfficeWorkScheduleDto) {
-    return this.workDaysService.updateOfficeWorkSchedule(officeId, dto);
+    return this.workDayOffices.updateOfficeWorkSchedule(officeId, dto);
   }
 
   @Get('users')
@@ -86,7 +88,7 @@ export class WorkDaysController {
 
   @Get('my/offices')
   listMyOffices() {
-    return this.workDaysService.listMyOffices();
+    return this.workDayOffices.listMyOffices();
   }
 
   @Get('my/status')
