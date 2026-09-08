@@ -15,6 +15,7 @@ import type { PackagePayableBreakdown } from './packagePaymentTotals';
 export const PACKAGE_BASIS_LABEL_PREPAYMENT = 'предоплата по договору';
 export const PACKAGE_BASIS_LABEL_PARTIAL = 'частичная оплата по договору';
 export const PACKAGE_BASIS_LABEL_FINAL = 'окончательный расчёт по договору';
+export const PACKAGE_BASIS_LABEL_FULL = 'полная оплата по договору';
 
 export function packageAddendumBasisLabel(addendumNumber: number): string {
   return `оплата по д/с ${addendumNumber}`;
@@ -29,6 +30,7 @@ export type PackageFurniturePaymentBasisKind = 'prepayment' | 'partial' | 'final
 export type PackagePaymentBasisOptionKey =
   | 'contract_prepayment'
   | 'contract_partial'
+  | 'contract_full'
   | 'contract_final'
   | `addendum_${number}`
   | `addendum_partial_${number}`
@@ -245,6 +247,12 @@ export function buildPackagePaymentBasisOptions(
       label: PACKAGE_BASIS_LABEL_FINAL,
       paymentType: 'FINAL',
       disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FINAL),
+    },
+    {
+      key: 'contract_full',
+      label: PACKAGE_BASIS_LABEL_FULL,
+      paymentType: 'FINAL',
+      disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FULL),
     },
   ];
 

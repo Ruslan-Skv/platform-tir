@@ -77,6 +77,9 @@ export function inferPaymentTypeFromBasisText(basis: string): {
   if (normalized === 'частичная оплата по договору') {
     return { paymentType: 'ADVANCE' };
   }
+  if (normalized === 'полная оплата по договору') {
+    return { paymentType: 'FINAL' };
+  }
   if (normalized === 'окончательный расчёт по договору') {
     return { paymentType: 'FINAL' };
   }

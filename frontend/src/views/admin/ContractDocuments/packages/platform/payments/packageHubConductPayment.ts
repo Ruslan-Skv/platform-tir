@@ -62,6 +62,8 @@ export function computePackageHubConductSuggestedAmountRub(
       const paid = Number.isFinite(journalPaidRub) ? journalPaidRub : 0;
       return roundRub(Math.max(0, grandTotalRub - paid));
     }
+    case 'contract_full':
+      return roundRub(Math.max(0, mainContractRub - contractPaidRub));
     case 'contract_partial':
       return roundRub(Math.max(0, mainContractRub - contractPaidRub));
     default:
