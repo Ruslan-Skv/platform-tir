@@ -1,3 +1,5 @@
+import { describe, expect, it } from '@jest/globals';
+
 import { computePackageHubConductSuggestedAmountRub } from './packageHubConductPayment';
 import {
   PACKAGE_BASIS_LABEL_FULL,
