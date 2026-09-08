@@ -1,5 +1,7 @@
-# Build stage: Bullseye нужен для libssl1.1 (Prisma query engine), Alpine/musl не подходят для Prisma
-FROM node:20-bullseye-slim AS builder
+# Build stage: node:20-slim (Debian bookworm) — Prisma 5.x поддерживает OpenSSL 3.0;
+# bullseye (EOL) больше не подходит: его security-репозиторий истёк, apt-get падает.
+# Alpine/musl не подходят для Prisma.
+FROM node:20-slim AS builder
 
 # Husky/git hooks не нужны в образе; CI=true — стандартный маркер для install-скриптов
 ENV HUSKY=0
