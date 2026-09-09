@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { unifyContractDocumentTypographyInHtml } from './contractTemplateTypography';
 
 const MIXED_ACT_HTML = `<p style="font-size: 12px; line-height: 1.3;">к договору</p>
@@ -9,7 +7,8 @@ const MIXED_ACT_HTML = `<p style="font-size: 12px; line-height: 1.3;">к дог�
 
 const hasDom = typeof window !== 'undefined' && typeof DOMParser !== 'undefined';
 
-describe.skipIf(!hasDom)('unifyContractDocumentTypographyInHtml', () => {
+// describe.skipIf — API vitest; в jest условный skip делаем выбором describe/describe.skip
+(!hasDom ? describe.skip : describe)('unifyContractDocumentTypographyInHtml', () => {
   it('wraps content in docPrint, removes mixed font-size and aligns line-height', () => {
     const normalized = unifyContractDocumentTypographyInHtml(MIXED_ACT_HTML);
     expect(normalized).toContain('docPrint');
@@ -17,7 +16,7 @@ describe.skipIf(!hasDom)('unifyContractDocumentTypographyInHtml', () => {
     expect(normalized).not.toMatch(/font-size:\s*12px/i);
     expect(normalized).not.toMatch(/font-size:\s*10pt/i);
     expect(normalized).toContain('line-height: 1.32');
-    expect(normalized).not.toContain('line-height: 1.3');
+    expect(normalized).not.toMatch(/line-height:\s*1\.3(?!\d)/i);
     expect(normalized).not.toMatch(/signTableActHandwritten[\s\S]*line-height:\s*1\.3/i);
   });
 });

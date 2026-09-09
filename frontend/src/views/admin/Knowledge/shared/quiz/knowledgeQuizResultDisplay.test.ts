@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { getQuizResultAdditionalExplanation } from './knowledgeQuizResultDisplay';
 
 describe('getQuizResultAdditionalExplanation', () => {

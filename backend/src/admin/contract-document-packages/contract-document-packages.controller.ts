@@ -23,6 +23,7 @@ import * as path from 'path';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
+import { decodeMultipartFilename } from '../../common/utils/upload-filename.util';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
@@ -92,10 +93,11 @@ const WINDOWS_SPEC_BLOCKED_EXTENSIONS =
   /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
 
 function sanitizeWindowsSpecificationStoredFilename(originalname: string): string {
-  const ext = path.extname(originalname).toLowerCase();
+  const decoded = decodeMultipartFilename(originalname);
+  const ext = path.extname(decoded).toLowerCase();
   const base =
     path
-      .basename(originalname, ext)
+      .basename(decoded, ext)
       .replace(/[^\w\u0400-\u04FF.\-()+ ]/gu, '_')
       .replace(/_+/g, '_')
       .slice(0, 80) || 'file';
@@ -709,7 +711,7 @@ export class ContractDocumentPackagesController {
       }),
       limits: { fileSize: 50 * 1024 * 1024 },
       fileFilter: (_req, file, cb) => {
-        const ext = path.extname(file.originalname).toLowerCase();
+        const ext = path.extname(decodeMultipartFilename(file.originalname)).toLowerCase();
         if (!ext) {
           cb(
             new BadRequestException(
@@ -753,7 +755,7 @@ export class ContractDocumentPackagesController {
     const filename = path.basename(file.path);
     return {
       fileUrl: `/uploads/contract-document-packages/windows-specifications/${filename}`,
-      fileName: file.originalname,
+      fileName: decodeMultipartFilename(file.originalname),
       mimeType: file.mimetype || null,
       size: file.size ?? null,
     };

@@ -831,6 +831,14 @@ function buildPrintStylesheet(
     font-weight: normal;
   }
   .docPrint .estimateA4DocPrintEmbed { line-height: 1.32; color: #111; }
+  /* Превью прикреплённого файла спецификации: на отдельную страницу A4, iframe не разрывается между страницами. */
+  .docPrint .windowsSpecFilePreview { break-before: page; break-inside: avoid; page-break-before: always; page-break-inside: avoid; margin: 0; }
+  .docPrint .windowsSpecFilePreviewFrame {
+    display: block; width: 100%; height: 250mm; border: none; margin: 0;
+  }
+  .docPrint .windowsSpecFilePreviewImage {
+    display: block; max-width: 100%; max-height: 250mm; margin: 0 auto; border: none;
+  }
   .docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection { margin-bottom: 6pt; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Meta { margin: 0 0 6pt; color: #333; line-height: 1.35; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Room { margin-bottom: 10pt; }

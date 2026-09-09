@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import type { CartItem } from '@/shared/api/cart';
 
 import { doorsSpecificationLineHasContent, newDoorsSpecificationLine } from './doorsSpecification';

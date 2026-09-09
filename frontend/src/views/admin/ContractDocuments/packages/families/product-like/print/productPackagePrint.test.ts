@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { buildEstimateSheetPrintHtml } from '../../../platform/estimates/packageEstimateDocPrintEmbedHtml';
 import {
   pickWindowsPackagePrintDocumentOptions,

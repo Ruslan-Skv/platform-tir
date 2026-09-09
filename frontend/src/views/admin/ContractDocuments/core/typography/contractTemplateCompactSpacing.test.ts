@@ -48,10 +48,8 @@ describe('contractTemplateCompactSpacing', () => {
       return { start: wordStart, end: wordEnd };
     };
 
-    const first = toggleContractParagraphSpacingInHtmlRange(
-      html,
-      ...Object.values(selectionRange(html))
-    );
+    const { start, end } = selectionRange(html);
+    const first = toggleContractParagraphSpacingInHtmlRange(html, start, end);
     expect(first.dense).toBe(true);
     expect(first.blockCount).toBe(1);
     expect(first.html).toContain('data-contract-paragraph-spacing="dense"');

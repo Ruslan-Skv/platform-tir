@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { defaultPackageFormData } from '../../../platform/form/defaults';
 import { newDoorsSpecificationLine } from '../specification/doorsSpecification';
 import { computeProductContractCostBreakdown } from './productContractCostBreakdown';
@@ -9,7 +7,7 @@ describe('computeProductContractCostBreakdown', () => {
     const base = defaultPackageFormData();
     const breakdown = computeProductContractCostBreakdown({
       ...base,
-      estimate: { ...base.estimate, snapshot: { total: 20_000 } },
+      estimate: { ...base.estimate, snapshot: { total: 20_000, rooms: [] } },
       doorsSpecificationLines: [
         {
           ...newDoorsSpecificationLine(),
@@ -46,7 +44,7 @@ describe('computeProductContractCostBreakdown', () => {
     const breakdown = computeProductContractCostBreakdown({
       ...base,
       productSpecificationAmount: '40 000',
-      estimate: { ...base.estimate, snapshot: { total: 60_000 } },
+      estimate: { ...base.estimate, snapshot: { total: 60_000, rooms: [] } },
       doorsSpecificationLines: [],
     });
     expect(breakdown.productsAmount).toBe(40_000);

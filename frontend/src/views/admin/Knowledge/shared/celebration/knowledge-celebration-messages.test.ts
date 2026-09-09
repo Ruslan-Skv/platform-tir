@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import type { KnowledgeTrainingCelebration } from '@/shared/api/admin-knowledge';
 
 import {

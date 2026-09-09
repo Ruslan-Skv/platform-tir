@@ -62,7 +62,7 @@ describe('contract title bold / structure', () => {
   it('packageContractTitleBlock flattens nested title in table cell', () => {
     const c = document.createElement('div');
     c.innerHTML = WINDOWS_CONTRACT_TITLE_CELL;
-    const docPrint = c.querySelector('.docPrint')!;
+    const docPrint = c.querySelector<HTMLElement>('.docPrint')!;
     packageContractTitleBlock(docPrint);
     const title = c.querySelector(`h1.${CONTRACT_DOC_TITLE_CLASS}`);
     expect(title).not.toBeNull();

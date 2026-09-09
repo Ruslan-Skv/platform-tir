@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import { PACKAGE_DOCUMENT_TAB_IDS } from './packageDocumentTabs';
 import { resolvePackageEditorVisibleTabs } from './resolvePackageEditorTabs';
 

@@ -1,5 +1,3 @@
-import { describe, expect, it } from 'vitest';
-
 import {
   CONTRACT_SIGN_FIO_LINE_CLASS,
   buildContractActHandwrittenCustomerSignaturesHtml,

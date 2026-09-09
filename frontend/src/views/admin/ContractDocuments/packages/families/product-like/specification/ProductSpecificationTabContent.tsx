@@ -42,6 +42,17 @@ function formatFileSize(bytes: number | null | undefined): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} МБ`;
 }
 
+const IMAGE_FILE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
+const PDF_FILE_EXT_RE = /\.pdf$/i;
+
+function isPdfSpecificationFile(url: string, name: string): boolean {
+  return PDF_FILE_EXT_RE.test(url) || PDF_FILE_EXT_RE.test(name);
+}
+
+function isImageSpecificationFile(url: string, name: string): boolean {
+  return IMAGE_FILE_EXT_RE.test(url) || IMAGE_FILE_EXT_RE.test(name);
+}
+
 type ProductSpecificationTabContentProps = {
   packageKind: ContractDocumentPackageKind;
   packageId: string;
@@ -97,7 +108,15 @@ export function ProductSpecificationTabContent({
     [disabled, onError, onFileAttached, packageId]
   );
 
-  const downloadHref = fileUrl.trim() ? publicUploadUrl(fileUrl) : '';
+  const trimmedFileUrl = fileUrl.trim();
+  const trimmedFileName = fileName.trim();
+  const downloadHref = trimmedFileUrl ? publicUploadUrl(fileUrl) : '';
+  const isPdfFile = trimmedFileUrl
+    ? isPdfSpecificationFile(trimmedFileUrl, trimmedFileName)
+    : false;
+  const isImageFile = trimmedFileUrl
+    ? isImageSpecificationFile(trimmedFileUrl, trimmedFileName)
+    : false;
   const copy = isProductDirectionPackageKind(packageKind)
     ? productSpecificationCopy(packageKind)
     : productSpecificationCopy('WINDOWS');
@@ -223,13 +242,37 @@ export function ProductSpecificationTabContent({
               ) : (
                 <p className={cdDocPreview.estimateA4Empty}>Стоимость не указана.</p>
               )}
-              {fileName.trim() ? (
+              {trimmedFileName ? (
                 <p className={cdDocPreview.estimateA4Meta}>
-                  Файл: <strong>{fileName.trim()}</strong>
+                  Файл: <strong>{trimmedFileName}</strong>
                 </p>
               ) : (
                 <p className={cdDocPreview.estimateA4Empty}>Файл не прикреплён.</p>
               )}
+              {trimmedFileUrl && isPdfFile ? (
+                /* windowsSpecFilePreview* — стабильные глобальные классы для печати (printDocument.ts); module-классы — для экрана */
+                <div
+                  className={`${cdDocPreview.estimateA4FilePreview} windowsSpecFilePreview`}
+                  aria-hidden
+                >
+                  <iframe
+                    className={`${cdDocPreview.estimateA4FilePreviewFrame} windowsSpecFilePreviewFrame`}
+                    src={downloadHref}
+                    title={trimmedFileName || 'Файл спецификации'}
+                  />
+                </div>
+              ) : trimmedFileUrl && isImageFile ? (
+                <div
+                  className={`${cdDocPreview.estimateA4FilePreview} windowsSpecFilePreview`}
+                  aria-hidden
+                >
+                  <img
+                    className={`${cdDocPreview.estimateA4FilePreviewImage} windowsSpecFilePreviewImage`}
+                    src={downloadHref}
+                    alt={trimmedFileName || 'Файл спецификации'}
+                  />
+                </div>
+              ) : null}
               <PackageEstimateSignaturesBlock
                 directorName={directorName}
                 customerFullName={customerFullName}
