@@ -29,6 +29,7 @@ import {
   isLateEdit,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
+import { WaybillAttachmentsModal } from './WaybillAttachmentsModal';
 import { WaybillTaskForm } from './WaybillTaskForm';
 import { WaybillTaskRowActions } from './WaybillTaskRowActions';
 import { WaybillTrashModal } from './WaybillTrashModal';
@@ -123,6 +124,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
   const [createDateBlocked, setCreateDateBlocked] = useState(false);
   const [editDateBlocked, setEditDateBlocked] = useState(false);
   const [weekPreviewRefreshToken, setWeekPreviewRefreshToken] = useState(0);
+  const [attachmentsItem, setAttachmentsItem] = useState<WaybillTask | null>(null);
 
   const statusCounts = {
     ALL: tasks.length,
@@ -237,6 +239,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
           onCopy={openRescheduleModal}
           onDelete={setDeleteItem}
           onReopen={(task) => void handleReopen(task)}
+          onOpenAttachments={setAttachmentsItem}
         />
       ),
     },
@@ -440,6 +443,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             onCopy={openRescheduleModal}
             onDelete={setDeleteItem}
             onReopen={(task) => void handleReopen(task)}
+            onOpenAttachments={setAttachmentsItem}
           />
 
           <DataTable
@@ -525,6 +529,12 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         cancelText="Отмена"
         variant="danger"
         onConfirm={handleDelete}
+      />
+
+      <WaybillAttachmentsModal
+        item={attachmentsItem}
+        onClose={() => setAttachmentsItem(null)}
+        onChanged={() => void refresh()}
       />
 
       <WaybillTrashModal

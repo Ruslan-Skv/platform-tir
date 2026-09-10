@@ -799,3 +799,110 @@
   border-color: #ef6c00;
   color: #ffb74d;
 }
+
+/* --- Вложения задания (файлы для водителя) --- */
+.attachmentList {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.attachmentRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 6px 10px;
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: 8px;
+  background: var(--admin-surface-soft, #f9fafb);
+  font-size: 13px;
+  word-break: break-word;
+}
+
+.attachmentRow a {
+  color: var(--admin-info, #2563eb);
+  text-decoration: underline;
+}
+
+.attachmentRemoveBtn {
+  flex-shrink: 0;
+  padding: 2px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.attachmentPendingHint {
+  color: var(--admin-text-muted, #6b7280);
+  font-style: italic;
+}
+
+.driverAttachmentList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.driverAttachmentLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border: 1px solid var(--admin-info-light, #93c5fd);
+  border-radius: 999px;
+  background: rgb(37 99 235 / 0.08);
+  color: var(--admin-info, #2563eb);
+  font-size: 13px;
+  font-weight: 500;
+  text-decoration: none;
+}
+
+.driverAttachmentLink:hover {
+  background: rgb(37 99 235 / 0.16);
+}
+
+/* --- Быстрый доступ к файлам задания из колонки «Действия» --- */
+.attachmentIconButton,
+.attachmentIconButtonActive {
+  position: relative;
+}
+
+.attachmentIconButtonActive {
+  color: var(--admin-info, #2563eb);
+  border-color: var(--admin-info-light, #93c5fd);
+}
+
+.attachmentCountBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--admin-info, #2563eb);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+}
+
+.attachmentRowActions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.attachmentDownloadLink {
+  color: var(--admin-info, #2563eb);
+  text-decoration: underline;
+  font-size: 12px;
+}

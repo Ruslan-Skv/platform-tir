@@ -98,7 +98,27 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
     {
       key: 'task',
       title: 'Задание',
-      render: (item: WaybillTask) => <div className={styles.taskCell}>{item.taskText}</div>,
+      render: (item: WaybillTask) => (
+        <div className={styles.taskCell}>
+          {item.taskText}
+          {item.attachments && item.attachments.length > 0 ? (
+            <ul className={styles.driverAttachmentList}>
+              {item.attachments.map((attachment) => (
+                <li key={attachment.id}>
+                  <a
+                    className={styles.driverAttachmentLink}
+                    href={attachment.fileUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                  >
+                    {attachment.fileName}
+                  </a>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
+      ),
     },
     {
       key: 'customer',

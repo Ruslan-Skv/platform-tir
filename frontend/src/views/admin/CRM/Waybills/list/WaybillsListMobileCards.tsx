@@ -25,6 +25,7 @@ type WaybillsListMobileCardsProps = {
   onCopy: (item: WaybillTask) => void;
   onDelete: (item: WaybillTask) => void;
   onReopen: (item: WaybillTask) => void;
+  onOpenAttachments: (item: WaybillTask) => void;
 };
 
 export function WaybillsListMobileCards({
@@ -37,6 +38,7 @@ export function WaybillsListMobileCards({
   onCopy,
   onDelete,
   onReopen,
+  onOpenAttachments,
 }: WaybillsListMobileCardsProps) {
   return (
     <div className={styles.mobileCards} aria-label="Список заданий путевого листа">
@@ -124,6 +126,7 @@ export function WaybillsListMobileCards({
                   onCopy={onCopy}
                   onDelete={onDelete}
                   onReopen={onReopen}
+                  onOpenAttachments={onOpenAttachments}
                 />
               </div>
             </article>

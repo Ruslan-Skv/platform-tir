@@ -103,6 +103,27 @@ export function MyWaybillMobileCards({
                   <dt>Грузчики</dt>
                   <dd>{formatMoney(item.moversCost, item.moversPayer)}</dd>
                 </div>
+                {item.attachments && item.attachments.length > 0 ? (
+                  <div className={styles.mobileCardRow}>
+                    <dt>Файлы</dt>
+                    <dd>
+                      <ul className={styles.driverAttachmentList}>
+                        {item.attachments.map((attachment) => (
+                          <li key={attachment.id}>
+                            <a
+                              className={styles.driverAttachmentLink}
+                              href={attachment.fileUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              {attachment.fileName}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    </dd>
+                  </div>
+                ) : null}
                 {item.completionNote ? (
                   <div className={styles.mobileCardRow}>
                     <dt>Коммент.</dt>

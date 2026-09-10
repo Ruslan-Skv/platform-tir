@@ -9,6 +9,7 @@ import {
   type WaybillTaskInput,
   completeWaybillTask,
   createWaybillTask,
+  deleteWaybillAttachment,
   deleteWaybillTask,
   failWaybillTask,
   getWaybillTasks,
@@ -17,6 +18,7 @@ import {
   reopenWaybillTask,
   rescheduleWaybillTask,
   updateWaybillTask,
+  uploadWaybillAttachments,
 } from '@/shared/api/admin-waybills';
 
 import { getBlockedDeliveryDayMessage } from '../../shared/driver-availability.utils';
@@ -245,6 +247,9 @@ export function useWaybillsPage() {
       moversPayer: item.moversPayer ?? '',
       responsibleUserId: item.responsibleUserId ?? '',
       driverUserId: item.driverUserId ?? '',
+      pendingFiles: [],
+      existingAttachments: item.attachments ?? [],
+      removedAttachmentIds: [],
     });
     setFormError(null);
     setSubmitting(false);
@@ -325,6 +330,24 @@ export function useWaybillsPage() {
     }
   }, []);
 
+  /** Загружает новые и удаляет помеченные вложения задания. Ошибки вложений не откатывают задание. */
+  const syncAttachments = useCallback(
+    async (taskId: string, values: WaybillFormValues): Promise<string | null> => {
+      try {
+        if (values.removedAttachmentIds.length > 0) {
+          await Promise.all(values.removedAttachmentIds.map((id) => deleteWaybillAttachment(id)));
+        }
+        if (values.pendingFiles.length > 0) {
+          await uploadWaybillAttachments(taskId, values.pendingFiles);
+        }
+        return null;
+      } catch (err) {
+        return err instanceof Error ? err.message : 'Не удалось сохранить файлы';
+      }
+    },
+    []
+  );
+
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
@@ -340,8 +363,14 @@ export function useWaybillsPage() {
       setSubmitting(true);
       setFormError(null);
       try {
-        await createWaybillTask(toInput(formValues));
-        flashMessage({ type: 'success', text: 'Задание добавлено' });
+        const created = await createWaybillTask(toInput(formValues));
+        const attachmentError = await syncAttachments(created.id, formValues);
+        flashMessage({
+          type: 'success',
+          text: attachmentError
+            ? `Задание добавлено, но файлы не загружены: ${attachmentError}`
+            : 'Задание добавлено',
+        });
         closeCreateModal();
         await loadTasks();
       } catch (err) {
@@ -350,7 +379,15 @@ export function useWaybillsPage() {
         setSubmitting(false);
       }
     },
-    [assertDriverDateAllowed, closeCreateModal, flashMessage, formValues, loadTasks, toInput]
+    [
+      assertDriverDateAllowed,
+      closeCreateModal,
+      flashMessage,
+      formValues,
+      loadTasks,
+      syncAttachments,
+      toInput,
+    ]
   );
 
   const handleEdit = useCallback(
@@ -370,7 +407,13 @@ export function useWaybillsPage() {
       setFormError(null);
       try {
         await updateWaybillTask(editItem.id, toInput(formValues));
-        flashMessage({ type: 'success', text: 'Задание обновлено' });
+        const attachmentError = await syncAttachments(editItem.id, formValues);
+        flashMessage({
+          type: 'success',
+          text: attachmentError
+            ? `Задание обновлено, но файлы не сохранены: ${attachmentError}`
+            : 'Задание обновлено',
+        });
         closeEditModal();
         await loadTasks();
       } catch (err) {
@@ -386,6 +429,7 @@ export function useWaybillsPage() {
       flashMessage,
       formValues,
       loadTasks,
+      syncAttachments,
       toInput,
     ]
   );

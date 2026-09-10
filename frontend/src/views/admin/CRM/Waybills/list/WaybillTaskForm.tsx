@@ -415,6 +415,79 @@ export function WaybillTaskForm({
             onChange={(e) => onChange({ ...values, moversPayer: e.target.value })}
           />
         </div>
+        <div data-modal-form-group data-modal-span>
+          <label htmlFor="wb-attachments">Файлы для водителя</label>
+          <input
+            id="wb-attachments"
+            type="file"
+            multiple
+            accept=".pdf,image/*,.doc,.docx,.xls,.xlsx,.rtf,.txt"
+            onChange={(e) => {
+              const picked = Array.from(e.target.files ?? []);
+              if (picked.length === 0) return;
+              onChange({ ...values, pendingFiles: [...values.pendingFiles, ...picked] });
+              e.target.value = '';
+            }}
+          />
+          <span className={styles.fieldHint}>
+            PDF, изображения, Word, Excel — до 10 файлов по 25 МБ. Водитель увидит их в «Мой
+            маршрут».
+          </span>
+          {values.existingAttachments.length > 0 || values.pendingFiles.length > 0 ? (
+            <ul className={styles.attachmentList}>
+              {values.existingAttachments.map((attachment) => (
+                <li key={attachment.id} className={styles.attachmentRow}>
+                  <a href={attachment.fileUrl} target="_blank" rel="noreferrer">
+                    {attachment.fileName}
+                  </a>
+                  <button
+                    data-admin-mutation
+                    type="button"
+                    data-modal-btn="secondary"
+                    className={styles.attachmentRemoveBtn}
+                    onClick={() =>
+                      onChange({
+                        ...values,
+                        existingAttachments: values.existingAttachments.filter(
+                          (a) => a.id !== attachment.id
+                        ),
+                        removedAttachmentIds: [...values.removedAttachmentIds, attachment.id],
+                      })
+                    }
+                    aria-label={`Удалить файл ${attachment.fileName}`}
+                  >
+                    Удалить
+                  </button>
+                </li>
+              ))}
+              {values.pendingFiles.map((file, index) => (
+                <li key={`${file.name}-${index}`} className={styles.attachmentRow}>
+                  <span>
+                    {file.name}{' '}
+                    <span className={styles.attachmentPendingHint}>
+                      (загрузится при сохранении)
+                    </span>
+                  </span>
+                  <button
+                    data-admin-mutation
+                    type="button"
+                    data-modal-btn="secondary"
+                    className={styles.attachmentRemoveBtn}
+                    onClick={() =>
+                      onChange({
+                        ...values,
+                        pendingFiles: values.pendingFiles.filter((_, i) => i !== index),
+                      })
+                    }
+                    aria-label={`Убрать файл ${file.name}`}
+                  >
+                    Убрать
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </div>
         <div data-modal-form-group>
           <label htmlFor="wb-responsible">Ответственный</label>
           <select

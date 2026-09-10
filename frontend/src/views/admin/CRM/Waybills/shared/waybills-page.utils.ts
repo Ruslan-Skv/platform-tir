@@ -152,6 +152,9 @@ export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillF
     moversPayer: '',
     responsibleUserId,
     driverUserId: '',
+    pendingFiles: [],
+    existingAttachments: [],
+    removedAttachmentIds: [],
   };
 }
 

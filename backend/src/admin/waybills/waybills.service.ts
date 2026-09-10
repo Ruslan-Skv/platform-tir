@@ -5,6 +5,8 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, WaybillTaskStatus } from '@prisma/client';
+import * as fs from 'fs';
+import * as path from 'path';
 import { PrismaService } from '../../database/prisma.service';
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
@@ -49,6 +51,18 @@ const TASK_INCLUDE = {
   completedBy: { select: USER_SELECT },
   createdBy: { select: USER_SELECT },
   deletedBy: { select: USER_SELECT },
+  attachments: {
+    orderBy: { createdAt: 'asc' },
+    select: {
+      id: true,
+      fileName: true,
+      fileUrl: true,
+      fileSize: true,
+      mimeType: true,
+      createdAt: true,
+      uploadedBy: { select: USER_SELECT },
+    },
+  },
 } as const;
 
 /** Срок хранения задания в корзине до безвозвратного удаления. */
@@ -281,6 +295,43 @@ export class WaybillsService {
       throw new NotFoundException(`Waybill task ${id} not found`);
     }
     return task;
+  }
+
+  /** Прикрепляет загруженные файлы к заданию путевого листа. */
+  async addAttachments(id: string, files: Express.Multer.File[], uploadedById: string) {
+    const task = await this.findOne(id);
+    const rows = await this.prisma.$transaction(
+      files.map((file) =>
+        this.prisma.waybillTaskAttachment.create({
+          data: {
+            waybillTaskId: task.id,
+            fileName: path.basename(file.originalname),
+            fileUrl: `/uploads/waybills/${file.filename}`,
+            fileSize: file.size,
+            mimeType: file.mimetype,
+            uploadedById,
+          },
+          select: TASK_INCLUDE.attachments.select,
+        }),
+      ),
+    );
+    return rows;
+  }
+
+  /** Удаляет вложение (запись и файл на диске). */
+  async removeAttachment(attachmentId: string) {
+    const attachment = await this.prisma.waybillTaskAttachment.findUnique({
+      where: { id: attachmentId },
+    });
+    if (!attachment) {
+      throw new NotFoundException(`Вложение ${attachmentId} not found`);
+    }
+    await this.prisma.waybillTaskAttachment.delete({ where: { id: attachmentId } });
+    const filePath = path.join(process.cwd(), attachment.fileUrl.replace(/^[/\\]+/, ''));
+    fs.promises.unlink(filePath).catch(() => {
+      // файла может уже не быть — это не ошибка
+    });
+    return { ok: true };
   }
 
   async update(id: string, dto: UpdateWaybillTaskDto, actorUserId?: string) {

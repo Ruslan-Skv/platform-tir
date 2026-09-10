@@ -11,8 +11,15 @@ import {
   Put,
   Query,
   Req,
+  UploadedFiles,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { FilesInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
+import { randomUUID } from 'crypto';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
@@ -51,6 +58,37 @@ const PLANNER_ROLES = [
   'LEAD_SPECIALIST_FURNITURE',
   'LEAD_SPECIALIST_WINDOWS_DOORS',
 ] as const;
+
+const WAYBILL_UPLOAD_DIR = path.join(process.cwd(), 'uploads', 'waybills');
+
+/** Разрешённые типы вложений: картинки, PDF, Word, Excel, текст. */
+const WAYBILL_ATTACHMENT_MIME_TYPES = new Set([
+  'application/pdf',
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/rtf',
+  'text/plain',
+]);
+
+const waybillAttachmentStorage = diskStorage({
+  destination: (_req, _file, cb) => {
+    fs.mkdirSync(WAYBILL_UPLOAD_DIR, { recursive: true });
+    cb(null, WAYBILL_UPLOAD_DIR);
+  },
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname).toLowerCase();
+    cb(null, `${Date.now()}-${randomUUID()}${ext || ''}`);
+  },
+});
 
 @Controller('admin/waybills')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -152,6 +190,43 @@ export class WaybillsController {
   removeDriverAvailability(@Req() req: RequestWithUser, @Param('userId') userId: string) {
     this.assertPlanner(req.user.role);
     return this.driverAvailabilityService.remove(userId);
+  }
+
+  @Post(':id/attachments')
+  @UseInterceptors(
+    FilesInterceptor('files', 10, {
+      storage: waybillAttachmentStorage,
+      limits: { fileSize: 25 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        if (!WAYBILL_ATTACHMENT_MIME_TYPES.has(file.mimetype)) {
+          cb(
+            new BadRequestException(
+              `Тип файла не поддерживается: ${file.mimetype || 'неизвестен'}`,
+            ),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadAttachments(
+    @Param('id') id: string,
+    @Req() req: RequestWithUser,
+    @UploadedFiles() files?: Express.Multer.File[],
+  ) {
+    this.assertPlanner(req.user.role);
+    if (!files?.length) {
+      throw new BadRequestException('Файлы не переданы');
+    }
+    return this.waybillsService.addAttachments(id, files, req.user.id);
+  }
+
+  @Delete('attachments/:attachmentId')
+  removeAttachment(@Param('attachmentId') attachmentId: string, @Req() req: RequestWithUser) {
+    this.assertPlanner(req.user.role);
+    return this.waybillsService.removeAttachment(attachmentId);
   }
 
   @Get(':id')

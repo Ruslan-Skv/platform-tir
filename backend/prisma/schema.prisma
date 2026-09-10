@@ -155,6 +155,7 @@ model User {
   waybillTasksCreated                     WaybillTask[]                            @relation("WaybillTaskCreatedBy")
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
   waybillTaskBellEvents                   WaybillTaskBellEvent[]
+  waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                  @relation("WaybillTaskAttachmentUploadedBy")
   driverDeliveryAvailability              DriverDeliveryAvailability?
   installationSchedulesCompleted          InstallationScheduleEntry[]              @relation("InstallationScheduleCompletedBy")
   installationSchedulesCreated            InstallationScheduleEntry[]              @relation("InstallationScheduleCreatedBy")
@@ -2889,13 +2890,14 @@ model WaybillTask {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  contract    Contract?              @relation(fields: [contractId], references: [id], onDelete: SetNull)
-  responsible User?                  @relation("WaybillTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
-  driver      User?                  @relation("WaybillTaskDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
-  completedBy User?                  @relation("WaybillTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
-  createdBy   User?                  @relation("WaybillTaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  deletedBy   User?                  @relation("WaybillTaskDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
+  contract    Contract?               @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  responsible User?                   @relation("WaybillTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
+  driver      User?                   @relation("WaybillTaskDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
+  completedBy User?                   @relation("WaybillTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
+  createdBy   User?                   @relation("WaybillTaskCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy   User?                   @relation("WaybillTaskDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
   bellEvents  WaybillTaskBellEvent[]
+  attachments WaybillTaskAttachment[]
 
   @@index([date])
   @@index([driverUserId, date])
@@ -2904,6 +2906,24 @@ model WaybillTask {
   @@index([deletedAt])
   @@index([createdById])
   @@map("waybill_tasks")
+}
+
+/// Вложения задания путевого листа (PDF, изображения, Word, Excel и т.д.)
+model WaybillTaskAttachment {
+  id            String      @id @default(cuid())
+  waybillTaskId String
+  fileName      String
+  /// Публичный путь вида /uploads/waybills/<file>
+  fileUrl       String
+  fileSize      Int?
+  mimeType      String?
+  uploadedById  String?
+  createdAt     DateTime    @default(now())
+  task          WaybillTask @relation(fields: [waybillTaskId], references: [id], onDelete: Cascade)
+  uploadedBy    User?       @relation("WaybillTaskAttachmentUploadedBy", fields: [uploadedById], references: [id], onDelete: SetNull)
+
+  @@index([waybillTaskId])
+  @@map("waybill_task_attachments")
 }
 
 enum InstallationScheduleStatus {

@@ -30,6 +30,16 @@ export interface WaybillTaskContract {
   customerPhone: string | null;
 }
 
+export interface WaybillTaskAttachment {
+  id: string;
+  fileName: string;
+  fileUrl: string;
+  fileSize: number | null;
+  mimeType: string | null;
+  createdAt: string;
+  uploadedBy?: WaybillTaskUser | null;
+}
+
 export interface WaybillTask {
   id: string;
   date: string;
@@ -66,6 +76,7 @@ export interface WaybillTask {
   completedBy?: WaybillTaskUser | null;
   createdBy?: WaybillTaskUser | null;
   deletedBy?: WaybillTaskUser | null;
+  attachments?: WaybillTaskAttachment[];
 }
 
 export type WaybillTaskInput = {
@@ -246,6 +257,36 @@ export async function restoreWaybillTask(id: string): Promise<WaybillTask> {
   });
   if (!res.ok) await throwApiError(res, 'Не удалось восстановить задание');
   return res.json();
+}
+
+/** Загружает файлы-вложения (PDF, картинки, Word, Excel…) к заданию путевого листа. */
+export async function uploadWaybillAttachments(
+  taskId: string,
+  files: File[]
+): Promise<WaybillTaskAttachment[]> {
+  const formData = new FormData();
+  files.forEach((file) => formData.append('files', file));
+  const token =
+    typeof window === 'undefined'
+      ? null
+      : localStorage.getItem('admin_token') || localStorage.getItem('user_token');
+  const headers: Record<string, string> = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const res = await apiFetch(`${API_URL}/admin/waybills/${taskId}/attachments`, {
+    method: 'POST',
+    headers,
+    body: formData,
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить файлы');
+  return res.json();
+}
+
+export async function deleteWaybillAttachment(attachmentId: string): Promise<void> {
+  const res = await apiFetch(`${API_URL}/admin/waybills/attachments/${attachmentId}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось удалить файл');
 }
 
 export type DriverDeliveryCycleDay = {
