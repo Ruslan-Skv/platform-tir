@@ -391,11 +391,19 @@ export function contractsListMatchesSearch(
   return haystack.includes(searchNorm);
 }
 
-/** Колонка «Дата» — только дата подписания договора. */
+/** Колонка «Дата» — дата и время подписания договора, чч.мм дд.мм.гггг. */
 export function formatSigningDateOnly(r: ContractDocumentPackage): string {
   const iso = contractsListContractSigningDateIso(r);
   if (!iso) return '—';
-  return formatContractsListActDate(iso);
+  const d = /^\d{4}-\d{2}-\d{2}$/.test(iso) ? new Date(`${iso}T12:00:00`) : new Date(iso);
+  if (Number.isNaN(d.getTime())) return iso;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}.${mm} ${d.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  })}`;
 }
 
 /** Статус для фильтра и колонки: «Ремонт» и «Окна» — полный конвейер, прочие — упрощённо. */
