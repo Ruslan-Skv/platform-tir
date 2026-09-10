@@ -31,6 +31,7 @@ import { RescheduleWaybillTaskDto } from './dto/reschedule-waybill-task.dto';
 import { UpsertDriverDeliveryAvailabilityDto } from './dto/upsert-driver-delivery-availability.dto';
 import { UpdateWaybillTaskDto } from './dto/update-waybill-task.dto';
 import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
+import { WaybillAttachmentsService } from './waybill-attachments.service';
 import { WaybillsService } from './waybills.service';
 
 const WAYBILL_ROLES = [
@@ -96,6 +97,7 @@ const waybillAttachmentStorage = diskStorage({
 export class WaybillsController {
   constructor(
     private readonly waybillsService: WaybillsService,
+    private readonly waybillAttachmentsService: WaybillAttachmentsService,
     private readonly driverAvailabilityService: DriverDeliveryAvailabilityService,
   ) {}
 
@@ -220,13 +222,13 @@ export class WaybillsController {
     if (!files?.length) {
       throw new BadRequestException('Файлы не переданы');
     }
-    return this.waybillsService.addAttachments(id, files, req.user.id);
+    return this.waybillAttachmentsService.addAttachments(id, files, req.user.id);
   }
 
   @Delete('attachments/:attachmentId')
   removeAttachment(@Param('attachmentId') attachmentId: string, @Req() req: RequestWithUser) {
     this.assertPlanner(req.user.role);
-    return this.waybillsService.removeAttachment(attachmentId);
+    return this.waybillAttachmentsService.removeAttachment(attachmentId);
   }
 
   @Get(':id')
