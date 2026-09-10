@@ -179,6 +179,11 @@ export function useAccountingInvoicesPage() {
       setError('Добавьте позиции в таблицу счёта');
       return;
     }
+    // Счёт — документ на оплату; для возврата денег клиенту счёт не выставляется.
+    if (option.paymentType === 'REFUND') {
+      setError('Для возврата денежных средств счёт не выставляется');
+      return;
+    }
     setIssueSaving(true);
     try {
       await createPackagePaymentInvoice(selectedPackageId, {

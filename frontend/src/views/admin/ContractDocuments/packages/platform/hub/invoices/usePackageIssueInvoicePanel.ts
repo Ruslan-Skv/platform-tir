@@ -57,10 +57,13 @@ export function usePackageIssueInvoicePanel({
 
   const basisOptions = useMemo(() => {
     const opts = buildPackagePaymentBasisOptions(form, paymentRows, payableBreakdown);
-    return opts.map((opt) => ({
-      ...opt,
-      disabled: opt.disabled || issuedRows.some((inv) => inv.basis.trim() === opt.label.trim()),
-    }));
+    // Счёт на возврат не выставляем — только на оплату.
+    return opts
+      .filter((opt) => opt.paymentType !== 'REFUND')
+      .map((opt) => ({
+        ...opt,
+        disabled: opt.disabled || issuedRows.some((inv) => inv.basis.trim() === opt.label.trim()),
+      }));
   }, [form, paymentRows, payableBreakdown, issuedRows]);
 
   const selectedBasis = packagePaymentBasisOptionByKey(basisOptions, basisKey);

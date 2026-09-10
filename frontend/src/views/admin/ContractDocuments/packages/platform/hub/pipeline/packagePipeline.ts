@@ -6,6 +6,7 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { windowsAddendumSlotHasSpecificationContent } from '../../../families/product-like/addendum/addendumSpecification';
 import { computeContractDeadlineFromWorkPeriodStart } from '../../form/contractWorkPeriod';
 import type {
   PackageAddendumSlotEstimateBlock,
@@ -58,7 +59,6 @@ export interface PackageAddendumPipelineCard {
   paidRub: number;
   paidPct: number | null;
   signedAt: string;
-  hasAttachedPresets: boolean;
   canSign: boolean;
   canUnmarkSigned: boolean;
   signedRevertRemainingMs: number;
@@ -119,22 +119,35 @@ export function computePackagePaymentAllocations(
   for (const r of rows) {
     const n = Number.parseFloat(r.amount);
     if (!Number.isFinite(n)) continue;
+    // Возврат денег клиенту хранится положительной суммой, но уменьшает оплаченное.
+    const signed = r.paymentType === 'REFUND' ? -n : n;
     if (r.paymentType === 'AMENDMENT' && r.addendumNumber != null && r.addendumNumber >= 1) {
-      byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
+      byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + signed);
     } else {
-      contractPaidRub += n;
+      contractPaidRub += signed;
     }
   }
   return { contractPaidRub, byAddendum };
 }
 
+/**
+ * Признак «заполненного» Д/с: прикреплённые расчёты (основной и исключаемый)
+ * либо вручную внесённая информация — строки «Изменений в Спецификации»,
+ * примечания к расчётам. Подписать Д/с можно и без прикреплённых расчётов.
+ */
 export function addendumSlotHasData(slot: PackageAddendumSlotEstimateBlock | undefined): boolean {
   if (!slot) return false;
   const t = slot.snapshot?.total;
   if (typeof t === 'number' && Number.isFinite(t)) return true;
-  return (
-    (slot.selectedPresetIds?.length ?? 0) > 0 || (slot.excludedSelectedPresetIds?.length ?? 0) > 0
-  );
+  const excludedTotal = slot.excludedSnapshot?.total;
+  if (typeof excludedTotal === 'number' && Number.isFinite(excludedTotal)) return true;
+  if (
+    (slot.selectedPresetIds?.length ?? 0) > 0 ||
+    (slot.excludedSelectedPresetIds?.length ?? 0) > 0
+  )
+    return true;
+  if (windowsAddendumSlotHasSpecificationContent(slot)) return true;
+  return Boolean(slot.notes?.trim()) || Boolean(slot.excludedNotes?.trim());
 }
 
 /** Номера Д/с (1…5) с расчётами, которые ещё не отмечены как подписанные (после «Договор подписан»). */
@@ -221,7 +234,8 @@ export function inferWindowsPrepayment70StartDate(
   for (const row of sorted) {
     const n = Number.parseFloat(row.amount);
     if (!Number.isFinite(n) || n <= 0) continue;
-    cumulative += n;
+    // Возврат уменьшает накопленную оплату (для расчёта даты выхода на 70%).
+    cumulative += row.paymentType === 'REFUND' ? -n : n;
     if (cumulative >= threshold) {
       const d = row.paymentDate?.trim();
       return d || null;
@@ -295,9 +309,6 @@ function buildAddendumCards(
     const totalRub =
       payableBreakdown.addendumTotalsRub.find((a) => a.slotIndex1 === ordinal)?.totalRub ?? null;
     const paidRub = allocations.byAddendum.get(ordinal) ?? 0;
-    const hasAttachedPresets =
-      (slot?.selectedPresetIds?.length ?? 0) > 0 ||
-      (slot?.excludedSelectedPresetIds?.length ?? 0) > 0;
     const slotStatus = slot?.status ?? 'OPEN';
     const signedAt = slot?.signedAt ?? '';
     let signedRevertRemainingMs = 0;
@@ -316,7 +327,6 @@ function buildAddendumCards(
       paidRub,
       paidPct: paidPctRounded(paidRub, totalRub),
       signedAt,
-      hasAttachedPresets,
       canSign: packageFlowStatus === 'CONTRACT_CONCLUDED' && slotStatus === 'OPEN',
       canUnmarkSigned:
         slotStatus === 'SIGNED' && isWithinMsSinceIso(signedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS),

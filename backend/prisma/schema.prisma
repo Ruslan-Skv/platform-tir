@@ -3798,6 +3798,7 @@ enum PaymentType {
   ADVANCE
   FINAL
   AMENDMENT
+  REFUND
 }
 
 enum ConversationStatus {

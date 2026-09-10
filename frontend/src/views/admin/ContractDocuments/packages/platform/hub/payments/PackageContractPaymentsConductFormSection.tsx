@@ -67,16 +67,18 @@ export function PackageContractPaymentsConductFormSection({
   handleAppendBasisOption,
   submitCreate,
 }: PackageContractPaymentsConductFormSectionProps) {
+  const selectedBasisOption = hubFixedBasisOptions.find((o) => o.key === hubBasisKey);
+  const isRefundBasis = selectedBasisOption?.paymentType === 'REFUND';
   return (
     <>
       {isHubConductLayout ? (
         <div className={cdBase.paymentsHubConductTitleRow}>
           <h3 className={`${crmDetailStyles.linkedSectionTitle} ${cdBase.paymentsHubBlockTitle}`}>
-            Провести оплату
+            {isRefundBasis ? 'Провести возврат' : 'Провести оплату'}
           </h3>
           {hubPaymentConductedNotice ? (
             <span className={cdBase.paymentsHubConductDoneMsg} role="status">
-              Оплата проведена
+              {isRefundBasis ? 'Возврат проведён' : 'Оплата проведена'}
             </span>
           ) : null}
         </div>
@@ -203,9 +205,14 @@ export function PackageContractPaymentsConductFormSection({
                     }
                     onClick={() => void submitHubConductPayment()}
                   >
-                    {saving ? 'Сохранение…' : 'Провести оплату'}
+                    {saving
+                      ? 'Сохранение…'
+                      : isRefundBasis
+                        ? 'Провести возврат'
+                        : 'Провести оплату'}
                   </button>
-                  {onPrintCashOrder ? (
+                  {/* ПКО — приходный документ, для возврата денег не печатаем. */}
+                  {!isRefundBasis && onPrintCashOrder ? (
                     <button
                       type="button"
                       className={cdBase.paymentsHubConductSecondaryBtn}

@@ -105,10 +105,12 @@ function computePaymentAllocations(rows: PackageListPaymentRow[]): {
   for (const r of rows) {
     const n = paymentAmount(r);
     if (!Number.isFinite(n)) continue;
+    // Возврат денег клиенту уменьшает оплаченную сумму (запись хранится с положительной суммой).
+    const signed = r.paymentType === 'REFUND' ? -n : n;
     if (r.paymentType === 'AMENDMENT' && r.addendumNumber != null && r.addendumNumber >= 1) {
-      byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
+      byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + signed);
     } else {
-      contractPaidRub += n;
+      contractPaidRub += signed;
     }
   }
   const journalTotal = contractPaidRub + [...byAddendum.values()].reduce((a, b) => a + b, 0);

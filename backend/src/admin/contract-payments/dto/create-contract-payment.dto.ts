@@ -15,6 +15,7 @@ export enum PaymentTypeDto {
   ADVANCE = 'ADVANCE',
   FINAL = 'FINAL',
   AMENDMENT = 'AMENDMENT',
+  REFUND = 'REFUND',
 }
 
 export class CreateContractPaymentDto {

@@ -291,7 +291,7 @@ export function PackageContractPaymentsHubSummarySection({
               <label htmlFor={`pay_tab_ds_rec_${row.num}`}>Рекомендованная оплата (100%)</label>
               <input
                 id={`pay_tab_ds_rec_${row.num}`}
-                value={row.hasData ? row.rec100 : '—'}
+                value={row.hasData && row.rec100 ? row.rec100 : '—'}
                 readOnly
                 className={`${cdEstimateTab.autoFilledInput} ${cdBase.paymentsRecommendedAmountInput}`}
               />

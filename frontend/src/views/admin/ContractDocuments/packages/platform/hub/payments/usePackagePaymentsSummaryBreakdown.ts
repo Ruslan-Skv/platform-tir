@@ -9,10 +9,7 @@ import {
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { computeProductContractCostBreakdown } from '../../../families/product-like/cost/productContractCostBreakdown';
-import {
-  applyPackageContractDiscountToAmount,
-  parsePackageContractDiscountPercent,
-} from '../../form/packageContractDiscount';
+import { parsePackageContractDiscountPercent } from '../../form/packageContractDiscount';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../../form/packageForm';
 import { buildPackagePaymentBasisOptions } from '../../payments/packagePaymentBasisOptions';
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
@@ -28,25 +25,6 @@ export function usePackagePaymentsSummaryBreakdown({
   packageKind,
   rows,
 }: UsePackagePaymentsSummaryBreakdownParams) {
-  const addendumPaymentSummaries = useMemo(() => {
-    const discountPct = parsePackageContractDiscountPercent(form.contract.discountPercent);
-    const count = clampPackageAddendumSlotCount(form.addendumSlotCount);
-    return Array.from({ length: count }, (_, i) => {
-      const raw = form.addendumSlots[i]?.snapshot?.total;
-      if (typeof raw !== 'number' || !Number.isFinite(raw)) {
-        return { num: i + 1, costStr: '', rec100: '', hasData: false as const };
-      }
-      const total = applyPackageContractDiscountToAmount(raw, discountPct);
-      const costStr = total.toFixed(2).replace('.', ',');
-      return {
-        num: i + 1,
-        costStr,
-        rec100: costStr,
-        hasData: true as const,
-      };
-    });
-  }, [form.addendumSlotCount, form.addendumSlots, form.contract.discountPercent]);
-
   const paymentsContractDiscountPct = useMemo(
     () => parsePackageContractDiscountPercent(form.contract.discountPercent),
     [form.contract.discountPercent]
@@ -56,6 +34,27 @@ export function usePackagePaymentsSummaryBreakdown({
     () => computePackagePayableBreakdown(form, packageKind),
     [form, packageKind]
   );
+
+  // Стоимость Д/с берём из сводки к оплате: она учитывает и прикреплённые расчёты,
+  // и вручную заполненные блоки (например, «Изменения в Спецификации»).
+  const addendumPaymentSummaries = useMemo(() => {
+    const count = clampPackageAddendumSlotCount(form.addendumSlotCount);
+    return Array.from({ length: count }, (_, i) => {
+      const totalRub =
+        payableBreakdown.addendumTotalsRub.find((a) => a.slotIndex1 === i + 1)?.totalRub ?? null;
+      if (totalRub == null || !Number.isFinite(totalRub)) {
+        return { num: i + 1, costStr: '', rec100: '', hasData: false as const };
+      }
+      const costStr = totalRub.toFixed(2).replace('.', ',');
+      return {
+        num: i + 1,
+        costStr,
+        // «Рекомендованная оплата» имеет смысл только когда по д/с есть что доплатить.
+        rec100: totalRub > 0 ? costStr : '',
+        hasData: true as const,
+      };
+    });
+  }, [form.addendumSlotCount, payableBreakdown]);
 
   const windowsCostBreakdown = useMemo(
     () =>

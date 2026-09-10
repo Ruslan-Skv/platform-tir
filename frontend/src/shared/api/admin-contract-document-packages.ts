@@ -119,7 +119,12 @@ export type ContractDocumentPackagePaymentForm =
   | 'INVOICE'
   | 'LC_TRANSFER';
 
-export type ContractDocumentPackagePaymentKind = 'PREPAYMENT' | 'ADVANCE' | 'FINAL' | 'AMENDMENT';
+export type ContractDocumentPackagePaymentKind =
+  | 'PREPAYMENT'
+  | 'ADVANCE'
+  | 'FINAL'
+  | 'AMENDMENT'
+  | 'REFUND';
 
 export interface ContractDocumentPackagePaymentUserRef {
   id: string;

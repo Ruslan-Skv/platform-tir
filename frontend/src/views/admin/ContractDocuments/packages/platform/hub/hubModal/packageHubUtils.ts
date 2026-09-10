@@ -19,7 +19,9 @@ export function isWithinMsSinceIso(iso: string | null | undefined, windowMs: num
 export function sumPackagePaymentAmountsRub(rows: ContractDocumentPackagePayment[]): number {
   return rows.reduce((acc, r) => {
     const n = Number.parseFloat(r.amount);
-    return acc + (Number.isFinite(n) ? n : 0);
+    // Возврат денег клиенту уменьшает сумму по журналу.
+    const signed = r.paymentType === 'REFUND' ? -n : n;
+    return acc + (Number.isFinite(n) ? signed : 0);
   }, 0);
 }
 

@@ -107,6 +107,11 @@ export function PackageAddendumAdditionalWorksSection({
                   onClick={onUnmarkSigned}
                   title="Отменить статус «Д/с подписано» (доступно 30 секунд)"
                 >
+                  <span
+                    className={cdWorkspace.addendumUndoSpinner}
+                    role="status"
+                    aria-label="Идёт отсчёт 30 секунд на отмену"
+                  />
                   Отменить статус «Д/с подписано»
                 </button>
               ) : null}

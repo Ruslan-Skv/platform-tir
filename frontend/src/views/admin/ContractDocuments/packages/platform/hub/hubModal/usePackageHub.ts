@@ -82,7 +82,9 @@ export function usePackageHub({
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const [paymentRows, setPaymentRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [savingPackageStatus, setSavingPackageStatus] = useState(false);
-  const [, setUndoUiTick] = useState(0);
+  // Тик перерисовки во время 30-секундного окна отмены подписания —
+  // подключён к зависимостям pipeline, чтобы отсчёт секунд шёл «живьём».
+  const [undoUiTick, setUndoUiTick] = useState(0);
 
   const formRef = useRef(form);
   formRef.current = form;
@@ -416,7 +418,9 @@ export function usePackageHub({
         payments: paymentRows,
         nowMs: Date.now(),
       }),
-    [packageKind, packageFlowStatus, form, paymentRows]
+    // undoUiTick — чтобы отсчёт 30 секунд на отмену подписания обновлялся каждую секунду.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- значение тика не читается напрямую: оно принуждает пересчитать nowMs.
+    [packageKind, packageFlowStatus, form, paymentRows, undoUiTick]
   );
 
   const attachedActPhotos = useMemo(() => {

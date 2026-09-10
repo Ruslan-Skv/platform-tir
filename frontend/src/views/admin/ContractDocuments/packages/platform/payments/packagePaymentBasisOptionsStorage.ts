@@ -71,6 +71,12 @@ export function inferPaymentTypeFromBasisText(basis: string): {
   addendumNumber?: number;
 } {
   const normalized = basis.trim().toLowerCase();
+  if (normalized === 'возврат денежных средств клиенту') {
+    return { paymentType: 'REFUND' };
+  }
+  if (/возврат/i.test(normalized)) {
+    return { paymentType: 'REFUND' };
+  }
   if (normalized === 'предоплата по договору') {
     return { paymentType: 'PREPAYMENT' };
   }

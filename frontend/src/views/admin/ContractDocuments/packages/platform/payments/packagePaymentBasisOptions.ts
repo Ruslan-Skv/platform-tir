@@ -16,6 +16,7 @@ export const PACKAGE_BASIS_LABEL_PREPAYMENT = 'предоплата по дог�
 export const PACKAGE_BASIS_LABEL_PARTIAL = 'частичная оплата по договору';
 export const PACKAGE_BASIS_LABEL_FINAL = 'окончательный расчёт по договору';
 export const PACKAGE_BASIS_LABEL_FULL = 'полная оплата по договору';
+export const PACKAGE_BASIS_LABEL_REFUND = 'возврат денежных средств клиенту';
 
 export function packageAddendumBasisLabel(addendumNumber: number): string {
   return `оплата по д/с ${addendumNumber}`;
@@ -32,6 +33,7 @@ export type PackagePaymentBasisOptionKey =
   | 'contract_partial'
   | 'contract_full'
   | 'contract_final'
+  | 'contract_refund'
   | `addendum_${number}`
   | `addendum_partial_${number}`
   | `furniture_${FurniturePackageLegId}_${PackageFurniturePaymentBasisKind}`;
@@ -146,8 +148,6 @@ function appendAddendumBasisOptions(
   const count = Math.min(5, clampPackageAddendumSlotCount(form.addendumSlotCount));
   for (let i = 0; i < count; i++) {
     const n = i + 1;
-    const slot = form.addendumSlots[i];
-    const raw = slot?.snapshot?.total;
     const totalRub = breakdown.addendumTotalsRub.find((a) => a.slotIndex1 === n)?.totalRub ?? null;
 
     options.push({
@@ -158,7 +158,9 @@ function appendAddendumBasisOptions(
       disabled: false,
     });
 
-    if (typeof raw === 'number' && Number.isFinite(raw)) {
+    // Полная оплата доступна, когда известен итог Д/с: прикреплённый расчёт
+    // или вручную заполненные блоки (например, «Изменения в Спецификации»).
+    if (totalRub != null && Number.isFinite(totalRub) && totalRub > 0) {
       const label = packageAddendumBasisLabel(n);
       options.push({
         key: `addendum_${n}`,
@@ -225,38 +227,45 @@ export function buildPackagePaymentBasisOptions(
   breakdown: PackagePayableBreakdown,
   packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): PackagePaymentBasisOption[] {
-  if (isFurnitureLikePackageKind(packageKind)) {
-    return buildFurniturePaymentBasisOptions(form, rows, breakdown);
+  const options: PackagePaymentBasisOption[] = isFurnitureLikePackageKind(packageKind)
+    ? buildFurniturePaymentBasisOptions(form, rows, breakdown)
+    : [
+        {
+          key: 'contract_prepayment',
+          label: PACKAGE_BASIS_LABEL_PREPAYMENT,
+          paymentType: 'PREPAYMENT',
+          disabled: hasContractBasisPayment(rows, 'PREPAYMENT', PACKAGE_BASIS_LABEL_PREPAYMENT),
+        },
+        {
+          key: 'contract_partial',
+          label: PACKAGE_BASIS_LABEL_PARTIAL,
+          paymentType: 'ADVANCE',
+          disabled: false,
+        },
+        {
+          key: 'contract_final',
+          label: PACKAGE_BASIS_LABEL_FINAL,
+          paymentType: 'FINAL',
+          disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FINAL),
+        },
+        {
+          key: 'contract_full',
+          label: PACKAGE_BASIS_LABEL_FULL,
+          paymentType: 'FINAL',
+          disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FULL),
+        },
+      ];
+
+  if (!isFurnitureLikePackageKind(packageKind)) {
+    appendAddendumBasisOptions(options, form, rows, breakdown);
   }
-
-  const options: PackagePaymentBasisOption[] = [
-    {
-      key: 'contract_prepayment',
-      label: PACKAGE_BASIS_LABEL_PREPAYMENT,
-      paymentType: 'PREPAYMENT',
-      disabled: hasContractBasisPayment(rows, 'PREPAYMENT', PACKAGE_BASIS_LABEL_PREPAYMENT),
-    },
-    {
-      key: 'contract_partial',
-      label: PACKAGE_BASIS_LABEL_PARTIAL,
-      paymentType: 'ADVANCE',
-      disabled: false,
-    },
-    {
-      key: 'contract_final',
-      label: PACKAGE_BASIS_LABEL_FINAL,
-      paymentType: 'FINAL',
-      disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FINAL),
-    },
-    {
-      key: 'contract_full',
-      label: PACKAGE_BASIS_LABEL_FULL,
-      paymentType: 'FINAL',
-      disabled: hasContractBasisPayment(rows, 'FINAL', PACKAGE_BASIS_LABEL_FULL),
-    },
-  ];
-
-  appendAddendumBasisOptions(options, form, rows, breakdown);
+  // Возврат доступен всегда: расторжение договора, «отрицательное» Д/с и т.п.
+  options.push({
+    key: 'contract_refund',
+    label: PACKAGE_BASIS_LABEL_REFUND,
+    paymentType: 'REFUND',
+    disabled: false,
+  });
   return options;
 }
 

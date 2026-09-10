@@ -81,6 +81,11 @@ export function PackagePipelineStepCard({
         pipeline.canRevertContractConcluded ? (
           <div className={hubStyles.pipelineRevertBlock}>
             <p className={hubStyles.pipelineRevertHint}>
+              <span
+                className={hubStyles.pipelineRevertSpinner}
+                role="status"
+                aria-label="Идёт отсчёт 30 секунд на отмену"
+              />
               Отменить подписание договора можно в течение{' '}
               {Math.ceil(pipeline.contractSignedRevertRemainingMs / 1000)} с
             </p>
@@ -126,10 +131,8 @@ export function PackagePipelineStepCard({
                   <button
                     type="button"
                     data-modal-btn="secondary"
-                    disabled={!card.hasAttachedPresets || actionsDisabled}
-                    title={
-                      !card.hasAttachedPresets ? 'Сначала прикрепите расчёт к Д/с' : actionsTitle
-                    }
+                    disabled={actionsDisabled}
+                    title={actionsTitle}
                     onClick={() => void hub.markAddendumSlotSigned(card.slotIndex0)}
                   >
                     Д/с №{card.ordinal} подписано
@@ -143,6 +146,11 @@ export function PackagePipelineStepCard({
                       disabled={hub.savingPackageStatus}
                       onClick={() => void hub.unmarkAddendumSlotSigned(card.slotIndex0)}
                     >
+                      <span
+                        className={hubStyles.pipelineRevertSpinner}
+                        role="status"
+                        aria-label="Идёт отсчёт 30 секунд на отмену"
+                      />
                       Отменить подписание ({Math.ceil(card.signedRevertRemainingMs / 1000)} с)
                     </button>
                   </div>

@@ -58,12 +58,14 @@ export function PackageContractPaymentsJournalSection({
               {rows.map((r) => {
                 const rowAmountNum = Number.parseFloat(r.amount);
                 const rowRub = Number.isFinite(rowAmountNum) ? rowAmountNum : null;
-                const rowPct = formatPercentOfGrandTotal(rowRub, grandTotalRub);
+                // Возврат показываем со знаком «минус» — так видно его влияние на итог.
+                const displayRub = r.paymentType === 'REFUND' && rowRub != null ? -rowRub : rowRub;
+                const rowPct = formatPercentOfGrandTotal(displayRub, grandTotalRub);
                 return (
                   <tr key={r.id}>
                     <td>{formatDateRu(r.paymentDate)}</td>
                     {showFurnitureLeg ? <td>{furniturePaymentLegDisplayLabel(r)}</td> : null}
-                    <td>{formatMoneyRub(Number.parseFloat(r.amount))}</td>
+                    <td>{displayRub != null ? formatMoneyRub(displayRub) : '—'}</td>
                     <td className={cdBase.paymentsTablePctCol}>{rowPct ?? '—'}</td>
                     <td>{PACKAGE_PAYMENT_FORM_LABELS[r.paymentForm] ?? r.paymentForm}</td>
                     <td className={cdBase.paymentsTableBasisCell}>{r.basis?.trim() || '—'}</td>

@@ -156,6 +156,11 @@ export function PackageInvoicesModal({
       onError('Добавьте позиции в таблицу счёта');
       return;
     }
+    // Счёт — документ на оплату; для возврата денег клиенту счёт не выставляется.
+    if (option.paymentType === 'REFUND') {
+      onError('Для возврата денежных средств счёт не выставляется');
+      return;
+    }
     setSaving(true);
     try {
       await createPackagePaymentInvoice(packageId, {

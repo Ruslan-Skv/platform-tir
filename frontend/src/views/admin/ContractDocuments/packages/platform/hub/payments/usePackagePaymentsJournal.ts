@@ -51,10 +51,12 @@ export function usePackagePaymentsJournal({
     for (const r of rows) {
       const n = Number.parseFloat(r.amount);
       if (!Number.isFinite(n)) continue;
+      // Возврат денег клиенту уменьшает оплаченную сумму.
+      const signed = r.paymentType === 'REFUND' ? -n : n;
       if (r.paymentType === 'AMENDMENT' && r.addendumNumber != null && r.addendumNumber >= 1) {
-        byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + n);
+        byAddendum.set(r.addendumNumber, (byAddendum.get(r.addendumNumber) ?? 0) + signed);
       } else {
-        contractPaidRub += n;
+        contractPaidRub += signed;
         const leg = resolveFurniturePaymentLeg(r);
         if (leg) {
           byFurnitureLeg.set(leg, (byFurnitureLeg.get(leg) ?? 0) + n);
@@ -68,7 +70,8 @@ export function usePackagePaymentsJournal({
     () =>
       rows.reduce((acc, r) => {
         const n = Number.parseFloat(r.amount);
-        return acc + (Number.isFinite(n) ? n : 0);
+        const signed = r.paymentType === 'REFUND' ? -n : n;
+        return acc + (Number.isFinite(n) ? signed : 0);
       }, 0),
     [rows]
   );
