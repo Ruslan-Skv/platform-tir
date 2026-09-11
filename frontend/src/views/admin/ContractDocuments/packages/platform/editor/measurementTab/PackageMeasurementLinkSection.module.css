@@ -1,0 +1,102 @@
+/* Блок ручной связи пакета с замером (вкладка «Замер»). */
+.measurementLinkCard {
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-soft, #f9fafb);
+  padding: var(--admin-space-md, 16px);
+  margin: 0 0 var(--admin-space-lg, 24px);
+}
+
+.measurementLinkTitle {
+  margin: 0 0 var(--admin-space-xs, 4px);
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 600;
+  color: var(--admin-text-primary, inherit);
+}
+
+.measurementLinkList {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--admin-space-sm, 8px) var(--admin-space-lg, 24px);
+  margin: 0 0 var(--admin-space-sm, 8px);
+}
+
+.measurementLinkList div {
+  display: flex;
+  gap: var(--admin-space-sm, 8px);
+  min-width: 0;
+}
+
+.measurementLinkList dt {
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-text-muted, #6b7280);
+  flex-shrink: 0;
+}
+
+.measurementLinkList dd {
+  margin: 0;
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-text-primary, inherit);
+  overflow-wrap: anywhere;
+}
+
+.measurementLinkActions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md, 16px);
+  margin-top: var(--admin-space-sm, 8px);
+}
+
+.measurementLinkOpen {
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-info, #2563eb);
+  text-decoration: underline;
+}
+
+.measurementLinkOpen:hover {
+  text-decoration: none;
+}
+
+.measurementLinkPickerRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 8px);
+  align-items: center;
+}
+
+.measurementLinkSelect {
+  flex: 2 1 320px;
+  min-width: 0;
+  padding: var(--admin-space-xs, 6px) var(--admin-space-sm, 8px);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 4px);
+  background: var(--admin-surface, #fff);
+  font-size: var(--admin-font-size-sm, 14px);
+}
+
+.sectionHint {
+  margin: 0 0 var(--admin-space-sm, 8px);
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.errorText {
+  margin: 0 0 var(--admin-space-md, 16px);
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-danger-text, #dc2626);
+}
+
+.removeButton {
+  border: none;
+  background: none;
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-danger-text, #dc2626);
+  cursor: pointer;
+  border-radius: var(--admin-radius-sm, 4px);
+}
+
+.removeButton:hover {
+  background: var(--admin-danger-bg, #fef2f2);
+}

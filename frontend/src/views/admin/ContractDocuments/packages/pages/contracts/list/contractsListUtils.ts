@@ -313,18 +313,25 @@ export function contractsListPackageDirectionIds(
   const fromKind = directions.find((d) => d.slug === slug);
   if (fromKind) out.add(fromKind.id);
 
+  const addMeasurementDirections = (m: Measurement | undefined) => {
+    if (!m) return;
+    if (m.directionId) out.add(m.directionId);
+    for (const aid of m.additionalDirectionIds ?? []) {
+      if (aid) out.add(aid);
+    }
+  };
+
   const fd = (pkg.formData ?? {}) as Record<string, unknown>;
   for (const presetId of contractsListAttachedPresetIds(fd)) {
     const preset = presetById.get(presetId);
     const mid = preset?.sourceMeasurementId?.trim();
     if (!mid) continue;
-    const m = measurementById.get(mid);
-    if (!m) continue;
-    if (m.directionId) out.add(m.directionId);
-    for (const aid of m.additionalDirectionIds ?? []) {
-      if (aid) out.add(aid);
-    }
+    addMeasurementDirections(measurementById.get(mid));
   }
+  /** Ручная связь «договор ↔ замер» из вкладки «Замер». */
+  const manualMeasurementId =
+    typeof fd.linkedMeasurementId === 'string' ? fd.linkedMeasurementId.trim() : '';
+  if (manualMeasurementId) addMeasurementDirections(measurementById.get(manualMeasurementId));
   return [...out];
 }
 

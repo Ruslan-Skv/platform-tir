@@ -80,9 +80,10 @@ export function useMyMeasurementsPage() {
       return;
     }
     try {
+      // Все направления: ручная связь (formData.linkedMeasurementId) есть не только у «Ремонта».
       const [{ items: estimates }, packages] = await Promise.all([
         getContractDocumentEstimatePresets('REPAIR'),
-        getContractDocumentPackages('REPAIR'),
+        getContractDocumentPackages(),
       ]);
       const estimatesByMeasurement = new Map<string, ContractEstimatePreset[]>();
       for (const estimate of estimates) {
@@ -94,12 +95,20 @@ export function useMyMeasurementsPage() {
       }
 
       const packagesByEstimateId = new Map<string, ContractDocumentPackage[]>();
+      /** Ручная связь «пакет ↔ замер» из вкладки «Замер». */
+      const manualPackagesByMeasurementId = new Map<string, ContractDocumentPackage>();
       for (const pkg of packages) {
         const estimateIds = extractEstimatePresetIdsFromPackageForm(pkg.formData);
         for (const estimateId of estimateIds) {
           const bucket = packagesByEstimateId.get(estimateId) ?? [];
           bucket.push(pkg);
           packagesByEstimateId.set(estimateId, bucket);
+        }
+        const fd = (pkg.formData ?? {}) as Record<string, unknown>;
+        const manualId =
+          typeof fd.linkedMeasurementId === 'string' ? fd.linkedMeasurementId.trim() : '';
+        if (manualId && measurementIds.has(manualId)) {
+          manualPackagesByMeasurementId.set(manualId, pkg);
         }
       }
 
@@ -119,6 +128,15 @@ export function useMyMeasurementsPage() {
                 packageTitle: latestPackage.title || 'Пакет документов',
               }
             : {}),
+        };
+      }
+      // Ручные связи — для замеров без автоматической цепочки через расчёт.
+      for (const [measurementId, pkg] of manualPackagesByMeasurementId) {
+        if (nextMap[measurementId]?.packageId) continue;
+        nextMap[measurementId] = {
+          packageId: pkg.id,
+          packageTitle: pkg.title || 'Пакет документов',
+          manual: true,
         };
       }
       setLinksByMeasurementId(nextMap);

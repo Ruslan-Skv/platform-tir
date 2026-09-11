@@ -172,6 +172,7 @@ export function PackageDocumentEditorTabContent({
       <PackageMeasurementTab
         packageId={packageId}
         form={form}
+        linkedCrmCustomerId={dataTabProps.linkedCrmCustomerId}
         setForm={setForm}
         touchPackageData={touchPackageData}
       />

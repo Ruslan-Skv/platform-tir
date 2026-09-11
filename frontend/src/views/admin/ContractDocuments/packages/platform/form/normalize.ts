@@ -504,6 +504,10 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
         .map((u) => u.trim())
         .slice(0, PACKAGE_DRAWING_PHOTOS_MAX);
     })(),
+    linkedMeasurementId:
+      typeof (merged as unknown as Record<string, unknown>).linkedMeasurementId === 'string'
+        ? String((merged as unknown as Record<string, unknown>).linkedMeasurementId).trim()
+        : '',
     productSpecificationAmount: (() => {
       const rec = merged as unknown as Record<string, unknown>;
       if (typeof rec.productSpecificationAmount === 'string')

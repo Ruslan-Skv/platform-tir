@@ -126,15 +126,19 @@ function MeasurementMobileCard({
                 <span className={styles.muted}>Нет связанного расчёта</span>
               ) : (
                 <>
-                  <span className={styles.linkStateOk}>Расчёт создан</span>
+                  {links.estimateId ? (
+                    <span className={styles.linkStateOk}>Расчёт создан</span>
+                  ) : null}
                   {links.packageId ? (
                     <>
-                      {' · '}
-                      <span className={styles.linkStateDone}>Договор создан</span>
+                      {links.estimateId ? ' · ' : null}
+                      <span className={styles.linkStateDone}>
+                        Договор создан{links.manual ? ' (вручную)' : ''}
+                      </span>
                     </>
                   ) : (
                     <>
-                      {' · '}
+                      {links.estimateId ? ' · ' : null}
                       <span className={styles.linkStatePending}>Договор не создан</span>
                     </>
                   )}

@@ -138,9 +138,11 @@ export function MyMeasurementsPageView({ model }: Props) {
         }
         return (
           <div>
-            <div className={styles.linkStateOk}>Расчёт создан</div>
+            {links.estimateId ? <div className={styles.linkStateOk}>Расчёт создан</div> : null}
             {links.packageId ? (
-              <div className={styles.linkStateDone}>Договор создан</div>
+              <div className={styles.linkStateDone} title={links.packageTitle}>
+                Договор создан{links.manual ? ' (связь вручную)' : ''}
+              </div>
             ) : (
               <div className={styles.linkStatePending}>Договор не создан</div>
             )}
