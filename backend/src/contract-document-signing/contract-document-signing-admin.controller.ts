@@ -18,6 +18,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 import { ContractDocumentSigningService } from './contract-document-signing.service';
+import { persistSigningSessionDocuments } from './signing-session-documents';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -85,7 +86,7 @@ export class ContractDocumentSigningAdminController {
     }
     // До записи файлов на диск: договор «Ремонт» без сметы нельзя отправить на подписание.
     await this.signing.assertCanCreateSigningSession(packageId);
-    const docs = this.signing.persistUploadedDocuments(packageId, metas, files || []);
+    const docs = persistSigningSessionDocuments(packageId, metas, files || []);
     const expiresInDays = body.expiresInDays ? Number(body.expiresInDays) : undefined;
     const sendEmail = body.sendEmail === '1' || body.sendEmail === 'true';
     return this.signing.createSession({
