@@ -49,8 +49,10 @@ export type EnsureEstimateObjectGroupsResult = {
 };
 
 /**
- * Расчёты с адресом объекта, но без `groupId`, привязываются к группе с тем же `title` (адрес)
- * или создаётся новая группа. Без адреса группа не назначается.
+ * Группа объекта — заголовок-адрес (так объект показан в списке расчётов и в каталоге
+ * прикрепления). Расчёт без группы привязывается к группе своего адреса (или создаётся
+ * новая), а при смене адреса — переезжает из старой группы в группу нового адреса.
+ * Без адреса группа не назначается.
  */
 export function ensureEstimateObjectGroups(
   items: ContractEstimatePreset[],
@@ -61,16 +63,7 @@ export function ensureEstimateObjectGroups(
 
   for (const g of nextGroups) {
     const key = normalizeAddressMatchKey(g.title);
-    if (key) addressToGroupId.set(key, g.id);
-  }
-
-  for (const it of items) {
-    const addr = (it.objectAddress ?? '').trim();
-    if (!addr || !it.groupId) continue;
-    const key = normalizeAddressMatchKey(addr);
-    if (!addressToGroupId.has(key)) {
-      addressToGroupId.set(key, it.groupId);
-    }
+    if (key && !addressToGroupId.has(key)) addressToGroupId.set(key, g.id);
   }
 
   let changed = false;
@@ -81,22 +74,17 @@ export function ensureEstimateObjectGroups(
     if (!addr) return it;
 
     const matchKey = normalizeAddressMatchKey(addr);
-    let groupId = it.groupId?.trim();
-    if (groupId && nextGroups.some((g) => g.id === groupId)) {
-      addressToGroupId.set(matchKey, groupId);
+    const currentGroupId = it.groupId?.trim();
+    const currentGroup = currentGroupId
+      ? nextGroups.find((g) => g.id === currentGroupId)
+      : undefined;
+
+    if (currentGroup && normalizeAddressMatchKey(currentGroup.title) === matchKey) {
+      addressToGroupId.set(matchKey, currentGroup.id);
       return it;
     }
 
-    groupId = addressToGroupId.get(matchKey);
-    if (!groupId) {
-      const peer = items.find(
-        (p) =>
-          p.id !== it.id &&
-          normalizeAddressMatchKey(p.objectAddress ?? '') === matchKey &&
-          p.groupId?.trim()
-      );
-      groupId = peer?.groupId?.trim();
-    }
+    let groupId = addressToGroupId.get(matchKey);
     if (!groupId) {
       groupId = newGroupId();
       nextGroups.push({ id: groupId, title: addr, updatedAt: now });

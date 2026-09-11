@@ -14,6 +14,9 @@ export type EstimateWorkspaceCustomerCardProps = {
   estimateNameDraft: string;
   onEstimateNameChange: (value: string) => void;
   estimateNameError: string | null;
+  /** Наценка расчёта, % ('' — «наценка объекта»). */
+  additionalMarkupRaw: string;
+  onAdditionalMarkupChange: (value: string) => void;
   customerName: string;
   objectAddress: string;
   estimateCustomerError: string | null;
@@ -28,6 +31,8 @@ export function EstimateWorkspaceCustomerCard({
   estimateNameDraft,
   onEstimateNameChange,
   estimateNameError,
+  additionalMarkupRaw,
+  onAdditionalMarkupChange,
   customerName,
   objectAddress,
   estimateCustomerError,
@@ -129,6 +134,27 @@ export function EstimateWorkspaceCustomerCard({
                 {estimateObjectAddressError}
               </span>
             ) : null}
+          </div>
+          <div className={measurementFormStyles.row}>
+            <label
+              className={measurementFormStyles.label}
+              htmlFor="estimate-workspace-additional-markup"
+              title="Доп. наценка к расчёту, %. Пусто — для расчёта в объекте действует наценка объекта; иначе +% к цене каждой позиции при прикреплении к смете."
+            >
+              Наценка, %
+            </label>
+            <input
+              id="estimate-workspace-additional-markup"
+              type="number"
+              min={0}
+              max={999}
+              step={0.1}
+              value={additionalMarkupRaw}
+              onChange={(e) => onAdditionalMarkupChange(e.target.value)}
+              placeholder="Наценка объекта"
+              className={measurementFormStyles.input}
+              autoComplete="off"
+            />
           </div>
         </div>
         <div className={cdWorkspace.packageCustomerSearchSlot}>

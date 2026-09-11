@@ -41,6 +41,8 @@ export type EstimateWorkspaceLoadResult = {
   selectedEstimateId: string;
   copySessionPendingSave: boolean;
   baseline: WorkspaceBaseline | null;
+  /** Начальное значение поля «Наценка, %» ('' — наценка объекта). */
+  initialAdditionalMarkupRaw: string;
   error: string | null;
 };
 
@@ -73,6 +75,8 @@ export async function loadEstimateWorkspaceSession(
   let baselineSlugs: string[] = [];
   let baselineName = '';
   let baselineCustomer = emptyEstimateCrmCustomerFields();
+  /** Наценка исходного расчёта (копия/редактирование); undefined — наценка объекта. */
+  let baselineMarkupPercent: number | undefined;
   let estimateCategorySlugs: string[] = [];
   let activeCategorySlug = '';
   let estimateNameDraft = '';
@@ -110,6 +114,9 @@ export async function loadEstimateWorkspaceSession(
       baselineName = copyTitle;
       baselineCustomer = await resolveEstimateCustomerFieldsFromPreset(source);
       applyCustomerFromLoader(baselineCustomer);
+      if (typeof source.additionalMarkupPercent === 'number') {
+        baselineMarkupPercent = source.additionalMarkupPercent;
+      }
       copySessionPendingSave = true;
     } else {
       error = 'Исходный расчёт не найден. Вернитесь к списку и обновите страницу.';
@@ -135,6 +142,9 @@ export async function loadEstimateWorkspaceSession(
       baselineName = preset.title;
       baselineCustomer = await resolveEstimateCustomerFieldsFromPreset(preset);
       applyCustomerFromLoader(baselineCustomer);
+      if (typeof preset.additionalMarkupPercent === 'number') {
+        baselineMarkupPercent = preset.additionalMarkupPercent;
+      }
     } else {
       error = 'Расчёт не найден. Вернитесь к списку и обновите страницу.';
       resetToDefaultCategory();
@@ -220,6 +230,7 @@ export async function loadEstimateWorkspaceSession(
           name: baselineName,
           draftsByCategory: baselineDraftsByCategory,
           customer: baselineCustomer,
+          additionalMarkupPercent: baselineMarkupPercent,
         }
       : null;
 
@@ -233,6 +244,8 @@ export async function loadEstimateWorkspaceSession(
     selectedEstimateId,
     copySessionPendingSave,
     baseline,
+    initialAdditionalMarkupRaw:
+      baselineMarkupPercent !== undefined ? String(baselineMarkupPercent) : '',
     error,
   };
 }

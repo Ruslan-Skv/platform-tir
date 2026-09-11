@@ -8,6 +8,8 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { clampEstimateAdditionalMarkupPercent } from '../../../../platform/estimates/applyEstimatePresetIds';
+import { parseOptionalPercentInput } from '../../list/estimatesListUtils';
 import { persistEstimateWorkspacePresets } from '../estimateWorkspacePersist';
 import {
   buildEstimateWorkspaceSaveBatch,
@@ -29,6 +31,8 @@ export type UseEstimateWorkspaceSaveParams = {
   estimateCategories: Array<{ slug: string; name: string }>;
   estimateCategorySlugs: string[];
   estimateNameDraft: string;
+  /** Текущее значение поля «Наценка, %» ('' — наценка объекта). */
+  additionalMarkupRaw: string;
   selectedEstimateId: string;
   setSelectedEstimateId: (id: string) => void;
   crmCustomerId: string | null;
@@ -59,6 +63,7 @@ export function useEstimateWorkspaceSave({
   estimateCategories,
   estimateCategorySlugs,
   estimateNameDraft,
+  additionalMarkupRaw,
   selectedEstimateId,
   setSelectedEstimateId,
   crmCustomerId,
@@ -130,6 +135,9 @@ export function useEstimateWorkspaceSave({
 
     const { draftsByCategory, draftSlugs } = validation;
 
+    // Наценка из воркспейса: пусто — «наценка объекта» (поле не пишем), иначе клампим.
+    const parsedMarkup = parseOptionalPercentInput(additionalMarkupRaw);
+
     setSaving(true);
     setError(null);
     setOk(null);
@@ -150,6 +158,10 @@ export function useEstimateWorkspaceSave({
         joinSplitBundleIdFromUrl,
         fromMeasurementId,
         actorUserId: user?.id ?? null,
+        additionalMarkupPercent:
+          parsedMarkup === undefined
+            ? undefined
+            : clampEstimateAdditionalMarkupPercent(parsedMarkup),
       });
       setSelectedEstimateId(nextItem.id);
       const synced = await persistEstimateWorkspacePresets(nextItems, estimateGroups);
@@ -169,6 +181,7 @@ export function useEstimateWorkspaceSave({
     customerName,
     objectAddress,
     estimateCategorySlugs,
+    additionalMarkupRaw,
     isEditingExisting,
     items,
     selectedEstimateId,

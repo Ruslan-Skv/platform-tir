@@ -39,6 +39,7 @@ export function useEstimateWorkspaceLoad({
   const [estimateCategorySlugs, setEstimateCategorySlugs] = useState<string[]>([]);
   const [activeCategorySlug, setActiveCategorySlug] = useState('');
   const [estimateNameDraft, setEstimateNameDraft] = useState('');
+  const [additionalMarkupRaw, setAdditionalMarkupRaw] = useState('');
   const [selectedEstimateId, setSelectedEstimateId] = useState('');
   const [baseline, setBaseline] = useState<WorkspaceBaseline | null>(null);
   const [copySessionPendingSave, setCopySessionPendingSave] = useState(false);
@@ -69,6 +70,7 @@ export function useEstimateWorkspaceLoad({
         setEstimateCategorySlugs(result.estimateCategorySlugs);
         setActiveCategorySlug(result.activeCategorySlug);
         setEstimateNameDraft(result.estimateNameDraft);
+        setAdditionalMarkupRaw(result.initialAdditionalMarkupRaw);
         setSelectedEstimateId(result.selectedEstimateId);
         setCopySessionPendingSave(result.copySessionPendingSave);
         setBaseline(result.baseline);
@@ -111,6 +113,8 @@ export function useEstimateWorkspaceLoad({
     setActiveCategorySlug,
     estimateNameDraft,
     setEstimateNameDraft,
+    additionalMarkupRaw,
+    setAdditionalMarkupRaw,
     selectedEstimateId,
     setSelectedEstimateId,
     baseline,

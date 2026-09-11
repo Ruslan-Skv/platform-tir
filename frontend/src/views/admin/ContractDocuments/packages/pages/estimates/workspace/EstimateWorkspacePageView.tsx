@@ -100,6 +100,8 @@ export function EstimateWorkspacePageView({
               }
             }}
             estimateNameError={estimateNameError}
+            additionalMarkupRaw={session.additionalMarkupRaw}
+            onAdditionalMarkupChange={session.setAdditionalMarkupRaw}
             customerName={customerName}
             objectAddress={objectAddress}
             estimateCustomerError={estimateCustomerError}

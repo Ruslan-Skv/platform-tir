@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 
+import { parseOptionalPercentInput } from '../../list/estimatesListUtils';
 import {
   estimateWorkspaceCustomerDirty,
   isEstimateWorkspaceDirty,
@@ -19,6 +20,7 @@ export type UseEstimateWorkspaceDirtyStateParams = {
   crmCustomerId: string | null;
   customerName: string;
   objectAddress: string;
+  additionalMarkupRaw: string;
   estimateCalculatorError: string | null;
   setEstimateCalculatorError: (value: string | null) => void;
 };
@@ -31,6 +33,7 @@ export function useEstimateWorkspaceDirtyState({
   crmCustomerId,
   customerName,
   objectAddress,
+  additionalMarkupRaw,
   estimateCalculatorError,
   setEstimateCalculatorError,
 }: UseEstimateWorkspaceDirtyStateParams) {
@@ -64,6 +67,7 @@ export function useEstimateWorkspaceDirtyState({
     crmCustomerId,
     customerName,
     objectAddress,
+    additionalMarkupRaw,
   });
 
   useEffect(() => {
@@ -94,8 +98,14 @@ export function useEstimateWorkspaceDirtyState({
         customerName,
         objectAddress,
       });
+      const markupDirty =
+        parseOptionalPercentInput(additionalMarkupRaw) !== baseline.additionalMarkupPercent;
       const isDirty =
-        !sameSlugs || estimateNameDraft !== baseline.name || draftsDirty || customerDirty;
+        !sameSlugs ||
+        estimateNameDraft !== baseline.name ||
+        draftsDirty ||
+        customerDirty ||
+        markupDirty;
       if (!isDirty) return;
       e.preventDefault();
       e.returnValue = '';
@@ -110,6 +120,7 @@ export function useEstimateWorkspaceDirtyState({
     crmCustomerId,
     customerName,
     objectAddress,
+    additionalMarkupRaw,
   ]);
 
   return { dirty, draftPollTick };

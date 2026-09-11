@@ -248,10 +248,17 @@ export class ContractDocumentObjectsService {
 
   /**
    * Автоматически группирует договоры в объекты по совпадающему адресу объекта в formData.
-   * Один нормализованный адрес — один объект; договоры без объекта прикрепляются к нему.
+   * Один нормализованный адрес — один объект; договоры без объекта прикрепляются к нему,
+   * а договоры, чей адрес разошёлся с адресом объекта (адрес поправили в «Данных»),
+   * открепляются — иначе в одном объекте со временем смешиваются разные адреса и заказчики.
    */
   async autoSyncByAddress() {
-    const stats = { createdObjects: 0, mergedObjects: 0, attachedPackages: 0 };
+    const stats = {
+      createdObjects: 0,
+      mergedObjects: 0,
+      attachedPackages: 0,
+      detachedPackages: 0,
+    };
 
     const [packages, objectRows] = await Promise.all([
       this.prisma.contractDocumentPackage.findMany({
@@ -268,6 +275,28 @@ export class ContractDocumentObjectsService {
         orderBy: { createdAt: 'asc' },
       }),
     ]);
+
+    for (const obj of objectRows) {
+      const objNorm = normalizeContractDocumentObjectAddress(obj.address ?? '');
+      if (!isMeaningfulContractDocumentObjectAddress(obj.address ?? '')) continue;
+      const staleIds = obj.packages
+        .filter((member) => {
+          const memberRaw = packageFormObjectAddress(member.formData);
+          if (!isMeaningfulContractDocumentObjectAddress(memberRaw)) return false;
+          return packageFormNormalizedAddress(member.formData) !== objNorm;
+        })
+        .map((m) => m.id);
+      if (staleIds.length === 0) continue;
+      await this.prisma.contractDocumentPackage.updateMany({
+        where: { id: { in: staleIds } },
+        data: { documentObjectId: null },
+      });
+      obj.packages = obj.packages.filter((m) => !staleIds.includes(m.id));
+      stats.detachedPackages += staleIds.length;
+      for (const pkg of packages) {
+        if (staleIds.includes(pkg.id)) pkg.documentObjectId = null;
+      }
+    }
 
     const byNorm = new Map<string, typeof packages>();
     for (const pkg of packages) {

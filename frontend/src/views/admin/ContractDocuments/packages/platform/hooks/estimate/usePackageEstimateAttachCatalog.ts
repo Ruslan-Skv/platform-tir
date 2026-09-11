@@ -101,7 +101,9 @@ export function usePackageEstimateAttachCatalog({
 
   const estimateCustomerFilter = useMemo(
     () => ({
-      filterByLinkedCustomer: isProductDirectionPackage,
+      // Для product-пакетов заказчик обязателен; для остальных — фильтруем по заказчику,
+      // когда он выбран на вкладке «Данные», чтобы не показывать чужие объекты.
+      filterByLinkedCustomer: isProductDirectionPackage || Boolean(linkedCrmCustomerId?.trim()),
       linkedCrmCustomerId,
       packageObjectAddress,
     }),
@@ -136,7 +138,8 @@ export function usePackageEstimateAttachCatalog({
 
   /** Есть свободные расчёты с тем же адресом, но другой карточкой CRM — типичная путаница. */
   const attachBlockedByCrmMismatch = useMemo(() => {
-    if (!isProductDirectionPackage || !linkedCrmCustomerId?.trim()) return false;
+    const linkedId = linkedCrmCustomerId?.trim() ?? '';
+    if (!linkedId) return false;
     if (attachableEstimatePresets.length > 0) return false;
     const addrKey = normalizeAddressMatchKey(packageObjectAddress);
     if (!addrKey) return false;
@@ -147,10 +150,9 @@ export function usePackageEstimateAttachCatalog({
       if ((estimateUsageById.get(preset.id)?.length ?? 0) !== 0) return false;
       if (normalizeAddressMatchKey(preset.objectAddress ?? '') !== addrKey) return false;
       const presetCrm = (preset.crmCustomerId ?? '').trim();
-      return Boolean(presetCrm && presetCrm !== linkedCrmCustomerId.trim());
+      return Boolean(presetCrm && presetCrm !== linkedId);
     });
   }, [
-    isProductDirectionPackage,
     linkedCrmCustomerId,
     attachableEstimatePresets.length,
     packageObjectAddress,

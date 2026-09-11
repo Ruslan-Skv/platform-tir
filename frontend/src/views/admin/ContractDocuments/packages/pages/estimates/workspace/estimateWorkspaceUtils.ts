@@ -96,6 +96,8 @@ export type WorkspaceBaseline = {
   name: string;
   draftsByCategory: Record<string, string | null>;
   customer: EstimateCrmCustomerFields;
+  /** Наценка расчёта на момент загрузки (undefined — «наценка объекта»). */
+  additionalMarkupPercent?: number;
 };
 
 export function estimateCustomerFieldsFromPreset(

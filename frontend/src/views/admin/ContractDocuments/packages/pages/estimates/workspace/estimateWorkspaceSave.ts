@@ -91,6 +91,8 @@ export type BuildEstimateWorkspaceSaveBatchParams = {
   fromMeasurementId: string | null;
   /** Текущий пользователь — для createdById у новых расчётов. */
   actorUserId?: string | null;
+  /** Наценка из воркспейса; undefined — «наценка объекта» (поле не сохраняется). */
+  additionalMarkupPercent?: number;
 };
 
 export async function buildEstimateWorkspaceSaveBatch({
@@ -109,6 +111,7 @@ export async function buildEstimateWorkspaceSaveBatch({
   joinSplitBundleIdFromUrl,
   fromMeasurementId,
   actorUserId,
+  additionalMarkupPercent,
 }: BuildEstimateWorkspaceSaveBatchParams): Promise<{
   nextItem: ContractEstimatePreset;
   nextItems: ContractEstimatePreset[];
@@ -156,7 +159,6 @@ export async function buildEstimateWorkspaceSaveBatch({
   );
   const copyFromSource =
     !existing && copyFromId ? items.find((it) => it.id === copyFromId) : undefined;
-  const markupSource = existing ?? copyFromSource;
   const copyLinkedSplitInstance = Boolean(copyFromSource) && splitInstanceFromUrl;
   const linkedCopyTarget: LinkedCopySplitTarget | null = copyLinkedSplitInstance
     ? joinSplitBundleIdFromUrl
@@ -206,9 +208,7 @@ export async function buildEstimateWorkspaceSaveBatch({
       : fromMeasurementId
         ? { sourceMeasurementId: fromMeasurementId }
         : {}),
-    ...(typeof markupSource?.additionalMarkupPercent === 'number'
-      ? { additionalMarkupPercent: markupSource.additionalMarkupPercent }
-      : {}),
+    ...(additionalMarkupPercent !== undefined ? { additionalMarkupPercent } : {}),
     ...(existing?.groupId && existing.inGroupListOrder != null
       ? { inGroupListOrder: existing.inGroupListOrder }
       : !existing && copyFromSource?.groupId && copyFromId

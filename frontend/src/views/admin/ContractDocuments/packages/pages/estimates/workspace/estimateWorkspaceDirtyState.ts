@@ -1,4 +1,5 @@
 import type { EstimateCrmCustomerFields } from '../../../platform/estimates/estimateCrmCustomer';
+import { parseOptionalPercentInput } from '../list/estimatesListUtils';
 import {
   type WorkspaceBaseline,
   calculatorDraftStorageKey,
@@ -13,6 +14,8 @@ export type EstimateWorkspaceDirtyStateParams = {
   crmCustomerId: string | null;
   customerName: string;
   objectAddress: string;
+  /** Текущее значение поля «Наценка, %» ('' — наценка объекта). */
+  additionalMarkupRaw: string;
   draftPollTick: number;
 };
 
@@ -24,6 +27,7 @@ export function isEstimateWorkspaceDirty({
   crmCustomerId,
   customerName,
   objectAddress,
+  additionalMarkupRaw,
 }: Omit<EstimateWorkspaceDirtyStateParams, 'draftPollTick'>): boolean {
   if (copySessionPendingSave) return true;
   if (!baseline) return false;
@@ -37,6 +41,9 @@ export function isEstimateWorkspaceDirty({
   if ((crmCustomerId ?? '') !== (baseline.customer.crmCustomerId ?? '')) return true;
   if (customerName !== baseline.customer.customerName) return true;
   if (objectAddress !== baseline.customer.objectAddress) return true;
+  if (parseOptionalPercentInput(additionalMarkupRaw) !== baseline.additionalMarkupPercent) {
+    return true;
+  }
   for (const slug of selectedSlugs) {
     const currentDraft = window.localStorage.getItem(calculatorDraftStorageKey(slug));
     const baselineDraft = baseline.draftsByCategory[slug] ?? null;
