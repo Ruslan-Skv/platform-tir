@@ -108,13 +108,15 @@ export function packageManagerCrmUserIdFromForm(formData: Record<string, unknown
   return form.executor.signatoryCrmUserId?.trim() ?? '';
 }
 
+/** Фильтр по менеджеру: автор расчёта или менеджер привязанного договора. */
 export function estimateMatchesManagerFilter(
-  presetId: string,
+  preset: ContractEstimatePreset,
   managerFilter: string,
   managerIdsByPresetId: Map<string, Set<string>>
 ): boolean {
   if (!managerFilter) return true;
-  const ids = managerIdsByPresetId.get(presetId);
+  if (preset.createdById?.trim() === managerFilter) return true;
+  const ids = managerIdsByPresetId.get(preset.id);
   return Boolean(ids?.has(managerFilter));
 }
 

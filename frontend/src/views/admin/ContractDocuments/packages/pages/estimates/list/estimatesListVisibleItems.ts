@@ -56,7 +56,7 @@ export function filterVisibleEstimatesListItems({
       return estimateBelongsToUser(it, currentUserId, managerIdsByPresetId);
     }
 
-    return estimateMatchesManagerFilter(it.id, managerFilter, managerIdsByPresetId);
+    return estimateMatchesManagerFilter(it, managerFilter, managerIdsByPresetId);
   });
 }
 
