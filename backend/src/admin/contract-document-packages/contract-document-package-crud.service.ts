@@ -405,22 +405,16 @@ export class ContractDocumentPackageCrudService {
     const ids = this.extractEstimatePresetIds(formData);
     if (ids.length === 0) return;
 
-    const previousIdsList =
+    const previousIds =
       options?.previousFormData !== undefined
-        ? this.extractEstimatePresetIds(options.previousFormData)
+        ? new Set(this.extractEstimatePresetIds(options.previousFormData))
         : null;
-    if (previousIdsList !== null) {
-      const previousSet = new Set(previousIdsList);
-      const unchanged =
-        ids.length === previousIdsList.length && ids.every((id) => previousSet.has(id));
-      if (unchanged) return;
-    }
+    // Валидируем только новые привязки: сохранение/снятие старых не должно падать
+    // из-за двойных привязок, оставшихся в данных до кросс-видовой проверки.
+    const addedIds = previousIds ? ids.filter((id) => !previousIds.has(id)) : ids;
+    if (addedIds.length === 0) return;
 
-    const previousIds = previousIdsList !== null ? new Set(previousIdsList) : null;
-    const idsToValidatePipeline = previousIds ? ids.filter((id) => !previousIds.has(id)) : ids;
-    if (idsToValidatePipeline.length > 0) {
-      await this.estimatePresets.assertPipelineActive(idsToValidatePipeline);
-    }
+    await this.estimatePresets.assertPipelineActive(addedIds);
 
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
@@ -431,7 +425,7 @@ export class ContractDocumentPackageCrudService {
     });
     for (const pkg of others) {
       const otherIds = this.extractEstimatePresetIds(pkg.formData);
-      const conflict = ids.find((id) => otherIds.includes(id));
+      const conflict = addedIds.find((id) => otherIds.includes(id));
       if (conflict) {
         throw new BadRequestException(
           'Этот расчёт уже прикреплён к другому договору. Сначала отвяжите его в том пакете или выберите другой расчёт.',

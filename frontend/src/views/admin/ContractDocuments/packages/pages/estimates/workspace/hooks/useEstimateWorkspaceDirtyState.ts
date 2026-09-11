@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import {
   estimateWorkspaceCustomerDirty,
@@ -53,27 +53,18 @@ export function useEstimateWorkspaceDirtyState({
     }
   }, [draftPollTick, estimateCalculatorError, estimateCategorySlugs, setEstimateCalculatorError]);
 
-  const dirty = useMemo(
-    () =>
-      isEstimateWorkspaceDirty({
-        copySessionPendingSave,
-        baseline,
-        estimateCategorySlugs,
-        estimateNameDraft,
-        crmCustomerId,
-        customerName,
-        objectAddress,
-      }),
-    [
-      copySessionPendingSave,
-      baseline,
-      estimateCategorySlugs,
-      estimateNameDraft,
-      crmCustomerId,
-      customerName,
-      objectAddress,
-    ]
-  );
+  // Черновики калькулятора живут в localStorage, а не в React-состоянии:
+  // считаем dirty на каждом рендере, включая тик поллинга (draftPollTick),
+  // иначе правки только в калькуляторе не показывают кнопку сохранения.
+  const dirty = isEstimateWorkspaceDirty({
+    copySessionPendingSave,
+    baseline,
+    estimateCategorySlugs,
+    estimateNameDraft,
+    crmCustomerId,
+    customerName,
+    objectAddress,
+  });
 
   useEffect(() => {
     if (!baseline && !copySessionPendingSave) return;
