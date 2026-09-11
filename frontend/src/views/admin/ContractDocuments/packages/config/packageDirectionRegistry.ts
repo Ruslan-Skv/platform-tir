@@ -208,6 +208,17 @@ export function packageKindsWithCreateEnabled(): ContractDocumentPackageKind[] {
   );
 }
 
+/**
+ * Виды пакетов, прикрепляющие расчёты из общего пула (каталог расчётов REPAIR).
+ * Для «привязан к договору» и эксклюзивности привязки нужен весь этот список,
+ * а не пакеты одного направления.
+ */
+export function packageKindsUsingSharedEstimateCatalog(): ContractDocumentPackageKind[] {
+  return (Object.keys(PACKAGE_DIRECTION_REGISTRY) as ContractDocumentPackageKind[]).filter(
+    (k) => PACKAGE_DIRECTION_REGISTRY[k].estimateCatalogKind === 'REPAIR'
+  );
+}
+
 /** Пакет kind → slug CRM-направления (единый маппинг с backend). */
 export const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, string> = {
   REPAIR: 'repair',

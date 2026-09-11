@@ -10,6 +10,7 @@ import {
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { packageKindsUsingSharedEstimateCatalog } from '../../../config/packageDirectionRegistry';
 import { ensureEstimateObjectGroups } from '../../../platform/estimates/estimateObjectGroupSync';
 import {
   type EstimatesListWorkspacePackage,
@@ -27,7 +28,9 @@ export type EstimatesListLoadResult = {
 export async function loadEstimatesListData(): Promise<EstimatesListLoadResult> {
   const [presetsRes, packagesRes, signatoriesRes] = await Promise.all([
     getContractDocumentEstimatePresets('REPAIR'),
-    getContractDocumentPackages('REPAIR'),
+    // Пакеты всех направлений: расчёты из пула REPAIR прикрепляются к любому пакету,
+    // и бейдж «Договор №…» должен показываться независимо от направления.
+    getContractDocumentPackages({ kinds: packageKindsUsingSharedEstimateCatalog() }),
     getContractDocumentSignatoryProfiles('REPAIR').catch(() => ({
       items: [] as ContractSignatoryProfile[],
     })),

@@ -13,6 +13,7 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 import { trashContractEstimatePreset } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
 
+import { packageKindsUsingSharedEstimateCatalog } from '../../../../config/packageDirectionRegistry';
 import { clampEstimateAdditionalMarkupPercent } from '../../../../platform/estimates/applyEstimatePresetIds';
 import { persistPackageAfterRemovingEstimatePreset } from '../../../../platform/estimates/detachEstimatePresetFromPackages';
 import { ensureEstimateObjectGroups } from '../../../../platform/estimates/estimateObjectGroupSync';
@@ -97,7 +98,9 @@ export function useEstimatesListMutations({
   const { canEdit } = useAdminSectionCanEdit();
 
   const refreshPackagesFromServer = useCallback(async () => {
-    const packagesRes = await getContractDocumentPackages('REPAIR');
+    const packagesRes = await getContractDocumentPackages({
+      kinds: packageKindsUsingSharedEstimateCatalog(),
+    });
     setWorkspacePackages(mapPackagesForEstimatesList(packagesRes));
   }, [setWorkspacePackages]);
 

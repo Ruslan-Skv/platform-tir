@@ -31,6 +31,7 @@ import {
   contractDateToDdMmYyyy,
   todayContractDateDdMmYyyy,
 } from '../../../../core/contractDateFormat';
+import { packageKindsUsingSharedEstimateCatalog } from '../../../config/packageDirectionRegistry';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { ensureCeilingsContractTemplatePresets } from '../../../families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
 import {
@@ -213,7 +214,11 @@ export function usePackageDocumentLoad({
             groups: [],
             updatedAt: null as string | null,
           })),
-          getContractDocumentPackages(currentKind).catch(() => []),
+          // Все направления с общим пулом расчётов: расчёт можно прикрепить только
+          // к одному пакету, поэтому «занятость» нужно считать по всем видам.
+          getContractDocumentPackages({ kinds: packageKindsUsingSharedEstimateCatalog() }).catch(
+            () => []
+          ),
           getInstallers().catch(() => [] as InstallerMaster[]),
           (() => {
             const settingsKind = packageContractSettingsKind(currentKind);

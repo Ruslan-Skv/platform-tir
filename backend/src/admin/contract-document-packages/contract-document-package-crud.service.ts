@@ -45,11 +45,7 @@ export class ContractDocumentPackageCrudService {
       const defaultDays = await this.kindSettings.resolveDefaultWorkPeriodDays(dto.kind);
       formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
     }
-    if (dto.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(null, formDataInput);
-    } else if (dto.formData !== undefined) {
-      await this.assertRepairEstimatePresetsExclusive(null, dto.formData);
-    }
+    await this.assertEstimatePresetsExclusive(null, formDataInput);
     const created = await this.prisma.contractDocumentPackage.create({
       data: {
         kind: dto.kind,
@@ -145,8 +141,8 @@ export class ContractDocumentPackageCrudService {
     if (dto.crmContractId) {
       await this.assertCrmContractExists(dto.crmContractId);
     }
-    if (dto.formData !== undefined && row.kind === ContractDocumentPackageKind.REPAIR) {
-      await this.assertRepairEstimatePresetsExclusive(id, dto.formData, {
+    if (dto.formData !== undefined) {
+      await this.assertEstimatePresetsExclusive(id, dto.formData, {
         previousFormData: row.formData,
       });
     }
@@ -167,7 +163,7 @@ export class ContractDocumentPackageCrudService {
     if (becomingConcluded && row.kind === ContractDocumentPackageKind.REPAIR) {
       const effectiveForm =
         dto.formData !== undefined ? dto.formData : row.formData !== undefined ? row.formData : {};
-      if (this.extractRepairEstimatePresetIds(effectiveForm).length === 0) {
+      if (this.extractEstimatePresetIds(effectiveForm).length === 0) {
         throw new BadRequestException(
           'Договор «Ремонт» нельзя отметить подписанным без прикреплённой сметы (расчёта)',
         );
@@ -299,21 +295,19 @@ export class ContractDocumentPackageCrudService {
     if (row.deletedAt) {
       throw new BadRequestException('Договор уже в корзине');
     }
-    if (row.kind === ContractDocumentPackageKind.REPAIR) {
-      const paymentCount = await this.prisma.contractDocumentPackagePayment.count({
-        where: { packageId: id },
-      });
-      if (paymentCount > 0) {
-        throw new BadRequestException(
-          'Нельзя удалить пакет с зарегистрированными оплатами. Сначала удалите записи об оплатах.',
-        );
-      }
-      const estimatePresetIds = this.extractRepairEstimatePresetIds(row.formData);
-      if (estimatePresetIds.length > 0) {
-        throw new BadRequestException(
-          'Нельзя удалить договор с прикреплённой сметой. Сначала отвяжите расчёты на вкладке «Смета».',
-        );
-      }
+    const paymentCount = await this.prisma.contractDocumentPackagePayment.count({
+      where: { packageId: id },
+    });
+    if (paymentCount > 0) {
+      throw new BadRequestException(
+        'Нельзя удалить пакет с зарегистрированными оплатами. Сначала удалите записи об оплатах.',
+      );
+    }
+    const estimatePresetIds = this.extractEstimatePresetIds(row.formData);
+    if (estimatePresetIds.length > 0) {
+      throw new BadRequestException(
+        'Нельзя удалить договор с прикреплённым расчётом. Сначала отвяжите его на вкладке сметы (счёт-заказа).',
+      );
     }
     await this.contractNumbering.releaseNumberAssignmentsForPackage(id);
     await this.contractNumbering.releaseActiveHoldsForPackage(id);
@@ -332,8 +326,8 @@ export class ContractDocumentPackageCrudService {
     if (!row.deletedAt) {
       throw new BadRequestException('Договор не в корзине');
     }
-    if (row.kind === ContractDocumentPackageKind.REPAIR && row.formData !== undefined) {
-      await this.assertRepairEstimatePresetsExclusive(id, row.formData);
+    if (row.formData !== undefined) {
+      await this.assertEstimatePresetsExclusive(id, row.formData);
     }
     await this.contractNumbering.syncNumberAssignmentsForPackage(id, row.formData);
     return this.prisma.contractDocumentPackage.update({
@@ -385,7 +379,7 @@ export class ContractDocumentPackageCrudService {
     return user.id;
   }
 
-  private extractRepairEstimatePresetIds(formData: unknown): string[] {
+  private extractEstimatePresetIds(formData: unknown): string[] {
     if (!formData || typeof formData !== 'object') return [];
     const est = (formData as Record<string, unknown>).estimate;
     if (!est || typeof est !== 'object') return [];
@@ -402,17 +396,18 @@ export class ContractDocumentPackageCrudService {
     return [...new Set(ids)];
   }
 
-  private async assertRepairEstimatePresetsExclusive(
+  /** Расчёт можно прикрепить только к одному пакету — любого направления. */
+  private async assertEstimatePresetsExclusive(
     currentPackageId: string | null,
     formData: unknown,
     options?: { previousFormData?: unknown },
   ): Promise<void> {
-    const ids = this.extractRepairEstimatePresetIds(formData);
+    const ids = this.extractEstimatePresetIds(formData);
     if (ids.length === 0) return;
 
     const previousIdsList =
       options?.previousFormData !== undefined
-        ? this.extractRepairEstimatePresetIds(options.previousFormData)
+        ? this.extractEstimatePresetIds(options.previousFormData)
         : null;
     if (previousIdsList !== null) {
       const previousSet = new Set(previousIdsList);
@@ -429,14 +424,13 @@ export class ContractDocumentPackageCrudService {
 
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
-        kind: ContractDocumentPackageKind.REPAIR,
         deletedAt: null,
         ...(currentPackageId ? { NOT: { id: currentPackageId } } : {}),
       },
       select: { id: true, formData: true },
     });
     for (const pkg of others) {
-      const otherIds = this.extractRepairEstimatePresetIds(pkg.formData);
+      const otherIds = this.extractEstimatePresetIds(pkg.formData);
       const conflict = ids.find((id) => otherIds.includes(id));
       if (conflict) {
         throw new BadRequestException(
