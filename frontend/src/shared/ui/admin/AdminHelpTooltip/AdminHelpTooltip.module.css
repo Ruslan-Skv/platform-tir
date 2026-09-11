@@ -23,7 +23,11 @@
   font-size: var(--admin-font-size-xs, 0.75rem);
   line-height: 1.35;
   pointer-events: auto;
-  overflow: hidden;
+  /* Только overflow-x: обрезаем по горизонтали (скруглённые углы). Вертикаль НЕ трогаем:
+     panelClassName-потребители задают свой overflow-y:auto + max-height, а общее
+     `overflow: hidden` при равной специфичности побеждало их в проде при другом
+     порядке CSS-чанков — и скролл длинных подсказок умирал. */
+  overflow-x: hidden;
 }
 
 .panelAlignCenter {
