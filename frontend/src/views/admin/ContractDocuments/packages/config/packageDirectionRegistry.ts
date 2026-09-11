@@ -58,6 +58,7 @@ function repairLikeConfig(
     hiddenEditorTabs: ['specification'],
     memoTabVisible: false,
     deliveryNoteTabVisible: false,
+    drawingsTabVisible: false,
     lineSpecificationEnabled: false,
     tabLabelOverrides: {},
     profilesKind: kind,
@@ -80,6 +81,7 @@ function productLikeConfig(
     hiddenEditorTabs: PRODUCT_LIKE_HIDDEN_EDITOR_TABS,
     memoTabVisible: true,
     deliveryNoteTabVisible: false,
+    drawingsTabVisible: false,
     lineSpecificationEnabled: false,
     tabLabelOverrides: PRODUCT_TAB_LABEL_OVERRIDES,
     profilesKind: 'REPAIR',
@@ -121,6 +123,7 @@ function furnitureLikeConfig(
     ],
     memoTabVisible: true,
     deliveryNoteTabVisible: true,
+    drawingsTabVisible: false,
     lineSpecificationEnabled: false,
     tabLabelOverrides: {
       memo: { full: 'Инструкция', short: 'Инструкция' },
@@ -146,6 +149,8 @@ const PACKAGE_DIRECTION_REGISTRY: Record<ContractDocumentPackageKind, PackageDir
   CEILINGS: {
     ...productLikeWithLineSpecification('CEILINGS', 'Потолки'),
     deliveryNoteTabVisible: false,
+    /** Чертежи потолков — картинки с чертежами, отправляются заказчику. */
+    drawingsTabVisible: true,
     excludedLibraryTemplateTabs: CEILINGS_LIBRARY_EXCLUDED,
   },
   BLINDS: productLikeWithLineSpecification('BLINDS', 'Жалюзи'),

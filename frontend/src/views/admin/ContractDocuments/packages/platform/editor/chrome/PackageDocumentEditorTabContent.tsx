@@ -17,6 +17,7 @@ import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAd
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
 import { PackageAddendumEditorPane } from '../addendum/PackageAddendumEditorPane';
 import { PackageDataTab, type PackageDataTabProps } from '../dataTab/PackageDataTab';
+import { PackageDrawingsTab } from '../drawingsTab/PackageDrawingsTab';
 import {
   PackageEstimateTab,
   type PackageEstimateTabProps,
@@ -169,6 +170,17 @@ export function PackageDocumentEditorTabContent({
   if (activeTab === 'measurement') {
     return (
       <PackageMeasurementTab
+        packageId={packageId}
+        form={form}
+        setForm={setForm}
+        touchPackageData={touchPackageData}
+      />
+    );
+  }
+
+  if (activeTab === 'drawings') {
+    return (
+      <PackageDrawingsTab
         packageId={packageId}
         form={form}
         setForm={setForm}

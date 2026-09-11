@@ -63,16 +63,27 @@ export function PackagePipelineStepCard({
             >
               Отказ
             </button>
-            <button
-              data-admin-mutation
-              type="button"
-              data-modal-btn="primary"
-              disabled={actionsDisabled}
-              title={actionsTitle}
-              onClick={() => void hub.handleMarkContractConcluded()}
-            >
-              {hub.savingPackageStatus ? 'Сохранение…' : 'Договор подписан'}
-            </button>
+            {(() => {
+              /** Договор «Ремонт» нельзя подписать без прикреплённой сметы (расчёта). */
+              const needsEstimate =
+                hub.packageKind === 'REPAIR' && !pipeline.contractEstimateAttached;
+              return (
+                <button
+                  data-admin-mutation
+                  type="button"
+                  data-modal-btn="primary"
+                  disabled={actionsDisabled || needsEstimate}
+                  title={
+                    needsEstimate
+                      ? 'Сначала прикрепите смету (расчёт) — вкладка «Смета»'
+                      : actionsTitle
+                  }
+                  onClick={() => void hub.handleMarkContractConcluded()}
+                >
+                  {hub.savingPackageStatus ? 'Сохранение…' : 'Договор подписан'}
+                </button>
+              );
+            })()}
           </div>
         ) : null}
 

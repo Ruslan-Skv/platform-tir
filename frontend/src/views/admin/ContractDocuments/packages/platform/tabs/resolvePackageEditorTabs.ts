@@ -103,6 +103,8 @@ export function resolvePackageEditorVisibleTabs(input: {
 
     if (id === 'deliveryNote' && !config.deliveryNoteTabVisible) return false;
 
+    if (id === 'drawings' && !config.drawingsTabVisible) return false;
+
     if (hidden.has(id)) return false;
 
     if (

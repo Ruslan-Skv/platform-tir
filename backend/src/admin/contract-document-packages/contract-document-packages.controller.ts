@@ -96,12 +96,29 @@ const packageMeasurementsDir = path.join(
   'measurements',
 );
 
+const packageDrawingsDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'drawings',
+);
+
 /** Максимум фото замера в formData пакета (вкладка «Замер»). */
 const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
+
+/** Максимум картинок с чертежами в formData пакета «Потолки» (вкладка «Чертежи»). */
+const PACKAGE_DRAWING_PHOTOS_MAX = 10;
 
 function countPackageMeasurementPhotos(formData: unknown): number {
   if (!formData || typeof formData !== 'object') return 0;
   const urls = (formData as { measurementPhotoUrls?: unknown }).measurementPhotoUrls;
+  if (!Array.isArray(urls)) return 0;
+  return urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).length;
+}
+
+function countPackageDrawingPhotos(formData: unknown): number {
+  if (!formData || typeof formData !== 'object') return 0;
+  const urls = (formData as { drawingPhotoUrls?: unknown }).drawingPhotoUrls;
   if (!Array.isArray(urls)) return 0;
   return urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).length;
 }
@@ -753,6 +770,52 @@ export class ContractDocumentPackagesController {
     }
     const filename = path.basename(file.path);
     return { imageUrl: `/uploads/contract-document-packages/measurements/${filename}` };
+  }
+
+  /** Картинки с чертежами для вкладки «Чертежи» (только «Потолки»), до 10 файлов. */
+  @Post(':id/upload-drawing-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(packageDrawingsDir)) {
+            fs.mkdirSync(packageDrawingsDir, { recursive: true });
+          }
+          cb(null, packageDrawingsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(
+            null,
+            `drawing-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${path.extname(file.originalname) || '.jpg'}`,
+          );
+        },
+      }),
+      limits: { fileSize: 8 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadDrawingPhoto(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (pkg.kind !== ContractDocumentPackageKind.CEILINGS) {
+      throw new BadRequestException('Чертежи доступны только для пакета «Потолки»');
+    }
+    if (countPackageDrawingPhotos(pkg.formData) >= PACKAGE_DRAWING_PHOTOS_MAX) {
+      throw new BadRequestException(
+        `Можно прикрепить не более ${PACKAGE_DRAWING_PHOTOS_MAX} чертежей`,
+      );
+    }
+    const filename = path.basename(file.path);
+    return { imageUrl: `/uploads/contract-document-packages/drawings/${filename}` };
   }
 
   @Post(':id/upload-windows-specification-file')

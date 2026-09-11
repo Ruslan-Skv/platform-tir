@@ -109,6 +109,8 @@ export interface PackageContractPipelineModel {
   listPipelineStatus: PackageListPipelineStatus;
   contractSignedRevertRemainingMs: number;
   canRevertContractConcluded: boolean;
+  /** Прикреплена ли смета (расчёт) к основному договору (для «Ремонта» — обязательна к подписанию). */
+  contractEstimateAttached: boolean;
 }
 
 export function computePackagePaymentAllocations(
@@ -503,6 +505,14 @@ function deriveListPipelineStatus(input: {
   return 'IN_PROJECT';
 }
 
+/** Прикреплена ли смета (расчёт) к основному договору пакета. */
+export function packageHasAttachedEstimate(form: PackageFormData): boolean {
+  return (
+    Boolean(form.estimate.selectedPresetId?.trim()) ||
+    form.estimate.selectedPresetIds.some((id) => id.trim().length > 0)
+  );
+}
+
 export function computePackageContractPipelineModel(input: {
   packageKind?: ContractDocumentPackageKind;
   packageFlowStatus: ContractDocumentPackageStatus;
@@ -645,6 +655,7 @@ export function computePackageContractPipelineModel(input: {
     canRevertContractConcluded:
       input.packageFlowStatus === 'CONTRACT_CONCLUDED' &&
       isWithinMsSinceIso(input.form.contractConcludedAt, CONTRACT_SIGNED_REVERT_WINDOW_MS),
+    contractEstimateAttached: packageHasAttachedEstimate(input.form),
   };
 }
 

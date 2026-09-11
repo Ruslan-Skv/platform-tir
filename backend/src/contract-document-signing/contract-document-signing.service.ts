@@ -7,6 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import {
+  ContractDocumentPackageKind,
   ContractDocumentPackageStatus,
   ContractDocumentSigningSessionStatus,
   Prisma,
@@ -47,6 +48,19 @@ const BLOCKED_FILE_EXTENSIONS =
 function safeFileExtension(originalname: string): string {
   const match = /\.([a-z0-9]{1,8})$/i.exec(originalname.trim());
   return match ? `.${match[1]!.toLowerCase()}` : '';
+}
+
+/** Прикреплена ли к пакету смета (расчёт): estimate.selectedPresetId / selectedPresetIds. */
+function hasAttachedRepairEstimate(formData: unknown): boolean {
+  if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return false;
+  const est = (formData as Record<string, unknown>).estimate;
+  if (!est || typeof est !== 'object') return false;
+  const e = est as Record<string, unknown>;
+  if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) return true;
+  if (Array.isArray(e.selectedPresetIds)) {
+    return e.selectedPresetIds.some((x) => typeof x === 'string' && x.trim().length > 0);
+  }
+  return false;
 }
 
 @Injectable()
@@ -190,6 +204,22 @@ export class ContractDocumentSigningService {
     void signedName;
   }
 
+  /** Можно ли создавать сессию ЭП для пакета: договор «Ремонт» — только с прикреплённой сметой. */
+  async assertCanCreateSigningSession(packageId: string): Promise<void> {
+    const pkg = await this.prisma.contractDocumentPackage.findFirst({
+      where: { id: packageId, deletedAt: null },
+    });
+    if (!pkg) throw new NotFoundException('Пакет документов не найден');
+    if (
+      pkg.kind === ContractDocumentPackageKind.REPAIR &&
+      !hasAttachedRepairEstimate(pkg.formData)
+    ) {
+      throw new BadRequestException(
+        'Договор «Ремонт» нельзя отправить на подписание без прикреплённой сметы (расчёта)',
+      );
+    }
+  }
+
   async createSession(input: {
     packageId: string;
     createdById: string | null;
@@ -205,6 +235,16 @@ export class ContractDocumentSigningService {
       where: { id: input.packageId, deletedAt: null },
     });
     if (!pkg) throw new NotFoundException('Пакет документов не найден');
+
+    // Договор «Ремонт» без сметы нельзя подписать — блокируем уже на этапе создания сессии ЭП.
+    if (
+      pkg.kind === ContractDocumentPackageKind.REPAIR &&
+      !hasAttachedRepairEstimate(pkg.formData)
+    ) {
+      throw new BadRequestException(
+        'Договор «Ремонт» нельзя отправить на подписание без прикреплённой сметы (расчёта)',
+      );
+    }
 
     // Cancel previous active sessions for this package and release their number holds
     const previousActive = await this.prisma.contractDocumentSigningSession.findMany({

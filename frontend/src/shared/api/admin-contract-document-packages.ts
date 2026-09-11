@@ -628,6 +628,29 @@ export async function uploadPackageMeasurementPhoto(
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
+/** Картинка с чертежом (вкладка «Чертежи», пакет «Потолки»); в ответе — относительный `imageUrl`. */
+export async function uploadPackageDrawingPhoto(
+  packageId: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-drawing-photo`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ imageUrl: string }>;
+}
+
 /** Файл спецификации ПВХ для пакета «Окна» (широкий набор форматов, до 50 МБ). */
 export async function uploadWindowsSpecificationFile(
   packageId: string,

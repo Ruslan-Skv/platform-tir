@@ -27,6 +27,9 @@ import type {
 /** Максимум фото результатов замера во вкладке «Замер» (синхронизирован с backend). */
 export const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
 
+/** Максимум картинок с чертежами во вкладке «Чертежи» (синхронизирован с backend). */
+export const PACKAGE_DRAWING_PHOTOS_MAX = 10;
+
 function normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
   if (!Array.isArray(raw)) return [];
   const out: PackageIssuedInvoice[] = [];
@@ -492,6 +495,14 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
         .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
         .map((u) => u.trim())
         .slice(0, PACKAGE_MEASUREMENT_PHOTOS_MAX);
+    })(),
+    drawingPhotoUrls: (() => {
+      const raw = (merged as unknown as Record<string, unknown>).drawingPhotoUrls;
+      if (!Array.isArray(raw)) return [] as string[];
+      return raw
+        .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        .map((u) => u.trim())
+        .slice(0, PACKAGE_DRAWING_PHOTOS_MAX);
     })(),
     productSpecificationAmount: (() => {
       const rec = merged as unknown as Record<string, unknown>;

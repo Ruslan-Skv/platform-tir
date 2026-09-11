@@ -27,6 +27,8 @@ export type PackageDirectionConfig = {
   memoTabVisible: boolean;
   /** Накладная в строке вкладок (Двери, Жалюзи, …). */
   deliveryNoteTabVisible: boolean;
+  /** Вкладка «Чертежи» (картинки с чертежами; только «Потолки»). */
+  drawingsTabVisible: boolean;
   /**
    * Спецификация строками (как «Двери»), а не файлом+суммой (как «Окна»).
    * Позиции хранятся в `doorsSpecificationLines` до обобщения модели.

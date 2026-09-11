@@ -83,6 +83,8 @@ export class ContractDocumentSigningAdminController {
     if (!metas.length || metas.some((m) => !m.tabId)) {
       throw new BadRequestException('Укажите документы для отправки');
     }
+    // До записи файлов на диск: договор «Ремонт» без сметы нельзя отправить на подписание.
+    await this.signing.assertCanCreateSigningSession(packageId);
     const docs = this.signing.persistUploadedDocuments(packageId, metas, files || []);
     const expiresInDays = body.expiresInDays ? Number(body.expiresInDays) : undefined;
     const sendEmail = body.sendEmail === '1' || body.sendEmail === 'true';

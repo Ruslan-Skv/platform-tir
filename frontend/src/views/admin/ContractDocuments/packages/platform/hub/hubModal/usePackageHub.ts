@@ -48,6 +48,7 @@ import {
   PACKAGE_WORK_START_MIN_CONTRACT_PAY_PCT,
   computePackageContractPipelineModel,
   inferWindowsPrepayment70StartDate,
+  packageHasAttachedEstimate,
 } from '../pipeline/packagePipeline';
 import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from './packageHubConstants';
 import {
@@ -489,6 +490,11 @@ export function usePackageHub({
   const contractNumberLabel = getPackageContractNumberDisplayForForm(form);
 
   const handleMarkContractConcluded = async () => {
+    /** Договор «Ремонт» нельзя отметить подписанным без прикреплённой сметы (расчёта). */
+    if (packageKind === 'REPAIR' && !packageHasAttachedEstimate(formRef.current)) {
+      setError('Сначала прикрепите смету (расчёт) — вкладка «Смета»');
+      return;
+    }
     setSavingPackageStatus(true);
     setError(null);
     try {

@@ -164,6 +164,16 @@ export class ContractDocumentPackageCrudService {
       dto.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
       row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED;
 
+    if (becomingConcluded && row.kind === ContractDocumentPackageKind.REPAIR) {
+      const effectiveForm =
+        dto.formData !== undefined ? dto.formData : row.formData !== undefined ? row.formData : {};
+      if (this.extractRepairEstimatePresetIds(effectiveForm).length === 0) {
+        throw new BadRequestException(
+          'Договор «Ремонт» нельзя отметить подписанным без прикреплённой сметы (расчёта)',
+        );
+      }
+    }
+
     let formDataToSave: Prisma.InputJsonValue | undefined =
       dto.formData !== undefined ? (dto.formData as Prisma.InputJsonValue) : undefined;
     if (becomingConcluded) {

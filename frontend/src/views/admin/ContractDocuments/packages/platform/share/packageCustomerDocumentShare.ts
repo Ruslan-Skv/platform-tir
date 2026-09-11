@@ -80,6 +80,7 @@ import {
 const CUSTOMER_SHAREABLE_TAB_IDS = new Set<PackageDocumentTabId>([
   'contract',
   'consent',
+  'drawings',
   'estimate',
   'specification',
   'finalEstimate',
@@ -158,6 +159,8 @@ export type PackageCustomerShareableDocument = {
   /** Файл спецификации (Окна) — не PDF из шаблона. */
   isExternalFile?: boolean;
   externalFileName?: string;
+  /** Несколько прикреплённых файлов (чертежи потолков) — относительные URL загрузок. */
+  externalFileUrls?: string[];
 };
 
 export type PackageCustomerShareContext = {
@@ -405,6 +408,13 @@ export function listPackageCustomerShareableDocuments(
   for (const tabId of visible) {
     if (!CUSTOMER_SHAREABLE_TAB_IDS.has(tabId)) continue;
     const label = packageEditorTabLabel(packageKind, tabId);
+    if (tabId === 'drawings') {
+      /** Чертежи потолков: отправляются как отдельные файлы-картинки. */
+      const urls = form.drawingPhotoUrls.filter((u) => u.trim().length > 0);
+      if (urls.length === 0) continue;
+      out.push({ tabId, label, isExternalFile: true, externalFileUrls: urls });
+      continue;
+    }
     if (
       tabId === 'specification' &&
       isProductDirectionPackageKind(packageKind) &&
@@ -676,6 +686,42 @@ export async function fetchExternalSpecificationFile(
   }
 }
 
+function fileExtensionFromUrl(url: string): string {
+  const match = /\.([a-z0-9]{1,5})$/i.exec(url.trim().split('?')[0] ?? '');
+  return match ? `.${match[1]!.toLowerCase()}` : '';
+}
+
+/**
+ * Все файлы внешнего документа: файл спецификации («Окна») либо картинки-чертежи («Потолки»).
+ * Чертежи именуются Chertezh_N по порядку прикрепления.
+ */
+export async function fetchPackageShareExternalFiles(
+  ctx: PackageCustomerShareContext,
+  meta: PackageCustomerShareableDocument
+): Promise<File[]> {
+  const urls = (meta.externalFileUrls ?? []).filter((u) => u.trim().length > 0);
+  if (urls.length > 0) {
+    const out: File[] = [];
+    for (let i = 0; i < urls.length; i++) {
+      const url = publicUploadUrl(urls[i]!);
+      if (!url) continue;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) continue;
+        const blob = await res.blob();
+        const ext = fileExtensionFromUrl(urls[i]!) || '.jpg';
+        const type = blob.type || 'application/octet-stream';
+        out.push(new File([blob], `Chertezh_${i + 1}${ext}`, { type }));
+      } catch {
+        /* пропускаем недоступный файл */
+      }
+    }
+    return out;
+  }
+  const single = await fetchExternalSpecificationFile(ctx, meta);
+  return single ? [single] : [];
+}
+
 export type PackageCustomerSharePdfResult = {
   file: File | null;
   extraFiles: File[];
@@ -715,8 +761,8 @@ export async function buildPackageCustomerSharePdfResult(
 
   const extraFiles: File[] = [];
   for (const meta of merged.externalFiles) {
-    const f = await fetchExternalSpecificationFile(ctx, meta);
-    if (f) extraFiles.push(f);
+    const files = await fetchPackageShareExternalFiles(ctx, meta);
+    if (files.length > 0) extraFiles.push(...files);
     else merged.skippedLabels.push(meta.label);
   }
 

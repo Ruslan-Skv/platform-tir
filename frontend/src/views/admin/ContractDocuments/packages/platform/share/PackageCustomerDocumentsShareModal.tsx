@@ -250,7 +250,11 @@ export function PackageCustomerDocumentsShareModal({
                     <span>
                       {doc.label}
                       {doc.isExternalFile ? (
-                        <span className={styles.docItemHint}> (файл)</span>
+                        <span className={styles.docItemHint}>
+                          {doc.externalFileUrls?.length
+                            ? ` (файлы: ${doc.externalFileUrls.length})`
+                            : ' (файл)'}
+                        </span>
                       ) : null}
                     </span>
                   </label>

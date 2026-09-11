@@ -64,7 +64,12 @@ export function usePackageRenderedDocument({
   );
 
   return useMemo(() => {
-    if (activeTab === 'data' || activeTab === 'measurement' || activeTab === 'payments') {
+    if (
+      activeTab === 'data' ||
+      activeTab === 'measurement' ||
+      activeTab === 'drawings' ||
+      activeTab === 'payments'
+    ) {
       return '';
     }
     if (

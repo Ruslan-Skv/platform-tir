@@ -23,7 +23,7 @@ import {
   buildPackageCustomerDocumentHtml,
   buildPackageCustomerShareMailtoUrl,
   defaultSelectedCustomerDocumentTabs,
-  fetchExternalSpecificationFile,
+  fetchPackageShareExternalFiles,
   loadPackageCustomerShareContext,
   openPackageCustomerMessenger,
 } from './packageCustomerDocumentShare';
@@ -112,30 +112,33 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         const meta = ctx.shareableDocuments.find((d) => d.tabId === tab);
         const label = meta?.label ?? tab;
         if (meta?.isExternalFile) {
-          const external = await fetchExternalSpecificationFile(ctx, meta);
-          if (!external) {
+          // Внешние файлы (файл спецификации, чертежи потолков) — каждый отдельным документом.
+          const externals = await fetchPackageShareExternalFiles(ctx, meta);
+          if (externals.length === 0) {
             setError(
-              `Не удалось загрузить файл «${meta.externalFileName || label}». Проверьте прикреплённую спецификацию или исключите её из выбора.`
+              `Не удалось загрузить файлы «${label}». Проверьте прикреплённые файлы или исключите их из выбора.`
             );
             setBusy(false);
             return;
           }
-          // RTF конвертируем в PDF, чтобы заказчик получил привычный PDF;
-          // при сбое конвертации отправляем исходный файл.
-          if (/\.rtf$/i.test(external.name)) {
-            const pdf = await convertRtfSpecificationToPdf(external, external.name);
-            if (pdf) {
-              docs.push({ tabId: tab, label, file: pdf, fileName: pdf.name });
-              continue;
+          for (const external of externals) {
+            // RTF конвертируем в PDF, чтобы заказчик получил привычный PDF;
+            // при сбое конвертации отправляем исходный файл.
+            if (/\.rtf$/i.test(external.name)) {
+              const pdf = await convertRtfSpecificationToPdf(external, external.name);
+              if (pdf) {
+                docs.push({ tabId: tab, label, file: pdf, fileName: pdf.name });
+                continue;
+              }
             }
+            docs.push({
+              tabId: tab,
+              label: externals.length > 1 ? `${label} (${external.name})` : label,
+              file: external,
+              fileName: external.name,
+              isExternalFile: true,
+            });
           }
-          docs.push({
-            tabId: tab,
-            label,
-            file: external,
-            fileName: external.name,
-            isExternalFile: true,
-          });
           continue;
         }
         const html = buildPackageCustomerDocumentHtml(ctx, tab).trim();
@@ -249,8 +252,9 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                           {doc.label}
                           {doc.isExternalFile ? (
                             <span className={styles.docItemHint}>
-                              {' '}
-                              (прикреплённый файл: {doc.externalFileName || 'спецификация'})
+                              {doc.externalFileUrls?.length
+                                ? ` (файлы: ${doc.externalFileUrls.length})`
+                                : ` (прикреплённый файл: ${doc.externalFileName || 'спецификация'})`}
                             </span>
                           ) : null}
                         </span>
