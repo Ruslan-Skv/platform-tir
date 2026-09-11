@@ -22,6 +22,7 @@ import {
   buildPackageCustomerDocumentHtml,
   buildPackageCustomerShareMailtoUrl,
   defaultSelectedCustomerDocumentTabs,
+  fetchExternalSpecificationFile,
   loadPackageCustomerShareContext,
   openPackageCustomerMessenger,
 } from './packageCustomerDocumentShare';
@@ -99,23 +100,40 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     setBusy(true);
     setError(null);
     try {
-      const docs: Array<{ tabId: string; label: string; file: Blob; fileName: string }> = [];
+      const docs: Array<{
+        tabId: string;
+        label: string;
+        file: Blob;
+        fileName: string;
+        isExternalFile?: boolean;
+      }> = [];
       for (const tab of selectedTabs) {
         const meta = ctx.shareableDocuments.find((d) => d.tabId === tab);
+        const label = meta?.label ?? tab;
         if (meta?.isExternalFile) {
-          setError(
-            `«${meta.label}» — внешний файл. Прикрепите его отдельно или исключите из выбора.`
-          );
-          setBusy(false);
-          return;
+          const external = await fetchExternalSpecificationFile(ctx, meta);
+          if (!external) {
+            setError(
+              `Не удалось загрузить файл «${meta.externalFileName || label}». Проверьте прикреплённую спецификацию или исключите её из выбора.`
+            );
+            setBusy(false);
+            return;
+          }
+          docs.push({
+            tabId: tab,
+            label,
+            file: external,
+            fileName: external.name,
+            isExternalFile: true,
+          });
+          continue;
         }
         const html = buildPackageCustomerDocumentHtml(ctx, tab).trim();
         if (!html) {
-          setError(`Нет данных для документа «${meta?.label ?? tab}»`);
+          setError(`Нет данных для документа «${label}»`);
           setBusy(false);
           return;
         }
-        const label = meta?.label ?? tab;
         const { blob, fileName } = await buildDocumentPdfBlob(html, label, `${tab}.pdf`, {
           contractCompact: true,
         });
@@ -215,13 +233,15 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                         <input
                           type="checkbox"
                           checked={checked}
-                          disabled={Boolean(doc.isExternalFile)}
                           onChange={() => toggleTab(doc.tabId)}
                         />
                         <span>
                           {doc.label}
                           {doc.isExternalFile ? (
-                            <span className={styles.docItemHint}> (файл — пока недоступен)</span>
+                            <span className={styles.docItemHint}>
+                              {' '}
+                              (прикреплённый файл: {doc.externalFileName || 'спецификация'})
+                            </span>
                           ) : null}
                         </span>
                       </label>

@@ -41,6 +41,14 @@ function randomOtpCode(): string {
   return String(crypto.randomInt(100000, 999999));
 }
 
+const BLOCKED_FILE_EXTENSIONS =
+  /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
+
+function safeFileExtension(originalname: string): string {
+  const match = /\.([a-z0-9]{1,8})$/i.exec(originalname.trim());
+  return match ? `.${match[1]!.toLowerCase()}` : '';
+}
+
 @Injectable()
 export class ContractDocumentSigningService {
   constructor(
@@ -64,10 +72,10 @@ export class ContractDocumentSigningService {
     return dir;
   }
 
-  /** Сохраняет загруженные PDF и возвращает метаданные документов. */
+  /** Сохраняет загруженные файлы (PDF из шаблонов + внешние вложения) и возвращает метаданные документов. */
   persistUploadedDocuments(
     packageId: string,
-    metas: Array<{ tabId: string; label: string }>,
+    metas: Array<{ tabId: string; label: string; isExternalFile?: boolean }>,
     files: Express.Multer.File[],
   ): SigningSessionDocumentMeta[] {
     if (!metas.length) {
@@ -81,18 +89,26 @@ export class ContractDocumentSigningService {
     for (let i = 0; i < metas.length; i++) {
       const meta = metas[i]!;
       const file = files[i]!;
-      if (!file.mimetype?.includes('pdf') && !file.originalname.toLowerCase().endsWith('.pdf')) {
-        throw new BadRequestException(`Файл «${file.originalname}» должен быть PDF`);
+      const isPdf =
+        file.mimetype?.includes('pdf') || file.originalname.toLowerCase().endsWith('.pdf');
+      if (!isPdf) {
+        if (!meta.isExternalFile) {
+          throw new BadRequestException(`Файл «${file.originalname}» должен быть PDF`);
+        }
+        if (BLOCKED_FILE_EXTENSIONS.test(file.originalname)) {
+          throw new BadRequestException(`Тип файла «${file.originalname}» запрещён`);
+        }
       }
       const safeTab = (meta.tabId || 'doc').replace(/[^\w-]+/g, '_').slice(0, 40);
-      const filename = `${packageId}_${Date.now()}_${i}_${safeTab}.pdf`;
+      const ext = isPdf ? '.pdf' : safeFileExtension(file.originalname);
+      const filename = `${packageId}_${Date.now()}_${i}_${safeTab}${ext}`;
       const fullPath = path.join(dir, filename);
       fs.writeFileSync(fullPath, file.buffer);
       out.push({
         tabId: meta.tabId,
         label: meta.label || meta.tabId,
         fileUrl: `/uploads/contract-document-packages/signing/${filename}`,
-        fileName: file.originalname || `${safeTab}.pdf`,
+        fileName: file.originalname || `${safeTab}${ext}`,
       });
     }
     return out;

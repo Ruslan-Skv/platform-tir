@@ -68,13 +68,14 @@ export class ContractDocumentSigningAdminController {
     @Body() body: CreateBody,
     @Req() req: RequestWithUser,
   ) {
-    let metas: Array<{ tabId: string; label: string }> = [];
+    let metas: Array<{ tabId: string; label: string; isExternalFile?: boolean }> = [];
     try {
       const raw = body.documentsMeta ? JSON.parse(body.documentsMeta) : [];
       if (!Array.isArray(raw)) throw new Error('not array');
-      metas = raw.map((row: { tabId?: string; label?: string }) => ({
+      metas = raw.map((row: { tabId?: string; label?: string; isExternalFile?: boolean }) => ({
         tabId: String(row.tabId || '').trim(),
         label: String(row.label || '').trim() || String(row.tabId || 'Документ'),
+        isExternalFile: row.isExternalFile === true,
       }));
     } catch {
       throw new BadRequestException('Некорректный documentsMeta (ожидается JSON-массив)');

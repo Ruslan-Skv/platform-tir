@@ -655,7 +655,7 @@ function buildCombinedPdfFileName(
     : `Dogovor_${contract}_dokumenty_${count}.pdf`;
 }
 
-async function fetchExternalSpecificationFile(
+export async function fetchExternalSpecificationFile(
   ctx: PackageCustomerShareContext,
   meta: PackageCustomerShareableDocument
 ): Promise<File | null> {

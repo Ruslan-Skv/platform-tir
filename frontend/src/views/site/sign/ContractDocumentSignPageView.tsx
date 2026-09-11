@@ -163,7 +163,9 @@ export function ContractDocumentSignPageView() {
               rel="noopener noreferrer"
             >
               <span>{doc.label}</span>
-              <span className={styles.docMeta}>PDF</span>
+              <span className={styles.docMeta}>
+                {(doc.fileName.match(/\.[a-z0-9]{1,8}$/i)?.[0] ?? '.pdf').slice(1).toUpperCase()}
+              </span>
             </a>
           </li>
         ))}

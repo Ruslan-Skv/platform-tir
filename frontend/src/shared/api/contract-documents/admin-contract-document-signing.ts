@@ -92,7 +92,13 @@ export type PublicSigningSession = {
 export async function createPackageSigningSession(
   packageId: string,
   input: {
-    documents: Array<{ tabId: string; label: string; file: Blob; fileName: string }>;
+    documents: Array<{
+      tabId: string;
+      label: string;
+      file: Blob;
+      fileName: string;
+      isExternalFile?: boolean;
+    }>;
     customerName?: string;
     customerPhone?: string;
     customerEmail?: string;
@@ -104,7 +110,13 @@ export async function createPackageSigningSession(
   const form = new FormData();
   form.append(
     'documentsMeta',
-    JSON.stringify(input.documents.map((d) => ({ tabId: d.tabId, label: d.label })))
+    JSON.stringify(
+      input.documents.map((d) => ({
+        tabId: d.tabId,
+        label: d.label,
+        ...(d.isExternalFile ? { isExternalFile: true } : {}),
+      }))
+    )
   );
   for (const doc of input.documents) {
     form.append('files', doc.file, doc.fileName);
