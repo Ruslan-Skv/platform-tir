@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { uploadWindowsSpecificationFile } from '@/shared/api/admin-contract-document-packages';
@@ -21,6 +21,8 @@ import {
   packageLockNoticeMessage,
 } from '../../../platform/editor/shared/packageLockNoticeUi';
 import { productSpecificationCopy } from './productSpecificationCopy';
+import { convertRtfSpecificationToPdf } from './rtfFileToPdf';
+import { rtfToHtml } from './rtfToHtml';
 
 const SPEC_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estimateTabCompact} ${cdHubModals.estimateTabCompact}`;
 const SPEC_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
@@ -44,6 +46,7 @@ function formatFileSize(bytes: number | null | undefined): string {
 
 const IMAGE_FILE_EXT_RE = /\.(png|jpe?g|gif|webp|bmp|svg)$/i;
 const PDF_FILE_EXT_RE = /\.pdf$/i;
+const RTF_FILE_EXT_RE = /\.rtf$/i;
 
 function isPdfSpecificationFile(url: string, name: string): boolean {
   return PDF_FILE_EXT_RE.test(url) || PDF_FILE_EXT_RE.test(name);
@@ -51,6 +54,10 @@ function isPdfSpecificationFile(url: string, name: string): boolean {
 
 function isImageSpecificationFile(url: string, name: string): boolean {
   return IMAGE_FILE_EXT_RE.test(url) || IMAGE_FILE_EXT_RE.test(name);
+}
+
+function isRtfSpecificationFile(url: string, name: string): boolean {
+  return RTF_FILE_EXT_RE.test(url) || RTF_FILE_EXT_RE.test(name);
 }
 
 type ProductSpecificationTabContentProps = {
@@ -89,13 +96,22 @@ export function ProductSpecificationTabContent({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [uploading, setUploading] = useState(false);
   const [lastFileSize, setLastFileSize] = useState<number | null>(null);
+  const [rtfHtml, setRtfHtml] = useState<string | null>(null);
+  const [rtfError, setRtfError] = useState<string | null>(null);
 
   const handleFilePick = useCallback(
     async (file: File | null) => {
       if (!file || disabled) return;
       setUploading(true);
       try {
-        const res = await uploadWindowsSpecificationFile(packageId, file);
+        // RTF сразу переводим в PDF: превью на А4, печать и отправка на подписание
+        // работают по отлаженному PDF-пути (iframe + печатные стили).
+        let uploadFile: File = file;
+        if (/\.rtf$/i.test(file.name)) {
+          const pdf = await convertRtfSpecificationToPdf(file, file.name);
+          if (pdf) uploadFile = pdf;
+        }
+        const res = await uploadWindowsSpecificationFile(packageId, uploadFile);
         onFileAttached({ fileUrl: res.fileUrl, fileName: res.fileName });
         setLastFileSize(res.size);
       } catch (e) {
@@ -117,6 +133,32 @@ export function ProductSpecificationTabContent({
   const isImageFile = trimmedFileUrl
     ? isImageSpecificationFile(trimmedFileUrl, trimmedFileName)
     : false;
+  const isRtfFile = trimmedFileUrl
+    ? isRtfSpecificationFile(trimmedFileUrl, trimmedFileName)
+    : false;
+
+  useEffect(() => {
+    setRtfHtml(null);
+    setRtfError(null);
+    if (!trimmedFileUrl || !isRtfFile) return;
+    let aborted = false;
+    void (async () => {
+      try {
+        const res = await fetch(publicUploadUrl(trimmedFileUrl));
+        if (!res.ok) throw new Error('fetch failed');
+        const text = await res.text();
+        if (aborted) return;
+        const html = rtfToHtml(text);
+        setRtfHtml(html || null);
+        if (!html) setRtfError('Не удалось прочитать содержимое RTF-файла.');
+      } catch {
+        if (!aborted) setRtfError('Не удалось загрузить файл для предпросмотра.');
+      }
+    })();
+    return () => {
+      aborted = true;
+    };
+  }, [trimmedFileUrl, isRtfFile]);
   const copy = isProductDirectionPackageKind(packageKind)
     ? productSpecificationCopy(packageKind)
     : productSpecificationCopy('WINDOWS');
@@ -131,7 +173,8 @@ export function ProductSpecificationTabContent({
           <h3 className={`${SPEC_SECTION_TITLE} ${SPEC_SECTION_TITLE_MAIN}`}>Спецификация</h3>
           <p className={SPEC_HINT} style={{ marginTop: 0 }}>
             Спецификация ПВХ-изделий готовится в отдельной программе. Укажите итоговую стоимость и
-            прикрепите файл с эскизом и расчётом (PDF, Office, изображения, архивы, DWG и др.).
+            прикрепите файл с эскизом и расчётом (PDF, RTF, Office, изображения, архивы, DWG и др.).
+            RTF-файлы автоматически конвертируются в PDF.
           </p>
           <div className={SPEC_SECTION_FIELDS}>
             <div
@@ -271,6 +314,24 @@ export function ProductSpecificationTabContent({
                     src={downloadHref}
                     alt={trimmedFileName || 'Файл спецификации'}
                   />
+                </div>
+              ) : trimmedFileUrl && isRtfFile ? (
+                /* windowsSpecRtfHolder/windowsSpecRtfContent — стабильные глобальные классы для печати (printDocument.ts); module-классы — для экрана */
+                <div
+                  className={`${cdDocPreview.estimateA4RtfPreview} windowsSpecRtfHolder`}
+                  aria-hidden
+                >
+                  {rtfError ? (
+                    <p className={cdDocPreview.estimateA4Empty}>{rtfError}</p>
+                  ) : rtfHtml ? (
+                     
+                    <div
+                      className="windowsSpecRtfContent"
+                      dangerouslySetInnerHTML={{ __html: rtfHtml }}
+                    />
+                  ) : (
+                    <p className={cdDocPreview.estimateA4Empty}>Чтение файла…</p>
+                  )}
                 </div>
               ) : null}
               <PackageEstimateSignaturesBlock

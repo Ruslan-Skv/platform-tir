@@ -16,6 +16,7 @@ import hubStyles from '@/views/admin/ContractDocuments/packages/platform/hub/wor
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
 
 import { buildDocumentPdfBlob } from '../../../core/printDocument';
+import { convertRtfSpecificationToPdf } from '../../families/product-like/specification/rtfFileToPdf';
 import styles from './PackageCustomerDocumentsShareModal.module.css';
 import {
   type PackageCustomerShareContext,
@@ -118,6 +119,15 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
             );
             setBusy(false);
             return;
+          }
+          // RTF конвертируем в PDF, чтобы заказчик получил привычный PDF;
+          // при сбое конвертации отправляем исходный файл.
+          if (/\.rtf$/i.test(external.name)) {
+            const pdf = await convertRtfSpecificationToPdf(external, external.name);
+            if (pdf) {
+              docs.push({ tabId: tab, label, file: pdf, fileName: pdf.name });
+              continue;
+            }
           }
           docs.push({
             tabId: tab,

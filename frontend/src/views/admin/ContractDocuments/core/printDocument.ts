@@ -839,6 +839,18 @@ function buildPrintStylesheet(
   .docPrint .windowsSpecFilePreviewImage {
     display: block; max-width: 100%; max-height: 250mm; margin: 0 auto; border: none;
   }
+  /* Превью прикреплённого RTF-файла спецификации: содержимое файла на отдельной странице А4. */
+  .docPrint .windowsSpecRtfHolder { break-before: page; page-break-before: always; }
+  .docPrint .windowsSpecRtfContent { margin: 0; color: #111; line-height: 1.32; font-size: 10pt; }
+  .docPrint .windowsSpecRtfContent p { margin: 0 0 5pt; }
+  .docPrint .windowsSpecRtfContent table {
+    width: 100%; border-collapse: collapse; table-layout: fixed; margin: 3pt 0 7pt;
+  }
+  .docPrint .windowsSpecRtfContent td {
+    border: 1px solid #9ca3af; padding: 2pt 4pt; text-align: left; vertical-align: top;
+    line-height: 1.26; overflow-wrap: break-word; word-break: break-word;
+  }
+  .docPrint .windowsSpecRtfContent img { display: block; max-width: 100%; margin: 5pt auto; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4CategorySection { margin-bottom: 6pt; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Meta { margin: 0 0 6pt; color: #333; line-height: 1.35; }
   .docPrint .estimateA4DocPrintEmbed .estimateA4Room { margin-bottom: 10pt; }

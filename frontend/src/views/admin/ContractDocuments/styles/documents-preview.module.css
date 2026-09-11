@@ -1354,6 +1354,46 @@
   }
 }
 
+/* Превью прикреплённого RTF-файла спецификации внутри листа А4. */
+.estimateA4RtfPreview {
+  margin: var(--admin-space-sm) 0 var(--admin-space-md);
+  font-size: var(--admin-print-font-size-12px);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text);
+}
+
+.estimateA4RtfPreview :global(.windowsSpecRtfContent) p {
+  margin: 0 0 var(--admin-space-xs);
+}
+
+.estimateA4RtfPreview :global(.windowsSpecRtfContent) table {
+  width: 100%;
+  margin: var(--admin-space-xs) 0 var(--admin-space-sm);
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.estimateA4RtfPreview :global(.windowsSpecRtfContent) td {
+  border: 1px solid var(--admin-border);
+  padding: 2px 6px;
+  vertical-align: top;
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.estimateA4RtfPreview :global(.windowsSpecRtfContent) img {
+  display: block;
+  max-width: 100%;
+  margin: var(--admin-space-sm) auto;
+}
+
+@media print {
+  :global(body.body-print-estimate-sheet) .estimateA4RtfPreview {
+    margin: var(--admin-space-0);
+    break-before: page;
+  }
+}
+
 .estimateA4AppendixRef {
   margin: var(--admin-space-0) var(--admin-space-0) var(--admin-space-sm);
   font-size: var(--admin-print-font-size-10px);
