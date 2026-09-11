@@ -24,6 +24,9 @@ import type {
   PackagePostWorkQuestionnaire2Block,
 } from './types';
 
+/** Максимум фото результатов замера во вкладке «Замер» (синхронизирован с backend). */
+export const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
+
 function normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
   if (!Array.isArray(raw)) return [];
   const out: PackageIssuedInvoice[] = [];
@@ -482,6 +485,14 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
       'string'
         ? String((merged as unknown as Record<string, unknown>).repairContractCloseActPhotoUrl)
         : '',
+    measurementPhotoUrls: (() => {
+      const raw = (merged as unknown as Record<string, unknown>).measurementPhotoUrls;
+      if (!Array.isArray(raw)) return [] as string[];
+      return raw
+        .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        .map((u) => u.trim())
+        .slice(0, PACKAGE_MEASUREMENT_PHOTOS_MAX);
+    })(),
     productSpecificationAmount: (() => {
       const rec = merged as unknown as Record<string, unknown>;
       if (typeof rec.productSpecificationAmount === 'string')

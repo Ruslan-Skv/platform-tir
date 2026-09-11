@@ -64,7 +64,9 @@ export function usePackageRenderedDocument({
   );
 
   return useMemo(() => {
-    if (activeTab === 'data' || activeTab === 'payments') return '';
+    if (activeTab === 'data' || activeTab === 'measurement' || activeTab === 'payments') {
+      return '';
+    }
     if (
       activeTab === 'finalEstimate' ||
       activeTab === 'specification' ||

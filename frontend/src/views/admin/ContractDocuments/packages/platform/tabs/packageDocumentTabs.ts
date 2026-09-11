@@ -1,5 +1,6 @@
 export const PACKAGE_DOCUMENT_TAB_IDS = [
   'data',
+  'measurement',
   'payments',
   'contract',
   'consent',
@@ -77,6 +78,7 @@ export function normalizeLegacyPackageTabId(id: string): string {
 
 export const PACKAGE_DOCUMENT_TAB_LABELS: Record<PackageDocumentTabId, string> = {
   data: 'Данные',
+  measurement: 'Замер',
   payments: 'Оплаты',
   contract: 'Договор',
   consent: 'Согласие',
@@ -108,6 +110,7 @@ export const PACKAGE_DOCUMENT_TAB_LABELS: Record<PackageDocumentTabId, string> =
 /** Короткие подписи для строки вкладок редактора пакета «Ремонт». */
 export const PACKAGE_DOCUMENT_TAB_LABELS_SHORT: Record<PackageDocumentTabId, string> = {
   data: 'Данные',
+  measurement: 'Замер',
   payments: 'Оплаты',
   contract: 'Договор',
   consent: 'Согласие',

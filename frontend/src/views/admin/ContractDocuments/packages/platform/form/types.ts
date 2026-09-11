@@ -315,6 +315,11 @@ export interface PackageFormData {
   repairContractCloseActSignedAt: string;
   /** URL фото акта сдачи-приёмки. */
   repairContractCloseActPhotoUrl: string;
+  /**
+   * Фото результатов замера (вкладка «Замер») — относительные URL после загрузки на сервер.
+   * Порядок = порядок прикрепления; максимум 5 шт.
+   */
+  measurementPhotoUrls: string[];
   /** Стоимость спецификации товарного пакета (Окна, Двери, …), ввод менеджера. */
   productSpecificationAmount: string;
   /** Файл спецификации (эскиз, расчёт из внешней программы) — относительный URL на сервере. */

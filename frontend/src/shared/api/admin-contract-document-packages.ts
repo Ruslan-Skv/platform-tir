@@ -605,6 +605,29 @@ export async function uploadRepairPackageContractCloseActPhoto(
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
+/** Фото результатов замера (вкладка «Замер», любое направление пакета); в ответе — относительный `imageUrl`. */
+export async function uploadPackageMeasurementPhoto(
+  packageId: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-measurement-photo`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ imageUrl: string }>;
+}
+
 /** Файл спецификации ПВХ для пакета «Окна» (широкий набор форматов, до 50 МБ). */
 export async function uploadWindowsSpecificationFile(
   packageId: string,

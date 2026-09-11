@@ -21,6 +21,7 @@ import {
   PackageEstimateTab,
   type PackageEstimateTabProps,
 } from '../estimateTab/PackageEstimateTab';
+import { PackageMeasurementTab } from '../measurementTab/PackageMeasurementTab';
 import {
   PackageFinalEstimateTab,
   type PackageFinalEstimateTabProps,
@@ -163,6 +164,17 @@ export function PackageDocumentEditorTabContent({
 
   if (activeTab === 'data') {
     return <PackageDataTab {...dataTabProps} />;
+  }
+
+  if (activeTab === 'measurement') {
+    return (
+      <PackageMeasurementTab
+        packageId={packageId}
+        form={form}
+        setForm={setForm}
+        touchPackageData={touchPackageData}
+      />
+    );
   }
 
   if (activeTab === 'estimate') {

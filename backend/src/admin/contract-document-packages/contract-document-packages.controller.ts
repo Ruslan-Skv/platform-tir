@@ -89,6 +89,23 @@ const windowsSpecificationsDir = path.join(
   'windows-specifications',
 );
 
+const packageMeasurementsDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'measurements',
+);
+
+/** Максимум фото замера в formData пакета (вкладка «Замер»). */
+const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
+
+function countPackageMeasurementPhotos(formData: unknown): number {
+  if (!formData || typeof formData !== 'object') return 0;
+  const urls = (formData as { measurementPhotoUrls?: unknown }).measurementPhotoUrls;
+  if (!Array.isArray(urls)) return 0;
+  return urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).length;
+}
+
 const WINDOWS_SPEC_BLOCKED_EXTENSIONS =
   /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
 
@@ -693,6 +710,49 @@ export class ContractDocumentPackagesController {
     }
     const filename = path.basename(file.path);
     return { imageUrl: `/uploads/contract-document-packages/contract-close-acts/${filename}` };
+  }
+
+  /** Фото результатов замера для вкладки «Замер» (любое направление пакета), до 5 фото. */
+  @Post(':id/upload-measurement-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(packageMeasurementsDir)) {
+            fs.mkdirSync(packageMeasurementsDir, { recursive: true });
+          }
+          cb(null, packageMeasurementsDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(
+            null,
+            `measurement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${path.extname(file.originalname) || '.jpg'}`,
+          );
+        },
+      }),
+      limits: { fileSize: 8 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadMeasurementPhoto(@Param('id') id: string, @UploadedFile() file: Express.Multer.File) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (countPackageMeasurementPhotos(pkg.formData) >= PACKAGE_MEASUREMENT_PHOTOS_MAX) {
+      throw new BadRequestException(
+        `Можно прикрепить не более ${PACKAGE_MEASUREMENT_PHOTOS_MAX} фото замера`,
+      );
+    }
+    const filename = path.basename(file.path);
+    return { imageUrl: `/uploads/contract-document-packages/measurements/${filename}` };
   }
 
   @Post(':id/upload-windows-specification-file')

@@ -156,6 +156,7 @@ export function defaultPackageFormData(): PackageFormData {
     repairWorkStartActPhotoUrl: '',
     repairContractCloseActSignedAt: '',
     repairContractCloseActPhotoUrl: '',
+    measurementPhotoUrls: [],
     productSpecificationAmount: '',
     productSpecificationFileUrl: '',
     productSpecificationFileName: '',
