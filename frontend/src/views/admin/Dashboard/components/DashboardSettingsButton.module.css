@@ -378,3 +378,14 @@
   font-size: var(--admin-font-size-xs);
   color: var(--admin-danger, #c0392b);
 }
+
+/* Панель кнопок всегда видна при скролле содержимого модалки */
+.formActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 calc(-1 * var(--admin-space-xl, 12px)) calc(-1 * var(--admin-space-xl, 12px));
+  padding: var(--admin-space-lg, 10px) var(--admin-space-xl, 12px);
+  border-radius: 0 0 var(--admin-radius-lg, 10px) var(--admin-radius-lg, 10px);
+  box-shadow: 0 -4px 12px rgb(0 0 0 / 0.08);
+}

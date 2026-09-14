@@ -280,7 +280,7 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
   }, [open, loadSettings]);
 
   const handleClose = () => {
-    if (saving) return;
+    if (saving || roleSaving || roleLinkSaving) return;
     setOpen(false);
     setError(null);
     clearSaveSuccess();
@@ -329,27 +329,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     setRoleAllowedDraft((prev) => ({ ...prev, [key]: value }));
   };
 
-  const handleSaveRoleBlock = async () => {
-    if (!selectedRole || roleSaving || !roleAllowedHasChanges) return;
-    setRoleSaving(true);
-    setRoleError(null);
-    try {
-      const saved = await updateAdminDashboardRoleBlock({
-        role: selectedRole,
-        ...roleAllowedDraft,
-      });
-      setRoleBlocksList((prev) => {
-        const rest = prev.filter((item) => item.role !== saved.role);
-        return [...rest, saved].sort((a, b) => a.role.localeCompare(b.role));
-      });
-      showSaveSuccess();
-    } catch (e) {
-      setRoleError(e instanceof Error ? e.message : 'Ошибка сохранения');
-    } finally {
-      setRoleSaving(false);
-    }
-  };
-
   /** Сохранённые ссылки с id — для них можно настраивать доступ по ролям. */
   const savedQuickLinks = useMemo(
     () => quickLinks.filter((link): link is QuickLinkDraft & { id: string } => !!link.id),
@@ -367,34 +346,19 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     setRoleLinkDraft((prev) => ({ ...prev, [linkId]: value }));
   };
 
-  const handleSaveRoleLinks = async () => {
-    if (!selectedRole || roleLinkSaving || savedQuickLinks.length === 0) return;
-    setRoleLinkSaving(true);
-    setRoleLinkError(null);
-    try {
-      const items = savedQuickLinks.map((link) => ({
-        linkId: link.id,
-        allowed: roleLinkDraft[link.id] ?? true,
-      }));
-      const saved = await updateAdminDashboardRoleQuickLinks({ role: selectedRole, items });
-      setRoleLinkAccess((prev) => [...prev.filter((item) => item.role !== selectedRole), ...saved]);
-      showSaveSuccess();
-    } catch (e) {
-      setRoleLinkError(e instanceof Error ? e.message : 'Ошибка сохранения');
-    } finally {
-      setRoleLinkSaving(false);
-    }
-  };
-
   useEffect(() => {
     if (hasChanges && saveSuccessVisible) {
       clearSaveSuccess();
     }
   }, [clearSaveSuccess, hasChanges, saveSuccessVisible]);
 
+  const hasAnyChanges = hasChanges || roleAllowedHasChanges || roleLinkHasChanges;
+  const anySaving = saving || roleSaving || roleLinkSaving;
+
+  /** Единая кнопка «Сохранить»: сохраняет порядок/ссылки и доступы выбранной роли. */
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (saving || loading || !hasChanges) return;
+    if (anySaving || loading || !hasAnyChanges) return;
 
     const validationError = validateQuickLinks(quickLinks);
     if (validationError) {
@@ -402,29 +366,69 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
       return;
     }
 
-    setSaving(true);
     setError(null);
+    setRoleError(null);
+    setRoleLinkError(null);
     clearSaveSuccess();
     try {
-      const saved = await updateAdminDashboardSettings({
-        sectionOrder,
-        quickLinks: quickLinks.map((link) => ({
-          id: link.id,
-          label: link.label.trim(),
-          href: link.href.trim(),
-          isEnabled: link.isEnabled,
-        })),
-      });
-      const nextDraft = settingsToDraft(saved);
-      setSectionOrder(nextDraft.sectionOrder);
-      setQuickLinks(nextDraft.quickLinks);
-      setSavedSettings(toSavedSnapshot(nextDraft));
-      onSettingsChange(saved);
+      if (hasChanges) {
+        setSaving(true);
+        const saved = await updateAdminDashboardSettings({
+          sectionOrder,
+          quickLinks: quickLinks.map((link) => ({
+            id: link.id,
+            label: link.label.trim(),
+            href: link.href.trim(),
+            isEnabled: link.isEnabled,
+          })),
+        });
+        const nextDraft = settingsToDraft(saved);
+        setSectionOrder(nextDraft.sectionOrder);
+        setQuickLinks(nextDraft.quickLinks);
+        setSavedSettings(toSavedSnapshot(nextDraft));
+        onSettingsChange(saved);
+        setSaving(false);
+      }
+
+      if (selectedRole && roleAllowedHasChanges) {
+        setRoleSaving(true);
+        const savedBlock = await updateAdminDashboardRoleBlock({
+          role: selectedRole,
+          ...roleAllowedDraft,
+        });
+        setRoleBlocksList((prev) => {
+          const rest = prev.filter((item) => item.role !== savedBlock.role);
+          return [...rest, savedBlock].sort((a, b) => a.role.localeCompare(b.role));
+        });
+        setRoleSaving(false);
+      }
+
+      if (selectedRole && savedQuickLinks.length > 0 && roleLinkHasChanges) {
+        setRoleLinkSaving(true);
+        const savedLinks = await updateAdminDashboardRoleQuickLinks({
+          role: selectedRole,
+          items: savedQuickLinks.map((link) => ({
+            linkId: link.id,
+            allowed: roleLinkDraft[link.id] ?? true,
+          })),
+        });
+        setRoleLinkAccess((prev) => [
+          ...prev.filter((item) => item.role !== selectedRole),
+          ...savedLinks,
+        ]);
+        setRoleLinkSaving(false);
+      }
+
       showSaveSuccess();
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Ошибка сохранения');
+      const message = e instanceof Error ? e.message : 'Ошибка сохранения';
+      setError(message);
+      setRoleError(message);
+      setRoleLinkError(message);
     } finally {
       setSaving(false);
+      setRoleSaving(false);
+      setRoleLinkSaving(false);
     }
   };
 
@@ -535,15 +539,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
                           </option>
                         ))}
                       </select>
-                      <button
-                        data-admin-mutation
-                        type="button"
-                        className={styles.roleSaveBtn}
-                        disabled={roleSaving || !roleAllowedHasChanges}
-                        onClick={() => void handleSaveRoleBlock()}
-                      >
-                        {roleSaving ? 'Сохранение…' : 'Сохранить для роли'}
-                      </button>
                     </div>
                     <ul className={styles.roleBlocksList}>
                       {(
@@ -570,17 +565,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
 
                     <div className={styles.sectionHead}>
                       <h4 className={styles.sectionTitle}>Быстрые ссылки для роли</h4>
-                      <button
-                        data-admin-mutation
-                        type="button"
-                        className={styles.roleSaveBtn}
-                        disabled={
-                          roleLinkSaving || savedQuickLinks.length === 0 || !roleLinkHasChanges
-                        }
-                        onClick={() => void handleSaveRoleLinks()}
-                      >
-                        {roleLinkSaving ? 'Сохранение…' : 'Сохранить ссылки для роли'}
-                      </button>
                     </div>
                     {savedQuickLinks.length === 0 ? (
                       <p className={styles.hint}>
@@ -720,22 +704,23 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
 
               {error ? <p data-modal-form-error>{error}</p> : null}
 
-              <div data-modal-form-actions>
+              <div data-modal-form-actions className={styles.formActions}>
                 <button
                   type="button"
                   data-modal-btn="secondary"
                   onClick={handleClose}
-                  disabled={saving}
+                  disabled={anySaving}
                 >
-                  {hasChanges ? 'Отмена' : 'Закрыть'}
+                  {hasAnyChanges ? 'Отмена' : 'Закрыть'}
                 </button>
                 <button
                   data-admin-mutation
                   type="submit"
                   data-modal-btn="primary"
-                  disabled={saving || !hasChanges}
+                  disabled={anySaving || loading || !hasAnyChanges}
+                  title={hasAnyChanges ? undefined : 'Сначала внесите изменения'}
                 >
-                  {saving ? 'Сохранение…' : 'Сохранить'}
+                  {anySaving ? 'Сохранение…' : 'Сохранить'}
                 </button>
               </div>
             </form>
