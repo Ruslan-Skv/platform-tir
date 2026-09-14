@@ -73,6 +73,27 @@ export function PackageDataPartySectionCollapseButton({
   );
 }
 
+/** Краткая сводка блока для свёрнутого состояния: первые заполненные значения через «·». */
+export function buildPartySummaryText(
+  parts: ReadonlyArray<string | null | undefined>,
+  limit = 3
+): string {
+  return parts
+    .filter((p): p is string => typeof p === 'string' && p.trim().length > 0)
+    .map((p) => p.trim())
+    .slice(0, limit)
+    .join(' · ');
+}
+
+export function PackageDataPartySectionSummary({ text }: { text: string }) {
+  if (!text) return null;
+  return (
+    <p className={styles.packageDataPartySectionSummary} title={text}>
+      {text}
+    </p>
+  );
+}
+
 function isFilledContractDataField(value: unknown): boolean {
   if (value == null) return false;
   if (typeof value === 'string') return value.trim().length > 0;

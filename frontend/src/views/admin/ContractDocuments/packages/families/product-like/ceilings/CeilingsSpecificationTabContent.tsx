@@ -26,7 +26,6 @@ const SPEC_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
 const SPEC_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
 const SPEC_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
 const SPEC_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
-const SPEC_SECTION_FIELDS = `${cdTemplates.sectionFields} ${cdEstimateTab.sectionFields}`;
 const SPEC_SECTION_TITLE = cdEstimateTab.sectionTitle;
 const SPEC_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
 const SPEC_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
@@ -97,7 +96,6 @@ export function CeilingsSpecificationTabContent({
             priceItems={priceItems}
             readOnly={disabled}
             fieldClassName={SPEC_FIELD}
-            fieldsRowClassName={`${SPEC_SECTION_FIELDS} ${cdProduct.doorsSpecificationFieldsRow}`}
             onChange={onSpecChange}
           />
         </div>

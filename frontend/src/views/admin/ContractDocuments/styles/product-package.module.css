@@ -1056,15 +1056,17 @@
 
 .ceilingsSpecificationTotalsRow {
   display: flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: flex-end;
-  gap: var(--admin-space-sm) var(--admin-space-md);
+  justify-content: flex-start;
+  gap: var(--admin-space-2xs) var(--admin-space-sm);
+  margin-bottom: var(--admin-space-sm);
 }
 
 .ceilingsSpecificationCompactField {
   flex: 0 0 auto;
-  width: 8rem;
-  max-width: 8rem;
+  width: 7.5rem;
+  max-width: 7.5rem;
   min-width: 0;
 }
 
@@ -1080,16 +1082,18 @@
 }
 
 .ceilingsSpecificationTotals {
-  margin: 0 0 var(--admin-space-2xs) auto;
+  margin: 0 0 var(--admin-space-2xs) 0;
   display: inline-flex;
-  flex-wrap: nowrap;
+  flex-wrap: wrap;
   align-items: center;
-  gap: var(--admin-space-xs);
+  justify-content: flex-start;
+  gap: var(--admin-space-3xs, 2px) var(--admin-space-xs);
   font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
   font-weight: 700;
   line-height: var(--admin-line-height-sm);
   color: var(--admin-text-primary);
-  white-space: nowrap;
+  white-space: normal;
+  text-align: left;
 }
 
 .ceilingsSpecificationTotalsBadge {

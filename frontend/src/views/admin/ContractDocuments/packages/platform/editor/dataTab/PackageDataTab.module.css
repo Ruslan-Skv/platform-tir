@@ -138,6 +138,16 @@
   line-height: var(--admin-line-height-sm);
 }
 
+.packageDataPartySectionSummary {
+  margin: 4px 0 2px;
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  color: var(--admin-text-muted);
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 .packageDataPartySectionFieldHint {
   margin-top: 2px;
   margin-bottom: 0;

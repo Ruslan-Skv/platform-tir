@@ -6,6 +6,7 @@ import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModa
 import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
+import { PackageRemoteSigningTimeline } from '../events/PackageRemoteSigningTimeline';
 import { PackageContractPaymentsJournalModal } from '../payments/PackageContractPaymentsJournalModal';
 import { PackageContractPaymentsTab } from '../payments/PackageContractPaymentsTab';
 import { PackagePipelineSection } from '../pipeline/PackagePipelineSection';
@@ -142,6 +143,11 @@ export function PackageHubModalView({
                   blockPipelineReason={blockPipelineReason}
                   onOpenPaymentsJournal={() => setPaymentsJournalOpen(true)}
                   onScrollToConductPayment={scrollToConductPayment}
+                />
+                <PackageRemoteSigningTimeline
+                  packageId={packageId}
+                  reloadToken={journalReloadToken}
+                  onError={hub.setError}
                 />
               </section>
 

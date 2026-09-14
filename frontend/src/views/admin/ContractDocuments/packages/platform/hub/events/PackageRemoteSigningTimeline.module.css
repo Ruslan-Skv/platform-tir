@@ -1,0 +1,201 @@
+.sectionHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin: 18px 0 6px;
+}
+
+.refreshBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+}
+
+.refreshBtn:hover:not(:disabled) {
+  border-color: currentColor;
+}
+
+.refreshIcon {
+  width: 16px;
+  height: 16px;
+}
+
+.refreshSpinning {
+  animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.hint {
+  margin: 0;
+  font-size: 12px;
+  opacity: 0.75;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 8px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.session {
+  padding: 8px 10px;
+  border: 1px solid rgb(0 0 0 / 0.08);
+  border-radius: 10px;
+  background: rgb(0 0 0 / 0.02);
+}
+
+.sessionHead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.sessionStatus {
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  background: rgb(0 0 0 / 0.08);
+}
+
+.sessionStatusSigned {
+  background: rgb(34 197 94 / 0.16);
+  color: #15803d;
+}
+
+.sessionStatusRejected {
+  background: rgb(239 68 68 / 0.14);
+  color: #b91c1c;
+}
+
+.sessionStatusPending {
+  background: rgb(245 158 11 / 0.16);
+  color: #92400e;
+}
+
+.events {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  margin: 6px 0 0;
+  padding: 0 0 0 14px;
+  list-style: none;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.events li {
+  position: relative;
+}
+
+.events li::before {
+  content: '—';
+  position: absolute;
+  left: -14px;
+  color: rgb(0 0 0 / 0.35);
+}
+
+.eventDate {
+  color: rgb(0 0 0 / 0.5);
+  font-variant-numeric: tabular-nums;
+}
+
+.eventToneSigned {
+  color: #15803d;
+  font-weight: 600;
+}
+
+.eventToneRejected {
+  color: #b91c1c;
+  font-weight: 600;
+}
+
+.docs {
+  margin-top: 6px;
+  font-size: 12.5px;
+}
+
+.docsTitle {
+  color: rgb(0 0 0 / 0.55);
+}
+
+.docsList {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin: 3px 0 0;
+  padding: 0 0 0 14px;
+  list-style: none;
+}
+
+.docLink {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: rgb(0 0 0 / 0.3);
+  text-underline-offset: 2px;
+}
+
+.docLink:hover {
+  text-decoration-color: currentColor;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .docsTitle {
+  color: rgb(255 255 255 / 0.5);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .session {
+  border-color: rgb(255 255 255 / 0.12);
+  background: rgb(255 255 255 / 0.04);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sessionStatus {
+  background: rgb(255 255 255 / 0.12);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sessionStatusSigned {
+  background: rgb(74 222 128 / 0.18);
+  color: rgb(134 239 172);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sessionStatusRejected {
+  background: rgb(248 113 113 / 0.18);
+  color: rgb(252 165 165);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sessionStatusPending {
+  background: rgb(245 158 11 / 0.2);
+  color: rgb(253 230 138);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .eventDate,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .events li::before {
+  color: rgb(255 255 255 / 0.45);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .eventToneSigned {
+  color: rgb(134 239 172);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .eventToneRejected {
+  color: rgb(252 165 165);
+}

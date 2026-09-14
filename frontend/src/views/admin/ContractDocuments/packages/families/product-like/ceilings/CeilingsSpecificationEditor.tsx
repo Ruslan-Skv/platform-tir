@@ -44,7 +44,6 @@ type Props = {
   priceItems: CeilingsPriceItem[];
   readOnly: boolean;
   fieldClassName: string;
-  fieldsRowClassName: string;
   onChange: (spec: CeilingsSpecification) => void;
 };
 
@@ -142,7 +141,6 @@ export function CeilingsSpecificationEditor({
   priceItems,
   readOnly,
   fieldClassName,
-  fieldsRowClassName,
   onChange,
 }: Props) {
   const textures = useMemo(() => listFabricTextures(priceItems), [priceItems]);
@@ -173,7 +171,7 @@ export function CeilingsSpecificationEditor({
 
   return (
     <div className={cdProduct.ceilingsSpecificationEditor}>
-      <div className={`${fieldsRowClassName} ${cdProduct.ceilingsSpecificationTotalsRow}`}>
+      <div className={cdProduct.ceilingsSpecificationTotalsRow}>
         <div
           className={`${fieldClassName} ${cdProduct.doorsSpecificationDiscountField} ${cdProduct.ceilingsSpecificationCompactField}`}
         >

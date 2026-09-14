@@ -16,7 +16,9 @@ import {
 } from './packageDataTabStyles';
 import {
   PackageDataPartySectionCollapseButton,
+  PackageDataPartySectionSummary,
   PackageDataSectionLockInline,
+  buildPartySummaryText,
   packageCompletionBadgeStyle,
 } from './packageDataTabUi';
 
@@ -67,6 +69,17 @@ export function PackageDataCustomerPartySection({
           />
         </div>
       </div>
+      {!customerDataSectionExpanded ? (
+        <PackageDataPartySectionSummary
+          text={buildPartySummaryText([
+            form.customer.type === 'PERSON'
+              ? form.customer.fullName
+              : form.customer.organizationName || form.customer.representativeFullNameNominative,
+            customerPhonesReadonlyDisplay,
+            form.customer.type === 'PERSON' ? form.customer.address : form.customer.inn,
+          ])}
+        />
+      ) : null}
       {customerDataSectionExpanded ? (
         <>
           <p className={`${DATA_HINT} ${styles.packageDataPartySectionIntroHint}`}>

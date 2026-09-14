@@ -12,7 +12,9 @@ import {
 } from './packageDataTabStyles';
 import {
   PackageDataPartySectionCollapseButton,
+  PackageDataPartySectionSummary,
   PackageDataSectionLockInline,
+  buildPartySummaryText,
   packageCompletionBadgeStyle,
 } from './packageDataTabUi';
 
@@ -57,6 +59,15 @@ export function PackageDataManagerPartySection({
           />
         </div>
       </div>
+      {!managerDataSectionExpanded ? (
+        <PackageDataPartySectionSummary
+          text={buildPartySummaryText([
+            form.executor.directorNameNominative,
+            form.executor.salesOffice,
+            form.executor.officePhone,
+          ])}
+        />
+      ) : null}
       {managerDataSectionExpanded ? (
         <>
           <p className={`${DATA_HINT} ${styles.packageDataPartySectionIntroHint}`}>
