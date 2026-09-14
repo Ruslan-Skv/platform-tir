@@ -20,10 +20,6 @@ export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS = [
 ] as const;
 
 export const DEFAULT_ADMIN_DASHBOARD_SETTINGS = {
-  catalogActivityVisible: false,
-  trainingDynamicsVisible: true,
-  calendarVisible: false,
-  dateToolbarVisible: true,
   sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: [...DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS],
 } as const;
@@ -213,13 +209,11 @@ export class AdminDashboardSettingsService {
 
     if (!row) {
       return {
-        catalogActivityVisible:
-          DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible && allowed.catalogActivity,
-        trainingDynamicsVisible:
-          DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible && allowed.trainingDynamics,
-        calendarVisible: DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible && allowed.calendar,
-        dateToolbarVisible:
-          DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible && allowed.dateToolbar,
+        // Видимость блоков определяется только доступом роли (настраивает супер-админ)
+        catalogActivityVisible: allowed.catalogActivity,
+        trainingDynamicsVisible: allowed.trainingDynamics,
+        calendarVisible: allowed.calendar,
+        dateToolbarVisible: allowed.dateToolbar,
         sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder],
         quickLinks: allowed.quickLinks
           ? DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
@@ -252,10 +246,11 @@ export class AdminDashboardSettingsService {
           }));
 
     return {
-      catalogActivityVisible: row.catalogActivityVisible && allowed.catalogActivity,
-      trainingDynamicsVisible: row.trainingDynamicsVisible && allowed.trainingDynamics,
-      calendarVisible: row.calendarVisible && allowed.calendar,
-      dateToolbarVisible: row.dateToolbarVisible && allowed.dateToolbar,
+      // Видимость блоков определяется только доступом роли (настраивает супер-админ)
+      catalogActivityVisible: allowed.catalogActivity,
+      trainingDynamicsVisible: allowed.trainingDynamics,
+      calendarVisible: allowed.calendar,
+      dateToolbarVisible: allowed.dateToolbar,
       sectionOrder: normalizeAdminDashboardSectionOrder(row.sectionOrder),
       quickLinks: allowed.quickLinks
         ? quickLinks.filter((link) => !blockedLinkIds.has(link.id))
@@ -279,34 +274,15 @@ export class AdminDashboardSettingsService {
     }
 
     await this.prisma.$transaction(async (tx) => {
-      const block = await tx.adminDashboardBlock.upsert({
+      await tx.adminDashboardBlock.upsert({
         where: { id: SETTINGS_ID },
         update: {
-          ...(dto.catalogActivityVisible !== undefined && {
-            catalogActivityVisible: dto.catalogActivityVisible,
-          }),
-          ...(dto.trainingDynamicsVisible !== undefined && {
-            trainingDynamicsVisible: dto.trainingDynamicsVisible,
-          }),
-          ...(dto.calendarVisible !== undefined && {
-            calendarVisible: dto.calendarVisible,
-          }),
-          ...(dto.dateToolbarVisible !== undefined && {
-            dateToolbarVisible: dto.dateToolbarVisible,
-          }),
           ...(dto.sectionOrder !== undefined && {
             sectionOrder: normalizeAdminDashboardSectionOrder(dto.sectionOrder),
           }),
         },
         create: {
           id: SETTINGS_ID,
-          catalogActivityVisible:
-            dto.catalogActivityVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
-          trainingDynamicsVisible:
-            dto.trainingDynamicsVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible,
-          calendarVisible: dto.calendarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible,
-          dateToolbarVisible:
-            dto.dateToolbarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
           sectionOrder:
             dto.sectionOrder !== undefined
               ? normalizeAdminDashboardSectionOrder(dto.sectionOrder)
@@ -337,11 +313,9 @@ export class AdminDashboardSettingsService {
       });
 
       return {
-        catalogActivityVisible: block.catalogActivityVisible,
-        trainingDynamicsVisible: block.trainingDynamicsVisible,
-        calendarVisible: block.calendarVisible,
-        dateToolbarVisible: block.dateToolbarVisible,
-        sectionOrder: normalizeAdminDashboardSectionOrder(block.sectionOrder),
+        sectionOrder: normalizeAdminDashboardSectionOrder(
+          dto.sectionOrder ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder,
+        ),
         quickLinks: quickLinks.map((link) => ({
           id: link.id,
           label: link.label,

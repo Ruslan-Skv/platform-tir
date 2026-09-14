@@ -46,28 +46,6 @@ export class AdminDashboardQuickLinkDto {
 }
 
 export class UpdateAdminDashboardSettingsDto {
-  @ApiPropertyOptional({ description: 'Показывать статистику добавления товаров в каталог' })
-  @IsOptional()
-  @IsBoolean()
-  catalogActivityVisible?: boolean;
-
-  @ApiPropertyOptional({ description: 'Показывать график динамики обучения сотрудников' })
-  @IsOptional()
-  @IsBoolean()
-  trainingDynamicsVisible?: boolean;
-
-  @ApiPropertyOptional({ description: 'Показывать календарь событий на дашборде' })
-  @IsOptional()
-  @IsBoolean()
-  calendarVisible?: boolean;
-
-  @ApiPropertyOptional({
-    description: 'Показывать блок выбора периода (даты «с» / «по» и быстрые пресеты)',
-  })
-  @IsOptional()
-  @IsBoolean()
-  dateToolbarVisible?: boolean;
-
   @ApiPropertyOptional({
     type: [String],
     description: 'Порядок секций на дашборде',

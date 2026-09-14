@@ -80,29 +80,17 @@ function roleAllowedEqual(
 }
 
 type DashboardSettingsDraft = {
-  catalogActivityVisible: boolean;
-  trainingDynamicsVisible: boolean;
-  calendarVisible: boolean;
-  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: QuickLinkDraft[];
 };
 
 type SavedDashboardSettingsSnapshot = {
-  catalogActivityVisible: boolean;
-  trainingDynamicsVisible: boolean;
-  calendarVisible: boolean;
-  dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: Array<{ label: string; href: string; isEnabled: boolean }>;
 };
 
 function settingsToDraft(settings: AdminDashboardSettings): DashboardSettingsDraft {
   return {
-    catalogActivityVisible: settings.catalogActivityVisible,
-    trainingDynamicsVisible: settings.trainingDynamicsVisible,
-    calendarVisible: settings.calendarVisible,
-    dateToolbarVisible: settings.dateToolbarVisible,
     sectionOrder: [...settings.sectionOrder],
     quickLinks: settings.quickLinks.map((link, index) => ({
       key: link.id || `link-${index}`,
@@ -116,10 +104,6 @@ function settingsToDraft(settings: AdminDashboardSettings): DashboardSettingsDra
 
 function toSavedSnapshot(draft: DashboardSettingsDraft): SavedDashboardSettingsSnapshot {
   return {
-    catalogActivityVisible: draft.catalogActivityVisible,
-    trainingDynamicsVisible: draft.trainingDynamicsVisible,
-    calendarVisible: draft.calendarVisible,
-    dateToolbarVisible: draft.dateToolbarVisible,
     sectionOrder: [...draft.sectionOrder],
     quickLinks: draft.quickLinks.map((link) => ({
       label: link.label.trim(),
@@ -133,10 +117,6 @@ function snapshotsEqual(
   left: SavedDashboardSettingsSnapshot,
   right: SavedDashboardSettingsSnapshot
 ): boolean {
-  if (left.catalogActivityVisible !== right.catalogActivityVisible) return false;
-  if (left.trainingDynamicsVisible !== right.trainingDynamicsVisible) return false;
-  if (left.calendarVisible !== right.calendarVisible) return false;
-  if (left.dateToolbarVisible !== right.dateToolbarVisible) return false;
   if (left.sectionOrder.length !== right.sectionOrder.length) return false;
   if (left.quickLinks.length !== right.quickLinks.length) return false;
 
@@ -165,44 +145,6 @@ function validateQuickLinks(quickLinks: QuickLinkDraft[]): string | null {
   return null;
 }
 
-function isSectionVisible(
-  sectionId: AdminDashboardSectionId,
-  draft: Pick<
-    DashboardSettingsDraft,
-    'catalogActivityVisible' | 'trainingDynamicsVisible' | 'calendarVisible'
-  >
-): boolean {
-  switch (sectionId) {
-    case 'trainingDynamics':
-      return draft.trainingDynamicsVisible;
-    case 'catalogActivity':
-      return draft.catalogActivityVisible;
-    case 'calendar':
-      return draft.calendarVisible;
-    case 'quickLinks':
-      return true;
-    default:
-      return false;
-  }
-}
-
-function setSectionVisible(
-  sectionId: AdminDashboardSectionId,
-  visible: boolean,
-  draft: DashboardSettingsDraft
-): DashboardSettingsDraft {
-  switch (sectionId) {
-    case 'trainingDynamics':
-      return { ...draft, trainingDynamicsVisible: visible };
-    case 'catalogActivity':
-      return { ...draft, catalogActivityVisible: visible };
-    case 'calendar':
-      return { ...draft, calendarVisible: visible };
-    default:
-      return draft;
-  }
-}
-
 function sectionHint(sectionId: AdminDashboardSectionId): string {
   switch (sectionId) {
     case 'trainingDynamics':
@@ -220,18 +162,6 @@ function sectionHint(sectionId: AdminDashboardSectionId): string {
 
 export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsButtonProps) {
   const [open, setOpen] = useState(false);
-  const [catalogActivityVisible, setCatalogActivityVisible] = useState(
-    DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible
-  );
-  const [trainingDynamicsVisible, setTrainingDynamicsVisible] = useState(
-    DEFAULT_ADMIN_DASHBOARD_SETTINGS.trainingDynamicsVisible
-  );
-  const [calendarVisible, setCalendarVisible] = useState(
-    DEFAULT_ADMIN_DASHBOARD_SETTINGS.calendarVisible
-  );
-  const [dateToolbarVisible, setDateToolbarVisible] = useState(
-    DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible
-  );
   const [sectionOrder, setSectionOrder] = useState<AdminDashboardSectionId[]>(
     DEFAULT_ADMIN_DASHBOARD_SETTINGS.sectionOrder
   );
@@ -264,21 +194,10 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
 
   const draft = useMemo(
     (): DashboardSettingsDraft => ({
-      catalogActivityVisible,
-      trainingDynamicsVisible,
-      calendarVisible,
-      dateToolbarVisible,
       sectionOrder,
       quickLinks,
     }),
-    [
-      catalogActivityVisible,
-      trainingDynamicsVisible,
-      calendarVisible,
-      dateToolbarVisible,
-      sectionOrder,
-      quickLinks,
-    ]
+    [sectionOrder, quickLinks]
   );
 
   const clearSaveSuccess = useCallback(() => {
@@ -332,10 +251,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     try {
       const data = await getAdminDashboardSettings();
       const nextDraft = settingsToDraft(data);
-      setCatalogActivityVisible(nextDraft.catalogActivityVisible);
-      setTrainingDynamicsVisible(nextDraft.trainingDynamicsVisible);
-      setCalendarVisible(nextDraft.calendarVisible);
-      setDateToolbarVisible(nextDraft.dateToolbarVisible);
       setSectionOrder(nextDraft.sectionOrder);
       setQuickLinks(nextDraft.quickLinks);
       setSavedSettings(toSavedSnapshot(nextDraft));
@@ -401,13 +316,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
   const moveQuickLink = (index: number, direction: 'up' | 'down') => {
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
     setQuickLinks((prev) => moveItemInArray(prev, index, targetIndex));
-  };
-
-  const handleSectionVisibilityChange = (sectionId: AdminDashboardSectionId, visible: boolean) => {
-    const next = setSectionVisible(sectionId, visible, draft);
-    setCatalogActivityVisible(next.catalogActivityVisible);
-    setTrainingDynamicsVisible(next.trainingDynamicsVisible);
-    setCalendarVisible(next.calendarVisible);
   };
 
   const hasChanges = useMemo(() => {
@@ -499,10 +407,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     clearSaveSuccess();
     try {
       const saved = await updateAdminDashboardSettings({
-        catalogActivityVisible,
-        trainingDynamicsVisible,
-        calendarVisible,
-        dateToolbarVisible,
         sectionOrder,
         quickLinks: quickLinks.map((link) => ({
           id: link.id,
@@ -512,10 +416,6 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
         })),
       });
       const nextDraft = settingsToDraft(saved);
-      setCatalogActivityVisible(nextDraft.catalogActivityVisible);
-      setTrainingDynamicsVisible(nextDraft.trainingDynamicsVisible);
-      setCalendarVisible(nextDraft.calendarVisible);
-      setDateToolbarVisible(nextDraft.dateToolbarVisible);
       setSectionOrder(nextDraft.sectionOrder);
       setQuickLinks(nextDraft.quickLinks);
       setSavedSettings(toSavedSnapshot(nextDraft));
@@ -560,42 +460,21 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
               onSubmit={(event) => void handleSubmit(event)}
             >
               <p className={styles.hint}>
-                Настройте блоки, их порядок и быстрые ссылки на главной странице админ-панели.
-                Изменения видны всем пользователям.
+                Настройте порядок блоков и быстрые ссылки на главной странице админ-панели. Какие
+                блоки и ссылки видеть каждой роли — задаётся ниже в разделе «Доступ блоков по
+                ролям».
               </p>
-
-              <section className={styles.section}>
-                <h3 className={styles.sectionTitle}>Выбор периода</h3>
-                <p className={styles.sectionHint}>
-                  Блок с датами «С» / «По», кнопкой «Показать» и быстрыми пресетами. Имеет смысл,
-                  если включены виджеты «Товары» или «Динамика обучения».
-                </p>
-                <label className={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    checked={dateToolbarVisible}
-                    onChange={(e) => setDateToolbarVisible(e.target.checked)}
-                  />
-                  <span>
-                    <strong>Показывать блок выбора дат</strong>
-                    <span className={styles.itemHint}>
-                      Если скрыть, виджеты с периодом загружаются по умолчанию (с начала текущего
-                      месяца).
-                    </span>
-                  </span>
-                </label>
-              </section>
 
               <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Блоки и порядок на дашборде</h3>
                 <p className={styles.sectionHint}>
-                  Отметьте, что показывать, и измените порядок секций кнопками «↑» и «↓».
+                  Измените порядок секций кнопками «↑» и «↓». Видимость блоков для ролей
+                  настраивается в следующем разделе.
                 </p>
                 <ul className={styles.orderList}>
                   {sectionOrder.map((sectionId, index) => {
                     const canMoveUp = index > 0;
                     const canMoveDown = index < sectionOrder.length - 1;
-                    const hasVisibilityToggle = sectionId !== 'quickLinks';
                     return (
                       <li key={sectionId} className={styles.orderRow}>
                         <div className={styles.orderControls}>
@@ -621,26 +500,10 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
                           </button>
                         </div>
                         <div className={styles.orderBody}>
-                          {hasVisibilityToggle ? (
-                            <label className={styles.checkboxRow}>
-                              <input
-                                type="checkbox"
-                                checked={isSectionVisible(sectionId, draft)}
-                                onChange={(e) =>
-                                  handleSectionVisibilityChange(sectionId, e.target.checked)
-                                }
-                              />
-                              <span>
-                                <strong>{ADMIN_DASHBOARD_SECTION_LABELS[sectionId]}</strong>
-                                <span className={styles.itemHint}>{sectionHint(sectionId)}</span>
-                              </span>
-                            </label>
-                          ) : (
-                            <div className={styles.staticSectionRow}>
-                              <strong>{ADMIN_DASHBOARD_SECTION_LABELS[sectionId]}</strong>
-                              <span className={styles.itemHint}>{sectionHint(sectionId)}</span>
-                            </div>
-                          )}
+                          <div className={styles.staticSectionRow}>
+                            <strong>{ADMIN_DASHBOARD_SECTION_LABELS[sectionId]}</strong>
+                            <span className={styles.itemHint}>{sectionHint(sectionId)}</span>
+                          </div>
                         </div>
                       </li>
                     );
@@ -651,8 +514,9 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
               <section className={styles.section}>
                 <h3 className={styles.sectionTitle}>Доступ блоков по ролям</h3>
                 <p className={styles.sectionHint}>
-                  Выберите роль и отметьте, какие блоки дашборда ей доступны. Снятая галочка
-                  полностью скрывает блок для всей роли. SUPER_ADMIN всегда видит все блоки.
+                  Единственное место, где определяется видимость блоков: выберите роль и отметьте,
+                  какие блоки дашборда ей доступны. Снятая галочка полностью скрывает блок для всей
+                  роли. SUPER_ADMIN всегда видит все блоки.
                 </p>
                 {roles.length === 0 ? (
                   <p className={styles.hint}>Список ролей недоступен.</p>

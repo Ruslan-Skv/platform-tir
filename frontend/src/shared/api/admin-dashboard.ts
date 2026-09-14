@@ -84,9 +84,10 @@ export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS: Omit<
 ];
 
 export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
-  catalogActivityVisible: false,
+  // Видимость блоков определяется только доступом роли (задаёт супер-админ)
+  catalogActivityVisible: true,
   trainingDynamicsVisible: true,
-  calendarVisible: false,
+  calendarVisible: true,
   dateToolbarVisible: true,
   sectionOrder: [...DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER],
   quickLinks: DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS.map((link, index) => ({
@@ -159,10 +160,6 @@ export async function getAdminDashboardSettings(): Promise<AdminDashboardSetting
 }
 
 export type AdminDashboardSettingsUpdate = {
-  catalogActivityVisible?: boolean;
-  trainingDynamicsVisible?: boolean;
-  calendarVisible?: boolean;
-  dateToolbarVisible?: boolean;
   sectionOrder?: AdminDashboardSectionId[];
   quickLinks?: Array<{
     id?: string;
