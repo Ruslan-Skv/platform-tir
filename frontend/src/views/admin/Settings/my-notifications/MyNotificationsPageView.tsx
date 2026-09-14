@@ -428,7 +428,7 @@ export function MyNotificationsPageView() {
               )}
             </div>
             {settings.soundEnabled && canManageSounds && (
-              <div className={styles.inlineRow} style={{ marginTop: 'var(--admin-space-sm)' }}>
+              <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
                 <div className={styles.inlineField}>
                   <label className={styles.inlineFieldLabel} htmlFor="soundFile">
                     Загрузить новый звук
