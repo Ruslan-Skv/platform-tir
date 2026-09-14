@@ -167,9 +167,13 @@ export class AdminNotificationsService {
       dto.desktopNotifications ?? effective.desktopNotifications ?? false;
     const checkIntervalSeconds = dto.checkIntervalSeconds ?? effective.checkIntervalSeconds ?? 60;
 
+    const allowedEvents = await this.settingsReader.getAllowedEventsForRole(userRole);
     const deliveryOnly = !NOTIFY_EVENT_KEYS.some((key) => dto[key] !== undefined);
     const eventData = Object.fromEntries(
-      NOTIFY_EVENT_KEYS.map((key) => [key, dto[key] ?? (effective[key] as boolean) ?? true]),
+      NOTIFY_EVENT_KEYS.map((key) => [
+        key,
+        allowedEvents[key] === false ? false : (dto[key] ?? (effective[key] as boolean) ?? true),
+      ]),
     );
 
     const data = {

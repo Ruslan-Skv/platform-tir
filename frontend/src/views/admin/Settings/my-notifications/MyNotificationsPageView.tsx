@@ -276,7 +276,9 @@ export function MyNotificationsPageView() {
   const hasUnsavedChanges =
     settings != null && baseline != null && JSON.stringify(settings) !== JSON.stringify(baseline);
 
-  const visibleEvents = EVENT_TOGGLES.filter((t) => !t.superAdminOnly || isSuperAdmin);
+  const visibleEvents = EVENT_TOGGLES.filter(
+    (t) => (!t.superAdminOnly || isSuperAdmin) && settings?.allowedEvents?.[t.key] !== false
+  );
 
   return (
     <div className={cdBase.page}>
@@ -333,6 +335,11 @@ export function MyNotificationsPageView() {
           <section className={styles.card}>
             <h2 className={styles.cardTitle}>События для уведомлений</h2>
             <div className={styles.rows}>
+              {visibleEvents.length === 0 && (
+                <p className={styles.hint}>
+                  Для вашей роли супер-администратор не разрешил ни одного события уведомлений.
+                </p>
+              )}
               {visibleEvents.map((toggle) => (
                 <label className={styles.row} key={toggle.key} htmlFor={toggle.key}>
                   <input
@@ -347,9 +354,9 @@ export function MyNotificationsPageView() {
               ))}
             </div>
             <p className={styles.hint}>
-              Колокольчик в шапке, звук и браузерные push-уведомления приходят только по включённым
-              событиям. По умолчанию список событий наследуется от вашей роли — его задаёт
-              администратор на странице «Уведомления в админке».
+              Показаны только события, разрешённые для вашей роли супер-администратором на странице
+              «Уведомления в админке». Колокольчик в шапке, звук и браузерные push-уведомления
+              приходят только по включённым событиям.
             </p>
           </section>
 

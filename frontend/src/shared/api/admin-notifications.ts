@@ -32,6 +32,8 @@ export interface AdminNotificationsSettings {
   notifyOnRepairSchedules: boolean;
   notifyOnFurnitureSchedules: boolean;
   notifyOnContractSigning: boolean;
+  /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
+  allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
 }
 
 function getAdminAuthHeaders(): HeadersInit {

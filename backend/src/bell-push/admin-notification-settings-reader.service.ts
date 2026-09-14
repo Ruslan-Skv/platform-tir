@@ -1,6 +1,28 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
 
+/** Флаги событий уведомлений — те же ключи, что в NOTIFY_EVENT_KEYS модуля notifications. */
+export const READER_NOTIFY_EVENT_KEYS = [
+  'notifyOnReviews',
+  'notifyOnOrders',
+  'notifyOnSupportChat',
+  'notifyOnMeasurementForm',
+  'notifyOnCallbackForm',
+  'notifyOnDirectorForm',
+  'notifyOnQuoteForm',
+  'notifyOnQuizMebel',
+  'notifyOnQuizRemont',
+  'notifyOnKnowledgeFeedback',
+  'notifyOnSiteFeedback',
+  'notifyOnKnowledgeTraining',
+  'notifyOnWorkDays',
+  'notifyOnWaybills',
+  'notifyOnInstallationSchedules',
+  'notifyOnRepairSchedules',
+  'notifyOnFurnitureSchedules',
+  'notifyOnContractSigning',
+] as const;
+
 type DeliveryOverlay = {
   soundEnabled: boolean;
   soundVolume: number;
@@ -79,19 +101,43 @@ export class AdminNotificationSettingsReaderService {
     };
   }
 
+  /**
+   * События, доступные роли: их задаёт супер-админ в блоке настроек роли.
+   * Супер-админу доступны все события.
+   */
+  async getAllowedEventsForRole(userRole: string | null) {
+    if (userRole === 'SUPER_ADMIN') {
+      return Object.fromEntries(READER_NOTIFY_EVENT_KEYS.map((key) => [key, true]));
+    }
+    const base = await this.resolveRoleBase(userRole);
+    return Object.fromEntries(
+      READER_NOTIFY_EVENT_KEYS.map((key) => [key, (base as Record<string, unknown>)[key] ?? true]),
+    );
+  }
+
   async getSettingsForUser(userId: string | undefined, userRole: string | null) {
+    const base = await this.resolveRoleBase(userRole);
+    const allowedEvents = await this.getAllowedEventsForRole(userRole);
     if (userId) {
       const override = await this.prisma.userAdminNotificationOverride.findUnique({
         where: { userId },
       });
       if (override) {
         if (override.deliveryOnly) {
-          const base = await this.resolveRoleBase(userRole);
-          return this.applyDeliveryOverlay(base, override);
+          return { ...this.applyDeliveryOverlay(base, override), allowedEvents };
         }
-        return { ...override, role: null };
+        // Личные флаги событий действуют только в пределах разрешённых роли событий.
+        const events = Object.fromEntries(
+          READER_NOTIFY_EVENT_KEYS.map((key) => [
+            key,
+            allowedEvents[key] === false
+              ? false
+              : ((override as Record<string, unknown>)[key] ?? true),
+          ]),
+        );
+        return { ...override, role: null, ...events, allowedEvents };
       }
     }
-    return this.resolveRoleBase(userRole);
+    return { ...base, allowedEvents };
   }
 }
