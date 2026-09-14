@@ -2,12 +2,21 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { type AdminRoleItem, getAdminAccessRoles } from '@/shared/api/admin-access';
 import {
+  type AdminDashboardRoleAllowed,
+  type AdminDashboardRoleBlock,
+  type AdminDashboardRoleQuickLinkAccess,
   type AdminDashboardSettings,
   DEFAULT_ADMIN_DASHBOARD_SETTINGS,
+  getAdminDashboardRoleBlocks,
+  getAdminDashboardRoleQuickLinks,
   getAdminDashboardSettings,
+  updateAdminDashboardRoleBlock,
+  updateAdminDashboardRoleQuickLinks,
   updateAdminDashboardSettings,
 } from '@/shared/api/admin-dashboard';
+import { getRoleLabel } from '@/shared/config/admin-roles';
 import {
   ADMIN_DASHBOARD_SECTION_LABELS,
   type AdminDashboardSectionId,
@@ -24,6 +33,7 @@ import styles from './DashboardSettingsButton.module.css';
 
 type QuickLinkDraft = {
   key: string;
+  id?: string;
   label: string;
   href: string;
   isEnabled: boolean;
@@ -35,6 +45,39 @@ type DashboardSettingsButtonProps = {
 
 const MAX_QUICK_LINKS = 20;
 const SAVE_SUCCESS_VISIBLE_MS = 3000;
+
+const DEFAULT_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
+  trainingDynamics: true,
+  catalogActivity: true,
+  calendar: true,
+  quickLinks: true,
+  dateToolbar: true,
+};
+
+const ROLE_BLOCK_LABELS: Record<keyof AdminDashboardRoleAllowed, string> = {
+  trainingDynamics: 'Динамика обучения сотрудников',
+  catalogActivity: 'Добавление товаров в каталог',
+  calendar: 'Календарь',
+  quickLinks: 'Быстрые ссылки',
+  dateToolbar: 'Блок выбора периода',
+};
+
+const ROLE_BLOCK_HINTS: Record<keyof AdminDashboardRoleAllowed, string> = {
+  trainingDynamics: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
+  catalogActivity: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
+  calendar: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
+  quickLinks: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
+  dateToolbar: 'Блок с датами и пресетами периодов',
+};
+
+function roleAllowedEqual(
+  left: AdminDashboardRoleAllowed,
+  right: AdminDashboardRoleAllowed
+): boolean {
+  return (Object.keys(DEFAULT_ROLE_ALLOWED) as Array<keyof AdminDashboardRoleAllowed>).every(
+    (key) => left[key] === right[key]
+  );
+}
 
 type DashboardSettingsDraft = {
   catalogActivityVisible: boolean;
@@ -63,6 +106,7 @@ function settingsToDraft(settings: AdminDashboardSettings): DashboardSettingsDra
     sectionOrder: [...settings.sectionOrder],
     quickLinks: settings.quickLinks.map((link, index) => ({
       key: link.id || `link-${index}`,
+      id: link.id,
       label: link.label,
       href: link.href,
       isEnabled: link.isEnabled,
@@ -201,6 +245,23 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
   const [saveSuccessVisible, setSaveSuccessVisible] = useState(false);
   const saveSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
+  const [roles, setRoles] = useState<AdminRoleItem[]>([]);
+  const [selectedRole, setSelectedRole] = useState('');
+  const [roleBlocksList, setRoleBlocksList] = useState<AdminDashboardRoleBlock[]>([]);
+  const [savedRoleAllowed, setSavedRoleAllowed] = useState<AdminDashboardRoleAllowed>({
+    ...DEFAULT_ROLE_ALLOWED,
+  });
+  const [roleAllowedDraft, setRoleAllowedDraft] = useState<AdminDashboardRoleAllowed>({
+    ...DEFAULT_ROLE_ALLOWED,
+  });
+  const [roleSaving, setRoleSaving] = useState(false);
+  const [roleError, setRoleError] = useState<string | null>(null);
+
+  const [roleLinkAccess, setRoleLinkAccess] = useState<AdminDashboardRoleQuickLinkAccess[]>([]);
+  const [roleLinkDraft, setRoleLinkDraft] = useState<Record<string, boolean>>({});
+  const [roleLinkSaving, setRoleLinkSaving] = useState(false);
+  const [roleLinkError, setRoleLinkError] = useState<string | null>(null);
+
   const draft = useMemo(
     (): DashboardSettingsDraft => ({
       catalogActivityVisible,
@@ -247,10 +308,27 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     };
   }, []);
 
+  // При смене выбранной роли подставляем её сохранённые ограничения.
+  useEffect(() => {
+    if (!selectedRole) return;
+    const block = roleBlocksList.find((item) => item.role === selectedRole);
+    const allowed = block ? { ...block } : { ...DEFAULT_ROLE_ALLOWED };
+    setSavedRoleAllowed(allowed);
+    setRoleAllowedDraft({ ...allowed });
+    setRoleLinkDraft(
+      Object.fromEntries(
+        roleLinkAccess
+          .filter((item) => item.role === selectedRole)
+          .map((item) => [item.linkId, item.allowed])
+      )
+    );
+  }, [selectedRole, roleBlocksList, roleLinkAccess]);
+
   const loadSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     clearSaveSuccess();
+    setRoleError(null);
     try {
       const data = await getAdminDashboardSettings();
       const nextDraft = settingsToDraft(data);
@@ -261,6 +339,19 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
       setSectionOrder(nextDraft.sectionOrder);
       setQuickLinks(nextDraft.quickLinks);
       setSavedSettings(toSavedSnapshot(nextDraft));
+
+      const [roleList, roleBlocks, roleLinks] = await Promise.all([
+        getAdminAccessRoles().catch(() => [] as AdminRoleItem[]),
+        getAdminDashboardRoleBlocks().catch(() => [] as AdminDashboardRoleBlock[]),
+        getAdminDashboardRoleQuickLinks().catch(() => [] as AdminDashboardRoleQuickLinkAccess[]),
+      ]);
+      const adminRoles = roleList.filter((item) => item.id !== 'SUPER_ADMIN');
+      setRoles(adminRoles);
+      setRoleBlocksList(roleBlocks);
+      setRoleLinkAccess(roleLinks);
+      setSelectedRole((prev) =>
+        prev && adminRoles.some((item) => item.id === prev) ? prev : (adminRoles[0]?.id ?? '')
+      );
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка загрузки');
     } finally {
@@ -324,6 +415,69 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
     return !snapshotsEqual(current, savedSettings);
   }, [draft, savedSettings]);
 
+  const roleAllowedHasChanges = !roleAllowedEqual(roleAllowedDraft, savedRoleAllowed);
+
+  const handleRoleBlockChange = (key: keyof AdminDashboardRoleAllowed, value: boolean) => {
+    setRoleAllowedDraft((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleSaveRoleBlock = async () => {
+    if (!selectedRole || roleSaving || !roleAllowedHasChanges) return;
+    setRoleSaving(true);
+    setRoleError(null);
+    try {
+      const saved = await updateAdminDashboardRoleBlock({
+        role: selectedRole,
+        ...roleAllowedDraft,
+      });
+      setRoleBlocksList((prev) => {
+        const rest = prev.filter((item) => item.role !== saved.role);
+        return [...rest, saved].sort((a, b) => a.role.localeCompare(b.role));
+      });
+      showSaveSuccess();
+    } catch (e) {
+      setRoleError(e instanceof Error ? e.message : 'Ошибка сохранения');
+    } finally {
+      setRoleSaving(false);
+    }
+  };
+
+  /** Сохранённые ссылки с id — для них можно настраивать доступ по ролям. */
+  const savedQuickLinks = useMemo(
+    () => quickLinks.filter((link): link is QuickLinkDraft & { id: string } => !!link.id),
+    [quickLinks]
+  );
+
+  const roleLinkHasChanges = savedQuickLinks.some(
+    (link) =>
+      (roleLinkDraft[link.id] ?? true) !==
+      (roleLinkAccess.find((item) => item.role === selectedRole && item.linkId === link.id)
+        ?.allowed ?? true)
+  );
+
+  const handleRoleLinkChange = (linkId: string, value: boolean) => {
+    setRoleLinkDraft((prev) => ({ ...prev, [linkId]: value }));
+  };
+
+  const handleSaveRoleLinks = async () => {
+    if (!selectedRole || roleLinkSaving || savedQuickLinks.length === 0) return;
+    setRoleLinkSaving(true);
+    setRoleLinkError(null);
+    try {
+      const items = savedQuickLinks.map((link) => ({
+        linkId: link.id,
+        allowed: roleLinkDraft[link.id] ?? true,
+      }));
+      const saved = await updateAdminDashboardRoleQuickLinks({ role: selectedRole, items });
+      setRoleLinkAccess((prev) => [...prev.filter((item) => item.role !== selectedRole), ...saved]);
+      showSaveSuccess();
+    } catch (e) {
+      setRoleLinkError(e instanceof Error ? e.message : 'Ошибка сохранения');
+    } finally {
+      setRoleLinkSaving(false);
+    }
+  };
+
   useEffect(() => {
     if (hasChanges && saveSuccessVisible) {
       clearSaveSuccess();
@@ -351,6 +505,7 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
         dateToolbarVisible,
         sectionOrder,
         quickLinks: quickLinks.map((link) => ({
+          id: link.id,
           label: link.label.trim(),
           href: link.href.trim(),
           isEnabled: link.isEnabled,
@@ -491,6 +646,107 @@ export function DashboardSettingsButton({ onSettingsChange }: DashboardSettingsB
                     );
                   })}
                 </ul>
+              </section>
+
+              <section className={styles.section}>
+                <h3 className={styles.sectionTitle}>Доступ блоков по ролям</h3>
+                <p className={styles.sectionHint}>
+                  Выберите роль и отметьте, какие блоки дашборда ей доступны. Снятая галочка
+                  полностью скрывает блок для всей роли. SUPER_ADMIN всегда видит все блоки.
+                </p>
+                {roles.length === 0 ? (
+                  <p className={styles.hint}>Список ролей недоступен.</p>
+                ) : (
+                  <>
+                    <div className={styles.roleBar}>
+                      <select
+                        className={styles.roleSelect}
+                        value={selectedRole}
+                        onChange={(e) => setSelectedRole(e.target.value)}
+                        aria-label="Роль"
+                      >
+                        {roles.map((item) => (
+                          <option key={item.id} value={item.id}>
+                            {getRoleLabel(item.id)}
+                          </option>
+                        ))}
+                      </select>
+                      <button
+                        data-admin-mutation
+                        type="button"
+                        className={styles.roleSaveBtn}
+                        disabled={roleSaving || !roleAllowedHasChanges}
+                        onClick={() => void handleSaveRoleBlock()}
+                      >
+                        {roleSaving ? 'Сохранение…' : 'Сохранить для роли'}
+                      </button>
+                    </div>
+                    <ul className={styles.roleBlocksList}>
+                      {(
+                        Object.keys(DEFAULT_ROLE_ALLOWED) as Array<keyof AdminDashboardRoleAllowed>
+                      ).map((key) => (
+                        <li key={key} className={styles.orderRow}>
+                          <div className={styles.orderBody}>
+                            <label className={styles.checkboxRow}>
+                              <input
+                                type="checkbox"
+                                checked={roleAllowedDraft[key]}
+                                onChange={(e) => handleRoleBlockChange(key, e.target.checked)}
+                              />
+                              <span>
+                                <strong>{ROLE_BLOCK_LABELS[key]}</strong>
+                                <span className={styles.itemHint}>{ROLE_BLOCK_HINTS[key]}</span>
+                              </span>
+                            </label>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                    {roleError ? <p className={styles.roleError}>{roleError}</p> : null}
+
+                    <div className={styles.sectionHead}>
+                      <h4 className={styles.sectionTitle}>Быстрые ссылки для роли</h4>
+                      <button
+                        data-admin-mutation
+                        type="button"
+                        className={styles.roleSaveBtn}
+                        disabled={
+                          roleLinkSaving || savedQuickLinks.length === 0 || !roleLinkHasChanges
+                        }
+                        onClick={() => void handleSaveRoleLinks()}
+                      >
+                        {roleLinkSaving ? 'Сохранение…' : 'Сохранить ссылки для роли'}
+                      </button>
+                    </div>
+                    {savedQuickLinks.length === 0 ? (
+                      <p className={styles.hint}>
+                        Сначала сохраните быстрые ссылки в разделе ниже — затем их можно будет
+                        разрешать или скрывать для роли.
+                      </p>
+                    ) : (
+                      <ul className={styles.roleBlocksList}>
+                        {savedQuickLinks.map((link) => (
+                          <li key={link.id} className={styles.orderRow}>
+                            <div className={styles.orderBody}>
+                              <label className={styles.checkboxRow}>
+                                <input
+                                  type="checkbox"
+                                  checked={roleLinkDraft[link.id] ?? true}
+                                  onChange={(e) => handleRoleLinkChange(link.id, e.target.checked)}
+                                />
+                                <span>
+                                  <strong>{link.label || link.href}</strong>
+                                  <span className={styles.itemHint}>{link.href}</span>
+                                </span>
+                              </label>
+                            </div>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                    {roleLinkError ? <p className={styles.roleError}>{roleLinkError}</p> : null}
+                  </>
+                )}
               </section>
 
               <section className={styles.section}>

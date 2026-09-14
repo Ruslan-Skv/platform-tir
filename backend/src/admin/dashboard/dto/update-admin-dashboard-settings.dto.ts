@@ -19,6 +19,13 @@ import {
 } from '../admin-dashboard-section-order';
 
 export class AdminDashboardQuickLinkDto {
+  @ApiPropertyOptional({
+    description: 'Идентификатор существующей ссылки (сохраняется при обновлении списка)',
+  })
+  @IsOptional()
+  @IsString()
+  id?: string;
+
   @ApiProperty({ example: 'Заказы' })
   @IsString()
   @MinLength(1)

@@ -2597,15 +2597,44 @@ model AdminDashboardBlock {
   @@map("admin_dashboard_block")
 }
 
+// Доступность отдельных быстрых ссылок дашборда для роли (задаёт супер-админ)
+model AdminDashboardRoleQuickLink {
+  id        String                  @id @default(cuid())
+  role      String
+  linkId    String
+  allowed   Boolean                 @default(true)
+  link      AdminDashboardQuickLink @relation(fields: [linkId], references: [id], onDelete: Cascade)
+  updatedAt DateTime                @updatedAt
+
+  @@unique([role, linkId])
+  @@index([role])
+  @@map("admin_dashboard_role_quick_link")
+}
+
+// Доступность блоков дашборда для конкретной админ-роли (задаёт супер-админ)
+model AdminDashboardRoleBlock {
+  id                      String   @id @default(cuid())
+  role                    String   @unique
+  trainingDynamicsAllowed Boolean  @default(true)
+  catalogActivityAllowed  Boolean  @default(true)
+  calendarAllowed         Boolean  @default(true)
+  quickLinksAllowed       Boolean  @default(true)
+  dateToolbarAllowed      Boolean  @default(true)
+  updatedAt               DateTime @updatedAt
+
+  @@map("admin_dashboard_role_block")
+}
+
 model AdminDashboardQuickLink {
-  id        String              @id @default(cuid())
-  blockId   String              @default("main")
+  id        String                        @id @default(cuid())
+  blockId   String                        @default("main")
   label     String
   href      String
-  isEnabled Boolean             @default(true)
-  sortOrder Int                 @default(0)
-  updatedAt DateTime            @updatedAt
-  block     AdminDashboardBlock @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  isEnabled Boolean                       @default(true)
+  sortOrder Int                           @default(0)
+  updatedAt DateTime                      @updatedAt
+  block     AdminDashboardBlock           @relation(fields: [blockId], references: [id], onDelete: Cascade)
+  roleLinks AdminDashboardRoleQuickLink[]
 
   @@index([blockId, sortOrder])
   @@map("admin_dashboard_quick_links")

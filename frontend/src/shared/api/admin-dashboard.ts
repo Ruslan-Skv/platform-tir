@@ -41,6 +41,26 @@ export interface AdminDashboardQuickLink {
   sortOrder: number;
 }
 
+/** Доступность блоков дашборда для роли: false — блок роли запрещён супер-админом. */
+export interface AdminDashboardRoleAllowed {
+  trainingDynamics: boolean;
+  catalogActivity: boolean;
+  calendar: boolean;
+  quickLinks: boolean;
+  dateToolbar: boolean;
+}
+
+export interface AdminDashboardRoleBlock extends AdminDashboardRoleAllowed {
+  role: string;
+}
+
+/** Доступность отдельной быстрой ссылки для роли. */
+export interface AdminDashboardRoleQuickLinkAccess {
+  role: string;
+  linkId: string;
+  allowed: boolean;
+}
+
 export interface AdminDashboardSettings {
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
@@ -48,6 +68,7 @@ export interface AdminDashboardSettings {
   dateToolbarVisible: boolean;
   sectionOrder: AdminDashboardSectionId[];
   quickLinks: AdminDashboardQuickLink[];
+  allowedBlocks?: AdminDashboardRoleAllowed;
 }
 
 export type { AdminDashboardSectionId };
@@ -121,6 +142,7 @@ function normalizeAdminDashboardSettings(
       data?.dateToolbarVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.dateToolbarVisible,
     sectionOrder: normalizeAdminDashboardSectionOrder(data?.sectionOrder),
     quickLinks,
+    allowedBlocks: data?.allowedBlocks,
   };
 }
 
@@ -143,6 +165,7 @@ export type AdminDashboardSettingsUpdate = {
   dateToolbarVisible?: boolean;
   sectionOrder?: AdminDashboardSectionId[];
   quickLinks?: Array<{
+    id?: string;
     label: string;
     href: string;
     isEnabled?: boolean;
@@ -162,6 +185,67 @@ export async function updateAdminDashboardSettings(
     throw new Error(err.message || 'Не удалось сохранить настройки дашборда');
   }
   return normalizeAdminDashboardSettings(await res.json());
+}
+
+export async function getAdminDashboardRoleBlocks(): Promise<AdminDashboardRoleBlock[]> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/settings/role-blocks`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить доступность блоков по ролям');
+  }
+  return res.json();
+}
+
+export type AdminDashboardRoleBlockUpdate = {
+  role: string;
+} & Partial<AdminDashboardRoleAllowed>;
+
+export async function updateAdminDashboardRoleBlock(
+  data: AdminDashboardRoleBlockUpdate
+): Promise<AdminDashboardRoleBlock> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/settings/role-blocks`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось сохранить доступность блоков для роли');
+  }
+  return res.json();
+}
+
+export async function getAdminDashboardRoleQuickLinks(): Promise<
+  AdminDashboardRoleQuickLinkAccess[]
+> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/settings/role-quick-links`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить доступность быстрых ссылок по ролям');
+  }
+  return res.json();
+}
+
+export async function updateAdminDashboardRoleQuickLinks(data: {
+  role: string;
+  items: Array<{ linkId: string; allowed: boolean }>;
+}): Promise<AdminDashboardRoleQuickLinkAccess[]> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/settings/role-quick-links`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось сохранить доступность быстрых ссылок для роли');
+  }
+  return res.json();
 }
 
 export async function getCatalogActivity(from: Date, to: Date): Promise<CatalogActivityResponse> {
