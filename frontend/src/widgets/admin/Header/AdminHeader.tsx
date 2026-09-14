@@ -26,6 +26,7 @@ import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shar
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellCalendarNotifications,
+  getAdminBellContractSigningNotifications,
   getAdminBellFurnitureScheduleNotifications,
   getAdminBellInstallationScheduleNotifications,
   getAdminBellKanbanNotifications,
@@ -38,6 +39,7 @@ import {
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellCalendarNotification,
+  AdminBellContractSigningNotification,
   AdminBellFurnitureScheduleNotification,
   AdminBellInstallationScheduleNotification,
   AdminBellKanbanNotification,
@@ -83,6 +85,7 @@ import {
   type AdminBellNotificationItem,
   buildDesktopNotification,
   calendarToBellNotificationItem,
+  contractSigningToBellNotificationItem,
   filterNotifiableLeads,
   furnitureScheduleToBellNotificationItem,
   installationScheduleToBellNotificationItem,
@@ -176,6 +179,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     AdminBellMessengerNotification[]
   >([]);
   const [kanbanNotifications, setKanbanNotifications] = useState<AdminBellKanbanNotification[]>([]);
+  const [contractSigningNotifications, setContractSigningNotifications] = useState<
+    AdminBellContractSigningNotification[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -195,6 +201,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     calendar: number;
     messenger: number;
     kanban: number;
+    contractSigning: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -350,6 +357,12 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const loadKanban = hasAccess('admin.kanban')
         ? getAdminBellKanbanNotifications(20)
         : Promise.resolve([] as AdminBellKanbanNotification[]);
+      const canAccessContractSigning =
+        hasAccess('admin.contract-documents') || hasAccess('admin.contract-documents.contracts');
+      const loadContractSigning =
+        settings?.notifyOnContractSigning !== false && canAccessContractSigning
+          ? getAdminBellContractSigningNotifications(20)
+          : Promise.resolve([] as AdminBellContractSigningNotification[]);
 
       const [
         reviewsResult,
@@ -365,6 +378,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         calendarResult,
         messengerResult,
         kanbanResult,
+        contractSigningResult,
       ] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -387,6 +401,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadCalendar,
         loadMessenger,
         loadKanban,
+        loadContractSigning,
       ]);
 
       const newReviews =
@@ -425,6 +440,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const newMessenger =
         messengerResult.status === 'fulfilled' ? (messengerResult.value ?? []) : [];
       const newKanban = kanbanResult.status === 'fulfilled' ? (kanbanResult.value ?? []) : [];
+      const newContractSigning =
+        contractSigningResult.status === 'fulfilled' ? (contractSigningResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -440,6 +457,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         calendar: newCalendar.length,
         messenger: newMessenger.length,
         kanban: newKanban.length,
+        contractSigning: newContractSigning.length,
       };
 
       const totalNew =
@@ -454,7 +472,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newFurnitureSchedules.length +
         newCalendar.length +
         newMessenger.length +
-        newKanban.length;
+        newKanban.length +
+        newContractSigning.length;
       const prevTotal = prev
         ? prev.reviews +
           prev.support +
@@ -467,7 +486,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.furnitureSchedules +
           prev.calendar +
           prev.messenger +
-          prev.kanban
+          prev.kanban +
+          prev.contractSigning
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -514,6 +534,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newCalendar.map(calendarToBellNotificationItem),
             ...newMessenger.map(messengerToBellNotificationItem),
             ...newKanban.map(kanbanToBellNotificationItem),
+            ...newContractSigning.map(contractSigningToBellNotificationItem),
           ]
             .filter((item) => isBellTypeEnabled(item.type, settings))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -537,6 +558,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setCalendarNotifications(newCalendar);
       setMessengerNotifications(newMessenger);
       setKanbanNotifications(newKanban);
+      setContractSigningNotifications(newContractSigning);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -716,6 +738,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...calendarNotifications.map(calendarToBellNotificationItem),
     ...messengerNotifications.map(messengerToBellNotificationItem),
     ...kanbanNotifications.map(kanbanToBellNotificationItem),
+    ...contractSigningNotifications.map(contractSigningToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>

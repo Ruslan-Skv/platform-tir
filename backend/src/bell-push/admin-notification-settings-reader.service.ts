@@ -52,6 +52,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnInstallationSchedules: true,
       notifyOnRepairSchedules: true,
       notifyOnFurnitureSchedules: true,
+      notifyOnContractSigning: true,
     };
   }
 

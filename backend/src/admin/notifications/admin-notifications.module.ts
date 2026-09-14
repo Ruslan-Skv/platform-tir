@@ -11,6 +11,7 @@ import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-sc
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
+import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminNotificationsController } from './admin-notifications.controller';
 import { AdminNotificationsService } from './admin-notifications.service';
@@ -31,6 +32,7 @@ import { AdminNotificationsService } from './admin-notifications.service';
     AdminBellCalendarFeedService,
     AdminBellMessengerFeedService,
     AdminBellKanbanFeedService,
+    AdminBellContractSigningFeedService,
   ],
   exports: [AdminNotificationsService, BellPushModule],
 })

@@ -19,6 +19,7 @@ export type AdminBellNotificationType =
   | 'installationSchedules'
   | 'repairSchedules'
   | 'furnitureSchedules'
+  | 'contractSigning'
   | 'calendar'
   | 'messenger'
   | 'kanban';
@@ -127,6 +128,18 @@ export type AdminBellKanbanNotification = {
   kind: 'assigned' | 'moved' | 'commented' | 'due_changed' | 'priority';
   kindLabel: string;
   cardId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellContractSigningNotification = {
+  id: string;
+  kind: 'signed' | 'rejected' | 'viewed';
+  kindLabel: string;
+  packageId: string;
+  sessionId: string;
   title: string;
   message: string;
   href: string;
@@ -372,6 +385,18 @@ export function kanbanToBellNotificationItem(
   };
 }
 
+export function contractSigningToBellNotificationItem(
+  item: AdminBellContractSigningNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'contractSigning',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || `/admin/contract-documents/contracts/${item.packageId}`,
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -454,6 +479,13 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.furniture-schedules') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'contractSigning') {
+    return (
+      (hasAccess('admin.contract-documents') || hasAccess('admin.contract-documents.contracts')) &&
+      isBellTypeEnabled(item.type, settings)
+    );
+  }
+
   if (item.type === 'calendar') {
     return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
   }
@@ -508,6 +540,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnRepairSchedules !== false;
     case 'furnitureSchedules':
       return settings.notifyOnFurnitureSchedules !== false;
+    case 'contractSigning':
+      return settings.notifyOnContractSigning !== false;
     case 'calendar':
       return true;
     case 'messenger':
@@ -602,6 +636,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'furnitureSchedules':
       return {
         title: 'План-график мебели',
+        body: item.text,
+        tag,
+      };
+    case 'contractSigning':
+      return {
+        title: 'Подписание договоров',
         body: item.text,
         tag,
       };

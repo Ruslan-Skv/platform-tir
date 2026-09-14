@@ -16,6 +16,7 @@ import * as crypto from 'crypto';
 
 import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
+import { ContractSigningNotifyService } from './contract-signing-notify.service';
 import { type SigningSessionDocumentMeta } from './signing-session-documents';
 
 export type { SigningSessionDocumentMeta } from './signing-session-documents';
@@ -56,6 +57,7 @@ export class ContractDocumentSigningService {
     private readonly config: ConfigService,
     private readonly mailer: MailerService,
     private readonly contractNumbering: ContractDocumentNumberingService,
+    private readonly signingNotify: ContractSigningNotifyService,
   ) {}
 
   private siteUrl(): string {
@@ -417,7 +419,7 @@ export class ContractDocumentSigningService {
     return {
       status: row.status,
       customerName: row.customerName,
-      contractTitle: row.package.title,
+      contractTitle: row.package.title ?? 'Договор',
       packageKind: row.package.kind,
       managerNote: row.managerNote,
       expiresAt: row.expiresAt.toISOString(),
@@ -456,6 +458,8 @@ export class ContractDocumentSigningService {
         signedAt: null,
         documentCount: Array.isArray(updated.documents) ? updated.documents.length : 0,
       });
+
+      this.signingNotify.onSessionEvent('viewed', row, row.package.title ?? 'Договор');
     }
     return this.getPublicSession(token);
   }
@@ -527,6 +531,10 @@ export class ContractDocumentSigningService {
       { conclude: true, signedName },
     );
 
+    this.signingNotify.onSessionEvent('signed', row, row.package.title ?? 'Договор', {
+      signedName,
+    });
+
     return this.getPublicSession(token);
   }
 
@@ -559,6 +567,11 @@ export class ContractDocumentSigningService {
       rejectionReason: updated.rejectionReason,
       documentCount: Array.isArray(updated.documents) ? updated.documents.length : 0,
     });
+
+    this.signingNotify.onSessionEvent('rejected', row, row.package.title ?? 'Договор', {
+      rejectionReason: updated.rejectionReason,
+    });
+
     return this.getPublicSession(token);
   }
 }

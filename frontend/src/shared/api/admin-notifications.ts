@@ -31,6 +31,7 @@ export interface AdminNotificationsSettings {
   notifyOnInstallationSchedules: boolean;
   notifyOnRepairSchedules: boolean;
   notifyOnFurnitureSchedules: boolean;
+  notifyOnContractSigning: boolean;
 }
 
 function getAdminAuthHeaders(): HeadersInit {
@@ -69,6 +70,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnInstallationSchedules',
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
+  'notifyOnContractSigning',
 ] as const;
 
 export type MyNotifyEventKey = (typeof MY_NOTIFY_EVENT_KEYS)[number];
@@ -255,6 +257,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
+    notifyOnContractSigning: data.notifyOnContractSigning,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -308,6 +311,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
+    notifyOnContractSigning: data.notifyOnContractSigning,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -615,6 +619,30 @@ export type AdminBellKanbanNotification = {
   href: string;
   occurredAt: string;
 };
+
+export type AdminBellContractSigningNotification = {
+  id: string;
+  kind: 'signed' | 'rejected' | 'viewed';
+  kindLabel: string;
+  packageId: string;
+  sessionId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellContractSigningNotifications(
+  limit = 20
+): Promise<AdminBellContractSigningNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/contract-signing?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления о подписании договоров');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
 
 export async function getAdminBellKanbanNotifications(
   limit = 20

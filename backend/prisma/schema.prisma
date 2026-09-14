@@ -155,6 +155,7 @@ model User {
   waybillTasksCreated                     WaybillTask[]                            @relation("WaybillTaskCreatedBy")
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
   waybillTaskBellEvents                   WaybillTaskBellEvent[]
+  contractSigningBellEvents               ContractSigningBellEvent[]
   waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                  @relation("WaybillTaskAttachmentUploadedBy")
   driverDeliveryAvailability              DriverDeliveryAvailability?
   installationSchedulesCompleted          InstallationScheduleEntry[]              @relation("InstallationScheduleCompletedBy")
@@ -2695,6 +2696,7 @@ model UserAdminNotificationOverride {
   notifyOnInstallationSchedules Boolean  @default(true)
   notifyOnRepairSchedules       Boolean  @default(true)
   notifyOnFurnitureSchedules    Boolean  @default(true)
+  notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
   updatedAt                     DateTime @updatedAt
   user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2754,6 +2756,7 @@ model AdminNotificationsBlock {
   notifyOnInstallationSchedules Boolean  @default(true) // Графики монтажей
   notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта
   notifyOnFurnitureSchedules    Boolean  @default(true) // План-график мебели
+  notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
   updatedAt                     DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -3234,6 +3237,26 @@ model WaybillTaskBellEvent {
   @@index([recipientId, createdAt])
   @@index([waybillTaskId])
   @@map("waybill_task_bell_events")
+}
+
+/// События электронного подписания договоров для колокольчика (лично автору сессии подписания).
+model ContractSigningBellEvent {
+  id          String   @id @default(cuid())
+  recipientId String
+  packageId   String
+  sessionId   String
+  /// signed | rejected | viewed
+  kind        String
+  title       String
+  message     String   @db.Text
+  href        String
+  createdAt   DateTime @default(now())
+
+  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([packageId])
+  @@map("contract_signing_bell_events")
 }
 
 /// Циклическая схема доступности водителя на доставках (не путать с учётом рабочего дня).

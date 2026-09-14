@@ -25,6 +25,7 @@ export type AdminBellPushEvent =
   | 'installation_schedule'
   | 'repair_schedule'
   | 'furniture_schedule'
+  | 'contract_signing'
   | 'calendar_event'
   | 'messenger_message'
   | 'kanban_card';
@@ -120,6 +121,7 @@ export class AdminBellPushService {
       notifyOnInstallationSchedules?: boolean;
       notifyOnRepairSchedules?: boolean;
       notifyOnFurnitureSchedules?: boolean;
+      notifyOnContractSigning?: boolean;
     },
     role: string,
   ) {
@@ -158,6 +160,8 @@ export class AdminBellPushService {
         return settings.notifyOnRepairSchedules !== false;
       case 'furniture_schedule':
         return settings.notifyOnFurnitureSchedules !== false;
+      case 'contract_signing':
+        return settings.notifyOnContractSigning !== false;
       case 'calendar_event':
         return true;
       case 'messenger_message':

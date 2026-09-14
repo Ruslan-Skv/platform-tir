@@ -130,6 +130,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnFurnitureSchedules?: boolean;
 
+  @ApiPropertyOptional({ description: 'Электронное подписание договоров (подписан / отклонён)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractSigning?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

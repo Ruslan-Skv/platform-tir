@@ -42,6 +42,7 @@ import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-sc
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
+import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 
@@ -77,6 +78,7 @@ export class AdminNotificationsController {
     private readonly bellCalendarFeed: AdminBellCalendarFeedService,
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
+    private readonly bellContractSigningFeed: AdminBellContractSigningFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -212,6 +214,14 @@ export class AdminNotificationsController {
   getBellKanbanFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellKanbanFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/contract-signing')
+  @ApiOperation({ summary: 'События электронного подписания договоров для колокольчика (лично)' })
+  getBellContractSigningFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellContractSigningFeed.listForUser(req.user.id, take);
   }
 
   @Get('settings/by-user/:userId')
