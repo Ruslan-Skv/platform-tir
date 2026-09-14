@@ -1,7 +1,17 @@
 ﻿import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
 import { isProductDirectionPackageKind } from '../../config/productDirectionPackageKind';
+import {
+  buildCeilingsClientPrintModel,
+  parseCeilingsQty,
+} from '../../families/product-like/ceilings/ceilingsSpecification';
 import { computeProductContractCostBreakdown } from '../../families/product-like/cost/productContractCostBreakdown';
+import {
+  computeDoorsSpecificationNetTotal,
+  doorsSpecificationLineHasContent,
+  resolveDoorsSpecificationLineTotal,
+  sumDoorsSpecificationLinesTotal,
+} from '../../families/product-like/specification/doorsSpecification';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -17,7 +27,10 @@ import {
 
 type EstimateSnapshot = NonNullable<PackageFormData['estimate']['snapshot']>;
 
-export type PackageInvoiceEstimateSourceId = 'contract' | `addendum_${1 | 2 | 3 | 4 | 5}`;
+export type PackageInvoiceEstimateSourceId =
+  | 'contract'
+  | 'specification'
+  | `addendum_${1 | 2 | 3 | 4 | 5}`;
 
 export type PackageInvoiceEstimateSourceOption = {
   id: PackageInvoiceEstimateSourceId;
@@ -60,6 +73,7 @@ function snapshotForSource(
   sourceId: PackageInvoiceEstimateSourceId
 ): EstimateSnapshot | null {
   if (sourceId === 'contract') return form.estimate.snapshot;
+  if (sourceId === 'specification') return null;
   const match = /^addendum_(\d)$/.exec(sourceId);
   if (!match) return null;
   const idx = Number(match[1]) - 1;
@@ -67,7 +81,87 @@ function snapshotForSource(
   return form.addendumSlots[idx]?.snapshot ?? null;
 }
 
-/** Документы с позициями для загрузки в счёт (смета / счёт-заказ и Д/с). */
+/**
+ * Позиции из спецификации изделий (потолки → двери → ручная сумма).
+ * Спецификация считает изделия со своей наценкой и скидкой — скидка по договору
+ * на работы к ней не применяется.
+ */
+export function paymentInvoiceLinesFromProductSpecification(
+  form: PackageFormData
+): PaymentInvoiceLineItem[] {
+  const ceilingsModel = buildCeilingsClientPrintModel(form.ceilingsSpecification);
+  if (ceilingsModel.hasContent && ceilingsModel.sections.length > 0) {
+    const discountFactor = 1 - ceilingsModel.totals.discountPercent / 100;
+    const result: PaymentInvoiceLineItem[] = [];
+    for (const section of ceilingsModel.sections) {
+      for (const row of section.rows) {
+        const amount = row.amount * discountFactor;
+        if (amount <= 0) continue;
+        const name = [row.name, row.detail].filter(Boolean).join(' — ').trim();
+        if (!name) continue;
+        const quantity = parseCeilingsQty(row.qty) ?? 1;
+        const unitPrice = amount / Math.max(quantity, 1);
+        result.push({
+          lineKind: 'GOODS',
+          name,
+          quantity: formatPaymentInvoiceQuantity(quantity),
+          unit: row.unit || 'шт.',
+          vatLabel: 'Без НДС',
+          unitPrice: formatPaymentInvoiceLineAmount(unitPrice),
+          amount: formatPaymentInvoiceLineAmount(amount),
+        });
+      }
+    }
+    if (result.length > 0) return result;
+  }
+
+  const doorsLines = (form.doorsSpecificationLines ?? []).filter(doorsSpecificationLineHasContent);
+  if (doorsLines.length > 0 && sumDoorsSpecificationLinesTotal(doorsLines) > 0) {
+    const { netTotal, grossTotal } = computeDoorsSpecificationNetTotal(
+      doorsLines,
+      form.doorsSpecificationDiscountPercent
+    );
+    const discountFactor = grossTotal > 0 ? netTotal / grossTotal : 1;
+    const result: PaymentInvoiceLineItem[] = [];
+    for (const line of doorsLines) {
+      const amount = resolveDoorsSpecificationLineTotal(line) * discountFactor;
+      if (amount <= 0 || !line.name.trim()) continue;
+      const quantity = parseCeilingsQty(line.quantity) ?? 1;
+      const unitPrice = amount / Math.max(quantity, 1);
+      result.push({
+        lineKind: 'GOODS',
+        name: line.name.trim(),
+        quantity: formatPaymentInvoiceQuantity(quantity),
+        unit: 'шт.',
+        vatLabel: 'Без НДС',
+        unitPrice: formatPaymentInvoiceLineAmount(unitPrice),
+        amount: formatPaymentInvoiceLineAmount(amount),
+      });
+    }
+    if (result.length > 0) return result;
+  }
+
+  const manualAmount = Number(
+    (form.productSpecificationAmount ?? '').replace(/\s+/g, '').replace(',', '.')
+  );
+  if (Number.isFinite(manualAmount) && manualAmount > 0) {
+    return [
+      {
+        lineKind: 'GOODS',
+        name: 'Изделия по спецификации',
+        quantity: formatPaymentInvoiceQuantity(1),
+        unit: 'шт.',
+        vatLabel: 'Без НДС',
+        unitPrice: formatPaymentInvoiceLineAmount(manualAmount),
+        amount: formatPaymentInvoiceLineAmount(manualAmount),
+      },
+    ];
+  }
+
+  return [];
+}
+
+/** Документы с позициями для загрузки в счёт (смета / счёт-заказ, спецификация и Д/с). */
 export function buildPackageInvoiceEstimateSourceOptions(
   form: PackageFormData,
   packageKind: ContractDocumentPackageKind = 'REPAIR'
@@ -86,6 +180,21 @@ export function buildPackageInvoiceEstimateSourceOptions(
     },
   ];
 
+  if (isProductDirectionPackageKind(packageKind)) {
+    const specLines = paymentInvoiceLinesFromProductSpecification(form);
+    let specTotalRub = 0;
+    for (const line of specLines) {
+      specTotalRub += Number(line.amount.replace(/\s+/g, '').replace(',', '.')) || 0;
+    }
+    options.push({
+      id: 'specification',
+      label: 'Спецификация (изделия)',
+      linesCount: specLines.length,
+      totalRub: specTotalRub,
+      disabled: specLines.length === 0,
+    });
+  }
+
   const addendumCount = clampPackageAddendumSlotCount(form.addendumSlotCount);
   for (let i = 0; i < addendumCount; i++) {
     const n = (i + 1) as 1 | 2 | 3 | 4 | 5;
@@ -102,12 +211,13 @@ export function buildPackageInvoiceEstimateSourceOptions(
   return options;
 }
 
-/** Позиции счёта из сметы / счёт-заказа или Д/с (скидка по договору — на работы). */
+/** Позиции счёта из сметы / счёт-заказа, спецификации или Д/с (скидка по договору — на работы). */
 export function paymentInvoiceLinesFromEstimateSource(
   form: PackageFormData,
   sourceId: PackageInvoiceEstimateSourceId,
   _packageKind: ContractDocumentPackageKind = 'REPAIR'
 ): PaymentInvoiceLineItem[] {
+  if (sourceId === 'specification') return paymentInvoiceLinesFromProductSpecification(form);
   const snapshot = snapshotForSource(form, sourceId);
   if (!snapshot?.rooms?.length) return [];
 
@@ -150,7 +260,7 @@ export function packageInvoiceContractSourceSummaryHint(
   if (breakdown.totalAmount <= 0) return null;
   const parts: string[] = [];
   if (breakdown.productsAmount > 0) {
-    parts.push(`изделия по спецификации ${breakdown.productsDisplay} ₽ (в счёт вручную)`);
+    parts.push(`изделия по спецификации ${breakdown.productsDisplay} ₽`);
   }
   if (breakdown.worksAmount > 0) {
     parts.push(`работы по счёт-заказу ${breakdown.worksDisplay} ₽`);

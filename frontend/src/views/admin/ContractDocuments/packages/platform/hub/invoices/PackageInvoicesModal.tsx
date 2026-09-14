@@ -191,6 +191,33 @@ export function PackageInvoicesModal({
     });
   };
 
+  /** Черновик счёта из формы — как запись счёта, для модалки отправки заказчику. */
+  const shareDraft = (conduct: PackageInvoiceConductDraft) => {
+    const amountNum = Number.parseFloat(conduct.amount.replace(/\s+/g, '').replace(',', '.'));
+    const row: ContractDocumentPaymentInvoice = {
+      id: `draft-${conduct.invoiceNumber}`,
+      packageId,
+      sequenceNumber: 0,
+      invoiceNumber: conduct.invoiceNumber,
+      invoiceDate: conduct.invoiceDate,
+      amount: String(Number.isFinite(amountNum) ? amountNum : 0),
+      paymentType: 'PREPAYMENT',
+      addendumNumber: null,
+      basis: conduct.paymentBasis,
+      lineItems: paymentInvoiceLineItemsForApi(conduct.lineItems),
+      legacyFormId: null,
+      createdAt: '',
+      updatedAt: '',
+      issuedById: null,
+      issuedBy: null,
+      packageTitle: null,
+      packageKind,
+      contractNumber: contractNumberLabel,
+      customerName: form.customer.fullName ?? '',
+    };
+    setShareInvoice(row);
+  };
+
   const shareLiveInput: PackageInvoiceShareLiveInput = {
     packageId,
     packageKind,
@@ -251,6 +278,7 @@ export function PackageInvoicesModal({
               saving={saving}
               onReprint={reprintIssued}
               onShare={setShareInvoice}
+              onShareDraft={shareDraft}
             />
           ) : null}
         </div>

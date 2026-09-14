@@ -2,6 +2,7 @@
 
 import { Fragment } from 'react';
 
+import { ShareIcon } from '@/shared/ui/icons';
 import measurementBlankStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
@@ -46,6 +47,8 @@ export type PackageIssueInvoiceIssueFormSectionProps = Pick<
   | 'handleIssue'
   | 'handlePrint'
   | 'handleDownloadDraft'
+  | 'handleShareDraft'
+  | 'canShareDraft'
 >;
 
 export function PackageIssueInvoiceIssueFormSection({
@@ -80,6 +83,8 @@ export function PackageIssueInvoiceIssueFormSection({
   handleIssue,
   handlePrint,
   handleDownloadDraft,
+  handleShareDraft,
+  canShareDraft,
 }: PackageIssueInvoiceIssueFormSectionProps) {
   return (
     <div
@@ -204,6 +209,19 @@ export function PackageIssueInvoiceIssueFormSection({
                 {downloadBusy ? 'PDF…' : 'Скачать PDF'}
               </button>
             ) : null}
+
+            {canShareDraft ? (
+              <button
+                type="button"
+                className={cdBase.paymentsHubConductSecondaryBtn}
+                disabled={!formComplete}
+                onClick={handleShareDraft}
+                title="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
+                aria-label="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
+              >
+                <ShareIcon />
+              </button>
+            ) : null}
           </div>
         </div>
       </div>
@@ -215,8 +233,7 @@ export function PackageIssueInvoiceIssueFormSection({
           В печатной форме основание уходит в поле «Основание», позиции — в таблицу.{' '}
           {isProductDirectionPackage ? (
             <>
-              Автозагрузка — только из счёт-заказа и Д/с (скидка по договору на работы). Позиции по
-              изделиям из спецификации добавляйте в таблицу вручную.
+              Автозагрузка — из счёт-заказа, спецификации и Д/с (скидка по договору на работы).
               {contractSourceSummaryHint ? <> {contractSourceSummaryHint}.</> : null}
             </>
           ) : (

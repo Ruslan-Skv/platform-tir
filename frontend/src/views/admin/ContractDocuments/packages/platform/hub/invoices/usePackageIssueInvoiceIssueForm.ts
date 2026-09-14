@@ -40,6 +40,7 @@ export function usePackageIssueInvoiceIssueForm({
   onIssue,
   onPrint,
   onDownload,
+  onShareDraft,
   selectedBasis,
   basisKey,
   setBasisKey,
@@ -56,6 +57,7 @@ export function usePackageIssueInvoiceIssueForm({
   onIssue: PackageIssueInvoicePanelProps['onIssue'];
   onPrint: PackageIssueInvoicePanelProps['onPrint'];
   onDownload?: PackageIssueInvoicePanelProps['onDownload'];
+  onShareDraft?: PackageIssueInvoicePanelProps['onShareDraft'];
   selectedBasis: PackagePaymentBasisOption | undefined;
   basisKey: PackagePaymentBasisOptionKey | '';
   setBasisKey: (key: PackagePaymentBasisOptionKey | '') => void;
@@ -210,6 +212,12 @@ export function usePackageIssueInvoiceIssueForm({
     if (conduct) void handleDownload(conduct);
   }, [buildConductDraft, handleDownload]);
 
+  const handleShareDraft = useCallback(() => {
+    if (!onShareDraft) return;
+    const conduct = buildConductDraft();
+    if (conduct) onShareDraft(conduct);
+  }, [buildConductDraft, onShareDraft]);
+
   const handleReprintDownload = useCallback(
     (row: ContractDocumentPaymentInvoice) => {
       void handleDownload({
@@ -236,6 +244,8 @@ export function usePackageIssueInvoiceIssueForm({
     handleIssue,
     handlePrint,
     handleDownloadDraft,
+    handleShareDraft,
+    canShareDraft: Boolean(onShareDraft),
     handleReprintDownload,
   };
 }

@@ -167,7 +167,7 @@ export function PackageDocumentEditorHeaderActions({
         {!loading ? (
           <button
             type="button"
-            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn}`}
+            className={`${cdWorkspace.secondaryBtn} ${cdChrome.estimatesPageRefreshIconBtn} ${cdDataTab.packageEditorHubPrimaryBtn}`}
             onClick={onOpenCustomerShare}
             title={
               headerContractNumberLabel
@@ -180,7 +180,7 @@ export function PackageDocumentEditorHeaderActions({
                 : 'Отправить заказчику (Telegram, WhatsApp, MAX, почта)'
             }
           >
-            <ShareIcon />
+            <ShareIcon tone="inherit" />
           </button>
         ) : null}
         {!loading ? (

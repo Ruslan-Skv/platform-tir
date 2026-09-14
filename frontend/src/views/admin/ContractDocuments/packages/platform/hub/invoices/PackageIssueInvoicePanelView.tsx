@@ -38,6 +38,8 @@ export function PackageIssueInvoicePanelView({
   handleIssue,
   handlePrint,
   handleDownloadDraft,
+  handleShareDraft,
+  canShareDraft,
   handleReprintDownload,
   issuedRows,
 }: PackageIssueInvoicePanelModel) {
@@ -75,6 +77,8 @@ export function PackageIssueInvoicePanelView({
         handleIssue={handleIssue}
         handlePrint={handlePrint}
         handleDownloadDraft={handleDownloadDraft}
+        handleShareDraft={handleShareDraft}
+        canShareDraft={canShareDraft}
       />
 
       {showIssuedTable ? (

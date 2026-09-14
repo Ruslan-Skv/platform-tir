@@ -41,6 +41,9 @@ export type PackageIssueInvoicePanelProps = {
   onReprint?: (row: ContractDocumentPaymentInvoice) => void;
 
   onShare?: (row: ContractDocumentPaymentInvoice) => void;
+
+  /** Отправка заказчику ещё не выставленного счёта (черновик из формы). */
+  onShareDraft?: (conduct: PackageInvoiceConductDraft) => void;
 };
 
 export function PackageIssueInvoicePanel(props: PackageIssueInvoicePanelProps) {

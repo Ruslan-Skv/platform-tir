@@ -91,7 +91,7 @@ export function usePackageIssueInvoiceLineItems({
       if (!estimateLoadSource) {
         onError(
           isProductDirectionPackage
-            ? 'Выберите счёт-заказ или доп. соглашение'
+            ? 'Выберите счёт-заказ, спецификацию или доп. соглашение'
             : 'Выберите смету или доп. соглашение'
         );
         return;
