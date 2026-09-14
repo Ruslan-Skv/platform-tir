@@ -27,9 +27,15 @@ export const metadata: Metadata = {
   title: 'Территория интерьерных решений',
   description: 'Платформа для дизайна интерьеров и покупки товаров',
   icons: {
-    icon: '/favicon.svg',
-    shortcut: '/favicon.svg',
-    apple: '/favicon.svg',
+    // Робот Яндекса не понимает SVG-фавиконки: без ICO/PNG в поиске и рекламе Директа
+    // показывается серая заглушка, поэтому основной ссылкой должен быть /favicon.ico.
+    icon: [
+      { url: '/favicon.ico', sizes: '48x48' },
+      { url: '/icons/favicon.svg', type: 'image/svg+xml' },
+      { url: '/icons/favicon-96x96.png', sizes: '96x96', type: 'image/png' },
+    ],
+    shortcut: [{ url: '/favicon.ico' }],
+    apple: [{ url: '/icons/apple-touch-icon.png', sizes: '180x180' }],
   },
   manifest: '/manifest.webmanifest',
   appleWebApp: {
@@ -77,6 +83,19 @@ export default async function RootLayout({
         />
       </head>
       <body>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              '@context': 'https://schema.org',
+              '@type': 'Organization',
+              name: 'Территория интерьерных решений',
+              url: getMetadataBase().toString(),
+              logo: `${getMetadataBase().toString()}/icons/icon-192.png`,
+              email: 'skvirya@mail.ru',
+            }),
+          }}
+        />
         <StoreProvider>
           <ThemeInitializer>{children}</ThemeInitializer>
         </StoreProvider>
