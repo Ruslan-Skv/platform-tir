@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
+
 import measurementFormStyles from '@/views/admin/CRM/Measurements/form/MeasurementFormPage.module.css';
 
 import cdBase from '../../../../styles/base.module.css';
@@ -24,16 +27,62 @@ export function EstimateWorkspaceLoadingState() {
 
 type EstimateWorkspacePageViewProps = EstimateWorkspacePageModel;
 
+type WorkspaceToastMessage = { type: 'success' | 'error'; text: string };
+
+/** Тост в правом нижнем углу — как сообщение о сохранении на странице замера. */
+function EstimateWorkspaceToast({
+  message,
+  onClose,
+}: {
+  message: WorkspaceToastMessage;
+  onClose: () => void;
+}) {
+  const [portalRoot, setPortalRoot] = useState<HTMLElement | null>(null);
+
+  useEffect(() => {
+    // Внутрь admin shell — есть CSS-переменные; body их не наследует (тост становился невидимым).
+    setPortalRoot(document.querySelector<HTMLElement>('[data-admin-shell]') ?? document.body);
+  }, []);
+
+  if (!portalRoot) return null;
+
+  return createPortal(
+    <div
+      className={`${measurementFormStyles.toast} ${
+        message.type === 'success'
+          ? measurementFormStyles.toastSuccess
+          : measurementFormStyles.toastError
+      }`}
+      role={message.type === 'success' ? 'status' : 'alert'}
+    >
+      <span className={measurementFormStyles.toastIcon} aria-hidden>
+        {message.type === 'success' ? '✓' : '⚠'}
+      </span>
+      <span className={measurementFormStyles.toastMessage}>{message.text}</span>
+      <button
+        type="button"
+        className={measurementFormStyles.toastClose}
+        onClick={onClose}
+        aria-label="Закрыть"
+      >
+        ✕
+      </button>
+    </div>,
+    portalRoot
+  );
+}
+
 export function EstimateWorkspacePageView({
   url,
   error,
   setError,
+  ok,
+  setOk,
   estimateNameError,
   setEstimateNameError,
   estimateCustomerError,
   estimateObjectAddressError,
   estimateCalculatorError,
-  ok,
   customerName,
   objectAddress,
   crmCustomerId,
@@ -43,6 +92,7 @@ export function EstimateWorkspacePageView({
   session,
   dirtyState,
   save,
+  estimateTotalCost,
 }: EstimateWorkspacePageViewProps) {
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdWorkspace.estimateWorkspacePage}`}>
@@ -60,12 +110,15 @@ export function EstimateWorkspacePageView({
         onRequestExit={() => setExitConfirmOpen(true)}
       />
 
-      {error ? (
-        <p className={measurementFormStyles.fieldError} role="alert">
-          {error}
-        </p>
+      {error || ok ? (
+        <EstimateWorkspaceToast
+          message={error ? { type: 'error', text: error } : { type: 'success', text: ok ?? '' }}
+          onClose={() => {
+            setError(null);
+            setOk(null);
+          }}
+        />
       ) : null}
-      {ok ? <p className={cdDocPreview.success}>{ok}</p> : null}
 
       <div className={cdWorkspace.estimateWorkspaceTopRow}>
         <div className={cdWorkspace.estimateWorkspaceTopBlock}>
@@ -102,6 +155,7 @@ export function EstimateWorkspacePageView({
             estimateNameError={estimateNameError}
             additionalMarkupRaw={session.additionalMarkupRaw}
             onAdditionalMarkupChange={session.setAdditionalMarkupRaw}
+            estimateTotalCost={estimateTotalCost}
             customerName={customerName}
             objectAddress={objectAddress}
             estimateCustomerError={estimateCustomerError}

@@ -44,6 +44,7 @@ export type UseEstimateWorkspaceSaveParams = {
   joinSplitBundleIdFromUrl: string;
   fromMeasurementId: string | null;
   setCopySessionPendingSave: (value: boolean) => void;
+  setBaseline: (baseline: WorkspaceBaseline | null) => void;
   setError: (msg: string | null) => void;
   setOk: (msg: string | null) => void;
   setEstimateNameError: (msg: string | null) => void;
@@ -75,6 +76,7 @@ export function useEstimateWorkspaceSave({
   joinSplitBundleIdFromUrl,
   fromMeasurementId,
   setCopySessionPendingSave,
+  setBaseline,
   setError,
   setOk,
   setEstimateNameError,
@@ -169,7 +171,22 @@ export function useEstimateWorkspaceSave({
       setEstimateGroups(synced.groups);
       setOk('Сохранено.');
       setCopySessionPendingSave(false);
-      router.push('/admin/contract-documents/estimates');
+      // Остаёмся на странице расчёта: обновляем baseline, чтобы состояние
+      // «есть несохранённые изменения» сбросилось без перезагрузки страницы.
+      const savedDraftsByCategory: Record<string, string | null> = {};
+      for (const slug of draftSlugs) {
+        savedDraftsByCategory[slug] = window.localStorage.getItem(calculatorDraftStorageKey(slug));
+      }
+      setBaseline({
+        categorySlugs: draftSlugs,
+        name: estimateNameDraft,
+        draftsByCategory: savedDraftsByCategory,
+        customer: { crmCustomerId, customerName, objectAddress },
+        additionalMarkupPercent:
+          parsedMarkup === undefined
+            ? undefined
+            : clampEstimateAdditionalMarkupPercent(parsedMarkup),
+      });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить расчёты');
     } finally {
@@ -197,13 +214,13 @@ export function useEstimateWorkspaceSave({
     setItems,
     setEstimateGroups,
     setCopySessionPendingSave,
+    setBaseline,
     setError,
     setOk,
     setEstimateNameError,
     setEstimateCustomerError,
     setEstimateObjectAddressError,
     setEstimateCalculatorError,
-    router,
   ]);
 
   return { saving, isEditingExisting, saveCurrentEstimate, abandonChangesAndLeave };

@@ -40,6 +40,8 @@ export type EstimateSnapshotLine = {
   amount: number;
   /** Id позиции каталога (пишется при сохранении сметы из ответа calculate). */
   itemId?: string;
+  /** Наценка расчёта к позиции не применяется (например, «Дополнительные виды работ»). */
+  noMarkup?: boolean;
 };
 
 export type EstimateSnapshotRoom = {
@@ -104,6 +106,10 @@ export function applyAdditionalMarkupPercentToSnapshot(
   const rooms: EstimateSnapshotRoom[] = snapshot.rooms.map((room) => {
     let roomTotal = 0;
     const lines = room.lines.map((line) => {
+      if (line.noMarkup) {
+        roomTotal += line.amount;
+        return line;
+      }
       const price = line.price * factor;
       const amount = line.amount * factor;
       roomTotal += amount;

@@ -75,6 +75,8 @@ export type PersistedCalculatorDraftV1 = {
   activeCalcId: string;
   /** Виды работ только для этого расчёта (ключ — `est-custom:…`). */
   customItems?: EstimateCalculatorDraftCustomItems;
+  /** Наценка расчёта не применяется к «Дополнительным видам работ». */
+  customItemsNoMarkup?: boolean;
   calcs: Array<{
     id: string;
     name: string;
@@ -143,7 +145,8 @@ export function writeCalculatorDraftToStorage(
   slug: string,
   calculations: CalculatorDraft[],
   activeCalcId: string,
-  customItems: EstimateCalculatorDraftCustomItems
+  customItems: EstimateCalculatorDraftCustomItems,
+  customItemsNoMarkup = false
 ): void {
   if (typeof window === 'undefined') return;
   try {
@@ -151,6 +154,7 @@ export function writeCalculatorDraftToStorage(
       v: 1,
       activeCalcId,
       ...(Object.keys(customItems).length > 0 ? { customItems } : {}),
+      ...(customItemsNoMarkup ? { customItemsNoMarkup: true } : {}),
       calcs: calculations.map((c) => ({
         id: c.id,
         name: c.name,
@@ -174,6 +178,7 @@ export function hydrateCalculatorDraftFromStorage(
   calculations: CalculatorDraft[];
   activeCalcId: string;
   customItems: EstimateCalculatorDraftCustomItems;
+  customItemsNoMarkup: boolean;
 } | null {
   const raw = readCalculatorDraftFromStorage(slug);
   if (!raw || raw.calcs.length === 0) return null;
@@ -231,7 +236,12 @@ export function hydrateCalculatorDraftFromStorage(
       ? raw.activeCalcId
       : calculations[0].id;
 
-  return { calculations, activeCalcId: activeRaw, customItems };
+  return {
+    calculations,
+    activeCalcId: activeRaw,
+    customItems,
+    customItemsNoMarkup: raw.customItemsNoMarkup === true,
+  };
 }
 
 export const formatPrice = (n: number) =>

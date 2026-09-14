@@ -87,15 +87,19 @@ export function useServiceCategoryPage({
   const [customWorkUnit, setCustomWorkUnit] = useState<string>(ESTIMATE_CUSTOM_WORK_UNITS[2]);
   const [customWorkPrice, setCustomWorkPrice] = useState('');
   const [customWorkError, setCustomWorkError] = useState<string | null>(null);
+  /** Наценка расчёта не применяется к «Дополнительным видам работ» этого расчёта. */
+  const [customItemsNoMarkup, setCustomItemsNoMarkup] = useState(false);
   /** Пока true — не пишем черновик в localStorage (первая гидрация URL/хранилища). */
   const skipPersistCalculatorDraftRef = useRef(true);
   const prevSlugForCalculatorRef = useRef<string | null>(null);
   const calculationsRef = useRef(calculations);
   const activeCalcIdRef = useRef(activeCalcId);
   const draftCustomItemsRef = useRef(draftCustomItems);
+  const customItemsNoMarkupRef = useRef(customItemsNoMarkup);
   calculationsRef.current = calculations;
   activeCalcIdRef.current = activeCalcId;
   draftCustomItemsRef.current = draftCustomItems;
+  customItemsNoMarkupRef.current = customItemsNoMarkup;
 
   /*
    * Свёрнутые группы: одна синхронная фаза — чтение из LS + пересечение с актуальными секциями.
@@ -252,8 +256,10 @@ export function useServiceCategoryPage({
             setCalculations(restored.calculations);
             setActiveCalcId(restored.activeCalcId);
             setDraftCustomItems(restored.customItems);
+            setCustomItemsNoMarkup(restored.customItemsNoMarkup);
           } else {
             setDraftCustomItems({});
+            setCustomItemsNoMarkup(false);
           }
         }
       } else {
@@ -262,8 +268,10 @@ export function useServiceCategoryPage({
           setCalculations(restored.calculations);
           setActiveCalcId(restored.activeCalcId);
           setDraftCustomItems(restored.customItems);
+          setCustomItemsNoMarkup(restored.customItemsNoMarkup);
         } else {
           setDraftCustomItems({});
+          setCustomItemsNoMarkup(false);
         }
       }
     }
@@ -275,7 +283,8 @@ export function useServiceCategoryPage({
         slug,
         calculationsRef.current,
         activeCalcIdRef.current,
-        draftCustomItemsRef.current
+        draftCustomItemsRef.current,
+        customItemsNoMarkupRef.current
       );
     }, 0);
     return () => window.clearTimeout(enablePersistTimer);
@@ -284,8 +293,14 @@ export function useServiceCategoryPage({
   useEffect(() => {
     if (!data || data.slug !== slug) return;
     if (skipPersistCalculatorDraftRef.current) return;
-    writeCalculatorDraftToStorage(slug, calculations, activeCalcId, draftCustomItems);
-  }, [slug, data, calculations, activeCalcId, draftCustomItems]);
+    writeCalculatorDraftToStorage(
+      slug,
+      calculations,
+      activeCalcId,
+      draftCustomItems,
+      customItemsNoMarkup
+    );
+  }, [slug, data, calculations, activeCalcId, draftCustomItems, customItemsNoMarkup]);
 
   // Принудительный flush перед сменой вкладки категории в workspace расчёта.
   useEffect(() => {
@@ -295,7 +310,8 @@ export function useServiceCategoryPage({
         slug,
         calculationsRef.current,
         activeCalcIdRef.current,
-        draftCustomItemsRef.current
+        draftCustomItemsRef.current,
+        customItemsNoMarkupRef.current
       );
     };
     window.addEventListener('estimate-calculator-flush-draft', onFlush);
@@ -310,7 +326,8 @@ export function useServiceCategoryPage({
         slug,
         calculationsRef.current,
         activeCalcIdRef.current,
-        draftCustomItemsRef.current
+        draftCustomItemsRef.current,
+        customItemsNoMarkupRef.current
       );
     };
   }, [slug]);
@@ -598,6 +615,7 @@ export function useServiceCategoryPage({
       ]);
       setActiveCalcId(id);
       setDraftCustomItems({});
+      setCustomItemsNoMarkup(false);
       setCustomWorkName('');
       setCustomWorkPrice('');
       setCustomWorkError(null);
@@ -757,6 +775,8 @@ export function useServiceCategoryPage({
     orderStatus,
     collapsedWorkGroupKeys,
     draftCustomItems,
+    customItemsNoMarkup,
+    setCustomItemsNoMarkup,
     customWorkName,
     setCustomWorkName,
     customWorkUnit,

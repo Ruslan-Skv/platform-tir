@@ -16,6 +16,19 @@ export function isEstimateCustomItemId(itemId: string): boolean {
   return itemId.startsWith(ESTIMATE_CUSTOM_ITEM_ID_PREFIX);
 }
 
+/**
+ * Флаг блока «Дополнительные виды работ»: наценка расчёта не применяется
+ * к кастомным позициям черновика.
+ */
+export function parseCustomItemsNoMarkupFromDraft(draftRaw: string): boolean {
+  try {
+    const parsed = JSON.parse(draftRaw) as { customItemsNoMarkup?: unknown };
+    return parsed?.customItemsNoMarkup === true;
+  } catch {
+    return false;
+  }
+}
+
 export function createEstimateCustomItemId(): string {
   return `${ESTIMATE_CUSTOM_ITEM_ID_PREFIX}${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
 }
@@ -87,7 +100,8 @@ export function splitDraftLineItems(
 }
 
 export function buildCustomSnapshotLines(
-  custom: Array<{ itemId: string; quantity: number; def: EstimateCustomWorkItemDef }>
+  custom: Array<{ itemId: string; quantity: number; def: EstimateCustomWorkItemDef }>,
+  noMarkup = false
 ): Array<{
   itemId: string;
   name: string;
@@ -95,6 +109,7 @@ export function buildCustomSnapshotLines(
   quantity: number;
   price: number;
   amount: number;
+  noMarkup?: boolean;
 }> {
   return custom.map(({ itemId, quantity, def }) => ({
     itemId,
@@ -103,6 +118,7 @@ export function buildCustomSnapshotLines(
     quantity,
     price: def.price,
     amount: def.price * quantity,
+    ...(noMarkup ? { noMarkup: true } : {}),
   }));
 }
 

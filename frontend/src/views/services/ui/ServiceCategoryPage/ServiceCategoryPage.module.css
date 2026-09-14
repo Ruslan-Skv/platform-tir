@@ -1540,6 +1540,24 @@
   line-height: 1.45;
 }
 
+.customWorkMarkupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.85rem;
+  font-size: 0.875rem;
+  color: inherit;
+  cursor: pointer;
+  user-select: none;
+}
+
+.customWorkMarkupToggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+}
+
 .customWorkForm {
   display: grid;
   grid-template-columns: minmax(0, 1.6fr) minmax(5.5rem, 0.55fr) minmax(6.5rem, 0.65fr) auto;

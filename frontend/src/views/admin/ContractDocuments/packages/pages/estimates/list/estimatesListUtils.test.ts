@@ -11,16 +11,15 @@ function presetWith(fields: Partial<ContractEstimatePreset>): ContractEstimatePr
     calculatorDraft: '',
     createdAt: '2026-01-01T00:00:00.000Z',
     updatedAt: '2026-01-01T00:00:00.000Z',
-    createdById: null,
     ...fields,
   } as ContractEstimatePreset;
 }
 
 describe('estimateMatchesManagerFilter', () => {
   it('пропускает всё без выбранного менеджера', () => {
-    expect(estimateMatchesManagerFilter(presetWith({ createdById: null }), '', new Map())).toBe(
-      true
-    );
+    expect(
+      estimateMatchesManagerFilter(presetWith({ createdById: undefined }), '', new Map())
+    ).toBe(true);
   });
 
   it('находит расчёт по автору без привязки к договору', () => {
@@ -30,7 +29,7 @@ describe('estimateMatchesManagerFilter', () => {
   });
 
   it('находит расчёт по менеджеру привязанного договора', () => {
-    const preset = presetWith({ createdById: null });
+    const preset = presetWith({ createdById: undefined });
     const managerIdsByPresetId = new Map([['est_1', new Set(['user_b'])]]);
     expect(estimateMatchesManagerFilter(preset, 'user_b', managerIdsByPresetId)).toBe(true);
     expect(estimateMatchesManagerFilter(preset, 'user_a', managerIdsByPresetId)).toBe(false);

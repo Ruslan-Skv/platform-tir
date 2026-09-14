@@ -4,6 +4,7 @@ import { getApiBaseUrl } from '@/shared/lib/auth-session';
 
 import {
   buildCustomSnapshotLines,
+  parseCustomItemsNoMarkupFromDraft,
   parseEstimateCustomItemsFromDraft,
   splitDraftLineItems,
 } from './estimateCustomWorkItems';
@@ -72,10 +73,11 @@ export async function buildEstimateSnapshot(draftRaw: string): Promise<EstimateS
   const rooms = parseDraftRooms(draftRaw);
   if (rooms.length === 0) return null;
   const customItems = parseEstimateCustomItemsFromDraft(draftRaw);
+  const customNoMarkup = parseCustomItemsNoMarkupFromDraft(draftRaw);
   const roomSnapshots = await Promise.all(
     rooms.map(async (room) => {
       const { catalog, custom } = splitDraftLineItems(room.items, customItems);
-      const customLines = buildCustomSnapshotLines(custom);
+      const customLines = buildCustomSnapshotLines(custom, customNoMarkup);
       const customTotal = customLines.reduce((s, l) => s + l.amount, 0);
 
       if (catalog.length === 0) {

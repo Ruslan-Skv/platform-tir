@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { useRouter, useSearchParams } from 'next/navigation';
 
@@ -7,6 +7,7 @@ import { useEstimateWorkspaceCustomer } from './useEstimateWorkspaceCustomer';
 import { useEstimateWorkspaceDirtyState } from './useEstimateWorkspaceDirtyState';
 import { useEstimateWorkspaceLoad } from './useEstimateWorkspaceLoad';
 import { useEstimateWorkspaceSave } from './useEstimateWorkspaceSave';
+import { useEstimateWorkspaceTotalCost } from './useEstimateWorkspaceTotalCost';
 
 export function useEstimateWorkspacePage() {
   const router = useRouter();
@@ -28,6 +29,19 @@ export function useEstimateWorkspacePage() {
   const [customerName, setCustomerName] = useState('');
   const [objectAddress, setObjectAddress] = useState('');
   const [exitConfirmOpen, setExitConfirmOpen] = useState(false);
+
+  // Тост сообщения о сохранении/ошибке скрывается сам — как на странице замера.
+  useEffect(() => {
+    if (!ok) return;
+    const t = window.setTimeout(() => setOk(null), 3500);
+    return () => window.clearTimeout(t);
+  }, [ok]);
+
+  useEffect(() => {
+    if (!error) return;
+    const t = window.setTimeout(() => setError(null), 6000);
+    return () => window.clearTimeout(t);
+  }, [error]);
 
   const customer = useEstimateWorkspaceCustomer({
     setCrmCustomerId,
@@ -61,6 +75,8 @@ export function useEstimateWorkspacePage() {
     setEstimateCalculatorError,
   });
 
+  const estimateTotalCost = useEstimateWorkspaceTotalCost(session.estimateCategorySlugs);
+
   useEstimateWorkspaceActiveCategory(
     session.estimateCategorySlugs,
     session.activeCategorySlug,
@@ -89,6 +105,7 @@ export function useEstimateWorkspacePage() {
     joinSplitBundleIdFromUrl,
     fromMeasurementId,
     setCopySessionPendingSave: session.setCopySessionPendingSave,
+    setBaseline: session.setBaseline,
     setError,
     setOk,
     setEstimateNameError,
@@ -115,6 +132,7 @@ export function useEstimateWorkspacePage() {
     estimateObjectAddressError,
     estimateCalculatorError,
     ok,
+    setOk,
     crmCustomerId,
     customerName,
     objectAddress,
@@ -124,6 +142,7 @@ export function useEstimateWorkspacePage() {
     session,
     dirtyState,
     save,
+    estimateTotalCost,
   };
 }
 

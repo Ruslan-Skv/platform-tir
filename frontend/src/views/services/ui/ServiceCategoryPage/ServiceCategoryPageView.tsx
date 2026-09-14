@@ -46,6 +46,8 @@ export function ServiceCategoryPageView({ model }: ServiceCategoryPageViewProps)
     pendingReviewConfirmOpen,
     setPendingReviewConfirmOpen,
     collapsedWorkGroupKeys,
+    customItemsNoMarkup,
+    setCustomItemsNoMarkup,
     customWorkName,
     setCustomWorkName,
     customWorkUnit,
@@ -241,6 +243,14 @@ export function ServiceCategoryPageView({ model }: ServiceCategoryPageViewProps)
                 Только для этого расчёта: позиции не попадают в общий каталог и сохраняются вместе с
                 расчётом.
               </p>
+              <label className={styles.customWorkMarkupToggle}>
+                <input
+                  type="checkbox"
+                  checked={!customItemsNoMarkup}
+                  onChange={(e) => setCustomItemsNoMarkup(!e.target.checked)}
+                />
+                Применять наценку расчёта к этим видам работ
+              </label>
               <div className={styles.customWorkForm}>
                 <label className={styles.customWorkField}>
                   <span>Название</span>

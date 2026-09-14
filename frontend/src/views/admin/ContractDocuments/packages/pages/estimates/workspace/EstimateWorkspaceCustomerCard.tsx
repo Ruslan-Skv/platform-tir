@@ -1,6 +1,7 @@
 'use client';
 
 import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
+import { formatCatalogPriceWithRuble } from '@/shared/lib/catalog/format-catalog-price';
 import {
   type CrmCustomerAppliedContext,
   CrmCustomerSearchPanel,
@@ -9,6 +10,21 @@ import measurementFormStyles from '@/views/admin/CRM/Measurements/form/Measureme
 
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import {
+  type EstimateWorkspaceTotalCost,
+  parseAdditionalMarkupPercent,
+} from './hooks/useEstimateWorkspaceTotalCost';
+
+function formatTotalCost(cost: EstimateWorkspaceTotalCost | null, markupRaw: string): string {
+  if (cost == null) return '—';
+  const markupPercent = parseAdditionalMarkupPercent(markupRaw);
+  if (markupPercent <= 0) return formatCatalogPriceWithRuble(cost.total);
+  const factor = 1 + markupPercent / 100;
+  const withMarkup = (cost.total - cost.noMarkupTotal) * factor + cost.noMarkupTotal;
+  return `${formatCatalogPriceWithRuble(cost.total)} → ${formatCatalogPriceWithRuble(
+    withMarkup
+  )} (с наценкой ${markupPercent}%)`;
+}
 
 export type EstimateWorkspaceCustomerCardProps = {
   estimateNameDraft: string;
@@ -17,6 +33,8 @@ export type EstimateWorkspaceCustomerCardProps = {
   /** Наценка расчёта, % ('' — «наценка объекта»). */
   additionalMarkupRaw: string;
   onAdditionalMarkupChange: (value: string) => void;
+  /** Общая расчётная стоимость всего расчёта без наценки (null — ещё не посчитана). */
+  estimateTotalCost: EstimateWorkspaceTotalCost | null;
   customerName: string;
   objectAddress: string;
   estimateCustomerError: string | null;
@@ -33,6 +51,7 @@ export function EstimateWorkspaceCustomerCard({
   estimateNameError,
   additionalMarkupRaw,
   onAdditionalMarkupChange,
+  estimateTotalCost,
   customerName,
   objectAddress,
   estimateCustomerError,
@@ -155,6 +174,15 @@ export function EstimateWorkspaceCustomerCard({
               className={measurementFormStyles.input}
               autoComplete="off"
             />
+          </div>
+          <div className={measurementFormStyles.row}>
+            <span className={measurementFormStyles.label}>Стоимость расчёта</span>
+            <div
+              className={`${measurementFormStyles.input} ${measurementFormStyles.inputReadonly} ${cdWorkspace.estimateWorkspaceTotalCost}`}
+              title="Общая расчётная стоимость всех позиций расчёта"
+            >
+              {formatTotalCost(estimateTotalCost, additionalMarkupRaw)}
+            </div>
           </div>
         </div>
         <div className={cdWorkspace.packageCustomerSearchSlot}>
