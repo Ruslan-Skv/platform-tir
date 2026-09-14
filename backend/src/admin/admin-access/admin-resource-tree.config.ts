@@ -157,6 +157,8 @@ export function getAdminResourceAncestors(resourceId: string): string[] {
 }
 
 export function isAdminSettingsRestrictedResource(resourceId: string): boolean {
+  // «Мои уведомления» (admin.settings.my-notifications) — личный топ-раздел без родителя,
+  // доступен всем ролям админки и не попадает в ограничение ветки «Настройки».
   if (
     SETTINGS_RESTRICTED_ROOTS.includes(resourceId as (typeof SETTINGS_RESTRICTED_ROOTS)[number])
   ) {

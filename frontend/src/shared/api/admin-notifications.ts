@@ -51,6 +51,28 @@ export async function getAdminNotificationsSettings(): Promise<AdminNotification
   return res.json();
 }
 
+const MY_NOTIFY_EVENT_KEYS = [
+  'notifyOnReviews',
+  'notifyOnOrders',
+  'notifyOnSupportChat',
+  'notifyOnMeasurementForm',
+  'notifyOnCallbackForm',
+  'notifyOnDirectorForm',
+  'notifyOnQuoteForm',
+  'notifyOnQuizMebel',
+  'notifyOnQuizRemont',
+  'notifyOnKnowledgeFeedback',
+  'notifyOnSiteFeedback',
+  'notifyOnKnowledgeTraining',
+  'notifyOnWorkDays',
+  'notifyOnWaybills',
+  'notifyOnInstallationSchedules',
+  'notifyOnRepairSchedules',
+  'notifyOnFurnitureSchedules',
+] as const;
+
+export type MyNotifyEventKey = (typeof MY_NOTIFY_EVENT_KEYS)[number];
+
 export type MyAdminNotificationDeliveryPrefs = {
   soundEnabled?: boolean;
   soundVolume?: number;
@@ -58,13 +80,13 @@ export type MyAdminNotificationDeliveryPrefs = {
   customSoundUrl?: string | null;
   desktopNotifications?: boolean;
   checkIntervalSeconds?: number;
-};
+} & Partial<Record<MyNotifyEventKey, boolean>>;
 
-/** Личные prefs доставки (звук / desktop); события notify* остаются от роли. */
+/** Личные настройки: доставка + опциональные личные переопределения событий. */
 export async function updateMyAdminNotificationDeliveryPrefs(
   data: MyAdminNotificationDeliveryPrefs
 ): Promise<AdminNotificationsSettings> {
-  const body = {
+  const body: Record<string, unknown> = {
     soundEnabled: data.soundEnabled,
     soundVolume: data.soundVolume,
     soundType: data.soundType,
@@ -72,6 +94,9 @@ export async function updateMyAdminNotificationDeliveryPrefs(
     desktopNotifications: data.desktopNotifications,
     checkIntervalSeconds: data.checkIntervalSeconds,
   };
+  for (const key of MY_NOTIFY_EVENT_KEYS) {
+    if (data[key] !== undefined) body[key] = data[key];
+  }
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/me`, {
     method: 'PATCH',
     headers: getAdminAuthHeaders(),
@@ -85,6 +110,15 @@ export async function updateMyAdminNotificationDeliveryPrefs(
       'Не удалось сохранить настройки';
     throw new Error(message);
   }
+  return res.json();
+}
+
+export async function resetMyAdminNotificationSettings(): Promise<AdminNotificationsSettings> {
+  const res = await apiFetch(`${API_URL}/admin/notifications/settings/me`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось сбросить настройки');
   return res.json();
 }
 

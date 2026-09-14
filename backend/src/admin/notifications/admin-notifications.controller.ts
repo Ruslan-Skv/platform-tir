@@ -111,13 +111,19 @@ export class AdminNotificationsController {
 
   @Patch('settings/me')
   @ApiOperation({
-    summary: 'Личные prefs доставки (звук / desktop); события notify* остаются от роли',
+    summary: 'Личные настройки уведомлений: доставка и опциональные переопределения событий',
   })
   updateMyDeliveryPrefs(
     @Req() req: RequestWithUser,
     @Body() dto: UpdateMyAdminNotificationDeliveryDto,
   ) {
     return this.notifications.updateMyDeliveryPrefs(req.user.id, req.user?.role ?? null, dto);
+  }
+
+  @Delete('settings/me')
+  @ApiOperation({ summary: 'Сбросить личные настройки уведомлений к настройкам роли' })
+  resetMySettings(@Req() req: RequestWithUser) {
+    return this.notifications.resetMySettings(req.user.id, req.user?.role ?? null);
   }
 
   @SkipThrottle()

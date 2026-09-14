@@ -62,6 +62,11 @@ export const ADMIN_API_RESOURCE_SKIPS: ReadonlyArray<{
     methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE'],
     pathPattern: /^\/api\/v1\/admin\/notifications\/settings\/me$/,
   },
+  // Список звуков — для личного выбора звука уведомлений (загрузка/удаление — по правам раздела)
+  {
+    methods: ['GET', 'HEAD'],
+    pathPattern: /^\/api\/v1\/admin\/notifications\/sounds(?:\/|$)/,
+  },
   {
     methods: ['GET', 'HEAD', 'PATCH', 'POST', 'PUT', 'DELETE'],
     pathPattern: /^\/api\/v1\/admin\/notifications\/(bell|push)(?:\/|$)/,

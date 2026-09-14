@@ -1,0 +1,463 @@
+.header {
+  margin-bottom: var(--admin-space-xl);
+}
+
+.headerLeft {
+  min-width: 0;
+}
+
+.title {
+  margin: 0;
+  font-size: var(--admin-font-size-4xl);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+  line-height: 1.2;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .title {
+  color: var(--admin-text-primary);
+}
+
+.sourceBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-border);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  color: var(--admin-text-muted);
+  white-space: nowrap;
+}
+
+.sourceBadgePersonal {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+.headerActions {
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm);
+}
+
+.resetBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  margin: 0;
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  line-height: var(--admin-line-height-sm);
+}
+
+.resetBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+}
+
+.resetBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.card {
+  margin-bottom: var(--admin-space-xl);
+  padding: var(--admin-space-xl) var(--admin-space-2xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-xl);
+  background: var(--admin-surface-muted);
+}
+
+.cardTitle {
+  margin: 0 0 var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.hint {
+  margin: var(--admin-space-sm) 0 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+  line-height: 1.45;
+}
+
+.rows {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(19rem, 1fr));
+  gap: var(--admin-space-sm) var(--admin-space-xl);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-lg);
+  background: var(--admin-surface);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.row:hover {
+  border-color: var(--admin-border-strong, var(--admin-border));
+}
+
+.rowInput {
+  flex-shrink: 0;
+  width: 1.05rem;
+  height: 1.05rem;
+  accent-color: var(--admin-primary, #2563eb);
+  cursor: pointer;
+}
+
+.rowLabel {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.35;
+}
+
+.rowLabelMuted {
+  color: var(--admin-text-muted);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.fieldGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--admin-space-md) var(--admin-space-xl);
+  align-items: start;
+}
+
+/* Компактная строка настроек: элементы в одну линию с переносом */
+.inlineRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm) var(--admin-space-xl);
+}
+
+.inlineRow .row {
+  flex: 0 1 auto;
+}
+
+.inlineField {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.inlineFieldLabel {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+}
+
+.rangeField {
+  flex: 1 1 10rem;
+  max-width: 14rem;
+}
+
+.select,
+.fileInput {
+  padding: var(--admin-space-sm) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  min-height: 2.5rem;
+  box-sizing: border-box;
+  width: auto;
+  max-width: 18rem;
+  align-self: flex-start;
+}
+
+.fileInput {
+  max-width: 100%;
+}
+
+.range {
+  width: 100%;
+  accent-color: var(--admin-primary, #2563eb);
+  cursor: pointer;
+}
+
+.permissionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
+}
+
+.permissionOk {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs);
+  padding: var(--admin-space-xs) var(--admin-space-lg);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid var(--admin-success-border, #86efac);
+  background: var(--admin-success-bg-soft, #f0fdf4);
+  color: var(--admin-success-text, #15803d);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+}
+
+.permissionButton {
+  padding: var(--admin-space-sm) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.permissionButton:hover {
+  background: var(--admin-surface-muted);
+}
+
+.soundsList {
+  list-style: none;
+  margin: var(--admin-space-sm) 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.soundItem {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.deleteSoundBtn {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--admin-danger, #dc2626);
+  font-size: var(--admin-font-size-sm);
+  cursor: pointer;
+  padding: 2px var(--admin-space-sm);
+  border-radius: var(--admin-radius-sm, 4px);
+}
+
+.uploading {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-muted);
+}
+
+.testButton {
+  align-self: flex-start;
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-xs) var(--admin-space-xl);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.testButton:hover:not(:disabled) {
+  background: var(--admin-surface-muted);
+}
+
+.loading,
+.errorText {
+  margin: 0;
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.errorText {
+  color: var(--admin-danger, #dc2626);
+}
+
+.toast {
+  position: fixed;
+  right: var(--admin-space-xl);
+  bottom: var(--admin-space-xl);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-md);
+  max-width: min(26rem, calc(100vw - 2 * var(--admin-space-xl)));
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border-radius: var(--admin-radius-lg);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.15);
+  font-size: var(--admin-font-size-sm);
+}
+
+.toastSuccess {
+  border-color: var(--admin-success-border, #86efac);
+}
+
+.toastError {
+  border-color: var(--admin-danger-border, #fecaca);
+}
+
+.toastIcon {
+  font-size: var(--admin-font-size-base);
+}
+
+.toastMessage {
+  flex: 1;
+  min-width: 0;
+  color: var(--admin-text-secondary);
+}
+
+.toastClose {
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--admin-text-muted);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm);
+  padding: 2px var(--admin-space-xs);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .card {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .row,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .select,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .fileInput,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .soundItem,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toast {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .sourceBadge {
+  background: var(--admin-text-secondary);
+  color: var(--admin-surface-muted);
+  border-color: transparent;
+}
+
+@media (max-width: 900px) {
+  .header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-md) !important;
+    margin-bottom: var(--admin-space-md) !important;
+    padding-bottom: var(--admin-space-sm) !important;
+  }
+
+  .title {
+    font-size: var(--admin-font-size-2xl);
+  }
+
+  .headerActions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--admin-space-sm);
+    width: 100%;
+    justify-content: stretch;
+  }
+
+  .headerActions :global(button) {
+    width: 100%;
+    min-height: 2.5rem;
+    font-size: var(--admin-font-size-xs);
+    padding: var(--admin-space-sm) var(--admin-space-md);
+    white-space: normal;
+    text-align: center;
+    line-height: 1.25;
+  }
+
+  .card {
+    margin-bottom: var(--admin-space-md);
+    padding: var(--admin-space-md) var(--admin-space-lg);
+  }
+
+  .rows {
+    grid-template-columns: 1fr;
+  }
+
+  .fieldGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .inlineRow {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--admin-space-sm);
+  }
+
+  .inlineRow .row {
+    width: 100%;
+  }
+
+  .inlineField {
+    flex-wrap: wrap;
+  }
+
+  .rangeField {
+    max-width: none;
+  }
+
+  .select,
+  .fileInput {
+    width: 100%;
+    max-width: 100%;
+  }
+}
+
+/* Салатовый фон тоста успеха — после тёмной перезаписи .toast выше */
+.toastSuccess {
+  border-color: var(--admin-success-border, #86efac);
+  background: var(--admin-success-bg-soft, #f0fdf4);
+}
+
+.toastSuccess .toastMessage,
+.toastSuccess .toastIcon,
+.toastSuccess .toastClose {
+  color: var(--admin-success-text, #15803d);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .toastSuccess {
+  background: rgb(74 222 128 / 0.16);
+  border-color: rgb(74 222 128 / 0.4);
+}

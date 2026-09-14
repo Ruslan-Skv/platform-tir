@@ -335,6 +335,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/settings/notifications',
   },
   {
+    id: 'admin.settings.my-notifications',
+    label: 'Мои уведомления',
+    path: '/admin/settings/my-notifications',
+  },
+  {
     id: 'admin.settings.notification-channels',
     label: 'Каналы уведомлений о заявках',
     path: '/admin/settings/notification-channels',

@@ -9,6 +9,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   ADMIN: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -122,6 +123,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   CONTENT_MANAGER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',
@@ -162,6 +164,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   MODERATOR: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.orders',
     'admin.orders.checkout-info',
     'admin.crm',
@@ -181,6 +184,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   SUPPORT: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.orders',
     'admin.support',
     'admin.crm',
@@ -197,6 +201,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   MANAGER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -233,6 +238,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   TECHNOLOGIST: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -263,6 +269,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   PARTNER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.catalog',
     'admin.catalog.products',
     'admin.catalog.categories',
@@ -271,6 +278,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   BRIGADIER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -297,6 +305,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   LEAD_SPECIALIST_FURNITURE: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -323,6 +332,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   LEAD_SPECIALIST_WINDOWS_DOORS: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -349,6 +359,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   SURVEYOR: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.measurements',
     'admin.crm.measurements.my',
@@ -369,6 +380,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   DRIVER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.installers',
     'admin.crm.installation-schedules',
@@ -378,6 +390,7 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
   INSTALLER: [
     'admin',
     'admin.knowledge',
+    'admin.settings.my-notifications',
     'admin.crm',
     'admin.crm.installers',
     'admin.crm.installation-schedules.my',

@@ -125,6 +125,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm.my-work-day',
   },
   {
+    label: 'Мои уведомления',
+    href: '/admin/settings/my-notifications',
+    icon: '🔔',
+    resourceId: 'admin.settings.my-notifications',
+  },
+  {
     label: 'CRM',
     href: '/admin/crm',
     icon: '👥',

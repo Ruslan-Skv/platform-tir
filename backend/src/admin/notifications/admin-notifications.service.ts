@@ -24,6 +24,38 @@ const ADMIN_ROLES: UserRole[] = [
   'TRAINEE',
 ];
 
+/** Флаги событий личных/ролевых настроек уведомлений. */
+export const NOTIFY_EVENT_KEYS = [
+  'notifyOnReviews',
+  'notifyOnOrders',
+  'notifyOnSupportChat',
+  'notifyOnMeasurementForm',
+  'notifyOnCallbackForm',
+  'notifyOnDirectorForm',
+  'notifyOnQuoteForm',
+  'notifyOnQuizMebel',
+  'notifyOnQuizRemont',
+  'notifyOnKnowledgeFeedback',
+  'notifyOnSiteFeedback',
+  'notifyOnKnowledgeTraining',
+  'notifyOnWorkDays',
+  'notifyOnWaybills',
+  'notifyOnInstallationSchedules',
+  'notifyOnRepairSchedules',
+  'notifyOnFurnitureSchedules',
+] as const;
+
+export type NotifyEventKey = (typeof NOTIFY_EVENT_KEYS)[number];
+
+type MyNotificationPrefsDto = {
+  soundEnabled?: boolean;
+  soundVolume?: number;
+  soundType?: string;
+  customSoundUrl?: string | null;
+  desktopNotifications?: boolean;
+  checkIntervalSeconds?: number;
+} & Partial<Record<NotifyEventKey, boolean>>;
+
 @Injectable()
 export class AdminNotificationsService {
   constructor(
@@ -113,19 +145,14 @@ export class AdminNotificationsService {
   }
 
   /**
-   * Личные prefs доставки: не перетирают флаги событий роли (deliveryOnly=true).
+   * Личные настройки: доставка + опциональные личные переопределения событий.
+   * Пока события не передаются, храним deliveryOnly=true (флаги берутся от роли);
+   * как только передан хотя бы один notify*-флаг — фиксируем полный набор событий.
    */
   async updateMyDeliveryPrefs(
     userId: string,
     userRole: string | null,
-    dto: {
-      soundEnabled?: boolean;
-      soundVolume?: number;
-      soundType?: string;
-      customSoundUrl?: string | null;
-      desktopNotifications?: boolean;
-      checkIntervalSeconds?: number;
-    },
+    dto: MyNotificationPrefsDto,
   ) {
     const effective = await this.getSettingsForUser(userId, userRole);
     const soundEnabled = dto.soundEnabled ?? effective.soundEnabled ?? true;
@@ -137,29 +164,34 @@ export class AdminNotificationsService {
       dto.desktopNotifications ?? effective.desktopNotifications ?? false;
     const checkIntervalSeconds = dto.checkIntervalSeconds ?? effective.checkIntervalSeconds ?? 60;
 
+    const deliveryOnly = !NOTIFY_EVENT_KEYS.some((key) => dto[key] !== undefined);
+    const eventData = Object.fromEntries(
+      NOTIFY_EVENT_KEYS.map((key) => [key, dto[key] ?? (effective[key] as boolean) ?? true]),
+    );
+
+    const data = {
+      deliveryOnly,
+      soundEnabled,
+      soundVolume,
+      soundType,
+      customSoundUrl,
+      desktopNotifications,
+      checkIntervalSeconds,
+      ...eventData,
+    };
+
     await this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
-      update: {
-        deliveryOnly: true,
-        soundEnabled,
-        soundVolume,
-        soundType,
-        customSoundUrl,
-        desktopNotifications,
-        checkIntervalSeconds,
-      },
-      create: {
-        userId,
-        deliveryOnly: true,
-        soundEnabled,
-        soundVolume,
-        soundType,
-        customSoundUrl,
-        desktopNotifications,
-        checkIntervalSeconds,
-      },
+      update: data,
+      create: { userId, ...data },
     });
 
+    return this.getSettingsForUser(userId, userRole);
+  }
+
+  /** Сброс личных настроек: снова используются настройки роли. */
+  async resetMySettings(userId: string, userRole: string | null) {
+    await this.prisma.userAdminNotificationOverride.deleteMany({ where: { userId } });
     return this.getSettingsForUser(userId, userRole);
   }
 
