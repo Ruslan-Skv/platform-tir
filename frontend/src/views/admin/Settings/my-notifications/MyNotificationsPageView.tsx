@@ -84,9 +84,6 @@ const EVENT_TOGGLES: EventToggle[] = [
 
 const INTERVAL_OPTIONS = [30, 60, 120, 180, 300];
 
-/** Загрузка и удаление звуков — только для ролей с доступом к разделу «Уведомления в админке». */
-const SOUND_MANAGE_ROLES = ['SUPER_ADMIN', 'ADMIN'];
-
 function intervalLabel(sec: number) {
   if (sec < 60) return `${sec} секунд`;
   if (sec === 60) return '1 минута';
@@ -96,7 +93,6 @@ function intervalLabel(sec: number) {
 export function MyNotificationsPageView() {
   const { user } = useAuth();
   const isSuperAdmin = user?.role === 'SUPER_ADMIN';
-  const canManageSounds = !!user?.role && (SOUND_MANAGE_ROLES as string[]).includes(user.role);
 
   const [settings, setSettings] = useState<AdminNotificationsSettings | null>(null);
   /** Снимок последних загруженных/сохранённых настроек — для отслеживания несохранённых правок. */
@@ -438,7 +434,7 @@ export function MyNotificationsPageView() {
                 </>
               )}
             </div>
-            {settings.soundEnabled && canManageSounds && (
+            {settings.soundEnabled && (
               <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
                 <div className={styles.inlineField}>
                   <label className={styles.inlineFieldLabel} htmlFor="soundFile">
@@ -474,7 +470,7 @@ export function MyNotificationsPageView() {
                 )}
               </div>
             )}
-            {settings.soundEnabled && canManageSounds && (
+            {settings.soundEnabled && (
               <p className={styles.hint}>Форматы: mp3, wav, ogg, m4a, aac. Макс. 2 МБ.</p>
             )}
           </section>
