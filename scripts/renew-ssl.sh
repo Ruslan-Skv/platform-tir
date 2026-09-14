@@ -33,9 +33,10 @@ $CERTBOT renew --quiet
 echo "=== Копирование сертификатов в проект (владелец — $(id -un)) ==="
 mkdir -p nginx/ssl
 docker run --rm \
+  --entrypoint sh \
   -v /etc/letsencrypt:/etc/letsencrypt:ro \
   -v "$PWD/nginx/ssl:/dst" \
-  "$CERTBOT_IMAGE" sh -c \
+  "$CERTBOT_IMAGE" -c \
   "cp /etc/letsencrypt/live/$DOMAIN/fullchain.pem /dst/ && cp /etc/letsencrypt/live/$DOMAIN/privkey.pem /dst/ && chown $UID_GID /dst/fullchain.pem /dst/privkey.pem"
 
 echo "=== Запуск nginx ==="
