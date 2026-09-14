@@ -57,6 +57,8 @@ export type CeilingsCeilingBlock = {
 export type CeilingsSpecification = {
   extraMarkupPercent: string;
   discountPercent: string;
+  /** Доп. наценка не применяется к блоку «Товар (светильники, LED…)». */
+  goodsNoMarkup?: boolean;
   ceilings: CeilingsCeilingBlock[];
 };
 
@@ -203,6 +205,7 @@ export function normalizeCeilingsSpecification(raw: unknown): CeilingsSpecificat
   return {
     extraMarkupPercent: str(o.extraMarkupPercent, '10'),
     discountPercent: str(o.discountPercent),
+    ...(o.goodsNoMarkup === true ? { goodsNoMarkup: true } : {}),
     ceilings: ceilings.length > 0 ? ceilings : [newCeilingsCeilingBlock(1)],
   };
 }
@@ -232,13 +235,19 @@ export function ceilingsLineAmount(qtyRaw: string, priceRaw: string): number {
   return lineAmount(qtyRaw, priceRaw);
 }
 
+export function sumCeilingsCeilingGoods(ceiling: CeilingsCeilingBlock): number {
+  let sum = 0;
+  for (const g of ceiling.goods) sum += lineAmount(g.qty, g.unitPrice);
+  return sum;
+}
+
 export function sumCeilingsCeilingGross(ceiling: CeilingsCeilingBlock): number {
   let sum = 0;
   for (const f of ceiling.fabrics) sum += lineAmount(f.qtyM2, f.unitPrice);
   for (const t of ceiling.tapes) sum += lineAmount(t.qtyM, t.unitPrice);
   for (const p of ceiling.profiles) sum += lineAmount(p.qty, p.unitPrice);
   for (const e of ceiling.extras) sum += lineAmount(e.qty, e.unitPrice);
-  for (const g of ceiling.goods) sum += lineAmount(g.qty, g.unitPrice);
+  sum += sumCeilingsCeilingGoods(ceiling);
   return sum;
 }
 
@@ -268,8 +277,13 @@ export function computeCeilingsSpecificationNetTotal(spec: CeilingsSpecification
 } {
   const grossTotal = spec.ceilings.reduce((s, c) => s + sumCeilingsCeilingGross(c), 0);
   const extraMarkupPercent = parsePackageContractDiscountPercent(spec.extraMarkupPercent);
+  const goodsTotal = spec.ceilings.reduce((s, c) => s + sumCeilingsCeilingGoods(c), 0);
+  const noMarkupTotal = spec.goodsNoMarkup ? goodsTotal : 0;
+  const markupableTotal = grossTotal - noMarkupTotal;
   const withExtraMarkup =
-    extraMarkupPercent > 0 ? grossTotal * (1 + extraMarkupPercent / 100) : grossTotal;
+    extraMarkupPercent > 0
+      ? markupableTotal * (1 + extraMarkupPercent / 100) + noMarkupTotal
+      : grossTotal;
   const discountPercent = parsePackageContractDiscountPercent(spec.discountPercent);
   const netTotal = applyPackageContractDiscountToAmount(withExtraMarkup, discountPercent);
   return { grossTotal, withExtraMarkup, extraMarkupPercent, discountPercent, netTotal };
@@ -283,6 +297,8 @@ export type CeilingsFlatPrintRow = {
   unit: string;
   unitPrice: string;
   amount: number;
+  /** Строка блока «Товар (светильники, LED…)» — к ней может не применяться доп. наценка. */
+  block?: 'goods';
 };
 
 export function flattenCeilingsSpecificationRows(
@@ -316,7 +332,7 @@ export function flattenCeilingsSpecificationRows(
         amount: lineAmount(t.qtyM, t.unitPrice),
       });
     }
-    const pushNamed = (list: CeilingsNamedQtyLine[], fallbackName: string) => {
+    const pushNamed = (list: CeilingsNamedQtyLine[], fallbackName: string, block?: 'goods') => {
       for (const p of list) {
         if (!p.name.trim() && !p.qty.trim()) continue;
         rows.push({
@@ -327,12 +343,13 @@ export function flattenCeilingsSpecificationRows(
           unit: p.unit || 'шт',
           unitPrice: p.unitPrice || '0',
           amount: lineAmount(p.qty, p.unitPrice),
+          ...(block ? { block } : {}),
         });
       }
     };
     pushNamed(ceiling.profiles, 'Багет');
     pushNamed(ceiling.extras, 'Доп.');
-    pushNamed(ceiling.goods, 'Товар');
+    pushNamed(ceiling.goods, 'Товар', 'goods');
   }
   return rows;
 }
@@ -372,8 +389,9 @@ export function buildCeilingsClientPrintModel(spec: CeilingsSpecification): {
     const source = byTitle.get(ceiling.title) ?? [];
     if (source.length === 0) continue;
     const rows: CeilingsClientPrintRow[] = source.map((r) => {
-      const unitPrice = (parseCeilingsQty(r.unitPrice) ?? 0) * factor;
-      const amount = r.amount * factor;
+      const rowFactor = spec.goodsNoMarkup && r.block === 'goods' ? 1 : factor;
+      const unitPrice = (parseCeilingsQty(r.unitPrice) ?? 0) * rowFactor;
+      const amount = r.amount * rowFactor;
       return {
         name: r.name,
         detail: r.detail,

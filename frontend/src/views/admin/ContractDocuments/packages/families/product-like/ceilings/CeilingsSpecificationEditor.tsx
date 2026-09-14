@@ -100,6 +100,7 @@ function SpecBlock({
   readOnly,
   onAdd,
   addAriaLabel,
+  headerExtra,
   children,
 }: {
   title: string;
@@ -107,6 +108,7 @@ function SpecBlock({
   readOnly: boolean;
   onAdd?: () => void;
   addAriaLabel?: string;
+  headerExtra?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -117,6 +119,7 @@ function SpecBlock({
     >
       <div className={cdProduct.ceilingsSpecificationBlockHeader}>
         <h4 className={cdProduct.ceilingsSpecificationSectionTitle}>{title}</h4>
+        {headerExtra}
         {!readOnly && onAdd ? (
           <button
             type="button"
@@ -332,6 +335,20 @@ export function CeilingsSpecificationEditor({
                 options={goods}
                 groupOptions
                 readOnly={readOnly}
+                headerExtra={
+                  <label
+                    className={cdProduct.ceilingsSpecificationMarkupToggle}
+                    title="Применение «Доп. наценки, %» к позициям этого блока"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={!spec.goodsNoMarkup}
+                      disabled={readOnly}
+                      onChange={(e) => onChange({ ...spec, goodsNoMarkup: !e.target.checked })}
+                    />
+                    Применять доп. наценку
+                  </label>
+                }
                 onChange={(goodsNext) => updateCeiling(ceiling.id, { goods: goodsNext })}
               />
             </section>
@@ -571,6 +588,7 @@ function NamedLinesBlock({
   options,
   groupOptions = false,
   readOnly,
+  headerExtra,
   onChange,
 }: {
   title: string;
@@ -578,6 +596,7 @@ function NamedLinesBlock({
   options: CeilingsPriceItem[];
   groupOptions?: boolean;
   readOnly: boolean;
+  headerExtra?: ReactNode;
   onChange: (lines: CeilingsNamedQtyLine[]) => void;
 }) {
   const grouped = groupOptions ? groupGoodsAdminBlocks(options) : null;
@@ -588,6 +607,7 @@ function NamedLinesBlock({
       filled={namedBlockHasData(lines)}
       readOnly={readOnly}
       addAriaLabel={`Добавить строку в «${title}»`}
+      headerExtra={headerExtra}
       onAdd={() => onChange([...lines, newCeilingsNamedQtyLine()])}
     >
       {lines.map((line) => (

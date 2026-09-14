@@ -1156,6 +1156,25 @@
   color: var(--admin-text-primary);
 }
 
+.ceilingsSpecificationMarkupToggle {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--admin-space-xs, 0.35rem);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 400;
+  color: var(--admin-text-primary);
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.ceilingsSpecificationMarkupToggle input {
+  width: 1rem;
+  height: 1rem;
+  margin: 0;
+  cursor: pointer;
+}
+
 .ceilingsSpecificationBlock {
   margin-top: var(--admin-space-sm);
   border: 1px solid var(--admin-border, #e2e8f0);
