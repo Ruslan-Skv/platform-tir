@@ -42,13 +42,34 @@ const nextConfig = {
     ],
   },
   async headers() {
+    const isProd = process.env.NODE_ENV === 'production';
+    // connect-src собираем из фактических origin'ов окружения, а не из разрешительного https:
+    const connectOrigins = new Set(['self']);
+    for (const raw of [
+      process.env.NEXT_PUBLIC_API_URL,
+      process.env.NEXT_PUBLIC_SITE_URL,
+      'http://localhost:3001',
+    ]) {
+      if (!raw) continue;
+      try {
+        const u = new URL(raw);
+        connectOrigins.add(u.origin);
+        if (u.protocol === 'https:') connectOrigins.add(`wss://${u.host}`);
+        if (u.protocol === 'http:') connectOrigins.add(`ws://${u.host}`);
+      } catch {
+        // невалидный URL окружения — пропускаем
+      }
+    }
+    const connectSrc = [...connectOrigins].map((o) => (o === 'self' ? "'self'" : o));
+    // в dev Next.js использует eval (React Refresh); в проде — запрещаем
+    const scriptSrc = isProd ? "'self' 'unsafe-inline'" : "'self' 'unsafe-inline' 'unsafe-eval'";
     const csp = [
       "default-src 'self'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+      `script-src ${scriptSrc}`,
       "style-src 'self' 'unsafe-inline'",
       "img-src 'self' data: blob: https:",
       "font-src 'self' data:",
-      "connect-src 'self' https: wss: http://localhost:* http://127.0.0.1:* ws://localhost:* ws://127.0.0.1:*",
+      `connect-src ${connectSrc.join(' ')} http://localhost:* ws://localhost:*`,
       "media-src 'self' blob: https:",
       "frame-src 'self' https://oauth.yandex.ru https://www.youtube.com https://www.youtube-nocookie.com https://player.vimeo.com https://rutube.ru https://vk.com https://vkvideo.ru",
       "object-src 'none'",
