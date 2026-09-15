@@ -11,10 +11,12 @@ import { Request } from 'express';
 @Injectable()
 export class OriginGuard implements CanActivate {
   private readonly allowedOrigins: Set<string>;
+  private readonly allowMissingOrigin: boolean;
 
   constructor(private configService: ConfigService) {
     const corsOrigin = this.configService.get<string>('CORS_ORIGIN') || 'http://localhost:3000';
     this.allowedOrigins = new Set(corsOrigin.split(',').map((o) => o.trim().replace(/\/$/, '')));
+    this.allowMissingOrigin = configService.get<string>('ORIGIN_GUARD_ALLOW_MISSING') === 'true';
   }
 
   canActivate(context: ExecutionContext): boolean {
@@ -22,10 +24,11 @@ export class OriginGuard implements CanActivate {
     const origin = request.headers.origin;
     const referer = request.headers.referer;
 
-    // Без Origin/Referer state-changing запросы отклоняем (кроме dev)
+    // Без Origin/Referer mutation-запросы отклоняем всегда (fail-closed).
+    // Обход для не-браузерных клиентов (curl, e2e-тесты) — явная переменная ORIGIN_GUARD_ALLOW_MISSING.
     if (!origin && !referer) {
       const isMutation = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(request.method.toUpperCase());
-      if (isMutation && process.env.NODE_ENV === 'production') {
+      if (isMutation && this.allowMissingOrigin !== true) {
         throw new ForbiddenException('Invalid request origin');
       }
       return true;
