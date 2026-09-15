@@ -1,6 +1,7 @@
 import { NotFoundException } from '@nestjs/common';
 import { Test, TestingModule } from '@nestjs/testing';
 import { PrismaService } from '../database/prisma.service';
+import { ComponentCatalogKindsService } from '../products/services/component-catalog-kinds.service';
 import { CartService } from './cart.service';
 
 describe('CartService', () => {
@@ -20,10 +21,18 @@ describe('CartService', () => {
     productComponent: { findUnique: jest.fn() },
   };
 
+  const mockKindsService = {
+    getMap: jest.fn().mockResolvedValue({}),
+  };
+
   beforeEach(async () => {
     jest.clearAllMocks();
     const module: TestingModule = await Test.createTestingModule({
-      providers: [CartService, { provide: PrismaService, useValue: mockPrisma }],
+      providers: [
+        CartService,
+        { provide: PrismaService, useValue: mockPrisma },
+        { provide: ComponentCatalogKindsService, useValue: mockKindsService },
+      ],
     }).compile();
 
     service = module.get<CartService>(CartService);
