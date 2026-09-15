@@ -218,7 +218,7 @@ export class AuthService {
     await this.prisma.passwordResetToken.create({
       data: {
         userId: user.id,
-        token,
+        token: hashOpaqueToken(token),
         expiresAt,
       },
     });
@@ -238,7 +238,7 @@ export class AuthService {
   /** Сброс пароля по токену из письма. */
   async resetPassword(token: string, newPassword: string): Promise<{ ok: boolean }> {
     const record = await this.prisma.passwordResetToken.findUnique({
-      where: { token },
+      where: { token: hashOpaqueToken(token) },
       include: { user: true },
     });
 
