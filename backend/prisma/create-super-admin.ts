@@ -3,14 +3,17 @@
  * Запуск: npx ts-node -r tsconfig-paths/register prisma/create-super-admin.ts
  * Или через Docker: docker compose exec backend npx ts-node -r tsconfig-paths/register prisma/create-super-admin.ts
  *
- * Переменные окружения (опционально) — из .env или env:
+ * Переменные окружения (из .env или env):
  *   SUPER_ADMIN_EMAIL    — email (по умолчанию: admin@platform.local)
- *   SUPER_ADMIN_PASSWORD — пароль (по умолчанию: Admin123!)
+ *   SUPER_ADMIN_PASSWORD — пароль (обязательно; если не задан — генерируется
+ *                          случайный и печатается один раз в консоль)
  */
 
 // Загружаем .env до остальных импортов (сначала корень проекта, затем backend/)
 require('dotenv').config({ path: require('path').resolve(process.cwd(), '../.env') });
 require('dotenv').config({ path: require('path').resolve(process.cwd(), '.env') });
+
+import { randomBytes } from 'crypto';
 
 import { PrismaClient } from '@prisma/client';
 import { hashPassword } from '../src/auth/password-crypto';
@@ -18,11 +21,11 @@ import { hashPassword } from '../src/auth/password-crypto';
 const prisma = new PrismaClient();
 
 const DEFAULT_EMAIL = 'admin@platform.local';
-const DEFAULT_PASSWORD = 'Admin123!';
 
 async function main() {
   const email = process.env.SUPER_ADMIN_EMAIL || DEFAULT_EMAIL;
-  const password = process.env.SUPER_ADMIN_PASSWORD || DEFAULT_PASSWORD;
+  const generatedPassword = randomBytes(12).toString('base64url');
+  const password = process.env.SUPER_ADMIN_PASSWORD || generatedPassword;
 
   const hashedPassword = await hashPassword(password);
 

@@ -3,22 +3,24 @@
  * Usage: node prisma/create-super-admin.cjs
  * Docker: docker compose exec backend node prisma/create-super-admin.cjs
  *
- * Env: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD (optional, from .env or process.env)
+ * Env: SUPER_ADMIN_EMAIL, SUPER_ADMIN_PASSWORD (from .env or process env).
+ * If SUPER_ADMIN_PASSWORD is not set, a random password is generated and printed once.
  */
 const path = require('path');
 require('dotenv').config({ path: path.resolve(process.cwd(), '../.env') });
 require('dotenv').config({ path: path.resolve(process.cwd(), '.env') });
+
+const { randomBytes } = require('crypto');
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcrypt');
 
 const prisma = new PrismaClient();
 const DEFAULT_EMAIL = 'admin@platform.local';
-const DEFAULT_PASSWORD = 'Admin123!';
 
 async function main() {
   const email = process.env.SUPER_ADMIN_EMAIL || DEFAULT_EMAIL;
-  const password = process.env.SUPER_ADMIN_PASSWORD || DEFAULT_PASSWORD;
+  const password = process.env.SUPER_ADMIN_PASSWORD || randomBytes(12).toString('base64url');
 
   const hashedPassword = await bcrypt.hash(password, 10);
 

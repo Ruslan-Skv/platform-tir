@@ -68,9 +68,9 @@ services:
       # Yandex ID OAuth (вход через Яндекс). Без них — 400 на GET /auth/yandex
       YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
       YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
-      # Для скрипта create-super-admin.cjs (опционально)
+      # Для скрипта create-super-admin.cjs (запускается вручную; без пароля скрипт сгенерирует случайный)
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@platform.local}
-      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-Admin123!}
+      SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}
       # Письма (восстановление пароля, заказ на email). Без SMTP письма не отправятся
       MAIL_FROM: ${MAIL_FROM:-}
       SMTP_HOST: ${SMTP_HOST:-}

@@ -71,7 +71,7 @@ docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
 docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml exec backend node prisma/create-super-admin.cjs
 ```
 
-По умолчанию: `admin@platform.local` / `Admin123!`  
+Email по умолчанию: `admin@platform.local`; пароль — из `SUPER_ADMIN_PASSWORD` (если не задан, скрипт сгенерирует случайный и напечатает один раз).  
 Переменные: `SUPER_ADMIN_EMAIL`, `SUPER_ADMIN_PASSWORD`
 
 ---
