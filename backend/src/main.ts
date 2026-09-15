@@ -3,6 +3,7 @@ import { ValidationPipe } from '@nestjs/common';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import * as express from 'express';
+import helmet from 'helmet';
 import cookieParser = require('cookie-parser');
 import { join } from 'path';
 import { AppModule } from './app.module';
@@ -12,6 +13,16 @@ async function bootstrap() {
 
   // Trust proxy (nginx) — корректный IP и протокол из X-Forwarded-*
   app.set('trust proxy', 1);
+
+  // Security headers (helmet). CSP/COEP отключены: API отвечает JSON,
+  // а жёсткие cross-origin политики могут ломать загрузку файлов фронтом и PWA-клиенты.
+  app.use(
+    helmet({
+      contentSecurityPolicy: false,
+      crossOriginEmbedderPolicy: false,
+      crossOriginResourcePolicy: { policy: 'cross-origin' },
+    }),
+  );
 
   // Раздача загруженных файлов; резюме — только через API админки
   app.use('/uploads/recruitment', (_req: Request, res: Response) => {
