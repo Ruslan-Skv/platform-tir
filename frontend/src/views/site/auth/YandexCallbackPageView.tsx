@@ -18,6 +18,7 @@ function YandexCallbackContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const code = searchParams.get('code');
+  const stateParam = searchParams.get('state');
   const errorParam = searchParams.get('error');
 
   const [status, setStatus] = useState<'loading' | 'success' | 'error'>('loading');
@@ -44,7 +45,7 @@ function YandexCallbackContent() {
       const res = await apiFetch(`${getApiBaseUrl()}/auth/yandex/callback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code }),
+        body: JSON.stringify({ code, state: stateParam ?? undefined }),
       });
 
       const data = await res.json().catch(() => ({}));
@@ -69,7 +70,7 @@ function YandexCallbackContent() {
       setStatus('error');
       setErrorMessage('Ошибка подключения к серверу');
     }
-  }, [code, errorParam, router]);
+  }, [code, stateParam, errorParam, router]);
 
   useEffect(() => {
     processCallback();

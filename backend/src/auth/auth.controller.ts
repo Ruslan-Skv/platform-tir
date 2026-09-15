@@ -126,16 +126,20 @@ export class AuthController {
   @UseGuards(OriginGuard)
   @Get('yandex')
   @ApiOperation({ summary: 'URL для авторизации через Яндекс ID' })
-  getYandexAuthUrl() {
-    return { url: this.yandexAuthService.getAuthorizationUrl() };
+  getYandexAuthUrl(@Res({ passthrough: true }) res: Response) {
+    return this.yandexAuthService.getAuthorizationUrl(res);
   }
 
   @Throttle({ default: { limit: 10, ttl: 60_000 } })
   @UseGuards(OriginGuard)
   @Post('yandex/callback')
   @ApiOperation({ summary: 'Обмен кода Яндекс на JWT (refresh в cookie)' })
-  async yandexCallback(@Res({ passthrough: true }) res: Response, @Body() dto: YandexCallbackDto) {
-    const data = await this.yandexAuthService.exchangeCodeForUser(dto.code);
+  async yandexCallback(
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto: YandexCallbackDto,
+  ) {
+    const data = await this.yandexAuthService.exchangeCodeForUser(dto.code, req, res);
     this.refreshCookie.attach(res, data.refresh_token);
     return { access_token: data.access_token, user: data.user };
   }

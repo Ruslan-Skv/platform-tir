@@ -1,5 +1,6 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { CookieOptions, Request, Response } from 'express';
 import * as crypto from 'crypto';
 import { AuthService } from './auth.service';
 import { hashPassword } from './password-crypto';
@@ -9,6 +10,18 @@ import { PrismaService } from '../database/prisma.service';
 const YANDEX_AUTH_URL = 'https://oauth.yandex.com/authorize';
 const YANDEX_TOKEN_URL = 'https://oauth.yandex.com/token';
 const YANDEX_USER_INFO_URL = 'https://login.yandex.ru/info';
+
+export const YANDEX_OAUTH_STATE_COOKIE = 'yandex_oauth_state';
+
+export function buildYandexStateCookieOptions(isProd: boolean): CookieOptions {
+  return {
+    httpOnly: true,
+    sameSite: 'lax',
+    secure: isProd,
+    path: '/api/v1/auth',
+    maxAge: 10 * 60 * 1000,
+  };
+}
 
 interface YandexUserInfo {
   id: string;
@@ -30,7 +43,7 @@ export class YandexAuthService {
     private prisma: PrismaService,
   ) {}
 
-  getAuthorizationUrl(): string {
+  getAuthorizationUrl(res: Response): { url: string } {
     const clientId = this.config.get<string>('YANDEX_CLIENT_ID');
     if (!clientId) {
       throw new BadRequestException('Yandex OAuth не настроен (YANDEX_CLIENT_ID)');
@@ -39,16 +52,34 @@ export class YandexAuthService {
     const redirectUri = `${siteUrl.replace(/\/$/, '')}/auth/yandex/callback`;
     const scope = 'login:info login:email login:avatar';
 
+    // state защищает от login CSRF: навязывание жертве чужого кода авторизации
+    const state = crypto.randomBytes(16).toString('hex');
+    const isProd = this.config.get<string>('NODE_ENV') === 'production';
+    res.cookie(YANDEX_OAUTH_STATE_COOKIE, state, buildYandexStateCookieOptions(isProd));
+
     const params = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
       redirect_uri: redirectUri,
       scope,
+      state,
     });
-    return `${YANDEX_AUTH_URL}?${params.toString()}`;
+    return { url: `${YANDEX_AUTH_URL}?${params.toString()}` };
   }
 
-  async exchangeCodeForUser(code: string) {
+  /** Сверяет state из callback со state-cookie, выставленным при редиректе на Яндекс. */
+  private assertStateCookie(req: Request, state: string | undefined): void {
+    const expected = req.cookies?.[YANDEX_OAUTH_STATE_COOKIE];
+    const sameLength = !!state && !!expected && state.length === expected.length;
+    if (!sameLength || !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expected))) {
+      throw new BadRequestException('Недействительный параметр state. Начните вход заново.');
+    }
+  }
+
+  async exchangeCodeForUser(code: string, req: Request, res: Response) {
+    this.assertStateCookie(req, (req.body as { state?: string } | undefined)?.state);
+    res.clearCookie(YANDEX_OAUTH_STATE_COOKIE, { path: '/api/v1/auth' });
+
     const clientId = this.config.get<string>('YANDEX_CLIENT_ID');
     const clientSecret = this.config.get<string>('YANDEX_CLIENT_SECRET');
     if (!clientId || !clientSecret) {
