@@ -25,7 +25,16 @@ const prisma = new PrismaClient({
   datasources: { db: { url: databaseUrl } },
 });
 
-const TEST_PASSWORD = 'Test123!';
+// Пароль генерируется случайный при каждом запуске сида — фиксированный пароль небезопасен.
+// Переопределить для повторяемости локально: SEED_TEST_PASSWORD=...
+const TEST_PASSWORD =
+  process.env.SEED_TEST_PASSWORD || require('crypto').randomBytes(12).toString('base64url');
+
+if (process.env.NODE_ENV === 'production' && !process.env.ALLOW_SEED_IN_PRODUCTION) {
+  throw new Error(
+    'Seeding заблокирован в production (создаёт тестовых пользователей). Установите ALLOW_SEED_IN_PRODUCTION=1 для явного обхода.',
+  );
+}
 
 // Супер-администратора не создаём — его создаёте вы сами.
 const TEST_USERS = [

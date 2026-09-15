@@ -22,7 +22,6 @@ import { RefreshCookieService } from './refresh-cookie.service';
         secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: (configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
-            configService.get<string>('JWT_EXPIRES_IN') ||
             '15m') as import('ms').StringValue,
         },
       }),

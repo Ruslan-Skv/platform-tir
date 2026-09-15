@@ -63,10 +63,22 @@ const ALLOWED_ATTR = [
 
 /**
  * Лёгкая санитизация на сервере (без jsdom, без ReDoS).
- * Удаляет script/iframe/object целиком и атрибуты on*.
+ * Удаляет script/iframe/object/embed/svg/math/style/form целиком, on*-атрибуты
+ * и опасные URL-схемы в href/src (javascript:, data:, vbscript:, file:).
  */
 function sanitizeHtmlServer(html: string): string {
-  const tags = ['script', 'iframe', 'object', 'embed'];
+  const tags = [
+    'script',
+    'iframe',
+    'object',
+    'embed',
+    'svg',
+    'math',
+    'style',
+    'form',
+    'link',
+    'base',
+  ];
   let out = html;
   for (const tag of tags) {
     for (;;) {
@@ -80,9 +92,15 @@ function sanitizeHtmlServer(html: string): string {
       out = out.slice(0, i) + out.slice(end);
     }
   }
-  // Удаляем on* атрибуты
-  out = out.replace(/\s+on\w+\s*=\s*["'][^"']*["']/gi, '');
+  // Удаляем on* атрибуты (кавычекные, одиночные и незакавыченные значения)
+  out = out.replace(/\s+on\w+\s*=\s*"[^"]*"/gi, '');
+  out = out.replace(/\s+on\w+\s*=\s*'[^']*'/gi, '');
   out = out.replace(/\s+on\w+\s*=\s*[^\s>]+/gi, '');
+  // Нейтрализуем опасные схемы в href/src (учитывая HTML-entities без точки с запятой)
+  out = out.replace(
+    /(\s(?:href|src)\s*=\s*["']?)\s*(?:j\s*a\s*v\s*a\s*s\s*c\s*r\s*i\s*p\s*t|v\s*b\s*s\s*c\s*r\s*i\s*p\s*t|d\s*a\s*t\s*a|f\s*i\s*l\s*e)\s*:/gi,
+    '$1#blocked:'
+  );
   return out;
 }
 

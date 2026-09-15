@@ -69,9 +69,16 @@ self.addEventListener('push', (event) => {
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   const targetUrl = event.notification.data?.url || '/admin';
-  const absoluteUrl = targetUrl.startsWith('http')
-    ? targetUrl
-    : `${self.location.origin}${targetUrl}`;
+  let absoluteUrl;
+  try {
+    absoluteUrl = new URL(targetUrl, self.location.origin);
+  } catch {
+    absoluteUrl = new URL('/admin', self.location.origin);
+  }
+  // Разрешаем только свой origin — иначе скомпрометированный push может открыть фишинг
+  if (absoluteUrl.origin !== self.location.origin) {
+    absoluteUrl = new URL('/admin', self.location.origin);
+  }
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((clientList) => {

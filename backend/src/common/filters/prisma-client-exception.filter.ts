@@ -52,17 +52,18 @@ export class PrismaClientExceptionFilter implements ExceptionFilter {
           error: 'Not Found',
         });
       case 'P2021':
+        // Детали (не применённые миграции и пр.) — только в лог, клиенту generic-500
+        console.error('Prisma P2021 (таблица не найдена):', exception.message);
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message:
-            'Таблица в базе данных не найдена. Возможно, не применены миграции Prisma (prisma migrate deploy).',
+          message: 'Внутренняя ошибка сервера. Попробуйте позже.',
           error: 'Internal Server Error',
         });
       case 'P2022':
+        console.error('Prisma P2022 (схема устарела):', exception.message);
         return res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
           statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-          message:
-            'Схема базы данных устарела. Примените миграции: npx prisma migrate deploy (в каталоге backend).',
+          message: 'Внутренняя ошибка сервера. Попробуйте позже.',
           error: 'Internal Server Error',
         });
       default:

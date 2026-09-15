@@ -67,10 +67,7 @@ export class AuthService {
   }
 
   private getAccessExpiresIn(): import('ms').StringValue {
-    const value =
-      this.config.get<string>('JWT_ACCESS_EXPIRES_IN') ||
-      this.config.get<string>('JWT_EXPIRES_IN') ||
-      '15m';
+    const value = this.config.get<string>('JWT_ACCESS_EXPIRES_IN') || '15m';
     return value as import('ms').StringValue;
   }
 
