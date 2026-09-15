@@ -40,8 +40,8 @@ const COL_SPAN = 8;
 /** Порядок секций при фильтре «Все»: в работе → на очереди → закрытые. */
 const STATUS_SECTIONS: Array<{ status: FurnitureScheduleProjectStatus; label: string }> = [
   { status: 'IN_PROGRESS', label: 'В работе' },
-  { status: 'CLAIMS', label: 'Рекламации' },
   { status: 'NEW', label: 'На очереди' },
+  { status: 'CLAIMS', label: 'Рекламации' },
   { status: 'CLOSED', label: 'Закрытые' },
 ];
 

@@ -68,6 +68,13 @@ services:
       # Yandex ID OAuth (вход через Яндекс). Без них — 400 на GET /auth/yandex
       YANDEX_CLIENT_ID: ${YANDEX_CLIENT_ID:-}
       YANDEX_CLIENT_SECRET: ${YANDEX_CLIENT_SECRET:-}
+      # Сбер ID OAuth (вход через Сбер ID). Без них — 400 на GET /auth/sber
+      SBER_CLIENT_ID: ${SBER_CLIENT_ID:-}
+      SBER_CLIENT_SECRET: ${SBER_CLIENT_SECRET:-}
+      # Эндпоинты по умолчанию — прод; переопределите для тестового контура Сбера
+      SBER_AUTH_URL: ${SBER_AUTH_URL:-}
+      SBER_TOKEN_URL: ${SBER_TOKEN_URL:-}
+      SBER_USERINFO_URL: ${SBER_USERINFO_URL:-}
       # Для скрипта create-super-admin.cjs (запускается вручную; без пароля скрипт сгенерирует случайный)
       SUPER_ADMIN_EMAIL: ${SUPER_ADMIN_EMAIL:-admin@platform.local}
       SUPER_ADMIN_PASSWORD: ${SUPER_ADMIN_PASSWORD:-}

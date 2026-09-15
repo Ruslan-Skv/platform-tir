@@ -31,6 +31,24 @@ export type FurnitureDeadlineFilter = 'ALL' | 'LE20' | 'LE10' | 'LE3' | 'OVERDUE
 export type FurnitureSchedulesViewMode = 'list' | 'timeline';
 
 const VIEW_MODE_STORAGE_KEY = 'admin_furniture_schedules_view_mode';
+const FILTERS_STORAGE_KEY = 'admin_furniture_schedules_filters';
+
+type StoredFilters = {
+  statusFilter: FurnitureScheduleProjectStatus | 'ALL';
+  deadlineFilter: FurnitureDeadlineFilter;
+  staleOnly: boolean;
+  search: string;
+};
+
+function readStoredFilters(): Partial<StoredFilters> {
+  if (typeof window === 'undefined') return {};
+  try {
+    const raw = window.localStorage.getItem(FILTERS_STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as Partial<StoredFilters>) : {};
+  } catch {
+    return {};
+  }
+}
 
 function readStoredViewMode(): FurnitureSchedulesViewMode {
   if (typeof window === 'undefined') return 'list';
@@ -43,15 +61,18 @@ function readStoredViewMode(): FurnitureSchedulesViewMode {
 
 export function useFurnitureSchedulesPage() {
   const router = useRouter();
+  const [stored] = useState(readStoredFilters);
   const [statusFilter, setStatusFilter] = useState<FurnitureScheduleProjectStatus | 'ALL'>(
-    'IN_PROGRESS'
+    stored.statusFilter ?? 'IN_PROGRESS'
   );
-  const [deadlineFilter, setDeadlineFilter] = useState<FurnitureDeadlineFilter>('ALL');
+  const [deadlineFilter, setDeadlineFilter] = useState<FurnitureDeadlineFilter>(
+    stored.deadlineFilter ?? 'ALL'
+  );
   const [viewMode, setViewModeState] = useState<FurnitureSchedulesViewMode>(() =>
     readStoredViewMode()
   );
-  const [staleOnly, setStaleOnly] = useState(false);
-  const [search, setSearch] = useState('');
+  const [staleOnly, setStaleOnly] = useState(stored.staleOnly ?? false);
+  const [search, setSearch] = useState(stored.search ?? '');
   const [items, setItems] = useState<FurnitureScheduleProject[]>([]);
   const [installers, setInstallers] = useState<InstallerMaster[]>([]);
   const [loading, setLoading] = useState(true);
@@ -95,6 +116,17 @@ export function useFurnitureSchedulesPage() {
       .then(setInstallers)
       .catch(() => setInstallers([]));
   }, []);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        FILTERS_STORAGE_KEY,
+        JSON.stringify({ statusFilter, deadlineFilter, staleOnly, search })
+      );
+    } catch {
+      /* ignore */
+    }
+  }, [statusFilter, deadlineFilter, staleOnly, search]);
 
   const statusScopedItems = useMemo(() => {
     if (statusFilter === 'ALL') return items;
