@@ -5,6 +5,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { uploadWindowsSpecificationFile } from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+import { sanitizeHtml } from '@/shared/lib/sanitize';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdDataTab from '../../../../styles/data-tab.module.css';
@@ -148,7 +149,8 @@ export function ProductSpecificationTabContent({
         if (!res.ok) throw new Error('fetch failed');
         const text = await res.text();
         if (aborted) return;
-        const html = rtfToHtml(text);
+        // RTF-конвертер пропускает внедрённый HTML (\*\htmltag) — санитизируем перед рендером
+        const html = sanitizeHtml(rtfToHtml(text));
         setRtfHtml(html || null);
         if (!html) setRtfError('Не удалось прочитать содержимое RTF-файла.');
       } catch {
@@ -324,7 +326,6 @@ export function ProductSpecificationTabContent({
                   {rtfError ? (
                     <p className={cdDocPreview.estimateA4Empty}>{rtfError}</p>
                   ) : rtfHtml ? (
-                     
                     <div
                       className="windowsSpecRtfContent"
                       dangerouslySetInnerHTML={{ __html: rtfHtml }}
