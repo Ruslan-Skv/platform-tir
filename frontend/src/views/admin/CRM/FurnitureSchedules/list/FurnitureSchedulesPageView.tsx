@@ -280,6 +280,7 @@ export function FurnitureSchedulesPageView({ model }: { model: FurnitureSchedule
         >
           <FurnitureSchedulesGroupedList
             items={items}
+            statusFilter={statusFilter}
             loading={loading}
             submitting={submitting}
             openProject={openProject}

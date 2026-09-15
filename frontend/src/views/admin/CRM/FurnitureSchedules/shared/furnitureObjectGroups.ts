@@ -138,6 +138,18 @@ export function compareFurnitureProjectsByAge(
   return a.id < b.id ? -1 : 1;
 }
 
+/** Сравнение по дате заключения договора (fallback — дата создания). Раньше заключённые — выше. */
+export function compareFurnitureProjectsByContractDate(
+  a: FurnitureScheduleProject,
+  b: FurnitureScheduleProject
+): number {
+  const ta = projectTimeMs(a.contractDate) || projectTimeMs(a.createdAt);
+  const tb = projectTimeMs(b.contractDate) || projectTimeMs(b.createdAt);
+  if (ta !== tb) return ta - tb;
+  if (a.id === b.id) return 0;
+  return a.id < b.id ? -1 : 1;
+}
+
 /** Сравнение по дате закрытия (позднее закрытые — выше при newestFirst). */
 export function compareFurnitureProjectsByClosedAt(
   a: FurnitureScheduleProject,

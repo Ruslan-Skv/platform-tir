@@ -2,7 +2,10 @@
 
 import { Fragment, useEffect, useMemo, useState } from 'react';
 
-import type { FurnitureScheduleProject } from '@/shared/api/crm/admin-furniture-schedules';
+import type {
+  FurnitureScheduleProject,
+  FurnitureScheduleProjectStatus,
+} from '@/shared/api/crm/admin-furniture-schedules';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { DeleteIcon, EditIcon, PublishIcon } from '@/shared/ui/icons';
@@ -14,11 +17,13 @@ import styles from '../shared/FurnitureSchedules.module.css';
 import { FURNITURE_STATUS_LABELS, formatDate, formatMoney } from '../shared/furniture-schedules';
 import {
   buildRepairObjectGroups,
+  compareFurnitureProjectsByContractDate,
   furnitureObjectGroupSumLabel,
 } from '../shared/furnitureObjectGroups';
 
 type Props = {
   items: FurnitureScheduleProject[];
+  statusFilter: FurnitureScheduleProjectStatus | 'ALL';
   loading: boolean;
   submitting: boolean;
   openProject: (id: string) => void;
@@ -32,8 +37,24 @@ type Props = {
 
 const COL_SPAN = 8;
 
+/** Порядок секций при фильтре «Все»: в работе → на очереди → закрытые. */
+const STATUS_SECTIONS: Array<{ status: FurnitureScheduleProjectStatus; label: string }> = [
+  { status: 'IN_PROGRESS', label: 'В работе' },
+  { status: 'CLAIMS', label: 'Рекламации' },
+  { status: 'NEW', label: 'На очереди' },
+  { status: 'CLOSED', label: 'Закрытые' },
+];
+
+type StatusSection = {
+  id: string;
+  label: string | null;
+  count: number;
+  groups: ReturnType<typeof buildRepairObjectGroups>;
+};
+
 export function FurnitureSchedulesGroupedList({
   items,
+  statusFilter,
   loading,
   submitting,
   openProject,
@@ -41,14 +62,37 @@ export function FurnitureSchedulesGroupedList({
   onDelete,
   flashSuccess,
 }: Props) {
-  const groups = useMemo(() => buildRepairObjectGroups(items), [items]);
+  const sections = useMemo<StatusSection[]>(() => {
+    if (statusFilter !== 'ALL') {
+      return [
+        {
+          id: statusFilter,
+          label: null,
+          count: items.length,
+          groups: buildRepairObjectGroups(items),
+        },
+      ];
+    }
+    return STATUS_SECTIONS.map(({ status, label }) => {
+      const sectionItems = items
+        .filter((i) => i.status === status)
+        .sort(compareFurnitureProjectsByContractDate);
+      return {
+        id: status,
+        label,
+        count: sectionItems.length,
+        groups: buildRepairObjectGroups(sectionItems),
+      };
+    }).filter((s) => s.count > 0);
+  }, [items, statusFilter]);
   const clusterKey = useMemo(
     () =>
-      groups
+      sections
+        .flatMap((s) => s.groups)
         .filter((g) => g.isCluster)
         .map((g) => g.id)
         .join('\n'),
-    [groups]
+    [sections]
   );
   const [expandedIds, setExpandedIds] = useState<Set<string>>(() => new Set());
 
@@ -250,42 +294,54 @@ export function FurnitureSchedulesGroupedList({
   return (
     <>
       <div className={styles.mobileCards} aria-label="Проекты мебели">
-        {groups.map((group) => {
-          if (!group.isCluster) {
-            return renderMobileCard(group.projects[0]);
-          }
-          const expanded = expandedIds.has(group.id);
-          return (
-            <div key={group.id} className={styles.mobileObjectGroup}>
-              <button
-                type="button"
-                className={styles.mobileObjectHeader}
-                aria-expanded={expanded}
-                onClick={() => toggle(group.id)}
-              >
-                <span className={styles.mobileObjectExpand}>{expanded ? '−' : '+'}</span>
-                <span className={styles.mobileObjectBody}>
-                  <span className={styles.mobileObjectTitleRow}>
-                    <span className={cdBase.contractsListObjectKindChip}>Объект</span>
-                    <strong className={styles.mobileObjectLabel}>{group.label}</strong>
-                    <span className={styles.mobileObjectCount}>({group.projects.length})</span>
-                  </span>
-                  <span className={styles.mobileCardMeta}>
-                    {[...group.customerNames, ...group.addresses.filter((a) => a !== group.label)]
-                      .filter(Boolean)
-                      .slice(0, 3)
-                      .join(' · ')}
-                  </span>
-                </span>
-              </button>
-              {expanded ? (
-                <div className={styles.mobileObjectChildren}>
-                  {group.projects.map((item) => renderMobileCard(item))}
+        {sections.map((section) => (
+          <Fragment key={section.id}>
+            {section.label ? (
+              <p className={styles.mobileStatusSectionTitle}>
+                {section.label} ({section.count})
+              </p>
+            ) : null}
+            {section.groups.map((group) => {
+              if (!group.isCluster) {
+                return renderMobileCard(group.projects[0]);
+              }
+              const expanded = expandedIds.has(group.id);
+              return (
+                <div key={group.id} className={styles.mobileObjectGroup}>
+                  <button
+                    type="button"
+                    className={styles.mobileObjectHeader}
+                    aria-expanded={expanded}
+                    onClick={() => toggle(group.id)}
+                  >
+                    <span className={styles.mobileObjectExpand}>{expanded ? '−' : '+'}</span>
+                    <span className={styles.mobileObjectBody}>
+                      <span className={styles.mobileObjectTitleRow}>
+                        <span className={cdBase.contractsListObjectKindChip}>Объект</span>
+                        <strong className={styles.mobileObjectLabel}>{group.label}</strong>
+                        <span className={styles.mobileObjectCount}>({group.projects.length})</span>
+                      </span>
+                      <span className={styles.mobileCardMeta}>
+                        {[
+                          ...group.customerNames,
+                          ...group.addresses.filter((a) => a !== group.label),
+                        ]
+                          .filter(Boolean)
+                          .slice(0, 3)
+                          .join(' · ')}
+                      </span>
+                    </span>
+                  </button>
+                  {expanded ? (
+                    <div className={styles.mobileObjectChildren}>
+                      {group.projects.map((item) => renderMobileCard(item))}
+                    </div>
+                  ) : null}
                 </div>
-              ) : null}
-            </div>
-          );
-        })}
+              );
+            })}
+          </Fragment>
+        ))}
       </div>
 
       <div
@@ -307,106 +363,119 @@ export function FurnitureSchedulesGroupedList({
                 </tr>
               </thead>
               <tbody>
-                {groups.map((group) => {
-                  if (!group.isCluster) {
-                    const item = group.projects[0];
-                    return (
-                      <tr key={item.id} className={dataTableStyles.row}>
-                        {renderProjectCells(item, false)}
-                      </tr>
-                    );
-                  }
-
-                  const expanded = expandedIds.has(group.id);
-                  const metaCustomers = group.customerNames.filter((n) => n !== group.label);
-                  const metaAddresses = group.addresses.filter((a) => a !== group.label);
-
-                  return (
-                    <Fragment key={group.id}>
-                      <tr
-                        className={`${dataTableStyles.row} ${cdHub.contractsListObjectGroupRow} ${
-                          expanded
-                            ? cdHub.contractsListObjectGroupRowExpanded
-                            : cdHub.contractsListObjectGroupRowCollapsed
-                        } ${styles.objectGroupRow}`}
-                      >
-                        <td colSpan={COL_SPAN} className={styles.objectGroupCell}>
-                          <div className={cdHub.contractsListObjectHeader}>
-                            <div className={cdHub.contractsListObjectHeaderControls}>
-                              <button
-                                type="button"
-                                className={cdBase.contractsListExpandBtn}
-                                aria-expanded={expanded}
-                                aria-label={
-                                  expanded
-                                    ? 'Свернуть договоры объекта'
-                                    : 'Развернуть договоры объекта'
-                                }
-                                title={expanded ? 'Свернуть' : 'Развернуть'}
-                                onClick={() => toggle(group.id)}
-                              >
-                                {expanded ? '−' : '+'}
-                              </button>
-                            </div>
-                            <div className={cdHub.contractsListObjectHeaderMain}>
-                              <div className={cdHub.contractsListObjectHeaderTitleBlock}>
-                                <div className={cdBase.contractsListObjectTitleRow}>
-                                  <span className={cdBase.contractsListObjectKindChip}>Объект</span>
-                                  <span
-                                    className={cdBase.contractsListObjectAddressLabel}
-                                    title={group.label}
-                                  >
-                                    {group.label}
-                                  </span>
-                                  <span className={cdBase.contractsListObjectBadge}>
-                                    ({group.projects.length})
-                                  </span>
-                                </div>
-                                {metaCustomers.length > 0 || metaAddresses.length > 0 ? (
-                                  <div className={cdHub.contractsListObjectHeaderMeta}>
-                                    {metaCustomers.map((name) => (
-                                      <span
-                                        key={`c-${name}`}
-                                        className={cdHub.contractsListObjectMetaChip}
-                                        title={name}
-                                      >
-                                        {name}
-                                      </span>
-                                    ))}
-                                    {metaAddresses.map((addr) => (
-                                      <span
-                                        key={`a-${addr}`}
-                                        className={cdHub.contractsListObjectMetaChip}
-                                        title={addr}
-                                      >
-                                        {addr}
-                                      </span>
-                                    ))}
-                                  </div>
-                                ) : null}
-                              </div>
-                              <div className={styles.objectGroupStats}>
-                                <span title="Сумма договоров объекта">
-                                  {furnitureObjectGroupSumLabel(group.projects)}
-                                </span>
-                              </div>
-                            </div>
-                          </div>
+                {sections.map((section) => (
+                  <Fragment key={section.id}>
+                    {section.label ? (
+                      <tr className={styles.statusSectionRow}>
+                        <td colSpan={COL_SPAN}>
+                          {section.label} ({section.count})
                         </td>
                       </tr>
-                      {expanded
-                        ? group.projects.map((item) => (
-                            <tr
-                              key={item.id}
-                              className={`${dataTableStyles.row} ${styles.objectChildRow}`}
-                            >
-                              {renderProjectCells(item, true)}
-                            </tr>
-                          ))
-                        : null}
-                    </Fragment>
-                  );
-                })}
+                    ) : null}
+                    {section.groups.map((group) => {
+                      if (!group.isCluster) {
+                        const item = group.projects[0];
+                        return (
+                          <tr key={item.id} className={dataTableStyles.row}>
+                            {renderProjectCells(item, false)}
+                          </tr>
+                        );
+                      }
+
+                      const expanded = expandedIds.has(group.id);
+                      const metaCustomers = group.customerNames.filter((n) => n !== group.label);
+                      const metaAddresses = group.addresses.filter((a) => a !== group.label);
+
+                      return (
+                        <Fragment key={group.id}>
+                          <tr
+                            className={`${dataTableStyles.row} ${cdHub.contractsListObjectGroupRow} ${
+                              expanded
+                                ? cdHub.contractsListObjectGroupRowExpanded
+                                : cdHub.contractsListObjectGroupRowCollapsed
+                            } ${styles.objectGroupRow}`}
+                          >
+                            <td colSpan={COL_SPAN} className={styles.objectGroupCell}>
+                              <div className={cdHub.contractsListObjectHeader}>
+                                <div className={cdHub.contractsListObjectHeaderControls}>
+                                  <button
+                                    type="button"
+                                    className={cdBase.contractsListExpandBtn}
+                                    aria-expanded={expanded}
+                                    aria-label={
+                                      expanded
+                                        ? 'Свернуть договоры объекта'
+                                        : 'Развернуть договоры объекта'
+                                    }
+                                    title={expanded ? 'Свернуть' : 'Развернуть'}
+                                    onClick={() => toggle(group.id)}
+                                  >
+                                    {expanded ? '−' : '+'}
+                                  </button>
+                                </div>
+                                <div className={cdHub.contractsListObjectHeaderMain}>
+                                  <div className={cdHub.contractsListObjectHeaderTitleBlock}>
+                                    <div className={cdBase.contractsListObjectTitleRow}>
+                                      <span className={cdBase.contractsListObjectKindChip}>
+                                        Объект
+                                      </span>
+                                      <span
+                                        className={cdBase.contractsListObjectAddressLabel}
+                                        title={group.label}
+                                      >
+                                        {group.label}
+                                      </span>
+                                      <span className={cdBase.contractsListObjectBadge}>
+                                        ({group.projects.length})
+                                      </span>
+                                    </div>
+                                    {metaCustomers.length > 0 || metaAddresses.length > 0 ? (
+                                      <div className={cdHub.contractsListObjectHeaderMeta}>
+                                        {metaCustomers.map((name) => (
+                                          <span
+                                            key={`c-${name}`}
+                                            className={cdHub.contractsListObjectMetaChip}
+                                            title={name}
+                                          >
+                                            {name}
+                                          </span>
+                                        ))}
+                                        {metaAddresses.map((addr) => (
+                                          <span
+                                            key={`a-${addr}`}
+                                            className={cdHub.contractsListObjectMetaChip}
+                                            title={addr}
+                                          >
+                                            {addr}
+                                          </span>
+                                        ))}
+                                      </div>
+                                    ) : null}
+                                  </div>
+                                  <div className={styles.objectGroupStats}>
+                                    <span title="Сумма договоров объекта">
+                                      {furnitureObjectGroupSumLabel(group.projects)}
+                                    </span>
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+                          </tr>
+                          {expanded
+                            ? group.projects.map((item) => (
+                                <tr
+                                  key={item.id}
+                                  className={`${dataTableStyles.row} ${styles.objectChildRow}`}
+                                >
+                                  {renderProjectCells(item, true)}
+                                </tr>
+                              ))
+                            : null}
+                        </Fragment>
+                      );
+                    })}
+                  </Fragment>
+                ))}
               </tbody>
             </table>
           </div>

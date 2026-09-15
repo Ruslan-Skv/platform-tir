@@ -1,5 +1,5 @@
--- ID аккаунта Сбер ID для OAuth
-ALTER TABLE "User" ADD COLUMN "sberId" TEXT;
+-- AlterTable
+ALTER TABLE "users" ADD COLUMN "sberId" TEXT;
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_sberId_key" ON "User"("sberId");
+CREATE UNIQUE INDEX "users_sberId_key" ON "users"("sberId");

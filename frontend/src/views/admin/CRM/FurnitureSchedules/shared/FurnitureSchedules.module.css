@@ -110,6 +110,17 @@
   position: relative;
 }
 
+.statusSectionRow td {
+  background: var(--admin-surface-soft, #f8fafc);
+  padding: var(--admin-space-sm) var(--admin-space-lg);
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary);
+  border-bottom: 1px solid var(--admin-border);
+}
+
 .objectGroupRow td {
   background: var(--admin-surface-soft, #f8fafc);
 }
@@ -140,6 +151,16 @@
   border: 1px solid var(--admin-border);
   font-size: var(--admin-font-size-xs);
   color: var(--admin-text-muted);
+}
+
+.mobileStatusSectionTitle {
+  margin-top: var(--admin-space-md);
+  padding: 0.15rem 0.4rem;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--admin-text-secondary);
 }
 
 .mobileObjectGroup {
