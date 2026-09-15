@@ -19,12 +19,11 @@ import { RefreshCookieService } from './refresh-cookie.service';
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
-        secret: configService.get<string>('JWT_SECRET'),
+        secret: configService.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
-          expiresIn:
-            configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
+          expiresIn: (configService.get<string>('JWT_ACCESS_EXPIRES_IN') ||
             configService.get<string>('JWT_EXPIRES_IN') ||
-            '15m',
+            '15m') as import('ms').StringValue,
         },
       }),
       inject: [ConfigService],
