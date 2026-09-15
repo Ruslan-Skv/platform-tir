@@ -23,6 +23,18 @@ function isAllowedYandexOAuthUrl(url: string): boolean {
   }
 }
 
+function isAllowedSberOAuthUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    return (
+      parsed.protocol === 'https:' &&
+      (parsed.hostname === 'online.sberbank.ru' || parsed.hostname === 'dev.sberbank.ru')
+    );
+  } catch {
+    return false;
+  }
+}
+
 export function LoginPageView() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -35,6 +47,7 @@ export function LoginPageView() {
   const { login, register } = useUserAuth();
   const router = useRouter();
   const [yandexLoading, setYandexLoading] = useState(false);
+  const [sberLoading, setSberLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [consent, setConsent] = useState(false);
@@ -57,6 +70,27 @@ export function LoginPageView() {
       setError('Ошибка подключения к серверу');
     } finally {
       setYandexLoading(false);
+    }
+  };
+
+  const handleSberLogin = async () => {
+    setSberLoading(true);
+    try {
+      const res = await apiFetch(`${getApiBaseUrl()}/auth/sber`);
+      if (res.ok) {
+        const { url } = await res.json();
+        if (url && isAllowedSberOAuthUrl(url)) {
+          window.location.href = url;
+        } else {
+          setError('Вход через Сбер ID временно недоступен');
+        }
+      } else {
+        setError('Вход через Сбер ID временно недоступен');
+      }
+    } catch {
+      setError('Ошибка подключения к серверу');
+    } finally {
+      setSberLoading(false);
     }
   };
 
@@ -296,6 +330,21 @@ export function LoginPageView() {
                     <>
                       <span className={styles.yandexIcon}>Я</span>
                       Войти через Яндекс ID
+                    </>
+                  )}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSberLogin}
+                  className={styles.sberButton}
+                  disabled={sberLoading}
+                >
+                  {sberLoading ? (
+                    'Загрузка...'
+                  ) : (
+                    <>
+                      <span className={styles.sberIcon}>С</span>
+                      Войти через Сбер ID
                     </>
                   )}
                 </button>

@@ -22,6 +22,8 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { YandexCallbackDto } from './dto/yandex-callback.dto';
 import { YandexAuthService } from './yandex-auth.service';
+import { SberCallbackDto } from './dto/sber-callback.dto';
+import { SberAuthService } from './sber-auth.service';
 import { RefreshCookieService } from './refresh-cookie.service';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 
@@ -31,6 +33,7 @@ export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly yandexAuthService: YandexAuthService,
+    private readonly sberAuthService: SberAuthService,
     private readonly refreshCookie: RefreshCookieService,
   ) {}
 
@@ -140,6 +143,27 @@ export class AuthController {
     @Body() dto: YandexCallbackDto,
   ) {
     const data = await this.yandexAuthService.exchangeCodeForUser(dto.code, req, res);
+    this.refreshCookie.attach(res, data.refresh_token);
+    return { access_token: data.access_token, user: data.user };
+  }
+
+  @UseGuards(OriginGuard)
+  @Get('sber')
+  @ApiOperation({ summary: 'URL для авторизации через Сбер ID' })
+  getSberAuthUrl(@Res({ passthrough: true }) res: Response) {
+    return this.sberAuthService.getAuthorizationUrl(res);
+  }
+
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
+  @UseGuards(OriginGuard)
+  @Post('sber/callback')
+  @ApiOperation({ summary: 'Обмен кода Сбер ID на JWT (refresh в cookie)' })
+  async sberCallback(
+    @Req() req: ExpressRequest,
+    @Res({ passthrough: true }) res: Response,
+    @Body() dto: SberCallbackDto,
+  ) {
+    const data = await this.sberAuthService.exchangeCodeForUser(dto.code, req, res);
     this.refreshCookie.attach(res, data.refresh_token);
     return { access_token: data.access_token, user: data.user };
   }
