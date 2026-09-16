@@ -2,12 +2,14 @@ import { Module } from '@nestjs/common';
 import { BellPushModule } from '../../bell-push/bell-push.module';
 import { DatabaseModule } from '../../database/database.module';
 import { AdminBellDismissedService } from './admin-bell-dismissed.service';
+import { AdminBellHistoryService } from './services/admin-bell-history.service';
 import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
 import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service';
 import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
 import { AdminBellInstallationScheduleFeedService } from './admin-bell-installation-schedule-feed.service';
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
+import { AdminBellMeasurementFeedService } from './services/admin-bell-measurement-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
@@ -23,12 +25,14 @@ import { AdminNotificationsService } from './admin-notifications.service';
     AdminNotificationsService,
     AdminExternalNotifyService,
     AdminBellDismissedService,
+    AdminBellHistoryService,
     AdminBellTrainingFeedService,
     AdminBellWorkDayFeedService,
     AdminBellWaybillFeedService,
     AdminBellInstallationScheduleFeedService,
     AdminBellRepairScheduleFeedService,
     AdminBellFurnitureScheduleFeedService,
+    AdminBellMeasurementFeedService,
     AdminBellCalendarFeedService,
     AdminBellMessengerFeedService,
     AdminBellKanbanFeedService,

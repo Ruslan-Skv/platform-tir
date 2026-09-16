@@ -130,6 +130,13 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnFurnitureSchedules?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Изменения статусов замеров (создан, выполнен, отказ, договор)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnMeasurements?: boolean;
+
   @ApiPropertyOptional({ description: 'Электронное подписание договоров (подписан / отклонён)' })
   @IsOptional()
   @IsBoolean()

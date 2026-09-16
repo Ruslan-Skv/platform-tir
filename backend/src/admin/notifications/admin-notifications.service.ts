@@ -43,6 +43,7 @@ export const NOTIFY_EVENT_KEYS = [
   'notifyOnInstallationSchedules',
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
+  'notifyOnMeasurements',
   'notifyOnContractSigning',
 ] as const;
 
@@ -108,6 +109,7 @@ export class AdminNotificationsService {
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules,
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
+      notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnContractSigning: dto.notifyOnContractSigning,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
@@ -138,6 +140,7 @@ export class AdminNotificationsService {
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules ?? true,
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
+      notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
@@ -327,6 +330,7 @@ export class AdminNotificationsService {
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules,
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
+      notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnContractSigning: dto.notifyOnContractSigning,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
@@ -355,6 +359,7 @@ export class AdminNotificationsService {
       notifyOnInstallationSchedules: dto.notifyOnInstallationSchedules ?? true,
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
+      notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
     };
     if (role !== null) {

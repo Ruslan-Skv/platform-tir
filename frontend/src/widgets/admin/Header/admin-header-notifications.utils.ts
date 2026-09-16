@@ -19,6 +19,7 @@ export type AdminBellNotificationType =
   | 'installationSchedules'
   | 'repairSchedules'
   | 'furnitureSchedules'
+  | 'measurements'
   | 'contractSigning'
   | 'calendar'
   | 'messenger'
@@ -95,6 +96,17 @@ export type AdminBellFurnitureScheduleNotification = {
   kind: 'created' | 'updated' | 'status_changed' | 'entry_added';
   kindLabel: string;
   furnitureScheduleProjectId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellMeasurementNotification = {
+  id: string;
+  kind: 'created' | 'completed' | 'cancelled' | 'converted';
+  kindLabel: string;
+  measurementId: string;
   title: string;
   message: string;
   href: string;
@@ -349,6 +361,18 @@ export function furnitureScheduleToBellNotificationItem(
   };
 }
 
+export function measurementToBellNotificationItem(
+  item: AdminBellMeasurementNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'measurements',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || `/admin/crm/measurements/${item.measurementId}`,
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function calendarToBellNotificationItem(
   item: AdminBellCalendarNotification
 ): AdminBellNotificationItem {
@@ -479,6 +503,13 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.furniture-schedules') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'measurements') {
+    return (
+      (hasAccess('admin.crm.measurements') || hasAccess('admin.crm.measurements.my')) &&
+      isBellTypeEnabled(item.type, settings)
+    );
+  }
+
   if (item.type === 'contractSigning') {
     return (
       (hasAccess('admin.contract-documents') || hasAccess('admin.contract-documents.contracts')) &&
@@ -540,6 +571,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnRepairSchedules !== false;
     case 'furnitureSchedules':
       return settings.notifyOnFurnitureSchedules !== false;
+    case 'measurements':
+      return settings.notifyOnMeasurements !== false;
     case 'contractSigning':
       return settings.notifyOnContractSigning !== false;
     case 'calendar':
@@ -636,6 +669,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'furnitureSchedules':
       return {
         title: 'План-график мебели',
+        body: item.text,
+        tag,
+      };
+    case 'measurements':
+      return {
+        title: 'Замеры',
         body: item.text,
         tag,
       };

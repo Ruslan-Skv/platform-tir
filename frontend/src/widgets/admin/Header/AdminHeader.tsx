@@ -30,12 +30,15 @@ import {
   getAdminBellFurnitureScheduleNotifications,
   getAdminBellInstallationScheduleNotifications,
   getAdminBellKanbanNotifications,
+  getAdminBellMeasurementNotifications,
   getAdminBellMessengerNotifications,
+  getAdminBellNotificationHistory,
   getAdminBellRepairScheduleNotifications,
   getAdminBellTrainingNotifications,
   getAdminBellWaybillNotifications,
   getAdminBellWorkDayNotifications,
   getAdminNotificationsSettings,
+  saveAdminBellNotificationHistory,
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellCalendarNotification,
@@ -43,7 +46,9 @@ import type {
   AdminBellFurnitureScheduleNotification,
   AdminBellInstallationScheduleNotification,
   AdminBellKanbanNotification,
+  AdminBellMeasurementNotification,
   AdminBellMessengerNotification,
+  AdminBellNotificationHistoryItem,
   AdminBellRepairScheduleNotification,
   AdminBellTrainingNotification,
   AdminBellWaybillNotification,
@@ -93,6 +98,7 @@ import {
   isNotificationItemEnabled,
   kanbanToBellNotificationItem,
   leadsToBellNotificationItems,
+  measurementToBellNotificationItem,
   messengerToBellNotificationItem,
   repairScheduleToBellNotificationItem,
   reviewToBellNotificationItem,
@@ -172,6 +178,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [furnitureScheduleNotifications, setFurnitureScheduleNotifications] = useState<
     AdminBellFurnitureScheduleNotification[]
   >([]);
+  const [measurementNotifications, setMeasurementNotifications] = useState<
+    AdminBellMeasurementNotification[]
+  >([]);
   const [calendarNotifications, setCalendarNotifications] = useState<
     AdminBellCalendarNotification[]
   >([]);
@@ -188,6 +197,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [dismissedNotificationIds, setDismissedNotificationIds] = useState<Set<string>>(
     () => new Set()
   );
+  const [notificationsHistoryMode, setNotificationsHistoryMode] = useState(false);
+  const [notificationsHistoryItems, setNotificationsHistoryItems] = useState<
+    AdminBellNotificationHistoryItem[] | null
+  >(null);
   const prevCountsRef = useRef<{
     reviews: number;
     support: number;
@@ -198,6 +211,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     installationSchedules: number;
     repairSchedules: number;
     furnitureSchedules: number;
+    measurements: number;
     calendar: number;
     messenger: number;
     kanban: number;
@@ -348,6 +362,11 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           hasAccess('admin.crm.furniture-schedules.my'))
           ? getAdminBellFurnitureScheduleNotifications(20)
           : Promise.resolve([] as AdminBellFurnitureScheduleNotification[]);
+      const loadMeasurements =
+        settings?.notifyOnMeasurements !== false &&
+        (hasAccess('admin.crm.measurements') || hasAccess('admin.crm.measurements.my'))
+          ? getAdminBellMeasurementNotifications(20)
+          : Promise.resolve([] as AdminBellMeasurementNotification[]);
       const loadCalendar = hasAccess('admin.calendar')
         ? getAdminBellCalendarNotifications(20)
         : Promise.resolve([] as AdminBellCalendarNotification[]);
@@ -375,6 +394,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installationSchedulesResult,
         repairSchedulesResult,
         furnitureSchedulesResult,
+        measurementsResult,
         calendarResult,
         messengerResult,
         kanbanResult,
@@ -398,6 +418,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadInstallationSchedules,
         loadRepairSchedules,
         loadFurnitureSchedules,
+        loadMeasurements,
         loadCalendar,
         loadMessenger,
         loadKanban,
@@ -436,6 +457,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedulesResult.status === 'fulfilled'
           ? (furnitureSchedulesResult.value ?? [])
           : [];
+      const newMeasurements =
+        measurementsResult.status === 'fulfilled' ? (measurementsResult.value ?? []) : [];
       const newCalendar = calendarResult.status === 'fulfilled' ? (calendarResult.value ?? []) : [];
       const newMessenger =
         messengerResult.status === 'fulfilled' ? (messengerResult.value ?? []) : [];
@@ -454,6 +477,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         installationSchedules: newInstallationSchedules.length,
         repairSchedules: newRepairSchedules.length,
         furnitureSchedules: newFurnitureSchedules.length,
+        measurements: newMeasurements.length,
         calendar: newCalendar.length,
         messenger: newMessenger.length,
         kanban: newKanban.length,
@@ -470,6 +494,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newInstallationSchedules.length +
         newRepairSchedules.length +
         newFurnitureSchedules.length +
+        newMeasurements.length +
         newCalendar.length +
         newMessenger.length +
         newKanban.length +
@@ -484,6 +509,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.installationSchedules +
           prev.repairSchedules +
           prev.furnitureSchedules +
+          prev.measurements +
           prev.calendar +
           prev.messenger +
           prev.kanban +
@@ -531,6 +557,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newInstallationSchedules.map(installationScheduleToBellNotificationItem),
             ...newRepairSchedules.map(repairScheduleToBellNotificationItem),
             ...newFurnitureSchedules.map(furnitureScheduleToBellNotificationItem),
+            ...newMeasurements.map(measurementToBellNotificationItem),
             ...newCalendar.map(calendarToBellNotificationItem),
             ...newMessenger.map(messengerToBellNotificationItem),
             ...newKanban.map(kanbanToBellNotificationItem),
@@ -555,6 +582,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setInstallationScheduleNotifications(newInstallationSchedules);
       setRepairScheduleNotifications(newRepairSchedules);
       setFurnitureScheduleNotifications(newFurnitureSchedules);
+      setMeasurementNotifications(newMeasurements);
       setCalendarNotifications(newCalendar);
       setMessengerNotifications(newMessenger);
       setKanbanNotifications(newKanban);
@@ -735,6 +763,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...installationScheduleNotifications.map(installationScheduleToBellNotificationItem),
     ...repairScheduleNotifications.map(repairScheduleToBellNotificationItem),
     ...furnitureScheduleNotifications.map(furnitureScheduleToBellNotificationItem),
+    ...measurementNotifications.map(measurementToBellNotificationItem),
     ...calendarNotifications.map(calendarToBellNotificationItem),
     ...messengerNotifications.map(messengerToBellNotificationItem),
     ...kanbanNotifications.map(kanbanToBellNotificationItem),
@@ -756,10 +785,34 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   useFaviconBadge(unreadCount);
   const canTogglePublicSiteEdit = canRoleEditCatalogOnPublicSite(user?.role);
 
+  useEffect(() => {
+    if (showNotifications) return;
+    setNotificationsHistoryMode(false);
+  }, [showNotifications]);
+
+  const handleShowNotificationsHistory = useCallback(async () => {
+    setNotificationsHistoryMode(true);
+    setNotificationsHistoryItems(null);
+    try {
+      setNotificationsHistoryItems(await getAdminBellNotificationHistory(100));
+    } catch {
+      setNotificationsHistoryItems([]);
+    }
+  }, []);
+
   const dismissNotification = useCallback(
     (item: NotificationItem) => {
       if (!user?.id) return;
       const key = notificationItemKey(item.type, item.id);
+      void saveAdminBellNotificationHistory([
+        {
+          key,
+          type: item.type,
+          text: item.text,
+          link: item.link,
+          occurredAt: item.date,
+        },
+      ]).catch(() => undefined);
       setDismissedNotificationIds((prev) => {
         if (prev.has(key)) return prev;
         void addDismissedNotificationKeys(user.id, prev, [key]).then(setDismissedNotificationIds);
@@ -778,6 +831,15 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const handleMarkAllNotificationsRead = async () => {
     if (!user?.id) return;
     const keys = enabledNotificationItems.map((item) => notificationItemKey(item.type, item.id));
+    void saveAdminBellNotificationHistory(
+      enabledNotificationItems.map((item) => ({
+        key: notificationItemKey(item.type, item.id),
+        type: item.type,
+        text: item.text,
+        link: item.link,
+        occurredAt: item.date,
+      }))
+    ).catch(() => undefined);
     const next = await addDismissedNotificationKeys(user.id, dismissedNotificationIds, keys);
     setDismissedNotificationIds(next);
 
@@ -959,9 +1021,19 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                     }}
                   >
                     <div className={styles.dropdownHeader}>
-                      <span>Уведомления</span>
+                      <span>
+                        {notificationsHistoryMode ? 'История уведомлений' : 'Уведомления'}
+                      </span>
                       <div className={styles.dropdownHeaderActions}>
-                        {visibleNotificationItems.length > 0 ? (
+                        {notificationsHistoryMode ? (
+                          <button
+                            type="button"
+                            className={styles.markAllRead}
+                            onClick={() => setNotificationsHistoryMode(false)}
+                          >
+                            К непрочитанным
+                          </button>
+                        ) : visibleNotificationItems.length > 0 ? (
                           <button
                             type="button"
                             className={styles.markAllRead}
@@ -973,7 +1045,47 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                       </div>
                     </div>
                     <div className={styles.notificationList}>
-                      {notificationsLoading ? (
+                      {notificationsHistoryMode ? (
+                        notificationsHistoryItems === null ? (
+                          <div className={styles.notificationItem}>
+                            <p className={styles.notificationText}>Загрузка...</p>
+                          </div>
+                        ) : notificationsHistoryItems.length === 0 ? (
+                          <div className={styles.notificationItem}>
+                            <p className={styles.notificationText}>История пока пуста</p>
+                            <span className={styles.notificationHint}>
+                              Прочитанные уведомления будут сохраняться здесь
+                            </span>
+                          </div>
+                        ) : (
+                          notificationsHistoryItems.map((item) => (
+                            <div
+                              key={item.key}
+                              className={`${styles.notificationRow} ${styles.notificationRowRead}`}
+                            >
+                              {item.link ? (
+                                <Link
+                                  href={getSafeHref(item.link, '#')}
+                                  className={styles.notificationItem}
+                                  onClick={() => setShowNotifications(false)}
+                                >
+                                  <p className={styles.notificationText}>{item.text}</p>
+                                  <span className={styles.notificationTime}>
+                                    Прочитано: {formatTimeAgo(item.readAt)}
+                                  </span>
+                                </Link>
+                              ) : (
+                                <div className={styles.notificationItem}>
+                                  <p className={styles.notificationText}>{item.text}</p>
+                                  <span className={styles.notificationTime}>
+                                    Прочитано: {formatTimeAgo(item.readAt)}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+                          ))
+                        )
+                      ) : notificationsLoading ? (
                         <div className={styles.notificationItem}>
                           <p className={styles.notificationText}>Загрузка...</p>
                         </div>
@@ -1034,6 +1146,15 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
                           }}
                         >
                           Включить на рабочем столе
+                        </button>
+                      ) : null}
+                      {!notificationsHistoryMode ? (
+                        <button
+                          type="button"
+                          className={styles.notificationSettingsButton}
+                          onClick={() => void handleShowNotificationsHistory()}
+                        >
+                          История
                         </button>
                       ) : null}
                       <button

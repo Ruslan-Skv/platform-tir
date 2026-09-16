@@ -63,7 +63,8 @@ type ChannelKey =
   | 'siteFeedback'
   | 'workDays'
   | 'waybills'
-  | 'installationSchedules';
+  | 'installationSchedules'
+  | 'measurements';
 
 type TabId = 'forms' | 'quizzes' | 'other';
 
@@ -93,6 +94,7 @@ const INITIAL: ChannelsState = {
   workDays: { ...EMPTY },
   waybills: { ...EMPTY },
   installationSchedules: { ...EMPTY },
+  measurements: { ...EMPTY },
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
@@ -204,6 +206,12 @@ const EVENTS_BY_TAB: Record<
       description: 'Новые записи, правки, выполнение и невыполнение по графику монтажей.',
     },
     {
+      key: 'measurements',
+      label: 'Замеры',
+      title: 'Замеры',
+      description: 'Создание замера, выполнение, отказ и заключение договора по замеру.',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -237,6 +245,7 @@ function pickExternal(
     | 'workDays'
     | 'waybills'
     | 'installationSchedules'
+    | 'measurements'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -287,6 +296,12 @@ function pickExternal(
         notifyTelegramIds: settings.installationScheduleNotifyTelegramIds,
         notifyMaxIds: settings.installationScheduleNotifyMaxIds,
       };
+    case 'measurements':
+      return {
+        notifyEmails: settings.measurementNotifyEmails,
+        notifyTelegramIds: settings.measurementNotifyTelegramIds,
+        notifyMaxIds: settings.measurementNotifyMaxIds,
+      };
     case 'knowledgeFeedback':
       return {
         notifyEmails: settings.knowledgeFeedbackNotifyEmails,
@@ -328,6 +343,9 @@ function buildExternalPatch(channels: ChannelsState) {
     installationScheduleNotifyEmails: channels.installationSchedules.notifyEmails,
     installationScheduleNotifyTelegramIds: channels.installationSchedules.notifyTelegramIds,
     installationScheduleNotifyMaxIds: channels.installationSchedules.notifyMaxIds,
+    measurementNotifyEmails: channels.measurements.notifyEmails,
+    measurementNotifyTelegramIds: channels.measurements.notifyTelegramIds,
+    measurementNotifyMaxIds: channels.measurements.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -417,6 +435,7 @@ export function LeadNotificationChannelsSection() {
         workDays: pickExternal(external, 'workDays'),
         waybills: pickExternal(external, 'waybills'),
         installationSchedules: pickExternal(external, 'installationSchedules'),
+        measurements: pickExternal(external, 'measurements'),
       });
     } catch (err) {
       console.error('Failed to fetch notification channels:', err);

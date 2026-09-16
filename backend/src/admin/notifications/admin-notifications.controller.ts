@@ -33,18 +33,21 @@ import { UpdateMyAdminNotificationDeliveryDto } from './dto/update-my-admin-noti
 import { UpdateExternalNotifySettingsDto } from '../external-notify/dto/update-external-notify-settings.dto';
 import { AdminExternalNotifyService } from '../external-notify/admin-external-notify.service';
 import { AdminBellDismissedService } from './admin-bell-dismissed.service';
+import { AdminBellHistoryService } from './services/admin-bell-history.service';
 import { AdminBellTrainingFeedService } from './admin-bell-training-feed.service';
 import { AdminBellWorkDayFeedService } from './admin-bell-work-day-feed.service';
 import { AdminBellWaybillFeedService } from './admin-bell-waybill-feed.service';
 import { AdminBellInstallationScheduleFeedService } from './admin-bell-installation-schedule-feed.service';
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
+import { AdminBellMeasurementFeedService } from './services/admin-bell-measurement-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
 import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
+import { SaveAdminBellNotificationHistoryDto } from './dto/save-admin-bell-notification-history.dto';
 
 const soundsDir = path.join(process.cwd(), 'uploads', 'notification-sounds');
 
@@ -69,12 +72,14 @@ export class AdminNotificationsController {
     private readonly pushSubscriptions: AdminPushSubscriptionsService,
     private readonly externalNotifySettings: AdminExternalNotifyService,
     private readonly bellDismissed: AdminBellDismissedService,
+    private readonly bellHistory: AdminBellHistoryService,
     private readonly bellTrainingFeed: AdminBellTrainingFeedService,
     private readonly bellWorkDayFeed: AdminBellWorkDayFeedService,
     private readonly bellWaybillFeed: AdminBellWaybillFeedService,
     private readonly bellInstallationScheduleFeed: AdminBellInstallationScheduleFeedService,
     private readonly bellRepairScheduleFeed: AdminBellRepairScheduleFeedService,
     private readonly bellFurnitureScheduleFeed: AdminBellFurnitureScheduleFeedService,
+    private readonly bellMeasurementFeed: AdminBellMeasurementFeedService,
     private readonly bellCalendarFeed: AdminBellCalendarFeedService,
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
@@ -145,6 +150,20 @@ export class AdminNotificationsController {
   }
 
   @SkipThrottle()
+  @Get('bell/history')
+  @ApiOperation({ summary: 'История прочитанных уведомлений колокольчика (лично)' })
+  getBellHistory(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(200, Math.max(1, limit ? parseInt(limit, 10) : 50));
+    return this.bellHistory.listForUser(req.user.id, take);
+  }
+
+  @Post('bell/history')
+  @ApiOperation({ summary: 'Сохранить уведомления в историю при отметке прочитанными' })
+  saveBellHistory(@Req() req: RequestWithUser, @Body() dto: SaveAdminBellNotificationHistoryDto) {
+    return this.bellHistory.saveMany(req.user.id, dto.items);
+  }
+
+  @SkipThrottle()
   @Get('bell/training')
   @ApiOperation({ summary: 'События динамики обучения для колокольчика админки' })
   getBellTrainingFeed(@Query('limit') limit?: string) {
@@ -190,6 +209,14 @@ export class AdminNotificationsController {
   getBellFurnitureScheduleFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellFurnitureScheduleFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/measurements')
+  @ApiOperation({ summary: 'События изменения статусов замеров для колокольчика (персонально)' })
+  getBellMeasurementFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellMeasurementFeed.listForUser(req.user.id, take);
   }
 
   @SkipThrottle()

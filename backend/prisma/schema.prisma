@@ -74,6 +74,7 @@ model User {
   sitePlatformFeedback                    SitePlatformFeedback[]
   adminPushSubscriptions                  AdminPushSubscription[]
   adminBellDismissed                      AdminBellDismissedNotification[]
+  adminBellNotificationHistory            AdminBellNotificationHistory[]
   knowledgeQuizAttempts                   KnowledgeQuizAttempt[]
   knowledgeCategoryQuizAttempts           KnowledgeCategoryQuizAttempt[]
   cartItems                               CartItem[]
@@ -157,6 +158,7 @@ model User {
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
   waybillTaskBellEvents                   WaybillTaskBellEvent[]
   contractSigningBellEvents               ContractSigningBellEvent[]
+  measurementBellEvents                   MeasurementBellEvent[]
   waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                  @relation("WaybillTaskAttachmentUploadedBy")
   driverDeliveryAvailability              DriverDeliveryAvailability?
   installationSchedulesCompleted          InstallationScheduleEntry[]              @relation("InstallationScheduleCompletedBy")
@@ -474,6 +476,10 @@ model ExternalNotifySettings {
   installationScheduleNotifyEmails      Json? // string[]
   installationScheduleNotifyTelegramIds Json? // string[]
   installationScheduleNotifyMaxIds      Json? // string[]
+
+  measurementNotifyEmails      Json? // string[]
+  measurementNotifyTelegramIds Json? // string[]
+  measurementNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -2727,6 +2733,7 @@ model UserAdminNotificationOverride {
   notifyOnRepairSchedules       Boolean  @default(true)
   notifyOnFurnitureSchedules    Boolean  @default(true)
   notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
+  notifyOnMeasurements          Boolean  @default(true) // Изменения статусов замеров
   updatedAt                     DateTime @updatedAt
   user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2760,6 +2767,22 @@ model AdminBellDismissedNotification {
   @@map("admin_bell_dismissed")
 }
 
+model AdminBellNotificationHistory {
+  id         String   @id @default(cuid())
+  userId     String
+  key        String
+  type       String
+  text       String
+  link       String?
+  occurredAt DateTime
+  readAt     DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, key])
+  @@index([userId, readAt])
+  @@map("admin_bell_notification_history")
+}
+
 model AdminNotificationsBlock {
   id                            String   @id @default(cuid())
   role                          String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
@@ -2787,6 +2810,7 @@ model AdminNotificationsBlock {
   notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта
   notifyOnFurnitureSchedules    Boolean  @default(true) // План-график мебели
   notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
+  notifyOnMeasurements          Boolean  @default(true) // Изменения статусов замеров
   updatedAt                     DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -3269,6 +3293,25 @@ model WaybillTaskBellEvent {
   @@map("waybill_task_bell_events")
 }
 
+/// События изменения статусов замеров для колокольчика (менеджеру и замерщику).
+model MeasurementBellEvent {
+  id            String   @id @default(cuid())
+  recipientId   String
+  measurementId String
+  kind          String /// created | completed | cancelled | converted
+  title         String
+  message       String   @db.Text
+  href          String
+  createdAt     DateTime @default(now())
+
+  recipient   User        @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  measurement Measurement @relation(fields: [measurementId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([measurementId])
+  @@map("measurement_bell_events")
+}
+
 /// События электронного подписания договоров для колокольчика (лично автору сессии подписания).
 model ContractSigningBellEvent {
   id          String   @id @default(cuid())
@@ -3333,6 +3376,7 @@ model Measurement {
   customer             Customer?                        @relation(fields: [customerId], references: [id], onDelete: SetNull)
   contract             Contract?                        @relation("MeasurementToContract")
   history              MeasurementHistory[]
+  bellEvents           MeasurementBellEvent[]
 
   @@index([managerId])
   @@index([status])

@@ -53,8 +53,8 @@ export class ContractsController {
   constructor(private readonly contractsService: ContractsService) {}
 
   @Post()
-  create(@Body() createContractDto: CreateContractDto) {
-    return this.contractsService.create(createContractDto);
+  create(@Body() createContractDto: CreateContractDto, @Req() req: RequestWithUser) {
+    return this.contractsService.create(createContractDto, req.user?.id);
   }
 
   @Get()

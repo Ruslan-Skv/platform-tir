@@ -131,6 +131,11 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsBoolean()
   notifyOnFurnitureSchedules?: boolean;
 
+  @ApiPropertyOptional({ description: 'Личное переопределение: изменения статусов замеров' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnMeasurements?: boolean;
+
   @ApiPropertyOptional({ description: 'Личное переопределение: электронное подписание договоров' })
   @IsOptional()
   @IsBoolean()

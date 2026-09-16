@@ -14,7 +14,8 @@ export type ExternalNotifyEvent =
   | 'knowledge_training'
   | 'work_day'
   | 'waybill'
-  | 'installation_schedule';
+  | 'installation_schedule'
+  | 'measurement';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -128,6 +129,15 @@ export class AdminExternalNotifyService {
         dto.installationScheduleNotifyMaxIds,
       );
     }
+    if (dto.measurementNotifyEmails !== undefined) {
+      data.measurementNotifyEmails = normalizeStringArray(dto.measurementNotifyEmails);
+    }
+    if (dto.measurementNotifyTelegramIds !== undefined) {
+      data.measurementNotifyTelegramIds = normalizeStringArray(dto.measurementNotifyTelegramIds);
+    }
+    if (dto.measurementNotifyMaxIds !== undefined) {
+      data.measurementNotifyMaxIds = normalizeStringArray(dto.measurementNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -199,6 +209,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.installationScheduleNotifyTelegramIds),
           maxIds: parseStringArray(block.installationScheduleNotifyMaxIds),
         };
+      case 'measurement':
+        return {
+          emails: parseStringArray(block.measurementNotifyEmails),
+          telegramIds: parseStringArray(block.measurementNotifyTelegramIds),
+          maxIds: parseStringArray(block.measurementNotifyMaxIds),
+        };
     }
   }
 
@@ -241,6 +257,9 @@ export class AdminExternalNotifyService {
     installationScheduleNotifyEmails: Prisma.JsonValue | null;
     installationScheduleNotifyTelegramIds: Prisma.JsonValue | null;
     installationScheduleNotifyMaxIds: Prisma.JsonValue | null;
+    measurementNotifyEmails: Prisma.JsonValue | null;
+    measurementNotifyTelegramIds: Prisma.JsonValue | null;
+    measurementNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -280,6 +299,9 @@ export class AdminExternalNotifyService {
         block.installationScheduleNotifyTelegramIds,
       ),
       installationScheduleNotifyMaxIds: parseStringArray(block.installationScheduleNotifyMaxIds),
+      measurementNotifyEmails: parseStringArray(block.measurementNotifyEmails),
+      measurementNotifyTelegramIds: parseStringArray(block.measurementNotifyTelegramIds),
+      measurementNotifyMaxIds: parseStringArray(block.measurementNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

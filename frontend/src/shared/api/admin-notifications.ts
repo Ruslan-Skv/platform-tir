@@ -31,6 +31,7 @@ export interface AdminNotificationsSettings {
   notifyOnInstallationSchedules: boolean;
   notifyOnRepairSchedules: boolean;
   notifyOnFurnitureSchedules: boolean;
+  notifyOnMeasurements: boolean;
   notifyOnContractSigning: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
   allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
@@ -72,6 +73,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnInstallationSchedules',
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
+  'notifyOnMeasurements',
   'notifyOnContractSigning',
 ] as const;
 
@@ -259,6 +261,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
+    notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnContractSigning: data.notifyOnContractSigning,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
@@ -313,6 +316,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
+    notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnContractSigning: data.notifyOnContractSigning,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
@@ -410,6 +414,46 @@ export async function dismissAdminBellNotifications(keys: string[]): Promise<voi
       body: JSON.stringify({ keys: chunk }),
     });
     if (!res.ok) throw new Error('Не удалось сохранить прочитанные уведомления');
+  }
+}
+
+export type AdminBellNotificationHistoryItem = {
+  key: string;
+  type: string;
+  text: string;
+  link: string | null;
+  occurredAt: string;
+  readAt: string;
+};
+
+export async function getAdminBellNotificationHistory(
+  limit = 50
+): Promise<AdminBellNotificationHistoryItem[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/history?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить историю уведомлений');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function saveAdminBellNotificationHistory(
+  items: { key: string; type: string; text: string; link?: string; occurredAt?: string }[]
+): Promise<void> {
+  const unique = [
+    ...new Map(
+      items.filter((item) => item.key && item.text).map((item) => [item.key, item])
+    ).values(),
+  ];
+  for (let i = 0; i < unique.length; i += BELL_DISMISS_BATCH_SIZE) {
+    const chunk = unique.slice(i, i + BELL_DISMISS_BATCH_SIZE);
+    const res = await apiFetch(`${API_URL}/admin/notifications/bell/history`, {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify({ items: chunk }),
+    });
+    if (!res.ok) throw new Error('Не удалось сохранить историю уведомлений');
   }
 }
 
@@ -538,6 +582,29 @@ export async function getAdminBellRepairScheduleNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по графику ремонтов');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellMeasurementNotification = {
+  id: string;
+  kind: 'created' | 'completed' | 'cancelled' | 'converted';
+  kindLabel: string;
+  measurementId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellMeasurementNotifications(
+  limit = 20
+): Promise<AdminBellMeasurementNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/measurements?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по замерам');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

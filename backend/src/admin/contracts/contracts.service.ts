@@ -20,8 +20,8 @@ export class ContractsService {
     private amendments: ContractsAmendmentsService,
   ) {}
 
-  create(createContractDto: CreateContractDto) {
-    return this.crud.create(createContractDto);
+  create(createContractDto: CreateContractDto, createdById?: string) {
+    return this.crud.create(createContractDto, createdById);
   }
 
   findAll(params?: Parameters<ContractsCrudService['findAll']>[0]) {

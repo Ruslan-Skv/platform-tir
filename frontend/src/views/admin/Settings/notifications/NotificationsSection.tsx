@@ -326,6 +326,7 @@ export function NotificationsSection() {
     notifyOnInstallationSchedules: true,
     notifyOnRepairSchedules: true,
     notifyOnFurnitureSchedules: true,
+    notifyOnMeasurements: true,
     notifyOnContractSigning: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
@@ -916,6 +917,19 @@ export function NotificationsSection() {
                   }
                 />
                 <label htmlFor="notifyOnFurnitureSchedules">План-график мебели</label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnMeasurements"
+                  checked={formSettings.notifyOnMeasurements ?? true}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnMeasurements: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnMeasurements">
+                  Замеры (создан, выполнен, отказ, договор)
+                </label>
               </div>
               <div className={styles.checkboxRow}>
                 <input

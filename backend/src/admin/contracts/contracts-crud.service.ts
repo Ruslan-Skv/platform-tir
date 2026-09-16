@@ -9,12 +9,17 @@ import {
   contractInclude,
   serializeContractSnapshot,
 } from './contracts-shared';
+import { MeasurementsCrudService } from '../measurements/measurements-crud.service';
+import { MeasurementStatusDto } from '../measurements/dto/create-measurement.dto';
 
 @Injectable()
 export class ContractsCrudService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly measurements: MeasurementsCrudService,
+  ) {}
 
-  async create(createContractDto: CreateContractDto) {
+  async create(createContractDto: CreateContractDto, createdById?: string) {
     let customerName = createContractDto.customerName ?? null;
     let customerAddress = createContractDto.customerAddress ?? null;
     let customerPhone = createContractDto.customerPhone ?? null;
@@ -43,7 +48,7 @@ export class ContractsCrudService {
       }
     }
 
-    return this.prisma.contract.create({
+    const created = await this.prisma.contract.create({
       data: {
         contractNumber: createContractDto.contractNumber,
         contractDate: new Date(createContractDto.contractDate),
@@ -93,6 +98,29 @@ export class ContractsCrudService {
       },
       include: contractInclude(),
     });
+
+    if (created.measurementId) {
+      await this.markMeasurementConverted(created.measurementId, createdById);
+    }
+    return created;
+  }
+
+  /** Договор по замеру переводит замер в CONVERTED (история + уведомления). */
+  private async markMeasurementConverted(measurementId: string, changedById?: string) {
+    try {
+      const measurement = await this.prisma.measurement.findUnique({
+        where: { id: measurementId },
+        select: { status: true },
+      });
+      if (!measurement || measurement.status === 'CONVERTED') return;
+      await this.measurements.update(
+        measurementId,
+        { status: MeasurementStatusDto.CONVERTED },
+        changedById,
+      );
+    } catch {
+      // Ошибка авто-статуса не должна ломать создание/обновление договора.
+    }
   }
 
   async findAll(params?: {
@@ -273,11 +301,19 @@ export class ContractsCrudService {
       });
     }
 
-    return this.prisma.contract.update({
+    const updated = await this.prisma.contract.update({
       where: { id },
       data,
       include: contractInclude(),
     });
+
+    if (
+      updateContractDto.measurementId &&
+      updateContractDto.measurementId !== current.measurementId
+    ) {
+      await this.markMeasurementConverted(updateContractDto.measurementId, changedById);
+    }
+    return updated;
   }
 
   async remove(id: string) {

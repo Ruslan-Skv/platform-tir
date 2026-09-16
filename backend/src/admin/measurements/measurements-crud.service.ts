@@ -12,10 +12,14 @@ import {
   formatMeasurementResponse,
   normalizeAdditionalDirectionIds,
 } from './measurements-shared';
+import { MeasurementNotifyService } from './measurement-notify.service';
 
 @Injectable()
 export class MeasurementsCrudService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private readonly notify: MeasurementNotifyService,
+  ) {}
 
   async syncAdditionalDirections(
     measurementId: string,
@@ -79,6 +83,7 @@ export class MeasurementsCrudService {
         },
       });
     }
+    this.notify.onCreated(created, createdById);
     return formatMeasurementResponse(created);
   }
 
@@ -540,6 +545,13 @@ export class MeasurementsCrudService {
       data: updateData,
       include: MEASUREMENT_RELATIONS_INCLUDE,
     });
+
+    if (
+      updateMeasurementDto.status !== undefined &&
+      updateMeasurementDto.status !== current.status
+    ) {
+      this.notify.onStatusChanged(updated, updateMeasurementDto.status, changedById);
+    }
 
     const additionalChanged =
       JSON.stringify(prevAdditionalIds) !== JSON.stringify(nextAdditionalIds);

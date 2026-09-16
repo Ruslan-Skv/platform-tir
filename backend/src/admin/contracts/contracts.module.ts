@@ -6,9 +6,10 @@ import { ContractsHistoryService } from './contracts-history.service';
 import { ContractsAmendmentsService } from './contracts-amendments.service';
 import { ContractsController } from './contracts.controller';
 import { DatabaseModule } from '../../database/database.module';
+import { MeasurementsModule } from '../measurements/measurements.module';
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, MeasurementsModule],
   controllers: [ContractsController],
   providers: [
     ContractsService,

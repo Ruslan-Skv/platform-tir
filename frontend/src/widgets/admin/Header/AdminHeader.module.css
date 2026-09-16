@@ -742,6 +742,10 @@
   background: var(--admin-surface-muted);
 }
 
+.notificationRowRead .notificationText {
+  opacity: 0.7;
+}
+
 .notificationRow.unread:hover {
   background: var(--admin-info-soft-hover);
 }
