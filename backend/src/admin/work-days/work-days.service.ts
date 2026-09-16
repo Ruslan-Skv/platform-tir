@@ -27,25 +27,22 @@ import {
   WORK_DAY_TIMEZONE,
   calculateEarlyLeaveMinutes,
   calculateLateMinutes,
+  canRestartWorkDay,
   combineDateAndTime,
   extractClientIp,
-  getDateKeyInTimezone,
   getDayOfWeekInTimezone,
   getTodayDateInTimezone,
   isIpAllowed,
   isMobileUserAgent,
   pickRandomGreeting,
+  remainingRestartsToday,
   resolveDaySchedule,
   resolveWorkSchedule,
 } from './utils/work-day.utils';
 import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
-import {
-  DEFAULT_WORK_DAY_SETTINGS,
-  MAX_WORK_DAY_RESTARTS_PER_DAY,
-  WORK_DAY_RECORD_INCLUDE,
-} from './work-day.constants';
+import { DEFAULT_WORK_DAY_SETTINGS, WORK_DAY_RECORD_INCLUDE } from './work-day.constants';
 import {
   USER_WORK_SCHEDULE_SELECT,
   legacyFieldsFromWeeklySchedule,
@@ -257,8 +254,8 @@ export class WorkDaysService implements OnModuleInit {
       todayWorkDay: todayDay,
       forgottenOpenDay: openPrevious,
       hasOpenAbsence: todayDay?.absences.some((a) => !a.endedAt) ?? false,
-      canRestartToday: todayDay ? this.canRestartWorkDay(todayDay, today) : false,
-      remainingRestartsToday: MAX_WORK_DAY_RESTARTS_PER_DAY - (todayDay?.reopenCount ?? 0),
+      canRestartToday: todayDay ? canRestartWorkDay(todayDay, today) : false,
+      remainingRestartsToday: remainingRestartsToday(todayDay),
       canAccessAdmin:
         !tracked ||
         !settings.isEnabled ||
@@ -276,12 +273,6 @@ export class WorkDaysService implements OnModuleInit {
           }
         : null,
     };
-  }
-
-  private canRestartWorkDay(day: WorkDay, today: Date): boolean {
-    if (day.closeReason !== WorkDayCloseReason.MANUAL || !day.endedAt) return false;
-    if (getDateKeyInTimezone(day.endedAt) !== getDateKeyInTimezone(today)) return false;
-    return day.reopenCount < MAX_WORK_DAY_RESTARTS_PER_DAY;
   }
 
   async startWorkDay(userId: string, role: UserRole, dto: StartWorkDayDto, meta: RequestMeta) {
@@ -314,11 +305,8 @@ export class WorkDaysService implements OnModuleInit {
     const existing = await this.prisma.workDay.findUnique({
       where: { userId_workDate: { userId, workDate: today } },
     });
-    const canRestartExisting =
-      Boolean(existing) &&
-      existing!.status !== WorkDayStatus.OPEN &&
-      this.canRestartWorkDay(existing!, today);
-    if (existing && existing.status !== WorkDayStatus.OPEN && !canRestartExisting) {
+    const restart = Boolean(existing && canRestartWorkDay(existing, today));
+    if (existing && existing.status !== WorkDayStatus.OPEN && !restart) {
       throw new BadRequestException(
         'Рабочий день на сегодня уже завершён. В течение дня можно начать его не более 3 раз.',
       );
@@ -345,37 +333,38 @@ export class WorkDaysService implements OnModuleInit {
     const lateArrivalApproved = await this.workDayRequests.hasApprovedLateArrival(userId, today);
     const lateMinutes = lateArrivalApproved ? 0 : calculateLateMinutes(now, today, todaySchedule);
 
-    const workDay = canRestartExisting
-      ? await this.prisma.workDay.update({
-          where: { id: existing!.id },
-          data: {
-            officeId: office.id,
-            status: WorkDayStatus.OPEN,
-            startedAt: now,
-            endedAt: null,
-            closeReason: null,
-            endedFromIp: null,
-            earlyLeaveMinutes: 0,
-            startedFromIp: ip,
-            startedFromUserAgent: userAgent ?? null,
-            reopenCount: { increment: 1 },
-          },
-          include: WORK_DAY_RECORD_INCLUDE,
-        })
-      : await this.prisma.workDay.create({
-          data: {
-            userId,
-            officeId: office.id,
-            workDate: today,
-            status: WorkDayStatus.OPEN,
-            startedAt: now,
-            startedFromIp: ip,
-            startedFromUserAgent: userAgent ?? null,
-            lateMinutes,
-          },
-          include: WORK_DAY_RECORD_INCLUDE,
-        });
-    if (!canRestartExisting) {
+    let workDay: WorkDay;
+    if (restart && existing) {
+      workDay = await this.prisma.workDay.update({
+        where: { id: existing.id },
+        data: {
+          officeId: office.id,
+          status: WorkDayStatus.OPEN,
+          startedAt: now,
+          endedAt: null,
+          closeReason: null,
+          endedFromIp: null,
+          earlyLeaveMinutes: 0,
+          startedFromIp: ip,
+          startedFromUserAgent: userAgent ?? null,
+          reopenCount: { increment: 1 },
+        },
+        include: WORK_DAY_RECORD_INCLUDE,
+      });
+    } else {
+      workDay = await this.prisma.workDay.create({
+        data: {
+          userId,
+          officeId: office.id,
+          workDate: today,
+          status: WorkDayStatus.OPEN,
+          startedAt: now,
+          startedFromIp: ip,
+          startedFromUserAgent: userAgent ?? null,
+          lateMinutes,
+        },
+        include: WORK_DAY_RECORD_INCLUDE,
+      });
       this.workDayNotify.onWorkDayStarted(workDay.id, lateMinutes);
     }
 

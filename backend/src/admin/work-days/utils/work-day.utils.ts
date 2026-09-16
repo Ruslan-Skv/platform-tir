@@ -1,4 +1,6 @@
-import { WorkDaySettings } from '@prisma/client';
+import { WorkDay, WorkDayCloseReason, WorkDaySettings } from '@prisma/client';
+
+import { MAX_WORK_DAY_RESTARTS_PER_DAY } from '../work-day.constants';
 import {
   type DayScheduleEntry,
   type WeeklySchedule,
@@ -34,6 +36,21 @@ export function getDateKeyInTimezone(date: Date, timezone = WORK_DAY_TIMEZONE): 
     month: '2-digit',
     day: '2-digit',
   }).format(date);
+}
+
+/** Можно ли заново открыть вручную завершённый в этот же день рабочий день. */
+export function canRestartWorkDay(
+  day: Pick<WorkDay, 'closeReason' | 'endedAt' | 'reopenCount'>,
+  today: Date,
+): boolean {
+  if (day.closeReason !== WorkDayCloseReason.MANUAL || !day.endedAt) return false;
+  if (getDateKeyInTimezone(day.endedAt) !== getDateKeyInTimezone(today)) return false;
+  return day.reopenCount < MAX_WORK_DAY_RESTARTS_PER_DAY;
+}
+
+/** Сколько перезапусков рабочего дня ещё доступно сегодня. */
+export function remainingRestartsToday(day: Pick<WorkDay, 'reopenCount'> | null): number {
+  return MAX_WORK_DAY_RESTARTS_PER_DAY - (day?.reopenCount ?? 0);
 }
 
 export function getDayOfWeekInTimezone(timezone = WORK_DAY_TIMEZONE, date?: Date): number {
