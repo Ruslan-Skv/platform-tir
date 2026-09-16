@@ -54,6 +54,14 @@
   color: var(--admin-text-secondary);
 }
 
+.todayFinished {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-lg);
+  flex-wrap: wrap;
+}
+
 .stats {
   display: flex;
   flex-wrap: wrap;

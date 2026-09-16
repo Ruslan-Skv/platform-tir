@@ -86,6 +86,8 @@ export interface WorkDayMyStatus {
   forgottenOpenDay: WorkDayRecord | null;
   hasOpenAbsence: boolean;
   canAccessAdmin: boolean;
+  canRestartToday?: boolean;
+  remainingRestartsToday?: number;
   schedule: {
     startTime: string;
     endTime: string;

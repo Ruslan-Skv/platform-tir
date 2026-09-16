@@ -1,0 +1,1 @@
+ALTER TABLE "work_days" ADD COLUMN "reopenCount" INTEGER NOT NULL DEFAULT 0;

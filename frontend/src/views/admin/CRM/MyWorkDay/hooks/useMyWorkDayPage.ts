@@ -14,7 +14,13 @@ import {
 } from '@/shared/api/admin-work-days';
 
 export function useMyWorkDayPage() {
-  const { status: liveStatus, refresh, handleStartAbsence, handleEndAbsence } = useWorkDay();
+  const {
+    status: liveStatus,
+    refresh,
+    handleStartDay,
+    handleStartAbsence,
+    handleEndAbsence,
+  } = useWorkDay();
   const today = new Date();
   const defaultFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const defaultTo = today.toISOString().slice(0, 10);
@@ -27,6 +33,7 @@ export function useMyWorkDayPage() {
   const [error, setError] = useState<string | null>(null);
   const [requestBusy, setRequestBusy] = useState(false);
   const [absenceBusy, setAbsenceBusy] = useState(false);
+  const [restartBusy, setRestartBusy] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -125,6 +132,22 @@ export function useMyWorkDayPage() {
     }
   }, [handleEndAbsence, load]);
 
+  const restartToday = useCallback(
+    async (officeId: string) => {
+      setRestartBusy(true);
+      setError(null);
+      try {
+        await handleStartDay(officeId);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось начать рабочий день');
+      } finally {
+        setRestartBusy(false);
+      }
+    },
+    [handleStartDay, load]
+  );
+
   return {
     liveStatus,
     dateFrom,
@@ -138,7 +161,9 @@ export function useMyWorkDayPage() {
     error,
     requestBusy,
     absenceBusy,
+    restartBusy,
     load,
+    restartToday,
     submitRequest,
     cancelRequest,
     startAbsence,

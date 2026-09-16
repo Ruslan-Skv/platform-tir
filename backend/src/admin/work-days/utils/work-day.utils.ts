@@ -27,6 +27,15 @@ export function getTodayDateInTimezone(timezone = WORK_DAY_TIMEZONE): Date {
   return new Date(`${year}-${month}-${day}T00:00:00.000Z`);
 }
 
+export function getDateKeyInTimezone(date: Date, timezone = WORK_DAY_TIMEZONE): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: timezone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(date);
+}
+
 export function getDayOfWeekInTimezone(timezone = WORK_DAY_TIMEZONE, date?: Date): number {
   const target = date ?? new Date();
   const weekday = new Intl.DateTimeFormat('en-US', {

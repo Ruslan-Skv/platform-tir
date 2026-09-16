@@ -165,6 +165,12 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
               {!status.isWorkDayToday ? (
                 <p className={styles.hint}>Сегодня по вашему графику нерабочий день.</p>
               ) : null}
+              {status.todayWorkDay && status.todayWorkDay.status !== 'OPEN' ? (
+                <p className={styles.hint}>
+                  Рабочий день уже завершался сегодня — его можно начать заново (до 3 запусков в
+                  течение дня).
+                </p>
+              ) : null}
               <WorkDaysIpHelp variant="compact" />
               <button
                 type="button"

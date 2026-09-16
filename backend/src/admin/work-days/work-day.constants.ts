@@ -17,6 +17,9 @@ export const DEFAULT_WORK_DAY_SETTINGS: Omit<WorkDaySettings, 'createdAt' | 'upd
   ],
 };
 
+/** Сколько раз можно заново начать рабочий день после ручного завершения (итого до 3 запусков в день). */
+export const MAX_WORK_DAY_RESTARTS_PER_DAY = 2;
+
 export const WORK_DAY_RECORD_INCLUDE = {
   office: { select: { id: true, name: true, prefix: true } },
   absences: { orderBy: { startedAt: 'asc' as const } },

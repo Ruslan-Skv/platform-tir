@@ -77,7 +77,9 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
     error,
     requestBusy,
     absenceBusy,
+    restartBusy,
     load,
+    restartToday,
     submitRequest,
     cancelRequest,
     startAbsence,
@@ -203,10 +205,27 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               {liveStatus.approvedEarlyLeave ? ' · ранний уход согласован' : ''}
             </p>
           ) : todayDay && todayDay.status !== 'OPEN' ? (
-            <p className={styles.todayText}>
-              Рабочий день завершён: {formatWorkDayTime(todayDay.startedAt)}
-              {todayDay.endedAt ? ` — ${formatWorkDayTime(todayDay.endedAt)}` : ''}
-            </p>
+            <div className={styles.todayFinished}>
+              <p className={styles.todayText}>
+                Рабочий день завершён: {formatWorkDayTime(todayDay.startedAt)}
+                {todayDay.endedAt ? ` — ${formatWorkDayTime(todayDay.endedAt)}` : ''}
+              </p>
+              {liveStatus.canRestartToday && liveStatus.office ? (
+                <button
+                  type="button"
+                  className={cdChrome.contractsListHeaderAddBtn}
+                  disabled={restartBusy}
+                  title={
+                    (liveStatus.remainingRestartsToday ?? 0) > 1
+                      ? `Осталось перезапусков сегодня: ${liveStatus.remainingRestartsToday}`
+                      : 'Последний доступный перезапуск рабочего дня сегодня'
+                  }
+                  onClick={() => void restartToday(liveStatus.office!.id)}
+                >
+                  {restartBusy ? 'Открытие…' : 'Продолжить рабочий день'}
+                </button>
+              ) : null}
+            </div>
           ) : (
             <p className={styles.todayText}>
               Рабочий день ещё не начат. Отметьте начало при входе в админку.

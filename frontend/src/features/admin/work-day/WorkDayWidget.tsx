@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+
 import { useWorkDay } from './WorkDayContext';
 import styles from './WorkDayWidget.module.css';
 
@@ -13,6 +15,7 @@ export function WorkDayWidget() {
   const { status, loading, handleEndDay, handleStartAbsence, handleEndAbsence } = useWorkDay();
   const [busy, setBusy] = useState(false);
   const [showAbsenceForm, setShowAbsenceForm] = useState(false);
+  const [confirmEndOpen, setConfirmEndOpen] = useState(false);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -30,11 +33,18 @@ export function WorkDayWidget() {
       await fn();
       setShowAbsenceForm(false);
       setReason('');
+      return true;
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Ошибка');
+      return false;
     } finally {
       setBusy(false);
     }
+  };
+
+  const confirmEndDay = async () => {
+    const ok = await run(handleEndDay);
+    if (ok) setConfirmEndOpen(false);
   };
 
   return (
@@ -96,7 +106,7 @@ export function WorkDayWidget() {
               type="button"
               className={styles.btnEnd}
               disabled={busy}
-              onClick={() => void run(handleEndDay)}
+              onClick={() => setConfirmEndOpen(true)}
             >
               Завершить день
             </button>
@@ -104,6 +114,21 @@ export function WorkDayWidget() {
         )}
       </div>
       {error ? <p className={styles.error}>{error}</p> : null}
+
+      <ConfirmModal
+        isOpen={confirmEndOpen}
+        onClose={() => {
+          if (!busy) setConfirmEndOpen(false);
+        }}
+        onConfirm={() => void confirmEndDay()}
+        closeOnConfirm={false}
+        confirmLoading={busy}
+        variant="danger"
+        title="Завершить рабочий день?"
+        message="Рабочий день будет завершён. Если завершили случайно, в течение дня его можно начать заново (не более 3 запусков за день)."
+        confirmText="Завершить день"
+        cancelText="Отмена"
+      />
     </div>
   );
 }

@@ -4353,6 +4353,7 @@ model WorkDay {
   notifiedEarlyLeaveAt    DateTime?
   notifiedAutoClosedAt    DateTime?
   notifiedReportedCloseAt DateTime?
+  reopenCount             Int                 @default(0)
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
 
