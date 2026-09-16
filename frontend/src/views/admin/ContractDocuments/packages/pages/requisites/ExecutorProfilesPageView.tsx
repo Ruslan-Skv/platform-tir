@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 
 import type { ExecutorRequisiteProfile } from '@/shared/api/admin-contract-document-packages';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
@@ -136,6 +137,17 @@ export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
         <div>
           <div>{row.item.companyName || '—'}</div>
           {row.item.email ? <span className={styles.subline}>{row.item.email}</span> : null}
+          {row.item.requisitesPdfUrl ? (
+            <a
+              className={styles.pdfChip}
+              href={publicUploadUrl(row.item.requisitesPdfUrl)}
+              target="_blank"
+              rel="noreferrer"
+              title={row.item.requisitesPdfName || 'Реквизиты.pdf'}
+            >
+              📄 Реквизиты (PDF)
+            </a>
+          ) : null}
         </div>
       ),
     },
@@ -274,6 +286,21 @@ export function ExecutorProfilesPageView(model: ExecutorProfilesPageModel) {
                   <dt>E-mail</dt>
                   <dd>{row.item.email || '—'}</dd>
                 </div>
+                {row.item.requisitesPdfUrl ? (
+                  <div className={styles.mobileCardRow}>
+                    <dt>Реквизиты</dt>
+                    <dd>
+                      <a
+                        href={publicUploadUrl(row.item.requisitesPdfUrl)}
+                        target="_blank"
+                        rel="noreferrer"
+                        title={row.item.requisitesPdfName || 'Реквизиты.pdf'}
+                      >
+                        PDF
+                      </a>
+                    </dd>
+                  </div>
+                ) : null}
               </dl>
               <div className={styles.mobileCardActions}>{rowActions(row)}</div>
             </article>

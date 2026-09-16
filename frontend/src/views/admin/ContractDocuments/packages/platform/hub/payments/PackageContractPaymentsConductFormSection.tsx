@@ -194,6 +194,18 @@ export function PackageContractPaymentsConductFormSection({
                   &nbsp;
                 </label>
                 <div className={cdBase.paymentsHubConductActions}>
+                  {/* ПКО — приходный документ, для возврата денег не печатаем. */}
+                  {!isRefundBasis && onPrintCashOrder ? (
+                    <button
+                      type="button"
+                      className={cdBase.paymentsHubConductSecondaryBtn}
+                      disabled={!hubConductFormComplete}
+                      title="Печать ПКО (два экземпляра на листе)"
+                      onClick={handleHubPrintCashOrder}
+                    >
+                      Печать ПКО
+                    </button>
+                  ) : null}
                   <button
                     type="button"
                     className={cdBase.paymentsHubConductBtn}
@@ -211,18 +223,6 @@ export function PackageContractPaymentsConductFormSection({
                         ? 'Провести возврат'
                         : 'Провести оплату'}
                   </button>
-                  {/* ПКО — приходный документ, для возврата денег не печатаем. */}
-                  {!isRefundBasis && onPrintCashOrder ? (
-                    <button
-                      type="button"
-                      className={cdBase.paymentsHubConductSecondaryBtn}
-                      disabled={!hubConductFormComplete}
-                      title="Печать ПКО (два экземпляра на листе)"
-                      onClick={handleHubPrintCashOrder}
-                    >
-                      Печать ПКО
-                    </button>
-                  ) : null}
                 </div>
               </div>
               {hubConductAllBasesDone ? (

@@ -12,6 +12,7 @@ import {
 import { getContractDocumentTemplatePresetsTrash } from '@/shared/api/contract-documents/admin-contract-document-template-presets-trash';
 import { useAdminTrashCount } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { ensureCeilingsContractTemplatePresets } from '@/views/admin/ContractDocuments/packages/families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
+import { packageExecutorProfilesKind } from '@/views/admin/ContractDocuments/packages/platform/catalogKinds';
 import { fixMisassignedProductLibraryPresets } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateSelection';
 import type { PackageLibraryTemplateTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageLibraryTemplateTabs';
 
@@ -65,7 +66,7 @@ export function useTemplatesLibraryLoad({
       try {
         const [templatesRes, executorRes, signatoryRes] = await Promise.allSettled([
           getContractDocumentTemplatePresets(activeLibraryKind),
-          getContractDocumentExecutorProfiles(activeLibraryKind),
+          getContractDocumentExecutorProfiles(packageExecutorProfilesKind(activeLibraryKind)),
           getContractDocumentSignatoryProfiles(activeLibraryKind),
         ]);
         if (templatesLoadRequestIdRef.current !== requestId) return;

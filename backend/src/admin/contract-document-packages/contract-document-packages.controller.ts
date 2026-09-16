@@ -89,6 +89,13 @@ const windowsSpecificationsDir = path.join(
   'windows-specifications',
 );
 
+const executorRequisitesDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'executor-requisites',
+);
+
 const packageMeasurementsDir = path.join(
   process.cwd(),
   'uploads',
@@ -465,6 +472,47 @@ export class ContractDocumentPackagesController {
     @Req() req: RequestWithUser,
   ) {
     return this.service.setGlobalExecutorProfiles(dto, req.user?.id);
+  }
+
+  /** PDF-файл с реквизитами исполнителя (карточка на странице «Реквизиты»). */
+  @Post('executor-profiles/upload-requisites-pdf')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(executorRequisitesDir)) {
+            fs.mkdirSync(executorRequisitesDir, { recursive: true });
+          }
+          cb(null, executorRequisitesDir);
+        },
+        filename: (_req, file, cb) => {
+          const ext =
+            path.extname(decodeMultipartFilename(file.originalname)).toLowerCase() || '.pdf';
+          const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          cb(null, `executor-requisites-${unique}${ext}`);
+        },
+      }),
+      limits: { fileSize: 20 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(decodeMultipartFilename(file.originalname)).toLowerCase();
+        const isPdf = ext === '.pdf' || (file.mimetype || '').toLowerCase() === 'application/pdf';
+        if (!isPdf) {
+          cb(new BadRequestException('Можно загрузить только PDF-файл.'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadExecutorRequisitesPdf(@UploadedFile() file: Express.Multer.File) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const filename = path.basename(file.path);
+    return {
+      fileUrl: `/uploads/contract-document-packages/executor-requisites/${filename}`,
+      fileName: decodeMultipartFilename(file.originalname),
+    };
   }
 
   @Get('signatory-profiles')

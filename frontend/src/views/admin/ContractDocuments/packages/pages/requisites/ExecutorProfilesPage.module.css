@@ -194,3 +194,28 @@
     margin: 0;
   }
 }
+
+.pdfAttachRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin-bottom: var(--admin-space-xs);
+}
+
+.pdfAttachLink {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pdfAttachRemoveBtn {
+  flex-shrink: 0;
+}
+
+.pdfChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 2px;
+  font-size: var(--admin-font-size-sm);
+}

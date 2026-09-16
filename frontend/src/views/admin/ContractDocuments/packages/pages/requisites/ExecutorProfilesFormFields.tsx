@@ -1,5 +1,10 @@
 'use client';
 
+import { useRef, useState } from 'react';
+
+import { uploadExecutorRequisitesPdf } from '@/shared/api/admin-contract-document-packages';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
+
 import styles from './ExecutorProfilesPage.module.css';
 import type { ExecutorProfilesPageModel } from './hooks/useExecutorProfilesPage';
 
@@ -14,6 +19,32 @@ export function ExecutorProfilesFormFields({
   setDraft,
 }: ExecutorProfilesFormFieldsProps) {
   const isEntrepreneur = draft.kind === 'ENTREPRENEUR';
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
+  const [pdfUploading, setPdfUploading] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
+
+  const handlePdfSelect = async (file: File | undefined) => {
+    if (!file) return;
+    if (!file.name.toLowerCase().endsWith('.pdf')) {
+      setPdfError('Можно загрузить только PDF-файл.');
+      return;
+    }
+    setPdfUploading(true);
+    setPdfError(null);
+    try {
+      const { fileUrl, fileName } = await uploadExecutorRequisitesPdf(file);
+      setDraft((p) => ({
+        ...p,
+        requisitesPdfUrl: fileUrl,
+        requisitesPdfName: fileName || file.name,
+      }));
+    } catch (e) {
+      setPdfError(e instanceof Error ? e.message : 'Не удалось загрузить PDF');
+    } finally {
+      setPdfUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
 
   return (
     <>
@@ -187,6 +218,47 @@ export function ExecutorProfilesFormFields({
           Для счёта на оплату и договора используются эти поля. Старая сводная строка пересобирается
           при сохранении.
         </p>
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="executor_requisites_pdf">Реквизиты (PDF)</label>
+        {draft.requisitesPdfUrl ? (
+          <div className={styles.pdfAttachRow}>
+            <a
+              href={publicUploadUrl(draft.requisitesPdfUrl)}
+              target="_blank"
+              rel="noreferrer"
+              className={styles.pdfAttachLink}
+              title={draft.requisitesPdfName || 'Реквизиты.pdf'}
+            >
+              {draft.requisitesPdfName || 'Реквизиты.pdf'}
+            </a>
+            <button
+              type="button"
+              className={styles.pdfAttachRemoveBtn}
+              disabled={pdfUploading}
+              onClick={() =>
+                setDraft((p) => ({ ...p, requisitesPdfUrl: '', requisitesPdfName: '' }))
+              }
+            >
+              Убрать
+            </button>
+          </div>
+        ) : null}
+        <input
+          ref={fileInputRef}
+          id="executor_requisites_pdf"
+          type="file"
+          accept="application/pdf,.pdf"
+          disabled={pdfUploading}
+          onChange={(e) => void handlePdfSelect(e.target.files?.[0])}
+        />
+        <p className={styles.fieldHint}>
+          {pdfUploading
+            ? 'Загрузка PDF…'
+            : 'PDF-файл с реквизитами компании (до 20 МБ). Прикрепляется к карточке и доступен по ссылке из списка.'}
+        </p>
+        {pdfError ? <p data-modal-form-error>{pdfError}</p> : null}
       </div>
 
       {formError ? <p data-modal-form-error>{formError}</p> : null}

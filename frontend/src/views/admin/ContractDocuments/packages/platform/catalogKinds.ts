@@ -9,11 +9,14 @@ export function packageEstimatePresetsCatalogKind(
   return getPackageDirectionConfig(packageKind).estimateCatalogKind;
 }
 
-/** Справочник исполнителей для пакета. */
+/**
+ * Справочник исполнителей для пакета.
+ * Единый общий каталог для всех направлений — редактируется на странице «Реквизиты».
+ */
 export function packageExecutorProfilesKind(
-  packageKind: ContractDocumentPackageKind
+  _packageKind: ContractDocumentPackageKind
 ): ContractDocumentPackageKind {
-  return getPackageDirectionConfig(packageKind).profilesKind;
+  return 'REPAIR';
 }
 
 /** Справочник менеджеров для пакета. */

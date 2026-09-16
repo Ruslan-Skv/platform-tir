@@ -76,6 +76,18 @@ export class ExecutorProfileDto {
   @IsString()
   @MaxLength(320)
   email?: string;
+
+  /** PDF-файл с реквизитами (относительная ссылка `/uploads/...`). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(320)
+  requisitesPdfUrl?: string;
+
+  /** Исходное имя PDF-файла (для подписи ссылки). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(260)
+  requisitesPdfName?: string;
 }
 
 export class SetGlobalExecutorProfilesDto {

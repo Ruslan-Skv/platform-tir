@@ -205,6 +205,32 @@ export interface ExecutorRequisiteProfile {
   bankCorrAccount?: string;
   bankSettlementAccount?: string;
   email?: string;
+  /** PDF-файл с реквизитами (относительная ссылка `/uploads/...`). */
+  requisitesPdfUrl?: string;
+  /** Исходное имя PDF-файла (для подписи ссылки). */
+  requisitesPdfName?: string;
+}
+
+/** Реквизиты исполнителя в PDF; файл сохраняется на сервере, в ответе — относительный `fileUrl`. */
+export async function uploadExecutorRequisitesPdf(
+  file: File
+): Promise<{ fileUrl: string; fileName: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/executor-profiles/upload-requisites-pdf`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    }
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ fileUrl: string; fileName: string }>;
 }
 
 /** Профиль менеджера (справочник). */

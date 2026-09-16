@@ -2,16 +2,20 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract-document-packages';
 import {
   type ContractDocumentSigningSessionCreated,
   createPackageSigningSession,
   remoteSigningStatusLabel,
 } from '@/shared/api/contract-documents/admin-contract-document-signing';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { Modal } from '@/shared/ui/Modal';
 import { CopyIcon } from '@/shared/ui/icons';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import { formatCrmPhoneInput } from '@/views/admin/CRM/Customers/shared/crmCustomerPhone';
 import type { MessengerShareChannel } from '@/views/admin/CRM/InstallationSchedules/shared/installationScheduleShare';
+import { packageExecutorProfilesKind } from '@/views/admin/ContractDocuments/packages/platform/catalogKinds';
+import { normalizeExecutorRequisiteProfile } from '@/views/admin/ContractDocuments/packages/platform/form/executorBankFields';
 import hubStyles from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubModal.module.css';
 import type { PackageDocumentTabId } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageDocumentTabs';
 
@@ -57,6 +61,11 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState<ContractDocumentSigningSessionCreated | null>(null);
   const [copied, setCopied] = useState(false);
+  const [executorRequisitesPdf, setExecutorRequisitesPdf] = useState<{
+    url: string;
+    name: string;
+  } | null>(null);
+  const [includeRequisitesPdf, setIncludeRequisitesPdf] = useState(true);
   const abortRef = useRef(false);
 
   useEffect(() => {
@@ -65,15 +74,45 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     setCreated(null);
     setError(null);
     setBusy(false);
+    setExecutorRequisitesPdf(null);
+    setIncludeRequisitesPdf(true);
     setLoading(true);
     void loadPackageCustomerShareContext(packageId)
-      .then((next) => {
+      .then(async (next) => {
         if (abortRef.current) return;
         setCtx(next);
         setSelectedTabs(defaultSelectedCustomerDocumentTabs(next.shareableDocuments));
         setPhone(next.customerPhone ? formatCrmPhoneInput(next.customerPhone) : '');
         setEmail(next.customerEmail);
         setSendEmail(Boolean(next.customerEmail));
+        // Карточка с реквизитами (PDF) конкретного исполнителя, выбранного в пакете.
+        // Каталог тот же, из которого выбирает исполнитель редактор пакета.
+        try {
+          const profiles = await getContractDocumentExecutorProfiles(
+            packageExecutorProfilesKind(next.packageKind)
+          );
+          const items = (profiles.items ?? []).map(normalizeExecutorRequisiteProfile);
+          const title = next.form.executor.selectedProfileTitle?.trim();
+          const company = next.form.executor.companyName?.trim();
+          const inn = next.form.executor.inn?.trim();
+          const profile = title
+            ? items.find((it) => it.title.trim() === title)
+            : // Старые пакеты без выбранного набора — сопоставляем по организации/ИНН.
+              items.find(
+                (it) =>
+                  (company && (it.companyName ?? '').trim() === company) ||
+                  (inn && it.inn?.trim() === inn)
+              );
+          if (profile?.requisitesPdfUrl) {
+            if (abortRef.current) return;
+            setExecutorRequisitesPdf({
+              url: profile.requisitesPdfUrl,
+              name: profile.requisitesPdfName || 'Реквизиты.pdf',
+            });
+          }
+        } catch {
+          // Справочник реквизитов недоступен — просто не прикладываем PDF.
+        }
       })
       .catch((err) => {
         if (abortRef.current) return;
@@ -153,6 +192,25 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         docs.push({ tabId: tab, label, file: blob, fileName });
       }
 
+      if (includeRequisitesPdf && executorRequisitesPdf) {
+        const pdfRes = await fetch(publicUploadUrl(executorRequisitesPdf.url));
+        if (!pdfRes.ok) {
+          setError('Не удалось загрузить PDF с реквизитами исполнителя. Попробуйте ещё раз.');
+          setBusy(false);
+          return;
+        }
+        const pdfBlob = await pdfRes.blob();
+        docs.push({
+          tabId: 'executorRequisites',
+          label: 'Карточка с реквизитами (PDF)',
+          file: pdfBlob,
+          fileName: executorRequisitesPdf.name.toLowerCase().endsWith('.pdf')
+            ? executorRequisitesPdf.name
+            : `${executorRequisitesPdf.name}.pdf`,
+          isExternalFile: true,
+        });
+      }
+
       const result = await createPackageSigningSession(packageId, {
         documents: docs,
         customerName: ctx.form.customer.fullName,
@@ -222,14 +280,20 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                     <button
                       type="button"
                       className={styles.docListLinkBtn}
-                      onClick={() => setSelectedTabs(ctx.shareableDocuments.map((d) => d.tabId))}
+                      onClick={() => {
+                        setSelectedTabs(ctx.shareableDocuments.map((d) => d.tabId));
+                        setIncludeRequisitesPdf(true);
+                      }}
                     >
                       Все
                     </button>
                     <button
                       type="button"
                       className={styles.docListLinkBtn}
-                      onClick={() => setSelectedTabs([])}
+                      onClick={() => {
+                        setSelectedTabs([]);
+                        setIncludeRequisitesPdf(false);
+                      }}
                     >
                       Снять
                     </button>
@@ -261,6 +325,26 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                       </label>
                     );
                   })}
+                  {executorRequisitesPdf ? (
+                    <label
+                      className={`${styles.docItem}${
+                        includeRequisitesPdf ? ` ${styles.docItemSelected}` : ''
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={includeRequisitesPdf}
+                        onChange={(e) => setIncludeRequisitesPdf(e.target.checked)}
+                      />
+                      <span>
+                        Карточка с реквизитами исполнителя
+                        <span className={styles.docItemHint}>
+                          {' '}
+                          (PDF: {executorRequisitesPdf.name})
+                        </span>
+                      </span>
+                    </label>
+                  ) : null}
                 </div>
               </div>
             ) : null}

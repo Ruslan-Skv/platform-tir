@@ -163,6 +163,8 @@ export function normalizeExecutorRequisiteProfile(
     bankCorrAccount: raw.bankCorrAccount ?? '',
     bankSettlementAccount: raw.bankSettlementAccount ?? '',
     email: raw.email ?? '',
+    requisitesPdfUrl: raw.requisitesPdfUrl ?? '',
+    requisitesPdfName: raw.requisitesPdfName ?? '',
   });
 }
 
