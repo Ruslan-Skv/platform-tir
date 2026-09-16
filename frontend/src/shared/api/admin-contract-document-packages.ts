@@ -585,7 +585,7 @@ export async function updateContractDocumentPackage(
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(body),
   });
-  if (!res.ok) throw new Error('Не удалось сохранить пакет документов');
+  if (!res.ok) throw new Error(await readAdminContractPackagesError(res));
   return res.json();
 }
 
