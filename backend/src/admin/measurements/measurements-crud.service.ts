@@ -437,35 +437,6 @@ export class MeasurementsCrudService {
     };
   }
 
-  /** Дописывает URL загруженного фото замера (с лимитом) и возвращает обновлённый список. */
-  async appendPhotoUrl(id: string, imageUrl: string, changedById?: string) {
-    const current = await this.prisma.measurement.findUnique({
-      where: { id },
-      select: { photoUrls: true },
-    });
-    if (!current) {
-      throw new NotFoundException(`Measurement with ID ${id} not found`);
-    }
-    const photoUrls = [...current.photoUrls, imageUrl];
-    const updated = await this.prisma.measurement.update({
-      where: { id },
-      data: { photoUrls },
-      include: MEASUREMENT_RELATIONS_INCLUDE,
-    });
-    if (changedById) {
-      await this.prisma.measurementHistory.create({
-        data: {
-          measurementId: id,
-          snapshot: { photoUrls: current.photoUrls } as object,
-          changedFields: ['photoUrls'],
-          action: 'UPDATE',
-          changedById,
-        },
-      });
-    }
-    return formatMeasurementResponse(updated).photoUrls;
-  }
-
   async findOne(id: string) {
     const m = await this.prisma.measurement.findUnique({
       where: { id },

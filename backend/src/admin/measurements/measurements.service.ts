@@ -3,12 +3,14 @@ import { CreateMeasurementDto } from './dto/create-measurement.dto';
 import { UpdateMeasurementDto } from './dto/update-measurement.dto';
 import { MeasurementsCrudService } from './measurements-crud.service';
 import { MeasurementsHistoryService } from './measurements-history.service';
+import { MeasurementsPhotosService } from './measurements-photos.service';
 
 @Injectable()
 export class MeasurementsService {
   constructor(
     private crud: MeasurementsCrudService,
     private history: MeasurementsHistoryService,
+    private photos: MeasurementsPhotosService,
   ) {}
 
   create(createMeasurementDto: CreateMeasurementDto, createdById?: string) {
@@ -33,7 +35,7 @@ export class MeasurementsService {
 
   /** Дописывает URL загруженного фото замера и возвращает обновлённый список. */
   appendPhotoUrl(id: string, imageUrl: string, changedById?: string) {
-    return this.crud.appendPhotoUrl(id, imageUrl, changedById);
+    return this.photos.appendPhotoUrl(id, imageUrl, changedById);
   }
 
   getHistory(measurementId: string) {
