@@ -1,5 +1,7 @@
 'use client';
 
+import { useState } from 'react';
+
 import type { Measurement } from '@/shared/api/admin-crm';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
@@ -12,6 +14,7 @@ import {
   formatUser,
   measurementsFilterFieldClass,
 } from '../list/measurements-page.utils';
+import { MeasurementPhotosModal } from '../modals/MeasurementPhotosModal';
 import {
   MEASUREMENT_STATUS_OPTIONS,
   getMeasurementStatusLabel,
@@ -63,6 +66,11 @@ export function MyMeasurementsPageView({ model }: Props) {
     openCompleteModal,
     handleCompleteConfirm,
   } = model;
+
+  const [photosModal, setPhotosModal] = useState<Measurement | null>(null);
+  /** Локальные правки фото из модалки — без перезагрузки списка. */
+  const [photoUrlsById, setPhotoUrlsById] = useState<Record<string, string[]>>({});
+  const photosOf = (m: Measurement): string[] => photoUrlsById[m.id] ?? m.photoUrls ?? [];
 
   const renderDirection = (m: Measurement) => {
     const primary = m.direction?.name;
@@ -325,6 +333,7 @@ export function MyMeasurementsPageView({ model }: Props) {
         onOpen={openMeasurement}
         onComplete={openCompleteModal}
         completeDisabled={submitting}
+        onOpenPhotos={setPhotosModal}
       />
 
       <DataTable
@@ -387,6 +396,19 @@ export function MyMeasurementsPageView({ model }: Props) {
           </div>
         </div>
       </Modal>
+
+      <MeasurementPhotosModal
+        isOpen={Boolean(photosModal)}
+        measurementId={photosModal?.id ?? ''}
+        measurementName={photosModal?.customerName || undefined}
+        photoUrls={photosModal ? photosOf(photosModal) : []}
+        onPhotoUrlsChange={(next) => {
+          const id = photosModal?.id;
+          if (id) setPhotoUrlsById((prev) => ({ ...prev, [id]: next }));
+        }}
+        onError={() => undefined}
+        onClose={() => setPhotosModal(null)}
+      />
     </div>
   );
 }

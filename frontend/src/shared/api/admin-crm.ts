@@ -746,6 +746,8 @@ export interface Measurement {
   comments: string | null;
   status: string;
   customerId: string | null;
+  /** Фото с результатами замера (кнопка-скрепка на странице замера). */
+  photoUrls?: string[];
   manager?: { id: string; firstName: string | null; lastName: string | null };
   surveyor?: { id: string; firstName: string | null; lastName: string | null } | null;
   direction?: { id: string; name: string; slug: string } | null;
@@ -879,6 +881,7 @@ export async function createMeasurement(data: {
   comments?: string;
   status?: string;
   customerId?: string | null;
+  photoUrls?: string[];
 }): Promise<Measurement> {
   const res = await apiFetch(`${API_URL}/admin/measurements`, {
     method: 'POST',
@@ -916,6 +919,28 @@ export async function updateMeasurement(
     throw new Error(detail ? `Не удалось обновить замер: ${detail}` : 'Не удалось обновить замер');
   }
   return res.json();
+}
+
+/** Загрузка фото с результатами замера; сервер сам дописывает URL в photoUrls замера. */
+export async function uploadMeasurementPhoto(
+  id: string,
+  file: File
+): Promise<{ imageUrl: string; photoUrls: string[] }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = { ...getAdminAuthHeaders() } as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(`${API_URL}/admin/measurements/${id}/upload-photo`, {
+    method: 'POST',
+    headers: { ...headers, Accept: 'application/json' },
+    body,
+  });
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join('. ') : err.message;
+    throw new Error(msg || 'Не удалось загрузить фото замера');
+  }
+  return res.json() as Promise<{ imageUrl: string; photoUrls: string[] }>;
 }
 
 export async function deleteMeasurement(id: string): Promise<void> {

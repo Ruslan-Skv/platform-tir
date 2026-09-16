@@ -1,6 +1,7 @@
 'use client';
 
 import type { CrmDirection, Measurement } from '@/shared/api/admin-crm';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CallCustomerIcon } from '@/shared/ui/icons/crm/CallCustomerIcon';
 import {
   crmPhoneToTelHref,
@@ -16,6 +17,47 @@ import styles from './MeasurementsPage.module.css';
 import type { MeasurementLinksInfo } from './measurements-page.types';
 import { formatDate, formatUser } from './measurements-page.utils';
 
+/** Скрепка «Фото замера» (как в таблице списков замеров). */
+export function MeasurementPhotosIconButton({
+  count,
+  onClick,
+  disabled = false,
+}: {
+  count: number;
+  onClick: () => void;
+  disabled?: boolean;
+}) {
+  const label = count > 0 ? `Фото замера (${count})` : 'Фото замера — прикрепить';
+  return (
+    <AdminTableIconButton
+      aria-label={label}
+      title={label}
+      disabled={disabled}
+      className={`${styles.photosIconButton} ${count > 0 ? styles.photosIconButtonActive : ''}`}
+      onClick={(e) => {
+        e.stopPropagation();
+        onClick();
+      }}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={14}
+        height={14}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+      </svg>
+      {count > 0 ? <span className={styles.photosCountBadge}>{count}</span> : null}
+    </AdminTableIconButton>
+  );
+}
+
 type MeasurementsListMobileCardsProps = {
   data: Measurement[];
   loading: boolean;
@@ -25,6 +67,8 @@ type MeasurementsListMobileCardsProps = {
   /** Только для «Мои замеры»: отметить выполненным. */
   onComplete?: (measurement: Measurement) => void;
   completeDisabled?: boolean;
+  /** Открыть фото замера (модалка) прямо из карточки. */
+  onOpenPhotos?: (measurement: Measurement) => void;
 };
 
 function renderDirection(m: Measurement, directions: CrmDirection[]): string {
@@ -47,6 +91,7 @@ function MeasurementMobileCard({
   onOpen,
   onComplete,
   completeDisabled,
+  onOpenPhotos,
 }: {
   m: Measurement;
   directions: CrmDirection[];
@@ -54,6 +99,7 @@ function MeasurementMobileCard({
   onOpen: (measurement: Measurement) => void;
   onComplete?: (measurement: Measurement) => void;
   completeDisabled: boolean;
+  onOpenPhotos?: (measurement: Measurement) => void;
 }) {
   const links = linksByMeasurementId[m.id];
   const phoneDisplay = m.customerPhone ? formatCrmPhoneOrDash(m.customerPhone) : null;
@@ -148,13 +194,21 @@ function MeasurementMobileCard({
           </div>
         </dl>
       </button>
-      {showComplete ? (
+      {showComplete || onOpenPhotos ? (
         <div className={styles.mobileCardActions}>
-          <MyMeasurementSurveyorActions
-            item={m}
-            onComplete={onComplete!}
-            disabled={completeDisabled}
-          />
+          {onOpenPhotos ? (
+            <MeasurementPhotosIconButton
+              count={(m.photoUrls ?? []).length}
+              onClick={() => onOpenPhotos(m)}
+            />
+          ) : null}
+          {showComplete ? (
+            <MyMeasurementSurveyorActions
+              item={m}
+              onComplete={onComplete!}
+              disabled={completeDisabled}
+            />
+          ) : null}
         </div>
       ) : null}
     </article>
@@ -169,6 +223,7 @@ export function MeasurementsListMobileCards({
   onOpen,
   onComplete,
   completeDisabled = false,
+  onOpenPhotos,
 }: MeasurementsListMobileCardsProps) {
   const groupByCompletion = Boolean(onComplete);
   const openItems = groupByCompletion
@@ -198,6 +253,7 @@ export function MeasurementsListMobileCards({
                   onOpen={onOpen}
                   onComplete={onComplete}
                   completeDisabled={completeDisabled}
+                  onOpenPhotos={onOpenPhotos}
                 />
               ))}
             </section>
@@ -214,6 +270,7 @@ export function MeasurementsListMobileCards({
                   onOpen={onOpen}
                   onComplete={onComplete}
                   completeDisabled={completeDisabled}
+                  onOpenPhotos={onOpenPhotos}
                 />
               ))}
             </section>
@@ -228,6 +285,7 @@ export function MeasurementsListMobileCards({
             linksByMeasurementId={linksByMeasurementId}
             onOpen={onOpen}
             completeDisabled={completeDisabled}
+            onOpenPhotos={onOpenPhotos}
           />
         ))
       )}

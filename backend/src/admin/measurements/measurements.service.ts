@@ -31,6 +31,11 @@ export class MeasurementsService {
     return this.crud.update(id, updateMeasurementDto, changedById);
   }
 
+  /** Дописывает URL загруженного фото замера и возвращает обновлённый список. */
+  appendPhotoUrl(id: string, imageUrl: string, changedById?: string) {
+    return this.crud.appendPhotoUrl(id, imageUrl, changedById);
+  }
+
   getHistory(measurementId: string) {
     return this.history.getHistory(measurementId);
   }

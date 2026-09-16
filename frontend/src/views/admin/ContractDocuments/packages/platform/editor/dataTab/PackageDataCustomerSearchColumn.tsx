@@ -1,11 +1,11 @@
 'use client';
 
 import { CrmCustomerSearchPanel } from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel';
-import crmCustomerSearchPanelStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerSearchPanel.module.css';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import { ProductContractCostFields } from '../../../families/product-like/cost/ProductContractCostFields';
 import { packageCustomerBlockHasContent } from '../../questionnaires/applyCrmContractToForm';
+import { PackageMeasurementLinkSection } from '../measurementTab/PackageMeasurementLinkSection';
 import type { PackageDataTabProps } from './PackageDataTab';
 import styles from './PackageDataTab.module.css';
 import {
@@ -18,6 +18,8 @@ import {
 export type PackageDataCustomerSearchColumnProps = Pick<
   PackageDataTabProps,
   | 'form'
+  | 'setForm'
+  | 'touchPackageData'
   | 'contractAndEstimateLocked'
   | 'linkedCrmCustomerId'
   | 'onCrmCustomerApplied'
@@ -29,6 +31,8 @@ export type PackageDataCustomerSearchColumnProps = Pick<
 
 export function PackageDataCustomerSearchColumn({
   form,
+  setForm,
+  touchPackageData,
   contractAndEstimateLocked,
   linkedCrmCustomerId,
   onCrmCustomerApplied,
@@ -48,7 +52,6 @@ export function PackageDataCustomerSearchColumn({
         }`}
       >
         <CrmCustomerSearchPanel
-          className={`${crmCustomerSearchPanelStyles.customerCrmPanelCompact} ${crmCustomerSearchPanelStyles.customerCrmPanelDataTopFill}`}
           customerId={linkedCrmCustomerId}
           disabled={contractAndEstimateLocked}
           listboxId="repair-customer-crm-search-listbox"
@@ -58,6 +61,27 @@ export function PackageDataCustomerSearchColumn({
           showClearButton={hasOrphanCustomerFields}
         />
       </div>
+      <PackageMeasurementLinkSection
+        linkedMeasurementId={form.linkedMeasurementId}
+        linkedCrmCustomerId={linkedCrmCustomerId}
+        placement="data"
+        surveyorUserId={form.contract.surveyorUserId}
+        onAutoFillSurveyor={(surveyorUserId) => {
+          setForm((prev) => ({
+            ...prev,
+            contract: { ...prev.contract, surveyorUserId },
+          }));
+          touchPackageData();
+        }}
+        onLink={(measurementId) => {
+          setForm((prev) => ({ ...prev, linkedMeasurementId: measurementId }));
+          touchPackageData();
+        }}
+        onUnlink={() => {
+          setForm((prev) => ({ ...prev, linkedMeasurementId: '' }));
+          touchPackageData();
+        }}
+      />
       {isProductDirectionPackage && productContractCostBreakdown ? (
         <ProductContractCostFields breakdown={productContractCostBreakdown} />
       ) : (

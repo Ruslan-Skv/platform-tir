@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { type Measurement, getMeasurements } from '@/shared/api/admin-crm';
 
@@ -36,10 +36,17 @@ export type PackageMeasurementLinkSectionProps = {
   linkedCrmCustomerId: string | null;
   onLink: (measurementId: string) => void;
   onUnlink: () => void;
+  /** Где отображается — на вкладке «Замер» или под блоком поиска заказчика на вкладке «Данные». */
+  placement?: 'measurement' | 'data';
+  /** Текущее значение поля «Замерщик» (form.contract.surveyorUserId). */
+  surveyorUserId?: string;
+  /** Автозаполнение поля «Замерщик» замерщиком из связанного замера (только если поле пустое). */
+  onAutoFillSurveyor?: (surveyorUserId: string) => void;
 };
 
 /**
- * Ручная связь пакета с замером (вкладка «Замер»).
+ * Ручная связь пакета с замером. Используется на вкладке «Замер» и на вкладке «Данные»
+ * (оба места редактируют одно и то же поле формы — они синхронизированы).
  * Замеры предлагает только того заказчика, который выбран на вкладке «Данные».
  */
 export function PackageMeasurementLinkSection({
@@ -47,6 +54,9 @@ export function PackageMeasurementLinkSection({
   linkedCrmCustomerId,
   onLink,
   onUnlink,
+  placement = 'measurement',
+  surveyorUserId,
+  onAutoFillSurveyor,
 }: PackageMeasurementLinkSectionProps) {
   const [measurements, setMeasurements] = useState<Measurement[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -79,15 +89,33 @@ export function PackageMeasurementLinkSection({
     [measurements, linkedCrmCustomerId]
   );
 
+  /**
+   * Автозаполнение «Замерщика» из связанного замера — один раз на замер
+   * (пока поле пустое), чтобы не затирать осознанно очищенное значение.
+   */
+  const autoFilledMeasurementRef = useRef<string | null>(null);
+  useEffect(() => {
+    const surveyorId = linked?.surveyorId;
+    if (!onAutoFillSurveyor || !surveyorId) return;
+    if (autoFilledMeasurementRef.current === linked.id) return;
+    autoFilledMeasurementRef.current = linked.id;
+    if (!surveyorUserId?.trim()) onAutoFillSurveyor(surveyorId);
+  }, [linked, surveyorUserId, onAutoFillSurveyor]);
+
   if (loadError) {
     return <p className={link.errorText}>{loadError}</p>;
   }
+
+  const cardClassName =
+    placement === 'data'
+      ? `${link.measurementLinkCard} ${link.measurementLinkCardData}`
+      : link.measurementLinkCard;
 
   if (linkedMeasurementId) {
     const customerMismatch =
       linked != null && linked.customerId != null && linked.customerId !== linkedCrmCustomerId;
     return (
-      <div className={link.measurementLinkCard}>
+      <div className={cardClassName}>
         <h4 className={link.measurementLinkTitle}>Связанный замер</h4>
         {linked ? (
           <dl className={link.measurementLinkList}>
@@ -160,22 +188,24 @@ export function PackageMeasurementLinkSection({
 
   if (!linkedCrmCustomerId) {
     return (
-      <div className={link.measurementLinkCard}>
+      <div className={cardClassName}>
         <h4 className={link.measurementLinkTitle}>Связанный замер</h4>
         <p className={link.sectionHint}>
-          Сначала выберите заказчика (карточку) на вкладке «Данные» — после этого здесь можно
-          связать договор с его замером.
+          {placement === 'data'
+            ? 'Сначала выберите заказчика (карточку) в блоке «Поиск заказчика в базе» выше — после этого можно связать договор с его замером.'
+            : 'Сначала выберите заказчика (карточку) на вкладке «Данные» — после этого здесь можно связать договор с его замером.'}
         </p>
       </div>
     );
   }
 
   return (
-    <div className={link.measurementLinkCard}>
+    <div className={cardClassName}>
       <h4 className={link.measurementLinkTitle}>Связанный замер</h4>
       <p className={link.sectionHint}>
-        Показаны замеры заказчика, выбранного на вкладке «Данные». Связь появится в списке замеров
-        («Договор создан») и в фильтрах по направлениям.
+        {placement === 'data'
+          ? 'Показаны замеры заказчика, выбранного выше. Этот же выбор отображается на вкладке «Замер».'
+          : 'Показаны замеры заказчика, выбранного на вкладке «Данные». Связь появится в списке замеров («Договор создан») и в фильтрах по направлениям.'}
       </p>
       <div className={link.measurementLinkPickerRow}>
         <select
@@ -201,6 +231,7 @@ export function PackageMeasurementLinkSection({
         <button
           type="button"
           data-modal-btn="primary"
+          className={link.linkButton}
           disabled={!selectedId}
           onClick={() => {
             if (selectedId) onLink(selectedId);

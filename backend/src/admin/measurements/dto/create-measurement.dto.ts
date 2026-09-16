@@ -70,4 +70,10 @@ export class CreateMeasurementDto {
   @IsOptional()
   @IsString()
   customerId?: string;
+
+  @ApiPropertyOptional({ description: 'Фото с результатами замера (URL)', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  photoUrls?: string[];
 }

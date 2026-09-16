@@ -461,11 +461,14 @@
   min-height: 0;
 }
 
-/* «Договор и объект» и «Поиск заказчика» — одинаковая высота цветных карточек */
-.packageDataTabDense .dataTopBlock > .sectionCard,
-.packageDataTabDense .dataTopBlock > .packageCustomerSearchSlot {
+/* «Договор и объект» — тянется по высоте; «Поиск заказчика» — компактный, по содержимому */
+.packageDataTabDense .dataTopBlock > .sectionCard {
   flex: 1 1 auto;
   min-height: 0;
+}
+
+.packageDataTabDense .dataTopBlock > .packageCustomerSearchSlot {
+  flex: 0 0 auto;
 }
 
 /* «Договор и объект»: на широкой колонке форма на всю ширину карточки; отступы как у блока поиска */
@@ -482,20 +485,14 @@
   min-height: 100%;
 }
 
-/* Панель поиска растягивается; поля стоимости — фиксированная строка внизу колонки */
+/* Панель поиска компактная (по содержимому); ниже — связь с замером и поля стоимости */
 .packageDataTabDense .dataTopBlockCustomerCol .packageCustomerSearchSlot {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
+  flex: 0 0 auto;
 }
 
 .packageDataTabDense .dataTopBlockCustomerCol .packageCustomerSearchSlot > article {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  min-height: 0;
-  height: 100%;
+  height: auto;
+  min-height: min-content;
 }
 
 .packageDataTabDense .dataTopBlock:first-child > .sectionCard {

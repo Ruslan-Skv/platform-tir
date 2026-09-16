@@ -9,7 +9,14 @@ import {
   Query,
   UseGuards,
   Req,
+  UseInterceptors,
+  UploadedFile,
+  BadRequestException,
 } from '@nestjs/common';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { diskStorage } from 'multer';
+import * as fs from 'fs';
+import * as path from 'path';
 import { MeasurementsService } from './measurements.service';
 import { CreateMeasurementDto } from './dto/create-measurement.dto';
 import { UpdateMeasurementDto } from './dto/update-measurement.dto';
@@ -17,6 +24,11 @@ import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
+
+const measurementPhotosDir = path.join(process.cwd(), 'uploads', 'measurements');
+
+/** Максимум фото с результатами замера на странице замера. */
+export const MEASUREMENT_PHOTOS_MAX = 5;
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -163,6 +175,48 @@ export class MeasurementsController {
     @Req() req: RequestWithUser,
   ) {
     return this.measurementsService.update(id, updateMeasurementDto, req.user?.id);
+  }
+
+  /** Фото с результатами замера (кнопка-скрепка на странице замера), до 5 фото. */
+  @Post(':id/upload-photo')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(measurementPhotosDir)) {
+            fs.mkdirSync(measurementPhotosDir, { recursive: true });
+          }
+          cb(null, measurementPhotosDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(
+            null,
+            `measurement-${Date.now()}-${Math.random().toString(36).slice(2, 8)}${path.extname(file.originalname) || '.jpg'}`,
+          );
+        },
+      }),
+      limits: { fileSize: 8 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const allowed = /\.(jpe?g|png|webp|gif)$/i.test(file.originalname);
+        if (!allowed) {
+          cb(new BadRequestException('Допустимы только изображения: jpg, png, webp, gif'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadPhoto(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Req() req: RequestWithUser,
+  ) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const imageUrl = `/uploads/measurements/${path.basename(file.path)}`;
+    const photoUrls = await this.measurementsService.appendPhotoUrl(id, imageUrl, req.user?.id);
+    return { imageUrl, photoUrls };
   }
 
   @Delete(':id')

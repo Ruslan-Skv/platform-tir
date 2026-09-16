@@ -7,6 +7,11 @@
   margin: 0 0 var(--admin-space-lg, 24px);
 }
 
+/* Вариант для вкладки «Данные»: без нижнего отступа (колонка задаёт gap) */
+.measurementLinkCardData {
+  margin-bottom: 0;
+}
+
 .measurementLinkTitle {
   margin: 0 0 var(--admin-space-xs, 4px);
   font-size: var(--admin-font-size-md, 15px);
@@ -85,6 +90,42 @@
   margin: 0 0 var(--admin-space-md, 16px);
   font-size: var(--admin-font-size-sm, 14px);
   color: var(--admin-danger-text, #dc2626);
+}
+
+.linkButton {
+  flex: 0 0 auto;
+  padding: var(--admin-space-xs, 6px) var(--admin-space-md, 14px);
+  border: 1px solid var(--admin-info, #3b82f6);
+  border-radius: var(--admin-radius-sm, 4px);
+  background: var(--admin-info, #3b82f6);
+  color: var(--admin-surface, #fff);
+  font-size: var(--admin-font-size-sm, 14px);
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.linkButton:hover:not(:disabled) {
+  background: var(--admin-info-strong, #1d4ed8);
+  border-color: var(--admin-info-strong, #1d4ed8);
+}
+
+.linkButton:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .linkButton {
+  background: var(--admin-info, #3b82f6);
+  border-color: var(--admin-info-bright, #60a5fa);
+  color: var(--admin-text-inverse, #fff);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .linkButton:hover:not(:disabled) {
+  background: var(--admin-info-strong, #1d4ed8);
+  border-color: var(--admin-info-bright, #60a5fa);
 }
 
 .removeButton {

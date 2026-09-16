@@ -17,6 +17,7 @@ import {
 } from '@/views/admin/ui/AdminStickySaveButton';
 
 import { MeasurementHistoryModal } from '../modals/MeasurementHistoryModal';
+import { MeasurementPhotosModal } from '../modals/MeasurementPhotosModal';
 import { getResultTabLabel } from '../shared/measurementResultTabs';
 import { MEASUREMENT_STATUS_OPTIONS as STATUS_OPTIONS } from '../shared/measurementStatuses';
 import styles from './MeasurementFormPage.module.css';
@@ -119,6 +120,8 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     savedResultTabs,
     activeResultTab,
     setActiveResultTab,
+    photoUrls,
+    setPhotoUrls,
     clearFieldError,
     showMessage,
     applyCrmCustomerFromDetail,
@@ -144,6 +147,11 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     message != null ? (
       <MeasurementFormToast message={message} onClose={() => setMessage(null)} />
     ) : null;
+
+  const [showPhotos, setShowPhotos] = useState(false);
+  const photosCount = photoUrls.length;
+  const photosButtonLabel =
+    photosCount > 0 ? `Фото замера (${photosCount})` : 'Фото замера — прикрепить';
 
   if (loading) {
     return (
@@ -177,6 +185,34 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
             <MeasurementFormRulesInfoTip />
           </div>
           <div className={styles.titleControls}>
+            {measurementId ? (
+              <AdminTableIconButton
+                aria-label={photosButtonLabel}
+                title={photosButtonLabel}
+                className={`${styles.photosIconButton} ${
+                  photosCount > 0 ? styles.photosIconButtonActive : ''
+                }`}
+                onClick={() => setShowPhotos(true)}
+              >
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width={14}
+                  height={14}
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth={2}
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden
+                >
+                  <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+                {photosCount > 0 ? (
+                  <span className={styles.photosCountBadge}>{photosCount}</span>
+                ) : null}
+              </AdminTableIconButton>
+            ) : null}
             <BadgeTooltip content={MEASUREMENT_STATUS_ORDER_HINT} side="left" wide>
               <label className={styles.statusInlineLabel}>
                 <span className={styles.statusInlineText}>Статус</span>
@@ -1203,6 +1239,18 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
           onClose={() => setShowHistory(false)}
         />
       )}
+
+      {measurementId ? (
+        <MeasurementPhotosModal
+          isOpen={showPhotos}
+          measurementId={measurementId}
+          measurementName={customerName || undefined}
+          photoUrls={photoUrls}
+          onPhotoUrlsChange={setPhotoUrls}
+          onError={(text) => showMessage('error', text)}
+          onClose={() => setShowPhotos(false)}
+        />
+      ) : null}
     </AdminStickyPageRoot>
   );
 }

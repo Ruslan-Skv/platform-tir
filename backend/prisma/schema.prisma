@@ -3366,6 +3366,8 @@ model Measurement {
   comments        String?           @db.Text
   status          MeasurementStatus @default(NEW)
   customerId      String?
+  /// Фото с результатами замера (кнопка-скрепка на странице замера, до 5 изображений)
+  photoUrls       String[]          @default([])
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 

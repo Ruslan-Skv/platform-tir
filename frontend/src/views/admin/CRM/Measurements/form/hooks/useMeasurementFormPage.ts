@@ -69,6 +69,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [comments, setComments] = useState('');
   const [status, setStatus] = useState('NEW');
+  const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(!!measurementId);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(() =>
@@ -156,6 +157,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
       );
       setActiveResultTab('repair');
       setStatus(data.status);
+      setPhotoUrls(data.photoUrls ?? []);
     } catch {
       showMessage('error', 'Ошибка загрузки замера');
     } finally {
@@ -656,6 +658,8 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
     activeResultTab,
     setActiveResultTab,
     currentMeasurementId,
+    photoUrls,
+    setPhotoUrls,
     clearFieldError,
     showMessage,
     applyCrmCustomerFromDetail,

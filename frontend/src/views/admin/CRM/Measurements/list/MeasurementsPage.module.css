@@ -119,6 +119,34 @@
   font-size: var(--admin-font-size-xs);
 }
 
+/* Кнопка-скрепка «Фото замера» в последней колонке таблицы (как у путевых листов) */
+.photosIconButton,
+.photosIconButtonActive {
+  position: relative;
+}
+
+.photosIconButtonActive {
+  color: var(--admin-info, #2563eb);
+  border-color: var(--admin-info-light, #93c5fd);
+}
+
+.photosCountBadge {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  min-width: 15px;
+  height: 15px;
+  padding: 0 3px;
+  border-radius: 999px;
+  background: var(--admin-info, #2563eb);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 15px;
+  text-align: center;
+  pointer-events: none;
+}
+
 .pageError {
   margin: 0 0 var(--admin-space-md, 8px);
   color: var(--admin-danger-text, #b91c1c);

@@ -1,12 +1,16 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 
 import type { Measurement } from '@/shared/api/admin-crm';
+import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
+import { MeasurementPhotosModal } from '../modals/MeasurementPhotosModal';
 import {
   MEASUREMENT_STATUS_OPTIONS,
   getMeasurementStatusLabel,
@@ -66,6 +70,12 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
   } = model;
 
   const showManagerFilter = listScope !== 'mine';
+
+  const [photosModal, setPhotosModal] = useState<Measurement | null>(null);
+  /** Локальные правки фото из модалки списка — без перезагрузки страницы. */
+  const [photoUrlsById, setPhotoUrlsById] = useState<Record<string, string[]>>({});
+
+  const photosOf = (m: Measurement): string[] => photoUrlsById[m.id] ?? m.photoUrls ?? [];
 
   const renderDirection = (m: Measurement) => {
     const primary = m.direction?.name;
@@ -155,6 +165,43 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
               <div className={styles.linkStatePending}>Договор не создан</div>
             )}
           </div>
+        );
+      },
+    },
+    {
+      key: 'photos',
+      title: 'Фото',
+      render: (m: Measurement) => {
+        const count = photosOf(m).length;
+        const label = count > 0 ? `Фото замера (${count})` : 'Фото замера — прикрепить';
+        return (
+          <AdminTableIconButton
+            aria-label={label}
+            title={label}
+            className={`${styles.photosIconButton} ${
+              count > 0 ? styles.photosIconButtonActive : ''
+            }`}
+            onClick={(e) => {
+              e.stopPropagation();
+              setPhotosModal(m);
+            }}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+            </svg>
+            {count > 0 ? <span className={styles.photosCountBadge}>{count}</span> : null}
+          </AdminTableIconButton>
         );
       },
     },
@@ -414,6 +461,19 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
           total,
           onPageChange: setPage,
         }}
+      />
+
+      <MeasurementPhotosModal
+        isOpen={Boolean(photosModal)}
+        measurementId={photosModal?.id ?? ''}
+        measurementName={photosModal?.customerName || undefined}
+        photoUrls={photosModal ? photosOf(photosModal) : []}
+        onPhotoUrlsChange={(next) => {
+          const id = photosModal?.id;
+          if (id) setPhotoUrlsById((prev) => ({ ...prev, [id]: next }));
+        }}
+        onError={() => undefined}
+        onClose={() => setPhotosModal(null)}
       />
     </div>
   );
