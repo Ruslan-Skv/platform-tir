@@ -31,7 +31,25 @@ export async function fetchWithTimeout(
   const timeoutSignal = AbortSignal.timeout(timeoutMs);
   const signal = init?.signal ? mergeAbortSignals([init.signal, timeoutSignal]) : timeoutSignal;
 
-  return fetch(input, { ...init, signal });
+  try {
+    return await fetch(input, { ...init, signal });
+  } catch (e) {
+    // Истёк таймаут (свой сигнал) — показываем понятную причину, а не "The user aborted a request."
+    if (e instanceof DOMException && e.name === 'AbortError' && !init?.signal?.aborted) {
+      throw new TimeoutError(timeoutMs);
+    }
+    throw e;
+  }
+}
+
+/** Запрос не успел завершиться за отведённый таймаут. */
+export class TimeoutError extends Error {
+  constructor(timeoutMs: number) {
+    super(
+      `Превышено время ожидания сервера (${Math.round(timeoutMs / 1000)} с). Попробуйте ещё раз.`
+    );
+    this.name = 'TimeoutError';
+  }
 }
 
 /** SSR-запросы к API: короткий таймаут, чтобы страница не зависала при недоступном бэкенде. */

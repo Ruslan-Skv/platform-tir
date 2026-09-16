@@ -1,5 +1,8 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+/** Загрузка файлов идёт дольше обычного JSON-запроса — даём ей увеличенный таймаут. */
+const FILE_UPLOAD_TIMEOUT_MS = 120_000;
+
 const API_FALLBACK = 'http://localhost:3001/api/v1';
 
 /**
@@ -225,7 +228,8 @@ export async function uploadExecutorRequisitesPdf(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
@@ -600,7 +604,8 @@ export async function uploadRepairPackageWorkStartActPhoto(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
@@ -623,7 +628,8 @@ export async function uploadRepairPackageContractCloseActPhoto(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
@@ -646,7 +652,8 @@ export async function uploadPackageMeasurementPhoto(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
@@ -669,7 +676,8 @@ export async function uploadPackageDrawingPhoto(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
@@ -697,7 +705,8 @@ export async function uploadWindowsSpecificationFile(
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
       body,
-    }
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
     throw new Error(await readAdminContractPackagesError(res));
