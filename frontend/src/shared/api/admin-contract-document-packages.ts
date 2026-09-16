@@ -661,6 +661,30 @@ export async function uploadPackageMeasurementPhoto(
   return res.json() as Promise<{ imageUrl: string }>;
 }
 
+/** Скрин чека об оплате от клиента (QR/банковский перевод); в ответе — относительный `imageUrl`. */
+export async function uploadPackagePaymentProofPhoto(
+  packageId: string,
+  file: File
+): Promise<{ imageUrl: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-payment-proof-photo`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    },
+    FILE_UPLOAD_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ imageUrl: string }>;
+}
+
 /** Картинка с чертежом (вкладка «Чертежи», пакет «Потолки»); в ответе — относительный `imageUrl`. */
 export async function uploadPackageDrawingPhoto(
   packageId: string,

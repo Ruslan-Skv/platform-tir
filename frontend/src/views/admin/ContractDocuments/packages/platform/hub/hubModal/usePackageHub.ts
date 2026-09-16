@@ -30,6 +30,7 @@ import {
 } from '../../form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '../../form/packageContractDisplay';
 import {
+  PACKAGE_PAYMENT_PROOF_PHOTOS_MAX,
   type PackageFormData,
   clampPackageAddendumSlotCount,
   mergePackageFormData,
@@ -139,6 +140,7 @@ export function usePackageHub({
   const [contractCloseModalError, setContractCloseModalError] = useState<string | null>(null);
 
   const [actPhotosModalOpen, setActPhotosModalOpen] = useState(false);
+  const [paymentProofsModalOpen, setPaymentProofsModalOpen] = useState(false);
   const [refusalModalOpen, setRefusalModalOpen] = useState(false);
   const [refusalReasonDraft, setRefusalReasonDraft] = useState('');
   const [refusalModalBusy, setRefusalModalBusy] = useState(false);
@@ -323,6 +325,47 @@ export function usePackageHub({
       /* не блокируем UI */
     }
   }, [packageId, syncWindowsWorkPeriodStartFromPayments]);
+
+  const appendPaymentProofPhoto = useCallback(
+    async (imageUrl: string) => {
+      const base = hubFormBase();
+      const next: PackageFormData = {
+        ...base,
+        paymentProofPhotoUrls: [...base.paymentProofPhotoUrls, imageUrl].slice(
+          0,
+          PACKAGE_PAYMENT_PROOF_PHOTOS_MAX
+        ),
+      };
+      setForm(next);
+      formRef.current = next;
+      try {
+        await persistForm(next);
+        notifyUpdated();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось сохранить фото-подтверждение');
+      }
+    },
+    [persistForm, notifyUpdated, hubFormBase]
+  );
+
+  const removePaymentProofPhoto = useCallback(
+    async (index: number) => {
+      const base = hubFormBase();
+      const next: PackageFormData = {
+        ...base,
+        paymentProofPhotoUrls: base.paymentProofPhotoUrls.filter((_, i) => i !== index),
+      };
+      setForm(next);
+      formRef.current = next;
+      try {
+        await persistForm(next);
+        notifyUpdated();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось удалить фото-подтверждение');
+      }
+    },
+    [persistForm, notifyUpdated, hubFormBase]
+  );
 
   const updateContract = useCallback(
     <K extends keyof PackageFormData['contract']>(key: K, value: string) => {
@@ -779,6 +822,10 @@ export function usePackageHub({
     setContractCloseModalError,
     actPhotosModalOpen,
     setActPhotosModalOpen,
+    paymentProofsModalOpen,
+    setPaymentProofsModalOpen,
+    appendPaymentProofPhoto,
+    removePaymentProofPhoto,
     refusalModalOpen,
     setRefusalModalOpen,
     refusalReasonDraft,

@@ -30,6 +30,9 @@ export const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
 /** Максимум картинок с чертежами во вкладке «Чертежи» (синхронизирован с backend). */
 export const PACKAGE_DRAWING_PHOTOS_MAX = 10;
 
+/** Максимум скринов чеков об оплате от клиентов (синхронизирован с backend). */
+export const PACKAGE_PAYMENT_PROOF_PHOTOS_MAX = 12;
+
 function normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
   if (!Array.isArray(raw)) return [];
   const out: PackageIssuedInvoice[] = [];
@@ -503,6 +506,14 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
         .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
         .map((u) => u.trim())
         .slice(0, PACKAGE_DRAWING_PHOTOS_MAX);
+    })(),
+    paymentProofPhotoUrls: (() => {
+      const raw = (merged as unknown as Record<string, unknown>).paymentProofPhotoUrls;
+      if (!Array.isArray(raw)) return [] as string[];
+      return raw
+        .filter((u): u is string => typeof u === 'string' && u.trim().length > 0)
+        .map((u) => u.trim())
+        .slice(0, PACKAGE_PAYMENT_PROOF_PHOTOS_MAX);
     })(),
     linkedMeasurementId:
       typeof (merged as unknown as Record<string, unknown>).linkedMeasurementId === 'string'

@@ -13,6 +13,7 @@ import { PackagePipelineSection } from '../pipeline/PackagePipelineSection';
 import { PackageHubActPhotosModal } from './PackageHubActPhotosModal';
 import { PackageHubContractCloseModal } from './PackageHubContractCloseModal';
 import hubStyles from './PackageHubModal.module.css';
+import { PackageHubPaymentProofsModal } from './PackageHubPaymentProofsModal';
 import { PackageHubRefusalModal } from './PackageHubRefusalModal';
 import { PackageHubWorkStartModal } from './PackageHubWorkStartModal';
 import type { PackageHubModalModel } from './usePackageHubModal';
@@ -204,6 +205,8 @@ export function PackageHubModalView({
           onJournalChanged={handleJournalChanged}
         />
       ) : null}
+
+      {hub.contentReady ? <PackageHubPaymentProofsModal packageId={packageId} hub={hub} /> : null}
 
       <ConfirmModal
         isOpen={hub.revertRefusalConfirmOpen}

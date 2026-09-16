@@ -1,6 +1,6 @@
 'use client';
 
-import { BanknotesIcon } from '@heroicons/react/24/outline';
+import { BanknotesIcon, CameraIcon } from '@heroicons/react/24/outline';
 
 import { useEffect, useRef, useState } from 'react';
 
@@ -39,8 +39,11 @@ export function usePackageHubModal({
   const conductPanelRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
-    if (!isOpen) setPaymentsJournalOpen(false);
-  }, [isOpen]);
+    if (!isOpen) {
+      setPaymentsJournalOpen(false);
+      hub.setPaymentProofsModalOpen(false);
+    }
+  }, [isOpen, hub]);
 
   const handleJournalChanged = () => {
     void hub.refreshJournalPaidRub();
@@ -74,6 +77,8 @@ export function usePackageHubModal({
   const titleContractNumber = contractNumberLabelFromEditor?.trim() || hub.contractNumberLabel;
   const titleConcludedDate = headerConcludedDateFromEditor ?? hub.headerConcludedDateLabel;
 
+  const paymentProofsLabel = `Подтверждения оплат (чеки клиентов)${hub.form.paymentProofPhotoUrls.length > 0 ? ` — ${hub.form.paymentProofPhotoUrls.length} шт.` : ''}`;
+
   const modalTitle = (
     <span className={`${crmDetailStyles.titleWithEdit} ${hubStyles.modalTitleRow}`}>
       <span>{PACKAGE_HUB_MODAL_TITLE}</span>
@@ -96,6 +101,16 @@ export function usePackageHubModal({
         onClick={() => setPaymentsJournalOpen(true)}
       >
         <BanknotesIcon className={crmDetailStyles.editIcon} aria-hidden />
+      </button>
+      <button
+        type="button"
+        className={crmDetailStyles.historyBtn}
+        title={paymentProofsLabel}
+        aria-label={paymentProofsLabel}
+        disabled={hub.loading && !hub.contentReady}
+        onClick={() => hub.setPaymentProofsModalOpen(true)}
+      >
+        <CameraIcon className={crmDetailStyles.editIcon} aria-hidden />
       </button>
     </span>
   );
