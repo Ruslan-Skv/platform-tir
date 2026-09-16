@@ -223,6 +223,12 @@
   background: color-mix(in srgb, var(--user-office-accent) 6%, var(--admin-surface));
 }
 
+.userCardWeekly {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--admin-text-muted, #64748b);
+}
+
 .userCardHead {
   display: flex;
   align-items: baseline;

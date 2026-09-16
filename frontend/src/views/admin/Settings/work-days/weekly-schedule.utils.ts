@@ -63,6 +63,31 @@ export function normalizeWeeklySchedule(
   return base;
 }
 
+export function getWeeklyScheduleDurationMinutes(schedule: WeeklySchedule): number {
+  let total = 0;
+  for (const { key } of WEEKDAY_ROWS) {
+    const day = schedule[key];
+    if (!day?.enabled) continue;
+    const start = parseTimeToMinutes(day.startTime);
+    const end = parseTimeToMinutes(day.endTime);
+    if (end <= start) continue;
+    total += end - start;
+  }
+  return total;
+}
+
+export function formatWeeklyDuration(minutes: number): string {
+  if (minutes <= 0) return '0 ч';
+  const hours = Math.floor(minutes / 60);
+  const mins = minutes % 60;
+  return mins > 0 ? `${hours} ч ${mins} мин` : `${hours} ч`;
+}
+
+function parseTimeToMinutes(time: string): number {
+  const [h, m] = time.split(':').map((v) => parseInt(v, 10));
+  return (h || 0) * 60 + (m || 0);
+}
+
 export function patchWeeklyDay(
   schedule: WeeklySchedule,
   key: string,

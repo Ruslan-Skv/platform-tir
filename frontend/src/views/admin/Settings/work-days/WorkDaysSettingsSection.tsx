@@ -28,7 +28,12 @@ import { ROLES_CONFIG } from '@/views/admin/Settings';
 
 import { WeeklyScheduleEditor } from './WeeklyScheduleEditor';
 import styles from './WorkDaysSettingsSection.module.css';
-import { type WeeklySchedule, normalizeWeeklySchedule } from './weekly-schedule.utils';
+import {
+  type WeeklySchedule,
+  formatWeeklyDuration,
+  getWeeklyScheduleDurationMinutes,
+  normalizeWeeklySchedule,
+} from './weekly-schedule.utils';
 
 type Tab = 'general' | 'offices' | 'users';
 
@@ -573,6 +578,15 @@ function UserCard({
   const roleLabel = ROLES_CONFIG.find((r) => r.id === user.role)?.label ?? user.role;
   const officeAccent = getOfficeAccentColor(user.officeId, offices);
   const showScheduleEditor = user.useCustomWorkSchedule && scheduleExpanded;
+  const office = offices.find((o) => o.id === user.officeId) ?? null;
+  const effectiveWeekly = user.useCustomWorkSchedule
+    ? getUserWeekly(user)
+    : office
+      ? getOfficeWeekly(office)
+      : null;
+  const weeklyDurationMinutes = effectiveWeekly
+    ? getWeeklyScheduleDurationMinutes(effectiveWeekly)
+    : null;
 
   return (
     <article
@@ -597,6 +611,22 @@ function UserCard({
           <span className={styles.userCardRole}>{roleLabel}</span>
         </div>
       </div>
+      <p
+        className={styles.userCardWeekly}
+        title="Суммарная длительность рабочих дней по действующему графику (без учёта перерывов)"
+      >
+        Расчётная продолжительность недели:{' '}
+        <strong>
+          {weeklyDurationMinutes === null
+            ? 'офис не назначен'
+            : formatWeeklyDuration(weeklyDurationMinutes)}
+        </strong>
+        {user.useCustomWorkSchedule
+          ? ' · свой график'
+          : office
+            ? ` · график офиса «${office.name}»`
+            : ''}
+      </p>
       <div className={styles.userCardBody}>
         <label className={styles.userCheck} title="Учёт рабочего времени для этого сотрудника">
           <input
