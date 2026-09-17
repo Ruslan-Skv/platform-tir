@@ -1,5 +1,6 @@
 import {
   findPackagesLinkedToCustomers,
+  parsePackageContractTotal,
   parseLinkedCrmCustomerId,
   parsePackageContractDate,
   parsePackageContractNumber,
@@ -34,6 +35,13 @@ describe('customer-linked-packages.util', () => {
     expect(parsePackageContractNumber({})).toBeNull();
   });
 
+  it('сумма договора из contract.totalAmount (строка с запятой)', () => {
+    expect(parsePackageContractTotal({ contract: { totalAmount: '17474,00' } })).toBe(17474);
+    expect(parsePackageContractTotal({ contract: { totalAmount: '17 474,50' } })).toBe(17474.5);
+    expect(parsePackageContractTotal({ contract: { totalAmount: '' } })).toBeNull();
+    expect(parsePackageContractTotal({})).toBeNull();
+  });
+
   it('дата договора из contractConcludedAt', () => {
     const d = parsePackageContractDate({ contractConcludedAt: '2026-09-01' });
     expect(d?.toISOString().slice(0, 10)).toBe('2026-09-01');
@@ -47,8 +55,12 @@ describe('customer-linked-packages.util', () => {
         kind: 'REPAIR',
         status: 'DRAFT',
         crmContractId: null,
-        formData: { _linkedCrmCustomerId: 'cm1', contract: { number: 'Р-1' } },
+        formData: {
+          _linkedCrmCustomerId: 'cm1',
+          contract: { number: 'Р-1', totalAmount: '17474,00' },
+        },
         createdAt: new Date('2026-09-01'),
+        payments: [{ amount: 5000 }, { amount: 2474 }],
       },
       {
         id: 'p2',
@@ -57,6 +69,7 @@ describe('customer-linked-packages.util', () => {
         crmContractId: 'ct9',
         formData: {},
         createdAt: new Date('2026-09-02'),
+        payments: [],
       },
       {
         id: 'p3',
@@ -65,6 +78,7 @@ describe('customer-linked-packages.util', () => {
         crmContractId: null,
         formData: {},
         createdAt: new Date('2026-09-03'),
+        payments: [],
       },
     ]);
     const map = await findPackagesLinkedToCustomers(
@@ -74,5 +88,8 @@ describe('customer-linked-packages.util', () => {
     );
     expect(map.get('cm1')?.map((p) => p.id)).toEqual(['p1', 'p2']);
     expect(map.get('cm1')?.[0].contractNumber).toBe('Р-1');
+    expect(map.get('cm1')?.[0].totalAmount).toBe(17474);
+    expect(map.get('cm1')?.[0].paidAmount).toBe(7474);
+    expect(map.get('cm1')?.[0].remainingAmount).toBe(10000);
   });
 });

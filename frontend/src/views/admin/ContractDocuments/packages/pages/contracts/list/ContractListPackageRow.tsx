@@ -11,6 +11,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { ShareIcon } from '@/shared/ui/icons';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
+import { EditIcon } from '@/shared/ui/icons/EditIcon';
 import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
 import { getDisplayContractNumber } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
 import { mergePackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
@@ -75,6 +76,9 @@ export type ContractListPackageRowProps = {
   router: AppRouterInstance;
   onCopy: (packageId: string) => void;
   onDelete: (pkg: ContractDocumentPackage) => void;
+  /** Супер-админ: отмена подписания; кнопка видна только для подписанных договоров. */
+  onRevertSigning?: (pkg: ContractDocumentPackage) => void;
+  revertSigningBusy?: boolean;
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
@@ -98,6 +102,8 @@ export function ContractListPackageRow({
   router,
   onCopy,
   onDelete,
+  onRevertSigning,
+  revertSigningBusy,
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
@@ -321,6 +327,33 @@ export function ContractListPackageRow({
                 className={deleteBusy ? cdChrome.estimatesRefreshIconSpinning : undefined}
               />
             </AdminTableIconButton>
+          </div>
+          <div className={cdEstimatesList.contractsListActionsSlot}>
+            {onRevertSigning && pkg.status === 'CONTRACT_CONCLUDED' ? (
+              <AdminTableIconButton
+                disabled={
+                  loading ||
+                  creating ||
+                  copyingPackageId !== null ||
+                  deletingPackageId !== null ||
+                  (revertSigningBusy ?? false)
+                }
+                aria-busy={revertSigningBusy}
+                aria-label={
+                  revertSigningBusy
+                    ? 'Отмена подписания…'
+                    : `Отменить подписание договора ${num} и вернуть на доработку`
+                }
+                title="Отменить подписание и вернуть на доработку (только супер-админ)"
+                onClick={() => onRevertSigning(pkg)}
+              >
+                <EditIcon
+                  className={revertSigningBusy ? cdChrome.estimatesRefreshIconSpinning : undefined}
+                />
+              </AdminTableIconButton>
+            ) : (
+              <span className={cdEstimatesList.contractsListActionsIconPlaceholder} aria-hidden />
+            )}
           </div>
           <div className={cdEstimatesList.contractsListActionsSlot}>
             {actPhotoItems.length > 0 ? (

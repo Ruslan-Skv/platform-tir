@@ -30,6 +30,10 @@ type ContractsListModalsProps = {
   deleteConfirmMessage: string;
   onCloseDeleteConfirm: () => void;
   onConfirmDelete: () => void;
+  revertSignConfirmOpen: boolean;
+  revertSignConfirmMessage: string;
+  onCloseRevertSignConfirm: () => void;
+  onConfirmRevertSign: () => void;
   trashOpen: boolean;
   onCloseTrash: () => void;
   onTrashRestored: () => void;
@@ -61,6 +65,10 @@ export function ContractsListModals({
   deleteConfirmMessage,
   onCloseDeleteConfirm,
   onConfirmDelete,
+  revertSignConfirmOpen,
+  revertSignConfirmMessage,
+  onCloseRevertSignConfirm,
+  onConfirmRevertSign,
   trashOpen,
   onCloseTrash,
   onTrashRestored,
@@ -195,6 +203,16 @@ export function ContractsListModals({
         confirmText="В корзину"
         cancelText="Отмена"
         variant="danger"
+      />
+
+      <ConfirmModal
+        isOpen={revertSignConfirmOpen}
+        onClose={onCloseRevertSignConfirm}
+        onConfirm={onConfirmRevertSign}
+        title="Отменить подписание договора?"
+        message={revertSignConfirmMessage}
+        confirmText="Отменить подписание"
+        cancelText="Оставить подписанным"
       />
 
       <PackageContractTrashModal

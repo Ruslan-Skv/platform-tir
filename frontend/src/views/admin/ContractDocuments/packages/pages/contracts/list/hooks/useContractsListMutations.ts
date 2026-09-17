@@ -3,6 +3,7 @@ import { useCallback, useMemo } from 'react';
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
+import { useAuth } from '@/features/auth/context/AuthContext';
 import type {
   ContractDocumentPackage,
   ContractDocumentPackageKind,
@@ -11,6 +12,7 @@ import {
   createContractDocumentPackage,
   getContractDocumentPackage,
   trashContractDocumentPackage,
+  updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
 
@@ -36,6 +38,8 @@ export function useContractsListMutations({
   modals,
 }: UseContractsListMutationsParams) {
   const { canEdit } = useAdminSectionCanEdit();
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
   const {
     setCreating,
     setCreateDirectionModalOpen,
@@ -44,6 +48,9 @@ export function useContractsListMutations({
     setDeletingPackageId,
     setPackagePendingDelete,
     packagePendingDelete,
+    setRevertSigningPackageId,
+    setPackagePendingRevertSign,
+    packagePendingRevertSign,
   } = modals;
 
   const handleCreate = useCallback(
@@ -162,11 +169,74 @@ export function useContractsListMutations({
     [packagePendingDelete]
   );
 
+  /** Супер-админ: отмена подписания договора и возврат в работу (без 30-сек окна хаба). */
+  const requestRevertSigning = useCallback(
+    (pkg: ContractDocumentPackage) => {
+      if (!canEdit || !isSuperAdmin || pkg.status !== 'CONTRACT_CONCLUDED') return;
+      setPackagePendingRevertSign(pkg);
+    },
+    [canEdit, isSuperAdmin, setPackagePendingRevertSign]
+  );
+
+  const handleConfirmRevertSigning = useCallback(() => {
+    const pkg = packagePendingRevertSign;
+    if (!pkg?.id || !canEdit || !isSuperAdmin) return;
+    const id = pkg.id;
+    void (async () => {
+      setRevertSigningPackageId(id);
+      setError(null);
+      try {
+        const formData = {
+          ...((pkg.formData ?? {}) as Record<string, unknown>),
+          contractConcludedAt: '',
+          contractPaidAt: '',
+        };
+        await updateContractDocumentPackage(id, {
+          formData,
+          status: 'IN_PROGRESS',
+          recordVersion: true,
+        });
+        setPackagePendingRevertSign(null);
+        await load();
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось отменить подписание договора');
+      } finally {
+        setRevertSigningPackageId(null);
+      }
+    })();
+  }, [
+    canEdit,
+    isSuperAdmin,
+    load,
+    packagePendingRevertSign,
+    setError,
+    setPackagePendingRevertSign,
+    setRevertSigningPackageId,
+  ]);
+
+  const revertSignConfirmMessage = useMemo(
+    () =>
+      packagePendingRevertSign != null
+        ? (() => {
+            const n = getDisplayContractNumber({
+              formData: (packagePendingRevertSign.formData ?? {}) as Record<string, unknown>,
+            });
+            const suffix = n && String(n).trim() !== '' && n !== '—' ? ` «${n}»` : '';
+            return `Отменить подписание договора${suffix} и вернуть его на доработку? Статус изменится на «В работе», дата подписания сбросится. Оплаты и план-график сохранятся.`;
+          })()
+        : '',
+    [packagePendingRevertSign]
+  );
+
   return {
     handleCreate,
     handleCopyPackage,
     requestDeletePackage,
     handleConfirmDeletePackage,
     deleteConfirmMessage,
+    isSuperAdmin,
+    requestRevertSigning,
+    handleConfirmRevertSigning,
+    revertSignConfirmMessage,
   };
 }

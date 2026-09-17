@@ -150,6 +150,8 @@ export function ContractsListPageView({
         router={router}
         onCopyPackage={(id) => void mutations.handleCopyPackage(id)}
         onDeletePackage={mutations.requestDeletePackage}
+        onRevertSigning={mutations.isSuperAdmin ? mutations.requestRevertSigning : undefined}
+        revertSigningPackageId={modals.revertSigningPackageId}
         onOpenHub={modals.setPackageHubPackageId}
         onOpenInvoicesHub={modals.setInvoicesHubPackageId}
         onOpenWorkOrdersHub={modals.setWorkOrdersHubPackageId}
@@ -170,6 +172,10 @@ export function ContractsListPageView({
         deleteConfirmMessage={mutations.deleteConfirmMessage}
         onCloseDeleteConfirm={() => modals.setPackagePendingDelete(null)}
         onConfirmDelete={mutations.handleConfirmDeletePackage}
+        revertSignConfirmOpen={modals.packagePendingRevertSign != null}
+        revertSignConfirmMessage={mutations.revertSignConfirmMessage}
+        onCloseRevertSignConfirm={() => modals.setPackagePendingRevertSign(null)}
+        onConfirmRevertSign={mutations.handleConfirmRevertSigning}
         trashOpen={modals.trashOpen}
         onCloseTrash={() => {
           modals.setTrashOpen(false);

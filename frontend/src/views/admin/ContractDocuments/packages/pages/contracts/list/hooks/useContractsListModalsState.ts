@@ -17,6 +17,10 @@ export function useContractsListModalsState() {
   const [packagePendingDelete, setPackagePendingDelete] = useState<ContractDocumentPackage | null>(
     null
   );
+  /** Идёт отмена подписания (busy) — только супер-админ. */
+  const [revertSigningPackageId, setRevertSigningPackageId] = useState<string | null>(null);
+  const [packagePendingRevertSign, setPackagePendingRevertSign] =
+    useState<ContractDocumentPackage | null>(null);
   const [trashOpen, setTrashOpen] = useState(false);
   const [packageHubPackageId, setPackageHubPackageId] = useState<string | null>(null);
   const [invoicesHubPackageId, setInvoicesHubPackageId] = useState<string | null>(null);
@@ -29,8 +33,12 @@ export function useContractsListModalsState() {
   } | null>(null);
 
   const actionsBusy = useMemo(
-    () => creating || copyingPackageId !== null || deletingPackageId !== null,
-    [creating, copyingPackageId, deletingPackageId]
+    () =>
+      creating ||
+      copyingPackageId !== null ||
+      deletingPackageId !== null ||
+      revertSigningPackageId !== null,
+    [creating, copyingPackageId, deletingPackageId, revertSigningPackageId]
   );
 
   return {
@@ -46,6 +54,10 @@ export function useContractsListModalsState() {
     setDeletingPackageId,
     packagePendingDelete,
     setPackagePendingDelete,
+    revertSigningPackageId,
+    setRevertSigningPackageId,
+    packagePendingRevertSign,
+    setPackagePendingRevertSign,
     trashOpen,
     setTrashOpen,
     packageHubPackageId,

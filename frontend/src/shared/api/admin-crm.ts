@@ -1162,6 +1162,10 @@ export interface CrmCustomerContractLink {
   contractNumber: string;
   contractDate: string | null;
   totalAmount: number;
+  /** Сумма платежей (для договоров-пакетов); null, если неизвестна. */
+  paidAmount?: number | null;
+  /** Остаток к оплате (для договоров-пакетов); null, если стоимость неизвестна. */
+  remainingAmount?: number | null;
   documentPackageId: string | null;
 }
 

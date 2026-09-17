@@ -9,6 +9,11 @@ export interface CustomerLinkedPackageInfo {
   crmContractId: string | null;
   contractNumber: string | null;
   contractDate: Date | null;
+  totalAmount: number | null;
+  /** Сумма платежей по пакету (ПКО/оплаты). */
+  paidAmount: number;
+  /** Остаток к оплате: стоимость − оплачено (null, если стоимость неизвестна). */
+  remainingAmount: number | null;
 }
 
 export function parseLinkedCrmCustomerId(formData: unknown): string | null {
@@ -43,6 +48,22 @@ export function parsePackageContractNumber(formData: unknown): string | null {
   return null;
 }
 
+/** Сумма договора: formData.contract.totalAmount — строка вида «17474,00» (уже со скидкой). */
+export function parsePackageContractTotal(formData: unknown): number | null {
+  if (!formData || typeof formData !== 'object') return null;
+  const fd = formData as Record<string, unknown>;
+  const contract =
+    fd.contract && typeof fd.contract === 'object'
+      ? (fd.contract as Record<string, unknown>)
+      : null;
+  const raw = contract?.totalAmount;
+  if (raw == null) return null;
+  const normalized = String(raw).trim().replace(/\s+/g, '').replace(',', '.');
+  if (!normalized) return null;
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function parsePackageContractDate(formData: unknown): Date | null {
   if (!formData || typeof formData !== 'object') return null;
   const iso = String((formData as Record<string, unknown>).contractConcludedAt ?? '').trim();
@@ -53,18 +74,20 @@ export function parsePackageContractDate(formData: unknown): Date | null {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+type LinkedPackageRow = {
+  id: string;
+  kind: string;
+  status: string;
+  crmContractId: string | null;
+  formData: unknown;
+  createdAt: Date;
+  payments?: Array<{ amount: unknown }> | null;
+};
+
 type PackagesPrisma = {
   contractDocumentPackage: {
-    findMany: (args: unknown) => Promise<
-      Array<{
-        id: string;
-        kind: string;
-        status: string;
-        crmContractId: string | null;
-        formData: unknown;
-        createdAt: Date;
-      }>
-    >;
+    // args typed as unknown: реальные Prisma-перегрузки (select/include) структурно не совместимы.
+    findMany: (args: unknown) => Promise<unknown[]>;
   };
 };
 
@@ -78,7 +101,7 @@ export async function findPackagesLinkedToCustomers(
   const result = new Map<string, CustomerLinkedPackageInfo[]>();
   if (customerIds.length === 0) return result;
 
-  const packages = await prisma.contractDocumentPackage.findMany({
+  const packages = (await prisma.contractDocumentPackage.findMany({
     where: { deletedAt: null },
     select: {
       id: true,
@@ -87,9 +110,10 @@ export async function findPackagesLinkedToCustomers(
       crmContractId: true,
       formData: true,
       createdAt: true,
+      payments: { select: { amount: true } },
     },
     orderBy: { createdAt: 'desc' },
-  });
+  })) as LinkedPackageRow[];
 
   const idSet = new Set(customerIds);
   for (const pkg of packages) {
@@ -98,6 +122,11 @@ export async function findPackagesLinkedToCustomers(
       ownerId = contractOwnerIdById.get(pkg.crmContractId) ?? null;
     }
     if (!ownerId || !idSet.has(ownerId)) continue;
+    const totalAmount = parsePackageContractTotal(pkg.formData);
+    const paidAmount = (pkg.payments ?? []).reduce((sum, p) => {
+      const n = Number(p.amount);
+      return Number.isFinite(n) ? sum + n : sum;
+    }, 0);
     const info: CustomerLinkedPackageInfo = {
       id: pkg.id,
       kind: pkg.kind,
@@ -107,6 +136,9 @@ export async function findPackagesLinkedToCustomers(
       contractDate:
         parsePackageContractDate(pkg.formData) ??
         (parsePackageContractNumber(pkg.formData) ? pkg.createdAt : null),
+      totalAmount,
+      paidAmount,
+      remainingAmount: totalAmount != null ? Math.max(0, totalAmount - paidAmount) : null,
     };
     const list = result.get(ownerId) ?? [];
     list.push(info);
@@ -120,6 +152,8 @@ export interface DisplayContractEntry {
   contractNumber: string;
   contractDate: Date;
   totalAmount: number | null;
+  paidAmount: number | null;
+  remainingAmount: number | null;
   documentPackageId: string | null;
 }
 
@@ -142,6 +176,8 @@ export function buildDisplayContractList(
     contractNumber: c.contractNumber,
     contractDate: c.contractDate,
     totalAmount: Number(c.totalAmount),
+    paidAmount: null as number | null,
+    remainingAmount: null as number | null,
     documentPackageId: packageByContract.get(c.id) ?? null,
   }));
   const fromPackages = (packagesByCustomer.get(customerId) ?? [])
@@ -150,7 +186,9 @@ export function buildDisplayContractList(
       id: p.id,
       contractNumber: p.contractNumber ?? '—',
       contractDate: p.contractDate ?? new Date(0),
-      totalAmount: null,
+      totalAmount: p.totalAmount,
+      paidAmount: p.paidAmount,
+      remainingAmount: p.remainingAmount,
       documentPackageId: p.id,
     }));
   return [...fromCrm, ...fromPackages].sort(

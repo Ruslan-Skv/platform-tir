@@ -342,6 +342,7 @@ export class CustomersDirectoryService {
         if (pkg.crmContractId && attributedContractIds.has(pkg.crmContractId)) continue;
         const cur = statsOf(ownerId);
         cur.contractCount += 1;
+        cur.totalAmount += pkg.totalAmount ?? 0;
         if (
           pkg.contractDate &&
           (!cur.lastContractDate || pkg.contractDate > new Date(`${cur.lastContractDate}T23:59:59`))

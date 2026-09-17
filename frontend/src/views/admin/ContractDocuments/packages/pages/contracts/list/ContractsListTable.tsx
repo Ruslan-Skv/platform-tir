@@ -44,6 +44,9 @@ type ContractsListTableProps = {
   router: AppRouterInstance;
   onCopyPackage: (packageId: string) => void;
   onDeletePackage: (pkg: ContractDocumentPackage) => void;
+  /** Супер-админ: отмена подписания и возврат договора на доработку. */
+  onRevertSigning?: (pkg: ContractDocumentPackage) => void;
+  revertSigningPackageId?: string | null;
   onOpenHub: (packageId: string) => void;
   onOpenInvoicesHub: (packageId: string) => void;
   onOpenWorkOrdersHub: (packageId: string) => void;
@@ -78,6 +81,8 @@ export function ContractsListTable({
   router,
   onCopyPackage,
   onDeletePackage,
+  onRevertSigning,
+  revertSigningPackageId,
   onOpenHub,
   onOpenInvoicesHub,
   onOpenWorkOrdersHub,
@@ -252,6 +257,8 @@ export function ContractsListTable({
                       router={router}
                       onCopy={onCopyPackage}
                       onDelete={onDeletePackage}
+                      onRevertSigning={onRevertSigning}
+                      revertSigningBusy={revertSigningPackageId === item.package.id}
                       onOpenHub={onOpenHub}
                       onOpenInvoicesHub={onOpenInvoicesHub}
                       onOpenWorkOrdersHub={onOpenWorkOrdersHub}

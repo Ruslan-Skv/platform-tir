@@ -343,6 +343,8 @@ export class CustomersService {
         contractNumber: c.contractNumber,
         contractDate: c.contractDate.toISOString().slice(0, 10),
         totalAmount: c.totalAmount,
+        paidAmount: c.paidAmount,
+        remainingAmount: c.remainingAmount,
         documentPackageId: c.documentPackageId,
       })),
       measurements: allMeasurements.map((m) => ({

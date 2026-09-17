@@ -97,11 +97,20 @@ export function contractsListSnapshotTotalAfterDiscountRub(
   return applyPackageContractDiscountToNullableBase(base, discountPercentRaw);
 }
 
-/** Стоимость в списке — только из прикреплённой сметы (снимок), с учётом скидки по договору. */
+/** Стоимость в списке: сумма договора из формы (contract.totalAmount — то же, что видно
+ *  в самом пакете); если пуста — пересчёт из прикреплённой сметы (снимок) со скидкой. */
 export function contractsListContractTotalAmount(fd: Record<string, unknown>): number | null {
+  const c = asObj(fd.contract);
+  const raw = c?.totalAmount;
+  if (raw != null) {
+    const normalized = String(raw).trim().replace(/\s+/g, '').replace(',', '.');
+    if (normalized) {
+      const parsed = Number(normalized);
+      if (Number.isFinite(parsed)) return parsed;
+    }
+  }
   if (!contractsListHasAttachedEstimate(fd)) return null;
   const est = asObj(fd.estimate);
-  const c = asObj(fd.contract);
   return contractsListSnapshotTotalAfterDiscountRub(
     est?.snapshot,
     String(c?.discountPercent ?? '')

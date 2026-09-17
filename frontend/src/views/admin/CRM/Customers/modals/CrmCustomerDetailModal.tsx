@@ -524,7 +524,10 @@ export function CrmCustomerDetailModal({
                             const label = [
                               c.contractNumber ? `№ ${c.contractNumber}` : 'Без номера',
                               c.contractDate ? `от ${formatDateDdMmYyyy(c.contractDate)}` : null,
-                              `— ${formatCurrency(c.totalAmount)}`,
+                              c.totalAmount != null ? `— ${formatCurrency(c.totalAmount)}` : null,
+                              c.remainingAmount != null
+                                ? `(остаток: ${formatCurrency(c.remainingAmount)})`
+                                : null,
                             ]
                               .filter(Boolean)
                               .join(' ');
@@ -636,7 +639,10 @@ export function CrmCustomerDetailModal({
                             const label = [
                               c.contractNumber ? `№ ${c.contractNumber}` : 'Без номера',
                               c.contractDate ? `от ${formatDateDdMmYyyy(c.contractDate)}` : null,
-                              `— ${formatCurrency(c.totalAmount)}`,
+                              c.totalAmount != null ? `— ${formatCurrency(c.totalAmount)}` : null,
+                              c.remainingAmount != null
+                                ? `(остаток: ${formatCurrency(c.remainingAmount)})`
+                                : null,
                             ]
                               .filter(Boolean)
                               .join(' ');
