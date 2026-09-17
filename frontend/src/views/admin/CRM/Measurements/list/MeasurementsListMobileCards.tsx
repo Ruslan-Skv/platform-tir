@@ -154,6 +154,10 @@ function MeasurementMobileCard({
             <dd>{formatDate(m.executionDate)}</dd>
           </div>
           <div className={styles.mobileCardRow}>
+            <dt>Желаемое время</dt>
+            <dd>{m.preferredTime || '—'}</dd>
+          </div>
+          <div className={styles.mobileCardRow}>
             <dt>Менеджер</dt>
             <dd>{formatUser(m.manager)}</dd>
           </div>

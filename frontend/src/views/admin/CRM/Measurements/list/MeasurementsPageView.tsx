@@ -106,6 +106,11 @@ export function MeasurementsPageView({ model }: MeasurementsPageViewProps) {
       render: (m: Measurement) => formatDate(m.executionDate),
     },
     {
+      key: 'preferredTime',
+      title: 'Желаемое время',
+      render: (m: Measurement) => m.preferredTime || '—',
+    },
+    {
       key: 'managerId',
       title: 'Менеджер',
       render: (m: Measurement) => formatUser(m.manager),
