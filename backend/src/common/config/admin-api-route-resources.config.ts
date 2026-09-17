@@ -114,6 +114,7 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
   { prefix: '/api/v1/admin/contracts', resourceId: 'admin.contract-documents.repair' },
   // CRM
   { prefix: '/api/v1/admin/contract-payments', resourceId: 'admin.crm.contract-payments' },
+  { prefix: '/api/v1/admin/money-movements', resourceId: 'admin.crm.dp' },
   { prefix: '/api/v1/admin/office-cash', resourceId: 'admin.crm.cash-register' },
   { prefix: '/api/v1/admin/measurements', resourceId: 'admin.crm.measurements' },
   { prefix: '/api/v1/admin/customers', resourceId: 'admin.crm.customers' },

@@ -23,6 +23,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Движ. ден. средст',
     path: '/admin/crm/contract-payments',
   },
+  { id: 'admin.crm.dp', label: 'ДП', path: '/admin/crm/dp' },
   { id: 'admin.crm.cash-register', label: 'Касса', path: '/admin/crm/cash-register' },
   {
     id: 'admin.crm.supplier-settlements',

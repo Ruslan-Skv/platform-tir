@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, NotFoundException } from '@nestjs/comm
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { MoneyMovementsService } from '../money-movements/money-movements.service';
 import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
 
@@ -15,7 +16,10 @@ function assertAmendmentAddendumNumber(n: number | null | undefined): asserts n 
 
 @Injectable()
 export class ContractDocumentPackagePaymentsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly moneyMovements: MoneyMovementsService,
+  ) {}
 
   private serialize(
     p: Prisma.ContractDocumentPackagePaymentGetPayload<{
@@ -109,6 +113,7 @@ export class ContractDocumentPackagePaymentsService {
         },
       },
     });
+    await this.moneyMovements.recordFromPackagePayment(created);
     return this.serialize(created);
   }
 
@@ -146,6 +151,7 @@ export class ContractDocumentPackagePaymentsService {
         },
       },
     });
+    await this.moneyMovements.syncFromPackagePayment(updated);
     return this.serialize(updated);
   }
 
@@ -159,6 +165,7 @@ export class ContractDocumentPackagePaymentsService {
       throw new NotFoundException('Запись оплаты не найдена');
     }
     await this.prisma.contractDocumentPackagePayment.delete({ where: { id: paymentId } });
+    await this.moneyMovements.removeBySourceId(paymentId);
     return { ok: true };
   }
 }

@@ -11,6 +11,7 @@ import {
 
 export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.contract-payments': 'admin.crm',
+  'admin.crm.dp': 'admin.crm',
   'admin.crm.cash-register': 'admin.crm',
   'admin.crm.supplier-settlements': 'admin.crm',
   'admin.crm.offices': 'admin.crm',

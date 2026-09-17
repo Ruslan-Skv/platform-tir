@@ -3,6 +3,7 @@ import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../database/database.module';
 import { ContractDocumentNumberingModule } from '../../contract-document-numbering/contract-document-numbering.module';
 import { RepairSchedulesModule } from '../repair-schedules/repair-schedules.module';
+import { MoneyMovementsModule } from '../money-movements/money-movements.module';
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesController } from './contract-document-packages.controller';
@@ -15,7 +16,12 @@ import { ContractDocumentPackageKindSettingsService } from './contract-document-
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
 
 @Module({
-  imports: [DatabaseModule, RepairSchedulesModule, ContractDocumentNumberingModule],
+  imports: [
+    DatabaseModule,
+    RepairSchedulesModule,
+    ContractDocumentNumberingModule,
+    MoneyMovementsModule,
+  ],
   controllers: [ContractDocumentPackagesController],
   providers: [
     ContractDocumentPackagesService,

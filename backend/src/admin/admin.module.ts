@@ -4,6 +4,7 @@ import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { ContractsModule } from './contracts/contracts.module';
 import { ContractPaymentsModule } from './contract-payments/contract-payments.module';
+import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { OfficesModule } from './offices/offices.module';
 import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -69,6 +70,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     MeasurementsModule,
     ContractsModule,
     ContractPaymentsModule,
+    MoneyMovementsModule,
     OfficesModule,
     ComplexObjectsModule,
     TasksModule,

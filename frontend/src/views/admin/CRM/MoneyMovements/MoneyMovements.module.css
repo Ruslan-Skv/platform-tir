@@ -1,0 +1,103 @@
+.pageMessage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 12px);
+  border: 1px solid var(--admin-error-border, #fca5a5);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-error-bg, #fef2f2);
+  color: var(--admin-error, #b91c1c);
+  font-size: var(--admin-font-size-sm, 13px);
+  margin-bottom: var(--admin-space-md, 12px);
+}
+
+.pageMessage button {
+  border: none;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.summaryRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-sm, 6px) var(--admin-space-lg, 16px);
+  margin: 0 0 var(--admin-space-md, 12px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.summaryRow strong {
+  color: var(--admin-text, #111827);
+  font-weight: 600;
+}
+
+.summarySum {
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  color: var(--admin-info-strong, #1d4ed8);
+  font-weight: 600;
+}
+
+.amountCell {
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.amountCellRefund {
+  color: var(--admin-error, #b91c1c);
+}
+
+.basisCell {
+  max-width: 320px;
+}
+
+.basisSubline {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.contractCell {
+  white-space: nowrap;
+}
+
+.customerCell {
+  max-width: 260px;
+}
+
+.customerSubline {
+  display: block;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.muted {
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.resetBtn {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-muted, #6b7280);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-md, 12px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  white-space: nowrap;
+}
+
+.resetBtn:hover {
+  color: var(--admin-text, #111827);
+  border-color: var(--admin-info, #3b82f6);
+}

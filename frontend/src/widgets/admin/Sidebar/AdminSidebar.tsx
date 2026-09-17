@@ -141,6 +141,7 @@ const baseNavItems: NavItem[] = [
         href: '/admin/crm/contract-payments',
         resourceId: 'admin.crm.contract-payments',
       },
+      { label: 'ДП', href: '/admin/crm/dp', resourceId: 'admin.crm.dp' },
       { label: 'Касса', href: '/admin/crm/cash-register', resourceId: 'admin.crm.cash-register' },
       {
         label: 'Расчёты с поставщиками',
