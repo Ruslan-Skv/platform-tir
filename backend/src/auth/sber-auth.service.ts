@@ -135,6 +135,28 @@ export class SberAuthService {
     return null;
   }
 
+  /**
+   * CA для проверки серверных сертификатов Сбера (цепочка НУЦ Минцифры).
+   * Важно: при передаче любых connect-опций (наш pfx) undici перестаёт использовать
+   * дефолтное хранилище CA Node (NODE_EXTRA_CA_CERTS/NODE_USE_SYSTEM_CA не применяются),
+   * поэтому корни нужно передавать в Agent явно. Берём их из NODE_EXTRA_CA_CERTS.
+   */
+  private getExtraCa(): string[] {
+    const extra = this.config.get<string>('NODE_EXTRA_CA_CERTS') || '';
+    const sep = process.platform === 'win32' ? ';' : ':';
+    return extra
+      .split(sep)
+      .map((p) => p.trim())
+      .filter(Boolean)
+      .flatMap((p) => {
+        try {
+          return [fs.readFileSync(p, 'utf8')];
+        } catch {
+          return [];
+        }
+      });
+  }
+
   /** mTLS-диспетчер для запросов к Сберу (токен и профиль). Кэшируется после первого создания. */
   private getMtlsDispatcher(): Agent {
     if (this.dispatcher === undefined) {
@@ -144,7 +166,8 @@ export class SberAuthService {
           'Сбер ID не настроен: запросы токена выполняются с клиентским сертификатом (mTLS), задайте SBER_CLIENT_CERT_FILE/KEY_FILE или SBER_CLIENT_PFX_FILE',
         );
       }
-      this.dispatcher = new Agent({ connect: cfg });
+      const ca = this.getExtraCa();
+      this.dispatcher = new Agent({ connect: { ...cfg, ...(ca.length ? { ca } : {}) } });
     }
     return this.dispatcher;
   }
