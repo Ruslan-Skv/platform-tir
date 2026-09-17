@@ -7,6 +7,7 @@ import {
   formatCrmPhoneDisplay,
   isValidCrmPhone,
 } from './crmCustomerPhone';
+import { hasCrmStructuredAddressContent } from './crmCustomerStructuredAddress';
 
 export type CrmCustomerFormFieldErrors = Partial<Record<string, string>>;
 
@@ -200,7 +201,17 @@ export function validateCrmCustomerForm(
     }
   });
 
-  if (form.address.trim() && !hasMinText(form.address, 3)) {
+  if (form.addressStructured) {
+    // Режим структуры: если адрес начали заполнять — город и улица обязательны.
+    if (hasCrmStructuredAddressContent(form.addressStructured)) {
+      if (!hasMinText(form.addressStructured.city, 2)) {
+        errors['address.city'] = 'Укажите город';
+      }
+      if (!hasMinText(form.addressStructured.street, 2)) {
+        errors['address.street'] = 'Укажите улицу';
+      }
+    }
+  } else if (form.address.trim() && !hasMinText(form.address, 3)) {
     errors.address = 'Адрес слишком короткий';
   }
 
@@ -288,6 +299,7 @@ export function clearCrmCustomerFieldError(
 ): CrmCustomerFormFieldErrors {
   const next = { ...errors };
   delete next[key];
+  if (key.startsWith('address.')) delete next.address;
   if (key.startsWith('phones.')) delete next.phones;
   if (key === 'phones') {
     for (const k of Object.keys(next)) {

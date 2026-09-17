@@ -1408,12 +1408,84 @@ export async function restoreCrmCustomer(customerId: string): Promise<void> {
   }
 }
 
-export async function createCrmCustomer(payload: CreateCrmCustomerPayload): Promise<unknown> {
+export interface CrmCustomerDuplicate {
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  phones: string[];
+  address: string;
+  reasons: string[];
+}
+
+export async function checkCrmCustomerDuplicates(params: {
+  phones?: string[];
+  email?: string | null;
+  firstName?: string | null;
+  lastName?: string | null;
+  patronymic?: string | null;
+  excludeId?: string;
+}): Promise<CrmCustomerDuplicate[]> {
+  const search = new URLSearchParams();
+  const phones = (params.phones ?? []).map((p) => p.trim()).filter(Boolean);
+  if (phones.length > 0) search.set('phones', phones.join(','));
+  if (params.email?.trim()) search.set('email', params.email.trim());
+  if (params.firstName?.trim()) search.set('firstName', params.firstName.trim());
+  if (params.lastName?.trim()) search.set('lastName', params.lastName.trim());
+  if (params.patronymic?.trim()) search.set('patronymic', params.patronymic.trim());
+  if (params.excludeId) search.set('excludeId', params.excludeId);
+  const qs = search.toString();
+  if (!qs) return [];
+  const res = await apiFetch(`${API_URL}/admin/customers/duplicate-check?${qs}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) return [];
+  const data = (await res.json()) as { duplicates?: CrmCustomerDuplicate[] };
+  return data.duplicates ?? [];
+}
+
+export interface CrmCustomerLinksCount {
+  deals: number;
+  measurements: number;
+  contracts: number;
+  documentPackages: number;
+  interactions: number;
+  tasks: number;
+  total: number;
+}
+
+export async function getCrmCustomerLinksCount(
+  customerId: string
+): Promise<CrmCustomerLinksCount | null> {
+  try {
+    const res = await apiFetch(
+      `${API_URL}/admin/customers/${encodeURIComponent(customerId)}/links-count`,
+      { headers: getAdminAuthHeaders() }
+    );
+    if (!res.ok) return null;
+    return (await res.json()) as CrmCustomerLinksCount;
+  } catch {
+    return null;
+  }
+}
+
+export async function createCrmCustomer(
+  payload: CreateCrmCustomerPayload & { allowDuplicate?: boolean }
+): Promise<unknown> {
   const res = await apiFetch(`${API_URL}/admin/customers`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(payload),
   });
+  if (res.status === 409) {
+    const err = (await res.json().catch(() => ({}))) as {
+      message?: string;
+      duplicates?: CrmCustomerDuplicate[];
+    };
+    const error = new Error(err.message || 'Найден существующий клиент с совпадающими данными');
+    (error as Error & { duplicates?: CrmCustomerDuplicate[] }).duplicates = err.duplicates ?? [];
+    throw error;
+  }
   if (!res.ok) {
     const err = (await res.json().catch(() => ({}))) as { message?: string };
     throw new Error(err.message || 'Не удалось создать заказчика');

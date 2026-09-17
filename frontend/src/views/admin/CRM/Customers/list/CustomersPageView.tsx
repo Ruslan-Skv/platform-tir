@@ -416,6 +416,7 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
         columns={directoryColumns}
         keyExtractor={(row) => row.id}
         serverSideSort
+        serverSidePagination
         controlledSortBy={directorySortBy}
         controlledSortOrder={directorySortOrder}
         onSortChange={handleDirectorySortChange}

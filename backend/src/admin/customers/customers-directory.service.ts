@@ -5,6 +5,12 @@ import { PrismaService } from '../../database/prisma.service';
 import { ContractsService } from '../contracts/contracts.service';
 import { computeCrmCustomerProfileFillPercent } from './crm-customer-fill-percent.util';
 import { parseObjectAddressesFromExtendedProfile } from './crm-object-addresses.util';
+import { digitsOnly as canonicalPhoneDigits } from './customer-duplicates.util';
+import {
+  attributeUnlinkedDoc,
+  buildCustomerDisplayNameIndex,
+  buildCustomerPhoneIndex,
+} from './customer-doc-attribution.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -70,19 +76,12 @@ export class CustomersDirectoryService {
     if (entityType) {
       where.entityType = entityType;
     }
-    if (params?.search?.trim()) {
-      const search = params.search.trim();
-      const t = search;
-      where.OR = [
-        { email: { contains: search, mode: 'insensitive' } },
-        { firstName: { contains: search, mode: 'insensitive' } },
-        { lastName: { contains: search, mode: 'insensitive' } },
-        { company: { contains: search, mode: 'insensitive' } },
-        { phone: { contains: search } },
-        { phones: { has: t } },
-        { extendedProfile: { string_contains: search } },
-      ];
-    }
+    // Поиск сознательно делается в коде, а не в SQL: карточка часто создаётся с одним
+    // именем, а фамилия/отчество/адрес дозаполняются позже в extendedProfile.
+    // JSON-фильтр Prisma (string_contains) регистрозависим и не видит этих данных,
+    // поэтому матчим по фактически отображаемым данным карточки.
+    const search = params?.search?.trim() ?? '';
+    const searchLower = search.toLowerCase();
 
     const createdByFilter = params?.createdById?.trim();
     if (createdByFilter) {
@@ -94,7 +93,7 @@ export class CustomersDirectoryService {
     }
 
     const FETCH_CAP = 5000;
-    const dbCustomers = await this.prisma.customer.findMany({
+    const dbCustomersAll = await this.prisma.customer.findMany({
       where,
       include: {
         manager: {
@@ -110,6 +109,12 @@ export class CustomersDirectoryService {
       orderBy: { createdAt: 'desc' },
       take: FETCH_CAP,
     });
+
+    const dbCustomers = search
+      ? dbCustomersAll.filter((c) =>
+          this.matchesCustomerSearch(c, searchLower, digitsPhone(search)),
+        )
+      : dbCustomersAll;
 
     const digitSet = new Set<string>();
     for (const c of dbCustomers) {
@@ -155,9 +160,7 @@ export class CustomersDirectoryService {
     };
     const merged: Merged[] = [];
 
-    const statsByCustomerId = await this.buildDirectoryStatsForCustomers(
-      dbCustomers.map((c) => c.id),
-    );
+    const statsByCustomerId = await this.buildDirectoryStatsForCustomers(dbCustomers);
 
     const expandObjectAddresses = params?.expandObjectAddresses === true;
 
@@ -230,7 +233,18 @@ export class CustomersDirectoryService {
     };
   }
 
-  private async buildDirectoryStatsForCustomers(customerIds: string[]): Promise<
+  private async buildDirectoryStatsForCustomers(
+    customers: Array<{
+      id: string;
+      firstName: string;
+      lastName: string | null;
+      company: string | null;
+      entityType: string | null;
+      phone: string | null;
+      phones: string[];
+      extendedProfile: unknown;
+    }>,
+  ): Promise<
     Map<
       string,
       {
@@ -254,12 +268,43 @@ export class CustomersDirectoryService {
         measurementCount: number;
       }
     >();
-    if (customerIds.length === 0) return map;
+    if (customers.length === 0) return map;
+    const customerIds = customers.map((c) => c.id);
+    const emptyStats = () => ({
+      contractCount: 0,
+      totalAmount: 0,
+      lastContractDate: null as string | null,
+      lastContractNumber: null as string | null,
+      lastMeasurementDate: null as string | null,
+      measurementCount: 0,
+    });
+    const statsOf = (id: string) => {
+      let cur = map.get(id);
+      if (!cur) {
+        cur = emptyStats();
+        map.set(id, cur);
+      }
+      return cur;
+    };
+
+    // Индексы для атрибуции непривязанных (customerId = null) записей по телефону/ФИО.
+    const phoneIndex = buildCustomerPhoneIndex(customers);
+    const displayNameIndex = buildCustomerDisplayNameIndex(
+      customers.map((c) => ({
+        id: c.id,
+        displayName:
+          this.resolveCustomerEntityType(c) === 'PERSON'
+            ? this.resolvePersonDisplayName(c)
+            : (c.company ?? '').trim(),
+      })),
+    );
 
     const contracts = await this.prisma.contract.findMany({
-      where: { customerId: { in: customerIds } },
+      where: { OR: [{ customerId: { in: customerIds } }, { customerId: null }] },
       select: {
         customerId: true,
+        customerName: true,
+        customerPhone: true,
         contractDate: true,
         contractNumber: true,
         totalAmount: true,
@@ -267,44 +312,32 @@ export class CustomersDirectoryService {
       orderBy: { contractDate: 'desc' },
     });
     for (const row of contracts) {
-      if (!row.customerId) continue;
-      const cur = map.get(row.customerId) ?? {
-        contractCount: 0,
-        totalAmount: 0,
-        lastContractDate: null,
-        lastContractNumber: null,
-        lastMeasurementDate: null,
-        measurementCount: 0,
-      };
+      const ownerId =
+        row.customerId ?? attributeUnlinkedDoc(row, phoneIndex, displayNameIndex) ?? undefined;
+      if (!ownerId) continue;
+      const cur = statsOf(ownerId);
       cur.contractCount += 1;
       cur.totalAmount += Number(row.totalAmount ?? 0);
       if (!cur.lastContractDate) {
         cur.lastContractDate = row.contractDate.toISOString().slice(0, 10);
         cur.lastContractNumber = row.contractNumber;
       }
-      map.set(row.customerId, cur);
     }
 
     const measurements = await this.prisma.measurement.findMany({
-      where: { customerId: { in: customerIds } },
-      select: { customerId: true, receptionDate: true },
+      where: { OR: [{ customerId: { in: customerIds } }, { customerId: null }] },
+      select: { customerId: true, customerName: true, customerPhone: true, receptionDate: true },
       orderBy: { receptionDate: 'desc' },
     });
     for (const row of measurements) {
-      if (!row.customerId) continue;
-      const cur = map.get(row.customerId) ?? {
-        contractCount: 0,
-        totalAmount: 0,
-        lastContractDate: null,
-        lastContractNumber: null,
-        lastMeasurementDate: null,
-        measurementCount: 0,
-      };
+      const ownerId =
+        row.customerId ?? attributeUnlinkedDoc(row, phoneIndex, displayNameIndex) ?? undefined;
+      if (!ownerId) continue;
+      const cur = statsOf(ownerId);
       cur.measurementCount += 1;
       if (!cur.lastMeasurementDate) {
         cur.lastMeasurementDate = row.receptionDate.toISOString().slice(0, 10);
       }
-      map.set(row.customerId, cur);
     }
 
     return map;
@@ -333,6 +366,64 @@ export class CustomersDirectoryService {
     const rowLn = (customer.lastName ?? '').trim();
     if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
     return [rowLn, rowFn].filter(Boolean).join(' ');
+  }
+
+  /** Регистронезависимый поиск по фактическим данным карточки: ФИО (включая дозаполненное
+   *  в extendedProfile), e-mail, телефонам по цифрам, адресам проживания и объектов. */
+  private matchesCustomerSearch(
+    c: {
+      firstName: string;
+      lastName: string | null;
+      company: string | null;
+      email: string | null;
+      phone: string | null;
+      phones: string[];
+      entityType: string | null;
+      extendedProfile: unknown;
+    },
+    searchLower: string,
+    searchDigits: string,
+  ): boolean {
+    const ext = (c.extendedProfile ?? {}) as Record<string, unknown>;
+    const str = (key: string) => {
+      const v = ext[key];
+      return typeof v === 'string' ? v.trim().toLowerCase() : '';
+    };
+
+    const haystacks: string[] = [];
+    if (this.resolveCustomerEntityType(c) === 'PERSON') {
+      haystacks.push(this.resolvePersonDisplayName(c).toLowerCase());
+    } else {
+      haystacks.push((c.company ?? '').trim().toLowerCase(), str('organizationName'));
+    }
+    haystacks.push(
+      (c.firstName ?? '').trim().toLowerCase(),
+      (c.lastName ?? '').trim().toLowerCase(),
+      (c.email ?? '').trim().toLowerCase(),
+      str('fullName'),
+      str('address'),
+    );
+
+    const structured = ext.addressStructured;
+    if (structured && typeof structured === 'object') {
+      const rec = structured as Record<string, unknown>;
+      for (const v of Object.values(rec)) {
+        if (typeof v === 'string' && v.trim()) haystacks.push(v.trim().toLowerCase());
+      }
+    }
+
+    if (haystacks.some((h) => h && h.includes(searchLower))) return true;
+
+    if (searchDigits.length >= 4) {
+      const needle = canonicalPhoneDigits(searchDigits);
+      const phones = [...(c.phones ?? []), ...(c.phone ? [c.phone] : [])];
+      if (phones.some((p) => canonicalPhoneDigits(p).includes(needle))) return true;
+    }
+
+    const objectAddresses = parseObjectAddressesFromExtendedProfile(ext);
+    if (objectAddresses.some((a) => a.trim().toLowerCase().includes(searchLower))) return true;
+
+    return false;
   }
 
   private directoryDateSortKey(iso: unknown): number {

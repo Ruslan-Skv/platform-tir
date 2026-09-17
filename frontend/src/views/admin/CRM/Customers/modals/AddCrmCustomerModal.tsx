@@ -3,7 +3,11 @@
 import { type FormEvent, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
-import { createCrmCustomer } from '@/shared/api/admin-crm';
+import {
+  type CrmCustomerDuplicate,
+  checkCrmCustomerDuplicates,
+  createCrmCustomer,
+} from '@/shared/api/admin-crm';
 import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { Modal } from '@/shared/ui/Modal';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
@@ -17,6 +21,7 @@ import {
 } from '../shared/crmCustomerFillPercent';
 import {
   type CrmCustomerFormState,
+  crmCustomerFormAddressString,
   emptyCrmCustomerForm,
   personNameFromForm,
 } from '../shared/crmCustomerForm';
@@ -65,6 +70,7 @@ function formFromDraft(draft: CustomerDraft): CrmCustomerFormState {
   const objectAddr = draft.objectAddress?.trim() || draft.address?.trim() || '';
   const legacyFull = draft.fullName?.trim() ?? '';
   const parsed = legacyFull ? parseFullNameString(legacyFull) : null;
+  const residence = draft.residenceAddress?.trim() ?? '';
   return {
     ...emptyCrmCustomerForm(),
     entityType: 'PERSON',
@@ -74,7 +80,9 @@ function formFromDraft(draft: CustomerDraft): CrmCustomerFormState {
     phones: draft.phone?.trim()
       ? [formatCrmPhoneDisplay(draft.phone.trim()) || draft.phone.trim()]
       : [''],
-    address: draft.residenceAddress?.trim() ?? '',
+    address: residence,
+    // Черновик приходит одной строкой — показываем поле «одной строкой».
+    ...(residence ? { addressStructured: null } : {}),
     objectAddresses: objectAddr ? [objectAddr] : [],
   };
 }
@@ -97,8 +105,12 @@ export function AddCrmCustomerModal({
   const [fieldErrors, setFieldErrors] = useState<CrmCustomerFormFieldErrors>({});
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [duplicates, setDuplicates] = useState<CrmCustomerDuplicate[]>([]);
   const wasOpenRef = useRef(false);
   const initialDraftRef = useRef(initialDraft);
+  /** Осознанный обход проверки дублей после показа найденных карточек. */
+  const forceCreateRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
 
   initialDraftRef.current = initialDraft;
 
@@ -106,6 +118,8 @@ export function AddCrmCustomerModal({
     setForm(emptyCrmCustomerForm());
     setFieldErrors({});
     setError(null);
+    setDuplicates([]);
+    forceCreateRef.current = false;
   }, []);
 
   const fillPercent = useMemo(() => computeCrmCustomerFormFillPercent(form), [form]);
@@ -134,6 +148,8 @@ export function AddCrmCustomerModal({
       setForm(draftHasContent(draft) ? formFromDraft(draft!) : emptyCrmCustomerForm());
       setFieldErrors({});
       setError(null);
+      setDuplicates([]);
+      forceCreateRef.current = false;
     }
   }, [isOpen, reset]);
 
@@ -146,6 +162,7 @@ export function AddCrmCustomerModal({
     e.preventDefault();
     if (!canEdit) return;
     setError(null);
+    setDuplicates([]);
 
     const validation = validateCrmCustomerForm(form, { mode: 'create', lockedPhones: [] });
     setFieldErrors(validation);
@@ -172,7 +189,8 @@ export function AddCrmCustomerModal({
       representativePositionGenitive: form.posGen,
       inn: form.inn,
       ogrn: form.ogrn,
-      address: form.address.trim(),
+      address: crmCustomerFormAddressString(form),
+      ...(form.addressStructured ? { addressStructured: form.addressStructured } : {}),
       objectAddresses: normalizedObjectAddresses,
       phone: normalizedPhones[0] ?? '',
       email: form.email,
@@ -206,7 +224,27 @@ export function AddCrmCustomerModal({
 
     setSubmitting(true);
     try {
+      // Превалидация дублей: телефон/email/ФИО+телефон. Осознанный обход — только
+      // после показа найденных карточек (кнопка «Всё равно создать»).
+      if (!forceCreateRef.current) {
+        const found = await checkCrmCustomerDuplicates({
+          phones: normalizedPhones,
+          email: emailTrimmed || null,
+          firstName: form.entityType === 'PERSON' ? form.firstName.trim() || null : null,
+          lastName: form.entityType === 'PERSON' ? form.lastName.trim() || null : null,
+          patronymic: form.entityType === 'PERSON' ? form.patronymic.trim() || null : null,
+        });
+        if (found.length > 0) {
+          setDuplicates(found);
+          setError(
+            'Найден существующий клиент с совпадающими данными (телефон, e-mail или ФИО с телефоном). Проверьте карточки ниже: возможно, нужный клиент уже есть в базе.'
+          );
+          return;
+        }
+      }
+
       const created = await createCrmCustomer({
+        ...(forceCreateRef.current ? { allowDuplicate: true } : {}),
         ...(emailTrimmed ? { email: emailTrimmed } : {}),
         firstName: firstNameForCrm,
         lastName,
@@ -260,6 +298,7 @@ export function AddCrmCustomerModal({
       compactOnMobile
     >
       <form
+        ref={formRef}
         className={`${phoneStyles.formShell} ${modalStyles.formBlueShell}`}
         data-modal-form
         data-modal-density="compact"
@@ -283,6 +322,38 @@ export function AddCrmCustomerModal({
         />
 
         {error ? <p data-modal-form-error>{error}</p> : null}
+
+        {duplicates.length > 0 ? (
+          <div data-modal-form-group role="alert">
+            <p className={phoneStyles.phoneHint}>
+              Возможные дубли ({duplicates.length}). Убедитесь, что этого клиента ещё нет в базе.
+            </p>
+            <ul>
+              {duplicates.map((d) => (
+                <li key={d.id}>
+                  <strong>{d.displayName}</strong>
+                  {d.phone || d.phones?.[0] ? ` — тел. ${d.phone ?? d.phones[0]}` : ''}
+                  {d.email ? `, ${d.email}` : ''}
+                  {d.address ? ` — ${d.address}` : ''}
+                </li>
+              ))}
+            </ul>
+            <button
+              data-admin-mutation
+              type="button"
+              data-modal-btn="secondary"
+              disabled={submitting}
+              onClick={() => {
+                forceCreateRef.current = true;
+                setDuplicates([]);
+                setError(null);
+                formRef.current?.requestSubmit();
+              }}
+            >
+              Продолжить создание (это другой клиент)
+            </button>
+          </div>
+        ) : null}
 
         <div data-modal-form-actions>
           <button

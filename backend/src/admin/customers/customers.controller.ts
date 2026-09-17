@@ -123,9 +123,44 @@ export class CustomersController {
     return this.customersService.getUpcomingFollowUps(managerId, days ? parseInt(days, 10) : 7);
   }
 
+  /** Превалидация формы: живые карточки, совпадающие по телефону/email/ФИО+телефону. */
+  @Get('duplicate-check')
+  duplicateCheck(
+    @Query('phone') phone?: string,
+    @Query('phones') phones?: string,
+    @Query('email') email?: string,
+    @Query('firstName') firstName?: string,
+    @Query('lastName') lastName?: string,
+    @Query('patronymic') patronymic?: string,
+    @Query('excludeId') excludeId?: string,
+  ) {
+    return this.customersService.findPotentialDuplicates(
+      {
+        phones: phones
+          ? phones
+              .split(',')
+              .map((p) => p.trim())
+              .filter(Boolean)
+          : phone?.trim()
+            ? [phone.trim()]
+            : [],
+        email: email?.trim() || null,
+        firstName: firstName?.trim() || null,
+        lastName: lastName?.trim() || null,
+        extendedProfile: patronymic?.trim() ? { patronymic: patronymic.trim() } : null,
+      },
+      excludeId?.trim() || undefined,
+    );
+  }
+
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.customersService.getHistory(id);
+  }
+
+  @Get(':id/links-count')
+  getLinksCount(@Param('id') id: string) {
+    return this.customersService.getLinksCount(id);
   }
 
   @Get(':id')

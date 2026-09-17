@@ -7,6 +7,7 @@ import {
   IsArray,
   IsDateString,
   IsObject,
+  IsBoolean,
   ArrayMaxSize,
   MaxLength,
 } from 'class-validator';
@@ -120,4 +121,9 @@ export class CreateCustomerDto {
   @IsObject()
   @IsOptional()
   extendedProfile?: Record<string, unknown>;
+
+  /** Осознанный обход проверки дублей (однофамилец с тем же номером и т.п.). */
+  @IsBoolean()
+  @IsOptional()
+  allowDuplicate?: boolean;
 }

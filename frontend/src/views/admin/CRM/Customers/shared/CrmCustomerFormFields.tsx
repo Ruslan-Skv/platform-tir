@@ -13,6 +13,10 @@ import {
   formatCrmPhoneDisplay,
   formatCrmPhoneInput,
 } from './crmCustomerPhone';
+import {
+  type CrmStructuredAddress,
+  emptyCrmStructuredAddress,
+} from './crmCustomerStructuredAddress';
 
 export type CrmPersonNamePartKey = 'lastName' | 'firstName' | 'patronymic';
 
@@ -150,6 +154,31 @@ export function CrmCustomerFormFields({
       ...prev,
       objectAddresses: prev.objectAddresses.filter((_, i) => i !== index),
     }));
+  };
+
+  const updateStructuredAddress = (key: keyof CrmStructuredAddress, value: string) => {
+    onClearFieldError?.(`address.${String(key)}`);
+    setForm((prev) =>
+      prev.addressStructured
+        ? {
+            ...prev,
+            addressStructured: { ...prev.addressStructured, [key]: value },
+          }
+        : prev
+    );
+  };
+
+  const switchToStructuredAddress = () => {
+    onClearFieldError?.('address');
+    setForm((prev) => ({
+      ...prev,
+      address: '',
+      addressStructured: emptyCrmStructuredAddress(),
+    }));
+  };
+
+  const switchToLegacyAddress = () => {
+    setForm((prev) => ({ ...prev, addressStructured: null }));
   };
 
   const isPerson = form.entityType === 'PERSON';
@@ -416,15 +445,105 @@ export function CrmCustomerFormFields({
         </div>
       </div>
 
-      <FieldWrap id={pid('residence-address')} label="Адрес проживания" error={err('address')}>
-        <input
-          id={pid('residence-address')}
-          value={form.address}
-          onChange={set('address')}
-          autoComplete="street-address"
-          {...inputProps('address')}
-        />
-      </FieldWrap>
+      {form.addressStructured ? (
+        <div data-modal-form-group>
+          <label id={pid('residence-address-label')}>Адрес проживания</label>
+          <p className={formStyles.phoneHint}>
+            Адрес заполняется по частям и сохраняется в карточку одной строкой.
+          </p>
+          <div data-modal-form-grid aria-labelledby={pid('residence-address-label')}>
+            <FieldWrap id={pid('addr-city')} label="Город" error={err('address.city')}>
+              <input
+                id={pid('addr-city')}
+                value={form.addressStructured.city}
+                autoComplete="address-level2"
+                onChange={(e) => updateStructuredAddress('city', e.target.value)}
+                {...inputProps('address.city')}
+              />
+            </FieldWrap>
+            <FieldWrap id={pid('addr-street')} label="Улица" error={err('address.street')}>
+              <input
+                id={pid('addr-street')}
+                value={form.addressStructured.street}
+                autoComplete="address-line1"
+                placeholder="ул. … / пр-т …"
+                onChange={(e) => updateStructuredAddress('street', e.target.value)}
+                {...inputProps('address.street')}
+              />
+            </FieldWrap>
+            <div
+              data-modal-form-grid
+              className={formStyles.personNameRow}
+              role="group"
+              aria-label="Дом, корпус, квартира"
+            >
+              <FieldWrap id={pid('addr-house')} label="Дом" error={err('address.house')}>
+                <input
+                  id={pid('addr-house')}
+                  value={form.addressStructured.house}
+                  autoComplete="address-line2"
+                  onChange={(e) => updateStructuredAddress('house', e.target.value)}
+                  {...inputProps('address.house')}
+                />
+              </FieldWrap>
+              <FieldWrap id={pid('addr-building')} label="Корпус" error={err('address.building')}>
+                <input
+                  id={pid('addr-building')}
+                  value={form.addressStructured.building}
+                  onChange={(e) => updateStructuredAddress('building', e.target.value)}
+                  {...inputProps('address.building')}
+                />
+              </FieldWrap>
+              <FieldWrap
+                id={pid('addr-apartment')}
+                label="Квартира"
+                error={err('address.apartment')}
+              >
+                <input
+                  id={pid('addr-apartment')}
+                  value={form.addressStructured.apartment}
+                  onChange={(e) => updateStructuredAddress('apartment', e.target.value)}
+                  {...inputProps('address.apartment')}
+                />
+              </FieldWrap>
+            </div>
+          </div>
+          <button
+            type="button"
+            data-modal-btn="secondary"
+            onClick={switchToLegacyAddress}
+            disabled={Boolean(
+              form.addressStructured.city.trim() ||
+              form.addressStructured.street.trim() ||
+              form.addressStructured.house.trim() ||
+              form.addressStructured.building.trim() ||
+              form.addressStructured.apartment.trim()
+            )}
+            title="Станет доступно, когда все поля структуры пусты"
+          >
+            Ввести одной строкой
+          </button>
+        </div>
+      ) : (
+        <div data-modal-form-group>
+          <label htmlFor={pid('residence-address')}>Адрес проживания</label>
+          <input
+            id={pid('residence-address')}
+            value={form.address}
+            onChange={set('address')}
+            autoComplete="street-address"
+            {...inputProps('address')}
+          />
+          <button
+            type="button"
+            data-modal-btn="secondary"
+            onClick={switchToStructuredAddress}
+            title="Заполнить адрес по частям (город, улица, дом…)"
+          >
+            Заполнить по частям
+          </button>
+        </div>
+      )}
 
       <div data-modal-form-group>
         <label id={pid('object-addresses-label')}>Адреса объектов</label>

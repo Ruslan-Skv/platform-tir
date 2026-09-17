@@ -9,6 +9,13 @@ import {
   resolvePersonNamePartsFromDetail,
 } from './crmCustomerName';
 import { digitsOnlyPhone, normalizeCrmPhonesList } from './crmCustomerPhone';
+import {
+  type CrmStructuredAddress,
+  cloneCrmStructuredAddress,
+  composeCrmStructuredAddress,
+  emptyCrmStructuredAddress,
+  parseCrmStructuredAddress,
+} from './crmCustomerStructuredAddress';
 
 export type CrmCustomerFormState = {
   entityType: CrmCustomerEntityType;
@@ -26,6 +33,8 @@ export type CrmCustomerFormState = {
   inn: string;
   ogrn: string;
   address: string;
+  /** Адрес по частям; null — режим одной строки (legacy-карточки без структуры). */
+  addressStructured: CrmStructuredAddress | null;
   objectAddresses: string[];
   bankDetails: string;
   passportSeriesNumber: string;
@@ -49,6 +58,7 @@ export const emptyCrmCustomerForm = (): CrmCustomerFormState => ({
   inn: '',
   ogrn: '',
   address: '',
+  addressStructured: emptyCrmStructuredAddress(),
   objectAddresses: [],
   bankDetails: '',
   passportSeriesNumber: '',
@@ -56,6 +66,12 @@ export const emptyCrmCustomerForm = (): CrmCustomerFormState => ({
   passportIssueDate: '',
   notes: '',
 });
+
+/** Итоговая строка адреса: из структуры (автосклейка) либо из поля «одной строкой». */
+export function crmCustomerFormAddressString(form: CrmCustomerFormState): string {
+  if (form.addressStructured) return composeCrmStructuredAddress(form.addressStructured);
+  return form.address.trim();
+}
 
 function str(ext: Record<string, unknown> | undefined, key: string): string {
   const v = ext?.[key];
@@ -113,6 +129,7 @@ export function formFromCrmCustomerDetail(data: CrmCustomerDetail): {
       inn: str(ext, 'inn'),
       ogrn: str(ext, 'ogrn'),
       address: str(ext, 'address'),
+      addressStructured: parseCrmStructuredAddress(ext),
       objectAddresses: objectAddresses.length > 0 ? objectAddresses : [],
       bankDetails: str(ext, 'bankDetails'),
       passportSeriesNumber: str(ext, 'passportSeriesNumber'),
@@ -142,7 +159,10 @@ function crmCustomerFormEditSnapshot(
     posGen: form.posGen.trim(),
     inn: form.inn.trim(),
     ogrn: form.ogrn.trim(),
-    address: form.address.trim(),
+    address: crmCustomerFormAddressString(form),
+    addressStructured: form.addressStructured
+      ? cloneCrmStructuredAddress(form.addressStructured)
+      : null,
     objectAddresses: normalizeObjectAddresses(form.objectAddresses),
     bankDetails: form.bankDetails.trim(),
     passportSeriesNumber: form.passportSeriesNumber.trim(),
@@ -164,6 +184,9 @@ export function cloneCrmCustomerForm(form: CrmCustomerFormState): CrmCustomerFor
   return {
     ...form,
     phones: [...form.phones],
+    addressStructured: form.addressStructured
+      ? cloneCrmStructuredAddress(form.addressStructured)
+      : null,
     objectAddresses: [...form.objectAddresses],
   };
 }
@@ -216,7 +239,10 @@ export function buildCrmCustomerUpdatePayload(
     representativePositionGenitive: form.posGen.trim(),
     inn: form.inn.trim(),
     ogrn: form.ogrn.trim(),
-    address: form.address.trim(),
+    address: crmCustomerFormAddressString(form),
+    ...(form.addressStructured
+      ? { addressStructured: cloneCrmStructuredAddress(form.addressStructured) }
+      : {}),
     objectAddresses: normalizeObjectAddresses(form.objectAddresses),
     phone: mergedPhones[0] ?? '',
     email: form.email.trim(),

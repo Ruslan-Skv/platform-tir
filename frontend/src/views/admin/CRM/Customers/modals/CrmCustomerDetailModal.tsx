@@ -14,7 +14,9 @@ import Link from 'next/link';
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import {
   type CrmCustomerDetail,
+  type CrmCustomerLinksCount,
   getCrmCustomer,
+  getCrmCustomerLinksCount,
   trashCrmCustomer,
   updateCrmCustomer,
 } from '@/shared/api/admin-crm';
@@ -178,6 +180,7 @@ export function CrmCustomerDetailModal({
   const [showManagerQuestionnaire, setShowManagerQuestionnaire] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [trashing, setTrashing] = useState(false);
+  const [linksCount, setLinksCount] = useState<CrmCustomerLinksCount | null>(null);
 
   const loadCustomer = useCallback(async (id: string) => {
     setLoading(true);
@@ -212,6 +215,20 @@ export function CrmCustomerDetailModal({
     }
     void loadCustomer(customerId);
   }, [isOpen, customerId, loadCustomer]);
+
+  useEffect(() => {
+    if (!showDeleteConfirm || !customerId) {
+      setLinksCount(null);
+      return;
+    }
+    let cancelled = false;
+    void getCrmCustomerLinksCount(customerId).then((count) => {
+      if (!cancelled) setLinksCount(count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [showDeleteConfirm, customerId]);
 
   const handleConfirmTrash = async () => {
     if (!customerId || !canEdit) return;
@@ -706,6 +723,17 @@ export function CrmCustomerDetailModal({
             перемещена в корзину и исчезнет из общего списка заказчиков. Восстановить карточку можно
             в любой момент из корзины на странице заказчиков.
           </p>
+          {linksCount && linksCount.total > 0 ? (
+            <p className={confirmModalStyles.message} style={{ color: '#b45309' }}>
+              Внимание: к этой карточке привязаны документы — договоров: {linksCount.contracts}
+              {linksCount.documentPackages > 0
+                ? ` (пакетов документов: ${linksCount.documentPackages})`
+                : ''}
+              , замеров: {linksCount.measurements}, сделок: {linksCount.deals}. Если это дубль —
+              сначала переприкрепите документы на основную карточку, иначе они потеряют привязку к
+              заказчику.
+            </p>
+          ) : null}
           <div className={confirmModalStyles.actions}>
             <button
               type="button"
