@@ -14,6 +14,10 @@ import { CustomersCrmService } from './customers-crm.service';
 import { CustomerDuplicateInput } from './customer-duplicates.util';
 import { CustomersDuplicatesService } from './customers-duplicates.service';
 import { collectCustomerDocLists } from './customer-doc-attribution.util';
+import {
+  buildDisplayContractList,
+  findPackagesLinkedToCustomers,
+} from './customer-linked-packages.util';
 import { resolveCustomerEntityType, resolvePersonDisplayName } from './customer-display.util';
 
 function digitsPhone(s: string | null | undefined): string {
@@ -307,8 +311,24 @@ export class CustomersService {
         .map((p) => [p.crmContractId, p.id]),
     );
 
+    // Договоры из раздела «Договоры» (ContractDocumentPackage): фронтенд пишет привязку
+    // к карточке в formData._linkedCrmCustomerId. Пакеты, не покрытые CRM-Contract'ом,
+    // добавляются отдельными строками (dedupe по crmContractId).
+    const contractOwnerIdById = new Map(contractIds.map((cid) => [cid, customer.id]));
+    const packagesByCustomer = await findPackagesLinkedToCustomers(
+      this.prisma,
+      [customer.id],
+      contractOwnerIdById,
+    );
+    const displayContracts = buildDisplayContractList(
+      customer.id,
+      allContracts,
+      packageByContract,
+      packagesByCustomer,
+    );
+
     // relations contracts/measurements остаются в rest, но переопределяются ниже
-    // объединёнными allContracts/allMeasurements (привязанные + сматченные по телефону/ФИО).
+    // объединёнными списками (привязанные + сматченные + пакеты документов).
     const { dealValue, lastContactAt, nextFollowUp, createdAt, updatedAt, ...rest } = customer;
 
     return {
@@ -318,12 +338,12 @@ export class CustomersService {
       updatedAt: updatedAt.toISOString(),
       lastContactAt: lastContactAt?.toISOString() ?? null,
       nextFollowUp: nextFollowUp?.toISOString() ?? null,
-      contracts: allContracts.map((c) => ({
+      contracts: displayContracts.map((c) => ({
         id: c.id,
         contractNumber: c.contractNumber,
         contractDate: c.contractDate.toISOString().slice(0, 10),
-        totalAmount: Number(c.totalAmount),
-        documentPackageId: packageByContract.get(c.id) ?? null,
+        totalAmount: c.totalAmount,
+        documentPackageId: c.documentPackageId,
       })),
       measurements: allMeasurements.map((m) => ({
         id: m.id,
@@ -445,25 +465,8 @@ export class CustomersService {
     });
   }
 
-  async getHistory(customerId: string) {
-    await this.assertCustomerExists(customerId, { allowTrashed: true });
-
-    const history = await this.prisma.customerHistory.findMany({
-      where: { customerId },
-      include: {
-        changedBy: { select: customerAuditUserSelect },
-      },
-      orderBy: { changedAt: 'desc' },
-    });
-
-    return history.map((h) => ({
-      id: h.id,
-      action: h.action,
-      changedAt: h.changedAt.toISOString(),
-      changedBy: h.changedBy,
-      changedFields: h.changedFields,
-      snapshot: h.snapshot as Record<string, unknown>,
-    }));
+  getHistory(customerId: string) {
+    return this.crm.getHistory(customerId);
   }
 
   async findTrash(params?: { search?: string; page?: number; limit?: number }) {

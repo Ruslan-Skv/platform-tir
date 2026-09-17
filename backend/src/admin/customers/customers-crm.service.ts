@@ -47,6 +47,42 @@ export class CustomersCrmService {
     return interaction;
   }
 
+  /** История изменений карточки (включая находящиеся в корзине). */
+  async getHistory(customerId: string, allowTrashed = true) {
+    const customer = await this.prisma.customer.findUnique({ where: { id: customerId } });
+    if (!customer) {
+      throw new NotFoundException(`Customer with ID ${customerId} not found`);
+    }
+    if (customer.deletedAt && !allowTrashed) {
+      throw new NotFoundException('Карточка клиента находится в корзине');
+    }
+
+    const history = await this.prisma.customerHistory.findMany({
+      where: { customerId },
+      include: {
+        changedBy: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+          },
+        },
+      },
+      orderBy: { changedAt: 'desc' },
+    });
+
+    return history.map((h) => ({
+      id: h.id,
+      action: h.action,
+      changedAt: h.changedAt.toISOString(),
+      changedBy: h.changedBy,
+      changedFields: h.changedFields,
+      snapshot: h.snapshot as Record<string, unknown>,
+    }));
+  }
+
   async getInteractions(customerId: string, page = 1, limit = 20) {
     const skip = (page - 1) * limit;
 

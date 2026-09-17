@@ -11,6 +11,7 @@ import {
   buildCustomerDisplayNameIndex,
   buildCustomerPhoneIndex,
 } from './customer-doc-attribution.util';
+import { findPackagesLinkedToCustomers } from './customer-linked-packages.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -302,6 +303,7 @@ export class CustomersDirectoryService {
     const contracts = await this.prisma.contract.findMany({
       where: { OR: [{ customerId: { in: customerIds } }, { customerId: null }] },
       select: {
+        id: true,
         customerId: true,
         customerName: true,
         customerPhone: true,
@@ -311,16 +313,42 @@ export class CustomersDirectoryService {
       },
       orderBy: { contractDate: 'desc' },
     });
+    const attributedContractIds = new Set<string>();
+    const contractOwnerIdById = new Map<string, string>();
     for (const row of contracts) {
       const ownerId =
         row.customerId ?? attributeUnlinkedDoc(row, phoneIndex, displayNameIndex) ?? undefined;
       if (!ownerId) continue;
+      attributedContractIds.add(row.id);
+      contractOwnerIdById.set(row.id, ownerId);
       const cur = statsOf(ownerId);
       cur.contractCount += 1;
       cur.totalAmount += Number(row.totalAmount ?? 0);
       if (!cur.lastContractDate) {
         cur.lastContractDate = row.contractDate.toISOString().slice(0, 10);
         cur.lastContractNumber = row.contractNumber;
+      }
+    }
+
+    // Договоры из раздела «Договоры» (ContractDocumentPackage): привязка к карточке —
+    // formData._linkedCrmCustomerId или crmContractId → учтённый выше CRM-Contract.
+    const packagesByCustomer = await findPackagesLinkedToCustomers(
+      this.prisma,
+      customerIds,
+      contractOwnerIdById,
+    );
+    for (const [ownerId, pkgs] of packagesByCustomer) {
+      for (const pkg of pkgs) {
+        if (pkg.crmContractId && attributedContractIds.has(pkg.crmContractId)) continue;
+        const cur = statsOf(ownerId);
+        cur.contractCount += 1;
+        if (
+          pkg.contractDate &&
+          (!cur.lastContractDate || pkg.contractDate > new Date(`${cur.lastContractDate}T23:59:59`))
+        ) {
+          cur.lastContractDate = pkg.contractDate.toISOString().slice(0, 10);
+          cur.lastContractNumber = pkg.contractNumber;
+        }
       }
     }
 

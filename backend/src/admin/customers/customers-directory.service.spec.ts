@@ -49,6 +49,9 @@ function makeService(customers: CustomerRow[]) {
     measurement: {
       findMany: jest.fn().mockResolvedValue([]),
     },
+    contractDocumentPackage: {
+      findMany: jest.fn().mockResolvedValue([]),
+    },
   };
   const contractsService = {
     getCustomersFromContracts: jest.fn().mockResolvedValue({ customers: [] }),
@@ -86,6 +89,7 @@ describe('CustomersDirectoryService pagination', () => {
       customer: { findMany: jest.fn().mockResolvedValue(customers) },
       contract: { findMany: jest.fn().mockResolvedValue([]) },
       measurement: { findMany: jest.fn().mockResolvedValue([]) },
+      contractDocumentPackage: { findMany: jest.fn().mockResolvedValue([]) },
     };
     const contractsService = {
       getCustomersFromContracts: jest.fn().mockResolvedValue({
