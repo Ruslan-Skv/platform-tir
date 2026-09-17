@@ -2,15 +2,19 @@ import { Injectable, BadRequestException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CookieOptions, Request, Response } from 'express';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import { Agent, fetch as undiciFetch } from 'undici';
 import { AuthService } from './auth.service';
 import { hashPassword } from './password-crypto';
 import { UsersService } from '../users/users.service';
 import { PrismaService } from '../database/prisma.service';
 
-// Продовые эндпоинты Сбер ID; переопределяются через env (тестовый контур Сбера)
-const SBER_AUTH_URL_DEFAULT = 'https://online.sberbank.ru/wa/oa/sberbank_id/authorize';
-const SBER_TOKEN_URL_DEFAULT = 'https://online.sberbank.ru/wa/oauth/token';
-const SBER_USER_INFO_URL_DEFAULT = 'https://online.sberbank.ru/sa/sberbank_id/profile';
+// Продовые эндпоинты Сбер ID (контур Cloud, актуальные на 2026; см. developers.sber.ru/docs/ru/sberid).
+// Запросы токена и профиля выполняются с клиентским сертификатом (mTLS), полученным при регистрации.
+// Эндпоинты переопределяются через env (например, для тестового контура IFT).
+const SBER_AUTH_URL_DEFAULT = 'https://id.sber.ru/CSAFront/oidc/authorize.do';
+const SBER_TOKEN_URL_DEFAULT = 'https://oauth.sber.ru/ru/prod/tokens/v2/oidc';
+const SBER_USER_INFO_URL_DEFAULT = 'https://oauth.sber.ru/ru/prod/sberbankid/v2.1/userinfo';
 
 export const SBER_OAUTH_STATE_COOKIE = 'sber_oauth_state';
 
@@ -34,6 +38,8 @@ interface SberUserInfo {
 
 @Injectable()
 export class SberAuthService {
+  private dispatcher: Agent | undefined; // кэш mTLS-диспетчера (undefined — ещё не создан)
+
   constructor(
     private config: ConfigService,
     private authService: AuthService,
@@ -46,21 +52,31 @@ export class SberAuthService {
     if (!clientId) {
       throw new BadRequestException('Сбер ID не настроен (SBER_CLIENT_ID)');
     }
+    if (!this.hasClientCertificate()) {
+      throw new BadRequestException(
+        'Сбер ID не настроен: не задан клиентский сертификат для mTLS (SBER_CLIENT_CERT_FILE/KEY_FILE или SBER_CLIENT_PFX_FILE)',
+      );
+    }
     const siteUrl = this.config.get<string>('SITE_URL', 'http://localhost:3000');
     const redirectUri = `${siteUrl.replace(/\/$/, '')}/auth/sber/callback`;
     const scope = 'openid name phone email';
 
     // state защищает от login CSRF: навязывание жертве чужого кода авторизации
     const state = crypto.randomBytes(16).toString('hex');
+    // nonce — параметр схемы авторизации Сбера (OIDC)
+    const nonce = crypto.randomBytes(16).toString('hex');
     const isProd = this.config.get<string>('NODE_ENV') === 'production';
     res.cookie(SBER_OAUTH_STATE_COOKIE, state, buildSberStateCookieOptions(isProd));
 
     const params = new URLSearchParams({
       response_type: 'code',
+      client_type: 'PRIVATE',
       client_id: clientId,
       redirect_uri: redirectUri,
       scope,
       state,
+      nonce,
+      app: 'false',
     });
     const authUrl = this.config.get<string>('SBER_AUTH_URL') || SBER_AUTH_URL_DEFAULT;
     return { url: `${authUrl}?${params.toString()}` };
@@ -73,6 +89,64 @@ export class SberAuthService {
     if (!sameLength || !crypto.timingSafeEqual(Buffer.from(state), Buffer.from(expected))) {
       throw new BadRequestException('Недействительный параметр state. Начните вход заново.');
     }
+  }
+
+  /** Конфигурация клиентского сертификата: PEM-файлы, PEM из env или PFX-контейнер. */
+  private hasClientCertificate(): boolean {
+    return this.readCertificateConfig() !== null;
+  }
+
+  private readCertificateConfig(): {
+    cert?: string;
+    key?: string;
+    pfx?: Buffer;
+    passphrase?: string;
+  } | null {
+    const certFile = this.config.get<string>('SBER_CLIENT_CERT_FILE');
+    const keyFile = this.config.get<string>('SBER_CLIENT_KEY_FILE');
+    const pfxFile = this.config.get<string>('SBER_CLIENT_PFX_FILE');
+    const certEnv = this.config.get<string>('SBER_CLIENT_CERT');
+    const keyEnv = this.config.get<string>('SBER_CLIENT_KEY');
+
+    if (certFile && keyFile) {
+      try {
+        return { cert: fs.readFileSync(certFile, 'utf8'), key: fs.readFileSync(keyFile, 'utf8') };
+      } catch (e) {
+        throw new BadRequestException(
+          `Сбер ID: не удалось прочитать файлы сертификата mTLS (${(e as Error).message})`,
+        );
+      }
+    }
+    if (certEnv && keyEnv) {
+      return { cert: certEnv, key: keyEnv };
+    }
+    if (pfxFile) {
+      try {
+        return {
+          pfx: fs.readFileSync(pfxFile),
+          passphrase: this.config.get<string>('SBER_CLIENT_PFX_PASSPHRASE') || undefined,
+        };
+      } catch (e) {
+        throw new BadRequestException(
+          `Сбер ID: не удалось прочитать PFX-контейнер сертификата (${(e as Error).message})`,
+        );
+      }
+    }
+    return null;
+  }
+
+  /** mTLS-диспетчер для запросов к Сберу (токен и профиль). Кэшируется после первого создания. */
+  private getMtlsDispatcher(): Agent {
+    if (this.dispatcher === undefined) {
+      const cfg = this.readCertificateConfig();
+      if (!cfg) {
+        throw new BadRequestException(
+          'Сбер ID не настроен: запросы токена выполняются с клиентским сертификатом (mTLS), задайте SBER_CLIENT_CERT_FILE/KEY_FILE или SBER_CLIENT_PFX_FILE',
+        );
+      }
+      this.dispatcher = new Agent({ connect: cfg });
+    }
+    return this.dispatcher;
   }
 
   async exchangeCodeForUser(code: string, req: Request, res: Response) {
@@ -89,17 +163,25 @@ export class SberAuthService {
     const redirectUri = `${siteUrl.replace(/\/$/, '')}/auth/sber/callback`;
     const tokenUrl = this.config.get<string>('SBER_TOKEN_URL') || SBER_TOKEN_URL_DEFAULT;
     const userInfoUrl = this.config.get<string>('SBER_USERINFO_URL') || SBER_USER_INFO_URL_DEFAULT;
+    // rquid — идентификатор цепочки запросов (32 hex); один на вход, в заголовках токена и профиля
+    const rquid = crypto.randomUUID().replace(/-/g, '');
+    const dispatcher = this.getMtlsDispatcher();
 
-    const tokenRes = await fetch(tokenUrl, {
+    const tokenRes = await undiciFetch(tokenUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+        Accept: 'application/json',
+        rquid,
+      },
       body: new URLSearchParams({
         grant_type: 'authorization_code',
         code,
         client_id: clientId,
         client_secret: clientSecret,
         redirect_uri: redirectUri,
-      }),
+      }).toString(),
+      dispatcher,
     });
 
     if (!tokenRes.ok) {
@@ -110,11 +192,17 @@ export class SberAuthService {
 
     const tokenData = (await tokenRes.json()) as { access_token: string };
 
-    const infoRes = await fetch(userInfoUrl, {
-      headers: { Authorization: `Bearer ${tokenData.access_token}` },
+    const infoRes = await undiciFetch(userInfoUrl, {
+      headers: {
+        Authorization: `Bearer ${tokenData.access_token}`,
+        'x-introspect-rquid': rquid,
+      },
+      dispatcher,
     });
 
     if (!infoRes.ok) {
+      const err = await infoRes.json().catch(() => ({}));
+      console.error('Sber ID userinfo error:', err);
       throw new BadRequestException('Не удалось получить данные пользователя Сбер ID.');
     }
 

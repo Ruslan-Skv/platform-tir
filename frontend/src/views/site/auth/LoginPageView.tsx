@@ -28,7 +28,8 @@ function isAllowedSberOAuthUrl(url: string): boolean {
     const parsed = new URL(url);
     return (
       parsed.protocol === 'https:' &&
-      (parsed.hostname === 'online.sberbank.ru' || parsed.hostname === 'dev.sberbank.ru')
+      // Прод (Cloud) и тестовый (IFT) контуры Сбер ID
+      (parsed.hostname === 'id.sber.ru' || parsed.hostname === 'id-ift.sber.ru')
     );
   } catch {
     return false;

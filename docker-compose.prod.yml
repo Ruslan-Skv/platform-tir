@@ -51,6 +51,11 @@ services:
       - backend_uploads:/app/uploads
       # CA с хоста (НУЦ Минцифры) — TLS к platform-api2.max.ru
       - /etc/ssl/certs:/etc/ssl/certs:ro
+      # Клиентский сертификат Сбер ID (mTLS, PKCS#12/.p12 или PEM) — раскомментируйте
+      # нужный вариант после выпуска сертификата на портале Сбер ID:
+      # - ./secrets/sber-client.p12:/app/certs/sber-client.p12:ro
+      # - ./secrets/sber-client.crt:/app/certs/sber-client.crt:ro
+      # - ./secrets/sber-client.key:/app/certs/sber-client.key:ro
     environment:
       DATABASE_URL: ${DATABASE_URL:?DATABASE_URL required for production}
       ELASTICSEARCH_NODE: http://elasticsearch:9200
@@ -71,7 +76,14 @@ services:
       # Сбер ID OAuth (вход через Сбер ID). Без них — 400 на GET /auth/sber
       SBER_CLIENT_ID: ${SBER_CLIENT_ID:-}
       SBER_CLIENT_SECRET: ${SBER_CLIENT_SECRET:-}
-      # Эндпоинты по умолчанию — прод; переопределите для тестового контура Сбера
+      # Клиентский сертификат (mTLS): путь к файлам, смонтированным в контейнер
+      # (mount см. volumes ниже; также поддерживаются SBER_CLIENT_CERT/SBER_CLIENT_KEY
+      # как PEM в env и SBER_CLIENT_PFX_FILE + SBER_CLIENT_PFX_PASSPHRASE)
+      SBER_CLIENT_CERT_FILE: ${SBER_CLIENT_CERT_FILE:-}
+      SBER_CLIENT_KEY_FILE: ${SBER_CLIENT_KEY_FILE:-}
+      SBER_CLIENT_PFX_FILE: ${SBER_CLIENT_PFX_FILE:-}
+      SBER_CLIENT_PFX_PASSPHRASE: ${SBER_CLIENT_PFX_PASSPHRASE:-}
+      # Эндпоинты по умолчанию — прод Cloud-контур; переопределите для тестового IFT
       SBER_AUTH_URL: ${SBER_AUTH_URL:-}
       SBER_TOKEN_URL: ${SBER_TOKEN_URL:-}
       SBER_USERINFO_URL: ${SBER_USERINFO_URL:-}
