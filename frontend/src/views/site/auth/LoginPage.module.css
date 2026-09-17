@@ -374,12 +374,20 @@
   font-size: 0.9rem;
 }
 
-/* Кнопка Сбер ID: фирменный зелёный вместо акцентного цвета проекта */
+/*
+ * Кнопка Сбер ID — фирменные стандарты Сбера (руководство по использованию кнопки SBER):
+ * фон #21a038, радиус 8px, высота 50px, ширина 160–240px, знак 13–21px,
+ * охранное поле вокруг знака 8px, надпись без изменений. Шрифт — как у остальных кнопок.
+ */
 .sberButton {
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.875rem 1.25rem;
+  justify-content: center;
+  gap: 8px;
+  box-sizing: border-box;
+  width: 240px;
+  height: 50px;
+  padding: 0 16px;
   background: #21a038;
   color: white;
   border: none;
@@ -405,19 +413,6 @@
 .sberButton:disabled {
   opacity: 0.6;
   cursor: not-allowed;
-}
-
-.sberIcon {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 1.25rem;
-  height: 1.25rem;
-  background: rgb(255 255 255 / 0.25);
-  color: white;
-  border-radius: 4px;
-  font-weight: 700;
-  font-size: 0.9rem;
 }
 
 .switchButton {

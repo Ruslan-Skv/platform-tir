@@ -345,14 +345,7 @@ export function LoginPageView() {
                   className={styles.sberButton}
                   disabled={sberLoading}
                 >
-                  {sberLoading ? (
-                    'Загрузка...'
-                  ) : (
-                    <>
-                      <span className={styles.sberIcon}>С</span>
-                      Войти через Сбер ID
-                    </>
-                  )}
+                  {sberLoading ? 'Загрузка...' : 'Войти по Сбер ID'}
                 </button>
               </div>
               <div className={styles.oauthDivider}>
