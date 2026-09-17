@@ -1,4 +1,5 @@
 import { digitsOnly } from './customer-duplicates.util';
+import { resolvePersonDisplayName } from './customer-display.util';
 
 /** Атрибуция замеров/договоров без явной карточки (customerId = null):
  *  матчинг по нормализованному телефону, затем по точному ФИО (если владелец однозначен). */
@@ -53,4 +54,121 @@ export function attributeUnlinkedDoc(
   const name = (doc.customerName ?? '').trim().toLowerCase();
   if (name) return displayNameIndex.get(name) ?? null;
   return null;
+}
+
+type MinimalPrisma = {
+  contract: {
+    findMany: (args: unknown) => Promise<
+      Array<{
+        id: string;
+        contractNumber: string;
+        contractDate: Date;
+        totalAmount: unknown;
+        customerName?: string | null;
+        customerPhone?: string | null;
+      }>
+    >;
+  };
+  measurement: {
+    findMany: (args: unknown) => Promise<
+      Array<{
+        id: string;
+        receptionDate: Date;
+        status: string;
+        customerName: string;
+        customerPhone?: string | null;
+      }>
+    >;
+  };
+};
+
+/** Списки договоров/замеров карточки: явно привязанные (customerId) плюс непривязанные,
+ *  сматченные по телефону или полному ФИО; отсортированные по дате по убыванию. */
+export async function collectCustomerDocLists(
+  prisma: MinimalPrisma,
+  customer: {
+    id: string;
+    firstName: string;
+    lastName: string | null;
+    company: string | null;
+    entityType: string | null;
+    phone: string | null;
+    phones: string[];
+    extendedProfile: unknown;
+  },
+  linked: {
+    contracts: Array<{
+      id: string;
+      contractNumber: string;
+      contractDate: Date;
+      totalAmount: unknown;
+    }>;
+    measurements: Array<{
+      id: string;
+      receptionDate: Date;
+      status: string;
+      customerName: string;
+    }>;
+  },
+): Promise<{
+  contracts: Array<{
+    id: string;
+    contractNumber: string;
+    contractDate: Date;
+    totalAmount: unknown;
+  }>;
+  measurements: Array<{
+    id: string;
+    receptionDate: Date;
+    status: string;
+    customerName: string;
+  }>;
+}> {
+  const phoneIndex = buildCustomerPhoneIndex([
+    { id: customer.id, phone: customer.phone, phones: customer.phones },
+  ]);
+  const displayNameIndex = buildCustomerDisplayNameIndex([
+    {
+      id: customer.id,
+      displayName: resolvePersonDisplayName(customer),
+    },
+  ]);
+  const belongsToCustomer = (doc: {
+    customerName?: string | null;
+    customerPhone?: string | null;
+  }) => attributeUnlinkedDoc(doc, phoneIndex, displayNameIndex) === customer.id;
+
+  const unlinkedContracts = await prisma.contract.findMany({
+    where: { customerId: null },
+    select: {
+      id: true,
+      contractNumber: true,
+      contractDate: true,
+      totalAmount: true,
+      customerName: true,
+      customerPhone: true,
+    },
+    orderBy: { contractDate: 'desc' },
+  });
+  const unlinkedMeasurements = await prisma.measurement.findMany({
+    where: { customerId: null },
+    select: {
+      id: true,
+      receptionDate: true,
+      status: true,
+      customerName: true,
+      customerPhone: true,
+    },
+    orderBy: { receptionDate: 'desc' },
+  });
+
+  const contracts = [...linked.contracts, ...unlinkedContracts.filter(belongsToCustomer)].sort(
+    (a, b) => b.contractDate.getTime() - a.contractDate.getTime(),
+  );
+  const measurements = [
+    ...linked.measurements,
+    ...unlinkedMeasurements.filter(belongsToCustomer),
+  ].sort((a, b) => b.receptionDate.getTime() - a.receptionDate.getTime());
+
+  return { contracts, measurements };
 }

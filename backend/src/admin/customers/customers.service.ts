@@ -1,9 +1,4 @@
-import {
-  BadRequestException,
-  ConflictException,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -16,16 +11,10 @@ import {
 } from './customer-history.util';
 import { CustomersDirectoryService } from './customers-directory.service';
 import { CustomersCrmService } from './customers-crm.service';
-import {
-  CustomerDuplicateInput,
-  findDuplicateReasons,
-  toDuplicateDto,
-} from './customer-duplicates.util';
-import {
-  attributeUnlinkedDoc,
-  buildCustomerDisplayNameIndex,
-  buildCustomerPhoneIndex,
-} from './customer-doc-attribution.util';
+import { CustomerDuplicateInput } from './customer-duplicates.util';
+import { CustomersDuplicatesService } from './customers-duplicates.service';
+import { collectCustomerDocLists } from './customer-doc-attribution.util';
+import { resolveCustomerEntityType, resolvePersonDisplayName } from './customer-display.util';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -51,6 +40,7 @@ export class CustomersService {
     private prisma: PrismaService,
     private directory: CustomersDirectoryService,
     private crm: CustomersCrmService,
+    private duplicates: CustomersDuplicatesService,
   ) {}
 
   private collectExistingPhones(customer: { phone: string | null; phones: string[] }): string[] {
@@ -64,47 +54,6 @@ export class CustomersService {
       if (!unique.some((x) => digitsPhone(x) === digitsPhone(p))) unique.push(p);
     }
     return unique;
-  }
-
-  private resolveCustomerEntityType(customer: {
-    entityType: string | null;
-    extendedProfile: unknown;
-  }): 'PERSON' | 'COMPANY' | 'ENTREPRENEUR' {
-    if (
-      customer.entityType === 'PERSON' ||
-      customer.entityType === 'COMPANY' ||
-      customer.entityType === 'ENTREPRENEUR'
-    ) {
-      return customer.entityType;
-    }
-    const ext = customer.extendedProfile as Record<string, unknown> | null;
-    const t = ext?.type;
-    if (t === 'COMPANY' || t === 'ENTREPRENEUR') return t;
-    return 'PERSON';
-  }
-
-  private resolvePersonDisplayName(customer: {
-    firstName: string;
-    lastName: string | null;
-    extendedProfile: unknown;
-  }): string {
-    const ext = (customer.extendedProfile ?? {}) as Record<string, unknown>;
-    const str = (key: string) => {
-      const v = ext[key];
-      return typeof v === 'string' ? v.trim() : '';
-    };
-    const extLn = str('lastName');
-    const extFn = str('firstName');
-    const extPat = str('patronymic');
-    if (extLn || extFn || extPat) {
-      return [extLn, extFn, extPat].filter(Boolean).join(' ');
-    }
-    const full = str('fullName');
-    if (full) return full;
-    const rowFn = (customer.firstName ?? '').trim();
-    const rowLn = (customer.lastName ?? '').trim();
-    if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
-    return [rowLn, rowFn].filter(Boolean).join(' ');
   }
 
   private assertExistingPhonesPreserved(existingPhones: string[], nextPhones: string[]): void {
@@ -142,58 +91,11 @@ export class CustomersService {
   }
 
   /** Живые (не в корзине) карточки, совпадающие по телефону/email/ФИО+телефону. */
-  async findPotentialDuplicates(input: CustomerDuplicateInput, excludeId?: string) {
-    const rows = await this.prisma.customer.findMany({
-      where: { deletedAt: null },
-      select: {
-        id: true,
-        firstName: true,
-        lastName: true,
-        company: true,
-        entityType: true,
-        email: true,
-        phone: true,
-        phones: true,
-        extendedProfile: true,
-      },
-      orderBy: { createdAt: 'desc' },
-      take: 5000,
-    });
-
-    const duplicates = rows
-      .filter((row) => row.id !== excludeId)
-      .map((row) => {
-        const candidate = {
-          ...row,
-          extendedProfile: row.extendedProfile as unknown,
-          deletedAt: null,
-        };
-        const reasons = findDuplicateReasons(input, candidate);
-        if (reasons.length === 0) return null;
-        const displayName =
-          this.resolveCustomerEntityType(candidate) === 'PERSON'
-            ? this.resolvePersonDisplayName(candidate)
-            : (candidate.company ?? '').trim();
-        return toDuplicateDto({ candidate, reasons }, displayName || candidate.id);
-      })
-      .filter((d): d is NonNullable<typeof d> => d !== null);
-
-    return { duplicates };
-  }
-
-  /** Блокирует создание/изменение, если найден дубль и осознанный обход не разрешён. */
-  private async assertNoDuplicates(
-    input: CustomerDuplicateInput & { allowDuplicate?: boolean },
+  findPotentialDuplicates(
+    input: CustomerDuplicateInput,
     excludeId?: string,
-  ) {
-    if (input.allowDuplicate) return;
-    const { duplicates } = await this.findPotentialDuplicates(input, excludeId);
-    if (duplicates.length > 0) {
-      throw new ConflictException({
-        message: 'Найден существующий клиент с совпадающими данными',
-        duplicates,
-      });
-    }
+  ): Promise<Awaited<ReturnType<CustomersDuplicatesService['findPotentialDuplicates']>>> {
+    return this.duplicates.findPotentialDuplicates(input, excludeId);
   }
 
   async create(createCustomerDto: CreateCustomerDto, actorUserId?: string) {
@@ -211,7 +113,7 @@ export class CustomersService {
       email != null && String(email).trim() !== '' ? String(email).trim() : null;
     const { phone: primary, phones: list } = this.normalizeCustomerPhones({ phone, phones });
 
-    await this.assertNoDuplicates({
+    await this.duplicates.assertNoDuplicates({
       phones: list,
       email: emailResolved,
       firstName: rest.firstName,
@@ -383,69 +285,13 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    // Непривязанные договоры/замеры (customerId = null) добавляем к карточке,
-    // если совпадает телефон или полное ФИО — иначе они навсегда скрыты из карточки.
-    const phoneIndex = buildCustomerPhoneIndex([
-      { id: customer.id, phone: customer.phone, phones: customer.phones },
-    ]);
-    const displayNameIndex = buildCustomerDisplayNameIndex([
-      {
-        id: customer.id,
-        displayName:
-          this.resolveCustomerEntityType(customer) === 'PERSON'
-            ? this.resolvePersonDisplayName(customer)
-            : (customer.company ?? '').trim(),
-      },
-    ]);
-    const belongsToCustomer = (doc: {
-      customerName?: string | null;
-      customerPhone?: string | null;
-    }) => attributeUnlinkedDoc(doc, phoneIndex, displayNameIndex) === customer.id;
-
-    const unlinkedContracts = await this.prisma.contract.findMany({
-      where: { customerId: null },
-      select: {
-        id: true,
-        contractNumber: true,
-        contractDate: true,
-        totalAmount: true,
-        customerName: true,
-        customerPhone: true,
-      },
-      orderBy: { contractDate: 'desc' },
-    });
-    const matchedUnlinkedContracts = unlinkedContracts.filter(belongsToCustomer);
-    const unlinkedMeasurements = await this.prisma.measurement.findMany({
-      where: { customerId: null },
-      select: {
-        id: true,
-        receptionDate: true,
-        status: true,
-        customerName: true,
-        customerPhone: true,
-      },
-      orderBy: { receptionDate: 'desc' },
-    });
-    const matchedUnlinkedMeasurements = unlinkedMeasurements.filter(belongsToCustomer);
-
-    const allContracts = [
-      ...customer.contracts,
-      ...matchedUnlinkedContracts.map((c) => ({
-        id: c.id,
-        contractNumber: c.contractNumber,
-        contractDate: c.contractDate,
-        totalAmount: c.totalAmount,
-      })),
-    ].sort((a, b) => b.contractDate.getTime() - a.contractDate.getTime());
-    const allMeasurements = [
-      ...customer.measurements,
-      ...matchedUnlinkedMeasurements.map((m) => ({
-        id: m.id,
-        receptionDate: m.receptionDate,
-        status: m.status,
-        customerName: m.customerName,
-      })),
-    ].sort((a, b) => b.receptionDate.getTime() - a.receptionDate.getTime());
+    // Привязанные договоры/замеры + непривязанные (customerId = null), сматченные
+    // по телефону или полному ФИО — иначе последние навсегда скрыты из карточки.
+    const { contracts: allContracts, measurements: allMeasurements } =
+      await collectCustomerDocLists(this.prisma, customer, {
+        contracts: customer.contracts,
+        measurements: customer.measurements,
+      });
 
     const contractIds = allContracts.map((c) => c.id);
     const packages =
@@ -490,7 +336,7 @@ export class CustomersService {
 
   async update(id: string, updateCustomerDto: UpdateCustomerDto, actorUserId?: string) {
     const existing = await this.assertCustomerExists(id);
-    const entityType = this.resolveCustomerEntityType(existing);
+    const entityType = resolveCustomerEntityType(existing);
     const { extendedProfile, dealValue, nextFollowUp, phone, phones, allowDuplicate, ...rest } =
       updateCustomerDto;
     delete rest.firstName;
@@ -550,7 +396,7 @@ export class CustomersService {
             ? String(updateCustomerDto.email).trim()
             : null
           : existing.email;
-      await this.assertNoDuplicates(
+      await this.duplicates.assertNoDuplicates(
         {
           phones: list,
           email: nextEmail,
@@ -651,10 +497,10 @@ export class CustomersService {
     ]);
 
     const data = customers.map((c) => {
-      const entityType = this.resolveCustomerEntityType(c);
+      const entityType = resolveCustomerEntityType(c);
       const displayName =
         entityType === 'PERSON'
-          ? this.resolvePersonDisplayName(c) || c.email || c.id
+          ? resolvePersonDisplayName(c) || c.email || c.id
           : (c.company ?? '').trim() ||
             (() => {
               const ext = (c.extendedProfile ?? {}) as Record<string, unknown>;
@@ -717,31 +563,8 @@ export class CustomersService {
   }
 
   /** Количества связанных сущностей — для предупреждения перед удалением в корзину. */
-  async getLinksCount(id: string) {
-    await this.assertCustomerExists(id, { allowTrashed: true });
-    const [deals, measurements, contracts, interactions, tasks] = await Promise.all([
-      this.prisma.deal.count({ where: { customerId: id } }),
-      this.prisma.measurement.count({ where: { customerId: id } }),
-      this.prisma.contract.count({ where: { customerId: id } }),
-      this.prisma.interaction.count({ where: { customerId: id } }),
-      this.prisma.task.count({ where: { customerId: id } }),
-    ]);
-    const contractRows = await this.prisma.contract.findMany({
-      where: { customerId: id },
-      select: { id: true },
-    });
-    const documentPackages = await this.prisma.contractDocumentPackage.count({
-      where: { crmContractId: { in: contractRows.map((c) => c.id) } },
-    });
-    return {
-      deals,
-      measurements,
-      contracts,
-      documentPackages,
-      interactions,
-      tasks,
-      total: deals + measurements + contracts + documentPackages,
-    };
+  getLinksCount(id: string) {
+    return this.duplicates.getLinksCount(id);
   }
 
   findClientDirectory(params?: Parameters<CustomersDirectoryService['findClientDirectory']>[0]) {
