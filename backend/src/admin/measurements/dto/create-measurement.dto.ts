@@ -61,6 +61,11 @@ export class CreateMeasurementDto {
   @IsString()
   comments?: string;
 
+  @ApiPropertyOptional({ description: 'Желаемое время проведения замера (свободный текст)' })
+  @IsOptional()
+  @IsString()
+  preferredTime?: string;
+
   @ApiPropertyOptional({ enum: MeasurementStatusDto, default: 'NEW' })
   @IsOptional()
   @IsEnum(MeasurementStatusDto)

@@ -79,6 +79,9 @@ export function snapshotContractsListFiltersForSavedView(
     sortOrder: filters.sortOrder,
     pageLimit: filters.pageLimit,
     listViewMode: filters.listViewMode,
+    // expand/page — состояние просмотра, а не часть сохранённого представления.
+    expandedObjectId: null,
+    page: 1,
   };
 }
 

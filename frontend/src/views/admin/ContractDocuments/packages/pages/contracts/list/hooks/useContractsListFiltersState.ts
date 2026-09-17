@@ -47,13 +47,15 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   const [listSortOrder, setListSortOrder] = useState<ContractsListSortOrder>(
     initialListFiltersRef.current.sortOrder
   );
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(initialListFiltersRef.current.page);
   const [limit, setLimit] = useState<ContractsPageLimit>(initialListFiltersRef.current.pageLimit);
   const effectiveLimit = (isNarrowViewport ? ADMIN_MOBILE_PAGE_LIMIT : limit) as ContractsPageLimit;
   const [listViewMode, setListViewMode] = useState<ContractsListViewMode>(
     initialListFiltersRef.current.listViewMode
   );
-  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(null);
+  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(
+    initialListFiltersRef.current.expandedObjectId
+  );
 
   const searchNorm = normalizeContractsListSearch(search);
   const queuePreset = resolveContractsListQueuePreset(statusFilters);
@@ -110,6 +112,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       sortOrder: listSortOrder,
       pageLimit: limit,
       listViewMode,
+      expandedObjectId,
+      page,
     }),
     [
       search,
@@ -123,6 +127,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       listSortOrder,
       limit,
       listViewMode,
+      expandedObjectId,
+      page,
     ]
   );
 
@@ -140,6 +146,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setListSortOrder(saved.sortOrder);
     setLimit(saved.pageLimit);
     setListViewMode(saved.listViewMode);
+    setPage(saved.page);
+    setExpandedObjectId(saved.expandedObjectId);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -173,6 +181,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       sortOrder: listSortOrder,
       pageLimit: limit,
       listViewMode,
+      expandedObjectId,
+      page,
     });
   }, [
     search,
@@ -187,6 +197,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     listSortOrder,
     limit,
     listViewMode,
+    expandedObjectId,
+    page,
   ]);
 
   const handleListSortChange = useCallback(

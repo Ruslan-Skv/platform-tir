@@ -58,6 +58,7 @@ export class MeasurementsCrudService {
         customerAddress: createMeasurementDto.customerAddress ?? null,
         customerPhone: createMeasurementDto.customerPhone,
         comments: createMeasurementDto.comments ?? null,
+        preferredTime: createMeasurementDto.preferredTime?.trim() || null,
         status: (createMeasurementDto.status as MeasurementStatus) ?? 'NEW',
         customerId: createMeasurementDto.customerId ?? null,
         ...(createMeasurementDto.photoUrls && { photoUrls: createMeasurementDto.photoUrls }),
@@ -499,6 +500,8 @@ export class MeasurementsCrudService {
       updateData.customerPhone = updateMeasurementDto.customerPhone;
     if (updateMeasurementDto.comments !== undefined)
       updateData.comments = updateMeasurementDto.comments ?? null;
+    if (updateMeasurementDto.preferredTime !== undefined)
+      updateData.preferredTime = updateMeasurementDto.preferredTime?.trim() || null;
     if (updateMeasurementDto.status !== undefined) {
       updateData.status = updateMeasurementDto.status as MeasurementStatus;
     }

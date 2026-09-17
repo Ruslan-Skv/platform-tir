@@ -68,6 +68,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
   const [customerPhone, setCustomerPhone] = useState('');
   const [customerId, setCustomerId] = useState<string | null>(null);
   const [comments, setComments] = useState('');
+  const [preferredTime, setPreferredTime] = useState('');
   const [status, setStatus] = useState('NEW');
   const [photoUrls, setPhotoUrls] = useState<string[]>([]);
   const [loading, setLoading] = useState(!!measurementId);
@@ -144,6 +145,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
       setCustomerName(data.customerName);
       setCustomerAddress(data.customerAddress ?? '');
       setCustomerPhone(data.customerPhone);
+      setPreferredTime(data.preferredTime ?? '');
       const { textWithoutSavedMarker, savedTabs } = extractSavedTabsFromComments(
         data.comments ?? ''
       );
@@ -402,6 +404,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
         ...(primaryDirectionId && { directionId: primaryDirectionId }),
         ...(additionalDirectionIds.length > 0 && { additionalDirectionIds }),
         ...(customerAddress.trim() && { customerAddress: customerAddress.trim() }),
+        preferredTime: preferredTime.trim(),
         comments: shouldPersistResults
           ? buildMeasurementComments(
               comments,
@@ -426,6 +429,7 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
       directionRows,
       customerAddress,
       comments,
+      preferredTime,
       repairMeasurementData,
       resultsSectionOpen,
       savedResultTabs,
@@ -633,6 +637,8 @@ export function useMeasurementFormPage({ measurementId }: MeasurementFormPagePro
     setCustomerId,
     comments,
     setComments,
+    preferredTime,
+    setPreferredTime,
     status,
     setStatus,
     loading,

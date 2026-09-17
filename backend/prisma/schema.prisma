@@ -3365,6 +3365,8 @@ model Measurement {
   customerAddress String?           @db.Text
   customerPhone   String
   comments        String?           @db.Text
+  /// Желаемое время проведения замера (свободный текст)
+  preferredTime   String?           @db.Text
   status          MeasurementStatus @default(NEW)
   customerId      String?
   /// Фото с результатами замера (кнопка-скрепка на странице замера, до 5 изображений)

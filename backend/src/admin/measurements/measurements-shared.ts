@@ -10,6 +10,7 @@ export const MEASUREMENT_SNAPSHOT_FIELDS = {
   customerAddress: true,
   customerPhone: true,
   comments: true,
+  preferredTime: true,
   status: true,
   customerId: true,
 } as const;

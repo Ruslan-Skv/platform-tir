@@ -97,6 +97,8 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
     setCustomerId,
     comments,
     setComments,
+    preferredTime,
+    setPreferredTime,
     status,
     setStatus,
     loading,
@@ -531,6 +533,20 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                   }}
                 />
               </div>
+            </div>
+
+            <div className={`${styles.row} ${styles.blankCommentRow}`}>
+              <label className={styles.label} htmlFor="preferredTime">
+                Желаемое время
+              </label>
+              <textarea
+                id="preferredTime"
+                value={preferredTime}
+                onChange={(e) => setPreferredTime(e.target.value)}
+                className={styles.textarea}
+                rows={2}
+                placeholder="Например: будни после 18:00, выходные с 10:00..."
+              />
             </div>
 
             <div className={`${styles.row} ${styles.blankCommentRow}`}>

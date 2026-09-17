@@ -33,6 +33,10 @@ export interface ContractsListFiltersPersisted {
   sortOrder: ContractsListSortOrder;
   pageLimit: ContractsPageLimit;
   listViewMode: ContractsListViewMode;
+  /** Развёрнутый объект в режиме by_object — сохраняем между визитами страницы. */
+  expandedObjectId: string | null;
+  /** Текущая страница списка — сохраняем между визитами страницы. */
+  page: number;
 }
 
 const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_contract_documents_contracts_list_filters_v3';
@@ -52,6 +56,8 @@ export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   sortOrder: 'desc',
   pageLimit: 20,
   listViewMode: 'by_object',
+  expandedObjectId: null,
+  page: 1,
 };
 
 function normalizePageLimit(raw: unknown): ContractsPageLimit {
@@ -157,6 +163,14 @@ function normalizePersistedFilters(
       raw.listViewMode === 'flat' || raw.listViewMode === 'by_object'
         ? raw.listViewMode
         : EMPTY_CONTRACTS_LIST_FILTERS.listViewMode,
+    expandedObjectId:
+      typeof raw.expandedObjectId === 'string' && raw.expandedObjectId.trim()
+        ? raw.expandedObjectId
+        : null,
+    page:
+      typeof raw.page === 'number' && Number.isInteger(raw.page) && raw.page >= 1
+        ? raw.page
+        : EMPTY_CONTRACTS_LIST_FILTERS.page,
   };
 }
 

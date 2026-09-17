@@ -744,6 +744,8 @@ export interface Measurement {
   customerAddress: string | null;
   customerPhone: string;
   comments: string | null;
+  /** Желаемое время проведения замера (свободный текст). */
+  preferredTime?: string | null;
   status: string;
   customerId: string | null;
   /** Фото с результатами замера (кнопка-скрепка на странице замера). */
@@ -879,6 +881,7 @@ export async function createMeasurement(data: {
   customerAddress?: string;
   customerPhone: string;
   comments?: string;
+  preferredTime?: string;
   status?: string;
   customerId?: string | null;
   photoUrls?: string[];
