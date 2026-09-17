@@ -17,7 +17,12 @@ import styles from './LoginPage.module.css';
 function isAllowedYandexOAuthUrl(url: string): boolean {
   try {
     const parsed = new URL(url);
-    return parsed.protocol === 'https:' && parsed.hostname === 'oauth.yandex.ru';
+    // oauth.yandex.ru и oauth.yandex.com — официальные алиасы одного сервиса Яндекс ID;
+    // бэкенд строит URL на .com
+    return (
+      parsed.protocol === 'https:' &&
+      (parsed.hostname === 'oauth.yandex.ru' || parsed.hostname === 'oauth.yandex.com')
+    );
   } catch {
     return false;
   }
