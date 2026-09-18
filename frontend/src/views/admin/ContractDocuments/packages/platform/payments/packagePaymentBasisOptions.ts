@@ -10,6 +10,7 @@ import {
   sumFurnitureLegPaidRub,
 } from '../../directions/furniture/furniturePaymentLeg';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../form/packageForm';
+import { computePackagePaymentCoverage } from './packagePaymentCoverage';
 import type { PackagePayableBreakdown } from './packagePaymentTotals';
 
 export const PACKAGE_BASIS_LABEL_PREPAYMENT = 'предоплата по договору';
@@ -113,32 +114,6 @@ export function sumPackageAddendumPaidRub(
   }, 0);
 }
 
-function sumPaidForAddendum(
-  rows: ContractDocumentPackagePayment[],
-  addendumNumber: number,
-  label: string
-): number {
-  const byNumber = sumPackageAddendumPaidRub(rows, addendumNumber);
-  const byLabel = rows.reduce((acc, r) => {
-    if (r.paymentType === 'AMENDMENT' && basisTextMatches(r, label)) {
-      return acc + paymentAmountRub(r);
-    }
-    return acc;
-  }, 0);
-  return Math.max(byNumber, byLabel);
-}
-
-function isAddendumBasisSatisfied(
-  rows: ContractDocumentPackagePayment[],
-  addendumNumber: number,
-  label: string,
-  totalRub: number | null | undefined
-): boolean {
-  if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return false;
-  const paid = sumPaidForAddendum(rows, addendumNumber, label);
-  return paid >= totalRub - PAYMENT_AMOUNT_TOLERANCE_RUB;
-}
-
 function appendAddendumBasisOptions(
   options: PackagePaymentBasisOption[],
   form: PackageFormData,
@@ -146,28 +121,31 @@ function appendAddendumBasisOptions(
   breakdown: PackagePayableBreakdown
 ): void {
   const count = Math.min(5, clampPackageAddendumSlotCount(form.addendumSlotCount));
+  // Д/с считается закрытым и тогда, когда его покрыл «перелив» из оплат
+  // по договору (окончательный расчёт одной суммой) — см. packagePaymentCoverage.
+  const coverage = computePackagePaymentCoverage(breakdown, rows);
   for (let i = 0; i < count; i++) {
     const n = i + 1;
-    const totalRub = breakdown.addendumTotalsRub.find((a) => a.slotIndex1 === n)?.totalRub ?? null;
+    const cov = coverage.addendums.find((c) => c.slotIndex1 === n);
 
     options.push({
       key: `addendum_partial_${n}`,
       label: packageAddendumPartialBasisLabel(n),
       paymentType: 'AMENDMENT',
       addendumNumber: n,
-      disabled: false,
+      disabled: cov?.fullyCovered ?? false,
     });
 
     // Полная оплата доступна, когда известен итог Д/с: прикреплённый расчёт
     // или вручную заполненные блоки (например, «Изменения в Спецификации»).
-    if (totalRub != null && Number.isFinite(totalRub) && totalRub > 0) {
+    if (cov?.payableRub != null && cov.payableRub > 0) {
       const label = packageAddendumBasisLabel(n);
       options.push({
         key: `addendum_${n}`,
         label,
         paymentType: 'AMENDMENT',
         addendumNumber: n,
-        disabled: isAddendumBasisSatisfied(rows, n, label, totalRub),
+        disabled: cov.fullyCovered,
       });
     }
   }

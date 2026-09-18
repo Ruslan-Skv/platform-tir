@@ -29,6 +29,7 @@ export type PackageContractPaymentsHubSummarySectionProps = Pick<
   | 'payableBreakdown'
   | 'windowsCostBreakdown'
   | 'paidAllocations'
+  | 'coverage'
   | 'journalPaidRub'
   | 'grandTotalRub'
   | 'mainContractPctOfGrand'
@@ -48,6 +49,7 @@ export function PackageContractPaymentsHubSummarySection({
   payableBreakdown,
   windowsCostBreakdown,
   paidAllocations,
+  coverage,
   journalPaidRub,
   grandTotalRub,
   mainContractPctOfGrand,
@@ -176,17 +178,14 @@ export function PackageContractPaymentsHubSummarySection({
                     <td className={cdBase.paymentsHubSummaryNumCol}>
                       {loading
                         ? '…'
-                        : renderHubPaidValue(
-                            paidAllocations.contractPaidRub,
-                            payableBreakdown.mainContractRub
-                          )}
+                        : renderHubPaidValue(coverage.mainCoveredRub, coverage.effectiveMainRub)}
                     </td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
                       {loading
                         ? '…'
                         : renderHubRemainderValue(
-                            paidAllocations.contractPaidRub,
-                            payableBreakdown.mainContractRub
+                            coverage.mainCoveredRub,
+                            coverage.effectiveMainRub
                           )}
                     </td>
                   </tr>
@@ -194,10 +193,7 @@ export function PackageContractPaymentsHubSummarySection({
                 {addendumPaymentSummaries
                   .filter((row) => row.hasData)
                   .map((row) => {
-                    const addendumTotalRub = payableBreakdown.addendumTotalsRub.find(
-                      (a) => a.slotIndex1 === row.num
-                    )?.totalRub;
-                    const paidRub = paidAllocations.byAddendum.get(row.num) ?? 0;
+                    const cov = coverage.addendums.find((c) => c.slotIndex1 === row.num);
                     return (
                       <tr key={`pay_hub_ds_${row.num}`}>
                         <td>Д/с №{row.num}</td>
@@ -205,7 +201,7 @@ export function PackageContractPaymentsHubSummarySection({
                           {formatHubDiscountCell(paymentsContractDiscountPct)}
                         </td>
                         <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {row.costStr ? `${row.costStr} ₽` : formatMoneyRub(addendumTotalRub)}
+                          {row.costStr ? `${row.costStr} ₽` : formatMoneyRub(cov?.totalRub ?? null)}
                         </td>
                         <td
                           className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
@@ -213,10 +209,21 @@ export function PackageContractPaymentsHubSummarySection({
                           {row.rec100 ? `${row.rec100} ₽` : '—'}
                         </td>
                         <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading ? '…' : renderHubPaidValue(paidRub, addendumTotalRub)}
+                          {loading
+                            ? '…'
+                            : cov?.reducesContract
+                              ? '—'
+                              : renderHubPaidValue(cov?.coveredRub ?? 0, cov?.payableRub ?? null)}
                         </td>
                         <td className={cdBase.paymentsHubSummaryNumCol}>
-                          {loading ? '…' : renderHubRemainderValue(paidRub, addendumTotalRub)}
+                          {loading
+                            ? '…'
+                            : cov?.reducesContract
+                              ? '—'
+                              : renderHubRemainderValue(
+                                  cov?.coveredRub ?? 0,
+                                  cov?.payableRub ?? null
+                                )}
                         </td>
                       </tr>
                     );

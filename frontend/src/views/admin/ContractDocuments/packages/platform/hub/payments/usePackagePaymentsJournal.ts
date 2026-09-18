@@ -8,6 +8,10 @@ import {
 } from '@/shared/api/admin-contract-document-packages';
 
 import { resolveFurniturePaymentLeg } from '../../../directions/furniture/furniturePaymentLeg';
+import {
+  type PackagePaymentCoverage,
+  computePackagePaymentCoverage,
+} from '../../payments/packagePaymentCoverage';
 import { type PackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import { formatPercentOfGrandTotal } from './packageContractPaymentsFormat';
 
@@ -66,6 +70,12 @@ export function usePackagePaymentsJournal({
     return { contractPaidRub, byAddendum, byFurnitureLeg };
   }, [rows]);
 
+  /** Покрытие оплат: сколько закрыто по договору (с учётом уменьшающих Д/с) и по каждому Д/с. */
+  const coverage: PackagePaymentCoverage = useMemo(
+    () => computePackagePaymentCoverage(payableBreakdown, rows),
+    [payableBreakdown, rows]
+  );
+
   const journalPaidRub = useMemo(
     () =>
       rows.reduce((acc, r) => {
@@ -105,6 +115,7 @@ export function usePackagePaymentsJournal({
     loading,
     load,
     paidAllocations,
+    coverage,
     journalPaidRub,
     balancePerJournalRub,
     grandTotalRub,

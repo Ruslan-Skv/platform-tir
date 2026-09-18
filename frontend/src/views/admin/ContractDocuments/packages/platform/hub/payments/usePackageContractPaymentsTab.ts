@@ -58,6 +58,7 @@ export function usePackageContractPaymentsTab({
     payableBreakdown: summary.payableBreakdown,
     journalPaidRub: journal.journalPaidRub,
     paidAllocations: journal.paidAllocations,
+    coverage: journal.coverage,
     hubFixedBasisOptions: summary.hubFixedBasisOptions,
   });
 
@@ -89,6 +90,7 @@ export function usePackageContractPaymentsTab({
     payableBreakdown: summary.payableBreakdown,
     windowsCostBreakdown: summary.windowsCostBreakdown,
     paidAllocations: journal.paidAllocations,
+    coverage: journal.coverage,
     journalPaidRub: journal.journalPaidRub,
     grandTotalRub: journal.grandTotalRub,
     mainContractPctOfGrand: journal.mainContractPctOfGrand,

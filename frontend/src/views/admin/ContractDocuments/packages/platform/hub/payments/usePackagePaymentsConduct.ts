@@ -34,6 +34,7 @@ import {
   paymentApiFieldsFromCustomBasis,
   readPackagePaymentBasisOptions,
 } from '../../payments/packagePaymentBasisOptionsStorage';
+import type { PackagePaymentCoverage } from '../../payments/packagePaymentCoverage';
 import {
   PACKAGE_PAYMENT_FORM_LABELS,
   formatPackagePaymentDateForTemplate,
@@ -61,6 +62,7 @@ export type UsePackagePaymentsConductParams = {
     byAddendum: Map<number, number>;
     byFurnitureLeg?: Map<string, number>;
   };
+  coverage?: PackagePaymentCoverage;
   hubFixedBasisOptions: PackagePaymentBasisOption[];
 };
 
@@ -77,6 +79,7 @@ export function usePackagePaymentsConduct({
   payableBreakdown,
   journalPaidRub,
   paidAllocations,
+  coverage,
   hubFixedBasisOptions,
 }: UsePackagePaymentsConductParams) {
   const [saving, setSaving] = useState(false);
@@ -198,7 +201,8 @@ export function usePackagePaymentsConduct({
       journalPaidRub,
       paidAllocations.contractPaidRub,
       paidAllocations.byAddendum,
-      paidAllocations.byFurnitureLeg
+      paidAllocations.byFurnitureLeg,
+      coverage
     );
     if (suggested != null && suggested > 0) {
       setConductAmount(formatPackageHubConductAmountInput(suggested));
@@ -212,6 +216,8 @@ export function usePackagePaymentsConduct({
     journalPaidRub,
     paidAllocations.contractPaidRub,
     paidAllocations.byAddendum,
+    paidAllocations.byFurnitureLeg,
+    coverage,
   ]);
 
   const resetDraft = () => {

@@ -1,4 +1,5 @@
 ﻿import type { PackagePaymentBasisOption } from './packagePaymentBasisOptions';
+import type { PackagePaymentCoverage } from './packagePaymentCoverage';
 import type { PackagePayableBreakdown } from './packagePaymentTotals';
 
 /** Сумма для поля «Сумма» в блоке «Провести оплату» по выбранному основанию. */
@@ -8,10 +9,16 @@ export function computePackageHubConductSuggestedAmountRub(
   journalPaidRub: number,
   contractPaidRub: number,
   addendumPaidByNumber?: ReadonlyMap<number, number>,
-  furnitureLegPaidById?: ReadonlyMap<string, number>
+  furnitureLegPaidById?: ReadonlyMap<string, number>,
+  coverage?: PackagePaymentCoverage | null
 ): number | null {
   const addendumNum = option.addendumNumber;
   if (option.key.startsWith('addendum_partial_') && addendumNum != null) {
+    const cov = coverage?.addendums.find((c) => c.slotIndex1 === addendumNum);
+    if (cov) {
+      // Подсказываем остаток с учётом покрытия (перелив из договора тоже закрывает Д/с).
+      return cov.payableRub == null ? null : roundRub(Math.max(0, cov.payableRub - cov.coveredRub));
+    }
     const entry = breakdown.addendumTotalsRub.find((a) => a.slotIndex1 === addendumNum);
     const totalRub = entry?.totalRub;
     if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return null;
@@ -20,6 +27,10 @@ export function computePackageHubConductSuggestedAmountRub(
   }
 
   if (/^addendum_\d+$/.test(option.key) && addendumNum != null) {
+    const cov = coverage?.addendums.find((c) => c.slotIndex1 === addendumNum);
+    if (cov) {
+      return cov.payableRub == null ? null : roundRub(Math.max(0, cov.payableRub - cov.coveredRub));
+    }
     const entry = breakdown.addendumTotalsRub.find((a) => a.slotIndex1 === addendumNum);
     const totalRub = entry?.totalRub;
     if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return null;
@@ -63,9 +74,13 @@ export function computePackageHubConductSuggestedAmountRub(
       return roundRub(Math.max(0, grandTotalRub - paid));
     }
     case 'contract_full':
+    case 'contract_partial': {
+      // Остаток по договору с учётом уменьшений от отрицательных Д/с и покрытия.
+      if (coverage?.effectiveMainRub != null) {
+        return roundRub(Math.max(0, coverage.effectiveMainRub - coverage.mainCoveredRub));
+      }
       return roundRub(Math.max(0, mainContractRub - contractPaidRub));
-    case 'contract_partial':
-      return roundRub(Math.max(0, mainContractRub - contractPaidRub));
+    }
     default:
       return null;
   }

@@ -125,11 +125,19 @@ export function PackagePipelineStepCard({
               >
                 <div className={hubStyles.pipelineAddendumCardHead}>
                   <span className={hubStyles.pipelineAddendumCardTitle}>Д/с №{card.ordinal}</span>
-                  <span
-                    className={`${hubStyles.pipelinePayBadge} ${payPctToneClass(card.paidPct)}`}
-                  >
-                    {card.paidPct != null ? `Оплата ${card.paidPct}%` : 'Оплата —'}
-                  </span>
+                  {card.reducesContract ? (
+                    <span
+                      className={`${hubStyles.pipelinePayBadge} ${hubStyles.pipelinePayBadgeMuted}`}
+                    >
+                      Уменьшение
+                    </span>
+                  ) : (
+                    <span
+                      className={`${hubStyles.pipelinePayBadge} ${payPctToneClass(card.paidPct)}`}
+                    >
+                      {card.paidPct != null ? `Оплата ${card.paidPct}%` : 'Оплата —'}
+                    </span>
+                  )}
                 </div>
                 <p className={hubStyles.pipelineAddendumCardStatus}>
                   {card.slotStatus === 'OPEN'
@@ -183,9 +191,17 @@ export function PackagePipelineStepCard({
               {pipeline.addendumCards.map((card) => (
                 <span
                   key={`pay-badge-ds-${card.ordinal}`}
-                  className={`${hubStyles.pipelinePayBadge} ${payPctToneClass(card.paidPct)}`}
+                  className={`${hubStyles.pipelinePayBadge} ${
+                    card.reducesContract
+                      ? hubStyles.pipelinePayBadgeMuted
+                      : payPctToneClass(card.paidPct)
+                  }`}
                 >
-                  Оплата по Д/с №{card.ordinal} {card.paidPct != null ? `${card.paidPct}%` : '—'}
+                  {card.reducesContract
+                    ? `Д/с №${card.ordinal}: уменьшение договора`
+                    : `Оплата по Д/с №${card.ordinal} ${
+                        card.paidPct != null ? `${card.paidPct}%` : '—'
+                      }`}
                 </span>
               ))}
               {pipeline.grandPaidPct != null ? (
@@ -222,8 +238,9 @@ export function PackagePipelineStepCard({
             {step.state === 'current' && !pipeline.allPaymentsComplete ? (
               <p className={hubStyles.pipelineStepHint}>
                 Для этапа «Закрыт» нужна 100% оплата по договору
-                {pipeline.hasAddendumsInPackage ? ' и по всем Д/с с расчётами' : ''}. Записи
-                вносятся в журнал или через форму ниже.
+                {pipeline.hasAddendumsInPackage ? ' и по всем Д/с с расчётами' : ''}. Окончательный
+                расчёт по договору одной суммой закрывает и Д/с. Записи вносятся в журнал или через
+                форму ниже.
               </p>
             ) : null}
             {step.state === 'current' &&

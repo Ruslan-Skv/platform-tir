@@ -14,6 +14,10 @@ import type {
   PackageFormData,
 } from '../../form/packageForm';
 import { clampPackageAddendumSlotCount, mergePackageFormData } from '../../form/packageForm';
+import {
+  type PackagePaymentCoverage,
+  computePackagePaymentCoverage,
+} from '../../payments/packagePaymentCoverage';
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
 import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from '../hubModal/packageHubConstants';
 import { formatPackagePipelineActDate, isWithinMsSinceIso } from '../hubModal/packageHubUtils';
@@ -56,8 +60,13 @@ export interface PackageAddendumPipelineCard {
   hasData: boolean;
   slotStatus: PackageAddendumSlotStatus;
   totalRub: number | null;
+  /** Покрыто оплатами (собственные проводки + перелив из оплат по договору). */
   paidRub: number;
   paidPct: number | null;
+  /** Закрыт ли Д/с оплатами (для нулевого/отрицательного итога — true, платить нечего). */
+  fullyCovered: boolean;
+  /** Отрицательный Д/с: уменьшает сумму по договору, оплата не требуется. */
+  reducesContract: boolean;
   signedAt: string;
   canSign: boolean;
   canUnmarkSigned: boolean;
@@ -190,12 +199,6 @@ function isPaidAtLeastPct(paidRub: number, totalRub: number | null, minPct: numb
   return paidRub >= totalRub * (minPct / 100) - PACKAGE_PAYMENT_TOLERANCE_RUB;
 }
 
-/** 100% оплачено: только при известной сумме > 0 и достаточной оплате (0% при пустой сумме — не «оплачено»). */
-function isFullyPaidRub(paidRub: number, totalRub: number | null): boolean {
-  if (totalRub == null || !Number.isFinite(totalRub) || totalRub <= 0) return false;
-  return paidRub >= totalRub - PACKAGE_PAYMENT_TOLERANCE_RUB;
-}
-
 function hasPositivePayableGrandTotal(
   breakdown: ReturnType<typeof computePackagePayableBreakdown>
 ): boolean {
@@ -297,8 +300,7 @@ function computeContractSignedRevertRemainingMs(
 
 function buildAddendumCards(
   form: PackageFormData,
-  allocations: PackagePaymentAllocations,
-  payableBreakdown: ReturnType<typeof computePackagePayableBreakdown>,
+  coverage: PackagePaymentCoverage,
   packageFlowStatus: ContractDocumentPackageStatus,
   nowMs: number
 ): PackageAddendumPipelineCard[] {
@@ -308,9 +310,8 @@ function buildAddendumCards(
     const slot = form.addendumSlots[i];
     if (!addendumSlotHasData(slot)) continue;
     const ordinal = i + 1;
-    const totalRub =
-      payableBreakdown.addendumTotalsRub.find((a) => a.slotIndex1 === ordinal)?.totalRub ?? null;
-    const paidRub = allocations.byAddendum.get(ordinal) ?? 0;
+    const cov = coverage.addendums.find((c) => c.slotIndex1 === ordinal);
+    const totalRub = cov?.totalRub ?? null;
     const slotStatus = slot?.status ?? 'OPEN';
     const signedAt = slot?.signedAt ?? '';
     let signedRevertRemainingMs = 0;
@@ -326,8 +327,10 @@ function buildAddendumCards(
       hasData: true,
       slotStatus,
       totalRub,
-      paidRub,
-      paidPct: paidPctRounded(paidRub, totalRub),
+      paidRub: cov?.coveredRub ?? 0,
+      paidPct: cov?.paidPct ?? null,
+      fullyCovered: cov?.fullyCovered ?? false,
+      reducesContract: cov?.reducesContract ?? false,
       signedAt,
       canSign: packageFlowStatus === 'CONTRACT_CONCLUDED' && slotStatus === 'OPEN',
       canUnmarkSigned:
@@ -526,37 +529,31 @@ export function computePackageContractPipelineModel(input: {
   const isProductDirection = isProductDirectionPackageKind(packageKind);
   const nowMs = input.nowMs ?? Date.now();
   const payableBreakdown = computePackagePayableBreakdown(input.form, packageKind);
-  const allocations = input.payments
-    ? computePackagePaymentAllocations(input.payments)
-    : { contractPaidRub: 0, byAddendum: new Map<number, number>() };
+  const coverage = computePackagePaymentCoverage(payableBreakdown, input.payments);
+  const allocations: PackagePaymentAllocations = {
+    contractPaidRub: coverage.contractPaidRub,
+    byAddendum: coverage.byAddendum,
+  };
 
-  const mainContractRub = payableBreakdown.mainContractRub;
-  const contractPaidRub = allocations.contractPaidRub;
-  const contractPaidPct = paidPctRounded(contractPaidRub, mainContractRub);
+  // «Оплата по договору» — покрытие эффективной суммы (за вычетом уменьшений
+  // от отрицательных Д/с): окончательный расчёт одной суммой даёт 100%.
+  const contractPaidPct = coverage.mainPaidPct;
   const grandTotal = payableBreakdown.grandTotalRub;
-  const journalTotal =
-    input.journalPaidRub ??
-    contractPaidRub + [...allocations.byAddendum.values()].reduce((a, b) => a + b, 0);
+  const journalTotal = input.journalPaidRub ?? coverage.journalTotalRub;
   const grandPaidPct = paidPctRounded(journalTotal, grandTotal);
 
-  const addendumCards = buildAddendumCards(
-    input.form,
-    allocations,
-    payableBreakdown,
-    input.packageFlowStatus,
-    nowMs
-  );
+  const addendumCards = buildAddendumCards(input.form, coverage, input.packageFlowStatus, nowMs);
   const hasAddendumsInPackage = addendumCards.length > 0;
   const allAddendumsSigned =
     !hasAddendumsInPackage ||
     addendumCards.every((c) => c.slotStatus === 'SIGNED' || c.slotStatus === 'PAID');
 
-  const contractFullyPaid = isFullyPaidRub(contractPaidRub, mainContractRub);
-  const allAddendumsFullyPaid = addendumCards.every((c) => isFullyPaidRub(c.paidRub, c.totalRub));
+  // 100% оплаты: договор покрыт с учётом уменьшений, каждый Д/с закрыт
+  // (своими проводками или переливом из оплаты по договору одной суммой).
   const allPaymentsComplete =
     hasPositivePayableGrandTotal(payableBreakdown) &&
-    contractFullyPaid &&
-    (!hasAddendumsInPackage || allAddendumsFullyPaid);
+    coverage.mainFullyCovered &&
+    (!hasAddendumsInPackage || addendumCards.every((c) => c.fullyCovered));
 
   const workStartPaymentReady = isPaidAtLeastPct(
     journalTotal,

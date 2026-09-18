@@ -36,6 +36,7 @@ export function PackageContractPaymentsTabView({
   payableBreakdown,
   windowsCostBreakdown,
   paidAllocations,
+  coverage,
   journalPaidRub,
   grandTotalRub,
   mainContractPctOfGrand,
@@ -71,6 +72,7 @@ export function PackageContractPaymentsTabView({
           payableBreakdown={payableBreakdown}
           windowsCostBreakdown={windowsCostBreakdown}
           paidAllocations={paidAllocations}
+          coverage={coverage}
           journalPaidRub={journalPaidRub}
           grandTotalRub={grandTotalRub}
           mainContractPctOfGrand={mainContractPctOfGrand}
