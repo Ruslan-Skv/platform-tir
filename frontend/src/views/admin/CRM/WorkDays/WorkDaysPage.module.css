@@ -71,8 +71,66 @@
   background: #fffbeb;
 }
 
+.rowEarly {
+  background: #fffbeb;
+}
+
 .rowAuto {
   background: #fef2f2;
+}
+
+.rowDayOff {
+  background: #ecfdf5;
+}
+
+.absenceCell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 8rem;
+}
+
+.absenceTotal {
+  font-weight: 600;
+}
+
+.absenceList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  font-size: 0.75rem;
+  color: #64748b;
+  line-height: 1.35;
+}
+
+.requestBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.requestBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 0.6rem;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
+  color: #475569;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.requestBadgeApproved {
+  border-color: transparent;
+  background: #ecfdf5;
+  color: #047857;
+}
+
+.requestBadgePending {
+  border-color: transparent;
+  background: #fffbeb;
+  color: #b45309;
 }
 
 .empty {

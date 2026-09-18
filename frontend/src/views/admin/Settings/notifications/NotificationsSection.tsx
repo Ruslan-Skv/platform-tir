@@ -322,6 +322,7 @@ export function NotificationsSection() {
     notifyOnSiteFeedback: true,
     notifyOnKnowledgeTraining: true,
     notifyOnWorkDays: true,
+    notifyOnWorkDayRequestReviews: true,
     notifyOnWaybills: true,
     notifyOnInstallationSchedules: true,
     notifyOnRepairSchedules: true,
@@ -860,6 +861,21 @@ export function NotificationsSection() {
                 />
                 <label htmlFor="notifyOnWorkDays">
                   Учёт рабочего времени (опоздания, ранний уход, автозакрытие)
+                </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnWorkDayRequestReviews"
+                  checked={formSettings.notifyOnWorkDayRequestReviews ?? true}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, notifyOnWorkDayRequestReviews: e.target.checked } : s
+                    )
+                  }
+                />
+                <label htmlFor="notifyOnWorkDayRequestReviews">
+                  Ответы на запросы рабочего времени (выходной, уйти пораньше, прийти попозже)
                 </label>
               </div>
               <div className={styles.checkboxRow}>

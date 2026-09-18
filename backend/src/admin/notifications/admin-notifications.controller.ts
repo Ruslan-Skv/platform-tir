@@ -180,6 +180,16 @@ export class AdminNotificationsController {
   }
 
   @SkipThrottle()
+  @Get('bell/work-days/my-request-reviews')
+  @ApiOperation({
+    summary: 'Ответы на мои запросы (выходной / пораньше / попозже) для колокольчика (лично)',
+  })
+  getBellMyWorkDayRequestReviews(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellWorkDayFeed.listReviewedRequestsForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
   @Get('bell/waybills')
   @ApiOperation({ summary: 'События путевого листа для колокольчика (персонально)' })
   getBellWaybillFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {

@@ -275,11 +275,12 @@ export function calculateLateMinutes(
 export function calculateEarlyLeaveMinutes(
   endedAt: Date,
   workDate: Date,
-  schedule: Pick<ResolvedDaySchedule, 'endTime'>,
+  schedule: Pick<ResolvedDaySchedule, 'endTime' | 'gracePeriodMinutes'>,
   timezone = WORK_DAY_TIMEZONE,
 ): number {
   const scheduledEnd = combineDateAndTime(workDate, schedule.endTime, timezone);
-  const diff = scheduledEnd.getTime() - endedAt.getTime();
+  const graceMs = schedule.gracePeriodMinutes * 60_000;
+  const diff = scheduledEnd.getTime() - endedAt.getTime() - graceMs;
   if (diff <= 0) return 0;
   return Math.ceil(diff / 60_000);
 }

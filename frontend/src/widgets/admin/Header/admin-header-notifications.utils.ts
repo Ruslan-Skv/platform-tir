@@ -15,6 +15,7 @@ export type AdminBellNotificationType =
   | 'siteFeedback'
   | 'knowledgeTraining'
   | 'workDays'
+  | 'myWorkDayRequests'
   | 'waybills'
   | 'installationSchedules'
   | 'repairSchedules'
@@ -56,6 +57,18 @@ export type AdminBellWorkDayNotification = {
   lateMinutes: number;
   earlyLeaveMinutes: number;
   occurredAt: string;
+};
+
+export type AdminBellWorkDayRequestReviewNotification = {
+  id: string;
+  requestId: string;
+  status: 'approved' | 'rejected';
+  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+  requestTypeLabel: string;
+  workDate: string;
+  proposedEndTime: string | null;
+  reviewComment: string | null;
+  reviewedAt: string;
 };
 
 export type AdminBellWaybillNotification = {
@@ -313,6 +326,25 @@ export function workDayToBellNotificationItem(
   };
 }
 
+export function workDayRequestReviewToBellNotificationItem(
+  item: AdminBellWorkDayRequestReviewNotification
+): AdminBellNotificationItem {
+  const workDateLabel = new Date(item.workDate).toLocaleDateString('ru-RU');
+  const timePart =
+    item.proposedEndTime != null && item.requestType !== 'DAY_OFF'
+      ? ` ${item.requestType === 'LATE_ARRIVAL' ? 'к' : 'до'} ${item.proposedEndTime}`
+      : '';
+  const decision = item.status === 'approved' ? 'согласован' : 'отклонён';
+  const commentSuffix = item.reviewComment ? `. ${item.reviewComment}` : '';
+  return {
+    type: 'myWorkDayRequests',
+    id: item.id,
+    date: item.reviewedAt,
+    link: '/admin/crm/my-work-day',
+    text: `Запрос «${item.requestTypeLabel}»${timePart} ${decision} — ${workDateLabel}${commentSuffix}`,
+  };
+}
+
 export function waybillToBellNotificationItem(
   item: AdminBellWaybillNotification
 ): AdminBellNotificationItem {
@@ -480,6 +512,11 @@ export function isNotificationItemEnabled(
     return hasAccess('admin.crm.work-days') && isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'myWorkDayRequests') {
+    // Адресные уведомления об ответах на собственные запросы — без требования доступа к журналу.
+    return isBellTypeEnabled(item.type, settings);
+  }
+
   if (item.type === 'waybills') {
     return (
       (hasAccess('admin.crm.waybills') || hasAccess('admin.crm.waybills.my')) &&
@@ -563,6 +600,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnKnowledgeTraining !== false;
     case 'workDays':
       return settings.notifyOnWorkDays !== false;
+    case 'myWorkDayRequests':
+      return settings.notifyOnWorkDayRequestReviews !== false;
     case 'waybills':
       return settings.notifyOnWaybills !== false;
     case 'installationSchedules':
@@ -645,6 +684,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'workDays':
       return {
         title: 'Учёт рабочего времени',
+        body: item.text,
+        tag,
+      };
+    case 'myWorkDayRequests':
+      return {
+        title: 'Ответ на запрос рабочего времени',
         body: item.text,
         tag,
       };

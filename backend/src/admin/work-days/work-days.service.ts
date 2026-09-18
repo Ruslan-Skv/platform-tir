@@ -8,10 +8,14 @@ import {
 import {
   UserRole,
   WorkDayCloseReason,
+  WorkDayRequestStatus,
+  WorkDayRequestType,
   WorkDayStatus,
   type Office,
   type User,
   type WorkDay,
+  type WorkDayAbsence,
+  type WorkDayRequest,
   type WorkDaySettings,
 } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
@@ -54,6 +58,74 @@ type RequestMeta = {
   realIp?: string;
   remoteAddress?: string;
 };
+
+/** Короткая карточка запроса (выходной / пораньше / попозже) для строк журнала. */
+export type WorkDayRequestBadge = {
+  id: string;
+  type: WorkDayRequestType;
+  status: WorkDayRequestStatus;
+  requestDate: string;
+  proposedEndTime: string | null;
+  comment: string | null;
+  createdAt: Date;
+};
+
+type WorkDayJournalUser = {
+  id: string;
+  email: string;
+  firstName: string | null;
+  lastName: string | null;
+  role: UserRole;
+};
+
+/** Строка журнала за согласованную с руководителем дату выходного, когда явки не было. */
+export type WorkDayDayOffRow = {
+  id: string;
+  userId: string;
+  officeId: string | null;
+  workDate: Date;
+  status: WorkDayStatus;
+  startedAt: null;
+  endedAt: null;
+  closeReason: null;
+  autoClosedAt: null;
+  startedFromIp: null;
+  startedFromUserAgent: null;
+  endedFromIp: null;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  reportedEndAt: null;
+  reopenCount: number;
+  dayOffOnly: true;
+  office: { id: string; name: string } | null;
+  user: WorkDayJournalUser | null;
+  absences: [];
+  requests: WorkDayRequestBadge[];
+};
+
+export type WorkDayJournalRow = WorkDay & {
+  user: WorkDayJournalUser;
+  office: { id: string; name: string } | null;
+  absences: WorkDayAbsence[];
+  requests: WorkDayRequestBadge[];
+  dayOffOnly?: false;
+};
+
+function dateKey(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+function toRequestBadge(row: WorkDayRequest): WorkDayRequestBadge {
+  return {
+    id: row.id,
+    type: row.type,
+    status: row.status,
+    requestDate: dateKey(row.requestDate),
+    proposedEndTime: row.proposedEndTime,
+    comment: row.comment,
+    createdAt: row.createdAt,
+  };
+}
 
 @Injectable()
 export class WorkDaysService implements OnModuleInit {
@@ -478,7 +550,9 @@ export class WorkDaysService implements OnModuleInit {
   }
 
   async listMyWorkDays(userId: string, params: { dateFrom?: string; dateTo?: string }) {
-    const records = await this.listWorkDays({ ...params, userId });
+    const rows = await this.listWorkDays({ ...params, userId });
+    const records = rows.filter((r): r is WorkDayJournalRow => r.dayOffOnly !== true);
+    const dayOffDays = rows.filter((r) => r.dayOffOnly === true).length;
     const lateDays = records.filter((r) => r.lateMinutes > 0).length;
     const earlyLeaveDays = records.filter((r) => r.earlyLeaveMinutes > 0).length;
     const autoClosedDays = records.filter((r) => r.status === WorkDayStatus.AUTO_CLOSED).length;
@@ -492,13 +566,14 @@ export class WorkDaysService implements OnModuleInit {
     }, 0);
 
     return {
-      records,
+      records: rows,
       summary: {
         totalDays: records.length,
         lateDays,
         earlyLeaveDays,
         autoClosedDays,
         totalAbsenceMinutes: Math.round(totalAbsenceMinutes),
+        approvedDayOffDays: dayOffDays,
       },
     };
   }
@@ -508,7 +583,7 @@ export class WorkDaysService implements OnModuleInit {
     dateTo?: string;
     officeId?: string;
     userId?: string;
-  }) {
+  }): Promise<Array<WorkDayJournalRow | WorkDayDayOffRow>> {
     const where: {
       workDate?: { gte?: Date; lte?: Date };
       officeId?: string;
@@ -519,7 +594,7 @@ export class WorkDaysService implements OnModuleInit {
     if (params.officeId) where.officeId = params.officeId;
     if (params.userId) where.userId = params.userId;
 
-    return this.prisma.workDay.findMany({
+    const records = await this.prisma.workDay.findMany({
       where,
       include: {
         user: {
@@ -536,6 +611,144 @@ export class WorkDaysService implements OnModuleInit {
       },
       orderBy: [{ workDate: 'desc' }, { startedAt: 'desc' }],
     });
+
+    const enriched: Array<WorkDayJournalRow | WorkDayDayOffRow> = await this.attachRequests(
+      records,
+      params,
+    );
+    return enriched.sort((a, b) => {
+      const dateDiff = b.workDate.getTime() - a.workDate.getTime();
+      if (dateDiff !== 0) return dateDiff;
+      const aStart = a.startedAt?.getTime() ?? 0;
+      const bStart = b.startedAt?.getTime() ?? 0;
+      return bStart - aStart;
+    });
+  }
+
+  /**
+   * Прикрепляет к строкам журнала запросы (выходной / уйти пораньше / прийти попозже)
+   * и добавляет отдельные строки за согласованные выходные без явки.
+   */
+  private async attachRequests(
+    records: Array<
+      WorkDay & {
+        user: WorkDayJournalUser;
+        office: { id: string; name: string } | null;
+        absences: WorkDayAbsence[];
+      }
+    >,
+    params: { dateFrom?: string; dateTo?: string; officeId?: string; userId?: string },
+  ): Promise<Array<WorkDayJournalRow | WorkDayDayOffRow>> {
+    const bounds = {
+      from: params.dateFrom
+        ? new Date(params.dateFrom)
+        : records.reduce<Date | null>(
+            (min, r) => (!min || r.workDate < min ? r.workDate : min),
+            null,
+          ),
+      to: params.dateTo
+        ? new Date(params.dateTo)
+        : records.reduce<Date | null>(
+            (max, r) => (!max || r.workDate > max ? r.workDate : max),
+            null,
+          ),
+    };
+    if (!bounds.from && !params.dateFrom && !params.dateTo && records.length === 0) {
+      return records.map((r) => ({ ...r, requests: [] as WorkDayRequestBadge[] }));
+    }
+
+    const requestWhere: {
+      status: { in: WorkDayRequestStatus[] };
+      requestDate?: { gte?: Date; lte?: Date };
+      userId?: string;
+      user?: { officeId?: string };
+    } = {
+      status: { in: [WorkDayRequestStatus.APPROVED, WorkDayRequestStatus.PENDING] },
+    };
+    if (bounds.from || bounds.to) {
+      requestWhere.requestDate = {};
+      if (bounds.from) requestWhere.requestDate.gte = bounds.from;
+      if (bounds.to) requestWhere.requestDate.lte = bounds.to;
+    }
+    if (params.userId) requestWhere.userId = params.userId;
+    if (params.officeId) requestWhere.user = { officeId: params.officeId };
+
+    const requestRows = await this.prisma.workDayRequest.findMany({
+      where: requestWhere,
+      include: {
+        user: {
+          select: {
+            id: true,
+            email: true,
+            firstName: true,
+            lastName: true,
+            role: true,
+            officeId: true,
+            office: { select: { id: true, name: true } },
+          },
+        },
+      },
+      orderBy: [{ requestDate: 'desc' }, { createdAt: 'desc' }],
+    });
+
+    const requestsByKey = new Map<string, WorkDayRequestBadge[]>();
+    for (const row of requestRows) {
+      const badge = toRequestBadge(row);
+      const key = `${row.userId}|${badge.requestDate}`;
+      const list = requestsByKey.get(key) ?? [];
+      list.push(badge);
+      requestsByKey.set(key, list);
+    }
+
+    const enrichedRows: Array<WorkDayJournalRow | WorkDayDayOffRow> = records.map((record) => ({
+      ...record,
+      requests: requestsByKey.get(`${record.userId}|${dateKey(record.workDate)}`) ?? [],
+    }));
+
+    const recordKeys = new Set(
+      records.map((record) => `${record.userId}|${dateKey(record.workDate)}`),
+    );
+    for (const row of requestRows) {
+      const badge = toRequestBadge(row);
+      if (row.type !== WorkDayRequestType.DAY_OFF) continue;
+      if (row.status !== WorkDayRequestStatus.APPROVED) continue;
+      const key = `${row.userId}|${badge.requestDate}`;
+      if (recordKeys.has(key)) continue;
+      recordKeys.add(key);
+      enrichedRows.push({
+        id: row.id,
+        userId: row.userId,
+        officeId: row.user?.officeId ?? null,
+        workDate: row.requestDate,
+        status: WorkDayStatus.CLOSED,
+        startedAt: null,
+        endedAt: null,
+        closeReason: null,
+        autoClosedAt: null,
+        startedFromIp: null,
+        startedFromUserAgent: null,
+        endedFromIp: null,
+        lateMinutes: 0,
+        earlyLeaveMinutes: 0,
+        reportedEndAt: null,
+        reopenCount: 0,
+        dayOffOnly: true,
+        office: row.user?.office ?? null,
+        user: row.user
+          ? {
+              id: row.user.id,
+              email: row.user.email,
+              firstName: row.user.firstName,
+              lastName: row.user.lastName,
+              role: row.user.role,
+            }
+          : null,
+        absences: [],
+        requests: [badge],
+      });
+    }
+
+    return enrichedRows;
   }
 
   async deleteWorkDay(workDayId: string) {

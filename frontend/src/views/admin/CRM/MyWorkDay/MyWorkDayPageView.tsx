@@ -3,7 +3,16 @@
 import { useMemo, useState } from 'react';
 
 import { WorkDaysIpHelp } from '@/features/admin/work-day/WorkDaysIpHelp';
-import type { WorkDayRecord, WorkDayRequestType } from '@/shared/api/admin-work-days';
+import {
+  buildWorkDayEndSummary,
+  hasWorkDayViolations,
+} from '@/features/admin/work-day/work-day-summary';
+import { useAuth } from '@/features/auth';
+import type {
+  WorkDayJournalRow,
+  WorkDayRecord,
+  WorkDayRequestType,
+} from '@/shared/api/admin-work-days';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { contractsListFilterFieldClass } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
@@ -15,7 +24,9 @@ import {
   formatWorkDayAbsenceInterval,
   formatWorkDayDate,
   formatWorkDayTime,
+  isWorkDayDayOffRow,
   workDayAbsenceMinutes,
+  workDayRequestBadgeLabel,
   workDayRowClassName,
   workDayStatusLabel,
 } from '../WorkDays/work-days-display.utils';
@@ -63,6 +74,26 @@ function AbsenceCell({ row }: { row: WorkDayRecord }) {
   );
 }
 
+function RequestsCell({ row }: { row: WorkDayJournalRow }) {
+  const requests = row.requests ?? [];
+  if (requests.length === 0) return <>—</>;
+
+  return (
+    <div className={styles.requestBadges}>
+      {requests.map((req) => (
+        <span
+          key={req.id}
+          className={`${styles.requestBadge} ${
+            req.status === 'APPROVED' ? styles.requestBadgeApproved : styles.requestBadgePending
+          }`}
+        >
+          {workDayRequestBadgeLabel(req)}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
   const {
     liveStatus,
@@ -86,6 +117,12 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
     endAbsence,
   } = model;
 
+  const { user } = useAuth();
+  const displayName = useMemo(
+    () => user?.firstName?.trim() || user?.lastName?.trim() || 'Коллега',
+    [user?.firstName, user?.lastName]
+  );
+
   const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const [modalType, setModalType] = useState<WorkDayRequestType | null>(null);
   const [absenceModalOpen, setAbsenceModalOpen] = useState(false);
@@ -93,6 +130,10 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
   const todayDay = liveStatus?.todayWorkDay;
   const todayOpen = todayDay?.status === 'OPEN';
   const hasOpenAbsence = Boolean(liveStatus?.hasOpenAbsence);
+  const endSummary =
+    todayDay && todayDay.status !== 'OPEN' && hasWorkDayViolations(todayDay)
+      ? buildWorkDayEndSummary(displayName, todayDay)
+      : null;
 
   const openModal = (type: WorkDayRequestType) => {
     setModalType(type);
@@ -206,10 +247,24 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
             </p>
           ) : todayDay && todayDay.status !== 'OPEN' ? (
             <div className={styles.todayFinished}>
-              <p className={styles.todayText}>
-                Рабочий день завершён: {formatWorkDayTime(todayDay.startedAt)}
-                {todayDay.endedAt ? ` — ${formatWorkDayTime(todayDay.endedAt)}` : ''}
-              </p>
+              <div className={styles.todayFinishedInfo}>
+                <p className={styles.todayText}>
+                  Рабочий день завершён: {formatWorkDayTime(todayDay.startedAt)}
+                  {todayDay.endedAt ? ` — ${formatWorkDayTime(todayDay.endedAt)}` : ''}
+                </p>
+                {endSummary ? (
+                  <div className={styles.todayNotices}>
+                    {endSummary.lines.map((line) => (
+                      <p key={line} className={styles.todayNotice}>
+                        {line}
+                      </p>
+                    ))}
+                    {endSummary.note ? (
+                      <p className={styles.todayNoticeNote}>{endSummary.note}</p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </div>
               {liveStatus.canRestartToday && liveStatus.office ? (
                 <button
                   type="button"
@@ -278,6 +333,11 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
           <span className={styles.statChip}>
             По делам (суммарно): {stats.totalAbsenceMinutes} мин
           </span>
+          {stats.approvedDayOffDays ? (
+            <span className={styles.statChip}>
+              Согласованных выходных: {stats.approvedDayOffDays}
+            </span>
+          ) : null}
         </div>
       ) : null}
 
@@ -331,37 +391,57 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               <th>Опозд.</th>
               <th>Ранний уход</th>
               <th>По делам</th>
+              <th>Запросы</th>
               <th>Статус</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <p className={styles.emptyHint}>Загрузка…</p>
                 </td>
               </tr>
             ) : rows.length === 0 ? (
               <tr>
-                <td colSpan={8}>
+                <td colSpan={9}>
                   <p className={styles.emptyHint}>Нет записей за выбранный период</p>
                 </td>
               </tr>
             ) : (
-              rows.map((row) => (
-                <tr key={row.id} className={workDayRowClassName(row, styles)}>
-                  <td>{formatWorkDayDate(row.workDate)}</td>
-                  <td>{row.office?.name ?? '—'}</td>
-                  <td>{formatWorkDayTime(row.startedAt)}</td>
-                  <td>{row.endedAt ? formatWorkDayTime(row.endedAt) : '—'}</td>
-                  <td>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</td>
-                  <td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</td>
-                  <td>
-                    <AbsenceCell row={row} />
-                  </td>
-                  <td>{workDayStatusLabel(row.status)}</td>
-                </tr>
-              ))
+              rows.map((row) =>
+                isWorkDayDayOffRow(row) ? (
+                  <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                    <td>{formatWorkDayDate(row.workDate)}</td>
+                    <td>{row.office?.name ?? '—'}</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>
+                      <RequestsCell row={row} />
+                    </td>
+                    <td>Выходной</td>
+                  </tr>
+                ) : (
+                  <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                    <td>{formatWorkDayDate(row.workDate)}</td>
+                    <td>{row.office?.name ?? '—'}</td>
+                    <td>{formatWorkDayTime(row.startedAt)}</td>
+                    <td>{row.endedAt ? formatWorkDayTime(row.endedAt) : '—'}</td>
+                    <td>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</td>
+                    <td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</td>
+                    <td>
+                      <AbsenceCell row={row} />
+                    </td>
+                    <td>
+                      <RequestsCell row={row} />
+                    </td>
+                    <td>{workDayStatusLabel(row.status)}</td>
+                  </tr>
+                )
+              )
             )}
           </tbody>
         </table>
@@ -374,6 +454,30 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
           ) : (
             rows.map((row) => {
               const tone = workDayRowClassName(row, styles);
+              if (isWorkDayDayOffRow(row)) {
+                return (
+                  <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
+                    <div className={styles.mobileCardTop}>
+                      <strong className={styles.mobileCardDate}>
+                        {formatWorkDayDate(row.workDate)}
+                      </strong>
+                      <span className={styles.mobileCardStatus}>Выходной</span>
+                    </div>
+                    <dl className={styles.mobileCardRows}>
+                      <div className={styles.mobileCardRow}>
+                        <dt>Офис</dt>
+                        <dd>{row.office?.name ?? '—'}</dd>
+                      </div>
+                      <div className={styles.mobileCardRow}>
+                        <dt>Запросы</dt>
+                        <dd>
+                          <RequestsCell row={row} />
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                );
+              }
               return (
                 <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
                   <div className={styles.mobileCardTop}>
@@ -411,6 +515,14 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                         <AbsenceCell row={row} />
                       </dd>
                     </div>
+                    {(row.requests ?? []).length > 0 ? (
+                      <div className={styles.mobileCardRow}>
+                        <dt>Запросы</dt>
+                        <dd>
+                          <RequestsCell row={row} />
+                        </dd>
+                      </div>
+                    ) : null}
                   </dl>
                 </article>
               );

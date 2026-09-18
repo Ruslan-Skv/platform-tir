@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import {
   type WorkDayMyStatus,
+  type WorkDayRecord,
   closeForgottenWorkDay,
   endWorkDay,
   endWorkDayAbsence,
@@ -20,7 +21,7 @@ type WorkDayContextValue = {
   greeting: string | null;
   refresh: () => Promise<void>;
   handleStartDay: (officeId: string) => Promise<void>;
-  handleEndDay: () => Promise<void>;
+  handleEndDay: () => Promise<WorkDayRecord>;
   handleStartAbsence: (reason?: string, comment?: string) => Promise<void>;
   handleEndAbsence: () => Promise<void>;
   handleCloseForgotten: (workDayId: string, reportedEndTime: string) => Promise<void>;
@@ -77,8 +78,9 @@ export function WorkDayProvider({ children }: { children: React.ReactNode }) {
   );
 
   const handleEndDay = useCallback(async () => {
-    await endWorkDay();
+    const record = await endWorkDay();
     await refresh();
+    return record;
   }, [refresh]);
 
   const handleStartAbsence = useCallback(

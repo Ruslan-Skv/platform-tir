@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { getOffices } from '@/shared/api/admin-crm';
-import { type WorkDayRecord, deleteWorkDay, getWorkDays } from '@/shared/api/admin-work-days';
+import { type WorkDayJournalRow, deleteWorkDay, getWorkDays } from '@/shared/api/admin-work-days';
 
 export function useWorkDaysPage() {
   const { user } = useAuth();
@@ -16,7 +16,7 @@ export function useWorkDaysPage() {
   const [dateFrom, setDateFrom] = useState(defaultFrom);
   const [dateTo, setDateTo] = useState(defaultTo);
   const [officeId, setOfficeId] = useState('');
-  const [rows, setRows] = useState<WorkDayRecord[]>([]);
+  const [rows, setRows] = useState<WorkDayJournalRow[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -51,8 +51,9 @@ export function useWorkDaysPage() {
   }, [load]);
 
   const handleDelete = useCallback(
-    async (row: WorkDayRecord) => {
+    async (row: WorkDayJournalRow) => {
       if (!canDelete) return;
+      if (row.dayOffOnly === true) return;
       setDeletingId(row.id);
       setError(null);
       try {
@@ -68,10 +69,12 @@ export function useWorkDaysPage() {
   );
 
   const stats = useMemo(() => {
-    const late = rows.filter((r) => r.lateMinutes > 0).length;
-    const early = rows.filter((r) => r.earlyLeaveMinutes > 0).length;
-    const auto = rows.filter((r) => r.status === 'AUTO_CLOSED').length;
-    return { late, early, auto };
+    const days = rows.filter((r) => r.dayOffOnly !== true);
+    const late = days.filter((r) => r.lateMinutes > 0).length;
+    const early = days.filter((r) => r.earlyLeaveMinutes > 0).length;
+    const auto = days.filter((r) => r.status === 'AUTO_CLOSED').length;
+    const dayOffs = rows.filter((r) => r.dayOffOnly === true).length;
+    return { late, early, auto, dayOffs };
   }, [rows]);
 
   return {

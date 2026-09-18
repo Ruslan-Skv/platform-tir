@@ -180,7 +180,7 @@ export class WorkDayRequestsService {
     if (row.status !== WorkDayRequestStatus.PENDING) {
       throw new BadRequestException('Запрос уже обработан');
     }
-    return this.prisma.workDayRequest.update({
+    const updated = await this.prisma.workDayRequest.update({
       where: { id: requestId },
       data: {
         status,
@@ -190,6 +190,8 @@ export class WorkDayRequestsService {
       },
       include: REQUEST_INCLUDE,
     });
+    this.workDayNotify.onRequestReviewed(updated);
+    return updated;
   }
 
   assertSuperAdmin(role: UserRole) {

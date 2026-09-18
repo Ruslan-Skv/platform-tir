@@ -21,6 +21,7 @@ export type AdminBellPushEvent =
   | 'site_feedback'
   | 'knowledge_training'
   | 'work_day'
+  | 'work_day_request_review'
   | 'waybill'
   | 'installation_schedule'
   | 'repair_schedule'
@@ -118,6 +119,7 @@ export class AdminBellPushService {
       notifyOnSiteFeedback?: boolean;
       notifyOnKnowledgeTraining?: boolean;
       notifyOnWorkDays?: boolean;
+      notifyOnWorkDayRequestReviews?: boolean;
       notifyOnWaybills?: boolean;
       notifyOnInstallationSchedules?: boolean;
       notifyOnRepairSchedules?: boolean;
@@ -154,6 +156,9 @@ export class AdminBellPushService {
         return settings.notifyOnKnowledgeTraining !== false;
       case 'work_day':
         return settings.notifyOnWorkDays !== false;
+      case 'work_day_request_review':
+        // Адресное уведомление сотруднику об ответе на его же запрос.
+        return settings.notifyOnWorkDayRequestReviews !== false;
       case 'waybill':
         return settings.notifyOnWaybills !== false;
       case 'installation_schedule':

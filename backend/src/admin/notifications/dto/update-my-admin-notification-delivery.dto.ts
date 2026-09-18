@@ -111,6 +111,13 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsBoolean()
   notifyOnWorkDays?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Личное переопределение: ответы на собственные запросы рабочего времени',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnWorkDayRequestReviews?: boolean;
+
   @ApiPropertyOptional({ description: 'Личное переопределение: путевые листы' })
   @IsOptional()
   @IsBoolean()

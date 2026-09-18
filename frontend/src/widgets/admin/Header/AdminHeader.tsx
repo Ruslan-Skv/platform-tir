@@ -32,6 +32,7 @@ import {
   getAdminBellKanbanNotifications,
   getAdminBellMeasurementNotifications,
   getAdminBellMessengerNotifications,
+  getAdminBellMyWorkDayRequestReviews,
   getAdminBellNotificationHistory,
   getAdminBellRepairScheduleNotifications,
   getAdminBellTrainingNotifications,
@@ -53,6 +54,7 @@ import type {
   AdminBellTrainingNotification,
   AdminBellWaybillNotification,
   AdminBellWorkDayNotification,
+  AdminBellWorkDayRequestReviewNotification,
   AdminNotificationsSettings,
 } from '@/shared/api/admin-notifications';
 import { getAdminReviews } from '@/shared/api/admin-reviews';
@@ -105,6 +107,7 @@ import {
   supportToBellNotificationItem,
   trainingToBellNotificationItem,
   waybillToBellNotificationItem,
+  workDayRequestReviewToBellNotificationItem,
   workDayToBellNotificationItem,
 } from './admin-header-notifications.utils';
 
@@ -166,6 +169,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [workDayNotifications, setWorkDayNotifications] = useState<AdminBellWorkDayNotification[]>(
     []
   );
+  const [workDayRequestReviews, setWorkDayRequestReviews] = useState<
+    AdminBellWorkDayRequestReviewNotification[]
+  >([]);
   const [waybillNotifications, setWaybillNotifications] = useState<AdminBellWaybillNotification[]>(
     []
   );
@@ -207,6 +213,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     leads: number;
     training: number;
     workDays: number;
+    myWorkDayRequests: number;
     waybills: number;
     installationSchedules: number;
     repairSchedules: number;
@@ -339,6 +346,12 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           ? getAdminBellWorkDayNotifications(20)
           : Promise.resolve([] as AdminBellWorkDayNotification[]);
 
+      // Адресные уведомления об ответах на собственные запросы — грузим всем ролям колокольчика.
+      const loadMyWorkDayRequests =
+        settings?.notifyOnWorkDayRequestReviews !== false
+          ? getAdminBellMyWorkDayRequestReviews(20)
+          : Promise.resolve([] as AdminBellWorkDayRequestReviewNotification[]);
+
       const canAccessWaybills =
         hasAccess('admin.crm.waybills') || hasAccess('admin.crm.waybills.my');
       const loadWaybills =
@@ -390,6 +403,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         directorResult,
         trainingResult,
         workDaysResult,
+        myWorkDayRequestsResult,
         waybillsResult,
         installationSchedulesResult,
         repairSchedulesResult,
@@ -414,6 +428,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           : Promise.resolve({ data: [] as UnifiedLeadItem[] }),
         loadTraining,
         loadWorkDays,
+        loadMyWorkDayRequests,
         loadWaybills,
         loadInstallationSchedules,
         loadRepairSchedules,
@@ -446,6 +461,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       );
       const newTraining = trainingResult.status === 'fulfilled' ? (trainingResult.value ?? []) : [];
       const newWorkDays = workDaysResult.status === 'fulfilled' ? (workDaysResult.value ?? []) : [];
+      const newMyWorkDayRequests =
+        myWorkDayRequestsResult.status === 'fulfilled' ? (myWorkDayRequestsResult.value ?? []) : [];
       const newWaybills = waybillsResult.status === 'fulfilled' ? (waybillsResult.value ?? []) : [];
       const newInstallationSchedules =
         installationSchedulesResult.status === 'fulfilled'
@@ -473,6 +490,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         leads: newLeads.length,
         training: newTraining.length,
         workDays: newWorkDays.length,
+        myWorkDayRequests: newMyWorkDayRequests.length,
         waybills: newWaybills.length,
         installationSchedules: newInstallationSchedules.length,
         repairSchedules: newRepairSchedules.length,
@@ -490,6 +508,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newLeads.length +
         newTraining.length +
         newWorkDays.length +
+        newMyWorkDayRequests.length +
         newWaybills.length +
         newInstallationSchedules.length +
         newRepairSchedules.length +
@@ -505,6 +524,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.leads +
           prev.training +
           prev.workDays +
+          prev.myWorkDayRequests +
           prev.waybills +
           prev.installationSchedules +
           prev.repairSchedules +
@@ -553,6 +573,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...leadsToBellNotificationItems(newLeads),
             ...newTraining.map(trainingToBellNotificationItem),
             ...newWorkDays.map(workDayToBellNotificationItem),
+            ...newMyWorkDayRequests.map(workDayRequestReviewToBellNotificationItem),
             ...newWaybills.map(waybillToBellNotificationItem),
             ...newInstallationSchedules.map(installationScheduleToBellNotificationItem),
             ...newRepairSchedules.map(repairScheduleToBellNotificationItem),
@@ -578,6 +599,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setLeadNotifications(newLeads);
       setTrainingNotifications(newTraining);
       setWorkDayNotifications(newWorkDays);
+      setWorkDayRequestReviews(newMyWorkDayRequests);
       setWaybillNotifications(newWaybills);
       setInstallationScheduleNotifications(newInstallationSchedules);
       setRepairScheduleNotifications(newRepairSchedules);
@@ -759,6 +781,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...leadsToBellNotificationItems(leadNotifications),
     ...trainingNotifications.map(trainingToBellNotificationItem),
     ...workDayNotifications.map(workDayToBellNotificationItem),
+    ...workDayRequestReviews.map(workDayRequestReviewToBellNotificationItem),
     ...waybillNotifications.map(waybillToBellNotificationItem),
     ...installationScheduleNotifications.map(installationScheduleToBellNotificationItem),
     ...repairScheduleNotifications.map(repairScheduleToBellNotificationItem),

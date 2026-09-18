@@ -2729,6 +2729,7 @@ model UserAdminNotificationOverride {
   notifyOnSiteFeedback          Boolean  @default(true)
   notifyOnKnowledgeTraining     Boolean  @default(true)
   notifyOnWorkDays              Boolean  @default(true)
+  notifyOnWorkDayRequestReviews Boolean  @default(true) // Ответы на собственные запросы рабочего времени
   notifyOnWaybills              Boolean  @default(true)
   notifyOnInstallationSchedules Boolean  @default(true)
   notifyOnRepairSchedules       Boolean  @default(true)
@@ -2806,6 +2807,7 @@ model AdminNotificationsBlock {
   notifyOnSiteFeedback          Boolean  @default(true) // Обратная связь по публичному сайту
   notifyOnKnowledgeTraining     Boolean  @default(true) // Динамика изучения материалов обучения
   notifyOnWorkDays              Boolean  @default(true) // Учёт рабочего времени
+  notifyOnWorkDayRequestReviews Boolean  @default(true) // Ответы на запросы сотрудников (выходной / пораньше / попозже)
   notifyOnWaybills              Boolean  @default(true) // Путевой лист / маршрут водителя
   notifyOnInstallationSchedules Boolean  @default(true) // Графики монтажей
   notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта

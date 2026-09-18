@@ -2,16 +2,19 @@
 
 import { useState } from 'react';
 
-import type { WorkDayRecord } from '@/shared/api/admin-work-days';
+import type { WorkDayJournalRow } from '@/shared/api/admin-work-days';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
 import styles from './WorkDaysPage.module.css';
 import type { WorkDaysPageModel } from './hooks/useWorkDaysPage';
 import {
+  formatWorkDayAbsenceInterval,
   formatWorkDayDate,
   formatWorkDayTime,
+  isWorkDayDayOffRow,
   workDayAbsenceMinutes,
+  workDayRequestBadgeLabel,
   workDayRowClassName,
   workDayStatusLabel,
   workDayUserName,
@@ -20,6 +23,47 @@ import {
 type WorkDaysPageViewProps = {
   model: WorkDaysPageModel;
 };
+
+function AbsenceCell({ row }: { row: WorkDayJournalRow }) {
+  const absences = row.absences ?? [];
+  const minutes = workDayAbsenceMinutes(row);
+  if (absences.length === 0) return <>—</>;
+
+  return (
+    <div className={styles.absenceCell}>
+      <span className={styles.absenceTotal}>{Math.round(minutes)} мин</span>
+      <ul className={styles.absenceList}>
+        {absences.map((a) => (
+          <li key={a.id}>
+            {formatWorkDayAbsenceInterval(a.startedAt, a.endedAt)}
+            {a.reason ? ` · ${a.reason}` : ''}
+            {!a.endedAt ? ' (сейчас)' : ''}
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function RequestsCell({ row }: { row: WorkDayJournalRow }) {
+  const requests = row.requests ?? [];
+  if (requests.length === 0) return <>—</>;
+
+  return (
+    <div className={styles.requestBadges}>
+      {requests.map((req) => (
+        <span
+          key={req.id}
+          className={`${styles.requestBadge} ${
+            req.status === 'APPROVED' ? styles.requestBadgeApproved : styles.requestBadgePending
+          }`}
+        >
+          {workDayRequestBadgeLabel(req)}
+        </span>
+      ))}
+    </div>
+  );
+}
 
 export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
   const {
@@ -39,8 +83,8 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     handleDelete,
   } = model;
 
-  const [deleteTarget, setDeleteTarget] = useState<WorkDayRecord | null>(null);
-  const colSpan = canDelete ? 10 : 9;
+  const [deleteTarget, setDeleteTarget] = useState<WorkDayJournalRow | null>(null);
+  const colSpan = canDelete ? 11 : 10;
 
   return (
     <div className={styles.page}>
@@ -75,6 +119,7 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         <span>Опозданий: {stats.late}</span>
         <span>Ранних уходов: {stats.early}</span>
         <span>Авто-закрытий: {stats.auto}</span>
+        {stats.dayOffs > 0 ? <span>Согласованных выходных: {stats.dayOffs}</span> : null}
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
@@ -93,6 +138,7 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                 <th>Опозд.</th>
                 <th>Ранний уход</th>
                 <th>По делам</th>
+                <th>Запросы</th>
                 <th>Статус</th>
                 {canDelete ? <th className={styles.actionsCol} /> : null}
               </tr>
@@ -105,9 +151,24 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                   </td>
                 </tr>
               ) : (
-                rows.map((row) => {
-                  const absence = workDayAbsenceMinutes(row);
-                  return (
+                rows.map((row) =>
+                  isWorkDayDayOffRow(row) ? (
+                    <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                      <td>{formatWorkDayDate(row.workDate)}</td>
+                      <td>{workDayUserName(row)}</td>
+                      <td>{row.office?.name ?? '—'}</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>
+                        <RequestsCell row={row} />
+                      </td>
+                      <td>Выходной</td>
+                      {canDelete ? <td className={styles.actionsCol} /> : null}
+                    </tr>
+                  ) : (
                     <tr key={row.id} className={workDayRowClassName(row, styles)}>
                       <td>{formatWorkDayDate(row.workDate)}</td>
                       <td>{workDayUserName(row)}</td>
@@ -116,7 +177,12 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                       <td>{row.endedAt ? formatWorkDayTime(row.endedAt) : '—'}</td>
                       <td>{row.lateMinutes > 0 ? `${row.lateMinutes} мин` : '—'}</td>
                       <td>{row.earlyLeaveMinutes > 0 ? `${row.earlyLeaveMinutes} мин` : '—'}</td>
-                      <td>{absence > 0 ? `${Math.round(absence)} мин` : '—'}</td>
+                      <td>
+                        <AbsenceCell row={row} />
+                      </td>
+                      <td>
+                        <RequestsCell row={row} />
+                      </td>
                       <td>{workDayStatusLabel(row.status)}</td>
                       {canDelete ? (
                         <td className={styles.actionsCol}>
@@ -136,15 +202,15 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                         </td>
                       ) : null}
                     </tr>
-                  );
-                })
+                  )
+                )
               )}
             </tbody>
           </table>
         </div>
       )}
 
-      {deleteTarget ? (
+      {deleteTarget && deleteTarget.dayOffOnly !== true ? (
         <ConfirmModal
           isOpen
           title="Удалить запись рабочего дня?"

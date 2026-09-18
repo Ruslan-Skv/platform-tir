@@ -27,6 +27,7 @@ export interface AdminNotificationsSettings {
   notifyOnSiteFeedback: boolean;
   notifyOnKnowledgeTraining: boolean;
   notifyOnWorkDays: boolean;
+  notifyOnWorkDayRequestReviews: boolean;
   notifyOnWaybills: boolean;
   notifyOnInstallationSchedules: boolean;
   notifyOnRepairSchedules: boolean;
@@ -69,6 +70,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnSiteFeedback',
   'notifyOnKnowledgeTraining',
   'notifyOnWorkDays',
+  'notifyOnWorkDayRequestReviews',
   'notifyOnWaybills',
   'notifyOnInstallationSchedules',
   'notifyOnRepairSchedules',
@@ -257,6 +259,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
+    notifyOnWorkDayRequestReviews: data.notifyOnWorkDayRequestReviews,
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
@@ -312,6 +315,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnSiteFeedback: data.notifyOnSiteFeedback,
     notifyOnKnowledgeTraining: data.notifyOnKnowledgeTraining,
     notifyOnWorkDays: data.notifyOnWorkDays,
+    notifyOnWorkDayRequestReviews: data.notifyOnWorkDayRequestReviews,
     notifyOnWaybills: data.notifyOnWaybills,
     notifyOnInstallationSchedules: data.notifyOnInstallationSchedules,
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
@@ -510,6 +514,31 @@ export async function getAdminBellWorkDayNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по учёту рабочего времени');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellWorkDayRequestReviewNotification = {
+  id: string;
+  requestId: string;
+  status: 'approved' | 'rejected';
+  requestType: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+  requestTypeLabel: string;
+  workDate: string;
+  proposedEndTime: string | null;
+  reviewComment: string | null;
+  reviewedAt: string;
+};
+
+export async function getAdminBellMyWorkDayRequestReviews(
+  limit = 20
+): Promise<AdminBellWorkDayRequestReviewNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(
+    `${API_URL}/admin/notifications/bell/work-days/my-request-reviews?${params}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить ответы на запросы рабочего времени');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

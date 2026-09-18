@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
-import { WorkDayCloseReason, WorkDayRequestStatus, WorkDayStatus } from '@prisma/client';
+import {
+  WorkDayCloseReason,
+  WorkDayRequestStatus,
+  WorkDayRequestType,
+  WorkDayStatus,
+} from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 export type WorkDayBellKind =
@@ -25,6 +30,19 @@ export type AdminBellWorkDayNotification = {
   occurredAt: string;
 };
 
+/** Персональное уведомление сотруднику об ответе руководителя на его запрос. */
+export type AdminBellWorkDayRequestReviewNotification = {
+  id: string;
+  requestId: string;
+  status: 'approved' | 'rejected';
+  requestType: WorkDayRequestType;
+  requestTypeLabel: string;
+  workDate: string;
+  proposedEndTime: string | null;
+  reviewComment: string | null;
+  reviewedAt: string;
+};
+
 const KIND_LABELS: Record<WorkDayBellKind, string> = {
   late: 'Опоздание',
   early_leave: 'Ранний уход',
@@ -33,6 +51,12 @@ const KIND_LABELS: Record<WorkDayBellKind, string> = {
   day_off_request: 'Запрос выходного',
   early_leave_request: 'Запрос уйти пораньше',
   late_arrival_request: 'Запрос прийти попозже',
+};
+
+const REQUEST_TYPE_LABELS: Record<WorkDayRequestType, string> = {
+  DAY_OFF: 'Выходной',
+  EARLY_LEAVE: 'Уйти пораньше',
+  LATE_ARRIVAL: 'Прийти попозже',
 };
 
 @Injectable()
@@ -164,6 +188,40 @@ export class AdminBellWorkDayFeedService {
     return items
       .sort((a, b) => new Date(b.occurredAt).getTime() - new Date(a.occurredAt).getTime())
       .slice(0, limit);
+  }
+
+  /**
+   * Ответы руководителя на запросы сотрудника (согласован / отклонён) —
+   * персональный фид колокольчика: только запросы самого пользователя.
+   */
+  async listReviewedRequestsForUser(
+    userId: string,
+    limit = 20,
+  ): Promise<AdminBellWorkDayRequestReviewNotification[]> {
+    const since = new Date();
+    since.setDate(since.getDate() - 14);
+
+    const requests = await this.prisma.workDayRequest.findMany({
+      where: {
+        userId,
+        status: { in: [WorkDayRequestStatus.APPROVED, WorkDayRequestStatus.REJECTED] },
+        reviewedAt: { gte: since },
+      },
+      orderBy: { reviewedAt: 'desc' },
+      take: limit,
+    });
+
+    return requests.map((req) => ({
+      id: `request_review:${req.id}`,
+      requestId: req.id,
+      status: req.status === WorkDayRequestStatus.APPROVED ? 'approved' : 'rejected',
+      requestType: req.type,
+      requestTypeLabel: REQUEST_TYPE_LABELS[req.type],
+      workDate: req.requestDate.toISOString().slice(0, 10),
+      proposedEndTime: req.proposedEndTime,
+      reviewComment: req.reviewComment,
+      reviewedAt: (req.reviewedAt ?? req.updatedAt).toISOString(),
+    }));
   }
 
   private mapWorkDayItem(

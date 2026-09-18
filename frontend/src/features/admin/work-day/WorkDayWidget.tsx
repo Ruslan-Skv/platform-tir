@@ -2,10 +2,13 @@
 
 import { useState } from 'react';
 
+import { useAuth } from '@/features/auth';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import { useWorkDay } from './WorkDayContext';
+import { WorkDayEndSummaryModal } from './WorkDayEndSummaryModal';
 import styles from './WorkDayWidget.module.css';
+import { hasWorkDayViolations } from './work-day-summary';
 
 function formatTime(iso: string): string {
   return new Date(iso).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
@@ -13,9 +16,14 @@ function formatTime(iso: string): string {
 
 export function WorkDayWidget() {
   const { status, loading, handleEndDay, handleStartAbsence, handleEndAbsence } = useWorkDay();
+  const { user } = useAuth();
   const [busy, setBusy] = useState(false);
   const [showAbsenceForm, setShowAbsenceForm] = useState(false);
   const [confirmEndOpen, setConfirmEndOpen] = useState(false);
+  const [endSummary, setEndSummary] = useState<{
+    lateMinutes: number;
+    earlyLeaveMinutes: number;
+  } | null>(null);
   const [reason, setReason] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -43,7 +51,15 @@ export function WorkDayWidget() {
   };
 
   const confirmEndDay = async () => {
-    const ok = await run(handleEndDay);
+    const ok = await run(async () => {
+      const record = await handleEndDay();
+      if (hasWorkDayViolations(record)) {
+        setEndSummary({
+          lateMinutes: record.lateMinutes,
+          earlyLeaveMinutes: record.earlyLeaveMinutes,
+        });
+      }
+    });
     if (ok) setConfirmEndOpen(false);
   };
 
@@ -129,6 +145,16 @@ export function WorkDayWidget() {
         confirmText="Завершить день"
         cancelText="Отмена"
       />
+
+      {endSummary ? (
+        <WorkDayEndSummaryModal
+          isOpen
+          onClose={() => setEndSummary(null)}
+          displayName={user?.firstName?.trim() || user?.lastName?.trim() || 'Коллега'}
+          lateMinutes={endSummary.lateMinutes}
+          earlyLeaveMinutes={endSummary.earlyLeaveMinutes}
+        />
+      ) : null}
     </div>
   );
 }

@@ -110,6 +110,13 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnWorkDays?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'Ответы на запросы сотрудников (выходной / уйти пораньше / прийти попозже)',
+  })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnWorkDayRequestReviews?: boolean;
+
   @ApiPropertyOptional({ description: 'Путевой лист (новые задания, правки, выполнение)' })
   @IsOptional()
   @IsBoolean()

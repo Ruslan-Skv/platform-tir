@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import { WorkDayCloseReason, WorkDayStatus } from '@prisma/client';
+import { WorkDayCloseReason, WorkDayRequestStatus, WorkDayStatus } from '@prisma/client';
 import { AdminBellPushService } from '../../../bell-push/admin-bell-push.service';
 import { ExternalNotifyService } from '../../../external-notify/external-notify.service';
 import { ExternalNotifySettingsService } from '../../../external-notify/external-notify-settings.service';
@@ -71,6 +71,46 @@ export class WorkDayNotifyService {
 
   onRequestCreated(requestId: string): void {
     void this.notifyRequest(requestId).catch(() => undefined);
+  }
+
+  /**
+   * Ответ руководителя на запрос сотрудника: push-уведомление получает только автор запроса.
+   */
+  onRequestReviewed(request: {
+    id: string;
+    userId: string;
+    type: 'DAY_OFF' | 'EARLY_LEAVE' | 'LATE_ARRIVAL';
+    status: WorkDayRequestStatus;
+    requestDate: Date;
+    proposedEndTime: string | null;
+  }): void {
+    if (
+      request.status !== WorkDayRequestStatus.APPROVED &&
+      request.status !== WorkDayRequestStatus.REJECTED
+    ) {
+      return;
+    }
+    const approved = request.status === WorkDayRequestStatus.APPROVED;
+    const kindLabel =
+      request.type === 'DAY_OFF'
+        ? 'Запрос выходного'
+        : request.type === 'EARLY_LEAVE'
+          ? 'Запрос уйти пораньше'
+          : 'Запрос прийти попозже';
+    const workDateLabel = request.requestDate.toLocaleDateString('ru-RU');
+    const timePart =
+      request.proposedEndTime != null && request.type !== 'DAY_OFF'
+        ? ` ${request.type === 'LATE_ARRIVAL' ? 'к' : 'до'} ${request.proposedEndTime}`
+        : '';
+
+    void this.adminBellPush
+      .notifyUsers([request.userId], 'work_day_request_review', {
+        title: approved ? 'Запрос согласован' : 'Запрос отклонён',
+        body: `${kindLabel}${timePart} — ${workDateLabel}`,
+        url: '/admin/crm/my-work-day',
+        tag: `work-day-request-review-${request.id}`,
+      })
+      .catch(() => undefined);
   }
 
   private async notifyRequest(requestId: string): Promise<void> {

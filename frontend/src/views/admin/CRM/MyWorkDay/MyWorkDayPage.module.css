@@ -62,6 +62,67 @@
   flex-wrap: wrap;
 }
 
+.todayFinishedInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+  min-width: 0;
+}
+
+.todayNotices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs);
+}
+
+.todayNotice {
+  margin: 0;
+  padding: var(--admin-space-xs) var(--admin-space-md);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  border: 1px solid var(--admin-warning-border, #fcd34d);
+  color: var(--admin-text-primary);
+  font-size: var(--admin-font-size-sm);
+  line-height: 1.45;
+}
+
+.todayNoticeNote {
+  margin: 0;
+  color: var(--admin-text-muted);
+  font-size: var(--admin-font-size-xs);
+  line-height: 1.45;
+}
+
+.requestBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.requestBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid var(--admin-border);
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-secondary);
+  font-size: var(--admin-font-size-xs);
+  white-space: nowrap;
+}
+
+.requestBadgeApproved {
+  border-color: transparent;
+  background: var(--admin-success-bg-soft, #ecfdf5);
+  color: var(--admin-success-text, #047857);
+}
+
+.requestBadgePending {
+  border-color: transparent;
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  color: var(--admin-warning-text, #b45309);
+}
+
 .stats {
   display: flex;
   flex-wrap: wrap;
@@ -99,8 +160,16 @@
   background: var(--admin-warning-bg-soft, #fffbeb);
 }
 
+.rowEarly td {
+  background: var(--admin-warning-bg-soft, #fffbeb);
+}
+
 .rowAuto td {
   background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.rowDayOff td {
+  background: var(--admin-success-bg-soft, #ecfdf5);
 }
 
 .requestsSection {
@@ -238,8 +307,37 @@
   background: rgb(245 158 11 / 0.16);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowEarly td {
+  background: rgb(245 158 11 / 0.16);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .rowAuto td {
   background: rgb(239 68 68 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowDayOff td {
+  background: rgb(16 185 129 / 0.14);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadge {
+  background: var(--admin-surface-muted);
+  border-color: var(--admin-border);
+  color: var(--admin-text-secondary);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadgeApproved {
+  background: rgb(16 185 129 / 0.18);
+  color: rgb(110 231 183);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadgePending {
+  background: rgb(245 158 11 / 0.16);
+  color: rgb(252 211 77);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .todayNotice {
+  background: rgb(245 158 11 / 0.16);
+  border-color: rgb(245 158 11 / 0.4);
 }
 
 .mobileCards {
@@ -312,9 +410,19 @@
   border-color: var(--admin-warning-border, #fcd34d);
 }
 
+.mobileCard.rowEarly {
+  background: var(--admin-warning-bg-soft, #fffbeb);
+  border-color: var(--admin-warning-border, #fcd34d);
+}
+
 .mobileCard.rowAuto {
   background: var(--admin-danger-bg-soft, #fef2f2);
   border-color: var(--admin-danger-border, #fecaca);
+}
+
+.mobileCard.rowDayOff {
+  background: var(--admin-success-bg-soft, #ecfdf5);
+  border-color: var(--admin-success-border, #a7f3d0);
 }
 
 @media (max-width: 900px) {
@@ -454,8 +562,16 @@
   background: rgb(245 158 11 / 0.16);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowEarly {
+  background: rgb(245 158 11 / 0.16);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowAuto {
   background: rgb(239 68 68 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowDayOff {
+  background: rgb(16 185 129 / 0.14);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardDate {

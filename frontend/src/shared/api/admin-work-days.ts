@@ -55,7 +55,46 @@ export interface WorkDayRecord {
     lastName: string | null;
     role: string;
   };
+  /** Запросы (выходной / уйти пораньше / прийти попозже) на дату записи. */
+  requests?: WorkDayRequestBadge[];
+  dayOffOnly?: false;
 }
+
+/** Короткая карточка запроса для строк журнала рабочего времени. */
+export interface WorkDayRequestBadge {
+  id: string;
+  type: WorkDayRequestType;
+  status: WorkDayRequestStatus;
+  requestDate: string;
+  proposedEndTime: string | null;
+  comment: string | null;
+  createdAt: string;
+}
+
+/** Строка журнала за согласованный выходной, когда явки в офисе не было. */
+export interface WorkDayDayOffRow {
+  id: string;
+  userId: string;
+  officeId: string | null;
+  workDate: string;
+  startedAt: null;
+  endedAt: null;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  dayOffOnly: true;
+  office?: { id: string; name: string } | null;
+  absences: [];
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
+  requests: WorkDayRequestBadge[];
+}
+
+export type WorkDayJournalRow = WorkDayRecord | WorkDayDayOffRow;
 
 export interface WorkDaySettings {
   id: string;
@@ -243,10 +282,11 @@ export interface MyWorkDayHistorySummary {
   earlyLeaveDays: number;
   autoClosedDays: number;
   totalAbsenceMinutes: number;
+  approvedDayOffDays?: number;
 }
 
 export interface MyWorkDayHistoryResponse {
-  records: WorkDayRecord[];
+  records: WorkDayJournalRow[];
   summary: MyWorkDayHistorySummary;
 }
 
@@ -255,7 +295,7 @@ export async function getWorkDays(params?: {
   dateTo?: string;
   officeId?: string;
   userId?: string;
-}): Promise<WorkDayRecord[]> {
+}): Promise<WorkDayJournalRow[]> {
   const search = new URLSearchParams();
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
