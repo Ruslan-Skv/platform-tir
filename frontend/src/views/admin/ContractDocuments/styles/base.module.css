@@ -1622,6 +1622,36 @@
   margin-right: var(--admin-space-xs);
 }
 
+/* «Отменить» в журнале оплат — действие только супер-админа, подсвечиваем как опасное. */
+.paymentsCancelBtn {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-danger, #dc2626);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-danger, #dc2626);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  font-weight: 600;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 1.75rem;
+  padding: var(--admin-space-xs, 2px) var(--admin-space-md, 12px);
+  white-space: nowrap;
+}
+
+.paymentsCancelBtn:not(:disabled):hover {
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.paymentsCancelBtn:disabled {
+  border-color: var(--admin-border-strong, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
 .workScopeSplitModalForm [data-modal-form-hint],
 .workScopeSplitModalForm [data-modal-form-error] {
   font-size: var(--admin-font-size-xs, 0.8125rem);

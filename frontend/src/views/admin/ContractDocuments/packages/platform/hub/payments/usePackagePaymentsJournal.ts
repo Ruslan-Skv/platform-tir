@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   type ContractDocumentPackagePayment,
+  deleteContractDocumentPackagePayment,
   getContractDocumentPackagePayments,
 } from '@/shared/api/admin-contract-document-packages';
 
@@ -20,6 +21,8 @@ export type UsePackagePaymentsJournalParams = {
   onError: (message: string) => void;
   journalReloadToken?: number;
   payableBreakdown: PackagePayableBreakdown;
+  /** Уведомить владельца таблички (бейдж % в шапке хаба) после отмены оплаты. */
+  onJournalChanged?: () => void;
 };
 
 export function usePackagePaymentsJournal({
@@ -27,9 +30,11 @@ export function usePackagePaymentsJournal({
   onError,
   journalReloadToken = 0,
   payableBreakdown,
+  onJournalChanged,
 }: UsePackagePaymentsJournalParams) {
   const [rows, setRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(true);
+  const [cancelingPaymentId, setCancelingPaymentId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -47,6 +52,23 @@ export function usePackagePaymentsJournal({
   useEffect(() => {
     void load();
   }, [load, journalReloadToken]);
+
+  /** Отмена проведённой оплаты — доступна только супер-админу (проверка роли и на бэкенде). */
+  const cancelPayment = useCallback(
+    async (paymentId: string) => {
+      setCancelingPaymentId(paymentId);
+      try {
+        await deleteContractDocumentPackagePayment(packageId, paymentId);
+        await load();
+        onJournalChanged?.();
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Не удалось отменить оплату');
+      } finally {
+        setCancelingPaymentId(null);
+      }
+    },
+    [packageId, load, onJournalChanged, onError]
+  );
 
   const paidAllocations = useMemo(() => {
     let contractPaidRub = 0;
@@ -114,6 +136,8 @@ export function usePackagePaymentsJournal({
     setRows,
     loading,
     load,
+    cancelingPaymentId,
+    cancelPayment,
     paidAllocations,
     coverage,
     journalPaidRub,

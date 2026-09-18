@@ -16,6 +16,8 @@ export function PackageContractPaymentsTabView({
   onPrintCashOrder,
   rows,
   loading,
+  cancelingPaymentId,
+  cancelPayment,
   saving,
   showHubSummary,
   showJournalTable,
@@ -117,6 +119,8 @@ export function PackageContractPaymentsTabView({
           rows={rows}
           grandTotalRub={grandTotalRub}
           packageKind={packageKind}
+          cancelingPaymentId={cancelingPaymentId}
+          cancelPayment={cancelPayment}
         />
       ) : null}
     </div>

@@ -710,7 +710,9 @@ export class ContractDocumentPackagesController {
     return this.packagePayments.update(id, paymentId, dto);
   }
 
+  /** Отмена проведённой оплаты — только супер-админ (исправление ошибок менеджеров). */
   @Delete(':id/payments/:paymentId')
+  @Roles('SUPER_ADMIN')
   removePackagePayment(@Param('id') id: string, @Param('paymentId') paymentId: string) {
     return this.packagePayments.remove(id, paymentId);
   }

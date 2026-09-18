@@ -1,5 +1,10 @@
 'use client';
 
+import { useState } from 'react';
+
+import { useAuth } from '@/features/auth/context/AuthContext';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+
 import cdBase from '../../../../styles/base.module.css';
 import cdProduct from '../../../../styles/product-package.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
@@ -15,7 +20,13 @@ import type { PackageContractPaymentsTabModel } from './usePackageContractPaymen
 
 export type PackageContractPaymentsJournalSectionProps = Pick<
   PackageContractPaymentsTabModel,
-  'layout' | 'loading' | 'rows' | 'grandTotalRub' | 'packageKind'
+  | 'layout'
+  | 'loading'
+  | 'rows'
+  | 'grandTotalRub'
+  | 'packageKind'
+  | 'cancelingPaymentId'
+  | 'cancelPayment'
 >;
 
 export function PackageContractPaymentsJournalSection({
@@ -24,8 +35,25 @@ export function PackageContractPaymentsJournalSection({
   rows,
   grandTotalRub,
   packageKind = 'REPAIR',
+  cancelingPaymentId,
+  cancelPayment,
 }: PackageContractPaymentsJournalSectionProps) {
+  const { user } = useAuth();
+  // Отменять проведённые оплаты может только супер-админ (роль проверяется и на бэкенде).
+  const canCancelPayments = user?.role === 'SUPER_ADMIN';
+  const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
+  const pendingCancelRow = rows.find((r) => r.id === pendingCancelId) ?? null;
   const showFurnitureLeg = isFurnitureLikePackageKind(packageKind);
+
+  const pendingCancelSummary = pendingCancelRow
+    ? [
+        `от ${formatDateRu(pendingCancelRow.paymentDate)}`,
+        pendingCancelRow.amount ? formatMoneyRub(Number(pendingCancelRow.amount)) : null,
+        pendingCancelRow.basis?.trim() || null,
+      ]
+        .filter(Boolean)
+        .join(' · ')
+    : '';
 
   return (
     <div
@@ -52,6 +80,7 @@ export function PackageContractPaymentsJournalSection({
                 <th>Способ оплаты</th>
                 <th>Основание</th>
                 <th>Кто внёс</th>
+                {canCancelPayments ? <th>Действия</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -61,6 +90,7 @@ export function PackageContractPaymentsJournalSection({
                 // Возврат показываем со знаком «минус» — так видно его влияние на итог.
                 const displayRub = r.paymentType === 'REFUND' && rowRub != null ? -rowRub : rowRub;
                 const rowPct = formatPercentOfGrandTotal(displayRub, grandTotalRub);
+                const rowCanceling = cancelingPaymentId === r.id;
                 return (
                   <tr key={r.id}>
                     <td>{formatDateRu(r.paymentDate)}</td>
@@ -76,6 +106,20 @@ export function PackageContractPaymentsJournalSection({
                             .join(' ') || r.recordedBy.email
                         : '—'}
                     </td>
+                    {canCancelPayments ? (
+                      <td className={cdBase.paymentsTableActionsCell}>
+                        <button
+                          data-admin-mutation
+                          type="button"
+                          className={cdBase.paymentsCancelBtn}
+                          disabled={cancelingPaymentId != null}
+                          title="Отменить оплату (только супер-админ)"
+                          onClick={() => setPendingCancelId(r.id)}
+                        >
+                          {rowCanceling ? 'Отмена…' : 'Отменить'}
+                        </button>
+                      </td>
+                    ) : null}
                   </tr>
                 );
               })}
@@ -83,6 +127,25 @@ export function PackageContractPaymentsJournalSection({
           </table>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={pendingCancelRow != null}
+        onClose={() => {
+          if (cancelingPaymentId == null) setPendingCancelId(null);
+        }}
+        onConfirm={() => {
+          if (pendingCancelRow) void cancelPayment(pendingCancelRow.id);
+          setPendingCancelId(null);
+        }}
+        title="Отменить проведённую оплату?"
+        message={
+          pendingCancelSummary
+            ? `Запись ${pendingCancelSummary} будет удалена из журнала, оплаченная сумма и покрытие оснований пересчитаются. Отменять оплату можно только для исправления ошибок.`
+            : 'Запись будет удалена из журнала, оплаченная сумма и покрытие оснований пересчитаются. Отменять оплату можно только для исправления ошибок.'
+        }
+        confirmText="Отменить оплату"
+        variant="danger"
+      />
     </div>
   );
 }

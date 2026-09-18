@@ -102,6 +102,7 @@ export function useContractsListPage() {
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     listViewMode: filters.listViewMode,
+    loading: load.loading,
     setPage: filters.setPage,
     setExpandedObjectId: filters.setExpandedObjectId,
     totalVisible: derived.totalVisible,

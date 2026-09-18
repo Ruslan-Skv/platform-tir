@@ -27,20 +27,22 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   const roleDefaultsAppliedRef = useRef(false);
   const isNarrowViewport = useAdminNarrowViewport();
 
-  const [search, setSearch] = useState(initialListFiltersRef.current.search);
-  const [managerFilter, setManagerFilter] = useState(initialListFiltersRef.current.managerFilter);
-  const [statusFilters, setStatusFilters] = useState<string[]>(
+  const [search, setSearchState] = useState(initialListFiltersRef.current.search);
+  const [managerFilter, setManagerFilterState] = useState(
+    initialListFiltersRef.current.managerFilter
+  );
+  const [statusFilters, setStatusFiltersState] = useState<string[]>(
     initialListFiltersRef.current.statusFilters
   );
-  const [directionFilters, setDirectionFilters] = useState<string[]>(
+  const [directionFilters, setDirectionFiltersState] = useState<string[]>(
     initialListFiltersRef.current.directionFilters
   );
   const [listScope, setListScopeState] = useState<ContractsListScope>(
     initialListFiltersRef.current.listScope
   );
   const [scopeTouched, setScopeTouched] = useState(initialListFiltersRef.current.scopeTouched);
-  const [dateFrom, setDateFrom] = useState(initialListFiltersRef.current.dateFrom);
-  const [dateTo, setDateTo] = useState(initialListFiltersRef.current.dateTo);
+  const [dateFrom, setDateFromState] = useState(initialListFiltersRef.current.dateFrom);
+  const [dateTo, setDateToState] = useState(initialListFiltersRef.current.dateTo);
   const [listSortBy, setListSortBy] = useState<ContractsListSortBy>(
     initialListFiltersRef.current.sortBy
   );
@@ -76,19 +78,19 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
 
   const applyQueuePreset = useCallback((preset: ContractsListQueuePreset) => {
     const row = CONTRACTS_LIST_QUEUE_PRESETS.find((p) => p.id === preset);
-    setStatusFilters(row?.statusFilters ?? []);
+    setStatusFiltersState(row?.statusFilters ?? []);
     setScopeTouched(true);
   }, []);
 
   const applyFiltersSnapshot = useCallback((next: ContractsListFiltersPersisted) => {
-    setSearch(next.search);
-    setManagerFilter(next.managerFilter);
-    setStatusFilters([...next.statusFilters]);
-    setDirectionFilters([...next.directionFilters]);
+    setSearchState(next.search);
+    setManagerFilterState(next.managerFilter);
+    setStatusFiltersState([...next.statusFilters]);
+    setDirectionFiltersState([...next.directionFilters]);
     setListScopeState(next.listScope);
     setScopeTouched(true);
-    setDateFrom(next.dateFrom);
-    setDateTo(next.dateTo);
+    setDateFromState(next.dateFrom);
+    setDateToState(next.dateTo);
     setListSortBy(next.sortBy);
     setListSortOrder(next.sortOrder);
     setLimit(next.pageLimit);
@@ -134,14 +136,14 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
 
   useEffect(() => {
     const saved = reloadContractsListFiltersFromStorage();
-    setSearch(saved.search);
-    setManagerFilter(saved.managerFilter);
-    setStatusFilters(saved.statusFilters);
-    setDirectionFilters(saved.directionFilters);
+    setSearchState(saved.search);
+    setManagerFilterState(saved.managerFilter);
+    setStatusFiltersState(saved.statusFilters);
+    setDirectionFiltersState(saved.directionFilters);
     setListScopeState(saved.listScope);
     setScopeTouched(saved.scopeTouched);
-    setDateFrom(saved.dateFrom);
-    setDateTo(saved.dateTo);
+    setDateFromState(saved.dateFrom);
+    setDateToState(saved.dateTo);
     setListSortBy(saved.sortBy);
     setListSortOrder(saved.sortOrder);
     setLimit(saved.pageLimit);
@@ -157,7 +159,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     if (!currentUserRole) return;
     const defaults = getContractsListRoleDefaults(currentUserRole);
     setListScopeState(defaults.listScope);
-    setStatusFilters(defaults.statusFilters);
+    setStatusFiltersState(defaults.statusFilters);
     setScopeTouched(true);
     roleDefaultsAppliedRef.current = true;
   }, [currentUserRole, scopeTouched]);
@@ -212,6 +214,38 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     },
     [listSortBy]
   );
+
+  // Любое изменение фильтра пользователем фиксирует его выбор: иначе при возврате
+  // на страницу ролевые дефолты снова применятся и перезапишут сохранённые чипы.
+  const setSearch = useCallback((next: string) => {
+    setSearchState(next);
+    setScopeTouched(true);
+  }, []);
+
+  const setManagerFilter = useCallback((next: string) => {
+    setManagerFilterState(next);
+    setScopeTouched(true);
+  }, []);
+
+  const setStatusFilters = useCallback((next: string[]) => {
+    setStatusFiltersState(next);
+    setScopeTouched(true);
+  }, []);
+
+  const setDirectionFilters = useCallback((next: string[] | ((prev: string[]) => string[])) => {
+    setDirectionFiltersState(next);
+    setScopeTouched(true);
+  }, []);
+
+  const setDateFrom = useCallback((next: string) => {
+    setDateFromState(next);
+    setScopeTouched(true);
+  }, []);
+
+  const setDateTo = useCallback((next: string) => {
+    setDateToState(next);
+    setScopeTouched(true);
+  }, []);
 
   return {
     search,

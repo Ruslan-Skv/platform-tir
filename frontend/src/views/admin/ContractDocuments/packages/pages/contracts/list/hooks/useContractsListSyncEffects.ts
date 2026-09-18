@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
 import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection } from '@/shared/api/admin-crm';
@@ -14,6 +14,8 @@ export type UseContractsListSyncEffectsParams = {
   dateFrom: string;
   dateTo: string;
   listViewMode: ContractsListViewMode;
+  /** Пока данные не загружены, не трогаем восстановленные из localStorage page/фильтры. */
+  loading: boolean;
   setPage: (page: number) => void;
   setExpandedObjectId: (id: string | null) => void;
   totalVisible: number;
@@ -34,6 +36,7 @@ export function useContractsListSyncEffects({
   dateFrom,
   dateTo,
   listViewMode,
+  loading,
   setPage,
   setExpandedObjectId,
   totalVisible,
@@ -44,7 +47,25 @@ export function useContractsListSyncEffects({
   directions,
   setDirectionFilters,
 }: UseContractsListSyncEffectsParams) {
+  // Сброс page/expandedObjectId — только при реальном изменении фильтров после монтирования:
+  // при возврате на страницу восстановленные значения не должны затираться.
+  const prevFiltersSignatureRef = useRef<string | null>(null);
+
   useEffect(() => {
+    const signature = JSON.stringify([
+      searchNorm,
+      managerFilter,
+      statusFilters,
+      directionFilters,
+      listScope,
+      dateFrom,
+      dateTo,
+      listViewMode,
+    ]);
+    const isFirstRun = prevFiltersSignatureRef.current === null;
+    const changed = prevFiltersSignatureRef.current !== signature;
+    prevFiltersSignatureRef.current = signature;
+    if (isFirstRun || !changed) return;
     setPage(1);
     setExpandedObjectId(null);
   }, [
@@ -61,23 +82,27 @@ export function useContractsListSyncEffects({
   ]);
 
   useEffect(() => {
+    // До первой загрузки totalVisible = 0 — не клампим восстановленную страницу.
+    if (loading) return;
     const totalPages = Math.max(1, Math.ceil(totalVisible / limit));
     if (page > totalPages) setPage(totalPages);
-  }, [totalVisible, limit, page, setPage]);
+  }, [loading, totalVisible, limit, page, setPage]);
 
+  // Справочники (менеджеры, направления) грузятся асинхронно и до загрузки пусты:
+  // валидируем сохранённые фильтры только против загруженных данных, иначе затрём их.
   useEffect(() => {
-    if (!managerFilter) return;
+    if (loading || !managerFilter) return;
     if (!managerOptions.some((p) => p.crmUserId === managerFilter)) {
       setManagerFilter('');
     }
-  }, [managerFilter, managerOptions, setManagerFilter]);
+  }, [loading, managerFilter, managerOptions, setManagerFilter]);
 
   useEffect(() => {
-    if (directionFilters.length === 0) return;
+    if (loading || directionFilters.length === 0) return;
     const valid = new Set(directions.map((d) => d.id));
     const next = directionFilters.filter((id) => valid.has(id));
     if (next.length !== directionFilters.length) {
       setDirectionFilters(next);
     }
-  }, [directionFilters, directions, setDirectionFilters]);
+  }, [loading, directionFilters, directions, setDirectionFilters]);
 }

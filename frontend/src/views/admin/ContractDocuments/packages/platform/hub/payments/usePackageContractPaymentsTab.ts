@@ -37,6 +37,7 @@ export function usePackageContractPaymentsTab({
     onError,
     journalReloadToken,
     payableBreakdown,
+    onJournalChanged,
   });
 
   const summary = usePackagePaymentsSummaryBreakdown({
@@ -70,6 +71,8 @@ export function usePackageContractPaymentsTab({
     onPrintCashOrder,
     rows: journal.rows,
     loading: journal.loading,
+    cancelingPaymentId: journal.cancelingPaymentId,
+    cancelPayment: journal.cancelPayment,
     saving: conduct.saving,
     showHubSummary,
     showJournalTable,
