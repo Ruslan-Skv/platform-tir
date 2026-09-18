@@ -349,6 +349,22 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
               </div>
 
               <div className={styles.row}>
+                <label className={styles.label} htmlFor="preferredTime">
+                  Желаемое время
+                </label>
+                <textarea
+                  id="preferredTime"
+                  value={preferredTime}
+                  onChange={(e) => setPreferredTime(e.target.value)}
+                  className={styles.textarea}
+                  rows={1}
+                  placeholder="Например: будни после 18:00"
+                />
+              </div>
+            </div>
+
+            <div className={styles.blankCustomerLayout}>
+              <div className={styles.row}>
                 <label className={styles.label}>Замерщик</label>
                 <select
                   value={surveyorId}
@@ -369,9 +385,7 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                       ))}
                 </select>
               </div>
-            </div>
 
-            <div className={styles.blankCustomerLayout}>
               <div className={`${styles.row} ${styles.directionRowsBlock}`}>
                 <label className={styles.label}>
                   Направление <span className={styles.required}>*</span>
@@ -533,20 +547,6 @@ export function MeasurementFormPageView({ model }: MeasurementFormPageViewProps)
                   }}
                 />
               </div>
-            </div>
-
-            <div className={`${styles.row} ${styles.blankCommentRow}`}>
-              <label className={styles.label} htmlFor="preferredTime">
-                Желаемое время
-              </label>
-              <textarea
-                id="preferredTime"
-                value={preferredTime}
-                onChange={(e) => setPreferredTime(e.target.value)}
-                className={styles.textarea}
-                rows={2}
-                placeholder="Например: будни после 18:00, выходные с 10:00..."
-              />
             </div>
 
             <div className={`${styles.row} ${styles.blankCommentRow}`}>
