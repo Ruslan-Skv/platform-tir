@@ -957,6 +957,10 @@ export async function allocateContractDocumentNumber(body: {
 export type RepairContractSettings = {
   defaultWorkPeriodDays: number;
   updatedAt: string | null;
+  /** Глобальная наценка заказ-наряда по ремонту (null — не задана, берётся из данных пакета). */
+  workOrderMarkupPercent?: number | null;
+  /** Глобальный налог заказ-наряда по ремонту (null — не задан, берётся из данных пакета). */
+  workOrderTaxPercent?: number | null;
 };
 
 export type WindowsContractSettings = RepairContractSettings & {
@@ -1136,6 +1140,40 @@ export async function putContractDocumentWorkOrderMarkupSettings(body: {
 
 export async function getContractDocumentWindowsWorkOrderMarkup(): Promise<WindowsWorkOrderMarkupSettings> {
   return getContractDocumentWorkOrderMarkupSettings('WINDOWS');
+}
+
+export type RepairWorkOrderSettings = {
+  markupPercent: number | null;
+  taxPercent: number | null;
+  updatedAt: string | null;
+};
+
+export async function getContractDocumentRepairWorkOrderSettings(): Promise<RepairWorkOrderSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/repair-work-order-settings`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error('Не удалось загрузить налог и наценку заказ-наряда ремонта');
+  return res.json();
+}
+
+export async function putContractDocumentRepairWorkOrderSettings(body: {
+  markupPercent: number;
+  taxPercent: number;
+}): Promise<RepairWorkOrderSettings> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/repair-work-order-settings`,
+    {
+      method: 'PUT',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось сохранить налог и наценку заказ-наряда ремонта');
+  }
+  return res.json();
 }
 
 export async function putContractDocumentWindowsWorkOrderMarkup(body: {

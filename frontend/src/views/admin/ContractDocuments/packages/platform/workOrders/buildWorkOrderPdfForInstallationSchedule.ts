@@ -7,6 +7,7 @@ import type {
 import {
   getContractDocumentEstimatePresets,
   getContractDocumentPackage,
+  getContractDocumentRepairSettings,
   getContractDocumentTemplatePresets,
   getContractDocumentWindowsSettings,
 } from '@/shared/api/admin-contract-document-packages';
@@ -30,6 +31,10 @@ import {
   type PackageDocumentTemplateTabId,
   mergeFormDataFromStorage,
 } from '../form/formDataTemplateStorage';
+import {
+  type RepairWorkOrderGlobalPercents,
+  applyRepairWorkOrderGlobalDefaults,
+} from '../form/repairWorkOrderPercents';
 import { isPackageLibraryTemplateTabId } from '../tabs/packageLibraryTemplateTabs';
 import { packageTemplatePresetEditorTabId } from '../tabs/packageTemplatePresetTab';
 import { buildWorkOrderInstallationMetaLines } from './workOrderInstallationMeta';
@@ -147,7 +152,7 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
   const estimatePresetsKind = estimatePresetsCatalogKind(packageKind);
   const templatePresetsKind = packageTemplatePresetsKind(packageKind);
 
-  const [estimateCatalog, templatePresetsRes, windowsSettings] = await Promise.all([
+  const [estimateCatalog, templatePresetsRes, settingsRes] = await Promise.all([
     getContractDocumentEstimatePresets(estimatePresetsKind).catch(() => ({
       items: [] as ContractEstimatePreset[],
       groups: [] as ContractEstimateGroup[],
@@ -161,9 +166,15 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
       ? getContractDocumentWindowsSettings().catch(() => ({
           windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
         }))
-      : Promise.resolve({
-          windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
-        }),
+      : packageKind === 'REPAIR'
+        ? getContractDocumentRepairSettings().catch(() => ({
+            windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+            workOrderMarkupPercent: null,
+            workOrderTaxPercent: null,
+          }))
+        : Promise.resolve({
+            windowsWorkOrderMarkupPercent: DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT,
+          }),
   ]);
 
   const estimatePresets = estimateCatalog.items ?? [];
@@ -180,15 +191,22 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
         : []),
     ]),
   ];
-  const form = applyEstimatePresetIdsToPackageForm(
+  let form = applyEstimatePresetIdsToPackageForm(
     mergedForm,
     normalizedEstimateIds,
     estimatePresets,
     estimateGroups
   );
+  /** Налог/наценку заказ-наряда ремонта добираем из глобальных настроек, если в пакете пусто. */
+  if (packageKind === 'REPAIR') {
+    form = applyRepairWorkOrderGlobalDefaults(
+      form,
+      settingsRes as RepairWorkOrderGlobalPercents
+    ).form;
+  }
 
   const windowsWorkOrderMarkupPercent = normalizeWindowsWorkOrderMarkupPercent(
-    windowsSettings.windowsWorkOrderMarkupPercent
+    (settingsRes as { windowsWorkOrderMarkupPercent?: number }).windowsWorkOrderMarkupPercent
   );
 
   const resolveTemplateHtml = (tab: PackageDocumentTemplateTabId) =>

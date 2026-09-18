@@ -6,6 +6,7 @@ import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
 } from './dto/set-repair-settings.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
 import {
   DEFAULT_REPAIR_CONTRACT_WORK_PERIOD_DAYS,
@@ -73,7 +74,16 @@ export class ContractDocumentPackageKindSettingsService {
   }
 
   async getRepairSettings() {
-    return this.getWorkPeriodSettings(ContractDocumentPackageKind.REPAIR);
+    const base = await this.getWorkPeriodSettings(ContractDocumentPackageKind.REPAIR);
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      select: { repairWorkOrderMarkupPercent: true, repairWorkOrderTaxPercent: true },
+    });
+    return {
+      ...base,
+      workOrderMarkupPercent: row?.repairWorkOrderMarkupPercent ?? null,
+      workOrderTaxPercent: row?.repairWorkOrderTaxPercent ?? null,
+    };
   }
 
   async getWindowsSettings() {
@@ -273,5 +283,52 @@ export class ContractDocumentPackageKindSettingsService {
 
   async setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
     return this.setWorkOrderMarkupSettings(ContractDocumentPackageKind.WINDOWS, dto, updatedById);
+  }
+
+  /** Глобальные налог и наценка заказ-наряда по ремонту (null — не заданы, берутся из данных пакета). */
+  async getRepairWorkOrderSettings() {
+    const row = await this.prisma.contractDocumentRepairSettings.findUnique({
+      where: { kind: ContractDocumentPackageKind.REPAIR },
+      select: {
+        repairWorkOrderMarkupPercent: true,
+        repairWorkOrderTaxPercent: true,
+        updatedAt: true,
+      },
+    });
+    return {
+      markupPercent: row?.repairWorkOrderMarkupPercent ?? null,
+      taxPercent: row?.repairWorkOrderTaxPercent ?? null,
+      updatedAt: row?.updatedAt?.toISOString() ?? null,
+    };
+  }
+
+  async setRepairWorkOrderSettings(dto: SetRepairWorkOrderSettingsDto, updatedById?: string) {
+    const kind = ContractDocumentPackageKind.REPAIR;
+    const fallbackDays = this.fallbackWorkPeriodDays(kind);
+    const row = await this.prisma.contractDocumentRepairSettings.upsert({
+      where: { kind },
+      create: {
+        kind,
+        defaultWorkPeriodDays: fallbackDays,
+        repairWorkOrderMarkupPercent: dto.markupPercent,
+        repairWorkOrderTaxPercent: dto.taxPercent,
+        updatedById: updatedById ?? null,
+      },
+      update: {
+        repairWorkOrderMarkupPercent: dto.markupPercent,
+        repairWorkOrderTaxPercent: dto.taxPercent,
+        updatedById: updatedById ?? null,
+      },
+      select: {
+        repairWorkOrderMarkupPercent: true,
+        repairWorkOrderTaxPercent: true,
+        updatedAt: true,
+      },
+    });
+    return {
+      markupPercent: row.repairWorkOrderMarkupPercent,
+      taxPercent: row.repairWorkOrderTaxPercent,
+      updatedAt: row.updatedAt.toISOString(),
+    };
   }
 }

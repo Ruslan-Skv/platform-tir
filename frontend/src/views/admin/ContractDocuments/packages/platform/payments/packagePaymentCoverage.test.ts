@@ -16,7 +16,7 @@ function breakdown(
     grandTotalRub:
       mainContractRub == null
         ? null
-        : mainContractRub + addendumTotals.reduce((acc, t) => acc + (t ?? 0), 0),
+        : mainContractRub + addendumTotals.reduce<number>((acc, t) => acc + (t ?? 0), 0),
   };
 }
 

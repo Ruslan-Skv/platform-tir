@@ -48,6 +48,7 @@ import {
   ApplyWorkPeriodToAllByKindDto,
   SetWorkPeriodSettingsByKindDto,
 } from './dto/set-work-period-settings-by-kind.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
 import { SetWorkOrderMarkupByKindDto } from './dto/set-work-order-markup-by-kind.dto';
 import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
@@ -644,6 +645,20 @@ export class ContractDocumentPackagesController {
       { windowsWorkOrderMarkupPercent: dto.windowsWorkOrderMarkupPercent },
       req.user?.id,
     );
+  }
+
+  @Get('repair-work-order-settings')
+  getRepairWorkOrderSettings() {
+    return this.service.getRepairWorkOrderSettings();
+  }
+
+  @Put('repair-work-order-settings')
+  @Roles('SUPER_ADMIN')
+  setRepairWorkOrderSettings(
+    @Body() dto: SetRepairWorkOrderSettingsDto,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.service.setRepairWorkOrderSettings(dto, req.user?.id);
   }
 
   /** @deprecated Используйте GET work-order-markup-settings?kind=WINDOWS. */

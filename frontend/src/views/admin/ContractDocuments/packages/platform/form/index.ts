@@ -12,3 +12,4 @@ export * from './contractPlaceholders';
 export * from './packageContractDisplay';
 export * from './clonePackageFormDataForCopy';
 export * from './resolvePackageTemplateHtml';
+export * from './repairWorkOrderPercents';

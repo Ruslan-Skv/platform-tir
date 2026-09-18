@@ -27,12 +27,12 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
     isSuperAdmin,
     loading,
     message,
-    parsedByKind,
     refresh,
     rows,
-    saveMarkup,
+    saveAllMarkups,
     savingKind,
     setMarkupInput,
+    setTaxInput,
     setMessage,
   } = model;
 
@@ -52,20 +52,24 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
 
   const countTitle = `${rows.length} направлений`;
 
-  const saveButton = (row: MarkupRow) => {
-    if (!isSuperAdmin) return <span className={styles.muted}>—</span>;
-    const parsed = parsedByKind.get(row.kind) ?? null;
-    const saving = savingKind === row.kind;
+  const taxInputCell = (row: MarkupRow, idPrefix: string) => {
+    if (row.taxInput === null || row.taxInputId === null) {
+      return <span className={styles.muted}>—</span>;
+    }
     return (
-      <button
-        type="button"
-        data-admin-mutation
-        className={styles.saveBtn}
-        disabled={busy || parsed === null}
-        onClick={() => void saveMarkup(row.kind)}
-      >
-        {saving ? '…' : 'Сохранить'}
-      </button>
+      <input
+        id={row.taxInputId}
+        className={styles.input}
+        type="text"
+        inputMode="numeric"
+        value={row.taxInput}
+        onChange={(e) => setTaxInput(row.kind, e.target.value)}
+        disabled={!isSuperAdmin || busy}
+        readOnly={!isSuperAdmin}
+        autoComplete="off"
+        aria-label={`Налог заказ-наряда для «${row.title}»`}
+        data-testid={`${idPrefix}_tax_input`}
+      />
     );
   };
 
@@ -94,16 +98,16 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
       ),
     },
     {
+      key: 'tax',
+      title: 'Налог, %',
+      render: (row: MarkupRow) => taxInputCell(row, 'desktop'),
+    },
+    {
       key: 'updatedAt',
       title: 'Обновлено',
       render: (row: MarkupRow) => (
         <span className={styles.muted}>{formatUpdatedAt(row.updatedAt)}</span>
       ),
-    },
-    {
-      key: 'actions',
-      title: 'Действия',
-      render: (row: MarkupRow) => saveButton(row),
     },
   ];
 
@@ -115,6 +119,19 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
           : cdHub.contractsHeaderIconActionsDesktop
       }
     >
+      {isSuperAdmin ? (
+        <button
+          type="button"
+          data-admin-mutation
+          className={styles.saveBtn}
+          disabled={busy || rows.length === 0}
+          title="Сохранить наценки и налог для всех направлений"
+          aria-label="Сохранить наценки и налог для всех направлений"
+          onClick={() => void saveAllMarkups()}
+        >
+          {savingKind !== null ? '…' : 'Сохранить'}
+        </button>
+      ) : null}
       <AdminListRefreshButton
         disabled={busy}
         busy={loading}
@@ -165,10 +182,12 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
 
       <div className={`${cdHub.contractsListFiltersPanel} ${styles.helpPanel}`}>
         <p className={styles.helpText}>
-          Наценка при расчёте заказ-наряда по направлениям. Цена позиции в заказ-наряде = цена в
-          счёт-заказе минус указанный процент (по умолчанию{' '}
+          Наценка при расчёте заказ-наряда по направлениям. Для «Окна», «Двери», «Жалюзи» и
+          «Натяжные потолки»: цена позиции = цена в счёт-заказе минус наценка (по умолчанию{' '}
           {DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT}
-          %). Сохранять может только суперадмин.
+          %). Для «Ремонта» дополнительно указывается налог: из суммы заказ-наряда вычитаются налог
+          и наценка, затем добавляется % разряда; если в договоре налог/наценка не заданы, берутся
+          значения отсюда. Сохранять может только суперадмин.
         </p>
         <div className={styles.relatedLinks}>
           <Link href="/admin/contract-documents/settings">Сроки договоров</Link>
@@ -214,8 +233,13 @@ export function MarkupSettingsPageView(model: MarkupSettingsPageModel) {
                     />
                   </dd>
                 </div>
+                {row.taxInput !== null ? (
+                  <div className={styles.mobileCardRow}>
+                    <dt>Налог, %</dt>
+                    <dd>{taxInputCell(row, 'mobile')}</dd>
+                  </div>
+                ) : null}
               </dl>
-              <div className={styles.mobileCardActions}>{saveButton(row)}</div>
             </article>
           ))
         )}

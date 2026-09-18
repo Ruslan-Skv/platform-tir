@@ -12,6 +12,7 @@ import {
   ApplyRepairWorkPeriodToAllDto,
   SetRepairContractSettingsDto,
 } from './dto/set-repair-settings.dto';
+import { SetRepairWorkOrderSettingsDto } from './dto/set-repair-work-order-settings.dto';
 import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-markup.dto';
 import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
@@ -238,6 +239,14 @@ export class ContractDocumentPackagesService {
 
   setWindowsWorkOrderMarkupSettings(dto: SetWindowsWorkOrderMarkupDto, updatedById?: string) {
     return this.kindSettings.setWindowsWorkOrderMarkupSettings(dto, updatedById);
+  }
+
+  getRepairWorkOrderSettings() {
+    return this.kindSettings.getRepairWorkOrderSettings();
+  }
+
+  setRepairWorkOrderSettings(dto: SetRepairWorkOrderSettingsDto, updatedById?: string) {
+    return this.kindSettings.setRepairWorkOrderSettings(dto, updatedById);
   }
 
   getCeilingsPriceList() {

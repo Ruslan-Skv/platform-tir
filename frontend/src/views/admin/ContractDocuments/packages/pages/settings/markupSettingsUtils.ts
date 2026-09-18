@@ -1,7 +1,7 @@
 import { normalizeWindowsWorkOrderMarkupPercent } from '../../families/product-like/print/productWorkOrder';
 
-export function formatMarkupPercentInput(value: number): string {
-  return String(normalizeWindowsWorkOrderMarkupPercent(value));
+export function formatMarkupPercentInput(value: number | null): string {
+  return String(normalizeWindowsWorkOrderMarkupPercent(value ?? 0));
 }
 
 export function parseMarkupPercentInput(raw: string): number | null {

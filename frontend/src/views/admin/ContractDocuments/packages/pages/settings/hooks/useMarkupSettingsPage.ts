@@ -1,13 +1,13 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 
-import { DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT } from '../../../families/product-like/print/productWorkOrder';
 import {
   MARKUP_KIND_CONFIG,
   MARKUP_SETTINGS_KINDS,
+  type MarkupKindSettingsSnapshot,
   type MarkupSettingsKind,
 } from '../markupSettingsConstants';
 import { formatMarkupPercentInput, parseMarkupPercentInput } from '../markupSettingsUtils';
@@ -18,29 +18,50 @@ export type MarkupRow = {
   kind: MarkupSettingsKind;
   title: string;
   inputId: string;
+  /** Поле «Налог, %» (только «Ремонт»). */
+  taxInputId: string | null;
   markupInput: string;
+  taxInput: string | null;
+  /** Значения, уже сохранённые на сервере (для отбора изменённых строк). */
+  savedMarkupPercent: number;
+  savedTaxPercent: number;
   updatedAt: string | null;
 };
 
-function emptyRows(): MarkupRow[] {
-  return MARKUP_SETTINGS_KINDS.map((kind) => {
-    const config = MARKUP_KIND_CONFIG[kind];
-    return {
-      kind,
-      title: config.title,
-      inputId: config.inputId,
-      markupInput: formatMarkupPercentInput(
-        config.fallbackPercent ?? DEFAULT_WINDOWS_WORK_ORDER_MARKUP_PERCENT
-      ),
-      updatedAt: null,
-    };
-  });
+/** Строка из снимка настроек; null — настроек ещё нет, показываем значения по умолчанию. */
+function buildRow(
+  kind: MarkupSettingsKind,
+  snapshot: MarkupKindSettingsSnapshot | null
+): MarkupRow {
+  const config = MARKUP_KIND_CONFIG[kind];
+  const markupPercent = snapshot?.markupPercent ?? config.fallbackPercent ?? 0;
+  const taxPercent = snapshot?.taxPercent ?? 0;
+  return {
+    kind,
+    title: config.title,
+    inputId: config.inputId,
+    taxInputId: config.taxInputId ?? null,
+    markupInput: formatMarkupPercentInput(markupPercent),
+    taxInput: config.taxInputId ? formatMarkupPercentInput(taxPercent) : null,
+    savedMarkupPercent: markupPercent,
+    savedTaxPercent: taxPercent,
+    updatedAt: snapshot?.updatedAt ?? null,
+  };
+}
+
+function describeSavedRow(row: MarkupRow, res: MarkupKindSettingsSnapshot): string {
+  if (row.taxInputId !== null) {
+    return `${row.title} — наценка ${res.markupPercent ?? 0} %, налог ${res.taxPercent ?? 0} %`;
+  }
+  return `${row.title} — наценка ${res.markupPercent ?? 0} %`;
 }
 
 export function useMarkupSettingsPage() {
   const { canEdit: isSuperAdmin } = useAdminSectionCanEdit();
   const [message, setMessage] = useState<MarkupSettingsPageMessage | null>(null);
-  const [rows, setRows] = useState<MarkupRow[]>(emptyRows);
+  const [rows, setRows] = useState<MarkupRow[]>(() =>
+    MARKUP_SETTINGS_KINDS.map((kind) => buildRow(kind, null))
+  );
   const [loading, setLoading] = useState(true);
   const [savingKind, setSavingKind] = useState<MarkupSettingsKind | null>(null);
 
@@ -48,20 +69,30 @@ export function useMarkupSettingsPage() {
     setLoading(true);
     setMessage(null);
     try {
-      const results = await Promise.all(
+      /** Падение одного направления не должно ломать всю страницу. */
+      const settled = await Promise.all(
         MARKUP_SETTINGS_KINDS.map(async (kind) => {
-          const config = MARKUP_KIND_CONFIG[kind];
-          const res = await config.load();
-          return {
-            kind,
-            title: config.title,
-            inputId: config.inputId,
-            markupInput: formatMarkupPercentInput(res.windowsWorkOrderMarkupPercent),
-            updatedAt: res.updatedAt,
-          } satisfies MarkupRow;
+          try {
+            return {
+              kind,
+              failed: false,
+              row: buildRow(kind, await MARKUP_KIND_CONFIG[kind].load()),
+            };
+          } catch {
+            return { kind, failed: true, row: buildRow(kind, null) };
+          }
         })
       );
-      setRows(results);
+      setRows(settled.map((item) => item.row));
+      const failedTitles = settled
+        .filter((item) => item.failed)
+        .map((item) => MARKUP_KIND_CONFIG[item.kind].title);
+      if (failedTitles.length > 0) {
+        setMessage({
+          type: 'error',
+          text: `Не удалось загрузить настройки: ${failedTitles.join(', ')} — показаны значения по умолчанию.`,
+        });
+      }
     } catch (e) {
       setMessage({
         type: 'error',
@@ -80,43 +111,48 @@ export function useMarkupSettingsPage() {
     setRows((prev) => prev.map((row) => (row.kind === kind ? { ...row, markupInput: raw } : row)));
   }, []);
 
-  const saveMarkup = useCallback(
-    async (kind: MarkupSettingsKind) => {
-      if (!isSuperAdmin) return;
+  const setTaxInput = useCallback((kind: MarkupSettingsKind, raw: string) => {
+    setRows((prev) =>
+      prev.map((row) =>
+        row.kind === kind && row.taxInput !== null ? { ...row, taxInput: raw } : row
+      )
+    );
+  }, []);
+
+  /** Сохраняет направление без сообщений; null — ошибка запроса или валидации. */
+  const persistKind = useCallback(
+    async (kind: MarkupSettingsKind): Promise<MarkupKindSettingsSnapshot | null> => {
+      if (!isSuperAdmin) return null;
       const row = rows.find((r) => r.kind === kind);
-      if (!row) return;
+      if (!row) return null;
       const parsed = parseMarkupPercentInput(row.markupInput);
-      if (parsed === null) {
-        setMessage({
-          type: 'error',
-          text: 'Укажите наценку от 0 до 100 % (целое число).',
-        });
-        return;
-      }
-      const config = MARKUP_KIND_CONFIG[kind];
+      if (parsed === null) return null;
+      const parsedTax = row.taxInput !== null ? parseMarkupPercentInput(row.taxInput) : null;
+      if (row.taxInput !== null && parsedTax === null) return null;
       setSavingKind(kind);
       try {
-        const res = await config.save({ windowsWorkOrderMarkupPercent: parsed });
+        const res = await MARKUP_KIND_CONFIG[kind].save({
+          markupPercent: parsed,
+          taxPercent: parsedTax,
+        });
         setRows((prev) =>
           prev.map((r) =>
             r.kind === kind
               ? {
                   ...r,
-                  markupInput: formatMarkupPercentInput(res.windowsWorkOrderMarkupPercent),
+                  markupInput: formatMarkupPercentInput(res.markupPercent ?? 0),
+                  taxInput:
+                    r.taxInput !== null ? formatMarkupPercentInput(res.taxPercent ?? 0) : null,
+                  savedMarkupPercent: res.markupPercent ?? 0,
+                  savedTaxPercent: res.taxPercent ?? 0,
                   updatedAt: res.updatedAt,
                 }
               : r
           )
         );
-        setMessage({
-          type: 'success',
-          text: config.saveOk(res.windowsWorkOrderMarkupPercent),
-        });
-      } catch (e) {
-        setMessage({
-          type: 'error',
-          text: e instanceof Error ? e.message : 'Не удалось сохранить',
-        });
+        return res;
+      } catch {
+        return null;
       } finally {
         setSavingKind(null);
       }
@@ -124,27 +160,63 @@ export function useMarkupSettingsPage() {
     [isSuperAdmin, rows]
   );
 
-  const busy = loading || savingKind !== null;
-
-  const parsedByKind = useMemo(() => {
-    const map = new Map<MarkupSettingsKind, number | null>();
-    for (const row of rows) {
-      map.set(row.kind, parseMarkupPercentInput(row.markupInput));
+  /** Сохраняет только изменённые направления и показывает один итог. */
+  const saveAllMarkups = useCallback(async (): Promise<void> => {
+    if (!isSuperAdmin) return;
+    const invalid = rows.find((row) => {
+      const markupInvalid = parseMarkupPercentInput(row.markupInput) === null;
+      const taxInvalid = row.taxInput !== null && parseMarkupPercentInput(row.taxInput) === null;
+      return markupInvalid || taxInvalid;
+    });
+    if (invalid) {
+      setMessage({
+        type: 'error',
+        text: `Проверьте «${invalid.title}»: наценка и налог — целое число от 0 до 100 %.`,
+      });
+      return;
     }
-    return map;
-  }, [rows]);
+    const dirty = rows.filter((row) => {
+      const markup = parseMarkupPercentInput(row.markupInput) ?? 0;
+      const tax = row.taxInput !== null ? (parseMarkupPercentInput(row.taxInput) ?? 0) : null;
+      return markup !== row.savedMarkupPercent || (tax !== null && tax !== row.savedTaxPercent);
+    });
+    if (dirty.length === 0) {
+      setMessage({ type: 'success', text: 'Нет изменений для сохранения.' });
+      return;
+    }
+    const savedParts: string[] = [];
+    const failedTitles: string[] = [];
+    for (const row of dirty) {
+      const res = await persistKind(row.kind);
+      if (res) {
+        savedParts.push(describeSavedRow(row, res));
+      } else {
+        failedTitles.push(row.title);
+      }
+    }
+    if (failedTitles.length > 0) {
+      setMessage({
+        type: 'error',
+        text: `${savedParts.length > 0 ? `Сохранено: ${savedParts.join('; ')}. ` : ''}Не удалось сохранить: ${failedTitles.join(', ')}.`,
+      });
+      return;
+    }
+    setMessage({ type: 'success', text: `Сохранено: ${savedParts.join('; ')}.` });
+  }, [isSuperAdmin, rows, persistKind]);
+
+  const busy = loading || savingKind !== null;
 
   return {
     busy,
     isSuperAdmin,
     loading,
     message,
-    parsedByKind,
     refresh: load,
     rows,
-    saveMarkup,
+    saveAllMarkups,
     savingKind,
     setMarkupInput,
+    setTaxInput,
     setMessage,
   };
 }

@@ -70,7 +70,9 @@ import {
 } from '../../form/formDataTemplateStorage';
 import {
   type PackageFormData,
+  type RepairWorkOrderGlobalPercents,
   applyOpenAddendumDocumentDateAutofill,
+  applyRepairWorkOrderGlobalDefaults,
 } from '../../form/packageForm';
 import {
   hydrateManagerQuestionnaire1FromLinkedCrmCustomer,
@@ -225,6 +227,8 @@ export function usePackageDocumentLoad({
             if (settingsKind === 'REPAIR') {
               return getContractDocumentRepairSettings().catch(() => ({
                 defaultWorkPeriodDays: DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS,
+                workOrderMarkupPercent: null,
+                workOrderTaxPercent: null,
                 updatedAt: null as string | null,
               }));
             }
@@ -325,7 +329,16 @@ export function usePackageDocumentLoad({
         };
         const presetsList = estimateRes.items ?? [];
         const estGroupsList = estimateRes.groups ?? [];
-        let finalForm: PackageFormData = formPayload;
+        /** Налог/наценка заказ-наряда ремонта: пустые значения берём из глобальных настроек. */
+        const repairWorkOrderDefaults =
+          packageContractSettingsKind(currentKind) === 'REPAIR'
+            ? applyRepairWorkOrderGlobalDefaults(
+                formPayload,
+                packageSettingsRes as RepairWorkOrderGlobalPercents
+              )
+            : { form: formPayload, changed: false };
+        const persistRepairWorkOrderPercents = repairWorkOrderDefaults.changed;
+        let finalForm: PackageFormData = repairWorkOrderDefaults.form;
         if (normalizedEstimateIds.length > 0) {
           finalForm = applyEstimatePresetIdsToPackageForm(
             finalForm,
@@ -428,7 +441,7 @@ export function usePackageDocumentLoad({
         setTemplateDraftTitle(initialTpl?.title ?? '');
         setTemplateDraftHtml(initialTpl?.html ?? '');
         setExcelMessage(null);
-        if (persistContractMeta || persistAddendumDocumentDates) {
+        if (persistContractMeta || persistAddendumDocumentDates || persistRepairWorkOrderPercents) {
           try {
             await updateContractDocumentPackage(packageId, {
               title: row.title?.trim() || null,

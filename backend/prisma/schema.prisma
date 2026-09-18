@@ -3920,6 +3920,10 @@ model ContractDocumentRepairSettings {
   defaultWorkPeriodDays         Int                         @default(60)
   /// Наценка при расчёте заказ-наряда (WINDOWS/DOORS/BLINDS/CEILINGS; вычитается из цены счёт-заказа), %.
   windowsWorkOrderMarkupPercent Int                         @default(33)
+  /// Наценка заказ-наряда по ремонту (глобальная), %; null — не задана, берётся из данных пакета.
+  repairWorkOrderMarkupPercent  Int?
+  /// Налог, вычитаемый из заказ-наряда по ремонту (глобальный), %; null — не задан, берётся из данных пакета.
+  repairWorkOrderTaxPercent     Int?
   updatedById                   String?
   updatedAt                     DateTime                    @updatedAt
 

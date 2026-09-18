@@ -28,6 +28,6 @@ export const CONTRACT_DOCUMENTS_HUB_CARDS: HubCard[] = [
   {
     href: '/admin/contract-documents/settings/markups',
     title: 'Наценки договоров',
-    hint: 'Наценка при расчёте заказ-наряда (окна, двери, жалюзи, потолки); меняет суперадмин.',
+    hint: 'Наценка (и налог для ремонта) при расчёте заказ-наряда; меняет суперадмин.',
   },
 ];
