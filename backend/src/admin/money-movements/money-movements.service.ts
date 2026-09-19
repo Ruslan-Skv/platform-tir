@@ -3,10 +3,14 @@ import { ContractDocumentPackageKind, PaymentForm, PaymentType, Prisma } from '@
 
 import { PACKAGE_DIRECTION_REGISTRY } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
+import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
 ) as Record<ContractDocumentPackageKind, string>;
+
+/** Таб справочника «Карточки менеджеров» (см. ContractDocumentPackageGlobalLibraryService). */
+const SIGNATORY_PROFILES_TAB = 'signatory_profiles';
 
 function contractNumberFromFormData(formData: unknown): string | null {
   if (!formData || typeof formData !== 'object') return null;
@@ -89,7 +93,7 @@ export class MoneyMovementsService {
       ];
     }
 
-    const [rawData, total, sum, managerGroups] = await Promise.all([
+    const [rawData, total, sum, signatoryUserIds] = await Promise.all([
       this.prisma.moneyMovement.findMany({
         where,
         include: {
@@ -101,19 +105,12 @@ export class MoneyMovementsService {
       }),
       this.prisma.moneyMovement.count({ where }),
       this.prisma.moneyMovement.aggregate({ where, _sum: { amount: true } }),
-      this.prisma.moneyMovement.groupBy({
-        by: ['managerId'],
-        where: { managerId: { not: null } },
-        _count: { _all: true },
-      }),
+      this.signatoryProfileUserIds(),
     ]);
 
-    const managerIds = managerGroups
-      .map((g) => g.managerId)
-      .filter((id): id is string => Boolean(id));
-    const managerRows = managerIds.length
+    const managerRows = signatoryUserIds.length
       ? await this.prisma.user.findMany({
-          where: { id: { in: managerIds } },
+          where: { id: { in: signatoryUserIds } },
           select: { id: true, email: true, firstName: true, lastName: true },
         })
       : [];
@@ -134,6 +131,32 @@ export class MoneyMovementsService {
       totalSum: Number(sum._sum.amount ?? 0),
       managers,
     };
+  }
+
+  /**
+   * Пользователи из справочника «Карточки менеджеров» (Подписанты) —
+   * менеджером по договору может быть любой сотрудник, а не только роль «Менеджер».
+   */
+  private async signatoryProfileUserIds(): Promise<string[]> {
+    const rows = await this.prisma.contractDocumentGlobalTemplate.findMany({
+      where: { tab: SIGNATORY_PROFILES_TAB },
+      select: { html: true },
+    });
+
+    const ids = new Set<string>();
+    for (const row of rows) {
+      let parsed: { items?: { crmUserId?: unknown }[] } | null = null;
+      try {
+        parsed = JSON.parse(row.html) as { items?: { crmUserId?: unknown }[] };
+      } catch {
+        continue;
+      }
+      for (const item of Array.isArray(parsed?.items) ? parsed.items : []) {
+        const id = typeof item?.crmUserId === 'string' ? item.crmUserId.trim() : '';
+        if (id) ids.add(id);
+      }
+    }
+    return [...ids];
   }
 
   private serialize(
@@ -181,10 +204,23 @@ export class MoneyMovementsService {
         select: {
           kind: true,
           formData: true,
+          createdById: true,
+          responsibleManagerId: true,
           crmContract: { select: { id: true, contractNumber: true, customerName: true } },
           documentObject: { select: { customerName: true } },
         },
       });
+
+      // Менеджер фиксируется на момент оплаты по договору («Карточка менеджера из справочника»),
+      // а не по тому, кто записал оплату. Цепочка та же, что в списке договоров:
+      // responsibleManagerId → formData.executor.signatoryCrmUserId → createdBy пакета.
+      const managerIdFromContract = pkg
+        ? computePackageEffectiveManagerUserId({
+            responsibleManagerId: pkg.responsibleManagerId,
+            createdById: pkg.createdById,
+            formData: pkg.formData,
+          })
+        : '';
 
       await this.prisma.moneyMovement.create({
         data: {
@@ -199,7 +235,7 @@ export class MoneyMovementsService {
           addendumNumber: payment.addendumNumber,
           basis: payment.basis,
           notes: payment.notes,
-          managerId: payment.recordedById,
+          managerId: managerIdFromContract || payment.recordedById,
           contractNumber:
             pkg?.crmContract?.contractNumber ?? contractNumberFromFormData(pkg?.formData) ?? null,
           customerName:
