@@ -359,10 +359,6 @@ function RoleOverviewSkeleton() {
   );
 }
 
-const CHILD_RESOURCE_IDS: Record<string, string[]> = {
-  'admin.crm.contract-payments': ['admin.crm.contract-payments.incassation'],
-};
-
 export function AccessModal({
   resourceId: initialResourceId,
   resourceLabel: resourceLabelOverride,
@@ -478,8 +474,7 @@ export function AccessModal({
   const rolesDenied = roleOverview.filter((r) => r.effective === 'DENIED');
   const rolesWithOverrides = roleOverview.filter((r) => r.hasExplicitOverride);
 
-  const relatedResourceIds =
-    CHILD_RESOURCE_IDS[initialResourceId] ?? getAdminResourceChildren(initialResourceId);
+  const relatedResourceIds = getAdminResourceChildren(initialResourceId);
   const parentResourceId = getAdminResourceParent(initialResourceId);
   const resourceLabel = resourceLabelOverride ?? getAdminResourceLabel(resourceId);
   const isKnowledgeCategory = resourceId.startsWith(KNOWLEDGE_CATEGORY_RESOURCE_PREFIX);

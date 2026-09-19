@@ -76,14 +76,14 @@ feature-name/
 
 Агрегатор: `admin.module.ts` импортирует подмодули. Группы:
 
-| Группа             | Примеры                                                                  |
-| ------------------ | ------------------------------------------------------------------------ |
-| CRM                | customers, measurements, contracts, tasks, installers                    |
-| CMS                | blog, pages, photo, knowledge, promotions                                |
-| Catalog (admin)    | `admin/catalog/*`, suppliers, partners                                   |
-| Orders             | admin/orders                                                             |
-| Contract documents | contract-document-packages, contract-document-objects, contract-payments |
-| System             | admin-access, admin-presence, notifications, analytics                   |
+| Группа             | Примеры                                                |
+| ------------------ | ------------------------------------------------------ |
+| CRM                | customers, measurements, contracts, tasks, installers  |
+| CMS                | blog, pages, photo, knowledge, promotions              |
+| Catalog (admin)    | `admin/catalog/*`, suppliers, partners                 |
+| Orders             | admin/orders                                           |
+| Contract documents | contract-document-packages, contract-document-objects  |
+| System             | admin-access, admin-presence, notifications, analytics |
 
 **Перекрёстные зависимости admin:** через `imports: [OtherModule]` и `exports: [OtherService]`, не через глубокие относительные пути к чужим файлам без module wiring.
 

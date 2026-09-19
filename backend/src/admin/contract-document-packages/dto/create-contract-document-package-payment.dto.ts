@@ -12,10 +12,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-import {
-  PaymentFormDto,
-  PaymentTypeDto,
-} from '../../contract-payments/dto/create-contract-payment.dto';
+import { PaymentFormDto, PaymentTypeDto } from './payment.enums';
 
 export class CreateContractDocumentPackagePaymentDto {
   @ApiProperty()

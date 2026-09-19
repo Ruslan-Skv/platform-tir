@@ -17,22 +17,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Мои замеры',
     path: '/admin/measurements/my',
   },
-  {
-    id: 'admin.crm.contract-payments',
-    label: 'Движ. ден. средст',
-    path: '/admin/crm/contract-payments',
-  },
   { id: 'admin.crm.dp', label: 'ДП', path: '/admin/dp' },
-  { id: 'admin.crm.cash-register', label: 'Касса', path: '/admin/crm/cash-register' },
   {
     id: 'admin.crm.supplier-settlements',
     label: 'Расчёты с поставщиками',
     path: '/admin/crm/supplier-settlements',
-  },
-  {
-    id: 'admin.crm.contract-payments.incassation',
-    label: 'Инкассация по оплатам (редактирование)',
-    path: '/admin/crm/contract-payments',
   },
   { id: 'admin.crm.offices', label: 'Офисы', path: '/admin/crm/offices' },
   { id: 'admin.crm.installers', label: 'Мастера (монтажники)', path: '/admin/crm/installers' },
@@ -404,7 +393,6 @@ export function resolveAdminResourceIdByPathname(pathname: string): string | nul
 
   for (const resource of ROUTES_BY_PATH_LENGTH) {
     if (pathname === resource.path || pathname.startsWith(`${resource.path}/`)) {
-      if (resource.id.endsWith('.incassation')) continue;
       return resource.id;
     }
   }

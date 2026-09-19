@@ -13,9 +13,7 @@ import {
  */
 export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   // CRM
-  'admin.crm.contract-payments': 'admin.crm',
   // admin.crm.dp — топ-пункт сайдбара («ДП»), не наследует DENY от admin.crm
-  'admin.crm.cash-register': 'admin.crm',
   'admin.crm.supplier-settlements': 'admin.crm',
   'admin.crm.offices': 'admin.crm',
   // admin.forms / admin.forms.director / admin.support / admin.crm.my-work-day — топ-пункты сайдбара
@@ -24,7 +22,6 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.work-days': 'admin.crm',
   'admin.crm.payroll': 'admin.crm',
   'admin.crm.payroll.management': 'admin.crm.payroll',
-  'admin.crm.contract-payments.incassation': 'admin.crm.contract-payments',
 
   // Бухгалтерия
   'admin.accounting.invoices': 'admin.accounting',

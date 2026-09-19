@@ -137,12 +137,6 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.crm',
     children: [
       {
-        label: 'Движ. ден. средст',
-        href: '/admin/crm/contract-payments',
-        resourceId: 'admin.crm.contract-payments',
-      },
-      { label: 'Касса', href: '/admin/crm/cash-register', resourceId: 'admin.crm.cash-register' },
-      {
         label: 'Расчёты с поставщиками',
         href: '/admin/crm/supplier-settlements',
         resourceId: 'admin.crm.supplier-settlements',
