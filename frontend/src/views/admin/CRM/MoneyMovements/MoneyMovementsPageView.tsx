@@ -1,7 +1,12 @@
 'use client';
 
+import { useId, useMemo, useState } from 'react';
+
 import type { MoneyMovement } from '@/shared/api/crm/admin-money-movements';
-import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import {
+  AdminListRefreshButton,
+  AdminToolbarIconButton,
+} from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
@@ -10,6 +15,10 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import styles from './MoneyMovements.module.css';
 import type { MoneyMovementsPageModel } from './hooks/useMoneyMovementsPage';
+import { IncassationHistoryModal } from './modals/IncassationHistoryModal';
+import { IncassationModal } from './modals/IncassationModal';
+import { ManualEntryModal } from './modals/ManualEntryModal';
+import { buildDpFiltersSummary } from './money-movements-filters';
 import {
   DP_DIRECTION_OPTIONS,
   DP_PAYMENT_FORM_LABELS,
@@ -29,6 +38,40 @@ function filterFieldClass(base: string, active: boolean): string {
   return active ? `${base} ${cdHub.contractsListFilterActive}` : base;
 }
 
+/** Кнопка-иконка «История инкассаций» — справа от «+ Инкассация». */
+function IncassationHistoryButton({
+  disabled,
+  onClick,
+}: {
+  disabled?: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <AdminToolbarIconButton
+      disabled={disabled}
+      onClick={onClick}
+      title="История инкассаций"
+      aria-label="История инкассаций"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={18}
+        height={18}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <circle cx="12" cy="12" r="10" />
+        <polyline points="12 6 12 12 16 14" />
+      </svg>
+    </AdminToolbarIconButton>
+  );
+}
+
 export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageModel }) {
   const {
     dateFrom,
@@ -37,6 +80,8 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     setDateTo,
     managerId,
     setManagerId,
+    scope,
+    setScope,
     direction,
     setDirection,
     paymentForm,
@@ -56,7 +101,45 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     refresh,
     resetFilters,
     setPeriod,
+    incassations,
+    incassationModalOpen,
+    openIncassationModal,
+    closeIncassationModal,
+    incassationHistoryOpen,
+    openIncassationHistory,
+    closeIncassationHistory,
+    cashBalance,
+    cashBalanceLoading,
+    loadCashBalance,
+    incassationSubmitting,
+    submitIncassation,
+    manualEntryModalOpen,
+    openManualEntryModal,
+    closeManualEntryModal,
+    manualEntrySubmitting,
+    submitManualEntry,
   } = model;
+
+  const filtersContentId = useId();
+  /** Всегда свёрнуто при открытии страницы — как в списке договоров. */
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
+
+  const filtersSummary = useMemo(
+    () =>
+      buildDpFiltersSummary({
+        scope,
+        direction,
+        search: searchInput,
+        managerId,
+        managers,
+        paymentForm,
+        paymentFormLabels: DP_PAYMENT_FORM_LABELS,
+        dateFrom,
+        dateTo,
+      }),
+    [scope, direction, searchInput, managerId, managers, paymentForm, dateFrom, dateTo]
+  );
 
   const countTitle = `${total} ${total === 1 ? 'запись' : 'записей'}`;
 
@@ -75,6 +158,11 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       key: 'manager',
       title: 'Менеджер',
       render: (item: MoneyMovement) => item.manager?.name || '—',
+    },
+    {
+      key: 'office',
+      title: 'Офис',
+      render: (item: MoneyMovement) => item.office || '—',
     },
     {
       key: 'contractNumber',
@@ -116,7 +204,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       render: (item: MoneyMovement) => (
         <span
           className={`${styles.amountCell}${
-            item.paymentType === 'REFUND' ? ` ${styles.amountCellRefund}` : ''
+            item.paymentType === 'REFUND' || Number(item.amount) < 0
+              ? ` ${styles.amountCellRefund}`
+              : ''
           }`}
         >
           {formatDpMoney(item.amount)}
@@ -145,6 +235,25 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
               </span>
             </div>
             <div className={cdHub.contractsHeaderIconActionsMobile}>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdChrome.contractsListHeaderAddBtn}
+                disabled={loading}
+                onClick={() => void openIncassationModal()}
+              >
+                + Инкассация
+              </button>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdChrome.contractsListHeaderAddBtn}
+                disabled={loading}
+                onClick={() => void openManualEntryModal()}
+              >
+                + Запись
+              </button>
+              <IncassationHistoryButton disabled={loading} onClick={openIncassationHistory} />
               <AdminListRefreshButton
                 disabled={loading}
                 busy={loading}
@@ -156,7 +265,26 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           </div>
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={loading}
+            onClick={() => void openIncassationModal()}
+          >
+            + Инкассация
+          </button>
+          <button
+            data-admin-mutation
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={loading}
+            onClick={() => void openManualEntryModal()}
+          >
+            + Запись
+          </button>
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
+            <IncassationHistoryButton disabled={loading} onClick={openIncassationHistory} />
             <AdminListRefreshButton
               disabled={loading}
               busy={loading}
@@ -177,122 +305,192 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         </div>
       ) : null}
 
-      <div className={cdHub.contractsListFiltersPanel}>
-        <div className={cdHub.contractsListFiltersStack}>
-          <div className={cdHub.contractsListChipRow} role="group" aria-label="Направление">
-            <span className={cdHub.contractsListChipRowLabel}>Направление</span>
+      <section className={cdHub.contractsListFiltersPanel} aria-label="Фильтры журнала ДП">
+        <div className={cdHub.contractsListFiltersPanelHeader}>
+          <button
+            type="button"
+            className={cdHub.contractsListFiltersPanelToggle}
+            onClick={toggleFiltersCollapsed}
+            aria-expanded={!filtersCollapsed}
+            aria-controls={filtersContentId}
+          >
+            <span className={cdHub.contractsListFiltersPanelChevron} aria-hidden>
+              {filtersCollapsed ? '▸' : '▾'}
+            </span>
+            <span className={cdHub.contractsListFiltersPanelTitle}>
+              {filtersCollapsed ? 'Фильтры журнала' : 'Свернуть фильтры'}
+            </span>
+          </button>
+          {filtersCollapsed ? (
             <button
               type="button"
-              disabled={loading}
-              className={chipClass(!direction)}
-              onClick={() => setDirection('')}
+              className={cdHub.contractsListFiltersPanelExpandLink}
+              onClick={toggleFiltersCollapsed}
             >
-              Все
+              Изменить
             </button>
-            {DP_DIRECTION_OPTIONS.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                disabled={loading}
-                className={chipClass(direction === option.value)}
-                onClick={() => setDirection(option.value)}
-              >
-                {option.label}
-              </button>
-            ))}
-          </div>
-
-          <div className={cdHub.contractsListChipRow} role="group" aria-label="Быстрый период">
-            <span className={cdHub.contractsListChipRowLabel}>Период</span>
-            {(['today', 'week', 'month'] as const).map((kind) => (
-              <button
-                key={kind}
-                type="button"
-                disabled={loading}
-                className={cdHub.contractsListChip}
-                onClick={() => setPeriod(kind)}
-              >
-                {kind === 'today' ? 'Сегодня' : kind === 'week' ? 'Неделя' : 'Месяц'}
-              </button>
-            ))}
-          </div>
-
-          <div className={cdHub.contractsListFilters}>
-            <input
-              type="search"
-              placeholder="Поиск: № договора, заказчик, основание, примечание…"
-              value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              disabled={loading}
-              className={filterFieldClass(
-                cdHub.contractsListSearchInput,
-                Boolean(searchInput.trim())
-              )}
-              aria-label="Поиск по журналу ДП"
-            />
-            <select
-              value={managerId}
-              onChange={(e) => setManagerId(e.target.value)}
-              disabled={loading}
-              className={filterFieldClass(cdHub.contractsListSelect, Boolean(managerId))}
-              aria-label="Менеджер"
-            >
-              <option value="">Все менеджеры</option>
-              {managers.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-            <select
-              value={paymentForm}
-              onChange={(e) => setPaymentForm(e.target.value)}
-              disabled={loading}
-              className={filterFieldClass(cdHub.contractsListSelect, Boolean(paymentForm))}
-              aria-label="Способ оплаты"
-            >
-              <option value="">Все способы</option>
-              {DP_PAYMENT_FORM_OPTIONS.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <div className={cdHub.contractsListDateFilters}>
-              <label className={cdHub.contractsListDateLabel}>
-                <span className={cdHub.contractsListDateLabelText}>Дата от</span>
-                <input
-                  type="date"
-                  value={dateFrom}
-                  onChange={(e) => setDateFrom(e.target.value)}
-                  disabled={loading}
-                  className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateFrom))}
-                  aria-label="Дата от"
-                />
-              </label>
-              <label className={cdHub.contractsListDateLabel}>
-                <span className={cdHub.contractsListDateLabelText}>Дата до</span>
-                <input
-                  type="date"
-                  value={dateTo}
-                  onChange={(e) => setDateTo(e.target.value)}
-                  disabled={loading}
-                  className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateTo))}
-                  aria-label="Дата до"
-                />
-              </label>
-            </div>
-            <button
-              type="button"
-              className={styles.resetBtn}
-              onClick={resetFilters}
-              disabled={loading}
-            >
-              Сбросить
-            </button>
-          </div>
+          ) : null}
         </div>
-      </div>
+
+        {filtersCollapsed ? (
+          <button
+            type="button"
+            className={cdHub.contractsListFiltersSummary}
+            onClick={toggleFiltersCollapsed}
+            aria-label="Развернуть фильтры журнала ДП"
+          >
+            {filtersSummary.map((item) => (
+              <span
+                key={item.key}
+                className={cdHub.contractsListFiltersSummaryChip}
+                data-filter-key={item.key}
+                title={item.label}
+              >
+                {item.label}
+              </span>
+            ))}
+          </button>
+        ) : (
+          <div id={filtersContentId} className={cdHub.contractsListFiltersPanelBody}>
+            <div className={cdHub.contractsListFiltersStack}>
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Менеджер">
+                <span className={cdHub.contractsListChipRowLabel}>Менеджер</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(scope === 'mine')}
+                  onClick={() => setScope('mine')}
+                >
+                  Мои
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(scope !== 'mine')}
+                  onClick={() => setScope('all')}
+                >
+                  Все
+                </button>
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Направление">
+                <span className={cdHub.contractsListChipRowLabel}>Направление</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(!direction)}
+                  onClick={() => setDirection('')}
+                >
+                  Все
+                </button>
+                {DP_DIRECTION_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    type="button"
+                    disabled={loading}
+                    className={chipClass(direction === option.value)}
+                    onClick={() => setDirection(option.value)}
+                  >
+                    {option.label}
+                  </button>
+                ))}
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Быстрый период">
+                <span className={cdHub.contractsListChipRowLabel}>Период</span>
+                {(['today', 'week', 'month'] as const).map((kind) => (
+                  <button
+                    key={kind}
+                    type="button"
+                    disabled={loading}
+                    className={cdHub.contractsListChip}
+                    onClick={() => setPeriod(kind)}
+                  >
+                    {kind === 'today' ? 'Сегодня' : kind === 'week' ? 'Неделя' : 'Месяц'}
+                  </button>
+                ))}
+              </div>
+
+              <div className={cdHub.contractsListFilters}>
+                <input
+                  type="search"
+                  placeholder="Поиск: № договора, заказчик, основание, примечание…"
+                  value={searchInput}
+                  onChange={(e) => setSearchInput(e.target.value)}
+                  disabled={loading}
+                  className={filterFieldClass(
+                    cdHub.contractsListSearchInput,
+                    Boolean(searchInput.trim())
+                  )}
+                  aria-label="Поиск по журналу ДП"
+                />
+                {scope !== 'mine' ? (
+                  <select
+                    value={managerId}
+                    onChange={(e) => setManagerId(e.target.value)}
+                    disabled={loading}
+                    className={filterFieldClass(cdHub.contractsListSelect, Boolean(managerId))}
+                    aria-label="Менеджер"
+                  >
+                    <option value="">Все менеджеры</option>
+                    {managers.map((m) => (
+                      <option key={m.id} value={m.id}>
+                        {m.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : null}
+                <select
+                  value={paymentForm}
+                  onChange={(e) => setPaymentForm(e.target.value)}
+                  disabled={loading}
+                  className={filterFieldClass(cdHub.contractsListSelect, Boolean(paymentForm))}
+                  aria-label="Способ оплаты"
+                >
+                  <option value="">Все способы</option>
+                  {DP_PAYMENT_FORM_OPTIONS.map((option) => (
+                    <option key={option.value} value={option.value}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+                <div className={cdHub.contractsListDateFilters}>
+                  <label className={cdHub.contractsListDateLabel}>
+                    <span className={cdHub.contractsListDateLabelText}>Дата от</span>
+                    <input
+                      type="date"
+                      value={dateFrom}
+                      onChange={(e) => setDateFrom(e.target.value)}
+                      disabled={loading}
+                      className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateFrom))}
+                      aria-label="Дата от"
+                    />
+                  </label>
+                  <label className={cdHub.contractsListDateLabel}>
+                    <span className={cdHub.contractsListDateLabelText}>Дата до</span>
+                    <input
+                      type="date"
+                      value={dateTo}
+                      onChange={(e) => setDateTo(e.target.value)}
+                      disabled={loading}
+                      className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateTo))}
+                      aria-label="Дата до"
+                    />
+                  </label>
+                </div>
+                <button
+                  type="button"
+                  className={styles.resetBtn}
+                  onClick={resetFilters}
+                  disabled={loading}
+                >
+                  Сбросить
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </section>
 
       <div className={styles.summaryRow}>
         <span>
@@ -321,6 +519,32 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           total,
           onPageChange: setPage,
         }}
+      />
+
+      <IncassationModal
+        open={incassationModalOpen}
+        onClose={closeIncassationModal}
+        managers={managers}
+        balance={cashBalance}
+        balanceLoading={cashBalanceLoading}
+        onManagerChange={(managerId) => void loadCashBalance(managerId)}
+        submitting={incassationSubmitting}
+        onSubmit={submitIncassation}
+      />
+
+      <IncassationHistoryModal
+        open={incassationHistoryOpen}
+        onClose={closeIncassationHistory}
+        incassations={incassations}
+      />
+
+      <ManualEntryModal
+        open={manualEntryModalOpen}
+        onClose={closeManualEntryModal}
+        managers={managers}
+        defaultManager={cashBalance}
+        submitting={manualEntrySubmitting}
+        onSubmit={submitManualEntry}
       />
     </div>
   );

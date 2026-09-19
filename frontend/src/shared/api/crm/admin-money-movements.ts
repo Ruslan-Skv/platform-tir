@@ -33,6 +33,8 @@ export type MoneyMovement = {
   contractNumber: string | null;
   customerName: string | null;
   direction: string | null;
+  /** Офис заключения договора на момент оплаты («Офис закл.»). */
+  office: string | null;
   manager: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -52,6 +54,8 @@ export type MoneyMovementListResponse = {
 
 export async function getMoneyMovements(params?: {
   managerId?: string;
+  /** «mine» — только записи текущего пользователя (менеджера из карточки договора). */
+  scope?: 'mine' | 'all';
   direction?: string;
   paymentForm?: string;
   paymentType?: string;
@@ -63,6 +67,7 @@ export async function getMoneyMovements(params?: {
 }): Promise<MoneyMovementListResponse> {
   const search = new URLSearchParams();
   if (params?.managerId) search.set('managerId', params.managerId);
+  if (params?.scope === 'mine') search.set('scope', 'mine');
   if (params?.direction) search.set('direction', params.direction);
   if (params?.paymentForm) search.set('paymentForm', params.paymentForm);
   if (params?.paymentType) search.set('paymentType', params.paymentType);
@@ -75,5 +80,87 @@ export async function getMoneyMovements(params?: {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось загрузить журнал ДП');
+  return res.json();
+}
+
+export type ManagerIncassation = {
+  id: string;
+  performedAt: string;
+  amount: string;
+  /** ФИО лица, производившего инкассацию (записал менеджер при создании). */
+  incassator: string;
+  notes: string | null;
+  manager: { id: string; name: string } | null;
+  createdAt: string;
+};
+
+export type IncassationCashBalance = {
+  /** Менеджер, для которого посчитан остаток. */
+  managerId: string;
+  /** Имя менеджера (если пользователь найден). */
+  managerName: string | null;
+  /** Наличные с момента последней инкассации (строкой, как Decimal). */
+  balance: string;
+  lastIncassation: { performedAt: string; amount: string; incassator: string } | null;
+};
+
+/** Наличные менеджера (по умолчанию — текущего) с момента последней инкассации. */
+export async function getIncassationCashBalance(
+  managerId?: string
+): Promise<IncassationCashBalance> {
+  const search = new URLSearchParams();
+  if (managerId) search.set('managerId', managerId);
+  const query = search.size > 0 ? `?${search}` : '';
+  const res = await apiFetch(`${API_URL}/admin/money-movements/incassations/cash-balance${query}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить остаток наличных');
+  return res.json();
+}
+
+export async function getManagerIncassations(limit = 50): Promise<ManagerIncassation[]> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/incassations?limit=${limit}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить инкассации');
+  return res.json();
+}
+
+export async function createManagerIncassation(params: {
+  /** Менеджер, сдающий инкассацию; по умолчанию — текущий пользователь. */
+  managerId?: string;
+  amount: number;
+  incassator: string;
+  performedAt: string;
+  notes?: string;
+}): Promise<ManagerIncassation> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/incassations`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось записать инкассацию');
+  return res.json();
+}
+
+/** Ручная запись (проводка) в журнале ДП: изъятие из кассы (сумма < 0) или внесение (> 0). */
+export async function createManualMoneyMovement(params: {
+  /** Менеджер, по кассе которого проводится запись; по умолчанию — текущий пользователь. */
+  managerId?: string;
+  /** Сумма со знаком: внесение > 0, изъятие < 0. */
+  amount: number;
+  paymentForm: string;
+  /** Дата записи, YYYY-MM-DD. */
+  paymentDate: string;
+  /** Основание: «Бытовые нужды» и т.п. */
+  basis: string;
+  notes?: string;
+}): Promise<MoneyMovement> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/manual-entry`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось записать проводку');
   return res.json();
 }

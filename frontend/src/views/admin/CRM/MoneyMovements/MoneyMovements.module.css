@@ -101,3 +101,192 @@
   color: var(--admin-text, #111827);
   border-color: var(--admin-info, #3b82f6);
 }
+
+/* --- Инкассация: модалка записи --- */
+
+.incassationForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-md, 12px);
+}
+
+.incassationBalanceBox {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs, 4px);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-md, 12px);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.incassationBalanceRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--admin-space-xs, 8px);
+  color: var(--admin-text, #111827);
+}
+
+.incassationBalanceHint {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.incassationField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs, 4px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #374151);
+}
+
+.incassationField input,
+.incassationField select,
+.incassationField textarea {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #111827);
+  padding: 0 var(--admin-space-sm, 8px);
+  height: 38px;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-family: inherit;
+}
+
+.incassationField textarea {
+  height: auto;
+  padding: var(--admin-space-sm, 8px);
+  resize: vertical;
+}
+
+.incassationField input:focus,
+.incassationField select:focus,
+.incassationField textarea:focus {
+  outline: none;
+  border-color: var(--admin-info, #3b82f6);
+}
+
+.incassationError {
+  padding: var(--admin-space-sm, 8px) var(--admin-space-md, 12px);
+  border: 1px solid var(--admin-error-border, #fca5a5);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-error-bg, #fef2f2);
+  color: var(--admin-error, #b91c1c);
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.incassationActions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--admin-space-sm, 8px);
+}
+
+.incassationSubmitBtn {
+  border: 1px solid var(--admin-accent, #0ea5e9);
+  background: var(--admin-accent, #0ea5e9);
+  color: #fff;
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-md, 12px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.incassationSubmitBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* --- Инкассации: панель истории --- */
+
+.incassationsTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--admin-font-size-sm, 13px);
+}
+
+.incassationsTable th,
+.incassationsTable td {
+  text-align: left;
+  padding: var(--admin-space-xs, 8px) var(--admin-space-sm, 10px);
+  border-bottom: 1px solid var(--admin-border, #e5e7eb);
+  vertical-align: top;
+}
+
+.incassationsTable th {
+  color: var(--admin-text-muted, #6b7280);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.incassationsTable td {
+  color: var(--admin-text, #111827);
+}
+
+.incassationsAmount {
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.incassationsNotes {
+  max-width: 320px;
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+/* --- Ручная запись: переключатель типа операции --- */
+
+.manualEntryKindRow {
+  display: flex;
+  gap: var(--admin-space-sm, 8px);
+}
+
+.manualEntryKindBtn {
+  flex: 1;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #374151);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-sm, 8px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  white-space: nowrap;
+}
+
+.manualEntryKindBtn:hover {
+  border-color: var(--admin-info, #3b82f6);
+}
+
+.manualEntryKindActiveWithdrawal {
+  flex: 1;
+  border: 1px solid var(--admin-error-border, #fca5a5);
+  background: var(--admin-error-bg, #fef2f2);
+  color: var(--admin-error, #b91c1c);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-sm, 8px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.manualEntryKindActiveDeposit {
+  flex: 1;
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-info-strong, #1d4ed8);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 0 var(--admin-space-sm, 8px);
+  height: 38px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  white-space: nowrap;
+}

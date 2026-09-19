@@ -1,9 +1,14 @@
-import { IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
+import { IsIn, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class QueryMoneyMovementsDto {
   @IsOptional()
   @IsString()
   managerId?: string;
+
+  /** «Мои» — только записи, где менеджером зафиксирован текущий пользователь. */
+  @IsOptional()
+  @IsIn(['mine', 'all'])
+  scope?: string;
 
   @IsOptional()
   @IsString()

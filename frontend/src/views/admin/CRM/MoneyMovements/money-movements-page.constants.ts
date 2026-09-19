@@ -32,6 +32,7 @@ export const DP_PAYMENT_TYPE_LABELS: Record<string, string> = {
   FINAL: 'Окончательный расчёт',
   AMENDMENT: 'Оплата доп. соглашения',
   REFUND: 'Возврат',
+  OTHER: 'Ручная запись',
 };
 
 export function formatDpDate(value: string | null | undefined) {

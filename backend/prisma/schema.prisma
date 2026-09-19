@@ -126,6 +126,8 @@ model User {
   contractDocumentSigningSessionsCreated  ContractDocumentSigningSession[]         @relation("ContractDocumentSigningSessionsCreated")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]         @relation("ContractDocumentPackagePaymentRecordedBy")
   moneyMovementsConducted                 MoneyMovement[]                          @relation("MoneyMovementManager")
+  managerIncassations                     ManagerIncassation[]                     @relation("ManagerIncassationsManager")
+  managerIncassationsCreated              ManagerIncassation[]                     @relation("ManagerIncassationsCreated")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
   contractDocumentGlobalTemplatesUpdated  ContractDocumentGlobalTemplate[]         @relation("GlobalContractTemplateUpdatedBy")
   contractDocumentRepairSettingsUpdated   ContractDocumentRepairSettings[]         @relation("ContractDocumentRepairSettingsUpdatedBy")
@@ -3703,6 +3705,8 @@ model MoneyMovement {
   customerName   String?
   /// Направление на момент оплаты («Ремонт», «Окна», «Двери», …).
   direction      String?
+  /// Офис заключения договора на момент оплаты («Офис закл.» — название офиса).
+  office         String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
@@ -3714,6 +3718,30 @@ model MoneyMovement {
   @@index([direction])
   @@index([packageId])
   @@map("money_movements")
+}
+
+/// Инкассация наличных менеджером (сдача выручки по журналу ДП).
+model ManagerIncassation {
+  id          String   @id @default(cuid())
+  /// Менеджер, сдавший наличные (чьи денежные движения закрыты записью).
+  managerId   String
+  /// Сумма сданных наличных, RUB (> 0).
+  amount      Decimal  @db.Decimal(12, 2)
+  /// ФИО лица, производившего инкассацию (фиксирует менеджер при создании записи).
+  incassator  String   @db.VarChar(500)
+  /// Дата и время инкассации.
+  performedAt DateTime
+  notes       String?  @db.Text
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  manager   User  @relation("ManagerIncassationsManager", fields: [managerId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("ManagerIncassationsCreated", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([managerId])
+  @@index([performedAt])
+  @@map("manager_incassations")
 }
 
 /// Выставленные счета на оплату по договорам (единая нумерация по всей организации).
@@ -3964,6 +3992,8 @@ enum PaymentType {
   FINAL
   AMENDMENT
   REFUND
+  /// Ручная запись ДП: не связана с оплатой договора (изъятие/внесение в кассу).
+  OTHER
 }
 
 enum ConversationStatus {

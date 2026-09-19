@@ -1,0 +1,44 @@
+import { PaymentForm } from '@prisma/client';
+import { Type } from 'class-transformer';
+import {
+  IsDateString,
+  IsEnum,
+  IsNumber,
+  IsOptional,
+  IsString,
+  MaxLength,
+  MinLength,
+  NotEquals,
+} from 'class-validator';
+
+export class CreateManualMoneyMovementDto {
+  /** Менеджер, по кассе которого проводится запись; по умолчанию — текущий пользователь. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  managerId?: string;
+
+  /** Сумма со знаком: внесение > 0, изъятие < 0. */
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
+  @NotEquals(0, { message: 'Сумма не может быть нулевой' })
+  amount: number;
+
+  @IsEnum(PaymentForm)
+  paymentForm: PaymentForm;
+
+  /** Дата записи (YYYY-MM-DD). */
+  @IsDateString()
+  paymentDate: string;
+
+  /** Основание: «Бытовые нужды», «Возврат излишка» и т.п. */
+  @IsString()
+  @MinLength(2)
+  @MaxLength(500)
+  basis: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}

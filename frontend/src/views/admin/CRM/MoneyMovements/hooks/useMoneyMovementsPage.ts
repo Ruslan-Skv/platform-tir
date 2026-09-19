@@ -3,11 +3,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
+  type IncassationCashBalance,
+  type ManagerIncassation,
   type MoneyMovement,
   type MoneyMovementManagerOption,
+  createManagerIncassation,
+  createManualMoneyMovement,
+  getIncassationCashBalance,
+  getManagerIncassations,
   getMoneyMovements,
 } from '@/shared/api/crm/admin-money-movements';
 
+import {
+  type DpListScope,
+  defaultDpFilters,
+  loadDpFilters,
+  persistDpFilters,
+} from '../money-movements-filters';
 import {
   MONEY_MOVEMENTS_PAGE_SIZE,
   monthBoundsIso,
@@ -17,22 +29,20 @@ import {
 
 const SEARCH_DEBOUNCE_MS = 400;
 
-function defaultPeriod() {
-  const now = new Date();
-  const bounds = monthBoundsIso(now.getFullYear(), now.getMonth());
-  return { dateFrom: bounds.from, dateTo: bounds.to };
-}
-
 export function useMoneyMovementsPage() {
-  const period = defaultPeriod();
-  const [dateFrom, setDateFrom] = useState(period.dateFrom);
-  const [dateTo, setDateTo] = useState(period.dateTo);
-  const [managerId, setManagerId] = useState('');
-  const [direction, setDirection] = useState('');
-  const [paymentForm, setPaymentForm] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
+  // Страница рендерится с ssr: false — читаем сохранённые фильтры сразу при монтировании.
+  const initialFiltersRef = useRef(loadDpFilters());
+  const filtersPersistedRef = useRef(false);
+
+  const [dateFrom, setDateFrom] = useState(initialFiltersRef.current.dateFrom);
+  const [dateTo, setDateTo] = useState(initialFiltersRef.current.dateTo);
+  const [managerId, setManagerId] = useState(initialFiltersRef.current.managerId);
+  const [scope, setScopeState] = useState<DpListScope>(initialFiltersRef.current.scope);
+  const [direction, setDirection] = useState(initialFiltersRef.current.direction);
+  const [paymentForm, setPaymentForm] = useState(initialFiltersRef.current.paymentForm);
+  const [searchInput, setSearchInput] = useState(initialFiltersRef.current.search);
+  const [search, setSearch] = useState(initialFiltersRef.current.search);
+  const [page, setPage] = useState(initialFiltersRef.current.page);
   const [items, setItems] = useState<MoneyMovement[]>([]);
   const [managers, setManagers] = useState<MoneyMovementManagerOption[]>([]);
   const [total, setTotal] = useState(0);
@@ -40,6 +50,34 @@ export function useMoneyMovementsPage() {
   const [totalSum, setTotalSum] = useState(0);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
+
+  // Инкассации: история, модалки и остаток наличных текущего менеджера.
+  const [incassations, setIncassations] = useState<ManagerIncassation[]>([]);
+  const [incassationModalOpen, setIncassationModalOpen] = useState(false);
+  const [incassationHistoryOpen, setIncassationHistoryOpen] = useState(false);
+  const [cashBalance, setCashBalance] = useState<IncassationCashBalance | null>(null);
+  const [cashBalanceLoading, setCashBalanceLoading] = useState(false);
+  const [incassationSubmitting, setIncassationSubmitting] = useState(false);
+
+  // Ручная запись (проводка): изъятие/внесение в кассу.
+  const [manualEntryModalOpen, setManualEntryModalOpen] = useState(false);
+  const [manualEntrySubmitting, setManualEntrySubmitting] = useState(false);
+
+  // Сохраняем выбранное состояние фильтров между визитами страницы.
+  useEffect(() => {
+    if (!filtersPersistedRef.current) {
+      filtersPersistedRef.current = true;
+      return;
+    }
+    persistDpFilters({ scope, managerId, direction, paymentForm, search, dateFrom, dateTo, page });
+  }, [scope, managerId, direction, paymentForm, search, dateFrom, dateTo, page]);
+
+  // Если сохранённый менеджер исчез из справочника карточек — сбрасываем выбор.
+  useEffect(() => {
+    if (scope === 'mine' || !managerId || managers.length === 0) return;
+    if (managers.some((m) => m.id === managerId)) return;
+    setManagerId('');
+  }, [managers, managerId, scope]);
 
   // Отдельный дебаунс для поиска: не дёргаем API на каждый символ
   const searchTimerRef = useRef<number | null>(null);
@@ -60,7 +98,8 @@ export function useMoneyMovementsPage() {
       const response = await getMoneyMovements({
         dateFrom: dateFrom || undefined,
         dateTo: dateTo || undefined,
-        managerId: managerId || undefined,
+        scope,
+        managerId: scope === 'mine' ? undefined : managerId || undefined,
         direction: direction || undefined,
         paymentForm: paymentForm || undefined,
         search: search || undefined,
@@ -82,17 +121,99 @@ export function useMoneyMovementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, managerId, direction, paymentForm, search, page]);
+  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, search, page]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
 
+  const loadIncassations = useCallback(async () => {
+    try {
+      setIncassations(await getManagerIncassations());
+    } catch {
+      // история инкассаций не критична для журнала — не мешаем работе страницы
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadIncassations();
+  }, [loadIncassations]);
+
+  /** Остаток наличных менеджера; без id — текущий пользователь (он же дефолт в селекте). */
+  const loadCashBalance = useCallback(async (managerId?: string) => {
+    setCashBalance(null);
+    setCashBalanceLoading(true);
+    try {
+      setCashBalance(await getIncassationCashBalance(managerId));
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Не удалось загрузить остаток наличных');
+    } finally {
+      setCashBalanceLoading(false);
+    }
+  }, []);
+
+  const openIncassationModal = useCallback(async () => {
+    setIncassationModalOpen(true);
+    await loadCashBalance();
+  }, [loadCashBalance]);
+
+  const closeIncassationModal = useCallback(() => setIncassationModalOpen(false), []);
+
+  const openIncassationHistory = useCallback(() => {
+    setIncassationHistoryOpen(true);
+    void loadIncassations();
+  }, [loadIncassations]);
+
+  const closeIncassationHistory = useCallback(() => setIncassationHistoryOpen(false), []);
+
+  const openManualEntryModal = useCallback(async () => {
+    setManualEntryModalOpen(true);
+    // Дефолтный менеджер в селекте — текущий пользователь (managerId из ответа баланса).
+    await loadCashBalance();
+  }, [loadCashBalance]);
+
+  const closeManualEntryModal = useCallback(() => setManualEntryModalOpen(false), []);
+
+  const submitManualEntry = useCallback(
+    async (data: Parameters<typeof createManualMoneyMovement>[0]) => {
+      setManualEntrySubmitting(true);
+      try {
+        await createManualMoneyMovement(data);
+        setManualEntryModalOpen(false);
+        await refresh();
+      } finally {
+        setManualEntrySubmitting(false);
+      }
+    },
+    [refresh]
+  );
+
+  const submitIncassation = useCallback(
+    async (data: {
+      managerId?: string;
+      amount: number;
+      incassator: string;
+      performedAt: string;
+      notes?: string;
+    }) => {
+      setIncassationSubmitting(true);
+      try {
+        await createManagerIncassation(data);
+        setIncassationModalOpen(false);
+        await Promise.all([refresh(), loadIncassations()]);
+      } finally {
+        setIncassationSubmitting(false);
+      }
+    },
+    [refresh, loadIncassations]
+  );
+
   const resetFilters = useCallback(() => {
-    const fresh = defaultPeriod();
+    const fresh = defaultDpFilters();
     setDateFrom(fresh.dateFrom);
     setDateTo(fresh.dateTo);
     setManagerId('');
+    setScopeState('all');
     setDirection('');
     setPaymentForm('');
     setSearchInput('');
@@ -135,6 +256,11 @@ export function useMoneyMovementsPage() {
       setManagerId(value);
       setPage(1);
     },
+    scope,
+    setScope: (value: DpListScope) => {
+      setScopeState(value);
+      setPage(1);
+    },
     direction,
     setDirection: (value: string) => {
       setDirection(value);
@@ -160,6 +286,24 @@ export function useMoneyMovementsPage() {
     refresh,
     resetFilters,
     setPeriod,
+    incassations,
+    loadIncassations,
+    incassationModalOpen,
+    openIncassationModal,
+    closeIncassationModal,
+    incassationHistoryOpen,
+    openIncassationHistory,
+    closeIncassationHistory,
+    cashBalance,
+    cashBalanceLoading,
+    loadCashBalance,
+    incassationSubmitting,
+    submitIncassation,
+    manualEntryModalOpen,
+    openManualEntryModal,
+    closeManualEntryModal,
+    manualEntrySubmitting,
+    submitManualEntry,
   };
 }
 
