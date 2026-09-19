@@ -803,10 +803,8 @@ export class ContractDocumentPackagesController {
     if (!file?.path) {
       throw new BadRequestException('Файл не загружен');
     }
-    const pkg = await this.service.findOne(id);
-    if (pkg.kind !== ContractDocumentPackageKind.REPAIR) {
-      throw new BadRequestException('Доступно только для пакета «Ремонт»');
-    }
+    // Фото акта при закрытии договора требуется для всех направлений (ремонт, окна и т.д.).
+    await this.service.findOne(id);
     const filename = path.basename(file.path);
     return { imageUrl: `/uploads/contract-document-packages/contract-close-acts/${filename}` };
   }
