@@ -9,6 +9,12 @@ const nextConfig = {
   sassOptions: {
     includePaths: ['./src/shared/styles'],
   },
+  async redirects() {
+    return [
+      // «ДП» перенесён из CRM на верхний уровень — старые закладки ведём на новый адрес
+      { source: '/admin/crm/dp', destination: '/admin/dp', permanent: true },
+    ];
+  },
   async rewrites() {
     const apiTarget = process.env.API_INTERNAL_URL || 'http://localhost:3001';
     return [
