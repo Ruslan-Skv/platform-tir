@@ -42,8 +42,7 @@ import {
 import { type WeeklySchedule } from './utils/weekly-schedule.types';
 import { WorkDayNotifyService } from './services/work-day-notify.service';
 import {
-  type WorkDayDayOffRow,
-  type WorkDayJournalRow,
+  type WorkDayJournalListRow,
   WorkDayJournalService,
 } from './services/work-day-journal.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
@@ -188,13 +187,13 @@ export class WorkDaysService implements OnModuleInit {
       schedule: ReturnType<typeof resolveDaySchedule>;
     },
   ) {
-    const earlyLeaveApproved = await this.workDayRequests.hasApprovedEarlyLeave(
-      day.userId,
-      day.workDate,
-    );
-    const earlyLeaveMinutes = earlyLeaveApproved
-      ? 0
-      : calculateEarlyLeaveMinutes(opts.endedAt, day.workDate, opts.schedule);
+    const earlyLeaveApproved = day.isDayOffWork
+      ? false
+      : await this.workDayRequests.hasApprovedEarlyLeave(day.userId, day.workDate);
+    const earlyLeaveMinutes =
+      day.isDayOffWork || earlyLeaveApproved
+        ? 0
+        : calculateEarlyLeaveMinutes(opts.endedAt, day.workDate, opts.schedule);
     await this.prisma.workDayAbsence.updateMany({
       where: { workDayId: day.id, endedAt: null },
       data: { endedAt: opts.endedAt },
@@ -292,9 +291,9 @@ export class WorkDaysService implements OnModuleInit {
     const dayOfWeek = getDayOfWeekInTimezone();
     const todaySchedule = resolveDaySchedule(user, user.office, settings, dayOfWeek);
     const today = getTodayDateInTimezone();
-    if (!todaySchedule.isWorkDay || (await this.workDayRequests.hasApprovedDayOff(userId, today))) {
-      throw new BadRequestException('Сегодня нерабочий день по вашему графику.');
-    }
+    // Выход на работу в свой выходной по графику не блокируем: день учитывается с пометкой.
+    const approvedDayOff = await this.workDayRequests.hasApprovedDayOff(userId, today);
+    const isDayOffWork = !todaySchedule.isWorkDay || approvedDayOff;
 
     const openPrevious = await this.prisma.workDay.findFirst({
       where: { userId, status: WorkDayStatus.OPEN, workDate: { lt: today } },
@@ -337,7 +336,8 @@ export class WorkDaysService implements OnModuleInit {
     const now = new Date();
     const { ip, userAgent } = this.getClientMeta(meta);
     const lateArrivalApproved = await this.workDayRequests.hasApprovedLateArrival(userId, today);
-    const lateMinutes = lateArrivalApproved ? 0 : calculateLateMinutes(now, today, todaySchedule);
+    const lateMinutes =
+      isDayOffWork || lateArrivalApproved ? 0 : calculateLateMinutes(now, today, todaySchedule);
 
     let workDay: WorkDay;
     if (restart && existing) {
@@ -354,6 +354,7 @@ export class WorkDaysService implements OnModuleInit {
           startedFromIp: ip,
           startedFromUserAgent: userAgent ?? null,
           reopenCount: { increment: 1 },
+          isDayOffWork,
         },
         include: WORK_DAY_RECORD_INCLUDE,
       });
@@ -368,6 +369,7 @@ export class WorkDaysService implements OnModuleInit {
           startedFromIp: ip,
           startedFromUserAgent: userAgent ?? null,
           lateMinutes,
+          isDayOffWork,
         },
         include: WORK_DAY_RECORD_INCLUDE,
       });
@@ -493,7 +495,7 @@ export class WorkDaysService implements OnModuleInit {
     dateTo?: string;
     officeId?: string;
     userId?: string;
-  }): Promise<Array<WorkDayJournalRow | WorkDayDayOffRow>> {
+  }): Promise<WorkDayJournalListRow[]> {
     const where: {
       workDate?: { gte?: Date; lte?: Date };
       officeId?: string;
@@ -522,8 +524,10 @@ export class WorkDaysService implements OnModuleInit {
       orderBy: [{ workDate: 'desc' }, { startedAt: 'desc' }],
     });
 
-    const enriched: Array<WorkDayJournalRow | WorkDayDayOffRow> =
-      await this.workDayJournal.attachRequests(records, params);
+    const enriched: WorkDayJournalListRow[] = await this.workDayJournal.attachRequests(
+      records,
+      params,
+    );
     return enriched.sort((a, b) => {
       const dateDiff = b.workDate.getTime() - a.workDate.getTime();
       if (dateDiff !== 0) return dateDiff;

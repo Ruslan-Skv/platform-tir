@@ -1,0 +1,1 @@
+ALTER TABLE "work_days" ADD COLUMN "isDayOffWork" BOOLEAN NOT NULL DEFAULT false;

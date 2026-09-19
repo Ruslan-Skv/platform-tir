@@ -46,6 +46,8 @@ export interface WorkDayRecord {
   lateMinutes: number;
   earlyLeaveMinutes: number;
   reportedEndAt: string | null;
+  /** Сотрудник вышел на работу в свой выходной по графику. */
+  isDayOffWork?: boolean;
   office?: { id: string; name: string; prefix?: string | null } | null;
   absences?: WorkDayAbsence[];
   user?: {
@@ -58,6 +60,8 @@ export interface WorkDayRecord {
   /** Запросы (выходной / уйти пораньше / прийти попозже) на дату записи. */
   requests?: WorkDayRequestBadge[];
   dayOffOnly?: false;
+  truancyOnly?: false;
+  bySchedule?: false;
 }
 
 /** Короткая карточка запроса для строк журнала рабочего времени. */
@@ -82,6 +86,9 @@ export interface WorkDayDayOffRow {
   lateMinutes: number;
   earlyLeaveMinutes: number;
   dayOffOnly: true;
+  truancyOnly?: false;
+  /** true — обычный выходной по графику (не согласованный запрос). */
+  bySchedule?: true;
   office?: { id: string; name: string } | null;
   absences: [];
   user?: {
@@ -94,7 +101,33 @@ export interface WorkDayDayOffRow {
   requests: WorkDayRequestBadge[];
 }
 
-export type WorkDayJournalRow = WorkDayRecord | WorkDayDayOffRow;
+/** Строка журнала за прошедший рабочий день по графику без явки и без согласованного выходного. */
+export interface WorkDayTruancyRow {
+  id: string;
+  userId: string;
+  officeId: string | null;
+  workDate: string;
+  startedAt: null;
+  endedAt: null;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  isDayOffWork: false;
+  truancyOnly: true;
+  dayOffOnly?: false;
+  bySchedule?: false;
+  office?: { id: string; name: string } | null;
+  absences: [];
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
+  requests: WorkDayRequestBadge[];
+}
+
+export type WorkDayJournalRow = WorkDayRecord | WorkDayDayOffRow | WorkDayTruancyRow;
 
 export interface WorkDaySettings {
   id: string;
@@ -283,6 +316,12 @@ export interface MyWorkDayHistorySummary {
   autoClosedDays: number;
   totalAbsenceMinutes: number;
   approvedDayOffDays?: number;
+  /** Выходные по графику без явки (субботы/воскресенья и т.п.). */
+  scheduleDayOffDays?: number;
+  /** Прогулы: рабочие дни по графику без явки и без согласованного выходного. */
+  truancyDays?: number;
+  /** Выходы на работу в свой выходной по графику. */
+  dayOffWorkDays?: number;
 }
 
 export interface MyWorkDayHistoryResponse {

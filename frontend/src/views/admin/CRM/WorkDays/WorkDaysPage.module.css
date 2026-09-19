@@ -83,6 +83,46 @@
   background: #ecfdf5;
 }
 
+.rowTruancy {
+  background: #fef2f2;
+}
+
+.rowDayOffWork {
+  background: #eff6ff;
+}
+
+.statusCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dayOffWorkBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: #dbeafe;
+  color: #1d4ed8;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.truancyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 0.6rem;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 0.75rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .absenceCell {
   display: flex;
   flex-direction: column;

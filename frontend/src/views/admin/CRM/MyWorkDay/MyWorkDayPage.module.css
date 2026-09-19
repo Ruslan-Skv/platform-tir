@@ -172,6 +172,46 @@
   background: var(--admin-success-bg-soft, #ecfdf5);
 }
 
+.rowTruancy td {
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.rowDayOffWork td {
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.statusCell {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.dayOffWorkBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid transparent;
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-info-text, #1d4ed8);
+  font-size: var(--admin-font-size-xs);
+  white-space: nowrap;
+}
+
+.truancyBadge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid transparent;
+  background: var(--admin-danger-bg-soft, #fef2f2);
+  color: var(--admin-danger, #b91c1c);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 .requestsSection {
   margin-bottom: var(--admin-space-xl);
 }
@@ -319,6 +359,24 @@
   background: rgb(16 185 129 / 0.14);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowTruancy td {
+  background: rgb(239 68 68 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowDayOffWork td {
+  background: rgb(59 130 246 / 0.14);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .dayOffWorkBadge {
+  background: rgb(59 130 246 / 0.18);
+  color: rgb(147 197 253);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .truancyBadge {
+  background: rgb(239 68 68 / 0.18);
+  color: rgb(252 165 165);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadge {
   background: var(--admin-surface-muted);
   border-color: var(--admin-border);
@@ -423,6 +481,24 @@
 .mobileCard.rowDayOff {
   background: var(--admin-success-bg-soft, #ecfdf5);
   border-color: var(--admin-success-border, #a7f3d0);
+}
+
+.mobileCard.rowTruancy {
+  background: var(--admin-danger-bg-soft, #fef2f2);
+  border-color: var(--admin-danger-border, #fecaca);
+}
+
+.mobileCard.rowDayOffWork {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border, #bfdbfe);
+}
+
+.mobileCardStatusWrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 4px;
 }
 
 @media (max-width: 900px) {
@@ -572,6 +648,14 @@
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowDayOff {
   background: rgb(16 185 129 / 0.14);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowTruancy {
+  background: rgb(239 68 68 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCard.rowDayOffWork {
+  background: rgb(59 130 246 / 0.14);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .mobileCardDate {

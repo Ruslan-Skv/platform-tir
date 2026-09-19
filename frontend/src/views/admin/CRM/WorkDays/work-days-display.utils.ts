@@ -3,6 +3,7 @@ import type {
   WorkDayJournalRow,
   WorkDayRecord,
   WorkDayRequestBadge,
+  WorkDayTruancyRow,
 } from '@/shared/api/admin-work-days';
 
 export function formatWorkDayTime(iso: string): string {
@@ -21,6 +22,17 @@ export function workDayUserName(row: WorkDayJournalRow): string {
 
 export function isWorkDayDayOffRow(row: WorkDayJournalRow): row is WorkDayDayOffRow {
   return row.dayOffOnly === true;
+}
+
+export function isWorkDayTruancyRow(row: WorkDayJournalRow): row is WorkDayTruancyRow {
+  return row.truancyOnly === true;
+}
+
+/** Синтетические строки журнала (согласованный выходной / прогул) — без записи в БД. */
+export function isWorkDaySyntheticRow(
+  row: WorkDayJournalRow
+): row is WorkDayDayOffRow | WorkDayTruancyRow {
+  return row.dayOffOnly === true || row.truancyOnly === true;
 }
 
 export function workDayAbsenceMinutes(row: WorkDayJournalRow): number {
@@ -48,6 +60,8 @@ export function workDayRowClassName(
   styles: { readonly [key: string]: string }
 ): string | undefined {
   if (row.dayOffOnly === true) return styles.rowDayOff;
+  if (row.truancyOnly === true) return styles.rowTruancy;
+  if (row.isDayOffWork) return styles.rowDayOffWork;
   if (row.status === 'AUTO_CLOSED') return styles.rowAuto;
   if (row.lateMinutes > 0) return styles.rowLate;
   if (row.earlyLeaveMinutes > 0) return styles.rowEarly;

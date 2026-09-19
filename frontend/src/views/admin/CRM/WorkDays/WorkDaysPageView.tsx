@@ -13,6 +13,8 @@ import {
   formatWorkDayDate,
   formatWorkDayTime,
   isWorkDayDayOffRow,
+  isWorkDaySyntheticRow,
+  isWorkDayTruancyRow,
   workDayAbsenceMinutes,
   workDayRequestBadgeLabel,
   workDayRowClassName,
@@ -120,6 +122,11 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         <span>Ранних уходов: {stats.early}</span>
         <span>Авто-закрытий: {stats.auto}</span>
         {stats.dayOffs > 0 ? <span>Согласованных выходных: {stats.dayOffs}</span> : null}
+        {stats.dayOffsBySchedule > 0 ? (
+          <span>Выходных по графику: {stats.dayOffsBySchedule}</span>
+        ) : null}
+        {stats.dayOffWork > 0 ? <span>Работа в выходной: {stats.dayOffWork}</span> : null}
+        {stats.truancy > 0 ? <span>Прогулов: {stats.truancy}</span> : null}
       </div>
 
       {error ? <p className={styles.error}>{error}</p> : null}
@@ -152,7 +159,25 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                 </tr>
               ) : (
                 rows.map((row) =>
-                  isWorkDayDayOffRow(row) ? (
+                  isWorkDayTruancyRow(row) ? (
+                    <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                      <td>{formatWorkDayDate(row.workDate)}</td>
+                      <td>{workDayUserName(row)}</td>
+                      <td>{row.office?.name ?? '—'}</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>
+                        <RequestsCell row={row} />
+                      </td>
+                      <td>
+                        <span className={styles.truancyBadge}>Прогул</span>
+                      </td>
+                      {canDelete ? <td className={styles.actionsCol} /> : null}
+                    </tr>
+                  ) : isWorkDayDayOffRow(row) ? (
                     <tr key={row.id} className={workDayRowClassName(row, styles)}>
                       <td>{formatWorkDayDate(row.workDate)}</td>
                       <td>{workDayUserName(row)}</td>
@@ -183,7 +208,14 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                       <td>
                         <RequestsCell row={row} />
                       </td>
-                      <td>{workDayStatusLabel(row.status)}</td>
+                      <td>
+                        <div className={styles.statusCell}>
+                          <span>{workDayStatusLabel(row.status)}</span>
+                          {row.isDayOffWork ? (
+                            <span className={styles.dayOffWorkBadge}>Работа в выходной</span>
+                          ) : null}
+                        </div>
+                      </td>
                       {canDelete ? (
                         <td className={styles.actionsCol}>
                           <button
@@ -210,7 +242,7 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
         </div>
       )}
 
-      {deleteTarget && deleteTarget.dayOffOnly !== true ? (
+      {deleteTarget && !isWorkDaySyntheticRow(deleteTarget) ? (
         <ConfirmModal
           isOpen
           title="Удалить запись рабочего дня?"

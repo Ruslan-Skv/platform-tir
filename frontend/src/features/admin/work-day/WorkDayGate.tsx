@@ -163,7 +163,10 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
                 </select>
               </label>
               {!status.isWorkDayToday ? (
-                <p className={styles.hint}>Сегодня по вашему графику нерабочий день.</p>
+                <p className={styles.hint}>
+                  Сегодня по вашему графику нерабочий день. День можно начать — он будет отмечен как
+                  «работа в выходной».
+                </p>
               ) : null}
               {status.todayWorkDay && status.todayWorkDay.status !== 'OPEN' ? (
                 <p className={styles.hint}>
@@ -176,7 +179,7 @@ export function WorkDayGate({ children }: { children: React.ReactNode }) {
                 type="button"
                 className={styles.primaryBtn}
                 onClick={() => void onStart()}
-                disabled={starting || !status.isWorkDayToday || !selectedOfficeId}
+                disabled={starting || !selectedOfficeId}
               >
                 {starting ? 'Открытие…' : 'Начать рабочий день'}
               </button>

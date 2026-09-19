@@ -25,6 +25,7 @@ import {
   formatWorkDayDate,
   formatWorkDayTime,
   isWorkDayDayOffRow,
+  isWorkDayTruancyRow,
   workDayAbsenceMinutes,
   workDayRequestBadgeLabel,
   workDayRowClassName,
@@ -135,6 +136,33 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
       ? buildWorkDayEndSummary(displayName, todayDay)
       : null;
 
+  // Кнопка старта дня прямо со страницы: нужна в том числе для работы в свой выходной,
+  // когда виджет учёта при входе в админку не блокирует интерфейс.
+  const trackedStatus = liveStatus?.tracked ? liveStatus : null;
+  const startOffice = trackedStatus?.office ?? null;
+  const startDayButton =
+    trackedStatus && !todayDay && startOffice ? (
+      <button
+        type="button"
+        className={cdChrome.contractsListHeaderAddBtn}
+        disabled={restartBusy}
+        title={
+          trackedStatus.isWorkDayToday
+            ? 'Отметить начало рабочего дня'
+            : 'День будет отмечен как «работа в выходной»'
+        }
+        onClick={() => void restartToday(startOffice.id)}
+      >
+        {restartBusy ? 'Открытие…' : 'Начать рабочий день'}
+      </button>
+    ) : null;
+  const dayOffWorkHint =
+    trackedStatus && !todayDay ? (
+      <p className={styles.todayNoticeNote}>
+        Если выйти на работу, день будет отмечен как «работа в выходной».
+      </p>
+    ) : null;
+
   const openModal = (type: WorkDayRequestType) => {
     setModalType(type);
   };
@@ -234,9 +262,23 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
         <div className={styles.todayCard}>
           <h2 className={styles.todayTitle}>Сегодня</h2>
           {liveStatus.approvedDayOff ? (
-            <p className={styles.todayText}>Согласованный выходной — явка не требуется.</p>
+            <div className={styles.todayFinished}>
+              <div className={styles.todayFinishedInfo}>
+                <p className={styles.todayText}>Согласованный выходной — явка не требуется.</p>
+                {dayOffWorkHint}
+              </div>
+              {startDayButton}
+            </div>
           ) : !liveStatus.isWorkDayToday ? (
-            <p className={styles.todayText}>По графику сегодня нерабочий день.</p>
+            <div className={styles.todayFinished}>
+              <div className={styles.todayFinishedInfo}>
+                <p className={styles.todayText}>
+                  Сегодня выходной по вашему графику — работать не обязательно.
+                </p>
+                {dayOffWorkHint}
+              </div>
+              {startDayButton}
+            </div>
           ) : todayOpen ? (
             <p className={styles.todayText}>
               На работе с {formatWorkDayTime(todayDay.startedAt)}
@@ -244,6 +286,7 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               {todayDay.lateMinutes > 0 ? ` · опоздание ${todayDay.lateMinutes} мин` : ''}
               {liveStatus.approvedLateArrival ? ' · поздний приход согласован' : ''}
               {liveStatus.approvedEarlyLeave ? ' · ранний уход согласован' : ''}
+              {todayDay.isDayOffWork ? ' · работа в выходной' : ''}
             </p>
           ) : todayDay && todayDay.status !== 'OPEN' ? (
             <div className={styles.todayFinished}>
@@ -251,6 +294,7 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                 <p className={styles.todayText}>
                   Рабочий день завершён: {formatWorkDayTime(todayDay.startedAt)}
                   {todayDay.endedAt ? ` — ${formatWorkDayTime(todayDay.endedAt)}` : ''}
+                  {todayDay.isDayOffWork ? ' · работа в выходной' : ''}
                 </p>
                 {endSummary ? (
                   <div className={styles.todayNotices}>
@@ -282,9 +326,14 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               ) : null}
             </div>
           ) : (
-            <p className={styles.todayText}>
-              Рабочий день ещё не начат. Отметьте начало при входе в админку.
-            </p>
+            <div className={styles.todayFinished}>
+              <div className={styles.todayFinishedInfo}>
+                <p className={styles.todayText}>
+                  Рабочий день ещё не начат. Отметьте начало при входе в админку или кнопкой справа.
+                </p>
+              </div>
+              {startDayButton}
+            </div>
           )}
         </div>
       ) : null}
@@ -337,6 +386,15 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
             <span className={styles.statChip}>
               Согласованных выходных: {stats.approvedDayOffDays}
             </span>
+          ) : null}
+          {stats.scheduleDayOffDays ? (
+            <span className={styles.statChip}>Выходных по графику: {stats.scheduleDayOffDays}</span>
+          ) : null}
+          {stats.dayOffWorkDays ? (
+            <span className={styles.statChip}>Работа в выходной: {stats.dayOffWorkDays}</span>
+          ) : null}
+          {stats.truancyDays ? (
+            <span className={styles.statChip}>Прогулов: {stats.truancyDays}</span>
           ) : null}
         </div>
       ) : null}
@@ -410,7 +468,23 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
               </tr>
             ) : (
               rows.map((row) =>
-                isWorkDayDayOffRow(row) ? (
+                isWorkDayTruancyRow(row) ? (
+                  <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                    <td>{formatWorkDayDate(row.workDate)}</td>
+                    <td>{row.office?.name ?? '—'}</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>
+                      <RequestsCell row={row} />
+                    </td>
+                    <td>
+                      <span className={styles.truancyBadge}>Прогул</span>
+                    </td>
+                  </tr>
+                ) : isWorkDayDayOffRow(row) ? (
                   <tr key={row.id} className={workDayRowClassName(row, styles)}>
                     <td>{formatWorkDayDate(row.workDate)}</td>
                     <td>{row.office?.name ?? '—'}</td>
@@ -438,7 +512,14 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                     <td>
                       <RequestsCell row={row} />
                     </td>
-                    <td>{workDayStatusLabel(row.status)}</td>
+                    <td>
+                      <div className={styles.statusCell}>
+                        <span>{workDayStatusLabel(row.status)}</span>
+                        {row.isDayOffWork ? (
+                          <span className={styles.dayOffWorkBadge}>Работа в выходной</span>
+                        ) : null}
+                      </div>
+                    </td>
                   </tr>
                 )
               )
@@ -454,6 +535,30 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
           ) : (
             rows.map((row) => {
               const tone = workDayRowClassName(row, styles);
+              if (isWorkDayTruancyRow(row)) {
+                return (
+                  <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
+                    <div className={styles.mobileCardTop}>
+                      <strong className={styles.mobileCardDate}>
+                        {formatWorkDayDate(row.workDate)}
+                      </strong>
+                      <span className={styles.truancyBadge}>Прогул</span>
+                    </div>
+                    <dl className={styles.mobileCardRows}>
+                      <div className={styles.mobileCardRow}>
+                        <dt>Офис</dt>
+                        <dd>{row.office?.name ?? '—'}</dd>
+                      </div>
+                      <div className={styles.mobileCardRow}>
+                        <dt>Запросы</dt>
+                        <dd>
+                          <RequestsCell row={row} />
+                        </dd>
+                      </div>
+                    </dl>
+                  </article>
+                );
+              }
               if (isWorkDayDayOffRow(row)) {
                 return (
                   <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
@@ -484,8 +589,13 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                     <strong className={styles.mobileCardDate}>
                       {formatWorkDayDate(row.workDate)}
                     </strong>
-                    <span className={styles.mobileCardStatus}>
-                      {workDayStatusLabel(row.status)}
+                    <span className={styles.mobileCardStatusWrap}>
+                      <span className={styles.mobileCardStatus}>
+                        {workDayStatusLabel(row.status)}
+                      </span>
+                      {row.isDayOffWork ? (
+                        <span className={styles.dayOffWorkBadge}>Работа в выходной</span>
+                      ) : null}
                     </span>
                   </div>
                   <dl className={styles.mobileCardRows}>

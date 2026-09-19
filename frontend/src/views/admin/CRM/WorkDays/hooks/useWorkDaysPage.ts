@@ -6,6 +6,8 @@ import { useAuth } from '@/features/auth';
 import { getOffices } from '@/shared/api/admin-crm';
 import { type WorkDayJournalRow, deleteWorkDay, getWorkDays } from '@/shared/api/admin-work-days';
 
+import { isWorkDaySyntheticRow } from '../work-days-display.utils';
+
 export function useWorkDaysPage() {
   const { user } = useAuth();
   const canDelete = user?.role === 'SUPER_ADMIN';
@@ -53,7 +55,7 @@ export function useWorkDaysPage() {
   const handleDelete = useCallback(
     async (row: WorkDayJournalRow) => {
       if (!canDelete) return;
-      if (row.dayOffOnly === true) return;
+      if (isWorkDaySyntheticRow(row)) return;
       setDeletingId(row.id);
       setError(null);
       try {
@@ -69,12 +71,17 @@ export function useWorkDaysPage() {
   );
 
   const stats = useMemo(() => {
-    const days = rows.filter((r) => r.dayOffOnly !== true);
+    const days = rows.filter((r) => !isWorkDaySyntheticRow(r));
     const late = days.filter((r) => r.lateMinutes > 0).length;
     const early = days.filter((r) => r.earlyLeaveMinutes > 0).length;
     const auto = days.filter((r) => r.status === 'AUTO_CLOSED').length;
-    const dayOffs = rows.filter((r) => r.dayOffOnly === true).length;
-    return { late, early, auto, dayOffs };
+    const dayOffs = rows.filter((r) => r.dayOffOnly === true && r.bySchedule !== true).length;
+    const dayOffsBySchedule = rows.filter(
+      (r) => r.dayOffOnly === true && r.bySchedule === true
+    ).length;
+    const truancy = rows.filter((r) => r.truancyOnly === true).length;
+    const dayOffWork = days.filter((r) => r.isDayOffWork).length;
+    return { late, early, auto, dayOffs, dayOffsBySchedule, truancy, dayOffWork };
   }, [rows]);
 
   return {
