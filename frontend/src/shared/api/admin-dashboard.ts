@@ -33,6 +33,15 @@ export interface CatalogActivityResponse {
   categories: CatalogActivityRow[];
 }
 
+/** Продажи за текущий месяц — итоги журнала ДП по направлениям и менеджерам. */
+export interface DashboardSalesMonthResponse {
+  periodFrom: string;
+  periodTo: string;
+  totalSum: number;
+  directionSums: { direction: string | null; sum: number }[];
+  managerSums: { managerId: string | null; name: string; sum: number }[];
+}
+
 export interface AdminDashboardQuickLink {
   id: string;
   label: string;
@@ -257,6 +266,18 @@ export async function getCatalogActivity(from: Date, to: Date): Promise<CatalogA
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось загрузить статистику');
+  }
+  return res.json();
+}
+
+export async function getDashboardSalesMonth(): Promise<DashboardSalesMonthResponse> {
+  const res = await apiFetch(`${API_URL}/admin/dashboard/sales-month`, {
+    headers: getAdminAuthHeaders(),
+    cache: 'no-store',
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось загрузить продажи за месяц');
   }
   return res.json();
 }

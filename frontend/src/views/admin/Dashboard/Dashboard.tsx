@@ -11,9 +11,11 @@ import {
   type CatalogActivityResponse,
   type CatalogActivityRow,
   DEFAULT_ADMIN_DASHBOARD_SETTINGS,
+  type DashboardSalesMonthResponse,
   type DashboardTrainingDynamicsResponse,
   getAdminDashboardSettings,
   getCatalogActivity,
+  getDashboardSalesMonth,
   getDashboardTrainingDynamics,
 } from '@/shared/api/admin-dashboard';
 import type { AdminDashboardSectionId } from '@/shared/lib/admin/admin-dashboard-sections';
@@ -23,6 +25,7 @@ import { getSafeHref } from '@/shared/lib/sanitize';
 import styles from './Dashboard.module.css';
 import { CalendarDashboardWidget } from './components/CalendarDashboardWidget';
 import { DashboardSettingsButton } from './components/DashboardSettingsButton';
+import { SalesMonthWidget } from './components/SalesMonthWidget';
 import { TrainingDynamicsWidget } from './components/TrainingDynamicsWidget';
 
 function formatPerson(row: CatalogActivityRow): string {
@@ -260,10 +263,13 @@ export function Dashboard() {
   const [toInput, setToInput] = useState(() => toDateInputValue(defaultRange.to));
   const [catalogData, setCatalogData] = useState<CatalogActivityResponse | null>(null);
   const [trainingData, setTrainingData] = useState<DashboardTrainingDynamicsResponse | null>(null);
+  const [salesMonthData, setSalesMonthData] = useState<DashboardSalesMonthResponse | null>(null);
   const [catalogLoading, setCatalogLoading] = useState(false);
   const [trainingLoading, setTrainingLoading] = useState(false);
+  const [salesMonthLoading, setSalesMonthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  const showSalesWidget = hasAccess('admin.crm.dp');
   const showCatalogWidget = settings.catalogActivityVisible;
   const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
   const showCalendarWidget = settings.calendarVisible && hasCalendarAccess;
@@ -275,6 +281,19 @@ export function Dashboard() {
       .catch(() => setSettings(DEFAULT_ADMIN_DASHBOARD_SETTINGS))
       .finally(() => setSettingsLoaded(true));
   }, []);
+
+  // Продажи месяца не зависят от тулбара дат: период фиксирован (текущий месяц).
+  useEffect(() => {
+    if (!showSalesWidget) {
+      setSalesMonthData(null);
+      return;
+    }
+    setSalesMonthLoading(true);
+    void getDashboardSalesMonth()
+      .then(setSalesMonthData)
+      .catch(() => setSalesMonthData(null))
+      .finally(() => setSalesMonthLoading(false));
+  }, [showSalesWidget]);
 
   const loadWidgets = useCallback(async () => {
     const fromD = parseDateInput(fromInput);
@@ -362,12 +381,24 @@ export function Dashboard() {
   );
 
   const hasAnyVisibleSection = useMemo(() => {
-    if (showTrainingWidget || showCatalogWidget || showCalendarWidget) return true;
+    if (showSalesWidget || showTrainingWidget || showCatalogWidget || showCalendarWidget) {
+      return true;
+    }
     return enabledQuickLinks.length > 0;
-  }, [showTrainingWidget, showCatalogWidget, showCalendarWidget, enabledQuickLinks.length]);
+  }, [
+    showSalesWidget,
+    showTrainingWidget,
+    showCatalogWidget,
+    showCalendarWidget,
+    enabledQuickLinks.length,
+  ]);
 
   const renderDashboardSection = (sectionId: AdminDashboardSectionId) => {
     switch (sectionId) {
+      case 'salesMonth':
+        return showSalesWidget ? (
+          <SalesMonthWidget key={sectionId} data={salesMonthData} loading={salesMonthLoading} />
+        ) : null;
       case 'trainingDynamics':
         return showTrainingWidget ? (
           <TrainingDynamicsWidget key={sectionId} data={trainingData} loading={trainingLoading} />

@@ -1,4 +1,5 @@
 export const ADMIN_DASHBOARD_SECTION_IDS = [
+  'salesMonth',
   'trainingDynamics',
   'catalogActivity',
   'calendar',
@@ -8,6 +9,7 @@ export const ADMIN_DASHBOARD_SECTION_IDS = [
 export type AdminDashboardSectionId = (typeof ADMIN_DASHBOARD_SECTION_IDS)[number];
 
 export const DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER: AdminDashboardSectionId[] = [
+  'salesMonth',
   'trainingDynamics',
   'catalogActivity',
   'calendar',
@@ -15,6 +17,7 @@ export const DEFAULT_ADMIN_DASHBOARD_SECTION_ORDER: AdminDashboardSectionId[] = 
 ];
 
 export const ADMIN_DASHBOARD_SECTION_LABELS: Record<AdminDashboardSectionId, string> = {
+  salesMonth: 'Продажи за текущий месяц',
   trainingDynamics: 'Динамика обучения сотрудников',
   catalogActivity: 'Добавление товаров в каталог',
   calendar: 'Календарь',

@@ -127,4 +127,13 @@ export class AdminDashboardController {
     }
     return this.adminDashboardService.getCatalogActivity(from, to);
   }
+
+  /** Продажи за текущий месяц: итог, направления и менеджеры (по журналу ДП). */
+  @Get('sales-month')
+  @ApiOperation({
+    summary: 'Продажи за текущий месяц: итог, по направлениям и по менеджерам (журнал ДП)',
+  })
+  getSalesMonth() {
+    return this.adminDashboardService.getSalesMonth();
+  }
 }

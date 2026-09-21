@@ -1,4 +1,5 @@
 import { Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface CatalogActivityRow {
@@ -19,9 +20,74 @@ export interface CatalogActivityResponse {
   categories: CatalogActivityRow[];
 }
 
+export interface DashboardSalesMonthResponse {
+  periodFrom: string;
+  periodTo: string;
+  /** Сумма оплат за месяц (наличные/безнал, минус возвраты и изъятия). */
+  totalSum: number;
+  directionSums: { direction: string | null; sum: number }[];
+  managerSums: { managerId: string | null; name: string; sum: number }[];
+}
+
 @Injectable()
 export class AdminDashboardService {
   constructor(private readonly prisma: PrismaService) {}
+
+  /**
+   * Продажи за текущий месяц — те же итоги, что в блоке итогов журнала ДП
+   * (/admin/dp): сумма оплат по журналам денежных движений, разбивка по
+   * направлениям и по менеджерам (карточка менеджера договора).
+   */
+  async getSalesMonth(): Promise<DashboardSalesMonthResponse> {
+    const now = new Date();
+    const from = new Date(now.getFullYear(), now.getMonth(), 1);
+    const to = new Date(now.getFullYear(), now.getMonth() + 1, 1);
+    const where: Prisma.MoneyMovementWhereInput = { paymentDate: { gte: from, lt: to } };
+
+    const [total, byDirection, byManager] = await Promise.all([
+      this.prisma.moneyMovement.aggregate({ where, _sum: { amount: true } }),
+      this.prisma.moneyMovement.groupBy({ by: ['direction'], where, _sum: { amount: true } }),
+      this.prisma.moneyMovement.groupBy({ by: ['managerId'], where, _sum: { amount: true } }),
+    ]);
+
+    // Менеджер движения может быть не из справочника карточек — берём имена из users.
+    const managerIds = [
+      ...new Set(byManager.map((row) => row.managerId).filter((id): id is string => Boolean(id))),
+    ];
+    const users = managerIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: managerIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        })
+      : [];
+    const nameById = new Map(
+      users.map((u) => [
+        u.id,
+        [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || u.email,
+      ]),
+    );
+
+    const directionSums = byDirection
+      .map((row) => ({ direction: row.direction, sum: Number(row._sum.amount ?? 0) }))
+      .sort((a, b) => b.sum - a.sum);
+    const managerSums = byManager
+      .map((row) => ({
+        managerId: row.managerId,
+        name: row.managerId
+          ? (nameById.get(row.managerId) ?? 'Неизвестный менеджер')
+          : 'Без менеджера',
+        sum: Number(row._sum.amount ?? 0),
+      }))
+      .sort((a, b) => b.sum - a.sum);
+
+    return {
+      periodFrom: from.toISOString(),
+      periodTo: to.toISOString(),
+      totalSum: Number(total._sum.amount ?? 0),
+      directionSums,
+      managerSums,
+    };
+  }
 
   async getCatalogActivity(from: Date, to: Date): Promise<CatalogActivityResponse> {
     const [productInPeriod, productTotal, categoryInPeriod, categoryTotal] = await Promise.all([
