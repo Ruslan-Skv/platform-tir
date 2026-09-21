@@ -7,17 +7,26 @@
  * Повторный запуск безопасен: менеджеры пересчитываются идемпотентно,
  * существующие снимки офиса не перезаписываются.
  *
- * Запуск (из каталога backend): node scripts/backfill-money-movement-managers.mjs
+ * Запуск из каталога backend (локально): node scripts/backfill-money-movement-managers.mjs
+ * В прод-контейнере (переменные БД уже в окружении, скрипт кладём в /app рядом с node_modules):
+ *   docker cp scripts/backfill-money-movement-managers.mjs <backend-контейнер>:/app/backfill.mjs
+ *   docker exec <backend-контейнер> node /app/backfill.mjs
  */
 import { PrismaClient } from '@prisma/client';
-import { config } from 'dotenv';
 import * as path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-config({ path: path.join(process.cwd(), '.env') });
-config({ path: path.join(__dirname, '..', '.env') });
+// .env — только для локального запуска; в контейнере dotenv может не быть —
+// тогда используем переменные окружения как есть.
+try {
+  const { config } = await import('dotenv');
+  config({ path: path.join(process.cwd(), '.env') });
+  config({ path: path.join(__dirname, '..', '.env') });
+} catch {
+  // dotenv недоступен (прод-контейнер) — DATABASE_URL берём из окружения
+}
 
 const prisma = new PrismaClient();
 
