@@ -44,15 +44,24 @@ export function useEstimatesListFiltersState(
   const [page, setPage] = useState(1);
   const [limit, setLimit] = useState<EstimatesPageLimit>(initialListFiltersRef.current.pageLimit);
   const effectiveLimit = (isNarrowViewport ? ADMIN_MOBILE_PAGE_LIMIT : limit) as EstimatesPageLimit;
-  const [expandedAddressKey, setExpandedAddressKey] = useState<string | null>(
-    initialListFiltersRef.current.expandedAddressKey
+  const [expandedAddressKeys, setExpandedAddressKeys] = useState<string[]>(
+    initialListFiltersRef.current.expandedAddressKeys
   );
 
   const searchNorm = normalizeEstimatesListSearch(search);
-  const effectiveExpandedAddressKey = listViewMode === 'by_object' ? expandedAddressKey : null;
+  const effectiveExpandedAddressKeys = listViewMode === 'by_object' ? expandedAddressKeys : [];
   const hasActiveListFilters = Boolean(
     searchNorm || managerFilter || dateFrom || dateTo || listScope !== 'all'
   );
+
+  /** Объекты можно раскрывать независимо: разворачивание одного не сворачивает другие. */
+  const toggleExpandedAddressKey = useCallback((addressKey: string) => {
+    setExpandedAddressKeys((current) =>
+      current.includes(addressKey)
+        ? current.filter((key) => key !== addressKey)
+        : [...current, addressKey]
+    );
+  }, []);
 
   const setListScope = useCallback((scope: EstimatesListScope) => {
     setListScopeState(scope);
@@ -71,7 +80,7 @@ export function useEstimatesListFiltersState(
     setListSortBy(saved.sortBy);
     setListSortOrder(saved.sortOrder);
     setLimit(saved.pageLimit);
-    setExpandedAddressKey(saved.expandedAddressKey);
+    setExpandedAddressKeys(saved.expandedAddressKeys);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -112,7 +121,7 @@ export function useEstimatesListFiltersState(
       listViewMode,
       listScope,
       scopeTouched,
-      expandedAddressKey,
+      expandedAddressKeys,
     });
   }, [
     search,
@@ -125,7 +134,7 @@ export function useEstimatesListFiltersState(
     listViewMode,
     listScope,
     scopeTouched,
-    expandedAddressKey,
+    expandedAddressKeys,
   ]);
 
   useEffect(() => {
@@ -161,9 +170,10 @@ export function useEstimatesListFiltersState(
     setPage,
     limit: effectiveLimit,
     setLimit,
-    expandedAddressKey,
-    setExpandedAddressKey,
-    effectiveExpandedAddressKey,
+    expandedAddressKeys,
+    setExpandedAddressKeys,
+    toggleExpandedAddressKey,
+    effectiveExpandedAddressKeys,
     searchNorm,
     hasActiveListFilters,
     handleListSortChange,

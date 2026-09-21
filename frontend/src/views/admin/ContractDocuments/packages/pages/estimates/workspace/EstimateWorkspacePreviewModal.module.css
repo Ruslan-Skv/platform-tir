@@ -1,0 +1,34 @@
+/*
+ * Локальные токены листа сметы: модалка рендерится в портале body (вне .adminLayout),
+ * поэтому печатные размеры шрифта и тень листа задаём здесь (как .page в base.module.css).
+ */
+.shell {
+  --admin-print-font-size-8pt: 8pt;
+  --admin-print-font-size-9pt: 9pt;
+  --admin-print-font-size-10px: 10px;
+  --admin-print-font-size-11px: 11px;
+  --admin-print-font-size-11pt: 11pt;
+  --admin-print-font-size-12px: 12px;
+  --admin-print-font-size-15px: 15px;
+  --admin-print-font-size-18px: 18px;
+  --admin-line-height-base: 1.35;
+  --admin-overlay-color-025: rgb(15 23 42 / 12%);
+}
+
+/* Отключаем базовую типографику Modal.content внутри листа (uppercase у h4, отступы li). */
+.sheet h4 {
+  text-transform: none;
+  letter-spacing: normal;
+  color: inherit;
+}
+
+.sheet li + li {
+  margin-top: 0;
+}
+
+.hint {
+  color: var(--modal-text-muted);
+  font-size: var(--modal-fs-xs);
+  line-height: var(--modal-lh);
+  margin: 0 0 var(--modal-space-md);
+}

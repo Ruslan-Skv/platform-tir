@@ -12,8 +12,8 @@ import {
 export type UseEstimatesListSyncEffectsParams = {
   loading: boolean;
   listViewMode: EstimatesListViewMode;
-  expandedAddressKey: string | null;
-  setExpandedAddressKey: (key: string | null) => void;
+  expandedAddressKeys: string[];
+  setExpandedAddressKeys: (keys: string[]) => void;
   estimateLayoutBlocks: EstimateLayoutBlock[];
   managerFilter: string;
   setManagerFilter: (value: string) => void;
@@ -32,8 +32,8 @@ export type UseEstimatesListSyncEffectsParams = {
 export function useEstimatesListSyncEffects({
   loading,
   listViewMode,
-  expandedAddressKey,
-  setExpandedAddressKey,
+  expandedAddressKeys,
+  setExpandedAddressKeys,
   estimateLayoutBlocks,
   managerFilter,
   setManagerFilter,
@@ -49,11 +49,14 @@ export function useEstimatesListSyncEffects({
   setPage,
 }: UseEstimatesListSyncEffectsParams) {
   useEffect(() => {
-    if (loading || listViewMode !== 'by_object' || !expandedAddressKey) return;
-    if (!isExpandedAddressKeyVisibleInLayout(estimateLayoutBlocks, expandedAddressKey)) {
-      setExpandedAddressKey(null);
+    if (loading || listViewMode !== 'by_object' || expandedAddressKeys.length === 0) return;
+    const visibleKeys = expandedAddressKeys.filter((key) =>
+      isExpandedAddressKeyVisibleInLayout(estimateLayoutBlocks, key)
+    );
+    if (visibleKeys.length !== expandedAddressKeys.length) {
+      setExpandedAddressKeys(visibleKeys);
     }
-  }, [loading, listViewMode, estimateLayoutBlocks, expandedAddressKey, setExpandedAddressKey]);
+  }, [loading, listViewMode, estimateLayoutBlocks, expandedAddressKeys, setExpandedAddressKeys]);
 
   useEffect(() => {
     const totalPages = Math.max(1, Math.ceil(totalTableRows / limit));

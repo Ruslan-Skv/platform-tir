@@ -13,6 +13,7 @@ import { EstimateWorkspaceCategoryPicker } from './EstimateWorkspaceCategoryPick
 import { EstimateWorkspaceCustomerCard } from './EstimateWorkspaceCustomerCard';
 import { EstimateWorkspaceExitModal } from './EstimateWorkspaceExitModal';
 import { EstimateWorkspacePageHeader } from './EstimateWorkspacePageHeader';
+import { EstimateWorkspacePreviewModal } from './EstimateWorkspacePreviewModal';
 import { syncRoomsForCategorySwitch } from './estimateWorkspaceCategorySwitch';
 import { uniqueCategorySlugsInOrder } from './estimateWorkspaceUtils';
 import type { EstimateWorkspacePageModel } from './hooks/useEstimateWorkspacePage';
@@ -93,6 +94,7 @@ export function EstimateWorkspacePageView({
   dirtyState,
   save,
   estimateTotalCost,
+  preview,
 }: EstimateWorkspacePageViewProps) {
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdWorkspace.estimateWorkspacePage}`}>
@@ -108,6 +110,7 @@ export function EstimateWorkspacePageView({
         saving={save.saving}
         onSave={() => void save.saveCurrentEstimate()}
         onRequestExit={() => setExitConfirmOpen(true)}
+        onOpenPreview={preview.open}
       />
 
       {error || ok ? (
@@ -188,6 +191,18 @@ export function EstimateWorkspacePageView({
         isOpen={exitConfirmOpen}
         onClose={() => setExitConfirmOpen(false)}
         onConfirm={save.abandonChangesAndLeave}
+      />
+
+      <EstimateWorkspacePreviewModal
+        isOpen={preview.isOpen}
+        onClose={preview.close}
+        loading={preview.loading}
+        error={preview.error}
+        model={preview.model}
+        estimateName={session.estimateNameDraft}
+        customerName={customerName}
+        objectAddress={objectAddress}
+        directorName={preview.directorName}
       />
     </div>
   );

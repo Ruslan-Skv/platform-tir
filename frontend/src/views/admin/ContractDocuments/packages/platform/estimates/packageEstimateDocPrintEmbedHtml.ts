@@ -52,6 +52,43 @@ function resolvePresetMultiSlugOrder(
   return [];
 }
 
+/** Диапазон помещений одной категории комплексного расчёта в исходном (нефильтрованном) снимке. */
+type EmbedCategoryRange = { categoryName: string; from: number; count: number };
+
+/**
+ * Раскладка помещений снимка по категориям комплексного расчёта.
+ * Диапазоны считаются по исходному снимку: у помещений, прошедших фильтр границ работ
+ * (`estimateWorkScopeKeys`), есть `sourceRoomIndex`, поэтому они попадают в свою категорию
+ * по исходному индексу. Позиционная нарезка после фильтра смешивала бы категории
+ * (все оставшиеся помещения доставались бы первой категории).
+ */
+function sectionsFromCategoryRanges(
+  rooms: EstimateSnapshotRoom[],
+  ranges: EmbedCategoryRange[],
+  fallbackCategoryName: string
+): EstimateEmbedSection[] {
+  const buckets = ranges.map((range) => ({
+    categoryName: range.categoryName,
+    from: range.from,
+    to: range.from + range.count,
+    rooms: [] as EstimateSnapshotRoom[],
+  }));
+  const tailRooms: EstimateSnapshotRoom[] = [];
+  rooms.forEach((room, position) => {
+    const sourceIndex = typeof room.sourceRoomIndex === 'number' ? room.sourceRoomIndex : position;
+    const bucket = buckets.find((b) => sourceIndex >= b.from && sourceIndex < b.to);
+    if (bucket) bucket.rooms.push(room);
+    else tailRooms.push(room);
+  });
+  const sections: EstimateEmbedSection[] = buckets
+    .filter((b) => b.rooms.length > 0)
+    .map((b) => ({ categoryName: b.categoryName, rooms: [...b.rooms] }));
+  if (tailRooms.length > 0) {
+    sections.push({ categoryName: fallbackCategoryName, rooms: [...tailRooms] });
+  }
+  return sections;
+}
+
 /**
  * Помещения объединённого снимка режутся по категориям комплексного расчёта (как при сохранении):
  * сначала `__adminMultiCategory.categories`, иначе порядок slug'ов и число помещений из черновиков по категориям.
@@ -63,59 +100,46 @@ function buildEmbedSectionsForMergedPreset(
   if (!snapshot.rooms.length) return [];
   const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
   const categories = meta?.categories ?? [];
+  const fallbackName = preset.categoryName.trim() || '—';
 
   if (categories.length > 1) {
-    const out: EstimateEmbedSection[] = [];
     let cursor = 0;
-    for (const cat of categories) {
+    const ranges = categories.map((cat) => {
       const count = Math.max(0, Number(cat.roomCount) || 0);
-      const rooms = snapshot.rooms.slice(cursor, cursor + count);
-      cursor += count;
-      if (rooms.length === 0) continue;
       const slug = (cat.slug || '').trim();
       const categoryName = (cat.name || '').trim() || slug.replace(/-/g, ' ') || '—';
-      out.push({ categoryName, rooms: [...rooms] });
-    }
-    if (cursor < snapshot.rooms.length) {
-      const tailRooms = snapshot.rooms.slice(cursor);
-      const name = preset.categoryName.trim() || '—';
-      out.push({ categoryName: name, rooms: [...tailRooms] });
-    }
-    return out;
+      const range = { categoryName, from: cursor, count };
+      cursor += count;
+      return range;
+    });
+    return sectionsFromCategoryRanges(snapshot.rooms, ranges, fallbackName);
   }
 
   const slugOrder = resolvePresetMultiSlugOrder(preset, meta);
   const byCat = preset.calculatorDraftByCategory as Record<string, string> | undefined;
   if (slugOrder.length > 1 && byCat && typeof byCat === 'object') {
     let cursor = 0;
-    const out: EstimateEmbedSection[] = [];
+    const ranges: EmbedCategoryRange[] = [];
     for (const slug of slugOrder) {
       const draft = byCat[slug];
       if (!draft || !String(draft).trim()) {
-        return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+        return [{ categoryName: fallbackName, rooms: [...snapshot.rooms] }];
       }
       const roomCount = parseDraftRooms(draft).length;
       if (roomCount <= 0) {
-        return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+        return [{ categoryName: fallbackName, rooms: [...snapshot.rooms] }];
       }
-      const rooms = snapshot.rooms.slice(cursor, cursor + roomCount);
-      cursor += roomCount;
-      if (rooms.length === 0) continue;
       const catMeta = categories.find((c) => (c.slug || '').trim() === slug);
       const categoryName =
         (catMeta?.name && String(catMeta.name).trim()) || slug.replace(/-/g, ' ') || '—';
-      out.push({ categoryName, rooms: [...rooms] });
+      ranges.push({ categoryName, from: cursor, count: roomCount });
+      cursor += roomCount;
     }
-    if (cursor < snapshot.rooms.length) {
-      out.push({
-        categoryName: preset.categoryName.trim() || '—',
-        rooms: [...snapshot.rooms.slice(cursor)],
-      });
-    }
-    if (out.length > 0) return out;
+    const sections = sectionsFromCategoryRanges(snapshot.rooms, ranges, fallbackName);
+    if (sections.length > 0) return sections;
   }
 
-  return [{ categoryName: preset.categoryName.trim() || '—', rooms: [...snapshot.rooms] }];
+  return [{ categoryName: fallbackName, rooms: [...snapshot.rooms] }];
 }
 
 function parseDraftMultiCategoryMeta(draftRaw: string): DraftMultiCategoryMeta | null {

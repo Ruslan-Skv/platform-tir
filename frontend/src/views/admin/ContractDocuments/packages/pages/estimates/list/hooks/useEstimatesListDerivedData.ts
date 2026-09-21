@@ -43,7 +43,7 @@ export type UseEstimatesListDerivedDataParams = {
   listViewMode: EstimatesListViewMode;
   listSortBy: EstimatesListSortBy;
   listSortOrder: EstimatesListSortOrder;
-  effectiveExpandedAddressKey: string | null;
+  effectiveExpandedAddressKeys: string[];
   page: number;
   limit: number;
 };
@@ -63,7 +63,7 @@ export function useEstimatesListDerivedData({
   listViewMode,
   listSortBy,
   listSortOrder,
-  effectiveExpandedAddressKey,
+  effectiveExpandedAddressKeys,
   page,
   limit,
 }: UseEstimatesListDerivedDataParams) {
@@ -172,8 +172,8 @@ export function useEstimatesListDerivedData({
   );
 
   const tableDisplayItems = useMemo(
-    () => buildEstimatesTableDisplayItems(estimateLayoutBlocks, effectiveExpandedAddressKey),
-    [estimateLayoutBlocks, effectiveExpandedAddressKey]
+    () => buildEstimatesTableDisplayItems(estimateLayoutBlocks, effectiveExpandedAddressKeys),
+    [estimateLayoutBlocks, effectiveExpandedAddressKeys]
   );
 
   /** Без служебных gap-строк: иначе «Всего» больше числа видимых объектов/расчётов. */
@@ -184,9 +184,10 @@ export function useEstimatesListDerivedData({
 
   const totalTableRows = paginatableDisplayItems.length;
 
+  // Пагинатор сам сохраняет gap-разделители между карточками (лимит — по строкам без gap).
   const paginatedDisplayItems = useMemo(
-    () => paginateEstimatesTableDisplayItems(paginatableDisplayItems, page, limit),
-    [paginatableDisplayItems, page, limit]
+    () => paginateEstimatesTableDisplayItems(tableDisplayItems, page, limit),
+    [tableDisplayItems, page, limit]
   );
 
   return {

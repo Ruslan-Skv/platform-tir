@@ -6,6 +6,7 @@ import { useEstimateWorkspaceActiveCategory } from './useEstimateWorkspaceActive
 import { useEstimateWorkspaceCustomer } from './useEstimateWorkspaceCustomer';
 import { useEstimateWorkspaceDirtyState } from './useEstimateWorkspaceDirtyState';
 import { useEstimateWorkspaceLoad } from './useEstimateWorkspaceLoad';
+import { useEstimateWorkspacePreview } from './useEstimateWorkspacePreview';
 import { useEstimateWorkspaceSave } from './useEstimateWorkspaceSave';
 import { useEstimateWorkspaceTotalCost } from './useEstimateWorkspaceTotalCost';
 
@@ -77,6 +78,15 @@ export function useEstimateWorkspacePage() {
 
   const estimateTotalCost = useEstimateWorkspaceTotalCost(session.estimateCategorySlugs);
 
+  const preview = useEstimateWorkspacePreview({
+    estimateCategorySlugs: session.estimateCategorySlugs,
+    estimateCategories: session.estimateCategories,
+    estimateGroups: session.estimateGroups,
+    additionalMarkupRaw: session.additionalMarkupRaw,
+    selectedEstimateId: session.selectedEstimateId,
+    items: session.items,
+  });
+
   useEstimateWorkspaceActiveCategory(
     session.estimateCategorySlugs,
     session.activeCategorySlug,
@@ -143,6 +153,7 @@ export function useEstimateWorkspacePage() {
     dirtyState,
     save,
     estimateTotalCost,
+    preview,
   };
 }
 

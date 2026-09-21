@@ -31,8 +31,8 @@ export interface EstimatesListFiltersPersisted {
   listScope: EstimatesListScope;
   /** false → один раз применить дефолты по роли. */
   scopeTouched: boolean;
-  /** Раскрытый блок объекта в режиме «По объектам» (`estimateObjectAddressKey`). */
-  expandedAddressKey: string | null;
+  /** Раскрытые блоки объектов в режиме «По объектам» (`estimateObjectAddressKey`) — можно несколько. */
+  expandedAddressKeys: string[];
 }
 
 const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v7';
@@ -48,13 +48,22 @@ const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   listViewMode: 'by_object',
   listScope: 'all',
   scopeTouched: false,
-  expandedAddressKey: null,
+  expandedAddressKeys: [],
 };
 
-function normalizeExpandedAddressKey(raw: unknown): string | null {
-  if (typeof raw !== 'string') return null;
-  const t = raw.trim();
-  return t.length > 0 ? t : null;
+function normalizeExpandedAddressKeys(raw: unknown): string[] {
+  // Новое поле — массив; раньше сохранялся один ключ `expandedAddressKey` (string | null).
+  const values = Array.isArray(raw) ? raw : typeof raw === 'string' ? [raw] : [];
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const t = value.trim();
+    if (!t || seen.has(t)) continue;
+    seen.add(t);
+    out.push(t);
+  }
+  return out;
 }
 
 function normalizeListViewMode(raw: unknown): EstimatesListViewMode {
@@ -92,7 +101,9 @@ function normalizePersistedFilters(
     listViewMode: normalizeListViewMode(raw.listViewMode),
     listScope: normalizeListScope(raw.listScope),
     scopeTouched: raw.scopeTouched === true,
-    expandedAddressKey: normalizeExpandedAddressKey(raw.expandedAddressKey),
+    expandedAddressKeys: normalizeExpandedAddressKeys(
+      raw.expandedAddressKeys ?? (raw as { expandedAddressKey?: unknown }).expandedAddressKey
+    ),
   };
 }
 

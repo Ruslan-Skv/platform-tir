@@ -112,8 +112,9 @@ export function buildEstimateLayoutBlocks({
 
 export function buildEstimatesTableDisplayItems(
   blocks: EstimateLayoutBlock[],
-  effectiveExpandedAddressKey: string | null
+  effectiveExpandedAddressKeys: string[]
 ): EstimatesTableDisplayItem[] {
+  const expandedKeys = new Set(effectiveExpandedAddressKeys);
   const out: EstimatesTableDisplayItem[] = [];
   let needsGapBeforeNextCard = false;
 
@@ -136,7 +137,7 @@ export function buildEstimatesTableDisplayItems(
         items: block.items,
       });
       needsGapBeforeNextCard = true;
-      if (effectiveExpandedAddressKey === block.addressKey) {
+      if (expandedKeys.has(block.addressKey)) {
         for (const preset of block.items) {
           out.push({ type: 'estimate', preset, childOfAddress: true });
         }
@@ -162,10 +163,33 @@ export function isExpandedAddressKeyVisibleInLayout(
   return blocks.some((b) => b.kind === 'address' && b.addressKey === expandedAddressKey);
 }
 
-export function paginateEstimatesTableDisplayItems<T>(
+/**
+ * Страница списка с сохранением gap-разделителей между карточками: лимит страницы
+ * считается по строкам без gap (счётчик «Всего» и пагинация не меняются), gap попадает
+ * в выдачу, только если следом на этой же странице есть строка — визуальный отступ
+ * перед карточкой. Хвостовые gap страницы отбрасываются.
+ */
+export function paginateEstimatesTableDisplayItems<T extends { type: string }>(
   items: T[],
   page: number,
   limit: number
 ): T[] {
-  return items.slice((page - 1) * limit, page * limit);
+  const from = (page - 1) * limit;
+  const to = page * limit;
+  const out: T[] = [];
+  let pendingGaps: T[] = [];
+  let rowIndex = 0;
+  for (const item of items) {
+    if (item.type === 'gap') {
+      if (out.length > 0) pendingGaps.push(item);
+      continue;
+    }
+    if (rowIndex >= to) break;
+    if (rowIndex >= from) {
+      out.push(...pendingGaps, item);
+    }
+    pendingGaps = [];
+    rowIndex++;
+  }
+  return out;
 }

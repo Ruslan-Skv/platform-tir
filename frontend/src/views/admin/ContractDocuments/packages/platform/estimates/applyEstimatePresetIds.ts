@@ -48,6 +48,12 @@ export type EstimateSnapshotRoom = {
   name: string;
   total: number;
   lines: EstimateSnapshotLine[];
+  /**
+   * Индекс помещения в исходном (нефильтрованном) снимке расчёта. Проставляется фильтром
+   * границ работ: после отбрасывания позиций/помещений позиция в массиве больше не совпадает
+   * с исходной, а нарезка секций сметы по категориям считается по исходным индексам.
+   */
+  sourceRoomIndex?: number;
 };
 
 export type EstimateSnapshot = {
@@ -134,8 +140,10 @@ function mergeEstimateSnapshots(
     if (!part.snapshot) continue;
     total += part.snapshot.total;
     for (const room of part.snapshot.rooms) {
+      // sourceRoomIndex относится к снимку одного расчёта — в объединённом снимке пакета не нужен.
+      const { sourceRoomIndex: _omit, ...roomRest } = room;
       rooms.push({
-        ...room,
+        ...roomRest,
         name: room.name,
       });
     }
@@ -278,7 +286,7 @@ function filterSnapshotByWorkScopeLineKeys(
     if (lines.length === 0) return;
     const roomTotal = lines.reduce((s, ln) => s + ln.amount, 0);
     grandTotal += roomTotal;
-    rooms.push({ ...room, lines, total: roomTotal });
+    rooms.push({ ...room, lines, total: roomTotal, sourceRoomIndex: gri });
   });
   if (rooms.length === 0) return { total: 0, rooms: [] };
   return { total: grandTotal, rooms };

@@ -32,7 +32,7 @@ export type EstimateAddressGroupTableRowProps = {
   groups: ContractEstimateGroup[];
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
   groupIdsWithLockedEstimate: Set<string>;
-  effectiveExpandedAddressKey: string | null;
+  effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
   onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
   onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
@@ -47,13 +47,13 @@ export function EstimateAddressGroupTableRow({
   groups,
   usageByEstimateId,
   groupIdsWithLockedEstimate,
-  effectiveExpandedAddressKey,
+  effectiveExpandedAddressKeys,
   onToggleAddressExpand,
   onAddressPipelineStage,
   onSetEstimatesArchivedByAddress,
   onGroupMarkupChange,
 }: EstimateAddressGroupTableRowProps) {
-  const expanded = effectiveExpandedAddressKey === section.addressKey;
+  const expanded = effectiveExpandedAddressKeys.includes(section.addressKey);
   const boundInGroup = section.items.filter(
     (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
   ).length;

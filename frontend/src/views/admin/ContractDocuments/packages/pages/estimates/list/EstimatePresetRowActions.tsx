@@ -13,6 +13,7 @@ import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-li
 import type { EstimatePresetTableRowProps } from './EstimatePresetTableRow';
 import {
   EstimatesArchiveIcon,
+  EstimatesPreviewIcon,
   EstimatesRestoreFromArchiveIcon,
   EstimatesToActiveIcon,
   EstimatesToProspectIcon,
@@ -36,6 +37,7 @@ export type EstimatePresetRowActionsProps = Pick<
   | 'onCopyPreset'
   | 'onOpenWorkScopeSplit'
   | 'onTrashPreset'
+  | 'onOpenPreview'
 > & {
   /** `cell` — `<td>` для таблицы; `inline` — блок для мобильных карточек. */
   as?: 'cell' | 'inline';
@@ -57,6 +59,7 @@ export function EstimatePresetRowActions({
   onCopyPreset,
   onOpenWorkScopeSplit,
   onTrashPreset,
+  onOpenPreview,
   as = 'cell',
 }: EstimatePresetRowActionsProps) {
   const usages = usageByEstimateId.get(it.id) ?? [];
@@ -224,6 +227,17 @@ export function EstimatePresetRowActions({
         >
           <DeleteIcon />
         </AdminTableIconButton>
+      </div>
+      <div className={cdEstimatesList.contractsListActionsSlot}>
+        <button
+          type="button"
+          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+          aria-label="Предпросмотр расчёта"
+          title="Посмотреть расчёт в виде сметы договора, не открывая редактор"
+          onClick={() => onOpenPreview(it.id)}
+        >
+          <EstimatesPreviewIcon />
+        </button>
       </div>
     </div>
   );

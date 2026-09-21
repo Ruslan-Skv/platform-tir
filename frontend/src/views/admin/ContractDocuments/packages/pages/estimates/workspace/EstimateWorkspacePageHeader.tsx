@@ -19,6 +19,8 @@ export type EstimateWorkspacePageHeaderProps = {
   saving: boolean;
   onSave: () => void;
   onRequestExit: () => void;
+  /** Предпросмотр текущего расчёта в виде сметы договора. */
+  onOpenPreview: () => void;
 };
 
 function estimateWorkspacePageTitle({
@@ -65,6 +67,7 @@ export function EstimateWorkspacePageHeader({
   saving,
   onSave,
   onRequestExit,
+  onOpenPreview,
 }: EstimateWorkspacePageHeaderProps) {
   return (
     <div className={cdWorkspace.editorHeader}>
@@ -98,33 +101,38 @@ export function EstimateWorkspacePageHeader({
           </p>
         ) : null}
       </div>
-      {dirty ? (
-        <div className={cdDocPreview.estimateWorkspaceHeaderControls}>
-          <div className={cdDocPreview.estimateWorkspaceActions}>
-            <button
-              data-admin-mutation
-              type="button"
-              className={cdWorkspace.primaryBtn}
-              disabled={saving}
-              onClick={onSave}
-            >
-              {saving
-                ? 'Сохранение…'
-                : isEditingExisting
-                  ? 'Сохранить изменения'
-                  : 'Сохранить расчёт'}
-            </button>
-            <button
-              type="button"
-              className={`${cdWorkspace.secondaryBtn} ${cdDocPreview.estimateWorkspaceExitBtn}`}
-              disabled={saving}
-              onClick={onRequestExit}
-            >
-              Выйти без сохранения
-            </button>
-          </div>
+      <div className={cdDocPreview.estimateWorkspaceHeaderControls}>
+        <div className={cdDocPreview.estimateWorkspaceActions}>
+          {dirty ? (
+            <>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdWorkspace.primaryBtn}
+                disabled={saving}
+                onClick={onSave}
+              >
+                {saving
+                  ? 'Сохранение…'
+                  : isEditingExisting
+                    ? 'Сохранить изменения'
+                    : 'Сохранить расчёт'}
+              </button>
+              <button
+                type="button"
+                className={`${cdWorkspace.secondaryBtn} ${cdDocPreview.estimateWorkspaceExitBtn}`}
+                disabled={saving}
+                onClick={onRequestExit}
+              >
+                Выйти без сохранения
+              </button>
+            </>
+          ) : null}
+          <button type="button" className={cdWorkspace.secondaryBtn} onClick={onOpenPreview}>
+            Предпросмотр расчёта
+          </button>
         </div>
-      ) : null}
+      </div>
     </div>
   );
 }

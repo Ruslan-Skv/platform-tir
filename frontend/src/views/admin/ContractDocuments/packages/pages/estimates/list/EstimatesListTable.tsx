@@ -40,7 +40,7 @@ export type EstimatesListTableProps = {
   items: ContractEstimatePreset[];
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
   groupIdsWithLockedEstimate: Set<string>;
-  effectiveExpandedAddressKey: string | null;
+  effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
   onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
   onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
@@ -54,6 +54,7 @@ export type EstimatesListTableProps = {
   onCopyPreset: (presetId: string) => void;
   onOpenWorkScopeSplit: (presetId: string) => void;
   onTrashPreset: (state: EstimateTrashConfirmState) => void;
+  onOpenPreview: (presetId: string) => void;
   page: number;
   limit: number;
   onPageChange: (page: number) => void;
@@ -77,7 +78,7 @@ export function EstimatesListTable({
   items,
   usageByEstimateId,
   groupIdsWithLockedEstimate,
-  effectiveExpandedAddressKey,
+  effectiveExpandedAddressKeys,
   onToggleAddressExpand,
   onAddressPipelineStage,
   onSetEstimatesArchivedByAddress,
@@ -91,6 +92,7 @@ export function EstimatesListTable({
   onCopyPreset,
   onOpenWorkScopeSplit,
   onTrashPreset,
+  onOpenPreview,
   page,
   limit,
   onPageChange,
@@ -164,7 +166,7 @@ export function EstimatesListTable({
                         groups={groups}
                         usageByEstimateId={usageByEstimateId}
                         groupIdsWithLockedEstimate={groupIdsWithLockedEstimate}
-                        effectiveExpandedAddressKey={effectiveExpandedAddressKey}
+                        effectiveExpandedAddressKeys={effectiveExpandedAddressKeys}
                         onToggleAddressExpand={onToggleAddressExpand}
                         onAddressPipelineStage={onAddressPipelineStage}
                         onSetEstimatesArchivedByAddress={onSetEstimatesArchivedByAddress}
@@ -207,6 +209,7 @@ export function EstimatesListTable({
                       onCopyPreset={onCopyPreset}
                       onOpenWorkScopeSplit={onOpenWorkScopeSplit}
                       onTrashPreset={onTrashPreset}
+                      onOpenPreview={onOpenPreview}
                     />
                   );
                 })
@@ -231,7 +234,7 @@ export function EstimatesListTable({
         items={items}
         usageByEstimateId={usageByEstimateId}
         groupIdsWithLockedEstimate={groupIdsWithLockedEstimate}
-        effectiveExpandedAddressKey={effectiveExpandedAddressKey}
+        effectiveExpandedAddressKeys={effectiveExpandedAddressKeys}
         onToggleAddressExpand={onToggleAddressExpand}
         onAddressPipelineStage={onAddressPipelineStage}
         onSetEstimatesArchivedByAddress={onSetEstimatesArchivedByAddress}
@@ -245,6 +248,7 @@ export function EstimatesListTable({
         onCopyPreset={onCopyPreset}
         onOpenWorkScopeSplit={onOpenWorkScopeSplit}
         onTrashPreset={onTrashPreset}
+        onOpenPreview={onOpenPreview}
       />
 
       {!loading && !refreshing && totalTableRows > 0 ? (

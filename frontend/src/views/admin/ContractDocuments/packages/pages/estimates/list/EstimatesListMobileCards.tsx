@@ -54,7 +54,7 @@ export type EstimatesListMobileCardsProps = {
   items: ContractEstimatePreset[];
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
   groupIdsWithLockedEstimate: Set<string>;
-  effectiveExpandedAddressKey: string | null;
+  effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
   onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
   onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
@@ -68,6 +68,7 @@ export type EstimatesListMobileCardsProps = {
   onCopyPreset: (presetId: string) => void;
   onOpenWorkScopeSplit: (presetId: string) => void;
   onTrashPreset: (state: EstimateTrashConfirmState) => void;
+  onOpenPreview: (presetId: string) => void;
 };
 
 function EstimateMobileCard({
@@ -88,6 +89,7 @@ function EstimateMobileCard({
   onCopyPreset,
   onOpenWorkScopeSplit,
   onTrashPreset,
+  onOpenPreview,
 }: {
   preset: ContractEstimatePreset;
   nested?: boolean;
@@ -108,6 +110,7 @@ function EstimateMobileCard({
   | 'onCopyPreset'
   | 'onOpenWorkScopeSplit'
   | 'onTrashPreset'
+  | 'onOpenPreview'
 >) {
   const usages = usageByEstimateId.get(it.id) ?? [];
   const hasLockedUsage = usages.some((u) => isUsageLocked(u));
@@ -260,6 +263,7 @@ function EstimateMobileCard({
           onCopyPreset={onCopyPreset}
           onOpenWorkScopeSplit={onOpenWorkScopeSplit}
           onTrashPreset={onTrashPreset}
+          onOpenPreview={onOpenPreview}
         />
       </div>
     </article>
@@ -281,7 +285,7 @@ export function EstimatesListMobileCards({
   items,
   usageByEstimateId,
   groupIdsWithLockedEstimate,
-  effectiveExpandedAddressKey,
+  effectiveExpandedAddressKeys,
   onToggleAddressExpand,
   onAddressPipelineStage,
   onSetEstimatesArchivedByAddress,
@@ -295,6 +299,7 @@ export function EstimatesListMobileCards({
   onCopyPreset,
   onOpenWorkScopeSplit,
   onTrashPreset,
+  onOpenPreview,
 }: EstimatesListMobileCardsProps) {
   if ((loading || refreshing) && visibleItemCount === 0) {
     return <p className={cdHub.contractsMobileEmpty}>Загрузка…</p>;
@@ -339,7 +344,7 @@ export function EstimatesListMobileCards({
         }
 
         if (item.type === 'address') {
-          const expanded = effectiveExpandedAddressKey === item.addressKey;
+          const expanded = effectiveExpandedAddressKeys.includes(item.addressKey);
           const boundInGroup = item.items.filter(
             (it) => (usageByEstimateId.get(it.id)?.length ?? 0) > 0
           ).length;
@@ -477,6 +482,7 @@ export function EstimatesListMobileCards({
                       onCopyPreset={onCopyPreset}
                       onOpenWorkScopeSplit={onOpenWorkScopeSplit}
                       onTrashPreset={onTrashPreset}
+                      onOpenPreview={onOpenPreview}
                     />
                   ))
                 : null}
@@ -503,6 +509,7 @@ export function EstimatesListMobileCards({
             onCopyPreset={onCopyPreset}
             onOpenWorkScopeSplit={onOpenWorkScopeSplit}
             onTrashPreset={onTrashPreset}
+            onOpenPreview={onOpenPreview}
           />
         );
       })}

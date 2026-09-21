@@ -590,9 +590,9 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: var(--admin-border);
 }
 
-/* Компактное тело таблицы — как у договоров */
+/* Тело таблицы — вертикальные отступы как у строк договоров (не зажато) */
 .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
-  padding: 4px 6px;
+  padding: 8px 6px;
   font-size: 0.75rem;
   line-height: 1.25;
   vertical-align: middle;
@@ -603,8 +603,9 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-spacing: 0;
 }
 
+/* Отступ между карточками объектов/расчётов — 8px (строка-разделитель без границ) */
 .estimatesDirectoryTable .estimatesListObjectGroupGap td {
-  padding: 6px 0;
+  padding: 4px 0 !important;
   height: auto;
   line-height: 0;
   font-size: 0;
@@ -618,8 +619,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: #fffbeb !important;
   border-top-color: var(--admin-warning-border-soft, #fde68a) !important;
   border-bottom-color: var(--admin-warning-border-soft, #fde68a) !important;
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
   font-size: 0.75rem;
   line-height: 1.25;
 }
@@ -674,8 +675,8 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-top: 1px solid var(--admin-border-strong, #cbd5e1) !important;
   border-bottom: 1px solid var(--admin-border-strong, #cbd5e1) !important;
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 35%);
-  padding-top: 5px !important;
-  padding-bottom: 5px !important;
+  padding-top: 8px !important;
+  padding-bottom: 8px !important;
 }
 
 .estimatesDirectoryTable .estimatesListStandaloneCard td:first-child {
@@ -725,13 +726,13 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 @media (min-width: 1280px) {
   .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable td {
-    padding: 4px 5px;
+    padding: 8px 5px;
   }
 
   .estimatesDirectoryTable .estimatesListObjectRow td,
   .estimatesDirectoryTable .estimatesListStandaloneCard td {
-    padding-top: 5px !important;
-    padding-bottom: 5px !important;
+    padding-top: 8px !important;
+    padding-bottom: 8px !important;
   }
 }
 
@@ -849,6 +850,20 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: var(--admin-surface-muted);
 }
 
+/*
+ * Строки расчётов внутри раскрытого объекта: явный разделитель между строками.
+ * У договоров строки разделяет крупный многострочный контент; наши строки однострочные,
+ * поэтому волосяная граница на сером фоне не видна — берём заметную светлую границу.
+ */
+.estimatesDirectoryTable .estimatesListEstimateRow td {
+  border-bottom: 1px solid var(--admin-border-strong, #cbd5e1);
+}
+
+/* Последняя строка объекта — низ карточки объекта (жёлтая граница из правил объекта). */
+.estimatesDirectoryTable .estimatesListChildRowLast td {
+  border-bottom: 1px solid var(--admin-warning-border-soft, #fde68a);
+}
+
 .estimatesListSectionRow td {
   background: var(--admin-surface-muted);
   font-weight: normal;
@@ -880,7 +895,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Фиксированные слоты: одинаковые действия в разных строках друг под другом */
 .estimatesDirectoryTable .estimatesListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(6, 24px);
+  grid-template-columns: repeat(7, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: start;
@@ -2001,7 +2016,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
     :global([class*='contractsMobileCardActions'])
     .estimatesListActionsGrid {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 4px;
     justify-content: flex-start;
   }

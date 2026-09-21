@@ -1,0 +1,47 @@
+import {
+  type EstimatesTableDisplayItem,
+  paginateEstimatesTableDisplayItems,
+} from './estimatesListLayout';
+
+type Item = EstimatesTableDisplayItem & { id?: string };
+
+function addressItem(id: string): Item {
+  return { type: 'address', addressKey: id, items: [] };
+}
+
+function estimateItem(id: string): Item {
+  return { type: 'estimate', preset: { id } as never };
+}
+
+describe('paginateEstimatesTableDisplayItems', () => {
+  const items: Item[] = [
+    addressItem('a'),
+    estimateItem('e1'),
+    { type: 'gap', id: 'g1' },
+    addressItem('b'),
+    estimateItem('e2'),
+    { type: 'gap', id: 'g2' },
+    estimateItem('e3'),
+  ];
+
+  it('лимит страницы — по строкам без gap; внутренние gap сохраняются', () => {
+    const page1 = paginateEstimatesTableDisplayItems(items, 1, 3);
+    expect(page1.map((x) => x.type)).toEqual(['address', 'estimate', 'gap', 'address']);
+
+    const page2 = paginateEstimatesTableDisplayItems(items, 2, 3);
+    expect(page2.map((x) => x.type)).toEqual(['estimate', 'gap', 'estimate']);
+  });
+
+  it('хвостовые и ведущие gap страницы отбрасываются', () => {
+    // Ведущий: страница 2 не начинается с gap перед своим первым объектом.
+    const page2 = paginateEstimatesTableDisplayItems(items, 2, 3);
+    expect(page2[0].type).not.toBe('gap');
+    // Хвостовой: на странице 1 нет gap после последней строки.
+    const page1 = paginateEstimatesTableDisplayItems(items, 1, 3);
+    expect(page1.at(-1)?.type).not.toBe('gap');
+  });
+
+  it('пустая страница за пределами списка', () => {
+    expect(paginateEstimatesTableDisplayItems(items, 9, 3)).toEqual([]);
+  });
+});

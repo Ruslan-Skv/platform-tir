@@ -54,6 +54,8 @@ export type EstimatePresetTableRowProps = {
   onCopyPreset: (presetId: string) => void;
   onOpenWorkScopeSplit: (presetId: string) => void;
   onTrashPreset: (state: EstimateTrashConfirmState) => void;
+  /** Быстрый предпросмотр расчёта в виде сметы договора. */
+  onOpenPreview: (presetId: string) => void;
 };
 
 export function EstimatePresetTableRow({
@@ -76,6 +78,7 @@ export function EstimatePresetTableRow({
   onCopyPreset,
   onOpenWorkScopeSplit,
   onTrashPreset,
+  onOpenPreview,
 }: EstimatePresetTableRowProps) {
   const usages = usageByEstimateId.get(it.id) ?? [];
   const hasLockedUsage = usages.some((u) => isUsageLocked(u));
@@ -199,6 +202,7 @@ export function EstimatePresetTableRow({
         onCopyPreset={onCopyPreset}
         onOpenWorkScopeSplit={onOpenWorkScopeSplit}
         onTrashPreset={onTrashPreset}
+        onOpenPreview={onOpenPreview}
       />
     </tr>
   );

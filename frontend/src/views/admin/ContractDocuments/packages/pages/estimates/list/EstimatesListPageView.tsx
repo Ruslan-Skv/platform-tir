@@ -4,6 +4,7 @@ import cdBase from '../../../../styles/base.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import { EstimateWorkspacePreviewModal } from '../workspace/EstimateWorkspacePreviewModal';
 import { EstimatesListFiltersBar } from './EstimatesListFiltersBar';
 import { EstimatesListFiltersPanel } from './EstimatesListFiltersPanel';
 import { EstimatesListModals } from './EstimatesListModals';
@@ -33,6 +34,7 @@ export function EstimatesListPageView({
   filters,
   navigation,
   modals,
+  preview,
   generateFromMeasurement,
   derived,
   mutations,
@@ -118,10 +120,8 @@ export function EstimatesListPageView({
         items={load.items}
         usageByEstimateId={derived.usageByEstimateId}
         groupIdsWithLockedEstimate={derived.groupIdsWithLockedEstimate}
-        effectiveExpandedAddressKey={filters.effectiveExpandedAddressKey}
-        onToggleAddressExpand={(addressKey) =>
-          filters.setExpandedAddressKey((current) => (current === addressKey ? null : addressKey))
-        }
+        effectiveExpandedAddressKeys={filters.effectiveExpandedAddressKeys}
+        onToggleAddressExpand={filters.toggleExpandedAddressKey}
         onAddressPipelineStage={mutations.setAddressPipelineStage}
         onSetEstimatesArchivedByAddress={mutations.setEstimatesArchivedByAddress}
         onGroupMarkupChange={mutations.updateGroupAdditionalMarkupPercent}
@@ -134,6 +134,7 @@ export function EstimatesListPageView({
         onCopyPreset={modals.setCopyChoicePresetId}
         onOpenWorkScopeSplit={modals.setWorkScopeModalPresetId}
         onTrashPreset={modals.setTrashConfirmModal}
+        onOpenPreview={preview.open}
         page={filters.page}
         limit={filters.limit}
         onPageChange={filters.setPage}
@@ -197,6 +198,18 @@ export function EstimatesListPageView({
             `/admin/contract-documents/estimates/workspace?fromMeasurement=${encodeURIComponent(measurementId)}`
           );
         }}
+      />
+
+      <EstimateWorkspacePreviewModal
+        isOpen={preview.preset != null}
+        onClose={preview.close}
+        loading={false}
+        error={preview.result && 'error' in preview.result ? preview.result.error : null}
+        model={preview.result && 'model' in preview.result ? preview.result.model : null}
+        estimateName={preview.preset?.title ?? ''}
+        customerName={preview.preset?.customerName ?? ''}
+        objectAddress={preview.preset?.objectAddress ?? ''}
+        directorName={preview.directorName}
       />
     </div>
   );

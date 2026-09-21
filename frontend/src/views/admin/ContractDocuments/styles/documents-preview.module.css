@@ -1719,7 +1719,8 @@
 
 .estimateA4SummaryList li {
   display: flex;
-  justify-content: space-between;
+  /* Сумма — сразу после названия категории (не по краям листа). */
+  justify-content: flex-start;
   gap: var(--admin-space-lg);
 }
 
@@ -1873,7 +1874,8 @@
 .docPane :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li),
 .contractA4Preview :global(.docPrint .estimateA4DocPrintEmbed .estimateA4SummaryList li) {
   display: flex;
-  justify-content: space-between;
+  /* Сумма — сразу после названия категории (не по краям листа). */
+  justify-content: flex-start;
   gap: var(--admin-space-lg);
 }
 

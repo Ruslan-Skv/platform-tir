@@ -13,6 +13,7 @@ import { useEstimatesListModalsState } from './useEstimatesListModalsState';
 import { useEstimatesListMutations } from './useEstimatesListMutations';
 import { useEstimatesListNavigation } from './useEstimatesListNavigation';
 import { useEstimatesListOkMessage } from './useEstimatesListOkMessage';
+import { useEstimatesListPreview } from './useEstimatesListPreview';
 import { useEstimatesListSyncEffects } from './useEstimatesListSyncEffects';
 
 export function useEstimatesListPage() {
@@ -37,6 +38,7 @@ export function useEstimatesListPage() {
   const filters = useEstimatesListFiltersState(archiveView, user?.role);
   const navigation = useEstimatesListNavigation(pathname, router, searchParams, filters.setPage);
   const modals = useEstimatesListModalsState(load.items, filters.listScope);
+  const preview = useEstimatesListPreview({ items: load.items, groups: load.groups });
   const generateFromMeasurement = useEstimatesListGenerateFromMeasurement(setError);
 
   const derived = useEstimatesListDerivedData({
@@ -54,7 +56,7 @@ export function useEstimatesListPage() {
     listViewMode: filters.listViewMode,
     listSortBy: filters.listSortBy,
     listSortOrder: filters.listSortOrder,
-    effectiveExpandedAddressKey: filters.effectiveExpandedAddressKey,
+    effectiveExpandedAddressKeys: filters.effectiveExpandedAddressKeys,
     page: filters.page,
     limit: filters.limit,
   });
@@ -62,8 +64,8 @@ export function useEstimatesListPage() {
   useEstimatesListSyncEffects({
     loading: load.loading,
     listViewMode: filters.listViewMode,
-    expandedAddressKey: filters.expandedAddressKey,
-    setExpandedAddressKey: filters.setExpandedAddressKey,
+    expandedAddressKeys: filters.expandedAddressKeys,
+    setExpandedAddressKeys: filters.setExpandedAddressKeys,
     estimateLayoutBlocks: derived.estimateLayoutBlocks,
     managerFilter: filters.managerFilter,
     setManagerFilter: filters.setManagerFilter,
@@ -118,6 +120,7 @@ export function useEstimatesListPage() {
     filters,
     navigation,
     modals,
+    preview,
     generateFromMeasurement,
     derived,
     mutations,
