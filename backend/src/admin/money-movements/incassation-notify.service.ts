@@ -34,12 +34,28 @@ export class IncassationNotifyService {
     });
   }
 
-  /** Получатели: менеджер кассы и сдающий; инициатор записи себе не получает. */
-  private recipientIds(incassation: IncassationNotifyData, actorUserId?: string): string[] {
+  /**
+   * Получатели: менеджер кассы и сдающий (кроме инициатора записи) плюс все активные
+   * супер-админы — те получают уведомление всегда, даже не будучи участниками инкассации.
+   * Гейт для каждого — его чекбокс «Инкассации наличных» в настройках уведомлений.
+   */
+  private async resolveRecipients(
+    incassation: IncassationNotifyData,
+    actorUserId?: string,
+  ): Promise<string[]> {
     const ids = new Set<string>();
     ids.add(incassation.managerId);
     if (incassation.submitterId) ids.add(incassation.submitterId);
-    if (actorUserId) ids.delete(actorUserId);
+
+    const superAdmins = await this.prisma.user.findMany({
+      where: { role: 'SUPER_ADMIN', isActive: true },
+      select: { id: true },
+    });
+    const superAdminIds = new Set(superAdmins.map((admin) => admin.id));
+    for (const id of superAdminIds) ids.add(id);
+
+    // Инициатор записи не получает уведомление о собственном действии — кроме супер-админов.
+    if (actorUserId && !superAdminIds.has(actorUserId)) ids.delete(actorUserId);
     return [...ids];
   }
 
@@ -60,7 +76,7 @@ export class IncassationNotifyService {
   }
 
   private async notify(incassation: IncassationNotifyData, actorUserId?: string): Promise<void> {
-    const recipients = this.recipientIds(incassation, actorUserId);
+    const recipients = await this.resolveRecipients(incassation, actorUserId);
     if (recipients.length === 0) return;
 
     const title = 'Инкассация проведена';
