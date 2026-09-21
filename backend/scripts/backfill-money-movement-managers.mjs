@@ -7,28 +7,27 @@
  * Повторный запуск безопасен: менеджеры пересчитываются идемпотентно,
  * существующие снимки офиса не перезаписываются.
  *
- * Локально: npx ts-node -r tsconfig-paths/register scripts/backfill-money-movement-managers.ts
+ * Запуск (из каталога backend): node scripts/backfill-money-movement-managers.mjs
  */
 import { PrismaClient } from '@prisma/client';
 import { config } from 'dotenv';
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 config({ path: path.join(process.cwd(), '.env') });
 config({ path: path.join(__dirname, '..', '.env') });
 
 const prisma = new PrismaClient();
 
-function asObj(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
+function asObj(value) {
+  return value && typeof value === 'object' ? value : null;
 }
 
 /** Приоритет как в MoneyMovementsService.resolveMovementManagerId:
  *  карточка менеджера → responsibleManagerId → createdBy. */
-function effectiveManagerId(pkg: {
-  responsibleManagerId: string | null;
-  createdById: string | null;
-  formData: unknown;
-}): string {
+function effectiveManagerId(pkg) {
   const formData = asObj(pkg.formData) ?? {};
   const executor = asObj(formData.executor);
   const cardManagerId =
@@ -40,18 +39,18 @@ function effectiveManagerId(pkg: {
 }
 
 /** «Офис закл.» договора: formData.contract.officeId. */
-function officeIdFromFormData(formData: unknown): string | null {
+function officeIdFromFormData(formData) {
   const contract = asObj(asObj(formData)?.contract);
   const officeId = contract?.officeId;
   return typeof officeId === 'string' && officeId.trim() ? officeId.trim() : null;
 }
 
-async function backfillManagers(packageIds: string[]) {
+async function backfillManagers(packageIds) {
   const packages = await prisma.contractDocumentPackage.findMany({
     where: { id: { in: packageIds } },
     select: { id: true, responsibleManagerId: true, createdById: true, formData: true },
   });
-  const targetByPackage = new Map<string, string>();
+  const targetByPackage = new Map();
   for (const pkg of packages) {
     const target = effectiveManagerId(pkg);
     if (target) targetByPackage.set(pkg.id, target);
@@ -83,16 +82,14 @@ async function backfillManagers(packageIds: string[]) {
   console.log(`Менеджеры: обновлено записей ДП: ${updatedCount}`);
 }
 
-async function backfillOffices(packageIds: string[]) {
+async function backfillOffices(packageIds) {
   const packages = await prisma.contractDocumentPackage.findMany({
     where: { id: { in: packageIds } },
     select: { id: true, formData: true },
   });
   const officeIds = [
     ...new Set(
-      packages
-        .map((pkg) => officeIdFromFormData(pkg.formData))
-        .filter((id): id is string => Boolean(id)),
+      packages.map((pkg) => officeIdFromFormData(pkg.formData)).filter((id) => Boolean(id)),
     ),
   ];
   const officeNameById = new Map(
@@ -101,7 +98,7 @@ async function backfillOffices(packageIds: string[]) {
         where: { id: { in: officeIds } },
         select: { id: true, name: true },
       })
-    ).map((o) => [o.id, o.name] as const),
+    ).map((o) => [o.id, o.name]),
   );
 
   let updatedCount = 0;
@@ -128,9 +125,7 @@ async function main() {
     where: { packageId: { not: null } },
     select: { packageId: true },
   });
-  const packageIds = [
-    ...new Set(movements.map((m) => m.packageId).filter((id): id is string => Boolean(id))),
-  ];
+  const packageIds = [...new Set(movements.map((m) => m.packageId).filter((id) => Boolean(id)))];
   if (!packageIds.length) {
     console.log('Записей ДП с договором не найдено — ничего обновлять.');
     return;
