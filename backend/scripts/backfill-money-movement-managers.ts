@@ -22,19 +22,20 @@ function asObj(value: unknown): Record<string, unknown> | null {
   return value && typeof value === 'object' ? (value as Record<string, unknown>) : null;
 }
 
-/** Та же цепочка, что computePackageEffectiveManagerUserId в list-pipeline. */
+/** Приоритет как в MoneyMovementsService.resolveMovementManagerId:
+ *  карточка менеджера → responsibleManagerId → createdBy. */
 function effectiveManagerId(pkg: {
   responsibleManagerId: string | null;
   createdById: string | null;
   formData: unknown;
 }): string {
-  const responsible = pkg.responsibleManagerId?.trim();
-  if (responsible) return responsible;
   const formData = asObj(pkg.formData) ?? {};
   const executor = asObj(formData.executor);
-  const signatory =
+  const cardManagerId =
     typeof executor?.signatoryCrmUserId === 'string' ? executor.signatoryCrmUserId.trim() : '';
-  if (signatory) return signatory;
+  if (cardManagerId) return cardManagerId;
+  const responsible = pkg.responsibleManagerId?.trim();
+  if (responsible) return responsible;
   return pkg.createdById?.trim() ?? '';
 }
 

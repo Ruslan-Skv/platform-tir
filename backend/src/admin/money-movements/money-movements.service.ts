@@ -49,6 +49,15 @@ function officeIdFromFormData(formData: unknown): string | null {
   return typeof officeId === 'string' && officeId.trim() ? officeId.trim() : null;
 }
 
+/** «Карточка менеджера (из справочника)» вкладки «Данные» (formData.executor.signatoryCrmUserId). */
+function signatoryCrmUserIdFromFormData(formData: unknown): string {
+  if (!formData || typeof formData !== 'object') return '';
+  const executor = (formData as Record<string, unknown>).executor;
+  if (!executor || typeof executor !== 'object') return '';
+  const id = (executor as Record<string, unknown>).signatoryCrmUserId;
+  return typeof id === 'string' ? id.trim() : '';
+}
+
 type PackagePaymentRow = {
   id: string;
   packageId: string;
@@ -320,17 +329,6 @@ export class MoneyMovementsService {
         },
       });
 
-      // Менеджер фиксируется на момент оплаты по договору («Карточка менеджера из справочника»),
-      // а не по тому, кто записал оплату. Цепочка та же, что в списке договоров:
-      // responsibleManagerId → formData.executor.signatoryCrmUserId → createdBy пакета.
-      const managerIdFromContract = pkg
-        ? computePackageEffectiveManagerUserId({
-            responsibleManagerId: pkg.responsibleManagerId,
-            createdById: pkg.createdById,
-            formData: pkg.formData,
-          })
-        : '';
-
       const officeId = officeIdFromFormData(pkg?.formData);
       const office = officeId
         ? await this.prisma.office.findUnique({ where: { id: officeId }, select: { name: true } })
@@ -349,7 +347,7 @@ export class MoneyMovementsService {
           addendumNumber: payment.addendumNumber,
           basis: payment.basis,
           notes: payment.notes,
-          managerId: managerIdFromContract || payment.recordedById,
+          managerId: this.resolveMovementManagerId(pkg, payment),
           office: office?.name ?? null,
           contractNumber:
             pkg?.crmContract?.contractNumber ?? contractNumberFromFormData(pkg?.formData) ?? null,
@@ -368,9 +366,40 @@ export class MoneyMovementsService {
     }
   }
 
+  /**
+   * Менеджер движения ДП — сотрудник из «Карточки менеджера (из справочника)» вкладки
+   * «Данные» договора; далее прежняя цепочка (responsibleManagerId → createdBy пакета)
+   * и лишь в самом конце — записавший оплату. Правка оплаты (в том числе супер-админом)
+   * не переатрибутирует движение на редактора.
+   */
+  private resolveMovementManagerId(
+    pkg: {
+      responsibleManagerId: string | null;
+      createdById: string | null;
+      formData: unknown;
+    } | null,
+    payment: PackagePaymentRow,
+  ): string {
+    const cardManagerId = pkg ? signatoryCrmUserIdFromFormData(pkg.formData) : '';
+    if (cardManagerId) return cardManagerId;
+    const chained = pkg
+      ? computePackageEffectiveManagerUserId({
+          responsibleManagerId: pkg.responsibleManagerId,
+          createdById: pkg.createdById,
+          formData: pkg.formData,
+        })
+      : '';
+    return chained || payment.recordedById || '';
+  }
+
   /** Синхронизирует запись ДП после изменения оплаты (по sourceId). */
   async syncFromPackagePayment(payment: PackagePaymentRow): Promise<void> {
     try {
+      const pkg = await this.prisma.contractDocumentPackage.findUnique({
+        where: { id: payment.packageId },
+        select: { responsibleManagerId: true, createdById: true, formData: true },
+      });
+      const managerId = this.resolveMovementManagerId(pkg, payment);
       const existing = await this.prisma.moneyMovement.findUnique({
         where: { sourceId: payment.id },
         select: { id: true },
@@ -389,6 +418,8 @@ export class MoneyMovementsService {
           addendumNumber: payment.addendumNumber,
           basis: payment.basis,
           notes: payment.notes,
+          // Менеджер — производное данных договора: правка оплаты поддерживает его актуальным.
+          ...(managerId ? { managerId } : {}),
         },
       });
     } catch (error) {
