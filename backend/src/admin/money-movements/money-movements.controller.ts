@@ -15,6 +15,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { MoneyMovementsService } from './money-movements.service';
+import { ManagerIncassationsService } from './manager-incassations.service';
 import { QueryMoneyMovementsDto } from './dto/query-money-movements.dto';
 import {
   CreateManagerIncassationDto,
@@ -41,7 +42,10 @@ const CRM_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...CRM_ROLES)
 export class MoneyMovementsController {
-  constructor(private readonly moneyMovementsService: MoneyMovementsService) {}
+  constructor(
+    private readonly moneyMovementsService: MoneyMovementsService,
+    private readonly managerIncassations: ManagerIncassationsService,
+  ) {}
 
   @Get()
   findAll(@Query() query: QueryMoneyMovementsDto, @Req() req: RequestWithUser) {
@@ -67,20 +71,20 @@ export class MoneyMovementsController {
     @Query('managerId') managerId: string | undefined,
     @Req() req: RequestWithUser,
   ) {
-    return this.moneyMovementsService.getIncassationCashBalance(managerId?.trim() || req.user!.id);
+    return this.managerIncassations.getIncassationCashBalance(managerId?.trim() || req.user!.id);
   }
 
   /** Последние инкассации менеджеров. */
   @Get('incassations')
   listIncassations(@Query() query: QueryManagerIncassationsDto) {
-    return this.moneyMovementsService.listIncassations(query.limit);
+    return this.managerIncassations.listIncassations(query.limit);
   }
 
   /** Запись инкассации: менеджер — текущий пользователь, ФИО инкассатора фиксирует он же. */
   @Post('incassations')
   @HttpCode(HttpStatus.CREATED)
   createIncassation(@Body() dto: CreateManagerIncassationDto, @Req() req: RequestWithUser) {
-    return this.moneyMovementsService.createIncassation(dto, req.user?.id);
+    return this.managerIncassations.createIncassation(dto, req.user?.id);
   }
 
   /** Ручная запись (проводка): изъятие из кассы или внесение сумм вне оплат по договорам. */

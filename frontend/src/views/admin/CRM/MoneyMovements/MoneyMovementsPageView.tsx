@@ -318,7 +318,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           <div className={cdHub.contractsHeaderTitleRow}>
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
-                <h1 className={cdHub.title}>ДП — денежные движения по договорам</h1>
+                <h1 className={cdHub.title}>ДП — оплаты</h1>
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>

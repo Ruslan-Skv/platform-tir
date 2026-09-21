@@ -4,9 +4,7 @@ import { ContractDocumentPackageKind, PaymentForm, PaymentType, Prisma } from '@
 import { PACKAGE_DIRECTION_REGISTRY } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
-import { CreateManagerIncassationDto } from './dto/create-manager-incassation.dto';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
-import { IncassationNotifyService } from './incassation-notify.service';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
@@ -14,15 +12,6 @@ const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> =
 
 /** Таб справочника «Карточки менеджеров» (см. ContractDocumentPackageGlobalLibraryService). */
 const SIGNATORY_PROFILES_TAB = 'signatory_profiles';
-
-const INCASSATION_MANAGER_INCLUDE = {
-  manager: { select: { id: true, email: true, firstName: true, lastName: true } },
-  submitter: { select: { id: true, email: true, firstName: true, lastName: true } },
-} satisfies Prisma.ManagerIncassationInclude;
-
-type IncassationWithManager = Prisma.ManagerIncassationGetPayload<{
-  include: typeof INCASSATION_MANAGER_INCLUDE;
-}>;
 
 function contractNumberFromFormData(formData: unknown): string | null {
   if (!formData || typeof formData !== 'object') return null;
@@ -76,10 +65,7 @@ type PackagePaymentRow = {
 export class MoneyMovementsService {
   private readonly logger = new Logger(MoneyMovementsService.name);
 
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly incassationNotify: IncassationNotifyService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async findAll(params?: {
     managerId?: string;
@@ -441,122 +427,6 @@ export class MoneyMovementsService {
   }
 
   /**
-   * Наличные менеджера с момента последней инкассации до текущего момента:
-   * наличные оплаты минус наличные возвраты (в журнале возвраты хранятся положительной суммой).
-   */
-  async getIncassationCashBalance(managerId: string) {
-    const [last, manager] = await Promise.all([
-      this.prisma.managerIncassation.findFirst({
-        where: { managerId },
-        orderBy: { performedAt: 'desc' },
-        select: { performedAt: true, amount: true, incassator: true },
-      }),
-      this.prisma.user.findUnique({
-        where: { id: managerId },
-        select: { email: true, firstName: true, lastName: true },
-      }),
-    ]);
-
-    const movements = await this.prisma.moneyMovement.findMany({
-      where: {
-        managerId,
-        paymentForm: PaymentForm.CASH,
-        ...(last ? { performedAt: { gt: last.performedAt } } : {}),
-      },
-      select: { amount: true, paymentType: true },
-    });
-
-    const balance = movements.reduce(
-      (sum, m) => sum.plus(m.paymentType === PaymentType.REFUND ? m.amount.neg() : m.amount),
-      new Prisma.Decimal(0),
-    );
-
-    return {
-      managerId,
-      managerName: manager
-        ? [manager.lastName, manager.firstName].filter(Boolean).join(' ').trim() || manager.email
-        : null,
-      balance: balance.toString(),
-      lastIncassation: last
-        ? {
-            performedAt: last.performedAt.toISOString(),
-            amount: last.amount.toString(),
-            incassator: last.incassator,
-          }
-        : null,
-    };
-  }
-
-  /**
-   * Создаёт запись инкассации. Менеджер, сдающий инкассацию, — выбранный в форме
-   * (по умолчанию текущий пользователь); запись фиксирует текущий пользователь (createdById).
-   * Если инкассация сдаётся за другого менеджера (onBehalfOfId), остаток наличных
-   * закрывается по кассе этого менеджера, а сдающий фиксируется в submitterId.
-   */
-  async createIncassation(dto: CreateManagerIncassationDto, currentUserId?: string) {
-    if (!currentUserId) throw new UnauthorizedException('Пользователь не определён');
-
-    const submitterId = dto.managerId?.trim() || currentUserId;
-    const managerId = dto.onBehalfOfId?.trim() || submitterId;
-
-    const [managerExists, submitterExists] = await Promise.all([
-      this.prisma.user.findUnique({ where: { id: managerId }, select: { id: true } }),
-      managerId === submitterId
-        ? Promise.resolve(true)
-        : this.prisma.user.findUnique({ where: { id: submitterId }, select: { id: true } }),
-    ]);
-    if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
-    if (!submitterExists) throw new BadRequestException('Указанный сдающий менеджер не найден');
-
-    const record = await this.prisma.managerIncassation.create({
-      data: {
-        managerId,
-        submitterId: submitterId === managerId ? null : submitterId,
-        amount: dto.amount,
-        incassator: dto.incassator.trim(),
-        performedAt: new Date(dto.performedAt),
-        notes: dto.notes?.trim() || null,
-        createdById: currentUserId,
-      },
-      include: INCASSATION_MANAGER_INCLUDE,
-    });
-
-    // Уведомления (колокольчик + браузерные push) менеджеру кассы и сдающему — fire-and-forget.
-    this.incassationNotify.onCreated(
-      {
-        id: record.id,
-        managerId,
-        submitterId: record.submitterId,
-        managerName: record.manager
-          ? [record.manager.lastName, record.manager.firstName].filter(Boolean).join(' ').trim() ||
-            record.manager.email
-          : null,
-        submitterName: record.submitter
-          ? [record.submitter.lastName, record.submitter.firstName]
-              .filter(Boolean)
-              .join(' ')
-              .trim() || record.submitter.email
-          : null,
-        amount: Number(record.amount),
-        incassator: record.incassator,
-      },
-      currentUserId,
-    );
-
-    return this.serializeIncassation(record);
-  }
-
-  /** Последние инкассации (для панели истории на странице ДП). */
-  async listIncassations(limit = 50) {
-    const records = await this.prisma.managerIncassation.findMany({
-      orderBy: [{ performedAt: 'desc' }, { createdAt: 'desc' }],
-      take: Math.min(Math.max(limit, 1), 100),
-      include: INCASSATION_MANAGER_INCLUDE,
-    });
-    return records.map((record) => this.serializeIncassation(record));
-  }
-
-  /**
    * Ручная запись (проводка) в журнале ДП: изъятие из кассы (amount < 0, например на бытовые
    * нужды) или внесение сумм, не проведённых в оплатах по договорам (amount > 0).
    * Наличные записи участвуют в остатке наличных менеджера для инкассации.
@@ -590,32 +460,5 @@ export class MoneyMovementsService {
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
     return this.serialize(row);
-  }
-
-  private serializeIncassation(row: IncassationWithManager) {
-    return {
-      id: row.id,
-      performedAt: row.performedAt.toISOString(),
-      amount: row.amount.toString(),
-      incassator: row.incassator,
-      notes: row.notes,
-      manager: row.manager
-        ? {
-            id: row.manager.id,
-            name:
-              [row.manager.lastName, row.manager.firstName].filter(Boolean).join(' ').trim() ||
-              row.manager.email,
-          }
-        : null,
-      submitter: row.submitter
-        ? {
-            id: row.submitter.id,
-            name:
-              [row.submitter.lastName, row.submitter.firstName].filter(Boolean).join(' ').trim() ||
-              row.submitter.email,
-          }
-        : null,
-      createdAt: row.createdAt.toISOString(),
-    };
   }
 }
