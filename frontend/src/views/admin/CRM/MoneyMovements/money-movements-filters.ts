@@ -6,11 +6,19 @@ import { monthBoundsIso } from './money-movements-page.constants';
 /** «Мои» — только записи, где менеджером зафиксирован текущий пользователь. */
 export type DpListScope = 'all' | 'mine';
 
+/** Тип записи журнала: «manual» — ручные проводки, «auto» — автоматические; пусто — все. */
+export type DpEntryKind = '' | 'auto' | 'manual';
+
+/** Режим панели итогов за период: по направлениям или по менеджерам. */
+export type DpTotalsMode = 'direction' | 'manager';
+
 export interface DpFiltersPersisted {
   scope: DpListScope;
   managerId: string;
   direction: string;
   paymentForm: string;
+  entryKind: DpEntryKind;
+  totalsMode: DpTotalsMode;
   search: string;
   dateFrom: string;
   dateTo: string;
@@ -20,6 +28,8 @@ export interface DpFiltersPersisted {
 const DP_FILTERS_STORAGE_KEY = 'admin_dp_money_movements_filters_v1';
 
 const SCOPE_VALUES = new Set<DpListScope>(['all', 'mine']);
+const ENTRY_KIND_VALUES = new Set<DpEntryKind>(['', 'auto', 'manual']);
+const TOTALS_MODE_VALUES = new Set<DpTotalsMode>(['direction', 'manager']);
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 /** Дефолт: текущий месяц, без ограничений по менеджеру и направлению. */
@@ -31,6 +41,8 @@ export function defaultDpFilters(): DpFiltersPersisted {
     managerId: '',
     direction: '',
     paymentForm: '',
+    entryKind: '',
+    totalsMode: 'direction',
     search: '',
     dateFrom: bounds.from,
     dateTo: bounds.to,
@@ -50,6 +62,15 @@ function normalizePersistedFilters(raw: unknown): DpFiltersPersisted {
     managerId: typeof value.managerId === 'string' ? value.managerId.trim() : '',
     direction: typeof value.direction === 'string' ? value.direction.trim() : '',
     paymentForm: typeof value.paymentForm === 'string' ? value.paymentForm.trim() : '',
+    entryKind:
+      typeof value.entryKind === 'string' && ENTRY_KIND_VALUES.has(value.entryKind as DpEntryKind)
+        ? (value.entryKind as DpEntryKind)
+        : defaults.entryKind,
+    totalsMode:
+      typeof value.totalsMode === 'string' &&
+      TOTALS_MODE_VALUES.has(value.totalsMode as DpTotalsMode)
+        ? (value.totalsMode as DpTotalsMode)
+        : defaults.totalsMode,
     search: typeof value.search === 'string' ? value.search : '',
     dateFrom:
       typeof value.dateFrom === 'string' && ISO_DATE_RE.test(value.dateFrom)
@@ -107,6 +128,8 @@ export function buildDpFiltersSummary(params: {
   managers: MoneyMovementManagerOption[];
   paymentForm: string;
   paymentFormLabels: Record<string, string>;
+  entryKind: DpEntryKind;
+  totalsMode: DpTotalsMode;
   dateFrom: string;
   dateTo: string;
 }): DpFiltersSummaryItem[] {
@@ -115,6 +138,17 @@ export function buildDpFiltersSummary(params: {
 
   if (params.direction) {
     items.push({ key: 'direction', label: `Направление: ${params.direction}` });
+  }
+
+  if (params.entryKind) {
+    items.push({
+      key: 'entryKind',
+      label: `Тип: ${params.entryKind === 'manual' ? 'ручные' : 'авто'}`,
+    });
+  }
+
+  if (params.totalsMode === 'manager') {
+    items.push({ key: 'totalsMode', label: 'Итоги: по менеджерам' });
   }
 
   const searchTrim = params.search.trim();

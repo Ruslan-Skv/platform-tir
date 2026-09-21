@@ -10,6 +10,7 @@ import { AdminBellInstallationScheduleFeedService } from './admin-bell-installat
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
 import { AdminBellMeasurementFeedService } from './services/admin-bell-measurement-feed.service';
+import { AdminBellIncassationFeedService } from './services/admin-bell-incassation-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
@@ -33,6 +34,7 @@ import { AdminNotificationsService } from './admin-notifications.service';
     AdminBellRepairScheduleFeedService,
     AdminBellFurnitureScheduleFeedService,
     AdminBellMeasurementFeedService,
+    AdminBellIncassationFeedService,
     AdminBellCalendarFeedService,
     AdminBellMessengerFeedService,
     AdminBellKanbanFeedService,

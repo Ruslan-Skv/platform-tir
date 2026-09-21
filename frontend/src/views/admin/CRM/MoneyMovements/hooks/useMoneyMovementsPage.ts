@@ -6,6 +6,7 @@ import {
   type IncassationCashBalance,
   type ManagerIncassation,
   type MoneyMovement,
+  type MoneyMovementListResponse,
   type MoneyMovementManagerOption,
   createManagerIncassation,
   createManualMoneyMovement,
@@ -15,7 +16,9 @@ import {
 } from '@/shared/api/crm/admin-money-movements';
 
 import {
+  type DpEntryKind,
   type DpListScope,
+  type DpTotalsMode,
   defaultDpFilters,
   loadDpFilters,
   persistDpFilters,
@@ -40,6 +43,11 @@ export function useMoneyMovementsPage() {
   const [scope, setScopeState] = useState<DpListScope>(initialFiltersRef.current.scope);
   const [direction, setDirection] = useState(initialFiltersRef.current.direction);
   const [paymentForm, setPaymentForm] = useState(initialFiltersRef.current.paymentForm);
+  const [entryKind, setEntryKindState] = useState<DpEntryKind>(initialFiltersRef.current.entryKind);
+  /** Режим панели итогов за период: по направлениям или по менеджерам. */
+  const [totalsMode, setTotalsModeState] = useState<DpTotalsMode>(
+    initialFiltersRef.current.totalsMode
+  );
   const [searchInput, setSearchInput] = useState(initialFiltersRef.current.search);
   const [search, setSearch] = useState(initialFiltersRef.current.search);
   const [page, setPage] = useState(initialFiltersRef.current.page);
@@ -48,6 +56,16 @@ export function useMoneyMovementsPage() {
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [totalSum, setTotalSum] = useState(0);
+  /** Итоги по направлениям за выбранный период — блок итогов над фильтрами. */
+  const [directionSums, setDirectionSums] = useState<MoneyMovementListResponse['directionSums']>(
+    []
+  );
+  /** Итоги по менеджерам за выбранный период — графики детальной статистики. */
+  const [managerSums, setManagerSums] = useState<MoneyMovementListResponse['managerSums']>([]);
+  /** Итоги «направление × менеджер» — лидеры внутри каждого направления. */
+  const [directionManagerSums, setDirectionManagerSums] = useState<
+    MoneyMovementListResponse['directionManagerSums']
+  >([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -69,8 +87,30 @@ export function useMoneyMovementsPage() {
       filtersPersistedRef.current = true;
       return;
     }
-    persistDpFilters({ scope, managerId, direction, paymentForm, search, dateFrom, dateTo, page });
-  }, [scope, managerId, direction, paymentForm, search, dateFrom, dateTo, page]);
+    persistDpFilters({
+      scope,
+      managerId,
+      direction,
+      paymentForm,
+      entryKind,
+      totalsMode,
+      search,
+      dateFrom,
+      dateTo,
+      page,
+    });
+  }, [
+    scope,
+    managerId,
+    direction,
+    paymentForm,
+    entryKind,
+    totalsMode,
+    search,
+    dateFrom,
+    dateTo,
+    page,
+  ]);
 
   // Если сохранённый менеджер исчез из справочника карточек — сбрасываем выбор.
   useEffect(() => {
@@ -102,6 +142,7 @@ export function useMoneyMovementsPage() {
         managerId: scope === 'mine' ? undefined : managerId || undefined,
         direction: direction || undefined,
         paymentForm: paymentForm || undefined,
+        entryKind: entryKind || undefined,
         search: search || undefined,
         page,
         limit: MONEY_MOVEMENTS_PAGE_SIZE,
@@ -111,17 +152,23 @@ export function useMoneyMovementsPage() {
       setTotal(response.total);
       setTotalPages(response.totalPages);
       setTotalSum(response.totalSum);
+      setDirectionSums(response.directionSums);
+      setManagerSums(response.managerSums);
+      setDirectionManagerSums(response.directionManagerSums);
     } catch (error) {
       setItems([]);
       setManagers([]);
       setTotal(0);
       setTotalPages(1);
       setTotalSum(0);
+      setDirectionSums([]);
+      setManagerSums([]);
+      setDirectionManagerSums([]);
       setMessage(error instanceof Error ? error.message : 'Не удалось загрузить журнал ДП');
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, search, page]);
+  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, entryKind, search, page]);
 
   useEffect(() => {
     void refresh();
@@ -191,6 +238,7 @@ export function useMoneyMovementsPage() {
   const submitIncassation = useCallback(
     async (data: {
       managerId?: string;
+      onBehalfOfId?: string;
       amount: number;
       incassator: string;
       performedAt: string;
@@ -216,6 +264,8 @@ export function useMoneyMovementsPage() {
     setScopeState('all');
     setDirection('');
     setPaymentForm('');
+    setEntryKindState('');
+    setTotalsModeState('direction');
     setSearchInput('');
     setPage(1);
   }, []);
@@ -271,6 +321,16 @@ export function useMoneyMovementsPage() {
       setPaymentForm(value);
       setPage(1);
     },
+    entryKind,
+    setEntryKind: (value: DpEntryKind) => {
+      setEntryKindState(value);
+      setPage(1);
+    },
+    totalsMode,
+    /** Меняет только отображение панели итогов — перезапроса и сброса страницы не требует. */
+    setTotalsMode: (value: DpTotalsMode) => {
+      setTotalsModeState(value);
+    },
     searchInput,
     setSearchInput,
     page,
@@ -280,6 +340,9 @@ export function useMoneyMovementsPage() {
     total,
     totalPages,
     totalSum,
+    directionSums,
+    managerSums,
+    directionManagerSums,
     loading,
     message,
     setMessage,

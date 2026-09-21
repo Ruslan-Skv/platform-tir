@@ -52,6 +52,7 @@ export class MoneyMovementsController {
       direction: query.direction,
       paymentForm: query.paymentForm,
       paymentType: query.paymentType,
+      entryKind: query.entryKind,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       search: query.search,

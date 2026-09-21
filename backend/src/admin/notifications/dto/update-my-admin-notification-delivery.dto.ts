@@ -147,4 +147,9 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsOptional()
   @IsBoolean()
   notifyOnContractSigning?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: инкассации наличных (журнал ДП)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnIncassations?: boolean;
 }

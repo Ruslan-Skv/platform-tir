@@ -27,6 +27,8 @@ export type MoneyMovement = {
   amount: string;
   paymentForm: string;
   paymentType: string;
+  /** Ручная проводка («Ручная запись в журнале ДП») — не связана с оплатой договора. */
+  isManual: boolean;
   addendumNumber: number | null;
   basis: string | null;
   notes: string | null;
@@ -49,6 +51,17 @@ export type MoneyMovementListResponse = {
   limit: number;
   totalPages: number;
   totalSum: number;
+  /** Суммы оплат по направлениям за выбранный период (те же фильтры, что у журнала). */
+  directionSums: { direction: string | null; sum: number }[];
+  /** Суммы оплат по менеджерам за выбранный период — для графиков статистики. */
+  managerSums: { managerId: string | null; name: string; sum: number }[];
+  /** Суммы «направление × менеджер» — кто из менеджеров лидер в каждом направлении. */
+  directionManagerSums: {
+    direction: string | null;
+    managerId: string | null;
+    name: string;
+    sum: number;
+  }[];
   managers: MoneyMovementManagerOption[];
 };
 
@@ -59,6 +72,8 @@ export async function getMoneyMovements(params?: {
   direction?: string;
   paymentForm?: string;
   paymentType?: string;
+  /** Тип записи: «manual» — ручные проводки, «auto» — автоматические по оплатам договоров. */
+  entryKind?: 'manual' | 'auto';
   dateFrom?: string;
   dateTo?: string;
   search?: string;
@@ -67,10 +82,11 @@ export async function getMoneyMovements(params?: {
 }): Promise<MoneyMovementListResponse> {
   const search = new URLSearchParams();
   if (params?.managerId) search.set('managerId', params.managerId);
-  if (params?.scope === 'mine') search.set('scope', 'mine');
+  if (params?.scope === 'mine') search.set('scope', params.scope);
   if (params?.direction) search.set('direction', params.direction);
   if (params?.paymentForm) search.set('paymentForm', params.paymentForm);
   if (params?.paymentType) search.set('paymentType', params.paymentType);
+  if (params?.entryKind) search.set('entryKind', params.entryKind);
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
   if (params?.search) search.set('search', params.search);
@@ -90,7 +106,10 @@ export type ManagerIncassation = {
   /** ФИО лица, производившего инкассацию (записал менеджер при создании). */
   incassator: string;
   notes: string | null;
+  /** Менеджер, за которого сдана инкассация (по чьей кассе закрыт остаток). */
   manager: { id: string; name: string } | null;
+  /** Менеджер, фактически сдавший инкассацию; null — сдал сам за себя. */
+  submitter: { id: string; name: string } | null;
   createdAt: string;
 };
 
@@ -129,6 +148,8 @@ export async function getManagerIncassations(limit = 50): Promise<ManagerIncassa
 export async function createManagerIncassation(params: {
   /** Менеджер, сдающий инкассацию; по умолчанию — текущий пользователь. */
   managerId?: string;
+  /** За кого сдаётся инкассация: менеджер, по чьей кассе закрывается остаток. Пусто — за себя. */
+  onBehalfOfId?: string;
   amount: number;
   incassator: string;
   performedAt: string;

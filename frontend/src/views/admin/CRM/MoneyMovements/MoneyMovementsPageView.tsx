@@ -8,6 +8,7 @@ import {
   AdminToolbarIconButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import { TrainingStatisticsIcon } from '@/shared/ui/icons/TrainingStatisticsIcon';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
@@ -15,6 +16,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 
 import styles from './MoneyMovements.module.css';
 import type { MoneyMovementsPageModel } from './hooks/useMoneyMovementsPage';
+import { DpStatsModal } from './modals/DpStatsModal';
 import { IncassationHistoryModal } from './modals/IncassationHistoryModal';
 import { IncassationModal } from './modals/IncassationModal';
 import { ManualEntryModal } from './modals/ManualEntryModal';
@@ -36,6 +38,25 @@ function chipClass(active: boolean): string {
 
 function filterFieldClass(base: string, active: boolean): string {
   return active ? `${base} ${cdHub.contractsListFilterActive}` : base;
+}
+
+/** Доля направления в итоге за период, например «97,9%». */
+function formatDpPercent(value: number): string {
+  return `${value.toLocaleString('ru-RU', { maximumFractionDigits: 1 })}%`;
+}
+
+/** Кнопка-иконка «Детальная статистика» — справа от «+ Запись» (иконка как в Территории знаний). */
+function DpStatsButton({ disabled, onClick }: { disabled?: boolean; onClick: () => void }) {
+  return (
+    <AdminToolbarIconButton
+      disabled={disabled}
+      onClick={onClick}
+      title="Детальная статистика за период"
+      aria-label="Детальная статистика за период"
+    >
+      <TrainingStatisticsIcon size={20} />
+    </AdminToolbarIconButton>
+  );
 }
 
 /** Кнопка-иконка «История инкассаций» — справа от «+ Инкассация». */
@@ -86,6 +107,10 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     setDirection,
     paymentForm,
     setPaymentForm,
+    entryKind,
+    setEntryKind,
+    totalsMode,
+    setTotalsMode,
     searchInput,
     setSearchInput,
     page,
@@ -95,6 +120,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     total,
     totalPages,
     totalSum,
+    directionSums,
+    managerSums,
+    directionManagerSums,
     loading,
     message,
     setMessage,
@@ -125,6 +153,11 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
   const [filtersCollapsed, setFiltersCollapsed] = useState(true);
   const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
 
+  /** Детальная статистика — в модалке по кнопке-иконке рядом с «+ Инкассация». */
+  const [statsOpen, setStatsOpen] = useState(false);
+  const openStats = () => setStatsOpen(true);
+  const closeStats = () => setStatsOpen(false);
+
   const filtersSummary = useMemo(
     () =>
       buildDpFiltersSummary({
@@ -135,15 +168,73 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         managers,
         paymentForm,
         paymentFormLabels: DP_PAYMENT_FORM_LABELS,
+        entryKind,
+        totalsMode,
         dateFrom,
         dateTo,
       }),
-    [scope, direction, searchInput, managerId, managers, paymentForm, dateFrom, dateTo]
+    [
+      scope,
+      direction,
+      searchInput,
+      managerId,
+      managers,
+      paymentForm,
+      entryKind,
+      totalsMode,
+      dateFrom,
+      dateTo,
+    ]
   );
 
   const countTitle = `${total} ${total === 1 ? 'запись' : 'записей'}`;
 
+  /** Плитки итогов: направления из справочника в фиксированном порядке + «Прочее»
+   *  для записей без направления (например, ручные проводки) и неизвестных направлений. */
+  const directionTotals = useMemo(() => {
+    const sumsByDirection = new Map(directionSums.map((item) => [item.direction ?? '', item.sum]));
+    const tiles = DP_DIRECTION_OPTIONS.map((option) => ({
+      key: option.value,
+      label: option.label,
+      sum: sumsByDirection.get(option.value) ?? 0,
+    }));
+    const known = new Set(DP_DIRECTION_OPTIONS.map((option) => option.value));
+    const otherSum = directionSums
+      .filter((item) => !item.direction || !known.has(item.direction))
+      .reduce((acc, item) => acc + item.sum, 0);
+    return otherSum !== 0 ? [...tiles, { key: '__other', label: 'Прочее', sum: otherSum }] : tiles;
+  }, [directionSums]);
+
+  /** Плитки итогов по менеджерам: только с ненулевой суммой, лидер первым (готово на бэке). */
+  const managerTotals = useMemo(
+    () =>
+      managerSums
+        .filter((item) => item.sum !== 0)
+        .map((item) => ({ key: item.managerId ?? '__none', label: item.name, sum: item.sum })),
+    [managerSums]
+  );
+
+  const totalsTiles = totalsMode === 'manager' ? managerTotals : directionTotals;
+
   const columns = [
+    {
+      key: 'isManual',
+      title: 'Тип записи',
+      render: (item: MoneyMovement) => (
+        <span
+          className={`${styles.entryKindBadge} ${
+            item.isManual ? styles.entryKindManual : styles.entryKindAuto
+          }`}
+          title={
+            item.isManual
+              ? 'Ручная проводка — внесена через «Ручную запись в журнале ДП»'
+              : 'Автоматическая запись по оплате договора'
+          }
+        >
+          {item.isManual ? 'Ручн.' : 'Авто'}
+        </span>
+      ),
+    },
     {
       key: 'paymentDate',
       title: 'Дата',
@@ -234,25 +325,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 <span className={cdHub.contractsListCountMobile}>{total}</span>
               </span>
             </div>
+            {/* Мобильная шапка: в строке с названием — только иконки; кнопки «+» — в ряду ниже. */}
             <div className={cdHub.contractsHeaderIconActionsMobile}>
-              <button
-                data-admin-mutation
-                type="button"
-                className={cdChrome.contractsListHeaderAddBtn}
-                disabled={loading}
-                onClick={() => void openIncassationModal()}
-              >
-                + Инкассация
-              </button>
-              <button
-                data-admin-mutation
-                type="button"
-                className={cdChrome.contractsListHeaderAddBtn}
-                disabled={loading}
-                onClick={() => void openManualEntryModal()}
-              >
-                + Запись
-              </button>
+              <DpStatsButton disabled={loading} onClick={openStats} />
               <IncassationHistoryButton disabled={loading} onClick={openIncassationHistory} />
               <AdminListRefreshButton
                 disabled={loading}
@@ -284,6 +359,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
             + Запись
           </button>
           <div className={cdHub.contractsHeaderIconActionsDesktop}>
+            <DpStatsButton disabled={loading} onClick={openStats} />
             <IncassationHistoryButton disabled={loading} onClick={openIncassationHistory} />
             <AdminListRefreshButton
               disabled={loading}
@@ -304,6 +380,30 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           </button>
         </div>
       ) : null}
+
+      <div
+        className={`${styles.totalsRow}${loading ? ` ${styles.totalsRowLoading}` : ''}`}
+        aria-label="Итоги по направлениям за выбранный период"
+      >
+        <div className={`${styles.totalsTile} ${styles.totalsTileTotal}`}>
+          <span className={styles.totalsTileLabel}>Итого за период</span>
+          <strong className={styles.totalsTileValue}>{formatDpMoney(totalSum)}</strong>
+        </div>
+        {totalsTiles.map((tile) => {
+          const percent = totalSum !== 0 ? (tile.sum / totalSum) * 100 : null;
+          return (
+            <div key={tile.key} className={styles.totalsTile}>
+              <span className={styles.totalsTileLabel}>{tile.label}</span>
+              <span className={styles.totalsTileValueRow}>
+                <strong className={styles.totalsTileValue}>{formatDpMoney(tile.sum)}</strong>
+                {percent !== null ? (
+                  <span className={styles.totalsTilePercent}>{formatDpPercent(percent)}</span>
+                ) : null}
+              </span>
+            </div>
+          );
+        })}
+      </div>
 
       <section className={cdHub.contractsListFiltersPanel} aria-label="Фильтры журнала ДП">
         <div className={cdHub.contractsListFiltersPanelHeader}>
@@ -394,6 +494,62 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                     {option.label}
                   </button>
                 ))}
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Тип записи">
+                <span className={cdHub.contractsListChipRowLabel}>Тип записи</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(!entryKind)}
+                  onClick={() => setEntryKind('')}
+                >
+                  Все
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(entryKind === 'auto')}
+                  onClick={() => setEntryKind('auto')}
+                >
+                  Авто
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(entryKind === 'manual')}
+                  onClick={() => setEntryKind('manual')}
+                >
+                  Ручные
+                </button>
+              </div>
+
+              <div
+                className={cdHub.contractsListChipRow}
+                role="radiogroup"
+                aria-label="Панель итогов"
+              >
+                <span className={cdHub.contractsListChipRowLabel}>Панель итогов</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  role="radio"
+                  aria-checked={totalsMode === 'direction'}
+                  className={chipClass(totalsMode === 'direction')}
+                  onClick={() => setTotalsMode('direction')}
+                >
+                  По направлениям
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  role="radio"
+                  aria-checked={totalsMode === 'manager'}
+                  className={chipClass(totalsMode === 'manager')}
+                  onClick={() => setTotalsMode('manager')}
+                >
+                  По менеджерам
+                </button>
               </div>
 
               <div className={cdHub.contractsListChipRow} role="group" aria-label="Быстрый период">
@@ -496,9 +652,6 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         <span>
           Записей: <strong>{total}</strong>
         </span>
-        <span className={styles.summarySum} title="Сумма по текущим фильтрам">
-          Итого: {formatDpMoney(totalSum)}
-        </span>
         {totalPages > 1 ? (
           <span className={styles.muted}>
             Страница {page} из {totalPages}
@@ -519,6 +672,16 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           total,
           onPageChange: setPage,
         }}
+      />
+
+      <DpStatsModal
+        open={statsOpen}
+        onClose={closeStats}
+        managerSums={managerSums}
+        directionSums={directionSums}
+        directionManagerSums={directionManagerSums}
+        dateFrom={dateFrom}
+        dateTo={dateTo}
       />
 
       <IncassationModal

@@ -23,30 +23,37 @@ export function IncassationHistoryModal({
       {incassations.length === 0 ? (
         <div className={styles.muted}>Инкассаций пока не было.</div>
       ) : (
-        <table className={styles.incassationsTable}>
-          <thead>
-            <tr>
-              <th>Дата и время</th>
-              <th>Менеджер</th>
-              <th>Сумма</th>
-              <th>ФИО инкассатора</th>
-              <th>Примечание</th>
-            </tr>
-          </thead>
-          <tbody>
-            {incassations.map((row) => (
-              <tr key={row.id}>
-                <td className={styles.contractCell}>
-                  {formatDpDate(row.performedAt)} {formatDpTime(row.performedAt)}
-                </td>
-                <td>{row.manager?.name ?? '—'}</td>
-                <td className={styles.incassationsAmount}>{formatDpMoney(row.amount)}</td>
-                <td>{row.incassator}</td>
-                <td className={styles.incassationsNotes}>{row.notes ?? '—'}</td>
+        <div className={styles.incassationsTableWrap}>
+          <table className={styles.incassationsTable}>
+            <thead>
+              <tr>
+                <th>Дата и время</th>
+                <th>Менеджер</th>
+                <th>Сумма</th>
+                <th>ФИО инкассатора</th>
+                <th>Примечание</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {incassations.map((row) => (
+                <tr key={row.id}>
+                  <td className={styles.contractCell}>
+                    {formatDpDate(row.performedAt)} {formatDpTime(row.performedAt)}
+                  </td>
+                  <td>
+                    {row.manager?.name ?? '—'}
+                    {row.submitter ? (
+                      <span className={styles.muted}> (сдал: {row.submitter.name})</span>
+                    ) : null}
+                  </td>
+                  <td className={styles.incassationsAmount}>{formatDpMoney(row.amount)}</td>
+                  <td>{row.incassator}</td>
+                  <td className={styles.incassationsNotes}>{row.notes ?? '—'}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </Modal>
   );

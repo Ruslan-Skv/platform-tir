@@ -8,9 +8,11 @@ import {
   createManagerIncassation,
 } from '@/shared/api/crm/admin-money-movements';
 import { Modal } from '@/shared/ui/Modal';
+import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import styles from '../MoneyMovements.module.css';
 import { formatDpDate, formatDpMoney, formatDpTime } from '../money-movements-page.constants';
+import formStyles from './MoneyMovementModalForm.module.css';
 
 export type IncassationSubmitData = Parameters<typeof createManagerIncassation>[0];
 
@@ -44,6 +46,7 @@ export function IncassationModal({
 }: IncassationModalProps) {
   const [managerId, setManagerId] = useState('');
   const [managerTouched, setManagerTouched] = useState(false);
+  const [onBehalfOfId, setOnBehalfOfId] = useState('');
   const [amount, setAmount] = useState('');
   const [amountTouched, setAmountTouched] = useState(false);
   const [incassator, setIncassator] = useState('');
@@ -56,6 +59,7 @@ export function IncassationModal({
     if (!open) return;
     setManagerId('');
     setManagerTouched(false);
+    setOnBehalfOfId('');
     setAmount('');
     setAmountTouched(false);
     setIncassator('');
@@ -76,13 +80,24 @@ export function IncassationModal({
     setAmount(balance.balance);
   }, [open, balance, amountTouched]);
 
+  // Остаток наличных считается по кассе менеджера из «За кого сдаётся инкассация»,
+  // а если он не выбран — по кассе самого сдающего.
   const handleManagerChange = (nextId: string) => {
     setManagerTouched(true);
     setManagerId(nextId);
     // Сумма пересчитается под нового менеджера — ручные правки суммы сбрасываем.
     setAmountTouched(false);
     setAmount('');
-    onManagerChange(nextId);
+    onManagerChange(onBehalfOfId || nextId);
+  };
+
+  const handleOnBehalfOfChange = (nextId: string) => {
+    // Фиксируем дефолт сдающего (текущего пользователя), чтобы он не перетёрся балансом.
+    setManagerTouched(true);
+    setOnBehalfOfId(nextId);
+    setAmountTouched(false);
+    setAmount('');
+    onManagerChange(nextId || managerId);
   };
 
   // Если дефолтный менеджер (текущий пользователь) не из справочника — показываем его отдельной опцией.
@@ -92,13 +107,22 @@ export function IncassationModal({
       <option value={managerId}>{balance.managerName}</option>
     ) : null;
 
+  // Кнопка «Записать инкассацию» неактивна, пока не заполнены обязательные поля
+  // (критерии те же, что в валидации handleSubmit).
+  const amountNumber = Number(amount.replace(',', '.'));
+  const canSubmit =
+    Boolean(managerId) &&
+    Number.isFinite(amountNumber) &&
+    amountNumber > 0 &&
+    incassator.trim().length >= 2 &&
+    Boolean(performedAt);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!managerId) {
       setError('Выберите менеджера, сдающего инкассацию');
       return;
     }
-    const amountNumber = Number(amount.replace(',', '.'));
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
       setError('Укажите сумму инкассации (положительное число)');
       return;
@@ -115,6 +139,7 @@ export function IncassationModal({
     try {
       await onSubmit({
         managerId,
+        onBehalfOfId: onBehalfOfId && onBehalfOfId !== managerId ? onBehalfOfId : undefined,
         amount: amountNumber,
         incassator: incassator.trim(),
         performedAt: new Date(performedAt).toISOString(),
@@ -128,16 +153,34 @@ export function IncassationModal({
   };
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Инкассация наличных" size="sm">
-      <form className={styles.incassationForm} onSubmit={(e) => void handleSubmit(e)}>
-        <label className={styles.incassationField}>
-          <span>Менеджер, сдающий инкассацию *</span>
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Инкассация наличных"
+      size="sm"
+      className={formStyles.modalPanel}
+      showCloseButton
+      compactOnMobile
+    >
+      <form
+        className={`${formStyles.formShell} ${modalStyles.formBlueShell}`}
+        data-modal-form
+        data-modal-density="compact"
+        onSubmit={(e) => void handleSubmit(e)}
+      >
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
+          Запись закрывает остаток наличных менеджера с момента последней инкассации: наличные
+          оплаты минус наличные возвраты.
+        </p>
+
+        <div data-modal-form-group>
+          <label htmlFor="incassation-manager">Менеджер, сдающий инкассацию *</label>
           <select
+            id="incassation-manager"
             value={managerId}
             onChange={(e) => handleManagerChange(e.target.value)}
             disabled={submitting || balanceLoading}
             required
-            aria-label="Менеджер, сдающий инкассацию"
           >
             <option value="">— выбрать менеджера —</option>
             {fallbackManagerOption}
@@ -147,15 +190,35 @@ export function IncassationModal({
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <div className={styles.incassationBalanceBox}>
+        <div data-modal-form-group>
+          <label htmlFor="incassation-on-behalf">За кого сдаётся инкассация</label>
+          <select
+            id="incassation-on-behalf"
+            value={onBehalfOfId}
+            onChange={(e) => handleOnBehalfOfChange(e.target.value)}
+            disabled={submitting || balanceLoading}
+          >
+            <option value="">— сдал за себя —</option>
+            {managers.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className={formStyles.balanceBox}>
           {balanceLoading ? (
             <span className={styles.muted}>Считаем наличчные с последней инкассации…</span>
           ) : balance ? (
             <>
               <div className={styles.incassationBalanceRow}>
-                <span>Наличные с последней инкассации:</span>
+                <span>
+                  Наличные с последней инкассации
+                  {onBehalfOfId && balance.managerName ? ` (${balance.managerName})` : ''}:
+                </span>
                 <strong>{formatDpMoney(balance.balance)}</strong>
               </div>
               {balance.lastIncassation ? (
@@ -176,9 +239,10 @@ export function IncassationModal({
           )}
         </div>
 
-        <label className={styles.incassationField}>
-          <span>Сумма инкассации, ₽ *</span>
+        <div data-modal-form-group>
+          <label htmlFor="incassation-amount">Сумма инкассации, ₽ *</label>
           <input
+            id="incassation-amount"
             type="number"
             min="0.01"
             step="0.01"
@@ -190,13 +254,13 @@ export function IncassationModal({
             }}
             disabled={submitting}
             required
-            aria-label="Сумма инкассации"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>ФИО лица, производившего инкассацию *</span>
+        <div data-modal-form-group>
+          <label htmlFor="incassation-incassator">ФИО лица, производившего инкассацию *</label>
           <input
+            id="incassation-incassator"
             type="text"
             value={incassator}
             onChange={(e) => setIncassator(e.target.value)}
@@ -204,41 +268,45 @@ export function IncassationModal({
             placeholder="Например: Иванов Иван Иванович"
             maxLength={500}
             required
-            aria-label="ФИО лица, производившего инкассацию"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Дата и время инкассации *</span>
+        <div data-modal-form-group>
+          <label htmlFor="incassation-performed-at">Дата и время инкассации *</label>
           <input
+            id="incassation-performed-at"
             type="datetime-local"
             value={performedAt}
             onChange={(e) => setPerformedAt(e.target.value)}
             disabled={submitting}
             required
-            aria-label="Дата и время инкассации"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Примечание</span>
+        <div data-modal-form-group>
+          <label htmlFor="incassation-notes">Примечание</label>
           <textarea
+            id="incassation-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={submitting}
             rows={2}
             maxLength={1000}
-            aria-label="Примечание к инкассации"
           />
-        </label>
+        </div>
 
-        {error ? <div className={styles.incassationError}>{error}</div> : null}
+        {error ? <p data-modal-form-error>{error}</p> : null}
 
-        <div className={styles.incassationActions}>
-          <button type="button" className={styles.resetBtn} onClick={onClose} disabled={submitting}>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" onClick={onClose} disabled={submitting}>
             Отмена
           </button>
-          <button type="submit" className={styles.incassationSubmitBtn} disabled={submitting}>
+          <button
+            type="submit"
+            data-admin-mutation
+            data-modal-btn="primary"
+            disabled={submitting || !canSubmit}
+          >
             {submitting ? 'Сохранение…' : 'Записать инкассацию'}
           </button>
         </div>

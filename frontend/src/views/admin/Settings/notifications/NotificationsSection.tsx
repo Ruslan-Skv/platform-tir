@@ -329,6 +329,7 @@ export function NotificationsSection() {
     notifyOnFurnitureSchedules: true,
     notifyOnMeasurements: true,
     notifyOnContractSigning: true,
+    notifyOnIncassations: true,
   };
   const formSettings = settings ?? defaultSettingsForForm;
 
@@ -961,6 +962,17 @@ export function NotificationsSection() {
                 <label htmlFor="notifyOnContractSigning">
                   Электронное подписание договоров (подписан / отклонён / открыт клиентом)
                 </label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
+                  id="notifyOnIncassations"
+                  checked={formSettings.notifyOnIncassations ?? true}
+                  onChange={(e) =>
+                    setSettings((s) => (s ? { ...s, notifyOnIncassations: e.target.checked } : s))
+                  }
+                />
+                <label htmlFor="notifyOnIncassations">Инкассации наличных (журнал ДП)</label>
               </div>
               {isSuperAdmin ? (
                 <div className={styles.checkboxRow}>

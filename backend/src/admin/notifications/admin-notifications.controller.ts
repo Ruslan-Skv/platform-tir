@@ -41,6 +41,7 @@ import { AdminBellInstallationScheduleFeedService } from './admin-bell-installat
 import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule-feed.service';
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
 import { AdminBellMeasurementFeedService } from './services/admin-bell-measurement-feed.service';
+import { AdminBellIncassationFeedService } from './services/admin-bell-incassation-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
@@ -80,6 +81,7 @@ export class AdminNotificationsController {
     private readonly bellRepairScheduleFeed: AdminBellRepairScheduleFeedService,
     private readonly bellFurnitureScheduleFeed: AdminBellFurnitureScheduleFeedService,
     private readonly bellMeasurementFeed: AdminBellMeasurementFeedService,
+    private readonly bellIncassationFeed: AdminBellIncassationFeedService,
     private readonly bellCalendarFeed: AdminBellCalendarFeedService,
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
@@ -227,6 +229,14 @@ export class AdminNotificationsController {
   getBellMeasurementFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellMeasurementFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/incassations')
+  @ApiOperation({ summary: 'События инкассаций наличных для колокольчика (персонально)' })
+  getBellIncassationFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellIncassationFeed.listForUser(req.user.id, take);
   }
 
   @SkipThrottle()

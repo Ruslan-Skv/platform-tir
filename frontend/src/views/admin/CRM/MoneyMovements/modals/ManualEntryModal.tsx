@@ -8,9 +8,11 @@ import {
   createManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
 import { Modal } from '@/shared/ui/Modal';
+import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import styles from '../MoneyMovements.module.css';
 import { DP_PAYMENT_FORM_OPTIONS, todayIsoDate } from '../money-movements-page.constants';
+import formStyles from './MoneyMovementModalForm.module.css';
 
 export type ManualEntrySubmitData = Parameters<typeof createManualMoneyMovement>[0];
 
@@ -69,9 +71,18 @@ export function ManualEntryModal({
       <option value={managerId}>{defaultManager.managerName}</option>
     ) : null;
 
+  // Кнопка «Записать» неактивна, пока не заполнены обязательные поля
+  // (критерии те же, что в валидации handleSubmit).
+  const amountNumber = Number(amount.replace(',', '.'));
+  const canSubmit =
+    Number.isFinite(amountNumber) &&
+    amountNumber > 0 &&
+    Boolean(managerId) &&
+    basis.trim().length >= 2 &&
+    Boolean(paymentDate);
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
-    const amountNumber = Number(amount.replace(',', '.'));
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
       setError('Укажите сумму проводки (положительное число)');
       return;
@@ -104,10 +115,29 @@ export function ManualEntryModal({
   };
 
   return (
-    <Modal isOpen={open} onClose={onClose} title="Ручная запись в журнале ДП" size="sm">
-      <form className={styles.incassationForm} onSubmit={(e) => void handleSubmit(e)}>
-        <div className={styles.incassationField}>
-          <span>Тип операции *</span>
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      title="Ручная запись в журнале ДП"
+      size="sm"
+      className={formStyles.modalPanel}
+      showCloseButton
+      compactOnMobile
+    >
+      <form
+        className={`${formStyles.formShell} ${modalStyles.formBlueShell}`}
+        data-modal-form
+        data-modal-density="compact"
+        onSubmit={(e) => void handleSubmit(e)}
+      >
+        <p data-modal-form-hint style={{ marginTop: 0 }}>
+          Проводка вне оплат по договорам: изъятие из кассы (например, на бытовые нужды) или
+          внесение сумм, не проведённых в оплатах. Наличные записи участвуют в остатке для
+          инкассации.
+        </p>
+
+        <div data-modal-form-group>
+          <label>Тип операции *</label>
           <div className={styles.manualEntryKindRow} role="group" aria-label="Тип операции">
             <button
               type="button"
@@ -134,14 +164,14 @@ export function ManualEntryModal({
           </div>
         </div>
 
-        <label className={styles.incassationField}>
-          <span>Менеджер (касса) *</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-manager">Менеджер (касса) *</label>
           <select
+            id="manual-entry-manager"
             value={managerId}
             onChange={(e) => setManagerId(e.target.value)}
             disabled={submitting}
             required
-            aria-label="Менеджер, по кассе которого проводится запись"
           >
             <option value="">— выбрать менеджера —</option>
             {fallbackManagerOption}
@@ -151,11 +181,12 @@ export function ManualEntryModal({
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Сумма, ₽ *</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-amount">Сумма, ₽ *</label>
           <input
+            id="manual-entry-amount"
             type="number"
             min="0.01"
             step="0.01"
@@ -164,18 +195,17 @@ export function ManualEntryModal({
             onChange={(e) => setAmount(e.target.value)}
             disabled={submitting}
             required
-            aria-label="Сумма проводки"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Способ *</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-payment-form">Способ *</label>
           <select
+            id="manual-entry-payment-form"
             value={paymentForm}
             onChange={(e) => setPaymentForm(e.target.value)}
             disabled={submitting}
             required
-            aria-label="Способ"
           >
             {DP_PAYMENT_FORM_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -183,23 +213,24 @@ export function ManualEntryModal({
               </option>
             ))}
           </select>
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Дата записи *</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-payment-date">Дата записи *</label>
           <input
+            id="manual-entry-payment-date"
             type="date"
             value={paymentDate}
             onChange={(e) => setPaymentDate(e.target.value)}
             disabled={submitting}
             required
-            aria-label="Дата записи"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Основание *</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-basis">Основание *</label>
           <input
+            id="manual-entry-basis"
             type="text"
             value={basis}
             onChange={(e) => setBasis(e.target.value)}
@@ -207,29 +238,33 @@ export function ManualEntryModal({
             placeholder="Например: Бытовые нужды"
             maxLength={500}
             required
-            aria-label="Основание проводки"
           />
-        </label>
+        </div>
 
-        <label className={styles.incassationField}>
-          <span>Примечание</span>
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-notes">Примечание</label>
           <textarea
+            id="manual-entry-notes"
             value={notes}
             onChange={(e) => setNotes(e.target.value)}
             disabled={submitting}
             rows={2}
             maxLength={1000}
-            aria-label="Примечание к проводке"
           />
-        </label>
+        </div>
 
-        {error ? <div className={styles.incassationError}>{error}</div> : null}
+        {error ? <p data-modal-form-error>{error}</p> : null}
 
-        <div className={styles.incassationActions}>
-          <button type="button" className={styles.resetBtn} onClick={onClose} disabled={submitting}>
+        <div data-modal-form-actions>
+          <button type="button" data-modal-btn="secondary" onClick={onClose} disabled={submitting}>
             Отмена
           </button>
-          <button type="submit" className={styles.incassationSubmitBtn} disabled={submitting}>
+          <button
+            type="submit"
+            data-admin-mutation
+            data-modal-btn="primary"
+            disabled={submitting || !canSubmit}
+          >
             {submitting ? 'Сохранение…' : 'Записать'}
           </button>
         </div>

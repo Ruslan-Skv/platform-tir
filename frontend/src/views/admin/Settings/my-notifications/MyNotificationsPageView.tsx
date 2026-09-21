@@ -79,6 +79,10 @@ const EVENT_TOGGLES: EventToggle[] = [
     label: 'Электронное подписание договоров (подписан / отклонён / открыт клиентом)',
   },
   {
+    key: 'notifyOnIncassations',
+    label: 'Инкассации наличных (журнал ДП)',
+  },
+  {
     key: 'notifyOnKnowledgeFeedback',
     label: 'Ошибки и предложения по обучающей платформе',
     superAdminOnly: true,

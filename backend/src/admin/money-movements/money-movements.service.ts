@@ -6,6 +6,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { CreateManagerIncassationDto } from './dto/create-manager-incassation.dto';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
+import { IncassationNotifyService } from './incassation-notify.service';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
@@ -16,6 +17,7 @@ const SIGNATORY_PROFILES_TAB = 'signatory_profiles';
 
 const INCASSATION_MANAGER_INCLUDE = {
   manager: { select: { id: true, email: true, firstName: true, lastName: true } },
+  submitter: { select: { id: true, email: true, firstName: true, lastName: true } },
 } satisfies Prisma.ManagerIncassationInclude;
 
 type IncassationWithManager = Prisma.ManagerIncassationGetPayload<{
@@ -65,7 +67,10 @@ type PackagePaymentRow = {
 export class MoneyMovementsService {
   private readonly logger = new Logger(MoneyMovementsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly incassationNotify: IncassationNotifyService,
+  ) {}
 
   async findAll(params?: {
     managerId?: string;
@@ -75,6 +80,8 @@ export class MoneyMovementsService {
     direction?: string;
     paymentForm?: string;
     paymentType?: string;
+    /** Тип записи: «manual» — ручные проводки, «auto» — автоматические по оплатам договоров. */
+    entryKind?: 'manual' | 'auto';
     dateFrom?: string;
     dateTo?: string;
     search?: string;
@@ -88,6 +95,7 @@ export class MoneyMovementsService {
       direction,
       paymentForm,
       paymentType,
+      entryKind,
       dateFrom,
       dateTo,
       search,
@@ -106,6 +114,13 @@ export class MoneyMovementsService {
     if (direction) where.direction = direction;
     if (paymentForm) where.paymentForm = paymentForm as Prisma.EnumPaymentFormFilter;
     if (paymentType) where.paymentType = paymentType as Prisma.EnumPaymentTypeFilter;
+    // Признак ручной проводки — тот же, что в serialize (isManual).
+    if (entryKind === 'manual') {
+      where.paymentType = PaymentType.OTHER;
+      where.sourceId = null;
+    } else if (entryKind === 'auto') {
+      where.NOT = { paymentType: PaymentType.OTHER, sourceId: null };
+    }
     if (dateFrom || dateTo) {
       where.paymentDate = {};
       if (dateFrom) where.paymentDate.gte = new Date(dateFrom);
@@ -121,7 +136,15 @@ export class MoneyMovementsService {
       ];
     }
 
-    const [rawData, total, sum, signatoryUserIds] = await Promise.all([
+    const [
+      rawData,
+      total,
+      sum,
+      directionSums,
+      managerSumsRaw,
+      directionManagerSumsRaw,
+      signatoryUserIds,
+    ] = await Promise.all([
       this.prisma.moneyMovement.findMany({
         where,
         include: {
@@ -133,6 +156,16 @@ export class MoneyMovementsService {
       }),
       this.prisma.moneyMovement.count({ where }),
       this.prisma.moneyMovement.aggregate({ where, _sum: { amount: true } }),
+      // Итоги по направлениям за тот же период/фильтры — для блока итогов над фильтрами.
+      this.prisma.moneyMovement.groupBy({ by: ['direction'], where, _sum: { amount: true } }),
+      // Итоги по менеджерам — для графиков детальной статистики.
+      this.prisma.moneyMovement.groupBy({ by: ['managerId'], where, _sum: { amount: true } }),
+      // Итоги «направление × менеджер» — кто из менеджеров лидер в каждом направлении.
+      this.prisma.moneyMovement.groupBy({
+        by: ['direction', 'managerId'],
+        where,
+        _sum: { amount: true },
+      }),
       this.signatoryProfileUserIds(),
     ]);
 
@@ -150,6 +183,45 @@ export class MoneyMovementsService {
       }))
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
+    // Менеджер движения может быть не из справочника карточек — берём имена из users.
+    const statsManagerIds = [
+      ...new Set(
+        managerSumsRaw.map((row) => row.managerId).filter((id): id is string => Boolean(id)),
+      ),
+    ];
+    const statsManagerUsers = statsManagerIds.length
+      ? await this.prisma.user.findMany({
+          where: { id: { in: statsManagerIds } },
+          select: { id: true, email: true, firstName: true, lastName: true },
+        })
+      : [];
+    const statsManagerNameById = new Map(
+      statsManagerUsers.map((u) => [
+        u.id,
+        [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || u.email,
+      ]),
+    );
+    const managerSums = managerSumsRaw
+      .map((row) => ({
+        managerId: row.managerId,
+        name: row.managerId
+          ? (statsManagerNameById.get(row.managerId) ?? 'Неизвестный менеджер')
+          : 'Без менеджера',
+        sum: Number(row._sum.amount ?? 0),
+      }))
+      .sort((a, b) => b.sum - a.sum);
+
+    const directionManagerSums = directionManagerSumsRaw
+      .map((row) => ({
+        direction: row.direction,
+        managerId: row.managerId,
+        name: row.managerId
+          ? (statsManagerNameById.get(row.managerId) ?? 'Неизвестный менеджер')
+          : 'Без менеджера',
+        sum: Number(row._sum.amount ?? 0),
+      }))
+      .sort((a, b) => b.sum - a.sum);
+
     return {
       data: rawData.map((row) => this.serialize(row)),
       total,
@@ -157,6 +229,12 @@ export class MoneyMovementsService {
       limit: take,
       totalPages: Math.ceil(total / take),
       totalSum: Number(sum._sum.amount ?? 0),
+      directionSums: directionSums.map((row) => ({
+        direction: row.direction,
+        sum: Number(row._sum.amount ?? 0),
+      })),
+      managerSums,
+      directionManagerSums,
       managers,
     };
   }
@@ -202,6 +280,8 @@ export class MoneyMovementsService {
       amount: row.amount.toString(),
       paymentForm: row.paymentForm,
       paymentType: row.paymentType,
+      /** Ручная проводка (модалка «Ручная запись в журнале ДП») — не связана с оплатой договора. */
+      isManual: row.paymentType === PaymentType.OTHER && row.sourceId === null,
       addendumNumber: row.addendumNumber,
       basis: row.basis,
       notes: row.notes,
@@ -379,20 +459,28 @@ export class MoneyMovementsService {
   /**
    * Создаёт запись инкассации. Менеджер, сдающий инкассацию, — выбранный в форме
    * (по умолчанию текущий пользователь); запись фиксирует текущий пользователь (createdById).
+   * Если инкассация сдаётся за другого менеджера (onBehalfOfId), остаток наличных
+   * закрывается по кассе этого менеджера, а сдающий фиксируется в submitterId.
    */
   async createIncassation(dto: CreateManagerIncassationDto, currentUserId?: string) {
     if (!currentUserId) throw new UnauthorizedException('Пользователь не определён');
 
-    const managerId = dto.managerId?.trim() || currentUserId;
-    const managerExists = await this.prisma.user.findUnique({
-      where: { id: managerId },
-      select: { id: true },
-    });
+    const submitterId = dto.managerId?.trim() || currentUserId;
+    const managerId = dto.onBehalfOfId?.trim() || submitterId;
+
+    const [managerExists, submitterExists] = await Promise.all([
+      this.prisma.user.findUnique({ where: { id: managerId }, select: { id: true } }),
+      managerId === submitterId
+        ? Promise.resolve(true)
+        : this.prisma.user.findUnique({ where: { id: submitterId }, select: { id: true } }),
+    ]);
     if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
+    if (!submitterExists) throw new BadRequestException('Указанный сдающий менеджер не найден');
 
     const record = await this.prisma.managerIncassation.create({
       data: {
         managerId,
+        submitterId: submitterId === managerId ? null : submitterId,
         amount: dto.amount,
         incassator: dto.incassator.trim(),
         performedAt: new Date(dto.performedAt),
@@ -401,6 +489,29 @@ export class MoneyMovementsService {
       },
       include: INCASSATION_MANAGER_INCLUDE,
     });
+
+    // Уведомления (колокольчик + браузерные push) менеджеру кассы и сдающему — fire-and-forget.
+    this.incassationNotify.onCreated(
+      {
+        id: record.id,
+        managerId,
+        submitterId: record.submitterId,
+        managerName: record.manager
+          ? [record.manager.lastName, record.manager.firstName].filter(Boolean).join(' ').trim() ||
+            record.manager.email
+          : null,
+        submitterName: record.submitter
+          ? [record.submitter.lastName, record.submitter.firstName]
+              .filter(Boolean)
+              .join(' ')
+              .trim() || record.submitter.email
+          : null,
+        amount: Number(record.amount),
+        incassator: record.incassator,
+      },
+      currentUserId,
+    );
+
     return this.serializeIncassation(record);
   }
 
@@ -463,6 +574,14 @@ export class MoneyMovementsService {
             name:
               [row.manager.lastName, row.manager.firstName].filter(Boolean).join(' ').trim() ||
               row.manager.email,
+          }
+        : null,
+      submitter: row.submitter
+        ? {
+            id: row.submitter.id,
+            name:
+              [row.submitter.lastName, row.submitter.firstName].filter(Boolean).join(' ').trim() ||
+              row.submitter.email,
           }
         : null,
       createdAt: row.createdAt.toISOString(),

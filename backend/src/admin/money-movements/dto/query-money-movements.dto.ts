@@ -22,6 +22,11 @@ export class QueryMoneyMovementsDto {
   @IsString()
   paymentType?: string;
 
+  /** Тип записи: «manual» — ручные проводки, «auto» — автоматические по оплатам договоров. */
+  @IsOptional()
+  @IsIn(['manual', 'auto'])
+  entryKind?: 'manual' | 'auto';
+
   @IsOptional()
   @IsString()
   dateFrom?: string;

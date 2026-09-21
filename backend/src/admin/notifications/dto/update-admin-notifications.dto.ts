@@ -149,6 +149,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnContractSigning?: boolean;
 
+  @ApiPropertyOptional({ description: 'Инкассации наличных (журнал ДП)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnIncassations?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

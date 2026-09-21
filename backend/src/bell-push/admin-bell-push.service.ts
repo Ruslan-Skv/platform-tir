@@ -28,6 +28,7 @@ export type AdminBellPushEvent =
   | 'furniture_schedule'
   | 'measurement'
   | 'contract_signing'
+  | 'incassation'
   | 'calendar_event'
   | 'messenger_message'
   | 'kanban_card';
@@ -126,6 +127,7 @@ export class AdminBellPushService {
       notifyOnFurnitureSchedules?: boolean;
       notifyOnMeasurements?: boolean;
       notifyOnContractSigning?: boolean;
+      notifyOnIncassations?: boolean;
     },
     role: string,
   ) {
@@ -171,6 +173,8 @@ export class AdminBellPushService {
         return settings.notifyOnMeasurements !== false;
       case 'contract_signing':
         return settings.notifyOnContractSigning !== false;
+      case 'incassation':
+        return settings.notifyOnIncassations !== false;
       case 'calendar_event':
         return true;
       case 'messenger_message':

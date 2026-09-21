@@ -1,0 +1,142 @@
+/* Общий стиль модалок ДП («Инкассация наличных», «Ручная запись») — в оформлении модалки «Добавить клиента в базу» (AddCrmCustomerModal). */
+
+/* Панель модалки: внешние отступы от краёв (без изменения шрифтов полей) */
+.modalPanel {
+  padding: var(--admin-space-4xl, 24px) var(--admin-space-3xl, 20px) !important;
+}
+
+.modalPanel > div:first-child {
+  gap: var(--admin-space-sm, 6px);
+  margin-bottom: var(--admin-space-xl, 12px);
+}
+
+/* Плашка остатка наличных — белая, как подсказка в форме добавления клиента */
+.balanceBox {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--modal-border);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--modal-text);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--modal-fs-sm);
+  gap: var(--admin-space-2xs, 4px);
+  line-height: 1.45;
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+/* Компактные поля: только высота, вертикальные отступы и расстояния между блоками */
+.formShell:global([data-modal-form]) {
+  gap: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px);
+}
+
+.formShell :global([data-modal-form-group]) {
+  gap: 2px;
+  margin-bottom: 2px;
+}
+
+.formShell:global([data-modal-form]) :global(input:not([type='checkbox']):not([type='radio'])),
+.formShell:global([data-modal-form]) :global(select),
+.formShell:global([data-modal-form]) :global(textarea) {
+  min-height: 1.625rem !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+  /* Явный светлый chrome: при body color-scheme: light dark нативный input/select на телефоне тянет тёмный текст */
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-text-primary, #111827);
+}
+
+.formShell:global([data-modal-form]) :global(select option) {
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-primary, #111827);
+}
+
+.formShell:global([data-modal-form]) :global(textarea) {
+  min-height: 2.25rem !important;
+  resize: vertical;
+}
+
+.formShell :global([data-modal-form-actions]) {
+  margin-top: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+  gap: var(--admin-space-sm, 6px);
+}
+
+.formShell :global([data-modal-btn='primary']),
+.formShell :global([data-modal-btn='secondary']) {
+  min-height: 1.75rem !important;
+  padding-top: 2px !important;
+  padding-bottom: 2px !important;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(input:not([type='checkbox']):not([type='radio'])),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(select),
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(textarea) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  border-color: var(--admin-sidebar-text, #9ca3af);
+  color: var(--admin-surface-muted, #111827);
+  color-scheme: light;
+  -webkit-text-fill-color: var(--admin-surface-muted, #111827);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .formShell:global([data-modal-form])
+  :global(select option) {
+  background: var(--admin-text-secondary, #e5e7eb);
+  color: var(--admin-surface-muted, #111827);
+}
+
+@media (max-width: 900px) {
+  .modalPanel {
+    padding: var(--admin-space-xl, 12px) var(--admin-space-md, 8px) !important;
+  }
+
+  .modalPanel > div:first-child {
+    margin-bottom: var(--admin-space-md, 8px);
+  }
+
+  .formShell:global([data-modal-form]) {
+    gap: var(--admin-space-sm, 6px);
+    padding: 0;
+  }
+
+  .formShell :global([data-modal-form-group]) {
+    gap: var(--admin-space-xs, 4px);
+    margin-bottom: var(--admin-space-xs, 4px);
+  }
+
+  .formShell:global([data-modal-form]) :global(input:not([type='checkbox']):not([type='radio'])),
+  .formShell:global([data-modal-form]) :global(select),
+  .formShell:global([data-modal-form]) :global(textarea) {
+    min-height: 2.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+    font-size: var(--admin-font-size-sm, 0.875rem) !important;
+  }
+
+  .formShell:global([data-modal-form]) :global(textarea) {
+    min-height: 4rem !important;
+  }
+
+  .formShell :global([data-modal-form-actions]) {
+    flex-direction: column-reverse;
+    gap: var(--admin-space-sm, 6px);
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  .formShell :global([data-modal-btn='primary']),
+  .formShell :global([data-modal-btn='secondary']) {
+    width: 100%;
+    min-height: 2.5rem !important;
+    padding-top: 0.5rem !important;
+    padding-bottom: 0.5rem !important;
+  }
+}

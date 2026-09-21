@@ -290,3 +290,168 @@
   font-weight: 600;
   white-space: nowrap;
 }
+
+/* Признак происхождения записи журнала: ручная проводка или автоматическая по оплате договора */
+.entryKindBadge {
+  display: inline-block;
+  border-radius: var(--admin-radius-sm, 6px);
+  font-size: var(--admin-font-size-xs, 12px);
+  line-height: 1.2;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.entryKindManual {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.entryKindAuto {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .entryKindManual {
+  background: rgb(154 52 18 / 0.28);
+  border-color: rgb(251 146 60 / 0.45);
+  color: #fdba74;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .entryKindAuto {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-muted);
+}
+
+/* Блок итогов над фильтрами: общая сумма и суммы по направлениям за выбранный период */
+.totalsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 8px);
+  margin: 0 0 var(--admin-space-md, 12px);
+}
+
+.totalsRowLoading {
+  opacity: 0.6;
+}
+
+.totalsTile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 7.5rem;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-lg, 14px);
+}
+
+.totalsTileLabel {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.totalsTileValue {
+  font-size: var(--admin-font-size-md, 14px);
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.totalsTileTotal {
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border-color: var(--admin-info-border, #93c5fd);
+}
+
+.totalsTileTotal .totalsTileValue {
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.totalsTileValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.totalsTilePercent {
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Сетка графиков детальной статистики: столбчатые и круговые диаграммы */
+.statsChartsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  gap: var(--admin-space-md, 12px) var(--admin-space-lg, 16px);
+  align-items: start;
+}
+
+/* Подпись периода в модалке детальной статистики */
+.statsPeriodHint {
+  color: var(--admin-text-muted, #6b7280);
+  font-size: var(--admin-font-size-sm, 13px);
+  margin: 0 0 var(--admin-space-md, 12px);
+}
+
+/* Заголовок секции «Менеджеры по направлениям» в модалке статистики */
+.statsSectionTitle {
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 600;
+  color: var(--admin-text, #111827);
+  margin: var(--admin-space-lg, 16px) 0 var(--admin-space-sm, 8px);
+}
+
+/* Горизонтальная прокрутка широкой таблицы истории инкассаций (контент модалки не скроллится по X) */
+.incassationsTableWrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Мобильная версия страницы ДП */
+@media (max-width: 900px) {
+  /* Плитки итогов — ровная сетка по 2 колонки на телефоне */
+  .totalsRow {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(8.75rem, 1fr));
+    gap: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  }
+
+  .totalsTile {
+    min-width: 0;
+    padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  }
+
+  .totalsTileValue {
+    font-size: var(--admin-font-size-sm, 13px);
+  }
+
+  .totalsTilePercent {
+    font-size: 11px;
+  }
+
+  .summaryRow {
+    gap: var(--admin-space-xs, 4px) var(--admin-space-md, 12px);
+  }
+
+  /* Модалка статистики: графики в одну колонку, компактные заголовки */
+  .statsPeriodHint {
+    margin-bottom: var(--admin-space-sm, 8px);
+  }
+
+  .statsSectionTitle {
+    margin-top: var(--admin-space-md, 12px);
+  }
+
+  /* Таблица истории: компактнее на узких экранах */
+  .incassationsTable th,
+  .incassationsTable td {
+    padding: var(--admin-space-2xs, 4px) var(--admin-space-xs, 8px);
+  }
+}

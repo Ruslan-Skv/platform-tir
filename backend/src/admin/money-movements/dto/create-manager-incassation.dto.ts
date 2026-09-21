@@ -18,6 +18,12 @@ export class CreateManagerIncassationDto {
   @MaxLength(40)
   managerId?: string;
 
+  /** За кого сдаётся инкассация: менеджер, по чьей кассе закрывается остаток. Пусто — за себя. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(40)
+  onBehalfOfId?: string;
+
   /** Сумма сданных наличных, RUB (> 0). */
   @Type(() => Number)
   @IsPositive()

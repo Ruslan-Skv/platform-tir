@@ -34,6 +34,7 @@ export interface AdminNotificationsSettings {
   notifyOnFurnitureSchedules: boolean;
   notifyOnMeasurements: boolean;
   notifyOnContractSigning: boolean;
+  notifyOnIncassations: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
   allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
 }
@@ -77,6 +78,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnFurnitureSchedules',
   'notifyOnMeasurements',
   'notifyOnContractSigning',
+  'notifyOnIncassations',
 ] as const;
 
 export type MyNotifyEventKey = (typeof MY_NOTIFY_EVENT_KEYS)[number];
@@ -266,6 +268,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
     notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnContractSigning: data.notifyOnContractSigning,
+    notifyOnIncassations: data.notifyOnIncassations,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -322,6 +325,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
     notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnContractSigning: data.notifyOnContractSigning,
+    notifyOnIncassations: data.notifyOnIncassations,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -634,6 +638,27 @@ export async function getAdminBellMeasurementNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по замерам');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellIncassationNotification = {
+  id: string;
+  incassationId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellIncassationNotifications(
+  limit = 20
+): Promise<AdminBellIncassationNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/incassations?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по инкассациям');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

@@ -46,6 +46,7 @@ export const NOTIFY_EVENT_KEYS = [
   'notifyOnFurnitureSchedules',
   'notifyOnMeasurements',
   'notifyOnContractSigning',
+  'notifyOnIncassations',
 ] as const;
 
 export type NotifyEventKey = (typeof NOTIFY_EVENT_KEYS)[number];
@@ -113,6 +114,7 @@ export class AdminNotificationsService {
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
       notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnContractSigning: dto.notifyOnContractSigning,
+      notifyOnIncassations: dto.notifyOnIncassations,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     updateData.deliveryOnly = false;
@@ -145,6 +147,7 @@ export class AdminNotificationsService {
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
+      notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
       where: { userId },
@@ -336,6 +339,7 @@ export class AdminNotificationsService {
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
       notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnContractSigning: dto.notifyOnContractSigning,
+      notifyOnIncassations: dto.notifyOnIncassations,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
     const createData = {
@@ -366,6 +370,7 @@ export class AdminNotificationsService {
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
+      notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };
     if (role !== null) {
       return this.prisma.adminNotificationsBlock.upsert({

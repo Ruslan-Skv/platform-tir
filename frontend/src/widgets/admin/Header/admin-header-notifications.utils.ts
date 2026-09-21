@@ -22,6 +22,7 @@ export type AdminBellNotificationType =
   | 'furnitureSchedules'
   | 'measurements'
   | 'contractSigning'
+  | 'incassations'
   | 'calendar'
   | 'messenger'
   | 'kanban';
@@ -120,6 +121,15 @@ export type AdminBellMeasurementNotification = {
   kind: 'created' | 'completed' | 'cancelled' | 'converted';
   kindLabel: string;
   measurementId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellIncassationNotification = {
+  id: string;
+  incassationId: string;
   title: string;
   message: string;
   href: string;
@@ -405,6 +415,18 @@ export function measurementToBellNotificationItem(
   };
 }
 
+export function incassationToBellNotificationItem(
+  item: AdminBellIncassationNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'incassations',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/dp',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function calendarToBellNotificationItem(
   item: AdminBellCalendarNotification
 ): AdminBellNotificationItem {
@@ -554,6 +576,11 @@ export function isNotificationItemEnabled(
     );
   }
 
+  if (item.type === 'incassations') {
+    // Адресные уведомления менеджеру кассы и сдающему — без требования доступа к журналу.
+    return isBellTypeEnabled(item.type, settings);
+  }
+
   if (item.type === 'calendar') {
     return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
   }
@@ -614,6 +641,8 @@ export function isBellTypeEnabled(
       return settings.notifyOnMeasurements !== false;
     case 'contractSigning':
       return settings.notifyOnContractSigning !== false;
+    case 'incassations':
+      return settings.notifyOnIncassations !== false;
     case 'calendar':
       return true;
     case 'messenger':
@@ -726,6 +755,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'contractSigning':
       return {
         title: 'Подписание договоров',
+        body: item.text,
+        tag,
+      };
+    case 'incassations':
+      return {
+        title: 'Инкассация',
         body: item.text,
         tag,
       };
