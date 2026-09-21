@@ -190,19 +190,59 @@ function parseIsoTs(raw: string | undefined): number {
   return Number.isFinite(t) ? t : 0;
 }
 
-function presetSortTs(p: ContractEstimatePreset): number {
+export function estimatePresetSortTs(p: ContractEstimatePreset): number {
   return parseIsoTs(p.updatedAt ?? p.createdAt);
+}
+
+/** Дата последнего изменения объекта — самый свежий из его расчётов. */
+export function estimateGroupSortTs(items: ContractEstimatePreset[]): number {
+  let max = 0;
+  for (const it of items) {
+    const ts = estimatePresetSortTs(it);
+    if (ts > max) max = ts;
+  }
+  return max;
+}
+
+/** Подпись даты объекта для колонки «Дата» (как у строк расчётов). */
+export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[]): string {
+  let latest: ContractEstimatePreset | null = null;
+  let latestTs = 0;
+  for (const it of items) {
+    const ts = estimatePresetSortTs(it);
+    if (ts > latestTs) {
+      latestTs = ts;
+      latest = it;
+    }
+  }
+  const raw = latest ? (latest.updatedAt ?? latest.createdAt) : undefined;
+  if (!raw) return '—';
+  const parsed = new Date(raw);
+  return Number.isFinite(parsed.getTime())
+    ? parsed.toLocaleString('ru-RU', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+      })
+    : '—';
 }
 
 export function comparePresetsForListSort(
   a: ContractEstimatePreset,
   b: ContractEstimatePreset,
   sortBy: EstimatesListSortBy,
-  sortOrder: EstimatesListSortOrder
+  sortOrder: EstimatesListSortOrder,
+  usageByEstimateId?: Map<string, EstimatePackageUsage[]>
 ): number {
   let cmp = 0;
   if (sortBy === 'date') {
-    cmp = presetSortTs(a) - presetSortTs(b);
+    cmp = estimatePresetSortTs(a) - estimatePresetSortTs(b);
+  } else if (sortBy === 'binding' && usageByEstimateId) {
+    // «Нет» раньше «есть» при asc (как алфавитный порядок); привязанные — сверху при desc.
+    cmp =
+      (usageByEstimateId.get(a.id)?.length ? 1 : 0) - (usageByEstimateId.get(b.id)?.length ? 1 : 0);
   }
   if (cmp === 0) {
     cmp = a.title.localeCompare(b.title, 'ru');
@@ -222,9 +262,12 @@ export function estimateObjectAddressDisplayLabel(addressKey: string): string {
 export function sortEstimatesForList(
   list: ContractEstimatePreset[],
   sortBy: EstimatesListSortBy,
-  sortOrder: EstimatesListSortOrder
+  sortOrder: EstimatesListSortOrder,
+  usageByEstimateId?: Map<string, EstimatePackageUsage[]>
 ): ContractEstimatePreset[] {
-  return [...list].sort((a, b) => comparePresetsForListSort(a, b, sortBy, sortOrder));
+  return [...list].sort((a, b) =>
+    comparePresetsForListSort(a, b, sortBy, sortOrder, usageByEstimateId)
+  );
 }
 
 /** Убирает ссылку на несуществующую группу (после удаления объекта и т.п.). */

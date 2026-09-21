@@ -167,8 +167,9 @@ export function useEstimatesListDerivedData({
         listViewMode,
         listSortBy,
         listSortOrder,
+        usageByEstimateId,
       }),
-    [visibleItems, archiveView, groups, listViewMode, listSortBy, listSortOrder]
+    [visibleItems, archiveView, groups, listViewMode, listSortBy, listSortOrder, usageByEstimateId]
   );
 
   const tableDisplayItems = useMemo(

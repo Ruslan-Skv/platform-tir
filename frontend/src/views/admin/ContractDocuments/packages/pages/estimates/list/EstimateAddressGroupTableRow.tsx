@@ -17,7 +17,11 @@ import {
   EstimatesToProspectIcon,
   unifiedGroupIdForEstimates,
 } from './estimatesListTableUi';
-import { type EstimatePackageUsage, estimateObjectAddressDisplayLabel } from './estimatesListUtils';
+import {
+  type EstimatePackageUsage,
+  estimateObjectAddressDisplayLabel,
+  formatEstimateGroupUpdatedLabel,
+} from './estimatesListUtils';
 
 export type EstimateAddressGroupSection = {
   addressKey: string;
@@ -99,7 +103,12 @@ export function EstimateAddressGroupTableRow({
           </div>
         </div>
       </td>
-      <td className={cdEstimatesList.estimatesListDateCell}>—</td>
+      <td
+        className={cdEstimatesList.estimatesListDateCell}
+        title="Дата последнего изменения расчётов объекта"
+      >
+        {formatEstimateGroupUpdatedLabel(section.items)}
+      </td>
       <td className={cdEstimatesList.estimatesListCostCell}>—</td>
       <td className={cdEstimatesList.estimatesListBindingCell}>
         {hasBound ? (

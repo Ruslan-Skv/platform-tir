@@ -7,6 +7,8 @@ import type { EstimatesListViewMode } from './estimatesListFilters';
 import type { EstimatesListSortBy, EstimatesListSortOrder } from './estimatesListSort';
 import {
   ESTIMATES_NO_ADDRESS_KEY,
+  type EstimatePackageUsage,
+  estimateGroupSortTs,
   estimateObjectAddressKey,
   sortEstimatesForList,
 } from './estimatesListUtils';
@@ -35,6 +37,8 @@ export type BuildEstimateLayoutBlocksParams = {
   listViewMode: EstimatesListViewMode;
   listSortBy: EstimatesListSortBy;
   listSortOrder: EstimatesListSortOrder;
+  /** Привязки расчётов к договорам — для сортировки «по привязке». */
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>;
 };
 
 export function countEstimatesAddressGroups(
@@ -53,6 +57,7 @@ export function buildEstimateLayoutBlocks({
   listViewMode,
   listSortBy,
   listSortOrder,
+  usageByEstimateId,
 }: BuildEstimateLayoutBlocksParams): EstimateLayoutBlock[] {
   const soloArchivedIds = new Set<string>();
   if (archiveView) {
@@ -71,7 +76,7 @@ export function buildEstimateLayoutBlocks({
     if (flatItems.length > 0) {
       blocks.push({
         kind: 'flatRun',
-        items: sortEstimatesForList(flatItems, listSortBy, listSortOrder),
+        items: sortEstimatesForList(flatItems, listSortBy, listSortOrder, usageByEstimateId),
       });
     }
   } else {
@@ -84,17 +89,30 @@ export function buildEstimateLayoutBlocks({
       byAddress.set(key, arr);
     }
 
-    const addressKeys = [...byAddress.keys()].sort((a, b) => {
+    // Сортировка объектов: по дате — по последнему изменению самого объекта
+    // (самый свежий из его расчётов); иначе (и как tie-break) — по адресу.
+    const compareAddressKeys = (a: string, b: string): number => {
       if (a === ESTIMATES_NO_ADDRESS_KEY) return 1;
       if (b === ESTIMATES_NO_ADDRESS_KEY) return -1;
+      if (listSortBy === 'date') {
+        const cmp =
+          estimateGroupSortTs(byAddress.get(a) ?? []) - estimateGroupSortTs(byAddress.get(b) ?? []);
+        if (cmp !== 0) return listSortOrder === 'asc' ? cmp : -cmp;
+      }
       return a.localeCompare(b, 'ru');
-    });
+    };
+    const addressKeys = [...byAddress.keys()].sort(compareAddressKeys);
 
     for (const addressKey of addressKeys) {
       blocks.push({
         kind: 'address',
         addressKey,
-        items: sortEstimatesForList(byAddress.get(addressKey) ?? [], listSortBy, listSortOrder),
+        items: sortEstimatesForList(
+          byAddress.get(addressKey) ?? [],
+          listSortBy,
+          listSortOrder,
+          usageByEstimateId
+        ),
       });
     }
   }
@@ -103,7 +121,7 @@ export function buildEstimateLayoutBlocks({
     const soloArchived = visibleItems.filter((it) => soloArchivedIds.has(it.id));
     blocks.push({
       kind: 'soloArchived',
-      items: sortEstimatesForList(soloArchived, listSortBy, listSortOrder),
+      items: sortEstimatesForList(soloArchived, listSortBy, listSortOrder, usageByEstimateId),
     });
   }
 

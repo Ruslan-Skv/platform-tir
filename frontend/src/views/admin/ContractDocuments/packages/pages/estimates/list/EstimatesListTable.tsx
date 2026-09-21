@@ -118,7 +118,13 @@ export function EstimatesListTable({
                   onSort={onSort}
                 />
                 <th>Стоимость</th>
-                <th>Привязка</th>
+                <EstimatesListSortableTh
+                  column="binding"
+                  title="Привязка"
+                  sortBy={listSortBy}
+                  sortOrder={listSortOrder}
+                  onSort={onSort}
+                />
                 <th>Наценка, %</th>
                 <th className={cdEstimatesList.contractsListActionsCol} aria-label="Действия" />
               </tr>

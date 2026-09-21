@@ -1,5 +1,6 @@
 import {
   type EstimatesTableDisplayItem,
+  buildEstimateLayoutBlocks,
   paginateEstimatesTableDisplayItems,
 } from './estimatesListLayout';
 
@@ -43,5 +44,44 @@ describe('paginateEstimatesTableDisplayItems', () => {
 
   it('пустая страница за пределами списка', () => {
     expect(paginateEstimatesTableDisplayItems(items, 9, 3)).toEqual([]);
+  });
+});
+
+describe('buildEstimateLayoutBlocks: сортировка объектов по дате', () => {
+  const usage = new Map<string, never[]>();
+  const preset = (id: string, address: string, iso: string) =>
+    ({ id, title: id, objectAddress: address, updatedAt: iso }) as never;
+
+  const items = [
+    preset('old_a', 'ул. Старая, 1', '2026-01-01T00:00:00.000Z'),
+    preset('new_a', 'ул. Старая, 1', '2026-03-01T00:00:00.000Z'),
+    preset('mid_b', 'ул. Новая, 2', '2026-02-01T00:00:00.000Z'),
+  ] as never[];
+
+  const addressKeys = (sortBy: 'date' | 'binding', sortOrder: 'asc' | 'desc') =>
+    buildEstimateLayoutBlocks({
+      visibleItems: items,
+      groups: [],
+      archiveView: false,
+      listViewMode: 'by_object',
+      listSortBy: sortBy,
+      listSortOrder: sortOrder,
+      usageByEstimateId: usage,
+    })
+      .filter((b) => b.kind === 'address')
+      .map((b) => (b as { addressKey: string }).addressKey);
+
+  it('desc — объект с самым свежим расчётом первым', () => {
+    expect(addressKeys('date', 'desc')).toEqual(['ул. Старая, 1', 'ул. Новая, 2']);
+  });
+
+  it('asc — самый старый объект первым', () => {
+    expect(addressKeys('date', 'asc')).toEqual(['ул. Новая, 2', 'ул. Старая, 1']);
+  });
+
+  it('не дата — прежний порядок по адресу', () => {
+    expect(addressKeys('binding', 'asc')).toEqual(
+      ['ул. Старая, 1', 'ул. Новая, 2'].sort((a, b) => a.localeCompare(b, 'ru'))
+    );
   });
 });

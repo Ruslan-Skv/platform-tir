@@ -1,6 +1,6 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import { estimateMatchesManagerFilter } from './estimatesListUtils';
+import { estimateMatchesManagerFilter, sortEstimatesForList } from './estimatesListUtils';
 
 function presetWith(fields: Partial<ContractEstimatePreset>): ContractEstimatePreset {
   return {
@@ -40,5 +40,28 @@ describe('estimateMatchesManagerFilter', () => {
     const managerIdsByPresetId = new Map([['est_1', new Set(['user_b'])]]);
     expect(estimateMatchesManagerFilter(preset, 'user_a', managerIdsByPresetId)).toBe(true);
     expect(estimateMatchesManagerFilter(preset, 'user_b', managerIdsByPresetId)).toBe(true);
+  });
+});
+
+describe('sortEstimatesForList: по привязке', () => {
+  const bound = presetWith({ id: 'est_bound', title: 'Привязанный' });
+  const free = presetWith({ id: 'est_free', title: 'Свободный' });
+  const usageByEstimateId = new Map([
+    ['est_bound', [{ contractNumber: '1', contractDate: '' }] as never],
+  ]);
+
+  it('asc — непривязанные раньше привязанных', () => {
+    const sorted = sortEstimatesForList([bound, free], 'binding', 'asc', usageByEstimateId);
+    expect(sorted.map((p) => p.id)).toEqual(['est_free', 'est_bound']);
+  });
+
+  it('desc — привязанные раньше непривязанных', () => {
+    const sorted = sortEstimatesForList([free, bound], 'binding', 'desc', usageByEstimateId);
+    expect(sorted.map((p) => p.id)).toEqual(['est_bound', 'est_free']);
+  });
+
+  it('без карты привязок порядок не меняется (кроме tie-breaker по названию)', () => {
+    const sorted = sortEstimatesForList([free, bound], 'binding', 'asc');
+    expect(sorted.map((p) => p.id)).toEqual(['est_bound', 'est_free']);
   });
 });

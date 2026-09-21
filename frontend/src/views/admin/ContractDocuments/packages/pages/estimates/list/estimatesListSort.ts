@@ -1,8 +1,8 @@
-export type EstimatesListSortBy = 'date';
+export type EstimatesListSortBy = 'date' | 'binding';
 
 export type EstimatesListSortOrder = 'asc' | 'desc';
 
-const SORT_BY_VALUES = new Set<EstimatesListSortBy>(['date']);
+const SORT_BY_VALUES = new Set<EstimatesListSortBy>(['date', 'binding']);
 
 export function parseEstimatesListSortBy(value: string): EstimatesListSortBy {
   if (SORT_BY_VALUES.has(value as EstimatesListSortBy)) {
