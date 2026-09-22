@@ -3,10 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import {
-  type ContractDocumentPackage,
-  getContractDocumentPackagesPage,
-} from '@/shared/api/admin-contract-document-packages';
+import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 import {
   type WaybillTask,
@@ -24,6 +21,7 @@ import {
   updateWaybillTask,
   uploadWaybillAttachments,
 } from '@/shared/api/admin-waybills';
+import { packageSearchLabel } from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 import { getBlockedDeliveryDayMessage } from '../../shared/driver-availability.utils';
 import { waybillPackagePick } from '../../shared/waybills-package-picker.utils';
@@ -35,6 +33,7 @@ import type {
 } from '../../shared/waybills-page.types';
 import {
   emptyWaybillForm,
+  isWaybillFormFilled,
   monthEndIso,
   monthStartIso,
   parseIsoDateParts,
@@ -124,9 +123,13 @@ export function useWaybillsPage() {
   );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [contractHits, setContractHits] = useState<ContractDocumentPackage[]>([]);
-  const [contractSearching, setContractSearching] = useState(false);
   const quietLoadRef = useRef(false);
+  /** Поля заказчика до автозаполнения заказом — «Снять выбор» возвращает их. */
+  const packagePrevCustomerRef = useRef<{
+    customerName: string;
+    customerAddress: string;
+    customerPhones: string[];
+  } | null>(null);
 
   const loadTasks = useCallback(async () => {
     const quiet = quietLoadRef.current;
@@ -214,7 +217,7 @@ export function useWaybillsPage() {
     setFormValues(emptyWaybillForm(defaultTaskDate, user?.id ?? ''));
     setFormError(null);
     setSubmitting(false);
-    setContractHits([]);
+    packagePrevCustomerRef.current = null;
   }, [defaultTaskDate, user?.id]);
 
   const openCreateModal = useCallback(() => {
@@ -227,7 +230,7 @@ export function useWaybillsPage() {
       setFormValues(emptyWaybillForm(isoDate, user?.id ?? ''));
       setFormError(null);
       setSubmitting(false);
-      setContractHits([]);
+      packagePrevCustomerRef.current = null;
       setCreateModalOpen(true);
     },
     [user?.id]
@@ -244,6 +247,7 @@ export function useWaybillsPage() {
       customerName: customer.customerName,
       customerAddress: customer.customerAddress,
       customerPhones: customer.customerPhones.length > 0 ? customer.customerPhones : [''],
+      packageId: '',
       contractSearch: '',
       deliveryCost: item.deliveryCost != null ? String(item.deliveryCost) : '',
       deliveryPayer: item.deliveryPayer ?? '',
@@ -257,7 +261,7 @@ export function useWaybillsPage() {
     });
     setFormError(null);
     setSubmitting(false);
-    setContractHits([]);
+    packagePrevCustomerRef.current = null;
     setEditItem(item);
   }, []);
 
@@ -292,39 +296,41 @@ export function useWaybillsPage() {
     };
   }, []);
 
-  const searchContracts = useCallback(async (query: string) => {
-    const q = query.trim();
-    if (q.length < 2) {
-      setContractHits([]);
-      return;
-    }
-    setContractSearching(true);
-    try {
-      const res = await getContractDocumentPackagesPage({
-        search: q,
-        page: 1,
-        limit: 8,
-        paginated: true,
-      });
-      setContractHits(Array.isArray(res) ? res : res.data);
-    } catch {
-      setContractHits([]);
-    } finally {
-      setContractSearching(false);
-    }
+  /** Выбранный заказ подставляет ФИО, адрес и телефоны заказчика. */
+  const applyPackage = useCallback((pkg: ContractDocumentPackage) => {
+    const pick = waybillPackagePick(pkg);
+    setFormValues((prev) => {
+      // при первом выборе запоминаем, что было в полях до автозаполнения
+      if (!prev.packageId) {
+        packagePrevCustomerRef.current = {
+          customerName: prev.customerName,
+          customerAddress: prev.customerAddress,
+          customerPhones: prev.customerPhones,
+        };
+      }
+      return {
+        ...prev,
+        packageId: pkg.id,
+        contractSearch: packageSearchLabel(pkg),
+        customerName: pick.customerName,
+        customerAddress: pick.customerAddress,
+        customerPhones: pick.customerPhones.length > 0 ? pick.customerPhones : [''],
+      };
+    });
   }, []);
 
-  const applyContract = useCallback((pkg: ContractDocumentPackage) => {
-    const pick = waybillPackagePick(pkg);
+  /** «Снять выбор»: очищает заказ и поля, заполненные им (возвращает прежние значения). */
+  const clearPackage = useCallback(() => {
+    const restore = packagePrevCustomerRef.current;
+    packagePrevCustomerRef.current = null;
     setFormValues((prev) => ({
       ...prev,
-      contractId: '',
-      contractSearch: pick.number || pick.customerName,
-      customerName: pick.customerName,
-      customerAddress: pick.customerAddress,
-      customerPhones: pick.customerPhones.length > 0 ? pick.customerPhones : [''],
+      packageId: '',
+      contractSearch: '',
+      customerName: restore?.customerName ?? '',
+      customerAddress: restore?.customerAddress ?? '',
+      customerPhones: restore && restore.customerPhones.length > 0 ? restore.customerPhones : [''],
     }));
-    setContractHits([]);
   }, []);
 
   const assertDriverDateAllowed = useCallback(async (values: WaybillFormValues) => {
@@ -359,8 +365,8 @@ export function useWaybillsPage() {
   const handleCreate = useCallback(
     async (e: React.FormEvent) => {
       e.preventDefault();
-      if (!formValues.taskText.trim()) {
-        setFormError('Укажите задание водителю');
+      if (!isWaybillFormFilled(formValues)) {
+        setFormError('Заполните обязательные поля задания');
         return;
       }
       const blocked = await assertDriverDateAllowed(formValues);
@@ -402,8 +408,8 @@ export function useWaybillsPage() {
     async (e: React.FormEvent) => {
       e.preventDefault();
       if (!editItem) return;
-      if (!formValues.taskText.trim()) {
-        setFormError('Укажите задание водителю');
+      if (!isWaybillFormFilled(formValues)) {
+        setFormError('Заполните обязательные поля задания');
         return;
       }
       const blocked = await assertDriverDateAllowed(formValues);
@@ -618,8 +624,6 @@ export function useWaybillsPage() {
     setFormValues,
     formError,
     submitting,
-    contractHits,
-    contractSearching,
     openCreateModal,
     openCreateModalForDate,
     openEditModal,
@@ -643,8 +647,8 @@ export function useWaybillsPage() {
     rescheduleTimeTo,
     setRescheduleTimeTo,
     rescheduleError,
-    searchContracts,
-    applyContract,
+    applyPackage,
+    clearPackage,
     refresh: loadTasks,
     trashOpen,
     setTrashOpen,

@@ -7,6 +7,9 @@ export type WaybillFormValues = {
   customerName: string;
   customerAddress: string;
   customerPhones: string[];
+  /** Id выбранного заказа (пакета документов) — подставляет ФИО, адрес и телефоны. */
+  packageId: string;
+  /** Текст поиска заказа или подпись выбранного заказа. */
   contractSearch: string;
   deliveryCost: string;
   deliveryPayer: string;

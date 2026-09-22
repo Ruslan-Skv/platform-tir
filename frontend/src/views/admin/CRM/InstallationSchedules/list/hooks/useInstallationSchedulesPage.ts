@@ -28,6 +28,7 @@ import {
   todayIsoDate,
   weekAheadIsoDate,
 } from '../../shared/installation-schedules';
+import { isInstallationScheduleFormFilled } from '../../shared/installationScheduleFillPercent';
 
 export function useInstallationSchedulesPage() {
   const today = todayIsoDate();
@@ -114,23 +115,12 @@ export function useInstallationSchedulesPage() {
   const save = useCallback(
     async (editing: boolean, event: React.FormEvent): Promise<boolean> => {
       event.preventDefault();
-      if (!formValues.date) {
-        setFormError('Укажите дату монтажа');
+      if (!isInstallationScheduleFormFilled(formValues)) {
+        setFormError('Заполните обязательные поля монтажа');
         return false;
       }
       if (formValues.dateEnd && formValues.dateEnd < formValues.date) {
         setFormError('Дата окончания не может быть раньше даты начала');
-        return false;
-      }
-      if (!formValues.manualInstaller && formValues.installerIds.length === 0) {
-        setFormError('Выберите хотя бы одного монтажника или включите ручной ввод');
-        return false;
-      }
-      if (
-        formValues.manualInstaller &&
-        !formValues.manualInstallerNames.some((name) => name.trim())
-      ) {
-        setFormError('Укажите имя монтажника');
         return false;
       }
       const phones = formValues.customerPhones.map((phone) => phone.trim()).filter(Boolean);

@@ -1,0 +1,97 @@
+/* Блоки-секции внутри модальных форм CRM (как в «Новом монтаже»). */
+
+.formSection {
+  margin-top: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-sm, 6px) var(--admin-space-md, 8px);
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface, #fff);
+  box-sizing: border-box;
+}
+
+.formSection:first-of-type {
+  margin-top: var(--admin-space-xs, 4px);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formSection {
+  background: var(--admin-surface-soft, #1f2937);
+  border-color: var(--admin-info-light, #60a5fa);
+}
+
+.formSectionTitle {
+  margin: 0 0 var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 700;
+  color: var(--admin-text-secondary, #374151);
+}
+
+.formSectionHint {
+  margin: 0 0 var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  line-height: 1.35;
+  color: var(--admin-text-muted);
+}
+
+.sectionFieldsRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-md);
+  align-items: flex-end;
+}
+
+/* Строка с полями разной высоты, выровненными по верху (метки на одном уровне). */
+.sectionFieldsRowTop {
+  align-items: flex-start;
+}
+
+.sectionField {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.sectionField > label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--admin-text-secondary);
+}
+
+.sectionFieldDate {
+  flex: 0 0 9.5rem;
+  width: 9.5rem;
+}
+
+.sectionFieldTime {
+  flex: 0 0 7.25rem;
+  width: 7.25rem;
+}
+
+.sectionFieldMid {
+  flex: 0 1 14rem;
+  width: 14rem;
+  max-width: 100%;
+}
+
+.sectionFieldGrow {
+  flex: 1 1 12rem;
+  min-width: 10rem;
+}
+
+.sectionStack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm);
+}
+
+/* Панель кнопок формы, прижатая к низу скролла модалки — не прячется при прокрутке.
+   Компенсирует padding оболочки формы (formShell — 4px) отрицательными отступами. */
+.stickyFormActions {
+  position: sticky;
+  bottom: 0;
+  z-index: 5;
+  margin-right: calc(-1 * var(--admin-space-xs, 4px));
+  margin-bottom: calc(-1 * var(--admin-space-xs, 4px));
+  margin-left: calc(-1 * var(--admin-space-xs, 4px));
+  box-shadow: 0 -8px 14px rgb(37 99 235 / 0.1);
+}

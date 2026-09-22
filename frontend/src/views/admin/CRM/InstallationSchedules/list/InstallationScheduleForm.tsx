@@ -1,13 +1,15 @@
 'use client';
 
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useMemo, useRef } from 'react';
 
-import {
-  type ContractDocumentPackage,
-  getContractDocumentPackages,
-} from '@/shared/api/admin-contract-document-packages';
+import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import { type InstallerMaster } from '@/shared/api/admin-crm';
-import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '@/views/admin/ContractDocuments/packages/config';
+import { PackageOrderSearch } from '@/views/admin/CRM/shared/PackageOrderSearch';
+import {
+  packageAssignedInstallerIds,
+  packageFormFields,
+  packageSearchLabel,
+} from '@/views/admin/CRM/shared/PackageOrderSearch';
 
 import styles from '../shared/InstallationSchedules.module.css';
 import {
@@ -23,190 +25,49 @@ type Props = {
   error: string | null;
 };
 
-function asRecord(value: unknown): Record<string, unknown> | null {
-  return value && typeof value === 'object' && !Array.isArray(value)
-    ? (value as Record<string, unknown>)
-    : null;
-}
-
-function trimStr(value: unknown): string {
-  return typeof value === 'string' && value.trim() ? value.trim() : '';
-}
-
-function formStrFromPackage(pkg: ContractDocumentPackage, key: string): string {
-  const formData = asRecord(pkg.formData) || {};
-  return trimStr(formData[key]);
-}
-
-/** Nested WINDOWS/DOORS/… formData: contract.*, customer.*, object.* (+ flat legacy keys). */
-function packageFormFields(pkg: ContractDocumentPackage) {
-  const formData = asRecord(pkg.formData) || {};
-  const contract = asRecord(formData.contract) || {};
-  const customer = asRecord(formData.customer) || {};
-  const object = asRecord(formData.object) || {};
-
-  const contractNumber =
-    trimStr(contract.number) ||
-    formStrFromPackage(pkg, 'contractNumber') ||
-    formStrFromPackage(pkg, 'dogovorNumber');
-
-  const customerName =
-    trimStr(customer.fullName) ||
-    trimStr(customer.organizationName) ||
-    trimStr(customer.representativeFullNameNominative) ||
-    formStrFromPackage(pkg, 'customerName') ||
-    formStrFromPackage(pkg, 'clientFullName') ||
-    formStrFromPackage(pkg, 'fio');
-
-  const customerEmail = trimStr(customer.email) || formStrFromPackage(pkg, 'customerEmail');
-
-  const phoneCandidates: string[] = [];
-  const pushPhone = (value: unknown) => {
-    const phone = trimStr(value);
-    if (phone && !phoneCandidates.includes(phone)) phoneCandidates.push(phone);
-  };
-  pushPhone(customer.phone);
-  if (Array.isArray(customer.phones)) {
-    for (const phone of customer.phones) pushPhone(phone);
-  }
-  pushPhone(formData.customerPhone);
-  pushPhone(formData.clientPhone);
-  pushPhone(formData.phone);
-
-  const objectAddress =
-    trimStr(pkg.documentObject?.address) ||
-    trimStr(object.objectAddress) ||
-    trimStr(object.address) ||
-    formStrFromPackage(pkg, 'objectAddress');
-
-  const customerAddress =
-    trimStr(customer.address) ||
-    formStrFromPackage(pkg, 'customerAddress') ||
-    formStrFromPackage(pkg, 'address');
-
-  return {
-    contractNumber,
-    customerName,
-    customerEmail,
-    customerPhones: phoneCandidates,
-    objectAddress,
-    customerAddress,
-    displayAddress: objectAddress || customerAddress,
-  };
-}
-
-function packageAssignedInstallerIds(pkg: ContractDocumentPackage): string[] {
-  const raw = asRecord(pkg.formData) || {};
-  const list = raw.selectedRepairInstallerIds;
-  if (!Array.isArray(list)) return [];
-  return list.map((id) => (typeof id === 'string' ? id.trim() : '')).filter(Boolean);
-}
-
-function packageResultTitle(pkg: ContractDocumentPackage): string {
-  const fields = packageFormFields(pkg);
-  return (
-    fields.customerName ||
-    (fields.contractNumber ? `Договор №${fields.contractNumber}` : '') ||
-    trimStr(pkg.title) ||
-    'Заказ'
-  );
-}
-
-function packageResultMeta(pkg: ContractDocumentPackage): string {
-  const fields = packageFormFields(pkg);
-  const kindLabel = CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS[pkg.kind] ?? pkg.kind;
-  return [
-    fields.customerPhones[0] || null,
-    fields.customerEmail || null,
-    kindLabel,
-    fields.contractNumber ? `№${fields.contractNumber}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
-}
-
-function packageResultAddress(pkg: ContractDocumentPackage): string {
-  return packageFormFields(pkg).displayAddress;
-}
-
-function packageSearchLabel(pkg: ContractDocumentPackage): string {
-  const fields = packageFormFields(pkg);
-  return (
-    [fields.customerName, fields.contractNumber ? `№${fields.contractNumber}` : null]
-      .filter(Boolean)
-      .join(' · ') || packageResultTitle(pkg)
-  );
-}
-
 export function InstallationScheduleForm({ values, onChange, installers, error }: Props) {
-  const listboxId = useId();
-  const [hits, setHits] = useState<ContractDocumentPackage[]>([]);
-  const [searching, setSearching] = useState(false);
-  const [searchError, setSearchError] = useState<string | null>(null);
-  const [debouncedSearch, setDebouncedSearch] = useState('');
-  /** Поиск только после действий пользователя — не при открытии «Изменить» с уже заполненным текстом. */
-  const [searchInteractive, setSearchInteractive] = useState(false);
+  /** Значения полей до автозаполнения заказом — «Снять выбор» возвращает их. */
+  const packagePrevFieldsRef = useRef<{
+    direction: InstallationScheduleFormValues['direction'];
+    installerIds: string[];
+    contractNumber: string;
+    customerName: string;
+    customerAddress: string;
+    customerPhones: string[];
+  } | null>(null);
+
   const filteredInstallers = useMemo(
     () => installers.filter((installer) => installer.directions?.includes(values.direction)),
     [installers, values.direction]
   );
 
-  useEffect(() => {
-    if (values.packageId) {
-      setDebouncedSearch('');
-      setSearchInteractive(false);
-      return;
-    }
-    if (!searchInteractive) {
-      setDebouncedSearch('');
-      return;
-    }
-    const query = values.packageSearch.trim();
-    const timer = window.setTimeout(() => setDebouncedSearch(query), 380);
-    return () => window.clearTimeout(timer);
-  }, [values.packageId, values.packageSearch, searchInteractive]);
-
-  useEffect(() => {
-    if (values.packageId || debouncedSearch.length < 2) {
-      setHits([]);
-      setSearching(false);
-      setSearchError(null);
-      return;
-    }
-    let cancelled = false;
-    setSearching(true);
-    setSearchError(null);
-    void getContractDocumentPackages({ search: debouncedSearch, limit: 30 })
-      .then((rows) => {
-        if (!cancelled) setHits(rows);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setHits([]);
-          setSearchError('Не удалось выполнить поиск заказа');
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setSearching(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [debouncedSearch, values.packageId]);
-
   const update = (patch: Partial<InstallationScheduleFormValues>) =>
     onChange({ ...values, ...patch });
 
   const clearPackage = () => {
-    setSearchInteractive(false);
+    const restore = packagePrevFieldsRef.current;
+    packagePrevFieldsRef.current = null;
     update({
       packageId: '',
       packageSearch: '',
       workOrderKey: '',
       workOrderLabel: '',
+      ...(restore
+        ? {
+            direction: restore.direction,
+            installerIds: restore.installerIds,
+            contractNumber: restore.contractNumber,
+            customerName: restore.customerName,
+            customerAddress: restore.customerAddress,
+            customerPhones: restore.customerPhones.length > 0 ? restore.customerPhones : [''],
+          }
+        : {
+            contractNumber: '',
+            customerName: '',
+            customerAddress: '',
+            customerPhones: [''],
+          }),
     });
-    setHits([]);
-    setSearchError(null);
   };
 
   const selectPackage = (pkg: ContractDocumentPackage) => {
@@ -230,7 +91,18 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
           ? values.installerIds
           : [];
 
-    setSearchInteractive(false);
+    // при первом выборе запоминаем, что было в полях до автозаполнения
+    if (!values.packageId) {
+      packagePrevFieldsRef.current = {
+        direction: values.direction,
+        installerIds: values.installerIds,
+        contractNumber: values.contractNumber,
+        customerName: values.customerName,
+        customerAddress: values.customerAddress,
+        customerPhones: values.customerPhones,
+      };
+    }
+
     update({
       packageId: pkg.id,
       packageSearch: packageSearchLabel(pkg),
@@ -247,8 +119,6 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
       workOrderKey: 'workOrder',
       workOrderLabel: 'Заказ-наряд',
     });
-    setHits([]);
-    setSearchError(null);
   };
 
   const toggleInstaller = (installerId: string) => {
@@ -258,100 +128,23 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
     update({ installerIds: selected, manualInstaller: false });
   };
 
-  const showOrderDropdown = searchInteractive && !values.packageId && debouncedSearch.length >= 2;
-
   return (
     <>
-      <article className={styles.orderSearchPanel}>
-        <div className={styles.orderSearchPanelHead}>
-          <div>
-            <h3 className={styles.orderSearchTitle}>Поиск заказа</h3>
-            <p className={styles.orderSearchHint}>
-              Найдите пакет по договору, заказчику или названию (от 2 символов)
-            </p>
-          </div>
-          {values.packageId ? (
-            <span className={styles.orderSearchLinkedBadge}>Заказ выбран</span>
-          ) : null}
-        </div>
-        <div className={styles.orderSearchWrap}>
-          <div className={styles.orderSearchRow}>
-            <input
-              id="is-package"
-              type="search"
-              className={styles.orderSearchInput}
-              value={values.packageSearch}
-              onChange={(e) => {
-                setSearchInteractive(true);
-                update({
-                  packageSearch: e.target.value,
-                  packageId: '',
-                  workOrderKey: '',
-                  workOrderLabel: '',
-                });
-              }}
-              placeholder="Поиск: договор, заказчик, название…"
-              autoComplete="off"
-              aria-label="Поиск заказа по договору, заказчику или названию (от 2 символов)"
-              aria-expanded={showOrderDropdown}
-              aria-controls={listboxId}
-            />
-            {values.packageId || values.packageSearch ? (
-              <button
-                type="button"
-                className={styles.orderSearchClearButton}
-                onClick={clearPackage}
-              >
-                Снять выбор
-              </button>
-            ) : null}
-          </div>
-          {showOrderDropdown ? (
-            <div className={styles.orderSearchDropdown} id={listboxId} role="presentation">
-              {searching ? <p className={styles.orderSearchMuted}>Поиск…</p> : null}
-              {!searching && searchError ? (
-                <p className={styles.orderSearchError}>{searchError}</p>
-              ) : null}
-              {!searching && !searchError && hits.length === 0 ? (
-                <p className={styles.orderSearchMuted}>Ничего не найдено</p>
-              ) : null}
-              {!searching && !searchError && hits.length > 0 ? (
-                <ul
-                  className={styles.orderSearchResults}
-                  role="listbox"
-                  aria-label="Результаты поиска заказа"
-                >
-                  {hits.map((pkg) => {
-                    const address = packageResultAddress(pkg);
-                    const meta = packageResultMeta(pkg);
-                    return (
-                      <li key={pkg.id} role="option" className={styles.orderSearchResultItem}>
-                        <button
-                          type="button"
-                          className={styles.orderSearchResultButton}
-                          onClick={() => selectPackage(pkg)}
-                        >
-                          <span className={styles.orderSearchResultName}>
-                            {packageResultTitle(pkg)}
-                          </span>
-                          {meta ? (
-                            <span className={styles.orderSearchResultMeta}>{meta}</span>
-                          ) : null}
-                          {address ? (
-                            <span className={styles.orderSearchResultAddress}>
-                              Объект: {address}
-                            </span>
-                          ) : null}
-                        </button>
-                      </li>
-                    );
-                  })}
-                </ul>
-              ) : null}
-            </div>
-          ) : null}
-        </div>
-      </article>
+      <PackageOrderSearch
+        id="is-package"
+        searchValue={values.packageSearch}
+        selectedPackageId={values.packageId}
+        onSearchChange={(packageSearch) =>
+          update({
+            packageSearch,
+            packageId: '',
+            workOrderKey: '',
+            workOrderLabel: '',
+          })
+        }
+        onSelect={selectPackage}
+        onClear={clearPackage}
+      />
 
       <section className={styles.formSection}>
         <h3 className={styles.formSectionTitle}>Дата и время</h3>
@@ -383,12 +176,13 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
             />
           </div>
           <div className={`${styles.compactField} ${styles.compactFieldTime}`}>
-            <label htmlFor="is-from">Время с</label>
+            <label htmlFor="is-from">Время с *</label>
             <input
               id="is-from"
               type="time"
               value={values.timeFrom}
               onChange={(e) => update({ timeFrom: e.target.value })}
+              required
             />
           </div>
           <div className={`${styles.compactField} ${styles.compactFieldTime}`}>
@@ -529,32 +323,35 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
         <div className={styles.customerFields}>
           <div className={styles.customerTopRow}>
             <div className={styles.compactField}>
-              <label htmlFor="is-contract">Номер договора</label>
+              <label htmlFor="is-contract">Номер договора *</label>
               <input
                 id="is-contract"
                 value={values.contractNumber}
                 onChange={(e) => update({ contractNumber: e.target.value })}
+                required
               />
             </div>
             <div className={`${styles.compactField} ${styles.compactFieldGrow}`}>
-              <label htmlFor="is-customer">Заказчик</label>
+              <label htmlFor="is-customer">Заказчик *</label>
               <input
                 id="is-customer"
                 value={values.customerName}
                 onChange={(e) => update({ customerName: e.target.value })}
+                required
               />
             </div>
           </div>
           <div className={styles.compactField}>
-            <label htmlFor="is-address">Адрес</label>
+            <label htmlFor="is-address">Адрес *</label>
             <input
               id="is-address"
               value={values.customerAddress}
               onChange={(e) => update({ customerAddress: e.target.value })}
+              required
             />
           </div>
           <div className={styles.compactField}>
-            <label>Телефоны</label>
+            <label>Телефоны *</label>
             <div className={styles.inlinePhoneRow}>
               {values.customerPhones.map((phone, index) => (
                 <div className={styles.inlinePhoneItem} key={index}>
@@ -566,6 +363,7 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
                       phones[index] = e.target.value;
                       update({ customerPhones: phones });
                     }}
+                    required={index === 0}
                   />
                   {values.customerPhones.length > 1 ? (
                     <button
@@ -701,12 +499,13 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
         <h3 className={styles.formSectionTitle}>Дополнительно</h3>
         <div className={styles.extraFields}>
           <div className={styles.compactField}>
-            <label htmlFor="is-order">Информация по заказу</label>
+            <label htmlFor="is-order">Информация по заказу *</label>
             <textarea
               id="is-order"
               rows={2}
               value={values.orderInfo}
               onChange={(e) => update({ orderInfo: e.target.value })}
+              required
             />
           </div>
           <div className={styles.compactField}>

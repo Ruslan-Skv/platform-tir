@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 
 import type { WaybillTask } from '@/shared/api/admin-waybills';
+import { BadgeTooltip } from '@/shared/ui/BadgeTooltip';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
@@ -12,12 +13,20 @@ import {
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import toolbarButtonStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarIconButton.module.css';
 import { DataTable } from '@/shared/ui/admin/DataTable';
+import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import sectionStyles from '@/views/admin/CRM/shared/crmFormSections.module.css';
+import modalShellStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../shared/Waybills.module.css';
+import {
+  computeWaybillFormFillPercent,
+  getWaybillFillBannerToneClass,
+  waybillFillPercentHint,
+} from '../shared/waybillFillPercent';
 import { WAYBILL_TRASH_RETENTION_NOTICE } from '../shared/waybillTrashRetention';
 import type { WaybillStatusFilter } from '../shared/waybills-page.types';
 import {
@@ -27,6 +36,7 @@ import {
   formatUserLabel,
   formatWaybillDateDisplay,
   isLateEdit,
+  isWaybillFormFilled,
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
 import { WaybillAttachmentsModal } from './WaybillAttachmentsModal';
@@ -85,8 +95,6 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     setFormValues,
     formError,
     submitting,
-    contractHits,
-    contractSearching,
     openCreateModal,
     openCreateModalForDate,
     openEditModal,
@@ -110,8 +118,8 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     rescheduleTimeTo,
     setRescheduleTimeTo,
     rescheduleError,
-    searchContracts,
-    applyContract,
+    applyPackage,
+    clearPackage,
     refresh,
     trashOpen,
     setTrashOpen,
@@ -125,6 +133,31 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
   const [editDateBlocked, setEditDateBlocked] = useState(false);
   const [weekPreviewRefreshToken, setWeekPreviewRefreshToken] = useState(0);
   const [attachmentsItem, setAttachmentsItem] = useState<WaybillTask | null>(null);
+
+  /** Обязательные поля задания заполнены — кнопка «Создать» активна. */
+  const formFilled = isWaybillFormFilled(formValues);
+
+  const fillPercent = useMemo(() => computeWaybillFormFillPercent(formValues), [formValues]);
+
+  const fillPercentTitleAside = (
+    <div className={panelStyles.fillBannerTooltipWrap}>
+      <BadgeTooltip content={waybillFillPercentHint()} side="left">
+        <div
+          className={`${panelStyles.fillBanner} ${getWaybillFillBannerToneClass(fillPercent)}`}
+          data-modal-footer-info
+          role="status"
+        >
+          <span data-modal-footer-info-icon aria-hidden="true" />
+          <span data-modal-footer-info-text>
+            <span className={panelStyles.fillBannerTextFull}>
+              Данные задания заполнены на {fillPercent}%.
+            </span>
+            <span className={panelStyles.fillBannerTextShort}>Заполнено на {fillPercent}%</span>
+          </span>
+        </div>
+      </BadgeTooltip>
+    </div>
+  );
 
   const statusCounts = {
     ALL: tasks.length,
@@ -460,10 +493,18 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         isOpen={createModalOpen}
         onClose={closeCreateModal}
         title="Новое задание"
+        titleAside={fillPercentTitleAside}
         size="lg"
+        className={panelStyles.modalPanel}
         showCloseButton
+        compactOnMobile
       >
-        <form data-modal-form data-modal-density="compact" onSubmit={handleCreate}>
+        <form
+          className={`${panelStyles.formShell} ${modalShellStyles.formBlueShell}`}
+          data-modal-form
+          data-modal-density="compact"
+          onSubmit={handleCreate}
+        >
           <p data-modal-form-hint className={styles.modalHintFlush}>
             Задание появится в путевом листе на выбранную дату и в «Моём маршруте» у назначенного
             водителя.
@@ -474,17 +515,15 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             formError={formError}
             users={users}
             drivers={drivers}
-            contractHits={contractHits}
-            contractSearching={contractSearching}
-            onSearchContracts={searchContracts}
-            onApplyContract={applyContract}
+            onApplyPackage={applyPackage}
+            onClearPackage={clearPackage}
             onDateBlockedChange={setCreateDateBlocked}
           />
           <ModalActions
             onCancel={closeCreateModal}
             submitting={submitting}
             submitLabel="Создать"
-            disabled={createDateBlocked}
+            disabled={createDateBlocked || !formFilled}
           />
         </form>
       </Modal>
@@ -493,10 +532,18 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         isOpen={Boolean(editItem)}
         onClose={closeEditModal}
         title="Изменить задание"
+        titleAside={fillPercentTitleAside}
         size="lg"
+        className={panelStyles.modalPanel}
         showCloseButton
+        compactOnMobile
       >
-        <form data-modal-form data-modal-density="compact" onSubmit={handleEdit}>
+        <form
+          className={`${panelStyles.formShell} ${modalShellStyles.formBlueShell}`}
+          data-modal-form
+          data-modal-density="compact"
+          onSubmit={handleEdit}
+        >
           <p data-modal-form-hint className={styles.modalHintFlush}>
             Изменения сразу отобразятся в путевом листе и у водителя.
           </p>
@@ -506,16 +553,14 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             formError={formError}
             users={users}
             drivers={drivers}
-            contractHits={contractHits}
-            contractSearching={contractSearching}
-            onSearchContracts={searchContracts}
-            onApplyContract={applyContract}
+            onApplyPackage={applyPackage}
+            onClearPackage={clearPackage}
             onDateBlockedChange={setEditDateBlocked}
           />
           <ModalActions
             onCancel={closeEditModal}
             submitting={submitting}
-            disabled={editDateBlocked}
+            disabled={editDateBlocked || !formFilled}
           />
         </form>
       </Modal>
@@ -718,7 +763,7 @@ function ModalActions({
   disabled?: boolean;
 }) {
   return (
-    <div data-modal-form-actions>
+    <div data-modal-form-actions className={sectionStyles.stickyFormActions}>
       <button type="button" data-modal-btn="secondary" onClick={onCancel} disabled={submitting}>
         Отмена
       </button>

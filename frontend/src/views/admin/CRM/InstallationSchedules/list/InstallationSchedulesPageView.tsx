@@ -13,6 +13,7 @@ import {
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
+import sectionStyles from '@/views/admin/CRM/shared/crmFormSections.module.css';
 import modalShellStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 import { useListModalPresence } from '@/views/admin/ContractDocuments/packages/pages/contracts/list/useListModalPresence';
 import { PackageWorkOrdersHubIcon } from '@/views/admin/ContractDocuments/packages/platform/hub/workOrders/PackageWorkOrdersHubIcon';
@@ -40,6 +41,7 @@ import {
   computeInstallationScheduleFormFillPercent,
   getInstallationScheduleFillBannerToneClass,
   installationScheduleFillPercentHint,
+  isInstallationScheduleFormFilled,
 } from '../shared/installationScheduleFillPercent';
 import { INSTALLATION_SCHEDULE_TRASH_RETENTION_NOTICE } from '../shared/installationScheduleTrashRetention';
 import { InstallationScheduleForm } from './InstallationScheduleForm';
@@ -132,6 +134,11 @@ export function InstallationSchedulesPageView({
     () => computeInstallationScheduleFormFillPercent(formValues),
     [formValues]
   );
+
+  /** Обязательные поля монтажа заполнены — кнопка активна (см. save в хуке страницы). */
+  const formFilled =
+    isInstallationScheduleFormFilled(formValues) &&
+    (!formValues.dateEnd || formValues.dateEnd >= formValues.date);
 
   const fillPercentHintText = installationScheduleFillPercentHint();
 
@@ -612,7 +619,12 @@ export function InstallationSchedulesPageView({
             installers={installers}
             error={formError}
           />
-          <ModalActions onCancel={closeForm} busy={submitting} label="Создать" />
+          <ModalActions
+            onCancel={closeForm}
+            busy={submitting}
+            label="Создать"
+            disabled={!formFilled}
+          />
         </form>
       </Modal>
 
@@ -645,7 +657,12 @@ export function InstallationSchedulesPageView({
             installers={installers}
             error={formError}
           />
-          <ModalActions onCancel={closeForm} busy={submitting} label="Сохранить" />
+          <ModalActions
+            onCancel={closeForm}
+            busy={submitting}
+            label="Сохранить"
+            disabled={!formFilled}
+          />
         </form>
       </Modal>
 
@@ -798,17 +815,19 @@ function ModalActions({
   onCancel,
   busy,
   label,
+  disabled = false,
 }: {
   onCancel: () => void;
   busy: boolean;
   label: string;
+  disabled?: boolean;
 }) {
   return (
-    <div data-modal-form-actions>
+    <div data-modal-form-actions className={sectionStyles.stickyFormActions}>
       <button type="button" data-modal-btn="secondary" onClick={onCancel}>
         Отмена
       </button>
-      <button type="submit" data-modal-btn="primary" disabled={busy}>
+      <button type="submit" data-modal-btn="primary" disabled={busy || disabled}>
         {busy ? 'Сохранение…' : label}
       </button>
     </div>

@@ -144,6 +144,7 @@ export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillF
     customerName: '',
     customerAddress: '',
     customerPhones: [''],
+    packageId: '',
     contractSearch: '',
     deliveryCost: '',
     deliveryPayer: '',
@@ -155,6 +156,24 @@ export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillF
     existingAttachments: [],
     removedAttachmentIds: [],
   };
+}
+
+/** Обязательные поля задания заполнены (кроме «Время с/по» и файлов — они необязательны). */
+export function isWaybillFormFilled(values: WaybillFormValues): boolean {
+  return Boolean(
+    values.date.trim() &&
+    values.taskText.trim() &&
+    values.driverUserId.trim() &&
+    values.direction.trim() &&
+    values.customerName.trim() &&
+    values.customerAddress.trim() &&
+    values.customerPhones.some((phone) => phone.trim()) &&
+    values.deliveryCost.trim() &&
+    values.deliveryPayer.trim() &&
+    values.moversCost.trim() &&
+    values.moversPayer.trim() &&
+    values.responsibleUserId.trim()
+  );
 }
 
 /** Разбирает legacy `customerInfoText` на ФИО / адрес / телефоны. */
