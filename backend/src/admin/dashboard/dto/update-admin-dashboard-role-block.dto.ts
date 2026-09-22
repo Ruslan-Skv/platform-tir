@@ -10,6 +10,11 @@ export class UpdateAdminDashboardRoleBlockDto {
   })
   role!: string;
 
+  @ApiPropertyOptional({ description: 'Доступен ли блок продаж за текущий месяц' })
+  @IsOptional()
+  @IsBoolean()
+  salesMonth?: boolean;
+
   @ApiPropertyOptional({ description: 'Доступен ли блок динамики обучения' })
   @IsOptional()
   @IsBoolean()

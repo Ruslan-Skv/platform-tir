@@ -33,6 +33,7 @@ export type AdminDashboardQuickLinkRecord = {
 };
 
 export type AdminDashboardSettingsRecord = {
+  salesMonthVisible: boolean;
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
@@ -45,6 +46,7 @@ export type AdminDashboardSettingsRecord = {
 
 /** Доступность блоков дашборда для роли: false — блок роли запрещён. */
 export type AdminDashboardRoleAllowed = {
+  salesMonth: boolean;
   trainingDynamics: boolean;
   catalogActivity: boolean;
   calendar: boolean;
@@ -63,6 +65,7 @@ export type AdminDashboardRoleQuickLinkRecord = {
 };
 
 export const DEFAULT_ADMIN_DASHBOARD_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
+  salesMonth: true,
   trainingDynamics: true,
   catalogActivity: true,
   calendar: true,
@@ -82,6 +85,7 @@ export class AdminDashboardSettingsService {
     const row = await this.prisma.adminDashboardRoleBlock.findUnique({ where: { role } });
     if (!row) return { ...DEFAULT_ADMIN_DASHBOARD_ROLE_ALLOWED };
     return {
+      salesMonth: row.salesMonthAllowed,
       trainingDynamics: row.trainingDynamicsAllowed,
       catalogActivity: row.catalogActivityAllowed,
       calendar: row.calendarAllowed,
@@ -97,6 +101,7 @@ export class AdminDashboardSettingsService {
     });
     return rows.map((row) => ({
       role: row.role,
+      salesMonth: row.salesMonthAllowed,
       trainingDynamics: row.trainingDynamicsAllowed,
       catalogActivity: row.catalogActivityAllowed,
       calendar: row.calendarAllowed,
@@ -111,6 +116,7 @@ export class AdminDashboardSettingsService {
     });
     const base = existing
       ? {
+          salesMonthAllowed: existing.salesMonthAllowed,
           trainingDynamicsAllowed: existing.trainingDynamicsAllowed,
           catalogActivityAllowed: existing.catalogActivityAllowed,
           calendarAllowed: existing.calendarAllowed,
@@ -121,6 +127,7 @@ export class AdminDashboardSettingsService {
     const row = await this.prisma.adminDashboardRoleBlock.upsert({
       where: { role: dto.role },
       update: {
+        ...(dto.salesMonth !== undefined && { salesMonthAllowed: dto.salesMonth }),
         ...(dto.trainingDynamics !== undefined && {
           trainingDynamicsAllowed: dto.trainingDynamics,
         }),
@@ -131,6 +138,7 @@ export class AdminDashboardSettingsService {
       },
       create: {
         role: dto.role,
+        salesMonthAllowed: dto.salesMonth ?? base.salesMonthAllowed,
         trainingDynamicsAllowed: dto.trainingDynamics ?? base.trainingDynamicsAllowed,
         catalogActivityAllowed: dto.catalogActivity ?? base.catalogActivityAllowed,
         calendarAllowed: dto.calendar ?? base.calendarAllowed,
@@ -140,6 +148,7 @@ export class AdminDashboardSettingsService {
     });
     return {
       role: row.role,
+      salesMonth: row.salesMonthAllowed,
       trainingDynamics: row.trainingDynamicsAllowed,
       catalogActivity: row.catalogActivityAllowed,
       calendar: row.calendarAllowed,
@@ -210,6 +219,7 @@ export class AdminDashboardSettingsService {
     if (!row) {
       return {
         // Видимость блоков определяется только доступом роли (настраивает супер-админ)
+        salesMonthVisible: allowed.salesMonth,
         catalogActivityVisible: allowed.catalogActivity,
         trainingDynamicsVisible: allowed.trainingDynamics,
         calendarVisible: allowed.calendar,
@@ -247,6 +257,7 @@ export class AdminDashboardSettingsService {
 
     return {
       // Видимость блоков определяется только доступом роли (настраивает супер-админ)
+      salesMonthVisible: allowed.salesMonth,
       catalogActivityVisible: allowed.catalogActivity,
       trainingDynamicsVisible: allowed.trainingDynamics,
       calendarVisible: allowed.calendar,

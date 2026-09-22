@@ -47,6 +47,7 @@ const MAX_QUICK_LINKS = 20;
 const SAVE_SUCCESS_VISIBLE_MS = 3000;
 
 const DEFAULT_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
+  salesMonth: true,
   trainingDynamics: true,
   catalogActivity: true,
   calendar: true,
@@ -55,6 +56,7 @@ const DEFAULT_ROLE_ALLOWED: AdminDashboardRoleAllowed = {
 };
 
 const ROLE_BLOCK_LABELS: Record<keyof AdminDashboardRoleAllowed, string> = {
+  salesMonth: 'Продажи за текущий месяц',
   trainingDynamics: 'Динамика обучения сотрудников',
   catalogActivity: 'Добавление товаров в каталог',
   calendar: 'Календарь',
@@ -63,6 +65,7 @@ const ROLE_BLOCK_LABELS: Record<keyof AdminDashboardRoleAllowed, string> = {
 };
 
 const ROLE_BLOCK_HINTS: Record<keyof AdminDashboardRoleAllowed, string> = {
+  salesMonth: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
   trainingDynamics: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
   catalogActivity: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
   calendar: 'Снимите галочку, чтобы скрыть блок для выбранной роли',
@@ -147,6 +150,8 @@ function validateQuickLinks(quickLinks: QuickLinkDraft[]): string | null {
 
 function sectionHint(sectionId: AdminDashboardSectionId): string {
   switch (sectionId) {
+    case 'salesMonth':
+      return 'Итоги продаж из журнала ДП за текущий календарный месяц';
     case 'trainingDynamics':
       return 'Общий график прогресса по «Территории знаний» (без стажёров)';
     case 'catalogActivity':

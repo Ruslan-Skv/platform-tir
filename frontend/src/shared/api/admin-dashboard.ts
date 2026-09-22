@@ -52,6 +52,7 @@ export interface AdminDashboardQuickLink {
 
 /** Доступность блоков дашборда для роли: false — блок роли запрещён супер-админом. */
 export interface AdminDashboardRoleAllowed {
+  salesMonth: boolean;
   trainingDynamics: boolean;
   catalogActivity: boolean;
   calendar: boolean;
@@ -71,6 +72,7 @@ export interface AdminDashboardRoleQuickLinkAccess {
 }
 
 export interface AdminDashboardSettings {
+  salesMonthVisible: boolean;
   catalogActivityVisible: boolean;
   trainingDynamicsVisible: boolean;
   calendarVisible: boolean;
@@ -94,6 +96,7 @@ export const DEFAULT_ADMIN_DASHBOARD_QUICK_LINKS: Omit<
 
 export const DEFAULT_ADMIN_DASHBOARD_SETTINGS: AdminDashboardSettings = {
   // Видимость блоков определяется только доступом роли (задаёт супер-админ)
+  salesMonthVisible: true,
   catalogActivityVisible: true,
   trainingDynamicsVisible: true,
   calendarVisible: true,
@@ -143,6 +146,8 @@ function normalizeAdminDashboardSettings(
       : DEFAULT_ADMIN_DASHBOARD_SETTINGS.quickLinks;
 
   return {
+    salesMonthVisible:
+      data?.salesMonthVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.salesMonthVisible,
     catalogActivityVisible:
       data?.catalogActivityVisible ?? DEFAULT_ADMIN_DASHBOARD_SETTINGS.catalogActivityVisible,
     trainingDynamicsVisible:

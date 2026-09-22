@@ -269,7 +269,7 @@ export function Dashboard() {
   const [salesMonthLoading, setSalesMonthLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const showSalesWidget = hasAccess('admin.crm.dp');
+  const showSalesWidget = settings.salesMonthVisible && hasAccess('admin.crm.dp');
   const showCatalogWidget = settings.catalogActivityVisible;
   const showTrainingWidget = settings.trainingDynamicsVisible && !isTrainee;
   const showCalendarWidget = settings.calendarVisible && hasCalendarAccess;

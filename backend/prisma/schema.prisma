@@ -2629,6 +2629,7 @@ model AdminDashboardRoleQuickLink {
 model AdminDashboardRoleBlock {
   id                      String   @id @default(cuid())
   role                    String   @unique
+  salesMonthAllowed       Boolean  @default(true)
   trainingDynamicsAllowed Boolean  @default(true)
   catalogActivityAllowed  Boolean  @default(true)
   calendarAllowed         Boolean  @default(true)
