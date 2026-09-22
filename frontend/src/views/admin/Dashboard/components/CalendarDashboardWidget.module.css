@@ -209,11 +209,69 @@
   overflow: visible;
 }
 
-.padDay {
-  min-height: 5.5rem !important;
-  background: color-mix(in srgb, var(--admin-surface-muted) 55%, var(--admin-surface)) !important;
-  opacity: 0.45;
-  pointer-events: none;
+/* Счётчик «+N» сверх страховочного лимита чипов; при наведении — список скрытых. */
+.moreWrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex: 0 0 auto;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--admin-surface-muted);
+  color: var(--admin-text-muted);
+  font-size: 0.6rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.moreTooltip {
+  display: none;
+  position: absolute;
+  z-index: 40;
+  left: 0;
+  top: calc(100% + 4px);
+  box-sizing: border-box;
+  width: 15rem;
+  max-height: 14rem;
+  overflow-y: auto;
+  padding: 0.5rem 0.65rem;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md);
+  background: var(--admin-surface);
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.14);
+  color: var(--admin-text-primary);
+  text-align: left;
+  white-space: normal;
+}
+
+.moreWrap:hover .moreTooltip,
+.moreWrap:focus-within .moreTooltip {
+  display: block;
+}
+
+.moreRow {
+  display: flex;
+  align-items: baseline;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  line-height: 1.45;
+}
+
+.moreRow + .moreRow {
+  margin-top: 0.2rem;
+}
+
+.moreDot {
+  width: 0.45rem;
+  height: 0.45rem;
+  flex-shrink: 0;
+  transform: translateY(-1px);
+  border-radius: 2px;
+}
+
+.moreRowLabel {
+  min-width: 0;
+  word-break: break-word;
 }
 
 .mobileEventMark {
@@ -270,8 +328,7 @@
     height: 0.45rem;
   }
 
-  .fortnightDay,
-  .padDay {
+  .fortnightDay {
     min-height: 3.75rem !important;
   }
 
@@ -338,8 +395,7 @@
     margin-bottom: var(--admin-space-sm);
   }
 
-  .fortnightDay,
-  .padDay {
+  .fortnightDay {
     min-height: 3.25rem !important;
     padding: 0.2rem !important;
   }

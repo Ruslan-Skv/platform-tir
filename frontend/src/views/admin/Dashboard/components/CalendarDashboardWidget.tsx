@@ -16,9 +16,9 @@ import {
   ALL_CALENDAR_TYPES,
   CALENDAR_TYPE_LABELS,
   CALENDAR_TYPE_SHORT_LABELS,
-  buildFortnightCalendarCells,
-  dashboardFortnightRangeIso,
-  formatDashboardFortnightRangeRu,
+  buildDashboardCalendarCells,
+  dashboardCalendarRangeIso,
+  formatDashboardCalendarRangeRu,
   pillLabel,
   typeDotClass,
   typePillClass,
@@ -27,7 +27,8 @@ import {
 import styles from './CalendarDashboardWidget.module.css';
 
 const WEEKDAYS = ['пн', 'вт', 'ср', 'чт', 'пт', 'сб', 'вс'];
-const MAX_PILLS_DESKTOP = 3;
+/** Страховочный лимит компактных чипов в ячейке: свыше — «+N» со списком в тултипе. */
+const MAX_CHIPS_DESKTOP = 30;
 const MAX_PILLS_MOBILE = 2;
 
 function useCalendarDashboardData() {
@@ -37,7 +38,7 @@ function useCalendarDashboardData() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [enabledTypes, setEnabledTypes] = useState<CalendarEventType[]>([...ALL_CALENDAR_TYPES]);
 
-  const range = useMemo(() => dashboardFortnightRangeIso(anchorDate), [anchorDate]);
+  const range = useMemo(() => dashboardCalendarRangeIso(anchorDate), [anchorDate]);
 
   const reload = useCallback(async () => {
     setLoading(true);
@@ -99,7 +100,7 @@ function useCalendarDashboardData() {
 
 export function CalendarDashboardWidget() {
   const isNarrow = useAdminNarrowViewport();
-  const maxPills = isNarrow ? MAX_PILLS_MOBILE : MAX_PILLS_DESKTOP;
+  const maxVisible = isNarrow ? MAX_PILLS_MOBILE : MAX_CHIPS_DESKTOP;
 
   const {
     anchorDate,
@@ -112,8 +113,8 @@ export function CalendarDashboardWidget() {
     resetToToday,
   } = useCalendarDashboardData();
 
-  const cells = buildFortnightCalendarCells(anchorDate);
-  const rangeLabel = formatDashboardFortnightRangeRu(anchorDate);
+  const cells = buildDashboardCalendarCells(anchorDate);
+  const rangeLabel = formatDashboardCalendarRangeRu(anchorDate);
 
   return (
     <section className={styles.root}>
@@ -124,7 +125,7 @@ export function CalendarDashboardWidget() {
           </span>
           <div className={styles.headText}>
             <h2 className={styles.title}>Календарь</h2>
-            <p className={styles.subtitle}>Неделя назад и неделя вперёд от сегодня</p>
+            <p className={styles.subtitle}>Прошлая неделя, текущая и следующая</p>
           </div>
         </div>
         <Link href="/admin/calendar" className={styles.openLink}>
@@ -192,15 +193,10 @@ export function CalendarDashboardWidget() {
             </div>
           ))}
           {cells.map((cell) => {
-            if (cell.isPadding) {
-              return (
-                <div key={cell.isoDate} className={`${calendarStyles.day} ${styles.padDay}`} />
-              );
-            }
-
             const dayItems = eventsByDate.get(cell.isoDate) ?? [];
-            const visible = dayItems.slice(0, maxPills);
+            const visible = dayItems.slice(0, maxVisible);
             const rest = dayItems.length - visible.length;
+            const restItems = dayItems.slice(maxVisible);
 
             return (
               <div
@@ -217,7 +213,13 @@ export function CalendarDashboardWidget() {
                     </span>
                   ) : null}
                 </div>
-                <div className={`${calendarStyles.pills} ${styles.pills}`}>
+                <div
+                  className={
+                    isNarrow
+                      ? `${calendarStyles.pills} ${styles.pills}`
+                      : `${calendarStyles.pills} ${calendarStyles.pillsCompact} ${styles.pills}`
+                  }
+                >
                   {visible.map((event) =>
                     isNarrow ? (
                       <Link
@@ -231,15 +233,37 @@ export function CalendarDashboardWidget() {
                       <Link
                         key={event.id}
                         href={event.href}
-                        className={`${calendarStyles.pill} ${calendarStyles[typePillClass(event.type)]}`}
+                        className={`${calendarStyles.pill} ${calendarStyles.pillCompact} ${calendarStyles[typePillClass(event.type)]}${
+                          event.timeFrom ? '' : ` ${calendarStyles.pillDot}`
+                        }`}
+                        aria-label={pillLabel(event)}
                       >
-                        <span className={calendarStyles.pillText}>{pillLabel(event)}</span>
+                        {event.timeFrom ? (
+                          <span className={calendarStyles.pillText}>{event.timeFrom}</span>
+                        ) : null}
                         <CalendarEventTooltip ev={event} />
                       </Link>
                     )
                   )}
                   {rest > 0 ? (
-                    <div className={`${calendarStyles.more} ${styles.more}`}>+{rest}</div>
+                    isNarrow ? (
+                      <div className={`${calendarStyles.more} ${styles.more}`}>+{rest}</div>
+                    ) : (
+                      <div className={styles.moreWrap} aria-label={`Ещё событий: ${rest}`}>
+                        +{rest}
+                        <div className={styles.moreTooltip} role="tooltip">
+                          {restItems.map((ev) => (
+                            <div key={ev.id} className={styles.moreRow}>
+                              <span
+                                className={`${styles.moreDot} ${calendarStyles[typeDotClass(ev.type)]}`}
+                                aria-hidden
+                              />
+                              <span className={styles.moreRowLabel}>{pillLabel(ev)}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )
                   ) : null}
                 </div>
               </div>

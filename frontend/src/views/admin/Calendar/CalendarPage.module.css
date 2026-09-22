@@ -265,6 +265,34 @@
   color: #fff;
 }
 
+/* Компактный режим дней с большим числом событий: чипы укладываются в строки,
+   а не в столбец, и вмещают все события дня. */
+.pillsCompact {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 2px;
+  align-content: flex-start;
+}
+
+/* Чип-капсула со временем начала события; подробности — в тултипе по наведению. */
+.pillCompact {
+  width: auto;
+  flex: 0 0 auto;
+  padding: 1px 5px;
+  border-radius: 999px;
+  font-size: 0.5625rem;
+  line-height: 1.35;
+  font-weight: 600;
+}
+
+/* Чип-точка для событий без времени. */
+.pillDot {
+  width: 0.7rem;
+  height: 0.7rem;
+  padding: 0;
+  border-radius: 50%;
+}
+
 .pillInstallation {
   background: #2563eb;
   border-color: #1d4ed8;

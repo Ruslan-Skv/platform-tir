@@ -52,7 +52,6 @@ export type CalendarCell = {
   day: number;
   inMonth: boolean;
   isToday: boolean;
-  isPadding?: boolean;
 };
 
 export function todayIsoDate(): string {
@@ -92,46 +91,43 @@ function startOfLocalDay(d: Date): Date {
   return new Date(d.getFullYear(), d.getMonth(), d.getDate());
 }
 
-/** Окно «−7 / +7» дней от якорной даты (по умолчанию — сегодня). */
-export function dashboardFortnightRangeIso(anchor: Date = new Date()): {
+/** Начало недели (понедельник) для даты. */
+function startOfLocalWeek(d: Date): Date {
+  const day = startOfLocalDay(d);
+  const weekday = (day.getDay() + 6) % 7;
+  const monday = new Date(day);
+  monday.setDate(monday.getDate() - weekday);
+  return monday;
+}
+
+/**
+ * Окно дашборда: три полные недели (пн–вс) — прошлая, текущая и следующая,
+ * чтобы соседние недели не обрезались в зависимости от дня недели «сегодня».
+ */
+export function dashboardCalendarRangeIso(anchor: Date = new Date()): {
   from: string;
   to: string;
 } {
-  const base = startOfLocalDay(anchor);
-  const from = new Date(base);
+  const monday = startOfLocalWeek(anchor);
+  const from = new Date(monday);
   from.setDate(from.getDate() - 7);
-  const to = new Date(base);
-  to.setDate(to.getDate() + 7);
+  const to = new Date(monday);
+  to.setDate(to.getDate() + 13); // пн текущей + 6 (вс текущей) + 7 (вс следующей)
   return { from: dateToIsoDate(from), to: dateToIsoDate(to) };
 }
 
-export function formatDashboardFortnightRangeRu(anchor: Date = new Date()): string {
-  const { from, to } = dashboardFortnightRangeIso(anchor);
+export function formatDashboardCalendarRangeRu(anchor: Date = new Date()): string {
+  const { from, to } = dashboardCalendarRangeIso(anchor);
   return `${formatEventDateRu(from)} — ${formatEventDateRu(to)}`;
 }
 
-/** Сетка календаря на ~2 недели вокруг якорной даты (выравнивание по пн–вс). */
-export function buildFortnightCalendarCells(anchor: Date = new Date()): CalendarCell[] {
+/** Сетка дашборда на 3 полные недели пн–вс вокруг якорной (без паддингов). */
+export function buildDashboardCalendarCells(anchor: Date = new Date()): CalendarCell[] {
   const today = todayIsoDate();
-  const base = startOfLocalDay(anchor);
-  const start = new Date(base);
-  start.setDate(start.getDate() - 7);
-  const end = new Date(base);
-  end.setDate(end.getDate() + 7);
-  const startWeekday = (start.getDay() + 6) % 7;
+  const { from, to } = dashboardCalendarRangeIso(anchor);
   const cells: CalendarCell[] = [];
-
-  for (let i = 0; i < startWeekday; i++) {
-    cells.push({
-      isoDate: `pad-start-${i}`,
-      day: 0,
-      inMonth: false,
-      isToday: false,
-      isPadding: true,
-    });
-  }
-
-  const cur = new Date(start);
+  const cur = new Date(`${from}T12:00:00`);
+  const end = new Date(`${to}T12:00:00`);
   while (cur <= end) {
     const iso = dateToIsoDate(cur);
     cells.push({
@@ -142,17 +138,6 @@ export function buildFortnightCalendarCells(anchor: Date = new Date()): Calendar
     });
     cur.setDate(cur.getDate() + 1);
   }
-
-  while (cells.length % 7 !== 0) {
-    cells.push({
-      isoDate: `pad-end-${cells.length}`,
-      day: 0,
-      inMonth: false,
-      isToday: false,
-      isPadding: true,
-    });
-  }
-
   return cells;
 }
 
