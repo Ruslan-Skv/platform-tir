@@ -3,23 +3,30 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-export type EstimatePipelineTab = 'active' | 'prospect';
+export type EstimatePipelineTab = 'active' | 'prospect' | 'contract';
 
 export const ESTIMATE_PIPELINE_TAB_LABELS: Record<EstimatePipelineTab, string> = {
   active: 'В работе',
   prospect: 'В перспективе',
+  contract: 'В договорах',
 };
 
 export function parseEstimatePipelineTab(raw: string | null): EstimatePipelineTab {
-  return raw === 'prospect' ? 'prospect' : 'active';
+  if (raw === 'prospect') return 'prospect';
+  if (raw === 'contract') return 'contract';
+  return 'active';
 }
 
 export function getGroupPipelineTab(group: ContractEstimateGroup | undefined): EstimatePipelineTab {
-  return group?.pipelineStage === 'prospect' ? 'prospect' : 'active';
+  return group?.pipelineStage === 'prospect' || group?.pipelineStage === 'contract'
+    ? group.pipelineStage
+    : 'active';
 }
 
 export function getPresetPipelineTab(preset: ContractEstimatePreset): EstimatePipelineTab {
-  return preset.pipelineStage === 'prospect' ? 'prospect' : 'active';
+  return preset.pipelineStage === 'prospect' || preset.pipelineStage === 'contract'
+    ? preset.pipelineStage
+    : 'active';
 }
 
 /** Эффективная вкладка расчёта с учётом группы объекта. */
@@ -27,7 +34,8 @@ export function getEffectivePresetPipelineTab(
   preset: ContractEstimatePreset,
   groups: ContractEstimateGroup[]
 ): EstimatePipelineTab {
-  if (getPresetPipelineTab(preset) === 'prospect') return 'prospect';
+  const ownTab = getPresetPipelineTab(preset);
+  if (ownTab !== 'active') return ownTab;
   if (!preset.groupId) return 'active';
   const g = groups.find((x) => x.id === preset.groupId);
   return getGroupPipelineTab(g);
@@ -46,11 +54,11 @@ export function applyPresetPipelineTab(
   tab: EstimatePipelineTab,
   ts: string
 ): ContractEstimatePreset {
-  if (tab === 'prospect') {
-    return { ...preset, pipelineStage: 'prospect', updatedAt: ts };
+  if (tab === 'active') {
+    const { pipelineStage: _drop, ...rest } = preset;
+    return { ...rest, updatedAt: ts };
   }
-  const { pipelineStage: _drop, ...rest } = preset;
-  return { ...rest, updatedAt: ts };
+  return { ...preset, pipelineStage: tab, updatedAt: ts };
 }
 
 export function applyGroupPipelineTab(
@@ -58,11 +66,11 @@ export function applyGroupPipelineTab(
   tab: EstimatePipelineTab,
   ts: string
 ): ContractEstimateGroup {
-  if (tab === 'prospect') {
-    return { ...group, pipelineStage: 'prospect', updatedAt: ts };
+  if (tab === 'active') {
+    const { pipelineStage: _drop, ...rest } = group;
+    return { ...rest, updatedAt: ts };
   }
-  const { pipelineStage: _drop, ...rest } = group;
-  return { ...rest, updatedAt: ts };
+  return { ...group, pipelineStage: tab, updatedAt: ts };
 }
 
 /** Доступен для прикрепления к договору (только «В работе», не архив). */

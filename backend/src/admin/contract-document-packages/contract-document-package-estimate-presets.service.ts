@@ -41,6 +41,11 @@ export class ContractDocumentPackageEstimatePresetsService {
           'Нельзя прикрепить расчёт из вкладки «В перспективе». Перенесите его в «В работе».',
         );
       }
+      if (preset.pipelineStage === 'contract') {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт из вкладки «В договорах». Верните его во «В работе».',
+        );
+      }
       const group = preset.groupId ? groupsById.get(preset.groupId) : undefined;
       if (group?.archived) {
         throw new BadRequestException(
@@ -50,6 +55,11 @@ export class ContractDocumentPackageEstimatePresetsService {
       if (group?.pipelineStage === 'prospect') {
         throw new BadRequestException(
           'Нельзя прикрепить расчёт объекта из вкладки «В перспективе». Перенесите объект в «В работе».',
+        );
+      }
+      if (group?.pipelineStage === 'contract') {
+        throw new BadRequestException(
+          'Нельзя прикрепить расчёт объекта из вкладки «В договорах». Верните объект во «В работе».',
         );
       }
     }

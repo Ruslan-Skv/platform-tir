@@ -23,7 +23,7 @@ export type EstimatesListPageHeaderProps = {
   addressGroupCount: number;
   autosaveVisible: boolean;
   pipelineTab: EstimatePipelineTab;
-  pipelineTabCounts: { active: number; prospect: number };
+  pipelineTabCounts: { active: number; prospect: number; contract: number };
   onPipelineTabChange: (tab: EstimatePipelineTab) => void;
   saving: boolean;
   refreshing: boolean;
@@ -226,9 +226,13 @@ export function EstimatesListPageHeader({
               role="tablist"
               aria-label="Вкладки списка расчётов"
             >
-              {(['active', 'prospect'] as const).map((tab) => {
-                const count =
-                  tab === 'active' ? pipelineTabCounts.active : pipelineTabCounts.prospect;
+              {(['active', 'prospect', 'contract'] as const).map((tab) => {
+                const activeTabClass =
+                  tab === 'prospect'
+                    ? cdEstimatesList.estimatesPipelineTabActiveProspect
+                    : tab === 'contract'
+                      ? cdEstimatesList.estimatesPipelineTabActiveContract
+                      : cdEstimatesList.estimatesPipelineTabActiveWork;
                 return (
                   <button
                     key={tab}
@@ -236,16 +240,14 @@ export function EstimatesListPageHeader({
                     role="tab"
                     aria-selected={pipelineTab === tab}
                     className={`${cdEstimatesList.tab} ${
-                      pipelineTab === tab
-                        ? tab === 'prospect'
-                          ? cdEstimatesList.estimatesPipelineTabActiveProspect
-                          : cdEstimatesList.estimatesPipelineTabActiveWork
-                        : ''
+                      pipelineTab === tab ? activeTabClass : ''
                     }`}
                     onClick={() => onPipelineTabChange(tab)}
                   >
                     {ESTIMATE_PIPELINE_TAB_LABELS[tab]}
-                    <span className={cdEstimatesList.estimatesPipelineTabCount}>{count}</span>
+                    <span className={cdEstimatesList.estimatesPipelineTabCount}>
+                      {pipelineTabCounts[tab]}
+                    </span>
                   </button>
                 );
               })}

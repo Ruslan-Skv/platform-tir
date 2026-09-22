@@ -16,6 +16,7 @@ import {
   EstimatesPreviewIcon,
   EstimatesRestoreFromArchiveIcon,
   EstimatesToActiveIcon,
+  EstimatesToContractsIcon,
   EstimatesToProspectIcon,
 } from './estimatesListTableUi';
 import { isUsageLocked } from './estimatesListUtils';
@@ -90,7 +91,7 @@ export function EstimatePresetRowActions({
             <EstimatesToProspectIcon />
           </button>
         ) : null}
-        {!archiveView && pipelineTab === 'prospect' ? (
+        {!archiveView && (pipelineTab === 'prospect' || pipelineTab === 'contract') ? (
           <button
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
@@ -238,6 +239,25 @@ export function EstimatePresetRowActions({
         >
           <EstimatesPreviewIcon />
         </button>
+      </div>
+      <div className={cdEstimatesList.contractsListActionsSlot}>
+        {!archiveView && pipelineTab === 'active' ? (
+          <button
+            data-admin-mutation
+            type="button"
+            className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
+            disabled={saving || !hasLockedUsage}
+            aria-label="В договорах"
+            title={
+              hasLockedUsage
+                ? 'Перенести расчёт на вкладку «В договорах» (договор подписан)'
+                : 'Доступно после подписания договора или Д/с, к которым прикреплён расчёт'
+            }
+            onClick={() => onPresetPipelineStage(it.id, 'contract')}
+          >
+            <EstimatesToContractsIcon />
+          </button>
+        ) : null}
       </div>
     </div>
   );

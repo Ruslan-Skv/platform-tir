@@ -111,9 +111,10 @@ export class ContractEstimatePresetDto {
   @Type(() => Boolean)
   archived?: boolean;
 
+  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
   @IsOptional()
-  @IsIn(['active', 'prospect'])
-  pipelineStage?: 'active' | 'prospect';
+  @IsIn(['active', 'prospect', 'contract'])
+  pipelineStage?: 'active' | 'prospect' | 'contract';
 
   /** Порядок в ленте для расчёта вне объекта. */
   @IsOptional()
@@ -184,9 +185,10 @@ export class ContractEstimateGroupDto {
   @Type(() => Boolean)
   archived?: boolean;
 
+  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
   @IsOptional()
-  @IsIn(['active', 'prospect'])
-  pipelineStage?: 'active' | 'prospect';
+  @IsIn(['active', 'prospect', 'contract'])
+  pipelineStage?: 'active' | 'prospect' | 'contract';
 
   /** Порядок блока объекта в общей ленте. */
   @IsOptional()

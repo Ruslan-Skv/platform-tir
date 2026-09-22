@@ -359,6 +359,14 @@
   font-weight: 600;
 }
 
+.estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveContract {
+  background: var(--admin-warning-bg-soft);
+  border-color: var(--admin-warning-border-soft);
+  border-bottom: none;
+  color: var(--admin-warning-strong);
+  font-weight: 600;
+}
+
 .estimatesPipelineTabCount {
   margin-left: var(--admin-space-xs);
   padding: 0 var(--admin-space-sm);
@@ -381,6 +389,14 @@
   .estimatesPipelineTabCount {
   background: var(--admin-info-border-soft);
   color: var(--admin-info-strong);
+}
+
+.estimatesPage
+  .estimatesPipelineTabBar
+  .estimatesPipelineTabActiveContract
+  .estimatesPipelineTabCount {
+  background: var(--admin-warning-border-soft);
+  color: var(--admin-warning-strong);
 }
 
 .estimatesListSectionArchive {
@@ -895,7 +911,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* Фиксированные слоты: одинаковые действия в разных строках друг под другом */
 .estimatesDirectoryTable .estimatesListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(7, 24px);
+  grid-template-columns: repeat(8, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: start;

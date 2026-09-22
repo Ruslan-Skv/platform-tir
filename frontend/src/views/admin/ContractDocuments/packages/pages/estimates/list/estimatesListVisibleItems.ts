@@ -4,7 +4,10 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 
 import type { EstimatePipelineTab } from '../../../platform/estimates/estimatePipelineStage';
-import { presetMatchesPipelineTab } from '../../../platform/estimates/estimatePipelineStage';
+import {
+  getEffectivePresetPipelineTab,
+  presetMatchesPipelineTab,
+} from '../../../platform/estimates/estimatePipelineStage';
 import type { EstimatesListScope } from './estimatesListFilters';
 import {
   estimateBelongsToUser,
@@ -98,9 +101,10 @@ export function countEstimatesPipelineTabs(
   listScope: EstimatesListScope,
   currentUserId: string | null,
   managerIdsByPresetId: Map<string, Set<string>>
-): { active: number; prospect: number } {
+): { active: number; prospect: number; contract: number } {
   let active = 0;
   let prospect = 0;
+  let contract = 0;
   for (const it of items) {
     const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
     if (Boolean(it.archived) || Boolean(g?.archived)) continue;
@@ -109,10 +113,12 @@ export function countEstimatesPipelineTabs(
         continue;
       }
     }
-    if (presetMatchesPipelineTab(it, groups, 'prospect')) prospect += 1;
+    const tab = getEffectivePresetPipelineTab(it, groups);
+    if (tab === 'prospect') prospect += 1;
+    else if (tab === 'contract') contract += 1;
     else active += 1;
   }
-  return { active, prospect };
+  return { active, prospect, contract };
 }
 
 export function countArchivedEstimates(

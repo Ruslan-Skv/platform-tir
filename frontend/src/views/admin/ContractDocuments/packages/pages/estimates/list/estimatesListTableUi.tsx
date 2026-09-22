@@ -136,6 +136,28 @@ export function EstimatesToActiveIcon() {
   );
 }
 
+export function EstimatesToContractsIcon() {
+  return (
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      width={14}
+      height={14}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="var(--admin-warning-strong)"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+    >
+      <path d="M13 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8l6 6v4" />
+      <path d="M14 3v6h6" />
+      <path d="M14 17h7" />
+      <path d="m18 14 3 3-3 3" />
+    </svg>
+  );
+}
+
 export function EstimatesPreviewIcon() {
   return (
     <svg
