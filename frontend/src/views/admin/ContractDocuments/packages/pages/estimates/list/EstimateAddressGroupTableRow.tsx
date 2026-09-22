@@ -109,6 +109,7 @@ export function EstimateAddressGroupTableRow({
       >
         {formatEstimateGroupUpdatedLabel(section.items)}
       </td>
+      <td className={cdEstimatesList.estimatesListAuthorCell}>—</td>
       <td className={cdEstimatesList.estimatesListCostCell}>—</td>
       <td className={cdEstimatesList.estimatesListBindingCell}>
         {hasBound ? (

@@ -33,7 +33,7 @@ export type EstimatePackageUsage =
       contractDate: string;
     };
 
-export const ESTIMATES_LIST_TABLE_COL_SPAN = 7;
+export const ESTIMATES_LIST_TABLE_COL_SPAN = 8;
 export const ESTIMATES_NO_ADDRESS_KEY = '__no_object_address__';
 
 export function isUsageLocked(u: EstimatePackageUsage): boolean {

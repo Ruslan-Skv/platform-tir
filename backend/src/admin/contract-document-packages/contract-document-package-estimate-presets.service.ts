@@ -162,11 +162,48 @@ export class ContractDocumentPackageEstimatePresetsService {
   async getGlobalEstimatePresets(kind: ContractDocumentPackageKind) {
     await this.purgeExpiredTrashedEstimatePresets(kind);
     const raw = await this.loadGlobalEstimatePresetsBlobInternal(kind);
+    const items = raw.items.filter((item) => !this.isEstimatePresetTrashed(item));
+    const authorNamesById = await this.resolveUserDisplayNames(
+      items.map((item) => item.createdById),
+    );
     return {
-      items: raw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
+      items: items.map((item) => {
+        const copy = { ...item };
+        const authorName = authorNamesById.get(copy.createdById?.trim() ?? '');
+        if (authorName) copy.createdByName = authorName;
+        else delete copy.createdByName;
+        return copy;
+      }),
       groups: raw.groups,
       updatedAt: raw.updatedAt,
     };
+  }
+
+  /** Отображаемое имя пользователя: «Имя Фамилия», иначе email. */
+  private formatUserDisplayName(user: {
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  }): string {
+    return (
+      [user.firstName?.trim(), user.lastName?.trim()].filter(Boolean).join(' ').trim() ||
+      user.email?.trim() ||
+      ''
+    );
+  }
+
+  private async resolveUserDisplayNames(
+    userIds: Array<string | undefined>,
+  ): Promise<Map<string, string>> {
+    const ids = [
+      ...new Set(userIds.map((id) => id?.trim()).filter((id): id is string => Boolean(id))),
+    ];
+    if (ids.length === 0) return new Map();
+    const users = await this.prisma.user.findMany({
+      where: { id: { in: ids } },
+      select: { id: true, email: true, firstName: true, lastName: true },
+    });
+    return new Map(users.map((u) => [u.id, this.formatUserDisplayName(u)]));
   }
 
   async findEstimatePresetsTrash(
@@ -378,7 +415,12 @@ export class ContractDocumentPackageEstimatePresetsService {
     const previousTrashedItems = previousRaw.items.filter((item) =>
       this.isEstimatePresetTrashed(item),
     );
-    const dtoItems = dto.items ?? [];
+    const dtoItems = (dto.items ?? []).map((item) => {
+      // createdByName вычисляется при чтении — в хранилище не сохраняем.
+      const copy = { ...item };
+      delete copy.createdByName;
+      return copy;
+    });
     const activeFromDto = dtoItems
       .filter((item) => !this.isEstimatePresetTrashed(item))
       .map((item) => {

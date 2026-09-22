@@ -164,6 +164,12 @@ export function EstimatePresetTableRow({
         </div>
       </td>
       <td className={cdEstimatesList.estimatesListDateCell}>{updatedLabel}</td>
+      <td
+        className={cdEstimatesList.estimatesListAuthorCell}
+        title={it.createdByName?.trim() || undefined}
+      >
+        {it.createdByName?.trim() || '—'}
+      </td>
       <td className={cdEstimatesList.estimatesListCostCell}>
         {hasSnapshotTotal ? (
           <>

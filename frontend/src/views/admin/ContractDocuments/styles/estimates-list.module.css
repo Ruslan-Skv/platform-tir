@@ -813,6 +813,15 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-secondary);
 }
 
+/* Автор расчёта — как дата: вторичный текст, без переносов */
+.estimatesListAuthorCell {
+  max-width: 11rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--admin-text-secondary);
+}
+
 .estimatesListCostCell {
   white-space: nowrap;
 }

@@ -306,6 +306,8 @@ export interface ContractEstimatePreset {
   sourceMeasurementId?: string;
   /** Кто создал расчёт (User.id) — для области «Мои» в списке. */
   createdById?: string;
+  /** Имя автора расчёта для колонки «Автор» (вычисляется на бэке при чтении). */
+  createdByName?: string;
   /** Карточка заказчика в CRM (`Customer.id`). */
   crmCustomerId?: string;
   /** Имя заказчика для списков и подписей (из карточки CRM). */

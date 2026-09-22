@@ -80,6 +80,12 @@ export class ContractEstimatePresetDto {
   @MaxLength(80)
   createdById?: string;
 
+  /** Имя автора для отображения (вычисляется на бэке при чтении; при сохранении отбрасывается). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  createdByName?: string;
+
   /** Карточка заказчика в CRM (`Customer.id`). */
   @IsOptional()
   @IsString()
