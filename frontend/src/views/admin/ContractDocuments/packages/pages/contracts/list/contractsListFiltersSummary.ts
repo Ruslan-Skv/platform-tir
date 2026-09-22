@@ -30,7 +30,6 @@ export type BuildContractsListFiltersSummaryParams = {
   dateFrom: string;
   dateTo: string;
   limit: ContractsPageLimit;
-  activeSavedViewTitle: string | null;
 };
 
 const SCOPE_LABELS: Record<ContractsListScope, string> = {
@@ -106,10 +105,6 @@ export function buildContractsListFiltersSummary(
   }
 
   items.push({ key: 'limit', label: `${params.limit} на странице` });
-
-  if (params.activeSavedViewTitle) {
-    items.push({ key: 'view-saved', label: `Вид: ${params.activeSavedViewTitle}` });
-  }
 
   return items;
 }

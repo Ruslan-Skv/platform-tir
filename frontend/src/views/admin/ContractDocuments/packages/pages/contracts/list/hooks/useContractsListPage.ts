@@ -14,7 +14,6 @@ import { useContractsListFiltersState } from './useContractsListFiltersState';
 import { useContractsListLoad } from './useContractsListLoad';
 import { useContractsListModalsState } from './useContractsListModalsState';
 import { useContractsListMutations } from './useContractsListMutations';
-import { useContractsListSavedViews } from './useContractsListSavedViews';
 import { useContractsListSyncEffects } from './useContractsListSyncEffects';
 
 export function useContractsListPage() {
@@ -85,9 +84,7 @@ export function useContractsListPage() {
     listSortOrder: filters.listSortOrder,
     crmUsers: load.crmUsers,
     listViewMode: filters.listViewMode,
-    documentObjects: load.documentObjects,
-    objectsById,
-    expandedObjectId: filters.expandedObjectId,
+    expandedObjectIds: filters.expandedObjectIds,
     page: filters.page,
     limit: filters.limit,
     visibleColumns,
@@ -104,7 +101,7 @@ export function useContractsListPage() {
     listViewMode: filters.listViewMode,
     loading: load.loading,
     setPage: filters.setPage,
-    setExpandedObjectId: filters.setExpandedObjectId,
+    setExpandedObjectIds: filters.setExpandedObjectIds,
     totalVisible: derived.totalVisible,
     limit: filters.limit,
     page: filters.page,
@@ -121,11 +118,6 @@ export function useContractsListPage() {
     modals,
   });
 
-  const savedViews = useContractsListSavedViews({
-    currentFilters: filters.currentFiltersSnapshot,
-    onApplyFilters: filters.applyFiltersSnapshot,
-  });
-
   return {
     router,
     error,
@@ -134,7 +126,6 @@ export function useContractsListPage() {
     modals,
     derived,
     mutations,
-    savedViews,
     objectsById,
     presetById,
     visibleColumns,

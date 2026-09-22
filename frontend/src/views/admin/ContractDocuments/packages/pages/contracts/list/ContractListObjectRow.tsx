@@ -22,7 +22,7 @@ export type ContractListObjectRowProps = {
   objectsById: Map<string, ContractDocumentObject>;
   addendumColumnCount: number;
   colSpan: number;
-  expandedObjectId: string | null;
+  expandedObjectIds: string[];
   onToggleExpand: (objectId: string) => void;
 };
 
@@ -32,7 +32,7 @@ export function ContractListObjectRow({
   objectsById,
   addendumColumnCount,
   colSpan,
-  expandedObjectId,
+  expandedObjectIds,
   onToggleExpand,
 }: ContractListObjectRowProps) {
   const obj = objectsById.get(objectId) ?? packages[0]?.documentObject;
@@ -48,7 +48,7 @@ export function ContractListObjectRow({
     contractsListCustomerName((packages[0]?.formData ?? {}) as Record<string, unknown>);
   const agg = aggregateContractsListPackagesMoney(packages, addendumColumnCount);
   const paymentBase = addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
-  const expanded = expandedObjectId === objectId;
+  const expanded = expandedObjectIds.includes(objectId);
   const totalLabel =
     addendumColumnCount > 0
       ? formatContractsListMoney(agg.totalWithAddendaRub)

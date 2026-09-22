@@ -81,6 +81,26 @@ export function EstimatesListFiltersBar({
         </button>
       </div>
 
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Режим списка">
+        <span className={cdHub.contractsListChipRowLabel}>Отображение</span>
+        <button
+          type="button"
+          disabled={disabled}
+          className={chipClass(listViewMode === 'by_object')}
+          onClick={() => onListViewModeChange('by_object')}
+        >
+          По объектам
+        </button>
+        <button
+          type="button"
+          disabled={disabled}
+          className={chipClass(listViewMode === 'flat')}
+          onClick={() => onListViewModeChange('flat')}
+        >
+          Плоский список
+        </button>
+      </div>
+
       <div className={cdHub.contractsListFilters}>
         <input
           type="search"
@@ -95,16 +115,6 @@ export function EstimatesListFiltersBar({
           )}
           aria-label="Поиск по названию расчёта, заказчику, адресу"
         />
-        <select
-          value={listViewMode}
-          onChange={(e) => onListViewModeChange(e.target.value as EstimatesListViewMode)}
-          disabled={disabled}
-          className={cdHub.contractsListSelect}
-          aria-label="Режим списка"
-        >
-          <option value="by_object">По объектам</option>
-          <option value="flat">Плоский список</option>
-        </select>
         {showManagerFilter ? (
           <select
             id="estimates_list_manager_filter"

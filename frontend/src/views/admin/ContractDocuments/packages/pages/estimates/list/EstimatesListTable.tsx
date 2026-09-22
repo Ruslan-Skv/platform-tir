@@ -100,6 +100,7 @@ export function EstimatesListTable({
   return (
     <div
       className={`${dataTableStyles.tableContainer} ${cdEstimatesList.contractsDirectoryTable} ${cdEstimatesList.estimatesDirectoryTable}${archiveView ? ` ${cdEstimatesList.estimatesDirectoryTableArchive}` : ''}`}
+      data-estimates-tab={pipelineTab}
     >
       <div className={`${dataTableStyles.tableWrapper} ${cdEstimatesList.estimatesDesktopTable}`}>
         <div className={dataTableStyles.scrollContainer}>

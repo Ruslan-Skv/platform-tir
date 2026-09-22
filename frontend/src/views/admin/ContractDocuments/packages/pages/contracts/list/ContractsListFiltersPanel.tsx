@@ -27,7 +27,6 @@ type ContractsListFiltersPanelProps = {
   dateFrom: string;
   dateTo: string;
   limit: ContractsPageLimit;
-  activeSavedViewTitle: string | null;
   children: ReactNode;
 };
 
@@ -44,7 +43,6 @@ export function ContractsListFiltersPanel({
   dateFrom,
   dateTo,
   limit,
-  activeSavedViewTitle,
   children,
 }: ContractsListFiltersPanelProps) {
   const contentId = useId();
@@ -66,7 +64,6 @@ export function ContractsListFiltersPanel({
         dateFrom,
         dateTo,
         limit,
-        activeSavedViewTitle,
       }),
     [
       listScope,
@@ -81,7 +78,6 @@ export function ContractsListFiltersPanel({
       dateFrom,
       dateTo,
       limit,
-      activeSavedViewTitle,
     ]
   );
 

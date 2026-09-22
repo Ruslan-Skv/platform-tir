@@ -13,8 +13,6 @@ import {
 import { contractsListFilterFieldClass } from './contractsListFormatters';
 import {
   CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS,
-  CONTRACTS_LIST_QUEUE_PRESETS,
-  type ContractsListQueuePreset,
   toggleContractsListChipValue,
 } from './contractsListScope';
 
@@ -29,8 +27,6 @@ type ContractsListFiltersBarProps = {
   onSearchChange: (value: string) => void;
   listScope: ContractsListScope;
   onListScopeChange: (scope: ContractsListScope) => void;
-  queuePreset: ContractsListQueuePreset | null;
-  onQueuePresetChange: (preset: ContractsListQueuePreset) => void;
   statusFilters: string[];
   onStatusFiltersChange: (value: string[]) => void;
   listViewMode: ContractsListViewMode;
@@ -43,7 +39,7 @@ type ContractsListFiltersBarProps = {
   directions: CrmDirection[];
   myDirectionIds: string[];
   scopeCounts: Record<ContractsListScope, number>;
-  queuePresetCounts: Partial<Record<ContractsListQueuePreset, number>>;
+  statusCounts: Record<string, number>;
   directionCounts: Record<string, number>;
   dateFrom: string;
   onDateFromChange: (value: string) => void;
@@ -63,8 +59,6 @@ export function ContractsListFiltersBar({
   onSearchChange,
   listScope,
   onListScopeChange,
-  queuePreset,
-  onQueuePresetChange,
   statusFilters,
   onStatusFiltersChange,
   listViewMode,
@@ -77,7 +71,7 @@ export function ContractsListFiltersBar({
   directions,
   myDirectionIds,
   scopeCounts,
-  queuePresetCounts,
+  statusCounts,
   directionCounts,
   dateFrom,
   onDateFromChange,
@@ -123,22 +117,6 @@ export function ContractsListFiltersBar({
         </button>
       </div>
 
-      <div className={cdHub.contractsListChipRow} role="group" aria-label="Рабочий этап">
-        <span className={cdHub.contractsListChipRowLabel}>Этап</span>
-        {CONTRACTS_LIST_QUEUE_PRESETS.map((preset) => (
-          <button
-            key={preset.id}
-            type="button"
-            disabled={loading}
-            className={chipClass(queuePreset === preset.id)}
-            title={preset.hint}
-            onClick={() => onQueuePresetChange(preset.id)}
-          >
-            {preset.label} ({queuePresetCounts[preset.id] ?? 0})
-          </button>
-        ))}
-      </div>
-
       <div className={cdHub.contractsListChipRow} role="group" aria-label="Статусы">
         <span className={cdHub.contractsListChipRowLabel}>Статус</span>
         <button
@@ -147,7 +125,7 @@ export function ContractsListFiltersBar({
           className={chipClass(statusFilters.length === 0)}
           onClick={() => onStatusFiltersChange([])}
         >
-          Все
+          Все ({statusCounts.all ?? 0})
         </button>
         {CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS.map((opt) => (
           <button
@@ -159,7 +137,7 @@ export function ContractsListFiltersBar({
               onStatusFiltersChange(toggleContractsListChipValue(statusFilters, opt.value))
             }
           >
-            {opt.label}
+            {opt.label} ({statusCounts[opt.value] ?? 0})
           </button>
         ))}
       </div>
@@ -194,6 +172,26 @@ export function ContractsListFiltersBar({
         })}
       </div>
 
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Режим списка">
+        <span className={cdHub.contractsListChipRowLabel}>Отображение</span>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(listViewMode === 'by_object')}
+          onClick={() => onListViewModeChange('by_object')}
+        >
+          По объектам
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(listViewMode === 'flat')}
+          onClick={() => onListViewModeChange('flat')}
+        >
+          Плоский список
+        </button>
+      </div>
+
       <div className={cdHub.contractsListFilters}>
         <input
           type="search"
@@ -208,16 +206,6 @@ export function ContractsListFiltersBar({
           )}
           aria-label="Поиск по номеру договора, ФИО заказчика, адресу"
         />
-        <select
-          value={listViewMode}
-          onChange={(e) => onListViewModeChange(e.target.value as ContractsListViewMode)}
-          disabled={loading}
-          className={cdHub.contractsListSelect}
-          aria-label="Режим списка"
-        >
-          <option value="by_object">По объектам</option>
-          <option value="flat">Плоский список</option>
-        </select>
         {showManagerFilter ? (
           <select
             id="repair_list_manager_filter"

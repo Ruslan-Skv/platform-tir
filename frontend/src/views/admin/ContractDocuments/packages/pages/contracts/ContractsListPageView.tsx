@@ -8,7 +8,6 @@ import { ContractsListFiltersBar } from './list/ContractsListFiltersBar';
 import { ContractsListFiltersPanel } from './list/ContractsListFiltersPanel';
 import { ContractsListModals } from './list/ContractsListModals';
 import { ContractsListPageHeader } from './list/ContractsListPageHeader';
-import { ContractsListSavedViewsBar } from './list/ContractsListSavedViewsBar';
 import { ContractsListTable } from './list/ContractsListTable';
 import type { ContractsListPageModel } from './list/hooks/useContractsListPage';
 
@@ -30,7 +29,6 @@ export function ContractsListPageView({
   modals,
   derived,
   mutations,
-  savedViews,
   objectsById,
   visibleColumns,
   setVisibleColumns,
@@ -66,11 +64,6 @@ export function ContractsListPageView({
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}
         limit={filters.limit}
-        activeSavedViewTitle={
-          savedViews.activeViewId
-            ? (savedViews.views.find((view) => view.id === savedViews.activeViewId)?.title ?? null)
-            : null
-        }
       >
         <ContractsListFiltersBar
           loading={load.loading}
@@ -78,8 +71,6 @@ export function ContractsListPageView({
           onSearchChange={filters.setSearch}
           listScope={filters.listScope}
           onListScopeChange={filters.setListScope}
-          queuePreset={filters.queuePreset}
-          onQueuePresetChange={filters.applyQueuePreset}
           statusFilters={filters.statusFilters}
           onStatusFiltersChange={filters.setStatusFilters}
           listViewMode={filters.listViewMode}
@@ -92,7 +83,7 @@ export function ContractsListPageView({
           directions={load.directions}
           myDirectionIds={load.myDirectionIds}
           scopeCounts={derived.scopeCounts}
-          queuePresetCounts={derived.queuePresetCounts}
+          statusCounts={derived.statusCounts}
           directionCounts={derived.directionCounts}
           dateFrom={filters.dateFrom}
           onDateFromChange={filters.setDateFrom}
@@ -103,22 +94,6 @@ export function ContractsListPageView({
             filters.setLimit(nextLimit);
             filters.setPage(1);
           }}
-        />
-
-        <ContractsListSavedViewsBar
-          loading={load.loading}
-          views={savedViews.views}
-          activeViewId={savedViews.activeViewId}
-          draftTitle={savedViews.draftTitle}
-          onDraftTitleChange={savedViews.setDraftTitle}
-          saveOpen={savedViews.saveOpen}
-          onSaveOpenChange={savedViews.setSaveOpen}
-          suggestedTitles={savedViews.suggestedTitles}
-          onApplyView={savedViews.applyView}
-          onOpenSaveComposer={savedViews.openSaveComposer}
-          onSaveCurrentView={savedViews.saveCurrentView}
-          onDeleteView={savedViews.deleteView}
-          onRenameView={savedViews.renameView}
         />
       </ContractsListFiltersPanel>
 
@@ -139,10 +114,8 @@ export function ContractsListPageView({
         limit={filters.limit}
         onPageChange={filters.setPage}
         objectsById={objectsById}
-        expandedObjectId={filters.expandedObjectId}
-        onToggleObjectExpand={(objectId) =>
-          filters.setExpandedObjectId((current) => (current === objectId ? null : objectId))
-        }
+        expandedObjectIds={filters.expandedObjectIds}
+        onToggleObjectExpand={filters.toggleExpandedObjectId}
         crmUsers={load.crmUsers}
         creating={modals.creating}
         copyingPackageId={modals.copyingPackageId}

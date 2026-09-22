@@ -33,8 +33,8 @@ export interface ContractsListFiltersPersisted {
   sortOrder: ContractsListSortOrder;
   pageLimit: ContractsPageLimit;
   listViewMode: ContractsListViewMode;
-  /** Развёрнутый объект в режиме by_object — сохраняем между визитами страницы. */
-  expandedObjectId: string | null;
+  /** Развёрнутые объекты в режиме by_object — сохраняем между визитами страницы. */
+  expandedObjectIds: string[];
   /** Текущая страница списка — сохраняем между визитами страницы. */
   page: number;
 }
@@ -56,7 +56,7 @@ export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   sortOrder: 'desc',
   pageLimit: 20,
   listViewMode: 'by_object',
-  expandedObjectId: null,
+  expandedObjectIds: [],
   page: 1,
 };
 
@@ -124,11 +124,25 @@ function normalizeDirectionFilters(raw: unknown, legacySingle?: unknown): string
   return [];
 }
 
+function normalizeExpandedObjectIds(raw: unknown, legacySingle?: unknown): string[] {
+  if (Array.isArray(raw)) {
+    return [
+      ...new Set(raw.filter((v): v is string => typeof v === 'string' && v.trim().length > 0)),
+    ];
+  }
+  // Миграция со старого формата, где развёрнут был один объект.
+  if (typeof legacySingle === 'string' && legacySingle.trim()) {
+    return [legacySingle];
+  }
+  return [];
+}
+
 function normalizePersistedFilters(
   raw:
     | (Partial<ContractsListFiltersPersisted> & {
         statusFilter?: string;
         directionFilter?: string;
+        expandedObjectId?: string | null;
       })
     | null
     | undefined
@@ -163,10 +177,7 @@ function normalizePersistedFilters(
       raw.listViewMode === 'flat' || raw.listViewMode === 'by_object'
         ? raw.listViewMode
         : EMPTY_CONTRACTS_LIST_FILTERS.listViewMode,
-    expandedObjectId:
-      typeof raw.expandedObjectId === 'string' && raw.expandedObjectId.trim()
-        ? raw.expandedObjectId
-        : null,
+    expandedObjectIds: normalizeExpandedObjectIds(raw.expandedObjectIds, raw.expandedObjectId),
     page:
       typeof raw.page === 'number' && Number.isInteger(raw.page) && raw.page >= 1
         ? raw.page

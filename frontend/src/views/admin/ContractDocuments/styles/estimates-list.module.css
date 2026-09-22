@@ -649,9 +649,41 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   background: color-mix(in srgb, #fffbeb 88%, var(--admin-warning-bg, #fef3c7)) !important;
 }
 
+/*
+ * Цвет левой полосы объектов/расчётов — по активной вкладке конвейера
+ * (В работе — зелёный, В перспективе — синий, В договорах — жёлтый),
+ * в цвет ярлычков вкладок. В архиве вкладок нет — остаётся жёлтый.
+ */
+.estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='active'] {
+  --estimates-list-accent: var(--admin-success, #22c55e);
+}
+
+.estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='prospect'] {
+  --estimates-list-accent: var(--admin-info, #3b82f6);
+}
+
+.estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='contract'] {
+  --estimates-list-accent: var(--admin-warning, #f59e0b);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='active'] {
+  --estimates-list-accent: var(--admin-success-light, #4ade80);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='prospect'] {
+  --estimates-list-accent: var(--admin-info-light, #60a5fa);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesDirectoryTable:not(.estimatesDirectoryTableArchive)[data-estimates-tab='contract'] {
+  --estimates-list-accent: #fbbf24;
+}
+
 .estimatesDirectoryTable .estimatesListObjectAccentCell {
   box-shadow:
-    inset 4px 0 0 var(--admin-warning, #f59e0b),
+    inset 4px 0 0 var(--estimates-list-accent, var(--admin-warning, #f59e0b)),
     inset 0 1px 0 rgb(255 255 255 / 35%) !important;
   border-color: var(--admin-warning-border-soft, #fde68a) !important;
 }
@@ -700,7 +732,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   border-top-left-radius: var(--admin-radius-md, 8px);
   border-bottom-left-radius: var(--admin-radius-md, 8px);
   box-shadow:
-    inset 4px 0 0 var(--admin-warning, #f59e0b),
+    inset 4px 0 0 var(--estimates-list-accent, var(--admin-warning, #f59e0b)),
     inset 0 1px 0 rgb(255 255 255 / 35%);
 }
 
@@ -726,7 +758,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 :where(html[data-theme='dark'], [data-app-theme='dark'])
   .estimatesDirectoryTable
   .estimatesListObjectAccentCell {
-  box-shadow: inset 4px 0 0 var(--admin-warning-amber, #fbbf24) !important;
+  box-shadow: inset 4px 0 0 var(--estimates-list-accent, var(--admin-warning-amber, #fbbf24)) !important;
 }
 
 .estimatesDirectoryTable.contractsDirectoryTable .contractsListTable.estimatesListTable thead th {

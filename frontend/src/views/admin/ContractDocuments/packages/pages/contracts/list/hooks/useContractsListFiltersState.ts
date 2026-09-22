@@ -1,9 +1,8 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
 
 import {
-  type ContractsListFiltersPersisted,
   type ContractsListScope,
   type ContractsListViewMode,
   type ContractsPageLimit,
@@ -12,8 +11,6 @@ import {
   reloadContractsListFiltersFromStorage,
 } from '../contractsListFilters';
 import {
-  CONTRACTS_LIST_QUEUE_PRESETS,
-  type ContractsListQueuePreset,
   getContractsListRoleDefaults,
   resolveContractsListQueuePreset,
 } from '../contractsListScope';
@@ -55,8 +52,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   const [listViewMode, setListViewMode] = useState<ContractsListViewMode>(
     initialListFiltersRef.current.listViewMode
   );
-  const [expandedObjectId, setExpandedObjectId] = useState<string | null>(
-    initialListFiltersRef.current.expandedObjectId
+  const [expandedObjectIds, setExpandedObjectIds] = useState<string[]>(
+    initialListFiltersRef.current.expandedObjectIds
   );
 
   const searchNorm = normalizeContractsListSearch(search);
@@ -76,64 +73,6 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setScopeTouched(true);
   }, []);
 
-  const applyQueuePreset = useCallback((preset: ContractsListQueuePreset) => {
-    const row = CONTRACTS_LIST_QUEUE_PRESETS.find((p) => p.id === preset);
-    setStatusFiltersState(row?.statusFilters ?? []);
-    setScopeTouched(true);
-  }, []);
-
-  const applyFiltersSnapshot = useCallback((next: ContractsListFiltersPersisted) => {
-    setSearchState(next.search);
-    setManagerFilterState(next.managerFilter);
-    setStatusFiltersState([...next.statusFilters]);
-    setDirectionFiltersState([...next.directionFilters]);
-    setListScopeState(next.listScope);
-    setScopeTouched(true);
-    setDateFromState(next.dateFrom);
-    setDateToState(next.dateTo);
-    setListSortBy(next.sortBy);
-    setListSortOrder(next.sortOrder);
-    setLimit(next.pageLimit);
-    setListViewMode(next.listViewMode);
-    setPage(1);
-    setExpandedObjectId(null);
-    roleDefaultsAppliedRef.current = true;
-  }, []);
-
-  const currentFiltersSnapshot = useMemo(
-    (): ContractsListFiltersPersisted => ({
-      search,
-      managerFilter,
-      statusFilters,
-      directionFilters,
-      listScope,
-      scopeTouched: true,
-      dateFrom,
-      dateTo,
-      sortBy: listSortBy,
-      sortOrder: listSortOrder,
-      pageLimit: limit,
-      listViewMode,
-      expandedObjectId,
-      page,
-    }),
-    [
-      search,
-      managerFilter,
-      statusFilters,
-      directionFilters,
-      listScope,
-      dateFrom,
-      dateTo,
-      listSortBy,
-      listSortOrder,
-      limit,
-      listViewMode,
-      expandedObjectId,
-      page,
-    ]
-  );
-
   useEffect(() => {
     const saved = reloadContractsListFiltersFromStorage();
     setSearchState(saved.search);
@@ -149,7 +88,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setLimit(saved.pageLimit);
     setListViewMode(saved.listViewMode);
     setPage(saved.page);
-    setExpandedObjectId(saved.expandedObjectId);
+    setExpandedObjectIds(saved.expandedObjectIds);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -183,7 +122,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       sortOrder: listSortOrder,
       pageLimit: limit,
       listViewMode,
-      expandedObjectId,
+      expandedObjectIds,
       page,
     });
   }, [
@@ -199,7 +138,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     listSortOrder,
     limit,
     listViewMode,
-    expandedObjectId,
+    expandedObjectIds,
     page,
   ]);
 
@@ -247,6 +186,13 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setScopeTouched(true);
   }, []);
 
+  /** Раскрытие объектов независимо друг от друга (режим by_object). */
+  const toggleExpandedObjectId = useCallback((objectId: string) => {
+    setExpandedObjectIds((current) =>
+      current.includes(objectId) ? current.filter((id) => id !== objectId) : [...current, objectId]
+    );
+  }, []);
+
   return {
     search,
     setSearch,
@@ -259,9 +205,6 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     listScope,
     setListScope,
     queuePreset,
-    applyQueuePreset,
-    applyFiltersSnapshot,
-    currentFiltersSnapshot,
     dateFrom,
     setDateFrom,
     dateTo,
@@ -274,8 +217,9 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setLimit,
     listViewMode,
     setListViewMode,
-    expandedObjectId,
-    setExpandedObjectId,
+    expandedObjectIds,
+    setExpandedObjectIds,
+    toggleExpandedObjectId,
     searchNorm,
     hasActiveFilters,
     handleListSortChange,

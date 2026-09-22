@@ -78,7 +78,7 @@ type ContractsListMobileCardsProps = {
   paginatedDisplayItems: ContractsListDisplayItem[];
   addendumColumnCount: number;
   objectsById: Map<string, ContractDocumentObject>;
-  expandedObjectId: string | null;
+  expandedObjectIds: string[];
   onToggleObjectExpand: (objectId: string) => void;
   crmUsers: CrmUser[];
   creating: boolean;
@@ -249,7 +249,7 @@ export function ContractsListMobileCards({
   paginatedDisplayItems,
   addendumColumnCount,
   objectsById,
-  expandedObjectId,
+  expandedObjectIds,
   onToggleObjectExpand,
   crmUsers,
   creating,
@@ -298,7 +298,7 @@ export function ContractsListMobileCards({
             );
           const agg = aggregateContractsListPackagesMoney(item.packages, addendumColumnCount);
           const paymentBase = addendumColumnCount > 0 ? agg.totalWithAddendaRub : agg.totalRub;
-          const expanded = expandedObjectId === item.objectId;
+          const expanded = expandedObjectIds.includes(item.objectId);
           const objectCustomerPhone = contractsListPackagesCustomerPhone(item.packages);
 
           return (

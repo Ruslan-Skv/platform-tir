@@ -18,6 +18,18 @@ export const CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS = [
   { value: 'REFUSED', label: 'Отказ' },
 ] as const;
 
+/**
+ * Счётчик чипа «Статус» берётся из counts.queue одно-статусного пресета этапа:
+ * сервер считает его с теми же прочими фильтрами (поиск, менеджер, направление, даты).
+ */
+export const CONTRACTS_LIST_STATUS_QUEUE_COUNT_KEY: Record<string, string> = {
+  IN_PROJECT: 'in_project',
+  SIGNED: 'to_production',
+  WORK_IN_PROGRESS: 'in_work',
+  CLOSED: 'closed',
+  REFUSED: 'refused',
+};
+
 /** Быстрые рабочие очереди (этап конвейера). */
 export type ContractsListQueuePreset =
   | 'all'

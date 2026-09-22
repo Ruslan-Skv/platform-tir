@@ -1,6 +1,5 @@
 import { useMemo } from 'react';
 
-import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type {
   ContractDocumentPackage,
   ContractDocumentPackagesListCounts,
@@ -17,7 +16,10 @@ import {
   buildContractsListTableDisplayItems,
   countContractsListObjectGroups,
 } from '../contractsListLayout';
-import { CONTRACTS_LIST_QUEUE_PRESETS, type ContractsListQueuePreset } from '../contractsListScope';
+import {
+  CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS,
+  CONTRACTS_LIST_STATUS_QUEUE_COUNT_KEY,
+} from '../contractsListScope';
 import type { ContractsListSortBy, ContractsListSortOrder } from '../contractsListSort';
 import { contractsListMaxSignedAddendumSlotCount } from '../contractsListUtils';
 
@@ -42,9 +44,7 @@ export type UseContractsListDerivedDataParams = {
   listSortOrder: ContractsListSortOrder;
   crmUsers: CrmUser[];
   listViewMode: ContractsListViewMode;
-  documentObjects: ContractDocumentObject[];
-  objectsById: Map<string, ContractDocumentObject>;
-  expandedObjectId: string | null;
+  expandedObjectIds: string[];
   page: number;
   limit: number;
   visibleColumns: readonly ContractsListColumnKey[];
@@ -73,12 +73,16 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
     };
   }, [params.serverCounts]);
 
-  const queuePresetCounts = useMemo(() => {
+  /** Счётчики чипов «Статус»: `all` — без фильтра по статусу, далее по pipeline-статусу. */
+  const statusCounts = useMemo(() => {
     const q = params.serverCounts?.queue ?? {};
-    const entries = CONTRACTS_LIST_QUEUE_PRESETS.map(
-      (preset) => [preset.id, q[preset.id] ?? 0] as const
-    );
-    return Object.fromEntries(entries) as Record<ContractsListQueuePreset, number>;
+    const entries = [
+      ['all', q.all ?? 0] as const,
+      ...CONTRACTS_LIST_PIPELINE_STATUS_OPTIONS.map(
+        (opt) => [opt.value, q[CONTRACTS_LIST_STATUS_QUEUE_COUNT_KEY[opt.value]] ?? 0] as const
+      ),
+    ];
+    return Object.fromEntries(entries) as Record<string, number>;
   }, [params.serverCounts]);
 
   const directionCounts = useMemo(() => {
@@ -94,19 +98,10 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
       buildContractsListTableDisplayItems({
         listViewMode: params.listViewMode,
         visibleRows,
-        documentObjects: params.documentObjects,
-        objectsById: params.objectsById,
-        expandedObjectId: params.expandedObjectId,
+        expandedObjectIds: params.expandedObjectIds,
         listSortOrder: params.listSortOrder,
       }),
-    [
-      params.listViewMode,
-      visibleRows,
-      params.documentObjects,
-      params.objectsById,
-      params.expandedObjectId,
-      params.listSortOrder,
-    ]
+    [params.listViewMode, visibleRows, params.expandedObjectIds, params.listSortOrder]
   );
 
   const objectGroupCount = useMemo(
@@ -159,7 +154,7 @@ export function useContractsListDerivedData(params: UseContractsListDerivedDataP
     tableDisplayItems,
     objectGroupCount,
     scopeCounts,
-    queuePresetCounts,
+    statusCounts,
     directionCounts,
     totalVisible,
     paginatedDisplayItems,

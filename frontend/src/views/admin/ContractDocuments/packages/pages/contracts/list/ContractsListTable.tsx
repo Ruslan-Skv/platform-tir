@@ -35,7 +35,7 @@ type ContractsListTableProps = {
   limit: number;
   onPageChange: (page: number) => void;
   objectsById: Map<string, ContractDocumentObject>;
-  expandedObjectId: string | null;
+  expandedObjectIds: string[];
   onToggleObjectExpand: (objectId: string) => void;
   crmUsers: CrmUser[];
   creating: boolean;
@@ -72,7 +72,7 @@ export function ContractsListTable({
   limit,
   onPageChange,
   objectsById,
-  expandedObjectId,
+  expandedObjectIds,
   onToggleObjectExpand,
   crmUsers,
   creating,
@@ -231,7 +231,7 @@ export function ContractsListTable({
                         objectsById={objectsById}
                         addendumColumnCount={addendumColumnCount}
                         colSpan={contractsListTableColSpan}
-                        expandedObjectId={expandedObjectId}
+                        expandedObjectIds={expandedObjectIds}
                         onToggleExpand={onToggleObjectExpand}
                       />
                     );
@@ -282,7 +282,7 @@ export function ContractsListTable({
         paginatedDisplayItems={paginatedDisplayItems}
         addendumColumnCount={addendumColumnCount}
         objectsById={objectsById}
-        expandedObjectId={expandedObjectId}
+        expandedObjectIds={expandedObjectIds}
         onToggleObjectExpand={onToggleObjectExpand}
         crmUsers={crmUsers}
         creating={creating}

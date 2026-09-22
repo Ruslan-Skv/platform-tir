@@ -17,7 +17,7 @@ export type UseContractsListSyncEffectsParams = {
   /** Пока данные не загружены, не трогаем восстановленные из localStorage page/фильтры. */
   loading: boolean;
   setPage: (page: number) => void;
-  setExpandedObjectId: (id: string | null) => void;
+  setExpandedObjectIds: (ids: string[]) => void;
   totalVisible: number;
   limit: number;
   page: number;
@@ -38,7 +38,7 @@ export function useContractsListSyncEffects({
   listViewMode,
   loading,
   setPage,
-  setExpandedObjectId,
+  setExpandedObjectIds,
   totalVisible,
   limit,
   page,
@@ -47,7 +47,7 @@ export function useContractsListSyncEffects({
   directions,
   setDirectionFilters,
 }: UseContractsListSyncEffectsParams) {
-  // Сброс page/expandedObjectId — только при реальном изменении фильтров после монтирования:
+  // Сброс page/expandedObjectIds — только при реальном изменении фильтров после монтирования:
   // при возврате на страницу восстановленные значения не должны затираться.
   const prevFiltersSignatureRef = useRef<string | null>(null);
 
@@ -67,7 +67,7 @@ export function useContractsListSyncEffects({
     prevFiltersSignatureRef.current = signature;
     if (isFirstRun || !changed) return;
     setPage(1);
-    setExpandedObjectId(null);
+    setExpandedObjectIds([]);
   }, [
     searchNorm,
     managerFilter,
@@ -78,7 +78,7 @@ export function useContractsListSyncEffects({
     dateTo,
     listViewMode,
     setPage,
-    setExpandedObjectId,
+    setExpandedObjectIds,
   ]);
 
   useEffect(() => {

@@ -115,12 +115,17 @@ export class ContractDocumentPackageListService {
     const rows = await this.prisma.contractDocumentPackage.findMany({
       where: {
         deletedAt: null,
-        ...(filters?.kind ? { kind: filters.kind } : {}),
-        ...(kinds.length > 0 ? { kind: { in: kinds } } : {}),
+        // Предфильтры по kind/kinds тоже отключены при includeCounts: они приходят
+        // из выбранных направлений и урезают счётчики прочих направлений до нуля.
+        ...(filters?.kind && !includeCounts ? { kind: filters.kind } : {}),
+        ...(kinds.length > 0 && !includeCounts ? { kind: { in: kinds } } : {}),
         ...(filters?.responsibleManagerId
           ? { responsibleManagerId: filters.responsibleManagerId }
           : {}),
-        ...(statuses.length > 0 ? { status: { in: statuses } } : {}),
+        // Предфильтр по DB-статусу отключён при includeCounts: счётчики чипов статусов
+        // считаются по полной выборке, иначе активный статус урезал бы прочие до нуля.
+        // Строки списка не меняются — точный pipeline-фильтр применяется в памяти.
+        ...(statuses.length > 0 && !includeCounts ? { status: { in: statuses } } : {}),
         // Поиск по номеру договора / заказчику — в formData и crmContract;
         // узкий Prisma OR по title/object отсекал такие пакеты до in-memory фильтра.
       },

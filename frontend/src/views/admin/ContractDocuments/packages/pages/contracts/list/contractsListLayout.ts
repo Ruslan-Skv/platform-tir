@@ -1,4 +1,3 @@
-import type { ContractDocumentObject } from '@/shared/api/admin-contract-document-objects';
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
@@ -7,7 +6,6 @@ import type { ContractsListScope } from './contractsListFilters';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 import {
   compareContractListRows,
-  compareContractsListStrings,
   contractsListEffectiveManagerUserId,
   contractsListMatchesDateRange,
   contractsListMatchesSearch,
@@ -127,18 +125,14 @@ export function filterContractsListVisibleRows({
 export type BuildContractsListTableDisplayItemsParams = {
   listViewMode: 'flat' | 'by_object';
   visibleRows: ContractDocumentPackage[];
-  documentObjects: ContractDocumentObject[];
-  objectsById: Map<string, ContractDocumentObject>;
-  expandedObjectId: string | null;
+  expandedObjectIds: string[];
   listSortOrder: ContractsListSortOrder;
 };
 
 export function buildContractsListTableDisplayItems({
   listViewMode,
   visibleRows,
-  documentObjects,
-  objectsById,
-  expandedObjectId,
+  expandedObjectIds,
   listSortOrder,
 }: BuildContractsListTableDisplayItemsParams): ContractsListDisplayItem[] {
   if (listViewMode === 'flat') {
@@ -146,51 +140,52 @@ export function buildContractsListTableDisplayItems({
   }
 
   const byObject = new Map<string, ContractDocumentPackage[]>();
-  const ungrouped: ContractDocumentPackage[] = [];
   for (const pkg of visibleRows) {
     const oid = pkg.documentObjectId?.trim();
-    if (oid) {
-      const arr = byObject.get(oid) ?? [];
-      arr.push(pkg);
-      byObject.set(oid, arr);
-    } else {
-      ungrouped.push(pkg);
-    }
+    if (!oid) continue;
+    const arr = byObject.get(oid) ?? [];
+    arr.push(pkg);
+    byObject.set(oid, arr);
   }
 
-  const objectIds = [...new Set([...documentObjects.map((o) => o.id), ...byObject.keys()])].filter(
-    (id) => (byObject.get(id)?.length ?? 0) > 0
-  );
-
-  objectIds.sort((a, b) => {
-    const na = objectsById.get(a)?.name ?? byObject.get(a)?.[0]?.documentObject?.name ?? a;
-    const nb = objectsById.get(b)?.name ?? byObject.get(b)?.[0]?.documentObject?.name ?? b;
-    return compareContractsListStrings(String(na), String(nb), listSortOrder);
+  // Объекты и одиночные договоры идут одним списком в порядке серверной
+  // сортировки строк: объект встаёт на месте самого нового своего договора,
+  // а не отдельным блоком по имени. Строки приходят отсортированными,
+  // поэтому «самый новый» — первое вхождение группы при desc и последнее при asc.
+  const anchorIndex = new Map<string, number>();
+  visibleRows.forEach((pkg, index) => {
+    const oid = pkg.documentObjectId?.trim();
+    if (!oid) return;
+    if (listSortOrder === 'asc') {
+      anchorIndex.set(oid, index);
+    } else {
+      anchorIndex.set(oid, anchorIndex.get(oid) ?? index);
+    }
   });
 
   const items: ContractsListDisplayItem[] = [];
-  for (const oid of objectIds) {
+  const expandedSet = new Set(expandedObjectIds);
+  visibleRows.forEach((pkg, index) => {
+    const oid = pkg.documentObjectId?.trim();
+    if (!oid) {
+      if (items.length > 0) {
+        items.push({ type: 'gap', id: `gap-before-pkg-${pkg.id}` });
+      }
+      items.push({ type: 'package', package: pkg, standaloneCard: true });
+      return;
+    }
+    if (anchorIndex.get(oid) !== index) return;
+    const pkgs = byObject.get(oid) ?? [pkg];
     if (items.length > 0) {
       items.push({ type: 'gap', id: `gap-before-${oid}` });
     }
-    const pkgs = byObject.get(oid) ?? [];
     items.push({ type: 'object', objectId: oid, packages: pkgs });
-    if (expandedObjectId === oid) {
-      for (const pkg of pkgs) {
-        items.push({ type: 'package', package: pkg, childOfObject: true });
+    if (expandedSet.has(oid)) {
+      for (const child of pkgs) {
+        items.push({ type: 'package', package: child, childOfObject: true });
       }
     }
-  }
-  if (ungrouped.length > 0 && items.length > 0) {
-    items.push({ type: 'gap', id: 'gap-before-ungrouped' });
-  }
-  for (let i = 0; i < ungrouped.length; i++) {
-    const pkg = ungrouped[i]!;
-    if (i > 0) {
-      items.push({ type: 'gap', id: `gap-before-pkg-${pkg.id}` });
-    }
-    items.push({ type: 'package', package: pkg, standaloneCard: true });
-  }
+  });
   return items;
 }
 
