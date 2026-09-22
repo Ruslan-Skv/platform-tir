@@ -89,12 +89,6 @@ function TaskTooltip({ task }: { task: WaybillTask }) {
           <span>Ответственный</span>
           <strong>{formatUserLabel(task.responsible)}</strong>
         </div>
-        {task.contract?.contractNumber ? (
-          <div className={styles.tooltipField}>
-            <span>Договор</span>
-            <strong>{task.contract.contractNumber}</strong>
-          </div>
-        ) : null}
         <div className={styles.tooltipField}>
           <span>Доставка</span>
           <strong>{formatMoney(task.deliveryCost, task.deliveryPayer)}</strong>

@@ -264,15 +264,6 @@ export class CustomersService {
       where: { id },
       include: {
         ...customerDetailInclude,
-        contracts: {
-          select: {
-            id: true,
-            contractNumber: true,
-            contractDate: true,
-            totalAmount: true,
-          },
-          orderBy: { contractDate: 'desc' },
-        },
         measurements: {
           select: {
             id: true,
@@ -289,46 +280,19 @@ export class CustomersService {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
 
-    // Привязанные договоры/замеры + непривязанные (customerId = null), сматченные
+    // Привязанные замеры + непривязанные (customerId = null), сматченные
     // по телефону или полному ФИО — иначе последние навсегда скрыты из карточки.
-    const { contracts: allContracts, measurements: allMeasurements } =
-      await collectCustomerDocLists(this.prisma, customer, {
-        contracts: customer.contracts,
-        measurements: customer.measurements,
-      });
+    const { measurements: allMeasurements } = await collectCustomerDocLists(this.prisma, customer, {
+      measurements: customer.measurements,
+    });
 
-    const contractIds = allContracts.map((c) => c.id);
-    const packages =
-      contractIds.length > 0
-        ? await this.prisma.contractDocumentPackage.findMany({
-            where: { crmContractId: { in: contractIds } },
-            select: { id: true, crmContractId: true },
-          })
-        : [];
-    const packageByContract = new Map(
-      packages
-        .filter((p): p is { id: string; crmContractId: string } => Boolean(p.crmContractId))
-        .map((p) => [p.crmContractId, p.id]),
-    );
+    // Договоры из раздела «Договора» (ContractDocumentPackage): фронтенд пишет привязку
+    // к карточке в formData._linkedCrmCustomerId.
+    const packagesByCustomer = await findPackagesLinkedToCustomers(this.prisma, [customer.id]);
+    const displayContracts = buildDisplayContractList(packagesByCustomer.get(customer.id) ?? []);
 
-    // Договоры из раздела «Договоры» (ContractDocumentPackage): фронтенд пишет привязку
-    // к карточке в formData._linkedCrmCustomerId. Пакеты, не покрытые CRM-Contract'ом,
-    // добавляются отдельными строками (dedupe по crmContractId).
-    const contractOwnerIdById = new Map(contractIds.map((cid) => [cid, customer.id]));
-    const packagesByCustomer = await findPackagesLinkedToCustomers(
-      this.prisma,
-      [customer.id],
-      contractOwnerIdById,
-    );
-    const displayContracts = buildDisplayContractList(
-      customer.id,
-      allContracts,
-      packageByContract,
-      packagesByCustomer,
-    );
-
-    // relations contracts/measurements остаются в rest, но переопределяются ниже
-    // объединёнными списками (привязанные + сматченные + пакеты документов).
+    // relations measurements остаётся в rest, но переопределяется ниже
+    // объединённым списком (привязанные + сматченные).
     const { dealValue, lastContactAt, nextFollowUp, createdAt, updatedAt, ...rest } = customer;
 
     return {

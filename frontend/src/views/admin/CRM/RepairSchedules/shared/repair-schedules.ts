@@ -128,18 +128,13 @@ export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairP
   const formContract = asRecord(form.contract) ?? {};
   const formCustomer = asRecord(form.customer) ?? {};
   const formObject = asRecord(form.object) ?? {};
-  const contract = pkg.crmContract;
 
   const contractSum =
-    moneyToInputValue(contract?.totalAmount) ||
-    moneyToInputValue(formContract.totalAmount) ||
-    moneyToInputValue(formContract.contractCost);
+    moneyToInputValue(formContract.totalAmount) || moneyToInputValue(formContract.contractCost);
 
-  const prepayment =
-    moneyToInputValue(contract?.advanceAmount) || moneyToInputValue(formContract.prepaymentAmount);
+  const prepayment = moneyToInputValue(formContract.prepaymentAmount);
 
-  const workStartActDate =
-    isoDateInput(form.repairWorkStartActSignedAt) || isoDateInput(contract?.actWorkStartDate);
+  const workStartActDate = isoDateInput(form.repairWorkStartActSignedAt);
   const workCloseActDate = isoDateInput(form.repairContractCloseActSignedAt);
   const workPeriodDays =
     typeof formContract.workPeriod === 'string' || typeof formContract.workPeriod === 'number'
@@ -148,23 +143,15 @@ export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairP
 
   return {
     packageId: pkg.id,
-    packageSearch: contract?.contractNumber || pkg.title || pkg.id,
-    contractId: pkg.crmContractId || contract?.id || '',
-    contractNumber: strField(contract?.contractNumber, formContract.number) || '',
-    customerName: strField(
-      contract?.customerName,
-      formCustomer.fullName,
-      formCustomer.customerName,
-      formCustomer.fio
-    ),
+    packageSearch: strField(formContract.number) || pkg.title || pkg.id,
+    contractNumber: strField(formContract.number),
+    customerName: strField(formCustomer.fullName, formCustomer.customerName, formCustomer.fio),
     customerAddress: strField(
-      contract?.customerAddress,
       formObject.objectAddress,
       formCustomer.address,
       formCustomer.customerAddress
     ),
     customerPhone: strField(
-      contract?.customerPhone,
       formCustomer.phone,
       Array.isArray(formCustomer.phones) ? formCustomer.phones[0] : null,
       formCustomer.customerPhone
@@ -174,7 +161,7 @@ export function fieldsFromPackage(pkg: ContractDocumentPackage): Partial<RepairP
     workPeriodDays,
     workStartActDate,
     workCloseActDate,
-    plannedStartDate: workStartActDate || isoDateInput(contract?.actWorkStartDate),
+    plannedStartDate: workStartActDate,
   };
 }
 
@@ -187,7 +174,6 @@ export type RepairProjectFormValues = {
   manualInstaller: boolean;
   packageId: string;
   packageSearch: string;
-  contractId: string;
   customerName: string;
   customerAddress: string;
   customerPhone: string;
@@ -210,7 +196,6 @@ export function emptyRepairProjectForm(): RepairProjectFormValues {
     manualInstaller: false,
     packageId: '',
     packageSearch: '',
-    contractId: '',
     customerName: '',
     customerAddress: '',
     customerPhone: '',
@@ -231,7 +216,6 @@ export function formValuesFromProject(project: {
   installerId: string | null;
   installerName: string | null;
   packageId: string | null;
-  contractId: string | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
@@ -242,7 +226,7 @@ export function formValuesFromProject(project: {
   workCloseActDate: string | null;
   plannedStartDate: string | null;
   note: string | null;
-  package?: { title?: string | null; crmContract?: { contractNumber?: string } | null } | null;
+  package?: { title?: string | null } | null;
 }): RepairProjectFormValues {
   return {
     status: project.status,
@@ -252,12 +236,7 @@ export function formValuesFromProject(project: {
     installerName: project.installerName || '',
     manualInstaller: !project.installerId && Boolean(project.installerName?.trim()),
     packageId: project.packageId || '',
-    packageSearch:
-      project.package?.crmContract?.contractNumber ||
-      project.package?.title ||
-      project.contractNumber ||
-      '',
-    contractId: project.contractId || '',
+    packageSearch: project.package?.title || project.contractNumber || '',
     customerName: project.customerName || '',
     customerAddress: project.customerAddress || '',
     customerPhone: project.customerPhone || '',

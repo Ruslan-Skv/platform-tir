@@ -74,28 +74,22 @@ export class CustomersDuplicatesService {
     if (!customer) {
       throw new NotFoundException(`Customer with ID ${id} not found`);
     }
-    const [deals, measurements, contracts, interactions, tasks] = await Promise.all([
+    const [deals, measurements, interactions, tasks, documentPackages] = await Promise.all([
       this.prisma.deal.count({ where: { customerId: id } }),
       this.prisma.measurement.count({ where: { customerId: id } }),
-      this.prisma.contract.count({ where: { customerId: id } }),
       this.prisma.interaction.count({ where: { customerId: id } }),
       this.prisma.task.count({ where: { customerId: id } }),
+      this.prisma.contractDocumentPackage.count({
+        where: { deletedAt: null, formData: { path: ['_linkedCrmCustomerId'], equals: id } },
+      }),
     ]);
-    const contractRows = await this.prisma.contract.findMany({
-      where: { customerId: id },
-      select: { id: true },
-    });
-    const documentPackages = await this.prisma.contractDocumentPackage.count({
-      where: { crmContractId: { in: contractRows.map((c) => c.id) } },
-    });
     return {
       deals,
       measurements,
-      contracts,
       documentPackages,
       interactions,
       tasks,
-      total: deals + measurements + contracts + documentPackages,
+      total: deals + measurements + documentPackages + interactions + tasks,
     };
   }
 }

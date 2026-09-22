@@ -27,25 +27,6 @@ export const ENTRY_INCLUDE = {
       title: true,
       status: true,
       formData: true,
-      crmContractId: true,
-      crmContract: {
-        select: {
-          id: true,
-          contractNumber: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-        },
-      },
-    },
-  },
-  contract: {
-    select: {
-      id: true,
-      contractNumber: true,
-      customerName: true,
-      customerAddress: true,
-      customerPhone: true,
     },
   },
   completedBy: { select: USER_SELECT },

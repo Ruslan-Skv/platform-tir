@@ -2,7 +2,6 @@ import { Module } from '@nestjs/common';
 import { CustomersModule } from './customers/customers.module';
 import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
-import { ContractsModule } from './contracts/contracts.module';
 import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { OfficesModule } from './offices/offices.module';
 import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
@@ -65,7 +64,6 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     FurnitureSchedulesModule,
     JointObjectsModule,
     MeasurementsModule,
-    ContractsModule,
     MoneyMovementsModule,
     OfficesModule,
     ComplexObjectsModule,
@@ -119,7 +117,6 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     FurnitureSchedulesModule,
     JointObjectsModule,
     MeasurementsModule,
-    ContractsModule,
     OfficesModule,
     ComplexObjectsModule,
     TasksModule,

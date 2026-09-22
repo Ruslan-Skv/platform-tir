@@ -100,11 +100,6 @@ export class CreateInstallationScheduleDto {
   @IsString()
   packageId?: string | null;
 
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
-  contractId?: string | null;
-
   @ApiPropertyOptional({ description: 'Номер договора вручную' })
   @IsOptional()
   @IsString()

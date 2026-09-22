@@ -12,11 +12,6 @@ export class UpdateContractDocumentPackageDto {
   formData?: Record<string, unknown>;
 
   @IsOptional()
-  @ValidateIf((_, v) => v !== null && v !== undefined)
-  @IsString()
-  crmContractId?: string | null;
-
-  @IsOptional()
   @ValidateIf((_, v) => v !== undefined)
   @IsString()
   responsibleManagerId?: string | null;

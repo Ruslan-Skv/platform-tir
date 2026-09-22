@@ -158,7 +158,6 @@ export class InstallationSchedulesService {
     });
 
     const packageId = emptyToNull(dto.packageId) ?? null;
-    let contractId = emptyToNull(dto.contractId) ?? null;
     let contractNumber = emptyToNull(dto.contractNumber) ?? null;
     let customerName = emptyToNull(dto.customerName) ?? null;
     let customerAddress = emptyToNull(dto.customerAddress) ?? null;
@@ -170,52 +169,16 @@ export class InstallationSchedulesService {
         select: {
           id: true,
           formData: true,
-          crmContractId: true,
-          crmContract: {
-            select: {
-              id: true,
-              contractNumber: true,
-              customerName: true,
-              customerAddress: true,
-              customerPhone: true,
-            },
-          },
         },
       });
       if (!pkg) throw new BadRequestException('Пакет документов не найден');
 
-      if (!contractId && pkg.crmContractId) contractId = pkg.crmContractId;
       const fromForm = customerFromFormData(asFormDataRecord(pkg.formData));
-      if (!contractNumber) {
-        contractNumber = pkg.crmContract?.contractNumber?.trim() || fromForm.contractNumber;
-      }
-      if (!customerName) {
-        customerName = pkg.crmContract?.customerName?.trim() || fromForm.customerName;
-      }
-      if (!customerAddress) {
-        customerAddress = pkg.crmContract?.customerAddress?.trim() || fromForm.customerAddress;
-      }
-      if (customerPhones.length === 0) {
-        const phone = pkg.crmContract?.customerPhone?.trim() || fromForm.customerPhone;
-        if (phone) customerPhones = [phone];
-      }
-    } else if (contractId) {
-      const contract = await this.prisma.contract.findUnique({
-        where: { id: contractId },
-        select: {
-          id: true,
-          contractNumber: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-        },
-      });
-      if (!contract) throw new BadRequestException('Договор не найден');
-      if (!contractNumber) contractNumber = contract.contractNumber;
-      if (!customerName) customerName = contract.customerName?.trim() || null;
-      if (!customerAddress) customerAddress = contract.customerAddress?.trim() || null;
-      if (customerPhones.length === 0 && contract.customerPhone?.trim()) {
-        customerPhones = [contract.customerPhone.trim()];
+      if (!contractNumber) contractNumber = fromForm.contractNumber;
+      if (!customerName) customerName = fromForm.customerName;
+      if (!customerAddress) customerAddress = fromForm.customerAddress;
+      if (customerPhones.length === 0 && fromForm.customerPhone) {
+        customerPhones = [fromForm.customerPhone];
       }
     }
 
@@ -233,7 +196,6 @@ export class InstallationSchedulesService {
       installerIds,
       installerName,
       packageId,
-      contractId,
       contractNumber,
       workOrderKey: emptyToNull(dto.workOrderKey) ?? null,
       workOrderLabel: emptyToNull(dto.workOrderLabel) ?? null,
@@ -394,29 +356,12 @@ export class InstallationSchedulesService {
       if (packageId) {
         const pkg = await this.prisma.contractDocumentPackage.findFirst({
           where: { id: packageId, deletedAt: null },
-          select: { id: true, crmContractId: true },
+          select: { id: true },
         });
         if (!pkg) throw new BadRequestException('Пакет документов не найден');
         data.package = { connect: { id: packageId } };
-        if (dto.contractId === undefined && pkg.crmContractId) {
-          data.contract = { connect: { id: pkg.crmContractId } };
-        }
       } else {
         data.package = { disconnect: true };
-      }
-    }
-
-    if (dto.contractId !== undefined) {
-      const contractId = emptyToNull(dto.contractId) ?? null;
-      if (contractId) {
-        const contract = await this.prisma.contract.findUnique({
-          where: { id: contractId },
-          select: { id: true },
-        });
-        if (!contract) throw new BadRequestException('Договор не найден');
-        data.contract = { connect: { id: contractId } };
-      } else {
-        data.contract = { disconnect: true };
       }
     }
 

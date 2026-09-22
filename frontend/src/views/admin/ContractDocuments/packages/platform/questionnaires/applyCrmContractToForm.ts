@@ -1,14 +1,7 @@
-import type {
-  Contract,
-  ContractCustomer,
-  CrmCustomerDetail,
-  DocumentCustomerBlock,
-} from '@/shared/api/admin-crm';
+import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
 import { formFromCrmCustomerDetail } from '@/views/admin/CRM/Customers/shared/crmCustomerForm';
 import { joinPersonFullName } from '@/views/admin/CRM/Customers/shared/crmCustomerName';
 
-import { amountToRussianWords } from '../../../core/amountToRussianWords';
-import { isoOrCrmDateToContractDdMmYyyy } from '../../../core/contractDateFormat';
 import {
   type PackageCustomerBlock,
   type PackageFormData,
@@ -19,53 +12,6 @@ import {
   isManagerQuestionnaire1Filled,
   readManagerQuestionnaire1FromCrmDetail,
 } from './crmManagerQuestionnaire1';
-
-function formatMoney(v: string | number | null | undefined): string {
-  if (v === null || v === undefined) return '';
-  return String(v);
-}
-
-function documentCustomerToPackageCustomer(doc: DocumentCustomerBlock): PackageCustomerBlock {
-  const typeRaw = doc.type?.trim();
-  const type: PackageCustomerBlock['type'] =
-    typeRaw === 'COMPANY' || typeRaw === 'ENTREPRENEUR' || typeRaw === 'PERSON'
-      ? typeRaw
-      : 'PERSON';
-  const phone = (doc.phone ?? '').trim();
-  return normalizePackageCustomerBlock({
-    type,
-    fullName: doc.fullName ?? '',
-    representativeFullNameNominative: doc.representativeFullNameNominative ?? '',
-    representativeFullNameGenitive: doc.representativeFullNameGenitive ?? '',
-    organizationName: doc.organizationName ?? '',
-    representativePositionNominative: doc.representativePositionNominative ?? '',
-    representativePositionGenitive: doc.representativePositionGenitive ?? '',
-    inn: doc.inn ?? '',
-    ogrn: doc.ogrn ?? '',
-    address: (doc.address ?? '').trim(),
-    phone,
-    phones: phone ? [phone] : [''],
-    email: (doc.email ?? '').trim(),
-    bankDetails: doc.bankDetails ?? '',
-    passportSeriesNumber: doc.passportSeriesNumber ?? '',
-    passportIssuedBy: doc.passportIssuedBy ?? '',
-    passportIssueDate: doc.passportIssueDate ?? '',
-  });
-}
-
-function contractSnapshotCustomer(c: Contract): PackageCustomerBlock {
-  const name = (c.customerName ?? '').trim();
-  const addr = (c.customerAddress ?? '').trim();
-  const tel = (c.customerPhone ?? '').trim();
-  return normalizePackageCustomerBlock({
-    ...defaultPackageFormData().customer,
-    type: 'PERSON',
-    fullName: name,
-    address: addr,
-    phone: tel,
-    phones: tel ? [tel] : [''],
-  });
-}
 
 /** Блок «Заказчик» из карточки CRM (без слияния с предыдущими значениями формы). */
 function packageCustomerBlockFromCrmDetail(detail: CrmCustomerDetail): PackageCustomerBlock {
@@ -158,44 +104,6 @@ export function packageCustomerBlockHasContent(customer: PackageCustomerBlock): 
     customer.passportIssuedBy?.trim() ||
     customer.passportIssueDate?.trim()
   );
-}
-
-/**
- * Подстановка данных пакета по договору CRM и строке поиска.
- * Блок «Заказчик» **полностью** берётся из `documentCustomer` строки поиска (если есть),
- * иначе — только поля из самого договора (ФИО/адрес/телефон).
- */
-export function mergePackageFormFromCrmContract(
-  c: Contract,
-  prev: PackageFormData,
-  searchRow?: ContractCustomer | null
-): PackageFormData {
-  const total = formatMoney(c.totalAmount);
-  const advance = formatMoney(c.advanceAmount);
-  const nextPrepayment = advance.trim() ? advance : prev.contract.prepaymentAmount;
-
-  const doc = searchRow?.documentCustomer;
-  const customer = doc ? documentCustomerToPackageCustomer(doc) : contractSnapshotCustomer(c);
-
-  const objectAddress =
-    (c.customerAddress ?? '').trim() || customer.address || prev.object.objectAddress;
-
-  return {
-    ...prev,
-    customer,
-    object: {
-      ...prev.object,
-      objectAddress,
-    },
-    contract: {
-      ...prev.contract,
-      number: c.contractNumber || prev.contract.number,
-      date: isoOrCrmDateToContractDdMmYyyy(c.contractDate) || prev.contract.date,
-      totalAmount: total || prev.contract.totalAmount,
-      prepaymentAmount: nextPrepayment,
-      prepaymentAmountWords: nextPrepayment.trim() ? amountToRussianWords(nextPrepayment) : '',
-    },
-  };
 }
 
 /** Заполняет блок «Заказчик» из ответа POST `/admin/customers` после создания карточки в CRM. */

@@ -99,11 +99,7 @@ model User {
   supportMessages                         SupportMessage[]
   managedMeasurements                     Measurement[]                            @relation("MeasurementManager")
   surveyedMeasurements                    Measurement[]                            @relation("MeasurementSurveyor")
-  managedContracts                        Contract[]                               @relation("ContractManager")
-  surveyedContracts                       Contract[]                               @relation("ContractSurveyor")
-  contractPayments                        ContractPayment[]
   measurementHistory                      MeasurementHistory[]                     @relation("MeasurementHistoryChangedBy")
-  contractHistory                         ContractHistory[]                        @relation("ContractHistoryChangedBy")
   complexObjectHistory                    ComplexObjectHistory[]                   @relation("ComplexObjectHistoryChangedBy")
   officeHistory                           OfficeHistory[]                          @relation("OfficeHistoryChangedBy")
   supplierSettlementHistory               SupplierSettlementHistory[]              @relation("SupplierSettlementHistoryChangedBy")
@@ -967,7 +963,6 @@ model Customer {
   interactions    Interaction[]
   tasks           Task[]
   measurements    Measurement[]
-  contracts       Contract[]
   history         CustomerHistory[]
 
   @@index([deletedAt])
@@ -2863,7 +2858,6 @@ model CrmDirection {
   updatedAt                       DateTime                         @updatedAt
   measurements                    Measurement[]
   measurementAdditionalDirections MeasurementAdditionalDirection[]
-  contracts                       Contract[]
   users                           UserCrmDirection[]
   contractDocumentNumberCounters  ContractDocumentNumberCounter[]
   contractDocumentNumberHolds     ContractDocumentNumberHold[]
@@ -2942,7 +2936,6 @@ model WaybillTask {
   customerAddress   String?           @db.Text
   customerPhone     String? /// основной телефон (первый из customerPhones)
   customerPhones    String[]          @default([])
-  contractId        String?
   deliveryCost      Decimal?          @db.Decimal(12, 2)
   deliveryPayer     String?
   moversCost        Decimal?          @db.Decimal(12, 2)
@@ -2959,7 +2952,6 @@ model WaybillTask {
   createdAt         DateTime          @default(now())
   updatedAt         DateTime          @updatedAt
 
-  contract    Contract?               @relation(fields: [contractId], references: [id], onDelete: SetNull)
   responsible User?                   @relation("WaybillTaskResponsible", fields: [responsibleUserId], references: [id], onDelete: SetNull)
   driver      User?                   @relation("WaybillTaskDriver", fields: [driverUserId], references: [id], onDelete: SetNull)
   completedBy User?                   @relation("WaybillTaskCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
@@ -2971,7 +2963,6 @@ model WaybillTask {
   @@index([date])
   @@index([driverUserId, date])
   @@index([status])
-  @@index([contractId])
   @@index([deletedAt])
   @@index([createdById])
   @@map("waybill_tasks")
@@ -3017,7 +3008,6 @@ model InstallationScheduleEntry {
   /// ID монтажников из справочника (включая installerId); для «Мои монтажи» и прав
   installerIds    String[]                   @default([])
   packageId       String?
-  contractId      String?
   contractNumber  String? /// снимок / ручной ввод без пакета
   workOrderKey    String? /// ключ вкладки заказ-наряда в пакете
   workOrderLabel  String? /// подпись / ручной ввод без привязки
@@ -3039,7 +3029,6 @@ model InstallationScheduleEntry {
 
   installer   InstallerMaster?                @relation(fields: [installerId], references: [id], onDelete: SetNull)
   package     ContractDocumentPackage?        @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  contract    Contract?                       @relation(fields: [contractId], references: [id], onDelete: SetNull)
   completedBy User?                           @relation("InstallationScheduleCompletedBy", fields: [completedById], references: [id], onDelete: SetNull)
   createdBy   User?                           @relation("InstallationScheduleCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   deletedBy   User?                           @relation("InstallationScheduleDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
@@ -3050,7 +3039,6 @@ model InstallationScheduleEntry {
   @@index([direction, date])
   @@index([installerId, date])
   @@index([packageId])
-  @@index([contractId])
   @@index([status])
   @@index([deletedAt])
   @@index([createdById])
@@ -3097,7 +3085,6 @@ model RepairScheduleProject {
   installerId      String?
   installerName    String?
   packageId        String?
-  contractId       String?
   customerName     String?
   customerAddress  String?                     @db.Text
   customerPhone    String?
@@ -3120,7 +3107,6 @@ model RepairScheduleProject {
 
   installer  InstallerMaster?          @relation(fields: [installerId], references: [id], onDelete: SetNull)
   package    ContractDocumentPackage?  @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  contract   Contract?                 @relation(fields: [contractId], references: [id], onDelete: SetNull)
   createdBy  User?                     @relation("RepairScheduleProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy  User?                     @relation("RepairScheduleProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   entries    RepairScheduleEntry[]
@@ -3129,7 +3115,6 @@ model RepairScheduleProject {
   @@index([status])
   @@index([installerId])
   @@index([packageId])
-  @@index([contractId])
   @@index([updatedAt])
   @@map("repair_schedule_projects")
 }
@@ -3204,7 +3189,6 @@ model FurnitureScheduleProject {
   /// Бригада / мастер (ФИО текстом)
   installerName              String?
   packageId                  String?
-  contractId                 String?
   customerName               String?
   customerAddress            String?                        @db.Text
   customerPhone              String?
@@ -3234,7 +3218,6 @@ model FurnitureScheduleProject {
 
   installer  InstallerMaster?             @relation(fields: [installerId], references: [id], onDelete: SetNull)
   package    ContractDocumentPackage?     @relation(fields: [packageId], references: [id], onDelete: SetNull)
-  contract   Contract?                    @relation(fields: [contractId], references: [id], onDelete: SetNull)
   createdBy  User?                        @relation("FurnitureScheduleProjectCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   updatedBy  User?                        @relation("FurnitureScheduleProjectUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
   entries    FurnitureScheduleEntry[]
@@ -3243,7 +3226,6 @@ model FurnitureScheduleProject {
   @@index([status])
   @@index([installerId])
   @@index([packageId])
-  @@index([contractId])
   @@index([updatedAt])
   @@map("furniture_schedule_projects")
 }
@@ -3390,7 +3372,6 @@ model Measurement {
   direction            CrmDirection?                    @relation(fields: [directionId], references: [id], onDelete: SetNull)
   additionalDirections MeasurementAdditionalDirection[]
   customer             Customer?                        @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  contract             Contract?                        @relation("MeasurementToContract")
   history              MeasurementHistory[]
   bellEvents           MeasurementBellEvent[]
 
@@ -3433,10 +3414,9 @@ model ComplexObject {
   createdAt      DateTime @default(now())
   updatedAt      DateTime @updatedAt
 
-  office    Office?                @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  manager   User?                  @relation("ComplexObjectManager", fields: [managerId], references: [id], onDelete: SetNull)
-  contracts Contract[]
-  history   ComplexObjectHistory[]
+  office  Office?                @relation(fields: [officeId], references: [id], onDelete: SetNull)
+  manager User?                  @relation("ComplexObjectManager", fields: [managerId], references: [id], onDelete: SetNull)
+  history ComplexObjectHistory[]
 
   @@index([officeId])
   @@index([managerId])
@@ -3458,133 +3438,6 @@ model ComplexObjectHistory {
   @@index([complexObjectId])
   @@index([changedAt])
   @@map("complex_object_history")
-}
-
-model Contract {
-  id                       String         @id @default(cuid())
-  contractNumber           String         @unique
-  contractDate             DateTime       @db.Date
-  status                   ContractStatus @default(DRAFT)
-  directionId              String?
-  managerId                String?
-  deliveryId               String?
-  surveyorId               String?
-  officeId                 String?
-  complexObjectId          String?
-  validityStart            DateTime?      @db.Date
-  validityEnd              DateTime?      @db.Date
-  contractDurationDays     Int? // Срок договора (число дней)
-  contractDurationType     String? // CALENDAR | WORKING — календарные или рабочие дни
-  installationDate         DateTime?      @db.Date
-  installationDurationDays Int? // Продолжительность монтажа в днях
-  deliveryDate             DateTime?      @db.Date
-  customerName             String?
-  customerAddress          String?        @db.Text
-  customerPhone            String?
-  customerId               String?
-  discount                 Decimal        @default(0) @db.Decimal(12, 2)
-  totalAmount              Decimal        @db.Decimal(12, 2)
-  advanceAmount            Decimal        @default(0) @db.Decimal(12, 2)
-  notes                    String?        @db.Text
-  source                   String?
-  preferredExecutorId      String?
-  measurementId            String?        @unique
-  actWorkStartDate         DateTime?      @db.Date
-  actWorkEndDate           DateTime?      @db.Date
-  actWorkStartImages       String[]       @default([])
-  actWorkEndImages         String[]       @default([])
-  goodsTransferDate        DateTime?      @db.Date
-  installers               String[]       @default([])
-  createdAt                DateTime       @default(now())
-  updatedAt                DateTime       @updatedAt
-
-  direction                 CrmDirection?               @relation(fields: [directionId], references: [id], onDelete: SetNull)
-  manager                   User?                       @relation("ContractManager", fields: [managerId], references: [id], onDelete: SetNull)
-  surveyor                  User?                       @relation("ContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
-  customer                  Customer?                   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  measurement               Measurement?                @relation("MeasurementToContract", fields: [measurementId], references: [id], onDelete: SetNull)
-  office                    Office?                     @relation(fields: [officeId], references: [id], onDelete: SetNull)
-  complexObject             ComplexObject?              @relation(fields: [complexObjectId], references: [id], onDelete: SetNull)
-  advances                  ContractAdvance[]
-  amendments                ContractAmendment[]
-  payments                  ContractPayment[]
-  history                   ContractHistory[]
-  documentPackages          ContractDocumentPackage[]
-  waybillTasks              WaybillTask[]
-  installationSchedules     InstallationScheduleEntry[]
-  repairScheduleProjects    RepairScheduleProject[]
-  furnitureScheduleProjects FurnitureScheduleProject[]
-
-  @@index([managerId])
-  @@index([status])
-  @@index([contractDate])
-  @@index([officeId])
-  @@index([complexObjectId])
-  @@map("contracts")
-}
-
-model ContractHistory {
-  id            String   @id @default(cuid())
-  contractId    String
-  snapshot      Json // Состояние договора до изменения
-  changedFields String[] @default([])
-  action        String // UPDATE | ROLLBACK
-  changedById   String
-  changedAt     DateTime @default(now())
-
-  contract  Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  changedBy User     @relation("ContractHistoryChangedBy", fields: [changedById], references: [id], onDelete: Restrict)
-
-  @@index([contractId])
-  @@index([changedAt])
-  @@map("contract_history")
-}
-
-model ContractAdvance {
-  id         String   @id @default(cuid())
-  contractId String
-  amount     Decimal  @db.Decimal(12, 2)
-  paidAt     DateTime @db.Date
-  notes      String?  @db.Text
-  contract   Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@map("contract_advances")
-}
-
-model ContractAmendment {
-  id                   String    @id @default(cuid())
-  contractId           String
-  number               Int? // Номер д/с по порядку (1, 2, 3...)
-  amount               Decimal   @db.Decimal(12, 2) // изменение стоимости: +, -, 0
-  discount             Decimal   @default(0) @db.Decimal(12, 2) // скидка по д/с
-  date                 DateTime  @db.Date
-  extendsValidityTo    DateTime? @db.Date // deprecated, см. durationAdditionDays
-  durationAdditionDays Int? // дней к сроку договора (0/null = без изменений)
-  durationAdditionType String? // CALENDAR | WORKING
-  notes                String?   @db.Text
-  contract             Contract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
-
-  @@map("contract_amendments")
-}
-
-model ContractPayment {
-  id               String      @id @default(cuid())
-  contractId       String
-  paymentDate      DateTime    @db.Date
-  amount           Decimal     @db.Decimal(12, 2)
-  collectionAmount Decimal?    @db.Decimal(12, 2)
-  paymentForm      PaymentForm
-  paymentType      PaymentType
-  managerId        String?
-  notes            String?     @db.Text
-  createdAt        DateTime    @default(now())
-
-  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
-  manager  User?    @relation(fields: [managerId], references: [id], onDelete: SetNull)
-
-  @@index([contractId])
-  @@index([paymentDate])
-  @@map("contract_payments")
 }
 
 /// Пакет документов для оформления договора (аналог книги Excel: вкладка «Данные» + сгенерированные вкладки).
@@ -3627,7 +3480,6 @@ model ContractDocumentPackage {
   /// Все редактируемые поля вкладки «Данные» и прочие структурированные данные (смета и т.д.).
   formData             Json                          @default("{}")
   /// Связь с договором в учётной системе (таблица `Contract`).
-  crmContractId        String?
   /// Группа «объект» (несколько пакетов / направлений на одном адресе).
   documentObjectId     String?
   createdById          String?
@@ -3642,7 +3494,6 @@ model ContractDocumentPackage {
   createdBy                 User?                              @relation("ContractDocumentPackagesCreated", fields: [createdById], references: [id], onDelete: SetNull)
   responsibleManager        User?                              @relation("ContractDocumentPackagesResponsible", fields: [responsibleManagerId], references: [id], onDelete: SetNull)
   deletedBy                 User?                              @relation("ContractDocumentPackagesDeleted", fields: [deletedById], references: [id], onDelete: SetNull)
-  crmContract               Contract?                          @relation(fields: [crmContractId], references: [id], onDelete: SetNull)
   versions                  ContractDocumentPackageVersion[]
   payments                  ContractDocumentPackagePayment[]
   paymentInvoices           ContractDocumentPaymentInvoice[]
@@ -3655,7 +3506,6 @@ model ContractDocumentPackage {
 
   @@index([kind])
   @@index([createdAt])
-  @@index([crmContractId])
   @@index([documentObjectId])
   @@index([responsibleManagerId])
   @@index([deletedAt])
@@ -3696,8 +3546,6 @@ model MoneyMovement {
   /// Id записи оплаты (ContractDocumentPackagePayment), породившей движение.
   sourceId       String?     @unique
   packageId      String?
-  /// Id CRM-договора, если пакет связан с ним.
-  contractId     String?
   paymentDate    DateTime    @db.Date
   /// Момент проведения операции оплаты (время в записи журнала).
   performedAt    DateTime
@@ -3926,7 +3774,6 @@ model ContractDocumentPackageVersion {
   title         String?
   status        ContractDocumentPackageStatus
   formData      Json                          @default("{}")
-  crmContractId String?
   savedById     String?
   createdAt     DateTime                      @default(now())
 
@@ -4199,7 +4046,6 @@ model Office {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  contracts      Contract[]
   complexObjects ComplexObject[]
   otherExpenses  OfficeOtherExpense[]
   incassations   OfficeIncassation[]

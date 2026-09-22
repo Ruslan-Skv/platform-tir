@@ -335,13 +335,11 @@ export function buildPackageVersionKeyMoments(args: {
   previous: {
     title: string | null;
     status: ContractDocumentPackageStatus;
-    crmContractId: string | null;
     formData: unknown;
   } | null;
   current: {
     title: string | null;
     status: ContractDocumentPackageStatus;
-    crmContractId: string | null;
     formData: unknown;
   };
   action?: 'CREATE' | 'UPDATE' | 'ROLLBACK';
@@ -366,10 +364,6 @@ export function buildPackageVersionKeyMoments(args: {
     const from = PACKAGE_STATUS_LABELS[previous.status] ?? previous.status;
     const to = PACKAGE_STATUS_LABELS[current.status] ?? current.status;
     moments.push(`Статус пакета: ${from} → ${to}`);
-  }
-
-  if ((previous.crmContractId ?? null) !== (current.crmContractId ?? null)) {
-    moments.push('Изменена привязка к договору CRM');
   }
 
   const prevRoot = asObject(previous.formData);

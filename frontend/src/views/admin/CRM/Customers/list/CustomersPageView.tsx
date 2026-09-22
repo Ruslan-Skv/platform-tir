@@ -3,7 +3,6 @@
 import { useMemo } from 'react';
 
 import type { ClientDirectoryRow } from '@/shared/api/admin-crm';
-import { Modal } from '@/shared/ui/Modal';
 import {
   AdminListRefreshButton,
   AdminToolbarTrashButton,
@@ -13,7 +12,6 @@ import { DataTable } from '@/shared/ui/admin/DataTable';
 import { AddCrmCustomerModal } from '../modals/AddCrmCustomerModal';
 import { CrmCustomerDetailModal } from '../modals/CrmCustomerDetailModal';
 import { CrmCustomerTrashModal } from '../modals/CrmCustomerTrashModal';
-import { CustomerReadonlyPanel } from '../shared/CustomerReadonlyPanel';
 import {
   formatCrmAuditActor,
   formatCrmDateTime,
@@ -73,7 +71,6 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
     directorySortOrder,
     authorSelectOptions,
     handleDirectorySortChange,
-    selectedDirectoryRow,
     clearDirectorySelection,
     crmDetailCustomerId,
     bumpListRefresh,
@@ -438,37 +435,6 @@ export function CustomersPageView({ model }: CustomersPageViewProps) {
           onPageChange: setDirectoryPage,
         }}
       />
-
-      <Modal
-        isOpen={
-          selectedDirectoryRow?.rowSource === 'contract_only' &&
-          Boolean(selectedDirectoryRow.contractCustomer)
-        }
-        onClose={() => setSelectedDirectoryRowId(null)}
-        title="Заказчик по договорам (без отдельной карточки)"
-        size="lg"
-        showCloseButton
-        compactOnMobile
-      >
-        {selectedDirectoryRow?.rowSource === 'contract_only' &&
-        selectedDirectoryRow.contractCustomer ? (
-          <>
-            <CustomerReadonlyPanel
-              customer={selectedDirectoryRow.contractCustomer}
-              formatCurrency={formatCurrency}
-              formatDateDdMmYyyy={formatDateDdMmYyyy}
-            />
-            <div data-modal-footer-info data-modal-tone="info" role="status">
-              <span data-modal-footer-info-icon aria-hidden="true" />
-              <span data-modal-footer-info-text>
-                Этот заказчик пока не заведён как отдельная карточка: данные только из договоров.
-                При оформлении следующего договора можно выбрать существующую карточку клиента,
-                чтобы вести учёт в одном месте.
-              </span>
-            </div>
-          </>
-        ) : null}
-      </Modal>
 
       <CrmCustomerDetailModal
         customerId={crmDetailCustomerId}

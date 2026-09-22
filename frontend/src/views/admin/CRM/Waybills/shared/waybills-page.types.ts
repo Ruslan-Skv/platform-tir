@@ -7,7 +7,6 @@ export type WaybillFormValues = {
   customerName: string;
   customerAddress: string;
   customerPhones: string[];
-  contractId: string;
   contractSearch: string;
   deliveryCost: string;
   deliveryPayer: string;

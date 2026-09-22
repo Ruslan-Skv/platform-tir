@@ -23,35 +23,6 @@ export const PROJECT_INCLUDE: Prisma.FurnitureScheduleProjectInclude = {
       title: true,
       status: true,
       formData: true,
-      crmContractId: true,
-      crmContract: {
-        select: {
-          id: true,
-          contractNumber: true,
-          contractDate: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-          totalAmount: true,
-          advanceAmount: true,
-          actWorkStartDate: true,
-          actWorkEndDate: true,
-          contractDurationDays: true,
-        },
-      },
-    },
-  },
-  contract: {
-    select: {
-      id: true,
-      contractNumber: true,
-      contractDate: true,
-      customerName: true,
-      customerAddress: true,
-      customerPhone: true,
-      actWorkStartDate: true,
-      actWorkEndDate: true,
-      contractDurationDays: true,
     },
   },
   createdBy: { select: USER_SELECT },
@@ -748,18 +719,6 @@ export function withDerived<
     workCloseActDate?: Date | null;
     package?: {
       formData?: unknown;
-      crmContract?: {
-        contractDate?: Date | null;
-        actWorkStartDate?: Date | null;
-        actWorkEndDate?: Date | null;
-        contractDurationDays?: number | null;
-      } | null;
-    } | null;
-    contract?: {
-      contractDate?: Date | null;
-      actWorkStartDate?: Date | null;
-      actWorkEndDate?: Date | null;
-      contractDurationDays?: number | null;
     } | null;
     entries: Array<{ date: Date; text: string; kind: FurnitureScheduleEntryKind; id: string }>;
   },
@@ -780,16 +739,10 @@ export function withDerived<
     workStartActDate: project.workStartActDate,
     workCloseActDate: project.workCloseActDate,
     packageFormData: project.package?.formData,
-    crmContractDate:
-      project.package?.crmContract?.contractDate ?? project.contract?.contractDate ?? null,
-    crmActWorkStartDate:
-      project.package?.crmContract?.actWorkStartDate ?? project.contract?.actWorkStartDate ?? null,
-    crmActWorkEndDate:
-      project.package?.crmContract?.actWorkEndDate ?? project.contract?.actWorkEndDate ?? null,
-    crmContractDurationDays:
-      project.package?.crmContract?.contractDurationDays ??
-      project.contract?.contractDurationDays ??
-      null,
+    crmContractDate: null,
+    crmActWorkStartDate: null,
+    crmActWorkEndDate: null,
+    crmContractDurationDays: null,
   });
 
   const deadline = buildDeadlineWarning({

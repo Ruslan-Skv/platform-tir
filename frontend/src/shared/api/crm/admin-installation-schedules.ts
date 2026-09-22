@@ -39,7 +39,6 @@ export type InstallationSchedule = {
   installerIds?: string[];
   installerName: string | null;
   packageId: string | null;
-  contractId: string | null;
   contractNumber: string | null;
   workOrderKey: string | null;
   workOrderLabel: string | null;
@@ -78,7 +77,6 @@ export type InstallationScheduleInput = {
   installerIds?: string[] | null;
   installerName?: string | null;
   packageId?: string | null;
-  contractId?: string | null;
   contractNumber?: string | null;
   workOrderKey?: string | null;
   workOrderLabel?: string | null;

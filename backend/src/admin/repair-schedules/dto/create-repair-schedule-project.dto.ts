@@ -48,11 +48,6 @@ export class CreateRepairScheduleProjectDto {
   @ApiPropertyOptional()
   @IsOptional()
   @IsString()
-  contractId?: string | null;
-
-  @ApiPropertyOptional()
-  @IsOptional()
-  @IsString()
   @MaxLength(500)
   customerName?: string | null;
 

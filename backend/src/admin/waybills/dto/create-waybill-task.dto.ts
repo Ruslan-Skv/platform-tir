@@ -75,11 +75,6 @@ export class CreateWaybillTaskDto {
 
   @ApiPropertyOptional()
   @IsOptional()
-  @IsString()
-  contractId?: string | null;
-
-  @ApiPropertyOptional()
-  @IsOptional()
   @Type(() => Number)
   @IsNumber({ maxDecimalPlaces: 2 })
   deliveryCost?: number | null;

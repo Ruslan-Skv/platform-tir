@@ -224,8 +224,6 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.crm.funnel',
     'admin.crm.tasks',
     'admin.crm.my-work-day',
-    'admin.crm.payroll',
-    'admin.crm.payroll.management',
     'admin.contract-documents.repair',
     'admin.contract-documents.contracts',
     'admin.contract-documents.estimates',

@@ -22,14 +22,6 @@ export interface WaybillTaskUser {
   role: string;
 }
 
-export interface WaybillTaskContract {
-  id: string;
-  contractNumber: string;
-  customerName: string | null;
-  customerAddress: string | null;
-  customerPhone: string | null;
-}
-
 export interface WaybillTaskAttachment {
   id: string;
   fileName: string;
@@ -52,7 +44,6 @@ export interface WaybillTask {
   customerAddress?: string | null;
   customerPhone?: string | null;
   customerPhones?: string[];
-  contractId: string | null;
   deliveryCost: string | number | null;
   deliveryPayer: string | null;
   moversCost: string | number | null;
@@ -70,7 +61,6 @@ export interface WaybillTask {
   permanentDeleteAt?: string | null;
   createdAt: string;
   updatedAt: string;
-  contract?: WaybillTaskContract | null;
   responsible?: WaybillTaskUser | null;
   driver?: WaybillTaskUser | null;
   completedBy?: WaybillTaskUser | null;
@@ -90,7 +80,6 @@ export type WaybillTaskInput = {
   customerAddress?: string | null;
   customerPhone?: string | null;
   customerPhones?: string[] | null;
-  contractId?: string | null;
   deliveryCost?: number | null;
   deliveryPayer?: string | null;
   moversCost?: number | null;

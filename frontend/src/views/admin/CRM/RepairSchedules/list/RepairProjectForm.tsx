@@ -89,7 +89,6 @@ export function RepairProjectForm({ values, onChange, installers, error }: Props
                 update({
                   packageId: '',
                   packageSearch: '',
-                  contractId: '',
                 })
               }
             >
@@ -101,7 +100,7 @@ export function RepairProjectForm({ values, onChange, installers, error }: Props
         <input
           id="rs-package"
           value={values.packageSearch}
-          onChange={(e) => update({ packageSearch: e.target.value, packageId: '', contractId: '' })}
+          onChange={(e) => update({ packageSearch: e.target.value, packageId: '' })}
           placeholder="Номер, ФИО, адрес…"
         />
         {hits.length > 0 ? (
@@ -109,8 +108,7 @@ export function RepairProjectForm({ values, onChange, installers, error }: Props
             {hits.map((pkg) => (
               <li key={pkg.id}>
                 <button type="button" onClick={() => applyPackage(pkg)}>
-                  {pkg.crmContract?.contractNumber || pkg.title || pkg.id}
-                  {pkg.crmContract?.customerName ? ` · ${pkg.crmContract.customerName}` : ''}
+                  {pkg.title || pkg.id}
                 </button>
               </li>
             ))}

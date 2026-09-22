@@ -1,12 +1,10 @@
-/** Договоры-пакеты (ContractDocumentPackage), привязанные к карточке клиента.
- *  Фронтенд пишет id карточки в formData._linkedCrmCustomerId при сохранении пакета;
- *  часть пакетов связана через crmContractId → Contract.customerId. */
+/** Договоры-пакеты (ContractDocumentPackage), привязанные к карточке клиента:
+ *  фронтенд пишет id карточки в formData._linkedCrmCustomerId при сохранении пакета. */
 
 export interface CustomerLinkedPackageInfo {
   id: string;
   kind: string;
   status: string;
-  crmContractId: string | null;
   contractNumber: string | null;
   contractDate: Date | null;
   totalAmount: number | null;
@@ -78,7 +76,6 @@ type LinkedPackageRow = {
   id: string;
   kind: string;
   status: string;
-  crmContractId: string | null;
   formData: unknown;
   createdAt: Date;
   payments?: Array<{ amount: unknown }> | null;
@@ -91,12 +88,10 @@ type PackagesPrisma = {
   };
 };
 
-/** Пакеты по клиентам: атрибуция по formData._linkedCrmCustomerId, плюс по crmContractId
- *  (если передан контрактный индекс contractOwnerIdById). */
+/** Пакеты по клиентам: атрибуция по formData._linkedCrmCustomerId. */
 export async function findPackagesLinkedToCustomers(
   prisma: PackagesPrisma,
   customerIds: string[],
-  contractOwnerIdById?: Map<string, string>,
 ): Promise<Map<string, CustomerLinkedPackageInfo[]>> {
   const result = new Map<string, CustomerLinkedPackageInfo[]>();
   if (customerIds.length === 0) return result;
@@ -107,7 +102,6 @@ export async function findPackagesLinkedToCustomers(
       id: true,
       kind: true,
       status: true,
-      crmContractId: true,
       formData: true,
       createdAt: true,
       payments: { select: { amount: true } },
@@ -117,10 +111,7 @@ export async function findPackagesLinkedToCustomers(
 
   const idSet = new Set(customerIds);
   for (const pkg of packages) {
-    let ownerId = parseLinkedCrmCustomerId(pkg.formData);
-    if (!ownerId && pkg.crmContractId && contractOwnerIdById) {
-      ownerId = contractOwnerIdById.get(pkg.crmContractId) ?? null;
-    }
+    const ownerId = parseLinkedCrmCustomerId(pkg.formData);
     if (!ownerId || !idSet.has(ownerId)) continue;
     const totalAmount = parsePackageContractTotal(pkg.formData);
     const paidAmount = (pkg.payments ?? []).reduce((sum, p) => {
@@ -131,7 +122,6 @@ export async function findPackagesLinkedToCustomers(
       id: pkg.id,
       kind: pkg.kind,
       status: pkg.status,
-      crmContractId: pkg.crmContractId,
       contractNumber: parsePackageContractNumber(pkg.formData),
       contractDate:
         parsePackageContractDate(pkg.formData) ??
@@ -157,31 +147,11 @@ export interface DisplayContractEntry {
   documentPackageId: string | null;
 }
 
-/** Итоговый список договоров клиента для карточки: CRM-Contract'ы (привязанные и
- *  сматченные по телефону/ФИО) + пакеты документов, не покрытые CRM-Contract'ом. */
+/** Итоговый список договоров клиента для карточки: пакеты документов из раздела «Договора». */
 export function buildDisplayContractList(
-  customerId: string,
-  crmContracts: Array<{
-    id: string;
-    contractNumber: string;
-    contractDate: Date;
-    totalAmount: unknown;
-  }>,
-  packageByContract: Map<string, string>,
-  packagesByCustomer: Map<string, CustomerLinkedPackageInfo[]>,
+  packages: CustomerLinkedPackageInfo[],
 ): DisplayContractEntry[] {
-  const attributedContractIdSet = new Set(crmContracts.map((c) => c.id));
-  const fromCrm = crmContracts.map((c) => ({
-    id: c.id,
-    contractNumber: c.contractNumber,
-    contractDate: c.contractDate,
-    totalAmount: Number(c.totalAmount),
-    paidAmount: null as number | null,
-    remainingAmount: null as number | null,
-    documentPackageId: packageByContract.get(c.id) ?? null,
-  }));
-  const fromPackages = (packagesByCustomer.get(customerId) ?? [])
-    .filter((p) => !p.crmContractId || !attributedContractIdSet.has(p.crmContractId))
+  return packages
     .map((p) => ({
       id: p.id,
       contractNumber: p.contractNumber ?? '—',
@@ -190,8 +160,6 @@ export function buildDisplayContractList(
       paidAmount: p.paidAmount,
       remainingAmount: p.remainingAmount,
       documentPackageId: p.id,
-    }));
-  return [...fromCrm, ...fromPackages].sort(
-    (a, b) => b.contractDate.getTime() - a.contractDate.getTime(),
-  );
+    }))
+    .sort((a, b) => b.contractDate.getTime() - a.contractDate.getTime());
 }

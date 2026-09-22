@@ -38,11 +38,6 @@ export class ComplexObjectsController {
     return this.service.findAll();
   }
 
-  @Get(':id/contracts')
-  getContracts(@Param('id') id: string) {
-    return this.service.getContracts(id);
-  }
-
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.service.getHistory(id);

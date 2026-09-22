@@ -20,8 +20,6 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
   'admin.crm.funnel': 'admin.crm',
   'admin.crm.tasks': 'admin.crm',
   'admin.crm.work-days': 'admin.crm',
-  'admin.crm.payroll': 'admin.crm',
-  'admin.crm.payroll.management': 'admin.crm.payroll',
 
   // Бухгалтерия
   'admin.accounting.invoices': 'admin.accounting',

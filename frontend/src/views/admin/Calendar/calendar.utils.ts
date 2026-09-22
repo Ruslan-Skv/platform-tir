@@ -2,11 +2,9 @@ import type { CalendarEventType } from '@/shared/api/calendar/admin-calendar';
 
 export const CALENDAR_TYPE_LABELS: Record<CalendarEventType, string> = {
   installation: 'Монтаж',
-  waybill: 'Доставка (накладная)',
+  waybill: 'Доставка',
   measurement: 'Замер',
   contract: 'Договор',
-  delivery: 'Доставка (договор)',
-  contract_install: 'Монтаж (договор)',
   work_day: 'Рабочий день',
   custom: 'Событие',
 };
@@ -14,11 +12,9 @@ export const CALENDAR_TYPE_LABELS: Record<CalendarEventType, string> = {
 /** Короткие подписи для фильтров на узком экране (дашборд, мобильный календарь). */
 export const CALENDAR_TYPE_SHORT_LABELS: Record<CalendarEventType, string> = {
   installation: 'Монтаж',
-  waybill: 'Накладная',
+  waybill: 'Доставка',
   measurement: 'Замер',
   contract: 'Договор',
-  delivery: 'Доставка',
-  contract_install: 'Монтаж дог.',
   work_day: 'Раб. день',
   custom: 'Событие',
 };
@@ -30,8 +26,6 @@ const TYPE_DOT: Record<CalendarEventType, string> = {
   waybill: 'filterDotWaybill',
   measurement: 'filterDotMeasurement',
   contract: 'filterDotContract',
-  delivery: 'filterDotDelivery',
-  contract_install: 'filterDotContractInstall',
   work_day: 'filterDotWorkDay',
   custom: 'filterDotCustom',
 };
@@ -41,8 +35,6 @@ const TYPE_PILL: Record<CalendarEventType, string> = {
   waybill: 'pillWaybill',
   measurement: 'pillMeasurement',
   contract: 'pillContract',
-  delivery: 'pillDelivery',
-  contract_install: 'pillContractInstall',
   work_day: 'pillWorkDay',
   custom: 'pillCustom',
 };

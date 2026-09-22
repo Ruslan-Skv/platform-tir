@@ -31,8 +31,6 @@ export type CalendarEventType =
   | 'waybill'
   | 'measurement'
   | 'contract'
-  | 'delivery'
-  | 'contract_install'
   | 'work_day'
   | 'custom';
 

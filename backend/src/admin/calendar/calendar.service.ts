@@ -10,8 +10,6 @@ export type CalendarEventType =
   | 'waybill'
   | 'measurement'
   | 'contract'
-  | 'delivery'
-  | 'contract_install'
   | 'work_day'
   | 'custom';
 
@@ -33,8 +31,6 @@ const ALL_TYPES: CalendarEventType[] = [
   'waybill',
   'measurement',
   'contract',
-  'delivery',
-  'contract_install',
   'work_day',
   'custom',
 ];
@@ -65,13 +61,10 @@ const MEASUREMENT_STATUS_LABELS: Record<string, string> = {
   CONVERTED: 'Договор',
 };
 
-const CONTRACT_STATUS_LABELS: Record<string, string> = {
-  DRAFT: 'Черновик',
-  ACTIVE: 'Активен',
+const PACKAGE_STATUS_LABELS: Record<string, string> = {
   IN_PROGRESS: 'В работе',
-  COMPLETED: 'Завершён',
-  EXPIRED: 'Истёк',
-  CANCELLED: 'Отменён',
+  CONTRACT_CONCLUDED: 'Заключён',
+  REFUSED: 'Отказ',
 };
 
 const WORK_DAY_STATUS_LABELS: Record<string, string> = {
@@ -108,8 +101,8 @@ export class CalendarService {
     if (types.has('measurement')) {
       jobs.push(this.loadMeasurements(range));
     }
-    if (types.has('contract') || types.has('delivery') || types.has('contract_install')) {
-      jobs.push(this.loadContracts(range, types));
+    if (types.has('contract')) {
+      jobs.push(this.loadContracts(range));
     }
     if (types.has('work_day')) {
       jobs.push(this.loadWorkDays(range));
@@ -333,7 +326,6 @@ export class CalendarService {
         direction: true,
         taskText: true,
         customerName: true,
-        contract: { select: { contractNumber: true } },
         driver: { select: { firstName: true, lastName: true, email: true } },
       },
       orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }],
@@ -348,7 +340,7 @@ export class CalendarService {
         date: this.toIso(row.date),
         timeFrom: row.timeFrom,
         timeTo: row.timeTo,
-        title: row.customerName?.trim() || row.contract?.contractNumber || 'Доставка',
+        title: row.customerName?.trim() || 'Доставка',
         subtitle:
           [
             this.labelDirection(row.direction),
@@ -400,84 +392,78 @@ export class CalendarService {
     return events;
   }
 
-  private async loadContracts(
-    range: { gte: Date; lte: Date },
-    types: Set<CalendarEventType>,
-  ): Promise<CalendarEventDto[]> {
-    const or: Prisma.ContractWhereInput[] = [];
-    if (types.has('contract')) or.push({ contractDate: range });
-    if (types.has('delivery')) or.push({ deliveryDate: range });
-    if (types.has('contract_install')) or.push({ installationDate: range });
-    if (or.length === 0) return [];
-
-    const rows = await this.prisma.contract.findMany({
-      where: { OR: or },
+  /**
+   * Оформленные договоры — пакеты документов со статусом CONTRACT_CONCLUDED.
+   * Дата договора хранится в formData («дд.ММ.гггг»), запасной вариант — момент заключения.
+   */
+  private async loadContracts(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {
+    const rows = await this.prisma.contractDocumentPackage.findMany({
+      where: { deletedAt: null, status: 'CONTRACT_CONCLUDED' },
       select: {
         id: true,
-        contractNumber: true,
-        contractDate: true,
-        deliveryDate: true,
-        installationDate: true,
+        kind: true,
         status: true,
-        customerName: true,
-        customerAddress: true,
-        direction: { select: { name: true } },
+        formData: true,
+        documentObject: { select: { name: true, address: true, customerName: true } },
+        numberAssignments: {
+          select: { displayNumber: true },
+          orderBy: { createdAt: 'desc' },
+          take: 1,
+        },
       },
       take: 5000,
     });
 
     const events: CalendarEventDto[] = [];
     for (const row of rows) {
-      const baseTitle = row.contractNumber || 'Договор';
-      const customer = row.customerName?.trim();
-      const subtitle =
-        [customer, row.direction?.name, row.customerAddress].filter(Boolean).join(' · ') || null;
+      const date = this.packageContractDate(row.formData);
+      if (!date || !this.inRange(date, range)) continue;
 
-      if (types.has('contract') && this.inRange(row.contractDate, range)) {
-        events.push({
-          id: `contract:${row.id}`,
-          type: 'contract',
-          date: this.toIso(row.contractDate),
-          timeFrom: null,
-          timeTo: null,
-          title: `Договор ${baseTitle}`,
-          subtitle,
-          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
-          href: `/admin/contract-documents/contracts`,
-        });
-      }
-      if (types.has('delivery') && row.deliveryDate && this.inRange(row.deliveryDate, range)) {
-        events.push({
-          id: `delivery:${row.id}`,
-          type: 'delivery',
-          date: this.toIso(row.deliveryDate),
-          timeFrom: null,
-          timeTo: null,
-          title: `Доставка · ${baseTitle}`,
-          subtitle,
-          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
-          href: `/admin/contract-documents/contracts`,
-        });
-      }
-      if (
-        types.has('contract_install') &&
-        row.installationDate &&
-        this.inRange(row.installationDate, range)
-      ) {
-        events.push({
-          id: `contract_install:${row.id}`,
-          type: 'contract_install',
-          date: this.toIso(row.installationDate),
-          timeFrom: null,
-          timeTo: null,
-          title: `Монтаж (договор) · ${baseTitle}`,
-          subtitle,
-          status: this.labelStatus(row.status, CONTRACT_STATUS_LABELS),
-          href: `/admin/contract-documents/contracts`,
-        });
-      }
+      const number = row.numberAssignments[0]?.displayNumber?.trim();
+      const customer =
+        row.documentObject?.customerName?.trim() ||
+        this.formDataString(row.formData, ['customer', 'fullName']);
+      const direction = this.labelDirection(row.kind);
+      const title = `Договор ${number || customer || direction || ''}`.trim();
+      const subtitle =
+        [direction, customer, row.documentObject?.address].filter(Boolean).join(' · ') || null;
+
+      events.push({
+        id: `contract:${row.id}`,
+        type: 'contract',
+        date: this.toIso(date),
+        timeFrom: null,
+        timeTo: null,
+        title,
+        subtitle,
+        status: this.labelStatus(row.status, PACKAGE_STATUS_LABELS),
+        href: `/admin/contract-documents/contracts/${row.id}`,
+      });
     }
     return events;
+  }
+
+  /** Дата договора из formData пакета («дд.ММ.гггг»), либо дата заключения. */
+  private packageContractDate(formData: Prisma.JsonValue): Date | null {
+    const raw = this.formDataString(formData, ['contract', 'date']);
+    const m = raw?.match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
+    if (m) {
+      return new Date(Date.UTC(Number(m[3]), Number(m[2]) - 1, Number(m[1])));
+    }
+    const concludedRaw = this.formDataString(formData, ['contractConcludedAt']);
+    const concluded = concludedRaw ? new Date(concludedRaw) : null;
+    return concluded && !Number.isNaN(concluded.getTime()) ? concluded : null;
+  }
+
+  /** Читает строковое значение из formData по пути ключей. */
+  private formDataString(formData: Prisma.JsonValue, path: string[]): string | null {
+    let cur: unknown = formData;
+    for (const key of path) {
+      if (cur === null || typeof cur !== 'object') return null;
+      cur = (cur as Record<string, unknown>)[key];
+    }
+    if (typeof cur !== 'string') return null;
+    return cur.trim() || null;
   }
 
   private async loadWorkDays(range: { gte: Date; lte: Date }): Promise<CalendarEventDto[]> {

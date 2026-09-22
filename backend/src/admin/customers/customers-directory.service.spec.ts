@@ -43,9 +43,6 @@ function makeService(customers: CustomerRow[]) {
     customer: {
       findMany: jest.fn().mockResolvedValue(customers),
     },
-    contract: {
-      findMany: jest.fn().mockResolvedValue([]),
-    },
     measurement: {
       findMany: jest.fn().mockResolvedValue([]),
     },
@@ -53,10 +50,7 @@ function makeService(customers: CustomerRow[]) {
       findMany: jest.fn().mockResolvedValue([]),
     },
   };
-  const contractsService = {
-    getCustomersFromContracts: jest.fn().mockResolvedValue({ customers: [] }),
-  };
-  const service = new CustomersDirectoryService(prisma as never, contractsService as never);
+  const service = new CustomersDirectoryService(prisma as never);
   return { service, prisma };
 }
 
@@ -79,35 +73,7 @@ describe('CustomersDirectoryService pagination', () => {
 
     const res = await service.findClientDirectory({ page: 2, limit: 20 });
 
-    expect(res.data).toHaveLength(9);
     expect(res.total).toBe(29);
-  });
-
-  it('строки contract_only тоже учитываются в пагинации', async () => {
-    const customers = Array.from({ length: 15 }, (_, i) => makeCustomer(i));
-    const prisma = {
-      customer: { findMany: jest.fn().mockResolvedValue(customers) },
-      contract: { findMany: jest.fn().mockResolvedValue([]) },
-      measurement: { findMany: jest.fn().mockResolvedValue([]) },
-      contractDocumentPackage: { findMany: jest.fn().mockResolvedValue([]) },
-    };
-    const contractsService = {
-      getCustomersFromContracts: jest.fn().mockResolvedValue({
-        customers: Array.from({ length: 20 }, (_, i) => ({
-          customerId: null,
-          customerName: `Договор ${i}`,
-          customerPhone: '+79990001122',
-          contractCount: 1,
-          totalAmount: 0,
-        })),
-      }),
-    };
-    const service = new CustomersDirectoryService(prisma as never, contractsService as never);
-
-    const res = await service.findClientDirectory({ page: 1, limit: 20 });
-
-    // 15 карточек + 20 строк без карточки = 35; на первой странице должно быть 20
-    expect(res.total).toBe(35);
-    expect(res.data).toHaveLength(20);
+    expect(res.data).toHaveLength(9);
   });
 });

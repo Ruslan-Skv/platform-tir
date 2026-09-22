@@ -21,7 +21,6 @@ import {
   emptyToNull,
   extractPackageContractTerms,
   moneyFromFormContract,
-  moneyFromUnknown,
   parseDateOnly,
   withDerived,
 } from './repair-schedule.shared';
@@ -93,21 +92,6 @@ export class RepairSchedulesService {
       select: {
         id: true,
         formData: true,
-        crmContractId: true,
-        crmContract: {
-          select: {
-            id: true,
-            contractNumber: true,
-            customerName: true,
-            customerAddress: true,
-            customerPhone: true,
-            totalAmount: true,
-            advanceAmount: true,
-            actWorkStartDate: true,
-            actWorkEndDate: true,
-            contractDurationDays: true,
-          },
-        },
       },
     });
     if (!pkg) throw new BadRequestException('Пакет документов не найден');
@@ -115,28 +99,17 @@ export class RepairSchedulesService {
     const fromForm = customerFromFormData(form);
     const terms = extractPackageContractTerms(pkg.formData);
     const contractSum =
-      moneyFromUnknown(pkg.crmContract?.totalAmount) ??
-      moneyFromFormContract(form, 'totalAmount') ??
-      moneyFromFormContract(form, 'contractCost');
-    const payoutSum =
-      moneyFromUnknown(pkg.crmContract?.advanceAmount) ??
-      moneyFromFormContract(form, 'prepaymentAmount');
-    const workStartActDate =
-      (terms.workStartActDate ? parseDateOnly(terms.workStartActDate) : null) ??
-      pkg.crmContract?.actWorkStartDate ??
-      null;
-    const workCloseActDate =
-      (terms.workCloseActDate ? parseDateOnly(terms.workCloseActDate) : null) ??
-      pkg.crmContract?.actWorkEndDate ??
-      null;
-    const workPeriodDays = terms.workPeriodDays ?? pkg.crmContract?.contractDurationDays ?? null;
+      moneyFromFormContract(form, 'totalAmount') ?? moneyFromFormContract(form, 'contractCost');
+    const payoutSum = moneyFromFormContract(form, 'prepaymentAmount');
+    const workStartActDate = terms.workStartActDate ? parseDateOnly(terms.workStartActDate) : null;
+    const workCloseActDate = terms.workCloseActDate ? parseDateOnly(terms.workCloseActDate) : null;
+    const workPeriodDays = terms.workPeriodDays ?? null;
     return {
       packageId: pkg.id,
-      contractId: pkg.crmContractId,
-      contractNumber: pkg.crmContract?.contractNumber?.trim() || fromForm.contractNumber,
-      customerName: pkg.crmContract?.customerName?.trim() || fromForm.customerName,
-      customerAddress: pkg.crmContract?.customerAddress?.trim() || fromForm.customerAddress,
-      customerPhone: pkg.crmContract?.customerPhone?.trim() || fromForm.customerPhone,
+      contractNumber: fromForm.contractNumber,
+      customerName: fromForm.customerName,
+      customerAddress: fromForm.customerAddress,
+      customerPhone: fromForm.customerPhone,
       contractSum,
       payoutSum,
       workPeriodDays,
@@ -154,7 +127,6 @@ export class RepairSchedulesService {
     );
 
     let packageId = emptyToNull(dto.packageId) ?? null;
-    let contractId = emptyToNull(dto.contractId) ?? null;
     let contractNumber = emptyToNull(dto.contractNumber) ?? null;
     let customerName = emptyToNull(dto.customerName) ?? null;
     let customerAddress = emptyToNull(dto.customerAddress) ?? null;
@@ -172,7 +144,6 @@ export class RepairSchedulesService {
     if (packageId) {
       const fromPkg = await this.enrichFromPackage(packageId);
       packageId = fromPkg.packageId;
-      if (!contractId) contractId = fromPkg.contractId;
       if (!contractNumber) contractNumber = fromPkg.contractNumber;
       if (!customerName) customerName = fromPkg.customerName;
       if (!customerAddress) customerAddress = fromPkg.customerAddress;
@@ -191,45 +162,6 @@ export class RepairSchedulesService {
       if (!plannedStartDate && fromPkg.plannedStartDate) {
         plannedStartDate = fromPkg.plannedStartDate;
       }
-    } else if (contractId) {
-      const contract = await this.prisma.contract.findUnique({
-        where: { id: contractId },
-        select: {
-          id: true,
-          contractNumber: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-          totalAmount: true,
-          advanceAmount: true,
-          actWorkStartDate: true,
-          actWorkEndDate: true,
-          contractDurationDays: true,
-        },
-      });
-      if (!contract) throw new BadRequestException('Договор не найден');
-      if (!contractNumber) contractNumber = contract.contractNumber;
-      if (!customerName) customerName = contract.customerName?.trim() || null;
-      if (!customerAddress) customerAddress = contract.customerAddress?.trim() || null;
-      if (!customerPhone) customerPhone = contract.customerPhone?.trim() || null;
-      if (contractSum === undefined || contractSum === null) {
-        contractSum = moneyFromUnknown(contract.totalAmount);
-      }
-      if (payoutSum === undefined || payoutSum === null) {
-        payoutSum = moneyFromUnknown(contract.advanceAmount);
-      }
-      if (workPeriodDays == null && contract.contractDurationDays != null) {
-        workPeriodDays = contract.contractDurationDays;
-      }
-      if (!workStartActDate && contract.actWorkStartDate) {
-        workStartActDate = contract.actWorkStartDate;
-      }
-      if (!workCloseActDate && contract.actWorkEndDate) {
-        workCloseActDate = contract.actWorkEndDate;
-      }
-      if (!plannedStartDate && contract.actWorkStartDate) {
-        plannedStartDate = contract.actWorkStartDate;
-      }
     }
 
     if (!plannedStartDate && workStartActDate) {
@@ -245,7 +177,6 @@ export class RepairSchedulesService {
         installerId,
         installerName,
         packageId,
-        contractId,
         customerName,
         customerAddress,
         customerPhone,
@@ -420,9 +351,6 @@ export class RepairSchedulesService {
       if (packageId) {
         const fromPkg = await this.enrichFromPackage(packageId);
         data.package = { connect: { id: fromPkg.packageId } };
-        if (dto.contractId === undefined && fromPkg.contractId) {
-          data.contract = { connect: { id: fromPkg.contractId } };
-        }
         if (dto.contractNumber === undefined && fromPkg.contractNumber) {
           data.contractNumber = fromPkg.contractNumber;
         }
@@ -456,12 +384,6 @@ export class RepairSchedulesService {
       } else {
         data.package = { disconnect: true };
       }
-    }
-
-    if (dto.contractId !== undefined) {
-      const contractId = emptyToNull(dto.contractId) ?? null;
-      if (contractId) data.contract = { connect: { id: contractId } };
-      else data.contract = { disconnect: true };
     }
 
     const updated = await this.prisma.repairScheduleProject.update({

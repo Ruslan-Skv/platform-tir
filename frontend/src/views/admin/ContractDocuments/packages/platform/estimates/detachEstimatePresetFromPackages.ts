@@ -72,7 +72,6 @@ export async function persistPackageAfterRemovingEstimatePreset(
   await updateContractDocumentPackage(packageId, {
     title: row.title?.trim() || null,
     formData,
-    crmContractId: null,
     recordVersion: false,
   });
 }

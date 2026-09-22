@@ -48,13 +48,12 @@ describe('customer-linked-packages.util', () => {
     expect(parsePackageContractDate({})).toBeNull();
   });
 
-  it('атрибуция пакетов по _linkedCrmCustomerId и crmContractId', async () => {
+  it('атрибуция пакетов по _linkedCrmCustomerId', async () => {
     const prisma = makePrisma([
       {
         id: 'p1',
         kind: 'REPAIR',
         status: 'DRAFT',
-        crmContractId: null,
         formData: {
           _linkedCrmCustomerId: 'cm1',
           contract: { number: 'Р-1', totalAmount: '17474,00' },
@@ -66,27 +65,13 @@ describe('customer-linked-packages.util', () => {
         id: 'p2',
         kind: 'FURNITURE',
         status: 'DRAFT',
-        crmContractId: 'ct9',
         formData: {},
         createdAt: new Date('2026-09-02'),
         payments: [],
       },
-      {
-        id: 'p3',
-        kind: 'WINDOWS',
-        status: 'DRAFT',
-        crmContractId: null,
-        formData: {},
-        createdAt: new Date('2026-09-03'),
-        payments: [],
-      },
     ]);
-    const map = await findPackagesLinkedToCustomers(
-      prisma as never,
-      ['cm1'],
-      new Map([['ct9', 'cm1']]),
-    );
-    expect(map.get('cm1')?.map((p) => p.id)).toEqual(['p1', 'p2']);
+    const map = await findPackagesLinkedToCustomers(prisma as never, ['cm1']);
+    expect(map.get('cm1')?.map((p) => p.id)).toEqual(['p1']);
     expect(map.get('cm1')?.[0].contractNumber).toBe('Р-1');
     expect(map.get('cm1')?.[0].totalAmount).toBe(17474);
     expect(map.get('cm1')?.[0].paidAmount).toBe(7474);

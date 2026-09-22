@@ -144,7 +144,6 @@ export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillF
     customerName: '',
     customerAddress: '',
     customerPhones: [''],
-    contractId: '',
     contractSearch: '',
     deliveryCost: '',
     deliveryPayer: '',

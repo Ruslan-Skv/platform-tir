@@ -36,7 +36,6 @@ export type InstallationScheduleFormValues = {
   manualInstallerNames: string[];
   packageId: string;
   packageSearch: string;
-  contractId: string;
   contractNumber: string;
   workOrderKey: string;
   workOrderLabel: string;
@@ -81,7 +80,6 @@ export function emptyForm(date = todayIsoDate()): InstallationScheduleFormValues
     manualInstallerNames: [''],
     packageId: '',
     packageSearch: '',
-    contractId: '',
     contractNumber: '',
     workOrderKey: '',
     workOrderLabel: '',
@@ -153,7 +151,6 @@ export function formFromSchedule(item: InstallationSchedule): InstallationSchedu
     ]
       .filter(Boolean)
       .join(' · '),
-    contractId: item.contractId ?? '',
     contractNumber: item.contractNumber ?? '',
     workOrderKey: item.workOrderKey ?? '',
     workOrderLabel: item.workOrderLabel ?? '',

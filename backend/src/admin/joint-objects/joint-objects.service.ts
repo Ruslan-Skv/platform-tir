@@ -54,7 +54,6 @@ export class JointObjectsService {
           contractNumber: true,
           installerName: true,
           packageId: true,
-          contractId: true,
           note: true,
           package: { select: { documentObjectId: true } },
         },
@@ -68,20 +67,6 @@ export class JointObjectsService {
             select: {
               documentObjectId: true,
               formData: true,
-              crmContract: {
-                select: {
-                  actWorkStartDate: true,
-                  actWorkEndDate: true,
-                  contractDurationDays: true,
-                },
-              },
-            },
-          },
-          contract: {
-            select: {
-              actWorkStartDate: true,
-              actWorkEndDate: true,
-              contractDurationDays: true,
             },
           },
           entries: {
@@ -102,20 +87,6 @@ export class JointObjectsService {
             select: {
               documentObjectId: true,
               formData: true,
-              crmContract: {
-                select: {
-                  actWorkStartDate: true,
-                  actWorkEndDate: true,
-                  contractDurationDays: true,
-                },
-              },
-            },
-          },
-          contract: {
-            select: {
-              actWorkStartDate: true,
-              actWorkEndDate: true,
-              contractDurationDays: true,
             },
           },
           entries: {
@@ -142,7 +113,6 @@ export class JointObjectsService {
           customerName: true,
           customerAddress: true,
           direction: true,
-          contractId: true,
         },
         orderBy: [{ date: 'asc' }, { timeFrom: 'asc' }],
         take: 5000,

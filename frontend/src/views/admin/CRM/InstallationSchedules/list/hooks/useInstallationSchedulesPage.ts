@@ -155,7 +155,6 @@ export function useInstallationSchedulesPage() {
               .join(', ')
           : selectedInstallers.map((row) => row.fullName).join(', ') || null,
         packageId: formValues.packageId || null,
-        contractId: formValues.contractId || null,
         contractNumber: formValues.contractNumber.trim() || null,
         workOrderKey: formValues.workOrderKey || null,
         workOrderLabel: formValues.workOrderLabel.trim() || null,

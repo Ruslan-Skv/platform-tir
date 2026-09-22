@@ -209,48 +209,35 @@ export function fieldsFromPackage(
   const formContract = asRecord(form.contract) ?? {};
   const formCustomer = asRecord(form.customer) ?? {};
   const formObject = asRecord(form.object) ?? {};
-  const contract = pkg.crmContract;
 
   const contractSum =
-    moneyToInputValue(contract?.totalAmount) ||
-    moneyToInputValue(formContract.totalAmount) ||
-    moneyToInputValue(formContract.contractCost);
+    moneyToInputValue(formContract.totalAmount) || moneyToInputValue(formContract.contractCost);
 
-  const prepayment =
-    moneyToInputValue(contract?.advanceAmount) || moneyToInputValue(formContract.prepaymentAmount);
+  const prepayment = moneyToInputValue(formContract.prepaymentAmount);
 
   const workCloseActDate = isoDateInput(form.repairContractCloseActSignedAt);
   const workPeriodDays =
     typeof formContract.workPeriod === 'string' || typeof formContract.workPeriod === 'number'
       ? String(formContract.workPeriod).trim()
       : '';
-  const contractDate =
-    isoDateInput(contract?.contractDate) || isoDateInput(formContract.date) || '';
+  const contractDate = isoDateInput(formContract.date) || '';
   const workStartActDate = resolveFurnitureTermStartDate(
     contractDate,
     '',
-    isoDateInput(form.repairWorkStartActSignedAt) || isoDateInput(contract?.actWorkStartDate)
+    isoDateInput(form.repairWorkStartActSignedAt)
   );
 
   return {
     packageId: pkg.id,
-    packageSearch: contract?.contractNumber || pkg.title || pkg.id,
-    contractId: pkg.crmContractId || contract?.id || '',
-    contractNumber: strField(contract?.contractNumber, formContract.number) || '',
-    customerName: strField(
-      contract?.customerName,
-      formCustomer.fullName,
-      formCustomer.customerName,
-      formCustomer.fio
-    ),
+    packageSearch: strField(formContract.number) || pkg.title || pkg.id,
+    contractNumber: strField(formContract.number),
+    customerName: strField(formCustomer.fullName, formCustomer.customerName, formCustomer.fio),
     customerAddress: strField(
-      contract?.customerAddress,
       formObject.objectAddress,
       formCustomer.address,
       formCustomer.customerAddress
     ),
     customerPhone: strField(
-      contract?.customerPhone,
       formCustomer.phone,
       Array.isArray(formCustomer.phones) ? formCustomer.phones[0] : null,
       formCustomer.customerPhone
@@ -278,7 +265,6 @@ export type FurnitureProjectFormValues = {
   manualInstaller: boolean;
   packageId: string;
   packageSearch: string;
-  contractId: string;
   customerName: string;
   customerAddress: string;
   customerPhone: string;
@@ -309,7 +295,6 @@ export function emptyFurnitureProjectForm(): FurnitureProjectFormValues {
     manualInstaller: false,
     packageId: '',
     packageSearch: '',
-    contractId: '',
     customerName: '',
     customerAddress: '',
     customerPhone: '',
@@ -338,7 +323,6 @@ export function formValuesFromProject(project: {
   installerId: string | null;
   installerName: string | null;
   packageId: string | null;
-  contractId: string | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
@@ -353,7 +337,7 @@ export function formValuesFromProject(project: {
   workCloseActDate: string | null;
   plannedStartDate: string | null;
   note: string | null;
-  package?: { title?: string | null; crmContract?: { contractNumber?: string } | null } | null;
+  package?: { title?: string | null } | null;
 }): FurnitureProjectFormValues {
   return {
     status: project.status,
@@ -367,12 +351,7 @@ export function formValuesFromProject(project: {
     installerName: project.installerName || '',
     manualInstaller: !project.installerId && Boolean(project.installerName?.trim()),
     packageId: project.packageId || '',
-    packageSearch:
-      project.package?.crmContract?.contractNumber ||
-      project.package?.title ||
-      project.contractNumber ||
-      '',
-    contractId: project.contractId || '',
+    packageSearch: project.package?.title || project.contractNumber || '',
     customerName: project.customerName || '',
     customerAddress: project.customerAddress || '',
     customerPhone: project.customerPhone || '',

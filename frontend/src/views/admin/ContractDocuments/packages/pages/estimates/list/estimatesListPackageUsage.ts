@@ -20,7 +20,6 @@ export type EstimatesListWorkspacePackage = {
   formData: Record<string, unknown>;
   createdById: string | null;
   responsibleManagerId: string | null;
-  crmContract: { contractNumber: string; contractDate: string } | null;
 };
 
 export function mapPackagesForEstimatesList(
@@ -38,12 +37,6 @@ export function mapPackagesForEstimatesList(
     formData: (p.formData ?? {}) as Record<string, unknown>,
     createdById: p.createdById?.trim() || null,
     responsibleManagerId: p.responsibleManagerId?.trim() || null,
-    crmContract: p.crmContract
-      ? {
-          contractNumber: p.crmContract.contractNumber,
-          contractDate: p.crmContract.contractDate,
-        }
-      : null,
   }));
 }
 

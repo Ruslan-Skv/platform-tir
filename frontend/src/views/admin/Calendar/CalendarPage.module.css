@@ -73,12 +73,6 @@
 .filterDotContract {
   background: #7c3aed;
 }
-.filterDotDelivery {
-  background: #059669;
-}
-.filterDotContractInstall {
-  background: #1d4ed8;
-}
 .filterDotWorkDay {
   background: #64748b;
 }
@@ -309,26 +303,6 @@
 .pillContract:focus-visible {
   background: #6d28d9;
   border-color: #5b21b6;
-}
-
-.pillDelivery {
-  background: #059669;
-  border-color: #047857;
-}
-.pillDelivery:hover,
-.pillDelivery:focus-visible {
-  background: #047857;
-  border-color: #065f46;
-}
-
-.pillContractInstall {
-  background: #1d4ed8;
-  border-color: #1e40af;
-}
-.pillContractInstall:hover,
-.pillContractInstall:focus-visible {
-  background: #1e40af;
-  border-color: #1e3a8a;
 }
 
 .pillWorkDay {

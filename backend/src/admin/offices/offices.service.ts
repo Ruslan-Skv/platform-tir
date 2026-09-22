@@ -133,17 +133,6 @@ export class OfficesService {
 
   async remove(id: string) {
     await this.findOne(id);
-    // Проверяем, есть ли договоры с этим офисом
-    const contractsCount = await this.prisma.contract.count({
-      where: { officeId: id },
-    });
-    if (contractsCount > 0) {
-      // Не удаляем, а деактивируем
-      return this.prisma.office.update({
-        where: { id },
-        data: { isActive: false },
-      });
-    }
     return this.prisma.office.delete({
       where: { id },
     });

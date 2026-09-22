@@ -154,18 +154,6 @@ const baseNavItems: NavItem[] = [
         href: '/admin/crm/work-day-requests',
         resourceId: 'admin.crm.work-days',
       },
-      {
-        label: 'Расчёт з/п',
-        href: '/admin/crm/payroll',
-        resourceId: 'admin.crm.payroll',
-        children: [
-          {
-            label: 'Управление',
-            href: '/admin/crm/payroll/management',
-            resourceId: 'admin.crm.payroll.management',
-          },
-        ],
-      },
     ],
   },
   {

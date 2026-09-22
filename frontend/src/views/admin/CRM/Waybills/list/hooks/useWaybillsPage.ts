@@ -3,7 +3,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
-import { type Contract, type CrmUser, getContracts, getCrmUsers } from '@/shared/api/admin-crm';
+import {
+  type ContractDocumentPackage,
+  getContractDocumentPackagesPage,
+} from '@/shared/api/admin-contract-document-packages';
+import { type CrmUser, getCrmUsers } from '@/shared/api/admin-crm';
 import {
   type WaybillTask,
   type WaybillTaskInput,
@@ -22,6 +26,7 @@ import {
 } from '@/shared/api/admin-waybills';
 
 import { getBlockedDeliveryDayMessage } from '../../shared/driver-availability.utils';
+import { waybillPackagePick } from '../../shared/waybills-package-picker.utils';
 import type {
   WaybillFormValues,
   WaybillStatusFilter,
@@ -119,7 +124,7 @@ export function useWaybillsPage() {
   );
   const [formError, setFormError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
-  const [contractHits, setContractHits] = useState<Contract[]>([]);
+  const [contractHits, setContractHits] = useState<ContractDocumentPackage[]>([]);
   const [contractSearching, setContractSearching] = useState(false);
   const quietLoadRef = useRef(false);
 
@@ -239,8 +244,7 @@ export function useWaybillsPage() {
       customerName: customer.customerName,
       customerAddress: customer.customerAddress,
       customerPhones: customer.customerPhones.length > 0 ? customer.customerPhones : [''],
-      contractId: item.contractId ?? '',
-      contractSearch: item.contract?.contractNumber ?? '',
+      contractSearch: '',
       deliveryCost: item.deliveryCost != null ? String(item.deliveryCost) : '',
       deliveryPayer: item.deliveryPayer ?? '',
       moversCost: item.moversCost != null ? String(item.moversCost) : '',
@@ -279,7 +283,6 @@ export function useWaybillsPage() {
       customerAddress: values.customerAddress.trim() || null,
       customerPhone: phones[0] ?? null,
       customerPhones: phones,
-      contractId: values.contractId.trim() || null,
       deliveryCost: parseOptionalNumber(values.deliveryCost),
       deliveryPayer: values.deliveryPayer.trim() || null,
       moversCost: parseOptionalNumber(values.moversCost),
@@ -297,8 +300,13 @@ export function useWaybillsPage() {
     }
     setContractSearching(true);
     try {
-      const res = await getContracts({ search: q, limit: 8 });
-      setContractHits(res.data);
+      const res = await getContractDocumentPackagesPage({
+        search: q,
+        page: 1,
+        limit: 8,
+        paginated: true,
+      });
+      setContractHits(Array.isArray(res) ? res : res.data);
     } catch {
       setContractHits([]);
     } finally {
@@ -306,15 +314,15 @@ export function useWaybillsPage() {
     }
   }, []);
 
-  const applyContract = useCallback((contract: Contract) => {
-    const phone = contract.customerPhone?.trim() || '';
+  const applyContract = useCallback((pkg: ContractDocumentPackage) => {
+    const pick = waybillPackagePick(pkg);
     setFormValues((prev) => ({
       ...prev,
-      contractId: contract.id,
-      contractSearch: contract.contractNumber,
-      customerName: contract.customerName?.trim() || '',
-      customerAddress: contract.customerAddress?.trim() || '',
-      customerPhones: phone ? [phone] : [''],
+      contractId: '',
+      contractSearch: pick.number || pick.customerName,
+      customerName: pick.customerName,
+      customerAddress: pick.customerAddress,
+      customerPhones: pick.customerPhones.length > 0 ? pick.customerPhones : [''],
     }));
     setContractHits([]);
   }, []);

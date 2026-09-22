@@ -72,19 +72,6 @@ export interface ContractEstimatePresetsHistoryEntry {
   changedBy?: ContractDocumentPackageUserRef | null;
 }
 
-/** Краткие поля связанного договора CRM (для списка и подписей). */
-export interface ContractDocumentPackageCrmContract {
-  id: string;
-  contractNumber: string;
-  contractDate: string;
-  customerName: string | null;
-  customerAddress: string | null;
-  customerPhone: string | null;
-  totalAmount: string | number;
-  advanceAmount?: string | number | null;
-  actWorkStartDate?: string | null;
-}
-
 export interface ContractDocumentObjectRef {
   id: string;
   name: string;
@@ -101,14 +88,12 @@ export interface ContractDocumentPackage {
   formData: Record<string, unknown>;
   documentObjectId?: string | null;
   documentObject?: ContractDocumentObjectRef | null;
-  crmContractId: string | null;
   createdById: string | null;
   responsibleManagerId?: string | null;
   createdAt: string;
   updatedAt: string;
   createdBy?: ContractDocumentPackageUserRef | null;
   responsibleManager?: ContractDocumentPackageUserRef | null;
-  crmContract?: ContractDocumentPackageCrmContract | null;
   /** При `include` в списке пакетов — строки журнала оплат (только `amount`). */
   payments?: Array<{ amount: string | number }>;
   /** Число записей в журнале версий (для списка). Создание пакета всегда добавляет версию 1. */
@@ -181,7 +166,6 @@ export interface ContractDocumentPackageVersionListItem {
   versionNumber: number;
   title: string | null;
   status: ContractDocumentPackageStatus;
-  crmContractId: string | null;
   action?: 'CREATE' | 'UPDATE' | 'ROLLBACK';
   keyMoments?: string[];
   createdAt: string;
@@ -556,7 +540,6 @@ export async function createContractDocumentPackage(body: {
   kind: ContractDocumentPackageKind;
   title?: string;
   formData?: Record<string, unknown>;
-  crmContractId?: string;
   responsibleManagerId?: string | null;
 }): Promise<ContractDocumentPackage> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/contract-document-packages`, {
@@ -573,7 +556,6 @@ export async function updateContractDocumentPackage(
   body: {
     title?: string | null;
     formData?: Record<string, unknown>;
-    crmContractId?: string | null;
     responsibleManagerId?: string | null;
     status?: ContractDocumentPackageStatus;
     /** Сохранить снимок в историю версий после успешного PATCH. */

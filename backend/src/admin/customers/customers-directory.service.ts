@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
-import { ContractsService } from '../contracts/contracts.service';
 import { computeCrmCustomerProfileFillPercent } from './crm-customer-fill-percent.util';
 import { parseObjectAddressesFromExtendedProfile } from './crm-object-addresses.util';
 import { digitsOnly as canonicalPhoneDigits } from './customer-duplicates.util';
@@ -27,10 +26,7 @@ const customerAuditUserSelect = {
 
 @Injectable()
 export class CustomersDirectoryService {
-  constructor(
-    private prisma: PrismaService,
-    private contractsService: ContractsService,
-  ) {}
+  constructor(private prisma: PrismaService) {}
 
   private resolveCustomerEntityType(customer: {
     entityType: string | null;
@@ -117,33 +113,6 @@ export class CustomersDirectoryService {
         )
       : dbCustomersAll;
 
-    const digitSet = new Set<string>();
-    for (const c of dbCustomers) {
-      const d = digitsPhone(c.phone);
-      if (d.length >= 10) digitSet.add(d);
-      for (const p of c.phones ?? []) {
-        const pd = digitsPhone(p);
-        if (pd.length >= 10) digitSet.add(pd);
-      }
-    }
-
-    type ContractParty = Awaited<
-      ReturnType<ContractsService['getCustomersFromContracts']>
-    >['customers'][number];
-
-    let orphanParties: ContractParty[] = [];
-    if (!entityType && !createdByFilter) {
-      const { customers: contractParties } = await this.contractsService.getCustomersFromContracts(
-        params?.search,
-      );
-      orphanParties = contractParties.filter((x) => !x.customerId);
-      orphanParties = orphanParties.filter((o) => {
-        const d = digitsPhone(o.customerPhone);
-        if (d.length >= 10 && digitSet.has(d)) return false;
-        return true;
-      });
-    }
-
     const sortBy =
       params?.sortBy === 'createdAt' ||
       params?.sortBy === 'lastMeasurementDate' ||
@@ -179,16 +148,6 @@ export class CustomersDirectoryService {
           row,
         });
       }
-    }
-    for (const o of orphanParties) {
-      const row = this.serializeContractOnlyDirectoryRow(o);
-      merged.push({
-        nameKey: String(row['displayName'] ?? '').toLowerCase(),
-        createdKey: 0,
-        lastMeasurementKey: this.directoryDateSortKey(row['lastMeasurementDate']),
-        lastContractKey: this.directoryDateSortKey(row['lastContractDate']),
-        row,
-      });
     }
 
     merged.sort((a, b) => {
@@ -288,7 +247,7 @@ export class CustomersDirectoryService {
       return cur;
     };
 
-    // Индексы для атрибуции непривязанных (customerId = null) записей по телефону/ФИО.
+    // Индексы для атрибуции непривязанных (customerId = null) замеров по телефону/ФИО.
     const phoneIndex = buildCustomerPhoneIndex(customers);
     const displayNameIndex = buildCustomerDisplayNameIndex(
       customers.map((c) => ({
@@ -300,46 +259,11 @@ export class CustomersDirectoryService {
       })),
     );
 
-    const contracts = await this.prisma.contract.findMany({
-      where: { OR: [{ customerId: { in: customerIds } }, { customerId: null }] },
-      select: {
-        id: true,
-        customerId: true,
-        customerName: true,
-        customerPhone: true,
-        contractDate: true,
-        contractNumber: true,
-        totalAmount: true,
-      },
-      orderBy: { contractDate: 'desc' },
-    });
-    const attributedContractIds = new Set<string>();
-    const contractOwnerIdById = new Map<string, string>();
-    for (const row of contracts) {
-      const ownerId =
-        row.customerId ?? attributeUnlinkedDoc(row, phoneIndex, displayNameIndex) ?? undefined;
-      if (!ownerId) continue;
-      attributedContractIds.add(row.id);
-      contractOwnerIdById.set(row.id, ownerId);
-      const cur = statsOf(ownerId);
-      cur.contractCount += 1;
-      cur.totalAmount += Number(row.totalAmount ?? 0);
-      if (!cur.lastContractDate) {
-        cur.lastContractDate = row.contractDate.toISOString().slice(0, 10);
-        cur.lastContractNumber = row.contractNumber;
-      }
-    }
-
     // Договоры из раздела «Договоры» (ContractDocumentPackage): привязка к карточке —
-    // formData._linkedCrmCustomerId или crmContractId → учтённый выше CRM-Contract.
-    const packagesByCustomer = await findPackagesLinkedToCustomers(
-      this.prisma,
-      customerIds,
-      contractOwnerIdById,
-    );
+    // formData._linkedCrmCustomerId.
+    const packagesByCustomer = await findPackagesLinkedToCustomers(this.prisma, customerIds);
     for (const [ownerId, pkgs] of packagesByCustomer) {
       for (const pkg of pkgs) {
-        if (pkg.crmContractId && attributedContractIds.has(pkg.crmContractId)) continue;
         const cur = statsOf(ownerId);
         cur.contractCount += 1;
         cur.totalAmount += pkg.totalAmount ?? 0;
@@ -533,42 +457,7 @@ export class CustomersDirectoryService {
       lastContractNumber: stats?.lastContractNumber ?? null,
       lastMeasurementDate: stats?.lastMeasurementDate ?? null,
       measurementCount: stats?.measurementCount ?? 0,
-      contractCustomer: null,
       profileFillPercent: computeCrmCustomerProfileFillPercent(c),
-    };
-  }
-
-  private serializeContractOnlyDirectoryRow(
-    o: Awaited<ReturnType<ContractsService['getCustomersFromContracts']>>['customers'][number],
-  ): Record<string, unknown> {
-    const displayName = (o.customerName ?? '').trim() || '—';
-    const phoneKey = (o.customerPhone ?? '').trim();
-    return {
-      rowSource: 'contract_only',
-      id: `contract-only:${displayName}|${phoneKey}`,
-      displayName,
-      email: null,
-      phone: o.customerPhone ?? null,
-      entityType: (() => {
-        const doc = o.documentCustomer as unknown;
-        if (doc && typeof doc === 'object' && 'type' in doc) {
-          const t = (doc as { type?: unknown }).type;
-          return typeof t === 'string' && t.trim() ? t : null;
-        }
-        return null;
-      })(),
-      status: null,
-      stage: null,
-      createdAt: null,
-      manager: o.manager,
-      createdBy: null,
-      contractCount: o.contractCount,
-      totalAmount: Number(o.totalAmount ?? 0),
-      lastContractDate: o.lastContractDate,
-      lastContractNumber: o.lastContractNumber ?? null,
-      lastMeasurementDate: null,
-      measurementCount: 0,
-      contractCustomer: o,
     };
   }
 }

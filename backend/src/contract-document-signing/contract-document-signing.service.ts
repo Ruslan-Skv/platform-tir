@@ -136,7 +136,6 @@ export class ContractDocumentSigningService {
         title: pkg.title,
         status: ContractDocumentPackageStatus.CONTRACT_CONCLUDED,
         formData: formData as Prisma.InputJsonValue,
-        crmContractId: pkg.crmContractId,
         savedById: null,
       },
     });

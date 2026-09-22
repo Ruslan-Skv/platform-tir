@@ -36,15 +36,6 @@ const USER_SELECT = {
 } as const;
 
 const TASK_INCLUDE = {
-  contract: {
-    select: {
-      id: true,
-      contractNumber: true,
-      customerName: true,
-      customerAddress: true,
-      customerPhone: true,
-    },
-  },
   responsible: { select: USER_SELECT },
   driver: { select: USER_SELECT },
   completedBy: { select: USER_SELECT },
@@ -161,31 +152,10 @@ export class WaybillsService {
   }
 
   private async buildCreateData(dto: CreateWaybillTaskDto, createdById: string) {
-    let customerName = this.emptyToNull(dto.customerName) ?? null;
-    let customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
-    let customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
+    const customerName = this.emptyToNull(dto.customerName) ?? null;
+    const customerAddress = this.emptyToNull(dto.customerAddress) ?? null;
+    const customerPhones = this.normalizeCustomerPhones(dto.customerPhones, dto.customerPhone);
     let customerInfoText = this.emptyToNull(dto.customerInfoText) ?? null;
-    const contractId = this.emptyToNull(dto.contractId) ?? null;
-
-    if (contractId) {
-      const contract = await this.prisma.contract.findUnique({
-        where: { id: contractId },
-        select: {
-          id: true,
-          customerName: true,
-          customerAddress: true,
-          customerPhone: true,
-        },
-      });
-      if (!contract) {
-        throw new BadRequestException('Договор не найден');
-      }
-      if (!customerName) customerName = contract.customerName?.trim() || null;
-      if (!customerAddress) customerAddress = contract.customerAddress?.trim() || null;
-      if (customerPhones.length === 0 && contract.customerPhone?.trim()) {
-        customerPhones = [contract.customerPhone.trim()];
-      }
-    }
 
     const customerPhone = customerPhones[0] ?? null;
 
@@ -208,7 +178,6 @@ export class WaybillsService {
       customerAddress,
       customerPhone,
       customerPhones,
-      contractId,
       deliveryCost: this.decimalOrNull(dto.deliveryCost) ?? null,
       deliveryPayer: this.emptyToNull(dto.deliveryPayer) ?? null,
       moversCost: this.decimalOrNull(dto.moversCost) ?? null,
@@ -370,20 +339,6 @@ export class WaybillsService {
     if (dto.driverUserId !== undefined) {
       data.driver = dto.driverUserId ? { connect: { id: dto.driverUserId } } : { disconnect: true };
     }
-    if (dto.contractId !== undefined) {
-      if (!dto.contractId) {
-        data.contract = { disconnect: true };
-      } else {
-        const contract = await this.prisma.contract.findUnique({
-          where: { id: dto.contractId },
-          select: { id: true },
-        });
-        if (!contract) {
-          throw new BadRequestException('Договор не найден');
-        }
-        data.contract = { connect: { id: dto.contractId } };
-      }
-    }
 
     const updated = await this.prisma.waybillTask.update({
       where: { id },
@@ -442,7 +397,6 @@ export class WaybillsService {
               { customerPhone: { contains: search, mode: 'insensitive' } },
               { customerPhones: { has: search } },
               { direction: { contains: search, mode: 'insensitive' } },
-              { contract: { contractNumber: { contains: search, mode: 'insensitive' } } },
             ],
           }
         : {}),
@@ -561,7 +515,6 @@ export class WaybillsService {
         customerAddress: source.customerAddress,
         customerPhone: source.customerPhone,
         customerPhones: source.customerPhones,
-        contractId: source.contractId,
         deliveryCost: source.deliveryCost,
         deliveryPayer: source.deliveryPayer,
         moversCost: source.moversCost,

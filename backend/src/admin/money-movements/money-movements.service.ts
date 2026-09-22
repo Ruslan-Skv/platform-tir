@@ -269,7 +269,6 @@ export class MoneyMovementsService {
       id: row.id,
       sourceId: row.sourceId,
       packageId: row.packageId,
-      contractId: row.contractId,
       paymentDate: row.paymentDate.toISOString().slice(0, 10),
       performedAt: row.performedAt.toISOString(),
       amount: row.amount.toString(),
@@ -310,7 +309,6 @@ export class MoneyMovementsService {
           formData: true,
           createdById: true,
           responsibleManagerId: true,
-          crmContract: { select: { id: true, contractNumber: true, customerName: true } },
           documentObject: { select: { customerName: true } },
         },
       });
@@ -324,7 +322,6 @@ export class MoneyMovementsService {
         data: {
           sourceId: payment.id,
           packageId: payment.packageId,
-          contractId: pkg?.crmContract?.id ?? null,
           paymentDate: payment.paymentDate,
           performedAt: payment.createdAt,
           amount: payment.amount,
@@ -335,13 +332,9 @@ export class MoneyMovementsService {
           notes: payment.notes,
           managerId: this.resolveMovementManagerId(pkg, payment),
           office: office?.name ?? null,
-          contractNumber:
-            pkg?.crmContract?.contractNumber ?? contractNumberFromFormData(pkg?.formData) ?? null,
+          contractNumber: contractNumberFromFormData(pkg?.formData) ?? null,
           customerName:
-            pkg?.crmContract?.customerName ??
-            customerNameFromFormData(pkg?.formData) ??
-            pkg?.documentObject?.customerName ??
-            null,
+            customerNameFromFormData(pkg?.formData) ?? pkg?.documentObject?.customerName ?? null,
           direction: pkg ? (PACKAGE_KIND_DIRECTION_NAME[pkg.kind] ?? pkg.kind) : null,
         },
       });
@@ -445,7 +438,6 @@ export class MoneyMovementsService {
       data: {
         sourceId: null,
         packageId: null,
-        contractId: null,
         paymentDate: new Date(dto.paymentDate),
         performedAt: new Date(),
         amount: dto.amount,

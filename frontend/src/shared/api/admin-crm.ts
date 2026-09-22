@@ -189,14 +189,6 @@ export async function getFunnelStats(managerId?: string): Promise<FunnelStageSta
 }
 
 // --- Complex Objects (Комплексные объекты) ---
-export interface ComplexObjectContract {
-  id: string;
-  contractNumber: string;
-  status: string;
-  totalAmount: string | number;
-  direction: { id: string; name: string } | null;
-}
-
 export interface ComplexObject {
   id: string;
   name: string;
@@ -210,7 +202,6 @@ export interface ComplexObject {
   managerId: string | null;
   office?: { id: string; name: string; address: string | null } | null;
   manager?: { id: string; firstName: string | null; lastName: string | null } | null;
-  contracts: ComplexObjectContract[];
 }
 
 export async function getComplexObjects(): Promise<ComplexObject[]> {
@@ -279,14 +270,6 @@ export async function deleteComplexObject(id: string): Promise<void> {
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось удалить комплексный объект');
-}
-
-export async function getComplexObjectContracts(id: string): Promise<Contract[]> {
-  const res = await apiFetch(`${API_URL}/admin/complex-objects/${id}/contracts`, {
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось загрузить договоры объекта');
-  return res.json();
 }
 
 export interface ComplexObjectHistoryEntry {
@@ -992,174 +975,6 @@ export async function rollbackMeasurement(
 }
 
 // --- Contracts ---
-export interface Contract {
-  id: string;
-  /** Идентификатор карточки клиента в справочнике, если договор к ней привязан */
-  customerId?: string | null;
-  contractNumber: string;
-  contractDate: string;
-  validityEnd?: string | null;
-  contractDurationDays?: number | null;
-  contractDurationType?: string | null;
-  status: string;
-  directionId: string | null;
-  managerId: string | null;
-  officeId: string | null;
-  complexObjectId: string | null;
-  customerName: string;
-  customerAddress: string | null;
-  customerPhone: string | null;
-  discount: string | number;
-  totalAmount: string | number;
-  advanceAmount: string | number;
-  installationDate: string | null;
-  installationDurationDays?: number | null;
-  deliveryDate: string | null;
-  actWorkStartDate: string | null;
-  actWorkEndDate: string | null;
-  actWorkStartImages?: string[];
-  actWorkEndImages?: string[];
-  manager?: { id: string; firstName: string | null; lastName: string | null } | null;
-  surveyor?: { id: string; firstName: string | null; lastName: string | null } | null;
-  direction?: { id: string; name: string; slug: string } | null;
-  office?: { id: string; name: string; address: string | null } | null;
-  complexObject?: {
-    id: string;
-    name: string;
-    customerName: string | null;
-    address: string | null;
-  } | null;
-  advances?: Array<{ id: string; amount: string | number; paidAt: string }>;
-  amendments?: ContractAmendment[];
-  notes?: string | null;
-  payments?: Array<{
-    id: string;
-    amount: string | number;
-    paymentDate: string;
-    paymentForm: string;
-    paymentType: string;
-  }>;
-}
-
-export async function getContracts(params?: {
-  status?: string;
-  managerId?: string;
-  directionId?: string;
-  search?: string;
-  dateFrom?: string;
-  dateTo?: string;
-  page?: number;
-  limit?: number;
-}): Promise<{
-  data: Contract[];
-  total: number;
-  page: number;
-  limit: number;
-  totalPages: number;
-}> {
-  const searchParams = new URLSearchParams();
-  if (params?.status) searchParams.set('status', params.status);
-  if (params?.managerId) searchParams.set('managerId', params.managerId);
-  if (params?.directionId) searchParams.set('directionId', params.directionId);
-  if (params?.search) searchParams.set('search', params.search);
-  if (params?.dateFrom) searchParams.set('dateFrom', params.dateFrom);
-  if (params?.dateTo) searchParams.set('dateTo', params.dateTo);
-  searchParams.set('page', String(params?.page ?? 1));
-  searchParams.set('limit', String(params?.limit ?? 20));
-
-  const res = await apiFetch(`${API_URL}/admin/contracts?${searchParams}`, {
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось загрузить договоры');
-  return res.json();
-}
-
-export async function getContract(id: string): Promise<Contract> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось загрузить договор');
-  return res.json();
-}
-
-export async function createContract(data: Record<string, unknown>): Promise<Contract> {
-  const res = await apiFetch(`${API_URL}/admin/contracts`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Не удалось создать договор');
-  }
-  return res.json();
-}
-
-export async function updateContract(id: string, data: Record<string, unknown>): Promise<Contract> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
-    method: 'PATCH',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) throw new Error('Не удалось обновить договор');
-  return res.json();
-}
-
-export async function deleteContract(id: string): Promise<void> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${id}`, {
-    method: 'DELETE',
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось удалить договор');
-}
-
-/** Договор заказчика в сводке (порядок: от новых к старым, как в выборке API) */
-export interface ContractCustomerContractRow {
-  id: string;
-  contractNumber: string | null;
-  contractDate: string | null;
-  totalAmount: number;
-  direction?: { id: string; name: string; slug: string } | null;
-}
-
-/** Блок «Заказчик» из последней версии пакета «Ремонт» по договору (если есть). */
-export interface DocumentCustomerBlock {
-  type: string;
-  fullName: string;
-  representativeFullNameNominative: string;
-  representativeFullNameGenitive: string;
-  organizationName: string;
-  representativePositionNominative: string;
-  representativePositionGenitive: string;
-  inn: string;
-  ogrn: string;
-  address: string;
-  phone: string;
-  email: string;
-  bankDetails: string;
-  passportSeriesNumber: string;
-  passportIssuedBy: string;
-  passportIssueDate: string;
-}
-
-export interface ContractCustomer {
-  /** Идентификатор карточки клиента, если договоры с ней связаны */
-  customerId: string | null;
-  customerName: string;
-  customerPhone: string;
-  customerAddress: string | null;
-  contractCount: number;
-  totalAmount: number;
-  lastContractDate: string | null;
-  lastContractId: string | null;
-  lastContractNumber: string | null;
-  /** Все договоры этого заказчика (для карточки и ссылок) */
-  contracts: ContractCustomerContractRow[];
-  /** Реквизиты как на вкладке «Данные» пакета «Ремонт», если пакет сохранён */
-  documentCustomer?: DocumentCustomerBlock | null;
-  manager: { id: string; firstName: string | null; lastName: string | null } | null;
-}
-
 export interface CrmCustomerContractLink {
   id: string;
   contractNumber: string;
@@ -1198,7 +1013,6 @@ export interface ClientDirectoryRow {
   lastContractNumber: string | null;
   lastMeasurementDate: string | null;
   measurementCount?: number | null;
-  contractCustomer?: ContractCustomer | null;
   /** Доля заполнения карточки CRM (0–100), только для rowSource === 'customer'. */
   profileFillPercent?: number | null;
   /** Адрес объекта (при expandObjectAddresses — отдельная строка на каждый адрес). */
@@ -1514,172 +1328,4 @@ export async function updateCrmCustomer(
     throw new Error(err.message || 'Не удалось сохранить данные клиента');
   }
   return res.json();
-}
-
-export async function getContractCustomers(
-  search?: string
-): Promise<{ customers: ContractCustomer[] }> {
-  const url = new URL(`${API_URL}/admin/contracts/customers`);
-  if (search?.trim()) url.searchParams.set('search', search.trim());
-  const res = await apiFetch(String(url), { headers: getAdminAuthHeaders() });
-  if (!res.ok) throw new Error('Не удалось загрузить заказчиков');
-  return res.json();
-}
-
-export interface ContractHistoryEntry {
-  id: string;
-  action: 'UPDATE' | 'ROLLBACK';
-  changedAt: string;
-  changedBy: { id: string; firstName: string | null; lastName: string | null; email: string };
-  changedFields: string[];
-  snapshot: Record<string, unknown>;
-}
-
-export async function getContractHistory(contractId: string): Promise<ContractHistoryEntry[]> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/history`, {
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось загрузить историю');
-  return res.json();
-}
-
-export async function rollbackContract(contractId: string, historyId: string): Promise<Contract> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/rollback/${historyId}`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string };
-    throw new Error(err.message || 'Не удалось откатить изменения');
-  }
-  return res.json();
-}
-
-// --- Contract Advances ---
-export interface ContractAdvance {
-  id: string;
-  amount: string | number;
-  paidAt: string;
-  notes?: string | null;
-}
-
-export async function addContractAdvance(
-  contractId: string,
-  data: { amount: number; paidAt: string; notes?: string }
-): Promise<ContractAdvance> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/advances`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Не удалось добавить аванс');
-  }
-  return res.json();
-}
-
-export async function uploadContractActImage(
-  contractId: string,
-  file: File,
-  type: 'start' | 'end'
-): Promise<{ imageUrl: string }> {
-  const formData = new FormData();
-  formData.append('file', file);
-  const headers = getAdminAuthHeaders() as Record<string, string>;
-  delete headers['Content-Type'];
-  const res = await apiFetch(
-    `${API_URL}/admin/contracts/${contractId}/upload-act-image?type=${type}`,
-    {
-      method: 'POST',
-      headers: { ...headers, Accept: 'application/json' },
-      body: formData,
-    }
-  );
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(err.message || 'Не удалось загрузить фото');
-  }
-  return res.json();
-}
-
-// --- Contract Amendments (доп. соглашения) ---
-export interface ContractAmendment {
-  id: string;
-  contractId: string;
-  number?: number | null;
-  amount: string | number;
-  discount?: string | number | null;
-  date: string;
-  durationAdditionDays?: number | null;
-  durationAdditionType?: string | null;
-  notes?: string | null;
-}
-
-export async function addContractAmendment(
-  contractId: string,
-  data: {
-    amount: number;
-    date: string;
-    discount?: number;
-    durationAdditionDays?: number;
-    durationAdditionType?: string;
-    notes?: string;
-  }
-): Promise<ContractAmendment> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments`, {
-    method: 'POST',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
-    const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
-    throw new Error(msg || 'Не удалось добавить доп. соглашение');
-  }
-  return res.json();
-}
-
-export async function updateContractAmendment(
-  contractId: string,
-  amendmentId: string,
-  data: {
-    amount?: number;
-    date?: string;
-    discount?: number;
-    durationAdditionDays?: number | null;
-    durationAdditionType?: string | null;
-    notes?: string | null;
-  }
-): Promise<ContractAmendment> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
-    method: 'PATCH',
-    headers: getAdminAuthHeaders(),
-    body: JSON.stringify(data),
-  });
-  if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
-    const msg = Array.isArray(err.message) ? err.message.join(', ') : err.message;
-    throw new Error(msg || 'Не удалось обновить доп. соглашение');
-  }
-  return res.json();
-}
-
-export async function removeContractAmendment(
-  contractId: string,
-  amendmentId: string
-): Promise<void> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/amendments/${amendmentId}`, {
-    method: 'DELETE',
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось удалить доп. соглашение');
-}
-
-export async function removeContractAdvance(contractId: string, advanceId: string): Promise<void> {
-  const res = await apiFetch(`${API_URL}/admin/contracts/${contractId}/advances/${advanceId}`, {
-    method: 'DELETE',
-    headers: getAdminAuthHeaders(),
-  });
-  if (!res.ok) throw new Error('Не удалось удалить аванс');
 }

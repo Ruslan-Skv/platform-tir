@@ -134,7 +134,6 @@ export class MeasurementsCrudService {
     search?: string;
     dateFrom?: string;
     dateTo?: string;
-    withoutContract?: boolean;
     hasCustomerId?: boolean;
     /** Область списка: мои / мои направления / все. */
     scope?: 'mine' | 'my_directions' | 'all';
@@ -162,7 +161,6 @@ export class MeasurementsCrudService {
       search,
       dateFrom,
       dateTo,
-      withoutContract,
       hasCustomerId,
       scope = 'all',
       scopeUserId,
@@ -186,7 +184,6 @@ export class MeasurementsCrudService {
       search,
       dateFrom,
       dateTo,
-      withoutContract,
       hasCustomerId,
       scope,
       scopeUserId,
@@ -224,7 +221,6 @@ export class MeasurementsCrudService {
             search,
             dateFrom,
             dateTo,
-            withoutContract,
             hasCustomerId,
             scope,
             scopeUserId,
@@ -253,7 +249,6 @@ export class MeasurementsCrudService {
     search?: string;
     dateFrom?: string;
     dateTo?: string;
-    withoutContract?: boolean;
     hasCustomerId?: boolean;
     scope?: 'mine' | 'my_directions' | 'all';
     scopeUserId?: string;
@@ -267,9 +262,6 @@ export class MeasurementsCrudService {
     }
     if (opts.managerId) where.managerId = opts.managerId;
     if (opts.surveyorId) where.surveyorId = opts.surveyorId;
-    if (opts.withoutContract) {
-      where.contract = { is: null };
-    }
     if (opts.hasCustomerId) {
       where.customerId = { not: null };
     }
@@ -339,7 +331,6 @@ export class MeasurementsCrudService {
     search?: string;
     dateFrom?: string;
     dateTo?: string;
-    withoutContract?: boolean;
     hasCustomerId?: boolean;
     scope?: 'mine' | 'my_directions' | 'all';
     scopeUserId?: string;
@@ -357,7 +348,6 @@ export class MeasurementsCrudService {
       search: opts.search,
       dateFrom: opts.dateFrom,
       dateTo: opts.dateTo,
-      withoutContract: opts.withoutContract,
       hasCustomerId: opts.hasCustomerId,
     };
 
@@ -445,7 +435,6 @@ export class MeasurementsCrudService {
         ...MEASUREMENT_RELATIONS_INCLUDE,
         manager: { select: { id: true, firstName: true, lastName: true, email: true } },
         customer: { select: { id: true, firstName: true, lastName: true, email: true } },
-        contract: true,
       },
     });
     if (!m) {

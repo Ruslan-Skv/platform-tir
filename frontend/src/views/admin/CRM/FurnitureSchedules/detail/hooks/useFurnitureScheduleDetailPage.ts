@@ -103,7 +103,6 @@ export function useFurnitureScheduleDetailPage(projectId: string) {
             ? null
             : values.installerName.trim() || null,
         packageId: values.packageId.trim() || null,
-        contractId: values.contractId.trim() || null,
         customerName: values.customerName.trim() || null,
         customerAddress: values.customerAddress.trim() || null,
         customerPhone: values.customerPhone.trim() || null,

@@ -86,12 +86,6 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     path: '/admin/crm/my-work-day',
   },
   { id: 'admin.crm.work-days', label: 'Журнал сотрудников', path: '/admin/crm/work-days' },
-  { id: 'admin.crm.payroll', label: 'Расчёт з/п', path: '/admin/crm/payroll' },
-  {
-    id: 'admin.crm.payroll.management',
-    label: 'Расчёт з/п — Управление',
-    path: '/admin/crm/payroll/management',
-  },
   {
     id: 'admin.contract-documents',
     label: 'Настройки — Оформление договоров',

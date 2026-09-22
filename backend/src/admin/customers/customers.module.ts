@@ -5,10 +5,9 @@ import { CustomersCrmService } from './customers-crm.service';
 import { CustomersDuplicatesService } from './customers-duplicates.service';
 import { CustomersController } from './customers.controller';
 import { DatabaseModule } from '../../database/database.module';
-import { ContractsModule } from '../contracts/contracts.module';
 
 @Module({
-  imports: [DatabaseModule, ContractsModule],
+  imports: [DatabaseModule],
   controllers: [CustomersController],
   providers: [
     CustomersService,

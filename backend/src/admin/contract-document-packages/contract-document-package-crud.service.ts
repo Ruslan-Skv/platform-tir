@@ -25,9 +25,6 @@ export class ContractDocumentPackageCrudService {
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
-    if (dto.crmContractId) {
-      await this.assertCrmContractExists(dto.crmContractId);
-    }
     const fromFormSignatory = this.extractSignatoryCrmUserId(dto.formData);
     const responsibleManagerId = await this.resolveResponsibleManagerId(
       dto.responsibleManagerId ?? fromFormSignatory,
@@ -53,7 +50,6 @@ export class ContractDocumentPackageCrudService {
         formData: formDataInput as Prisma.InputJsonValue,
         createdById: createdById ?? null,
         responsibleManagerId,
-        crmContractId: dto.crmContractId ?? null,
       },
       include: contractDocumentPackageInclude,
     });
@@ -70,7 +66,6 @@ export class ContractDocumentPackageCrudService {
       {
         title: created.title,
         formData: created.formData as Prisma.InputJsonValue,
-        crmContractId: created.crmContractId,
         status: created.status,
       },
       createdById ?? null,
@@ -106,11 +101,6 @@ export class ContractDocumentPackageCrudService {
       orderBy: { deletedAt: 'desc' },
       include: {
         deletedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
-        crmContract: {
-          select: {
-            customerName: true,
-          },
-        },
       },
     });
 
@@ -138,9 +128,6 @@ export class ContractDocumentPackageCrudService {
 
   async update(id: string, dto: UpdateContractDocumentPackageDto, savedById?: string | null) {
     const row = await this.findOne(id);
-    if (dto.crmContractId) {
-      await this.assertCrmContractExists(dto.crmContractId);
-    }
     if (dto.formData !== undefined) {
       await this.assertEstimatePresetsExclusive(id, dto.formData, {
         previousFormData: row.formData,
@@ -197,7 +184,6 @@ export class ContractDocumentPackageCrudService {
       data: {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(formDataToSave !== undefined ? { formData: formDataToSave } : {}),
-        ...(dto.crmContractId !== undefined ? { crmContractId: dto.crmContractId } : {}),
         ...(responsibleManagerId !== undefined ? { responsibleManagerId } : {}),
         ...(dto.status !== undefined ? { status: dto.status } : {}),
       },
@@ -209,7 +195,6 @@ export class ContractDocumentPackageCrudService {
         {
           title: updated.title,
           formData: updated.formData as Prisma.InputJsonValue,
-          crmContractId: updated.crmContractId,
           status: updated.status,
         },
         savedById ?? null,
@@ -242,7 +227,6 @@ export class ContractDocumentPackageCrudService {
         versionNumber: true,
         title: true,
         status: true,
-        crmContractId: true,
         formData: true,
         createdAt: true,
         savedBy: { select: { id: true, email: true, firstName: true, lastName: true } },
@@ -256,14 +240,12 @@ export class ContractDocumentPackageCrudService {
           ? {
               title: previous.title,
               status: previous.status,
-              crmContractId: previous.crmContractId,
               formData: previous.formData,
             }
           : null,
         current: {
           title: compactVersion.title,
           status: compactVersion.status,
-          crmContractId: compactVersion.crmContractId,
           formData,
         },
         action,
@@ -342,16 +324,6 @@ export class ContractDocumentPackageCrudService {
 
   async remove(id: string, actorUserId?: string) {
     return this.moveToTrash(id, actorUserId);
-  }
-
-  private async assertCrmContractExists(contractId: string) {
-    const row = await this.prisma.contract.findUnique({
-      where: { id: contractId },
-      select: { id: true },
-    });
-    if (!row) {
-      throw new BadRequestException('Указан несуществующий договор CRM');
-    }
   }
 
   private extractSignatoryCrmUserId(formData: unknown): string | null {
@@ -483,14 +455,12 @@ export class ContractDocumentPackageCrudService {
     pkg: {
       title: string | null;
       formData: unknown;
-      crmContract: { customerName: string | null } | null;
     },
     searchNorm: string,
   ): boolean {
     const haystack = [
       this.displayContractNumberFromFormData(pkg.formData),
       this.customerNameFromFormData(pkg.formData),
-      pkg.crmContract?.customerName ?? '',
       pkg.title ?? '',
     ]
       .join(' ')
@@ -503,7 +473,6 @@ export class ContractDocumentPackageCrudService {
     snapshot: {
       title: string | null;
       formData: Prisma.InputJsonValue;
-      crmContractId: string | null;
       status: ContractDocumentPackageStatus;
     },
     savedById?: string | null,
@@ -515,7 +484,6 @@ export class ContractDocumentPackageCrudService {
         select: {
           title: true,
           formData: true,
-          crmContractId: true,
           status: true,
         },
       });
@@ -536,7 +504,6 @@ export class ContractDocumentPackageCrudService {
           versionNumber: next,
           title: snapshot.title,
           formData: snapshot.formData,
-          crmContractId: snapshot.crmContractId,
           status: snapshot.status,
           savedById: savedById ?? null,
         },
@@ -547,13 +514,11 @@ export class ContractDocumentPackageCrudService {
   private buildVersionSnapshotSignature(snapshot: {
     title: string | null;
     status: ContractDocumentPackageStatus;
-    crmContractId: string | null;
     formData: unknown;
   }): string {
     return JSON.stringify({
       title: snapshot.title ?? null,
       status: snapshot.status,
-      crmContractId: snapshot.crmContractId ?? null,
       formData: snapshot.formData ?? {},
     });
   }
@@ -563,7 +528,6 @@ export class ContractDocumentPackageCrudService {
     versions: Array<{
       title: string | null;
       status: ContractDocumentPackageStatus;
-      crmContractId: string | null;
       formData: unknown;
     }>;
   }): 'CREATE' | 'UPDATE' | 'ROLLBACK' {

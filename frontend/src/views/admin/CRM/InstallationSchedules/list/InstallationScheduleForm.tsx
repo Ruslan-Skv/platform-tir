@@ -44,16 +44,13 @@ function packageFormFields(pkg: ContractDocumentPackage) {
   const contract = asRecord(formData.contract) || {};
   const customer = asRecord(formData.customer) || {};
   const object = asRecord(formData.object) || {};
-  const crm = pkg.crmContract;
 
   const contractNumber =
-    trimStr(crm?.contractNumber) ||
     trimStr(contract.number) ||
     formStrFromPackage(pkg, 'contractNumber') ||
     formStrFromPackage(pkg, 'dogovorNumber');
 
   const customerName =
-    trimStr(crm?.customerName) ||
     trimStr(customer.fullName) ||
     trimStr(customer.organizationName) ||
     trimStr(customer.representativeFullNameNominative) ||
@@ -68,7 +65,6 @@ function packageFormFields(pkg: ContractDocumentPackage) {
     const phone = trimStr(value);
     if (phone && !phoneCandidates.includes(phone)) phoneCandidates.push(phone);
   };
-  pushPhone(crm?.customerPhone);
   pushPhone(customer.phone);
   if (Array.isArray(customer.phones)) {
     for (const phone of customer.phones) pushPhone(phone);
@@ -84,7 +80,6 @@ function packageFormFields(pkg: ContractDocumentPackage) {
     formStrFromPackage(pkg, 'objectAddress');
 
   const customerAddress =
-    trimStr(crm?.customerAddress) ||
     trimStr(customer.address) ||
     formStrFromPackage(pkg, 'customerAddress') ||
     formStrFromPackage(pkg, 'address');
@@ -207,7 +202,6 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
     update({
       packageId: '',
       packageSearch: '',
-      contractId: '',
       workOrderKey: '',
       workOrderLabel: '',
     });
@@ -245,7 +239,6 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
       ...(values.manualInstaller || nextInstallerIds.length || values.direction === nextDirection
         ? {}
         : { manualInstallerNames: [''] }),
-      contractId: pkg.crmContractId || '',
       contractNumber: fields.contractNumber,
       customerName: fields.customerName,
       customerAddress: fields.displayAddress,
@@ -293,7 +286,6 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
                 update({
                   packageSearch: e.target.value,
                   packageId: '',
-                  contractId: '',
                   workOrderKey: '',
                   workOrderLabel: '',
                 });
@@ -541,7 +533,7 @@ export function InstallationScheduleForm({ values, onChange, installers, error }
               <input
                 id="is-contract"
                 value={values.contractNumber}
-                onChange={(e) => update({ contractNumber: e.target.value, contractId: '' })}
+                onChange={(e) => update({ contractNumber: e.target.value })}
               />
             </div>
             <div className={`${styles.compactField} ${styles.compactFieldGrow}`}>

@@ -57,18 +57,6 @@ export function attributeUnlinkedDoc(
 }
 
 type MinimalPrisma = {
-  contract: {
-    findMany: (args: unknown) => Promise<
-      Array<{
-        id: string;
-        contractNumber: string;
-        contractDate: Date;
-        totalAmount: unknown;
-        customerName?: string | null;
-        customerPhone?: string | null;
-      }>
-    >;
-  };
   measurement: {
     findMany: (args: unknown) => Promise<
       Array<{
@@ -82,7 +70,7 @@ type MinimalPrisma = {
   };
 };
 
-/** Списки договоров/замеров карточки: явно привязанные (customerId) плюс непривязанные,
+/** Список замеров карточки: явно привязанные (customerId) плюс непривязанные,
  *  сматченные по телефону или полному ФИО; отсортированные по дате по убыванию. */
 export async function collectCustomerDocLists(
   prisma: MinimalPrisma,
@@ -97,12 +85,6 @@ export async function collectCustomerDocLists(
     extendedProfile: unknown;
   },
   linked: {
-    contracts: Array<{
-      id: string;
-      contractNumber: string;
-      contractDate: Date;
-      totalAmount: unknown;
-    }>;
     measurements: Array<{
       id: string;
       receptionDate: Date;
@@ -111,12 +93,6 @@ export async function collectCustomerDocLists(
     }>;
   },
 ): Promise<{
-  contracts: Array<{
-    id: string;
-    contractNumber: string;
-    contractDate: Date;
-    totalAmount: unknown;
-  }>;
   measurements: Array<{
     id: string;
     receptionDate: Date;
@@ -138,18 +114,6 @@ export async function collectCustomerDocLists(
     customerPhone?: string | null;
   }) => attributeUnlinkedDoc(doc, phoneIndex, displayNameIndex) === customer.id;
 
-  const unlinkedContracts = await prisma.contract.findMany({
-    where: { customerId: null },
-    select: {
-      id: true,
-      contractNumber: true,
-      contractDate: true,
-      totalAmount: true,
-      customerName: true,
-      customerPhone: true,
-    },
-    orderBy: { contractDate: 'desc' },
-  });
   const unlinkedMeasurements = await prisma.measurement.findMany({
     where: { customerId: null },
     select: {
@@ -162,13 +126,10 @@ export async function collectCustomerDocLists(
     orderBy: { receptionDate: 'desc' },
   });
 
-  const contracts = [...linked.contracts, ...unlinkedContracts.filter(belongsToCustomer)].sort(
-    (a, b) => b.contractDate.getTime() - a.contractDate.getTime(),
-  );
   const measurements = [
     ...linked.measurements,
     ...unlinkedMeasurements.filter(belongsToCustomer),
   ].sort((a, b) => b.receptionDate.getTime() - a.receptionDate.getTime());
 
-  return { contracts, measurements };
+  return { measurements };
 }

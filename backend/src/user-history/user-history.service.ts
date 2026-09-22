@@ -67,7 +67,7 @@ function parseRubAmount(raw: unknown): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-function extractPackageContractAmount(formData: unknown, crmTotal: unknown): number | null {
+function extractPackageContractAmount(formData: unknown): number | null {
   if (formData && typeof formData === 'object' && !Array.isArray(formData)) {
     const fd = formData as Record<string, unknown>;
     const contract = fd.contract;
@@ -76,7 +76,20 @@ function extractPackageContractAmount(formData: unknown, crmTotal: unknown): num
       if (fromContract != null) return fromContract;
     }
   }
-  return parseRubAmount(crmTotal);
+  return null;
+}
+
+/** Номер договора из formData пакета («дд.ММ.гггг»-карточка «Данные»). */
+function extractPackageContractNumber(formData: unknown): string | null {
+  if (formData && typeof formData === 'object' && !Array.isArray(formData)) {
+    const fd = formData as Record<string, unknown>;
+    const contract = fd.contract;
+    if (contract && typeof contract === 'object' && !Array.isArray(contract)) {
+      const num = (contract as Record<string, unknown>).number;
+      if (typeof num === 'string' && num.trim()) return num.trim();
+    }
+  }
+  return null;
 }
 
 function extractPackageOccurredAt(
@@ -123,11 +136,10 @@ export class UserHistoryService {
     const emailNorm = normalizeEmail(user.email);
     const phoneNorm = normalizePhone(user.phone);
 
-    const [orders, serviceOrders, packageIds, contractIdsFromCustomers] = await Promise.all([
+    const [orders, serviceOrders, packageIds] = await Promise.all([
       this.fetchOrders(userId),
       this.fetchServiceOrders(userId),
       this.findMatchedPackageIds(emailNorm, phoneNorm),
-      this.findMatchedContractIds(emailNorm, phoneNorm),
     ]);
 
     const packages =
@@ -141,13 +153,6 @@ export class UserHistoryService {
               status: true,
               formData: true,
               updatedAt: true,
-              crmContractId: true,
-              crmContract: {
-                select: {
-                  contractNumber: true,
-                  totalAmount: true,
-                },
-              },
               signingSessions: {
                 where: {
                   status: {
@@ -166,15 +171,9 @@ export class UserHistoryService {
           })
         : [];
 
-    const allContractIds = new Set<string>(contractIdsFromCustomers);
-    for (const pkg of packages) {
-      if (pkg.crmContractId) allContractIds.add(pkg.crmContractId);
-    }
-
-    const contractIdList = [...allContractIds];
     const orderIds = orders.map((o) => o.id);
 
-    const [orderPayments, packagePayments, contractPayments] = await Promise.all([
+    const [orderPayments, packagePayments] = await Promise.all([
       orderIds.length > 0
         ? this.prisma.payment.findMany({
             where: { orderId: { in: orderIds } },
@@ -191,17 +190,8 @@ export class UserHistoryService {
                 select: {
                   title: true,
                   kind: true,
-                  crmContract: { select: { contractNumber: true } },
                 },
               },
-            },
-          })
-        : [],
-      contractIdList.length > 0
-        ? this.prisma.contractPayment.findMany({
-            where: { contractId: { in: contractIdList } },
-            include: {
-              contract: { select: { contractNumber: true } },
             },
           })
         : [],
@@ -253,8 +243,8 @@ export class UserHistoryService {
 
     for (const pkg of packages) {
       const kindLabel = PACKAGE_KIND_LABELS[pkg.kind] ?? pkg.kind;
-      const contractNumber = pkg.crmContract?.contractNumber ?? null;
-      const amount = extractPackageContractAmount(pkg.formData, pkg.crmContract?.totalAmount);
+      const contractNumber = extractPackageContractNumber(pkg.formData);
+      const amount = extractPackageContractAmount(pkg.formData);
       const occurredAt = extractPackageOccurredAt(pkg.formData, pkg.updatedAt, pkg.status);
 
       let signUrl: string | null = null;
@@ -307,7 +297,7 @@ export class UserHistoryService {
     for (const payment of packagePayments) {
       const pkg = payment.package;
       const kindLabel = PACKAGE_KIND_LABELS[pkg.kind] ?? pkg.kind;
-      const label = pkg.crmContract?.contractNumber ?? pkg.title?.trim() ?? kindLabel;
+      const label = pkg.title?.trim() ?? kindLabel;
       const paymentItem: HistoryPaymentItem = {
         id: `payment:pkg:${payment.id}`,
         type: 'payment',
@@ -322,30 +312,6 @@ export class UserHistoryService {
           paymentSource: 'contract_package',
           parentType: 'contract_package',
           parentId: payment.packageId,
-          parentLabel: label,
-          paymentType: payment.paymentType,
-          paymentForm: payment.paymentForm,
-        },
-      };
-      items.push(paymentItem);
-    }
-
-    for (const payment of contractPayments) {
-      const label = payment.contract.contractNumber;
-      const paymentItem: HistoryPaymentItem = {
-        id: `payment:crm:${payment.id}`,
-        type: 'payment',
-        occurredAt: payment.paymentDate.toISOString(),
-        title: 'Оплата по договору',
-        amount: Number(payment.amount),
-        status: 'PAID',
-        statusLabel: 'Оплачено',
-        subtitle: `Договор № ${label}`,
-        meta: {
-          paymentId: payment.id,
-          paymentSource: 'contract',
-          parentType: 'contract',
-          parentId: payment.contractId,
           parentLabel: label,
           paymentType: payment.paymentType,
           paymentForm: payment.paymentForm,
@@ -417,7 +383,6 @@ export class UserHistoryService {
     const phoneCondition = phoneNorm
       ? Prisma.sql`
           OR regexp_replace(coalesce(p.form_data->'customer'->>'phone', ''), '[^0-9]', '', 'g') = ${phoneNorm}
-          OR regexp_replace(coalesce(c.customer_phone, ''), '[^0-9]', '', 'g') = ${phoneNorm}
           OR regexp_replace(coalesce(cu.phone, ''), '[^0-9]', '', 'g') = ${phoneNorm}
           OR EXISTS (
             SELECT 1 FROM unnest(coalesce(cu.phones, ARRAY[]::text[])) ph
@@ -438,8 +403,7 @@ export class UserHistoryService {
       Prisma.sql`
         SELECT DISTINCT p.id
         FROM contract_document_packages p
-        LEFT JOIN contracts c ON c.id = p.crm_contract_id
-        LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.deleted_at IS NULL
+        LEFT JOIN customers cu ON cu.id = (p.form_data->>'_linkedCrmCustomerId') AND cu.deleted_at IS NULL
         LEFT JOIN contract_document_signing_sessions s ON s.package_id = p.id
         WHERE p.deleted_at IS NULL
           AND (
@@ -447,43 +411,6 @@ export class UserHistoryService {
             ${phoneCondition}
           )
         LIMIT ${HISTORY_MAX_PACKAGES}
-      `,
-    );
-
-    return rows.map((r) => r.id);
-  }
-
-  private async findMatchedContractIds(
-    emailNorm: string | null,
-    phoneNorm: string | null,
-  ): Promise<string[]> {
-    if (!emailNorm && !phoneNorm) return [];
-
-    const phoneCondition = phoneNorm
-      ? Prisma.sql`
-          OR regexp_replace(coalesce(c.customer_phone, ''), '[^0-9]', '', 'g') = ${phoneNorm}
-          OR regexp_replace(coalesce(cu.phone, ''), '[^0-9]', '', 'g') = ${phoneNorm}
-          OR EXISTS (
-            SELECT 1 FROM unnest(coalesce(cu.phones, ARRAY[]::text[])) ph
-            WHERE regexp_replace(ph, '[^0-9]', '', 'g') = ${phoneNorm}
-          )
-        `
-      : Prisma.empty;
-
-    const emailCondition = emailNorm
-      ? Prisma.sql`lower(coalesce(cu.email, '')) = ${emailNorm}`
-      : Prisma.sql`FALSE`;
-
-    const rows = await this.prisma.$queryRaw<MatchedPackageRow[]>(
-      Prisma.sql`
-        SELECT DISTINCT c.id
-        FROM contracts c
-        LEFT JOIN customers cu ON cu.id = c.customer_id AND cu.deleted_at IS NULL
-        WHERE (
-          ${emailCondition}
-          ${phoneCondition}
-        )
-        LIMIT 200
       `,
     );
 

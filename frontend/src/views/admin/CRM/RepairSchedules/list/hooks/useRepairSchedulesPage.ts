@@ -175,7 +175,6 @@ export function useRepairSchedulesPage() {
         installerId: formValues.manualInstaller ? null : formValues.installerId.trim() || null,
         installerName: formValues.manualInstaller ? formValues.installerName.trim() || null : null,
         packageId: formValues.packageId.trim() || null,
-        contractId: formValues.contractId.trim() || null,
         customerName: formValues.customerName.trim() || null,
         customerAddress: formValues.customerAddress.trim() || null,
         customerPhone: formValues.customerPhone.trim() || null,

@@ -7,19 +7,6 @@ export const contractDocumentPackageInclude = {
   createdBy: { select: packageUserSelect },
   responsibleManager: { select: packageUserSelect },
   deletedBy: { select: packageUserSelect },
-  crmContract: {
-    select: {
-      id: true,
-      contractNumber: true,
-      contractDate: true,
-      customerName: true,
-      customerAddress: true,
-      customerPhone: true,
-      totalAmount: true,
-      advanceAmount: true,
-      actWorkStartDate: true,
-    },
-  },
   /**
    * Для списков пакетов: журнал оплат (суммы + тип/дата) — нужен для точного pipeline-статуса
    * (70% / Д/с / дата предоплаты окон).

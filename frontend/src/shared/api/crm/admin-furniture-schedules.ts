@@ -75,7 +75,6 @@ export type FurnitureScheduleProject = {
   installerId: string | null;
   installerName: string | null;
   packageId: string | null;
-  contractId: string | null;
   customerName: string | null;
   customerAddress: string | null;
   customerPhone: string | null;
@@ -122,19 +121,6 @@ export type FurnitureScheduleProject = {
     title: string | null;
     status?: string;
     formData?: Record<string, unknown>;
-    crmContractId?: string | null;
-    crmContract?: {
-      id: string;
-      contractNumber: string;
-      customerName: string | null;
-      customerAddress: string | null;
-      customerPhone: string | null;
-      totalAmount?: string | number;
-      advanceAmount?: string | number | null;
-      actWorkStartDate?: string | null;
-      actWorkEndDate?: string | null;
-      contractDurationDays?: number | null;
-    } | null;
   } | null;
 };
 
@@ -149,7 +135,6 @@ export type FurnitureScheduleProjectInput = {
   installerId?: string | null;
   installerName?: string | null;
   packageId?: string | null;
-  contractId?: string | null;
   customerName?: string | null;
   customerAddress?: string | null;
   customerPhone?: string | null;

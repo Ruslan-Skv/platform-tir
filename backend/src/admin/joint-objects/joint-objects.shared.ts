@@ -36,7 +36,6 @@ export type JointTimelineItem = {
   contractSum: string | number | null;
   deadlineWarning: 'D20' | 'D10' | 'D3' | 'OVERDUE' | null;
   packageId: string | null;
-  contractId: string | null;
 };
 
 export type JointObjectCluster = {
@@ -73,7 +72,6 @@ export type JointRawNode = {
   customerKey: string;
   documentObjectId: string | null;
   packageId: string | null;
-  contractId: string | null;
 };
 
 export const DIRECTION_LABELS: Record<JointDirection | 'DELIVERY', string> = {
@@ -188,14 +186,12 @@ function nodeKeys(input: {
   customerAddress: string | null;
   documentObjectId?: string | null;
   packageId: string | null;
-  contractId: string | null;
 }): Omit<JointRawNode, 'item'> {
   return {
     addressKey: normalizeAddress(input.customerAddress),
     customerKey: normalizeName(input.customerName),
     documentObjectId: input.documentObjectId ?? null,
     packageId: input.packageId,
-    contractId: input.contractId,
   };
 }
 
@@ -211,7 +207,6 @@ export function installationToNode(row: {
   contractNumber: string | null;
   installerName: string | null;
   packageId: string | null;
-  contractId: string | null;
   note: string | null;
   package?: { documentObjectId: string | null } | null;
 }): JointRawNode | null {
@@ -226,7 +221,6 @@ export function installationToNode(row: {
       customerAddress: row.customerAddress,
       documentObjectId: row.package?.documentObjectId,
       packageId: row.packageId,
-      contractId: row.contractId,
     }),
     item: {
       id: row.id,
@@ -248,7 +242,6 @@ export function installationToNode(row: {
       contractSum: null,
       deadlineWarning: null,
       packageId: row.packageId,
-      contractId: row.contractId,
     },
   };
 }
@@ -262,7 +255,6 @@ export function repairToNode(
     customerAddress: string | null;
     installerName: string | null;
     packageId: string | null;
-    contractId: string | null;
     plannedStartDate: Date | null;
     workCloseActDate: Date | null;
     createdAt: Date;
@@ -281,7 +273,6 @@ export function repairToNode(
       customerAddress: row.customerAddress,
       documentObjectId: row.package?.documentObjectId ?? null,
       packageId: row.packageId,
-      contractId: row.contractId,
     }),
     item: {
       id: row.id,
@@ -303,7 +294,6 @@ export function repairToNode(
       contractSum: moneyOrNull(row.contractSum),
       deadlineWarning: derived.deadlineWarning ?? null,
       packageId: row.packageId,
-      contractId: row.contractId,
     },
   };
 }
@@ -318,7 +308,6 @@ export function furnitureToNode(
     customerAddress: string | null;
     installerName: string | null;
     packageId: string | null;
-    contractId: string | null;
     plannedStartDate: Date | null;
     contractDate: Date | null;
     workCloseActDate: Date | null;
@@ -344,7 +333,6 @@ export function furnitureToNode(
       customerAddress: row.customerAddress,
       documentObjectId: row.package?.documentObjectId ?? null,
       packageId: row.packageId,
-      contractId: row.contractId,
     }),
     item: {
       id: row.id,
@@ -366,7 +354,6 @@ export function furnitureToNode(
       contractSum: moneyOrNull(row.contractSum),
       deadlineWarning: derived.deadlineWarning ?? null,
       packageId: row.packageId,
-      contractId: row.contractId,
     },
   };
 }
@@ -380,7 +367,6 @@ export function waybillToNode(row: {
   taskText: string;
   customerName: string | null;
   customerAddress: string | null;
-  contractId: string | null;
 }): JointRawNode {
   const startDate = dateToIso(row.date);
   const time =
@@ -390,7 +376,6 @@ export function waybillToNode(row: {
       customerName: row.customerName,
       customerAddress: row.customerAddress,
       packageId: null,
-      contractId: row.contractId,
     }),
     item: {
       id: row.id,
@@ -412,7 +397,6 @@ export function waybillToNode(row: {
       contractSum: null,
       deadlineWarning: null,
       packageId: null,
-      contractId: row.contractId,
     },
   };
 }
@@ -440,7 +424,6 @@ export function clusterJointNodes(nodes: JointRawNode[]): JointObjectCluster[] {
   const byCustomer = new Map<string, number>();
   const byDocObject = new Map<string, number>();
   const byPackage = new Map<string, number>();
-  const byContract = new Map<string, number>();
 
   for (let i = 0; i < n; i++) {
     const node = nodes[i];
@@ -463,11 +446,6 @@ export function clusterJointNodes(nodes: JointRawNode[]): JointObjectCluster[] {
       const prev = byPackage.get(node.packageId);
       if (prev !== undefined) union(i, prev);
       else byPackage.set(node.packageId, i);
-    }
-    if (node.contractId) {
-      const prev = byContract.get(node.contractId);
-      if (prev !== undefined) union(i, prev);
-      else byContract.set(node.contractId, i);
     }
   }
 

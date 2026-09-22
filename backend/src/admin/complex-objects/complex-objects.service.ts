@@ -151,27 +151,8 @@ export class ComplexObjectsService {
 
   async remove(id: string) {
     await this.findOne(id);
-    // Сначала отвязываем все договоры
-    await this.prisma.contract.updateMany({
-      where: { complexObjectId: id },
-      data: { complexObjectId: null },
-    });
     return this.prisma.complexObject.delete({
       where: { id },
-    });
-  }
-
-  // Получить все договоры комплексного объекта
-  async getContracts(id: string) {
-    await this.findOne(id);
-    return this.prisma.contract.findMany({
-      where: { complexObjectId: id },
-      orderBy: { contractDate: 'asc' },
-      include: {
-        direction: { select: { id: true, name: true, slug: true } },
-        manager: { select: { id: true, firstName: true, lastName: true } },
-        office: { select: { id: true, name: true } },
-      },
     });
   }
 
@@ -179,16 +160,6 @@ export class ComplexObjectsService {
     return {
       office: { select: { id: true, name: true, address: true } },
       manager: { select: { id: true, firstName: true, lastName: true } },
-      contracts: {
-        select: {
-          id: true,
-          contractNumber: true,
-          status: true,
-          totalAmount: true,
-          direction: { select: { id: true, name: true } },
-        },
-        orderBy: { contractDate: 'asc' as const },
-      },
     };
   }
 }

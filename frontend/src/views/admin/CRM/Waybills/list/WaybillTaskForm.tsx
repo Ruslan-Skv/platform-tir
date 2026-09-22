@@ -2,7 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react';
 
-import type { Contract, CrmUser } from '@/shared/api/admin-crm';
+import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
+import type { CrmUser } from '@/shared/api/admin-crm';
 import {
   type DriverAvailabilityStatus,
   type DriverDeliveryAvailabilityListItem,
@@ -16,6 +17,7 @@ import {
   formatDayChipDate,
   previewDriverSchemeWeek,
 } from '../shared/driver-availability.utils';
+import { waybillPackageHitLabel } from '../shared/waybills-package-picker.utils';
 import type { WaybillFormValues } from '../shared/waybills-page.types';
 import {
   WAYBILL_DIRECTION_SUGGESTIONS,
@@ -29,10 +31,10 @@ export type WaybillTaskFormProps = {
   formError: string | null;
   users: CrmUser[];
   drivers: CrmUser[];
-  contractHits: Contract[];
+  contractHits: ContractDocumentPackage[];
   contractSearching: boolean;
   onSearchContracts: (q: string) => void;
-  onApplyContract: (c: Contract) => void;
+  onApplyContract: (c: ContractDocumentPackage) => void;
   onDateBlockedChange?: (blocked: boolean) => void;
 };
 
@@ -275,17 +277,17 @@ export function WaybillTaskForm({
           />
         </div>
         <div data-modal-form-group data-modal-span>
-          <label htmlFor="wb-contract">Договор (поиск по номеру)</label>
+          <label htmlFor="wb-contract">Договор (поиск по номеру, заказчику или адресу)</label>
           <input
             id="wb-contract"
             type="text"
             value={values.contractSearch}
             onChange={(e) => {
               const contractSearch = e.target.value;
-              onChange({ ...values, contractSearch, contractId: '' });
+              onChange({ ...values, contractSearch });
               void onSearchContracts(contractSearch);
             }}
-            placeholder="371Д-463"
+            placeholder="125-9 / Иванов / Ленина"
           />
           {contractSearching ? (
             <span className={styles.fieldHint}>Поиск…</span>
@@ -299,7 +301,7 @@ export function WaybillTaskForm({
               {contractHits.map((c) => (
                 <li key={c.id}>
                   <button type="button" onClick={() => onApplyContract(c)}>
-                    {c.contractNumber} — {c.customerName || 'без имени'}
+                    {waybillPackageHitLabel(c)}
                   </button>
                 </li>
               ))}
