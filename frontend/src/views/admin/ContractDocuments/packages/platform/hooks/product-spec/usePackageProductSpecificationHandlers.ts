@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 
+import { PACKAGE_SPECIFICATION_VERSIONS_MAX } from '../../form/normalize';
 import type { PackageFormData } from '../../form/packageForm';
 
 export type UsePackageProductSpecificationHandlersOptions = {
@@ -21,26 +22,51 @@ export function usePackageProductSpecificationHandlers({
     [setForm, touchPackageData]
   );
 
-  const onProductSpecificationFileAttached = useCallback(
-    ({ fileUrl, fileName }: { fileUrl: string; fileName: string }) => {
-      setForm((p) => ({
-        ...p,
-        productSpecificationFileUrl: fileUrl,
-        productSpecificationFileName: fileName,
-      }));
+  /** Новая версия файла спецификации: номер по порядку загрузки, legacy-поля — на последнюю версию. */
+  const onProductSpecificationVersionAttached = useCallback(
+    (payload: { fileUrl: string; fileName: string; size: number | null }) => {
+      setForm((p) => {
+        const versions = p.productSpecificationVersions ?? [];
+        if (versions.length >= PACKAGE_SPECIFICATION_VERSIONS_MAX) return p;
+        const nextVersion = versions.reduce((max, v) => Math.max(max, v.version), 0) + 1;
+        const entry = {
+          version: nextVersion,
+          fileUrl: payload.fileUrl,
+          fileName: payload.fileName,
+          uploadedAt: new Date().toISOString(),
+          size: payload.size,
+        };
+        return {
+          ...p,
+          productSpecificationVersions: [...versions, entry],
+          productSpecificationFileUrl: entry.fileUrl,
+          productSpecificationFileName: entry.fileName,
+        };
+      });
       touchPackageData();
     },
     [setForm, touchPackageData]
   );
 
-  const onProductSpecificationFileClear = useCallback(() => {
-    setForm((p) => ({
-      ...p,
-      productSpecificationFileUrl: '',
-      productSpecificationFileName: '',
-    }));
-    touchPackageData();
-  }, [setForm, touchPackageData]);
+  /** Удаление одной версии файла; остальные номера версий сохраняются. */
+  const onProductSpecificationVersionRemoved = useCallback(
+    (version: number) => {
+      setForm((p) => {
+        const versions = (p.productSpecificationVersions ?? []).filter(
+          (v) => v.version !== version
+        );
+        const latest = versions[versions.length - 1] ?? null;
+        return {
+          ...p,
+          productSpecificationVersions: versions,
+          productSpecificationFileUrl: latest?.fileUrl ?? '',
+          productSpecificationFileName: latest?.fileName ?? '',
+        };
+      });
+      touchPackageData();
+    },
+    [setForm, touchPackageData]
+  );
 
   const onDoorsSpecificationLinesChange = useCallback(
     (lines: PackageFormData['doorsSpecificationLines']) => {
@@ -111,8 +137,8 @@ export function usePackageProductSpecificationHandlers({
 
   return {
     onProductSpecificationAmountChange,
-    onProductSpecificationFileAttached,
-    onProductSpecificationFileClear,
+    onProductSpecificationVersionAttached,
+    onProductSpecificationVersionRemoved,
     onDoorsSpecificationLinesChange,
     onDoorsSpecificationDiscountPercentChange,
     onCeilingsSpecificationChange,

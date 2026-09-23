@@ -14,6 +14,8 @@ export type UsePackageDocumentEditorTabContentShellPropsOptions = {
   packageKind: ContractDocumentPackageKind;
   packageId: string;
   contractAndEstimateLocked: boolean;
+  /** Статус «Договор подписан»: на вкладке «Спецификация» можно прикреплять новые версии файла. */
+  contractConcluded: boolean;
   renderedDoc: string | null;
   unsignedAddendumOrdinals: number[];
   isProductDirectionPackage: boolean;
@@ -30,6 +32,7 @@ export function usePackageDocumentEditorTabContentShellProps({
   packageKind,
   packageId,
   contractAndEstimateLocked,
+  contractConcluded,
   renderedDoc,
   unsignedAddendumOrdinals,
   isProductDirectionPackage,
@@ -66,6 +69,7 @@ export function usePackageDocumentEditorTabContentShellProps({
       packageKind,
       packageId,
       contractAndEstimateLocked,
+      contractConcluded,
       renderedDoc,
       unsignedAddendumOrdinals,
       isProductDirectionPackage,
@@ -82,6 +86,7 @@ export function usePackageDocumentEditorTabContentShellProps({
       packageKind,
       packageId,
       contractAndEstimateLocked,
+      contractConcluded,
       renderedDoc,
       unsignedAddendumOrdinals,
       isProductDirectionPackage,

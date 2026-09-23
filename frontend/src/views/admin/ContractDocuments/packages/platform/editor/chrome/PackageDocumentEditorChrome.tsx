@@ -77,6 +77,7 @@ export function PackageDocumentEditorChrome({
             tabs={tabs}
             activeTab={activeTab}
             contractAndEstimateLocked={contractAndEstimateLocked}
+            contractConcluded={packageFlowStatus === 'CONTRACT_CONCLUDED'}
             unsignedAddendumOrdinals={unsignedAddendumOrdinals}
             signedAddendumOrdinals={signedAddendumOrdinals}
             onTabActivate={onTabActivate}

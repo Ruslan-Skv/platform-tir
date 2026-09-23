@@ -35,6 +35,8 @@ export type PackageDocumentEditorTabBarProps = {
   tabs: readonly PackageDocumentTabId[];
   activeTab: PackageDocumentTabId;
   contractAndEstimateLocked: boolean;
+  /** Договор подписан: на «Спецификации» можно прикреплять новые версии файла. */
+  contractConcluded?: boolean;
   unsignedAddendumOrdinals: number[];
   signedAddendumOrdinals: number[];
   onTabActivate: (id: PackageDocumentTabId) => void;
@@ -48,6 +50,7 @@ export function PackageDocumentEditorTabBar({
   tabs,
   activeTab,
   contractAndEstimateLocked,
+  contractConcluded = false,
   unsignedAddendumOrdinals,
   signedAddendumOrdinals,
   onTabActivate,
@@ -75,6 +78,8 @@ export function PackageDocumentEditorTabBar({
           contractAndEstimateLocked &&
           (id === 'contract' || id === 'estimate' || (isProductLike && id === 'specification'));
         const showTabLockIcon = isContractSignedViewOnlyTab || isSignedAddendumTab;
+        const isSpecificationVersionsTab =
+          isProductLike && id === 'specification' && contractConcluded;
 
         return (
           <button
@@ -88,9 +93,11 @@ export function PackageDocumentEditorTabBar({
                 ? `Д/с №${addendumTabOrdinal}: отметьте подписание во вкладке или в «Оплаты и Управление договором»`
                 : isSignedAddendumTab
                   ? `${label} — только просмотр (Д/с подписано)`
-                  : isContractSignedViewOnlyTab
-                    ? `${packageEditorTabLabel(packageKind, id)} — только просмотр (договор подписан)`
-                    : `${packageEditorTabLabel(packageKind, id)} — перетащите для смены порядка`
+                  : isSpecificationVersionsTab
+                    ? `${label} — договор подписан: можно прикрепить новую версию файла спецификации`
+                    : isContractSignedViewOnlyTab
+                      ? `${packageEditorTabLabel(packageKind, id)} — только просмотр (договор подписан)`
+                      : `${packageEditorTabLabel(packageKind, id)} — перетащите для смены порядка`
             }
             className={`${cdChrome.tab} ${activeTab === id ? cdChrome.tabActive : ''} ${
               isUnsignedAddendumTab ? cdDataTab.packageTabAddendumUnsigned : ''

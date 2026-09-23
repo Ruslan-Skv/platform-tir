@@ -714,6 +714,68 @@
   margin-bottom: 0;
 }
 
+/* Строки версий файла спецификации: «Версия №N · файл · размер · дата · Скачать · Удалить». */
+.windowsSpecVersionRow {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--admin-space-2xs) var(--admin-space-sm);
+  margin: 0;
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+}
+
+.windowsSpecVersionRow + .windowsSpecVersionRow {
+  margin-top: var(--admin-space-2xs);
+}
+
+.windowsSpecVersionAction {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  padding: 0;
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: var(--admin-text-secondary);
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.windowsSpecVersionAction svg {
+  width: 0.95rem;
+  height: 0.95rem;
+}
+
+.windowsSpecVersionAction:hover:not(:disabled) {
+  background: var(--admin-accent-soft);
+  border-color: var(--admin-accent);
+  color: var(--admin-accent);
+}
+
+.windowsSpecVersionAction:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.windowsSpecVersionActionRemove:hover:not(:disabled) {
+  border-color: var(--admin-danger-border-strong, #fca5a5);
+  color: var(--admin-danger-text, #dc2626);
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.windowsSpecVersionSummary {
+  margin: var(--admin-space-2xs) 0 0;
+  color: var(--admin-text-muted);
+  line-height: 1.35;
+}
+
 .windowsSpecificationAmountField > label {
   font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
   font-weight: 600 !important;

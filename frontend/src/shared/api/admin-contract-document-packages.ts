@@ -729,6 +729,43 @@ export async function uploadWindowsSpecificationFile(
   }>;
 }
 
+/**
+ * Дополнительный файл пакета «Окна» (вкладка «Файлы»): КП и другие исходники,
+ * до 50 МБ, в исходном виде (без конвертаций).
+ */
+export async function uploadWindowsAdditionalFile(
+  packageId: string,
+  file: File
+): Promise<{
+  fileUrl: string;
+  fileName: string;
+  mimeType: string | null;
+  size: number | null;
+}> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/upload-windows-additional-file`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    },
+    FILE_UPLOAD_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{
+    fileUrl: string;
+    fileName: string;
+    mimeType: string | null;
+    size: number | null;
+  }>;
+}
+
 export interface RepairContractPackageTrashRow {
   id: string;
   contractNumber: string;

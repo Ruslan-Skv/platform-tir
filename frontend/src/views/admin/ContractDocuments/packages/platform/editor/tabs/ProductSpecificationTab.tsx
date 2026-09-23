@@ -11,6 +11,7 @@ import type { CeilingsSpecification } from '../../../families/product-like/ceili
 import { DoorsSpecificationTabContent } from '../../../families/product-like/specification/DoorsSpecificationTabContent';
 import { ProductSpecificationTabContent } from '../../../families/product-like/specification/ProductSpecificationTabContent';
 import type { DoorsSpecificationLine } from '../../../families/product-like/specification/doorsSpecification';
+import type { ProductSpecificationFileVersion } from '../../form/types';
 
 export type ProductSpecificationTabProps = {
   packageKind: ContractDocumentPackageKind;
@@ -20,16 +21,23 @@ export type ProductSpecificationTabProps = {
   directorName: string;
   customerFullName: string;
   disabled?: boolean;
+  /** Договор подписан (CONTRACT_CONCLUDED): файл спецификации можно дополнять новыми версиями. */
+  contractConcluded?: boolean;
   productSpecificationAmount: string;
   productSpecificationFileUrl: string;
   productSpecificationFileName: string;
+  productSpecificationVersions: ProductSpecificationFileVersion[];
   doorsSpecificationLines: DoorsSpecificationLine[];
   doorsSpecificationDiscountPercent: string;
   ceilingsSpecification: CeilingsSpecification;
   furnitureManufactureDocs: FurnitureManufactureDocs;
   onProductSpecificationAmountChange: (value: string) => void;
-  onProductSpecificationFileAttached: (payload: { fileUrl: string; fileName: string }) => void;
-  onProductSpecificationFileClear: () => void;
+  onProductSpecificationVersionAttached: (payload: {
+    fileUrl: string;
+    fileName: string;
+    size: number | null;
+  }) => void;
+  onProductSpecificationVersionRemoved: (version: number) => void;
   onDoorsSpecificationLinesChange: (lines: DoorsSpecificationLine[]) => void;
   onDoorsSpecificationDiscountPercentChange: (value: string) => void;
   onCeilingsSpecificationChange: (spec: CeilingsSpecification) => void;
@@ -46,16 +54,18 @@ export function ProductSpecificationTab({
   directorName,
   customerFullName,
   disabled = false,
+  contractConcluded = false,
   productSpecificationAmount,
   productSpecificationFileUrl,
   productSpecificationFileName,
+  productSpecificationVersions,
   doorsSpecificationLines,
   doorsSpecificationDiscountPercent,
   ceilingsSpecification,
   furnitureManufactureDocs,
   onProductSpecificationAmountChange,
-  onProductSpecificationFileAttached,
-  onProductSpecificationFileClear,
+  onProductSpecificationVersionAttached,
+  onProductSpecificationVersionRemoved,
   onDoorsSpecificationLinesChange,
   onDoorsSpecificationDiscountPercentChange,
   onCeilingsSpecificationChange,
@@ -118,14 +128,16 @@ export function ProductSpecificationTab({
       amount={productSpecificationAmount}
       fileUrl={productSpecificationFileUrl}
       fileName={productSpecificationFileName}
+      versions={productSpecificationVersions}
       contractNumberLabel={contractNumberLabel}
       contractDateLabel={contractDateLabel}
       directorName={directorName}
       customerFullName={customerFullName}
       disabled={disabled}
+      contractConcluded={contractConcluded}
       onAmountChange={onProductSpecificationAmountChange}
-      onFileAttached={onProductSpecificationFileAttached}
-      onFileClear={onProductSpecificationFileClear}
+      onVersionAttached={onProductSpecificationVersionAttached}
+      onVersionRemoved={onProductSpecificationVersionRemoved}
       onError={onError}
     />
   );

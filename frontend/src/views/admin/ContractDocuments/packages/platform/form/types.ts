@@ -264,6 +264,38 @@ export type PackageAddendumSlotsTuple = [
   PackageAddendumSlotEstimateBlock,
 ];
 
+/**
+ * Версия файла спецификации товарного пакета (вкладка «Спецификация»).
+ * `version` — порядковый номер загрузки (1, 2, 3…); предыдущие версии не удаляются.
+ */
+export interface ProductSpecificationFileVersion {
+  version: number;
+  /** Относительный URL файла на сервере. */
+  fileUrl: string;
+  /** Исходное имя файла для отображения. */
+  fileName: string;
+  /** Время загрузки (ISO) — пусто для версий, прикреплённых до ведения версий. */
+  uploadedAt: string;
+  /** Размер файла в байтах, если известен. */
+  size: number | null;
+}
+
+/**
+ * Дополнительный файл пакета «Окна» (вкладка «Файлы»): коммерческое предложение
+ * и другие исходники в произвольных форматах. Без просмотра содержимого —
+ * только скачивание; хранится и отдаётся в исходном виде.
+ */
+export interface PackageAdditionalFile {
+  /** Относительный URL файла на сервере. */
+  fileUrl: string;
+  /** Исходное имя файла для отображения. */
+  fileName: string;
+  /** Время загрузки (ISO). */
+  uploadedAt: string;
+  /** Размер файла в байтах, если известен. */
+  size: number | null;
+}
+
 export interface PackageFormData {
   customer: PackageCustomerBlock;
   executor: PackageExecutorBlock;
@@ -341,6 +373,17 @@ export interface PackageFormData {
   productSpecificationFileUrl: string;
   /** Исходное имя прикреплённого файла для отображения. */
   productSpecificationFileName: string;
+  /**
+   * Версии файла спецификации товарного пакета (вкладка «Спецификация») — изменения после
+   * подписания договора. Номер = порядковый номер загрузки; максимум 5 версий.
+   * `productSpecificationFileUrl`/`productSpecificationFileName` всегда указывают на последнюю.
+   */
+  productSpecificationVersions: ProductSpecificationFileVersion[];
+  /**
+   * Дополнительные файлы пакета «Окна» (вкладка «Файлы»): КП и другие исходники
+   * в произвольных форматах. Порядок = порядок прикрепления; максимум 20 шт.
+   */
+  windowsAdditionalFiles: PackageAdditionalFile[];
   /** Позиции спецификации дверей (направление «Двери»). */
   doorsSpecificationLines: DoorsSpecificationLine[];
   /** Скидка на спецификацию дверей, % (только направление «Двери»). */

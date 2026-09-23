@@ -16,12 +16,14 @@ import type {
   PackageAddendumSlotEstimateBlock,
   PackageAddendumSlotStatus,
   PackageAddendumSlotsTuple,
+  PackageAdditionalFile,
   PackageCustomerBlock,
   PackageEstimateBlock,
   PackageFormData,
   PackageIssuedInvoice,
   PackageManagerQuestionnaire1Block,
   PackagePostWorkQuestionnaire2Block,
+  ProductSpecificationFileVersion,
 } from './types';
 
 /** Максимум фото результатов замера во вкладке «Замер» (синхронизирован с backend). */
@@ -32,6 +34,86 @@ export const PACKAGE_DRAWING_PHOTOS_MAX = 10;
 
 /** Максимум скринов чеков об оплате от клиентов (синхронизирован с backend). */
 export const PACKAGE_PAYMENT_PROOF_PHOTOS_MAX = 12;
+
+/** Максимум версий файла спецификации товарного пакета (синхронизирован с backend). */
+export const PACKAGE_SPECIFICATION_VERSIONS_MAX = 5;
+
+/** Максимум дополнительных файлов на вкладке «Файлы» пакета «Окна» (синхронизирован с backend). */
+export const PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX = 20;
+
+/** Дополнительные файлы пакета «Окна» (вкладка «Файлы»): только валидные записи, дедуп по URL. */
+export function normalizeWindowsAdditionalFiles(raw: unknown): PackageAdditionalFile[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PackageAdditionalFile[] = [];
+  const seenUrls = new Set<string>();
+  for (const item of raw) {
+    if (!item || typeof item !== 'object') continue;
+    const o = item as Record<string, unknown>;
+    const fileUrl = typeof o.fileUrl === 'string' ? o.fileUrl.trim() : '';
+    if (!fileUrl || seenUrls.has(fileUrl)) continue;
+    out.push({
+      fileUrl,
+      fileName: typeof o.fileName === 'string' ? o.fileName.trim() : '',
+      uploadedAt: typeof o.uploadedAt === 'string' ? o.uploadedAt.trim() : '',
+      size: typeof o.size === 'number' && Number.isFinite(o.size) ? o.size : null,
+    });
+    seenUrls.add(fileUrl);
+  }
+  return out.slice(0, PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX);
+}
+
+/**
+ * Версии файла спецификации товарного пакета. Пустой массив с заданным legacy-файлом
+ * (до ведения версий) разворачивается в одну версию №1; legacy-поля всегда синхронизируются
+ * с последней версией через `syncProductSpecificationLegacyFields`.
+ */
+export function normalizeProductSpecificationVersions(
+  raw: unknown,
+  legacyFileUrl: string,
+  legacyFileName: string
+): ProductSpecificationFileVersion[] {
+  const out: ProductSpecificationFileVersion[] = [];
+  const seenUrls = new Set<string>();
+  if (Array.isArray(raw)) {
+    for (const item of raw) {
+      if (!item || typeof item !== 'object') continue;
+      const o = item as Record<string, unknown>;
+      const fileUrl = typeof o.fileUrl === 'string' ? o.fileUrl.trim() : '';
+      if (!fileUrl || seenUrls.has(fileUrl)) continue;
+      const version = Number(o.version);
+      out.push({
+        version: Number.isFinite(version) && version >= 1 ? Math.floor(version) : out.length + 1,
+        fileUrl,
+        fileName: typeof o.fileName === 'string' ? o.fileName.trim() : '',
+        uploadedAt: typeof o.uploadedAt === 'string' ? o.uploadedAt.trim() : '',
+        size: typeof o.size === 'number' && Number.isFinite(o.size) ? o.size : null,
+      });
+      seenUrls.add(fileUrl);
+    }
+  }
+  if (!out.length && legacyFileUrl) {
+    out.push({
+      version: 1,
+      fileUrl: legacyFileUrl,
+      fileName: legacyFileName,
+      uploadedAt: '',
+      size: null,
+    });
+    return out;
+  }
+  return out.sort((a, b) => a.version - b.version).slice(0, PACKAGE_SPECIFICATION_VERSIONS_MAX);
+}
+
+/** URL/имя последней версии файла спецификации — для legacy-полей формы и шаринга клиенту. */
+export function syncProductSpecificationLegacyFields(
+  versions: ProductSpecificationFileVersion[],
+  legacyFileUrl: string,
+  legacyFileName: string
+): { fileUrl: string; fileName: string } {
+  const latest = versions[versions.length - 1];
+  if (latest) return { fileUrl: latest.fileUrl, fileName: latest.fileName };
+  return { fileUrl: legacyFileUrl, fileName: legacyFileName };
+}
 
 function normalizeIssuedInvoices(raw: unknown): PackageIssuedInvoice[] {
   if (!Array.isArray(raw)) return [];
@@ -527,22 +609,35 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
         return String(rec.windowsSpecificationAmount);
       return '';
     })(),
-    productSpecificationFileUrl: (() => {
+    ...(() => {
       const rec = merged as unknown as Record<string, unknown>;
-      if (typeof rec.productSpecificationFileUrl === 'string')
-        return String(rec.productSpecificationFileUrl);
-      if (typeof rec.windowsSpecificationFileUrl === 'string')
-        return String(rec.windowsSpecificationFileUrl);
-      return '';
+      const legacyFileUrl =
+        typeof rec.productSpecificationFileUrl === 'string'
+          ? String(rec.productSpecificationFileUrl)
+          : typeof rec.windowsSpecificationFileUrl === 'string'
+            ? String(rec.windowsSpecificationFileUrl)
+            : '';
+      const legacyFileName =
+        typeof rec.productSpecificationFileName === 'string'
+          ? String(rec.productSpecificationFileName)
+          : typeof rec.windowsSpecificationFileName === 'string'
+            ? String(rec.windowsSpecificationFileName)
+            : '';
+      const versions = normalizeProductSpecificationVersions(
+        rec.productSpecificationVersions,
+        legacyFileUrl,
+        legacyFileName
+      );
+      const legacy = syncProductSpecificationLegacyFields(versions, legacyFileUrl, legacyFileName);
+      return {
+        productSpecificationVersions: versions,
+        productSpecificationFileUrl: legacy.fileUrl,
+        productSpecificationFileName: legacy.fileName,
+      };
     })(),
-    productSpecificationFileName: (() => {
-      const rec = merged as unknown as Record<string, unknown>;
-      if (typeof rec.productSpecificationFileName === 'string')
-        return String(rec.productSpecificationFileName);
-      if (typeof rec.windowsSpecificationFileName === 'string')
-        return String(rec.windowsSpecificationFileName);
-      return '';
-    })(),
+    windowsAdditionalFiles: normalizeWindowsAdditionalFiles(
+      (merged as unknown as Record<string, unknown>).windowsAdditionalFiles
+    ),
     doorsSpecificationLines: normalizeDoorsSpecificationLines(
       (merged as unknown as Record<string, unknown>).doorsSpecificationLines
     ),

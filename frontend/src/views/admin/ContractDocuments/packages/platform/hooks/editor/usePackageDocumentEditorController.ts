@@ -208,6 +208,8 @@ export function usePackageDocumentEditorController({
   /** После «Договор подписан» или «Отказ» вкладки «Договор» и «Смета» только для просмотра. */
   const contractAndEstimateLocked =
     packageFlowStatus === 'CONTRACT_CONCLUDED' || packageFlowStatus === 'REFUSED';
+  /** «Договор подписан»: файл спецификации можно дополнять новыми версиями (изменения по Д/с). */
+  const contractConcluded = packageFlowStatus === 'CONTRACT_CONCLUDED';
   const {
     packageVersions,
     setPackageVersions,
@@ -710,6 +712,7 @@ export function usePackageDocumentEditorController({
         packageKind,
         packageId,
         contractAndEstimateLocked,
+        contractConcluded,
         renderedDoc,
         unsignedAddendumOrdinals,
         isProductDirectionPackage,

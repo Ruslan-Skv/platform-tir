@@ -68,7 +68,8 @@ export function usePackageRenderedDocument({
       activeTab === 'data' ||
       activeTab === 'measurement' ||
       activeTab === 'drawings' ||
-      activeTab === 'payments'
+      activeTab === 'payments' ||
+      activeTab === 'files'
     ) {
       return '';
     }

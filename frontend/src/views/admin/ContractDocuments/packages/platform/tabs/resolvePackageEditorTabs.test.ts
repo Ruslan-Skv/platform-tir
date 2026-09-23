@@ -84,6 +84,23 @@ describe('resolvePackageEditorVisibleTabs', () => {
     expect(specIdx).toBeLessThan(estimateIdx);
   });
 
+  it('shows files tab only for WINDOWS', () => {
+    const windows = resolvePackageEditorVisibleTabs({
+      tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+      packageKind: 'WINDOWS',
+      addendumSlotCount: 0,
+    });
+    expect(windows).toContain('files');
+    for (const kind of ['REPAIR', 'DOORS', 'BLINDS', 'CEILINGS', 'FURNITURE'] as const) {
+      const tabs = resolvePackageEditorVisibleTabs({
+        tabOrder: PACKAGE_DOCUMENT_TAB_IDS,
+        packageKind: kind,
+        addendumSlotCount: 0,
+      });
+      expect(tabs).not.toContain('files');
+    }
+  });
+
   it('hides actStart and productionLog for WINDOWS', () => {
     const tabs = resolvePackageEditorVisibleTabs({
       tabOrder: PACKAGE_DOCUMENT_TAB_IDS,

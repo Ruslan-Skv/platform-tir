@@ -30,6 +30,8 @@ export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknow
     productSpecificationAmount: '',
     productSpecificationFileUrl: '',
     productSpecificationFileName: '',
+    productSpecificationVersions: [],
+    windowsAdditionalFiles: [],
     doorsSpecificationLines: defaultPackageFormData().doorsSpecificationLines,
     doorsSpecificationDiscountPercent: '',
     ceilingsSpecification: defaultPackageFormData().ceilingsSpecification,

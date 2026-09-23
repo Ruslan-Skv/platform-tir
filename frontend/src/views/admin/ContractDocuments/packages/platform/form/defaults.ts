@@ -163,6 +163,8 @@ export function defaultPackageFormData(): PackageFormData {
     productSpecificationAmount: '',
     productSpecificationFileUrl: '',
     productSpecificationFileName: '',
+    productSpecificationVersions: [],
+    windowsAdditionalFiles: [],
     doorsSpecificationLines: [newDoorsSpecificationLine()],
     doorsSpecificationDiscountPercent: '',
     ceilingsSpecification: defaultCeilingsSpecification(),

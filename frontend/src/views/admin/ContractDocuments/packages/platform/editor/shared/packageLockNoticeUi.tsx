@@ -11,7 +11,7 @@ export type PackageLockNoticeScope = 'contract' | 'estimate' | 'specification' |
 
 export function packageLockNoticeMessage(
   scope: PackageLockNoticeScope,
-  options?: { slotOrdinal?: number; productDirection?: boolean }
+  options?: { slotOrdinal?: number; productDirection?: boolean; versionsAllowed?: boolean }
 ): string {
   switch (scope) {
     case 'contract':
@@ -21,7 +21,9 @@ export function packageLockNoticeMessage(
         ? 'Договор подписан: счёт-заказ и прикреплённые расчёты только для просмотра и печати.'
         : 'Договор подписан: смета договора и прикреплённые к ней расчёты только для просмотра и печати. Дополнительные объёмы оформляйте на вкладках «Д/с №1»…«Д/с №5»: там можно прикрепить новые расчёты к соответствующему дополнительному соглашению.';
     case 'specification':
-      return 'Договор подписан: спецификация только для просмотра и печати.';
+      return options?.versionsAllowed
+        ? 'Договор подписан: стоимость спецификации и просмотр — только для чтения. Обновлённый после подписания файл спецификации прикрепляйте новой версией (всего до 5).'
+        : 'Договор подписан: спецификация только для просмотра и печати.';
     case 'addendum': {
       const slotOrdinal = options?.slotOrdinal ?? 1;
       return options?.productDirection

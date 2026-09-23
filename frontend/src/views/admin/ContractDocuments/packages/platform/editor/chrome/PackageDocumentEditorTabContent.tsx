@@ -12,6 +12,7 @@ import type { FurnitureAppliancesDocs } from '../../../directions/furniture/furn
 import { furnitureAppliancesLinesTotal } from '../../../directions/furniture/furnitureAppliancesDocs';
 import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
 import type { FurnitureMontageDocs } from '../../../directions/furniture/furnitureMontageDocs';
+import { PackageWindowsFilesTab } from '../../../directions/windows/PackageWindowsFilesTab';
 import type { PackageFormData } from '../../form/packageForm';
 import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAddendumEditor';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
@@ -39,6 +40,8 @@ export type PackageDocumentEditorTabContentProps = {
   packageKind: ContractDocumentPackageKind;
   packageId: string;
   contractAndEstimateLocked: boolean;
+  /** Статус «Договор подписан»: на вкладке «Спецификация» можно прикреплять новые версии файла. */
+  contractConcluded: boolean;
   renderedDoc: string | null;
   unsignedAddendumOrdinals: number[];
   isProductDirectionPackage: boolean;
@@ -60,6 +63,7 @@ export function PackageDocumentEditorTabContent({
   packageKind,
   packageId,
   contractAndEstimateLocked,
+  contractConcluded,
   renderedDoc,
   unsignedAddendumOrdinals,
   isProductDirectionPackage,
@@ -190,6 +194,17 @@ export function PackageDocumentEditorTabContent({
     );
   }
 
+  if (activeTab === 'files') {
+    return (
+      <PackageWindowsFilesTab
+        packageId={packageId}
+        form={form}
+        setForm={setForm}
+        touchPackageData={touchPackageData}
+      />
+    );
+  }
+
   if (activeTab === 'estimate') {
     if (isFurniture) {
       return (
@@ -248,6 +263,7 @@ export function PackageDocumentEditorTabContent({
           packageKind={packageKind}
           packageId={packageId}
           disabled={contractAndEstimateLocked}
+          contractConcluded={contractConcluded}
           {...specificationTabProps}
         />
       </>

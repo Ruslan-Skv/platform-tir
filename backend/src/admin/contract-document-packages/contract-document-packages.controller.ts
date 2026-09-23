@@ -118,6 +118,13 @@ const packagePaymentProofsDir = path.join(
   'payment-proofs',
 );
 
+const windowsAdditionalFilesDir = path.join(
+  process.cwd(),
+  'uploads',
+  'contract-document-packages',
+  'windows-additional-files',
+);
+
 /** Максимум фото замера в formData пакета (вкладка «Замер»). */
 const PACKAGE_MEASUREMENT_PHOTOS_MAX = 5;
 
@@ -127,11 +134,46 @@ const PACKAGE_DRAWING_PHOTOS_MAX = 10;
 /** Максимум фото-подтверждений оплат (скринов чеков от клиентов) в formData пакета. */
 const PACKAGE_PAYMENT_PROOF_PHOTOS_MAX = 12;
 
+/** Максимум версий файла спецификации товарного пакета (вкладка «Спецификация»). */
+const PACKAGE_SPECIFICATION_VERSIONS_MAX = 5;
+
+/** Максимум дополнительных файлов на вкладке «Файлы» пакета «Окна». */
+const PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX = 20;
+
+/** Число дополнительных файлов пакета «Окна» (вкладка «Файлы») в formData. */
+function countPackageWindowsAdditionalFiles(formData: unknown): number {
+  if (!formData || typeof formData !== 'object') return 0;
+  const items = (formData as { windowsAdditionalFiles?: unknown }).windowsAdditionalFiles;
+  if (!Array.isArray(items)) return 0;
+  return items.filter((f): f is Record<string, unknown> => !!f && typeof f === 'object').length;
+}
+
 function countPackageMeasurementPhotos(formData: unknown): number {
   if (!formData || typeof formData !== 'object') return 0;
   const urls = (formData as { measurementPhotoUrls?: unknown }).measurementPhotoUrls;
   if (!Array.isArray(urls)) return 0;
   return urls.filter((u): u is string => typeof u === 'string' && u.trim().length > 0).length;
+}
+
+/**
+ * Число уже прикреплённых версий файла спецификации. Для пакетов, где файл был загружен
+ * до ведения версий, массива нет — считаем legacy-поле `productSpecificationFileUrl` одной версией.
+ */
+function countPackageSpecificationVersions(formData: unknown): number {
+  if (!formData || typeof formData !== 'object') return 0;
+  const rec = formData as {
+    productSpecificationVersions?: unknown;
+    productSpecificationFileUrl?: unknown;
+  };
+  if (Array.isArray(rec.productSpecificationVersions)) {
+    return rec.productSpecificationVersions.filter(
+      (v): v is Record<string, unknown> => !!v && typeof v === 'object',
+    ).length;
+  }
+  return typeof rec.productSpecificationFileUrl === 'string' &&
+    rec.productSpecificationFileUrl.trim().length > 0
+    ? 1
+    : 0;
 }
 
 function countPackageDrawingPhotos(formData: unknown): number {
@@ -151,7 +193,10 @@ function countPackagePaymentProofPhotos(formData: unknown): number {
 const WINDOWS_SPEC_BLOCKED_EXTENSIONS =
   /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
 
-function sanitizeWindowsSpecificationStoredFilename(originalname: string): string {
+function sanitizeWindowsSpecificationStoredFilename(
+  originalname: string,
+  prefix = 'windows-spec',
+): string {
   const decoded = decodeMultipartFilename(originalname);
   const ext = path.extname(decoded).toLowerCase();
   const base =
@@ -160,7 +205,7 @@ function sanitizeWindowsSpecificationStoredFilename(originalname: string): strin
       .replace(/[^\w\u0400-\u04FF.\-()+ ]/gu, '_')
       .replace(/_+/g, '_')
       .slice(0, 80) || 'file';
-  return `windows-spec-${Date.now()}-${base}${ext}`;
+  return `${prefix}-${Date.now()}-${base}${ext}`;
 }
 
 @Controller('admin/contract-document-packages')
@@ -1001,9 +1046,78 @@ export class ContractDocumentPackagesController {
         'Доступно только для товарных пакетов (Окна, Двери, Жалюзи, Натяжные потолки)',
       );
     }
+    if (countPackageSpecificationVersions(pkg.formData) >= PACKAGE_SPECIFICATION_VERSIONS_MAX) {
+      throw new BadRequestException(
+        `Можно прикрепить не более ${PACKAGE_SPECIFICATION_VERSIONS_MAX} версий файла спецификации. Чтобы добавить новую, удалите одну из предыдущих.`,
+      );
+    }
     const filename = path.basename(file.path);
     return {
       fileUrl: `/uploads/contract-document-packages/windows-specifications/${filename}`,
+      fileName: decodeMultipartFilename(file.originalname),
+      mimeType: file.mimetype || null,
+      size: file.size ?? null,
+    };
+  }
+
+  @Post(':id/upload-windows-additional-file')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(windowsAdditionalFilesDir)) {
+            fs.mkdirSync(windowsAdditionalFilesDir, { recursive: true });
+          }
+          cb(null, windowsAdditionalFilesDir);
+        },
+        filename: (_req, file, cb) => {
+          cb(null, sanitizeWindowsSpecificationStoredFilename(file.originalname, 'windows-file'));
+        },
+      }),
+      limits: { fileSize: 50 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(decodeMultipartFilename(file.originalname)).toLowerCase();
+        if (!ext) {
+          cb(
+            new BadRequestException(
+              'Укажите файл с расширением (например pdf, docx, xlsx, dwg, zip, jpg).',
+            ),
+            false,
+          );
+          return;
+        }
+        if (WINDOWS_SPEC_BLOCKED_EXTENSIONS.test(ext)) {
+          cb(
+            new BadRequestException(
+              'Этот тип файла нельзя загружать. Используйте документы, изображения, архивы или файлы САПР.',
+            ),
+            false,
+          );
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  async uploadWindowsAdditionalFile(
+    @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
+  ) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const pkg = await this.service.findOne(id);
+    if (pkg.kind !== ContractDocumentPackageKind.WINDOWS) {
+      throw new BadRequestException('Доступно только для пакетов направления «Окна»');
+    }
+    if (countPackageWindowsAdditionalFiles(pkg.formData) >= PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX) {
+      throw new BadRequestException(
+        `Можно прикрепить не более ${PACKAGE_WINDOWS_ADDITIONAL_FILES_MAX} файлов.`,
+      );
+    }
+    const filename = path.basename(file.path);
+    return {
+      fileUrl: `/uploads/contract-document-packages/windows-additional-files/${filename}`,
       fileName: decodeMultipartFilename(file.originalname),
       mimeType: file.mimetype || null,
       size: file.size ?? null,

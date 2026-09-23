@@ -97,6 +97,9 @@ export function resolvePackageEditorVisibleTabs(input: {
   const visible = input.tabOrder.filter((id) => {
     if (id === 'payments') return false;
 
+    /** Вкладка «Файлы» (КП и другие исходники) — только у направления «Окна». */
+    if (id === 'files' && input.packageKind !== 'WINDOWS') return false;
+
     if (!isPackageEditorTabBarTab(id, input.packageKind)) return false;
 
     if (id === 'memo' && !config.memoTabVisible) return false;

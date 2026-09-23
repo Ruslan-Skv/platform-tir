@@ -17,7 +17,7 @@ import { packageTemplatePresetEditorTabId } from '../../tabs/packageTemplatePres
 
 export type PackageTemplateTabId = Exclude<
   PackageDocumentTabId,
-  'data' | 'measurement' | 'drawings' | 'payments' | 'estimate' | PackageWorkOrderHubTabId
+  'data' | 'measurement' | 'drawings' | 'payments' | 'estimate' | 'files' | PackageWorkOrderHubTabId
 >;
 
 export const PACKAGE_TEMPLATE_TAB_IDS = PACKAGE_DOCUMENT_TAB_IDS.filter(
@@ -27,6 +27,7 @@ export const PACKAGE_TEMPLATE_TAB_IDS = PACKAGE_DOCUMENT_TAB_IDS.filter(
     id !== 'drawings' &&
     id !== 'payments' &&
     id !== 'estimate' &&
+    id !== 'files' &&
     !isPackageWorkOrderHubTabHiddenFromPackageEditor(id)
 ) as PackageTemplateTabId[];
 
