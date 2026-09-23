@@ -36,6 +36,7 @@ export class ServiceCatalogItemsService {
         description: dto.description,
         price: new Prisma.Decimal(dto.price),
         unit: dto.unit ?? 'м²',
+        workGroup: dto.workGroup ?? null,
         sortOrder,
         isActive: dto.isActive ?? true,
       },

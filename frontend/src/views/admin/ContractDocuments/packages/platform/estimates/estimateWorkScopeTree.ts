@@ -4,6 +4,10 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 import { apiFetch } from '@/shared/lib/api-fetch';
 import { getApiBaseUrl } from '@/shared/lib/auth-session';
+import {
+  SERVICE_CATALOG_WORK_GROUP_LABELS,
+  type ServiceCatalogWorkGroupKey,
+} from '@/shared/lib/serviceCatalogWorkGroups';
 
 import {
   type EstimateSnapshot,
@@ -113,63 +117,104 @@ export function parseDraftRoomItemIdArrays(draftRaw: string): string[][] {
   return parseDraftRooms(draftRaw).map((r) => r.items.map((it) => it.itemId));
 }
 
-type CatalogSectionJson = { name: string; slug: string; items: Array<{ id: string }> };
+type CatalogSectionJson = {
+  name: string;
+  slug: string;
+  items: Array<{ id: string; workGroup?: ServiceCatalogWorkGroupKey | null }>;
+};
 
-/** Глобальный порядок помещений: массив `itemId` по строкам, согласованный со `snapshot.rooms`. */
-export function buildGlobalDraftItemIdsMatrix(
-  preset: ContractEstimatePreset,
-  snapshot: EstimateSnapshot
-): string[][] | null {
-  if (!snapshot?.rooms?.length) return null;
-  const byCat = preset.calculatorDraftByCategory ?? {};
-  const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
+type CatalogItemLabelMaps = {
+  /** itemId → название подкатегории каталога. */
+  stageLabels: Map<string, string>;
+  /** itemId → ключ группы работ ('' — не задана). */
+  workGroups: Map<string, string>;
+};
 
-  const orderedMultiSlugs = resolveMultiCategorySlugOrder(preset);
-  if (orderedMultiSlugs.length > 1 && Object.keys(byCat).length > 0) {
-    const fromSlugs = buildGlobalDraftItemIdsMatrixFromOrderedSlugs(
-      preset,
-      orderedMultiSlugs,
-      snapshot
+/** Карты сопоставления позиций каталога: подкатегории и группы работ (одним запросом). */
+async function fetchCatalogItemLabelMaps(slug: string): Promise<CatalogItemLabelMaps> {
+  const stageLabels = new Map<string, string>();
+  const workGroups = new Map<string, string>();
+  try {
+    const res = await apiFetch(
+      joinApiPath(`service-catalog/categories/${encodeURIComponent(slug)}`)
     );
-    if (fromSlugs) return fromSlugs;
-    return null;
+    if (!res.ok) return { stageLabels, workGroups };
+    const data = (await res.json()) as {
+      name?: string;
+      slug?: string;
+      itemSections?: CatalogSectionJson[];
+      items?: Array<{ id: string; workGroup?: ServiceCatalogWorkGroupKey | null }>;
+    };
+    const sections: CatalogSectionJson[] =
+      data.itemSections && data.itemSections.length > 0
+        ? data.itemSections
+        : data.items?.length
+          ? [{ name: data.name ?? slug, slug: data.slug ?? slug, items: data.items }]
+          : [];
+    for (const sec of sections) {
+      const label = (sec.name || '').trim() || '—';
+      for (const it of sec.items ?? []) {
+        if (!it?.id) continue;
+        if (!stageLabels.has(it.id)) stageLabels.set(it.id, label);
+        if (!workGroups.has(it.id)) workGroups.set(it.id, it.workGroup ?? '');
+      }
+    }
+  } catch {
+    // ignore
   }
+  return { stageLabels, workGroups };
+}
 
-  const out: string[][] = [];
+export type WorkScopeStageMapsLoad = {
+  maps: Map<string, Map<string, string>> | null;
+  /** slug категории → (itemId → ключ группы работ; '' — не задана). */
+  workGroupMaps: Map<string, Map<string, string>> | null;
+  /** `null`, если черновик не совпал со снимком сметы по числу строк. */
+  matrix: string[][] | null;
+};
 
-  if (meta?.categories && meta.categories.length > 1) {
+export async function loadStageLabelMapsForPreset(
+  preset: ContractEstimatePreset,
+  groups: ContractEstimateGroup[]
+): Promise<WorkScopeStageMapsLoad> {
+  const snapshot = getBaseSnapshotWithMarkupForPreset(preset, groups);
+  let matrix = snapshot
+    ? (buildItemIdsMatrixFromSnapshotLines(snapshot) ??
+      buildGlobalDraftItemIdsMatrix(preset, snapshot))
+    : null;
+  if (!matrix && snapshot?.rooms.length) {
+    matrix = await buildItemIdsMatrixByRecalculate(preset, snapshot);
+  }
+  if (!matrix || !snapshot?.rooms.length) return { maps: null, workGroupMaps: null, matrix };
+
+  const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
+  const slugs = new Set<string>();
+  const ordered = resolveMultiCategorySlugOrder(preset);
+  if (ordered.length > 1) {
+    ordered.forEach((s) => slugs.add(s));
+  } else if (meta?.categories && meta.categories.length > 1) {
     for (const cat of meta.categories) {
-      const slug = (cat.slug || '').trim();
-      if (!slug) return null;
-      const raw = byCat[slug];
-      if (!raw) return null;
-      const perRoom = parseDraftRoomItemIdArrays(raw);
-      let count = Math.max(0, Number(cat.roomCount) || 0);
-      let idx = 0;
-      while (count-- > 0) {
-        if (idx >= perRoom.length) return null;
-        out.push(perRoom[idx]!);
-        idx += 1;
-      }
+      const s = (cat.slug || '').trim();
+      if (s) slugs.add(s);
     }
-    if (out.length < snapshot.rooms.length) {
-      const primary = preset.calculatorDraft;
-      const tail = parseDraftRoomItemIdArrays(primary);
-      let t = 0;
-      while (out.length < snapshot.rooms.length) {
-        if (t >= tail.length) return null;
-        out.push(tail[t]!);
-        t += 1;
-      }
-    }
+    const primary = (preset.categorySlug || '').trim();
+    if (primary) slugs.add(primary);
   } else {
-    const raw = preset.calculatorDraft;
-    for (const ids of parseDraftRoomItemIdArrays(raw)) {
-      out.push(ids);
-    }
+    const s = (preset.categorySlug || '').trim();
+    if (!s) return { maps: null, workGroupMaps: null, matrix };
+    slugs.add(s);
   }
 
-  return validateDraftMatrixAgainstSnapshot(snapshot, out);
+  const out = new Map<string, Map<string, string>>();
+  const workGroupOut = new Map<string, Map<string, string>>();
+  await Promise.all(
+    [...slugs].map(async (slug) => {
+      const { stageLabels, workGroups } = await fetchCatalogItemLabelMaps(slug);
+      out.set(slug, stageLabels);
+      workGroupOut.set(slug, workGroups);
+    })
+  );
+  return { maps: out, workGroupMaps: workGroupOut, matrix };
 }
 
 async function buildItemIdsMatrixByRecalculate(
@@ -236,83 +281,61 @@ async function buildItemIdsMatrixByRecalculate(
   return rows as string[][];
 }
 
-async function fetchItemIdToStageLabelMap(slug: string): Promise<Map<string, string>> {
-  const map = new Map<string, string>();
-  try {
-    const res = await apiFetch(
-      joinApiPath(`service-catalog/categories/${encodeURIComponent(slug)}`)
+/** Глобальный порядок помещений: массив `itemId` по строкам, согласованный со `snapshot.rooms`. */
+export function buildGlobalDraftItemIdsMatrix(
+  preset: ContractEstimatePreset,
+  snapshot: EstimateSnapshot
+): string[][] | null {
+  if (!snapshot?.rooms?.length) return null;
+  const byCat = preset.calculatorDraftByCategory ?? {};
+  const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
+
+  const orderedMultiSlugs = resolveMultiCategorySlugOrder(preset);
+  if (orderedMultiSlugs.length > 1 && Object.keys(byCat).length > 0) {
+    const fromSlugs = buildGlobalDraftItemIdsMatrixFromOrderedSlugs(
+      preset,
+      orderedMultiSlugs,
+      snapshot
     );
-    if (!res.ok) return map;
-    const data = (await res.json()) as {
-      name?: string;
-      slug?: string;
-      itemSections?: CatalogSectionJson[];
-      items?: Array<{ id: string }>;
-    };
-    const sections: CatalogSectionJson[] =
-      data.itemSections && data.itemSections.length > 0
-        ? data.itemSections
-        : data.items?.length
-          ? [{ name: data.name ?? slug, slug: data.slug ?? slug, items: data.items }]
-          : [];
-    for (const sec of sections) {
-      const label = (sec.name || '').trim() || '—';
-      for (const it of sec.items ?? []) {
-        if (it?.id && !map.has(it.id)) map.set(it.id, label);
+    if (fromSlugs) return fromSlugs;
+    return null;
+  }
+
+  const out: string[][] = [];
+
+  if (meta?.categories && meta.categories.length > 1) {
+    for (const cat of meta.categories) {
+      const slug = (cat.slug || '').trim();
+      if (!slug) return null;
+      const raw = byCat[slug];
+      if (!raw) return null;
+      const perRoom = parseDraftRoomItemIdArrays(raw);
+      let count = Math.max(0, Number(cat.roomCount) || 0);
+      let idx = 0;
+      while (count-- > 0) {
+        if (idx >= perRoom.length) return null;
+        out.push(perRoom[idx]!);
+        idx += 1;
       }
     }
-  } catch {
-    // ignore
-  }
-  return map;
-}
-
-export type WorkScopeStageMapsLoad = {
-  maps: Map<string, Map<string, string>> | null;
-  /** `null`, если черновик не совпал со снимком сметы по числу строк. */
-  matrix: string[][] | null;
-};
-
-export async function loadStageLabelMapsForPreset(
-  preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[]
-): Promise<WorkScopeStageMapsLoad> {
-  const snapshot = getBaseSnapshotWithMarkupForPreset(preset, groups);
-  let matrix = snapshot
-    ? (buildItemIdsMatrixFromSnapshotLines(snapshot) ??
-      buildGlobalDraftItemIdsMatrix(preset, snapshot))
-    : null;
-  if (!matrix && snapshot?.rooms.length) {
-    matrix = await buildItemIdsMatrixByRecalculate(preset, snapshot);
-  }
-  if (!matrix || !snapshot?.rooms.length) return { maps: null, matrix };
-
-  const meta = parseDraftMultiCategoryMeta(preset.calculatorDraft);
-  const slugs = new Set<string>();
-  const ordered = resolveMultiCategorySlugOrder(preset);
-  if (ordered.length > 1) {
-    ordered.forEach((s) => slugs.add(s));
-  } else if (meta?.categories && meta.categories.length > 1) {
-    for (const cat of meta.categories) {
-      const s = (cat.slug || '').trim();
-      if (s) slugs.add(s);
+    if (out.length < snapshot.rooms.length) {
+      const primary = preset.calculatorDraft;
+      const tail = parseDraftRoomItemIdArrays(primary);
+      let t = 0;
+      while (out.length < snapshot.rooms.length) {
+        if (t >= tail.length) return null;
+        out.push(tail[t]!);
+        t += 1;
+      }
     }
-    const primary = (preset.categorySlug || '').trim();
-    if (primary) slugs.add(primary);
   } else {
-    const s = (preset.categorySlug || '').trim();
-    if (!s) return { maps: null, matrix };
-    slugs.add(s);
+    const raw = preset.calculatorDraft;
+    for (const ids of parseDraftRoomItemIdArrays(raw)) {
+      out.push(ids);
+    }
   }
 
-  const out = new Map<string, Map<string, string>>();
-  await Promise.all(
-    [...slugs].map(async (slug) => {
-      const m = await fetchItemIdToStageLabelMap(slug);
-      out.set(slug, m);
-    })
-  );
-  return { maps: out, matrix };
+  return validateDraftMatrixAgainstSnapshot(snapshot, out);
 }
 
 export type WorkScopeLineRow = {
@@ -443,13 +466,22 @@ function buildSectionsForPreset(
   ];
 }
 
+/** Порядок групп работ внутри помещения (демонтаж → черновые → чистовые; '' — без группы). */
+const WORK_GROUP_BUCKET_ORDER: string[] = ['DEMOLITION', 'ROUGH', 'FINISHING', ''];
+
+function workGroupBucketLabel(key: string): string {
+  if (!key) return 'Без группы';
+  return SERVICE_CATALOG_WORK_GROUP_LABELS[key as ServiceCatalogWorkGroupKey] ?? 'Без группы';
+}
+
 function groupLinesIntoStages(args: {
   gri: number;
   lines: EstimateSnapshotLine[];
   itemIds: string[] | undefined;
   itemIdToStage: Map<string, string> | undefined;
+  mode: EstimateWorkScopeGroupMode;
 }): WorkScopeStageRow[] {
-  const { gri, lines, itemIds, itemIdToStage } = args;
+  const { gri, lines, itemIds, itemIdToStage, mode } = args;
   const stageMapReady = Boolean(itemIdToStage && itemIdToStage.size > 0);
   if (!itemIds || !stageMapReady || itemIds.length !== lines.length) {
     const lineRows: WorkScopeLineRow[] = lines.map((line, li) => ({
@@ -464,18 +496,22 @@ function groupLinesIntoStages(args: {
     return [{ id: `wst:${gri}:0`, label: '', amount, lines: lineRows }];
   }
 
-  const stageByItemId = itemIdToStage!;
+  const mapByItemId = itemIdToStage!;
   type Bucket = { label: string; rows: WorkScopeLineRow[]; order: number };
   const buckets = new Map<string, Bucket>();
   let order = 0;
   for (let li = 0; li < lines.length; li++) {
     const line = lines[li]!;
     const itemId = itemIds[li]!;
-    const stageLabel = (stageByItemId.get(itemId) ?? '—').trim() || '—';
-    let b = buckets.get(stageLabel);
+    const rawKey = mapByItemId.get(itemId);
+    const bucketLabel =
+      mode === 'work_group'
+        ? workGroupBucketLabel(typeof rawKey === 'string' ? rawKey : '')
+        : (typeof rawKey === 'string' ? rawKey.trim() : '') || '—';
+    let b = buckets.get(bucketLabel);
     if (!b) {
-      b = { label: stageLabel, rows: [], order: order++ };
-      buckets.set(stageLabel, b);
+      b = { label: bucketLabel, rows: [], order: order++ };
+      buckets.set(bucketLabel, b);
     }
     b.rows.push({
       id: `wsl:${gri}:${li}`,
@@ -487,11 +523,24 @@ function groupLinesIntoStages(args: {
     });
   }
 
-  const list = [...buckets.values()].sort((a, b) => a.order - b.order);
+  const groupRank = new Map(WORK_GROUP_BUCKET_ORDER.map((k, i) => [workGroupBucketLabel(k), i]));
+  const list = [...buckets.values()].sort((a, b) => {
+    const ra = groupRank.get(a.label);
+    const rb = groupRank.get(b.label);
+    if (ra !== undefined || rb !== undefined) {
+      return (ra ?? WORK_GROUP_BUCKET_ORDER.length) - (rb ?? WORK_GROUP_BUCKET_ORDER.length);
+    }
+    return a.order - b.order;
+  });
   if (list.length <= 1) {
-    const flat = list[0]?.rows ?? [];
-    const amount = flat.reduce((s, l) => s + l.amount, 0);
-    return [{ id: `wst:${gri}:0`, label: '', amount, lines: flat }];
+    const single = list[0];
+    // В режиме групп работ единственную реальную группу оставляем заголовком
+    // (позиций под группами в этом режиме нет); схлопываем только «Без группы».
+    if (mode !== 'work_group' || !single || !single.label || single.label === 'Без группы') {
+      const flat = single?.rows ?? [];
+      const amount = flat.reduce((s, l) => s + l.amount, 0);
+      return [{ id: `wst:${gri}:0`, label: '', amount, lines: flat }];
+    }
   }
 
   return list.map((b, si) => ({
@@ -502,11 +551,18 @@ function groupLinesIntoStages(args: {
   }));
 }
 
-/** Дерево: категория → помещение → (опционально этап/подкатегория) → позиция. */
+export type EstimateWorkScopeGroupMode = 'subcategory' | 'work_group';
+
+/**
+ * Дерево для модалки разделения сметы.
+ * Режим `subcategory`: категория → помещение → подкатегория каталога → позиция.
+ * Режим `work_group`: категория → помещение → группа работ (позиции внутри групп не показываются).
+ */
 export function buildEstimateWorkScopeTree(
   preset: ContractEstimatePreset,
   groups: ContractEstimateGroup[],
-  stageMapsBySlug?: Map<string, Map<string, string>> | null
+  stageMapsBySlug?: Map<string, Map<string, string>> | null,
+  mode: EstimateWorkScopeGroupMode = 'subcategory'
 ): WorkScopeCategoryRow[] {
   const snapshot = getBaseSnapshotWithMarkupForPreset(preset, groups);
   if (!snapshot?.rooms?.length) return [];
@@ -530,6 +586,7 @@ export function buildEstimateWorkScopeTree(
         lines: room.lines ?? [],
         itemIds,
         itemIdToStage: itemMap,
+        mode,
       });
       const roomAmount = stages.reduce((s, st) => s + st.amount, 0);
       catAmount += roomAmount;
@@ -556,23 +613,37 @@ export function buildEstimateWorkScopeTree(
 export type EstimateWorkScopeTreeAsyncResult = {
   tree: WorkScopeCategoryRow[];
   /**
-   * Почему в UI нет групп по подкатегориям каталога (если применимо).
+   * Почему в UI нет групп по подкатегориям/группам работ (если применимо).
    * `draft_snapshot_mismatch` — не удалось сопоставить позиции черновика со строками сметы.
+   * `no_work_group_marks` — режим групп работ: у позиций сметы не задана группа в каталоге.
    */
-  hint: 'draft_snapshot_mismatch' | 'no_subcategory_buckets' | null;
+  hint: 'draft_snapshot_mismatch' | 'no_subcategory_buckets' | 'no_work_group_marks' | null;
 };
 
 export async function buildEstimateWorkScopeTreeAsync(
   preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[]
+  groups: ContractEstimateGroup[],
+  mode: EstimateWorkScopeGroupMode = 'subcategory'
 ): Promise<EstimateWorkScopeTreeAsyncResult> {
-  const { maps, matrix } = await loadStageLabelMapsForPreset(preset, groups);
-  const tree = buildEstimateWorkScopeTree(preset, groups, maps);
+  const { maps, workGroupMaps, matrix } = await loadStageLabelMapsForPreset(preset, groups);
+  const itemMaps = mode === 'work_group' ? workGroupMaps : maps;
+  const tree = buildEstimateWorkScopeTree(preset, groups, itemMaps, mode);
   if (!matrix) {
     return {
       tree,
       hint: tree.length > 0 ? 'draft_snapshot_mismatch' : null,
     };
+  }
+  if (mode === 'work_group') {
+    // Есть ли вообще размеченные группы у позиций этой сметы.
+    const usedIds = new Set(matrix.flat());
+    const hasAnyMark = [...(workGroupMaps?.values() ?? [])].some((m) =>
+      [...m.entries()].some(([id, group]) => Boolean(group) && usedIds.has(id))
+    );
+    if (!hasAnyMark && tree.length > 0) {
+      return { tree, hint: 'no_work_group_marks' };
+    }
+    return { tree, hint: null };
   }
   const hasStageRows = tree.some((c) => c.rooms.some((r) => r.stages.length > 1));
   if (!hasStageRows && tree.length > 0) {

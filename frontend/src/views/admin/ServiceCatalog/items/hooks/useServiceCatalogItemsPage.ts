@@ -11,6 +11,7 @@ import type {
   ServiceCatalogCategory,
   ServiceCatalogDeleteTarget,
   ServiceCatalogItem,
+  ServiceCatalogWorkGroupKey,
 } from '../service-catalog-items-page.types';
 import {
   buildCategoryMarkupByIdFromTree,
@@ -45,9 +46,11 @@ export function useServiceCatalogItemsPage() {
     description: '',
     price: '',
     unit: 'м²',
+    workGroup: '',
   });
   const [editingItem, setEditingItem] = useState<string | null>(null);
   const [editItemData, setEditItemData] = useState<Partial<ServiceCatalogItem>>({});
+  const [workGroupSavingId, setWorkGroupSavingId] = useState<string | null>(null);
   const [collapsedCategoryIds, setCollapsedCategoryIds] = useState<Set<string>>(
     () => readInitialUiState().collapsedCategoryIds
   );
@@ -261,13 +264,14 @@ export function useServiceCatalogItemsPage() {
           name: newItem.name.trim(),
           price,
           unit: newItem.unit || 'м²',
+          workGroup: newItem.workGroup || null,
         }),
       });
       if (res.ok) {
         showMessage('success', 'Вид работ добавлен');
         await reloadKeepingScroll(() => {
           setShowNewItem(null);
-          setNewItem({ name: '', description: '', price: '', unit: 'м²' });
+          setNewItem({ name: '', description: '', price: '', unit: 'м²', workGroup: '' });
         });
       } else {
         const err = await res.json().catch(() => ({}));
@@ -312,6 +316,28 @@ export function useServiceCatalogItemsPage() {
     }
   };
 
+  /** Смена группы работ (демонтаж/черновые/чистовые) — сохраняется сразу, отдельно от редактирования строки. */
+  const handleSetWorkGroup = async (id: string, value: ServiceCatalogWorkGroupKey | '') => {
+    setWorkGroupSavingId(id);
+    try {
+      const res = await apiFetch(`${API_URL}/admin/service-catalog/items/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ workGroup: value || null }),
+      });
+      if (res.ok) {
+        showMessage('success', 'Группа работ обновлена');
+        await reloadKeepingScroll();
+      } else {
+        showMessage('error', 'Не удалось обновить группу работ');
+      }
+    } catch {
+      showMessage('error', 'Ошибка сети');
+    } finally {
+      setWorkGroupSavingId(null);
+    }
+  };
+
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -350,6 +376,8 @@ export function useServiceCatalogItemsPage() {
     setEditingItem,
     editItemData,
     setEditItemData,
+    workGroupSavingId,
+    handleSetWorkGroup,
     collapsedCategoryIds,
     nestedChildBlocksHiddenRoots,
     reorderInProgress,

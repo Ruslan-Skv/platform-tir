@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ServiceCatalogWorkGroup } from '@prisma/client';
 
 export class UpdateServiceCatalogItemDto {
   @IsString()
@@ -23,6 +24,11 @@ export class UpdateServiceCatalogItemDto {
   @IsString()
   @IsOptional()
   unit?: string;
+
+  /// null — сбросить группу работ
+  @IsEnum(ServiceCatalogWorkGroup)
+  @IsOptional()
+  workGroup?: ServiceCatalogWorkGroup | null;
 
   @IsNumber()
   @IsOptional()

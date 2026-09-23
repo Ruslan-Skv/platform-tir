@@ -7,6 +7,7 @@ import type {
 
 import { generateSplitBundleId } from '../../../platform/estimates/estimateSplitBundle';
 import {
+  type EstimateWorkScopeGroupMode,
   type WorkScopeCategoryRow,
   buildEstimateWorkScopeTreeAsync,
   buildSiblingLineClaimIndex,
@@ -43,23 +44,35 @@ export function useEstimateWorkScopeSplitModal({
   const [tree, setTree] = useState<WorkScopeCategoryRow[]>([]);
   const [treeLoading, setTreeLoading] = useState(true);
   const [workScopeSplitHint, setWorkScopeSplitHint] = useState<
-    'draft_snapshot_mismatch' | 'no_subcategory_buckets' | null
+    'draft_snapshot_mismatch' | 'no_subcategory_buckets' | 'no_work_group_marks' | null
   >(null);
+  const [splitGroupMode, setSplitGroupMode] = useState<EstimateWorkScopeGroupMode>('subcategory');
   const treeLoadGen = useRef(0);
+  const lastPresetIdRef = useRef(preset.id);
 
   useEffect(() => {
     const gen = ++treeLoadGen.current;
+    const presetChanged = lastPresetIdRef.current !== preset.id;
+    lastPresetIdRef.current = preset.id;
     setTreeLoading(true);
-    setWorkScopeSplitHint(null);
-    void buildEstimateWorkScopeTreeAsync(preset, groups).then((r) => {
+    // При смене варианта группировки показываем прежнее дерево, пока грузится новое —
+    // модалка не «прыгает». Очищаем только при переходе к другому расчёту.
+    if (presetChanged) {
+      setTree([]);
+      setWorkScopeSplitHint(null);
+    }
+    void buildEstimateWorkScopeTreeAsync(preset, groups, splitGroupMode).then((r) => {
       if (treeLoadGen.current !== gen) return;
       setTree(r.tree);
       setWorkScopeSplitHint(r.hint);
       setTreeLoading(false);
     });
-  }, [preset, groups]);
+  }, [preset, groups, splitGroupMode]);
 
   const allLineIds = useMemo(() => collectAllLineScopeIds(tree), [tree]);
+  // Ключи строк (`wsl:gri:li`) не зависят от варианта группировки: сравнение по содержимому,
+  // чтобы переключение режима не сбрасывало уже отмеченные позиции.
+  const allLineIdsKey = useMemo(() => allLineIds.join('\n'), [allLineIds]);
   const resolvedSplitBundleId = useMemo(
     () => resolveSplitBundleId(preset, allPresets),
     [preset, allPresets]
@@ -70,19 +83,33 @@ export function useEstimateWorkScopeSplitModal({
   );
 
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
+  /** Исходное состояние выбора (при открытии расчёта / после сохранения) — для dirty-проверки. */
+  const [baselineSelectedKeys, setBaselineSelectedKeys] = useState<string[] | null>(null);
   const [localError, setLocalError] = useState<string | null>(null);
 
   useEffect(() => {
     const raw = preset.estimateWorkScopeKeys;
+    let next: string[];
     if (Array.isArray(raw)) {
-      setSelectedKeys(raw.filter((k) => allLineIds.includes(k)));
+      next = raw.filter((k) => allLineIds.includes(k));
     } else if (claimIndex.size > 0) {
-      setSelectedKeys(allLineIds.filter((id) => !claimIndex.has(id)));
+      next = allLineIds.filter((id) => !claimIndex.has(id));
     } else {
-      setSelectedKeys([...allLineIds]);
+      next = [...allLineIds];
     }
+    setSelectedKeys(next);
+    setBaselineSelectedKeys(next);
     setLocalError(null);
-  }, [preset.id, preset.estimateWorkScopeKeys, allLineIds, claimIndex]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- allLineIds представлен ключом allLineIdsKey
+  }, [preset.id, preset.estimateWorkScopeKeys, allLineIdsKey, claimIndex]);
+
+  /** Состав менялся относительно сохранённого — только тогда доступно «Сохранить состав». */
+  const selectionDirty = useMemo(() => {
+    if (!baselineSelectedKeys) return false;
+    if (baselineSelectedKeys.length !== selectedKeys.length) return true;
+    const baselineSet = new Set(baselineSelectedKeys);
+    return selectedKeys.some((k) => !baselineSet.has(k));
+  }, [baselineSelectedKeys, selectedKeys]);
 
   const selectedSet = useMemo(() => new Set(selectedKeys), [selectedKeys]);
 
@@ -233,8 +260,11 @@ export function useEstimateWorkScopeSplitModal({
     tree,
     treeLoading,
     workScopeSplitHint,
+    splitGroupMode,
+    setSplitGroupMode,
     selectedKeys,
     selectedSet,
+    selectionDirty,
     claimIndex,
     localError,
     resolvedSplitBundleId,

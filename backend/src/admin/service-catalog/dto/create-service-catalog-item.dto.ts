@@ -1,5 +1,6 @@
-import { IsString, IsOptional, IsNumber, IsBoolean, MinLength, Min } from 'class-validator';
+import { IsString, IsOptional, IsNumber, IsBoolean, MinLength, Min, IsEnum } from 'class-validator';
 import { Type } from 'class-transformer';
+import { ServiceCatalogWorkGroup } from '@prisma/client';
 
 export class CreateServiceCatalogItemDto {
   @IsString()
@@ -21,6 +22,10 @@ export class CreateServiceCatalogItemDto {
   @IsString()
   @IsOptional()
   unit?: string; // м², шт, п.м. и т.д.
+
+  @IsEnum(ServiceCatalogWorkGroup)
+  @IsOptional()
+  workGroup?: ServiceCatalogWorkGroup; // Демонтажные / черновые / чистовые работы
 
   @IsNumber()
   @IsOptional()

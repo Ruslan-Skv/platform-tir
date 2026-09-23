@@ -1,5 +1,9 @@
 import cdBase from '../../../../styles/base.module.css';
-import type { SiblingClaim } from '../../../platform/estimates/estimateWorkScopeTree';
+import type {
+  EstimateWorkScopeGroupMode,
+  SiblingClaim,
+  WorkScopeStageRow,
+} from '../../../platform/estimates/estimateWorkScopeTree';
 import {
   type WorkScopeCategoryRow,
   type WorkScopeLineRow,
@@ -15,6 +19,7 @@ type EstimateWorkScopeSplitTreeProps = {
   tree: WorkScopeCategoryRow[];
   treeLoading: boolean;
   saving: boolean;
+  groupMode: EstimateWorkScopeGroupMode;
   selectedKeys: string[];
   selectedSet: Set<string>;
   claimIndex: Map<string, SiblingClaim[]>;
@@ -97,6 +102,7 @@ export function EstimateWorkScopeSplitTree(props: EstimateWorkScopeSplitTreeProp
     tree,
     treeLoading,
     saving,
+    groupMode,
     selectedKeys,
     selectedSet,
     claimIndex,
@@ -120,9 +126,34 @@ export function EstimateWorkScopeSplitTree(props: EstimateWorkScopeSplitTreeProp
     toggleLine,
   };
 
+  const renderWorkScopeStageHeading = (stage: WorkScopeStageRow) => (
+    <label
+      className={`${cdBase.workScopeSplitRow} ${cdBase.workScopeSplitIndent3} ${cdBase.workScopeSplitHeading}`}
+    >
+      <input
+        type="checkbox"
+        checked={(() => {
+          const lineIds = lineKeysFromStageNodeId(tree, stage.id);
+          const selectable = lineIds.filter(
+            (id) =>
+              !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) || selectedKeys.includes(id)
+          );
+          return selectable.length > 0 && selectable.every((id) => selectedSet.has(id));
+        })()}
+        disabled={saving || treeLoading}
+        onChange={() => toggleStage(stage.id)}
+      />
+      <span className={cdBase.workScopeSplitHeadingLabel}>{stage.label}</span>
+      <span className={cdBase.workScopeSplitHeadingLeader} aria-hidden="true" />
+      <span className={cdBase.workScopeSplitRowMeta}>
+        {formatEstimatePresetTotalRub(stage.amount)}
+      </span>
+    </label>
+  );
+
   return (
     <div className={cdBase.workScopeSplitTreePanel}>
-      {!treeLoading && tree.length > 0 ? (
+      {tree.length > 0 ? (
         <div className={cdBase.workScopeSplitTreeToolbar}>
           <button
             type="button"
@@ -150,14 +181,18 @@ export function EstimateWorkScopeSplitTree(props: EstimateWorkScopeSplitTreeProp
         </div>
       ) : null}
       <div className={cdBase.workScopeSplitTreeScroll}>
-        {treeLoading ? (
-          <p data-modal-form-hint style={{ margin: 0 }}>
-            Загрузка подкатегорий из каталога…
-          </p>
-        ) : tree.length === 0 ? (
-          <p data-modal-form-hint style={{ margin: 0 }}>
-            Нет строк сметы для разделения.
-          </p>
+        {tree.length === 0 ? (
+          treeLoading ? (
+            <p data-modal-form-hint style={{ margin: 0 }}>
+              {groupMode === 'work_group'
+                ? 'Загрузка групп работ из каталога…'
+                : 'Загрузка подкатегорий из каталога…'}
+            </p>
+          ) : (
+            <p data-modal-form-hint style={{ margin: 0 }}>
+              Нет строк сметы для разделения.
+            </p>
+          )
         ) : (
           tree.map((cat) => (
             <div key={cat.id}>
@@ -213,52 +248,30 @@ export function EstimateWorkScopeSplitTree(props: EstimateWorkScopeSplitTreeProp
                         {formatEstimatePresetTotalRub(room.amount)}
                       </span>
                     </label>
-                    {showStages
-                      ? room.stages.map((stage) => (
-                          <div key={stage.id}>
-                            <label
-                              className={`${cdBase.workScopeSplitRow} ${cdBase.workScopeSplitIndent3} ${cdBase.workScopeSplitHeading}`}
-                            >
-                              <input
-                                type="checkbox"
-                                checked={(() => {
-                                  const lineIds = lineKeysFromStageNodeId(tree, stage.id);
-                                  const selectable = lineIds.filter(
-                                    (id) =>
-                                      !isLineKeyClaimedBySibling(id, claimIndex, selectedKeys) ||
-                                      selectedKeys.includes(id)
-                                  );
-                                  return (
-                                    selectable.length > 0 &&
-                                    selectable.every((id) => selectedSet.has(id))
-                                  );
-                                })()}
-                                disabled={saving || treeLoading}
-                                onChange={() => toggleStage(stage.id)}
-                              />
-                              <span className={cdBase.workScopeSplitHeadingLabel}>
-                                {stage.label}
-                              </span>
-                              <span
-                                className={cdBase.workScopeSplitHeadingLeader}
-                                aria-hidden="true"
-                              />
-                              <span className={cdBase.workScopeSplitRowMeta}>
-                                {formatEstimatePresetTotalRub(stage.amount)}
-                              </span>
-                            </label>
-                            {stage.lines.map((line) =>
-                              renderWorkScopeLineRow(
-                                line,
-                                cdBase.workScopeSplitIndent4,
-                                lineRowProps
-                              )
-                            )}
-                          </div>
-                        ))
-                      : linesInWorkScopeRoom(room).map((line) =>
-                          renderWorkScopeLineRow(line, cdBase.workScopeSplitIndent3, lineRowProps)
-                        )}
+                    {groupMode === 'work_group'
+                      ? // Упрощённая группировка: только категория → помещение → группа работ,
+                        // отдельные виды работ не показываются.
+                        room.stages
+                          .filter((stage) => stage.label)
+                          .map((stage) => (
+                            <div key={stage.id}>{renderWorkScopeStageHeading(stage)}</div>
+                          ))
+                      : showStages
+                        ? room.stages.map((stage) => (
+                            <div key={stage.id}>
+                              {renderWorkScopeStageHeading(stage)}
+                              {stage.lines.map((line) =>
+                                renderWorkScopeLineRow(
+                                  line,
+                                  cdBase.workScopeSplitIndent4,
+                                  lineRowProps
+                                )
+                              )}
+                            </div>
+                          ))
+                        : linesInWorkScopeRoom(room).map((line) =>
+                            renderWorkScopeLineRow(line, cdBase.workScopeSplitIndent3, lineRowProps)
+                          )}
                   </div>
                 );
               })}

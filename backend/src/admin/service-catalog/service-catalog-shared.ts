@@ -1,4 +1,4 @@
-import { Prisma, ServiceCatalogCategory } from '@prisma/client';
+import { Prisma, ServiceCatalogCategory, ServiceCatalogWorkGroup } from '@prisma/client';
 import { serviceCatalogPriceWithMarkup } from '../../common/utils/service-catalog-price';
 import {
   categoryRowsToMarkupMap,
@@ -50,6 +50,8 @@ export type PublicCatalogItem = {
   description: string | null;
   unit: string;
   sortOrder: number;
+  /** Группа работ (демонтаж/черновые/чистовые) — для группировки в расчётах; null — не задана. */
+  workGroup?: ServiceCatalogWorkGroup | null;
   price?: number;
 };
 
@@ -61,6 +63,7 @@ export function mapPublicItems(
     description: string | null;
     unit: string;
     sortOrder: number;
+    workGroup?: ServiceCatalogWorkGroup | null;
     price: Prisma.Decimal;
   }[],
   categoryMarkupPercent: Prisma.Decimal,
@@ -72,6 +75,7 @@ export function mapPublicItems(
       description: item.description,
       unit: item.unit,
       sortOrder: item.sortOrder,
+      workGroup: item.workGroup ?? null,
     };
     if (showPrices) {
       return {

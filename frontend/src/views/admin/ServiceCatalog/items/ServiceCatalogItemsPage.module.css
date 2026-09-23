@@ -424,6 +424,37 @@
   width: 90px;
 }
 
+.groupColumn {
+  width: 190px;
+}
+
+.groupCell {
+  vertical-align: middle;
+}
+
+.groupSelect {
+  width: 100%;
+  box-sizing: border-box;
+  padding: var(--admin-space-fluid-md) var(--admin-space-fluid-xl);
+  border: 1px solid var(--admin-border-strong);
+  border-radius: var(--admin-radius-sm);
+  background: var(--admin-surface);
+  color: inherit;
+  font-size: var(--admin-font-size-sm);
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.groupSelect:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.groupSelect:focus {
+  outline: none;
+  border-color: var(--admin-overlay-color-135);
+}
+
 .actionsColumn {
   width: 220px;
 }

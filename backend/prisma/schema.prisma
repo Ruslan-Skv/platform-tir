@@ -863,18 +863,27 @@ model ServiceCatalogCategory {
   @@map("service_catalog_categories")
 }
 
+/// Дополнительная группировка видов работ для расчётов (демонтаж / черновые / чистовые).
+enum ServiceCatalogWorkGroup {
+  DEMOLITION // Демонтажные работы
+  ROUGH // Черновые работы
+  FINISHING // Чистовые работы
+}
+
 model ServiceCatalogItem {
-  id                String                 @id @default(cuid())
+  id                String                   @id @default(cuid())
   categoryId        String
   name              String // Вид работ (например "Шпатлёвка стен")
-  description       String?                @db.Text
-  price             Decimal                @db.Decimal(12, 2) // Стоимость за единицу
-  unit              String                 @default("м²") // Единица измерения: м², шт, п.м. и т.д.
-  sortOrder         Int                    @default(0)
-  isActive          Boolean                @default(true)
-  createdAt         DateTime               @default(now())
-  updatedAt         DateTime               @updatedAt
-  category          ServiceCatalogCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  description       String?                  @db.Text
+  price             Decimal                  @db.Decimal(12, 2) // Стоимость за единицу
+  unit              String                   @default("м²") // Единица измерения: м², шт, п.м. и т.д.
+  /// Группа работ (демонтаж/черновые/чистовые) — альтернативная группировка для расчётов. NULL — не задана.
+  workGroup         ServiceCatalogWorkGroup?
+  sortOrder         Int                      @default(0)
+  isActive          Boolean                  @default(true)
+  createdAt         DateTime                 @default(now())
+  updatedAt         DateTime                 @updatedAt
+  category          ServiceCatalogCategory   @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   serviceOrderItems ServiceOrderItem[]
   orderServiceItems OrderServiceItem[]
 

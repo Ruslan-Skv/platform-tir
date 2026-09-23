@@ -17,6 +17,8 @@ import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import styles from './ServiceCatalogItemsPage.module.css';
 import type { ServiceCatalogItemsPageModel } from './hooks/useServiceCatalogItemsPage';
+import { SERVICE_CATALOG_WORK_GROUP_OPTIONS } from './service-catalog-items-page.constants';
+import type { ServiceCatalogWorkGroupKey } from './service-catalog-items-page.types';
 import {
   collectDescendantCategoryIds,
   countItemsInDescendantCategories,
@@ -49,6 +51,8 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
     setEditingItem,
     editItemData,
     setEditItemData,
+    workGroupSavingId,
+    handleSetWorkGroup,
     collapsedCategoryIds,
     nestedChildBlocksHiddenRoots,
     reorderInProgress,
@@ -266,6 +270,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                           <col className={styles.priceColumn} />
                           <col className={styles.priceColumn} />
                           <col className={styles.unitColumn} />
+                          <col className={styles.groupColumn} />
                           <col className={styles.actionsColumn} />
                         </colgroup>
                         <thead>
@@ -274,6 +279,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                             <th>База</th>
                             <th>Итого</th>
                             <th>Ед. изм.</th>
+                            <th>Группа работ</th>
                             <th></th>
                           </tr>
                         </thead>
@@ -347,6 +353,28 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                   ) : (
                                     item.unit
                                   )}
+                                </td>
+                                <td className={styles.groupCell}>
+                                  <select
+                                    data-admin-mutation
+                                    className={styles.groupSelect}
+                                    value={item.workGroup ?? ''}
+                                    disabled={workGroupSavingId === item.id}
+                                    onChange={(e) =>
+                                      void handleSetWorkGroup(
+                                        item.id,
+                                        e.target.value as ServiceCatalogWorkGroupKey | ''
+                                      )
+                                    }
+                                    title="Группа работ для альтернативной группировки в расчётах"
+                                  >
+                                    <option value="">— не задана —</option>
+                                    {SERVICE_CATALOG_WORK_GROUP_OPTIONS.map((option) => (
+                                      <option key={option.value} value={option.value}>
+                                        {option.label}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </td>
                                 <td>
                                   {editingItem === item.id ? (
@@ -487,6 +515,26 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                   className={`${styles.input} ${styles.inputSortNarrow}`}
                                 />
                               </td>
+                              <td className={styles.groupCell}>
+                                <select
+                                  className={styles.groupSelect}
+                                  value={newItem.workGroup}
+                                  onChange={(e) =>
+                                    setNewItem((p) => ({
+                                      ...p,
+                                      workGroup: e.target.value as ServiceCatalogWorkGroupKey | '',
+                                    }))
+                                  }
+                                  title="Группа работ для альтернативной группировки в расчётах"
+                                >
+                                  <option value="">— не задана —</option>
+                                  {SERVICE_CATALOG_WORK_GROUP_OPTIONS.map((option) => (
+                                    <option key={option.value} value={option.value}>
+                                      {option.label}
+                                    </option>
+                                  ))}
+                                </select>
+                              </td>
                               <td>
                                 <span className={styles.addItemActions}>
                                   <button
@@ -506,6 +554,7 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
                                         description: '',
                                         price: '',
                                         unit: 'м²',
+                                        workGroup: '',
                                       });
                                     }}
                                   >
@@ -560,7 +609,9 @@ export function ServiceCatalogItemsPageView({ model }: ServiceCatalogItemsPageVi
           >
             {message.text}
           </div>,
-          document.body
+          // Порталим в оболочку админки, а не в body: CSS-переменные --admin-* объявлены на adminLayout,
+          // в body тост теряет фон/рамку и «висит в воздухе».
+          document.querySelector<HTMLElement>('[data-admin-shell]') ?? document.body
         )}
     </>
   );

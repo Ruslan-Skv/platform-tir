@@ -1,9 +1,15 @@
+import type { ServiceCatalogWorkGroupKey } from '@/shared/lib/serviceCatalogWorkGroups';
+
+export type { ServiceCatalogWorkGroupKey };
+
 export interface ServiceCatalogItem {
   id: string;
   name: string;
   description: string | null;
   price: number;
   unit: string;
+  /** Группа работ (демонтаж/черновые/чистовые); null — не задана. */
+  workGroup?: ServiceCatalogWorkGroupKey | null;
   sortOrder: number;
   isActive: boolean;
   category?: { id: string; name: string; slug: string };
@@ -49,4 +55,6 @@ export type NewServiceCatalogItemForm = {
   description: string;
   price: string;
   unit: string;
+  /** Группа работ при создании; '' — не задана. */
+  workGroup: '' | ServiceCatalogWorkGroupKey;
 };
