@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 
 import type {
   ContractEstimateGroup,
@@ -8,15 +8,12 @@ import type {
 import {
   type EstimateWorkspacePreviewResult,
   buildEstimatePresetPreviewModel,
-  loadEstimatePreviewDirectorName,
 } from '../../workspace/estimateWorkspacePreview';
 
 export type EstimatesListPreview = {
   /** Расчёт, для которого открыт предпросмотр (null — закрыт / пресет исчез). */
   preset: ContractEstimatePreset | null;
   result: EstimateWorkspacePreviewResult | null;
-  /** Директор из карточек подписантов «Ремонт» — для блока подписей как в договоре. */
-  directorName: string;
   open: (presetId: string) => void;
   close: () => void;
 };
@@ -30,7 +27,6 @@ export function useEstimatesListPreview({
   groups: ContractEstimateGroup[];
 }): EstimatesListPreview {
   const [previewPresetId, setPreviewPresetId] = useState<string | null>(null);
-  const [directorName, setDirectorName] = useState('');
 
   const preset = useMemo(
     () => (previewPresetId == null ? null : (items.find((x) => x.id === previewPresetId) ?? null)),
@@ -41,19 +37,8 @@ export function useEstimatesListPreview({
     [preset, groups]
   );
 
-  useEffect(() => {
-    if (preset == null) return;
-    let cancelled = false;
-    void loadEstimatePreviewDirectorName().then((name) => {
-      if (!cancelled) setDirectorName(name);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [preset]);
-
   const open = useCallback((presetId: string) => setPreviewPresetId(presetId), []);
   const close = useCallback(() => setPreviewPresetId(null), []);
 
-  return { preset, result, directorName, open, close };
+  return { preset, result, open, close };
 }

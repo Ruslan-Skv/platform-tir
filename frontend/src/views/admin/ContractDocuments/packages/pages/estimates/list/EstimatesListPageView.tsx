@@ -211,7 +211,6 @@ export function EstimatesListPageView({
         estimateName={preview.preset?.title ?? ''}
         customerName={preview.preset?.customerName ?? ''}
         objectAddress={preview.preset?.objectAddress ?? ''}
-        directorName={preview.directorName}
       />
     </div>
   );

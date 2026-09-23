@@ -1,7 +1,6 @@
 import {
   type ContractEstimateGroup,
   type ContractEstimatePreset,
-  getContractDocumentSignatoryProfiles,
 } from '@/shared/api/admin-contract-document-packages';
 
 import {
@@ -145,24 +144,4 @@ export function buildEstimatePresetPreviewModel(
       snapshot,
     },
   };
-}
-
-let directorNamePromise: Promise<string> | null = null;
-
-/**
- * Имя директора из карточек подписантов «Ремонт» — для блока подписей предпросмотра.
- * Кэшируется на время сессии; при ошибке — пустая строка (в подписи будет «—»).
- */
-export function loadEstimatePreviewDirectorName(): Promise<string> {
-  if (!directorNamePromise) {
-    directorNamePromise = getContractDocumentSignatoryProfiles('REPAIR')
-      .then(
-        (res) =>
-          (res.items ?? [])
-            .find((it) => it.directorNameNominative?.trim())
-            ?.directorNameNominative?.trim() ?? ''
-      )
-      .catch(() => '');
-  }
-  return directorNamePromise;
 }

@@ -3,10 +3,7 @@
 import { Modal } from '@/shared/ui/Modal';
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
-import {
-  PackageEstimateSignaturesBlock,
-  formatPackageMoneyValue,
-} from '../../../platform/editor/estimateTab/estimateTabUi';
+import { formatPackageMoneyValue } from '../../../platform/editor/estimateTab/estimateTabUi';
 import previewStyles from './EstimateWorkspacePreviewModal.module.css';
 import type { EstimateWorkspacePreviewModel } from './estimateWorkspacePreview';
 
@@ -19,8 +16,6 @@ export type EstimateWorkspacePreviewModalProps = {
   estimateName: string;
   customerName: string;
   objectAddress: string;
-  /** Директор из карточек подписантов — для блока подписей как в договоре. */
-  directorName: string;
 };
 
 /**
@@ -37,7 +32,6 @@ export function EstimateWorkspacePreviewModal({
   estimateName,
   customerName,
   objectAddress,
-  directorName,
 }: EstimateWorkspacePreviewModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Предпросмотр расчёта" size="xl" alignTop>
@@ -150,22 +144,6 @@ export function EstimateWorkspacePreviewModal({
                   Итого по смете:{' '}
                   <strong>{formatPackageMoneyValue(model.snapshot.total)} руб.</strong>
                 </p>
-                <PackageEstimateSignaturesBlock
-                  directorName={directorName || '—'}
-                  customerFullName={customerName.trim() || '—'}
-                />
-                <div className={cdDocPreview.estimateA4HandwritingNote}>
-                  <p className={cdDocPreview.estimateA4HandwritingNoteLabel}>Примечание:</p>
-                  <div className={cdDocPreview.estimateA4HandwritingLines} aria-hidden>
-                    {Array.from({ length: 3 }, (_, i) => (
-                      <div key={i} className={cdDocPreview.estimateA4HandwritingLine} />
-                    ))}
-                  </div>
-                </div>
-                <PackageEstimateSignaturesBlock
-                  directorName={directorName || '—'}
-                  customerFullName={customerName.trim() || '—'}
-                />
               </article>
             </div>
           </>

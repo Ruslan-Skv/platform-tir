@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 
 import type {
   ContractEstimateGroup,
@@ -8,7 +8,6 @@ import type {
 import {
   type EstimateWorkspacePreviewModel,
   buildEstimateWorkspacePreview,
-  loadEstimatePreviewDirectorName,
 } from '../estimateWorkspacePreview';
 
 export type EstimateWorkspacePreview = {
@@ -16,8 +15,6 @@ export type EstimateWorkspacePreview = {
   loading: boolean;
   error: string | null;
   model: EstimateWorkspacePreviewModel | null;
-  /** Директор из карточек подписантов «Ремонт» — для блока подписей как в договоре. */
-  directorName: string;
   open: () => void;
   close: () => void;
 };
@@ -44,19 +41,7 @@ export function useEstimateWorkspacePreview({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [model, setModel] = useState<EstimateWorkspacePreviewModel | null>(null);
-  const [directorName, setDirectorName] = useState('');
   const openGenRef = useRef(0);
-
-  useEffect(() => {
-    if (!isOpen) return;
-    let cancelled = false;
-    void loadEstimatePreviewDirectorName().then((name) => {
-      if (!cancelled) setDirectorName(name);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [isOpen]);
 
   const open = useCallback(() => {
     const gen = ++openGenRef.current;
@@ -99,5 +84,5 @@ export function useEstimateWorkspacePreview({
     setIsOpen(false);
   }, []);
 
-  return { isOpen, loading, error, model, directorName, open, close };
+  return { isOpen, loading, error, model, open, close };
 }

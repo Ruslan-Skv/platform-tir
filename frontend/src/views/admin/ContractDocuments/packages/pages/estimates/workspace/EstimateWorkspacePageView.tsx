@@ -204,7 +204,6 @@ export function EstimateWorkspacePageView({
         estimateName={session.estimateNameDraft}
         customerName={customerName}
         objectAddress={objectAddress}
-        directorName={preview.directorName}
       />
     </div>
   );
