@@ -31,6 +31,7 @@ export type PackageEstimateTabProps = {
   attachableForSelectedGroup: ContractEstimatePreset[];
   attachableEstimatePresets: ContractEstimatePreset[];
   attachBlockedByCrmMismatch: boolean;
+  attachBlockedByDirectionMismatch: boolean;
   estimatePresets: ContractEstimatePreset[];
   estimateUsageById: Map<string, EstimateUsageEntry[]>;
   draggingEstimatePresetId: string | null;

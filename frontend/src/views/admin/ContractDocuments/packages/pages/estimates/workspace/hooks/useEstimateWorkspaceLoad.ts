@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
@@ -40,6 +41,7 @@ export function useEstimateWorkspaceLoad({
   const [activeCategorySlug, setActiveCategorySlug] = useState('');
   const [estimateNameDraft, setEstimateNameDraft] = useState('');
   const [additionalMarkupRaw, setAdditionalMarkupRaw] = useState('');
+  const [direction, setDirection] = useState<ContractDocumentPackageKind>('REPAIR');
   const [selectedEstimateId, setSelectedEstimateId] = useState('');
   const [baseline, setBaseline] = useState<WorkspaceBaseline | null>(null);
   const [copySessionPendingSave, setCopySessionPendingSave] = useState(false);
@@ -71,6 +73,7 @@ export function useEstimateWorkspaceLoad({
         setActiveCategorySlug(result.activeCategorySlug);
         setEstimateNameDraft(result.estimateNameDraft);
         setAdditionalMarkupRaw(result.initialAdditionalMarkupRaw);
+        setDirection(result.initialDirection);
         setSelectedEstimateId(result.selectedEstimateId);
         setCopySessionPendingSave(result.copySessionPendingSave);
         setBaseline(result.baseline);
@@ -115,6 +118,8 @@ export function useEstimateWorkspaceLoad({
     setEstimateNameDraft,
     additionalMarkupRaw,
     setAdditionalMarkupRaw,
+    direction,
+    setDirection,
     selectedEstimateId,
     setSelectedEstimateId,
     baseline,

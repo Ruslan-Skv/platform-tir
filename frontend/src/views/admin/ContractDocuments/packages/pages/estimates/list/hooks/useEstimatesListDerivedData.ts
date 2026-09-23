@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
@@ -23,6 +24,7 @@ import type { EstimatesListWorkspacePackage } from '../estimatesListPackageUsage
 import type { EstimatesListSortBy, EstimatesListSortOrder } from '../estimatesListSort';
 import {
   countArchivedEstimates,
+  countEstimatesDirections,
   countEstimatesListScopes,
   countEstimatesPipelineTabs,
   filterVisibleEstimatesListItems,
@@ -40,6 +42,8 @@ export type UseEstimatesListDerivedDataParams = {
   managerFilter: string;
   listScope: EstimatesListScope;
   currentUserId: string | null;
+  /** Выбранные направления чипами; пусто — все. */
+  directionFilter: ContractDocumentPackageKind[];
   listViewMode: EstimatesListViewMode;
   listSortBy: EstimatesListSortBy;
   listSortOrder: EstimatesListSortOrder;
@@ -60,6 +64,7 @@ export function useEstimatesListDerivedData({
   managerFilter,
   listScope,
   currentUserId,
+  directionFilter,
   listViewMode,
   listSortBy,
   listSortOrder,
@@ -101,6 +106,7 @@ export function useEstimatesListDerivedData({
         listScope,
         currentUserId,
         managerIdsByPresetId,
+        directionFilter,
       }),
     [
       items,
@@ -114,7 +120,22 @@ export function useEstimatesListDerivedData({
       listScope,
       currentUserId,
       managerIdsByPresetId,
+      directionFilter,
     ]
+  );
+
+  const directionCounts = useMemo(
+    () =>
+      countEstimatesDirections(
+        items,
+        groups,
+        archiveView,
+        pipelineTab,
+        searchNorm,
+        dateFrom,
+        dateTo
+      ),
+    [items, groups, archiveView, pipelineTab, searchNorm, dateFrom, dateTo]
   );
 
   const scopeCounts = useMemo(
@@ -196,6 +217,7 @@ export function useEstimatesListDerivedData({
     groupIdsWithLockedEstimate,
     visibleItems,
     scopeCounts,
+    directionCounts,
     pipelineTabCounts,
     archiveCount,
     addressGroupCount,

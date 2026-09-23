@@ -53,6 +53,7 @@ export function useEstimatesListPage() {
     managerFilter: filters.managerFilter,
     listScope: filters.listScope,
     currentUserId: user?.id ?? null,
+    directionFilter: filters.directionFilters,
     listViewMode: filters.listViewMode,
     listSortBy: filters.listSortBy,
     listSortOrder: filters.listSortOrder,

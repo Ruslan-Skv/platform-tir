@@ -1,5 +1,6 @@
 'use client';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import type { CrmCustomerDetail } from '@/shared/api/admin-crm';
 import { formatCatalogPriceWithRuble } from '@/shared/lib/catalog/format-catalog-price';
 import {
@@ -10,6 +11,10 @@ import measurementFormStyles from '@/views/admin/CRM/Measurements/form/Measureme
 
 import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
 import cdTemplates from '../../../../styles/templates-library.module.css';
+import {
+  packageKindUiLabel,
+  packageKindsWithCreateEnabled,
+} from '../../../config/packageDirectionRegistry';
 import {
   type EstimateWorkspaceTotalCost,
   parseAdditionalMarkupPercent,
@@ -30,6 +35,9 @@ export type EstimateWorkspaceCustomerCardProps = {
   estimateNameDraft: string;
   onEstimateNameChange: (value: string) => void;
   estimateNameError: string | null;
+  /** Направление расчёта — тот же список, что при создании договора. */
+  direction: ContractDocumentPackageKind;
+  onDirectionChange: (kind: ContractDocumentPackageKind) => void;
   /** Наценка расчёта, % ('' — «наценка объекта»). */
   additionalMarkupRaw: string;
   onAdditionalMarkupChange: (value: string) => void;
@@ -49,6 +57,8 @@ export function EstimateWorkspaceCustomerCard({
   estimateNameDraft,
   onEstimateNameChange,
   estimateNameError,
+  direction,
+  onDirectionChange,
   additionalMarkupRaw,
   onAdditionalMarkupChange,
   estimateTotalCost,
@@ -66,33 +76,53 @@ export function EstimateWorkspaceCustomerCard({
       <div
         className={`${measurementFormStyles.blankSheet} ${cdWorkspace.estimateWorkspaceCustomerBlankSheet}`}
       >
-        <div className={measurementFormStyles.row}>
-          <label className={measurementFormStyles.label} htmlFor="estimate-workspace-name">
-            Название расчёта <span className={measurementFormStyles.required}>*</span>
-          </label>
-          <input
-            id="estimate-workspace-name"
-            type="text"
-            value={estimateNameDraft}
-            onChange={(e) => onEstimateNameChange(e.target.value)}
-            placeholder="Например: ЖК Парк, кв. 54"
-            className={`${cdWorkspace.estimateWorkspaceNameSearchInput} ${
-              estimateNameError ? measurementFormStyles.inputError : ''
-            }`}
-            autoComplete="off"
-            required
-            aria-invalid={!!estimateNameError}
-            aria-describedby={estimateNameError ? 'estimate-workspace-name-error' : undefined}
-          />
-          {estimateNameError ? (
-            <span
-              id="estimate-workspace-name-error"
-              className={measurementFormStyles.fieldError}
-              role="alert"
+        <div className={cdWorkspace.estimateWorkspaceNameFieldsRow}>
+          <div className={measurementFormStyles.row}>
+            <label className={measurementFormStyles.label} htmlFor="estimate-workspace-name">
+              Название расчёта <span className={measurementFormStyles.required}>*</span>
+            </label>
+            <input
+              id="estimate-workspace-name"
+              type="text"
+              value={estimateNameDraft}
+              onChange={(e) => onEstimateNameChange(e.target.value)}
+              placeholder="Например: ЖК Парк, кв. 54"
+              className={`${cdWorkspace.estimateWorkspaceNameSearchInput} ${
+                estimateNameError ? measurementFormStyles.inputError : ''
+              }`}
+              autoComplete="off"
+              required
+              aria-invalid={!!estimateNameError}
+              aria-describedby={estimateNameError ? 'estimate-workspace-name-error' : undefined}
+            />
+            {estimateNameError ? (
+              <span
+                id="estimate-workspace-name-error"
+                className={measurementFormStyles.fieldError}
+                role="alert"
+              >
+                {estimateNameError}
+              </span>
+            ) : null}
+          </div>
+          <div className={measurementFormStyles.row}>
+            <label className={measurementFormStyles.label} htmlFor="estimate-workspace-direction">
+              Направление
+            </label>
+            <select
+              id="estimate-workspace-direction"
+              value={direction}
+              onChange={(e) => onDirectionChange(e.target.value as ContractDocumentPackageKind)}
+              className={cdWorkspace.estimateWorkspaceNameSearchInput}
+              title="Направление, к которому относится расчёт — как при оформлении договора"
             >
-              {estimateNameError}
-            </span>
-          ) : null}
+              {packageKindsWithCreateEnabled().map((kind) => (
+                <option key={kind} value={kind}>
+                  {packageKindUiLabel(kind)}
+                </option>
+              ))}
+            </select>
+          </div>
         </div>
         <div className={cdWorkspace.estimateWorkspaceCustomerFieldsRow}>
           <div className={measurementFormStyles.row}>

@@ -33,7 +33,7 @@ export type EstimatePackageUsage =
       contractDate: string;
     };
 
-export const ESTIMATES_LIST_TABLE_COL_SPAN = 8;
+export const ESTIMATES_LIST_TABLE_COL_SPAN = 9;
 export const ESTIMATES_NO_ADDRESS_KEY = '__no_object_address__';
 
 export function isUsageLocked(u: EstimatePackageUsage): boolean {
@@ -204,8 +204,10 @@ export function estimateGroupSortTs(items: ContractEstimatePreset[]): number {
   return max;
 }
 
-/** Подпись даты объекта для колонки «Дата» (как у строк расчётов). */
-export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[]): string {
+/** Самый свежий расчёт из списка (по updatedAt/createdAt). */
+export function latestUpdatedEstimatePreset(
+  items: ContractEstimatePreset[]
+): ContractEstimatePreset | null {
   let latest: ContractEstimatePreset | null = null;
   let latestTs = 0;
   for (const it of items) {
@@ -215,6 +217,12 @@ export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[])
       latest = it;
     }
   }
+  return latest;
+}
+
+/** Подпись даты объекта для колонки «Дата» (как у строк расчётов). */
+export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[]): string {
+  const latest = latestUpdatedEstimatePreset(items);
   const raw = latest ? (latest.updatedAt ?? latest.createdAt) : undefined;
   if (!raw) return '—';
   const parsed = new Date(raw);
@@ -227,6 +235,15 @@ export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[])
         minute: '2-digit',
       })
     : '—';
+}
+
+/**
+ * Автор объекта — автор последнего прикреплённого расчёта (самого свежего),
+ * т.к. в одном объекте могут быть расчёты разных авторов.
+ */
+export function formatEstimateGroupAuthorLabel(items: ContractEstimatePreset[]): string {
+  const author = latestUpdatedEstimatePreset(items)?.createdByName?.trim();
+  return author || '—';
 }
 
 export function comparePresetsForListSort(

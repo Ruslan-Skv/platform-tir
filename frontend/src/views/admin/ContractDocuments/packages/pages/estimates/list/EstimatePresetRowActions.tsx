@@ -68,7 +68,6 @@ export function EstimatePresetRowActions({
   const hasLockedUsage = usages.some((u) => isUsageLocked(u));
   const groupForIt = it.groupId ? groups.find((g) => g.id === it.groupId) : undefined;
   const groupArchived = Boolean(groupForIt?.archived);
-  const canPresetArchive = !isBound && !it.archived && !groupArchived;
   const canPresetRestoreFromArchive = Boolean(it.archived) && !groupArchived;
   const inSplitBundle = Boolean(resolveSplitBundleId(it, items));
   const splitTree = buildEstimateWorkScopeTree(it, groups);
@@ -83,9 +82,13 @@ export function EstimatePresetRowActions({
           <button
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-            disabled={saving}
+            disabled={saving || hasLockedUsage}
             aria-label="В перспективу"
-            title="Перенести расчёт на вкладку «В перспективе»"
+            title={
+              hasLockedUsage
+                ? 'Перенос в перспективу недоступен: договор подписан или Д/с подписано'
+                : 'Перенести расчёт на вкладку «В перспективе»'
+            }
             onClick={() => onPresetPipelineStage(it.id, 'prospect')}
           >
             <EstimatesToProspectIcon />
@@ -105,14 +108,18 @@ export function EstimatePresetRowActions({
         ) : null}
       </div>
       <div className={cdEstimatesList.contractsListActionsSlot}>
-        {!archiveView && pipelineTab === 'active' && canPresetArchive ? (
+        {!archiveView && !it.archived && !groupArchived ? (
           <button
             data-admin-mutation
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-            disabled={saving}
+            disabled={saving || isBound}
             aria-label="В архив"
-            title="Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров"
+            title={
+              isBound
+                ? 'Архив недоступен: расчёт прикреплён к договору или Д/с'
+                : 'Отправить расчёт в архив: скрыть из основного списка и из выбора при оформлении договоров'
+            }
             onClick={() =>
               onArchivePreset({
                 estimateId: it.id,
@@ -171,13 +178,19 @@ export function EstimatePresetRowActions({
         </AdminTableIconButton>
       </div>
       <div className={cdEstimatesList.contractsListActionsSlot}>
-        {canOpenWorkScopeSplit && !archiveView && pipelineTab === 'active' ? (
+        {canOpenWorkScopeSplit && !archiveView ? (
           <button
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
             aria-label="Состав работ по договорам"
-            title="Разделение сметы: выбор позиций для этого экземпляра и связанных копий"
-            disabled={saving || hasLockedUsage}
+            title={
+              pipelineTab === 'prospect'
+                ? 'Недоступно на вкладке «В перспективе»: разделение сметы доступно на вкладке «В работе»'
+                : pipelineTab === 'contract'
+                  ? 'Недоступно на вкладке «В договорах»: разделение сметы доступно на вкладке «В работе»'
+                  : 'Разделение сметы: выбор позиций для этого экземпляра и связанных копий'
+            }
+            disabled={saving || hasLockedUsage || pipelineTab !== 'active'}
             onClick={() => onOpenWorkScopeSplit(it.id)}
           >
             <svg
@@ -241,17 +254,21 @@ export function EstimatePresetRowActions({
         </button>
       </div>
       <div className={cdEstimatesList.contractsListActionsSlot}>
-        {!archiveView && pipelineTab === 'active' ? (
+        {!archiveView ? (
           <button
             data-admin-mutation
             type="button"
             className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-            disabled={saving || !hasLockedUsage}
+            disabled={saving || pipelineTab !== 'active' || !hasLockedUsage}
             aria-label="В договорах"
             title={
-              hasLockedUsage
-                ? 'Перенести расчёт на вкладку «В договорах» (договор подписан)'
-                : 'Доступно после подписания договора или Д/с, к которым прикреплён расчёт'
+              pipelineTab === 'prospect'
+                ? 'Недоступно на вкладке «В перспективе»: перенос в договоры доступен на вкладке «В работе»'
+                : pipelineTab === 'contract'
+                  ? 'Расчёт уже находится на вкладке «В договорах»'
+                  : hasLockedUsage
+                    ? 'Перенести расчёт на вкладку «В договорах» (договор подписан)'
+                    : 'Доступно после подписания договора или Д/с, к которым прикреплён расчёт'
             }
             onClick={() => onPresetPipelineStage(it.id, 'contract')}
           >

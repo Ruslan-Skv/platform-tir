@@ -20,6 +20,7 @@ import {
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
+import { packageKindUiLabel } from '../../../config/packageDirectionRegistry';
 import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
@@ -162,6 +163,12 @@ export function EstimatePresetTableRow({
             </span>
           ) : null}
         </div>
+      </td>
+      <td
+        className={cdEstimatesList.estimatesListDirectionCell}
+        title={it.direction ? 'Направление расчёта' : 'Направление не задано (старый расчёт)'}
+      >
+        {it.direction ? packageKindUiLabel(it.direction) : '—'}
       </td>
       <td className={cdEstimatesList.estimatesListDateCell}>{updatedLabel}</td>
       <td

@@ -42,8 +42,6 @@ export type EstimatesListTableProps = {
   groupIdsWithLockedEstimate: Set<string>;
   effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
-  onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
-  onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
   onGroupMarkupChange: (groupId: string, raw: string) => void;
   router: AppRouterInstance;
   onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
@@ -80,8 +78,6 @@ export function EstimatesListTable({
   groupIdsWithLockedEstimate,
   effectiveExpandedAddressKeys,
   onToggleAddressExpand,
-  onAddressPipelineStage,
-  onSetEstimatesArchivedByAddress,
   onGroupMarkupChange,
   router,
   onPresetPipelineStage,
@@ -111,6 +107,7 @@ export function EstimatesListTable({
               <tr>
                 <th className={cdEstimatesList.contractsListSelectCol} aria-label="Группа" />
                 <th>Расчёт</th>
+                <th>Направл.</th>
                 <EstimatesListSortableTh
                   column="date"
                   title="Дата"
@@ -171,15 +168,11 @@ export function EstimatesListTable({
                         key={`addr_${item.addressKey}`}
                         section={{ addressKey: item.addressKey, items: item.items }}
                         saving={saving}
-                        archiveView={archiveView}
-                        pipelineTab={pipelineTab}
                         groups={groups}
                         usageByEstimateId={usageByEstimateId}
                         groupIdsWithLockedEstimate={groupIdsWithLockedEstimate}
                         effectiveExpandedAddressKeys={effectiveExpandedAddressKeys}
                         onToggleAddressExpand={onToggleAddressExpand}
-                        onAddressPipelineStage={onAddressPipelineStage}
-                        onSetEstimatesArchivedByAddress={onSetEstimatesArchivedByAddress}
                         onGroupMarkupChange={onGroupMarkupChange}
                       />
                     );
@@ -246,8 +239,6 @@ export function EstimatesListTable({
         groupIdsWithLockedEstimate={groupIdsWithLockedEstimate}
         effectiveExpandedAddressKeys={effectiveExpandedAddressKeys}
         onToggleAddressExpand={onToggleAddressExpand}
-        onAddressPipelineStage={onAddressPipelineStage}
-        onSetEstimatesArchivedByAddress={onSetEstimatesArchivedByAddress}
         onGroupMarkupChange={onGroupMarkupChange}
         router={router}
         onPresetPipelineStage={onPresetPipelineStage}

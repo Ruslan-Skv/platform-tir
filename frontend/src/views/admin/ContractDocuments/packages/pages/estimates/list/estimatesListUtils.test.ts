@@ -1,6 +1,10 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import { estimateMatchesManagerFilter, sortEstimatesForList } from './estimatesListUtils';
+import {
+  estimateMatchesManagerFilter,
+  formatEstimateGroupAuthorLabel,
+  sortEstimatesForList,
+} from './estimatesListUtils';
 
 function presetWith(fields: Partial<ContractEstimatePreset>): ContractEstimatePreset {
   return {
@@ -40,6 +44,61 @@ describe('estimateMatchesManagerFilter', () => {
     const managerIdsByPresetId = new Map([['est_1', new Set(['user_b'])]]);
     expect(estimateMatchesManagerFilter(preset, 'user_a', managerIdsByPresetId)).toBe(true);
     expect(estimateMatchesManagerFilter(preset, 'user_b', managerIdsByPresetId)).toBe(true);
+  });
+});
+
+describe('formatEstimateGroupAuthorLabel', () => {
+  it('берёт автора самого свежего расчёта объекта', () => {
+    const items = [
+      presetWith({
+        id: 'est_old',
+        createdByName: 'Старый Автор',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-01-01T00:00:00.000Z',
+      }),
+      presetWith({
+        id: 'est_new',
+        createdByName: 'Новый Автор',
+        createdAt: '2026-02-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+    ];
+    expect(formatEstimateGroupAuthorLabel(items)).toBe('Новый Автор');
+  });
+
+  it('свежесть по updatedAt: правка старого расчёта делает его автора актуальным', () => {
+    const items = [
+      presetWith({
+        id: 'est_a',
+        createdByName: 'Автор А',
+        createdAt: '2026-03-01T00:00:00.000Z',
+        updatedAt: '2026-03-01T00:00:00.000Z',
+      }),
+      presetWith({
+        id: 'est_b',
+        createdByName: 'Автор Б',
+        createdAt: '2026-01-01T00:00:00.000Z',
+        updatedAt: '2026-06-01T00:00:00.000Z',
+      }),
+    ];
+    expect(formatEstimateGroupAuthorLabel(items)).toBe('Автор Б');
+  });
+
+  it('«—», если у самого свежего расчёта нет автора', () => {
+    const items = [
+      presetWith({ id: 'est_no_author', createdByName: undefined }),
+      presetWith({
+        id: 'est_old_author',
+        createdByName: 'Старый Автор',
+        createdAt: '2025-01-01T00:00:00.000Z',
+        updatedAt: '2025-01-01T00:00:00.000Z',
+      }),
+    ];
+    expect(formatEstimateGroupAuthorLabel(items)).toBe('—');
+  });
+
+  it('«—» для пустого списка расчётов', () => {
+    expect(formatEstimateGroupAuthorLabel([])).toBe('—');
   });
 });
 

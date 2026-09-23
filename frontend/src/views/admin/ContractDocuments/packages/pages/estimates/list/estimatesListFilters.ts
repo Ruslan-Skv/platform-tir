@@ -1,4 +1,7 @@
 /** Сохранённый фильтр списка расчётов (/admin/contract-documents/estimates). */
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
+import { PACKAGE_DIRECTION_REGISTRY_LIST } from '../../../config/packageDirectionRegistry';
 import {
   CONTRACTS_PAGE_LIMIT_OPTIONS,
   type ContractsPageLimit,
@@ -31,11 +34,13 @@ export interface EstimatesListFiltersPersisted {
   listScope: EstimatesListScope;
   /** false → один раз применить дефолты по роли. */
   scopeTouched: boolean;
+  /** Выбранные направления чипами; пусто — все. */
+  directionFilters: ContractDocumentPackageKind[];
   /** Раскрытые блоки объектов в режиме «По объектам» (`estimateObjectAddressKey`) — можно несколько. */
   expandedAddressKeys: string[];
 }
 
-const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v7';
+const ESTIMATES_LIST_FILTERS_STORAGE_KEY = 'admin_estimates_list_filters_v8';
 
 const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   search: '',
@@ -48,8 +53,24 @@ const EMPTY_FILTERS: EstimatesListFiltersPersisted = {
   listViewMode: 'by_object',
   listScope: 'all',
   scopeTouched: false,
+  directionFilters: [],
   expandedAddressKeys: [],
 };
+
+function normalizeDirectionFilters(raw: unknown): ContractDocumentPackageKind[] {
+  const values = Array.isArray(raw) ? raw : [];
+  const seen = new Set<string>();
+  const out: ContractDocumentPackageKind[] = [];
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    const kind = value as ContractDocumentPackageKind;
+    if (!PACKAGE_DIRECTION_REGISTRY_LIST.some((c) => c.kind === kind)) continue;
+    if (seen.has(kind)) continue;
+    seen.add(kind);
+    out.push(kind);
+  }
+  return out;
+}
 
 function normalizeExpandedAddressKeys(raw: unknown): string[] {
   // Новое поле — массив; раньше сохранялся один ключ `expandedAddressKey` (string | null).
@@ -101,6 +122,7 @@ function normalizePersistedFilters(
     listViewMode: normalizeListViewMode(raw.listViewMode),
     listScope: normalizeListScope(raw.listScope),
     scopeTouched: raw.scopeTouched === true,
+    directionFilters: normalizeDirectionFilters(raw.directionFilters),
     expandedAddressKeys: normalizeExpandedAddressKeys(
       raw.expandedAddressKeys ?? (raw as { expandedAddressKey?: unknown }).expandedAddressKey
     ),

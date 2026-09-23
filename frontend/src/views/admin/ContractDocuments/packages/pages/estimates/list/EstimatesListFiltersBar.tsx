@@ -1,8 +1,15 @@
 'use client';
 
-import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractSignatoryProfile,
+} from '@/shared/api/admin-contract-document-packages';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
+import {
+  PACKAGE_DIRECTION_REGISTRY_LIST,
+  packageKindUiLabel,
+} from '../../../config/packageDirectionRegistry';
 import {
   ESTIMATES_PAGE_LIMIT_OPTIONS,
   type EstimatesListScope,
@@ -19,6 +26,10 @@ export type EstimatesListFiltersBarProps = {
   listScope: EstimatesListScope;
   onListScopeChange: (scope: EstimatesListScope) => void;
   scopeCounts: Record<EstimatesListScope, number>;
+  /** Выбранные направления чипами; пусто — все. */
+  directionFilters: ContractDocumentPackageKind[];
+  onDirectionFiltersChange: (kinds: ContractDocumentPackageKind[]) => void;
+  directionCounts: Record<ContractDocumentPackageKind, number>;
   listViewMode: EstimatesListViewMode;
   onListViewModeChange: (mode: EstimatesListViewMode) => void;
   managerFilter: string;
@@ -44,6 +55,9 @@ export function EstimatesListFiltersBar({
   listScope,
   onListScopeChange,
   scopeCounts,
+  directionFilters,
+  onDirectionFiltersChange,
+  directionCounts,
   listViewMode,
   onListViewModeChange,
   managerFilter,
@@ -58,6 +72,14 @@ export function EstimatesListFiltersBar({
 }: EstimatesListFiltersBarProps) {
   const disabled = loading || saving;
   const showManagerFilter = listScope !== 'mine';
+
+  const toggleDirection = (kind: ContractDocumentPackageKind) => {
+    onDirectionFiltersChange(
+      directionFilters.includes(kind)
+        ? directionFilters.filter((k) => k !== kind)
+        : [...directionFilters, kind]
+    );
+  };
 
   return (
     <div className={cdHub.contractsListFiltersStack}>
@@ -79,6 +101,29 @@ export function EstimatesListFiltersBar({
         >
           Все ({scopeCounts.all ?? 0})
         </button>
+      </div>
+
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Направления расчётов">
+        <span className={cdHub.contractsListChipRowLabel}>Направления</span>
+        <button
+          type="button"
+          disabled={disabled}
+          className={chipClass(directionFilters.length === 0)}
+          onClick={() => onDirectionFiltersChange([])}
+        >
+          Все
+        </button>
+        {PACKAGE_DIRECTION_REGISTRY_LIST.map((config) => (
+          <button
+            key={config.kind}
+            type="button"
+            disabled={disabled}
+            className={chipClass(directionFilters.includes(config.kind))}
+            onClick={() => toggleDirection(config.kind)}
+          >
+            {packageKindUiLabel(config.kind)} ({directionCounts[config.kind] ?? 0})
+          </button>
+        ))}
       </div>
 
       <div className={cdHub.contractsListChipRow} role="group" aria-label="Режим списка">

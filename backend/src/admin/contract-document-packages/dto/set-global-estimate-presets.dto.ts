@@ -122,6 +122,11 @@ export class ContractEstimatePresetDto {
   @IsIn(['active', 'prospect', 'contract'])
   pipelineStage?: 'active' | 'prospect' | 'contract';
 
+  /** Направление расчёта — то же, что выбирается при создании договора; у старых расчётов нет (трактуется как REPAIR). */
+  @IsOptional()
+  @IsEnum(ContractDocumentPackageKind)
+  direction?: ContractDocumentPackageKind;
+
   /** Порядок в ленте для расчёта вне объекта. */
   @IsOptional()
   @Type(() => Number)

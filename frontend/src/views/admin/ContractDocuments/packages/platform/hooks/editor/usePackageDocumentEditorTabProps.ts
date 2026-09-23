@@ -64,6 +64,7 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   attachableForSelectedGroup: ContractEstimatePreset[];
   attachableEstimatePresets: ContractEstimatePreset[];
   attachBlockedByCrmMismatch: boolean;
+  attachBlockedByDirectionMismatch: boolean;
   estimatePresets: ContractEstimatePreset[];
   estimateUsageById: ReturnType<typeof usePackageEstimateAttachCatalog>['estimateUsageById'];
   draggingEstimatePresetId: string | null;
@@ -120,6 +121,7 @@ export function usePackageDocumentEditorTabProps({
   attachableForSelectedGroup,
   attachableEstimatePresets,
   attachBlockedByCrmMismatch,
+  attachBlockedByDirectionMismatch,
   estimatePresets,
   estimateUsageById,
   draggingEstimatePresetId,
@@ -218,6 +220,7 @@ export function usePackageDocumentEditorTabProps({
       attachableForSelectedGroup,
       attachableEstimatePresets,
       attachBlockedByCrmMismatch,
+      attachBlockedByDirectionMismatch,
       estimatePresets,
       estimateUsageById,
       draggingEstimatePresetId,
@@ -242,6 +245,7 @@ export function usePackageDocumentEditorTabProps({
       attachableForSelectedGroup,
       attachableEstimatePresets,
       attachBlockedByCrmMismatch,
+      attachBlockedByDirectionMismatch,
       estimatePresets,
       estimateUsageById,
       draggingEstimatePresetId,

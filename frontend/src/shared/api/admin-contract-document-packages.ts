@@ -344,6 +344,8 @@ export interface ContractEstimatePreset {
   archived?: boolean;
   /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
   pipelineStage?: 'active' | 'prospect' | 'contract';
+  /** Направление расчёта — как при создании договора; у старых расчётов нет (трактуется как REPAIR). */
+  direction?: ContractDocumentPackageKind;
   /**
    * Связка экземпляров одной «семьи» при разделении сметы по договорам.
    * У копий после первого сохранения границ работ совпадает с исходным расчётом.

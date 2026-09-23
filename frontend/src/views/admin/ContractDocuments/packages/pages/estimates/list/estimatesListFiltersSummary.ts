@@ -1,5 +1,9 @@
-import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractSignatoryProfile,
+} from '@/shared/api/admin-contract-document-packages';
 
+import { packageKindUiLabel } from '../../../config/packageDirectionRegistry';
 import type {
   EstimatesListScope,
   EstimatesListViewMode,
@@ -54,6 +58,7 @@ export function buildEstimatesListFiltersSummary(params: {
   dateFrom: string;
   dateTo: string;
   limit: EstimatesPageLimit;
+  directionFilters: ContractDocumentPackageKind[];
 }): EstimatesListFiltersSummaryItem[] {
   const items: EstimatesListFiltersSummaryItem[] = [
     {
@@ -65,6 +70,13 @@ export function buildEstimatesListFiltersSummary(params: {
   const searchTrim = params.search.trim();
   if (searchTrim) {
     items.push({ key: 'search', label: `Поиск: «${searchTrim}»` });
+  }
+
+  if (params.directionFilters.length > 0) {
+    items.push({
+      key: 'directions',
+      label: `Направления: ${params.directionFilters.map(packageKindUiLabel).join(', ')}`,
+    });
   }
 
   items.push({

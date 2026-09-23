@@ -2,7 +2,10 @@
 
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 
-import type { ContractSignatoryProfile } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractSignatoryProfile,
+} from '@/shared/api/admin-contract-document-packages';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import type {
@@ -25,6 +28,7 @@ type EstimatesListFiltersPanelProps = {
   dateFrom: string;
   dateTo: string;
   limit: EstimatesPageLimit;
+  directionFilters: ContractDocumentPackageKind[];
   children: ReactNode;
 };
 
@@ -37,6 +41,7 @@ export function EstimatesListFiltersPanel({
   dateFrom,
   dateTo,
   limit,
+  directionFilters,
   children,
 }: EstimatesListFiltersPanelProps) {
   const contentId = useId();
@@ -64,8 +69,19 @@ export function EstimatesListFiltersPanel({
         dateFrom,
         dateTo,
         limit,
+        directionFilters,
       }),
-    [listScope, search, listViewMode, managerFilter, managerOptions, dateFrom, dateTo, limit]
+    [
+      listScope,
+      search,
+      listViewMode,
+      managerFilter,
+      managerOptions,
+      dateFrom,
+      dateTo,
+      limit,
+      directionFilters,
+    ]
   );
 
   const toggleCollapsed = () => setCollapsed((value) => !value);

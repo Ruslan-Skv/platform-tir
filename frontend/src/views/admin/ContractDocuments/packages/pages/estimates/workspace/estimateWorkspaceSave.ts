@@ -1,4 +1,7 @@
-import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 
 import { buildEstimateSnapshot } from '../../../platform/estimates/contractDocumentsEstimateSnapshot';
 import {
@@ -93,6 +96,8 @@ export type BuildEstimateWorkspaceSaveBatchParams = {
   actorUserId?: string | null;
   /** Наценка из воркспейса; undefined — «наценка объекта» (поле не сохраняется). */
   additionalMarkupPercent?: number;
+  /** Направление расчёта из воркспейса (как при создании договора). */
+  direction?: ContractDocumentPackageKind;
 };
 
 export async function buildEstimateWorkspaceSaveBatch({
@@ -112,6 +117,7 @@ export async function buildEstimateWorkspaceSaveBatch({
   fromMeasurementId,
   actorUserId,
   additionalMarkupPercent,
+  direction,
 }: BuildEstimateWorkspaceSaveBatchParams): Promise<{
   nextItem: ContractEstimatePreset;
   nextItems: ContractEstimatePreset[];
@@ -209,6 +215,7 @@ export async function buildEstimateWorkspaceSaveBatch({
         ? { sourceMeasurementId: fromMeasurementId }
         : {}),
     ...(additionalMarkupPercent !== undefined ? { additionalMarkupPercent } : {}),
+    ...(direction ? { direction } : {}),
     ...(existing?.groupId && existing.inGroupListOrder != null
       ? { inGroupListOrder: existing.inGroupListOrder }
       : !existing && copyFromSource?.groupId && copyFromId

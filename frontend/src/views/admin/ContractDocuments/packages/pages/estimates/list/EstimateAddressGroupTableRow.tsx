@@ -5,21 +5,15 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
-import type { EstimatePipelineTab } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
 import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdEstimateTab from '@/views/admin/ContractDocuments/styles/estimate-tab.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
-import {
-  EstimatesArchiveIcon,
-  EstimatesRestoreFromArchiveIcon,
-  EstimatesToActiveIcon,
-  EstimatesToProspectIcon,
-  unifiedGroupIdForEstimates,
-} from './estimatesListTableUi';
+import { unifiedGroupIdForEstimates } from './estimatesListTableUi';
 import {
   type EstimatePackageUsage,
   estimateObjectAddressDisplayLabel,
+  formatEstimateGroupAuthorLabel,
   formatEstimateGroupUpdatedLabel,
 } from './estimatesListUtils';
 
@@ -31,30 +25,22 @@ export type EstimateAddressGroupSection = {
 export type EstimateAddressGroupTableRowProps = {
   section: EstimateAddressGroupSection;
   saving: boolean;
-  archiveView: boolean;
-  pipelineTab: EstimatePipelineTab;
   groups: ContractEstimateGroup[];
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
   groupIdsWithLockedEstimate: Set<string>;
   effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
-  onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
-  onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
   onGroupMarkupChange: (groupId: string, raw: string) => void;
 };
 
 export function EstimateAddressGroupTableRow({
   section,
   saving,
-  archiveView,
-  pipelineTab,
   groups,
   usageByEstimateId,
   groupIdsWithLockedEstimate,
   effectiveExpandedAddressKeys,
   onToggleAddressExpand,
-  onAddressPipelineStage,
-  onSetEstimatesArchivedByAddress,
   onGroupMarkupChange,
 }: EstimateAddressGroupTableRowProps) {
   const expanded = effectiveExpandedAddressKeys.includes(section.addressKey);
@@ -103,13 +89,19 @@ export function EstimateAddressGroupTableRow({
           </div>
         </div>
       </td>
+      <td className={cdEstimatesList.estimatesListDirectionCell}>—</td>
       <td
         className={cdEstimatesList.estimatesListDateCell}
         title="Дата последнего изменения расчётов объекта"
       >
         {formatEstimateGroupUpdatedLabel(section.items)}
       </td>
-      <td className={cdEstimatesList.estimatesListAuthorCell}>—</td>
+      <td
+        className={cdEstimatesList.estimatesListAuthorCell}
+        title="Автор последнего прикреплённого расчёта объекта"
+      >
+        {formatEstimateGroupAuthorLabel(section.items)}
+      </td>
       <td className={cdEstimatesList.estimatesListCostCell}>—</td>
       <td className={cdEstimatesList.estimatesListBindingCell}>
         {hasBound ? (
@@ -159,78 +151,7 @@ export function EstimateAddressGroupTableRow({
           '—'
         )}
       </td>
-      <td className={cdEstimatesList.contractsListActionsCol}>
-        <div
-          className={`${cdEstimatesList.estimatesCardActions} ${cdEstimatesList.estimatesListActionsGrid}`}
-        >
-          <div className={cdEstimatesList.contractsListActionsSlot}>
-            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
-              <button
-                type="button"
-                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                disabled={saving}
-                aria-label="В перспективу"
-                title={
-                  unifiedGroup
-                    ? 'Перенести объект и все расчёты на вкладку «В перспективе»'
-                    : 'Перенести все расчёты по этому адресу на вкладку «В перспективе»'
-                }
-                onClick={() => onAddressPipelineStage(section.addressKey, 'prospect')}
-              >
-                <EstimatesToProspectIcon />
-              </button>
-            ) : null}
-            {!archiveView && pipelineTab === 'prospect' && section.items.length > 0 ? (
-              <button
-                type="button"
-                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                disabled={saving}
-                aria-label="В работе"
-                title={
-                  unifiedGroup
-                    ? 'Вернуть объект и все расчёты на вкладку «В работе»'
-                    : 'Вернуть все расчёты по этому адресу на вкладку «В работе»'
-                }
-                onClick={() => onAddressPipelineStage(section.addressKey, 'active')}
-              >
-                <EstimatesToActiveIcon />
-              </button>
-            ) : null}
-          </div>
-          <div className={cdEstimatesList.contractsListActionsSlot}>
-            {!archiveView && pipelineTab === 'active' && section.items.length > 0 ? (
-              <button
-                data-admin-mutation
-                type="button"
-                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                disabled={saving}
-                aria-label="В архив"
-                title="Отправить все расчёты по этому адресу в архив"
-                onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, true)}
-              >
-                <EstimatesArchiveIcon />
-              </button>
-            ) : null}
-            {archiveView ? (
-              <button
-                data-admin-mutation
-                type="button"
-                className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                disabled={saving}
-                aria-label="Восстановить"
-                title="Вернуть все расчёты по этому адресу в основной список"
-                onClick={() => onSetEstimatesArchivedByAddress(section.addressKey, false)}
-              >
-                <EstimatesRestoreFromArchiveIcon />
-              </button>
-            ) : null}
-          </div>
-          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
-          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
-          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
-          <div className={cdEstimatesList.contractsListActionsSlot} aria-hidden />
-        </div>
-      </td>
+      <td className={cdEstimatesList.contractsListActionsCol} />
     </tr>
   );
 }

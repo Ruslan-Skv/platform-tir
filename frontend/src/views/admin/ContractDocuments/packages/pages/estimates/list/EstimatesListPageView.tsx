@@ -76,6 +76,7 @@ export function EstimatesListPageView({
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}
         limit={filters.limit}
+        directionFilters={filters.directionFilters}
       >
         <EstimatesListFiltersBar
           loading={load.loading}
@@ -85,6 +86,9 @@ export function EstimatesListPageView({
           listScope={filters.listScope}
           onListScopeChange={filters.setListScope}
           scopeCounts={derived.scopeCounts}
+          directionFilters={filters.directionFilters}
+          onDirectionFiltersChange={filters.setDirectionFilters}
+          directionCounts={derived.directionCounts}
           listViewMode={filters.listViewMode}
           onListViewModeChange={filters.setListViewMode}
           managerFilter={filters.managerFilter}
@@ -122,8 +126,6 @@ export function EstimatesListPageView({
         groupIdsWithLockedEstimate={derived.groupIdsWithLockedEstimate}
         effectiveExpandedAddressKeys={filters.effectiveExpandedAddressKeys}
         onToggleAddressExpand={filters.toggleExpandedAddressKey}
-        onAddressPipelineStage={mutations.setAddressPipelineStage}
-        onSetEstimatesArchivedByAddress={mutations.setEstimatesArchivedByAddress}
         onGroupMarkupChange={mutations.updateGroupAdditionalMarkupPercent}
         router={router}
         onPresetPipelineStage={mutations.setPresetPipelineStage}

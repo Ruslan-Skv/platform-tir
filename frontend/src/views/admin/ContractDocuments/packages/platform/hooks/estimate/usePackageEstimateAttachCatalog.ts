@@ -3,11 +3,13 @@
 import { useEffect, useMemo } from 'react';
 
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
 import {
+  estimatePresetMatchesPackageDirection,
   getContractEstimateObjectGroupKey,
   isContractEstimatePresetAttachable,
   isEstimatePresetForLinkedContractCustomer,
@@ -36,6 +38,8 @@ export type PackageEstimateUsageEntry = {
 export type UsePackageEstimateAttachCatalogOptions = {
   packageId: string;
   form: PackageFormData;
+  /** Направление договора: расчёты другого направления не показываются для прикрепления. */
+  packageKind: ContractDocumentPackageKind;
   isProductDirectionPackage: boolean;
   linkedCrmCustomerId: string | null;
   activeAddendumSlot: number | null;
@@ -61,6 +65,7 @@ export type UsePackageEstimateAttachCatalogOptions = {
 export function usePackageEstimateAttachCatalog({
   packageId,
   form,
+  packageKind,
   isProductDirectionPackage,
   linkedCrmCustomerId,
   activeAddendumSlot,
@@ -120,6 +125,7 @@ export function usePackageEstimateAttachCatalog({
     }
     return estimatePresets.filter((preset) => {
       if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
+      if (!estimatePresetMatchesPackageDirection(preset, packageKind)) return false;
       if (!isEstimatePresetForLinkedContractCustomer(preset, estimateCustomerFilter)) {
         return false;
       }
@@ -134,6 +140,39 @@ export function usePackageEstimateAttachCatalog({
     form.estimate.selectedPresetIds,
     form.addendumSlots,
     estimateCustomerFilter,
+    packageKind,
+  ]);
+
+  /**
+   * Свободные расчёты есть, но все другого направления — показываем подсказку
+   * вместо пустого списка («расчётов нет» вводит в заблуждение).
+   */
+  const attachBlockedByDirectionMismatch = useMemo(() => {
+    if (attachableEstimatePresets.length > 0) return false;
+    const selected = new Set(form.estimate.selectedPresetIds ?? []);
+    const usedOnAddenda = new Set<string>();
+    for (const sl of form.addendumSlots) {
+      for (const id of sl.selectedPresetIds ?? []) {
+        if (id.trim()) usedOnAddenda.add(id.trim());
+      }
+    }
+    return estimatePresets.some((preset) => {
+      if (estimatePresetMatchesPackageDirection(preset, packageKind)) return false;
+      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
+      if (!isEstimatePresetForLinkedContractCustomer(preset, estimateCustomerFilter)) return false;
+      if (selected.has(preset.id)) return false;
+      if (usedOnAddenda.has(preset.id)) return false;
+      return (estimateUsageById.get(preset.id)?.length ?? 0) === 0;
+    });
+  }, [
+    attachableEstimatePresets.length,
+    estimatePresets,
+    estimateGroups,
+    estimateUsageById,
+    form.estimate.selectedPresetIds,
+    form.addendumSlots,
+    estimateCustomerFilter,
+    packageKind,
   ]);
 
   /** Есть свободные расчёты с тем же адресом, но другой карточкой CRM — типичная путаница. */
@@ -221,6 +260,7 @@ export function usePackageEstimateAttachCatalog({
     return estimatePresets
       .filter((p) => {
         if (!isContractEstimatePresetAttachable(p, estimateGroups)) return false;
+        if (!estimatePresetMatchesPackageDirection(p, packageKind)) return false;
         if (!isEstimatePresetForLinkedContractCustomer(p, estimateCustomerFilter)) return false;
         if (usedElsewhere.has(p.id)) return false;
         if ((estimateUsageById.get(p.id)?.length ?? 0) !== 0) return false;
@@ -238,6 +278,7 @@ export function usePackageEstimateAttachCatalog({
     estimateGroups,
     estimateUsageById,
     estimateCustomerFilter,
+    packageKind,
   ]);
 
   const attachableAddendumExcludedEstimatePresets = attachableAddendumEstimatePresets;
@@ -353,5 +394,6 @@ export function usePackageEstimateAttachCatalog({
     attachableAddendumEstimatePresets,
     attachableAddendumExcludedEstimatePresets,
     attachBlockedByCrmMismatch,
+    attachBlockedByDirectionMismatch,
   };
 }

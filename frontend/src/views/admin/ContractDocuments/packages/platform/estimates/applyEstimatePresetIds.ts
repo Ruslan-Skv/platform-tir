@@ -1,4 +1,5 @@
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
@@ -311,6 +312,18 @@ export function isContractEstimatePresetAttachable(
   groups: ContractEstimateGroup[]
 ): boolean {
   return isEstimatePresetAttachableToContract(preset, groups);
+}
+
+/**
+ * Направление расчёта должно совпадать с направлением договора.
+ * Расчёты без `direction` (созданные до появления поля) прикрепляются как раньше —
+ * чтобы не ломать ранее созданные расчёты и их договоры.
+ */
+export function estimatePresetMatchesPackageDirection(
+  preset: Pick<ContractEstimatePreset, 'direction'>,
+  packageKind: ContractDocumentPackageKind
+): boolean {
+  return !preset.direction || preset.direction === packageKind;
 }
 
 /** Для product-пакетов (окна, двери, …) — расчёты карточки заказчика, привязанной к договору. */

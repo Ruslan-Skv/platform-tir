@@ -72,6 +72,7 @@ export function useEstimateWorkspacePage() {
     customerName,
     objectAddress,
     additionalMarkupRaw: session.additionalMarkupRaw,
+    direction: session.direction,
     estimateCalculatorError,
     setEstimateCalculatorError,
   });
@@ -104,6 +105,7 @@ export function useEstimateWorkspacePage() {
     estimateCategorySlugs: session.estimateCategorySlugs,
     estimateNameDraft: session.estimateNameDraft,
     additionalMarkupRaw: session.additionalMarkupRaw,
+    direction: session.direction,
     selectedEstimateId: session.selectedEstimateId,
     setSelectedEstimateId: session.setSelectedEstimateId,
     crmCustomerId,

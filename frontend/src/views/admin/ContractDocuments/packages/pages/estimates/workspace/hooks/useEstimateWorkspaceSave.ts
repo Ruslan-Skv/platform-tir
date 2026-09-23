@@ -4,6 +4,7 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 
 import { useAuth } from '@/features/auth/context/AuthContext';
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
@@ -33,6 +34,8 @@ export type UseEstimateWorkspaceSaveParams = {
   estimateNameDraft: string;
   /** Текущее значение поля «Наценка, %» ('' — наценка объекта). */
   additionalMarkupRaw: string;
+  /** Текущее значение поля «Направление». */
+  direction: ContractDocumentPackageKind;
   selectedEstimateId: string;
   setSelectedEstimateId: (id: string) => void;
   crmCustomerId: string | null;
@@ -65,6 +68,7 @@ export function useEstimateWorkspaceSave({
   estimateCategorySlugs,
   estimateNameDraft,
   additionalMarkupRaw,
+  direction,
   selectedEstimateId,
   setSelectedEstimateId,
   crmCustomerId,
@@ -164,6 +168,7 @@ export function useEstimateWorkspaceSave({
           parsedMarkup === undefined
             ? undefined
             : clampEstimateAdditionalMarkupPercent(parsedMarkup),
+        direction,
       });
       setSelectedEstimateId(nextItem.id);
       const synced = await persistEstimateWorkspacePresets(nextItems, estimateGroups);
@@ -186,6 +191,7 @@ export function useEstimateWorkspaceSave({
           parsedMarkup === undefined
             ? undefined
             : clampEstimateAdditionalMarkupPercent(parsedMarkup),
+        direction,
       });
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось сохранить расчёты');
@@ -199,6 +205,7 @@ export function useEstimateWorkspaceSave({
     objectAddress,
     estimateCategorySlugs,
     additionalMarkupRaw,
+    direction,
     isEditingExisting,
     items,
     selectedEstimateId,

@@ -1,4 +1,7 @@
-import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
+import type {
+  ContractDocumentPackageKind,
+  ContractEstimatePreset,
+} from '@/shared/api/admin-contract-document-packages';
 import { getCrmCustomer } from '@/shared/api/admin-crm';
 import { crmDetailWithPreferredObjectAddress } from '@/views/admin/CRM/Customers/shared/crmCustomerExtendedProfile';
 
@@ -98,6 +101,8 @@ export type WorkspaceBaseline = {
   customer: EstimateCrmCustomerFields;
   /** Наценка расчёта на момент загрузки (undefined — «наценка объекта»). */
   additionalMarkupPercent?: number;
+  /** Направление расчёта на момент загрузки (нет у старых — REPAIR). */
+  direction?: ContractDocumentPackageKind;
 };
 
 export function estimateCustomerFieldsFromPreset(

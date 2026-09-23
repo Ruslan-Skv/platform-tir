@@ -1,4 +1,5 @@
 import {
+  type ContractDocumentPackageKind,
   type ContractEstimateGroup,
   type ContractEstimatePreset,
   getContractDocumentEstimatePresets,
@@ -43,6 +44,8 @@ export type EstimateWorkspaceLoadResult = {
   baseline: WorkspaceBaseline | null;
   /** Начальное значение поля «Наценка, %» ('' — наценка объекта). */
   initialAdditionalMarkupRaw: string;
+  /** Начальное значение поля «Направление» (у старых расчётов — REPAIR). */
+  initialDirection: ContractDocumentPackageKind;
   error: string | null;
 };
 
@@ -82,6 +85,7 @@ export async function loadEstimateWorkspaceSession(
   let estimateNameDraft = '';
   let selectedEstimateId = '';
   let copySessionPendingSave = false;
+  let initialDirection: ContractDocumentPackageKind = 'REPAIR';
 
   const resetToDefaultCategory = () => {
     selectedEstimateId = '';
@@ -117,6 +121,7 @@ export async function loadEstimateWorkspaceSession(
       if (typeof source.additionalMarkupPercent === 'number') {
         baselineMarkupPercent = source.additionalMarkupPercent;
       }
+      initialDirection = source.direction ?? 'REPAIR';
       copySessionPendingSave = true;
     } else {
       error = 'Исходный расчёт не найден. Вернитесь к списку и обновите страницу.';
@@ -145,6 +150,7 @@ export async function loadEstimateWorkspaceSession(
       if (typeof preset.additionalMarkupPercent === 'number') {
         baselineMarkupPercent = preset.additionalMarkupPercent;
       }
+      initialDirection = preset.direction ?? 'REPAIR';
     } else {
       error = 'Расчёт не найден. Вернитесь к списку и обновите страницу.';
       resetToDefaultCategory();
@@ -231,6 +237,7 @@ export async function loadEstimateWorkspaceSession(
           draftsByCategory: baselineDraftsByCategory,
           customer: baselineCustomer,
           additionalMarkupPercent: baselineMarkupPercent,
+          direction: initialDirection,
         }
       : null;
 
@@ -246,6 +253,7 @@ export async function loadEstimateWorkspaceSession(
     baseline,
     initialAdditionalMarkupRaw:
       baselineMarkupPercent !== undefined ? String(baselineMarkupPercent) : '',
+    initialDirection,
     error,
   };
 }

@@ -156,6 +156,8 @@ export function EstimateWorkspacePageView({
               }
             }}
             estimateNameError={estimateNameError}
+            direction={session.direction}
+            onDirectionChange={session.setDirection}
             additionalMarkupRaw={session.additionalMarkupRaw}
             onAdditionalMarkupChange={session.setAdditionalMarkupRaw}
             estimateTotalCost={estimateTotalCost}

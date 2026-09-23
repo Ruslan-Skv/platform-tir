@@ -24,6 +24,7 @@ function dirtyParams(overrides: Record<string, unknown>) {
     customerName: '',
     objectAddress: '',
     additionalMarkupRaw: '',
+    direction: 'REPAIR',
     ...overrides,
   };
 }
@@ -65,6 +66,24 @@ describe('isEstimateWorkspaceDirty: наценка', () => {
         })
       )
     ).toBe(true);
+  });
+});
+
+describe('isEstimateWorkspaceDirty: направление', () => {
+  it('не грязно, когда направление совпадает с базой', () => {
+    expect(
+      isEstimateWorkspaceDirty(
+        dirtyParams({ baseline: baselineWith({ direction: 'WINDOWS' }), direction: 'WINDOWS' })
+      )
+    ).toBe(false);
+  });
+
+  it('не грязно, когда REPAIR против отсутствующего направления в базе', () => {
+    expect(isEstimateWorkspaceDirty(dirtyParams({}))).toBe(false);
+  });
+
+  it('грязно, когда направление изменилось', () => {
+    expect(isEstimateWorkspaceDirty(dirtyParams({ direction: 'CEILINGS' }))).toBe(true);
   });
 });
 

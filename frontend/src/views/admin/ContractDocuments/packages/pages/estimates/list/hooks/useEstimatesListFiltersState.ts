@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import { ADMIN_MOBILE_PAGE_LIMIT, useAdminNarrowViewport } from '@/shared/lib/hooks';
 
 import {
@@ -33,6 +34,9 @@ export function useEstimatesListFiltersState(
     initialListFiltersRef.current.listScope
   );
   const [scopeTouched, setScopeTouched] = useState(initialListFiltersRef.current.scopeTouched);
+  const [directionFilters, setDirectionFilters] = useState<ContractDocumentPackageKind[]>(
+    initialListFiltersRef.current.directionFilters
+  );
   const [dateFrom, setDateFrom] = useState(initialListFiltersRef.current.dateFrom);
   const [dateTo, setDateTo] = useState(initialListFiltersRef.current.dateTo);
   const [listSortBy, setListSortBy] = useState<EstimatesListSortBy>(
@@ -51,8 +55,20 @@ export function useEstimatesListFiltersState(
   const searchNorm = normalizeEstimatesListSearch(search);
   const effectiveExpandedAddressKeys = listViewMode === 'by_object' ? expandedAddressKeys : [];
   const hasActiveListFilters = Boolean(
-    searchNorm || managerFilter || dateFrom || dateTo || listScope !== 'all'
+    searchNorm ||
+    managerFilter ||
+    dateFrom ||
+    dateTo ||
+    listScope !== 'all' ||
+    directionFilters.length > 0
   );
+
+  /** Чип «Направления»: мультиселект — клик переключает направление, пусто = все. */
+  const toggleDirectionFilter = useCallback((kind: ContractDocumentPackageKind) => {
+    setDirectionFilters((current) =>
+      current.includes(kind) ? current.filter((k) => k !== kind) : [...current, kind]
+    );
+  }, []);
 
   /** Объекты можно раскрывать независимо: разворачивание одного не сворачивает другие. */
   const toggleExpandedAddressKey = useCallback((addressKey: string) => {
@@ -75,6 +91,7 @@ export function useEstimatesListFiltersState(
     setListViewMode(saved.listViewMode);
     setListScopeState(saved.listScope);
     setScopeTouched(saved.scopeTouched);
+    setDirectionFilters(saved.directionFilters);
     setDateFrom(saved.dateFrom);
     setDateTo(saved.dateTo);
     setListSortBy(saved.sortBy);
@@ -121,6 +138,7 @@ export function useEstimatesListFiltersState(
       listViewMode,
       listScope,
       scopeTouched,
+      directionFilters,
       expandedAddressKeys,
     });
   }, [
@@ -134,6 +152,7 @@ export function useEstimatesListFiltersState(
     listViewMode,
     listScope,
     scopeTouched,
+    directionFilters,
     expandedAddressKeys,
   ]);
 
@@ -146,6 +165,7 @@ export function useEstimatesListFiltersState(
     dateTo,
     listViewMode,
     listScope,
+    directionFilters,
     listSortBy,
     listSortOrder,
     archiveView,
@@ -164,6 +184,9 @@ export function useEstimatesListFiltersState(
     setDateFrom,
     dateTo,
     setDateTo,
+    directionFilters,
+    setDirectionFilters,
+    toggleDirectionFilter,
     listSortBy,
     listSortOrder,
     page,

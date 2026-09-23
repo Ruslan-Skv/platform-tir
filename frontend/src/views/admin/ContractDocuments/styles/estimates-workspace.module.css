@@ -324,6 +324,24 @@
   }
 }
 
+/* «Название расчёта» + «Направление» в одной строке: направление — узкая правая колонка */
+.estimateWorkspaceNameFieldsRow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 220px;
+  gap: var(--admin-space-xs) var(--admin-space-sm);
+  align-items: start;
+}
+
+.estimateWorkspaceNameFieldsRow > * {
+  margin-bottom: 0;
+}
+
+@media (max-width: 900px) {
+  .estimateWorkspaceNameFieldsRow {
+    grid-template-columns: 1fr;
+  }
+}
+
 .estimateWorkspaceTotalCost {
   display: flex;
   align-items: center;

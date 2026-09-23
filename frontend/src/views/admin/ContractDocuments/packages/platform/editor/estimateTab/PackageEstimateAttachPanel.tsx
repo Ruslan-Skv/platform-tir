@@ -21,6 +21,7 @@ export type PackageEstimateAttachPanelProps = Pick<
   | 'attachableForSelectedGroup'
   | 'attachableEstimatePresets'
   | 'attachBlockedByCrmMismatch'
+  | 'attachBlockedByDirectionMismatch'
   | 'estimatePresets'
   | 'estimateUsageById'
   | 'draggingEstimatePresetId'
@@ -45,6 +46,7 @@ export function PackageEstimateAttachPanel({
   attachableForSelectedGroup,
   attachableEstimatePresets,
   attachBlockedByCrmMismatch,
+  attachBlockedByDirectionMismatch,
   estimatePresets,
   estimateUsageById,
   draggingEstimatePresetId,
@@ -142,11 +144,13 @@ export function PackageEstimateAttachPanel({
               <p className={ESTIMATE_TAB_HINT}>
                 {isProductDirectionPackage && !linkedCrmCustomerId?.trim()
                   ? 'Выберите заказчика на вкладке «Данные».'
-                  : attachBlockedByCrmMismatch
-                    ? 'Есть расчёты с этим адресом, но у другой карточки заказчика в CRM. Откройте расчёт и выберите того же заказчика, что в договоре (через поиск в базе), либо в договоре выберите ту же карточку, что в расчёте.'
-                    : isProductDirectionPackage
-                      ? 'Нет свободных расчётов этого заказчика для прикрепления (проверьте раздел «Расчёты» и статус «В работе»).'
-                      : 'Нет свободных расчётов для прикрепления.'}
+                  : attachBlockedByDirectionMismatch
+                    ? 'Есть свободные расчёты этого объекта, но другого направления — они скрыты. Направление расчёта должно совпадать с направлением договора: создайте расчёт с нужным направлением в разделе «Расчёты».'
+                    : attachBlockedByCrmMismatch
+                      ? 'Есть расчёты с этим адресом, но у другой карточки заказчика в CRM. Откройте расчёт и выберите того же заказчика, что в договоре (через поиск в базе), либо в договоре выберите ту же карточку, что в расчёте.'
+                      : isProductDirectionPackage
+                        ? 'Нет свободных расчётов этого заказчика для прикрепления (проверьте раздел «Расчёты» и статус «В работе»).'
+                        : 'Нет свободных расчётов для прикрепления.'}
               </p>
             ) : (
               <p className={ESTIMATE_HINT} style={{ marginTop: 0 }}>

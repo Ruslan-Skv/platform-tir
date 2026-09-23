@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react';
 
+import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
+
 import { parseOptionalPercentInput } from '../../list/estimatesListUtils';
 import {
   estimateWorkspaceCustomerDirty,
@@ -21,6 +23,7 @@ export type UseEstimateWorkspaceDirtyStateParams = {
   customerName: string;
   objectAddress: string;
   additionalMarkupRaw: string;
+  direction: ContractDocumentPackageKind;
   estimateCalculatorError: string | null;
   setEstimateCalculatorError: (value: string | null) => void;
 };
@@ -34,6 +37,7 @@ export function useEstimateWorkspaceDirtyState({
   customerName,
   objectAddress,
   additionalMarkupRaw,
+  direction,
   estimateCalculatorError,
   setEstimateCalculatorError,
 }: UseEstimateWorkspaceDirtyStateParams) {
@@ -68,6 +72,7 @@ export function useEstimateWorkspaceDirtyState({
     customerName,
     objectAddress,
     additionalMarkupRaw,
+    direction,
   });
 
   useEffect(() => {
@@ -100,12 +105,14 @@ export function useEstimateWorkspaceDirtyState({
       });
       const markupDirty =
         parseOptionalPercentInput(additionalMarkupRaw) !== baseline.additionalMarkupPercent;
+      const directionDirty = direction !== (baseline.direction ?? 'REPAIR');
       const isDirty =
         !sameSlugs ||
         estimateNameDraft !== baseline.name ||
         draftsDirty ||
         customerDirty ||
-        markupDirty;
+        markupDirty ||
+        directionDirty;
       if (!isDirty) return;
       e.preventDefault();
       e.returnValue = '';
@@ -121,6 +128,7 @@ export function useEstimateWorkspaceDirtyState({
     customerName,
     objectAddress,
     additionalMarkupRaw,
+    direction,
   ]);
 
   return { dirty, draftPollTick };

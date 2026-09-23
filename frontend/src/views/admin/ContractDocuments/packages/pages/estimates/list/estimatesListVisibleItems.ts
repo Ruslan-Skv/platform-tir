@@ -1,4 +1,5 @@
 import type {
+  ContractDocumentPackageKind,
   ContractEstimateGroup,
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
@@ -28,6 +29,8 @@ export type FilterVisibleEstimatesListItemsParams = {
   listScope: EstimatesListScope;
   currentUserId: string | null;
   managerIdsByPresetId: Map<string, Set<string>>;
+  /** Выбранные направления чипами; пусто — все. Расчёты без направления ловит только «Все». */
+  directionFilter: ContractDocumentPackageKind[];
 };
 
 export function filterVisibleEstimatesListItems({
@@ -42,6 +45,7 @@ export function filterVisibleEstimatesListItems({
   listScope,
   currentUserId,
   managerIdsByPresetId,
+  directionFilter,
 }: FilterVisibleEstimatesListItemsParams): ContractEstimatePreset[] {
   return items.filter((it) => {
     const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
@@ -53,6 +57,9 @@ export function filterVisibleEstimatesListItems({
     if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) return false;
     if (!estimateMatchesSearch(it, searchNorm)) return false;
     if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
+    if (directionFilter.length > 0 && (!it.direction || !directionFilter.includes(it.direction))) {
+      return false;
+    }
 
     if (listScope === 'mine') {
       if (!currentUserId) return false;
@@ -93,6 +100,41 @@ export function countEstimatesListScopes(
       : 0,
     all: base.length,
   };
+}
+
+/** Счётчики чипов «Направления»: по тем же базовым фильтрам (архив/вкладка/поиск/даты).
+ *  Расчёты без направления (старые) не относятся ни к одному чипу — видны только в «Все». */
+export function countEstimatesDirections(
+  items: ContractEstimatePreset[],
+  groups: ContractEstimateGroup[],
+  archiveView: boolean,
+  pipelineTab: EstimatePipelineTab,
+  searchNorm: string,
+  dateFrom: string,
+  dateTo: string
+): Record<ContractDocumentPackageKind, number> {
+  const counts = {
+    REPAIR: 0,
+    WINDOWS: 0,
+    DOORS: 0,
+    CEILINGS: 0,
+    BLINDS: 0,
+    FURNITURE: 0,
+  } as Record<ContractDocumentPackageKind, number>;
+  for (const it of items) {
+    if (!it.direction) continue;
+    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
+    const groupArchived = Boolean(g?.archived);
+    const rowArchived = Boolean(it.archived);
+    const inArchiveCombined = groupArchived || rowArchived;
+    const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
+    if (!archiveOk) continue;
+    if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) continue;
+    if (!estimateMatchesSearch(it, searchNorm)) continue;
+    if (!estimateMatchesDateRange(it, dateFrom, dateTo)) continue;
+    counts[it.direction] += 1;
+  }
+  return counts;
 }
 
 export function countEstimatesPipelineTabs(

@@ -14,6 +14,15 @@ const ESTIMATE_PRESET_TRASH_RETENTION_DAYS = 30;
 const ESTIMATE_PRESET_TRASH_RETENTION_MS =
   ESTIMATE_PRESET_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
 
+const PACKAGE_KIND_LABELS: Record<ContractDocumentPackageKind, string> = {
+  REPAIR: 'Ремонт',
+  WINDOWS: 'Окна',
+  DOORS: 'Двери',
+  CEILINGS: 'Потолки',
+  BLINDS: 'Жалюзи',
+  FURNITURE: 'Мебель',
+};
+
 @Injectable()
 export class ContractDocumentPackageEstimatePresetsService {
   constructor(private readonly prisma: PrismaService) {}
@@ -23,7 +32,16 @@ export class ContractDocumentPackageEstimatePresetsService {
     return this.loadGlobalEstimatePresetsBlobInternal(kind);
   }
 
-  async assertPipelineActive(presetIds: string[]): Promise<void> {
+  /**
+   * Для валидации прикрепления расчётов к пакету.
+   * `expectedKind` — направление пакета: расчёты с явно проставленным другим направлением
+   * прикрепить нельзя. Расчёты без `direction` (созданные до появления поля) проходят всегда,
+   * чтобы не ломать уже созданные расчёты и их договоры.
+   */
+  async assertPipelineActive(
+    presetIds: string[],
+    expectedKind?: ContractDocumentPackageKind,
+  ): Promise<void> {
     const raw = await this.loadGlobalEstimatePresetsBlobInternal(
       ContractDocumentPackageKind.REPAIR,
     );
@@ -31,6 +49,15 @@ export class ContractDocumentPackageEstimatePresetsService {
     for (const id of presetIds) {
       const preset = raw.items.find((item) => item.id === id);
       if (!preset) continue;
+      if (expectedKind && preset.direction && preset.direction !== expectedKind) {
+        throw new BadRequestException(
+          `Расчёт «${preset.title}» имеет направление «${
+            PACKAGE_KIND_LABELS[preset.direction] ?? preset.direction
+          }» — его нельзя прикрепить к договору направления «${
+            PACKAGE_KIND_LABELS[expectedKind] ?? expectedKind
+          }».`,
+        );
+      }
       if (preset.archived) {
         throw new BadRequestException(
           'Нельзя прикрепить расчёт из архива. Восстановите его в списке расчётов.',

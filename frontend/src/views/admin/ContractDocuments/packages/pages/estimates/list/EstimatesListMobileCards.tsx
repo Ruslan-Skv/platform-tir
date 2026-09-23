@@ -19,20 +19,16 @@ import {
 import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
+import { packageKindUiLabel } from '../../../config/packageDirectionRegistry';
 import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import type { EstimatesTableDisplayItem } from './estimatesListLayout';
-import {
-  EstimatesArchiveIcon,
-  EstimatesRestoreFromArchiveIcon,
-  EstimatesToActiveIcon,
-  EstimatesToProspectIcon,
-  unifiedGroupIdForEstimates,
-} from './estimatesListTableUi';
+import { unifiedGroupIdForEstimates } from './estimatesListTableUi';
 import {
   type EstimatePackageUsage,
   estimateObjectAddressDisplayLabel,
+  formatEstimateGroupAuthorLabel,
   formatEstimateListTableCost,
   formatEstimatePackageUsageLabel,
   isUsageLocked,
@@ -56,8 +52,6 @@ export type EstimatesListMobileCardsProps = {
   groupIdsWithLockedEstimate: Set<string>;
   effectiveExpandedAddressKeys: string[];
   onToggleAddressExpand: (addressKey: string) => void;
-  onAddressPipelineStage: (addressKey: string, tab: EstimatePipelineTab) => void;
-  onSetEstimatesArchivedByAddress: (addressKey: string, archived: boolean) => void;
   onGroupMarkupChange: (groupId: string, raw: string) => void;
   router: AppRouterInstance;
   onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
@@ -190,6 +184,10 @@ function EstimateMobileCard({
         </div>
         <dl className={cdHub.contractsMobileCardRows}>
           <div className={cdHub.contractsMobileCardRow}>
+            <dt>Направление</dt>
+            <dd>{it.direction ? packageKindUiLabel(it.direction) : '—'}</dd>
+          </div>
+          <div className={cdHub.contractsMobileCardRow}>
             <dt>Дата</dt>
             <dd>{updatedLabel}</dd>
           </div>
@@ -291,8 +289,6 @@ export function EstimatesListMobileCards({
   groupIdsWithLockedEstimate,
   effectiveExpandedAddressKeys,
   onToggleAddressExpand,
-  onAddressPipelineStage,
-  onSetEstimatesArchivedByAddress,
   onGroupMarkupChange,
   router,
   onPresetPipelineStage,
@@ -384,6 +380,12 @@ export function EstimatesListMobileCards({
                         {boundInGroup > 0 ? ` · привяз. ${boundInGroup}` : ''})
                       </span>
                     </div>
+                    <div
+                      className={cdHub.contractsMobileObjectMeta}
+                      title="Автор последнего прикреплённого расчёта объекта"
+                    >
+                      Автор: {formatEstimateGroupAuthorLabel(item.items)}
+                    </div>
                     {unifiedGroup ? (
                       <div className={cdEstimatesList.estimatesMobileObjectMarkup}>
                         <span>Наценка объекта, %</span>
@@ -412,58 +414,6 @@ export function EstimatesListMobileCards({
                         />
                       </div>
                     ) : null}
-                    <div className={cdEstimatesList.estimatesMobileObjectActions}>
-                      {!archiveView && pipelineTab === 'active' && item.items.length > 0 ? (
-                        <button
-                          type="button"
-                          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="В перспективу"
-                          title="Перенести объект и все расчёты на вкладку «В перспективе»"
-                          onClick={() => onAddressPipelineStage(item.addressKey, 'prospect')}
-                        >
-                          <EstimatesToProspectIcon />
-                        </button>
-                      ) : null}
-                      {!archiveView && pipelineTab === 'prospect' && item.items.length > 0 ? (
-                        <button
-                          type="button"
-                          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="В работе"
-                          title="Вернуть объект и все расчёты на вкладку «В работе»"
-                          onClick={() => onAddressPipelineStage(item.addressKey, 'active')}
-                        >
-                          <EstimatesToActiveIcon />
-                        </button>
-                      ) : null}
-                      {!archiveView && pipelineTab === 'active' && item.items.length > 0 ? (
-                        <button
-                          data-admin-mutation
-                          type="button"
-                          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="В архив"
-                          title="Отправить все расчёты по этому адресу в архив"
-                          onClick={() => onSetEstimatesArchivedByAddress(item.addressKey, true)}
-                        >
-                          <EstimatesArchiveIcon />
-                        </button>
-                      ) : null}
-                      {archiveView ? (
-                        <button
-                          data-admin-mutation
-                          type="button"
-                          className={`${cdEstimatesList.secondaryBtn} ${cdEstimatesList.estimatesIconBtn}`}
-                          disabled={saving}
-                          aria-label="Восстановить"
-                          title="Вернуть все расчёты по этому адресу в основной список"
-                          onClick={() => onSetEstimatesArchivedByAddress(item.addressKey, false)}
-                        >
-                          <EstimatesRestoreFromArchiveIcon />
-                        </button>
-                      ) : null}
-                    </div>
                   </div>
                 </div>
               </div>

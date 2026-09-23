@@ -813,6 +813,12 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   color: var(--admin-text-secondary);
 }
 
+/* Направление расчёта — короткая подпись без переносов */
+.estimatesListDirectionCell {
+  white-space: nowrap;
+  color: var(--admin-text-secondary);
+}
+
 /* Автор расчёта — как дата: вторичный текст, без переносов */
 .estimatesListAuthorCell {
   max-width: 11rem;
@@ -942,17 +948,18 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 .estimatesDirectoryTable .contractsListTable th.contractsListActionsCol,
 .estimatesDirectoryTable .contractsListTable td.contractsListActionsCol {
-  width: auto;
-  min-width: 10rem;
-  max-width: none;
+  /* 5×24px кнопки + 4×2px зазора + 2×5px паддинга — колонка без пустоты справа */
+  width: 138px;
+  min-width: 138px;
+  max-width: 138px;
   white-space: nowrap;
   text-align: left;
 }
 
-/* Фиксированные слоты: одинаковые действия в разных строках друг под другом */
+/* Фиксированные слоты: одинаковые действия в разных строках друг под другом. Сетка 5×2, как в списке договоров */
 .estimatesDirectoryTable .estimatesListActionsGrid.estimatesCardActions {
   display: grid;
-  grid-template-columns: repeat(8, 24px);
+  grid-template-columns: repeat(5, 24px);
   column-gap: 2px;
   row-gap: 0;
   justify-content: start;
@@ -1930,13 +1937,6 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   min-height: 1.75rem;
   padding: 2px 6px;
   font-size: var(--admin-font-size-xs);
-}
-
-.estimatesMobileObjectActions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--admin-space-xs);
-  margin-top: var(--admin-space-sm);
 }
 
 @media (max-width: 900px) {

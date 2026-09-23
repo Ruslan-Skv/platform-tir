@@ -19,7 +19,6 @@ import { persistPackageAfterRemovingEstimatePreset } from '../../../../platform/
 import { ensureEstimateObjectGroups } from '../../../../platform/estimates/estimateObjectGroupSync';
 import {
   type EstimatePipelineTab,
-  applyGroupPipelineTab,
   applyPresetPipelineTab,
 } from '../../../../platform/estimates/estimatePipelineStage';
 import { applySplitBundleSaveToPresets } from '../../../../platform/estimates/estimateWorkScopeTree';
@@ -29,10 +28,8 @@ import {
   type EstimatesListWorkspacePackage,
   mapPackagesForEstimatesList,
 } from '../estimatesListPackageUsage';
-import { unifiedGroupIdForEstimates } from '../estimatesListTableUi';
 import {
   type EstimatePackageUsage,
-  estimateObjectAddressKey,
   isUsageLocked,
   parseOptionalPercentInput,
   stripOrphanGroupIds,
@@ -171,31 +168,6 @@ export function useEstimatesListMutations({
     [groups, items, persistEstimates, setWorkScopeModalPresetId]
   );
 
-  const setEstimatesArchivedByAddress = useCallback(
-    (addressKey: string, archived: boolean) => {
-      const ts = new Date().toISOString();
-      const nextItems = items.map((it) =>
-        estimateObjectAddressKey(it) === addressKey ? { ...it, archived, updatedAt: ts } : it
-      );
-      void persistEstimates(nextItems, groups);
-    },
-    [groups, items, persistEstimates]
-  );
-
-  const setGroupPipelineStage = useCallback(
-    (groupId: string, tab: EstimatePipelineTab) => {
-      const ts = new Date().toISOString();
-      const nextGroups = groups.map((g) =>
-        g.id === groupId ? applyGroupPipelineTab(g, tab, ts) : g
-      );
-      const nextItems = items.map((it) =>
-        it.groupId === groupId ? applyPresetPipelineTab(it, tab, ts) : it
-      );
-      void persistEstimates(nextItems, nextGroups);
-    },
-    [groups, items, persistEstimates]
-  );
-
   const setPresetPipelineStage = useCallback(
     (estimateId: string, tab: EstimatePipelineTab) => {
       const ts = new Date().toISOString();
@@ -205,24 +177,6 @@ export function useEstimatesListMutations({
       void persistEstimates(nextItems, groups);
     },
     [groups, items, persistEstimates]
-  );
-
-  const setAddressPipelineStage = useCallback(
-    (addressKey: string, tab: EstimatePipelineTab) => {
-      const ts = new Date().toISOString();
-      const unifiedGroupId = unifiedGroupIdForEstimates(
-        items.filter((it) => estimateObjectAddressKey(it) === addressKey)
-      );
-      if (unifiedGroupId) {
-        setGroupPipelineStage(unifiedGroupId, tab);
-        return;
-      }
-      const nextItems = items.map((it) =>
-        estimateObjectAddressKey(it) === addressKey ? applyPresetPipelineTab(it, tab, ts) : it
-      );
-      void persistEstimates(nextItems, groups);
-    },
-    [groups, items, persistEstimates, setGroupPipelineStage]
   );
 
   const setPresetArchived = useCallback(
@@ -399,9 +353,7 @@ export function useEstimatesListMutations({
   return {
     refreshEstimates,
     handleWorkScopeSave,
-    setEstimatesArchivedByAddress,
     setPresetPipelineStage,
-    setAddressPipelineStage,
     setPresetArchived,
     handleConfirmDetachEdit,
     handleConfirmTrashMove,

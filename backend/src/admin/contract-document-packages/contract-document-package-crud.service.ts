@@ -42,7 +42,9 @@ export class ContractDocumentPackageCrudService {
       const defaultDays = await this.kindSettings.resolveDefaultWorkPeriodDays(dto.kind);
       formDataInput = injectDefaultWorkPeriodIntoFormData(formDataInput, defaultDays);
     }
-    await this.assertEstimatePresetsExclusive(null, formDataInput);
+    await this.assertEstimatePresetsExclusive(null, formDataInput, {
+      expectedKind: dto.kind,
+    });
     const created = await this.prisma.contractDocumentPackage.create({
       data: {
         kind: dto.kind,
@@ -131,6 +133,7 @@ export class ContractDocumentPackageCrudService {
     if (dto.formData !== undefined) {
       await this.assertEstimatePresetsExclusive(id, dto.formData, {
         previousFormData: row.formData,
+        expectedKind: row.kind,
       });
     }
     const responsibleManagerId =
@@ -368,11 +371,19 @@ export class ContractDocumentPackageCrudService {
     return [...new Set(ids)];
   }
 
-  /** Расчёт можно прикрепить только к одному пакету — любого направления. */
+  /**
+   * Расчёт можно прикрепить только к одному пакету — любого направления.
+   * Направление расчёта должно совпадать с направлением пакета (`expectedKind`).
+   * Валидируются только новые привязки: у уже подписанных договоров сохранение
+   * не падает из-за расчётов, привязанных до появления проверки направлений.
+   */
   private async assertEstimatePresetsExclusive(
     currentPackageId: string | null,
     formData: unknown,
-    options?: { previousFormData?: unknown },
+    options?: {
+      previousFormData?: unknown;
+      expectedKind?: ContractDocumentPackageKind;
+    },
   ): Promise<void> {
     const ids = this.extractEstimatePresetIds(formData);
     if (ids.length === 0) return;
@@ -386,7 +397,7 @@ export class ContractDocumentPackageCrudService {
     const addedIds = previousIds ? ids.filter((id) => !previousIds.has(id)) : ids;
     if (addedIds.length === 0) return;
 
-    await this.estimatePresets.assertPipelineActive(addedIds);
+    await this.estimatePresets.assertPipelineActive(addedIds, options?.expectedKind);
 
     const others = await this.prisma.contractDocumentPackage.findMany({
       where: {
