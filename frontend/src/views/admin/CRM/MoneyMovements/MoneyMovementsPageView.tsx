@@ -14,6 +14,7 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
+import { DpRulesInfoTip } from './DpRulesInfoTip';
 import styles from './MoneyMovements.module.css';
 import type { MoneyMovementsPageModel } from './hooks/useMoneyMovementsPage';
 import { DpStatsModal } from './modals/DpStatsModal';
@@ -435,6 +436,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>ДП — оплаты</h1>
+                <DpRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={countTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>
