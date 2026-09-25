@@ -16,6 +16,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
+import { ManualEntriesService } from './manual-entries.service';
 import { MoneyMovementsService } from './money-movements.service';
 import { ManagerIncassationsService } from './manager-incassations.service';
 import { QueryMoneyMovementsDto } from './dto/query-money-movements.dto';
@@ -46,6 +47,7 @@ const CRM_ROLES = [
 export class MoneyMovementsController {
   constructor(
     private readonly moneyMovementsService: MoneyMovementsService,
+    private readonly manualEntries: ManualEntriesService,
     private readonly managerIncassations: ManagerIncassationsService,
   ) {}
 
@@ -93,7 +95,7 @@ export class MoneyMovementsController {
   @Post('manual-entry')
   @HttpCode(HttpStatus.CREATED)
   createManualEntry(@Body() dto: CreateManualMoneyMovementDto, @Req() req: RequestWithUser) {
-    return this.moneyMovementsService.createManualEntry(dto, req.user?.id);
+    return this.manualEntries.createManualEntry(dto, req.user?.id);
   }
 
   /**
@@ -103,6 +105,6 @@ export class MoneyMovementsController {
   @Patch('manual-entry/:id')
   @Roles('SUPER_ADMIN')
   updateManualEntry(@Param('id') id: string, @Body() dto: CreateManualMoneyMovementDto) {
-    return this.moneyMovementsService.updateManualEntry(id, dto);
+    return this.manualEntries.updateManualEntry(id, dto);
   }
 }
