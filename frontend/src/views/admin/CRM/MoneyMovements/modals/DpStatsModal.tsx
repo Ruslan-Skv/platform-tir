@@ -12,6 +12,7 @@ import {
 import styles from '../MoneyMovements.module.css';
 import {
   DP_DIRECTION_OPTIONS,
+  DP_OTHER_DIRECTION,
   formatDpDate,
   formatDpMoney,
 } from '../money-movements-page.constants';
@@ -54,6 +55,8 @@ export function DpStatsModal({
   const directionChartItems = useMemo<DpChartItem[]>(
     () =>
       directionSums
+        // «Прочее» — движения вне продаж, в графики оплат не входят.
+        .filter((item) => item.direction !== DP_OTHER_DIRECTION)
         .filter((item) => item.sum > 0)
         .map((item) => ({
           id: item.direction ?? '__none',

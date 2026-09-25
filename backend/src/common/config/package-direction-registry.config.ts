@@ -68,6 +68,19 @@ export const PACKAGE_KIND_DIRECTION_SLUG: Record<ContractDocumentPackageKind, st
     string
   >;
 
+/** Спец. направления ручных записей журнала ДП — вне реестра направлений договоров. */
+export const DP_MANUAL_DIRECTION_MATERIALS = 'Материалы';
+
+/** Движения ДС вне продаж и договоров (хоз. товары и прочее) — не входят в итоговые продажи. */
+export const DP_MANUAL_DIRECTION_OTHER = 'Прочее';
+
+/** Разрешённые направления ручной записи ДП: направления договоров + «Материалы» + «Прочее». */
+export const MANUAL_MONEY_MOVEMENT_DIRECTIONS: readonly string[] = [
+  ...PACKAGE_DIRECTION_REGISTRY.map((d) => d.name),
+  DP_MANUAL_DIRECTION_MATERIALS,
+  DP_MANUAL_DIRECTION_OTHER,
+];
+
 export function packageDirectionsWithCreateEnabled(): PackageDirectionDefinition[] {
   return PACKAGE_DIRECTION_REGISTRY.filter((d) => d.createEnabled);
 }

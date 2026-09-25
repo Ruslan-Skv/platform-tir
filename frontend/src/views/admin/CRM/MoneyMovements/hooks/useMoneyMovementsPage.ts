@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
+import { useAuth } from '@/features/auth/context/AuthContext';
 import {
   type IncassationCashBalance,
   type ManagerIncassation,
@@ -13,6 +14,7 @@ import {
   getIncassationCashBalance,
   getManagerIncassations,
   getMoneyMovements,
+  updateManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
 
 import {
@@ -33,6 +35,10 @@ import {
 const SEARCH_DEBOUNCE_MS = 400;
 
 export function useMoneyMovementsPage() {
+  const { user } = useAuth();
+  /** Правка ручных записей — только супер-админ (роль проверяется и на бэкенде). */
+  const canEditManualEntries = user?.role === 'SUPER_ADMIN';
+
   // Страница рендерится с ssr: false — читаем сохранённые фильтры сразу при монтировании.
   const initialFiltersRef = useRef(loadDpFilters());
   const filtersPersistedRef = useRef(false);
@@ -77,9 +83,11 @@ export function useMoneyMovementsPage() {
   const [cashBalanceLoading, setCashBalanceLoading] = useState(false);
   const [incassationSubmitting, setIncassationSubmitting] = useState(false);
 
-  // Ручная запись (проводка): изъятие/внесение в кассу.
+  // Ручная запись (проводка): изъятие/внесение в кассу; для супер-админа — и правка существующих.
   const [manualEntryModalOpen, setManualEntryModalOpen] = useState(false);
   const [manualEntrySubmitting, setManualEntrySubmitting] = useState(false);
+  /** Запись в режиме правки; null — модалка открыта для создания новой проводки. */
+  const [editingEntry, setEditingEntry] = useState<MoneyMovement | null>(null);
 
   // Сохраняем выбранное состояние фильтров между визитами страницы.
   useEffect(() => {
@@ -214,25 +222,44 @@ export function useMoneyMovementsPage() {
   const closeIncassationHistory = useCallback(() => setIncassationHistoryOpen(false), []);
 
   const openManualEntryModal = useCallback(async () => {
+    setEditingEntry(null);
     setManualEntryModalOpen(true);
     // Дефолтный менеджер в селекте — текущий пользователь (managerId из ответа баланса).
     await loadCashBalance();
   }, [loadCashBalance]);
 
-  const closeManualEntryModal = useCallback(() => setManualEntryModalOpen(false), []);
+  /** Правка ручной записи — только супер-админ (кнопка-карандаш в строке журнала). */
+  const openManualEntryEditModal = useCallback(
+    async (entry: MoneyMovement) => {
+      setEditingEntry(entry);
+      setManualEntryModalOpen(true);
+      await loadCashBalance();
+    },
+    [loadCashBalance]
+  );
+
+  const closeManualEntryModal = useCallback(() => {
+    setManualEntryModalOpen(false);
+    setEditingEntry(null);
+  }, []);
 
   const submitManualEntry = useCallback(
     async (data: Parameters<typeof createManualMoneyMovement>[0]) => {
       setManualEntrySubmitting(true);
       try {
-        await createManualMoneyMovement(data);
+        if (editingEntry) {
+          await updateManualMoneyMovement(editingEntry.id, data);
+        } else {
+          await createManualMoneyMovement(data);
+        }
         setManualEntryModalOpen(false);
+        setEditingEntry(null);
         await refresh();
       } finally {
         setManualEntrySubmitting(false);
       }
     },
-    [refresh]
+    [editingEntry, refresh]
   );
 
   const submitIncassation = useCallback(
@@ -367,6 +394,10 @@ export function useMoneyMovementsPage() {
     closeManualEntryModal,
     manualEntrySubmitting,
     submitManualEntry,
+    /** true — текущий пользователь супер-админ: показывает кнопки правки ручных записей. */
+    canEditManualEntries,
+    editingEntry,
+    openManualEntryEditModal,
   };
 }
 

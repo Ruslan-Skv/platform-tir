@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
+import { DP_MANUAL_DIRECTION_OTHER } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 
 export interface CatalogActivityRow {
@@ -37,12 +38,16 @@ export class AdminDashboardService {
    * Продажи за текущий месяц — те же итоги, что в блоке итогов журнала ДП
    * (/admin/dp): сумма оплат по журналам денежных движений, разбивка по
    * направлениям и по менеджерам (карточка менеджера договора).
+   * Записи «Прочее» — движения ДС вне продаж, в продажи не входят.
    */
   async getSalesMonth(): Promise<DashboardSalesMonthResponse> {
     const now = new Date();
     const from = new Date(now.getFullYear(), now.getMonth(), 1);
     const to = new Date(now.getFullYear(), now.getMonth() + 1, 1);
-    const where: Prisma.MoneyMovementWhereInput = { paymentDate: { gte: from, lt: to } };
+    const where: Prisma.MoneyMovementWhereInput = {
+      paymentDate: { gte: from, lt: to },
+      direction: { not: DP_MANUAL_DIRECTION_OTHER },
+    };
 
     const [total, byDirection, byManager] = await Promise.all([
       this.prisma.moneyMovement.aggregate({ where, _sum: { amount: true } }),

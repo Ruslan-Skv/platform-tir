@@ -37,6 +37,11 @@ export type MoneyMovement = {
   direction: string | null;
   /** Офис заключения договора на момент оплаты («Офис закл.»). */
   office: string | null;
+  /**
+   * Первоначальные значения полей, правленных супер-админом: поле → значение до
+   * первой правки (null — запись не правилась). Журнал помечает их значком «было …».
+   */
+  originalValues: Record<string, string | null> | null;
   manager: { id: string; name: string } | null;
   createdAt: string;
   updatedAt: string;
@@ -164,8 +169,8 @@ export async function createManagerIncassation(params: {
   return res.json();
 }
 
-/** Ручная запись (проводка) в журнале ДП: изъятие из кассы (сумма < 0) или внесение (> 0). */
-export async function createManualMoneyMovement(params: {
+/** Поля ручной записи журнала ДП (создание и правка). */
+export type ManualMoneyMovementParams = {
   /** Менеджер, по кассе которого проводится запись; по умолчанию — текущий пользователь. */
   managerId?: string;
   /** Сумма со знаком: внесение > 0, изъятие < 0. */
@@ -173,15 +178,43 @@ export async function createManualMoneyMovement(params: {
   paymentForm: string;
   /** Дата записи, YYYY-MM-DD. */
   paymentDate: string;
+  /**
+   * Направление записи: направление договоров, «Материалы» или «Прочее».
+   * «Прочее» не учитывается в итоговых продажах.
+   */
+  direction: string;
+  /** № договора — для направлений и «Материалов» (колонка «№ договора»). */
+  contractNumber?: string;
+  /** Заказчик — для направлений и «Материалов» (колонка «Заказчик»). */
+  customerName?: string;
   /** Основание: «Бытовые нужды» и т.п. */
   basis: string;
   notes?: string;
-}): Promise<MoneyMovement> {
+};
+
+/** Ручная запись (проводка) в журнале ДП: изъятие из кассы (сумма < 0) или внесение (> 0). */
+export async function createManualMoneyMovement(
+  params: ManualMoneyMovementParams
+): Promise<MoneyMovement> {
   const res = await apiFetch(`${API_URL}/admin/money-movements/manual-entry`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
     body: JSON.stringify(params),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось записать проводку');
+  return res.json();
+}
+
+/** Правка ручной записи журнала ДП — только супер-админ (исправление ошибок). */
+export async function updateManualMoneyMovement(
+  id: string,
+  params: ManualMoneyMovementParams
+): Promise<MoneyMovement> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/manual-entry/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось сохранить правку проводки');
   return res.json();
 }

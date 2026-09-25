@@ -3571,6 +3571,9 @@ model MoneyMovement {
   direction      String?
   /// Офис заключения договора на момент оплаты («Офис закл.» — название офиса).
   office         String?
+  /// Первоначальные значения полей, правленных супер-админом: поле → значение до правки.
+  /// Пусто/отсутствует — запись не правилась. Показ значком «было …» в журнале ДП.
+  originalValues Json?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 

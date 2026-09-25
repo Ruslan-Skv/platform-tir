@@ -4,17 +4,23 @@ import { useEffect, useState } from 'react';
 
 import {
   type IncassationCashBalance,
+  type ManualMoneyMovementParams,
+  type MoneyMovement,
   type MoneyMovementManagerOption,
-  createManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
 import { Modal } from '@/shared/ui/Modal';
 import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalogModal.module.css';
 
 import styles from '../MoneyMovements.module.css';
-import { DP_PAYMENT_FORM_OPTIONS, todayIsoDate } from '../money-movements-page.constants';
+import {
+  DP_MANUAL_DIRECTION_OPTIONS,
+  DP_OTHER_DIRECTION,
+  DP_PAYMENT_FORM_OPTIONS,
+  todayIsoDate,
+} from '../money-movements-page.constants';
 import formStyles from './MoneyMovementModalForm.module.css';
 
-export type ManualEntrySubmitData = Parameters<typeof createManualMoneyMovement>[0];
+export type ManualEntrySubmitData = ManualMoneyMovementParams;
 
 type ManualEntryKind = 'withdrawal' | 'deposit';
 
@@ -27,6 +33,8 @@ type ManualEntryModalProps = {
   defaultManager: IncassationCashBalance | null;
   submitting: boolean;
   onSubmit: (data: ManualEntrySubmitData) => Promise<void>;
+  /** Редактируемая запись — режим правки (супер-админ); null/undefined — создание. */
+  editing?: MoneyMovement | null;
 };
 
 export function ManualEntryModal({
@@ -36,9 +44,13 @@ export function ManualEntryModal({
   defaultManager,
   submitting,
   onSubmit,
+  editing = null,
 }: ManualEntryModalProps) {
   const [kind, setKind] = useState<ManualEntryKind>('withdrawal');
   const [managerId, setManagerId] = useState('');
+  const [direction, setDirection] = useState('');
+  const [contractNumber, setContractNumber] = useState('');
+  const [customerName, setCustomerName] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentForm, setPaymentForm] = useState('CASH');
   const [paymentDate, setPaymentDate] = useState('');
@@ -46,29 +58,66 @@ export function ManualEntryModal({
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // № договора и заказчик — только для направлений и «Материалов»; «Прочее» — вне договоров.
+  const showContractFields = Boolean(direction) && direction !== DP_OTHER_DIRECTION;
+
+  const changeDirection = (value: string) => {
+    setDirection(value);
+    if (!value || value === DP_OTHER_DIRECTION) {
+      setContractNumber('');
+      setCustomerName('');
+    }
+  };
+
   // Новая проводка — чистая форма: сегодня, изъятие, наличные.
+  // Правка — форма предзаполнена данными редактируемой записи.
   useEffect(() => {
     if (!open) return;
-    setKind('withdrawal');
-    setManagerId('');
-    setAmount('');
-    setPaymentForm('CASH');
-    setPaymentDate(todayIsoDate());
-    setBasis('');
-    setNotes('');
+    if (editing) {
+      const editingAmount = Number(editing.amount);
+      setKind(editingAmount < 0 ? 'withdrawal' : 'deposit');
+      setManagerId(editing.manager?.id ?? '');
+      setDirection(editing.direction ?? '');
+      setContractNumber(editing.contractNumber ?? '');
+      setCustomerName(editing.customerName ?? '');
+      setAmount(Number.isFinite(editingAmount) ? String(Math.abs(editingAmount)) : '');
+      setPaymentForm(editing.paymentForm);
+      setPaymentDate(editing.paymentDate);
+      setBasis(editing.basis ?? '');
+      setNotes(editing.notes ?? '');
+    } else {
+      setKind('withdrawal');
+      setManagerId('');
+      setDirection('');
+      setContractNumber('');
+      setCustomerName('');
+      setAmount('');
+      setPaymentForm('CASH');
+      setPaymentDate(todayIsoDate());
+      setBasis('');
+      setNotes('');
+    }
     setError(null);
-  }, [open]);
+  }, [open, editing]);
 
-  // Дефолт в селекте — текущий пользователь (из ответа баланса).
+  // Дефолт в селекте — текущий пользователь (из ответа баланса); в режиме правки не подставляем,
+  // чтобы случайно не переатрибутировать запись на редактирующего.
   useEffect(() => {
-    if (!open || managerId || !defaultManager) return;
+    if (!open || editing || managerId || !defaultManager) return;
     setManagerId(defaultManager.managerId);
-  }, [open, defaultManager, managerId]);
+  }, [open, editing, defaultManager, managerId]);
 
   const managerInList = managers.some((m) => m.id === managerId);
+  // Менеджер записи может быть не из справочника карточек — держим его видимой опцией селекта.
+  const fallbackManagerName =
+    editing && editing.manager?.id === managerId
+      ? (editing.manager?.name ?? null)
+      : defaultManager && defaultManager.managerId === managerId
+        ? defaultManager.managerName
+        : null;
   const fallbackManagerOption =
-    !managerInList && managerId && defaultManager?.managerName ? (
-      <option value={managerId}>{defaultManager.managerName}</option>
+    !managerInList && managerId && fallbackManagerName ? (
+      <option value={managerId}>{fallbackManagerName}</option>
     ) : null;
 
   // Кнопка «Записать» неактивна, пока не заполнены обязательные поля
@@ -78,6 +127,7 @@ export function ManualEntryModal({
     Number.isFinite(amountNumber) &&
     amountNumber > 0 &&
     Boolean(managerId) &&
+    Boolean(direction) &&
     basis.trim().length >= 2 &&
     Boolean(paymentDate);
 
@@ -89,6 +139,10 @@ export function ManualEntryModal({
     }
     if (!managerId) {
       setError('Выберите менеджера, по кассе которого проводится запись');
+      return;
+    }
+    if (!direction) {
+      setError('Выберите направление (для движений вне продаж — «Прочее»)');
       return;
     }
     if (basis.trim().length < 2) {
@@ -106,6 +160,14 @@ export function ManualEntryModal({
         amount: kind === 'withdrawal' ? -amountNumber : amountNumber,
         paymentForm,
         paymentDate,
+        direction,
+        // № договора и заказчик — только для направлений и «Материалов».
+        ...(showContractFields
+          ? {
+              contractNumber: contractNumber.trim() || undefined,
+              customerName: customerName.trim() || undefined,
+            }
+          : {}),
         basis: basis.trim(),
         notes: notes.trim() || undefined,
       });
@@ -118,7 +180,7 @@ export function ManualEntryModal({
     <Modal
       isOpen={open}
       onClose={onClose}
-      title="Ручная запись в журнале ДП"
+      title={editing ? 'Редактирование ручной записи ДП' : 'Ручная запись в журнале ДП'}
       size="sm"
       className={formStyles.modalPanel}
       showCloseButton
@@ -133,7 +195,7 @@ export function ManualEntryModal({
         <p data-modal-form-hint style={{ marginTop: 0 }}>
           Проводка вне оплат по договорам: изъятие из кассы (например, на бытовые нужды) или
           внесение сумм, не проведённых в оплатах. Наличные записи участвуют в остатке для
-          инкассации.
+          инкассации. Записи «Прочее» не учитываются в итоговых продажах.
         </p>
 
         <div data-modal-form-group>
@@ -182,6 +244,53 @@ export function ManualEntryModal({
             ))}
           </select>
         </div>
+
+        <div data-modal-form-group>
+          <label htmlFor="manual-entry-direction">Направление *</label>
+          <select
+            id="manual-entry-direction"
+            value={direction}
+            onChange={(e) => changeDirection(e.target.value)}
+            disabled={submitting}
+            required
+          >
+            <option value="">— выбрать направление —</option>
+            {DP_MANUAL_DIRECTION_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {showContractFields ? (
+          <>
+            <div data-modal-form-group>
+              <label htmlFor="manual-entry-contract-number">№ договора</label>
+              <input
+                id="manual-entry-contract-number"
+                type="text"
+                value={contractNumber}
+                onChange={(e) => setContractNumber(e.target.value)}
+                disabled={submitting}
+                placeholder="Например: 123-д"
+                maxLength={100}
+              />
+            </div>
+            <div data-modal-form-group>
+              <label htmlFor="manual-entry-customer-name">Заказчик</label>
+              <input
+                id="manual-entry-customer-name"
+                type="text"
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                disabled={submitting}
+                placeholder="ФИО или организация"
+                maxLength={200}
+              />
+            </div>
+          </>
+        ) : null}
 
         <div data-modal-form-group>
           <label htmlFor="manual-entry-amount">Сумма, ₽ *</label>
@@ -265,7 +374,7 @@ export function ManualEntryModal({
             data-modal-btn="primary"
             disabled={submitting || !canSubmit}
           >
-            {submitting ? 'Сохранение…' : 'Записать'}
+            {submitting ? 'Сохранение…' : editing ? 'Сохранить' : 'Записать'}
           </button>
         </div>
       </form>

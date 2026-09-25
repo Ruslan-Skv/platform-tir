@@ -22,10 +22,11 @@ import { IncassationModal } from './modals/IncassationModal';
 import { ManualEntryModal } from './modals/ManualEntryModal';
 import { buildDpFiltersSummary } from './money-movements-filters';
 import {
-  DP_DIRECTION_OPTIONS,
+  DP_MANUAL_DIRECTION_OPTIONS,
   DP_PAYMENT_FORM_LABELS,
   DP_PAYMENT_FORM_OPTIONS,
   DP_PAYMENT_TYPE_LABELS,
+  DP_SALES_DIRECTION_OPTIONS,
   MONEY_MOVEMENTS_PAGE_SIZE,
   formatDpDate,
   formatDpMoney,
@@ -93,6 +94,44 @@ function IncassationHistoryButton({
   );
 }
 
+/** Подпись первоначального значения правленного поля («Было: …») или null, если поле не правилось. */
+function editedOriginal(
+  item: MoneyMovement,
+  field: string,
+  format: (value: string | null) => string = (value) => value ?? '—'
+): string | null {
+  const original = item.originalValues;
+  if (!original || !(field in original)) return null;
+  return format(original[field]);
+}
+
+/** Значок «поле правлено супер-админом»: при наведении — первоначальное значение поля. */
+function EditedFieldMark({ original }: { original: string | null }) {
+  if (original === null) return null;
+  return (
+    <span
+      className={styles.editedMark}
+      title={`Было: ${original}`}
+      aria-label={`Было: ${original}`}
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        width={11}
+        height={11}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={2.4}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+      </svg>
+    </span>
+  );
+}
+
 export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageModel }) {
   const {
     dateFrom,
@@ -146,6 +185,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     closeManualEntryModal,
     manualEntrySubmitting,
     submitManualEntry,
+    canEditManualEntries,
+    editingEntry,
+    openManualEntryEditModal,
   } = model;
 
   const filtersContentId = useId();
@@ -189,16 +231,17 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
 
   const countTitle = `${total} ${total === 1 ? 'запись' : 'записей'}`;
 
-  /** Плитки итогов: направления из справочника в фиксированном порядке + «Прочее»
-   *  для записей без направления (например, ручные проводки) и неизвестных направлений. */
+  /** Плитки итогов: направления из справочника + «Материалы» в фиксированном порядке и
+   *  «Прочее» для движений вне продаж (записи «Прочее» и без направления) — без процента,
+   *  так как «Итого за период» — итоговые продажи и «Прочее» в него не входит. */
   const directionTotals = useMemo(() => {
     const sumsByDirection = new Map(directionSums.map((item) => [item.direction ?? '', item.sum]));
-    const tiles = DP_DIRECTION_OPTIONS.map((option) => ({
+    const tiles = DP_SALES_DIRECTION_OPTIONS.map((option) => ({
       key: option.value,
       label: option.label,
       sum: sumsByDirection.get(option.value) ?? 0,
     }));
-    const known = new Set(DP_DIRECTION_OPTIONS.map((option) => option.value));
+    const known = new Set(DP_SALES_DIRECTION_OPTIONS.map((option) => option.value));
     const otherSum = directionSums
       .filter((item) => !item.direction || !known.has(item.direction))
       .reduce((acc, item) => acc + item.sum, 0);
@@ -238,7 +281,12 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     {
       key: 'paymentDate',
       title: 'Дата',
-      render: (item: MoneyMovement) => formatDpDate(item.paymentDate),
+      render: (item: MoneyMovement) => (
+        <>
+          {formatDpDate(item.paymentDate)}
+          <EditedFieldMark original={editedOriginal(item, 'paymentDate', formatDpDate)} />
+        </>
+      ),
     },
     {
       key: 'performedAt',
@@ -248,7 +296,12 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     {
       key: 'manager',
       title: 'Менеджер',
-      render: (item: MoneyMovement) => item.manager?.name || '—',
+      render: (item: MoneyMovement) => (
+        <>
+          {item.manager?.name || '—'}
+          <EditedFieldMark original={editedOriginal(item, 'managerName')} />
+        </>
+      ),
     },
     {
       key: 'office',
@@ -259,7 +312,10 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       key: 'contractNumber',
       title: '№ договора',
       render: (item: MoneyMovement) => (
-        <span className={styles.contractCell}>{item.contractNumber || '—'}</span>
+        <span className={styles.contractCell}>
+          {item.contractNumber || '—'}
+          <EditedFieldMark original={editedOriginal(item, 'contractNumber')} />
+        </span>
       ),
     },
     {
@@ -268,6 +324,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       render: (item: MoneyMovement) => (
         <div className={styles.customerCell}>
           {item.customerName || '—'}
+          <EditedFieldMark original={editedOriginal(item, 'customerName')} />
           {item.addendumNumber != null ? (
             <span className={styles.customerSubline}>Д/с №{item.addendumNumber}</span>
           ) : null}
@@ -277,17 +334,31 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     {
       key: 'direction',
       title: 'Направление',
-      render: (item: MoneyMovement) => item.direction || '—',
+      render: (item: MoneyMovement) => (
+        <>
+          {item.direction || '—'}
+          <EditedFieldMark original={editedOriginal(item, 'direction')} />
+        </>
+      ),
     },
     {
       key: 'basis',
       title: 'Основание',
-      render: (item: MoneyMovement) => (
-        <div className={styles.basisCell}>
-          {item.basis || DP_PAYMENT_TYPE_LABELS[item.paymentType] || item.paymentType}
-          {item.notes ? <span className={styles.basisSubline}>{item.notes}</span> : null}
-        </div>
-      ),
+      render: (item: MoneyMovement) => {
+        // Основание и примечание живут в одной колонке — объединяем их «было …».
+        const parts: string[] = [];
+        const basisOriginal = editedOriginal(item, 'basis');
+        if (basisOriginal !== null) parts.push(`основание — ${basisOriginal}`);
+        const notesOriginal = editedOriginal(item, 'notes');
+        if (notesOriginal !== null) parts.push(`примечание — ${notesOriginal}`);
+        return (
+          <div className={styles.basisCell}>
+            {item.basis || DP_PAYMENT_TYPE_LABELS[item.paymentType] || item.paymentType}
+            <EditedFieldMark original={parts.length > 0 ? parts.join(', ') : null} />
+            {item.notes ? <span className={styles.basisSubline}>{item.notes}</span> : null}
+          </div>
+        );
+      },
     },
     {
       key: 'amount',
@@ -301,14 +372,59 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           }`}
         >
           {formatDpMoney(item.amount)}
+          <EditedFieldMark original={editedOriginal(item, 'amount', formatDpMoney)} />
         </span>
       ),
     },
     {
       key: 'paymentForm',
       title: 'Способ оплаты',
-      render: (item: MoneyMovement) => DP_PAYMENT_FORM_LABELS[item.paymentForm] || item.paymentForm,
+      render: (item: MoneyMovement) => (
+        <>
+          {DP_PAYMENT_FORM_LABELS[item.paymentForm] || item.paymentForm}
+          <EditedFieldMark
+            original={editedOriginal(item, 'paymentForm', (value) =>
+              value ? (DP_PAYMENT_FORM_LABELS[value] ?? value) : '—'
+            )}
+          />
+        </>
+      ),
     },
+    // Правка ручных записей — только супер-админ; авто-записи по оплатам договоров не редактируются.
+    ...(canEditManualEntries
+      ? [
+          {
+            key: 'editEntry',
+            title: '',
+            width: '48px',
+            render: (item: MoneyMovement) =>
+              item.isManual ? (
+                <button
+                  type="button"
+                  className={styles.editEntryBtn}
+                  onClick={() => void openManualEntryEditModal(item)}
+                  title="Редактировать ручную запись"
+                  aria-label="Редактировать ручную запись"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width={15}
+                    height={15}
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth={2}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  </svg>
+                </button>
+              ) : null,
+          },
+        ]
+      : []),
   ];
 
   return (
@@ -390,9 +506,19 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
           <strong className={styles.totalsTileValue}>{formatDpMoney(totalSum)}</strong>
         </div>
         {totalsTiles.map((tile) => {
-          const percent = totalSum !== 0 ? (tile.sum / totalSum) * 100 : null;
+          // «Прочее» не входит в итоговые продажи — процент к ним не считаем.
+          const percent =
+            totalSum !== 0 && tile.key !== '__other' ? (tile.sum / totalSum) * 100 : null;
           return (
-            <div key={tile.key} className={styles.totalsTile}>
+            <div
+              key={tile.key}
+              className={styles.totalsTile}
+              title={
+                tile.key === '__other'
+                  ? 'Движения ДС вне продаж — в «Итого за период» не входят'
+                  : undefined
+              }
+            >
               <span className={styles.totalsTileLabel}>{tile.label}</span>
               <span className={styles.totalsTileValueRow}>
                 <strong className={styles.totalsTileValue}>{formatDpMoney(tile.sum)}</strong>
@@ -483,7 +609,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 >
                   Все
                 </button>
-                {DP_DIRECTION_OPTIONS.map((option) => (
+                {DP_MANUAL_DIRECTION_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     type="button"
@@ -708,6 +834,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         defaultManager={cashBalance}
         submitting={manualEntrySubmitting}
         onSubmit={submitManualEntry}
+        editing={editingEntry}
       />
     </div>
   );

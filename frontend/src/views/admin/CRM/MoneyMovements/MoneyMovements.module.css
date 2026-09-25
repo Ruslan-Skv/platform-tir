@@ -326,6 +326,47 @@
   color: var(--admin-text-muted);
 }
 
+/* Кнопка-карандаш правки ручной записи (видна только супер-админу) */
+.editEntryBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: var(--admin-radius-sm, 6px);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  background: var(--admin-surface-soft, #f3f4f6);
+  color: var(--admin-text-muted, #6b7280);
+  cursor: pointer;
+}
+
+.editEntryBtn:hover {
+  background: #fff7ed;
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editEntryBtn:hover {
+  background: rgb(154 52 18 / 0.28);
+  border-color: rgb(251 146 60 / 0.45);
+  color: #fdba74;
+}
+
+/* Значок «поле правлено супер-админом»: при наведении — первоначальное значение */
+.editedMark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: 4px;
+  vertical-align: middle;
+  color: #d97706;
+  cursor: help;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .editedMark {
+  color: #fbbf24;
+}
+
 /* Блок итогов над фильтрами: общая сумма и суммы по направлениям за выбранный период */
 .totalsRow {
   display: flex;

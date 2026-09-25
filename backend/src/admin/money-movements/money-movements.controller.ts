@@ -4,6 +4,8 @@ import {
   Get,
   HttpCode,
   HttpStatus,
+  Param,
+  Patch,
   Post,
   Query,
   Req,
@@ -92,5 +94,15 @@ export class MoneyMovementsController {
   @HttpCode(HttpStatus.CREATED)
   createManualEntry(@Body() dto: CreateManualMoneyMovementDto, @Req() req: RequestWithUser) {
     return this.moneyMovementsService.createManualEntry(dto, req.user?.id);
+  }
+
+  /**
+   * Правка ручной записи — только супер-админ: исправление ошибок других пользователей.
+   * Роль на методе перекрывает список CRM_ROLES класса (RolesGuard getAllAndOverride).
+   */
+  @Patch('manual-entry/:id')
+  @Roles('SUPER_ADMIN')
+  updateManualEntry(@Param('id') id: string, @Body() dto: CreateManualMoneyMovementDto) {
+    return this.moneyMovementsService.updateManualEntry(id, dto);
   }
 }

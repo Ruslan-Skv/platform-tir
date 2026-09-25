@@ -31,6 +31,27 @@ export class CreateManualMoneyMovementDto {
   @IsDateString()
   paymentDate: string;
 
+  /**
+   * Направление записи: одно из направлений договоров, «Материалы» или «Прочее».
+   * «Прочее» — движения вне продаж, не учитывается в итоговых продажах.
+   */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  direction?: string;
+
+  /** № договора — только для направлений и «Материалов» (колонка «№ договора» журнала). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  contractNumber?: string;
+
+  /** Заказчик — только для направлений и «Материалов» (колонка «Заказчик» журнала). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  customerName?: string;
+
   /** Основание: «Бытовые нужды», «Возврат излишка» и т.п. */
   @IsString()
   @MinLength(2)

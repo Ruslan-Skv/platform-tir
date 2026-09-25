@@ -10,6 +10,23 @@ export const DP_DIRECTION_OPTIONS: { value: string; label: string }[] = [
   { value: 'Мебель', label: 'Мебель' },
 ];
 
+/** Спец. направления ручных записей ДП — вне реестра направлений договоров. */
+export const DP_MATERIALS_DIRECTION = 'Материалы';
+
+/** Движения ДС вне продаж и договоров (хоз. товары и прочее) — не входят в итоговые продажи. */
+export const DP_OTHER_DIRECTION = 'Прочее';
+
+/** Направления ручной записи: направления договоров + «Материалы» + «Прочее». */
+export const DP_MANUAL_DIRECTION_OPTIONS: { value: string; label: string }[] = [
+  ...DP_DIRECTION_OPTIONS,
+  { value: DP_MATERIALS_DIRECTION, label: DP_MATERIALS_DIRECTION },
+  { value: DP_OTHER_DIRECTION, label: DP_OTHER_DIRECTION },
+];
+
+/** Направления продаж для плиток итогов: направления + «Материалы», без «Прочее». */
+export const DP_SALES_DIRECTION_OPTIONS: { value: string; label: string }[] =
+  DP_MANUAL_DIRECTION_OPTIONS.filter((option) => option.value !== DP_OTHER_DIRECTION);
+
 export const DP_PAYMENT_FORM_LABELS: Record<string, string> = {
   CASH: 'Наличные',
   TERMINAL: 'Терминал',
