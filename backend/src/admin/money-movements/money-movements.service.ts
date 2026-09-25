@@ -7,6 +7,7 @@ import {
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+import { ManagerIncassationsService } from './manager-incassations.service';
 import { serializeMoneyMovement } from './money-movement-serialize';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
@@ -68,7 +69,10 @@ type PackagePaymentRow = {
 export class MoneyMovementsService {
   private readonly logger = new Logger(MoneyMovementsService.name);
 
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly incassations: ManagerIncassationsService,
+  ) {}
 
   async findAll(params?: {
     managerId?: string;
@@ -233,6 +237,11 @@ export class MoneyMovementsService {
       }))
       .sort((a, b) => b.sum - a.sum);
 
+    // Наличные каждого менеджера к инкассации на текущий момент — снапшот кассы,
+    // от фильтров периода не зависит (плитки менеджеров в блоке итогов).
+    const balanceManagerIds = [...new Set([...signatoryUserIds, ...statsManagerIds])];
+    const cashBalances = await this.incassations.getCashBalances(balanceManagerIds);
+
     return {
       data: rawData.map((row) => serializeMoneyMovement(row)),
       total,
@@ -246,6 +255,10 @@ export class MoneyMovementsService {
       })),
       managerSums,
       directionManagerSums,
+      managerCashBalances: [...cashBalances.entries()].map(([managerId, balance]) => ({
+        managerId,
+        balance: balance.toString(),
+      })),
       managers,
     };
   }

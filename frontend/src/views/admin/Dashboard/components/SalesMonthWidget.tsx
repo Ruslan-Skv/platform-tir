@@ -111,7 +111,7 @@ export function SalesMonthWidget({
 
   return (
     <section className={styles.panel}>
-      <div className={styles.panelHead}>
+      <div className={`${styles.panelHead} ${styles.panelHeadSales}`}>
         <span className={styles.panelIcon} aria-hidden>
           📊
         </span>
@@ -121,6 +121,11 @@ export function SalesMonthWidget({
             {monthLabel ? `${monthLabel} · оплаты по журналу ДП` : 'Оплаты по журналу ДП'}
           </p>
         </div>
+        {data ? (
+          <span className={styles.salesTotalWrap}>
+            <span className={styles.salesTotal}>{rubFormat.format(data.totalSum)}</span>
+          </span>
+        ) : null}
         <Link href="/admin/dp" className={styles.panelLink}>
           Журнал ДП →
         </Link>
@@ -131,12 +136,6 @@ export function SalesMonthWidget({
         <p className={styles.empty}>Не удалось загрузить продажи за месяц.</p>
       ) : (
         <>
-          <div className={styles.trainingSummary}>
-            <div className={styles.trainingSummaryItem}>
-              <span className={styles.trainingSummaryValue}>{rubFormat.format(data.totalSum)}</span>
-              <span className={styles.trainingSummaryLabel}>Принято оплат за месяц</span>
-            </div>
-          </div>
           <div className={styles.chartsWrap}>
             <div className={styles.chartBlock}>
               <h3 className={styles.chartTitle}>По направлениям</h3>

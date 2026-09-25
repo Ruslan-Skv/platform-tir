@@ -426,6 +426,20 @@
   white-space: nowrap;
 }
 
+/* Наличные менеджера к инкассации на текущий момент (подпись плитки менеджера) */
+.totalsTileCash {
+  margin-top: 2px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  color: #9a3412;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .totalsTileCash {
+  color: #fdba74;
+}
+
 /* Сетка графиков детальной статистики: столбчатые и круговые диаграммы */
 .statsChartsGrid {
   display: grid;

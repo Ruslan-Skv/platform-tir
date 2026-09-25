@@ -434,6 +434,52 @@
   color: var(--admin-text-primary);
 }
 
+/* На десктопе обёртка не влияет на раскладку; на мобиле занимает строку и центрирует бейдж. */
+.salesTotalWrap {
+  display: contents;
+}
+
+.salesTotal {
+  flex-shrink: 0;
+  margin-left: var(--admin-space-lg);
+  padding: var(--admin-space-2xs) var(--admin-space-lg);
+  border-radius: var(--admin-radius-pill);
+  background: var(--dash-turquoise-soft);
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--dash-turquoise-deep);
+  line-height: var(--admin-line-height-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* Сумма идёт сразу за заголовком, а ссылка прижимается к правому краю шапки. */
+.panelHeadSales .panelHeadText {
+  flex: 0 1 auto;
+}
+
+.panelHeadSales .panelLink {
+  margin-left: auto;
+}
+
+@media (max-width: 640px) {
+  .panelHeadSales {
+    flex-wrap: wrap;
+  }
+
+  .salesTotalWrap {
+    order: 3;
+    flex-basis: 100%;
+    display: flex;
+    justify-content: center;
+  }
+
+  .salesTotal {
+    margin-left: var(--admin-space-0);
+    font-size: var(--admin-font-size-2xl);
+  }
+}
+
 @media (max-width: 640px) {
   .trainingPanel .panelHead {
     flex-wrap: nowrap;

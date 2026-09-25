@@ -1,7 +1,12 @@
 /** Сохранённые фильтры журнала ДП (/admin/dp). */
 import type { MoneyMovementManagerOption } from '@/shared/api/crm/admin-money-movements';
 
-import { monthBoundsIso } from './money-movements-page.constants';
+import {
+  DP_DEFAULT_PAGE_LIMIT,
+  DP_PAGE_LIMIT_OPTIONS,
+  type DpPageLimit,
+  monthBoundsIso,
+} from './money-movements-page.constants';
 
 /** «Мои» — только записи, где менеджером зафиксирован текущий пользователь. */
 export type DpListScope = 'all' | 'mine';
@@ -23,6 +28,8 @@ export interface DpFiltersPersisted {
   dateFrom: string;
   dateTo: string;
   page: number;
+  /** Записей на странице (пагинация журнала). */
+  pageLimit: DpPageLimit;
 }
 
 const DP_FILTERS_STORAGE_KEY = 'admin_dp_money_movements_filters_v1';
@@ -47,6 +54,7 @@ export function defaultDpFilters(): DpFiltersPersisted {
     dateFrom: bounds.from,
     dateTo: bounds.to,
     page: 1,
+    pageLimit: DP_DEFAULT_PAGE_LIMIT,
   };
 }
 
@@ -84,6 +92,11 @@ function normalizePersistedFilters(raw: unknown): DpFiltersPersisted {
       typeof value.page === 'number' && Number.isInteger(value.page) && value.page >= 1
         ? value.page
         : defaults.page,
+    pageLimit:
+      typeof value.pageLimit === 'number' &&
+      (DP_PAGE_LIMIT_OPTIONS as readonly number[]).includes(value.pageLimit)
+        ? (value.pageLimit as DpPageLimit)
+        : defaults.pageLimit,
   };
 }
 

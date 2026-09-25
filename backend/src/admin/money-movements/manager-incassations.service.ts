@@ -80,6 +80,49 @@ export class ManagerIncassationsService {
   }
 
   /**
+   * Наличные к инкассации сразу для списка менеджеров (плитки итогов журнала ДП):
+   * та же логика, что у getIncassationCashBalance, — наличные оплаты минус наличные
+   * возвраты с момента последней инкассации каждого менеджера до текущего момента.
+   */
+  async getCashBalances(managerIds: string[]): Promise<Map<string, Prisma.Decimal>> {
+    const balances = new Map<string, Prisma.Decimal>(
+      managerIds.map((id) => [id, new Prisma.Decimal(0)]),
+    );
+    if (managerIds.length === 0) return balances;
+
+    const [lastIncassations, movements] = await Promise.all([
+      this.prisma.managerIncassation.groupBy({
+        by: ['managerId'],
+        where: { managerId: { in: managerIds } },
+        _max: { performedAt: true },
+      }),
+      this.prisma.moneyMovement.findMany({
+        where: { managerId: { in: managerIds }, paymentForm: PaymentForm.CASH },
+        select: { managerId: true, amount: true, paymentType: true, performedAt: true },
+      }),
+    ]);
+
+    const lastByManager = new Map(
+      lastIncassations
+        .filter((row) => row._max.performedAt)
+        .map((row) => [row.managerId, row._max.performedAt as Date]),
+    );
+
+    for (const movement of movements) {
+      if (!movement.managerId) continue;
+      const last = lastByManager.get(movement.managerId);
+      if (last && movement.performedAt <= last) continue;
+      const delta =
+        movement.paymentType === PaymentType.REFUND ? movement.amount.neg() : movement.amount;
+      balances.set(
+        movement.managerId,
+        (balances.get(movement.managerId) ?? new Prisma.Decimal(0)).plus(delta),
+      );
+    }
+    return balances;
+  }
+
+  /**
    * Создаёт запись инкассации. Менеджер, сдающий инкассацию, — выбранный в форме
    * (по умолчанию текущий пользователь); запись фиксирует текущий пользователь (createdById).
    * Если инкассация сдаётся за другого менеджера (onBehalfOfId), остаток наличных

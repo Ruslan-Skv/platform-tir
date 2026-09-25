@@ -1,4 +1,9 @@
-export const MONEY_MOVEMENTS_PAGE_SIZE = 50;
+/** Опции пагинации журнала ДП — как в списке договоров. */
+export const DP_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
+export type DpPageLimit = (typeof DP_PAGE_LIMIT_OPTIONS)[number];
+
+/** Записей на странице по умолчанию. */
+export const DP_DEFAULT_PAGE_LIMIT: DpPageLimit = 50;
 
 /** Направления раздела ДП — как в реестре направлений пакетов договоров. */
 export const DP_DIRECTION_OPTIONS: { value: string; label: string }[] = [

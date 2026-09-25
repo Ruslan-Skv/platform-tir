@@ -68,6 +68,11 @@ export type MoneyMovementListResponse = {
     sum: number;
   }[];
   managers: MoneyMovementManagerOption[];
+  /**
+   * Наличные каждого менеджера к инкассации на текущий момент (с момента последней
+   * инкассации) — снапшот кассы, от фильтров периода не зависит.
+   */
+  managerCashBalances: { managerId: string; balance: string }[];
 };
 
 export async function getMoneyMovements(params?: {

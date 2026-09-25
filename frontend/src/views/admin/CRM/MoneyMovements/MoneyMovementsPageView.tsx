@@ -24,11 +24,12 @@ import { ManualEntryModal } from './modals/ManualEntryModal';
 import { buildDpFiltersSummary } from './money-movements-filters';
 import {
   DP_MANUAL_DIRECTION_OPTIONS,
+  DP_PAGE_LIMIT_OPTIONS,
   DP_PAYMENT_FORM_LABELS,
   DP_PAYMENT_FORM_OPTIONS,
   DP_PAYMENT_TYPE_LABELS,
   DP_SALES_DIRECTION_OPTIONS,
-  MONEY_MOVEMENTS_PAGE_SIZE,
+  type DpPageLimit,
   formatDpDate,
   formatDpMoney,
   formatDpTime,
@@ -155,14 +156,16 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     setSearchInput,
     page,
     setPage,
+    limit,
+    setLimit,
     items,
     managers,
     total,
-    totalPages,
     totalSum,
     directionSums,
     managerSums,
     directionManagerSums,
+    managerCashBalances,
     loading,
     message,
     setMessage,
@@ -234,29 +237,40 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
 
   /** Плитки итогов: направления из справочника + «Материалы» в фиксированном порядке и
    *  «Прочее» для движений вне продаж (записи «Прочее» и без направления) — без процента,
-   *  так как «Итого за период» — итоговые продажи и «Прочее» в него не входит. */
+   *  так как «Итого за период» — итоговые продажи и «Прочее» в него не входит.
+   *  cashBalance (наличные к инкассации) есть только на плитках менеджеров. */
   const directionTotals = useMemo(() => {
     const sumsByDirection = new Map(directionSums.map((item) => [item.direction ?? '', item.sum]));
     const tiles = DP_SALES_DIRECTION_OPTIONS.map((option) => ({
       key: option.value,
       label: option.label,
       sum: sumsByDirection.get(option.value) ?? 0,
+      cashBalance: 0,
     }));
     const known = new Set(DP_SALES_DIRECTION_OPTIONS.map((option) => option.value));
     const otherSum = directionSums
       .filter((item) => !item.direction || !known.has(item.direction))
       .reduce((acc, item) => acc + item.sum, 0);
-    return otherSum !== 0 ? [...tiles, { key: '__other', label: 'Прочее', sum: otherSum }] : tiles;
+    return otherSum !== 0
+      ? [...tiles, { key: '__other', label: 'Прочее', sum: otherSum, cashBalance: 0 }]
+      : tiles;
   }, [directionSums]);
 
-  /** Плитки итогов по менеджерам: только с ненулевой суммой, лидер первым (готово на бэке). */
-  const managerTotals = useMemo(
-    () =>
-      managerSums
-        .filter((item) => item.sum !== 0)
-        .map((item) => ({ key: item.managerId ?? '__none', label: item.name, sum: item.sum })),
-    [managerSums]
-  );
+  /** Плитки итогов по менеджерам: ненулевые продажи или ненулевой остаток кассы (лидер первым).
+   *  На плитке — наличные менеджера к инкассации на текущий момент (снапшот, не за период). */
+  const managerTotals = useMemo(() => {
+    const balanceById = new Map(
+      managerCashBalances.map((item) => [item.managerId, Number(item.balance)])
+    );
+    return managerSums
+      .map((item) => ({
+        key: item.managerId ?? '__none',
+        label: item.name,
+        sum: item.sum,
+        cashBalance: item.managerId ? (balanceById.get(item.managerId) ?? 0) : 0,
+      }))
+      .filter((item) => item.sum !== 0 || item.cashBalance !== 0);
+  }, [managerSums, managerCashBalances]);
 
   const totalsTiles = totalsMode === 'manager' ? managerTotals : directionTotals;
 
@@ -518,7 +532,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
               title={
                 tile.key === '__other'
                   ? 'Движения ДС вне продаж — в «Итого за период» не входят'
-                  : undefined
+                  : tile.cashBalance !== 0
+                    ? 'Продажи за период; «Касса» — наличные с момента последней инкассации, подлежат сдаче'
+                    : undefined
               }
             >
               <span className={styles.totalsTileLabel}>{tile.label}</span>
@@ -528,6 +544,11 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                   <span className={styles.totalsTilePercent}>{formatDpPercent(percent)}</span>
                 ) : null}
               </span>
+              {tile.cashBalance !== 0 ? (
+                <span className={styles.totalsTileCash}>
+                  Касса: {formatDpMoney(tile.cashBalance)}
+                </span>
+              ) : null}
             </div>
           );
         })}
@@ -762,6 +783,19 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                     />
                   </label>
                 </div>
+                <select
+                  value={limit}
+                  onChange={(e) => setLimit(Number(e.target.value) as DpPageLimit)}
+                  disabled={loading}
+                  className={`${cdHub.contractsListSelect} ${cdHub.contractsListPageLimitSelect}`}
+                  aria-label="Количество строк на странице"
+                >
+                  {DP_PAGE_LIMIT_OPTIONS.map((n) => (
+                    <option key={n} value={n}>
+                      {n} на странице
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   className={styles.resetBtn}
@@ -776,17 +810,6 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         )}
       </section>
 
-      <div className={styles.summaryRow}>
-        <span>
-          Записей: <strong>{total}</strong>
-        </span>
-        {totalPages > 1 ? (
-          <span className={styles.muted}>
-            Страница {page} из {totalPages}
-          </span>
-        ) : null}
-      </div>
-
       <DataTable
         data={items}
         columns={columns}
@@ -796,10 +819,12 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         serverSidePagination
         pagination={{
           page,
-          limit: MONEY_MOVEMENTS_PAGE_SIZE,
+          limit,
           total,
           onPageChange: setPage,
         }}
+        paginationClassName={cdHub.contractsListPagination}
+        paginationActiveClassName={cdHub.contractsListPaginationPageActive}
       />
 
       <DpStatsModal

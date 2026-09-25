@@ -26,7 +26,8 @@ import {
   persistDpFilters,
 } from '../money-movements-filters';
 import {
-  MONEY_MOVEMENTS_PAGE_SIZE,
+  DP_DEFAULT_PAGE_LIMIT,
+  type DpPageLimit,
   monthBoundsIso,
   toLocalIsoDate,
   todayIsoDate,
@@ -57,6 +58,8 @@ export function useMoneyMovementsPage() {
   const [searchInput, setSearchInput] = useState(initialFiltersRef.current.search);
   const [search, setSearch] = useState(initialFiltersRef.current.search);
   const [page, setPage] = useState(initialFiltersRef.current.page);
+  /** Записей на странице — выбор пользователя, сохраняется между визитами. */
+  const [limit, setLimitState] = useState<DpPageLimit>(initialFiltersRef.current.pageLimit);
   const [items, setItems] = useState<MoneyMovement[]>([]);
   const [managers, setManagers] = useState<MoneyMovementManagerOption[]>([]);
   const [total, setTotal] = useState(0);
@@ -71,6 +74,10 @@ export function useMoneyMovementsPage() {
   /** Итоги «направление × менеджер» — лидеры внутри каждого направления. */
   const [directionManagerSums, setDirectionManagerSums] = useState<
     MoneyMovementListResponse['directionManagerSums']
+  >([]);
+  /** Наличные менеджеров к инкассации на текущий момент — плитки менеджеров в итогах. */
+  const [managerCashBalances, setManagerCashBalances] = useState<
+    MoneyMovementListResponse['managerCashBalances']
   >([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState<string | null>(null);
@@ -106,6 +113,7 @@ export function useMoneyMovementsPage() {
       dateFrom,
       dateTo,
       page,
+      pageLimit: limit,
     });
   }, [
     scope,
@@ -118,6 +126,7 @@ export function useMoneyMovementsPage() {
     dateFrom,
     dateTo,
     page,
+    limit,
   ]);
 
   // Если сохранённый менеджер исчез из справочника карточек — сбрасываем выбор.
@@ -153,7 +162,7 @@ export function useMoneyMovementsPage() {
         entryKind: entryKind || undefined,
         search: search || undefined,
         page,
-        limit: MONEY_MOVEMENTS_PAGE_SIZE,
+        limit,
       });
       setItems(response.data);
       setManagers(response.managers);
@@ -163,6 +172,7 @@ export function useMoneyMovementsPage() {
       setDirectionSums(response.directionSums);
       setManagerSums(response.managerSums);
       setDirectionManagerSums(response.directionManagerSums);
+      setManagerCashBalances(response.managerCashBalances);
     } catch (error) {
       setItems([]);
       setManagers([]);
@@ -172,15 +182,22 @@ export function useMoneyMovementsPage() {
       setDirectionSums([]);
       setManagerSums([]);
       setDirectionManagerSums([]);
+      setManagerCashBalances([]);
       setMessage(error instanceof Error ? error.message : 'Не удалось загрузить журнал ДП');
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, entryKind, search, page]);
+  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, entryKind, search, page, limit]);
 
   useEffect(() => {
     void refresh();
   }, [refresh]);
+
+  // После смены фильтров/размера страницы текущая страница может стать лишней — возвращаем на последнюю существующую.
+  useEffect(() => {
+    if (loading || totalPages === 0 || page <= totalPages) return;
+    setPage(totalPages);
+  }, [loading, totalPages, page]);
 
   const loadIncassations = useCallback(async () => {
     try {
@@ -294,6 +311,7 @@ export function useMoneyMovementsPage() {
     setEntryKindState('');
     setTotalsModeState('direction');
     setSearchInput('');
+    setLimitState(DP_DEFAULT_PAGE_LIMIT);
     setPage(1);
   }, []);
 
@@ -362,6 +380,13 @@ export function useMoneyMovementsPage() {
     setSearchInput,
     page,
     setPage,
+    /** Записей на странице (пагинация журнала). */
+    limit,
+    /** Смена размера страницы возвращает на первую страницу. */
+    setLimit: (value: DpPageLimit) => {
+      setLimitState(value);
+      setPage(1);
+    },
     items,
     managers,
     total,
@@ -370,6 +395,7 @@ export function useMoneyMovementsPage() {
     directionSums,
     managerSums,
     directionManagerSums,
+    managerCashBalances,
     loading,
     message,
     setMessage,
