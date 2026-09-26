@@ -55,6 +55,7 @@ export class ManagerIncassationsService {
       where: {
         managerId,
         paymentForm: PaymentForm.CASH,
+        deletedAt: null,
         ...(last ? { performedAt: { gt: last.performedAt } } : {}),
       },
       select: { amount: true, paymentType: true },
@@ -97,7 +98,8 @@ export class ManagerIncassationsService {
         _max: { performedAt: true },
       }),
       this.prisma.moneyMovement.findMany({
-        where: { managerId: { in: managerIds }, paymentForm: PaymentForm.CASH },
+        // Удалённые в корзину записи кассу менеджера не пополняют.
+        where: { managerId: { in: managerIds }, paymentForm: PaymentForm.CASH, deletedAt: null },
         select: { managerId: true, amount: true, paymentType: true, performedAt: true },
       }),
     ]);

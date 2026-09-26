@@ -3,9 +3,11 @@
 import { useId, useMemo, useState } from 'react';
 
 import type { MoneyMovement } from '@/shared/api/crm/admin-money-movements';
+import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import {
   AdminListRefreshButton,
   AdminToolbarIconButton,
+  AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import { TrainingStatisticsIcon } from '@/shared/ui/icons/TrainingStatisticsIcon';
@@ -18,6 +20,7 @@ import { DpRulesInfoTip } from './DpRulesInfoTip';
 import styles from './MoneyMovements.module.css';
 import type { MoneyMovementsPageModel } from './hooks/useMoneyMovementsPage';
 import { DpStatsModal } from './modals/DpStatsModal';
+import { DpTrashModal } from './modals/DpTrashModal';
 import { IncassationHistoryModal } from './modals/IncassationHistoryModal';
 import { IncassationModal } from './modals/IncassationModal';
 import { ManualEntryModal } from './modals/ManualEntryModal';
@@ -193,6 +196,16 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     editingEntry,
     openManualEntryEditModal,
     executors,
+    canDeleteManualEntry,
+    deletingEntry,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    deleteSubmitting,
+    submitDeleteEntry,
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
   } = model;
 
   const filtersContentId = useId();
@@ -415,38 +428,74 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         );
       },
     },
-    // Правка ручных записей — только супер-админ; авто-записи по оплатам договоров не редактируются.
-    ...(canEditManualEntries
+    // Правка ручных записей — только супер-админ; удаление в корзину — свои записи
+    // текущего месяца (супер-админ — любые). Авто-записи по оплатам не трогаются.
+    ...(canEditManualEntries || items.some((item) => canDeleteManualEntry(item))
       ? [
           {
-            key: 'editEntry',
+            key: 'entryActions',
             title: '',
-            width: '48px',
-            render: (item: MoneyMovement) =>
-              item.isManual ? (
-                <button
-                  type="button"
-                  className={styles.editEntryBtn}
-                  onClick={() => void openManualEntryEditModal(item)}
-                  title="Редактировать ручную запись"
-                  aria-label="Редактировать ручную запись"
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    width={15}
-                    height={15}
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth={2}
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden
-                  >
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  </svg>
-                </button>
-              ) : null,
+            render: (item: MoneyMovement) => {
+              const showEdit = canEditManualEntries && item.isManual;
+              const showDelete = canDeleteManualEntry(item);
+              if (!showEdit && !showDelete) return null;
+              return (
+                <div className={styles.entryActions}>
+                  {showEdit ? (
+                    <button
+                      type="button"
+                      className={styles.editEntryBtn}
+                      onClick={() => void openManualEntryEditModal(item)}
+                      title="Редактировать ручную запись"
+                      aria-label="Редактировать ручную запись"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={15}
+                        height={15}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                      </svg>
+                    </button>
+                  ) : null}
+                  {showDelete ? (
+                    <button
+                      type="button"
+                      className={styles.deleteEntryBtn}
+                      onClick={() => openDeleteConfirm(item)}
+                      title="Удалить запись в корзину"
+                      aria-label="Удалить запись в корзину"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width={15}
+                        height={15}
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth={2}
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        aria-hidden
+                      >
+                        <path d="M3 6h18" />
+                        <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                        <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                        <line x1="10" x2="10" y1="11" y2="17" />
+                        <line x1="14" x2="14" y1="11" y2="17" />
+                      </svg>
+                    </button>
+                  ) : null}
+                </div>
+              );
+            },
           },
         ]
       : []),
@@ -475,8 +524,14 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 disabled={loading}
                 busy={loading}
                 title="Обновить журнал"
-                aria-label={loading ? 'Обновление журнала ДП' : 'Обновить журнал ДП'}
+                aria-label={loading ? 'Обновление журнала ДП' : 'Обновление журнала ДП'}
                 onClick={() => void refresh()}
+              />
+              <AdminToolbarTrashButton
+                trashCount={trashCount}
+                onClick={() => setTrashOpen(true)}
+                title="Корзина журнала ДП"
+                aria-label="Корзина журнала ДП"
               />
             </div>
           </div>
@@ -507,8 +562,14 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
               disabled={loading}
               busy={loading}
               title="Обновить журнал"
-              aria-label={loading ? 'Обновление журнала ДП' : 'Обновить журнал ДП'}
+              aria-label={loading ? 'Обновление журнала ДП' : 'Обновление журнала ДП'}
               onClick={() => void refresh()}
+            />
+            <AdminToolbarTrashButton
+              trashCount={trashCount}
+              onClick={() => setTrashOpen(true)}
+              title="Корзина журнала ДП"
+              aria-label="Корзина журнала ДП"
             />
           </div>
         </div>
@@ -873,6 +934,31 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         submitting={manualEntrySubmitting}
         onSubmit={submitManualEntry}
         editing={editingEntry}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(deletingEntry)}
+        onClose={closeDeleteConfirm}
+        title="Удалить запись в корзину"
+        message={
+          deletingEntry
+            ? `Запись от ${formatDpDate(deletingEntry.paymentDate)} на сумму ${formatDpMoney(deletingEntry.amount)} будет перемещена в корзину ДП и исчезнет из журнала, итогов и остатка кассы. Восстановление из корзины невозможно.`
+            : ''
+        }
+        confirmText={deleteSubmitting ? 'Удаление…' : 'В корзину'}
+        cancelText="Отмена"
+        variant="danger"
+        closeOnConfirm={false}
+        confirmLoading={deleteSubmitting}
+        onConfirm={() => void submitDeleteEntry()}
+      />
+
+      <DpTrashModal
+        isOpen={trashOpen}
+        onClose={() => {
+          setTrashOpen(false);
+          void refreshTrashCount();
+        }}
       />
     </div>
   );

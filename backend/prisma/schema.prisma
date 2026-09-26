@@ -124,6 +124,8 @@ model User {
   contractDocumentSigningSessionsCreated  ContractDocumentSigningSession[]         @relation("ContractDocumentSigningSessionsCreated")
   contractDocumentPackagePaymentsRecorded ContractDocumentPackagePayment[]         @relation("ContractDocumentPackagePaymentRecordedBy")
   moneyMovementsConducted                 MoneyMovement[]                          @relation("MoneyMovementManager")
+  moneyMovementsCreated                   MoneyMovement[]                          @relation("MoneyMovementCreatedBy")
+  moneyMovementsDeleted                   MoneyMovement[]                          @relation("MoneyMovementDeletedBy")
   managerIncassations                     ManagerIncassation[]                     @relation("ManagerIncassationsManager")
   managerIncassationsSubmitted            ManagerIncassation[]                     @relation("ManagerIncassationsSubmitter")
   managerIncassationsCreated              ManagerIncassation[]                     @relation("ManagerIncassationsCreated")
@@ -3576,16 +3578,26 @@ model MoneyMovement {
   /// Первоначальные значения полей, правленных супер-админом: поле → значение до правки.
   /// Пусто/отсутствует — запись не правилась. Показ значком «было …» в журнале ДП.
   originalValues Json?
+  /// Кем создана ручная запись (свои записи сотрудники могут удалять в корзину).
+  createdById    String?
+  /// Мягкое удаление: момент перемещения записи в корзину ДП (null — не удалена).
+  deletedAt      DateTime?   @map("deleted_at")
+  /// Кем запись удалена в корзину.
+  deletedById    String?     @map("deleted_by_id")
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  manager User? @relation("MoneyMovementManager", fields: [managerId], references: [id], onDelete: SetNull)
+  manager   User? @relation("MoneyMovementManager", fields: [managerId], references: [id], onDelete: SetNull)
+  createdBy User? @relation("MoneyMovementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  deletedBy User? @relation("MoneyMovementDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
 
   @@index([paymentDate])
   @@index([performedAt])
   @@index([managerId])
   @@index([direction])
   @@index([packageId])
+  @@index([deletedAt])
+  @@index([createdById])
   @@map("money_movements")
 }
 

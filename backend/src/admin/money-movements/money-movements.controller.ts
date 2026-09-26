@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -84,6 +85,30 @@ export class MoneyMovementsController {
     return this.managerIncassations.listIncassations(query.limit);
   }
 
+  /** Число удалённых записей в корзине ДП (сотрудник — свои, супер-админ — все). */
+  @Get('trash/count')
+  trashCount(@Req() req: RequestWithUser) {
+    return this.manualEntries.trashCount({ id: req.user!.id, role: req.user!.role });
+  }
+
+  /** Корзина ДП: удалённые ручные записи с полной информацией. Восстановление невозможно. */
+  @Get('trash')
+  findTrash(
+    @Req() req: RequestWithUser,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.manualEntries.findTrash(
+      {
+        search,
+        page: page ? Number(page) : undefined,
+        limit: limit ? Number(limit) : undefined,
+      },
+      { id: req.user!.id, role: req.user!.role },
+    );
+  }
+
   /** Запись инкассации: менеджер — текущий пользователь, ФИО инкассатора фиксирует он же. */
   @Post('incassations')
   @HttpCode(HttpStatus.CREATED)
@@ -106,5 +131,17 @@ export class MoneyMovementsController {
   @Roles('SUPER_ADMIN')
   updateManualEntry(@Param('id') id: string, @Body() dto: CreateManualMoneyMovementDto) {
     return this.manualEntries.updateManualEntry(id, dto);
+  }
+
+  /**
+   * Удаление ручной записи в корзину ДП. Сотрудник — только свои записи текущего
+   * месяца; супер-админ — любые ручные записи бессрочно. Восстановление невозможно.
+   */
+  @Delete('manual-entry/:id')
+  removeManualEntry(@Param('id') id: string, @Req() req: RequestWithUser) {
+    return this.manualEntries.removeManualEntry(id, {
+      id: req.user!.id,
+      role: req.user!.role,
+    });
   }
 }

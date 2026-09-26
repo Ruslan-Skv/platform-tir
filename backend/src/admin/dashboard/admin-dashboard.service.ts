@@ -47,6 +47,8 @@ export class AdminDashboardService {
     const where: Prisma.MoneyMovementWhereInput = {
       paymentDate: { gte: from, lt: to },
       direction: { not: DP_MANUAL_DIRECTION_OTHER },
+      // Удалённые в корзину ДП записи в продажи не входят — как и в журнале ДП.
+      deletedAt: null,
     };
 
     const [total, byDirection, byManager] = await Promise.all([

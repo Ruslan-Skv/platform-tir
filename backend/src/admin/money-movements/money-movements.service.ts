@@ -107,7 +107,8 @@ export class MoneyMovementsService {
     const take = Math.min(Math.max(limit, 1), 200);
     const skip = (page - 1) * take;
 
-    const where: Prisma.MoneyMovementWhereInput = {};
+    // Записи, удалённые в корзину, из журнала и итогов исчезают.
+    const where: Prisma.MoneyMovementWhereInput = { deletedAt: null };
     if (scope === 'mine' && currentUserId) {
       where.managerId = currentUserId;
     } else if (managerId) {

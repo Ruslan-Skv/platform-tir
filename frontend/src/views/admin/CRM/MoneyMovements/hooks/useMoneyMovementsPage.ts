@@ -12,8 +12,10 @@ import {
   type MoneyMovementManagerOption,
   createManagerIncassation,
   createManualMoneyMovement,
+  deleteManualMoneyMovement,
   getIncassationCashBalance,
   getManagerIncassations,
+  getMoneyMovementTrashCount,
   getMoneyMovements,
   updateManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
@@ -201,6 +203,70 @@ export function useMoneyMovementsPage() {
     if (loading || totalPages === 0 || page <= totalPages) return;
     setPage(totalPages);
   }, [loading, totalPages, page]);
+
+  // Удаление ручных записей в корзину: сотрудник — свои записи текущего месяца,
+  // супер-админ — любые. Корзина без восстановления.
+  const [deletingEntry, setDeletingEntry] = useState<MoneyMovement | null>(null);
+  const [deleteSubmitting, setDeleteSubmitting] = useState(false);
+  const [trashOpen, setTrashOpen] = useState(false);
+  const [trashCount, setTrashCount] = useState(0);
+
+  const refreshTrashCount = useCallback(async () => {
+    try {
+      setTrashCount(await getMoneyMovementTrashCount());
+    } catch {
+      // счётчик корзины не критичен для журнала
+    }
+  }, []);
+
+  useEffect(() => {
+    void refreshTrashCount();
+  }, [refreshTrashCount]);
+
+  /** Записи текущего месяца сотруднику ещё можно удалить (по времени проведения). */
+  const isCurrentMonthEntry = useCallback((entry: MoneyMovement): boolean => {
+    const performedAt = new Date(entry.performedAt);
+    if (Number.isNaN(performedAt.getTime())) return false;
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
+    return performedAt >= monthStart;
+  }, []);
+
+  /**
+   * Кнопка удаления ручной записи: сотруднику — только свои записи (он менеджер
+   * или автор) текущего месяца; супер-админу — любые ручные записи без срока.
+   */
+  const canDeleteManualEntry = useCallback(
+    (entry: MoneyMovement): boolean => {
+      if (!entry.isManual) return false;
+      if (canEditManualEntries) return true;
+      if (!user?.id) return false;
+      const isOwn = entry.manager?.id === user.id || entry.createdById === user.id;
+      return isOwn && isCurrentMonthEntry(entry);
+    },
+    [canEditManualEntries, isCurrentMonthEntry, user?.id]
+  );
+
+  const openDeleteConfirm = useCallback((entry: MoneyMovement) => {
+    setDeletingEntry(entry);
+  }, []);
+
+  const closeDeleteConfirm = useCallback(() => setDeletingEntry(null), []);
+
+  const submitDeleteEntry = useCallback(async () => {
+    if (!deletingEntry) return;
+    setDeleteSubmitting(true);
+    try {
+      await deleteManualMoneyMovement(deletingEntry.id);
+      await Promise.all([refresh(), refreshTrashCount()]);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : 'Не удалось удалить запись');
+    } finally {
+      // Модалку закрываем и при ошибке — текст ошибки виден в сообщении страницы.
+      setDeletingEntry(null);
+      setDeleteSubmitting(false);
+    }
+  }, [deletingEntry, refresh, refreshTrashCount]);
 
   const loadIncassations = useCallback(async () => {
     try {
@@ -445,6 +511,19 @@ export function useMoneyMovementsPage() {
     canEditManualEntries,
     editingEntry,
     openManualEntryEditModal,
+    /** Кнопка удаления ручной записи (сотрудник — свои текущего месяца, супер-админ — любые). */
+    canDeleteManualEntry,
+    /** Запись в модалке подтверждения удаления; null — модалка закрыта. */
+    deletingEntry,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    deleteSubmitting,
+    submitDeleteEntry,
+    /** Корзина ДП: открытие модалки и счётчик удалённых записей. */
+    trashOpen,
+    setTrashOpen,
+    trashCount,
+    refreshTrashCount,
   };
 }
 

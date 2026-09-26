@@ -45,6 +45,8 @@ export type MoneyMovement = {
    */
   originalValues: Record<string, string | null> | null;
   manager: { id: string; name: string } | null;
+  /** Автор ручной записи (id пользователя) — «свои» записи для права удаления. */
+  createdById: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -226,4 +228,60 @@ export async function updateManualMoneyMovement(
   });
   if (!res.ok) await throwApiError(res, 'Не удалось сохранить правку проводки');
   return res.json();
+}
+
+/** Запись корзины ДП: все поля записи + кто и когда создал и удалил её. */
+export type MoneyMovementTrashItem = MoneyMovement & {
+  createdBy: { id: string; name: string } | null;
+  /** Момент удаления в корзину (ISO). */
+  deletedAt: string | null;
+  deletedBy: { id: string; name: string } | null;
+};
+
+export type MoneyMovementTrashResponse = {
+  data: MoneyMovementTrashItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+};
+
+/**
+ * Удаление ручной записи в корзину ДП. Сотрудник — только свои записи текущего
+ * месяца; супер-админ — любые ручные записи. Восстановление из корзины невозможно.
+ */
+export async function deleteManualMoneyMovement(id: string): Promise<MoneyMovementTrashItem> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/manual-entry/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось удалить запись в корзину');
+  return res.json();
+}
+
+/** Корзина ДП (сотрудник видит свои записи, супер-админ — все). */
+export async function getMoneyMovementTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<MoneyMovementTrashResponse> {
+  const search = new URLSearchParams();
+  if (params?.search) search.set('search', params.search);
+  search.set('page', String(params?.page ?? 1));
+  search.set('limit', String(params?.limit ?? 15));
+  const res = await apiFetch(`${API_URL}/admin/money-movements/trash?${search}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить корзину ДП');
+  return res.json();
+}
+
+/** Число записей в корзине ДП (для бейджа кнопки корзины). */
+export async function getMoneyMovementTrashCount(): Promise<number> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/trash/count`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить счётчик корзины ДП');
+  const body = (await res.json()) as { count?: number };
+  return body.count ?? 0;
 }

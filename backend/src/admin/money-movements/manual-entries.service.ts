@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnauthorizedException,
@@ -13,7 +14,15 @@ import {
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
-import { serializeMoneyMovement } from './money-movement-serialize';
+import { serializeMoneyMovement, serializeMoneyMovementTrash } from './money-movement-serialize';
+
+const USER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
+
+const TRASH_INCLUDE = {
+  manager: { select: USER_SELECT },
+  createdBy: { select: USER_SELECT },
+  deletedBy: { select: USER_SELECT },
+} satisfies Prisma.MoneyMovementInclude;
 
 @Injectable()
 export class ManualEntriesService {
@@ -59,6 +68,7 @@ export class ManualEntriesService {
         contractNumber: withContract ? dto.contractNumber?.trim() || null : null,
         customerName: withContract ? dto.customerName?.trim() || null : null,
         executorName: withExecutor ? dto.executorName?.trim() || null : null,
+        createdById: currentUserId,
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
@@ -77,6 +87,9 @@ export class ManualEntriesService {
   async updateManualEntry(id: string, dto: CreateManualMoneyMovementDto) {
     const existing = await this.prisma.moneyMovement.findUnique({ where: { id } });
     if (!existing) throw new NotFoundException('Запись журнала ДП не найдена');
+    if (existing.deletedAt) {
+      throw new BadRequestException('Запись удалена в корзину и не редактируется');
+    }
     if (existing.paymentType !== PaymentType.OTHER || existing.sourceId !== null) {
       throw new BadRequestException('Редактировать можно только ручные записи');
     }
@@ -133,6 +146,118 @@ export class ManualEntriesService {
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
     return serializeMoneyMovement(row);
+  }
+
+  /**
+   * Удаление ручной записи в корзину ДП. Сотрудник удаляет только свои записи
+   * (он менеджер записи или автор) и только сделанные в текущем месяце;
+   * супер-админ — любые ручные записи без ограничения по сроку. Автоматические
+   * записи по оплатам договоров удалять нельзя: они производные оплат.
+   * Записи из корзины не восстанавливаются.
+   */
+  async removeManualEntry(id: string, user: { id: string; role: string }) {
+    const existing = await this.prisma.moneyMovement.findUnique({ where: { id } });
+    if (!existing) throw new NotFoundException('Запись журнала ДП не найдена');
+    if (existing.paymentType !== PaymentType.OTHER || existing.sourceId !== null) {
+      throw new BadRequestException('Удалять можно только ручные записи');
+    }
+    if (existing.deletedAt) {
+      throw new BadRequestException('Запись уже удалена в корзину');
+    }
+
+    if (user.role !== 'SUPER_ADMIN') {
+      const isOwn = existing.managerId === user.id || existing.createdById === user.id;
+      if (!isOwn) {
+        throw new ForbiddenException('Сотрудники могут удалять только свои записи');
+      }
+      if (existing.performedAt < this.currentMonthStart()) {
+        throw new BadRequestException(
+          'Удалять можно только записи, сделанные в текущем месяце. Обратитесь к супер-администратору',
+        );
+      }
+    }
+
+    const row = await this.prisma.moneyMovement.update({
+      where: { id },
+      data: { deletedAt: new Date(), deletedById: user.id },
+      include: TRASH_INCLUDE,
+    });
+    return serializeMoneyMovementTrash(row);
+  }
+
+  /**
+   * Корзина ДП: удалённые ручные записи с полной информацией. Супер-админ видит
+   * все записи, сотрудники — только свои (где они менеджер или автор записи).
+   */
+  async findTrash(
+    params: { search?: string; page?: number; limit?: number },
+    user: { id: string; role: string },
+  ) {
+    const page = Math.max(1, params.page ?? 1);
+    const limit = Math.min(Math.max(params.limit ?? 15, 1), 50);
+    const search = params.search?.trim();
+    const where: Prisma.MoneyMovementWhereInput = {
+      deletedAt: { not: null },
+      // Права и поиск объединяем через AND: у каждого своё OR, ключ OR один раз занять нельзя.
+      AND: [
+        ...(user.role !== 'SUPER_ADMIN'
+          ? [
+              {
+                OR: [{ managerId: user.id }, { createdById: user.id }],
+              } as Prisma.MoneyMovementWhereInput,
+            ]
+          : []),
+        ...(search
+          ? [
+              {
+                OR: [
+                  { basis: { contains: search, mode: 'insensitive' } },
+                  { notes: { contains: search, mode: 'insensitive' } },
+                  { contractNumber: { contains: search, mode: 'insensitive' } },
+                  { customerName: { contains: search, mode: 'insensitive' } },
+                ],
+              } as Prisma.MoneyMovementWhereInput,
+            ]
+          : []),
+      ],
+    };
+
+    const [total, data] = await Promise.all([
+      this.prisma.moneyMovement.count({ where }),
+      this.prisma.moneyMovement.findMany({
+        where,
+        include: TRASH_INCLUDE,
+        orderBy: { deletedAt: 'desc' },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data: data.map((row) => serializeMoneyMovementTrash(row)),
+      total,
+      page,
+      limit,
+      totalPages: Math.max(1, Math.ceil(total / limit)),
+    };
+  }
+
+  /** Число записей в корзине текущего пользователя (супер-админ — во всей корзине). */
+  async trashCount(user: { id: string; role: string }) {
+    const where: Prisma.MoneyMovementWhereInput = {
+      deletedAt: { not: null },
+      ...(user.role !== 'SUPER_ADMIN'
+        ? { OR: [{ managerId: user.id }, { createdById: user.id }] }
+        : {}),
+    };
+    const count = await this.prisma.moneyMovement.count({ where });
+    return { count };
+  }
+
+  /** Начало текущего месяца (локальное время сервера) — граница удаления для сотрудников. */
+  private currentMonthStart(): Date {
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth(), 1);
   }
 
   /** Направление ручной записи: направление договоров, «Материалы» или «Прочее». */
