@@ -24,7 +24,6 @@ import formStyles from './MoneyMovementModalForm.module.css';
 export type ManualEntrySubmitData = ManualMoneyMovementParams;
 
 type ManualEntryKind = 'withdrawal' | 'deposit';
-
 type ManualEntryModalProps = {
   open: boolean;
   onClose: () => void;
@@ -50,7 +49,8 @@ export function ManualEntryModal({
   onSubmit,
   editing = null,
 }: ManualEntryModalProps) {
-  const [kind, setKind] = useState<ManualEntryKind>('withdrawal');
+  /** Тип операции не выбран по умолчанию — менеджер осознанно выбирает режим записи. */
+  const [kind, setKind] = useState<ManualEntryKind | null>(null);
   const [managerId, setManagerId] = useState('');
   const [direction, setDirection] = useState('');
   const [executor, setExecutor] = useState('');
@@ -79,7 +79,7 @@ export function ManualEntryModal({
     }
   };
 
-  // Новая проводка — чистая форма: сегодня, изъятие, наличные.
+  // Новая проводка — чистая форма: сегодня, тип операции не выбран, наличные.
   // Правка — форма предзаполнена данными редактируемой записи.
   useEffect(() => {
     if (!open) return;
@@ -97,7 +97,7 @@ export function ManualEntryModal({
       setBasis(editing.basis ?? '');
       setNotes(editing.notes ?? '');
     } else {
-      setKind('withdrawal');
+      setKind(null);
       setManagerId('');
       setDirection('');
       setExecutor('');
@@ -141,6 +141,7 @@ export function ManualEntryModal({
   // (критерии те же, что в валидации handleSubmit).
   const amountNumber = Number(amount.replace(',', '.'));
   const canSubmit =
+    kind !== null &&
     Number.isFinite(amountNumber) &&
     amountNumber > 0 &&
     Boolean(managerId) &&
@@ -150,6 +151,10 @@ export function ManualEntryModal({
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!kind) {
+      setError('Выберите тип операции: внесение или изъятие из кассы');
+      return;
+    }
     if (!Number.isFinite(amountNumber) || amountNumber <= 0) {
       setError('Укажите сумму проводки (положительное число)');
       return;
@@ -223,6 +228,16 @@ export function ManualEntryModal({
               type="button"
               disabled={submitting}
               className={
+                kind === 'deposit' ? styles.manualEntryKindActiveDeposit : styles.manualEntryKindBtn
+              }
+              onClick={() => setKind('deposit')}
+            >
+              + Внесение в кассу
+            </button>
+            <button
+              type="button"
+              disabled={submitting}
+              className={
                 kind === 'withdrawal'
                   ? styles.manualEntryKindActiveWithdrawal
                   : styles.manualEntryKindBtn
@@ -230,16 +245,6 @@ export function ManualEntryModal({
               onClick={() => setKind('withdrawal')}
             >
               − Изъятие из кассы
-            </button>
-            <button
-              type="button"
-              disabled={submitting}
-              className={
-                kind === 'deposit' ? styles.manualEntryKindActiveDeposit : styles.manualEntryKindBtn
-              }
-              onClick={() => setKind('deposit')}
-            >
-              + Внесение в кассу
             </button>
           </div>
         </div>
