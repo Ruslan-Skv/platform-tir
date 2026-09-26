@@ -24,6 +24,8 @@ export function serializeMoneyMovement(row: MoneyMovementRowWithManager) {
     contractNumber: row.contractNumber,
     customerName: row.customerName,
     direction: row.direction,
+    /** Исполнитель ручной записи «Мебели» — название набора из справочника реквизитов. */
+    executorName: row.executorName,
     office: row.office,
     /** Первоначальные значения правленных супер-админом полей (значок «было …»). */
     originalValues: (row.originalValues as Record<string, string | null> | null) ?? null,

@@ -52,6 +52,12 @@ export class CreateManualMoneyMovementDto {
   @MaxLength(200)
   customerName?: string;
 
+  /** Исполнитель — только для направления «Мебель»: название набора из справочника реквизитов. */
+  @IsOptional()
+  @IsString()
+  @MaxLength(160)
+  executorName?: string;
+
   /** Основание: «Бытовые нужды», «Возврат излишка» и т.п. */
   @IsString()
   @MinLength(2)

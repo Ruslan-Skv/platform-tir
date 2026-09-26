@@ -81,6 +81,16 @@
   color: var(--admin-text-muted, #9ca3af);
 }
 
+.paymentFormCell {
+  white-space: nowrap;
+}
+
+.paymentFormSubline {
+  display: block;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
 .muted {
   color: var(--admin-text-muted, #9ca3af);
 }

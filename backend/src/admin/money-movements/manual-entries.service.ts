@@ -7,6 +7,7 @@ import {
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import {
+  DP_FURNITURE_DIRECTION,
   DP_MANUAL_DIRECTION_OTHER,
   MANUAL_MONEY_MOVEMENT_DIRECTIONS,
 } from '../../common/config/package-direction-registry.config';
@@ -38,6 +39,8 @@ export class ManualEntriesService {
     // № договора и заказчик — только у записей по направлениям и «Материалам»;
     // «Прочее» — движения вне договоров, поля договора не сохраняем.
     const withContract = this.hasContractFields(direction);
+    // Исполнитель — только у «Мебели» (выбирается из справочника реквизитов исполнителей).
+    const withExecutor = this.hasExecutorField(direction);
 
     const row = await this.prisma.moneyMovement.create({
       data: {
@@ -55,6 +58,7 @@ export class ManualEntriesService {
         office: null,
         contractNumber: withContract ? dto.contractNumber?.trim() || null : null,
         customerName: withContract ? dto.customerName?.trim() || null : null,
+        executorName: withExecutor ? dto.executorName?.trim() || null : null,
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
@@ -88,12 +92,14 @@ export class ManualEntriesService {
 
     const direction = this.normalizeDirection(dto.direction);
     const withContract = this.hasContractFields(direction);
+    const withExecutor = this.hasExecutorField(direction);
 
     const paymentDate = new Date(dto.paymentDate);
     const basis = dto.basis.trim();
     const notes = dto.notes?.trim() || null;
     const contractNumber = withContract ? dto.contractNumber?.trim() || null : null;
     const customerName = withContract ? dto.customerName?.trim() || null : null;
+    const executorName = withExecutor ? dto.executorName?.trim() || null : null;
 
     const originalValues = await this.collectOriginalValues(existing, {
       managerId,
@@ -103,6 +109,7 @@ export class ManualEntriesService {
       direction,
       contractNumber,
       customerName,
+      executorName,
       basis,
       notes,
     });
@@ -120,6 +127,7 @@ export class ManualEntriesService {
         direction,
         contractNumber,
         customerName,
+        executorName,
         ...(originalValues ? { originalValues } : { originalValues: Prisma.DbNull }),
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
@@ -143,6 +151,11 @@ export class ManualEntriesService {
     return Boolean(direction) && direction !== DP_MANUAL_DIRECTION_OTHER;
   }
 
+  /** Исполнитель — только у записей направления «Мебель». */
+  private hasExecutorField(direction: string | null): boolean {
+    return direction === DP_FURNITURE_DIRECTION;
+  }
+
   /**
    * Считает originalValues для правки: для каждого изменившегося поля — его
    * значение до правки (если ещё не запоминалось), для возвращённого к исходному
@@ -158,6 +171,7 @@ export class ManualEntriesService {
       direction: string | null;
       contractNumber: string | null;
       customerName: string | null;
+      executorName: string | null;
       basis: string;
       notes: string | null;
     },
@@ -232,6 +246,11 @@ export class ManualEntriesService {
         changed: (existing.customerName ?? null) !== next.customerName,
         fallback: existing.customerName ?? null,
         backToOriginal: norm(original.customerName) === norm(next.customerName),
+      },
+      executorName: {
+        changed: (existing.executorName ?? null) !== next.executorName,
+        fallback: existing.executorName ?? null,
+        backToOriginal: norm(original.executorName) === norm(next.executorName),
       },
       basis: {
         changed: (existing.basis ?? null) !== next.basis,

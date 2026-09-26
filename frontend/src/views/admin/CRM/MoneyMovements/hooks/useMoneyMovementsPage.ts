@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract-document-packages';
 import {
   type IncassationCashBalance,
   type ManagerIncassation,
@@ -95,6 +96,8 @@ export function useMoneyMovementsPage() {
   const [manualEntrySubmitting, setManualEntrySubmitting] = useState(false);
   /** Запись в режиме правки; null — модалка открыта для создания новой проводки. */
   const [editingEntry, setEditingEntry] = useState<MoneyMovement | null>(null);
+  /** Названия исполнителей из справочника реквизитов — селект в ручной записи «Мебели». */
+  const [executors, setExecutors] = useState<string[]>([]);
 
   // Сохраняем выбранное состояние фильтров между визитами страницы.
   useEffect(() => {
@@ -238,12 +241,27 @@ export function useMoneyMovementsPage() {
 
   const closeIncassationHistory = useCallback(() => setIncassationHistoryOpen(false), []);
 
+  /** Названия наборов реквизитов (страница «Реквизиты») — источник исполнителей «Мебели». */
+  const loadExecutors = useCallback(async () => {
+    try {
+      const res = await getContractDocumentExecutorProfiles('REPAIR');
+      setExecutors(
+        Array.from(
+          new Set((res.items ?? []).map((item) => item.title?.trim() || '').filter(Boolean))
+        ).sort((a, b) => a.localeCompare(b, 'ru', { sensitivity: 'base' }))
+      );
+    } catch {
+      // справочник не критичен для журнала: селект исполнителя останется пустым
+    }
+  }, []);
+
   const openManualEntryModal = useCallback(async () => {
     setEditingEntry(null);
     setManualEntryModalOpen(true);
     // Дефолтный менеджер в селекте — текущий пользователь (managerId из ответа баланса).
     await loadCashBalance();
-  }, [loadCashBalance]);
+    void loadExecutors();
+  }, [loadCashBalance, loadExecutors]);
 
   /** Правка ручной записи — только супер-админ (кнопка-карандаш в строке журнала). */
   const openManualEntryEditModal = useCallback(
@@ -251,8 +269,9 @@ export function useMoneyMovementsPage() {
       setEditingEntry(entry);
       setManualEntryModalOpen(true);
       await loadCashBalance();
+      void loadExecutors();
     },
-    [loadCashBalance]
+    [loadCashBalance, loadExecutors]
   );
 
   const closeManualEntryModal = useCallback(() => {
@@ -420,6 +439,8 @@ export function useMoneyMovementsPage() {
     closeManualEntryModal,
     manualEntrySubmitting,
     submitManualEntry,
+    /** Названия исполнителей из справочника реквизитов — для селекта «Мебели». */
+    executors,
     /** true — текущий пользователь супер-админ: показывает кнопки правки ручных записей. */
     canEditManualEntries,
     editingEntry,

@@ -35,6 +35,8 @@ export type MoneyMovement = {
   contractNumber: string | null;
   customerName: string | null;
   direction: string | null;
+  /** Исполнитель ручной записи направления «Мебель» — название набора из справочника реквизитов. */
+  executorName: string | null;
   /** Офис заключения договора на момент оплаты («Офис закл.»). */
   office: string | null;
   /**
@@ -192,6 +194,8 @@ export type ManualMoneyMovementParams = {
   contractNumber?: string;
   /** Заказчик — для направлений и «Материалов» (колонка «Заказчик»). */
   customerName?: string;
+  /** Исполнитель — только для направления «Мебель» (справочник реквизитов исполнителей). */
+  executorName?: string;
   /** Основание: «Бытовые нужды» и т.п. */
   basis: string;
   notes?: string;

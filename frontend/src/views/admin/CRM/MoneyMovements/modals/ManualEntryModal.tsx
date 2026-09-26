@@ -13,6 +13,7 @@ import modalStyles from '@/views/admin/Catalog/Components/shared/ComponentCatalo
 
 import styles from '../MoneyMovements.module.css';
 import {
+  DP_FURNITURE_DIRECTION,
   DP_MANUAL_DIRECTION_OPTIONS,
   DP_OTHER_DIRECTION,
   DP_PAYMENT_FORM_OPTIONS,
@@ -31,6 +32,8 @@ type ManualEntryModalProps = {
   managers: MoneyMovementManagerOption[];
   /** Ответ баланса — источник дефолтного менеджера (текущий пользователь). */
   defaultManager: IncassationCashBalance | null;
+  /** Названия исполнителей из справочника реквизитов — для направления «Мебель». */
+  executors: string[];
   submitting: boolean;
   onSubmit: (data: ManualEntrySubmitData) => Promise<void>;
   /** Редактируемая запись — режим правки (супер-админ); null/undefined — создание. */
@@ -42,6 +45,7 @@ export function ManualEntryModal({
   onClose,
   managers,
   defaultManager,
+  executors,
   submitting,
   onSubmit,
   editing = null,
@@ -49,6 +53,7 @@ export function ManualEntryModal({
   const [kind, setKind] = useState<ManualEntryKind>('withdrawal');
   const [managerId, setManagerId] = useState('');
   const [direction, setDirection] = useState('');
+  const [executor, setExecutor] = useState('');
   const [contractNumber, setContractNumber] = useState('');
   const [customerName, setCustomerName] = useState('');
   const [amount, setAmount] = useState('');
@@ -60,9 +65,14 @@ export function ManualEntryModal({
 
   // № договора и заказчик — только для направлений и «Материалов»; «Прочее» — вне договоров.
   const showContractFields = Boolean(direction) && direction !== DP_OTHER_DIRECTION;
+  // Исполнитель — только для «Мебели» (наборы реквизитов со страницы «Реквизиты»).
+  const showExecutorField = direction === DP_FURNITURE_DIRECTION;
 
   const changeDirection = (value: string) => {
     setDirection(value);
+    if (value !== DP_FURNITURE_DIRECTION) {
+      setExecutor('');
+    }
     if (!value || value === DP_OTHER_DIRECTION) {
       setContractNumber('');
       setCustomerName('');
@@ -78,6 +88,7 @@ export function ManualEntryModal({
       setKind(editingAmount < 0 ? 'withdrawal' : 'deposit');
       setManagerId(editing.manager?.id ?? '');
       setDirection(editing.direction ?? '');
+      setExecutor(editing.executorName ?? '');
       setContractNumber(editing.contractNumber ?? '');
       setCustomerName(editing.customerName ?? '');
       setAmount(Number.isFinite(editingAmount) ? String(Math.abs(editingAmount)) : '');
@@ -89,6 +100,7 @@ export function ManualEntryModal({
       setKind('withdrawal');
       setManagerId('');
       setDirection('');
+      setExecutor('');
       setContractNumber('');
       setCustomerName('');
       setAmount('');
@@ -119,6 +131,11 @@ export function ManualEntryModal({
     !managerInList && managerId && fallbackManagerName ? (
       <option value={managerId}>{fallbackManagerName}</option>
     ) : null;
+
+  // Исполнитель записи мог исчезнуть из справочника реквизитов — держим его видимой опцией селекта.
+  const executorInList = executors.some((name) => name === executor);
+  const fallbackExecutorOption =
+    editing && executor && !executorInList ? <option value={executor}>{executor}</option> : null;
 
   // Кнопка «Записать» неактивна, пока не заполнены обязательные поля
   // (критерии те же, что в валидации handleSubmit).
@@ -161,13 +178,14 @@ export function ManualEntryModal({
         paymentForm,
         paymentDate,
         direction,
-        // № договора и заказчик — только для направлений и «Материалов».
+        // № договора, заказчик и исполнитель — поля не всех направлений.
         ...(showContractFields
           ? {
               contractNumber: contractNumber.trim() || undefined,
               customerName: customerName.trim() || undefined,
             }
           : {}),
+        ...(showExecutorField ? { executorName: executor.trim() || undefined } : {}),
         basis: basis.trim(),
         notes: notes.trim() || undefined,
       });
@@ -262,6 +280,26 @@ export function ManualEntryModal({
             ))}
           </select>
         </div>
+
+        {showExecutorField ? (
+          <div data-modal-form-group>
+            <label htmlFor="manual-entry-executor">Исполнитель</label>
+            <select
+              id="manual-entry-executor"
+              value={executor}
+              onChange={(e) => setExecutor(e.target.value)}
+              disabled={submitting}
+            >
+              <option value="">— не выбран —</option>
+              {fallbackExecutorOption}
+              {executors.map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </div>
+        ) : null}
 
         {showContractFields ? (
           <>

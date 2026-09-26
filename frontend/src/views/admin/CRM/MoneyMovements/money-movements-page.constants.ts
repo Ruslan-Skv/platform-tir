@@ -18,6 +18,9 @@ export const DP_DIRECTION_OPTIONS: { value: string; label: string }[] = [
 /** Спец. направления ручных записей ДП — вне реестра направлений договоров. */
 export const DP_MATERIALS_DIRECTION = 'Материалы';
 
+/** Направление «Мебель»: ручные записи этого направления несут исполнителя (справочник реквизитов). */
+export const DP_FURNITURE_DIRECTION = 'Мебель';
+
 /** Движения ДС вне продаж и договоров (хоз. товары и прочее) — не входят в итоговые продажи. */
 export const DP_OTHER_DIRECTION = 'Прочее';
 

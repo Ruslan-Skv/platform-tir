@@ -165,3 +165,7 @@ cd backend && npm run husky:install
 ## Лицензия
 
 Private
+
+## После клонирования/перехода на новое рабочее место достаточно:
+
+npm install && npx prisma generate && npx prisma migrate deploy в backend/

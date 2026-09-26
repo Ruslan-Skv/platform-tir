@@ -192,6 +192,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     canEditManualEntries,
     editingEntry,
     openManualEntryEditModal,
+    executors,
   } = model;
 
   const filtersContentId = useId();
@@ -394,16 +395,25 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     {
       key: 'paymentForm',
       title: 'Способ оплаты',
-      render: (item: MoneyMovement) => (
-        <>
-          {DP_PAYMENT_FORM_LABELS[item.paymentForm] || item.paymentForm}
-          <EditedFieldMark
-            original={editedOriginal(item, 'paymentForm', (value) =>
-              value ? (DP_PAYMENT_FORM_LABELS[value] ?? value) : '—'
-            )}
-          />
-        </>
-      ),
+      render: (item: MoneyMovement) => {
+        // Способ и исполнитель («Мебель») живут в одной колонке — объединяем их «было …».
+        const parts: string[] = [];
+        const formOriginal = editedOriginal(item, 'paymentForm', (value) =>
+          value ? (DP_PAYMENT_FORM_LABELS[value] ?? value) : '—'
+        );
+        if (formOriginal !== null) parts.push(`способ — ${formOriginal}`);
+        const executorOriginal = editedOriginal(item, 'executorName');
+        if (executorOriginal !== null) parts.push(`исполнитель — ${executorOriginal}`);
+        return (
+          <div className={styles.paymentFormCell}>
+            {DP_PAYMENT_FORM_LABELS[item.paymentForm] || item.paymentForm}
+            <EditedFieldMark original={parts.length > 0 ? parts.join(', ') : null} />
+            {item.executorName ? (
+              <span className={styles.paymentFormSubline}>{item.executorName}</span>
+            ) : null}
+          </div>
+        );
+      },
     },
     // Правка ручных записей — только супер-админ; авто-записи по оплатам договоров не редактируются.
     ...(canEditManualEntries
@@ -859,6 +869,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         onClose={closeManualEntryModal}
         managers={managers}
         defaultManager={cashBalance}
+        executors={executors}
         submitting={manualEntrySubmitting}
         onSubmit={submitManualEntry}
         editing={editingEntry}
