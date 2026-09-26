@@ -55,7 +55,8 @@ export class ManualEntriesService {
       data: {
         sourceId: null,
         packageId: null,
-        paymentDate: new Date(dto.paymentDate),
+        // Дата и время записи — текущий момент сервера, клиент их не выбирает.
+        paymentDate: new Date(),
         performedAt: new Date(),
         amount: dto.amount,
         paymentForm: dto.paymentForm,
@@ -107,7 +108,9 @@ export class ManualEntriesService {
     const withContract = this.hasContractFields(direction);
     const withExecutor = this.hasExecutorField(direction);
 
-    const paymentDate = new Date(dto.paymentDate);
+    // Дата записи клиентом не правится: без поля в запросе сохраняем прежнюю.
+    const paymentDate =
+      dto.paymentDate !== undefined ? new Date(dto.paymentDate) : existing.paymentDate;
     const basis = dto.basis.trim();
     const notes = dto.notes?.trim() || null;
     const contractNumber = withContract ? dto.contractNumber?.trim() || null : null;

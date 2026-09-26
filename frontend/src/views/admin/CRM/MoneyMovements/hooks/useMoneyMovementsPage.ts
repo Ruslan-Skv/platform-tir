@@ -370,7 +370,6 @@ export function useMoneyMovementsPage() {
       onBehalfOfId?: string;
       amount: number;
       incassator: string;
-      performedAt: string;
       notes?: string;
     }) => {
       setIncassationSubmitting(true);

@@ -16,11 +16,6 @@ import formStyles from './MoneyMovementModalForm.module.css';
 
 export type IncassationSubmitData = Parameters<typeof createManagerIncassation>[0];
 
-function toLocalDateTimeValue(date: Date) {
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}T${pad(date.getHours())}:${pad(date.getMinutes())}`;
-}
-
 type IncassationModalProps = {
   open: boolean;
   onClose: () => void;
@@ -50,7 +45,6 @@ export function IncassationModal({
   const [amount, setAmount] = useState('');
   const [amountTouched, setAmountTouched] = useState(false);
   const [incassator, setIncassator] = useState('');
-  const [performedAt, setPerformedAt] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
 
@@ -63,7 +57,6 @@ export function IncassationModal({
     setAmount('');
     setAmountTouched(false);
     setIncassator('');
-    setPerformedAt(toLocalDateTimeValue(new Date()));
     setNotes('');
     setError(null);
   }, [open]);
@@ -114,8 +107,7 @@ export function IncassationModal({
     Boolean(managerId) &&
     Number.isFinite(amountNumber) &&
     amountNumber > 0 &&
-    incassator.trim().length >= 2 &&
-    Boolean(performedAt);
+    incassator.trim().length >= 2;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -131,10 +123,6 @@ export function IncassationModal({
       setError('Укажите ФИО лица, производившего инкассацию');
       return;
     }
-    if (!performedAt) {
-      setError('Укажите дату и время инкассации');
-      return;
-    }
     setError(null);
     try {
       await onSubmit({
@@ -142,7 +130,6 @@ export function IncassationModal({
         onBehalfOfId: onBehalfOfId && onBehalfOfId !== managerId ? onBehalfOfId : undefined,
         amount: amountNumber,
         incassator: incassator.trim(),
-        performedAt: new Date(performedAt).toISOString(),
         notes: notes.trim() || undefined,
       });
     } catch (submitError) {
@@ -267,18 +254,6 @@ export function IncassationModal({
             disabled={submitting}
             placeholder="Например: Иванов Иван Иванович"
             maxLength={500}
-            required
-          />
-        </div>
-
-        <div data-modal-form-group>
-          <label htmlFor="incassation-performed-at">Дата и время инкассации *</label>
-          <input
-            id="incassation-performed-at"
-            type="datetime-local"
-            value={performedAt}
-            onChange={(e) => setPerformedAt(e.target.value)}
-            disabled={submitting}
             required
           />
         </div>

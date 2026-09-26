@@ -36,9 +36,13 @@ export class CreateManagerIncassationDto {
   @MaxLength(500)
   incassator: string;
 
-  /** Дата и время инкассации (ISO 8601). */
+  /**
+   * Дата и время инкассации. Игнорируется: запись всегда фиксируется текущим
+   * моментом на сервере (поле оставлено для совместимости старых клиентов).
+   */
+  @IsOptional()
   @IsDateString()
-  performedAt: string;
+  performedAt?: string;
 
   @IsOptional()
   @IsString()

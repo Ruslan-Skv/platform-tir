@@ -166,7 +166,6 @@ export async function createManagerIncassation(params: {
   onBehalfOfId?: string;
   amount: number;
   incassator: string;
-  performedAt: string;
   notes?: string;
 }): Promise<ManagerIncassation> {
   const res = await apiFetch(`${API_URL}/admin/money-movements/incassations`, {
@@ -185,8 +184,6 @@ export type ManualMoneyMovementParams = {
   /** Сумма со знаком: внесение > 0, изъятие < 0. */
   amount: number;
   paymentForm: string;
-  /** Дата записи, YYYY-MM-DD. */
-  paymentDate: string;
   /**
    * Направление записи: направление договоров, «Материалы» или «Прочее».
    * «Прочее» не учитывается в итоговых продажах.

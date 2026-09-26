@@ -27,9 +27,14 @@ export class CreateManualMoneyMovementDto {
   @IsEnum(PaymentForm)
   paymentForm: PaymentForm;
 
-  /** Дата записи (YYYY-MM-DD). */
+  /**
+   * Дата записи (YYYY-MM-DD). Клиентом не передаётся: новая запись фиксируется
+   * текущей датой сервера (поле оставлено для совместимости; при правке без
+   * поля дата записи не меняется).
+   */
+  @IsOptional()
   @IsDateString()
-  paymentDate: string;
+  paymentDate?: string;
 
   /**
    * Направление записи: одно из направлений договоров, «Материалы» или «Прочее».

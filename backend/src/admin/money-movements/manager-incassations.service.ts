@@ -151,7 +151,9 @@ export class ManagerIncassationsService {
         submitterId: submitterId === managerId ? null : submitterId,
         amount: dto.amount,
         incassator: dto.incassator.trim(),
-        performedAt: new Date(dto.performedAt),
+        // Инкассация фиксируется моментом записи: остаток кассы отсекается по
+        // серверному времени, а не по выбираемой пользователем дате.
+        performedAt: new Date(),
         notes: dto.notes?.trim() || null,
         createdById: currentUserId,
       },

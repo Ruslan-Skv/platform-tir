@@ -17,7 +17,6 @@ import {
   DP_MANUAL_DIRECTION_OPTIONS,
   DP_OTHER_DIRECTION,
   DP_PAYMENT_FORM_OPTIONS,
-  todayIsoDate,
 } from '../money-movements-page.constants';
 import formStyles from './MoneyMovementModalForm.module.css';
 
@@ -58,7 +57,6 @@ export function ManualEntryModal({
   const [customerName, setCustomerName] = useState('');
   const [amount, setAmount] = useState('');
   const [paymentForm, setPaymentForm] = useState('CASH');
-  const [paymentDate, setPaymentDate] = useState('');
   const [basis, setBasis] = useState('');
   const [notes, setNotes] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -93,7 +91,6 @@ export function ManualEntryModal({
       setCustomerName(editing.customerName ?? '');
       setAmount(Number.isFinite(editingAmount) ? String(Math.abs(editingAmount)) : '');
       setPaymentForm(editing.paymentForm);
-      setPaymentDate(editing.paymentDate);
       setBasis(editing.basis ?? '');
       setNotes(editing.notes ?? '');
     } else {
@@ -105,7 +102,6 @@ export function ManualEntryModal({
       setCustomerName('');
       setAmount('');
       setPaymentForm('CASH');
-      setPaymentDate(todayIsoDate());
       setBasis('');
       setNotes('');
     }
@@ -146,8 +142,7 @@ export function ManualEntryModal({
     amountNumber > 0 &&
     Boolean(managerId) &&
     Boolean(direction) &&
-    basis.trim().length >= 2 &&
-    Boolean(paymentDate);
+    basis.trim().length >= 2;
 
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -171,17 +166,12 @@ export function ManualEntryModal({
       setError('Укажите основание (например: Бытовые нужды)');
       return;
     }
-    if (!paymentDate) {
-      setError('Укажите дату записи');
-      return;
-    }
     setError(null);
     try {
       await onSubmit({
         managerId,
         amount: kind === 'withdrawal' ? -amountNumber : amountNumber,
         paymentForm,
-        paymentDate,
         direction,
         // № договора, заказчик и исполнитель — поля не всех направлений.
         ...(showContractFields
@@ -365,18 +355,6 @@ export function ManualEntryModal({
               </option>
             ))}
           </select>
-        </div>
-
-        <div data-modal-form-group>
-          <label htmlFor="manual-entry-payment-date">Дата записи *</label>
-          <input
-            id="manual-entry-payment-date"
-            type="date"
-            value={paymentDate}
-            onChange={(e) => setPaymentDate(e.target.value)}
-            disabled={submitting}
-            required
-          />
         </div>
 
         <div data-modal-form-group>
