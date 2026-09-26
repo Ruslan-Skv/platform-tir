@@ -35,6 +35,14 @@ function reorderProductLikeEditorTabs(tabs: PackageDocumentTabId[]): PackageDocu
     next.splice(insertAt, 0, PRODUCT_SPEC_TAB_ID);
   }
 
+  /** «Заявка» (поставщику) — сразу после «Спецификации». */
+  const supplierRequestIndex = next.indexOf('supplierRequest');
+  if (supplierRequestIndex >= 0) {
+    next.splice(supplierRequestIndex, 1);
+    const specIdx = next.indexOf(PRODUCT_SPEC_TAB_ID);
+    next.splice(specIdx >= 0 ? specIdx + 1 : next.length, 0, 'supplierRequest');
+  }
+
   const memoIndex = next.indexOf('memo');
 
   if (memoIndex >= 0) {
@@ -99,6 +107,9 @@ export function resolvePackageEditorVisibleTabs(input: {
 
     /** Вкладка «Файлы» (КП и другие исходники) — только у направления «Окна». */
     if (id === 'files' && input.packageKind !== 'WINDOWS') return false;
+
+    /** «Заявка» поставщику — только у направления «Двери». */
+    if (id === 'supplierRequest' && input.packageKind !== 'DOORS') return false;
 
     if (!isPackageEditorTabBarTab(id, input.packageKind)) return false;
 

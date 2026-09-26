@@ -1,5 +1,8 @@
 'use client';
 
+import { useEffect, useState } from 'react';
+
+import { fetchAdminCatalogSuppliersForSelect } from '@/shared/api/admin-component-catalog';
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
 import cdDataTab from '../../../../styles/data-tab.module.css';
@@ -66,6 +69,28 @@ export function DoorsSpecificationTabContent({
   );
   const showCartImport = packageKind === 'DOORS';
 
+  /** Справочник «Поставщики» для колонки выбора поставщика позиции (только «Двери»). */
+  const [supplierOptions, setSupplierOptions] = useState<
+    { id: string; title: string }[] | undefined
+  >(packageKind === 'DOORS' ? [] : undefined);
+  useEffect(() => {
+    if (packageKind !== 'DOORS') return;
+    let cancelled = false;
+    fetchAdminCatalogSuppliersForSelect()
+      .then((suppliers) => {
+        if (cancelled) return;
+        setSupplierOptions(
+          suppliers.map((s) => ({ id: s.id, title: s.commercialName?.trim() || s.legalName }))
+        );
+      })
+      .catch(() => {
+        if (!cancelled) setSupplierOptions([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [packageKind]);
+
   return (
     <div className={SPEC_ROOT}>
       <div className={SPEC_FORM_GRID}>
@@ -106,6 +131,7 @@ export function DoorsSpecificationTabContent({
             lines={editorLines}
             readOnly={disabled}
             onChange={onLinesChange}
+            supplierOptions={supplierOptions}
           />
         </div>
 

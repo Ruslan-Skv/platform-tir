@@ -2,6 +2,16 @@ import { apiFetch } from '@/shared/lib/api-fetch';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001/api/v1';
 
+/** Поставщик товара из корзины — для автозаполнения колонки «Поставщик» в спецификации. */
+export interface CartProductSupplier {
+  isMainSupplier: boolean;
+  supplier: {
+    id: string;
+    legalName: string;
+    commercialName?: string | null;
+  };
+}
+
 export interface CartItem {
   id: string;
   userId: string;
@@ -27,6 +37,8 @@ export interface CartItem {
       | Array<{ name?: string; value?: string; slug?: string }>
       | null;
     coatingMaterial?: { id: string; name: string; slug?: string } | null;
+    /** Поставщики товара (основной — isMainSupplier). */
+    suppliers?: CartProductSupplier[];
     category: {
       id: string;
       name: string;
@@ -57,6 +69,7 @@ export interface CartItem {
       id: string;
       name: string;
       slug: string;
+      suppliers?: CartProductSupplier[];
     };
   } | null;
 }

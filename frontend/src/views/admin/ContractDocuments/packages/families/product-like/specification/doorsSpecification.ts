@@ -20,8 +20,12 @@ export type DoorsSpecificationLine = {
   openingSide: string;
   /** Жалюзи: крепление. */
   mounting: string;
-  /** Жалюзи: управление. */
+  /** Жалюзи: крепление. */
   control: string;
+  /** Поставщик позиции (справочник «Поставщики»); в А4 Спецификации не печатается. */
+  supplierId: string;
+  /** Наименование поставщика на момент выбора (для Заявки поставщику). */
+  supplierName: string;
   quantity: string;
   unitPrice: string;
   lineTotal: string;
@@ -115,6 +119,8 @@ export function newDoorsSpecificationLine(): DoorsSpecificationLine {
     openingSide: '',
     mounting: '',
     control: '',
+    supplierId: '',
+    supplierName: '',
     quantity: '1',
     unitPrice: '',
     lineTotal: '',
@@ -230,6 +236,8 @@ export function normalizeDoorsSpecificationLines(raw: unknown): DoorsSpecificati
       openingSide: typeof o.openingSide === 'string' ? o.openingSide : '',
       mounting: typeof o.mounting === 'string' ? o.mounting : '',
       control: typeof o.control === 'string' ? o.control : '',
+      supplierId: typeof o.supplierId === 'string' ? o.supplierId : '',
+      supplierName: typeof o.supplierName === 'string' ? o.supplierName : '',
       quantity: typeof o.quantity === 'string' && o.quantity.trim() ? o.quantity : '1',
       unitPrice: typeof o.unitPrice === 'string' ? o.unitPrice : '',
       lineTotal: '',

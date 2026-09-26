@@ -93,7 +93,7 @@ export function NumberingEmployeeCodesSection({
     <>
       <p className={styles.sectionHint}>
         Один код на человека — и для менеджера, и для замерщика (например, <code>1</code> и{' '}
-        <code>3</code> в номере 77/1/3д-5).
+        <code>3</code> в номере 7713д-5).
       </p>
 
       <div className={styles.mobileCards} aria-label="Коды сотрудников">

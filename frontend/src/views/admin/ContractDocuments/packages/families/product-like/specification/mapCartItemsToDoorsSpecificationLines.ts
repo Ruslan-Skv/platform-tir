@@ -1,4 +1,4 @@
-import type { CartItem } from '@/shared/api/cart';
+import type { CartItem, CartProductSupplier } from '@/shared/api/cart';
 
 import {
   type DoorsSpecificationLine,
@@ -113,6 +113,20 @@ function buildLineName(parts: string[]): string {
     .join(' · ');
 }
 
+/** Поставщик товара: основной (isMainSupplier), иначе первый из списка. */
+export function resolveCartProductSupplier(suppliers: CartProductSupplier[] | undefined | null): {
+  supplierId: string;
+  supplierName: string;
+} {
+  const list = (suppliers ?? []).filter((s) => s?.supplier?.id);
+  const main = list.find((s) => s.isMainSupplier) ?? list[0];
+  if (!main) return { supplierId: '', supplierName: '' };
+  return {
+    supplierId: main.supplier.id,
+    supplierName: main.supplier.commercialName?.trim() || main.supplier.legalName.trim(),
+  };
+}
+
 export function isCartItemRelevantForDoorsSpecification(item: CartItem): boolean {
   if (item.componentId && item.component) return true;
   return Boolean(item.productId && item.product);
@@ -138,6 +152,7 @@ function mapProductCartItemToLine(item: CartItem): DoorsSpecificationLine | null
     openingSide: (item.openingSide ?? '').trim(),
     mounting: '',
     control: '',
+    ...resolveCartProductSupplier(product.suppliers),
     quantity: formatQuantity(item.quantity),
     unitPrice: formatUnitPrice(unitPrice),
     lineTotal: '',
@@ -164,6 +179,7 @@ function mapComponentCartItemToLine(item: CartItem): DoorsSpecificationLine | nu
     openingSide: '',
     mounting: '',
     control: '',
+    ...resolveCartProductSupplier(component.product?.suppliers),
     quantity: formatQuantity(item.quantity),
     unitPrice: formatUnitPrice(parseCartMoney(component.price)),
     lineTotal: '',

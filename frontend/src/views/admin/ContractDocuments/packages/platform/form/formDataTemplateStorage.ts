@@ -4,7 +4,10 @@ import type { PackageFormData } from './types';
 
 /** Вкладки с HTML-шаблоном (можно переопределить текст, в т.ч. загрузкой из Excel). */
 export type PackageDocumentTemplateTabId =
-  | Exclude<PackageDocumentTabId, 'data' | 'measurement' | 'drawings' | 'payments' | 'files'>
+  | Exclude<
+      PackageDocumentTabId,
+      'data' | 'measurement' | 'drawings' | 'payments' | 'files' | 'supplierRequest'
+    >
   | 'cashOrder'
   | 'paymentInvoice';
 

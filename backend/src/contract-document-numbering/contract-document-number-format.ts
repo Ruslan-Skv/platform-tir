@@ -71,14 +71,17 @@ export function composeContractNumber(parts: {
   directionLetter: string;
   sequence: number;
 }): string {
-  return `${parts.officePrefix}/${parts.managerCode}/${parts.surveyorCode}${parts.directionLetter}-${parts.sequence}`;
+  return `${parts.officePrefix}${parts.managerCode}${parts.surveyorCode}${parts.directionLetter}-${parts.sequence}`;
 }
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
-/** Номер вида «77/5/2д-3» для текущих кодов офиса/менеджера/замерщика/буквы. */
+/**
+ * Номер вида «7713д-5» (без разделителей) для текущих кодов офиса/менеджера/замерщика/буквы.
+ * Легаси-номера со слэшами («77/1/3д-5») также распознаются как системные.
+ */
 export function isSystemContractNumberFormat(
   number: string,
   parts: {
@@ -92,7 +95,7 @@ export function isSystemContractNumberFormat(
     return false;
   }
   const re = new RegExp(
-    `^${escapeRegExp(parts.officePrefix)}/${escapeRegExp(parts.managerCode)}/${escapeRegExp(parts.surveyorCode)}${escapeRegExp(parts.directionLetter)}-\\d+$`,
+    `^${escapeRegExp(parts.officePrefix)}/?${escapeRegExp(parts.managerCode)}/?${escapeRegExp(parts.surveyorCode)}${escapeRegExp(parts.directionLetter)}-\\d+$`,
   );
   return re.test(number.trim());
 }

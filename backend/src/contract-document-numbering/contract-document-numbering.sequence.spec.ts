@@ -9,7 +9,7 @@ describe('isSystemContractNumberFormat', () => {
   };
 
   it('recognizes system numbers', () => {
-    expect(isSystemContractNumberFormat('77/5/2д-3', parts)).toBe(true);
+    expect(isSystemContractNumberFormat('7752д-3', parts)).toBe(true);
   });
 
   it('rejects custom numbers', () => {

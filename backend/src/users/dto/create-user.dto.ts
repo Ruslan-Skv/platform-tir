@@ -34,7 +34,7 @@ export class CreateUserDto {
 
   @ApiProperty({
     required: false,
-    description: 'Код сотрудника в номере договора (например 1 в 77/1/3д-5)',
+    description: 'Код сотрудника в номере договора (например 1 в 7713д-5)',
   })
   @IsOptional()
   @IsString()

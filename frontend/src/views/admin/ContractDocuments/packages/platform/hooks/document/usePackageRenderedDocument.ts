@@ -77,7 +77,8 @@ export function usePackageRenderedDocument({
       activeTab === 'finalEstimate' ||
       activeTab === 'specification' ||
       activeTab === 'interactiveFinalEstimate' ||
-      activeTab === 'finalWorkOrder'
+      activeTab === 'finalWorkOrder' ||
+      activeTab === 'supplierRequest'
     ) {
       return '';
     }

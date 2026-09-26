@@ -57,7 +57,8 @@ export function executePackageDocumentPrint(input: ExecutePackageDocumentPrintIn
     activeTab === 'estimate' ||
     activeTab === 'finalWorkOrder' ||
     activeTab === 'finalEstimate' ||
-    activeTab === 'specification'
+    activeTab === 'specification' ||
+    activeTab === 'supplierRequest'
   ) {
     const printTargetId =
       activeTab === 'estimate'

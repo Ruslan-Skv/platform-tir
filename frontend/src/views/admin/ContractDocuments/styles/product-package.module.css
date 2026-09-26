@@ -981,6 +981,10 @@
   width: 3.5rem;
 }
 
+.doorsSpecificationColSupplier {
+  width: 14%;
+}
+
 .doorsSpecificationColPrice,
 .doorsSpecificationColAmount {
   width: 5.5rem;
@@ -1007,7 +1011,8 @@
   background: var(--admin-surface, #fff);
 }
 
-.doorsSpecificationTable input {
+.doorsSpecificationTable input,
+.doorsSpecificationTable select {
   width: 100%;
   box-sizing: border-box;
   min-height: 28px;

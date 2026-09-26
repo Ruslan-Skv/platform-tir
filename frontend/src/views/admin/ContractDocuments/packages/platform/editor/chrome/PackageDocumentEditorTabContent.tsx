@@ -13,6 +13,7 @@ import { furnitureAppliancesLinesTotal } from '../../../directions/furniture/fur
 import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
 import type { FurnitureMontageDocs } from '../../../directions/furniture/furnitureMontageDocs';
 import { PackageWindowsFilesTab } from '../../../directions/windows/PackageWindowsFilesTab';
+import { DoorsSupplierRequestTabContent } from '../../../families/product-like/specification/DoorsSupplierRequestTabContent';
 import type { PackageFormData } from '../../form/packageForm';
 import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAddendumEditor';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
@@ -267,6 +268,20 @@ export function PackageDocumentEditorTabContent({
           {...specificationTabProps}
         />
       </>
+    );
+  }
+
+  if (activeTab === 'supplierRequest' && packageKind === 'DOORS') {
+    return (
+      <DoorsSupplierRequestTabContent
+        packageKind="DOORS"
+        lines={specificationTabProps.doorsSpecificationLines}
+        contractNumberLabel={form.contract.number}
+        contractDateLabel={form.contract.date}
+        executorTitle={
+          form.executor.selectedProfileTitle.trim() || form.executor.companyName.trim()
+        }
+      />
     );
   }
 

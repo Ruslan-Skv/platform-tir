@@ -19,11 +19,18 @@ import {
   resolveDoorsSpecificationLineTotal,
 } from './doorsSpecification';
 
+export type DoorsSpecificationSupplierOption = {
+  id: string;
+  title: string;
+};
+
 type Props = {
   packageKind: ContractDocumentPackageKind;
   lines: DoorsSpecificationLine[];
   readOnly: boolean;
   onChange: (lines: DoorsSpecificationLine[]) => void;
+  /** Справочник «Поставщики» — колонка выбора показывается только для «Дверей». */
+  supplierOptions?: DoorsSpecificationSupplierOption[];
 };
 
 function withSyncedTotal(line: DoorsSpecificationLine): DoorsSpecificationLine {
@@ -41,11 +48,18 @@ const ATTR_COL_CLASS: Record<string, string> = {
   control: cdProduct.doorsSpecificationColControl,
 };
 
-export function DoorsSpecificationLinesEditor({ packageKind, lines, readOnly, onChange }: Props) {
+export function DoorsSpecificationLinesEditor({
+  packageKind,
+  lines,
+  readOnly,
+  onChange,
+  supplierOptions,
+}: Props) {
   const attributeColumns = useMemo(
     () => lineSpecificationAttributeColumns(packageKind),
     [packageKind]
   );
+  const showSupplierColumn = packageKind === 'DOORS' && supplierOptions !== undefined;
   const sectionTotal = useMemo(
     () => lines.reduce((sum, line) => sum + resolveDoorsSpecificationLineTotal(line), 0),
     [lines]
@@ -77,6 +91,9 @@ export function DoorsSpecificationLinesEditor({ packageKind, lines, readOnly, on
             {attributeColumns.map((col) => (
               <col key={col.id} className={ATTR_COL_CLASS[col.id]} />
             ))}
+            {showSupplierColumn ? (
+              <col className={cdProduct.doorsSpecificationColSupplier} />
+            ) : null}
             <col className={cdProduct.doorsSpecificationColQty} />
             <col className={cdProduct.doorsSpecificationColPrice} />
             <col className={cdProduct.doorsSpecificationColAmount} />
@@ -90,6 +107,7 @@ export function DoorsSpecificationLinesEditor({ packageKind, lines, readOnly, on
                   {col.shortLabel ?? col.label}
                 </th>
               ))}
+              {showSupplierColumn ? <th title="Поставщик позиции">Поставщик</th> : null}
               <th>Кол-во</th>
               <th>Стоимость</th>
               <th>Сумма</th>
@@ -112,6 +130,28 @@ export function DoorsSpecificationLinesEditor({ packageKind, lines, readOnly, on
                     />
                   </td>
                 ))}
+                {showSupplierColumn ? (
+                  <td>
+                    <select
+                      value={line.supplierId}
+                      disabled={readOnly}
+                      onChange={(e) => {
+                        const option = supplierOptions?.find((o) => o.id === e.target.value);
+                        updateLine(line.id, {
+                          supplierId: e.target.value,
+                          supplierName: option?.title ?? '',
+                        });
+                      }}
+                    >
+                      <option value="">— не выбран —</option>
+                      {supplierOptions?.map((option) => (
+                        <option key={option.id} value={option.id}>
+                          {option.title}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                ) : null}
                 <td>
                   <input
                     type="text"

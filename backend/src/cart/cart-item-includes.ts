@@ -1,12 +1,28 @@
 /** Общие Prisma include для позиций корзины (товар, комплектующее, вариант). */
 
+/** Поставщики товара — для автозаполнения «Поставщика» в спецификации договора. */
+export const cartProductSuppliersInclude = {
+  select: {
+    isMainSupplier: true,
+    supplier: { select: { id: true, legalName: true, commercialName: true } },
+  },
+} as const;
+
 export const cartProductWithCategoryInclude = {
   category: true,
   coatingMaterial: { select: { id: true, name: true, slug: true } },
+  suppliers: cartProductSuppliersInclude,
 } as const;
 
 export const cartComponentWithProductInclude = {
-  product: { select: { id: true, name: true, slug: true } },
+  product: {
+    select: {
+      id: true,
+      name: true,
+      slug: true,
+      suppliers: cartProductSuppliersInclude,
+    },
+  },
   catalogItem: true,
 } as const;
 

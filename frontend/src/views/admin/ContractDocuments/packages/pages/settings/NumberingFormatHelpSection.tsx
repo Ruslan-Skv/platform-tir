@@ -13,7 +13,7 @@ export function NumberingFormatHelpSection() {
         className={cdHub.contractsListChipRowLabel}
         style={{ margin: '0 0 0.5rem', display: 'block' }}
       >
-        Как собирается номер <code className={styles.code}>77/1/3д-5</code>
+        Как собирается номер <code className={styles.code}>7713д-5</code>
       </h3>
       <ol className={styles.helpSteps}>
         <li>

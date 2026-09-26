@@ -38,6 +38,7 @@ export function shouldUseWindowsPackageCompactPrint(
     tab === 'consent' ||
     tab === 'estimate' ||
     tab === 'specification' ||
+    tab === 'supplierRequest' ||
     tab === 'finalWorkOrder' ||
     tab === 'memo' ||
     tab === 'deliveryNote' ||
