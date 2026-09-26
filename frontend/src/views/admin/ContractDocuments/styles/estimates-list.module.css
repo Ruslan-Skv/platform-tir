@@ -1457,6 +1457,10 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   cursor: pointer;
 }
 
+.workCategoryButton span {
+  white-space: nowrap;
+}
+
 .installerAssignedCountBadge {
   display: inline-flex;
   align-items: center;
@@ -1525,6 +1529,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 .interactiveInstallerBadge {
   display: inline-flex;
   align-items: stretch;
+  flex-shrink: 0;
   border-radius: var(--admin-radius-pill);
   overflow: hidden;
   border: 1px solid var(--admin-border-strong);
@@ -1617,6 +1622,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 .interactiveAssignedInstallerName {
   display: inline-flex;
   align-items: center;
+  white-space: nowrap;
   padding: 2px 8px;
   border-radius: var(--admin-radius-pill);
   background: color-mix(in srgb, var(--admin-success-bg) 80%, var(--admin-surface));
