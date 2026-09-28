@@ -242,6 +242,8 @@ export interface PackageAddendumSlotEstimateBlock {
   specificationAddedLines: ProductAddendumSpecificationLine[];
   /** Д/с по «Окна»: исключённые / уменьшенные изделия в спецификации. */
   specificationExcludedLines: ProductAddendumSpecificationLine[];
+  /** Д/с создано автоматически из правок Заявки (вкладка «Заявка», направление «Двери»). */
+  supplierRequestLinked: boolean;
 }
 
 /** Выставленный счёт на оплату (без проводки в журнале до фактической оплаты). */
@@ -386,6 +388,12 @@ export interface PackageFormData {
   windowsAdditionalFiles: PackageAdditionalFile[];
   /** Позиции спецификации дверей (направление «Двери»). */
   doorsSpecificationLines: DoorsSpecificationLine[];
+  /**
+   * Правки Заявки поставщику ведущим специалистом (вкладка «Заявка», направление «Двери»):
+   * `null` — заявку ещё не редактировали, она формируется из `doorsSpecificationLines`;
+   * после первого «Сохранить» — самостоятельный перечень (Спецификация не меняется).
+   */
+  doorsSupplierRequestLines: DoorsSpecificationLine[] | null;
   /** Скидка на спецификацию дверей, % (только направление «Двери»). */
   doorsSpecificationDiscountPercent: string;
   /** Спецификация натяжных потолков (карточки потолков объекта). */

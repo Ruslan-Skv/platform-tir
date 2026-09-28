@@ -257,6 +257,7 @@ function normalizeAddendumSlots(raw: unknown): PackageAddendumSlotsTuple {
       specificationExcludedLines: normalizeProductAddendumSpecificationLines(
         o.specificationExcludedLines
       ),
+      supplierRequestLinked: o.supplierRequestLinked === true,
     };
   }
   return out as PackageAddendumSlotsTuple;
@@ -641,6 +642,10 @@ export function mergePackageFormData(raw: unknown): PackageFormData {
     doorsSpecificationLines: normalizeDoorsSpecificationLines(
       (merged as unknown as Record<string, unknown>).doorsSpecificationLines
     ),
+    doorsSupplierRequestLines: (() => {
+      const raw = (merged as unknown as Record<string, unknown>).doorsSupplierRequestLines;
+      return Array.isArray(raw) ? normalizeDoorsSpecificationLines(raw) : null;
+    })(),
     doorsSpecificationDiscountPercent:
       typeof (merged as unknown as Record<string, unknown>).doorsSpecificationDiscountPercent ===
       'string'

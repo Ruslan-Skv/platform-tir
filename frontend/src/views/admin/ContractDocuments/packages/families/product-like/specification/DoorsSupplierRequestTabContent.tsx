@@ -2,21 +2,51 @@
 
 import { useState } from 'react';
 
+import cdDataTab from '../../../../styles/data-tab.module.css';
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
+import cdEstimateTab from '../../../../styles/estimate-tab.module.css';
+import cdWorkspace from '../../../../styles/estimates-workspace.module.css';
+import cdHubModals from '../../../../styles/hub-modals.module.css';
+import cdProduct from '../../../../styles/product-package.module.css';
+import cdTemplates from '../../../../styles/templates-library.module.css';
+import { DoorsSpecificationLinesEditor } from './DoorsSpecificationLinesEditor';
 import {
   type DoorsSpecificationLine,
   doorsSpecificationLineHasContent,
+  ensureAtLeastOneDoorsSpecificationLine,
   lineSpecificationAttributeColumns,
   lineSpecificationAttributeValue,
 } from './doorsSpecification';
+import type { DoorsSupplierRequestApplyResult } from './doorsSupplierRequest';
+import { useDoorsSupplierOptions } from './useDoorsSupplierOptions';
+
+const REQUEST_TAB_COMPACT = `${cdEstimateTab.estimateTabCompact} ${cdProduct.estimateTabCompact} ${cdHubModals.estimateTabCompact}`;
+const REQUEST_BLOCK = `${cdDataTab.blockData} ${cdProduct.blockData}`;
+const REQUEST_DATA_COMPACT = `${cdEstimateTab.dataCompact} ${cdDataTab.dataCompact} ${cdHubModals.dataCompact}`;
+const REQUEST_FORM_GRID = `${cdDataTab.formGrid} ${cdProduct.formGrid}`;
+const REQUEST_SECTION_CARD = `${cdTemplates.sectionCard} ${cdEstimateTab.sectionCard}`;
+const REQUEST_SECTION_TITLE = cdEstimateTab.sectionTitle;
+const REQUEST_SECTION_TITLE_MAIN = `${cdTemplates.estimateSectionTitle} ${cdEstimateTab.estimateSectionTitle}`;
+const REQUEST_HINT = `${cdDocPreview.hint} ${cdTemplates.hint}`;
+const REQUEST_A4_WRAP = `${cdDocPreview.estimateA4Wrap} ${cdEstimateTab.estimateA4Wrap}`;
+const REQUEST_ROOT = `${REQUEST_BLOCK} ${REQUEST_DATA_COMPACT} ${REQUEST_TAB_COMPACT} ${cdProduct.windowsContractTabTypography}`;
 
 type DoorsSupplierRequestTabContentProps = {
   packageKind: 'DOORS';
-  lines: DoorsSpecificationLine[];
+  /** Позиции неизменной Спецификации — база для предзаполнения панели правки. */
+  specificationLines: DoorsSpecificationLine[];
+  /** Правки заявки после «Сохранить»; null — заявку ещё не редактировали. */
+  requestLines: DoorsSpecificationLine[] | null;
+  /** Номер Д/с, в котором оформлены изменения заявки (если есть). */
+  linkedAddendumOrdinal: number | null;
   contractNumberLabel: string;
   contractDateLabel: string;
   executorTitle: string;
+  /** Применение правок: обновление заявки + создание/обновление Д/с. */
+  onApplyEdit: (lines: DoorsSpecificationLine[]) => DoorsSupplierRequestApplyResult;
+  /** Переход на вкладку Д/с №N. */
+  onOpenAddendum: (ordinal: number) => void;
 };
 
 type SupplierRequestGroup = {
@@ -36,7 +66,7 @@ function escapeHtml(value: string): string {
 }
 
 /** Группировка позиций спецификации по поставщику; порядок групп — как в спецификации. */
-export function groupDoorsSpecificationLinesBySupplier(
+function groupDoorsSpecificationLinesBySupplier(
   lines: DoorsSpecificationLine[]
 ): SupplierRequestGroup[] {
   const groups: SupplierRequestGroup[] = [];
@@ -128,31 +158,182 @@ function downloadSupplierRequest(input: {
   triggerWordDownload(html, fileName);
 }
 
-/** Вкладка «Заявка» пакета «Двери»: автоформируется из строк Спецификации — по подвкладке на поставщика. */
+type SaveNotice =
+  | { kind: 'addendum'; ordinal: number }
+  | { kind: 'noChanges' }
+  | { kind: 'exhausted' };
+
+/**
+ * Вкладка «Заявка» пакета «Двери»: автоформируется из строк Спецификации — по подвкладке на
+ * поставщика. Ведущий специалист может отредактировать заявку («Отредактировать заявку»):
+ * правки не меняют Спецификацию, а оформляются доп. соглашением к пакету.
+ */
 export function DoorsSupplierRequestTabContent({
-  lines,
+  specificationLines,
+  requestLines,
+  linkedAddendumOrdinal,
   contractNumberLabel,
   contractDateLabel,
   executorTitle,
+  onApplyEdit,
+  onOpenAddendum,
 }: DoorsSupplierRequestTabContentProps) {
-  const groups = groupDoorsSpecificationLinesBySupplier(lines);
-  const hasPositions = groups.length > 0;
+  const savedLines = requestLines ?? specificationLines;
+  const [editing, setEditing] = useState(false);
+  const [draftLines, setDraftLines] = useState<DoorsSpecificationLine[]>([]);
+  const [saveNotice, setSaveNotice] = useState<SaveNotice | null>(null);
   const [activeGroupKey, setActiveGroupKey] = useState<string | null>(null);
+  const supplierOptions = useDoorsSupplierOptions('DOORS');
+
+  const startEditing = () => {
+    setDraftLines(ensureAtLeastOneDoorsSpecificationLine(savedLines.map((line) => ({ ...line }))));
+    setSaveNotice(null);
+    setEditing(true);
+  };
+
+  const cancelEditing = () => {
+    setEditing(false);
+    setDraftLines([]);
+  };
+
+  const saveEditing = () => {
+    const result = onApplyEdit(draftLines);
+    setEditing(false);
+    setDraftLines([]);
+    if (result.addendumSlotsExhausted) {
+      setSaveNotice({ kind: 'exhausted' });
+    } else if (result.addendumSlotOrdinal !== null) {
+      setSaveNotice({ kind: 'addendum', ordinal: result.addendumSlotOrdinal });
+    } else {
+      setSaveNotice({ kind: 'noChanges' });
+    }
+  };
+
+  if (editing) {
+    return (
+      <div className={REQUEST_ROOT}>
+        <div className={REQUEST_FORM_GRID}>
+          <div className={`${REQUEST_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
+            <h3 className={`${REQUEST_SECTION_TITLE} ${REQUEST_SECTION_TITLE_MAIN}`}>
+              Правка заявки
+            </h3>
+            <p className={REQUEST_HINT} style={{ marginTop: 0 }}>
+              Заявка предзаполнена позициями Спецификации. Измените количество, добавьте или удалите
+              товары — исходная Спецификация остаётся неизменной: после «Сохранить» разница
+              автоматически оформится доп. соглашением к договору.
+            </p>
+            <DoorsSpecificationLinesEditor
+              packageKind="DOORS"
+              lines={draftLines}
+              readOnly={false}
+              onChange={setDraftLines}
+              supplierOptions={supplierOptions}
+              totalLabel="Итого по заявке"
+            />
+            <div className={cdProduct.doorsSpecificationActionsRow}>
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdWorkspace.primaryBtn}
+                onClick={saveEditing}
+              >
+                Сохранить
+              </button>
+              <button type="button" className={cdWorkspace.secondaryBtn} onClick={cancelEditing}>
+                Отмена
+              </button>
+            </div>
+          </div>
+
+          <div
+            className={`${cdEstimateTab.fieldSpanAll} ${cdProduct.estimateSheetField}`}
+            aria-hidden
+          >
+            <div className={REQUEST_A4_WRAP}>
+              <SupplierRequestSheet
+                lines={draftLines}
+                supplierName=""
+                contractNumberLabel={contractNumberLabel}
+                contractDateLabel={contractDateLabel}
+                executorTitle={executorTitle}
+                attributeColumns={lineSpecificationAttributeColumns('DOORS')}
+                preview
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  const groups = groupDoorsSpecificationLinesBySupplier(savedLines);
+  const hasPositions = groups.length > 0;
+  /** Правка доступна и для пустой отредактированной заявки — чтобы вернуть позиции. */
+  const canEdit = hasPositions || requestLines !== null;
   const activeGroup =
-    groups.find((g) => g.key === activeGroupKey) ?? (hasPositions ? groups[0] : null);
-  const attributeColumns = lineSpecificationAttributeColumns('DOORS');
+    groups.find((g) => g.key === activeGroupKey) ?? (groups.length > 0 ? groups[0] : null);
 
   return (
     <div>
+      <div className={cdProduct.supplierRequestToolbar}>
+        <button
+          data-admin-mutation
+          type="button"
+          className={cdWorkspace.secondaryBtn}
+          onClick={startEditing}
+          disabled={!canEdit}
+          title={
+            canEdit
+              ? 'Правки заявки не меняют Спецификацию — изменения оформляются доп. соглашением'
+              : 'Заявка формируется из вкладки «Спецификация» — заполните позиции спецификации'
+          }
+        >
+          Отредактировать заявку
+        </button>
+        {activeGroup ? (
+          <button
+            type="button"
+            className={cdProduct.supplierRequestWordBtn}
+            onClick={() =>
+              downloadSupplierRequest({
+                group: activeGroup,
+                contractNumberLabel,
+                contractDateLabel,
+                executorTitle,
+              })
+            }
+          >
+            {activeGroup.supplierName
+              ? `Скачать Word — ${activeGroup.supplierName}`
+              : 'Скачать Word'}
+          </button>
+        ) : null}
+        {saveNotice ? (
+          <span className={cdProduct.supplierRequestToolbarNotice}>
+            <SaveNoticeBlock notice={saveNotice} onOpenAddendum={onOpenAddendum} />
+          </span>
+        ) : null}
+      </div>
+
       {!hasPositions ? (
         <article className={cdDocPreview.estimateA4Sheet}>
           <p className={cdDocPreview.estimateA4Empty}>
-            Заявка формируется автоматически из вкладки «Спецификация» — заполните позиции
-            спецификации.
+            {requestLines !== null
+              ? 'Все позиции удалены из заявки — нажмите «Отредактировать заявку», чтобы вернуть их.'
+              : 'Заявка формируется автоматически из вкладки «Спецификация» — заполните позиции спецификации.'}
           </p>
         </article>
       ) : (
         <>
+          {requestLines !== null ? (
+            <p className={cdDocPreview.hint} style={{ marginTop: 0 }}>
+              Заявка отредактирована и может отличаться от Спецификации
+              {linkedAddendumOrdinal !== null
+                ? ` — изменения оформлены в Д/с №${linkedAddendumOrdinal}`
+                : ''}
+              . Спецификация договора остаётся неизменной.
+            </p>
+          ) : null}
           {groups.length > 1 ? (
             <div className={cdChrome.tabBar} style={{ marginBottom: 12 }}>
               {groups.map((group) => (
@@ -170,45 +351,54 @@ export function DoorsSupplierRequestTabContent({
             </div>
           ) : null}
           {activeGroup ? (
-            <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 12 }}>
-              <button
-                type="button"
-                style={{
-                  padding: '6px 14px',
-                  border: '1px solid #cbd5e1',
-                  borderRadius: 6,
-                  background: '#fff',
-                  cursor: 'pointer',
-                  fontSize: 13,
-                }}
-                onClick={() =>
-                  downloadSupplierRequest({
-                    group: activeGroup,
-                    contractNumberLabel,
-                    contractDateLabel,
-                    executorTitle,
-                  })
-                }
-              >
-                {activeGroup.supplierName
-                  ? `Скачать Word — ${activeGroup.supplierName}`
-                  : 'Скачать Word'}
-              </button>
-            </div>
-          ) : null}
-          {activeGroup ? (
             <SupplierRequestSheet
               lines={activeGroup.lines}
               supplierName={activeGroup.supplierName}
               contractNumberLabel={contractNumberLabel}
               contractDateLabel={contractDateLabel}
               executorTitle={executorTitle}
-              attributeColumns={attributeColumns}
+              attributeColumns={lineSpecificationAttributeColumns('DOORS')}
             />
           ) : null}
         </>
       )}
     </div>
+  );
+}
+
+function SaveNoticeBlock({
+  notice,
+  onOpenAddendum,
+}: {
+  notice: SaveNotice;
+  onOpenAddendum: (ordinal: number) => void;
+}) {
+  if (notice.kind === 'addendum') {
+    return (
+      <p className={cdDocPreview.hint} style={{ margin: 0 }}>
+        Заявка сохранена. Изменения позиций оформлены в{' '}
+        <button
+          type="button"
+          className={cdDataTab.packageAddendumUnsignedBannerLink}
+          onClick={() => onOpenAddendum(notice.ordinal)}
+        >
+          Д/с №{notice.ordinal}
+        </button>
+        .
+      </p>
+    );
+  }
+  if (notice.kind === 'exhausted') {
+    return (
+      <p className={cdDocPreview.hint} style={{ margin: 0 }}>
+        Заявка сохранена, но доп. соглашение не создано: все пять Д/с уже заняты.
+      </p>
+    );
+  }
+  return (
+    <p className={cdDocPreview.hint} style={{ margin: 0 }}>
+      Заявка сохранена — изменений относительно Спецификации нет.
+    </p>
   );
 }
 
@@ -219,6 +409,7 @@ function SupplierRequestSheet({
   contractDateLabel,
   executorTitle,
   attributeColumns,
+  preview = false,
 }: {
   lines: DoorsSpecificationLine[];
   supplierName: string;
@@ -226,6 +417,7 @@ function SupplierRequestSheet({
   contractDateLabel: string;
   executorTitle: string;
   attributeColumns: ReturnType<typeof lineSpecificationAttributeColumns>;
+  preview?: boolean;
 }) {
   return (
     <article
@@ -236,7 +428,9 @@ function SupplierRequestSheet({
       <p className={cdDocPreview.estimateA4AppendixRef}>
         Заявка № {contractNumberLabel} от {contractDateLabel}
       </p>
-      <h4 className={cdDocPreview.estimateA4Title}>Заявка поставщику</h4>
+      <h4 className={cdDocPreview.estimateA4Title}>
+        {preview ? 'Заявка поставщику (предпросмотр правок)' : 'Заявка поставщику'}
+      </h4>
       {supplierName ? (
         <p className={cdDocPreview.hint}>
           Поставщик: <strong>{supplierName}</strong>

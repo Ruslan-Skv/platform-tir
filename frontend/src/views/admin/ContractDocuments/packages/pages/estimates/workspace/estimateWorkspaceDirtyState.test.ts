@@ -1,4 +1,5 @@
 import {
+  type EstimateWorkspaceDirtyStateParams,
   estimateWorkspaceCustomerDirty,
   isEstimateWorkspaceDirty,
 } from './estimateWorkspaceDirtyState';
@@ -14,7 +15,9 @@ function baselineWith(fields: Partial<WorkspaceBaseline>): WorkspaceBaseline {
   };
 }
 
-function dirtyParams(overrides: Record<string, unknown>) {
+function dirtyParams(
+  overrides: Partial<Omit<EstimateWorkspaceDirtyStateParams, 'draftPollTick'>>
+): Omit<EstimateWorkspaceDirtyStateParams, 'draftPollTick'> {
   return {
     copySessionPendingSave: false,
     baseline: baselineWith({}),

@@ -108,6 +108,7 @@ export function PackageAddendumTabBarActions({
                   excludedNotes: '',
                   specificationAddedLines: [],
                   specificationExcludedLines: [],
+                  supplierRequestLinked: false,
                 };
                 return {
                   ...f,

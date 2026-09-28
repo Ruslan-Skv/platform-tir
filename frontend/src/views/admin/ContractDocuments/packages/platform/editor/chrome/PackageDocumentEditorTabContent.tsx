@@ -1,7 +1,10 @@
 ﻿'use client';
 
+import { useCallback } from 'react';
+
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
+import { todayContractDateDdMmYyyy } from '../../../../core/contractDateFormat';
 import cdDataTab from '../../../../styles/data-tab.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { FurnitureAppliancesListTabContent } from '../../../directions/furniture/FurnitureAppliancesListTabContent';
@@ -14,6 +17,11 @@ import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnit
 import type { FurnitureMontageDocs } from '../../../directions/furniture/furnitureMontageDocs';
 import { PackageWindowsFilesTab } from '../../../directions/windows/PackageWindowsFilesTab';
 import { DoorsSupplierRequestTabContent } from '../../../families/product-like/specification/DoorsSupplierRequestTabContent';
+import type { DoorsSpecificationLine } from '../../../families/product-like/specification/doorsSpecification';
+import {
+  applyDoorsSupplierRequestLines,
+  resolveDoorsSupplierRequestAddendumOrdinal,
+} from '../../../families/product-like/specification/doorsSupplierRequest';
 import type { PackageFormData } from '../../form/packageForm';
 import type { usePackageAddendumEditor } from '../../hooks/addendum/usePackageAddendumEditor';
 import type { PackageDocumentTabId } from '../../tabs/packageDocumentTabs';
@@ -55,6 +63,8 @@ export type PackageDocumentEditorTabContentProps = {
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   touchPackageData: () => void;
+  /** Переход на другую вкладку редактора (используется ссылкой на Д/с после правки Заявки). */
+  onNavigateToTab?: (tab: PackageDocumentTabId) => void;
 };
 
 /** Контент активной вкладки редактора пакета документов. */
@@ -77,8 +87,20 @@ export function PackageDocumentEditorTabContent({
   form,
   setForm,
   touchPackageData,
+  onNavigateToTab,
 }: PackageDocumentEditorTabContentProps) {
   const isFurniture = isFurnitureLikePackageKind(packageKind);
+
+  /** Сохранение правок Заявки (вкладка «Заявка», «Двери»): обновить заявку + оформить Д/с. */
+  const applyDoorsSupplierRequestEdit = useCallback(
+    (lines: DoorsSpecificationLine[]) => {
+      const result = applyDoorsSupplierRequestLines(form, lines, todayContractDateDdMmYyyy());
+      setForm(result.form);
+      touchPackageData();
+      return result;
+    },
+    [form, setForm, touchPackageData]
+  );
 
   const setActiveDocLeg = (leg: FurnitureActiveDocLeg) => {
     setForm((prev) => ({
@@ -275,12 +297,20 @@ export function PackageDocumentEditorTabContent({
     return (
       <DoorsSupplierRequestTabContent
         packageKind="DOORS"
-        lines={specificationTabProps.doorsSpecificationLines}
+        specificationLines={specificationTabProps.doorsSpecificationLines}
+        requestLines={form.doorsSupplierRequestLines}
+        linkedAddendumOrdinal={resolveDoorsSupplierRequestAddendumOrdinal(form)}
         contractNumberLabel={form.contract.number}
         contractDateLabel={form.contract.date}
         executorTitle={
           form.executor.selectedProfileTitle.trim() || form.executor.companyName.trim()
         }
+        onApplyEdit={applyDoorsSupplierRequestEdit}
+        onOpenAddendum={(ordinal) => {
+          if (ordinal >= 1 && ordinal <= 5) {
+            onNavigateToTab?.(`addendum${ordinal}` as PackageDocumentTabId);
+          }
+        }}
       />
     );
   }

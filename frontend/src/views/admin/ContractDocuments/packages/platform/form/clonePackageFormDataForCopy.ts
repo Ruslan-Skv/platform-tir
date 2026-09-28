@@ -33,6 +33,7 @@ export function buildFormDataForPackageCopy(raw: unknown): Record<string, unknow
     productSpecificationVersions: [],
     windowsAdditionalFiles: [],
     doorsSpecificationLines: defaultPackageFormData().doorsSpecificationLines,
+    doorsSupplierRequestLines: null,
     doorsSpecificationDiscountPercent: '',
     ceilingsSpecification: defaultPackageFormData().ceilingsSpecification,
     furniture: {

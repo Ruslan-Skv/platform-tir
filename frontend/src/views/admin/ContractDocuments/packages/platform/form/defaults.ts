@@ -166,6 +166,7 @@ export function defaultPackageFormData(): PackageFormData {
     productSpecificationVersions: [],
     windowsAdditionalFiles: [],
     doorsSpecificationLines: [newDoorsSpecificationLine()],
+    doorsSupplierRequestLines: null,
     doorsSpecificationDiscountPercent: '',
     ceilingsSpecification: defaultCeilingsSpecification(),
     furniture: defaultFurniturePackageBlock(),
@@ -227,6 +228,7 @@ function defaultAddendumSlot(): PackageAddendumSlotEstimateBlock {
     excludedNotes: '',
     specificationAddedLines: [],
     specificationExcludedLines: [],
+    supplierRequestLinked: false,
   };
 }
 

@@ -152,7 +152,7 @@ export function PackageDocumentEditorMainView({
           onTabDragOver={onTabDragOver}
           onTabDrop={onTabDrop}
         />
-        <PackageDocumentEditorTabContent {...tabContentProps} />
+        <PackageDocumentEditorTabContent {...tabContentProps} onNavigateToTab={setActiveTab} />
         <PackageDocumentEditorModals {...editorModalsProps} />
       </div>
     </PackageWorkOrderHubProvider>

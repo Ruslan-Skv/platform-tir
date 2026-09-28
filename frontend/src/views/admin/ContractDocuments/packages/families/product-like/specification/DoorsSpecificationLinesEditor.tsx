@@ -31,6 +31,8 @@ type Props = {
   onChange: (lines: DoorsSpecificationLine[]) => void;
   /** Справочник «Поставщики» — колонка выбора показывается только для «Дверей». */
   supplierOptions?: DoorsSpecificationSupplierOption[];
+  /** Подпись итога под таблицей (по умолчанию — «Итого по спецификации»). */
+  totalLabel?: string;
 };
 
 function withSyncedTotal(line: DoorsSpecificationLine): DoorsSpecificationLine {
@@ -54,6 +56,7 @@ export function DoorsSpecificationLinesEditor({
   readOnly,
   onChange,
   supplierOptions,
+  totalLabel = 'Итого по спецификации',
 }: Props) {
   const attributeColumns = useMemo(
     () => lineSpecificationAttributeColumns(packageKind),
@@ -214,7 +217,7 @@ export function DoorsSpecificationLinesEditor({
           <PlusIcon className={cdProduct.doorsSpecificationAddBtnIcon} aria-hidden />
         </button>
         <p className={cdProduct.doorsSpecificationSectionTotal}>
-          Итого по спецификации: {formatDoorsSpecificationMoney(sectionTotal)} руб.
+          {totalLabel}: {formatDoorsSpecificationMoney(sectionTotal)} руб.
         </p>
       </div>
     </div>
