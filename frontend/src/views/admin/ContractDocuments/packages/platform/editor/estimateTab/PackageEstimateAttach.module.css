@@ -201,6 +201,16 @@
   line-height: var(--admin-line-height-sm);
 }
 
+/* Фокус полей «Счёт-заказ» — синяя рамка с кольцом, как у полей «Спецификации»
+   (перебивает розовое accent-кольцо select:focus-visible из globals). */
+.estimatePickAndAttachedRow.estimateAttachWindowsTypography
+  .estimateAttachWindowsField
+  :is(input, select, textarea):not([readonly]):not(:disabled):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
+}
+
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedColumnTitle,
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedEmpty,
 .estimatePickAndAttachedRow.estimateAttachWindowsTypography .estimateAttachedPresetMeta,

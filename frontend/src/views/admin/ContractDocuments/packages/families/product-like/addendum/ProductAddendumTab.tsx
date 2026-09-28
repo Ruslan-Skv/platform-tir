@@ -78,7 +78,9 @@ export function ProductAddendumTab({
           </div>
           {signedLockNotice}
           <div className={cdChrome.packageAddendumMetaInlineRow}>
-            <div className={`${PRODUCT_ADDENDUM_FIELD} ${cdChrome.packageAddendumDateFieldRow}`}>
+            <div
+              className={`${PRODUCT_ADDENDUM_FIELD} ${cdProduct.windowsAddendumMetaField} ${cdChrome.packageAddendumDateFieldRow}`}
+            >
               <label htmlFor={`windows_addendum_date_${slotOrdinal}`}>
                 Дата доп. соглашения (в шапке слева)
               </label>
@@ -93,7 +95,7 @@ export function ProductAddendumTab({
               />
             </div>
             <div
-              className={`${PRODUCT_ADDENDUM_FIELD} ${cdChrome.packageAddendumWorkPeriodIncreaseFieldRow}`}
+              className={`${PRODUCT_ADDENDUM_FIELD} ${cdProduct.windowsAddendumMetaField} ${cdChrome.packageAddendumWorkPeriodIncreaseFieldRow}`}
             >
               <label htmlFor={`windows_addendum_work_period_increase_${slotOrdinal}`}>
                 Увеличение срока по договору

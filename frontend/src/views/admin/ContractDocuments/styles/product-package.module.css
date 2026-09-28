@@ -404,6 +404,45 @@
   overflow-x: auto;
 }
 
+/* Д/с: форма изделий — компактный шрифт, как в форме «Спецификации». */
+.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
+  :is(
+    .windowsAddendumSpecTable,
+    .windowsAddendumSpecTable th,
+    .windowsAddendumSpecTable td,
+    .windowsAddendumSpecTable input,
+    .windowsAddendumSpecSectionTotal,
+    .windowsAddendumSpecActionsRow .secondaryBtn
+  ) {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+/* Д/с: мета-поля (дата, увеличение срока) — в стиле формы «Спецификации». */
+.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
+  .windowsAddendumMetaField
+  input {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
+}
+
+.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
+  .windowsAddendumMetaField
+  input::placeholder {
+  color: var(--admin-text-primary, #0f172a);
+  opacity: 0.35;
+}
+
+/* Фокус мета-полей — синий, как у ячеек таблиц (перебивает accent-рамку редактора пакета). */
+.estimateTabCompact.windowsContractTabTypography.windowsAddendumTab
+  .windowsAddendumMetaField
+  input:not([readonly]):not(:disabled):focus {
+  border-color: var(--admin-focus-ring, #3b82f6) !important;
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6) !important;
+  outline: none;
+}
+
 .windowsAddendumSpecTable {
   width: 100%;
   min-width: 640px;
@@ -476,19 +515,24 @@
 /* Редактируемые ячейки — светлее фона строки */
 .windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly) {
   background: var(--admin-surface, #fff);
-  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 38%, transparent);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
+}
+
+/* Плейсхолдеры формы изделий: заметно прозрачнее основного текста. */
+.windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly)::placeholder {
+  color: var(--admin-text-primary, #0f172a);
+  opacity: 0.35;
 }
 
 .windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):focus {
-  outline: 2px solid color-mix(in srgb, var(--admin-primary, #3b82f6) 28%, transparent);
-  outline-offset: -1px;
-  border-color: color-mix(in srgb, var(--admin-primary, #3b82f6) 35%, transparent);
+  outline: none;
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
   background: var(--admin-surface, #fff);
 }
 
 .windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):focus-visible {
-  outline: 2px solid color-mix(in srgb, var(--admin-primary, #3b82f6) 28%, transparent);
-  outline-offset: -1px;
+  outline: none;
 }
 
 .windowsAddendumSpecTable input:not(.windowsAddendumSpecAmountReadonly):disabled {
@@ -519,7 +563,7 @@
   .windowsAddendumSpecTable
   input:not(.windowsAddendumSpecAmountReadonly) {
   background: color-mix(in srgb, var(--admin-surface) 88%, transparent);
-  border-color: color-mix(in srgb, var(--admin-border) 35%, transparent);
+  border-color: color-mix(in srgb, var(--admin-border) 55%, transparent);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark'])
@@ -790,14 +834,14 @@
 }
 
 .doorsSpecificationDiscountField > label {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-size: var(--admin-font-size-xs) !important;
   font-weight: 600 !important;
   color: var(--admin-text-secondary) !important;
   line-height: var(--admin-line-height-sm) !important;
 }
 
 .doorsSpecificationDiscountField input {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm)) !important;
+  font-size: var(--admin-font-size-xs) !important;
   line-height: var(--admin-line-height-sm) !important;
   padding: var(--admin-space-xs) var(--admin-space-sm);
 }
@@ -875,6 +919,7 @@
   margin-top: 0;
 }
 
+/* Форма внесения товаров: компактный шрифт (меньше шрифта вкладки). */
 .estimateTabCompact.windowsContractTabTypography
   .windowsContractFormSection
   :is(
@@ -882,10 +927,11 @@
     .doorsSpecificationTable th,
     .doorsSpecificationTable td,
     .doorsSpecificationTable input,
+    .doorsSpecificationTable select,
     .doorsSpecificationSectionTotal,
     .doorsSpecificationActionsRow .secondaryBtn
   ) {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
 }
 
@@ -907,7 +953,7 @@
 
 .doorsSpecificationImportHint {
   margin: 0;
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
   color: var(--admin-text-secondary);
 }
@@ -923,7 +969,7 @@
   .windowsContractFormSection
   .doorsSpecificationDiscountField
   label {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
   line-height: var(--admin-line-height-sm);
@@ -933,16 +979,27 @@
   .windowsContractFormSection
   .doorsSpecificationDiscountField
   input {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
   padding: var(--admin-space-xs) var(--admin-space-sm);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
+}
+
+/* Фокус поля скидки — синий, как у ячеек таблицы (перебивает accent-рамку редактора пакета). */
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  .doorsSpecificationDiscountField
+  input:not([readonly]):not(:disabled):focus {
+  border-color: var(--admin-focus-ring, #3b82f6) !important;
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6) !important;
+  outline: none;
 }
 
 .estimateTabCompact.windowsContractTabTypography
   .windowsContractFormSection
   .doorsSpecificationTable
   .estimateAttachedRemoveBtn {
-  font-size: var(--windows-contract-tab-font-size);
+  font-size: var(--admin-font-size-xs);
   line-height: 1;
 }
 
@@ -1017,23 +1074,32 @@
   box-sizing: border-box;
   min-height: 28px;
   padding: 4px 6px;
-  border: 1px solid var(--admin-border, #e2e8f0);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
   border-radius: var(--admin-radius-sm, 4px);
   font: inherit;
   background: var(--admin-surface, #fff);
   color: inherit;
 }
 
+/* Плейсхолдеры формы: заметно прозрачнее основного текста. */
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly)::placeholder,
+.doorsSpecificationDiscountField input::placeholder {
+  color: var(--admin-text-primary, #0f172a);
+  opacity: 0.35;
+}
+
 .doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly) {
   outline: none;
 }
 
-.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus {
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus,
+.doorsSpecificationTable select:focus {
   border-color: var(--admin-focus-ring, #3b82f6);
   box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
 }
 
-.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus-visible {
+.doorsSpecificationTable input:not(.doorsSpecificationAmountReadonly):focus-visible,
+.doorsSpecificationTable select:focus-visible {
   outline: none;
 }
 
@@ -1146,7 +1212,7 @@
   .doorsSpecificationTable
   input:not(.doorsSpecificationAmountReadonly) {
   background: var(--admin-surface);
-  border-color: color-mix(in srgb, var(--admin-border) 70%, transparent);
+  border-color: color-mix(in srgb, var(--admin-border) 55%, transparent);
 }
 
 /* Спецификация «Натяжные потолки»: карточки потолков. */
@@ -1355,19 +1421,20 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-muted, #64748b);
 }
 
 .ceilingsSpecificationLineTotal {
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   font-weight: 600;
   color: var(--admin-text-secondary);
   white-space: nowrap;
   text-align: right;
 }
 
+/* Поля карточек потолков — компактный шрифт и тонкая обводка, как в форме «Спецификации» дверей. */
 .ceilingsSpecificationLineRow select,
 .ceilingsSpecificationLineRow input,
 .ceilingsSpecificationFabricRow select,
@@ -1375,13 +1442,43 @@
   width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  font-size: var(--windows-contract-tab-font-size, var(--admin-font-size-sm));
+  font-size: var(--admin-font-size-xs);
   line-height: var(--admin-line-height-sm);
   padding: var(--admin-space-xs) var(--admin-space-sm);
-  border: 1px solid var(--admin-border, #e2e8f0);
+  border: 1px solid color-mix(in srgb, var(--admin-border, #e2e8f0) 60%, transparent);
   border-radius: var(--admin-radius-md, 8px);
   background: var(--admin-surface, #fff);
   color: var(--admin-text-primary);
+}
+
+/* Перебивает общий шрифт .windowsContractFormSection select/input (sm). */
+.estimateTabCompact.windowsContractTabTypography
+  .windowsContractFormSection
+  :is(
+    .ceilingsSpecificationLineRow select,
+    .ceilingsSpecificationLineRow input,
+    .ceilingsSpecificationFabricRow select,
+    .ceilingsSpecificationFabricRow input
+  ) {
+  font-size: var(--admin-font-size-xs);
+  line-height: var(--admin-line-height-sm);
+}
+
+/* Плейсхолдеры полей карточек потолков: заметно прозрачнее основного текста. */
+.ceilingsSpecificationLineRow input::placeholder,
+.ceilingsSpecificationFabricRow input::placeholder {
+  color: var(--admin-text-primary, #0f172a);
+  opacity: 0.35;
+}
+
+/* Фокус полей карточек потолков — синяя рамка с кольцом, как у полей «Спецификации». */
+.ceilingsSpecificationLineRow select:not(:disabled):focus,
+.ceilingsSpecificationLineRow input:not([readonly]):not(:disabled):focus,
+.ceilingsSpecificationFabricRow select:not(:disabled):focus,
+.ceilingsSpecificationFabricRow input:not([readonly]):not(:disabled):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
 }
 
 .ceilingsSpecificationPriceReadonly {
