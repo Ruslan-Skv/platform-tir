@@ -52,3 +52,20 @@ npm run prisma:seed-repair-contract-templates
 
 Режим по умолчанию (`fill-missing`) только добавляет пресет, если на вкладке
 ещё нет активного — существующие не трогает.
+
+### Залить на прод через контейнер backend
+
+`npm run prisma:seed-*-contract-templates` на сервере не работает: прод-образ
+не содержит `.ts`-скриптов и ts-node, а Postgres не публикует порты наружу
+(`DATABASE_URL` с хостом `postgres` резолвится только внутри docker-сети).
+Используйте самодостаточный `.cjs` (включён в образ, читает `prisma/seed-data`):
+
+```bash
+docker compose -f docker-compose.infra.yml -f docker-compose.prod.yml \
+  exec backend node prisma/seed-contract-template-presets.cjs DOORS CEILINGS BLINDS
+```
+
+Направления передаются аргументами (без них — все пять). Режим тот же:
+`{KIND}_TEMPLATES_SEED_MODE` или `TEMPLATES_SEED_MODE` (`fill-missing` по умолчанию).
+В образах, собранных до появления этого скрипта, его можно положить в работающий
+контейнер через `docker cp` (файл + `prisma/seed-data`).

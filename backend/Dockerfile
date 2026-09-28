@@ -85,6 +85,9 @@ COPY prisma/data ./prisma/data
 COPY prisma/create-super-admin.cjs ./prisma/create-super-admin.cjs
 COPY prisma/seed-product-card-badges.cjs ./prisma/seed-product-card-badges.cjs
 COPY prisma/seed-quiz-remont.cjs ./prisma/seed-quiz-remont.cjs
+# Сид библиотеки шаблонов договоров + снимки для запуска в контейнере
+COPY prisma/seed-contract-template-presets.cjs ./prisma/seed-contract-template-presets.cjs
+COPY prisma/seed-data ./prisma/seed-data
 RUN npx prisma generate
 
 # Copy built application
