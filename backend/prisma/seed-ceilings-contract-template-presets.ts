@@ -20,7 +20,7 @@ config({ path: path.join(__dirname, '..', '.env') });
 config({ path: path.join(__dirname, '..', '..', '.env') });
 
 /** Без накладной / actStart / productionLog (как в UI потолков). */
-const LIBRARY_TABS = ['contract', 'consent', 'actAcceptance', 'memo'] as const;
+const LIBRARY_TABS = ['contract', 'consent', 'actAcceptance', 'memo', 'cashOrder'] as const;
 
 const CFG: KindSeedConfig = {
   kind: 'CEILINGS',
@@ -30,12 +30,14 @@ const CFG: KindSeedConfig = {
     consent: 'Согласие на обработку персональных данных',
     actAcceptance: 'Акт сдачи-приёмки',
     memo: 'Памятка',
+    cashOrder: 'ПКО',
   },
   tabTemplateFiles: {
     contract: 'ceilingsTemplateContract.ts',
     consent: 'consent.ts',
     actAcceptance: 'doorsActAcceptance.ts',
     memo: 'ceilingsTemplateMemo.ts',
+    cashOrder: 'cashOrder.ts',
   },
   seedIdPrefix: 'seed-ceilings',
   envModeKey: 'CEILINGS_TEMPLATES_SEED_MODE',

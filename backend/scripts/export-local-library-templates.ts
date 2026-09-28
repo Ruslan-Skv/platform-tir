@@ -21,9 +21,9 @@ const CONTRACT_TEMPLATES_TAB = 'contract_templates';
 const ALLOWED_TABS: Record<ContractDocumentPackageKind, readonly string[]> = {
   REPAIR: ['contract', 'consent', 'actStart', 'actAcceptance', 'cashOrder', 'productionLog'],
   WINDOWS: ['contract', 'consent', 'actAcceptance', 'memo', 'cashOrder'],
-  DOORS: ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo'],
-  BLINDS: ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo'],
-  CEILINGS: ['contract', 'consent', 'actAcceptance', 'memo'],
+  DOORS: ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo', 'cashOrder'],
+  BLINDS: ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo', 'cashOrder'],
+  CEILINGS: ['contract', 'consent', 'actAcceptance', 'memo', 'cashOrder'],
   FURNITURE: [],
 };
 

@@ -19,7 +19,7 @@ config({ path: path.join(process.cwd(), '.env') });
 config({ path: path.join(__dirname, '..', '.env') });
 config({ path: path.join(__dirname, '..', '..', '.env') });
 
-const LIBRARY_TABS = ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo'] as const;
+const LIBRARY_TABS = ['contract', 'consent', 'actAcceptance', 'deliveryNote', 'memo', 'cashOrder'] as const;
 
 const CFG: KindSeedConfig = {
   kind: 'DOORS',
@@ -30,6 +30,7 @@ const CFG: KindSeedConfig = {
     actAcceptance: 'Акт приёма',
     deliveryNote: 'Накладная',
     memo: 'Памятка',
+    cashOrder: 'ПКО',
   },
   tabTemplateFiles: {
     contract: 'doorsTemplateContract.ts',
@@ -37,6 +38,7 @@ const CFG: KindSeedConfig = {
     actAcceptance: 'doorsActAcceptance.ts',
     deliveryNote: 'doorsTemplateDeliveryNote.ts',
     memo: 'doorsTemplateMemo.ts',
+    cashOrder: 'cashOrder.ts',
   },
   seedIdPrefix: 'seed-doors',
   envModeKey: 'DOORS_TEMPLATES_SEED_MODE',
