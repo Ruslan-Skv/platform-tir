@@ -24,6 +24,7 @@ import { QueryMoneyMovementsDto } from './dto/query-money-movements.dto';
 import {
   CreateManagerIncassationDto,
   QueryManagerIncassationsDto,
+  UpdateManagerIncassationDto,
 } from './dto/create-manager-incassation.dto';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
 
@@ -114,6 +115,26 @@ export class MoneyMovementsController {
   @HttpCode(HttpStatus.CREATED)
   createIncassation(@Body() dto: CreateManagerIncassationDto, @Req() req: RequestWithUser) {
     return this.managerIncassations.createIncassation(dto, req.user?.id);
+  }
+
+  /**
+   * Правка инкассации — только супер-админ: исправление ошибочной суммы, ФИО
+   * инкассатора или примечания. Роль на методе перекрывает список CRM_ROLES класса.
+   */
+  @Patch('incassations/:id')
+  @Roles('SUPER_ADMIN')
+  updateIncassation(@Param('id') id: string, @Body() dto: UpdateManagerIncassationDto) {
+    return this.managerIncassations.updateIncassation(id, dto);
+  }
+
+  /**
+   * Аннулирование ошибочной инкассации — только супер-админ: запись удаляется,
+   * сданная сумма возвращается в остаток кассы менеджера.
+   */
+  @Delete('incassations/:id')
+  @Roles('SUPER_ADMIN')
+  deleteIncassation(@Param('id') id: string) {
+    return this.managerIncassations.deleteIncassation(id);
   }
 
   /** Ручная запись (проводка): изъятие из кассы или внесение сумм вне оплат по договорам. */

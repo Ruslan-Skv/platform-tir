@@ -1,8 +1,16 @@
-import { BadRequestException, Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
-import { CreateManagerIncassationDto } from './dto/create-manager-incassation.dto';
+import {
+  CreateManagerIncassationDto,
+  UpdateManagerIncassationDto,
+} from './dto/create-manager-incassation.dto';
 import { IncassationNotifyService } from './incassation-notify.service';
 
 const INCASSATION_MANAGER_INCLUDE = {
@@ -35,11 +43,14 @@ export class ManagerIncassationsService {
   ) {}
 
   /**
-   * Наличные менеджера с момента последней инкассации до текущего момента:
-   * наличные оплаты минус наличные возвраты (в журнале возвраты хранятся положительной суммой).
+   * Остаток наличных менеджера (приходно-расходная модель): все наличные оплаты
+   * и проводки минус наличные возвраты минус все сданные инкассации. Момент
+   * внесения записей не важен: оплаты задним числом и правки лишь меняют
+   * текущий остаток, а инкассация уменьшает его ровно на сданную сумму —
+   * недосдача не «списывается», а остаётся в остатке.
    */
   async getIncassationCashBalance(managerId: string) {
-    const [last, manager] = await Promise.all([
+    const [last, manager, ledger] = await Promise.all([
       this.prisma.managerIncassation.findFirst({
         where: { managerId },
         orderBy: { performedAt: 'desc' },
@@ -49,27 +60,16 @@ export class ManagerIncassationsService {
         where: { id: managerId },
         select: { email: true, firstName: true, lastName: true },
       }),
+      this.cashLedger(managerId),
     ]);
-
-    const movements = await this.prisma.moneyMovement.findMany({
-      where: {
-        managerId,
-        paymentForm: PaymentForm.CASH,
-        deletedAt: null,
-        ...(last ? { performedAt: { gt: last.performedAt } } : {}),
-      },
-      select: { amount: true, paymentType: true },
-    });
-
-    const balance = movements.reduce(
-      (sum, m) => sum.plus(m.paymentType === PaymentType.REFUND ? m.amount.neg() : m.amount),
-      new Prisma.Decimal(0),
-    );
 
     return {
       managerId,
       managerName: userName(manager),
-      balance: balance.toString(),
+      payments: ledger.payments.toString(),
+      refunds: ledger.refunds.toString(),
+      incassated: ledger.incassated.toString(),
+      balance: ledger.balance.toString(),
       lastIncassation: last
         ? {
             performedAt: last.performedAt.toISOString(),
@@ -82,8 +82,8 @@ export class ManagerIncassationsService {
 
   /**
    * Наличные к инкассации сразу для списка менеджеров (плитки итогов журнала ДП):
-   * та же логика, что у getIncassationCashBalance, — наличные оплаты минус наличные
-   * возвраты с момента последней инкассации каждого менеджера до текущего момента.
+   * та же приходно-расходная модель, что у getIncassationCashBalance — оплаты
+   * минус возвраты минус все инкассации каждого менеджера.
    */
   async getCashBalances(managerIds: string[]): Promise<Map<string, Prisma.Decimal>> {
     const balances = new Map<string, Prisma.Decimal>(
@@ -91,44 +91,96 @@ export class ManagerIncassationsService {
     );
     if (managerIds.length === 0) return balances;
 
-    const [lastIncassations, movements] = await Promise.all([
+    // Удалённые в корзину записи кассу менеджера не пополняют.
+    const [paymentRows, refundRows, incassationRows] = await Promise.all([
+      this.prisma.moneyMovement.groupBy({
+        by: ['managerId'],
+        where: {
+          managerId: { in: managerIds },
+          paymentForm: PaymentForm.CASH,
+          deletedAt: null,
+          paymentType: { not: PaymentType.REFUND },
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.groupBy({
+        by: ['managerId'],
+        where: {
+          managerId: { in: managerIds },
+          paymentForm: PaymentForm.CASH,
+          deletedAt: null,
+          paymentType: PaymentType.REFUND,
+        },
+        _sum: { amount: true },
+      }),
       this.prisma.managerIncassation.groupBy({
         by: ['managerId'],
         where: { managerId: { in: managerIds } },
-        _max: { performedAt: true },
-      }),
-      this.prisma.moneyMovement.findMany({
-        // Удалённые в корзину записи кассу менеджера не пополняют.
-        where: { managerId: { in: managerIds }, paymentForm: PaymentForm.CASH, deletedAt: null },
-        select: { managerId: true, amount: true, paymentType: true, performedAt: true },
+        _sum: { amount: true },
       }),
     ]);
 
-    const lastByManager = new Map(
-      lastIncassations
-        .filter((row) => row._max.performedAt)
-        .map((row) => [row.managerId, row._max.performedAt as Date]),
-    );
-
-    for (const movement of movements) {
-      if (!movement.managerId) continue;
-      const last = lastByManager.get(movement.managerId);
-      if (last && movement.performedAt <= last) continue;
-      const delta =
-        movement.paymentType === PaymentType.REFUND ? movement.amount.neg() : movement.amount;
-      balances.set(
-        movement.managerId,
-        (balances.get(movement.managerId) ?? new Prisma.Decimal(0)).plus(delta),
-      );
-    }
+    // Возвраты хранятся положительной суммой, инкассации — тоже: вычитаем их из кассы.
+    const apply = (
+      rows: { managerId: string | null; _sum: { amount: Prisma.Decimal | null } }[],
+      sign: 1 | -1,
+    ) => {
+      for (const row of rows) {
+        const id = row.managerId;
+        if (!id) continue;
+        const current = balances.get(id);
+        if (current === undefined) continue;
+        balances.set(id, current.plus((row._sum.amount ?? new Prisma.Decimal(0)).mul(sign)));
+      }
+    };
+    apply(paymentRows, 1);
+    apply(refundRows, -1);
+    apply(incassationRows, -1);
     return balances;
+  }
+
+  /**
+   * Слагаемые кассы менеджера: оплаты и ручные проводки (изъятия — отрицательной
+   * суммой), возвраты (положительной) и все инкассации. Остаток = оплаты −
+   * возвраты − инкассации.
+   */
+  private async cashLedger(managerId: string) {
+    const [paymentAgg, refundAgg, incassationAgg] = await Promise.all([
+      this.prisma.moneyMovement.aggregate({
+        where: {
+          managerId,
+          paymentForm: PaymentForm.CASH,
+          deletedAt: null,
+          paymentType: { not: PaymentType.REFUND },
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.moneyMovement.aggregate({
+        where: {
+          managerId,
+          paymentForm: PaymentForm.CASH,
+          deletedAt: null,
+          paymentType: PaymentType.REFUND,
+        },
+        _sum: { amount: true },
+      }),
+      this.prisma.managerIncassation.aggregate({
+        where: { managerId },
+        _sum: { amount: true },
+      }),
+    ]);
+
+    const payments = paymentAgg._sum.amount ?? new Prisma.Decimal(0);
+    const refunds = refundAgg._sum.amount ?? new Prisma.Decimal(0);
+    const incassated = incassationAgg._sum.amount ?? new Prisma.Decimal(0);
+    return { payments, refunds, incassated, balance: payments.minus(refunds).minus(incassated) };
   }
 
   /**
    * Создаёт запись инкассации. Менеджер, сдающий инкассацию, — выбранный в форме
    * (по умолчанию текущий пользователь); запись фиксирует текущий пользователь (createdById).
-   * Если инкассация сдаётся за другого менеджера (onBehalfOfId), остаток наличных
-   * закрывается по кассе этого менеджера, а сдающий фиксируется в submitterId.
+   * Если инкассация сдаётся за другого менеджера (onBehalfOfId), сумма вычитается
+   * из кассы этого менеджера, а сдающий фиксируется в submitterId.
    */
   async createIncassation(dto: CreateManagerIncassationDto, currentUserId?: string) {
     if (!currentUserId) throw new UnauthorizedException('Пользователь не определён');
@@ -144,6 +196,19 @@ export class ManagerIncassationsService {
     ]);
     if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
     if (!submitterExists) throw new BadRequestException('Указанный сдающий менеджер не найден');
+
+    // Сдача, отличающаяся от остатка кассы, — всегда значимое событие (частичная
+    // сдача, излишек): причину фиксируем примечанием, иначе расхождение потеряется.
+    const ledger = await this.cashLedger(managerId);
+    const differsFromBalance = new Prisma.Decimal(dto.amount)
+      .minus(ledger.balance)
+      .abs()
+      .gte('0.01');
+    if (differsFromBalance && !dto.notes?.trim()) {
+      throw new BadRequestException(
+        `Сумма инкассации (${dto.amount} ₽) отличается от остатка наличных (${ledger.balance.toString()} ₽): укажите причину расхождения в примечании`,
+      );
+    }
 
     const record = await this.prisma.managerIncassation.create({
       data: {
@@ -185,6 +250,45 @@ export class ManagerIncassationsService {
       include: INCASSATION_MANAGER_INCLUDE,
     });
     return records.map((record) => this.serializeIncassation(record));
+  }
+
+  /**
+   * Правка инкассации — только супер-админ: исправление ошибочной суммы, ФИО
+   * инкассатора или примечания. Дата и менеджеры не меняются — для этого запись
+   * аннулируется и создаётся заново.
+   */
+  async updateIncassation(id: string, dto: UpdateManagerIncassationDto) {
+    const existing = await this.prisma.managerIncassation.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Запись инкассации не найдена');
+
+    const row = await this.prisma.managerIncassation.update({
+      where: { id },
+      data: {
+        ...(dto.amount !== undefined ? { amount: dto.amount } : {}),
+        ...(dto.incassator !== undefined ? { incassator: dto.incassator.trim() } : {}),
+        ...(dto.notes !== undefined ? { notes: dto.notes.trim() || null } : {}),
+      },
+      include: INCASSATION_MANAGER_INCLUDE,
+    });
+    return this.serializeIncassation(row);
+  }
+
+  /**
+   * Аннулирование ошибочной инкассации — только супер-админ: запись удаляется,
+   * сданная сумма возвращается в остаток кассы менеджера.
+   */
+  async deleteIncassation(id: string) {
+    const existing = await this.prisma.managerIncassation.findUnique({
+      where: { id },
+      select: { id: true },
+    });
+    if (!existing) throw new NotFoundException('Запись инкассации не найдена');
+
+    await this.prisma.managerIncassation.delete({ where: { id } });
+    return { ok: true };
   }
 
   private serializeIncassation(row: IncassationWithManager) {

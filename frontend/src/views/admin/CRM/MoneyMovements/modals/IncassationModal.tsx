@@ -109,6 +109,13 @@ export function IncassationModal({
     amountNumber > 0 &&
     incassator.trim().length >= 2;
 
+  // Расхождение с остатком кассы: частичная сдача или излишек — причина обязательна.
+  const differsFromBalance =
+    Boolean(balance) &&
+    Number.isFinite(amountNumber) &&
+    amountNumber > 0 &&
+    Math.abs(amountNumber - Number(balance!.balance)) >= 0.01;
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     if (!managerId) {
@@ -121,6 +128,12 @@ export function IncassationModal({
     }
     if (incassator.trim().length < 2) {
       setError('Укажите ФИО лица, производившего инкассацию');
+      return;
+    }
+    if (differsFromBalance && !notes.trim()) {
+      setError(
+        `Сумма отличается от остатка наличных (${formatDpMoney(balance!.balance)}): укажите причину расхождения в примечании`
+      );
       return;
     }
     setError(null);
@@ -156,8 +169,8 @@ export function IncassationModal({
         onSubmit={(e) => void handleSubmit(e)}
       >
         <p data-modal-form-hint style={{ marginTop: 0 }}>
-          Запись закрывает остаток наличных менеджера с момента последней инкассации: наличные
-          оплаты минус наличные возвраты.
+          Инкассация уменьшает остаток наличных менеджера на сданную сумму. Остаток считается по
+          всей кассе: наличные оплаты и проводки минус возвраты минус все инкассации.
         </p>
 
         <div data-modal-form-group>
@@ -198,15 +211,19 @@ export function IncassationModal({
 
         <div className={formStyles.balanceBox}>
           {balanceLoading ? (
-            <span className={styles.muted}>Считаем наличчные с последней инкассации…</span>
+            <span className={styles.muted}>Считаем наличчные в кассе…</span>
           ) : balance ? (
             <>
               <div className={styles.incassationBalanceRow}>
                 <span>
-                  Наличные с последней инкассации
+                  Наличные в кассе к инкассации
                   {onBehalfOfId && balance.managerName ? ` (${balance.managerName})` : ''}:
                 </span>
                 <strong>{formatDpMoney(balance.balance)}</strong>
+              </div>
+              <div className={styles.incassationBalanceHint}>
+                Расчёт: оплаты и проводки {formatDpMoney(balance.payments)} − возвраты{' '}
+                {formatDpMoney(balance.refunds)} − инкассации {formatDpMoney(balance.incassated)}
               </div>
               {balance.lastIncassation ? (
                 <div className={styles.incassationBalanceHint}>
@@ -242,6 +259,12 @@ export function IncassationModal({
             disabled={submitting}
             required
           />
+          {differsFromBalance ? (
+            <p className={styles.incassationMismatch}>
+              Сумма отличается от остатка в кассе ({formatDpMoney(balance!.balance)}) — укажите
+              причину расхождения в примечании.
+            </p>
+          ) : null}
         </div>
 
         <div data-modal-form-group>

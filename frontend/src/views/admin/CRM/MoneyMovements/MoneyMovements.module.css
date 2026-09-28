@@ -145,6 +145,13 @@
   color: var(--admin-text-muted, #6b7280);
 }
 
+/* Предупреждение под суммой: сдача отличается от остатка кассы. */
+.incassationMismatch {
+  margin: var(--admin-space-2xs, 4px) 0 0;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-warning-text, #b45309);
+}
+
 .incassationField {
   display: flex;
   flex-direction: column;
@@ -247,6 +254,73 @@
 .incassationsNotes {
   max-width: 320px;
   color: var(--admin-text-muted, #9ca3af);
+}
+
+/* --- История инкассаций: правка и аннулирование (супер-админ) --- */
+
+.incassationRowActions {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-2xs, 4px);
+  white-space: nowrap;
+}
+
+.incassationRowBtn,
+.incassationRowBtnDanger {
+  border: 1px solid var(--admin-border, #d1d5db);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #111827);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 2px 10px;
+  font-size: var(--admin-font-size-xs, 12px);
+  line-height: 20px;
+  cursor: pointer;
+}
+
+.incassationRowBtn:hover:not(:disabled) {
+  border-color: var(--admin-primary, #2563eb);
+  color: var(--admin-primary, #2563eb);
+}
+
+.incassationRowBtnDanger {
+  color: var(--admin-danger-text, #dc2626);
+  border-color: var(--admin-danger-border, #fca5a5);
+}
+
+.incassationRowBtnDanger:hover:not(:disabled) {
+  background: var(--admin-danger-bg-soft, #fef2f2);
+}
+
+.incassationRowBtn:disabled,
+.incassationRowBtnDanger:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.incassationConfirmText {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-danger-text, #dc2626);
+}
+
+.incassationEditingRow td {
+  vertical-align: middle;
+}
+
+.incassationEditInput {
+  width: 100%;
+  min-width: 90px;
+  border: 1px solid var(--admin-border, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text, #111827);
+  padding: 3px 8px;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-variant-numeric: tabular-nums;
+}
+
+.incassationEditInput:focus {
+  outline: none;
+  border-color: var(--admin-primary, #2563eb);
 }
 
 /* --- Ручная запись: переключатель типа операции --- */

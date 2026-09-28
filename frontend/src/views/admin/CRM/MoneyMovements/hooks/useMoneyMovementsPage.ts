@@ -7,16 +7,19 @@ import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract
 import {
   type IncassationCashBalance,
   type ManagerIncassation,
+  type ManagerIncassationUpdateParams,
   type MoneyMovement,
   type MoneyMovementListResponse,
   type MoneyMovementManagerOption,
   createManagerIncassation,
   createManualMoneyMovement,
+  deleteManagerIncassation,
   deleteManualMoneyMovement,
   getIncassationCashBalance,
   getManagerIncassations,
   getMoneyMovementTrashCount,
   getMoneyMovements,
+  updateManagerIncassation,
   updateManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
 
@@ -42,6 +45,8 @@ export function useMoneyMovementsPage() {
   const { user } = useAuth();
   /** Правка ручных записей — только супер-админ (роль проверяется и на бэкенде). */
   const canEditManualEntries = user?.role === 'SUPER_ADMIN';
+  /** Правка и аннулирование инкассаций — только супер-админ (роль проверяется и на бэкенде). */
+  const canManageIncassations = user?.role === 'SUPER_ADMIN';
 
   // Страница рендерится с ssr: false — читаем сохранённые фильтры сразу при монтировании.
   const initialFiltersRef = useRef(loadDpFilters());
@@ -384,6 +389,36 @@ export function useMoneyMovementsPage() {
     [refresh, loadIncassations]
   );
 
+  // Правка и аннулирование инкассаций (супер-админ): меняют остатки касс —
+  // обновляем и историю, и плитки журнала.
+  const [incassationSaving, setIncassationSaving] = useState(false);
+
+  const submitIncassationUpdate = useCallback(
+    async (id: string, params: ManagerIncassationUpdateParams) => {
+      setIncassationSaving(true);
+      try {
+        await updateManagerIncassation(id, params);
+        await Promise.all([refresh(), loadIncassations()]);
+      } finally {
+        setIncassationSaving(false);
+      }
+    },
+    [refresh, loadIncassations]
+  );
+
+  const submitIncassationDelete = useCallback(
+    async (id: string) => {
+      setIncassationSaving(true);
+      try {
+        await deleteManagerIncassation(id);
+        await Promise.all([refresh(), loadIncassations()]);
+      } finally {
+        setIncassationSaving(false);
+      }
+    },
+    [refresh, loadIncassations]
+  );
+
   const resetFilters = useCallback(() => {
     const fresh = defaultDpFilters();
     setDateFrom(fresh.dateFrom);
@@ -499,6 +534,12 @@ export function useMoneyMovementsPage() {
     loadCashBalance,
     incassationSubmitting,
     submitIncassation,
+    /** true — текущий пользователь супер-админ: правка и аннулирование инкассаций. */
+    canManageIncassations,
+    /** Идёт сохранение правки или аннулирование инкассации (история инкассаций). */
+    incassationSaving,
+    submitIncassationUpdate,
+    submitIncassationDelete,
     manualEntryModalOpen,
     openManualEntryModal,
     closeManualEntryModal,

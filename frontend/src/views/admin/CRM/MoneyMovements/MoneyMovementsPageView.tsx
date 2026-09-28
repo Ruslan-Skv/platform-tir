@@ -187,6 +187,10 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     loadCashBalance,
     incassationSubmitting,
     submitIncassation,
+    canManageIncassations,
+    incassationSaving,
+    submitIncassationUpdate,
+    submitIncassationDelete,
     manualEntryModalOpen,
     openManualEntryModal,
     closeManualEntryModal,
@@ -923,6 +927,10 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         open={incassationHistoryOpen}
         onClose={closeIncassationHistory}
         incassations={incassations}
+        canManage={canManageIncassations}
+        saving={incassationSaving}
+        onUpdate={submitIncassationUpdate}
+        onDelete={submitIncassationDelete}
       />
 
       <ManualEntryModal

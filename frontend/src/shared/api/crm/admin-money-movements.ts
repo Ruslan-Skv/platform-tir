@@ -73,8 +73,8 @@ export type MoneyMovementListResponse = {
   }[];
   managers: MoneyMovementManagerOption[];
   /**
-   * Наличные каждого менеджера к инкассации на текущий момент (с момента последней
-   * инкассации) — снапшот кассы, от фильтров периода не зависит.
+   * Наличные каждого менеджера к инкассации на текущий момент (оплаты − возвраты −
+   * все инкассации) — снапшот кассы, от фильтров периода не зависит.
    */
   managerCashBalances: { managerId: string; balance: string }[];
 };
@@ -132,12 +132,18 @@ export type IncassationCashBalance = {
   managerId: string;
   /** Имя менеджера (если пользователь найден). */
   managerName: string | null;
-  /** Наличные с момента последней инкассации (строкой, как Decimal). */
+  /** Все наличные оплаты и проводки менеджера (изъятия — отрицательными). */
+  payments: string;
+  /** Все наличные возвраты (положительная сумма). */
+  refunds: string;
+  /** Сумма всех сданных инкассаций. */
+  incassated: string;
+  /** Остаток наличных в кассе (строкой, как Decimal): оплаты − возвраты − инкассации. */
   balance: string;
   lastIncassation: { performedAt: string; amount: string; incassator: string } | null;
 };
 
-/** Наличные менеджера (по умолчанию — текущего) с момента последней инкассации. */
+/** Наличные менеджера (по умолчанию — текущего) в кассе на текущий момент. */
 export async function getIncassationCashBalance(
   managerId?: string
 ): Promise<IncassationCashBalance> {
@@ -174,6 +180,40 @@ export async function createManagerIncassation(params: {
     body: JSON.stringify(params),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось записать инкассацию');
+  return res.json();
+}
+
+/** Поля инкассации для правки (супер-админ): передаются только исправляемые. */
+export type ManagerIncassationUpdateParams = {
+  amount?: number;
+  incassator?: string;
+  notes?: string;
+};
+
+/** Правка инкассации — только супер-админ (исправление ошибочной записи). */
+export async function updateManagerIncassation(
+  id: string,
+  params: ManagerIncassationUpdateParams
+): Promise<ManagerIncassation> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/incassations/${id}`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось сохранить правку инкассации');
+  return res.json();
+}
+
+/**
+ * Аннулирование ошибочной инкассации — только супер-админ: запись удаляется,
+ * сданная сумма возвращается в остаток кассы менеджера.
+ */
+export async function deleteManagerIncassation(id: string): Promise<{ ok: boolean }> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/incassations/${id}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось аннулировать инкассацию');
   return res.json();
 }
 

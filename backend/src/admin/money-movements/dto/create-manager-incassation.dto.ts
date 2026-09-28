@@ -58,3 +58,23 @@ export class QueryManagerIncassationsDto {
   @Max(100)
   limit?: number;
 }
+
+/** Правка инкассации (супер-админ): передаются только исправляемые поля. */
+export class UpdateManagerIncassationDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsPositive()
+  @Max(100_000_000)
+  amount?: number;
+
+  @IsOptional()
+  @IsString()
+  @MinLength(2)
+  @MaxLength(500)
+  incassator?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(1000)
+  notes?: string;
+}
