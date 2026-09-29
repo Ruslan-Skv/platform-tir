@@ -1,5 +1,4 @@
 import type { PackageFormData } from '../../form/packageForm';
-import { formatPackageMoneyValue } from '../estimateTab/estimateTabUi';
 
 export type FinalEstimateSummaryRow = {
   key: string;
@@ -47,7 +46,7 @@ export function formatInstallerNameShort(fullName: string): string {
 export function formatMoneyRubShort(value: number): string {
   const rounded = Math.round(value);
   if (Math.abs(value - rounded) < 0.005) return `${rounded}`;
-  return formatPackageMoneyValue(value);
+  return value.toFixed(2).replace('.', ',');
 }
 
 export function parsePercentForWorkOrder(raw: string): number {

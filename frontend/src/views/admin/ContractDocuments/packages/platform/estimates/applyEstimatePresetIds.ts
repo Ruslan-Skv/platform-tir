@@ -4,6 +4,7 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { formatMoneyWholePlain } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToNullableBase,
   packageEstimateTotalToContractFields,
@@ -129,7 +130,7 @@ export function applyAdditionalMarkupPercentToSnapshot(
 }
 
 function formatMoneyValue(value: number): string {
-  return value.toFixed(2).replace('.', ',');
+  return formatMoneyWholePlain(value);
 }
 
 function mergeEstimateSnapshots(

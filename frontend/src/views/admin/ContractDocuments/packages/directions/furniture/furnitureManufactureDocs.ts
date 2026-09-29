@@ -1,3 +1,5 @@
+import { formatMoneyWholeGrouped } from '../../platform/form/moneyWhole';
+
 /** Строки спецификации изготовления мебели (Excel «Спец.»). */
 export type FurnitureSpecificationLine = {
   id: string;
@@ -89,11 +91,8 @@ function parseDecimalInput(raw: string): number | null {
 }
 
 export function formatFurnitureMoney(value: number): string {
-  if (!Number.isFinite(value)) return '0,00';
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (!Number.isFinite(value)) return '0';
+  return formatMoneyWholeGrouped(value);
 }
 
 export function resolveFurnitureSpecificationLineTotal(line: FurnitureSpecificationLine): number {

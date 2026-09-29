@@ -1,5 +1,9 @@
 import { PaymentType, Prisma } from '@prisma/client';
 
+/** Срок хранения записей в корзине ДП — по истечении удаляются безвозвратно. */
+export const DP_TRASH_RETENTION_DAYS = 30;
+export const DP_TRASH_RETENTION_MS = DP_TRASH_RETENTION_DAYS * 24 * 60 * 60 * 1000;
+
 /** Строка журнала ДП с менеджером — как её отдают списки и ручные записи. */
 export type MoneyMovementRowWithManager = Prisma.MoneyMovementGetPayload<{
   include: { manager: { select: { id: true; email: true; firstName: true; lastName: true } } };
@@ -69,6 +73,10 @@ export function serializeMoneyMovementTrash(row: MoneyMovementRowWithUsers) {
     ...serializeMoneyMovement(row),
     createdBy: serializeMovementUser(row.createdBy),
     deletedAt: row.deletedAt ? row.deletedAt.toISOString() : null,
+    /** Момент безвозвратного удаления — deletedAt + срок хранения корзины (30 дней). */
+    permanentDeleteAt: row.deletedAt
+      ? new Date(row.deletedAt.getTime() + DP_TRASH_RETENTION_MS).toISOString()
+      : null,
     deletedBy: serializeMovementUser(row.deletedBy),
   };
 }

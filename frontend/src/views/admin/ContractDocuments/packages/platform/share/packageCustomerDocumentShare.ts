@@ -225,7 +225,7 @@ function buildFinalEstimateSheetHtml(ctx: PackageCustomerShareContext): string {
   <td>${lineIndex + 1}</td>
   <td>${escapeHtml(line.name)}</td>
   <td>${escapeHtml(line.unit || '—')}</td>
-  <td style="text-align:right;">${escapeHtml(formatPackageMoneyValue(line.quantity))}</td>
+  <td style="text-align:right;">${escapeHtml(line.quantity.toFixed(2).replace('.', ','))}</td>
   <td style="text-align:right;">${escapeHtml(formatPackageMoneyValue(line.price))}</td>
   <td style="text-align:right;">${escapeHtml(formatPackageMoneyValue(line.amount))}</td>
 </tr>`

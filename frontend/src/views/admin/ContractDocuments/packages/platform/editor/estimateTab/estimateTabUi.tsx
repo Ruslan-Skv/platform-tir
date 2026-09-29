@@ -1,9 +1,11 @@
 'use client';
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
+import { formatMoneyWholePlain } from '../../form/moneyWhole';
 
+/** Суммы сметы на экране и в документах — целыми рублями (без копеек). */
 export function formatPackageMoneyValue(value: number): string {
-  return value.toFixed(2).replace('.', ',');
+  return formatMoneyWholePlain(value);
 }
 
 export function PackageEstimateSignaturesBlock({

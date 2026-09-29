@@ -14,7 +14,12 @@ import {
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
-import { serializeMoneyMovement, serializeMoneyMovementTrash } from './money-movement-serialize';
+import {
+  DP_TRASH_RETENTION_DAYS,
+  DP_TRASH_RETENTION_MS,
+  serializeMoneyMovement,
+  serializeMoneyMovementTrash,
+} from './money-movement-serialize';
 
 const USER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
 
@@ -156,7 +161,7 @@ export class ManualEntriesService {
    * (он менеджер записи или автор) и только сделанные в текущем месяце;
    * супер-админ — любые ручные записи без ограничения по сроку. Автоматические
    * записи по оплатам договоров удалять нельзя: они производные оплат.
-   * Записи из корзины не восстанавливаются.
+   * Записи из корзины не восстанавливаются; через 30 дней удаляются безвозвратно.
    */
   async removeManualEntry(id: string, user: { id: string; role: string }) {
     const existing = await this.prisma.moneyMovement.findUnique({ where: { id } });
@@ -196,6 +201,7 @@ export class ManualEntriesService {
     params: { search?: string; page?: number; limit?: number },
     user: { id: string; role: string },
   ) {
+    await this.purgeExpiredTrash();
     const page = Math.max(1, params.page ?? 1);
     const limit = Math.min(Math.max(params.limit ?? 15, 1), 50);
     const search = params.search?.trim();
@@ -242,11 +248,13 @@ export class ManualEntriesService {
       page,
       limit,
       totalPages: Math.max(1, Math.ceil(total / limit)),
+      trashRetentionDays: DP_TRASH_RETENTION_DAYS,
     };
   }
 
   /** Число записей в корзине текущего пользователя (супер-админ — во всей корзине). */
   async trashCount(user: { id: string; role: string }) {
+    await this.purgeExpiredTrash();
     const where: Prisma.MoneyMovementWhereInput = {
       deletedAt: { not: null },
       ...(user.role !== 'SUPER_ADMIN'
@@ -261,6 +269,16 @@ export class ManualEntriesService {
   private currentMonthStart(): Date {
     const now = new Date();
     return new Date(now.getFullYear(), now.getMonth(), 1);
+  }
+
+  /**
+   * Безвозвратно удаляет записи, хранящиеся в корзине дольше 30 дней.
+   * Вызывается при каждом обращении к корзине и её счётчику — корзина
+   * чистится без отдельного планировщика.
+   */
+  private async purgeExpiredTrash(): Promise<void> {
+    const cutoff = new Date(Date.now() - DP_TRASH_RETENTION_MS);
+    await this.prisma.moneyMovement.deleteMany({ where: { deletedAt: { lt: cutoff } } });
   }
 
   /** Направление ручной записи: направление договоров, «Материалы» или «Прочее». */

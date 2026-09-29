@@ -30,6 +30,7 @@ import {
 import { buildEstimateRoomsHtmlFromSnapshot } from './estimateHtml';
 import { resolveExecutorBankFields } from './executorBankFields';
 import { buildPackageInvoiceTemplateExtras } from './invoiceTemplateFields';
+import { formatMoneyWholePlain, roundMoneyStringToWhole } from './moneyWhole';
 import type {
   PackageContractBlock,
   PackageEstimateBlock,
@@ -172,20 +173,18 @@ export function packageFormForTemplate(
 
   const snapshot = estimate.snapshot;
   const totalValue = snapshot?.total ?? 0;
-  const total = totalValue > 0 ? totalValue.toFixed(2).replace('.', ',') : '';
+  const total = totalValue > 0 ? formatMoneyWholePlain(totalValue) : '';
   const roomsCount = String(snapshot?.rooms.length ?? 0);
   const linesCount = String(snapshot?.rooms.reduce((sum, room) => sum + room.lines.length, 0) ?? 0);
   const rooms = snapshot
     ? snapshot.rooms
         .map((room, roomIndex) => {
-          const roomHeader = `${roomIndex + 1}. ${room.name} — ${room.total
-            .toFixed(2)
-            .replace('.', ',')}`;
+          const roomHeader = `${roomIndex + 1}. ${room.name} — ${formatMoneyWholePlain(room.total)}`;
           const roomLines = room.lines.map(
             (line) =>
-              `- ${line.name}: ${line.quantity} ${line.unit} × ${line.price
-                .toFixed(2)
-                .replace('.', ',')} = ${line.amount.toFixed(2).replace('.', ',')}`
+              `- ${line.name}: ${line.quantity} ${line.unit} × ${formatMoneyWholePlain(
+                line.price
+              )} = ${formatMoneyWholePlain(line.amount)}`
           );
           return [roomHeader, ...roomLines].join('\n');
         })
@@ -201,7 +200,9 @@ export function packageFormForTemplate(
 
   const { grandTotalRub } = computePackagePayableBreakdown(form);
   const grandTotalAmount =
-    grandTotalRub != null && Number.isFinite(grandTotalRub) ? formatMoney(grandTotalRub) : '';
+    grandTotalRub != null && Number.isFinite(grandTotalRub)
+      ? formatMoneyWholePlain(grandTotalRub)
+      : '';
   const grandTotalAmountWords = grandTotalAmount ? amountToRussianWords(grandTotalAmount) : '';
 
   const addendumTabMatch =
@@ -479,8 +480,16 @@ export function packageFormForTemplate(
         }
       : undefined;
 
+  /** Итог договора в печати — целыми рублями (в т.ч. для старых пакетов с копейками в поле). */
+  const contractTotalAmountForPrint = roundMoneyStringToWhole(form.contract.totalAmount);
+  const contractTotalAmountWordsForPrint = contractTotalAmountForPrint
+    ? amountToRussianWords(contractTotalAmountForPrint)
+    : form.contract.totalAmountWords;
+
   const contractForTemplate = {
     ...form.contract,
+    totalAmount: contractTotalAmountForPrint,
+    totalAmountWords: contractTotalAmountWordsForPrint,
     prepaymentAmountWords,
     grandTotalAmount,
     grandTotalAmountWords,

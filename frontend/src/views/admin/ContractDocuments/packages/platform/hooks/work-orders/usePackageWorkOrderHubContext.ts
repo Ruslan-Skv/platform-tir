@@ -13,7 +13,6 @@ import {
   getInstallationSchedulesByPackage,
 } from '@/shared/api/crm/admin-installation-schedules';
 
-import { formatPackageMoneyValue } from '../../editor/estimateTab/estimateTabUi';
 import {
   formatInstallerGradeShort,
   formatInstallerNameShort,
@@ -170,7 +169,8 @@ export function usePackageWorkOrderHubContext(options: UsePackageWorkOrderHubCon
       estimateAppendixContractRef,
       packageId,
       linkedInstallationSchedule,
-      formatMoneyValue: formatPackageMoneyValue,
+      /** Заказ-наряд: с копейками (количества м² и суммы); округление до целых рублей — в сметах и договорах. */
+      formatMoneyValue: (value: number) => value.toFixed(2).replace('.', ','),
       formatMoneyRubShort,
       formatInstallerNameShort,
       formatInstallerGradeShort: (grade: string | null | undefined) =>

@@ -1,3 +1,5 @@
+import { formatMoneyWholeGrouped } from '../../platform/form/moneyWhole';
+
 /** Счёт-заказ монтажа (Excel «С-З») и строки заказ-наряда. */
 
 export type FurnitureMontageLine = {
@@ -37,11 +39,8 @@ function parseDecimalInput(raw: string): number | null {
 }
 
 export function formatFurnitureMontageMoney(value: number): string {
-  if (!Number.isFinite(value)) return '0,00';
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (!Number.isFinite(value)) return '0';
+  return formatMoneyWholeGrouped(value);
 }
 
 export function resolveFurnitureMontageLineTotal(line: {

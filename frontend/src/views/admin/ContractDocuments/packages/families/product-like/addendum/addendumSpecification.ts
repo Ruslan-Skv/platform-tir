@@ -1,4 +1,5 @@
 import { buildEstimateDocPrintFooterHtml } from '../../../platform/estimates/packageEstimateDocPrintEmbedHtml';
+import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -55,11 +56,8 @@ function parseDecimalInput(raw: string): number | null {
 }
 
 export function formatWindowsAddendumMoney(value: number): string {
-  if (!Number.isFinite(value)) return '0,00';
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (!Number.isFinite(value)) return '0';
+  return formatMoneyWholeGrouped(value);
 }
 
 export function formatWindowsAddendumSignedMoney(value: number): string {

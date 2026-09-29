@@ -1,3 +1,5 @@
+import { formatMoneyWholeGrouped } from '../../platform/form/moneyWhole';
+
 /** Перечень товара техники (Excel «Переч»): бытовая техника + сантехника. */
 
 export type FurnitureAppliancesLineGroup = 'appliances' | 'plumbing';
@@ -28,11 +30,8 @@ function parseDecimalInput(raw: string): number | null {
 }
 
 export function formatFurnitureAppliancesMoney(value: number): string {
-  if (!Number.isFinite(value)) return '0,00';
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (!Number.isFinite(value)) return '0';
+  return formatMoneyWholeGrouped(value);
 }
 
 export function resolveFurnitureAppliancesLineTotal(line: {

@@ -126,10 +126,12 @@ export function PackageDocumentEditorTabContent({
         }
         return sum;
       }, 0);
-      const totalStr = total > 0 ? String(total) : prev.furniture.montage.contract.totalAmount;
+      /** Итоги ноги договора — целыми рублями (без копеек). */
+      const totalStr =
+        total > 0 ? String(Math.round(total)) : prev.furniture.montage.contract.totalAmount;
       const recommended =
         total > 0
-          ? String(Math.round(total * 0.7 * 100) / 100)
+          ? String(Math.round(total * 0.7))
           : prev.furniture.montage.contract.recommendedPrepayment;
       return {
         ...prev,
@@ -153,11 +155,13 @@ export function PackageDocumentEditorTabContent({
   const onAppliancesDocsChange = (appliancesDocs: FurnitureAppliancesDocs) => {
     setForm((prev) => {
       const total = furnitureAppliancesLinesTotal(appliancesDocs.lines);
-      const totalStr = total > 0 ? String(total) : prev.furniture.appliances.contract.totalAmount;
+      /** Итоги ноги договора — целыми рублями (без копеек). */
+      const totalStr =
+        total > 0 ? String(Math.round(total)) : prev.furniture.appliances.contract.totalAmount;
       /** Excel «Дог Тех»: оплата 100% при заключении. */
       const fullPay =
         total > 0
-          ? String(Math.round(total * 100) / 100)
+          ? String(Math.round(total))
           : prev.furniture.appliances.contract.recommendedPrepayment;
       return {
         ...prev,

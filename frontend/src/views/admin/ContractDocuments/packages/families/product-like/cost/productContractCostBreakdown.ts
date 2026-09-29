@@ -1,3 +1,4 @@
+import { formatMoneyWholePlain, roundMoneyStringToWhole } from '../../../platform/form/moneyWhole';
 import {
   applyPackageContractDiscountToNullableBase,
   packageEstimateTotalToContractFields,
@@ -18,7 +19,7 @@ export function parseContractMoneyAmount(raw: string | undefined | null): number
 
 export function formatContractMoneyAmount(value: number): string {
   if (!Number.isFinite(value) || value < 0) return '';
-  return value.toFixed(2).replace('.', ',');
+  return formatMoneyWholePlain(value);
 }
 
 export type ProductContractCostBreakdown = {
@@ -70,7 +71,7 @@ export function productContractTotalToContractFields(totalAmount: number) {
   return packageEstimateTotalToContractFields(totalAmount);
 }
 
-/** Поля для шаблонов: {{contract.contractCost}}, {{contract.productsCost}}, {{contract.worksCost}}. */
+/** Поля для шаблонов: {{contract.contractCost}}, {{contract.productsCost}}, {{contract.worksCost}} — целыми рублями. */
 export function productContractCostFieldsForTemplate(form: PackageFormData): {
   contractCost: string;
   productsCost: string;
@@ -81,7 +82,8 @@ export function productContractCostFieldsForTemplate(form: PackageFormData): {
     form.estimate.snapshot?.total != null && Number.isFinite(form.estimate.snapshot.total);
   const hasProducts = breakdown.productsAmount > 0;
   const contractCost =
-    form.contract.totalAmount.trim() || (hasWorks || hasProducts ? breakdown.totalDisplay : '');
+    roundMoneyStringToWhole(form.contract.totalAmount).trim() ||
+    (hasWorks || hasProducts ? breakdown.totalDisplay : '');
   return {
     contractCost,
     productsCost: hasProducts ? breakdown.productsDisplay : '',

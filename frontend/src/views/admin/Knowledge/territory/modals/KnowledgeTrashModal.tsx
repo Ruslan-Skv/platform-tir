@@ -142,6 +142,7 @@ export function KnowledgeTrashModal({
         title="Корзина базы знаний"
         size="lg"
         className={`${panelStyles.modalPanel} ${styles.trashPanel}`}
+        contentClassName={styles.contentBody}
         showCloseButton
       >
         <form

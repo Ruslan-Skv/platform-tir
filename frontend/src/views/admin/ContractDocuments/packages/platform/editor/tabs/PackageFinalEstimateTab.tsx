@@ -42,6 +42,9 @@ export type PackageFinalEstimateTabProps = {
 
 const formatMoneyValue = formatPackageMoneyValue;
 
+/** Количества (м², шт.) — с дробной частью, округляются только суммы. */
+const formatQuantityValue = (value: number): string => value.toFixed(2).replace('.', ',');
+
 /** Вкладка «Итог. смета» — только для направления «Ремонт». */
 export function PackageFinalEstimateTab({
   contractNumberLabel,
@@ -109,13 +112,13 @@ export function PackageFinalEstimateTab({
                                 {line.name}
                                 {line.excludedQuantity > 0 ? (
                                   <div className={attachStyles.estimateAttachedPresetMeta}>
-                                    Вычет: {formatMoneyValue(line.excludedQuantity)} из{' '}
-                                    {formatMoneyValue(line.includedQuantity)}
+                                    Вычет: {formatQuantityValue(line.excludedQuantity)} из{' '}
+                                    {formatQuantityValue(line.includedQuantity)}
                                   </div>
                                 ) : null}
                               </td>
                               <td>{line.unit || '—'}</td>
-                              <td>{formatMoneyValue(line.quantity)}</td>
+                              <td>{formatQuantityValue(line.quantity)}</td>
                               <td>{formatMoneyValue(line.price)}</td>
                               <td>{formatMoneyValue(line.amount)}</td>
                             </tr>

@@ -1,6 +1,7 @@
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
 import { buildProductPackageSignaturesFooterHtml } from '../../../platform/estimates/estimateDocPrintSignatures';
+import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -97,11 +98,8 @@ function parseDecimalInput(raw: string): number | null {
 }
 
 export function formatDoorsSpecificationMoney(value: number): string {
-  if (!Number.isFinite(value)) return '0,00';
-  return value.toLocaleString('ru-RU', {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  });
+  if (!Number.isFinite(value)) return '0';
+  return formatMoneyWholeGrouped(value);
 }
 
 export function newDoorsSpecificationLine(): DoorsSpecificationLine {

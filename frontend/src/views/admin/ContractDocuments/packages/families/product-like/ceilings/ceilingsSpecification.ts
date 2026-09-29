@@ -1,4 +1,5 @@
 import { buildProductPackageSignaturesFooterHtml } from '../../../platform/estimates/estimateDocPrintSignatures';
+import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -217,11 +218,9 @@ export function parseCeilingsQty(raw: string): number | null {
   return Number.isFinite(n) && n >= 0 ? n : null;
 }
 
+/** Суммы спецификации натяжных потолков — целыми рублями (без копеек). */
 export function formatCeilingsMoney(value: number): string {
-  return new Intl.NumberFormat('ru-RU', {
-    maximumFractionDigits: 2,
-    minimumFractionDigits: 0,
-  }).format(value);
+  return formatMoneyWholeGrouped(value);
 }
 
 function lineAmount(qtyRaw: string, priceRaw: string): number {

@@ -1,8 +1,5 @@
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
-
-function formatMoneyValue(value: number): string {
-  return value.toFixed(2).replace('.', ',');
-}
+import { formatMoneyWholePlain } from './moneyWhole';
 
 /** Процент скидки по договору из поля формы: 0…100, пусто и нечисло → 0. */
 export function parsePackageContractDiscountPercent(raw: string | undefined | null): number {
@@ -40,7 +37,7 @@ export function applyPackageContractDiscountToNullableBase(
   );
 }
 
-/** Поля суммы договора из числа (после скидки), как при автозаполнении из сметы. */
+/** Поля суммы договора из числа (после скидки), как при автозаполнении из сметы; итог — целыми рублями. */
 export function packageEstimateTotalToContractFields(totalAfterDiscount: number | null): {
   totalAmount: string;
   totalAmountWords: string;
@@ -53,10 +50,10 @@ export function packageEstimateTotalToContractFields(totalAfterDiscount: number 
       recommendedPrepayment: '',
     };
   }
-  const totalAmount = totalAfterDiscount.toFixed(2).replace('.', ',');
+  const totalAmount = formatMoneyWholePlain(totalAfterDiscount);
   return {
     totalAmount,
     totalAmountWords: amountToRussianWords(totalAmount),
-    recommendedPrepayment: formatMoneyValue(totalAfterDiscount * 0.7),
+    recommendedPrepayment: formatMoneyWholePlain(totalAfterDiscount * 0.7),
   };
 }

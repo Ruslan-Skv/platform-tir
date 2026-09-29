@@ -18,7 +18,7 @@ describe('doorsSpecification', () => {
       unitPrice: '15 000,50',
     };
     expect(resolveDoorsSpecificationLineTotal(line)).toBe(30_001);
-    expect(formatDoorsSpecificationLineTotal(line)).toBe('30\u00a0001,00');
+    expect(formatDoorsSpecificationLineTotal(line)).toBe('30\u00a0001');
   });
 
   it('sums only lines with content', () => {

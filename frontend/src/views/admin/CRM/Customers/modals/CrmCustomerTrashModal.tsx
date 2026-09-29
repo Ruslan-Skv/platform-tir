@@ -98,6 +98,7 @@ export function CrmCustomerTrashModal({ isOpen, onClose, onRestored }: CrmCustom
       title="Корзина клиентов"
       size="lg"
       className={`${panelStyles.modalPanel} ${styles.trashPanel}`}
+      contentClassName={styles.contentBody}
       showCloseButton
       compactOnMobile
     >

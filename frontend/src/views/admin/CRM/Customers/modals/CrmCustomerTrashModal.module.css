@@ -2,9 +2,28 @@
   max-height: min(92vh, 52rem);
 }
 
+/* Контент модалки (Modal contentClassName): колонка, форма заполняет высоту.
+   Процентные высоты здесь не работают (панель auto + max-height), поэтому
+   тянем форму флексом — список скроллится внутри, записи не скрываются. */
+.contentBody {
+  display: flex;
+  flex-direction: column;
+}
+
 .shell {
+  flex: 1 1 auto;
   gap: var(--admin-space-xs, 4px);
+  min-height: 0;
   padding: var(--admin-space-xs, 4px);
+}
+
+/* Поиск, подсказки, пагинация и футер не сжимаются — сжимается только список. */
+.shell > .searchRow,
+.shell > .pagination,
+.shell > :global([data-modal-form-hint]),
+.shell > :global([data-modal-form-error]),
+.shell > :global([data-modal-footer-info]) {
+  flex-shrink: 0;
 }
 
 .shell :global([data-modal-form-hint]) {
@@ -46,9 +65,12 @@
 
 .list {
   display: flex;
+  flex: 1 1 auto;
   flex-direction: column;
   gap: var(--admin-space-xs, 4px);
-  max-height: min(58vh, 28rem);
+  /* Минимальная высота области списка: ниже — скроллится сама модалка,
+     записи остаются доступны скроллом внутри списка. */
+  min-height: 10rem;
   overflow-y: auto;
   padding: var(--admin-space-sm, 6px) !important;
 }
@@ -57,6 +79,7 @@
   background: var(--admin-surface, #fff);
   border: 1px solid var(--admin-border, #e5e7eb);
   border-radius: var(--admin-radius-md, 8px);
+  flex-shrink: 0;
   overflow: hidden;
 }
 

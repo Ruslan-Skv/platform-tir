@@ -272,6 +272,8 @@ export type MoneyMovementTrashItem = MoneyMovement & {
   createdBy: { id: string; name: string } | null;
   /** Момент удаления в корзину (ISO). */
   deletedAt: string | null;
+  /** Момент безвозвратного удаления из корзины — deletedAt + срок хранения (ISO). */
+  permanentDeleteAt: string | null;
   deletedBy: { id: string; name: string } | null;
 };
 
@@ -281,6 +283,8 @@ export type MoneyMovementTrashResponse = {
   page: number;
   limit: number;
   totalPages: number;
+  /** Срок хранения записей в корзине (дней) до безвозвратного удаления. */
+  trashRetentionDays?: number;
 };
 
 /**

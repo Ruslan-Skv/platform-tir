@@ -50,6 +50,7 @@ export function DpTrashModal({ isOpen, onClose }: DpTrashModalProps) {
   const [page, setPage] = useState(1);
   const [rows, setRows] = useState<MoneyMovementTrashItem[]>([]);
   const [total, setTotal] = useState(0);
+  const [retentionDays, setRetentionDays] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +82,7 @@ export function DpTrashModal({ isOpen, onClose }: DpTrashModalProps) {
       });
       setRows(res.data ?? []);
       setTotal(res.total ?? 0);
+      setRetentionDays(res.trashRetentionDays ?? null);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Ошибка загрузки корзины');
     } finally {
@@ -101,6 +103,7 @@ export function DpTrashModal({ isOpen, onClose }: DpTrashModalProps) {
       title="Корзина журнала ДП"
       size="lg"
       className={`${panelStyles.modalPanel} ${styles.trashPanel}`}
+      contentClassName={styles.contentBody}
       showCloseButton
     >
       <form
@@ -182,6 +185,9 @@ export function DpTrashModal({ isOpen, onClose }: DpTrashModalProps) {
                       <span className={styles.entryDeleted}>
                         {`Удалено: ${formatDateTimeLocale(row.deletedAt)} · ${formatUserLabel(row.deletedBy)}`}
                       </span>
+                      <span className={styles.entryDeleted}>
+                        {`Безвозвратное удаление: ${formatDateTimeLocale(row.permanentDeleteAt)}`}
+                      </span>
                       {edited ? (
                         <span className={styles.entryDeleted}>Правки супер-админа: {edited}</span>
                       ) : null}
@@ -220,6 +226,9 @@ export function DpTrashModal({ isOpen, onClose }: DpTrashModalProps) {
         <div data-modal-footer-info data-modal-tone="info" role="status">
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
+            {retentionDays != null
+              ? `Записи хранятся в корзине ${retentionDays} дней, затем удаляются безвозвратно. `
+              : 'Записи удаляются из корзины безвозвратно через 30 дней. '}
             Удалённые записи скрыты из журнала ДП, итогов и остатка кассы менеджера. Восстановление
             из корзины невозможно. Сотрудники удаляют только свои записи, сделанные в текущем
             месяце; супер-админ — любые ручные записи.

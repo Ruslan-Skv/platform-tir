@@ -45,7 +45,7 @@ describe('mapCartItemsToDoorsSpecificationLines', () => {
       },
     });
     const line = mapCartItemToDoorsSpecificationLine(item);
-    expect(line?.unitPrice).toBe('32\u00a0500,50');
+    expect(line?.unitPrice).toBe('32\u00a0501');
     expect(resolveCartProductUnitPrice(item)).toBe(32_500.5);
   });
 
@@ -87,7 +87,7 @@ describe('mapCartItemsToDoorsSpecificationLines', () => {
     expect(line?.size).toBe('900×2100');
     expect(line?.openingSide).toBe('Правая');
     expect(line?.quantity).toBe('2');
-    expect(line?.unitPrice).toBe('25\u00a0000,00');
+    expect(line?.unitPrice).toBe('25\u00a0000');
   });
 
   it('maps product in entrance-doors subcategory', () => {
@@ -121,7 +121,7 @@ describe('mapCartItemsToDoorsSpecificationLines', () => {
     expect(line?.name).toContain('Межкомнатная дверь');
     expect(line?.color).toBe('Белый');
     expect(line?.size).toBe('800×2000');
-    expect(line?.unitPrice).toBe('18\u00a0500,00');
+    expect(line?.unitPrice).toBe('18\u00a0500');
   });
 
   it('maps component line with name and parent product', () => {
@@ -140,7 +140,7 @@ describe('mapCartItemsToDoorsSpecificationLines', () => {
     const line = mapCartItemToDoorsSpecificationLine(item);
     expect(line?.name).toContain('Наличник');
     expect(line?.name).toContain('Межкомнатная дверь');
-    expect(line?.unitPrice).toBe('1\u00a0200,00');
+    expect(line?.unitPrice).toBe('1\u00a0200');
   });
 
   it('maps any catalog product regardless of category', () => {
