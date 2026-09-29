@@ -195,12 +195,22 @@ export function buildPackageWorkOrderHubSharePayload(
     throw new Error('Отправка для этой вкладки недоступна');
   }
 
+  return buildFinalWorkOrderSharePayloadForVariant(ctx, resolveFinalWorkOrderVariant(ctx));
+}
+
+/** HTML/метаданные конкретного листа итогового заказ-наряда: общий или отдельного мастера. */
+function buildFinalWorkOrderSharePayloadForVariant(
+  ctx: PackageWorkOrderHubContextValue,
+  variant: 'common' | PackagePerInstallerWorkOrder
+): PackageWorkOrderHubSharePayload {
+  const contractPart = sanitizeFilePart(ctx.estimateAppendixContractRef.num);
+  const datePart = sanitizeFilePart(ctx.estimateAppendixContractRef.date);
+
   const input = buildFinalWorkOrderPrintInput(ctx);
   if (input.finalWorkOrderComputed.rooms.length === 0) {
     throw new Error('Нет данных для итогового заказ-наряда');
   }
 
-  const variant = resolveFinalWorkOrderVariant(ctx);
   const html = buildFinalWorkOrderPrintEmbedHtml(input, variant, ctx.isWindowsPackage);
   const isInstallerSheet = variant !== 'common';
   const installerFullName = isInstallerSheet ? variant.installer.fullName : null;

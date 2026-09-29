@@ -1,8 +1,13 @@
 'use client';
 
+import { ArrowDownTrayIcon } from '@heroicons/react/24/outline';
+
+import { useState } from 'react';
+
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
 import cdChrome from '../../../../styles/editor-chrome.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
+import { downloadPackageWorkOrderHubTabPdf } from '../../workOrders/packageWorkOrderHubPrint';
 import { buildWorkOrderInstallationMetaLines } from '../../workOrders/workOrderInstallationMeta';
 import { PackageWorkOrderGradeButtons } from './PackageWorkOrderGradeButtons';
 import { usePackageWorkOrderHub } from './PackageWorkOrderHubContext';
@@ -18,6 +23,7 @@ import {
 } from './packageWorkOrdersHubPanelStyles';
 
 export function PackageWorkOrdersHubFinalWorkOrderPanel() {
+  const hub = usePackageWorkOrderHub();
   const {
     isWindowsPackage,
     form,
@@ -34,11 +40,27 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
     formatMoneyRubShort,
     formatInstallerNameShort,
     formatInstallerGradeShort,
-  } = usePackageWorkOrderHub();
+  } = hub;
+
+  const [pdfBusy, setPdfBusy] = useState(false);
+  const [pdfError, setPdfError] = useState<string | null>(null);
 
   const installationMeta = linkedInstallationSchedule
     ? buildWorkOrderInstallationMetaLines(linkedInstallationSchedule)
     : null;
+
+  const downloadActivePdf = async () => {
+    if (pdfBusy) return;
+    setPdfBusy(true);
+    setPdfError(null);
+    try {
+      await downloadPackageWorkOrderHubTabPdf('finalWorkOrder', hub);
+    } catch (err) {
+      setPdfError(err instanceof Error ? err.message : 'Не удалось сформировать PDF');
+    } finally {
+      setPdfBusy(false);
+    }
+  };
 
   return (
     <div className={woPanelRootClass(isWindowsPackage)}>
@@ -63,28 +85,45 @@ export function PackageWorkOrdersHubFinalWorkOrderPanel() {
               ? 'Формируется из счёт-заказа и доп. соглашений с учётом назначенных мастеров.'
               : 'Формируется из итоговой сметы: включает все проводимые работы по основной смете и доп. соглашениям, с вычетом работ из блока «Непроводимые ремонтно-отделочные работы».'}
           </p>
-          <div className={`${cdChrome.tabBar} ${hubStyles.finalDocTabBar}`}>
+          <div className={hubStyles.finalDocTabRow}>
+            <div className={`${cdChrome.tabBar} ${hubStyles.finalDocTabBar}`}>
+              <button
+                type="button"
+                className={`${cdChrome.tab} ${activeFinalWorkOrderDocId === 'common' ? cdChrome.tabActive : ''}`}
+                onClick={() => setActiveFinalWorkOrderDocId('common')}
+              >
+                Общий заказ-наряд
+              </button>
+              {perInstallerWorkOrders.map((doc) => (
+                <button
+                  key={doc.installer.id}
+                  type="button"
+                  className={`${cdChrome.tab} ${
+                    activeFinalWorkOrderDocId === doc.installer.id ? cdChrome.tabActive : ''
+                  }`}
+                  onClick={() => setActiveFinalWorkOrderDocId(doc.installer.id)}
+                >
+                  {formatInstallerNameShort(doc.installer.fullName)}
+                  {!isWindowsPackage ? ` (${formatInstallerGradeShort(doc.installer.grade)})` : ''}
+                </button>
+              ))}
+            </div>
             <button
               type="button"
-              className={`${cdChrome.tab} ${activeFinalWorkOrderDocId === 'common' ? cdChrome.tabActive : ''}`}
-              onClick={() => setActiveFinalWorkOrderDocId('common')}
+              className={hubStyles.finalDocDownloadBtn}
+              onClick={() => void downloadActivePdf()}
+              disabled={pdfBusy}
+              title="Скачать PDF открытого заказ-наряда (общего или выбранного мастера)"
             >
-              Общий заказ-наряд
+              <ArrowDownTrayIcon className={hubStyles.headerIcon} aria-hidden />
+              <span>{pdfBusy ? 'Готовим PDF…' : 'Скачать PDF'}</span>
             </button>
-            {perInstallerWorkOrders.map((doc) => (
-              <button
-                key={doc.installer.id}
-                type="button"
-                className={`${cdChrome.tab} ${
-                  activeFinalWorkOrderDocId === doc.installer.id ? cdChrome.tabActive : ''
-                }`}
-                onClick={() => setActiveFinalWorkOrderDocId(doc.installer.id)}
-              >
-                {formatInstallerNameShort(doc.installer.fullName)}
-                {!isWindowsPackage ? ` (${formatInstallerGradeShort(doc.installer.grade)})` : ''}
-              </button>
-            ))}
           </div>
+          {pdfError ? (
+            <p data-modal-form-error style={{ margin: '0 0 10px' }}>
+              {pdfError}
+            </p>
+          ) : null}
           <div className={WO_A4_WRAP}>
             <article className={cdDocPreview.estimateA4Sheet} data-print-target="work-order-sheet">
               <div className={cdDocPreview.estimateA4Meta} style={{ marginBottom: 10 }}>

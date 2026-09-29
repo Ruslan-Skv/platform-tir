@@ -1358,60 +1358,80 @@ export async function buildDocumentPdfBlob(
     : 'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;';
   document.body.appendChild(iframe);
 
-  const doc = iframe.contentDocument;
-  if (!doc) {
-    iframe.remove();
-    throw new Error('Не удалось подготовить PDF');
-  }
-
-  doc.open();
-  doc.write(fullHtml);
-  doc.close();
-
-  await new Promise<void>((resolve) => {
-    const finish = () => requestAnimationFrame(() => resolve());
-    if (doc.readyState === 'complete') {
-      finish();
-      return;
-    }
-    iframe.addEventListener('load', () => finish(), { once: true });
-  });
-
-  if (doc.fonts?.ready) {
-    try {
-      await doc.fonts.ready;
-    } catch {
-      /* ignore */
-    }
-  }
-
-  await waitForDocumentImages(doc);
-
-  const html2pdf = (await import('html2pdf.js')).default;
-
   try {
-    const worker = html2pdf()
-      .set({
-        margin: [10, 10, 10, 10],
-        filename: fileName,
-        image: { type: 'jpeg', quality: 0.96 },
-        html2canvas: {
-          scale: 2,
-          useCORS: true,
-          logging: false,
-          windowWidth: doc.documentElement.scrollWidth,
-          scrollX: 0,
-          scrollY: 0,
-        },
-        jsPDF: {
-          unit: 'mm',
-          format: 'a4',
-          orientation: landscape ? 'landscape' : 'portrait',
-        },
-      })
-      .from(doc.body);
-    const blob = (await worker.outputPdf('blob')) as Blob;
-    return { blob, fileName };
+    const doc = iframe.contentDocument;
+    if (!doc) {
+      throw new Error('Не удалось подготовить PDF');
+    }
+
+    doc.open();
+    doc.write(fullHtml);
+    doc.close();
+
+    await new Promise<void>((resolve) => {
+      const finish = () => requestAnimationFrame(() => resolve());
+      if (doc.readyState === 'complete') {
+        finish();
+        return;
+      }
+      iframe.addEventListener('load', () => finish(), { once: true });
+    });
+
+    if (doc.fonts?.ready) {
+      try {
+        await doc.fonts.ready;
+      } catch {
+        /* ignore */
+      }
+    }
+
+    await waitForDocumentImages(doc);
+
+    /*
+     * Растеризуем содержимое прямо из скрытого iframe с печатными стилями.
+     * html2pdf.js для рендера переносит клон в основной документ, где этих стилей нет,
+     * из-за чего PDF терял границы таблиц и компактный кегль печатной вёрстки.
+     */
+    const html2canvas = (await import('html2canvas')).default;
+    const canvas = await html2canvas(doc.body, {
+      scale: 2,
+      useCORS: true,
+      logging: false,
+      backgroundColor: '#ffffff',
+      windowWidth: doc.documentElement.scrollWidth,
+      scrollX: 0,
+      scrollY: 0,
+    });
+
+    const { jsPDF } = await import('jspdf');
+    const pdf = new jsPDF({
+      unit: 'mm',
+      format: 'a4',
+      orientation: landscape ? 'landscape' : 'portrait',
+    });
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const pdfMargin = 10;
+    const contentWidth = pageWidth - pdfMargin * 2;
+    const contentHeight = pageHeight - pdfMargin * 2;
+    const imgHeightMm = (canvas.height / canvas.width) * contentWidth;
+    const pageCount = Math.max(1, Math.ceil(imgHeightMm / contentHeight));
+    const imgData = canvas.toDataURL('image/jpeg', 0.96);
+
+    for (let page = 0; page < pageCount; page += 1) {
+      if (page > 0) pdf.addPage();
+      pdf.addImage(
+        imgData,
+        'JPEG',
+        pdfMargin,
+        pdfMargin - page * contentHeight,
+        contentWidth,
+        imgHeightMm,
+        'printDocumentPage'
+      );
+    }
+
+    return { blob: pdf.output('blob'), fileName };
   } finally {
     iframe.remove();
   }

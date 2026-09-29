@@ -168,6 +168,66 @@
   margin-bottom: 10px;
 }
 
+.finalDocTabRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.finalDocTabRow .finalDocTabBar {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.finalDocDownloadBtn {
+  appearance: none;
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 2px;
+  min-height: 2.25rem;
+  padding: 4px 12px;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+  white-space: nowrap;
+}
+
+.finalDocDownloadBtn:hover:not(:disabled) {
+  background: var(--admin-surface-soft, #f3f4f6);
+}
+
+.finalDocDownloadBtn:focus {
+  outline: none;
+}
+
+.finalDocDownloadBtn:focus-visible {
+  border-color: rgb(17 24 39 / 0.3);
+  box-shadow: 0 0 0 2px rgb(217 6 82 / 0.15);
+}
+
+.finalDocDownloadBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.finalDocDownloadBtn .headerIcon {
+  width: 1rem;
+  height: 1rem;
+}
+
 @media (max-width: 767px) {
   .modalPanel {
     width: 100%;
@@ -272,6 +332,12 @@
     line-height: 1.2;
   }
 
+  .finalDocTabRow {
+    flex-wrap: nowrap;
+    gap: 4px;
+    margin-bottom: 8px;
+  }
+
   .finalDocTabBar {
     flex-wrap: nowrap;
     overflow-x: auto;
@@ -288,6 +354,13 @@
     font-size: var(--admin-font-size-2xs, 0.6875rem);
     padding: 4px 8px;
     min-height: 2rem;
+  }
+
+  .finalDocDownloadBtn {
+    margin-top: 0;
+    padding: 4px 8px;
+    min-height: 2rem;
+    font-size: var(--admin-font-size-2xs, 0.6875rem);
   }
 
   .shareHintDesktop {
