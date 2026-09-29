@@ -162,6 +162,7 @@ model User {
   waybillTasksDeleted                     WaybillTask[]                            @relation("WaybillTaskDeletedBy")
   waybillTaskBellEvents                   WaybillTaskBellEvent[]
   contractSigningBellEvents               ContractSigningBellEvent[]
+  contractConcludedBellEvents             ContractConcludedBellEvent[]
   measurementBellEvents                   MeasurementBellEvent[]
   managerIncassationBellEvents            ManagerIncassationBellEvent[]
   waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                  @relation("WaybillTaskAttachmentUploadedBy")
@@ -489,6 +490,10 @@ model ExternalNotifySettings {
   measurementCreatedNotifyEmails      Json? // string[]
   measurementCreatedNotifyTelegramIds Json? // string[]
   measurementCreatedNotifyMaxIds      Json? // string[]
+
+  contractConcludedNotifyEmails      Json? // string[]
+  contractConcludedNotifyTelegramIds Json? // string[]
+  contractConcludedNotifyMaxIds      Json? // string[]
 
   updatedAt DateTime @updatedAt
 
@@ -2723,40 +2728,46 @@ model NotificationSound {
 }
 
 model UserAdminNotificationOverride {
-  id                            String   @id @default(cuid())
-  userId                        String   @unique // Персональные настройки для пользователя (переопределяют роль)
+  id                                 String   @id @default(cuid())
+  userId                             String   @unique // Персональные настройки для пользователя (переопределяют роль)
   // true = только доставка (звук/desktop); события notify* берутся из роли
-  deliveryOnly                  Boolean  @default(false)
-  soundEnabled                  Boolean  @default(true)
-  soundVolume                   Int      @default(70)
-  soundType                     String   @default("beep")
-  customSoundUrl                String?
-  desktopNotifications          Boolean  @default(false)
-  checkIntervalSeconds          Int      @default(60)
-  notifyOnReviews               Boolean  @default(true)
-  notifyOnOrders                Boolean  @default(true)
-  notifyOnSupportChat           Boolean  @default(true)
-  notifyOnMeasurementForm       Boolean  @default(true)
-  notifyOnCallbackForm          Boolean  @default(true)
-  notifyOnDirectorForm          Boolean  @default(true)
-  notifyOnQuoteForm             Boolean  @default(true)
-  notifyOnQuizMebel             Boolean  @default(true)
-  notifyOnQuizRemont            Boolean  @default(true)
-  notifyOnKnowledgeFeedback     Boolean  @default(true)
-  notifyOnSiteFeedback          Boolean  @default(true)
-  notifyOnKnowledgeTraining     Boolean  @default(true)
-  notifyOnWorkDays              Boolean  @default(true)
-  notifyOnWorkDayRequestReviews Boolean  @default(true) // Ответы на собственные запросы рабочего времени
-  notifyOnWaybills              Boolean  @default(true)
-  notifyOnInstallationSchedules Boolean  @default(true)
-  notifyOnRepairSchedules       Boolean  @default(true)
-  notifyOnFurnitureSchedules    Boolean  @default(true)
-  notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
-  notifyOnMeasurements          Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
-  notifyOnMeasurementCreated    Boolean  @default(true) // Создание нового замера
-  notifyOnIncassations          Boolean  @default(true) // Инкассации наличных (журнал ДП)
-  updatedAt                     DateTime @updatedAt
-  user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deliveryOnly                       Boolean  @default(false)
+  soundEnabled                       Boolean  @default(true)
+  soundVolume                        Int      @default(70)
+  soundType                          String   @default("beep")
+  customSoundUrl                     String?
+  desktopNotifications               Boolean  @default(false)
+  checkIntervalSeconds               Int      @default(60)
+  notifyOnReviews                    Boolean  @default(true)
+  notifyOnOrders                     Boolean  @default(true)
+  notifyOnSupportChat                Boolean  @default(true)
+  notifyOnMeasurementForm            Boolean  @default(true)
+  notifyOnCallbackForm               Boolean  @default(true)
+  notifyOnDirectorForm               Boolean  @default(true)
+  notifyOnQuoteForm                  Boolean  @default(true)
+  notifyOnQuizMebel                  Boolean  @default(true)
+  notifyOnQuizRemont                 Boolean  @default(true)
+  notifyOnKnowledgeFeedback          Boolean  @default(true)
+  notifyOnSiteFeedback               Boolean  @default(true)
+  notifyOnKnowledgeTraining          Boolean  @default(true)
+  notifyOnWorkDays                   Boolean  @default(true)
+  notifyOnWorkDayRequestReviews      Boolean  @default(true) // Ответы на собственные запросы рабочего времени
+  notifyOnWaybills                   Boolean  @default(true)
+  notifyOnInstallationSchedules      Boolean  @default(true)
+  notifyOnRepairSchedules            Boolean  @default(true)
+  notifyOnFurnitureSchedules         Boolean  @default(true)
+  notifyOnContractSigning            Boolean  @default(true) // Электронное подписание договоров
+  notifyOnMeasurements               Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
+  notifyOnMeasurementCreated         Boolean  @default(true) // Создание нового замера
+  notifyOnContractConcludedRepair    Boolean  @default(true) // Договор подписан — Ремонт
+  notifyOnContractConcludedWindows   Boolean  @default(true) // Договор подписан — Окна
+  notifyOnContractConcludedDoors     Boolean  @default(true) // Договор подписан — Двери
+  notifyOnContractConcludedCeilings  Boolean  @default(true) // Договор подписан — Потолки
+  notifyOnContractConcludedBlinds    Boolean  @default(true) // Договор подписан — Жалюзи
+  notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
+  notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
+  updatedAt                          DateTime @updatedAt
+  user                               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("user_admin_notification_override")
 }
@@ -2805,37 +2816,43 @@ model AdminBellNotificationHistory {
 }
 
 model AdminNotificationsBlock {
-  id                            String   @id @default(cuid())
-  role                          String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
-  soundEnabled                  Boolean  @default(true) // Звук при событиях
-  soundVolume                   Int      @default(70) // Громкость 0-100
-  soundType                     String   @default("beep") // beep, ding, chime, bell или custom
-  customSoundUrl                String? // URL загруженного звука (при soundType=custom)
-  desktopNotifications          Boolean  @default(false) // Браузерные уведомления
-  checkIntervalSeconds          Int      @default(60) // Интервал проверки (сек)
-  notifyOnReviews               Boolean  @default(true) // Уведомления о новых отзывах
-  notifyOnOrders                Boolean  @default(true) // Уведомления о новых заказах
-  notifyOnSupportChat           Boolean  @default(true) // Уведомления о сообщениях в чате
-  notifyOnMeasurementForm       Boolean  @default(true) // Уведомления о записи на замер
-  notifyOnCallbackForm          Boolean  @default(true) // Уведомления о заказе обратного звонка
-  notifyOnDirectorForm          Boolean  @default(true) // Уведомления о письме директору
-  notifyOnQuoteForm             Boolean  @default(true) // Уведомления о заявке на расчёт стоимости
-  notifyOnQuizMebel             Boolean  @default(true) // Заявки с квиза mebel-na-zakaz-51.ru
-  notifyOnQuizRemont            Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
-  notifyOnKnowledgeFeedback     Boolean  @default(true) // Обратная связь по обучающей платформе
-  notifyOnSiteFeedback          Boolean  @default(true) // Обратная связь по публичному сайту
-  notifyOnKnowledgeTraining     Boolean  @default(true) // Динамика изучения материалов обучения
-  notifyOnWorkDays              Boolean  @default(true) // Учёт рабочего времени
-  notifyOnWorkDayRequestReviews Boolean  @default(true) // Ответы на запросы сотрудников (выходной / пораньше / попозже)
-  notifyOnWaybills              Boolean  @default(true) // Путевой лист / маршрут водителя
-  notifyOnInstallationSchedules Boolean  @default(true) // Графики монтажей
-  notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта
-  notifyOnFurnitureSchedules    Boolean  @default(true) // План-график мебели
-  notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
-  notifyOnMeasurements          Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
-  notifyOnMeasurementCreated    Boolean  @default(true) // Создание нового замера
-  notifyOnIncassations          Boolean  @default(true) // Инкассации наличных (журнал ДП)
-  updatedAt                     DateTime @updatedAt
+  id                                 String   @id @default(cuid())
+  role                               String?  @unique // null = по умолчанию для всех, иначе роль (ADMIN, MODERATOR и т.д.)
+  soundEnabled                       Boolean  @default(true) // Звук при событиях
+  soundVolume                        Int      @default(70) // Громкость 0-100
+  soundType                          String   @default("beep") // beep, ding, chime, bell или custom
+  customSoundUrl                     String? // URL загруженного звука (при soundType=custom)
+  desktopNotifications               Boolean  @default(false) // Браузерные уведомления
+  checkIntervalSeconds               Int      @default(60) // Интервал проверки (сек)
+  notifyOnReviews                    Boolean  @default(true) // Уведомления о новых отзывах
+  notifyOnOrders                     Boolean  @default(true) // Уведомления о новых заказах
+  notifyOnSupportChat                Boolean  @default(true) // Уведомления о сообщениях в чате
+  notifyOnMeasurementForm            Boolean  @default(true) // Уведомления о записи на замер
+  notifyOnCallbackForm               Boolean  @default(true) // Уведомления о заказе обратного звонка
+  notifyOnDirectorForm               Boolean  @default(true) // Уведомления о письме директору
+  notifyOnQuoteForm                  Boolean  @default(true) // Уведомления о заявке на расчёт стоимости
+  notifyOnQuizMebel                  Boolean  @default(true) // Заявки с квиза mebel-na-zakaz-51.ru
+  notifyOnQuizRemont                 Boolean  @default(true) // Заявки с квиза remont-kvartir-51.ru
+  notifyOnKnowledgeFeedback          Boolean  @default(true) // Обратная связь по обучающей платформе
+  notifyOnSiteFeedback               Boolean  @default(true) // Обратная связь по публичному сайту
+  notifyOnKnowledgeTraining          Boolean  @default(true) // Динамика изучения материалов обучения
+  notifyOnWorkDays                   Boolean  @default(true) // Учёт рабочего времени
+  notifyOnWorkDayRequestReviews      Boolean  @default(true) // Ответы на запросы сотрудников (выходной / пораньше / попозже)
+  notifyOnWaybills                   Boolean  @default(true) // Путевой лист / маршрут водителя
+  notifyOnInstallationSchedules      Boolean  @default(true) // Графики монтажей
+  notifyOnRepairSchedules            Boolean  @default(true) // План-график ремонта
+  notifyOnFurnitureSchedules         Boolean  @default(true) // План-график мебели
+  notifyOnContractSigning            Boolean  @default(true) // Электронное подписание договоров
+  notifyOnMeasurements               Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
+  notifyOnMeasurementCreated         Boolean  @default(true) // Создание нового замера
+  notifyOnContractConcludedRepair    Boolean  @default(true) // Договор подписан — Ремонт
+  notifyOnContractConcludedWindows   Boolean  @default(true) // Договор подписан — Окна
+  notifyOnContractConcludedDoors     Boolean  @default(true) // Договор подписан — Двери
+  notifyOnContractConcludedCeilings  Boolean  @default(true) // Договор подписан — Потолки
+  notifyOnContractConcludedBlinds    Boolean  @default(true) // Договор подписан — Жалюзи
+  notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
+  notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
+  updatedAt                          DateTime @updatedAt
 
   @@map("admin_notifications_block")
 }
@@ -3343,6 +3360,26 @@ model ContractSigningBellEvent {
   @@map("contract_signing_bell_events")
 }
 
+/// События «Договор подписан» (пакет переведён в CONTRACT_CONCLUDED) для колокольчика.
+/// kind — направление пакета (REPAIR | WINDOWS | DOORS | CEILINGS | BLINDS | FURNITURE).
+model ContractConcludedBellEvent {
+  id          String   @id @default(cuid())
+  recipientId String
+  packageId   String
+  kind        String
+  title       String
+  message     String   @db.Text
+  href        String
+  createdAt   DateTime @default(now())
+
+  recipient User                    @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+  package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+
+  @@index([recipientId, createdAt])
+  @@index([packageId])
+  @@map("contract_concluded_bell_events")
+}
+
 /// Циклическая схема доступности водителя на доставках (не путать с учётом рабочего дня).
 model DriverDeliveryAvailability {
   id              String   @id @default(cuid())
@@ -3518,6 +3555,7 @@ model ContractDocumentPackage {
   repairScheduleProjects    RepairScheduleProject[]
   furnitureScheduleProjects FurnitureScheduleProject[]
   signingSessions           ContractDocumentSigningSession[]
+  concludedBellEvents       ContractConcludedBellEvent[]
   numberHolds               ContractDocumentNumberHold[]
   numberAssignments         ContractDocumentNumberAssignment[]
 

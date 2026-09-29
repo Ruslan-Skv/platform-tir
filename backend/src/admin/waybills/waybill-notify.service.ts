@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
+import { AdminNotificationSettingsReaderService } from '../../bell-push/admin-notification-settings-reader.service';
 import { ExternalNotifyService } from '../../external-notify/external-notify.service';
 import { ExternalNotifySettingsService } from '../../external-notify/external-notify-settings.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -30,6 +31,7 @@ export class WaybillNotifyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly settingsReader: AdminNotificationSettingsReaderService,
     private readonly externalNotify: ExternalNotifyService,
     private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
@@ -48,14 +50,6 @@ export class WaybillNotifyService {
 
   onFailed(task: WaybillNotifyTask, actorUserId: string): void {
     void this.notify('failed', task, actorUserId).catch(() => undefined);
-  }
-
-  private recipientIds(task: WaybillNotifyTask, actorUserId: string): string[] {
-    const ids = new Set<string>();
-    if (task.driverUserId) ids.add(task.driverUserId);
-    if (task.responsibleUserId) ids.add(task.responsibleUserId);
-    ids.delete(actorUserId);
-    return [...ids];
   }
 
   private formatDate(d: Date): string {
@@ -93,7 +87,8 @@ export class WaybillNotifyService {
   ): Promise<void> {
     const title = KIND_LABELS[kind];
     const message = this.buildMessage(kind, task);
-    const recipients = this.recipientIds(task, actorUserId);
+    // Рассылка всем сотрудникам с включённым чекбоксом «Путевой лист».
+    const recipients = await this.settingsReader.getUserIdsWithEventEnabled('notifyOnWaybills');
 
     if (recipients.length > 0) {
       await this.prisma.waybillTaskBellEvent.createMany({

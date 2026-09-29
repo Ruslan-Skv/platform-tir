@@ -153,6 +153,36 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsBoolean()
   notifyOnContractSigning?: boolean;
 
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Ремонт' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedRepair?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Окна' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedWindows?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Двери' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedDoors?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Потолки' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedCeilings?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Жалюзи' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedBlinds?: boolean;
+
+  @ApiPropertyOptional({ description: 'Личное переопределение: договор подписан — Мебель' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedFurniture?: boolean;
+
   @ApiPropertyOptional({ description: 'Личное переопределение: инкассации наличных (журнал ДП)' })
   @IsOptional()
   @IsBoolean()

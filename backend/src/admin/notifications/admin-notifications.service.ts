@@ -47,6 +47,12 @@ export const NOTIFY_EVENT_KEYS = [
   'notifyOnMeasurements',
   'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
+  'notifyOnContractConcludedRepair',
+  'notifyOnContractConcludedWindows',
+  'notifyOnContractConcludedDoors',
+  'notifyOnContractConcludedCeilings',
+  'notifyOnContractConcludedBlinds',
+  'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
 ] as const;
 
@@ -116,6 +122,12 @@ export class AdminNotificationsService {
       notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated,
       notifyOnContractSigning: dto.notifyOnContractSigning,
+      notifyOnContractConcludedRepair: dto.notifyOnContractConcludedRepair,
+      notifyOnContractConcludedWindows: dto.notifyOnContractConcludedWindows,
+      notifyOnContractConcludedDoors: dto.notifyOnContractConcludedDoors,
+      notifyOnContractConcludedCeilings: dto.notifyOnContractConcludedCeilings,
+      notifyOnContractConcludedBlinds: dto.notifyOnContractConcludedBlinds,
+      notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture,
       notifyOnIncassations: dto.notifyOnIncassations,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
@@ -150,6 +162,12 @@ export class AdminNotificationsService {
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
+      notifyOnContractConcludedRepair: dto.notifyOnContractConcludedRepair ?? true,
+      notifyOnContractConcludedWindows: dto.notifyOnContractConcludedWindows ?? true,
+      notifyOnContractConcludedDoors: dto.notifyOnContractConcludedDoors ?? true,
+      notifyOnContractConcludedCeilings: dto.notifyOnContractConcludedCeilings ?? true,
+      notifyOnContractConcludedBlinds: dto.notifyOnContractConcludedBlinds ?? true,
+      notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };
     return this.prisma.userAdminNotificationOverride.upsert({
@@ -343,6 +361,12 @@ export class AdminNotificationsService {
       notifyOnMeasurements: dto.notifyOnMeasurements,
       notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated,
       notifyOnContractSigning: dto.notifyOnContractSigning,
+      notifyOnContractConcludedRepair: dto.notifyOnContractConcludedRepair,
+      notifyOnContractConcludedWindows: dto.notifyOnContractConcludedWindows,
+      notifyOnContractConcludedDoors: dto.notifyOnContractConcludedDoors,
+      notifyOnContractConcludedCeilings: dto.notifyOnContractConcludedCeilings,
+      notifyOnContractConcludedBlinds: dto.notifyOnContractConcludedBlinds,
+      notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture,
       notifyOnIncassations: dto.notifyOnIncassations,
     };
     const updateData = Object.fromEntries(Object.entries(data).filter(([, v]) => v !== undefined));
@@ -375,6 +399,12 @@ export class AdminNotificationsService {
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
       notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
+      notifyOnContractConcludedRepair: dto.notifyOnContractConcludedRepair ?? true,
+      notifyOnContractConcludedWindows: dto.notifyOnContractConcludedWindows ?? true,
+      notifyOnContractConcludedDoors: dto.notifyOnContractConcludedDoors ?? true,
+      notifyOnContractConcludedCeilings: dto.notifyOnContractConcludedCeilings ?? true,
+      notifyOnContractConcludedBlinds: dto.notifyOnContractConcludedBlinds ?? true,
+      notifyOnContractConcludedFurniture: dto.notifyOnContractConcludedFurniture ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };
     if (role !== null) {

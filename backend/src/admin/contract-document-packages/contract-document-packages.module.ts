@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 
 import { DatabaseModule } from '../../database/database.module';
 import { ContractDocumentNumberingModule } from '../../contract-document-numbering/contract-document-numbering.module';
+import { ContractConcludedNotifyModule } from '../../contract-concluded-notify/contract-concluded-notify.module';
 import { RepairSchedulesModule } from '../repair-schedules/repair-schedules.module';
 import { MoneyMovementsModule } from '../money-movements/money-movements.module';
 import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
@@ -21,6 +22,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
     RepairSchedulesModule,
     ContractDocumentNumberingModule,
     MoneyMovementsModule,
+    ContractConcludedNotifyModule,
   ],
   controllers: [ContractDocumentPackagesController],
   providers: [

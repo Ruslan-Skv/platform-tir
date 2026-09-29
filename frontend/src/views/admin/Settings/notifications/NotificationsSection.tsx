@@ -4,7 +4,10 @@ import React, { useCallback, useEffect, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import type {
+  AdminNotificationUser,
   AdminNotificationsSettings,
+  CustomerNotificationSettings,
+  MyNotifyEventKey,
   NotificationSound,
 } from '@/shared/api/admin-notifications';
 import {
@@ -21,15 +24,13 @@ import {
   updateAllAdminCustomerNotificationSettings,
   uploadAdminNotificationSound,
 } from '@/shared/api/admin-notifications';
-import type {
-  AdminNotificationUser,
-  CustomerNotificationSettings,
-} from '@/shared/api/admin-notifications';
 import { ADMIN_NOTIFICATION_BELL_ROLES } from '@/shared/config/admin-roles';
 import { type NotificationSoundType, playNotificationSound } from '@/shared/lib/notification-sound';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
 
+import styles from '../my-notifications/MyNotificationsPage.module.css';
 import { ROLES_CONFIG } from '../shared/rolesConfig';
-import styles from './NotificationsSection.module.css';
 
 /** Роли, для которых SUPER_ADMIN настраивает события колокольчика (без стажёра). */
 const ADMIN_ROLES = ADMIN_NOTIFICATION_BELL_ROLES;
@@ -50,8 +51,114 @@ const SOUND_OPTIONS: { value: NotificationSoundType; label: string }[] = [
   { value: 'custom', label: 'Свой звук (загруженный)' },
 ];
 
+const INTERVAL_OPTIONS = [30, 60, 120, 180, 300];
+
+function intervalLabel(sec: number) {
+  if (sec < 60) return `${sec} секунд`;
+  if (sec === 60) return '1 минута';
+  return `${sec / 60} минуты`;
+}
+
 type EditMode = 'role' | 'user' | 'customer';
 type CustomerScope = 'single' | 'all';
+
+type EventToggle = {
+  key: MyNotifyEventKey;
+  label: string;
+  superAdminOnly?: boolean;
+};
+
+const EVENT_TOGGLES: EventToggle[] = [
+  { key: 'notifyOnReviews', label: 'Новые отзывы на товары' },
+  { key: 'notifyOnOrders', label: 'Новые заказы' },
+  { key: 'notifyOnSupportChat', label: 'Сообщения в чате поддержки' },
+  { key: 'notifyOnMeasurementForm', label: 'Запись на замер' },
+  { key: 'notifyOnCallbackForm', label: 'Заказ обратного звонка' },
+  { key: 'notifyOnDirectorForm', label: 'Письмо директору' },
+  { key: 'notifyOnQuoteForm', label: 'Рассчитать стоимость' },
+  { key: 'notifyOnQuizMebel', label: 'Квиз — Мебель на заказ (mebel-na-zakaz-51.ru)' },
+  { key: 'notifyOnQuizRemont', label: 'Квиз — Ремонт и отделка (remont-kvartir-51.ru)' },
+  {
+    key: 'notifyOnKnowledgeTraining',
+    label: 'Динамика изучения материалов на обучающей платформе',
+  },
+  {
+    key: 'notifyOnWorkDays',
+    label: 'Учёт рабочего времени (опоздания, ранний уход, автозакрытие)',
+  },
+  {
+    key: 'notifyOnWorkDayRequestReviews',
+    label: 'Ответы на запросы рабочего времени (выходной, уйти пораньше, прийти попозже)',
+  },
+  {
+    key: 'notifyOnWaybills',
+    label: 'Путевой лист (новые задания, правки, выполнение / невыполнение)',
+  },
+  {
+    key: 'notifyOnInstallationSchedules',
+    label: 'График монтажей (новые записи, правки, выполнение / невыполнение)',
+  },
+  {
+    key: 'notifyOnRepairSchedules',
+    label: 'График ремонтов (проекты, записи и изменение статусов)',
+  },
+  { key: 'notifyOnFurnitureSchedules', label: 'План-график мебели' },
+  { key: 'notifyOnMeasurementCreated', label: 'Новый замер (создание замера)' },
+  { key: 'notifyOnMeasurements', label: 'Замеры (выполнен, отказ, договор)' },
+  {
+    key: 'notifyOnContractSigning',
+    label: 'Электронное подписание договоров (подписан / отклонён / открыт клиентом)',
+  },
+  { key: 'notifyOnContractConcludedRepair', label: 'Договор подписан — Ремонт' },
+  { key: 'notifyOnContractConcludedWindows', label: 'Договор подписан — Окна' },
+  { key: 'notifyOnContractConcludedDoors', label: 'Договор подписан — Двери' },
+  { key: 'notifyOnContractConcludedCeilings', label: 'Договор подписан — Потолки' },
+  { key: 'notifyOnContractConcludedBlinds', label: 'Договор подписан — Жалюзи' },
+  { key: 'notifyOnContractConcludedFurniture', label: 'Договор подписан — Мебель' },
+  { key: 'notifyOnIncassations', label: 'Инкассации наличных (журнал ДП)' },
+  {
+    key: 'notifyOnKnowledgeFeedback',
+    label: 'Ошибки и предложения по обучающей платформе',
+    superAdminOnly: true,
+  },
+  {
+    key: 'notifyOnSiteFeedback',
+    label: 'Ошибки и предложения по публичному сайту',
+    superAdminOnly: true,
+  },
+];
+
+/** Радио-строки выбора режима редактирования (общие для всех экранов страницы). */
+function EditModeRadios({
+  value,
+  onChange,
+}: {
+  value: EditMode;
+  onChange: (mode: EditMode) => void;
+}) {
+  return (
+    <div className={styles.rows}>
+      {(
+        [
+          ['role', 'По роли'],
+          ['user', 'Для пользователя'],
+          ['customer', 'Покупатели'],
+        ] as const
+      ).map(([mode, label]) => (
+        <label key={mode} className={styles.row}>
+          <input
+            type="radio"
+            name="editMode"
+            className={styles.rowInput}
+            checked={value === mode}
+            onChange={() => onChange(mode)}
+          />
+          <span className={styles.rowLabel}>{label}</span>
+        </label>
+      ))}
+    </div>
+  );
+}
 
 export function NotificationsSection() {
   const { user } = useAuth();
@@ -61,6 +168,8 @@ export function NotificationsSection() {
   const [customerSettings, setCustomerSettings] = useState<CustomerNotificationSettings | null>(
     null
   );
+  /** Снимок последних загруженных/сохранённых значений — для отслеживания несохранённых правок. */
+  const [baselineSnapshot, setBaselineSnapshot] = useState('');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
@@ -121,35 +230,49 @@ export function NotificationsSection() {
 
   const loadSettings = useCallback(async () => {
     setLoading(true);
+    let snapshot = '';
     try {
       if (editMode === 'customer' && customerScope === 'single' && selectedCustomerId) {
         const data = await getAdminCustomerNotificationSettings(selectedCustomerId);
         setCustomerSettings(data);
         setSettings(null);
+        snapshot = JSON.stringify({ s: null, c: data, b: true });
       } else if (editMode === 'customer' && customerScope === 'all') {
         setSettings(null);
         setCustomerSettings(null);
+        snapshot = JSON.stringify({ s: null, c: null, b: bulkNotifyOnSupportChatReply });
       } else if (editMode === 'user' && selectedUserId) {
         const data = await getAdminNotificationsSettingsByUser(selectedUserId);
         setSettings(data);
         setCustomerSettings(null);
+        snapshot = JSON.stringify({ s: data, c: null, b: true });
       } else if (editMode === 'role') {
         const role = selectedRole === 'default' ? null : selectedRole;
         const data = await getAdminNotificationsSettingsByRole(role);
         setSettings(data);
         setCustomerSettings(null);
+        snapshot = JSON.stringify({ s: data, c: null, b: true });
       } else {
         setSettings(null);
         setCustomerSettings(null);
       }
+      setBaselineSnapshot(snapshot);
     } catch (err) {
       console.error(err);
       setSettings(null);
       setCustomerSettings(null);
+      setBaselineSnapshot('');
     } finally {
       setLoading(false);
     }
-  }, [editMode, customerScope, selectedRole, selectedUserId, selectedCustomerId]);
+  }, [
+    editMode,
+    customerScope,
+    selectedRole,
+    selectedUserId,
+    selectedCustomerId,
+    bulkNotifyOnSupportChatReply,
+  ]);
 
   const loadCustomSounds = useCallback(async () => {
     try {
@@ -181,8 +304,14 @@ export function NotificationsSection() {
     }
   }, []);
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const currentSnapshot = JSON.stringify({
+    s: settings,
+    c: customerSettings,
+    b: bulkNotifyOnSupportChatReply,
+  });
+  const hasUnsavedChanges = currentSnapshot !== baselineSnapshot;
+
+  const handleSave = async () => {
     setSaving(true);
     setToast(null);
     try {
@@ -191,29 +320,32 @@ export function NotificationsSection() {
           notifyOnSupportChatReply: bulkNotifyOnSupportChatReply,
         });
         showToast(`Настройки применены к ${result.updated} покупателям`, 'success');
-        return;
-      }
-      if (editMode === 'customer' && selectedCustomerId) {
+      } else if (editMode === 'customer' && selectedCustomerId) {
         await updateAdminCustomerNotificationSettings(selectedCustomerId, {
           notifyOnSupportChatReply: customerSettings?.notifyOnSupportChatReply ?? true,
         });
-      } else if (editMode === 'user' && selectedUserId && formSettings) {
-        await updateAdminNotificationsSettingsByUser(selectedUserId, formSettings);
-      } else if (editMode === 'role' && formSettings) {
-        const payload = {
-          ...formSettings,
+        showToast('Настройки сохранены', 'success');
+      } else if (editMode === 'user' && selectedUserId && settings) {
+        await updateAdminNotificationsSettingsByUser(selectedUserId, settings);
+        showToast('Настройки сохранены', 'success');
+        if (settings.desktopNotifications) {
+          window.dispatchEvent(new Event('admin-push-sync'));
+        }
+      } else if (editMode === 'role' && settings) {
+        await updateAdminNotificationsSettings({
+          ...settings,
           role: isSuperAdmin
             ? selectedRole === 'default'
               ? null
               : selectedRole
             : (user?.role ?? null),
-        };
-        await updateAdminNotificationsSettings(payload);
+        });
+        showToast('Настройки сохранены', 'success');
+        if (settings.desktopNotifications) {
+          window.dispatchEvent(new Event('admin-push-sync'));
+        }
       }
-      showToast('Настройки сохранены', 'success');
-      if (editMode !== 'customer' && formSettings?.desktopNotifications) {
-        window.dispatchEvent(new Event('admin-push-sync'));
-      }
+      setBaselineSnapshot(currentSnapshot);
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Ошибка сохранения', 'error');
     } finally {
@@ -221,13 +353,17 @@ export function NotificationsSection() {
     }
   };
 
+  const patchSettings = (patch: Partial<AdminNotificationsSettings>) => {
+    setSettings((s) => (s ? { ...s, ...patch } : s));
+  };
+
   const playTestSound = () => {
-    if (!formSettings?.soundEnabled) return;
+    if (!settings?.soundEnabled) return;
     try {
       playNotificationSound(
-        formSettings.soundVolume ?? 70,
-        (formSettings.soundType as NotificationSoundType) ?? 'beep',
-        formSettings.customSoundUrl
+        settings.soundVolume ?? 70,
+        (settings.soundType as NotificationSoundType) ?? 'beep',
+        settings.customSoundUrl
       );
     } catch {
       showToast('Не удалось воспроизвести звук', 'error');
@@ -251,7 +387,7 @@ export function NotificationsSection() {
             }
           : s
       );
-      showToast('Звук загружен. Выберите его в списке и сохраните настройки.', 'success');
+      showToast('Звук загружен. Сохраните настройки.', 'success');
     } catch (err) {
       showToast(err instanceof Error ? err.message : 'Ошибка загрузки', 'error');
     } finally {
@@ -265,8 +401,8 @@ export function NotificationsSection() {
       await deleteAdminNotificationSound(id);
       setCustomSounds((prev) => prev.filter((s) => s.id !== id));
       if (
-        formSettings?.customSoundUrl &&
-        customSounds.find((s) => s.id === id)?.fileUrl === formSettings.customSoundUrl
+        settings?.customSoundUrl &&
+        customSounds.find((s) => s.id === id)?.fileUrl === settings.customSoundUrl
       ) {
         setSettings((s) => (s ? { ...s, soundType: 'beep', customSoundUrl: null } : s));
       }
@@ -297,303 +433,88 @@ export function NotificationsSection() {
     }
   };
 
-  const editModeForUi: EditMode = editMode;
-  const customerScopeForUi: CustomerScope = customerScope;
   const showUserSelectPrompt = editMode === 'user' && !selectedUserId;
-  const defaultSettingsForForm: AdminNotificationsSettings = {
-    id: 'default',
-    role: null,
-    soundEnabled: true,
-    soundVolume: 70,
-    soundType: 'beep',
-    customSoundUrl: null,
-    desktopNotifications: false,
-    checkIntervalSeconds: 60,
-    notifyOnReviews: true,
-    notifyOnOrders: true,
-    notifyOnSupportChat: true,
-    notifyOnMeasurementForm: true,
-    notifyOnCallbackForm: true,
-    notifyOnDirectorForm: true,
-    notifyOnQuoteForm: true,
-    notifyOnQuizMebel: true,
-    notifyOnQuizRemont: true,
-    notifyOnKnowledgeFeedback: true,
-    notifyOnSiteFeedback: true,
-    notifyOnKnowledgeTraining: true,
-    notifyOnWorkDays: true,
-    notifyOnWorkDayRequestReviews: true,
-    notifyOnWaybills: true,
-    notifyOnInstallationSchedules: true,
-    notifyOnRepairSchedules: true,
-    notifyOnFurnitureSchedules: true,
-    notifyOnMeasurements: true,
-    notifyOnMeasurementCreated: true,
-    notifyOnContractSigning: true,
-    notifyOnIncassations: true,
-  };
-  const formSettings = settings ?? defaultSettingsForForm;
-
-  if (loading && !showUserSelectPrompt) {
-    return (
-      <div className={styles.page}>
-        <p className={styles.loading}>Загрузка настроек...</p>
-      </div>
-    );
-  }
-
   const showCustomerSelectPrompt =
     editMode === 'customer' &&
     customerScope === 'single' &&
     (customers.length === 0 || !selectedCustomerId);
+  const showLoading = loading && !showUserSelectPrompt && !showCustomerSelectPrompt;
 
-  if (showUserSelectPrompt) {
-    return (
-      <div className={styles.page}>
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Уведомления в админке</h2>
-          <p className={styles.sectionDescription}>
-            Настройте уведомления. Супер-администратор может редактировать настройки для конкретного
-            пользователя.
-          </p>
-          <form className={styles.form}>
-            {isSuperAdmin && (
-              <div className={styles.formRow}>
-                <label className={styles.label}>Режим редактирования</label>
-                <div className={styles.radioRow}>
-                  <label>
-                    <input
-                      type="radio"
-                      name="editMode"
-                      checked={editModeForUi === 'role'}
-                      onChange={() => setEditMode('role')}
-                    />
-                    По роли
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="editMode"
-                      checked={editModeForUi === 'user'}
-                      onChange={() => setEditMode('user')}
-                    />
-                    Для пользователя
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="editMode"
-                      checked={editModeForUi === 'customer'}
-                      onChange={() => setEditMode('customer')}
-                    />
-                    Покупатели
-                  </label>
-                </div>
-              </div>
-            )}
-            <div className={styles.formRow}>
-              <label htmlFor="userSelector" className={styles.label}>
-                Настройки для пользователя
-              </label>
-              <select
-                id="userSelector"
-                value={selectedUserId}
-                onChange={(e) => setSelectedUserId(e.target.value)}
-                className={styles.select}
-              >
-                <option value="">— Выберите пользователя —</option>
-                {adminUsers.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} ({u.email}) —{' '}
-                    {ROLES_CONFIG.find((c) => c.id === u.role)?.label ?? u.role}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className={styles.loading}>Выберите пользователя из списка выше.</p>
-          </form>
-        </section>
-      </div>
-    );
-  }
+  const selectedUser = adminUsers.find((u) => u.id === selectedUserId);
+  const selectedCustomer = customers.find((u) => u.id === selectedCustomerId);
+  const scopeBadgeText =
+    editMode === 'user'
+      ? `Пользователь · ${
+          selectedUser
+            ? [selectedUser.firstName, selectedUser.lastName].filter(Boolean).join(' ') ||
+              selectedUser.email
+            : 'не выбран'
+        }`
+      : editMode === 'customer'
+        ? customerScope === 'all'
+          ? 'Покупатели · все'
+          : `Покупатель · ${
+              selectedCustomer
+                ? [selectedCustomer.firstName, selectedCustomer.lastName]
+                    .filter(Boolean)
+                    .join(' ') || selectedCustomer.email
+                : 'не выбран'
+            }`
+        : isSuperAdmin
+          ? `По роли · ${ROLE_OPTIONS.find((o) => o.value === selectedRole)?.label ?? selectedRole}`
+          : `Роль · ${ROLES_CONFIG.find((c) => c.id === user?.role)?.label ?? user?.role ?? ''}`;
 
-  if (showCustomerSelectPrompt) {
-    return (
-      <div className={styles.page}>
-        <section className={styles.section}>
-          <h2 className={styles.sectionTitle}>Уведомления в админке</h2>
-          <p className={styles.sectionDescription}>
-            Настройте уведомления для покупателей. Супер-администратор может включать или отключать
-            уведомления при ответе в чате поддержки.
-          </p>
-          <form className={styles.form}>
-            <div className={styles.formRow}>
-              <label className={styles.label}>Режим редактирования</label>
-              <div className={styles.radioRow}>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editModeForUi === 'role'}
-                    onChange={() => setEditMode('role')}
-                  />
-                  По роли
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editModeForUi === 'user'}
-                    onChange={() => setEditMode('user')}
-                  />
-                  Для пользователя
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editModeForUi === 'customer'}
-                    onChange={() => setEditMode('customer')}
-                  />
-                  Покупатели
-                </label>
-              </div>
-            </div>
-            <div className={styles.formRow}>
-              <label className={styles.label}>Область применения</label>
-              <div className={styles.radioRow}>
-                <label>
-                  <input
-                    type="radio"
-                    name="customerScope"
-                    checked={customerScopeForUi === 'single'}
-                    onChange={() => setCustomerScope('single')}
-                  />
-                  Конкретный покупатель
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="customerScope"
-                    checked={customerScopeForUi === 'all'}
-                    onChange={() => setCustomerScope('all')}
-                  />
-                  Все покупатели
-                </label>
-              </div>
-            </div>
-            {customerScope === 'single' && (
-              <>
-                <div className={styles.formRow}>
-                  <label htmlFor="customerSelector" className={styles.label}>
-                    Настройки для покупателя
-                  </label>
-                  <select
-                    id="customerSelector"
-                    value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className={styles.select}
-                  >
-                    <option value="">— Выберите покупателя —</option>
-                    {customers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} ({u.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {customers.length === 0 ? (
-                  <p className={styles.hint}>Нет зарегистрированных покупателей.</p>
-                ) : (
-                  <p className={styles.loading}>Выберите покупателя из списка выше.</p>
-                )}
-              </>
-            )}
-          </form>
-        </section>
-      </div>
-    );
-  }
+  const saveDisabled =
+    saving || showLoading || showUserSelectPrompt || showCustomerSelectPrompt || !hasUnsavedChanges;
+
+  const visibleEvents = EVENT_TOGGLES.filter((t) => !t.superAdminOnly || isSuperAdmin);
 
   return (
-    <div className={styles.page}>
-      <section className={styles.section}>
-        <h2 className={styles.sectionTitle}>Уведомления в админке</h2>
-        <p className={styles.sectionDescription}>
-          Настройте звуковые и браузерные уведомления. Супер-администратор задаёт, какие события
-          показывать в колокольчике для каждой роли (кроме стажёра). Можно также переопределить
-          настройки для конкретного пользователя.
-        </p>
-        <form onSubmit={handleSave} className={styles.form}>
-          {isSuperAdmin && (
-            <div className={styles.formRow}>
-              <label className={styles.label}>Режим редактирования</label>
-              <div className={styles.radioRow}>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editMode === 'role'}
-                    onChange={() => setEditMode('role')}
-                  />
-                  По роли
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editMode === 'user'}
-                    onChange={() => setEditMode('user')}
-                  />
-                  Для пользователя
-                </label>
-                <label>
-                  <input
-                    type="radio"
-                    name="editMode"
-                    checked={editMode === 'customer'}
-                    onChange={() => setEditMode('customer')}
-                  />
-                  Покупатели
-                </label>
+    <div>
+      <div className={`${cdHub.editorHeader} ${styles.header}`}>
+        <div className={`${cdHub.contractsListHeaderLeft} ${styles.headerLeft}`}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <span
+                  className={`${styles.sourceBadge}${
+                    editMode === 'user' ? ` ${styles.sourceBadgePersonal}` : ''
+                  }`}
+                  title="Какие настройки открыты для редактирования"
+                >
+                  {scopeBadgeText}
+                </span>
               </div>
             </div>
-          )}
-          {isSuperAdmin && editMode === 'role' ? (
-            <div className={styles.formRow}>
-              <label htmlFor="roleSelector" className={styles.label}>
-                Настройки для роли
-              </label>
-              <select
-                id="roleSelector"
-                value={selectedRole}
-                onChange={(e) => setSelectedRole(e.target.value)}
-                className={styles.select}
-              >
-                {ROLE_OPTIONS.map((opt) => (
-                  <option key={opt.value} value={opt.value}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-              <p className={styles.hint}>
-                Выберите роль и отметьте, какие события показывать в колокольчике и push для этой
-                роли. Стажёры колокольчик не получают.
-              </p>
-            </div>
-          ) : editMode === 'role' && !isSuperAdmin ? (
-            <div className={styles.formRow}>
-              <p className={styles.hint}>
-                Редактируются настройки вашей роли
-                {user?.role
-                  ? `: ${ROLES_CONFIG.find((c) => c.id === user.role)?.label ?? user.role}`
-                  : ''}
-                . Настройка событий по ролям доступна супер-администратору.
-              </p>
-            </div>
-          ) : editMode === 'user' ? (
-            <div className={styles.formRow}>
-              <label htmlFor="userSelector" className={styles.label}>
+          </div>
+        </div>
+        <div className={`${cdChrome.headerButtonsRow} ${styles.headerActions}`}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            disabled={saveDisabled}
+            title={
+              !saving && !showLoading && !hasUnsavedChanges
+                ? 'Сначала внесите изменения в настройки'
+                : undefined
+            }
+            onClick={() => void handleSave()}
+          >
+            {saving ? 'Сохранение…' : 'Сохранить'}
+          </button>
+        </div>
+      </div>
+
+      {showLoading ? (
+        <p className={styles.loading}>Загрузка настроек…</p>
+      ) : showUserSelectPrompt ? (
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Режим редактирования</h2>
+          <EditModeRadios value={editMode} onChange={setEditMode} />
+          <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+            <div className={styles.inlineField}>
+              <label className={styles.inlineFieldLabel} htmlFor="userSelector">
                 Настройки для пользователя
               </label>
               <select
@@ -611,116 +532,206 @@ export function NotificationsSection() {
                 ))}
               </select>
             </div>
-          ) : (
-            <>
-              <div className={styles.formRow}>
-                <label className={styles.label}>Область применения</label>
-                <div className={styles.radioRow}>
-                  <label>
-                    <input
-                      type="radio"
-                      name="customerScope"
-                      checked={customerScope === 'single'}
-                      onChange={() => setCustomerScope('single')}
-                    />
-                    Конкретный покупатель
-                  </label>
-                  <label>
-                    <input
-                      type="radio"
-                      name="customerScope"
-                      checked={customerScope === 'all'}
-                      onChange={() => setCustomerScope('all')}
-                    />
-                    Все покупатели
-                  </label>
-                </div>
-              </div>
-              {customerScope === 'single' && (
-                <div className={styles.formRow}>
-                  <label htmlFor="customerSelector" className={styles.label}>
-                    Настройки для покупателя
-                  </label>
-                  <select
-                    id="customerSelector"
-                    value={selectedCustomerId}
-                    onChange={(e) => setSelectedCustomerId(e.target.value)}
-                    className={styles.select}
-                  >
-                    <option value="">— Выберите покупателя —</option>
-                    {customers.map((u) => (
-                      <option key={u.id} value={u.id}>
-                        {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} ({u.email})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-            </>
-          )}
+          </div>
+          <p className={styles.hint}>Выберите пользователя из списка выше.</p>
+        </section>
+      ) : showCustomerSelectPrompt ? (
+        <section className={styles.card}>
+          <h2 className={styles.cardTitle}>Режим редактирования</h2>
+          <EditModeRadios value={editMode} onChange={setEditMode} />
+          <div className={styles.rows}>
+            {(
+              [
+                ['single', 'Конкретный покупатель'],
+                ['all', 'Все покупатели'],
+              ] as const
+            ).map(([scope, label]) => (
+              <label key={scope} className={styles.row}>
+                <input
+                  type="radio"
+                  name="customerScope"
+                  className={styles.rowInput}
+                  checked={customerScope === scope}
+                  onChange={() => setCustomerScope(scope)}
+                />
+                <span className={styles.rowLabel}>{label}</span>
+              </label>
+            ))}
+          </div>
+          <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+            <div className={styles.inlineField}>
+              <label className={styles.inlineFieldLabel} htmlFor="customerSelector">
+                Настройки для покупателя
+              </label>
+              <select
+                id="customerSelector"
+                value={selectedCustomerId}
+                onChange={(e) => setSelectedCustomerId(e.target.value)}
+                className={styles.select}
+              >
+                <option value="">— Выберите покупателя —</option>
+                {customers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} ({u.email})
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
           <p className={styles.hint}>
-            {editMode === 'role' ? (
-              <>
-                Выберите роль, для которой редактируете настройки. «По умолчанию» применяется ко
-                всем ролям без собственного профиля.
-                {user?.role && (
-                  <>
-                    {' '}
-                    Вы вошли как{' '}
-                    <strong>
-                      {ROLES_CONFIG.find((c) => c.id === user.role)?.label ?? user.role}
-                    </strong>
-                    — настройки для вашей роли применяются к вам.
-                  </>
-                )}
-              </>
-            ) : editMode === 'user' ? (
-              <>
-                Выберите пользователя админки. Персональные настройки переопределяют настройки по
-                роли.
-              </>
-            ) : customerScope === 'all' ? (
-              <>Настройки будут применены ко всем пользователям с ролью «Покупатель».</>
-            ) : (
-              <>
-                Выберите покупателя. Настройки применяются к уведомлениям в чате поддержки на сайте.
-              </>
-            )}
+            {customers.length === 0
+              ? 'Нет зарегистрированных покупателей.'
+              : 'Выберите покупателя из списка выше.'}
           </p>
+        </section>
+      ) : (
+        <>
+          {isSuperAdmin ? (
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>Режим редактирования</h2>
+              <EditModeRadios value={editMode} onChange={setEditMode} />
+              {editMode === 'role' ? (
+                <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+                  <div className={styles.inlineField}>
+                    <label className={styles.inlineFieldLabel} htmlFor="roleSelector">
+                      Роль
+                    </label>
+                    <select
+                      id="roleSelector"
+                      value={selectedRole}
+                      onChange={(e) => setSelectedRole(e.target.value)}
+                      className={styles.select}
+                    >
+                      {ROLE_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : editMode === 'user' ? (
+                <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+                  <div className={styles.inlineField}>
+                    <label className={styles.inlineFieldLabel} htmlFor="userSelector">
+                      Пользователь
+                    </label>
+                    <select
+                      id="userSelector"
+                      value={selectedUserId}
+                      onChange={(e) => setSelectedUserId(e.target.value)}
+                      className={styles.select}
+                    >
+                      <option value="">— Выберите пользователя —</option>
+                      {adminUsers.map((u) => (
+                        <option key={u.id} value={u.id}>
+                          {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} (
+                          {u.email}) — {ROLES_CONFIG.find((c) => c.id === u.role)?.label ?? u.role}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className={styles.rows}>
+                    {(
+                      [
+                        ['single', 'Конкретный покупатель'],
+                        ['all', 'Все покупатели'],
+                      ] as const
+                    ).map(([scope, label]) => (
+                      <label key={scope} className={styles.row}>
+                        <input
+                          type="radio"
+                          name="customerScope"
+                          className={styles.rowInput}
+                          checked={customerScope === scope}
+                          onChange={() => setCustomerScope(scope)}
+                        />
+                        <span className={styles.rowLabel}>{label}</span>
+                      </label>
+                    ))}
+                  </div>
+                  {customerScope === 'single' && (
+                    <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+                      <div className={styles.inlineField}>
+                        <label className={styles.inlineFieldLabel} htmlFor="customerSelector">
+                          Покупатель
+                        </label>
+                        <select
+                          id="customerSelector"
+                          value={selectedCustomerId}
+                          onChange={(e) => setSelectedCustomerId(e.target.value)}
+                          className={styles.select}
+                        >
+                          <option value="">— Выберите покупателя —</option>
+                          {customers.map((u) => (
+                            <option key={u.id} value={u.id}>
+                              {[u.firstName, u.lastName].filter(Boolean).join(' ') || u.email} (
+                              {u.email})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
+              <p className={styles.hint}>
+                {editMode === 'role'
+                  ? 'Выберите роль и отметьте, какие события показывать в колокольчике и push для этой роли. «По умолчанию» применяется ко всем ролям без собственного профиля. Стажёры колокольчик не получают.'
+                  : editMode === 'user'
+                    ? 'Персональные настройки переопределяют настройки по роли.'
+                    : customerScope === 'all'
+                      ? 'Настройки будут применены ко всем пользователям с ролью «Покупатель».'
+                      : 'Настройки применяются к уведомлениям в чате поддержки на сайте.'}
+              </p>
+            </section>
+          ) : (
+            <p className={styles.hint}>
+              Редактируются настройки вашей роли
+              {user?.role
+                ? `: ${ROLES_CONFIG.find((c) => c.id === user.role)?.label ?? user.role}`
+                : ''}
+              . Настройка событий по ролям доступна супер-администратору.
+            </p>
+          )}
 
           {editMode === 'customer' ? (
-            <>
-              <h3 className={styles.subsectionTitle}>
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>
                 {customerScope === 'all'
                   ? 'Уведомления для всех покупателей'
                   : 'Уведомления для покупателя'}
-              </h3>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnSupportChatReply"
-                  checked={
-                    customerScope === 'all'
-                      ? bulkNotifyOnSupportChatReply
-                      : (customerSettings?.notifyOnSupportChatReply ?? true)
-                  }
-                  onChange={(e) => {
-                    const checked = e.target.checked;
-                    if (customerScope === 'all') {
-                      setBulkNotifyOnSupportChatReply(checked);
-                    } else {
-                      setCustomerSettings((s) => ({
-                        id: s?.id ?? null,
-                        userId: selectedCustomerId,
-                        notifyOnSupportChatReply: checked,
-                        createdAt: s?.createdAt ?? null,
-                        updatedAt: s?.updatedAt ?? null,
-                      }));
+              </h2>
+              <div className={styles.rows}>
+                <label className={styles.row} htmlFor="notifyOnSupportChatReply">
+                  <input
+                    type="checkbox"
+                    id="notifyOnSupportChatReply"
+                    className={styles.rowInput}
+                    checked={
+                      customerScope === 'all'
+                        ? bulkNotifyOnSupportChatReply
+                        : (customerSettings?.notifyOnSupportChatReply ?? true)
                     }
-                  }}
-                />
-                <label htmlFor="notifyOnSupportChatReply">
-                  Уведомлять при ответе в чате поддержки
+                    onChange={(e) => {
+                      const checked = e.target.checked;
+                      if (customerScope === 'all') {
+                        setBulkNotifyOnSupportChatReply(checked);
+                      } else {
+                        setCustomerSettings((s) => ({
+                          id: s?.id ?? null,
+                          userId: selectedCustomerId,
+                          notifyOnSupportChatReply: checked,
+                          createdAt: s?.createdAt ?? null,
+                          updatedAt: s?.updatedAt ?? null,
+                        }));
+                      }
+                    }}
+                  />
+                  <span className={styles.rowLabel}>Уведомлять при ответе в чате поддержки</span>
                 </label>
               </div>
               <p className={styles.hint}>
@@ -728,376 +739,132 @@ export function NotificationsSection() {
                   ? 'Если включено, все покупатели будут получать браузерные уведомления при новом ответе сотрудника в чате поддержки.'
                   : 'Если включено, покупатель будет получать браузерные уведомления при новом ответе сотрудника в чате поддержки.'}
               </p>
-            </>
+            </section>
           ) : (
-            <>
-              <h3 className={styles.subsectionTitle}>События для уведомлений</h3>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnReviews"
-                  checked={formSettings.notifyOnReviews}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnReviews: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnReviews">Новые отзывы на товары</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnOrders"
-                  checked={formSettings.notifyOnOrders}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnOrders: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnOrders">Новые заказы</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnSupportChat"
-                  checked={formSettings.notifyOnSupportChat}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnSupportChat: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnSupportChat">Сообщения в чате поддержки</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnMeasurementForm"
-                  checked={formSettings.notifyOnMeasurementForm}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnMeasurementForm: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnMeasurementForm">Запись на замер</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnCallbackForm"
-                  checked={formSettings.notifyOnCallbackForm}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnCallbackForm: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnCallbackForm">Заказ обратного звонка</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnDirectorForm"
-                  checked={formSettings.notifyOnDirectorForm}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnDirectorForm: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnDirectorForm">Письмо директору</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnQuoteForm"
-                  checked={formSettings.notifyOnQuoteForm}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnQuoteForm: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnQuoteForm">Рассчитать стоимость</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnQuizMebel"
-                  checked={formSettings.notifyOnQuizMebel}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnQuizMebel: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnQuizMebel">
-                  Квиз — Мебель на заказ (mebel-na-zakaz-51.ru)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnQuizRemont"
-                  checked={formSettings.notifyOnQuizRemont}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnQuizRemont: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnQuizRemont">
-                  Квиз — Ремонт и отделка (remont-kvartir-51.ru)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnKnowledgeTraining"
-                  checked={formSettings.notifyOnKnowledgeTraining ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnKnowledgeTraining: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnKnowledgeTraining">
-                  Динамика изучения материалов на обучающей платформе
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnWorkDays"
-                  checked={formSettings.notifyOnWorkDays ?? true}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnWorkDays: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnWorkDays">
-                  Учёт рабочего времени (опоздания, ранний уход, автозакрытие)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnWorkDayRequestReviews"
-                  checked={formSettings.notifyOnWorkDayRequestReviews ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnWorkDayRequestReviews: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnWorkDayRequestReviews">
-                  Ответы на запросы рабочего времени (выходной, уйти пораньше, прийти попозже)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnWaybills"
-                  checked={formSettings.notifyOnWaybills ?? true}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnWaybills: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnWaybills">
-                  Путевой лист (новые задания, правки, выполнение / невыполнение)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnInstallationSchedules"
-                  checked={formSettings.notifyOnInstallationSchedules ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnInstallationSchedules: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnInstallationSchedules">
-                  График монтажей (новые записи, правки, выполнение / невыполнение)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnRepairSchedules"
-                  checked={formSettings.notifyOnRepairSchedules ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnRepairSchedules: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnRepairSchedules">
-                  График ремонтов (проекты, записи и изменение статусов)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnFurnitureSchedules"
-                  checked={formSettings.notifyOnFurnitureSchedules ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnFurnitureSchedules: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnFurnitureSchedules">План-график мебели</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnMeasurementCreated"
-                  checked={formSettings.notifyOnMeasurementCreated ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnMeasurementCreated: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnMeasurementCreated">Новый замер (создание замера)</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnMeasurements"
-                  checked={formSettings.notifyOnMeasurements ?? true}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnMeasurements: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnMeasurements">Замеры (выполнен, отказ, договор)</label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnContractSigning"
-                  checked={formSettings.notifyOnContractSigning ?? true}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, notifyOnContractSigning: e.target.checked } : s
-                    )
-                  }
-                />
-                <label htmlFor="notifyOnContractSigning">
-                  Электронное подписание договоров (подписан / отклонён / открыт клиентом)
-                </label>
-              </div>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="notifyOnIncassations"
-                  checked={formSettings.notifyOnIncassations ?? true}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, notifyOnIncassations: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="notifyOnIncassations">Инкассации наличных (журнал ДП)</label>
-              </div>
-              {isSuperAdmin ? (
-                <div className={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    id="notifyOnKnowledgeFeedback"
-                    checked={formSettings.notifyOnKnowledgeFeedback ?? true}
-                    onChange={(e) =>
-                      setSettings((s) =>
-                        s ? { ...s, notifyOnKnowledgeFeedback: e.target.checked } : s
-                      )
-                    }
-                  />
-                  <label htmlFor="notifyOnKnowledgeFeedback">
-                    Ошибки и предложения по обучающей платформе
-                  </label>
-                </div>
-              ) : null}
-              {isSuperAdmin ? (
-                <div className={styles.checkboxRow}>
-                  <input
-                    type="checkbox"
-                    id="notifyOnSiteFeedback"
-                    checked={formSettings.notifyOnSiteFeedback ?? true}
-                    onChange={(e) =>
-                      setSettings((s) => (s ? { ...s, notifyOnSiteFeedback: e.target.checked } : s))
-                    }
-                  />
-                  <label htmlFor="notifyOnSiteFeedback">
-                    Ошибки и предложения по публичному сайту
-                  </label>
-                </div>
-              ) : null}
-
-              <h3 className={styles.subsectionTitle}>Звук</h3>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="soundEnabled"
-                  checked={formSettings.soundEnabled}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, soundEnabled: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="soundEnabled">Звук при новом событии</label>
-              </div>
-
-              {formSettings.soundEnabled && (
-                <>
-                  <div className={styles.formRow}>
-                    <label htmlFor="soundType" className={styles.label}>
-                      Тип звука
-                    </label>
-                    <select
-                      id="soundType"
-                      value={formSettings.soundType}
-                      onChange={(e) => {
-                        const val = e.target.value as NotificationSoundType;
-                        setSettings((s) =>
-                          s
-                            ? {
-                                ...s,
-                                soundType: val,
-                                customSoundUrl: val !== 'custom' ? null : s.customSoundUrl,
-                              }
-                            : s
-                        );
-                      }}
-                      className={styles.select}
-                    >
-                      {SOUND_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  {formSettings.soundType === 'custom' && (
-                    <div className={styles.formRow}>
-                      <label className={styles.label}>Выберите загруженный звук</label>
-                      <select
-                        value={formSettings.customSoundUrl || ''}
-                        onChange={(e) =>
-                          setSettings((s) =>
-                            s ? { ...s, customSoundUrl: e.target.value || null } : s
-                          )
-                        }
-                        className={styles.select}
-                      >
-                        <option value="">— Выберите —</option>
-                        {customSounds.map((s) => (
-                          <option key={s.id} value={s.fileUrl}>
-                            {s.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  )}
-                  <div className={styles.uploadSection}>
-                    <label className={styles.label}>Загрузить новый звук</label>
-                    <p className={styles.hint}>Форматы: mp3, wav, ogg, m4a, aac. Макс. 2 МБ.</p>
+            <section className={styles.card}>
+              <h2 className={styles.cardTitle}>События для уведомлений</h2>
+              <div className={styles.rows}>
+                {visibleEvents.map((toggle) => (
+                  <label className={styles.row} key={toggle.key} htmlFor={toggle.key}>
                     <input
-                      type="file"
-                      accept=".mp3,.wav,.ogg,.m4a,.aac"
-                      onChange={handleUploadSound}
-                      disabled={uploading}
-                      className={styles.fileInput}
+                      type="checkbox"
+                      id={toggle.key}
+                      className={styles.rowInput}
+                      checked={settings?.[toggle.key] ?? true}
+                      onChange={(e) => patchSettings({ [toggle.key]: e.target.checked })}
                     />
-                    {uploading && <span className={styles.uploading}>Загрузка...</span>}
-                  </div>
-                  {customSounds.length > 0 && (
-                    <div className={styles.customSoundsList}>
-                      <label className={styles.label}>Загруженные звуки</label>
+                    <span className={styles.rowLabel}>{toggle.label}</span>
+                  </label>
+                ))}
+              </div>
+              <p className={styles.hint}>
+                Отметьте события, по которым сотрудникам приходят колокольчик, звук и браузерные
+                push-уведомления.
+              </p>
+            </section>
+          )}
+
+          {editMode !== 'customer' && settings && (
+            <>
+              <section className={styles.card}>
+                <h2 className={styles.cardTitle}>Звук</h2>
+                <div className={styles.inlineRow}>
+                  <label className={styles.row} htmlFor="soundEnabled">
+                    <input
+                      type="checkbox"
+                      id="soundEnabled"
+                      className={styles.rowInput}
+                      checked={settings.soundEnabled}
+                      onChange={(e) => patchSettings({ soundEnabled: e.target.checked })}
+                    />
+                    <span className={styles.rowLabel}>Звук при новом событии</span>
+                  </label>
+                  {settings.soundEnabled && (
+                    <>
+                      <div className={styles.inlineField}>
+                        <label className={styles.inlineFieldLabel} htmlFor="soundType">
+                          Тип
+                        </label>
+                        <select
+                          id="soundType"
+                          className={styles.select}
+                          value={settings.soundType}
+                          onChange={(e) => {
+                            const val = e.target.value as NotificationSoundType;
+                            patchSettings({
+                              soundType: val,
+                              customSoundUrl: val !== 'custom' ? null : settings.customSoundUrl,
+                            });
+                          }}
+                        >
+                          {SOUND_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      {settings.soundType === 'custom' && (
+                        <div className={styles.inlineField}>
+                          <label className={styles.inlineFieldLabel} htmlFor="customSoundUrl">
+                            Файл
+                          </label>
+                          <select
+                            id="customSoundUrl"
+                            className={styles.select}
+                            value={settings.customSoundUrl || ''}
+                            onChange={(e) =>
+                              patchSettings({ customSoundUrl: e.target.value || null })
+                            }
+                          >
+                            <option value="">— Выберите —</option>
+                            {customSounds.map((s) => (
+                              <option key={s.id} value={s.fileUrl}>
+                                {s.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+                      <div className={`${styles.inlineField} ${styles.rangeField}`}>
+                        <label className={styles.inlineFieldLabel} htmlFor="soundVolume">
+                          Громкость: {settings.soundVolume}%
+                        </label>
+                        <input
+                          type="range"
+                          id="soundVolume"
+                          className={styles.range}
+                          min={0}
+                          max={100}
+                          value={settings.soundVolume}
+                          onChange={(e) =>
+                            patchSettings({ soundVolume: parseInt(e.target.value, 10) })
+                          }
+                        />
+                      </div>
+                      <button type="button" className={styles.testButton} onClick={playTestSound}>
+                        Проверить звук
+                      </button>
+                    </>
+                  )}
+                </div>
+                {settings.soundEnabled && (
+                  <div className={`${styles.inlineRow} ${styles.inlineRowSpaced}`}>
+                    <div className={styles.inlineField}>
+                      <label className={styles.inlineFieldLabel} htmlFor="soundFile">
+                        Загрузить новый звук
+                      </label>
+                      <input
+                        type="file"
+                        id="soundFile"
+                        className={styles.fileInput}
+                        accept=".mp3,.wav,.ogg,.m4a,.aac"
+                        onChange={handleUploadSound}
+                        disabled={uploading}
+                      />
+                      {uploading && <span className={styles.uploading}>Загрузка…</span>}
+                    </div>
+                    {customSounds.length > 0 && (
                       <ul className={styles.soundsList}>
                         {customSounds.map((s) => (
                           <li key={s.id} className={styles.soundItem}>
@@ -1106,7 +873,7 @@ export function NotificationsSection() {
                               data-admin-mutation
                               type="button"
                               className={styles.deleteSoundBtn}
-                              onClick={() => handleDeleteSound(s.id)}
+                              onClick={() => void handleDeleteSound(s.id)}
                               title="Удалить"
                             >
                               ✕
@@ -1114,98 +881,68 @@ export function NotificationsSection() {
                           </li>
                         ))}
                       </ul>
-                    </div>
-                  )}
-                  <div className={styles.formRow}>
-                    <label htmlFor="soundVolume" className={styles.label}>
-                      Громкость: {formSettings.soundVolume}%
-                    </label>
-                    <input
-                      type="range"
-                      id="soundVolume"
-                      min={0}
-                      max={100}
-                      value={formSettings.soundVolume}
-                      onChange={(e) =>
-                        setSettings((s) =>
-                          s ? { ...s, soundVolume: parseInt(e.target.value, 10) } : s
-                        )
-                      }
-                      className={styles.range}
-                    />
+                    )}
                   </div>
-                  <button type="button" className={styles.testButton} onClick={playTestSound}>
-                    Проверить звук
-                  </button>
-                </>
-              )}
-
-              <h3 className={styles.subsectionTitle}>Браузерные уведомления</h3>
-              <div className={styles.checkboxRow}>
-                <input
-                  type="checkbox"
-                  id="desktopNotifications"
-                  checked={formSettings.desktopNotifications}
-                  onChange={(e) =>
-                    setSettings((s) => (s ? { ...s, desktopNotifications: e.target.checked } : s))
-                  }
-                />
-                <label htmlFor="desktopNotifications">
-                  Уведомления на рабочем столе и в приложении (PWA)
-                </label>
-              </div>
-              <p className={styles.hint}>
-                Показывать уведомление вне вкладки браузера и на телефоне (если сайт установлен как
-                приложение) при новом событии. Требуется разрешение браузера.
-              </p>
-              <div className={styles.permissionRow}>
-                {permissionStatus === 'granted' ? (
-                  <span className={styles.permissionOk}>✓ Разрешение на уведомления получено</span>
-                ) : (
-                  <button
-                    type="button"
-                    className={styles.permissionButton}
-                    onClick={requestNotificationPermission}
-                  >
-                    {permissionStatus === 'denied'
-                      ? 'Разрешение заблокировано — откройте настройки браузера'
-                      : 'Разрешить уведомления'}
-                  </button>
                 )}
-              </div>
+                {settings.soundEnabled && (
+                  <p className={styles.hint}>Форматы: mp3, wav, ogg, m4a, aac. Макс. 2 МБ.</p>
+                )}
+              </section>
 
-              <div className={styles.formRow}>
-                <label htmlFor="checkIntervalSeconds" className={styles.label}>
-                  Интервал проверки: {formSettings.checkIntervalSeconds} сек
-                </label>
-                <select
-                  id="checkIntervalSeconds"
-                  value={formSettings.checkIntervalSeconds}
-                  onChange={(e) =>
-                    setSettings((s) =>
-                      s ? { ...s, checkIntervalSeconds: parseInt(e.target.value, 10) } : s
-                    )
-                  }
-                  className={styles.select}
-                >
-                  <option value={30}>30 секунд</option>
-                  <option value={60}>1 минута</option>
-                  <option value={120}>2 минуты</option>
-                  <option value={180}>3 минуты</option>
-                  <option value={300}>5 минут</option>
-                </select>
-              </div>
-              <p className={styles.hint}>
-                Как часто проверять наличие новых событий (отзывы, заказы, чат).
-              </p>
+              <section className={styles.card}>
+                <h2 className={styles.cardTitle}>Браузерные уведомления</h2>
+                <div className={styles.inlineRow}>
+                  <label className={styles.row} htmlFor="desktopNotifications">
+                    <input
+                      type="checkbox"
+                      id="desktopNotifications"
+                      className={styles.rowInput}
+                      checked={settings.desktopNotifications}
+                      onChange={(e) => patchSettings({ desktopNotifications: e.target.checked })}
+                    />
+                    <span className={styles.rowLabel}>На рабочем столе и в приложении (PWA)</span>
+                  </label>
+                  {permissionStatus === 'granted' ? (
+                    <span className={styles.permissionOk}>✓ Разрешение получено</span>
+                  ) : (
+                    <button
+                      type="button"
+                      className={styles.permissionButton}
+                      onClick={() => void requestNotificationPermission()}
+                    >
+                      {permissionStatus === 'denied' ? 'Разрешение заблокировано' : 'Разрешить'}
+                    </button>
+                  )}
+                  <div className={styles.inlineField}>
+                    <label className={styles.inlineFieldLabel} htmlFor="checkIntervalSeconds">
+                      Интервал проверки
+                    </label>
+                    <select
+                      id="checkIntervalSeconds"
+                      className={styles.select}
+                      value={settings.checkIntervalSeconds}
+                      onChange={(e) =>
+                        patchSettings({ checkIntervalSeconds: parseInt(e.target.value, 10) })
+                      }
+                    >
+                      {INTERVAL_OPTIONS.map((sec) => (
+                        <option key={sec} value={sec}>
+                          {intervalLabel(sec)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className={styles.hint}>
+                  Показывать уведомление вне вкладки браузера и на телефоне (если сайт установлен
+                  как приложение) при новом событии. Требуется разрешение браузера. Как часто
+                  проверять наличие новых событий (отзывы, заказы, чат).
+                </p>
+              </section>
             </>
           )}
-
-          <button data-admin-mutation type="submit" className={styles.saveButton} disabled={saving}>
-            {saving ? 'Сохранение...' : 'Сохранить настройки'}
-          </button>
-        </form>
-      </section>
+        </>
+      )}
 
       {toast && (
         <div

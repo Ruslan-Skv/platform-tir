@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
+import { AdminNotificationSettingsReaderService } from '../../bell-push/admin-notification-settings-reader.service';
 import { ExternalNotifyService } from '../../external-notify/external-notify.service';
 import { ExternalNotifySettingsService } from '../../external-notify/external-notify-settings.service';
 import { PrismaService } from '../../database/prisma.service';
@@ -27,6 +28,7 @@ export class MeasurementNotifyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly settingsReader: AdminNotificationSettingsReaderService,
     private readonly externalNotify: ExternalNotifyService,
     private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
@@ -46,14 +48,6 @@ export class MeasurementNotifyService {
             : null;
     if (!kind) return;
     void this.notify(kind, measurement, actorUserId).catch(() => undefined);
-  }
-
-  private recipientIds(measurement: MeasurementNotifyData, actorUserId?: string): string[] {
-    const ids = new Set<string>();
-    ids.add(measurement.managerId);
-    if (measurement.surveyorId) ids.add(measurement.surveyorId);
-    if (actorUserId) ids.delete(actorUserId);
-    return [...ids];
   }
 
   private formatDate(d: Date | null): string | null {
@@ -78,7 +72,11 @@ export class MeasurementNotifyService {
   ): Promise<void> {
     const title = KIND_LABELS[kind];
     const message = this.buildMessage(measurement);
-    const recipients = this.recipientIds(measurement, actorUserId);
+    // Рассылка всем сотрудникам с включённым чекбоксом события
+    // («Новый замер» — отдельная настройка от статусов замера).
+    const recipients = await this.settingsReader.getUserIdsWithEventEnabled(
+      kind === 'created' ? 'notifyOnMeasurementCreated' : 'notifyOnMeasurements',
+    );
     // «Новый замер» — отдельное событие с собственной настройкой уведомлений.
     const pushEvent = kind === 'created' ? 'measurement_created' : 'measurement';
 

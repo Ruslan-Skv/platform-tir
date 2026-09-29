@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AdminBellPushService } from '../bell-push/admin-bell-push.service';
+import { AdminNotificationSettingsReaderService } from '../bell-push/admin-notification-settings-reader.service';
 import { PrismaService } from '../database/prisma.service';
 
 export type ContractSigningNotifyKind = 'signed' | 'rejected' | 'viewed';
@@ -17,7 +18,7 @@ type ContractSigningNotifySession = {
   createdById: string | null;
 };
 
-/** Уведомления автору сессии подписания о её статусе (колокольчик + push). */
+/** Уведомления о статусе сессии подписания (колокольчик + push). */
 @Injectable()
 export class ContractSigningNotifyService {
   private readonly logger = new Logger(ContractSigningNotifyService.name);
@@ -25,6 +26,7 @@ export class ContractSigningNotifyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly settingsReader: AdminNotificationSettingsReaderService,
   ) {}
 
   onSessionEvent(
@@ -62,15 +64,17 @@ export class ContractSigningNotifyService {
     packageTitle: string,
     details?: { rejectionReason?: string | null; signedName?: string | null },
   ): Promise<void> {
-    const recipientId = session.createdById;
-    if (!recipientId) return;
-
     const title = KIND_LABELS[kind];
     const message = this.buildMessage(kind, session, packageTitle, details);
     const href = `/admin/contract-documents/contracts/${session.packageId}`;
 
-    await this.prisma.contractSigningBellEvent.create({
-      data: {
+    // Рассылка всем сотрудникам с включённым чекбоксом «Электронное подписание договоров».
+    const recipients =
+      await this.settingsReader.getUserIdsWithEventEnabled('notifyOnContractSigning');
+    if (recipients.length === 0) return;
+
+    await this.prisma.contractSigningBellEvent.createMany({
+      data: recipients.map((recipientId) => ({
         recipientId,
         packageId: session.packageId,
         sessionId: session.id,
@@ -78,14 +82,18 @@ export class ContractSigningNotifyService {
         title,
         message,
         href,
-      },
+      })),
     });
 
-    await this.adminBellPush.notifyUsers([recipientId], 'contract_signing', {
-      title,
-      body: message,
-      url: href,
-      tag: `contract-signing-${kind}-${session.id}`,
-    });
+    await Promise.all(
+      recipients.map((recipientId) =>
+        this.adminBellPush.notifyUsers([recipientId], 'contract_signing', {
+          title,
+          body: message,
+          url: href,
+          tag: `contract-signing-${kind}-${session.id}-${recipientId}`,
+        }),
+      ),
+    );
   }
 }

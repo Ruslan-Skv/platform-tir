@@ -26,6 +26,7 @@ import { getAdminDirectorMessages, getAdminLeads, updateAdminLead } from '@/shar
 import type { UnifiedLeadItem } from '@/shared/api/admin-leads';
 import {
   getAdminBellCalendarNotifications,
+  getAdminBellContractConcludedNotifications,
   getAdminBellContractSigningNotifications,
   getAdminBellFurnitureScheduleNotifications,
   getAdminBellIncassationNotifications,
@@ -44,6 +45,7 @@ import {
 } from '@/shared/api/admin-notifications';
 import type {
   AdminBellCalendarNotification,
+  AdminBellContractConcludedNotification,
   AdminBellContractSigningNotification,
   AdminBellFurnitureScheduleNotification,
   AdminBellIncassationNotification,
@@ -94,6 +96,7 @@ import {
   type AdminBellNotificationItem,
   buildDesktopNotification,
   calendarToBellNotificationItem,
+  contractConcludedToBellNotificationItem,
   contractSigningToBellNotificationItem,
   filterNotifiableLeads,
   furnitureScheduleToBellNotificationItem,
@@ -203,6 +206,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [contractSigningNotifications, setContractSigningNotifications] = useState<
     AdminBellContractSigningNotification[]
   >([]);
+  const [contractConcludedNotifications, setContractConcludedNotifications] = useState<
+    AdminBellContractConcludedNotification[]
+  >([]);
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationSettings, setNotificationSettings] =
     useState<AdminNotificationsSettings | null>(null);
@@ -230,6 +236,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     messenger: number;
     kanban: number;
     contractSigning: number;
+    contractConcluded: number;
   } | null>(null);
 
   const [publicSiteEditMode, setPublicSiteEditModeState] = useState(false);
@@ -413,6 +420,19 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         settings?.notifyOnContractSigning !== false && canAccessContractSigning
           ? getAdminBellContractSigningNotifications(20)
           : Promise.resolve([] as AdminBellContractSigningNotification[]);
+      // «Договор подписан»: направления с раздельными настройками загружаем только включёнными.
+      const contractConcludedKinds: AdminBellContractConcludedNotification['kind'][] = [
+        ...(settings?.notifyOnContractConcludedRepair !== false ? (['REPAIR'] as const) : []),
+        ...(settings?.notifyOnContractConcludedWindows !== false ? (['WINDOWS'] as const) : []),
+        ...(settings?.notifyOnContractConcludedDoors !== false ? (['DOORS'] as const) : []),
+        ...(settings?.notifyOnContractConcludedCeilings !== false ? (['CEILINGS'] as const) : []),
+        ...(settings?.notifyOnContractConcludedBlinds !== false ? (['BLINDS'] as const) : []),
+        ...(settings?.notifyOnContractConcludedFurniture !== false ? (['FURNITURE'] as const) : []),
+      ];
+      const loadContractConcluded =
+        contractConcludedKinds.length > 0 && canAccessContractSigning
+          ? getAdminBellContractConcludedNotifications(20, contractConcludedKinds)
+          : Promise.resolve([] as AdminBellContractConcludedNotification[]);
 
       const [
         reviewsResult,
@@ -432,6 +452,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         messengerResult,
         kanbanResult,
         contractSigningResult,
+        contractConcludedResult,
       ] = await Promise.allSettled([
         settings?.notifyOnReviews !== false
           ? getAdminReviews(1, 10, undefined, false)
@@ -458,6 +479,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadMessenger,
         loadKanban,
         loadContractSigning,
+        loadContractConcluded,
       ]);
 
       const newReviews =
@@ -504,6 +526,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       const newKanban = kanbanResult.status === 'fulfilled' ? (kanbanResult.value ?? []) : [];
       const newContractSigning =
         contractSigningResult.status === 'fulfilled' ? (contractSigningResult.value ?? []) : [];
+      const newContractConcluded =
+        contractConcludedResult.status === 'fulfilled' ? (contractConcludedResult.value ?? []) : [];
 
       const prev = prevCountsRef.current;
       prevCountsRef.current = {
@@ -523,6 +547,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         messenger: newMessenger.length,
         kanban: newKanban.length,
         contractSigning: newContractSigning.length,
+        contractConcluded: newContractConcluded.length,
       };
 
       const totalNew =
@@ -541,7 +566,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newCalendar.length +
         newMessenger.length +
         newKanban.length +
-        newContractSigning.length;
+        newContractSigning.length +
+        newContractConcluded.length;
       const prevTotal = prev
         ? prev.reviews +
           prev.support +
@@ -558,7 +584,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.calendar +
           prev.messenger +
           prev.kanban +
-          prev.contractSigning
+          prev.contractSigning +
+          prev.contractConcluded
         : totalNew;
 
       if (prev !== null && totalNew > prevTotal && settings?.soundEnabled) {
@@ -609,6 +636,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newMessenger.map(messengerToBellNotificationItem),
             ...newKanban.map(kanbanToBellNotificationItem),
             ...newContractSigning.map(contractSigningToBellNotificationItem),
+            ...newContractConcluded.map(contractConcludedToBellNotificationItem),
           ]
             .filter((item) => isBellTypeEnabled(item.type, settings))
             .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
@@ -636,6 +664,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setMessengerNotifications(newMessenger);
       setKanbanNotifications(newKanban);
       setContractSigningNotifications(newContractSigning);
+      setContractConcludedNotifications(newContractConcluded);
     } catch {
       // keep previous notification state on unexpected errors (e.g. token refresh)
     } finally {
@@ -819,6 +848,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...messengerNotifications.map(messengerToBellNotificationItem),
     ...kanbanNotifications.map(kanbanToBellNotificationItem),
     ...contractSigningNotifications.map(contractSigningToBellNotificationItem),
+    ...contractConcludedNotifications.map(contractConcludedToBellNotificationItem),
   ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
   const enabledNotificationItems = notificationItems.filter((item) =>

@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../database/prisma.service';
+import { ADMIN_BELL_ROLES } from './admin-bell-roles';
 
 /** Флаги событий уведомлений — те же ключи, что в NOTIFY_EVENT_KEYS модуля notifications. */
 export const READER_NOTIFY_EVENT_KEYS = [
@@ -24,6 +25,12 @@ export const READER_NOTIFY_EVENT_KEYS = [
   'notifyOnMeasurements',
   'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
+  'notifyOnContractConcludedRepair',
+  'notifyOnContractConcludedWindows',
+  'notifyOnContractConcludedDoors',
+  'notifyOnContractConcludedCeilings',
+  'notifyOnContractConcludedBlinds',
+  'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
 ] as const;
 
@@ -82,6 +89,12 @@ export class AdminNotificationSettingsReaderService {
       notifyOnMeasurements: true,
       notifyOnMeasurementCreated: true,
       notifyOnContractSigning: true,
+      notifyOnContractConcludedRepair: true,
+      notifyOnContractConcludedWindows: true,
+      notifyOnContractConcludedDoors: true,
+      notifyOnContractConcludedCeilings: true,
+      notifyOnContractConcludedBlinds: true,
+      notifyOnContractConcludedFurniture: true,
       notifyOnIncassations: true,
     };
   }
@@ -147,5 +160,26 @@ export class AdminNotificationSettingsReaderService {
       }
     }
     return { ...base, allowedEvents };
+  }
+
+  /**
+   * Все активные сотрудники админки, у которых включено событие уведомлений
+   * (с учётом настроек роли и личных переопределений «Мои уведомления»).
+   * Единый источник получателей для рассылок «всем с включённым чекбоксом».
+   */
+  async getUserIdsWithEventEnabled(eventFlag: string): Promise<string[]> {
+    const users = await this.prisma.user.findMany({
+      where: { role: { in: ADMIN_BELL_ROLES }, isActive: true },
+      select: { id: true, role: true },
+    });
+    const checks = await Promise.all(
+      users.map(async (user) => {
+        const settings = await this.getSettingsForUser(user.id, user.role);
+        return (settings as unknown as Record<string, unknown>)[eventFlag] !== false
+          ? user.id
+          : null;
+      }),
+    );
+    return checks.filter((id): id is string => id !== null);
   }
 }

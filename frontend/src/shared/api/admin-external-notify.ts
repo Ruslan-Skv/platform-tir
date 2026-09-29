@@ -47,6 +47,9 @@ export interface ExternalNotifyChannelsSettings {
   measurementCreatedNotifyEmails: string[];
   measurementCreatedNotifyTelegramIds: string[];
   measurementCreatedNotifyMaxIds: string[];
+  contractConcludedNotifyEmails: string[];
+  contractConcludedNotifyTelegramIds: string[];
+  contractConcludedNotifyMaxIds: string[];
   updatedAt: string;
 }
 
@@ -98,6 +101,9 @@ export async function updateAdminExternalNotifyChannels(
       | 'measurementCreatedNotifyEmails'
       | 'measurementCreatedNotifyTelegramIds'
       | 'measurementCreatedNotifyMaxIds'
+      | 'contractConcludedNotifyEmails'
+      | 'contractConcludedNotifyTelegramIds'
+      | 'contractConcludedNotifyMaxIds'
     >
   >
 ): Promise<ExternalNotifyChannelsSettings> {

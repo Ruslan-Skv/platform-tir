@@ -2,6 +2,7 @@ import { BadRequestException, Injectable, Logger, NotFoundException } from '@nes
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
+import { ContractConcludedNotifyService } from '../../contract-concluded-notify/contract-concluded-notify.service';
 import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
@@ -22,6 +23,7 @@ export class ContractDocumentPackageCrudService {
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
     private readonly repairScheduleFromPackage: RepairScheduleFromPackageService,
     private readonly contractNumbering: ContractDocumentNumberingService,
+    private readonly contractConcludedNotify: ContractConcludedNotifyService,
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -192,6 +194,9 @@ export class ContractDocumentPackageCrudService {
       },
       include: contractDocumentPackageInclude,
     });
+    if (becomingConcluded) {
+      this.contractConcludedNotify.onConcluded(updated, savedById);
+    }
     if (recordVersion) {
       await this.appendPackageVersion(
         id,

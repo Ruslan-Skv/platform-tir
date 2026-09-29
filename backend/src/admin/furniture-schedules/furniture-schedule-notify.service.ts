@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { AdminBellPushService } from '../../bell-push/admin-bell-push.service';
+import { AdminNotificationSettingsReaderService } from '../../bell-push/admin-notification-settings-reader.service';
 import { PrismaService } from '../../database/prisma.service';
 import { ExternalNotifyService } from '../../external-notify/external-notify.service';
 import { ExternalNotifySettingsService } from '../../external-notify/external-notify-settings.service';
@@ -31,6 +32,7 @@ export class FurnitureScheduleNotifyService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly adminBellPush: AdminBellPushService,
+    private readonly settingsReader: AdminNotificationSettingsReaderService,
     private readonly externalNotify: ExternalNotifyService,
     private readonly externalNotifySettings: ExternalNotifySettingsService,
   ) {}
@@ -72,25 +74,6 @@ export class FurnitureScheduleNotifyService {
       : `/admin/crm/furniture-schedules/${projectId}`;
   }
 
-  private async recipientIds(
-    project: FurnitureScheduleNotifyProject,
-    actorUserId: string,
-    installerUserId: string | null,
-  ): Promise<string[]> {
-    const ids = new Set<string>();
-    if (project.createdById) ids.add(project.createdById);
-    if (project.packageId) {
-      const pkg = await this.prisma.contractDocumentPackage.findUnique({
-        where: { id: project.packageId },
-        select: { responsibleManagerId: true },
-      });
-      if (pkg?.responsibleManagerId) ids.add(pkg.responsibleManagerId);
-    }
-    if (installerUserId) ids.add(installerUserId);
-    ids.delete(actorUserId);
-    return [...ids];
-  }
-
   private statusLabel(status: string): string {
     if (status === 'NEW') return 'На очереди';
     if (status === 'IN_PROGRESS') return 'В работе';
@@ -124,7 +107,10 @@ export class FurnitureScheduleNotifyService {
     const title = KIND_LABELS[kind];
     const message = this.buildMessage(kind, project);
     const installerUserId = await this.resolveInstallerUserId(project);
-    const recipients = await this.recipientIds(project, actorUserId, installerUserId);
+    // Рассылка всем сотрудникам с включённым чекбоксом «План-график мебели».
+    const recipients = await this.settingsReader.getUserIdsWithEventEnabled(
+      'notifyOnFurnitureSchedules',
+    );
 
     if (recipients.length > 0) {
       await this.prisma.furnitureScheduleBellEvent.createMany({

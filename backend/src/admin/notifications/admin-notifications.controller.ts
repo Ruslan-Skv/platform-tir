@@ -46,6 +46,7 @@ import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
 import { AdminBellContractSigningFeedService } from './services/admin-bell-contract-signing-feed.service';
+import { AdminBellContractConcludedFeedService } from './services/admin-bell-contract-concluded-feed.service';
 import { AdminNotificationsService } from './admin-notifications.service';
 import { DismissAdminBellNotificationsDto } from './dto/dismiss-admin-bell-notifications.dto';
 import { SaveAdminBellNotificationHistoryDto } from './dto/save-admin-bell-notification-history.dto';
@@ -86,6 +87,7 @@ export class AdminNotificationsController {
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
     private readonly bellContractSigningFeed: AdminBellContractSigningFeedService,
+    private readonly bellContractConcludedFeed: AdminBellContractConcludedFeedService,
   ) {}
 
   @Get('push/vapid-public-key')
@@ -280,6 +282,25 @@ export class AdminNotificationsController {
   getBellContractSigningFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellContractSigningFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/contract-concluded')
+  @ApiOperation({
+    summary:
+      'События «Договор подписан» для колокольчика (персонально); kinds фильтрует направления: REPAIR | WINDOWS | DOORS | CEILINGS | BLINDS | FURNITURE',
+  })
+  getBellContractConcludedFeed(
+    @Req() req: RequestWithUser,
+    @Query('limit') limit?: string,
+    @Query('kinds') kinds?: string,
+  ) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    const kindList = (kinds ?? '')
+      .split(',')
+      .map((kind) => kind.trim())
+      .filter(Boolean);
+    return this.bellContractConcludedFeed.listForUser(req.user.id, take, kindList);
   }
 
   @Get('settings/by-user/:userId')

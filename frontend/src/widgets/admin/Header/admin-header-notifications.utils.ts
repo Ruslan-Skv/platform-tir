@@ -22,6 +22,7 @@ export type AdminBellNotificationType =
   | 'furnitureSchedules'
   | 'measurements'
   | 'contractSigning'
+  | 'contractConcluded'
   | 'incassations'
   | 'calendar'
   | 'messenger'
@@ -175,6 +176,17 @@ export type AdminBellContractSigningNotification = {
   kindLabel: string;
   packageId: string;
   sessionId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellContractConcludedNotification = {
+  id: string;
+  kind: 'REPAIR' | 'WINDOWS' | 'DOORS' | 'CEILINGS' | 'BLINDS' | 'FURNITURE';
+  kindLabel: string;
+  packageId: string;
   title: string;
   message: string;
   href: string;
@@ -475,6 +487,18 @@ export function contractSigningToBellNotificationItem(
   };
 }
 
+export function contractConcludedToBellNotificationItem(
+  item: AdminBellContractConcludedNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'contractConcluded',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || `/admin/contract-documents/contracts/${item.packageId}`,
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function reviewToBellNotificationItem(review: AdminReview): AdminBellNotificationItem {
   return {
     type: 'review',
@@ -576,6 +600,13 @@ export function isNotificationItemEnabled(
     );
   }
 
+  if (item.type === 'contractConcluded') {
+    return (
+      (hasAccess('admin.contract-documents') || hasAccess('admin.contract-documents.contracts')) &&
+      isBellTypeEnabled(item.type, settings)
+    );
+  }
+
   if (item.type === 'incassations') {
     // Адресные уведомления менеджеру кассы и сдающему — без требования доступа к журналу.
     return isBellTypeEnabled(item.type, settings);
@@ -644,6 +675,16 @@ export function isBellTypeEnabled(
       );
     case 'contractSigning':
       return settings.notifyOnContractSigning !== false;
+    case 'contractConcluded':
+      // Фид уже отфильтрован по kind на бэкенде; показываем, если включено хоть одно направление.
+      return (
+        settings.notifyOnContractConcludedRepair !== false ||
+        settings.notifyOnContractConcludedWindows !== false ||
+        settings.notifyOnContractConcludedDoors !== false ||
+        settings.notifyOnContractConcludedCeilings !== false ||
+        settings.notifyOnContractConcludedBlinds !== false ||
+        settings.notifyOnContractConcludedFurniture !== false
+      );
     case 'incassations':
       return settings.notifyOnIncassations !== false;
     case 'calendar':
@@ -758,6 +799,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'contractSigning':
       return {
         title: 'Подписание договоров',
+        body: item.text,
+        tag,
+      };
+    case 'contractConcluded':
+      return {
+        title: 'Договор подписан',
         body: item.text,
         tag,
       };

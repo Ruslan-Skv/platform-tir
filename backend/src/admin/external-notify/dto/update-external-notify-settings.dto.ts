@@ -301,4 +301,28 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   measurementCreatedNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Email для уведомлений «Договор подписан»' })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  contractConcludedNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для уведомлений «Договор подписан»',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  contractConcludedNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для уведомлений «Договор подписан»',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  contractConcludedNotifyMaxIds?: string[];
 }

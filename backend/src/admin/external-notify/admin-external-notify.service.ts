@@ -16,7 +16,8 @@ export type ExternalNotifyEvent =
   | 'waybill'
   | 'installation_schedule'
   | 'measurement'
-  | 'measurement_created';
+  | 'measurement_created'
+  | 'contract_concluded';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -154,6 +155,17 @@ export class AdminExternalNotifyService {
         dto.measurementCreatedNotifyMaxIds,
       );
     }
+    if (dto.contractConcludedNotifyEmails !== undefined) {
+      data.contractConcludedNotifyEmails = normalizeStringArray(dto.contractConcludedNotifyEmails);
+    }
+    if (dto.contractConcludedNotifyTelegramIds !== undefined) {
+      data.contractConcludedNotifyTelegramIds = normalizeStringArray(
+        dto.contractConcludedNotifyTelegramIds,
+      );
+    }
+    if (dto.contractConcludedNotifyMaxIds !== undefined) {
+      data.contractConcludedNotifyMaxIds = normalizeStringArray(dto.contractConcludedNotifyMaxIds);
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -237,6 +249,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.measurementCreatedNotifyTelegramIds),
           maxIds: parseStringArray(block.measurementCreatedNotifyMaxIds),
         };
+      case 'contract_concluded':
+        return {
+          emails: parseStringArray(block.contractConcludedNotifyEmails),
+          telegramIds: parseStringArray(block.contractConcludedNotifyTelegramIds),
+          maxIds: parseStringArray(block.contractConcludedNotifyMaxIds),
+        };
     }
   }
 
@@ -285,6 +303,9 @@ export class AdminExternalNotifyService {
     measurementCreatedNotifyEmails: Prisma.JsonValue | null;
     measurementCreatedNotifyTelegramIds: Prisma.JsonValue | null;
     measurementCreatedNotifyMaxIds: Prisma.JsonValue | null;
+    contractConcludedNotifyEmails: Prisma.JsonValue | null;
+    contractConcludedNotifyTelegramIds: Prisma.JsonValue | null;
+    contractConcludedNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -332,6 +353,11 @@ export class AdminExternalNotifyService {
         block.measurementCreatedNotifyTelegramIds,
       ),
       measurementCreatedNotifyMaxIds: parseStringArray(block.measurementCreatedNotifyMaxIds),
+      contractConcludedNotifyEmails: parseStringArray(block.contractConcludedNotifyEmails),
+      contractConcludedNotifyTelegramIds: parseStringArray(
+        block.contractConcludedNotifyTelegramIds,
+      ),
+      contractConcludedNotifyMaxIds: parseStringArray(block.contractConcludedNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

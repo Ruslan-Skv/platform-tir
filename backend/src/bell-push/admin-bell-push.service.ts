@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
-import { UserRole } from '@prisma/client';
 import { PrismaService } from '../database/prisma.service';
+import { ADMIN_BELL_ROLES } from './admin-bell-roles';
 import { AdminNotificationSettingsReaderService } from './admin-notification-settings-reader.service';
 import {
   AdminPushPayload,
@@ -29,27 +29,16 @@ export type AdminBellPushEvent =
   | 'measurement'
   | 'measurement_created'
   | 'contract_signing'
+  | 'contract_concluded_repair'
+  | 'contract_concluded_windows'
+  | 'contract_concluded_doors'
+  | 'contract_concluded_ceilings'
+  | 'contract_concluded_blinds'
+  | 'contract_concluded_furniture'
   | 'incassation'
   | 'calendar_event'
   | 'messenger_message'
   | 'kanban_card';
-
-const ADMIN_ROLES: UserRole[] = [
-  'SUPER_ADMIN',
-  'ADMIN',
-  'CONTENT_MANAGER',
-  'MODERATOR',
-  'SUPPORT',
-  'MANAGER',
-  'TECHNOLOGIST',
-  'PARTNER',
-  'BRIGADIER',
-  'LEAD_SPECIALIST_FURNITURE',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-  'SURVEYOR',
-  'DRIVER',
-  'INSTALLER',
-];
 
 @Injectable()
 export class AdminBellPushService {
@@ -65,7 +54,7 @@ export class AdminBellPushService {
     const subscriptions = await this.prisma.adminPushSubscription.findMany({
       where: {
         user: {
-          role: { in: ADMIN_ROLES },
+          role: { in: ADMIN_BELL_ROLES },
           isActive: true,
         },
       },
@@ -129,6 +118,12 @@ export class AdminBellPushService {
       notifyOnMeasurements?: boolean;
       notifyOnMeasurementCreated?: boolean;
       notifyOnContractSigning?: boolean;
+      notifyOnContractConcludedRepair?: boolean;
+      notifyOnContractConcludedWindows?: boolean;
+      notifyOnContractConcludedDoors?: boolean;
+      notifyOnContractConcludedCeilings?: boolean;
+      notifyOnContractConcludedBlinds?: boolean;
+      notifyOnContractConcludedFurniture?: boolean;
       notifyOnIncassations?: boolean;
     },
     role: string,
@@ -177,6 +172,18 @@ export class AdminBellPushService {
         return settings.notifyOnMeasurementCreated !== false;
       case 'contract_signing':
         return settings.notifyOnContractSigning !== false;
+      case 'contract_concluded_repair':
+        return settings.notifyOnContractConcludedRepair !== false;
+      case 'contract_concluded_windows':
+        return settings.notifyOnContractConcludedWindows !== false;
+      case 'contract_concluded_doors':
+        return settings.notifyOnContractConcludedDoors !== false;
+      case 'contract_concluded_ceilings':
+        return settings.notifyOnContractConcludedCeilings !== false;
+      case 'contract_concluded_blinds':
+        return settings.notifyOnContractConcludedBlinds !== false;
+      case 'contract_concluded_furniture':
+        return settings.notifyOnContractConcludedFurniture !== false;
       case 'incassation':
         return settings.notifyOnIncassations !== false;
       case 'calendar_event':

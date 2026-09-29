@@ -16,6 +16,7 @@ import * as crypto from 'crypto';
 
 import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
+import { ContractConcludedNotifyService } from '../contract-concluded-notify/contract-concluded-notify.service';
 import { ContractSigningNotifyService } from './contract-signing-notify.service';
 import { type SigningSessionDocumentMeta } from './signing-session-documents';
 
@@ -58,6 +59,7 @@ export class ContractDocumentSigningService {
     private readonly mailer: MailerService,
     private readonly contractNumbering: ContractDocumentNumberingService,
     private readonly signingNotify: ContractSigningNotifyService,
+    private readonly contractConcludedNotify: ContractConcludedNotifyService,
   ) {}
 
   private siteUrl(): string {
@@ -113,6 +115,22 @@ export class ContractDocumentSigningService {
 
     if (opts?.conclude) {
       await this.appendSigningVersion(packageId, formData, pkg.status, opts.signedName);
+    }
+
+    // Пакет стал «Договор подписан» по подписанию клиентом — уведомляем всех
+    // сотрудников с включённым событием этого направления.
+    if (opts?.conclude && pkg.status === ContractDocumentPackageStatus.IN_PROGRESS) {
+      this.contractConcludedNotify.onConcluded(
+        {
+          id: packageId,
+          kind: pkg.kind,
+          title: pkg.title,
+          formData,
+          responsibleManagerId: pkg.responsibleManagerId,
+          createdById: pkg.createdById,
+        },
+        null,
+      );
     }
   }
 

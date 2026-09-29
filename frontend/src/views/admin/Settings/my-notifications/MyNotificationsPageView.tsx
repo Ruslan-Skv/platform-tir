@@ -83,6 +83,30 @@ const EVENT_TOGGLES: EventToggle[] = [
     label: 'Электронное подписание договоров (подписан / отклонён / открыт клиентом)',
   },
   {
+    key: 'notifyOnContractConcludedRepair',
+    label: 'Договор подписан — Ремонт',
+  },
+  {
+    key: 'notifyOnContractConcludedWindows',
+    label: 'Договор подписан — Окна',
+  },
+  {
+    key: 'notifyOnContractConcludedDoors',
+    label: 'Договор подписан — Двери',
+  },
+  {
+    key: 'notifyOnContractConcludedCeilings',
+    label: 'Договор подписан — Потолки',
+  },
+  {
+    key: 'notifyOnContractConcludedBlinds',
+    label: 'Договор подписан — Жалюзи',
+  },
+  {
+    key: 'notifyOnContractConcludedFurniture',
+    label: 'Договор подписан — Мебель',
+  },
+  {
     key: 'notifyOnIncassations',
     label: 'Инкассации наличных (журнал ДП)',
   },

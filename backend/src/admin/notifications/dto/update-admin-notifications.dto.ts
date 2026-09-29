@@ -154,6 +154,36 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnContractSigning?: boolean;
 
+  @ApiPropertyOptional({ description: 'Договор подписан — Ремонт' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedRepair?: boolean;
+
+  @ApiPropertyOptional({ description: 'Договор подписан — Окна' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedWindows?: boolean;
+
+  @ApiPropertyOptional({ description: 'Договор подписан — Двери' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedDoors?: boolean;
+
+  @ApiPropertyOptional({ description: 'Договор подписан — Потолки' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedCeilings?: boolean;
+
+  @ApiPropertyOptional({ description: 'Договор подписан — Жалюзи' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedBlinds?: boolean;
+
+  @ApiPropertyOptional({ description: 'Договор подписан — Мебель' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnContractConcludedFurniture?: boolean;
+
   @ApiPropertyOptional({ description: 'Инкассации наличных (журнал ДП)' })
   @IsOptional()
   @IsBoolean()

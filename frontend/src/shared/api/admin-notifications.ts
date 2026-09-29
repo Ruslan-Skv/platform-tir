@@ -35,6 +35,12 @@ export interface AdminNotificationsSettings {
   notifyOnMeasurements: boolean;
   notifyOnMeasurementCreated: boolean;
   notifyOnContractSigning: boolean;
+  notifyOnContractConcludedRepair: boolean;
+  notifyOnContractConcludedWindows: boolean;
+  notifyOnContractConcludedDoors: boolean;
+  notifyOnContractConcludedCeilings: boolean;
+  notifyOnContractConcludedBlinds: boolean;
+  notifyOnContractConcludedFurniture: boolean;
   notifyOnIncassations: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
   allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
@@ -80,6 +86,12 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnMeasurements',
   'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
+  'notifyOnContractConcludedRepair',
+  'notifyOnContractConcludedWindows',
+  'notifyOnContractConcludedDoors',
+  'notifyOnContractConcludedCeilings',
+  'notifyOnContractConcludedBlinds',
+  'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
 ] as const;
 
@@ -271,6 +283,12 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnMeasurementCreated: data.notifyOnMeasurementCreated,
     notifyOnContractSigning: data.notifyOnContractSigning,
+    notifyOnContractConcludedRepair: data.notifyOnContractConcludedRepair,
+    notifyOnContractConcludedWindows: data.notifyOnContractConcludedWindows,
+    notifyOnContractConcludedDoors: data.notifyOnContractConcludedDoors,
+    notifyOnContractConcludedCeilings: data.notifyOnContractConcludedCeilings,
+    notifyOnContractConcludedBlinds: data.notifyOnContractConcludedBlinds,
+    notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
@@ -329,6 +347,12 @@ export async function updateAdminNotificationsSettings(
     notifyOnMeasurements: data.notifyOnMeasurements,
     notifyOnMeasurementCreated: data.notifyOnMeasurementCreated,
     notifyOnContractSigning: data.notifyOnContractSigning,
+    notifyOnContractConcludedRepair: data.notifyOnContractConcludedRepair,
+    notifyOnContractConcludedWindows: data.notifyOnContractConcludedWindows,
+    notifyOnContractConcludedDoors: data.notifyOnContractConcludedDoors,
+    notifyOnContractConcludedCeilings: data.notifyOnContractConcludedCeilings,
+    notifyOnContractConcludedBlinds: data.notifyOnContractConcludedBlinds,
+    notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
@@ -771,6 +795,33 @@ export async function getAdminBellContractSigningNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления о подписании договоров');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellContractConcludedNotification = {
+  id: string;
+  kind: 'REPAIR' | 'WINDOWS' | 'DOORS' | 'CEILINGS' | 'BLINDS' | 'FURNITURE';
+  kindLabel: string;
+  packageId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellContractConcludedNotifications(
+  limit = 20,
+  kinds?: AdminBellContractConcludedNotification['kind'][]
+): Promise<AdminBellContractConcludedNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (kinds && kinds.length > 0) {
+    params.set('kinds', kinds.join(','));
+  }
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/contract-concluded?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления «Договор подписан»');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

@@ -65,7 +65,8 @@ type ChannelKey =
   | 'waybills'
   | 'installationSchedules'
   | 'measurementsCreated'
-  | 'measurements';
+  | 'measurements'
+  | 'contractConcluded';
 
 type TabId = 'forms' | 'quizzes' | 'other';
 
@@ -97,6 +98,7 @@ const INITIAL: ChannelsState = {
   installationSchedules: { ...EMPTY },
   measurementsCreated: { ...EMPTY },
   measurements: { ...EMPTY },
+  contractConcluded: { ...EMPTY },
 };
 
 const TABS: { id: TabId; label: string; hint: string }[] = [
@@ -220,6 +222,13 @@ const EVENTS_BY_TAB: Record<
       description: 'Выполнение, отказ и заключение договора по замеру.',
     },
     {
+      key: 'contractConcluded',
+      label: 'Договор подписан',
+      title: 'Договор подписан',
+      description:
+        'Перевод договора в статус «Договор подписан» по направлениям: Ремонт, Окна, Двери, Потолки, Жалюзи, Мебель.',
+    },
+    {
       key: 'siteFeedback',
       label: 'Обратная связь (сайт)',
       title: 'Обратная связь по сайту',
@@ -255,6 +264,7 @@ function pickExternal(
     | 'installationSchedules'
     | 'measurementsCreated'
     | 'measurements'
+    | 'contractConcluded'
 ): NotifyChannelsValue {
   switch (key) {
     case 'order':
@@ -317,6 +327,12 @@ function pickExternal(
         notifyTelegramIds: settings.measurementCreatedNotifyTelegramIds,
         notifyMaxIds: settings.measurementCreatedNotifyMaxIds,
       };
+    case 'contractConcluded':
+      return {
+        notifyEmails: settings.contractConcludedNotifyEmails,
+        notifyTelegramIds: settings.contractConcludedNotifyTelegramIds,
+        notifyMaxIds: settings.contractConcludedNotifyMaxIds,
+      };
     case 'knowledgeFeedback':
       return {
         notifyEmails: settings.knowledgeFeedbackNotifyEmails,
@@ -364,6 +380,9 @@ function buildExternalPatch(channels: ChannelsState) {
     measurementCreatedNotifyEmails: channels.measurementsCreated.notifyEmails,
     measurementCreatedNotifyTelegramIds: channels.measurementsCreated.notifyTelegramIds,
     measurementCreatedNotifyMaxIds: channels.measurementsCreated.notifyMaxIds,
+    contractConcludedNotifyEmails: channels.contractConcluded.notifyEmails,
+    contractConcludedNotifyTelegramIds: channels.contractConcluded.notifyTelegramIds,
+    contractConcludedNotifyMaxIds: channels.contractConcluded.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -455,6 +474,7 @@ export function LeadNotificationChannelsSection() {
         installationSchedules: pickExternal(external, 'installationSchedules'),
         measurementsCreated: pickExternal(external, 'measurementsCreated'),
         measurements: pickExternal(external, 'measurements'),
+        contractConcluded: pickExternal(external, 'contractConcluded'),
       });
     } catch (err) {
       console.error('Failed to fetch notification channels:', err);
