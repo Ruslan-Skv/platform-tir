@@ -25,8 +25,10 @@ import {
   formatWorkDayDate,
   formatWorkDayTime,
   isWorkDayDayOffRow,
+  isWorkDayLeaveRow,
   isWorkDayTruancyRow,
   workDayAbsenceMinutes,
+  workDayLeaveLabel,
   workDayRequestBadgeLabel,
   workDayRowClassName,
   workDayStatusLabel,
@@ -393,6 +395,12 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
           {stats.dayOffWorkDays ? (
             <span className={styles.statChip}>Работа в выходной: {stats.dayOffWorkDays}</span>
           ) : null}
+          {stats.vacationDays ? (
+            <span className={styles.statChip}>Дней отпуска: {stats.vacationDays}</span>
+          ) : null}
+          {stats.sickDays ? (
+            <span className={styles.statChip}>Дней больничных: {stats.sickDays}</span>
+          ) : null}
           {stats.truancyDays ? (
             <span className={styles.statChip}>Прогулов: {stats.truancyDays}</span>
           ) : null}
@@ -484,6 +492,37 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                       <span className={styles.truancyBadge}>Прогул</span>
                     </td>
                   </tr>
+                ) : isWorkDayLeaveRow(row) ? (
+                  <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                    <td>{formatWorkDayDate(row.workDate)}</td>
+                    <td>{row.office?.name ?? '—'}</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>—</td>
+                    <td>
+                      <RequestsCell row={row} />
+                    </td>
+                    <td>
+                      <div className={styles.statusCell}>
+                        <span
+                          className={
+                            row.leaveType === 'VACATION'
+                              ? styles.leaveBadgeVacation
+                              : styles.leaveBadgeSick
+                          }
+                        >
+                          {workDayLeaveLabel(row.leaveType)}
+                        </span>
+                        {row.leaveComment ? (
+                          <span className={styles.leaveComment} title={row.leaveComment}>
+                            {row.leaveComment}
+                          </span>
+                        ) : null}
+                      </div>
+                    </td>
+                  </tr>
                 ) : isWorkDayDayOffRow(row) ? (
                   <tr key={row.id} className={workDayRowClassName(row, styles)}>
                     <td>{formatWorkDayDate(row.workDate)}</td>
@@ -555,6 +594,38 @@ export function MyWorkDayPageView({ model }: MyWorkDayPageViewProps) {
                           <RequestsCell row={row} />
                         </dd>
                       </div>
+                    </dl>
+                  </article>
+                );
+              }
+              if (isWorkDayLeaveRow(row)) {
+                return (
+                  <article key={row.id} className={`${styles.mobileCard}${tone ? ` ${tone}` : ''}`}>
+                    <div className={styles.mobileCardTop}>
+                      <strong className={styles.mobileCardDate}>
+                        {formatWorkDayDate(row.workDate)}
+                      </strong>
+                      <span
+                        className={
+                          row.leaveType === 'VACATION'
+                            ? styles.leaveBadgeVacation
+                            : styles.leaveBadgeSick
+                        }
+                      >
+                        {workDayLeaveLabel(row.leaveType)}
+                      </span>
+                    </div>
+                    <dl className={styles.mobileCardRows}>
+                      <div className={styles.mobileCardRow}>
+                        <dt>Офис</dt>
+                        <dd>{row.office?.name ?? '—'}</dd>
+                      </div>
+                      {row.leaveComment ? (
+                        <div className={styles.mobileCardRow}>
+                          <dt>Комментарий</dt>
+                          <dd>{row.leaveComment}</dd>
+                        </div>
+                      ) : null}
                     </dl>
                   </article>
                 );

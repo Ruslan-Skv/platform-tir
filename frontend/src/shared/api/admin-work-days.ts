@@ -61,6 +61,7 @@ export interface WorkDayRecord {
   requests?: WorkDayRequestBadge[];
   dayOffOnly?: false;
   truancyOnly?: false;
+  leaveOnly?: false;
   bySchedule?: false;
 }
 
@@ -87,6 +88,7 @@ export interface WorkDayDayOffRow {
   earlyLeaveMinutes: number;
   dayOffOnly: true;
   truancyOnly?: false;
+  leaveOnly?: false;
   /** true — обычный выходной по графику (не согласованный запрос). */
   bySchedule?: true;
   office?: { id: string; name: string } | null;
@@ -114,6 +116,7 @@ export interface WorkDayTruancyRow {
   isDayOffWork: false;
   truancyOnly: true;
   dayOffOnly?: false;
+  leaveOnly?: false;
   bySchedule?: false;
   office?: { id: string; name: string } | null;
   absences: [];
@@ -127,7 +130,43 @@ export interface WorkDayTruancyRow {
   requests: WorkDayRequestBadge[];
 }
 
-export type WorkDayJournalRow = WorkDayRecord | WorkDayDayOffRow | WorkDayTruancyRow;
+export type WorkDayLeaveType = 'VACATION' | 'SICK';
+
+/** Строка журнала за день отпуска или больничного, отмеченных суперадмином (в т.ч. задним числом). */
+export interface WorkDayLeaveRow {
+  id: string;
+  userId: string;
+  officeId: string | null;
+  workDate: string;
+  startedAt: null;
+  endedAt: null;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  isDayOffWork: false;
+  leaveOnly: true;
+  leaveType: WorkDayLeaveType;
+  /** Комментарий отметки (общий на весь период отпуска/больничного). */
+  leaveComment: string | null;
+  truancyOnly?: false;
+  dayOffOnly?: false;
+  bySchedule?: false;
+  office?: { id: string; name: string } | null;
+  absences: [];
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+  } | null;
+  requests: WorkDayRequestBadge[];
+}
+
+export type WorkDayJournalRow =
+  | WorkDayRecord
+  | WorkDayDayOffRow
+  | WorkDayTruancyRow
+  | WorkDayLeaveRow;
 
 export interface WorkDaySettings {
   id: string;
@@ -322,6 +361,10 @@ export interface MyWorkDayHistorySummary {
   truancyDays?: number;
   /** Выходы на работу в свой выходной по графику. */
   dayOffWorkDays?: number;
+  /** Дни отпуска, отмеченного руководителем. */
+  vacationDays?: number;
+  /** Дни больничного, отмеченного руководителем. */
+  sickDays?: number;
 }
 
 export interface MyWorkDayHistoryResponse {
@@ -356,6 +399,86 @@ export async function deleteWorkDay(id: string): Promise<{ id: string }> {
   if (!res.ok) {
     const err = await res.json().catch(() => ({}));
     throw new Error(err.message || 'Не удалось удалить запись');
+  }
+  return res.json();
+}
+
+/** Отпуск или больничный, отмеченный суперадмином за период. */
+export interface WorkDayLeave {
+  id: string;
+  userId: string;
+  type: WorkDayLeaveType;
+  dateFrom: string;
+  dateTo: string;
+  comment: string | null;
+  createdById: string | null;
+  createdAt: string;
+  updatedAt: string;
+  user?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+    role: string;
+    officeId: string | null;
+    office?: { id: string; name: string } | null;
+  };
+  createdBy?: {
+    id: string;
+    email: string;
+    firstName: string | null;
+    lastName: string | null;
+  } | null;
+}
+
+/** Отпуска/больничные, пересекающиеся с выбранным периодом. */
+export async function getWorkDayLeaves(params?: {
+  dateFrom?: string;
+  dateTo?: string;
+  userId?: string;
+  officeId?: string;
+}): Promise<WorkDayLeave[]> {
+  const search = new URLSearchParams();
+  if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
+  if (params?.dateTo) search.set('dateTo', params.dateTo);
+  if (params?.userId) search.set('userId', params.userId);
+  if (params?.officeId) search.set('officeId', params.officeId);
+  const qs = search.toString();
+  const res = await apiFetch(`${API_URL}/admin/work-days/leaves${qs ? `?${qs}` : ''}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить отпуска и больничные');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export async function createWorkDayLeave(body: {
+  userId: string;
+  type: WorkDayLeaveType;
+  dateFrom: string;
+  dateTo: string;
+  comment?: string;
+}): Promise<WorkDayLeave> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/leaves`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось отметить отпуск/больничный');
+  }
+  return res.json();
+}
+
+export async function deleteWorkDayLeave(id: string): Promise<{ id: string }> {
+  const res = await apiFetch(`${API_URL}/admin/work-days/leaves/${encodeURIComponent(id)}`, {
+    method: 'DELETE',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось удалить отметку');
   }
   return res.json();
 }

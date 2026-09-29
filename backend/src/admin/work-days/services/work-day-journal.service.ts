@@ -1,11 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
   UserRole,
+  WorkDayLeaveType,
   WorkDayRequestStatus,
   WorkDayRequestType,
   WorkDayStatus,
   type WorkDay,
   type WorkDayAbsence,
+  type WorkDayLeave,
   type WorkDayRequest,
 } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
@@ -76,6 +78,7 @@ export type WorkDayDayOffRow = {
   isDayOffWork: false;
   dayOffOnly: true;
   truancyOnly?: false;
+  leaveOnly?: false;
   /** true — обычный выходной по графику (не согласованный запрос). */
   bySchedule?: true;
   office: { id: string; name: string } | null;
@@ -91,6 +94,7 @@ export type WorkDayJournalRow = WorkDay & {
   requests: WorkDayRequestBadge[];
   dayOffOnly?: false;
   truancyOnly?: false;
+  leaveOnly?: false;
   bySchedule?: false;
 };
 
@@ -115,6 +119,7 @@ export type WorkDayTruancyRow = {
   isDayOffWork: false;
   truancyOnly: true;
   dayOffOnly?: false;
+  leaveOnly?: false;
   bySchedule?: false;
   office: { id: string; name: string } | null;
   user: WorkDayJournalUser | null;
@@ -122,7 +127,43 @@ export type WorkDayTruancyRow = {
   requests: WorkDayRequestBadge[];
 };
 
-export type WorkDayJournalListRow = WorkDayJournalRow | WorkDayDayOffRow | WorkDayTruancyRow;
+/** Строка журнала за день отпуска или больничного, отмеченных суперадмином (в т.ч. задним числом). */
+export type WorkDayLeaveRow = {
+  id: string;
+  userId: string;
+  officeId: string | null;
+  workDate: Date;
+  status: WorkDayStatus;
+  startedAt: null;
+  endedAt: null;
+  closeReason: null;
+  autoClosedAt: null;
+  startedFromIp: null;
+  startedFromUserAgent: null;
+  endedFromIp: null;
+  lateMinutes: number;
+  earlyLeaveMinutes: number;
+  reportedEndAt: null;
+  reopenCount: number;
+  isDayOffWork: false;
+  leaveOnly: true;
+  leaveType: WorkDayLeaveType;
+  /** Комментарий отметки (общий на весь период отпуска/больничного). */
+  leaveComment: string | null;
+  truancyOnly?: false;
+  dayOffOnly?: false;
+  bySchedule?: false;
+  office: { id: string; name: string } | null;
+  user: WorkDayJournalUser | null;
+  absences: [];
+  requests: WorkDayRequestBadge[];
+};
+
+export type WorkDayJournalListRow =
+  | WorkDayJournalRow
+  | WorkDayDayOffRow
+  | WorkDayTruancyRow
+  | WorkDayLeaveRow;
 
 export type WorkDayJournalParams = {
   dateFrom?: string;
@@ -161,6 +202,10 @@ export type WorkDayMySummary = {
   truancyDays: number;
   /** Выходы на работу в свой выходной по графику. */
   dayOffWorkDays: number;
+  /** Дни отпуска, отмеченного руководителем. */
+  vacationDays: number;
+  /** Дни больничного, отмеченного руководителем. */
+  sickDays: number;
 };
 
 /**
@@ -172,10 +217,11 @@ export type WorkDayMySummary = {
 export class WorkDayJournalService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Сводка «Моего рабочего дня»: выходные и прогулы не считаются рабочими днями. */
+  /** Сводка «Моего рабочего дня»: выходные, отпуска и прогулы не считаются рабочими днями. */
   summarizeMyRows(rows: WorkDayJournalListRow[]): WorkDayMySummary {
     const records = rows.filter(
-      (r): r is WorkDayJournalRow => r.dayOffOnly !== true && r.truancyOnly !== true,
+      (r): r is WorkDayJournalRow =>
+        r.dayOffOnly !== true && r.truancyOnly !== true && r.leaveOnly !== true,
     );
     const approvedDayOffDays = rows.filter(
       (r) => r.dayOffOnly === true && r.bySchedule !== true,
@@ -184,6 +230,7 @@ export class WorkDayJournalService {
       (r) => r.dayOffOnly === true && r.bySchedule === true,
     ).length;
     const truancyDays = rows.filter((r) => r.truancyOnly === true).length;
+    const leaveRows = rows.filter((r): r is WorkDayLeaveRow => r.leaveOnly === true);
     const now = Date.now();
     const totalAbsenceMinutes = records.reduce(
       (sum, row) =>
@@ -204,6 +251,8 @@ export class WorkDayJournalService {
       scheduleDayOffDays,
       truancyDays,
       dayOffWorkDays: records.filter((r) => r.isDayOffWork).length,
+      vacationDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.VACATION).length,
+      sickDays: leaveRows.filter((r) => r.leaveType === WorkDayLeaveType.SICK).length,
     };
   }
 
@@ -297,20 +346,16 @@ export class WorkDayJournalService {
         approvedDayOffKeys.add(key);
       }
     }
-    for (const row of requestRows) {
-      const badge = toRequestBadge(row);
-      if (row.type !== WorkDayRequestType.DAY_OFF) continue;
-      if (row.status !== WorkDayRequestStatus.APPROVED) continue;
-      const key = `${row.userId}|${badge.requestDate}`;
-      if (recordKeys.has(key)) continue;
-      recordKeys.add(key);
-      enrichedRows.push(this.buildDayOffRow(row, badge));
-    }
+    const approvedDayOffRows = requestRows.filter(
+      (row) =>
+        row.type === WorkDayRequestType.DAY_OFF && row.status === WorkDayRequestStatus.APPROVED,
+    );
 
     await this.appendScheduleDayRows(enrichedRows, {
       params,
       recordKeys,
       approvedDayOffKeys,
+      approvedDayOffRows,
       requestsByKey,
     });
 
@@ -319,6 +364,7 @@ export class WorkDayJournalService {
 
   /**
    * Дни без явки по графику сотрудника (общему или индивидуальному):
+   * дни отпуска/больничного — строки «Отпуск»/«Больничный» (перекрывают прогул и выходной),
    * прошедшие рабочие дни без записи и без согласованного выходного — «прогул»,
    * остальные нерабочие дни по графику — строки «выходной».
    */
@@ -328,12 +374,26 @@ export class WorkDayJournalService {
       params: WorkDayJournalParams;
       recordKeys: Set<string>;
       approvedDayOffKeys: Set<string>;
+      approvedDayOffRows: Array<
+        WorkDayRequest & {
+          user:
+            | (WorkDayJournalUser & {
+                officeId: string | null;
+                office: { id: string; name: string } | null;
+              })
+            | null;
+        }
+      >;
       requestsByKey: Map<string, WorkDayRequestBadge[]>;
     },
   ): Promise<void> {
     const settingsRow = await this.prisma.workDaySettings.findUnique({ where: { id: 'main' } });
     const settings = settingsRow ?? DEFAULT_WORK_DAY_SETTINGS;
-    if (!settings.isEnabled) return;
+    if (!settings.isEnabled) {
+      // Согласованные выходные добавляем и при выключенном учёте: они не зависят от расписания.
+      this.pushApprovedDayOffRows(rows, ctx, null);
+      return;
+    }
 
     const today = getTodayDateInTimezone();
     // Прогул фиксируем только по полностью прошедшим дням (сегодня ещё не закончился);
@@ -348,7 +408,14 @@ export class WorkDayJournalService {
     const from =
       requestedFrom ?? recordsFrom ?? new Date(lastMissedDate.getTime() - 29 * 24 * 60 * 60 * 1000);
     const to = requestedTo ?? today;
-    if (from > to) return;
+    if (from > to) {
+      this.pushApprovedDayOffRows(rows, ctx, null);
+      return;
+    }
+
+    const leaveByUserDate = await this.buildLeaveMap(from, to, ctx.params);
+    // Отпуск/больничный важнее согласованного выходного: строка за дату будет одна.
+    this.pushApprovedDayOffRows(rows, ctx, leaveByUserDate);
 
     const users = await this.prisma.user.findMany({
       where: {
@@ -364,7 +431,13 @@ export class WorkDayJournalService {
     for (const user of users) {
       for (let date = new Date(from); date <= to; date = new Date(date.getTime() + 86_400_000)) {
         const key = `${user.id}|${dateKey(date)}`;
-        if (ctx.recordKeys.has(key) || ctx.approvedDayOffKeys.has(key)) continue;
+        if (ctx.recordKeys.has(key)) continue;
+        const leave = leaveByUserDate.get(key);
+        if (leave) {
+          rows.push(this.buildLeaveRow(user, date, leave));
+          continue;
+        }
+        if (ctx.approvedDayOffKeys.has(key)) continue;
         const schedule = resolveDaySchedule(
           user,
           user.office,
@@ -379,6 +452,87 @@ export class WorkDayJournalService {
         }
       }
     }
+  }
+
+  /** Отпуска/больничные за период: ключ «userId|дата» → отметка. */
+  private async buildLeaveMap(from: Date, to: Date, params: WorkDayJournalParams) {
+    const leaves = await this.prisma.workDayLeave.findMany({
+      where: {
+        dateFrom: { lte: to },
+        dateTo: { gte: from },
+        ...(params.userId ? { userId: params.userId } : {}),
+        ...(params.officeId ? { user: { officeId: params.officeId } } : {}),
+      },
+    });
+    const map = new Map<string, Pick<WorkDayLeave, 'id' | 'type' | 'comment'>>();
+    for (const leave of leaves) {
+      const start = leave.dateFrom < from ? from : new Date(leave.dateFrom);
+      const end = leave.dateTo > to ? to : new Date(leave.dateTo);
+      for (let date = new Date(start); date <= end; date = new Date(date.getTime() + 86_400_000)) {
+        map.set(`${leave.userId}|${dateKey(date)}`, leave);
+      }
+    }
+    return map;
+  }
+
+  private pushApprovedDayOffRows(
+    rows: WorkDayJournalListRow[],
+    ctx: {
+      recordKeys: Set<string>;
+      approvedDayOffRows: Array<
+        WorkDayRequest & {
+          user:
+            | (WorkDayJournalUser & {
+                officeId: string | null;
+                office: { id: string; name: string } | null;
+              })
+            | null;
+        }
+      >;
+    },
+    leaveByUserDate: Map<string, Pick<WorkDayLeave, 'id' | 'type' | 'comment'>> | null,
+  ): void {
+    for (const row of ctx.approvedDayOffRows) {
+      const badge = toRequestBadge(row);
+      const key = `${row.userId}|${badge.requestDate}`;
+      if (ctx.recordKeys.has(key)) continue;
+      if (leaveByUserDate?.has(key)) continue;
+      ctx.recordKeys.add(key);
+      rows.push(this.buildDayOffRow(row, badge));
+    }
+  }
+
+  private buildLeaveRow(
+    user: ScheduleJournalUser,
+    date: Date,
+    leave: Pick<WorkDayLeave, 'id' | 'type' | 'comment'>,
+  ): WorkDayLeaveRow {
+    return {
+      id: `leave-${user.id}-${dateKey(date)}`,
+      userId: user.id,
+      officeId: user.officeId,
+      workDate: new Date(date),
+      status: WorkDayStatus.CLOSED,
+      startedAt: null,
+      endedAt: null,
+      closeReason: null,
+      autoClosedAt: null,
+      startedFromIp: null,
+      startedFromUserAgent: null,
+      endedFromIp: null,
+      lateMinutes: 0,
+      earlyLeaveMinutes: 0,
+      reportedEndAt: null,
+      reopenCount: 0,
+      isDayOffWork: false,
+      leaveOnly: true,
+      leaveType: leave.type,
+      leaveComment: leave.comment,
+      office: user.office ? { id: user.office.id, name: user.office.name } : null,
+      user: toJournalUser(user),
+      absences: [],
+      requests: [],
+    };
   }
 
   private buildTruancyRow(

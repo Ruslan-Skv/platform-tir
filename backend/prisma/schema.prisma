@@ -153,6 +153,8 @@ model User {
   workDays                                WorkDay[]
   workDayRequests                         WorkDayRequest[]                         @relation("WorkDayRequestUser")
   workDayRequestsReviewed                 WorkDayRequest[]                         @relation("WorkDayRequestReviewedBy")
+  workDayLeaves                           WorkDayLeave[]                           @relation("WorkDayLeaveUser")
+  workDayLeavesCreated                    WorkDayLeave[]                           @relation("WorkDayLeaveCreatedBy")
   contractDocumentNumberCounters          ContractDocumentNumberCounter[]
   contractDocumentNumberHolds             ContractDocumentNumberHold[]
   waybillTasksAsResponsible               WaybillTask[]                            @relation("WaybillTaskResponsible")
@@ -4443,6 +4445,33 @@ model WorkDayRequest {
   @@index([requestDate])
   @@index([type, status, requestDate])
   @@map("work_day_requests")
+}
+
+/// Тип отметки отсутствия сотрудника: отпуск или больничный.
+enum WorkDayLeaveType {
+  VACATION
+  SICK
+}
+
+/// Отпуск или больничный, отмеченный суперадмином за период (в том числе задним числом).
+model WorkDayLeave {
+  id          String           @id @default(cuid())
+  userId      String
+  type        WorkDayLeaveType
+  dateFrom    DateTime         @db.Date
+  dateTo      DateTime         @db.Date
+  comment     String?          @db.Text
+  createdById String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+
+  user      User  @relation("WorkDayLeaveUser", fields: [userId], references: [id], onDelete: Cascade)
+  createdBy User? @relation("WorkDayLeaveCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([userId])
+  @@index([dateFrom])
+  @@index([dateTo])
+  @@map("work_day_leaves")
 }
 
 enum KanbanCardPriority {

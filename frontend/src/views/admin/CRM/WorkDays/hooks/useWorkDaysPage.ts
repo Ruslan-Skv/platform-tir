@@ -4,13 +4,24 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { useAuth } from '@/features/auth';
 import { getOffices } from '@/shared/api/admin-crm';
-import { type WorkDayJournalRow, deleteWorkDay, getWorkDays } from '@/shared/api/admin-work-days';
+import {
+  type WorkDayJournalRow,
+  type WorkDayLeave,
+  type WorkDayUserSchedule,
+  createWorkDayLeave,
+  deleteWorkDay,
+  deleteWorkDayLeave,
+  getWorkDayLeaves,
+  getWorkDayUsers,
+  getWorkDays,
+} from '@/shared/api/admin-work-days';
 
 import { isWorkDaySyntheticRow } from '../work-days-display.utils';
 
 export function useWorkDaysPage() {
   const { user } = useAuth();
   const canDelete = user?.role === 'SUPER_ADMIN';
+  const canManageLeaves = canDelete;
   const today = new Date();
   const defaultFrom = new Date(today.getFullYear(), today.getMonth(), 1).toISOString().slice(0, 10);
   const defaultTo = today.toISOString().slice(0, 10);
@@ -20,8 +31,12 @@ export function useWorkDaysPage() {
   const [officeId, setOfficeId] = useState('');
   const [rows, setRows] = useState<WorkDayJournalRow[]>([]);
   const [offices, setOffices] = useState<{ id: string; name: string }[]>([]);
+  const [trackedUsers, setTrackedUsers] = useState<WorkDayUserSchedule[]>([]);
+  const [leaves, setLeaves] = useState<WorkDayLeave[]>([]);
   const [loading, setLoading] = useState(true);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [savingLeave, setSavingLeave] = useState(false);
+  const [deletingLeaveId, setDeletingLeaveId] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
@@ -42,6 +57,15 @@ export function useWorkDaysPage() {
     }
   }, [dateFrom, dateTo, officeId]);
 
+  const loadLeaves = useCallback(async () => {
+    if (!canManageLeaves) return;
+    try {
+      setLeaves(await getWorkDayLeaves({ dateFrom, dateTo, officeId: officeId || undefined }));
+    } catch {
+      setLeaves([]);
+    }
+  }, [canManageLeaves, dateFrom, dateTo, officeId]);
+
   useEffect(() => {
     void getOffices(true)
       .then(setOffices)
@@ -49,8 +73,19 @@ export function useWorkDaysPage() {
   }, []);
 
   useEffect(() => {
+    if (!canManageLeaves) return;
+    void getWorkDayUsers()
+      .then(setTrackedUsers)
+      .catch(() => {});
+  }, [canManageLeaves]);
+
+  useEffect(() => {
     void load();
   }, [load]);
+
+  useEffect(() => {
+    void loadLeaves();
+  }, [loadLeaves]);
 
   const handleDelete = useCallback(
     async (row: WorkDayJournalRow) => {
@@ -70,6 +105,45 @@ export function useWorkDaysPage() {
     [canDelete]
   );
 
+  const handleCreateLeave = useCallback(
+    async (payload: {
+      userId: string;
+      type: 'VACATION' | 'SICK';
+      dateFrom: string;
+      dateTo: string;
+      comment?: string;
+    }) => {
+      setSavingLeave(true);
+      setError(null);
+      try {
+        await createWorkDayLeave(payload);
+        await Promise.all([load(), loadLeaves()]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось отметить отпуск/больничный');
+        throw e;
+      } finally {
+        setSavingLeave(false);
+      }
+    },
+    [load, loadLeaves]
+  );
+
+  const handleDeleteLeave = useCallback(
+    async (leaveId: string) => {
+      setDeletingLeaveId(leaveId);
+      setError(null);
+      try {
+        await deleteWorkDayLeave(leaveId);
+        await Promise.all([load(), loadLeaves()]);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось удалить отметку');
+      } finally {
+        setDeletingLeaveId(null);
+      }
+    },
+    [load, loadLeaves]
+  );
+
   const stats = useMemo(() => {
     const days = rows.filter((r) => !isWorkDaySyntheticRow(r));
     const late = days.filter((r) => r.lateMinutes > 0).length;
@@ -80,8 +154,10 @@ export function useWorkDaysPage() {
       (r) => r.dayOffOnly === true && r.bySchedule === true
     ).length;
     const truancy = rows.filter((r) => r.truancyOnly === true).length;
+    const vacation = rows.filter((r) => r.leaveOnly === true && r.leaveType === 'VACATION').length;
+    const sick = rows.filter((r) => r.leaveOnly === true && r.leaveType === 'SICK').length;
     const dayOffWork = days.filter((r) => r.isDayOffWork).length;
-    return { late, early, auto, dayOffs, dayOffsBySchedule, truancy, dayOffWork };
+    return { late, early, auto, dayOffs, dayOffsBySchedule, truancy, dayOffWork, vacation, sick };
   }, [rows]);
 
   return {
@@ -93,13 +169,20 @@ export function useWorkDaysPage() {
     setOfficeId,
     rows,
     offices,
+    trackedUsers,
+    leaves,
     loading,
     deletingId,
     canDelete,
+    canManageLeaves,
+    savingLeave,
+    deletingLeaveId,
     error,
     stats,
     load,
     handleDelete,
+    handleCreateLeave,
+    handleDeleteLeave,
   };
 }
 

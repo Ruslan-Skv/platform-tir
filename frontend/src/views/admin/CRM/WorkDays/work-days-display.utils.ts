@@ -1,6 +1,8 @@
 import type {
   WorkDayDayOffRow,
   WorkDayJournalRow,
+  WorkDayLeaveRow,
+  WorkDayLeaveType,
   WorkDayRecord,
   WorkDayRequestBadge,
   WorkDayTruancyRow,
@@ -28,11 +30,15 @@ export function isWorkDayTruancyRow(row: WorkDayJournalRow): row is WorkDayTruan
   return row.truancyOnly === true;
 }
 
-/** Синтетические строки журнала (согласованный выходной / прогул) — без записи в БД. */
+export function isWorkDayLeaveRow(row: WorkDayJournalRow): row is WorkDayLeaveRow {
+  return row.leaveOnly === true;
+}
+
+/** Синтетические строки журнала (выходной / прогул / отпуск / больничный) — без записи в БД. */
 export function isWorkDaySyntheticRow(
   row: WorkDayJournalRow
-): row is WorkDayDayOffRow | WorkDayTruancyRow {
-  return row.dayOffOnly === true || row.truancyOnly === true;
+): row is WorkDayDayOffRow | WorkDayTruancyRow | WorkDayLeaveRow {
+  return row.dayOffOnly === true || row.truancyOnly === true || row.leaveOnly === true;
 }
 
 export function workDayAbsenceMinutes(row: WorkDayJournalRow): number {
@@ -59,6 +65,9 @@ export function workDayRowClassName(
   row: WorkDayJournalRow,
   styles: { readonly [key: string]: string }
 ): string | undefined {
+  if (row.leaveOnly === true) {
+    return row.leaveType === 'VACATION' ? styles.rowLeaveVacation : styles.rowLeaveSick;
+  }
   if (row.dayOffOnly === true) return styles.rowDayOff;
   if (row.truancyOnly === true) return styles.rowTruancy;
   if (row.isDayOffWork) return styles.rowDayOffWork;
@@ -66,6 +75,10 @@ export function workDayRowClassName(
   if (row.lateMinutes > 0) return styles.rowLate;
   if (row.earlyLeaveMinutes > 0) return styles.rowEarly;
   return undefined;
+}
+
+export function workDayLeaveLabel(type: WorkDayLeaveType): string {
+  return type === 'VACATION' ? 'Отпуск' : 'Больничный';
 }
 
 const REQUEST_TYPE_SHORT_LABELS: Record<WorkDayRequestBadge['type'], string> = {

@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 
-import type { WorkDayJournalRow } from '@/shared/api/admin-work-days';
+import type { WorkDayJournalRow, WorkDayLeave } from '@/shared/api/admin-work-days';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
 
+import { WorkDayLeaveModal } from './WorkDayLeaveModal';
 import styles from './WorkDaysPage.module.css';
 import type { WorkDaysPageModel } from './hooks/useWorkDaysPage';
 import {
@@ -13,9 +14,11 @@ import {
   formatWorkDayDate,
   formatWorkDayTime,
   isWorkDayDayOffRow,
+  isWorkDayLeaveRow,
   isWorkDaySyntheticRow,
   isWorkDayTruancyRow,
   workDayAbsenceMinutes,
+  workDayLeaveLabel,
   workDayRequestBadgeLabel,
   workDayRowClassName,
   workDayStatusLabel,
@@ -67,6 +70,21 @@ function RequestsCell({ row }: { row: WorkDayJournalRow }) {
   );
 }
 
+function leaveUserName(leave: WorkDayLeave): string {
+  const user = leave.user;
+  if (!user) return '—';
+  const name = [user.lastName, user.firstName].filter(Boolean).join(' ');
+  return name || user.email;
+}
+
+function LeaveTypeBadge({ type }: { type: 'VACATION' | 'SICK' }) {
+  return (
+    <span className={type === 'VACATION' ? styles.leaveBadgeVacation : styles.leaveBadgeSick}>
+      {workDayLeaveLabel(type)}
+    </span>
+  );
+}
+
 export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
   const {
     dateFrom,
@@ -77,22 +95,43 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
     setOfficeId,
     rows,
     offices,
+    trackedUsers,
+    leaves,
     loading,
     deletingId,
     canDelete,
+    canManageLeaves,
+    savingLeave,
+    deletingLeaveId,
     error,
     stats,
     handleDelete,
+    handleCreateLeave,
+    handleDeleteLeave,
   } = model;
 
   const [deleteTarget, setDeleteTarget] = useState<WorkDayJournalRow | null>(null);
+  const [leaveModalOpen, setLeaveModalOpen] = useState(false);
+  const [deleteLeaveTarget, setDeleteLeaveTarget] = useState<WorkDayLeave | null>(null);
   const colSpan = canDelete ? 11 : 10;
+  const todayIso = new Date().toISOString().slice(0, 10);
 
   return (
     <div className={styles.page}>
       <header className={styles.header}>
-        <h1 className={styles.title}>Журнал сотрудников</h1>
-        <p className={styles.subtitle}>Журнал рабочих дней всех сотрудников по офисам</p>
+        <div className={styles.headerMain}>
+          <h1 className={styles.title}>Журнал сотрудников</h1>
+          <p className={styles.subtitle}>Журнал рабочих дней всех сотрудников по офисам</p>
+        </div>
+        {canManageLeaves ? (
+          <button
+            type="button"
+            className={styles.leaveButton}
+            onClick={() => setLeaveModalOpen(true)}
+          >
+            Отметить отпуск / больничный
+          </button>
+        ) : null}
       </header>
 
       <div className={styles.filters}>
@@ -126,8 +165,40 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
           <span>Выходных по графику: {stats.dayOffsBySchedule}</span>
         ) : null}
         {stats.dayOffWork > 0 ? <span>Работа в выходной: {stats.dayOffWork}</span> : null}
+        {stats.vacation > 0 ? <span>Дней отпуска: {stats.vacation}</span> : null}
+        {stats.sick > 0 ? <span>Дней больничных: {stats.sick}</span> : null}
         {stats.truancy > 0 ? <span>Прогулов: {stats.truancy}</span> : null}
       </div>
+
+      {canManageLeaves && leaves.length > 0 ? (
+        <div className={styles.leaves}>
+          {leaves.map((leave) => (
+            <span key={leave.id} className={styles.leaveChip}>
+              <LeaveTypeBadge type={leave.type} />
+              <span className={styles.leaveChipName}>{leaveUserName(leave)}</span>
+              <span className={styles.leaveChipDates}>
+                {formatWorkDayDate(leave.dateFrom)} – {formatWorkDayDate(leave.dateTo)}
+              </span>
+              {leave.comment ? (
+                <span className={styles.leaveChipComment} title={leave.comment}>
+                  {leave.comment}
+                </span>
+              ) : null}
+              <button
+                data-admin-mutation
+                type="button"
+                className={styles.leaveChipDelete}
+                disabled={deletingLeaveId === leave.id}
+                title={deletingLeaveId === leave.id ? 'Удаление…' : 'Удалить отметку'}
+                aria-label="Удалить отметку об отпуске/больничном"
+                onClick={() => setDeleteLeaveTarget(leave)}
+              >
+                ×
+              </button>
+            </span>
+          ))}
+        </div>
+      ) : null}
 
       {error ? <p className={styles.error}>{error}</p> : null}
       {loading ? <p>Загрузка…</p> : null}
@@ -174,6 +245,31 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
                       </td>
                       <td>
                         <span className={styles.truancyBadge}>Прогул</span>
+                      </td>
+                      {canDelete ? <td className={styles.actionsCol} /> : null}
+                    </tr>
+                  ) : isWorkDayLeaveRow(row) ? (
+                    <tr key={row.id} className={workDayRowClassName(row, styles)}>
+                      <td>{formatWorkDayDate(row.workDate)}</td>
+                      <td>{workDayUserName(row)}</td>
+                      <td>{row.office?.name ?? '—'}</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>—</td>
+                      <td>
+                        <RequestsCell row={row} />
+                      </td>
+                      <td>
+                        <div className={styles.statusCell}>
+                          <LeaveTypeBadge type={row.leaveType} />
+                          {row.leaveComment ? (
+                            <span className={styles.leaveComment} title={row.leaveComment}>
+                              {row.leaveComment}
+                            </span>
+                          ) : null}
+                        </div>
                       </td>
                       {canDelete ? <td className={styles.actionsCol} /> : null}
                     </tr>
@@ -254,6 +350,31 @@ export function WorkDaysPageView({ model }: WorkDaysPageViewProps) {
           }}
           onClose={() => setDeleteTarget(null)}
           confirmText={deletingId === deleteTarget.id ? 'Удаление…' : 'Удалить'}
+          variant="danger"
+        />
+      ) : null}
+
+      <WorkDayLeaveModal
+        open={leaveModalOpen}
+        busy={savingLeave}
+        users={trackedUsers}
+        todayIso={todayIso}
+        onClose={() => setLeaveModalOpen(false)}
+        onSubmit={handleCreateLeave}
+      />
+
+      {deleteLeaveTarget ? (
+        <ConfirmModal
+          isOpen
+          title="Удалить отметку об отпуске/больничном?"
+          message={`Отметка «${leaveUserName(deleteLeaveTarget)} — ${workDayLeaveLabel(deleteLeaveTarget.type)} с ${formatWorkDayDate(deleteLeaveTarget.dateFrom)} по ${formatWorkDayDate(deleteLeaveTarget.dateTo)}» будет удалена. Дни периода снова будут учитываться по графику сотрудника.`}
+          onConfirm={() => {
+            const target = deleteLeaveTarget;
+            setDeleteLeaveTarget(null);
+            void handleDeleteLeave(target.id);
+          }}
+          onClose={() => setDeleteLeaveTarget(null)}
+          confirmText={deletingLeaveId === deleteLeaveTarget.id ? 'Удаление…' : 'Удалить'}
           variant="danger"
         />
       ) : null}

@@ -19,6 +19,7 @@ import { ADMIN_ROLES } from '../../common/config/admin-roles.config';
 import { RequestWithUser } from '../../common/types/request-with-user.types';
 import {
   CloseForgottenWorkDayDto,
+  CreateWorkDayLeaveDto,
   CreateWorkDayRequestDto,
   ReviewWorkDayRequestDto,
   StartAbsenceDto,
@@ -27,6 +28,7 @@ import {
   UpdateUserWorkScheduleDto,
   UpdateWorkDaySettingsDto,
 } from './dto/work-day.dto';
+import { WorkDayLeavesService } from './work-day-leaves.service';
 import { WorkDayOfficesService } from './work-day-offices.service';
 import { WorkDayRequestsService } from './work-day-requests.service';
 import { WorkDaysService } from './work-days.service';
@@ -48,6 +50,7 @@ export class WorkDaysController {
     private readonly workDaysService: WorkDaysService,
     private readonly workDayRequests: WorkDayRequestsService,
     private readonly workDayOffices: WorkDayOfficesService,
+    private readonly workDayLeaves: WorkDayLeavesService,
   ) {}
 
   @Get('settings')
@@ -198,6 +201,31 @@ export class WorkDaysController {
   ) {
     const row = await this.workDayRequests.rejectRequest(id, req.user.id, dto);
     return this.workDayRequests.mapRequest(row);
+  }
+
+  @Get('leaves')
+  @Roles(UserRole.SUPER_ADMIN)
+  async listLeaves(
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
+    @Query('userId') userId?: string,
+    @Query('officeId') officeId?: string,
+  ) {
+    const rows = await this.workDayLeaves.listLeaves({ dateFrom, dateTo, userId, officeId });
+    return rows.map((row) => this.workDayLeaves.mapLeave(row));
+  }
+
+  @Post('leaves')
+  @Roles(UserRole.SUPER_ADMIN)
+  async createLeave(@Req() req: RequestWithUser, @Body() dto: CreateWorkDayLeaveDto) {
+    const row = await this.workDayLeaves.createLeave(req.user.id, dto);
+    return this.workDayLeaves.mapLeave(row);
+  }
+
+  @Delete('leaves/:id')
+  @Roles(UserRole.SUPER_ADMIN)
+  deleteLeave(@Param('id') id: string) {
+    return this.workDayLeaves.deleteLeave(id);
   }
 
   @Get()

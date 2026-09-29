@@ -180,6 +180,14 @@
   background: var(--admin-info-bg-soft, #eff6ff);
 }
 
+.rowLeaveVacation td {
+  background: #f5f3ff;
+}
+
+.rowLeaveSick td {
+  background: #fdf2f8;
+}
+
 .statusCell {
   display: flex;
   flex-wrap: wrap;
@@ -210,6 +218,37 @@
   font-size: var(--admin-font-size-xs);
   font-weight: 600;
   white-space: nowrap;
+}
+
+.leaveBadgeVacation,
+.leaveBadgeSick {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-3xl);
+  border: 1px solid transparent;
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.leaveBadgeVacation {
+  background: #ede9fe;
+  color: #6d28d9;
+}
+
+.leaveBadgeSick {
+  background: #fce7f3;
+  color: #be185d;
+}
+
+.leaveComment {
+  font-size: var(--admin-font-size-xs);
+  color: var(--admin-text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 14rem;
 }
 
 .requestsSection {
@@ -367,6 +406,14 @@
   background: rgb(59 130 246 / 0.14);
 }
 
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowLeaveVacation td {
+  background: rgb(139 92 246 / 0.16);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowLeaveSick td {
+  background: rgb(236 72 153 / 0.14);
+}
+
 :where(html[data-theme='dark'], [data-app-theme='dark']) .dayOffWorkBadge {
   background: rgb(59 130 246 / 0.18);
   color: rgb(147 197 253);
@@ -375,6 +422,16 @@
 :where(html[data-theme='dark'], [data-app-theme='dark']) .truancyBadge {
   background: rgb(239 68 68 / 0.18);
   color: rgb(252 165 165);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .leaveBadgeVacation {
+  background: rgb(139 92 246 / 0.2);
+  color: rgb(196 181 253);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .leaveBadgeSick {
+  background: rgb(236 72 153 / 0.18);
+  color: rgb(249 168 212);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .requestBadge {
@@ -491,6 +548,16 @@
 .mobileCard.rowDayOffWork {
   background: var(--admin-info-bg-soft, #eff6ff);
   border-color: var(--admin-info-border, #bfdbfe);
+}
+
+.mobileCard.rowLeaveVacation {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+}
+
+.mobileCard.rowLeaveSick {
+  background: #fdf2f8;
+  border-color: #fbcfe8;
 }
 
 .mobileCardStatusWrap {

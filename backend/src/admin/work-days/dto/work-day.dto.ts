@@ -184,3 +184,24 @@ export class ReviewWorkDayRequestDto {
   @IsString()
   reviewComment?: string;
 }
+
+export class CreateWorkDayLeaveDto {
+  @IsString()
+  @IsNotEmpty({ message: 'Выберите сотрудника' })
+  userId: string;
+
+  @IsIn(['VACATION', 'SICK'])
+  type: 'VACATION' | 'SICK';
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата начала должна быть в формате ГГГГ-ММ-ДД' })
+  dateFrom: string;
+
+  @IsString()
+  @Matches(/^\d{4}-\d{2}-\d{2}$/, { message: 'Дата окончания должна быть в формате ГГГГ-ММ-ДД' })
+  dateTo: string;
+
+  @IsOptional()
+  @IsString()
+  comment?: string;
+}
