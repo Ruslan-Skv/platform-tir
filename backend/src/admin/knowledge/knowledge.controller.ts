@@ -25,6 +25,7 @@ import type { Request as ExpressRequest } from 'express';
 import { SkipThrottle } from '@nestjs/throttler';
 import { KnowledgePlatformFeedbackType } from '@prisma/client';
 import { KnowledgeService } from './knowledge.service';
+import { KnowledgeTrashService, type KnowledgeTrashItemType } from './knowledge-trash.service';
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeCategoryQuizService } from './services/knowledge-category-quiz.service';
 import { KnowledgePlatformSettingsService } from './services/knowledge-platform-settings.service';
@@ -69,6 +70,7 @@ const knowledgeUploadStorage = diskStorage({
 export class KnowledgeController {
   constructor(
     private readonly knowledgeService: KnowledgeService,
+    private readonly trashService: KnowledgeTrashService,
     private readonly knowledgeQuizService: KnowledgeQuizService,
     private readonly knowledgeCategoryQuizService: KnowledgeCategoryQuizService,
     private readonly knowledgePlatformSettingsService: KnowledgePlatformSettingsService,
@@ -500,7 +502,7 @@ export class KnowledgeController {
 
   @Delete('materials/:id')
   removeMaterial(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.removeMaterial(id, req.user.id);
+    return this.trashService.softDeleteMaterial(id, req.user.id);
   }
 
   @Get('trash')
@@ -509,7 +511,7 @@ export class KnowledgeController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.knowledgeService.listTrash({
+    return this.trashService.listTrash({
       search,
       page: page ? parseInt(page, 10) : 1,
       limit: limit ? parseInt(limit, 10) : 25,
@@ -518,25 +520,22 @@ export class KnowledgeController {
 
   @Get('trash/count')
   getTrashCount() {
-    return this.knowledgeService.getTrashCount().then((count) => ({ count }));
+    return this.trashService.getTrashCount().then((count) => ({ count }));
   }
 
   @Post('trash/:type/:id/restore')
-  restoreTrashItem(
-    @Param('type') type: 'material' | 'category' | 'module',
-    @Param('id') id: string,
-  ) {
-    return this.knowledgeService.restoreTrashItem(type, id);
+  restoreTrashItem(@Param('type') type: KnowledgeTrashItemType, @Param('id') id: string) {
+    return this.trashService.restoreTrashItem(type, id);
   }
 
   @Delete('trash/:type/:id')
   permanentDeleteTrashItem(
-    @Param('type') type: 'material' | 'category' | 'module',
+    @Param('type') type: KnowledgeTrashItemType,
     @Param('id') id: string,
     @Request() req: RequestWithUser,
   ) {
     this.assertSuperAdmin(req);
-    return this.knowledgeService.permanentDeleteTrashItem(type, id).then(() => ({ success: true }));
+    return this.trashService.permanentDeleteTrashItem(type, id).then(() => ({ success: true }));
   }
 
   @Get('categories')
@@ -587,7 +586,7 @@ export class KnowledgeController {
 
   @Delete('categories/:id')
   removeCategory(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.removeCategory(id, req.user.id);
+    return this.trashService.softDeleteCategory(id, req.user.id);
   }
 
   @Get('modules')
@@ -612,7 +611,7 @@ export class KnowledgeController {
 
   @Delete('modules/:id')
   removeModule(@Param('id') id: string, @Request() req: RequestWithUser) {
-    return this.knowledgeService.removeModule(id, req.user.id);
+    return this.trashService.softDeleteModule(id, req.user.id);
   }
 
   @Post('upload')

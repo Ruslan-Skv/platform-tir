@@ -24,7 +24,6 @@ import { KnowledgeMaterialListService } from './knowledge-material-list.service'
 import { KnowledgeQuizService } from './knowledge-quiz.service';
 import { KnowledgeStructureService } from './knowledge-structure.service';
 import { KnowledgeTargetAudienceService } from './knowledge-target-audience.service';
-import { KnowledgeTrashService } from './knowledge-trash.service';
 import { KnowledgeUploadService } from './knowledge-upload.service';
 import { KnowledgeVideoThumbnailService } from './services/knowledge-video-thumbnail.service';
 import { CreateKnowledgeCategoryDto } from './dto/create-knowledge-category.dto';
@@ -49,7 +48,6 @@ export class KnowledgeService {
     private materialListService: KnowledgeMaterialListService,
     private structureService: KnowledgeStructureService,
     private targetAudienceService: KnowledgeTargetAudienceService,
-    private trashService: KnowledgeTrashService,
     private uploadService: KnowledgeUploadService,
     private knowledgeMaterialLikesService: KnowledgeMaterialLikesService,
     private knowledgeMaterialFavoritesService: KnowledgeMaterialFavoritesService,
@@ -410,30 +408,6 @@ export class KnowledgeService {
     return mapMaterialResponse(material, true);
   }
 
-  async removeMaterial(id: string, deletedById: string) {
-    return this.trashService.softDeleteMaterial(id, deletedById);
-  }
-
-  listTrash(params: { search?: string; page?: number; limit?: number }) {
-    return this.trashService.listTrash(params);
-  }
-
-  getTrashCount() {
-    return this.trashService.getTrashCount();
-  }
-
-  restoreTrashItem(type: 'material' | 'category' | 'module', id: string) {
-    if (type === 'material') return this.trashService.restoreMaterial(id);
-    if (type === 'category') return this.trashService.restoreCategory(id);
-    return this.trashService.restoreModule(id);
-  }
-
-  permanentDeleteTrashItem(type: 'material' | 'category' | 'module', id: string) {
-    if (type === 'material') return this.trashService.permanentDeleteMaterial(id);
-    if (type === 'category') return this.trashService.permanentDeleteCategory(id);
-    return this.trashService.permanentDeleteModule(id);
-  }
-
   async upsertVideoProgress(
     userId: string,
     materialId: string,
@@ -520,10 +494,6 @@ export class KnowledgeService {
     return this.structureService.updateCategory(id, data);
   }
 
-  removeCategory(id: string, deletedById: string) {
-    return this.trashService.softDeleteCategory(id, deletedById);
-  }
-
   createModule(dto: CreateKnowledgeModuleDto) {
     return this.structureService.createModule(dto);
   }
@@ -534,10 +504,6 @@ export class KnowledgeService {
 
   updateModule(id: string, data: Partial<CreateKnowledgeModuleDto>) {
     return this.structureService.updateModule(id, data);
-  }
-
-  removeModule(id: string, deletedById: string) {
-    return this.trashService.softDeleteModule(id, deletedById);
   }
 
   async getStats() {

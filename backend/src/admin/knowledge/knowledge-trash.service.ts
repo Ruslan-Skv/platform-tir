@@ -208,6 +208,18 @@ export class KnowledgeTrashService {
     };
   }
 
+  restoreTrashItem(type: KnowledgeTrashItemType, id: string) {
+    if (type === 'material') return this.restoreMaterial(id);
+    if (type === 'category') return this.restoreCategory(id);
+    return this.restoreModule(id);
+  }
+
+  permanentDeleteTrashItem(type: KnowledgeTrashItemType, id: string) {
+    if (type === 'material') return this.permanentDeleteMaterial(id);
+    if (type === 'category') return this.permanentDeleteCategory(id);
+    return this.permanentDeleteModule(id);
+  }
+
   async restoreMaterial(id: string) {
     const row = await this.prisma.knowledgeMaterial.findFirst({
       where: { id, deletedAt: { not: null } },
