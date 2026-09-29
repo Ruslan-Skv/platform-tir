@@ -33,6 +33,7 @@ export interface AdminNotificationsSettings {
   notifyOnRepairSchedules: boolean;
   notifyOnFurnitureSchedules: boolean;
   notifyOnMeasurements: boolean;
+  notifyOnMeasurementCreated: boolean;
   notifyOnContractSigning: boolean;
   notifyOnIncassations: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
@@ -77,6 +78,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
   'notifyOnMeasurements',
+  'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
   'notifyOnIncassations',
 ] as const;
@@ -267,6 +269,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
     notifyOnMeasurements: data.notifyOnMeasurements,
+    notifyOnMeasurementCreated: data.notifyOnMeasurementCreated,
     notifyOnContractSigning: data.notifyOnContractSigning,
     notifyOnIncassations: data.notifyOnIncassations,
   };
@@ -324,6 +327,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnRepairSchedules: data.notifyOnRepairSchedules,
     notifyOnFurnitureSchedules: data.notifyOnFurnitureSchedules,
     notifyOnMeasurements: data.notifyOnMeasurements,
+    notifyOnMeasurementCreated: data.notifyOnMeasurementCreated,
     notifyOnContractSigning: data.notifyOnContractSigning,
     notifyOnIncassations: data.notifyOnIncassations,
   };
@@ -631,9 +635,13 @@ export type AdminBellMeasurementNotification = {
 };
 
 export async function getAdminBellMeasurementNotifications(
-  limit = 20
+  limit = 20,
+  kinds?: AdminBellMeasurementNotification['kind'][]
 ): Promise<AdminBellMeasurementNotification[]> {
   const params = new URLSearchParams({ limit: String(limit) });
+  if (kinds && kinds.length > 0) {
+    params.set('kinds', kinds.join(','));
+  }
   const res = await apiFetch(`${API_URL}/admin/notifications/bell/measurements?${params}`, {
     headers: getAdminAuthHeaders(),
   });

@@ -486,6 +486,10 @@ model ExternalNotifySettings {
   measurementNotifyTelegramIds Json? // string[]
   measurementNotifyMaxIds      Json? // string[]
 
+  measurementCreatedNotifyEmails      Json? // string[]
+  measurementCreatedNotifyTelegramIds Json? // string[]
+  measurementCreatedNotifyMaxIds      Json? // string[]
+
   updatedAt DateTime @updatedAt
 
   @@map("external_notify_settings")
@@ -2748,7 +2752,8 @@ model UserAdminNotificationOverride {
   notifyOnRepairSchedules       Boolean  @default(true)
   notifyOnFurnitureSchedules    Boolean  @default(true)
   notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
-  notifyOnMeasurements          Boolean  @default(true) // Изменения статусов замеров
+  notifyOnMeasurements          Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
+  notifyOnMeasurementCreated    Boolean  @default(true) // Создание нового замера
   notifyOnIncassations          Boolean  @default(true) // Инкассации наличных (журнал ДП)
   updatedAt                     DateTime @updatedAt
   user                          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -2827,7 +2832,8 @@ model AdminNotificationsBlock {
   notifyOnRepairSchedules       Boolean  @default(true) // План-график ремонта
   notifyOnFurnitureSchedules    Boolean  @default(true) // План-график мебели
   notifyOnContractSigning       Boolean  @default(true) // Электронное подписание договоров
-  notifyOnMeasurements          Boolean  @default(true) // Изменения статусов замеров
+  notifyOnMeasurements          Boolean  @default(true) // Статусы замеров (выполнен, отказ, договор)
+  notifyOnMeasurementCreated    Boolean  @default(true) // Создание нового замера
   notifyOnIncassations          Boolean  @default(true) // Инкассации наличных (журнал ДП)
   updatedAt                     DateTime @updatedAt
 

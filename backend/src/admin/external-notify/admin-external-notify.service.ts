@@ -15,7 +15,8 @@ export type ExternalNotifyEvent =
   | 'work_day'
   | 'waybill'
   | 'installation_schedule'
-  | 'measurement';
+  | 'measurement'
+  | 'measurement_created';
 
 @Injectable()
 export class AdminExternalNotifyService {
@@ -138,6 +139,21 @@ export class AdminExternalNotifyService {
     if (dto.measurementNotifyMaxIds !== undefined) {
       data.measurementNotifyMaxIds = normalizeStringArray(dto.measurementNotifyMaxIds);
     }
+    if (dto.measurementCreatedNotifyEmails !== undefined) {
+      data.measurementCreatedNotifyEmails = normalizeStringArray(
+        dto.measurementCreatedNotifyEmails,
+      );
+    }
+    if (dto.measurementCreatedNotifyTelegramIds !== undefined) {
+      data.measurementCreatedNotifyTelegramIds = normalizeStringArray(
+        dto.measurementCreatedNotifyTelegramIds,
+      );
+    }
+    if (dto.measurementCreatedNotifyMaxIds !== undefined) {
+      data.measurementCreatedNotifyMaxIds = normalizeStringArray(
+        dto.measurementCreatedNotifyMaxIds,
+      );
+    }
 
     const block = await this.prisma.externalNotifySettings.update({
       where: { id: 'main' },
@@ -215,6 +231,12 @@ export class AdminExternalNotifyService {
           telegramIds: parseStringArray(block.measurementNotifyTelegramIds),
           maxIds: parseStringArray(block.measurementNotifyMaxIds),
         };
+      case 'measurement_created':
+        return {
+          emails: parseStringArray(block.measurementCreatedNotifyEmails),
+          telegramIds: parseStringArray(block.measurementCreatedNotifyTelegramIds),
+          maxIds: parseStringArray(block.measurementCreatedNotifyMaxIds),
+        };
     }
   }
 
@@ -260,6 +282,9 @@ export class AdminExternalNotifyService {
     measurementNotifyEmails: Prisma.JsonValue | null;
     measurementNotifyTelegramIds: Prisma.JsonValue | null;
     measurementNotifyMaxIds: Prisma.JsonValue | null;
+    measurementCreatedNotifyEmails: Prisma.JsonValue | null;
+    measurementCreatedNotifyTelegramIds: Prisma.JsonValue | null;
+    measurementCreatedNotifyMaxIds: Prisma.JsonValue | null;
     updatedAt: Date;
   }) {
     return {
@@ -302,6 +327,11 @@ export class AdminExternalNotifyService {
       measurementNotifyEmails: parseStringArray(block.measurementNotifyEmails),
       measurementNotifyTelegramIds: parseStringArray(block.measurementNotifyTelegramIds),
       measurementNotifyMaxIds: parseStringArray(block.measurementNotifyMaxIds),
+      measurementCreatedNotifyEmails: parseStringArray(block.measurementCreatedNotifyEmails),
+      measurementCreatedNotifyTelegramIds: parseStringArray(
+        block.measurementCreatedNotifyTelegramIds,
+      ),
+      measurementCreatedNotifyMaxIds: parseStringArray(block.measurementCreatedNotifyMaxIds),
       updatedAt: block.updatedAt.toISOString(),
     };
   }

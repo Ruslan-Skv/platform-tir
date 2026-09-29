@@ -64,6 +64,7 @@ type ChannelKey =
   | 'workDays'
   | 'waybills'
   | 'installationSchedules'
+  | 'measurementsCreated'
   | 'measurements';
 
 type TabId = 'forms' | 'quizzes' | 'other';
@@ -94,6 +95,7 @@ const INITIAL: ChannelsState = {
   workDays: { ...EMPTY },
   waybills: { ...EMPTY },
   installationSchedules: { ...EMPTY },
+  measurementsCreated: { ...EMPTY },
   measurements: { ...EMPTY },
 };
 
@@ -206,10 +208,16 @@ const EVENTS_BY_TAB: Record<
       description: 'Новые записи, правки, выполнение и невыполнение по графику монтажей.',
     },
     {
+      key: 'measurementsCreated',
+      label: 'Новый замер',
+      title: 'Новый замер',
+      description: 'Создание нового замера на странице «Замеры» (/admin/measurements).',
+    },
+    {
       key: 'measurements',
-      label: 'Замеры',
-      title: 'Замеры',
-      description: 'Создание замера, выполнение, отказ и заключение договора по замеру.',
+      label: 'Замеры (статусы)',
+      title: 'Замеры (статусы)',
+      description: 'Выполнение, отказ и заключение договора по замеру.',
     },
     {
       key: 'siteFeedback',
@@ -245,6 +253,7 @@ function pickExternal(
     | 'workDays'
     | 'waybills'
     | 'installationSchedules'
+    | 'measurementsCreated'
     | 'measurements'
 ): NotifyChannelsValue {
   switch (key) {
@@ -302,6 +311,12 @@ function pickExternal(
         notifyTelegramIds: settings.measurementNotifyTelegramIds,
         notifyMaxIds: settings.measurementNotifyMaxIds,
       };
+    case 'measurementsCreated':
+      return {
+        notifyEmails: settings.measurementCreatedNotifyEmails,
+        notifyTelegramIds: settings.measurementCreatedNotifyTelegramIds,
+        notifyMaxIds: settings.measurementCreatedNotifyMaxIds,
+      };
     case 'knowledgeFeedback':
       return {
         notifyEmails: settings.knowledgeFeedbackNotifyEmails,
@@ -346,6 +361,9 @@ function buildExternalPatch(channels: ChannelsState) {
     measurementNotifyEmails: channels.measurements.notifyEmails,
     measurementNotifyTelegramIds: channels.measurements.notifyTelegramIds,
     measurementNotifyMaxIds: channels.measurements.notifyMaxIds,
+    measurementCreatedNotifyEmails: channels.measurementsCreated.notifyEmails,
+    measurementCreatedNotifyTelegramIds: channels.measurementsCreated.notifyTelegramIds,
+    measurementCreatedNotifyMaxIds: channels.measurementsCreated.notifyMaxIds,
     knowledgeFeedbackNotifyEmails: channels.knowledgeFeedback.notifyEmails,
     knowledgeFeedbackNotifyTelegramIds: channels.knowledgeFeedback.notifyTelegramIds,
     knowledgeFeedbackNotifyMaxIds: channels.knowledgeFeedback.notifyMaxIds,
@@ -435,6 +453,7 @@ export function LeadNotificationChannelsSection() {
         workDays: pickExternal(external, 'workDays'),
         waybills: pickExternal(external, 'waybills'),
         installationSchedules: pickExternal(external, 'installationSchedules'),
+        measurementsCreated: pickExternal(external, 'measurementsCreated'),
         measurements: pickExternal(external, 'measurements'),
       });
     } catch (err) {

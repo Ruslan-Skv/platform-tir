@@ -71,8 +71,12 @@ const EVENT_TOGGLES: EventToggle[] = [
   },
   { key: 'notifyOnFurnitureSchedules', label: 'План-график мебели' },
   {
+    key: 'notifyOnMeasurementCreated',
+    label: 'Новый замер (создание замера)',
+  },
+  {
     key: 'notifyOnMeasurements',
-    label: 'Замеры (создан, выполнен, отказ, договор)',
+    label: 'Замеры (выполнен, отказ, договор)',
   },
   {
     key: 'notifyOnContractSigning',

@@ -45,6 +45,7 @@ export const NOTIFY_EVENT_KEYS = [
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
   'notifyOnMeasurements',
+  'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
   'notifyOnIncassations',
 ] as const;
@@ -113,6 +114,7 @@ export class AdminNotificationsService {
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
       notifyOnMeasurements: dto.notifyOnMeasurements,
+      notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated,
       notifyOnContractSigning: dto.notifyOnContractSigning,
       notifyOnIncassations: dto.notifyOnIncassations,
     };
@@ -146,6 +148,7 @@ export class AdminNotificationsService {
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
+      notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };
@@ -338,6 +341,7 @@ export class AdminNotificationsService {
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules,
       notifyOnMeasurements: dto.notifyOnMeasurements,
+      notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated,
       notifyOnContractSigning: dto.notifyOnContractSigning,
       notifyOnIncassations: dto.notifyOnIncassations,
     };
@@ -369,6 +373,7 @@ export class AdminNotificationsService {
       notifyOnRepairSchedules: dto.notifyOnRepairSchedules ?? true,
       notifyOnFurnitureSchedules: dto.notifyOnFurnitureSchedules ?? true,
       notifyOnMeasurements: dto.notifyOnMeasurements ?? true,
+      notifyOnMeasurementCreated: dto.notifyOnMeasurementCreated ?? true,
       notifyOnContractSigning: dto.notifyOnContractSigning ?? true,
       notifyOnIncassations: dto.notifyOnIncassations ?? true,
     };

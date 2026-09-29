@@ -328,6 +328,7 @@ export function NotificationsSection() {
     notifyOnRepairSchedules: true,
     notifyOnFurnitureSchedules: true,
     notifyOnMeasurements: true,
+    notifyOnMeasurementCreated: true,
     notifyOnContractSigning: true,
     notifyOnIncassations: true,
   };
@@ -938,15 +939,26 @@ export function NotificationsSection() {
               <div className={styles.checkboxRow}>
                 <input
                   type="checkbox"
+                  id="notifyOnMeasurementCreated"
+                  checked={formSettings.notifyOnMeasurementCreated ?? true}
+                  onChange={(e) =>
+                    setSettings((s) =>
+                      s ? { ...s, notifyOnMeasurementCreated: e.target.checked } : s
+                    )
+                  }
+                />
+                <label htmlFor="notifyOnMeasurementCreated">Новый замер (создание замера)</label>
+              </div>
+              <div className={styles.checkboxRow}>
+                <input
+                  type="checkbox"
                   id="notifyOnMeasurements"
                   checked={formSettings.notifyOnMeasurements ?? true}
                   onChange={(e) =>
                     setSettings((s) => (s ? { ...s, notifyOnMeasurements: e.target.checked } : s))
                   }
                 />
-                <label htmlFor="notifyOnMeasurements">
-                  Замеры (создан, выполнен, отказ, договор)
-                </label>
+                <label htmlFor="notifyOnMeasurements">Замеры (выполнен, отказ, договор)</label>
               </div>
               <div className={styles.checkboxRow}>
                 <input

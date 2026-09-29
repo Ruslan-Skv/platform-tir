@@ -27,6 +27,7 @@ export type AdminBellPushEvent =
   | 'repair_schedule'
   | 'furniture_schedule'
   | 'measurement'
+  | 'measurement_created'
   | 'contract_signing'
   | 'incassation'
   | 'calendar_event'
@@ -126,6 +127,7 @@ export class AdminBellPushService {
       notifyOnRepairSchedules?: boolean;
       notifyOnFurnitureSchedules?: boolean;
       notifyOnMeasurements?: boolean;
+      notifyOnMeasurementCreated?: boolean;
       notifyOnContractSigning?: boolean;
       notifyOnIncassations?: boolean;
     },
@@ -171,6 +173,8 @@ export class AdminBellPushService {
         return settings.notifyOnFurnitureSchedules !== false;
       case 'measurement':
         return settings.notifyOnMeasurements !== false;
+      case 'measurement_created':
+        return settings.notifyOnMeasurementCreated !== false;
       case 'contract_signing':
         return settings.notifyOnContractSigning !== false;
       case 'incassation':

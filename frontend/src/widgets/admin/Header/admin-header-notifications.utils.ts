@@ -638,7 +638,10 @@ export function isBellTypeEnabled(
     case 'furnitureSchedules':
       return settings.notifyOnFurnitureSchedules !== false;
     case 'measurements':
-      return settings.notifyOnMeasurements !== false;
+      // Фид уже отфильтрован по kind на бэкенде; проверяем, что включён хоть один из двух флагов.
+      return (
+        settings.notifyOnMeasurements !== false || settings.notifyOnMeasurementCreated !== false
+      );
     case 'contractSigning':
       return settings.notifyOnContractSigning !== false;
     case 'incassations':

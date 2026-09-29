@@ -79,6 +79,8 @@ export class MeasurementNotifyService {
     const title = KIND_LABELS[kind];
     const message = this.buildMessage(measurement);
     const recipients = this.recipientIds(measurement, actorUserId);
+    // «Новый замер» — отдельное событие с собственной настройкой уведомлений.
+    const pushEvent = kind === 'created' ? 'measurement_created' : 'measurement';
 
     if (recipients.length > 0) {
       await this.prisma.measurementBellEvent.createMany({
@@ -94,7 +96,7 @@ export class MeasurementNotifyService {
 
       await Promise.all(
         recipients.map((recipientId) =>
-          this.adminBellPush.notifyUsers([recipientId], 'measurement', {
+          this.adminBellPush.notifyUsers([recipientId], pushEvent, {
             title,
             body: message,
             url: `/admin/crm/measurements/${measurement.id}`,
@@ -104,7 +106,9 @@ export class MeasurementNotifyService {
       );
     }
 
-    const channels = await this.externalNotifySettings.getChannelsForEvent('measurement');
+    const channels = await this.externalNotifySettings.getChannelsForEvent(
+      kind === 'created' ? 'measurement_created' : 'measurement',
+    );
     if (channels.emails.length || channels.telegramIds.length || channels.maxIds.length) {
       const actor = actorUserId
         ? await this.prisma.user.findUnique({

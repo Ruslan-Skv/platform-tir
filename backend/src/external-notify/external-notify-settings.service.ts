@@ -15,7 +15,8 @@ export type ExternalNotifyEvent =
   | 'installation_schedule'
   | 'repair_schedule'
   | 'furniture_schedule'
-  | 'measurement';
+  | 'measurement'
+  | 'measurement_created';
 
 @Injectable()
 export class ExternalNotifySettingsService {
@@ -96,6 +97,12 @@ export class ExternalNotifySettingsService {
           emails: parseStringArray(block.measurementNotifyEmails),
           telegramIds: parseStringArray(block.measurementNotifyTelegramIds),
           maxIds: parseStringArray(block.measurementNotifyMaxIds),
+        };
+      case 'measurement_created':
+        return {
+          emails: parseStringArray(block.measurementCreatedNotifyEmails),
+          telegramIds: parseStringArray(block.measurementCreatedNotifyTelegramIds),
+          maxIds: parseStringArray(block.measurementCreatedNotifyMaxIds),
         };
     }
   }

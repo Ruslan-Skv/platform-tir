@@ -382,10 +382,17 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           hasAccess('admin.crm.furniture-schedules.my'))
           ? getAdminBellFurnitureScheduleNotifications(20)
           : Promise.resolve([] as AdminBellFurnitureScheduleNotification[]);
+      // «Новый замер» (created) и статусы замеров — раздельные настройки уведомлений.
+      const measurementFeedKinds: AdminBellMeasurementNotification['kind'][] = [
+        ...(settings?.notifyOnMeasurementCreated !== false ? (['created'] as const) : []),
+        ...(settings?.notifyOnMeasurements !== false
+          ? (['completed', 'cancelled', 'converted'] as const)
+          : []),
+      ];
       const loadMeasurements =
-        settings?.notifyOnMeasurements !== false &&
+        measurementFeedKinds.length > 0 &&
         (hasAccess('admin.crm.measurements') || hasAccess('admin.crm.measurements.my'))
-          ? getAdminBellMeasurementNotifications(20)
+          ? getAdminBellMeasurementNotifications(20, measurementFeedKinds)
           : Promise.resolve([] as AdminBellMeasurementNotification[]);
       const loadIncassations =
         settings?.notifyOnIncassations !== false

@@ -22,6 +22,7 @@ export const READER_NOTIFY_EVENT_KEYS = [
   'notifyOnRepairSchedules',
   'notifyOnFurnitureSchedules',
   'notifyOnMeasurements',
+  'notifyOnMeasurementCreated',
   'notifyOnContractSigning',
   'notifyOnIncassations',
 ] as const;
@@ -79,6 +80,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnRepairSchedules: true,
       notifyOnFurnitureSchedules: true,
       notifyOnMeasurements: true,
+      notifyOnMeasurementCreated: true,
       notifyOnContractSigning: true,
       notifyOnIncassations: true,
     };

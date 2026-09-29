@@ -19,18 +19,32 @@ const KIND_LABELS: Record<AdminBellMeasurementNotification['kind'], string> = {
   converted: 'Договор',
 };
 
+const ALL_KINDS = ['created', 'completed', 'cancelled', 'converted'] as const;
+
 @Injectable()
 export class AdminBellMeasurementFeedService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async listForUser(userId: string, limit = 20): Promise<AdminBellMeasurementNotification[]> {
+  async listForUser(
+    userId: string,
+    limit = 20,
+    kinds?: readonly string[],
+  ): Promise<AdminBellMeasurementNotification[]> {
     const since = new Date();
     since.setDate(since.getDate() - 14);
+
+    // kinds позволяет колокольчику запросить только события включённых настроек:
+    // «Новый замер» (created) отдельно от статусов (completed / cancelled / converted).
+    const kindFilter = (kinds ?? []).filter(
+      (kind): kind is AdminBellMeasurementNotification['kind'] =>
+        (ALL_KINDS as readonly string[]).includes(kind),
+    );
 
     const rows = await this.prisma.measurementBellEvent.findMany({
       where: {
         recipientId: userId,
         createdAt: { gte: since },
+        ...(kindFilter.length > 0 ? { kind: { in: kindFilter } } : {}),
       },
       orderBy: { createdAt: 'desc' },
       take: Math.min(50, Math.max(1, limit)),

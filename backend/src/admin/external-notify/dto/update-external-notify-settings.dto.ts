@@ -277,4 +277,28 @@ export class UpdateExternalNotifySettingsDto {
   @IsArray()
   @IsString({ each: true })
   measurementNotifyMaxIds?: string[];
+
+  @ApiPropertyOptional({ type: [String], description: 'Email для уведомлений о создании замера' })
+  @IsOptional()
+  @IsArray()
+  @IsEmail({}, { each: true })
+  measurementCreatedNotifyEmails?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'Telegram chat ID для уведомлений о создании замера',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  measurementCreatedNotifyTelegramIds?: string[];
+
+  @ApiPropertyOptional({
+    type: [String],
+    description: 'MAX chat ID для уведомлений о создании замера',
+  })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  measurementCreatedNotifyMaxIds?: string[];
 }

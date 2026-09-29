@@ -138,11 +138,16 @@ export class UpdateAdminNotificationsDto {
   notifyOnFurnitureSchedules?: boolean;
 
   @ApiPropertyOptional({
-    description: 'Изменения статусов замеров (создан, выполнен, отказ, договор)',
+    description: 'Изменения статусов замеров (выполнен, отказ, договор)',
   })
   @IsOptional()
   @IsBoolean()
   notifyOnMeasurements?: boolean;
+
+  @ApiPropertyOptional({ description: 'Создание нового замера (/admin/measurements)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnMeasurementCreated?: boolean;
 
   @ApiPropertyOptional({ description: 'Электронное подписание договоров (подписан / отклонён)' })
   @IsOptional()

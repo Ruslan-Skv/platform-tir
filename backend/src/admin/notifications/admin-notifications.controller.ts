@@ -225,10 +225,21 @@ export class AdminNotificationsController {
 
   @SkipThrottle()
   @Get('bell/measurements')
-  @ApiOperation({ summary: 'События изменения статусов замеров для колокольчика (персонально)' })
-  getBellMeasurementFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+  @ApiOperation({
+    summary:
+      'События замеров для колокольчика (персонально); kinds фильтрует: created | completed | cancelled | converted',
+  })
+  getBellMeasurementFeed(
+    @Req() req: RequestWithUser,
+    @Query('limit') limit?: string,
+    @Query('kinds') kinds?: string,
+  ) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
-    return this.bellMeasurementFeed.listForUser(req.user.id, take);
+    const kindList = (kinds ?? '')
+      .split(',')
+      .map((kind) => kind.trim())
+      .filter(Boolean);
+    return this.bellMeasurementFeed.listForUser(req.user.id, take, kindList);
   }
 
   @SkipThrottle()

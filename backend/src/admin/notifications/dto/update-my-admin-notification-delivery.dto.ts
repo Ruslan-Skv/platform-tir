@@ -143,6 +143,11 @@ export class UpdateMyAdminNotificationDeliveryDto {
   @IsBoolean()
   notifyOnMeasurements?: boolean;
 
+  @ApiPropertyOptional({ description: 'Личное переопределение: создание нового замера' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnMeasurementCreated?: boolean;
+
   @ApiPropertyOptional({ description: 'Личное переопределение: электронное подписание договоров' })
   @IsOptional()
   @IsBoolean()
