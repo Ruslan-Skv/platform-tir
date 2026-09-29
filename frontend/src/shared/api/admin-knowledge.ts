@@ -677,6 +677,18 @@ export async function restoreKnowledgeTrashItem(type: KnowledgeTrashItemType, id
   }
 }
 
+/** Безвозвратное удаление из корзины — доступно только супер-администратору. */
+export async function deleteKnowledgeTrashItem(type: KnowledgeTrashItemType, id: string) {
+  const res = await apiFetch(`${API_URL}/admin/knowledge/trash/${type}/${id}`, {
+    method: 'DELETE',
+    headers: getAuthHeaders(),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.message || 'Не удалось удалить безвозвратно');
+  }
+}
+
 export async function getKnowledgeStats() {
   const res = await apiFetch(`${API_URL}/admin/knowledge/stats`, {
     headers: getAuthHeaders(),

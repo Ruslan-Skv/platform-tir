@@ -181,6 +181,83 @@
   color: var(--admin-text-inverse, #fff);
 }
 
+.entryActions {
+  align-items: stretch;
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.deleteBtn {
+  align-items: center;
+  background: linear-gradient(
+    180deg,
+    var(--admin-danger-bg-soft, #fef2f2) 0%,
+    var(--admin-danger-bg, #fee2e2) 100%
+  );
+  border: 1px solid var(--admin-danger-border-strong, #fca5a5);
+  border-radius: var(--admin-radius-sm, 6px);
+  box-shadow: 0 1px 6px var(--admin-overlay-color-129, rgb(0 0 0 / 0.08));
+  color: var(--admin-danger-text, #b91c1c);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  font-weight: 700;
+  justify-content: center;
+  min-height: 1.625rem;
+  padding: 2px var(--admin-space-md, 8px);
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    color 0.15s ease;
+  white-space: nowrap;
+}
+
+.deleteBtn:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-danger-bg, #fee2e2) 0%,
+    var(--admin-danger-border, #fecaca) 100%
+  );
+  border-color: var(--admin-danger, #ef4444);
+  color: var(--admin-danger-text, #991b1b);
+}
+
+.deleteBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.deleteBtn:focus-visible {
+  outline: none;
+  box-shadow: var(
+    --admin-shadow-focus-soft,
+    0 0 0 3px rgb(var(--color-accent-rgb, 217 6 82) / 0.22)
+  );
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteBtn {
+  background: linear-gradient(
+    180deg,
+    var(--admin-danger, #ef4444) 0%,
+    var(--admin-danger-bg-strong, #7f1d1d) 100%
+  );
+  border-color: var(--admin-danger-border-strong, #fca5a5);
+  color: var(--admin-text-inverse, #fff);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .deleteBtn:hover:not(:disabled) {
+  background: linear-gradient(
+    180deg,
+    var(--admin-danger-bg-strong, #7f1d1d) 0%,
+    var(--admin-danger, #ef4444) 100%
+  );
+  border-color: var(--admin-danger-border-strong, #fca5a5);
+  color: var(--admin-text-inverse, #fff);
+}
+
 .pagination {
   align-items: center;
   display: flex;

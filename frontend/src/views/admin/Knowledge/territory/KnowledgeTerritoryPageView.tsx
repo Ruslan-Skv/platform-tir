@@ -414,6 +414,7 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
     trashCount,
     feedbackUnreadCount,
     handleTrashRestored,
+    refreshTrashCount,
     persistTerritoryFilters,
     isSuperAdmin,
     categoryAccessModal,
@@ -1264,6 +1265,8 @@ export function KnowledgeTerritoryPageView({ model }: KnowledgeTerritoryPageView
         isOpen={trashOpen}
         onClose={() => setTrashOpen(false)}
         onRestored={handleTrashRestored}
+        onDeleted={refreshTrashCount}
+        canDeletePermanently={isSuperAdmin}
       />
 
       {categoryAccessModal && typeof document !== 'undefined'

@@ -428,6 +428,12 @@ export class KnowledgeService {
     return this.trashService.restoreModule(id);
   }
 
+  permanentDeleteTrashItem(type: 'material' | 'category' | 'module', id: string) {
+    if (type === 'material') return this.trashService.permanentDeleteMaterial(id);
+    if (type === 'category') return this.trashService.permanentDeleteCategory(id);
+    return this.trashService.permanentDeleteModule(id);
+  }
+
   async upsertVideoProgress(
     userId: string,
     materialId: string,

@@ -277,6 +277,46 @@ export class KnowledgeTrashService {
     ]);
   }
 
+  async permanentDeleteMaterial(id: string): Promise<void> {
+    const row = await this.prisma.knowledgeMaterial.findFirst({
+      where: { id, deletedAt: { not: null } },
+    });
+    if (!row) {
+      throw new NotFoundException('Материал не найден в корзине');
+    }
+    await this.prisma.knowledgeMaterial.delete({ where: { id } });
+  }
+
+  async permanentDeleteCategory(id: string): Promise<void> {
+    const row = await this.prisma.knowledgeCategory.findFirst({
+      where: { id, deletedAt: { not: null } },
+    });
+    if (!row) {
+      throw new NotFoundException('Категория не найдена в корзине');
+    }
+    const liveMaterialCount = await this.prisma.knowledgeMaterial.count({
+      where: { categoryId: id, deletedAt: null },
+    });
+    if (liveMaterialCount > 0) {
+      throw new BadRequestException(
+        'Нельзя удалить категорию безвозвратно: в ней есть активные материалы. Сначала переместите или удалите материалы.',
+      );
+    }
+    // Каскадом удалятся модули и материалы категории, находящиеся в корзине.
+    await this.prisma.knowledgeCategory.delete({ where: { id } });
+  }
+
+  async permanentDeleteModule(id: string): Promise<void> {
+    const row = await this.prisma.knowledgeModule.findFirst({
+      where: { id, deletedAt: { not: null } },
+    });
+    if (!row) {
+      throw new NotFoundException('Модуль не найден в корзине');
+    }
+    // Материалы модуля остаются (moduleId → null по схеме).
+    await this.prisma.knowledgeModule.delete({ where: { id } });
+  }
+
   async restoreModule(id: string) {
     const row = await this.prisma.knowledgeModule.findFirst({
       where: { id, deletedAt: { not: null } },

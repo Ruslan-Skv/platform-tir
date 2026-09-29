@@ -529,6 +529,16 @@ export class KnowledgeController {
     return this.knowledgeService.restoreTrashItem(type, id);
   }
 
+  @Delete('trash/:type/:id')
+  permanentDeleteTrashItem(
+    @Param('type') type: 'material' | 'category' | 'module',
+    @Param('id') id: string,
+    @Request() req: RequestWithUser,
+  ) {
+    this.assertSuperAdmin(req);
+    return this.knowledgeService.permanentDeleteTrashItem(type, id).then(() => ({ success: true }));
+  }
+
   @Get('categories')
   async findAllCategories(@Request() req: RequestWithUser) {
     const editorView = await this.canEditKnowledge(req);
