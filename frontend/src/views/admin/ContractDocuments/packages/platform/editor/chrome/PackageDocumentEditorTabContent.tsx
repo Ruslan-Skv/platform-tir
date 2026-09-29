@@ -48,7 +48,10 @@ export type PackageDocumentEditorTabContentProps = {
   activeAddendumSlot: number | null;
   packageKind: ContractDocumentPackageKind;
   packageId: string;
-  contractAndEstimateLocked: boolean;
+  /** Полная блокировка прочих вкладок (шаблон договора и др.) — только при статусе «Отказ». */
+  packageReadOnly: boolean;
+  /** «Счёт-заказ»/«Смета» и «Спецификация» только для просмотра (подписан/отказ). */
+  signedDocsLocked: boolean;
   /** Статус «Договор подписан»: на вкладке «Спецификация» можно прикреплять новые версии файла. */
   contractConcluded: boolean;
   renderedDoc: string | null;
@@ -73,7 +76,8 @@ export function PackageDocumentEditorTabContent({
   activeAddendumSlot,
   packageKind,
   packageId,
-  contractAndEstimateLocked,
+  packageReadOnly,
+  signedDocsLocked,
   contractConcluded,
   renderedDoc,
   unsignedAddendumOrdinals,
@@ -185,7 +189,7 @@ export function PackageDocumentEditorTabContent({
         montageEnabled={form.furniture.montage.enabled}
         appliancesEnabled={form.furniture.appliances.enabled}
         activeDocLeg={form.furniture.activeDocLeg}
-        locked={contractAndEstimateLocked}
+        locked={signedDocsLocked}
         onChange={setActiveDocLeg}
       />
     ) : null;
@@ -236,7 +240,7 @@ export function PackageDocumentEditorTabContent({
           <FurnitureMontageEstimateTabContent
             docs={form.furniture.montageDocs}
             contractNumberLabel={form.furniture.montage.contract.number}
-            disabled={contractAndEstimateLocked}
+            disabled={signedDocsLocked}
             onChange={onMontageDocsChange}
           />
         </>
@@ -253,7 +257,7 @@ export function PackageDocumentEditorTabContent({
           docs={form.furniture.montageDocs}
           manufactureContractNumber={form.furniture.manufacture.contract.number}
           montageContractNumber={form.furniture.montage.contract.number}
-          disabled={contractAndEstimateLocked}
+          disabled={signedDocsLocked}
           onChange={onMontageDocsChange}
         />
       </>
@@ -267,7 +271,7 @@ export function PackageDocumentEditorTabContent({
         <FurnitureAppliancesListTabContent
           docs={form.furniture.appliancesDocs}
           contractNumberLabel={form.furniture.appliances.contract.number}
-          disabled={contractAndEstimateLocked}
+          disabled={signedDocsLocked}
           onChange={onAppliancesDocsChange}
         />
       </>
@@ -285,7 +289,7 @@ export function PackageDocumentEditorTabContent({
         <ProductSpecificationTab
           packageKind={packageKind}
           packageId={packageId}
-          disabled={contractAndEstimateLocked}
+          disabled={signedDocsLocked}
           contractConcluded={contractConcluded}
           {...specificationTabProps}
         />
@@ -321,7 +325,7 @@ export function PackageDocumentEditorTabContent({
       <PackageTemplateEditorPane
         activeTab={activeTab}
         packageKind={packageKind}
-        contractAndEstimateLocked={contractAndEstimateLocked}
+        packageReadOnly={packageReadOnly}
         renderedDoc={renderedDoc ?? ''}
         unsignedAddendumBanner={
           activeAddendumSlot !== null && unsignedAddendumOrdinals.includes(activeAddendumSlot) ? (

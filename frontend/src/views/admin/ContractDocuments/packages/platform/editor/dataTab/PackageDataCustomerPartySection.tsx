@@ -25,7 +25,7 @@ import {
 export type PackageDataCustomerPartySectionProps = Pick<
   PackageDataTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'linkedCrmCustomerId'
   | 'customerSectionCompletionPercent'
   | 'customerDataSectionExpanded'
@@ -35,7 +35,7 @@ export type PackageDataCustomerPartySectionProps = Pick<
 
 export function PackageDataCustomerPartySection({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   linkedCrmCustomerId,
   customerSectionCompletionPercent,
   customerDataSectionExpanded,
@@ -49,7 +49,7 @@ export function PackageDataCustomerPartySection({
       <div className={styles.packageDataPartySectionHeader}>
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Заказчик</h3>
-          {contractAndEstimateLocked ? (
+          {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Заказчик» только для просмотра" />
           ) : null}
         </div>

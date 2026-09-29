@@ -11,17 +11,17 @@ import type { PackageFormData } from '../../form/packageForm';
 
 export type UsePackageContractObjectBlockUiOptions = {
   form: PackageFormData;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   contractObjectBlockBaseline: Record<PackageContractObjectBlockFieldId, string> | null;
 };
 
 export function usePackageContractObjectBlockUi({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   contractObjectBlockBaseline,
 }: UsePackageContractObjectBlockUiOptions) {
   const contractObjectBlockEditedFlags = useMemo(() => {
-    if (!contractObjectBlockBaseline || contractAndEstimateLocked) {
+    if (!contractObjectBlockBaseline || signedDocsLocked) {
       return {} as Partial<Record<PackageContractObjectBlockFieldId, boolean>>;
     }
     const current = snapshotPackageContractObjectBlockFields(form);
@@ -32,11 +32,11 @@ export function usePackageContractObjectBlockUi({
       flags[fieldId] = contractObjectBlockBaseline[fieldId] !== current[fieldId];
     }
     return flags;
-  }, [form, contractObjectBlockBaseline, contractAndEstimateLocked]);
+  }, [form, contractObjectBlockBaseline, signedDocsLocked]);
 
   const contractObjectBlockFieldClassName = useCallback(
     (fieldId: PackageContractObjectBlockFieldId): string | undefined => {
-      if (contractAndEstimateLocked) {
+      if (signedDocsLocked) {
         return `${cdBase.autoFilledInput} ${cdDataTab.autoFilledInput} ${cdEstimateTab.autoFilledInput}`;
       }
       if (contractObjectBlockEditedFlags[fieldId]) {
@@ -44,7 +44,7 @@ export function usePackageContractObjectBlockUi({
       }
       return undefined;
     },
-    [contractAndEstimateLocked, contractObjectBlockEditedFlags]
+    [signedDocsLocked, contractObjectBlockEditedFlags]
   );
 
   return { contractObjectBlockFieldClassName };

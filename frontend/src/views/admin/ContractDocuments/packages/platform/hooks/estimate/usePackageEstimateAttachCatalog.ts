@@ -206,6 +206,33 @@ export function usePackageEstimateAttachCatalog({
     [form, estimatePresets]
   );
 
+  /**
+   * Объект для списков д/с: берётся из счёт-заказа договора, а для пакетов без
+   * прикреплённого счёт-заказа (договор «только со Спецификацией») выводится по адресу
+   * объекта из «Данных» среди свободных расчётов заказчика этого направления.
+   */
+  const addendumEstimateObjectKey = useMemo(() => {
+    if (contractEstimateObjectKey) return contractEstimateObjectKey;
+    const candidates = estimatePresets.filter(
+      (p) =>
+        isContractEstimatePresetAttachable(p, estimateGroups) &&
+        estimatePresetMatchesPackageDirection(p, packageKind) &&
+        isEstimatePresetForLinkedContractCustomer(p, estimateCustomerFilter)
+    );
+    return findAttachGroupKeyForPackageObjectAddress({
+      packageObjectAddress,
+      attachablePresets: candidates,
+      groups: estimateGroups,
+    });
+  }, [
+    contractEstimateObjectKey,
+    estimatePresets,
+    estimateGroups,
+    packageKind,
+    estimateCustomerFilter,
+    packageObjectAddress,
+  ]);
+
   const attachEstimatePickMeta = useMemo(() => {
     const hasUngrouped = attachableEstimatePresets.some((p) => !p.groupId);
     const groupIdsWithAttachable = new Set(
@@ -246,7 +273,7 @@ export function usePackageEstimateAttachCatalog({
 
   const attachableAddendumEstimatePresets = useMemo(() => {
     if (activeAddendumSlot === null) return [];
-    const objectKey = contractEstimateObjectKey;
+    const objectKey = addendumEstimateObjectKey;
     if (!objectKey) return [];
     const usedElsewhere = new Set<string>();
     for (const id of form.estimate.selectedPresetIds ?? []) {
@@ -271,7 +298,7 @@ export function usePackageEstimateAttachCatalog({
       .sort((a, b) => a.title.localeCompare(b.title, 'ru'));
   }, [
     activeAddendumSlot,
-    contractEstimateObjectKey,
+    addendumEstimateObjectKey,
     form.estimate.selectedPresetIds,
     form.addendumSlots,
     estimatePresets,
@@ -389,6 +416,7 @@ export function usePackageEstimateAttachCatalog({
     estimateUsageById,
     attachableEstimatePresets,
     contractEstimateObjectKey,
+    addendumEstimateObjectKey,
     attachEstimatePickMeta,
     attachableForSelectedGroup,
     attachableAddendumEstimatePresets,

@@ -21,7 +21,7 @@ import {
 export type PackageDataExecutorPartySectionProps = Pick<
   PackageDataTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'executorSectionCompletionPercent'
   | 'executorDataSectionExpanded'
   | 'setExecutorDataSectionExpanded'
@@ -29,7 +29,7 @@ export type PackageDataExecutorPartySectionProps = Pick<
 
 export function PackageDataExecutorPartySection({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   executorSectionCompletionPercent,
   executorDataSectionExpanded,
   setExecutorDataSectionExpanded,
@@ -39,7 +39,7 @@ export function PackageDataExecutorPartySection({
       <div className={styles.packageDataPartySectionHeader}>
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Исполнитель</h3>
-          {contractAndEstimateLocked ? (
+          {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Исполнитель» только для просмотра" />
           ) : null}
         </div>

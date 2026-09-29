@@ -15,7 +15,7 @@ export type EstimateUsageEntry = { contractNumber: string; contractDate: string 
 
 export type PackageEstimateTabProps = {
   form: PackageFormData;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   isProductDirectionPackage: boolean;
   linkedCrmCustomerId: string | null;
   estimateAppendixContractRef: { num: string; date: string };

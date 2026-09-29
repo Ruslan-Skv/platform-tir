@@ -25,7 +25,7 @@ import {
 } from './packageEstimateTabStyles';
 
 export function PackageEstimateTabView(props: PackageEstimateTabProps) {
-  const { contractAndEstimateLocked, isProductDirectionPackage, linkedCrmCustomerId } = props;
+  const { signedDocsLocked, isProductDirectionPackage, linkedCrmCustomerId } = props;
 
   return (
     <div
@@ -33,7 +33,7 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
     >
       <div className={ESTIMATE_FORM_GRID}>
         <div className={`${ESTIMATE_SECTION_CARD} ${cdProduct.windowsContractFormSection}`}>
-          {contractAndEstimateLocked ? (
+          {signedDocsLocked ? (
             <PackageLockNotice>
               {packageLockNoticeMessage('estimate', {
                 productDirection: isProductDirectionPackage,
@@ -50,9 +50,7 @@ export function PackageEstimateTabView(props: PackageEstimateTabProps) {
               ? 'Прикрепляются расчёты заказчика из раздела «Расчёты» (тот же, что выбран в блоке «Данные»). Объект выбирается здесь: все расчёты счёта-заказа должны относиться к одному объекту. После первого прикрепления объект фиксируется.'
               : 'Объект выбирается только здесь: все расчёты основной сметы и доп. соглашений должны относиться к одному объекту. После первого прикреплённого расчёта объект фиксируется автоматически.'}
           </p>
-          {isProductDirectionPackage &&
-          !linkedCrmCustomerId?.trim() &&
-          !contractAndEstimateLocked ? (
+          {isProductDirectionPackage && !linkedCrmCustomerId?.trim() && !signedDocsLocked ? (
             <p className={ESTIMATE_TAB_HINT} role="status">
               Сначала выберите заказчика в блоке «Поиск заказчика в базе» на вкладке «Данные» —
               тогда появятся его расчёты для прикрепления.

@@ -426,13 +426,20 @@ export function applyEstimatePresetIdsToAddendumSlot(
   estimateGroups: ContractEstimateGroup[] = [],
   target: 'additional' | 'excluded' = 'additional',
   /** Снятие расчёта из списка «Расчёты» и т.п.: разрешает менять слот даже при статусе SIGNED. */
-  force = false
+  force = false,
+  /**
+   * Объект договора, выведенный по адресу из «Данных», — для пакетов без прикреплённого
+   * счёт-заказа (договор «только со Спецификацией»). При первом прикреплении фиксируется
+   * в `estimateObjectGroupKey`, как и при прикреплении к основной смете.
+   */
+  objectKeyOverride = ''
 ): PackageFormData {
   if (slotIndex0 < 0 || slotIndex0 > 4) return previous;
   const slot = previous.addendumSlots[slotIndex0];
   if (!slot || (!force && slot.status === 'SIGNED')) return previous;
 
-  const objectKey = getContractEstimateObjectGroupKey(previous, presets);
+  const formObjectKey = getContractEstimateObjectGroupKey(previous, presets);
+  const objectKey = formObjectKey || objectKeyOverride.trim();
   if (!objectKey) return previous;
 
   const uniqueIds = [...new Set(presetIds.filter(Boolean))].filter((id) => {
@@ -471,5 +478,9 @@ export function applyEstimatePresetIdsToAddendumSlot(
           excludedNotes: notes,
         }),
   };
-  return { ...previous, addendumSlots: nextSlots };
+  return {
+    ...previous,
+    ...(formObjectKey ? null : { estimateObjectGroupKey: objectKey }),
+    addendumSlots: nextSlots,
+  };
 }

@@ -205,8 +205,15 @@ export function usePackageDocumentEditorController({
     useState<ContractDocumentPackageStatus>('IN_PROGRESS');
   const packageFlowStatusRef = useRef<ContractDocumentPackageStatus>('IN_PROGRESS');
   packageFlowStatusRef.current = packageFlowStatus;
-  /** После «Договор подписан» или «Отказ» вкладки «Договор» и «Смета» только для просмотра. */
-  const contractAndEstimateLocked =
+  /** После «Отказа» пакет целиком только для просмотра (правки не сохраняются). */
+  const packageReadOnly = packageFlowStatus === 'REFUSED';
+  /**
+   * После «Договор подписан» (или «Отказ») блокируются вкладки подготовки договора,
+   * влияющие на стоимость/конфигурацию заказа: «Данные», «Смета»/«Счёт-заказ», «Спецификация».
+   * Автоматические вкладки (Договор, акты, согласие, памятка), «Заявка», «Замер», «Файлы»,
+   * «Чертежи» и д/с остаются редактируемыми; подписанное д/с блокируется своим статусом.
+   */
+  const signedDocsLocked =
     packageFlowStatus === 'CONTRACT_CONCLUDED' || packageFlowStatus === 'REFUSED';
   /** «Договор подписан»: файл спецификации можно дополнять новыми версиями (изменения по Д/с). */
   const contractConcluded = packageFlowStatus === 'CONTRACT_CONCLUDED';
@@ -227,7 +234,7 @@ export function usePackageDocumentEditorController({
 
   const { contractObjectBlockFieldClassName } = usePackageContractObjectBlockUi({
     form,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     contractObjectBlockBaseline,
   });
 
@@ -376,7 +383,7 @@ export function usePackageDocumentEditorController({
     form,
     setForm,
     formRef,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     touchPackageData,
     executorProfiles,
     signatoryProfiles,
@@ -387,7 +394,7 @@ export function usePackageDocumentEditorController({
   const { updateContract, updateObject, updateWorkOrder } = usePackageContractFieldHandlers({
     form,
     setForm,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     isSuperAdmin,
     touchPackageData,
   });
@@ -409,6 +416,7 @@ export function usePackageDocumentEditorController({
     estimateUsageById,
     attachableEstimatePresets,
     contractEstimateObjectKey,
+    addendumEstimateObjectKey,
     attachEstimatePickMeta,
     attachableForSelectedGroup,
     attachableAddendumEstimatePresets,
@@ -451,7 +459,7 @@ export function usePackageDocumentEditorController({
   const { workPeriodFieldHelp, contractDateFieldHelp } = usePackageDataTabFieldHelp({
     packageKind,
     isProductDirectionPackage,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     isSuperAdmin,
     form,
   });
@@ -487,7 +495,7 @@ export function usePackageDocumentEditorController({
 
   const { addEstimatePresetToForm, moveEstimatePresetInForm, removeEstimatePresetFromForm } =
     usePackageEstimatePresetHandlers({
-      contractAndEstimateLocked,
+      signedDocsLocked,
       form,
       setForm,
       setDirty,
@@ -508,9 +516,9 @@ export function usePackageDocumentEditorController({
     activeAddendumSlot,
     form,
     formRef,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     isProductDirectionPackage,
-    contractEstimateObjectKey,
+    contractEstimateObjectKey: addendumEstimateObjectKey,
     estimateGroups,
     estimatePresets,
     attachableAddendumEstimatePresets,
@@ -609,7 +617,7 @@ export function usePackageDocumentEditorController({
         form,
         setForm,
         touchPackageData,
-        contractAndEstimateLocked,
+        signedDocsLocked,
         isSuperAdmin,
         isProductDirectionPackage,
         packageKind,
@@ -711,7 +719,8 @@ export function usePackageDocumentEditorController({
         activeAddendumSlot,
         packageKind,
         packageId,
-        contractAndEstimateLocked,
+        packageReadOnly,
+        signedDocsLocked,
         contractConcluded,
         renderedDoc,
         unsignedAddendumOrdinals,
@@ -762,7 +771,7 @@ export function usePackageDocumentEditorController({
     error,
     excelMessage,
     orderedVisibleTabs,
-    contractAndEstimateLocked,
+    signedDocsLocked,
     addendumTabAddDisabled,
     addendumTabAddTitle,
     setForm,

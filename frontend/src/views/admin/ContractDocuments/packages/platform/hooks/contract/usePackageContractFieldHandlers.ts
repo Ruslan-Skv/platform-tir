@@ -9,7 +9,6 @@ import {
   packageEstimateTotalToContractFields,
   parsePackageContractDiscountPercent,
 } from '../../form/packageContractDiscount';
-import { PACKAGE_CONTRACT_FIELDS_EDITABLE_WHEN_SIGNED } from '../../form/packageContractFieldPolicy';
 import type { PackageFormData } from '../../form/packageForm';
 
 function parseDecimalAmount(raw: string): number | null {
@@ -23,7 +22,7 @@ function parseDecimalAmount(raw: string): number | null {
 export type UsePackageContractFieldHandlersOptions = {
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   isSuperAdmin: boolean;
   touchPackageData: () => void;
 };
@@ -31,17 +30,17 @@ export type UsePackageContractFieldHandlersOptions = {
 export function usePackageContractFieldHandlers({
   form,
   setForm,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isSuperAdmin,
   touchPackageData,
 }: UsePackageContractFieldHandlersOptions) {
   const updateObject = useCallback(
     <K extends keyof PackageFormData['object']>(key: K, value: string) => {
-      if (contractAndEstimateLocked) return;
+      if (signedDocsLocked) return;
       setForm((p) => ({ ...p, object: { ...p.object, [key]: value } }));
       touchPackageData();
     },
-    [contractAndEstimateLocked, setForm, touchPackageData]
+    [signedDocsLocked, setForm, touchPackageData]
   );
 
   const updateWorkOrder = useCallback(
@@ -60,10 +59,7 @@ export function usePackageContractFieldHandlers({
       if (key === 'workPeriod' && !isSuperAdmin) {
         return;
       }
-      if (
-        contractAndEstimateLocked &&
-        !PACKAGE_CONTRACT_FIELDS_EDITABLE_WHEN_SIGNED.has(String(key))
-      ) {
+      if (signedDocsLocked) {
         return;
       }
       setForm((p) => {
@@ -97,7 +93,7 @@ export function usePackageContractFieldHandlers({
       });
       touchPackageData();
     },
-    [contractAndEstimateLocked, isSuperAdmin, setForm, touchPackageData]
+    [signedDocsLocked, isSuperAdmin, setForm, touchPackageData]
   );
 
   useEffect(() => {

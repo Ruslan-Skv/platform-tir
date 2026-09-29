@@ -11,7 +11,7 @@ import { applyEstimatePresetIdsToPackageForm } from '../../estimates/applyEstima
 import type { PackageFormData } from '../../form/packageForm';
 
 export type UsePackageEstimatePresetHandlersOptions = {
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   setDirty: (dirty: boolean) => void;
@@ -22,7 +22,7 @@ export type UsePackageEstimatePresetHandlersOptions = {
 };
 
 export function usePackageEstimatePresetHandlers({
-  contractAndEstimateLocked,
+  signedDocsLocked,
   form,
   setForm,
   setDirty,
@@ -33,7 +33,7 @@ export function usePackageEstimatePresetHandlers({
 }: UsePackageEstimatePresetHandlersOptions) {
   const applyEstimatePresetIdsToForm = useCallback(
     (presetIds: string[]) => {
-      if (contractAndEstimateLocked) return;
+      if (signedDocsLocked) return;
       setForm((p) => {
         const uniqueIds = [...new Set(presetIds.filter(Boolean))];
         const nextForm = applyEstimatePresetIdsToPackageForm(
@@ -49,7 +49,7 @@ export function usePackageEstimatePresetHandlers({
       setDirty(true);
     },
     [
-      contractAndEstimateLocked,
+      signedDocsLocked,
       setForm,
       estimatePresets,
       estimateGroups,

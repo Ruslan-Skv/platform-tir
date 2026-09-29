@@ -24,7 +24,8 @@ export type UsePackageDocumentEditorTabPropsOptions = {
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   touchPackageData: () => void;
-  contractAndEstimateLocked: boolean;
+  /** После подписания (или отказа) «Данные» и «Счёт-заказ»/«Смета» только для просмотра. */
+  signedDocsLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
   packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;
@@ -83,7 +84,7 @@ export function usePackageDocumentEditorTabProps({
   form,
   setForm,
   touchPackageData,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isSuperAdmin,
   isProductDirectionPackage,
   packageKind,
@@ -140,7 +141,7 @@ export function usePackageDocumentEditorTabProps({
       form,
       setForm,
       touchPackageData,
-      contractAndEstimateLocked,
+      signedDocsLocked,
       isSuperAdmin,
       isProductDirectionPackage,
       packageKind,
@@ -173,7 +174,7 @@ export function usePackageDocumentEditorTabProps({
       form,
       setForm,
       touchPackageData,
-      contractAndEstimateLocked,
+      signedDocsLocked,
       isSuperAdmin,
       isProductDirectionPackage,
       packageKind,
@@ -207,7 +208,7 @@ export function usePackageDocumentEditorTabProps({
   const estimateTabProps = useMemo(
     (): PackageEstimateTabProps => ({
       form,
-      contractAndEstimateLocked,
+      signedDocsLocked,
       isProductDirectionPackage,
       linkedCrmCustomerId,
       estimateAppendixContractRef,
@@ -232,7 +233,7 @@ export function usePackageDocumentEditorTabProps({
     }),
     [
       form,
-      contractAndEstimateLocked,
+      signedDocsLocked,
       isProductDirectionPackage,
       linkedCrmCustomerId,
       estimateAppendixContractRef,

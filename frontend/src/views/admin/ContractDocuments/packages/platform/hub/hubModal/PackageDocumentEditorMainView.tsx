@@ -51,7 +51,8 @@ export type PackageDocumentEditorMainViewProps = {
   error: string | null;
   excelMessage: string | null;
   orderedVisibleTabs: readonly PackageDocumentTabId[];
-  contractAndEstimateLocked: boolean;
+  /** «Счёт-заказ»/«Смета» и «Спецификация» только для просмотра (подписан/отказ). */
+  signedDocsLocked: boolean;
   addendumTabAddDisabled: boolean;
   addendumTabAddTitle: string;
   setForm: Dispatch<SetStateAction<PackageFormData>>;
@@ -91,7 +92,7 @@ export function PackageDocumentEditorMainView({
   error,
   excelMessage,
   orderedVisibleTabs,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   addendumTabAddDisabled,
   addendumTabAddTitle,
   setForm,
@@ -138,7 +139,7 @@ export function PackageDocumentEditorMainView({
           packageKind={packageKind}
           tabs={orderedVisibleTabs}
           activeTab={activeTab}
-          contractAndEstimateLocked={contractAndEstimateLocked}
+          signedDocsLocked={signedDocsLocked}
           unsignedAddendumOrdinals={unsignedAddendumOrdinals}
           signedAddendumOrdinals={signedAddendumOrdinals}
           form={form}

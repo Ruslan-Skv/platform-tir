@@ -80,6 +80,13 @@
   font-size: var(--admin-font-size-sm, 14px);
 }
 
+/* Активное состояние — синяя рамка с кольцом, как у остальных полей вкладки «Данные». */
+.measurementLinkSelect:not(:disabled):focus {
+  border-color: var(--admin-focus-ring, #3b82f6);
+  box-shadow: 0 0 0 1px var(--admin-focus-ring, #3b82f6);
+  outline: none;
+}
+
 .sectionHint {
   margin: 0 0 var(--admin-space-sm, 8px);
   font-size: var(--admin-font-size-sm, 14px);

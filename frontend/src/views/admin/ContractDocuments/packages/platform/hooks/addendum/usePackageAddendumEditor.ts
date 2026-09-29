@@ -12,6 +12,7 @@ import { ProductAddendumTab } from '../../../families/product-like/addendum/Prod
 import type { ProductAddendumSpecificationLine } from '../../../families/product-like/addendum/addendumSpecification';
 import { PackageAddendumEstimateBlock } from '../../editor/addendum/PackageAddendumEstimateBlock';
 import { applyEstimatePresetIdsToAddendumSlot } from '../../estimates/applyEstimatePresetIds';
+import { isPackageAddendumSlotRemovable } from '../../form/packageForm';
 import type { PackageFormData } from '../../form/packageForm';
 import {
   CONTRACT_SIGNED_REVERT_WINDOW_MS,
@@ -45,8 +46,13 @@ export type UsePackageAddendumEditorOptions = {
   activeAddendumSlot: number | null;
   form: PackageFormData;
   formRef: React.MutableRefObject<PackageFormData>;
-  contractAndEstimateLocked: boolean;
+  /** До подписания договора прикрепление расчётов к д/с недоступно (подсказка вместо блока). */
+  signedDocsLocked: boolean;
   isProductDirectionPackage: boolean;
+  /**
+   * Объект договора для списков д/с: из счёт-заказа либо выведенный по адресу объекта
+   * (пакеты без прикреплённого счёт-заказа).
+   */
   contractEstimateObjectKey: string;
   estimateGroups: ContractEstimateGroup[];
   estimatePresets: ContractEstimatePreset[];
@@ -72,7 +78,7 @@ export function usePackageAddendumEditor({
   activeAddendumSlot,
   form,
   formRef,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isProductDirectionPackage,
   contractEstimateObjectKey,
   estimateGroups,
@@ -129,7 +135,9 @@ export function usePackageAddendumEditor({
           presetIds,
           estimatePresets,
           estimateGroups,
-          mode
+          mode,
+          false,
+          contractEstimateObjectKey
         );
         formRef.current = next;
         schedulePersistDebounced();
@@ -137,7 +145,15 @@ export function usePackageAddendumEditor({
         return next;
       });
     },
-    [estimateGroups, estimatePresets, formRef, schedulePersistDebounced, setDirty, setForm]
+    [
+      contractEstimateObjectKey,
+      estimateGroups,
+      estimatePresets,
+      formRef,
+      schedulePersistDebounced,
+      setDirty,
+      setForm,
+    ]
   );
 
   const unmarkAddendumSlotSigned = useCallback(
@@ -319,8 +335,15 @@ export function usePackageAddendumEditor({
     patchAddendumSlotField,
   ]);
 
+  /**
+   * До подписания договора новое (пустое) д/с не оформляется — подсказка вместо блока.
+   * Заполненное д/с — например, оставшееся после отмены подписания договора — остаётся
+   * редактируемым, иначе его нельзя ни поправить, ни очистить для удаления вкладки.
+   */
   const lockedHint =
-    activeAddendumSlot !== null && !contractAndEstimateLocked
+    activeAddendumSlot !== null &&
+    !signedDocsLocked &&
+    isPackageAddendumSlotRemovable(form.addendumSlots[activeAddendumSlot - 1])
       ? `Прикрепление расчётов к доп. соглашению доступно после статуса «Договор подписан» в «${PACKAGE_HUB_MODAL_TITLE}».`
       : null;
 

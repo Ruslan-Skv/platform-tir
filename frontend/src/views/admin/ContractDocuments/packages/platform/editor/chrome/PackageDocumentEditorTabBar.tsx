@@ -34,7 +34,8 @@ export type PackageDocumentEditorTabBarProps = {
   packageKind: ContractDocumentPackageKind;
   tabs: readonly PackageDocumentTabId[];
   activeTab: PackageDocumentTabId;
-  contractAndEstimateLocked: boolean;
+  /** «Счёт-заказ»/«Смета» и «Спецификация» только для просмотра (подписан/отказ). */
+  signedDocsLocked: boolean;
   /** Договор подписан: на «Спецификации» можно прикреплять новые версии файла. */
   contractConcluded?: boolean;
   unsignedAddendumOrdinals: number[];
@@ -49,7 +50,7 @@ export function PackageDocumentEditorTabBar({
   packageKind,
   tabs,
   activeTab,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   contractConcluded = false,
   unsignedAddendumOrdinals,
   signedAddendumOrdinals,
@@ -74,9 +75,9 @@ export function PackageDocumentEditorTabBar({
         const isSignedAddendumTab =
           addendumTabOrdinal != null && signedAddendumOrdinals.includes(addendumTabOrdinal);
         const label = packageEditorTabLabel(packageKind, id, true);
+        /** Замок — только вкладки, блокируемые после подписания («Счёт-заказ»/«Смета», «Спецификация»). */
         const isContractSignedViewOnlyTab =
-          contractAndEstimateLocked &&
-          (id === 'contract' || id === 'estimate' || (isProductLike && id === 'specification'));
+          signedDocsLocked && (id === 'estimate' || (isProductLike && id === 'specification'));
         const showTabLockIcon = isContractSignedViewOnlyTab || isSignedAddendumTab;
         const isSpecificationVersionsTab =
           isProductLike && id === 'specification' && contractConcluded;

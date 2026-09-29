@@ -9,7 +9,7 @@ import { ESTIMATE_HINT, ESTIMATE_TAB_HINT } from './packageEstimateTabStyles';
 export type PackageEstimateAttachPanelProps = Pick<
   PackageEstimateTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'isProductDirectionPackage'
   | 'linkedCrmCustomerId'
   | 'contractEstimateObjectKey'
@@ -34,7 +34,7 @@ export type PackageEstimateAttachPanelProps = Pick<
 
 export function PackageEstimateAttachPanel({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isProductDirectionPackage,
   linkedCrmCustomerId,
   contractEstimateObjectKey,
@@ -72,17 +72,12 @@ export function PackageEstimateAttachPanel({
                     ? contractEstimateObjectKey
                     : estimateAttachGroupKey
                 }
-                disabled={
-                  contractAndEstimateLocked || (form.estimate.selectedPresetIds?.length ?? 0) > 0
-                }
+                disabled={signedDocsLocked || (form.estimate.selectedPresetIds?.length ?? 0) > 0}
                 onChange={(e) => {
                   const v = e.target.value;
                   setEstimateAttachGroupKey(v);
                   setEstimatePresetToAttach('');
-                  if (
-                    !contractAndEstimateLocked &&
-                    (form.estimate.selectedPresetIds?.length ?? 0) === 0
-                  ) {
+                  if (!signedDocsLocked && (form.estimate.selectedPresetIds?.length ?? 0) === 0) {
                     onEstimateObjectChange(v);
                   }
                 }}
@@ -104,7 +99,7 @@ export function PackageEstimateAttachPanel({
                 id="estimate_select"
                 value={estimatePresetToAttach}
                 disabled={
-                  contractAndEstimateLocked ||
+                  signedDocsLocked ||
                   !((form.estimate.selectedPresetIds?.length ?? 0) > 0
                     ? contractEstimateObjectKey
                     : estimateAttachGroupKey || contractEstimateObjectKey)
@@ -131,7 +126,7 @@ export function PackageEstimateAttachPanel({
               <button
                 type="button"
                 className={`${cdWorkspace.primaryBtn} ${attachStyles.estimateAttachPrimaryBtn}`}
-                disabled={contractAndEstimateLocked || !estimatePresetToAttach}
+                disabled={signedDocsLocked || !estimatePresetToAttach}
                 onClick={() => {
                   onAttachPreset(estimatePresetToAttach);
                   setEstimatePresetToAttach('');
@@ -171,17 +166,17 @@ export function PackageEstimateAttachPanel({
                 return (
                   <div
                     key={presetId}
-                    draggable={!contractAndEstimateLocked}
+                    draggable={!signedDocsLocked}
                     onDragStart={() => {
-                      if (!contractAndEstimateLocked) setDraggingEstimatePresetId(presetId);
+                      if (!signedDocsLocked) setDraggingEstimatePresetId(presetId);
                     }}
                     onDragEnd={() => setDraggingEstimatePresetId(null)}
                     onDragOver={(e) => {
-                      if (!contractAndEstimateLocked) e.preventDefault();
+                      if (!signedDocsLocked) e.preventDefault();
                     }}
                     onDrop={(e) => {
                       e.preventDefault();
-                      if (contractAndEstimateLocked) return;
+                      if (signedDocsLocked) return;
                       if (draggingEstimatePresetId) {
                         onMovePreset(draggingEstimatePresetId, presetId);
                       }
@@ -205,7 +200,7 @@ export function PackageEstimateAttachPanel({
                       className={`${cdWorkspace.secondaryBtn} ${attachStyles.estimateAttachedRemoveBtn}`}
                       aria-label="Убрать расчёт из сметы"
                       title="Убрать"
-                      disabled={contractAndEstimateLocked}
+                      disabled={signedDocsLocked}
                       onClick={() => onRemovePreset(presetId)}
                     >
                       ×

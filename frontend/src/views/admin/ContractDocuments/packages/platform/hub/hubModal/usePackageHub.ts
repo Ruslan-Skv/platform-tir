@@ -43,6 +43,7 @@ import {
   printPackageCashOrder,
 } from '../../payments/packageCashOrderPrint';
 import { computePackagePayableBreakdown } from '../../payments/packagePaymentTotals';
+import { resolveUniqueCrmCustomerByPhones } from '../../questionnaires/crmCustomerPhoneMatch';
 import { parseLinkedCrmCustomerIdFromFormData } from '../../questionnaires/crmManagerQuestionnaire1';
 import { PACKAGE_CASH_ORDER_TEMPLATE_TAB } from '../../tabs/packageActPrintTabs';
 import {
@@ -51,6 +52,8 @@ import {
   inferWindowsPrepayment70StartDate,
   packageHasAttachedEstimate,
 } from '../pipeline/packagePipeline';
+import { revertContractConclusionForm } from './contractConclusionRevert';
+import { collectContractSignRequirements } from './contractSignRequirements';
 import { CONTRACT_SIGNED_REVERT_WINDOW_MS } from './packageHubConstants';
 import {
   formatContractConcludedDateForHeader,
@@ -113,19 +116,28 @@ export function usePackageHub({
     return getLiveFormRef.current?.() ?? formRef.current;
   }, []);
 
-  const buildHubPersistedFormData = useCallback((nextForm: PackageFormData) => {
-    const persistOptions =
-      getLivePersistOptionsRef.current?.() ??
-      (linkedCrmCustomerIdRef.current
-        ? { linkedCrmCustomerId: linkedCrmCustomerIdRef.current }
-        : undefined);
-    return buildPersistedFormData(
-      nextForm,
-      templateOverridesRef.current,
-      selectedTemplateIdsRef.current,
-      persistOptions
-    );
-  }, []);
+  const buildHubPersistedFormData = useCallback(
+    (nextForm: PackageFormData, opts?: { linkedCrmCustomerId?: string | null }) => {
+      const liveOptions =
+        getLivePersistOptionsRef.current?.() ??
+        (linkedCrmCustomerIdRef.current
+          ? { linkedCrmCustomerId: linkedCrmCustomerIdRef.current }
+          : {});
+      const persistOptions = {
+        ...liveOptions,
+        ...(opts?.linkedCrmCustomerId?.trim()
+          ? { linkedCrmCustomerId: opts.linkedCrmCustomerId.trim() }
+          : null),
+      };
+      return buildPersistedFormData(
+        nextForm,
+        templateOverridesRef.current,
+        selectedTemplateIdsRef.current,
+        persistOptions
+      );
+    },
+    []
+  );
 
   const [workStartModalOpen, setWorkStartModalOpen] = useState(false);
   const [workStartModalDate, setWorkStartModalDate] = useState('');
@@ -153,9 +165,14 @@ export function usePackageHub({
   const persistForm = useCallback(
     async (
       nextForm: PackageFormData,
-      opts?: { status?: ContractDocumentPackageStatus; recordVersion?: boolean }
+      opts?: {
+        status?: ContractDocumentPackageStatus;
+        recordVersion?: boolean;
+        /** Карточка CRM, выведенная по телефону заказчика (например, при подписании). */
+        linkedCrmCustomerId?: string | null;
+      }
     ) => {
-      const formData = buildHubPersistedFormData(nextForm);
+      const formData = buildHubPersistedFormData(nextForm, opts);
       const recordVersion = opts?.recordVersion === true;
       await updateContractDocumentPackage(packageId, {
         status: opts?.status,
@@ -538,12 +555,55 @@ export function usePackageHub({
       setError('Сначала прикрепите смету (расчёт) — вкладка «Смета»');
       return;
     }
+    /**
+     * До подписания на «Данных» должны быть заполнены блок «Заказчик» (из него идут
+     * плейсхолдеры шаблонов), карточки исполнителя и менеджера, номер, дата заключения
+     * и адрес объекта: после подписания вкладка блокируется.
+     */
+    const signForm = hubFormBase();
+    const signRequirements = collectContractSignRequirements({
+      packageKind,
+      customer: signForm.customer,
+      contractNumber: signForm.contract.number,
+      contractDate: signForm.contract.date,
+      objectAddress: signForm.object.objectAddress,
+      executorProfileTitle: signForm.executor.selectedProfileTitle,
+      signatoryProfileTitle: signForm.executor.selectedSignatoryProfileTitle,
+    });
+    if (signRequirements.length > 0) {
+      setError(
+        `Договор нельзя подписать, пока на вкладке «Данные» не заполнено: ${signRequirements.join('; ')}`
+      );
+      return;
+    }
+    /**
+     * Заказчик заполнен, но карточка CRM не выбрана через «Поиск заказчика в базе»
+     * (данные пришли из анкеты). После подписания «Данные» блокируются, а расчёты
+     * для д/с отбираются по карточке CRM — выводим её по точному совпадению телефона.
+     */
+    let linkedCrmCustomerId =
+      getLivePersistOptionsRef.current?.().linkedCrmCustomerId ?? linkedCrmCustomerIdRef.current;
+    if (!linkedCrmCustomerId?.trim()) {
+      const customerPhones = [
+        ...(signForm.customer.phones ?? []).map((x) => x.trim()),
+        signForm.customer.phone?.trim() ?? '',
+      ].filter(Boolean);
+      const resolvedCrmCustomerId = await resolveUniqueCrmCustomerByPhones(customerPhones);
+      if (resolvedCrmCustomerId) {
+        linkedCrmCustomerId = resolvedCrmCustomerId;
+        linkedCrmCustomerIdRef.current = resolvedCrmCustomerId;
+      }
+    }
     setSavingPackageStatus(true);
     setError(null);
     try {
       const nowIso = new Date().toISOString();
       const nextForm = { ...hubFormBase(), contractConcludedAt: nowIso, contractPaidAt: '' };
-      await persistForm(nextForm, { status: 'CONTRACT_CONCLUDED', recordVersion: true });
+      await persistForm(nextForm, {
+        status: 'CONTRACT_CONCLUDED',
+        recordVersion: true,
+        linkedCrmCustomerId,
+      });
       setPackageFlowStatus('CONTRACT_CONCLUDED');
       notifyUpdated();
     } catch (e) {
@@ -564,7 +624,8 @@ export function usePackageHub({
     setSavingPackageStatus(true);
     setError(null);
     try {
-      const nextForm = { ...hubFormBase(), contractConcludedAt: '', contractPaidAt: '' };
+      /** Вместе с договором сбрасываются и подписания всех д/с. */
+      const nextForm = revertContractConclusionForm(hubFormBase());
       await persistForm(nextForm, { status: 'IN_PROGRESS', recordVersion: true });
       setPackageFlowStatus('IN_PROGRESS');
       notifyUpdated();

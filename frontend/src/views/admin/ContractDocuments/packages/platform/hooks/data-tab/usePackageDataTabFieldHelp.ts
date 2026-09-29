@@ -16,7 +16,7 @@ import { workPeriodFieldHelp as buildWorkPeriodFieldHelp } from '../../form/work
 export type UsePackageDataTabFieldHelpOptions = {
   packageKind: ContractDocumentPackageKind;
   isProductDirectionPackage: boolean;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   isSuperAdmin: boolean;
   form: PackageFormData;
 };
@@ -24,7 +24,7 @@ export type UsePackageDataTabFieldHelpOptions = {
 export function usePackageDataTabFieldHelp({
   packageKind,
   isProductDirectionPackage,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isSuperAdmin,
   form,
 }: UsePackageDataTabFieldHelpOptions) {
@@ -32,7 +32,7 @@ export function usePackageDataTabFieldHelp({
     () =>
       buildWorkPeriodFieldHelp({
         packageKindLabel: packageKindUiLabel(packageKind),
-        contractLocked: contractAndEstimateLocked,
+        contractLocked: signedDocsLocked,
         workPeriodIsManual: form.contract.workPeriodIsManual === true,
         isSuperAdmin,
         placeholderDays:
@@ -43,7 +43,7 @@ export function usePackageDataTabFieldHelp({
       }),
     [
       packageKind,
-      contractAndEstimateLocked,
+      signedDocsLocked,
       form.contract.workPeriodIsManual,
       form.contract.workPeriod,
       isSuperAdmin,
@@ -55,9 +55,9 @@ export function usePackageDataTabFieldHelp({
     () =>
       buildContractDateFieldHelp({
         isWindowsPackage: isProductDirectionPackage,
-        contractLocked: contractAndEstimateLocked,
+        contractLocked: signedDocsLocked,
       }),
-    [isProductDirectionPackage, contractAndEstimateLocked]
+    [isProductDirectionPackage, signedDocsLocked]
   );
 
   return {

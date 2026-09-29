@@ -20,7 +20,7 @@ export type PackageDataCustomerSearchColumnProps = Pick<
   | 'form'
   | 'setForm'
   | 'touchPackageData'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'linkedCrmCustomerId'
   | 'onCrmCustomerApplied'
   | 'onCrmCustomerClear'
@@ -33,7 +33,7 @@ export function PackageDataCustomerSearchColumn({
   form,
   setForm,
   touchPackageData,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   linkedCrmCustomerId,
   onCrmCustomerApplied,
   onCrmCustomerClear,
@@ -48,12 +48,12 @@ export function PackageDataCustomerSearchColumn({
     <div className={`${DATA_TOP_BLOCK} ${cdDataTab.dataTopBlockCustomerCol}`}>
       <div
         className={`${CUSTOMER_SEARCH_SLOT} ${
-          contractAndEstimateLocked ? cdDataTab.packageCustomerSearchSlotLocked : ''
+          signedDocsLocked ? cdDataTab.packageCustomerSearchSlotLocked : ''
         }`}
       >
         <CrmCustomerSearchPanel
           customerId={linkedCrmCustomerId}
-          disabled={contractAndEstimateLocked}
+          disabled={signedDocsLocked}
           listboxId="repair-customer-crm-search-listbox"
           onCustomerApplied={onCrmCustomerApplied}
           onClear={onCrmCustomerClear}

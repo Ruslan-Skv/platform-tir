@@ -26,7 +26,7 @@ export type UsePackageProfileDirectoryHandlersOptions = {
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   formRef: React.MutableRefObject<PackageFormData>;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   touchPackageData: () => void;
   executorProfiles: ExecutorRequisiteProfile[];
   signatoryProfiles: ContractSignatoryProfile[];
@@ -38,7 +38,7 @@ export function usePackageProfileDirectoryHandlers({
   form,
   setForm,
   formRef,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   touchPackageData,
   executorProfiles,
   signatoryProfiles,
@@ -54,26 +54,26 @@ export function usePackageProfileDirectoryHandlers({
 
   const handleCrmCustomerApplied = useCallback(
     (detail: CrmCustomerDetail) => {
-      if (contractAndEstimateLocked) return;
+      if (signedDocsLocked) return;
       const next = mergePackageFormFromCrmCustomerDetail(detail, formRef.current);
       setLinkedCrmCustomerId(detail.id);
       setForm(next);
       formRef.current = next;
       touchPackageData();
     },
-    [contractAndEstimateLocked, formRef, setForm, setLinkedCrmCustomerId, touchPackageData]
+    [signedDocsLocked, formRef, setForm, setLinkedCrmCustomerId, touchPackageData]
   );
 
   const handleCrmCustomerClear = useCallback(() => {
-    if (contractAndEstimateLocked) return;
+    if (signedDocsLocked) return;
     setLinkedCrmCustomerId(null);
     setForm((p) => clearPackageFormCrmCustomerFields(p));
     touchPackageData();
-  }, [contractAndEstimateLocked, setForm, setLinkedCrmCustomerId, touchPackageData]);
+  }, [signedDocsLocked, setForm, setLinkedCrmCustomerId, touchPackageData]);
 
   const applyExecutorProfile = useCallback(
     (title: string) => {
-      if (contractAndEstimateLocked) return;
+      if (signedDocsLocked) return;
       setForm((p) => {
         const profile = executorProfiles.find((it) => it.title === title);
         if (!profile) {
@@ -97,7 +97,7 @@ export function usePackageProfileDirectoryHandlers({
       });
       touchPackageData();
     },
-    [contractAndEstimateLocked, executorProfiles, setForm, touchPackageData]
+    [signedDocsLocked, executorProfiles, setForm, touchPackageData]
   );
 
   useEffect(() => {
@@ -123,7 +123,7 @@ export function usePackageProfileDirectoryHandlers({
 
   const applySignatoryProfile = useCallback(
     (title: string) => {
-      if (contractAndEstimateLocked) return;
+      if (signedDocsLocked) return;
       setForm((p) => {
         const profile = signatoryProfiles.find((it) => it.title === title);
         if (!profile) {
@@ -151,13 +151,7 @@ export function usePackageProfileDirectoryHandlers({
       }
       touchPackageData();
     },
-    [
-      contractAndEstimateLocked,
-      signatoryProfiles,
-      setForm,
-      touchPackageData,
-      onResponsibleManagerIdChange,
-    ]
+    [signedDocsLocked, signatoryProfiles, setForm, touchPackageData, onResponsibleManagerIdChange]
   );
 
   useEffect(() => {

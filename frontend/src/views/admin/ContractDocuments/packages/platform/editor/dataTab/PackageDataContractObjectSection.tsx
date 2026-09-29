@@ -28,7 +28,7 @@ import { PackageDataSectionLockInline } from './packageDataTabUi';
 export type PackageDataContractObjectSectionProps = Pick<
   PackageDataTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'isSuperAdmin'
   | 'isProductDirectionPackage'
   | 'packageKind'
@@ -53,7 +53,7 @@ function formatSignatoryProfileLabel(
 }
 export function PackageDataContractObjectSection({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   isSuperAdmin,
   isProductDirectionPackage,
   packageKind,
@@ -97,7 +97,7 @@ export function PackageDataContractObjectSection({
       <div className={`${DATA_SECTION_CARD} ${DATA_BLANK_SHEET}`}>
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Договор и объект</h3>
-          {contractAndEstimateLocked ? (
+          {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Договор и объект» только для просмотра" />
           ) : null}
         </div>
@@ -105,7 +105,7 @@ export function PackageDataContractObjectSection({
           <PackageContractNumberField
             form={form}
             packageKind={packageKind}
-            locked={contractAndEstimateLocked}
+            locked={signedDocsLocked}
             fieldClassName={contractObjectBlockFieldClassName('contract.number')}
             updateContract={updateContract}
             omitNumberField={isFurnitureLikePackageKind(packageKind)}
@@ -125,10 +125,10 @@ export function PackageDataContractObjectSection({
                   onChange={(e) => updateContract('date', e.target.value)}
                   placeholder="дд.мм.гггг"
                   autoComplete="off"
-                  disabled={contractAndEstimateLocked}
-                  readOnly={contractAndEstimateLocked}
+                  disabled={signedDocsLocked}
+                  readOnly={signedDocsLocked}
                   className={
-                    contractAndEstimateLocked
+                    signedDocsLocked
                       ? DATA_AUTO_FILLED
                       : contractObjectBlockFieldClassName('contract.date')
                   }
@@ -154,10 +154,10 @@ export function PackageDataContractObjectSection({
                       : String(DEFAULT_PACKAGE_CONTRACT_WORK_PERIOD_DAYS)
                   }
                   autoComplete="off"
-                  readOnly={!isSuperAdmin || contractAndEstimateLocked}
-                  disabled={contractAndEstimateLocked || !isSuperAdmin}
+                  readOnly={!isSuperAdmin || signedDocsLocked}
+                  disabled={signedDocsLocked || !isSuperAdmin}
                   className={
-                    !isSuperAdmin || contractAndEstimateLocked
+                    !isSuperAdmin || signedDocsLocked
                       ? DATA_AUTO_FILLED
                       : contractObjectBlockFieldClassName('contract.workPeriod')
                   }
@@ -175,10 +175,10 @@ export function PackageDataContractObjectSection({
                 onChange={(e) => updateContract('discountPercent', e.target.value)}
                 placeholder="0"
                 autoComplete="off"
-                disabled={contractAndEstimateLocked}
-                readOnly={contractAndEstimateLocked}
+                disabled={signedDocsLocked}
+                readOnly={signedDocsLocked}
                 className={
-                  contractAndEstimateLocked
+                  signedDocsLocked
                     ? DATA_AUTO_FILLED
                     : contractObjectBlockFieldClassName('contract.discountPercent')
                 }
@@ -193,7 +193,7 @@ export function PackageDataContractObjectSection({
                 value={form.object.objectAddress}
                 onChange={(e) => updateObject('objectAddress', e.target.value)}
                 autoComplete="off"
-                disabled={contractAndEstimateLocked}
+                disabled={signedDocsLocked}
                 className={contractObjectBlockFieldClassName('object.objectAddress')}
               />
             </div>
@@ -204,7 +204,7 @@ export function PackageDataContractObjectSection({
                 value={form.object.objectFloor}
                 onChange={(e) => updateObject('objectFloor', e.target.value)}
                 autoComplete="off"
-                disabled={contractAndEstimateLocked}
+                disabled={signedDocsLocked}
                 className={contractObjectBlockFieldClassName('object.objectFloor')}
               />
             </div>
@@ -218,7 +218,7 @@ export function PackageDataContractObjectSection({
                 id="o_desc"
                 value={form.object.objectDescription}
                 onChange={(e) => updateObject('objectDescription', e.target.value)}
-                disabled={contractAndEstimateLocked}
+                disabled={signedDocsLocked}
                 className={contractObjectBlockFieldClassName('object.objectDescription')}
               />
             </div>
@@ -231,7 +231,7 @@ export function PackageDataContractObjectSection({
                   id="e_profile"
                   value={form.executor.selectedProfileTitle}
                   onChange={(e) => applyExecutorProfile(e.target.value)}
-                  disabled={contractAndEstimateLocked}
+                  disabled={signedDocsLocked}
                   className={contractObjectBlockFieldClassName('executor.selectedProfileTitle')}
                 >
                   <option value="">— выбрать набор —</option>
@@ -249,7 +249,7 @@ export function PackageDataContractObjectSection({
                 id="s_profile"
                 value={form.executor.selectedSignatoryProfileTitle}
                 onChange={(e) => applySignatoryProfile(e.target.value)}
-                disabled={contractAndEstimateLocked}
+                disabled={signedDocsLocked}
                 className={contractObjectBlockFieldClassName(
                   'executor.selectedSignatoryProfileTitle'
                 )}

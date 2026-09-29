@@ -22,7 +22,7 @@ type ToolButton = {
 export type UseContractTemplateEditorOptions = {
   activeTab: PackageDocumentTabId;
   isSuperAdmin: boolean;
-  contractAndEstimateLocked: boolean;
+  packageReadOnly: boolean;
   contractTemplatePresets: ContractTemplatePreset[];
   setContractTemplatePresets: React.Dispatch<React.SetStateAction<ContractTemplatePreset[]>>;
   selectedTemplateIds: Partial<Record<PackageDocumentTemplateTabId, string>>;
@@ -45,7 +45,7 @@ export type UseContractTemplateEditorOptions = {
 export function useContractTemplateEditor({
   activeTab,
   isSuperAdmin,
-  contractAndEstimateLocked,
+  packageReadOnly,
   contractTemplatePresets,
   setContractTemplatePresets,
   selectedTemplateIds,
@@ -68,7 +68,7 @@ export function useContractTemplateEditor({
   const [formatToolbarQuery, setFormatToolbarQuery] = useState('');
   const [showAllFormatTools, setShowAllFormatTools] = useState(false);
 
-  const canEdit = isSuperAdmin && !contractAndEstimateLocked;
+  const canEdit = isSuperAdmin && !packageReadOnly;
 
   const contractTabTemplates = useMemo(
     () =>
@@ -85,7 +85,7 @@ export function useContractTemplateEditor({
 
   const persistContractTemplatePresets = useCallback(
     async (items: ContractTemplatePreset[]) => {
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       setTemplateSaving(true);
       setError(null);
       try {
@@ -98,33 +98,27 @@ export function useContractTemplateEditor({
         setTemplateSaving(false);
       }
     },
-    [
-      contractAndEstimateLocked,
-      setContractTemplatePresets,
-      setError,
-      setExcelMessage,
-      setTemplateSaving,
-    ]
+    [packageReadOnly, setContractTemplatePresets, setError, setExcelMessage, setTemplateSaving]
   );
 
   const handleContractTemplateChange = useCallback(
     (value: string) => {
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       setTemplateDraftHtml(value);
     },
-    [contractAndEstimateLocked, setTemplateDraftHtml]
+    [packageReadOnly, setTemplateDraftHtml]
   );
 
   const handleEditTemplateSelect = useCallback(
     (templateId: string) => {
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       setEditingTemplateId(templateId);
       const t = contractTemplatePresets.find((it) => it.id === templateId);
       setTemplateDraftTitle(t?.title ?? '');
       setTemplateDraftHtml(t?.html ?? '');
     },
     [
-      contractAndEstimateLocked,
+      packageReadOnly,
       contractTemplatePresets,
       setEditingTemplateId,
       setTemplateDraftHtml,
@@ -134,7 +128,7 @@ export function useContractTemplateEditor({
 
   const handleSaveTemplateDraft = useCallback(async () => {
     if (!isSuperAdmin) return;
-    if (contractAndEstimateLocked) return;
+    if (packageReadOnly) return;
     const title = templateDraftTitle.trim();
     if (!title) {
       setError('Укажите имя шаблона.');
@@ -171,7 +165,7 @@ export function useContractTemplateEditor({
     setEditingTemplateId(id);
     setSelectedTemplateIds((p) => ({ ...p, [currentTab]: p[currentTab] || id }));
   }, [
-    contractAndEstimateLocked,
+    packageReadOnly,
     contractTemplatePresets,
     editingTemplateId,
     isSuperAdmin,
@@ -186,7 +180,7 @@ export function useContractTemplateEditor({
   const handleCreateTemplate = useCallback(
     (mode: 'blank' | 'copy') => {
       if (!isSuperAdmin) return;
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       const sourceHtml = mode === 'copy' ? contractTemplateSource : '<div class="docPrint"></div>';
       const id = `tpl_${Date.now()}`;
       setEditingTemplateId(id);
@@ -194,7 +188,7 @@ export function useContractTemplateEditor({
       setTemplateDraftHtml(sourceHtml);
     },
     [
-      contractAndEstimateLocked,
+      packageReadOnly,
       contractTemplateSource,
       isSuperAdmin,
       setEditingTemplateId,
@@ -205,7 +199,7 @@ export function useContractTemplateEditor({
 
   const handleDeleteTemplate = useCallback(async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
-    if (contractAndEstimateLocked) return;
+    if (packageReadOnly) return;
     const current = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     if (!current) return;
     if (current.archived) return;
@@ -246,7 +240,7 @@ export function useContractTemplateEditor({
     setTemplateDraftTitle(fallback?.title ?? '');
     setTemplateDraftHtml(fallback?.html ?? '');
   }, [
-    contractAndEstimateLocked,
+    packageReadOnly,
     contractTemplatePresets,
     editingTemplateId,
     isSuperAdmin,
@@ -259,7 +253,7 @@ export function useContractTemplateEditor({
 
   const handleSetDefaultTemplate = useCallback(async () => {
     if (!isSuperAdmin || !editingTemplateId) return;
-    if (contractAndEstimateLocked) return;
+    if (packageReadOnly) return;
     const cur = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     if (cur?.archived) {
       setError('Нельзя сделать архивный шаблон по умолчанию.');
@@ -271,7 +265,7 @@ export function useContractTemplateEditor({
     }));
     await persistContractTemplatePresets(next);
   }, [
-    contractAndEstimateLocked,
+    packageReadOnly,
     contractTemplatePresets,
     editingTemplateId,
     isSuperAdmin,
@@ -290,7 +284,7 @@ export function useContractTemplateEditor({
         selectLength?: number;
       }
     ) => {
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       const el = contractHtmlTextareaRef.current;
       const current = contractTemplateSource;
       if (!el) {
@@ -312,7 +306,7 @@ export function useContractTemplateEditor({
         el.setSelectionRange(cursor, cursor + selectLength);
       });
     },
-    [contractAndEstimateLocked, contractTemplateSource, handleContractTemplateChange]
+    [packageReadOnly, contractTemplateSource, handleContractTemplateChange]
   );
 
   const wrapSelection = useCallback(
@@ -518,7 +512,7 @@ export function useContractTemplateEditor({
 
   const insertContractPlaceholder = useCallback(
     (path: string) => {
-      if (contractAndEstimateLocked) return;
+      if (packageReadOnly) return;
       const el = contractHtmlTextareaRef.current;
       const cur = templateDraftHtml || resolveTemplateHtml('contract');
       const token = `{{${path}}}`;
@@ -536,22 +530,17 @@ export function useContractTemplateEditor({
         handleContractTemplateChange(cur + token);
       }
     },
-    [
-      contractAndEstimateLocked,
-      handleContractTemplateChange,
-      resolveTemplateHtml,
-      templateDraftHtml,
-    ]
+    [packageReadOnly, handleContractTemplateChange, resolveTemplateHtml, templateDraftHtml]
   );
 
   const handleResetContractTemplate = useCallback(() => {
-    if (contractAndEstimateLocked) return;
+    if (packageReadOnly) return;
     const t = contractTemplatePresets.find((it) => it.id === editingTemplateId);
     setTemplateDraftTitle(t?.title ?? '');
     setTemplateDraftHtml(t?.html ?? '');
     setExcelMessage(null);
   }, [
-    contractAndEstimateLocked,
+    packageReadOnly,
     contractTemplatePresets,
     editingTemplateId,
     setExcelMessage,
@@ -566,10 +555,10 @@ export function useContractTemplateEditor({
   }, [activeTab]);
 
   useEffect(() => {
-    if (contractAndEstimateLocked) {
+    if (packageReadOnly) {
       setContractDocView('preview');
     }
-  }, [contractAndEstimateLocked]);
+  }, [packageReadOnly]);
 
   useEffect(() => {
     if (contractDocView !== 'edit') {

@@ -21,7 +21,7 @@ import {
 export type PackageDataManagerPartySectionProps = Pick<
   PackageDataTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'managerSectionCompletionPercent'
   | 'managerDataSectionExpanded'
   | 'setManagerDataSectionExpanded'
@@ -29,7 +29,7 @@ export type PackageDataManagerPartySectionProps = Pick<
 
 export function PackageDataManagerPartySection({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   managerSectionCompletionPercent,
   managerDataSectionExpanded,
   setManagerDataSectionExpanded,
@@ -39,7 +39,7 @@ export function PackageDataManagerPartySection({
       <div className={styles.packageDataPartySectionHeader}>
         <div className={styles.packageDataPartySectionTitleRow}>
           <h3 className={DATA_SECTION_TITLE}>Менеджер</h3>
-          {contractAndEstimateLocked ? (
+          {signedDocsLocked ? (
             <PackageDataSectionLockInline title="Договор подписан: блок «Менеджер» только для просмотра" />
           ) : null}
         </div>

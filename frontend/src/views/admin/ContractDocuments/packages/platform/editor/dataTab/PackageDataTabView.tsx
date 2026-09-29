@@ -27,7 +27,7 @@ export function PackageDataTabView(props: PackageDataTabProps) {
             form={props.form}
             setForm={props.setForm}
             touchPackageData={props.touchPackageData}
-            contractAndEstimateLocked={props.contractAndEstimateLocked}
+            signedDocsLocked={props.signedDocsLocked}
             packageKind={props.packageKind}
             executorProfiles={props.executorProfiles}
             updateContract={props.updateContract}

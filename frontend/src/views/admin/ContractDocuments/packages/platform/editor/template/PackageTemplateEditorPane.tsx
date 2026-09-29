@@ -11,7 +11,8 @@ import { PackageTemplateDocumentPreview } from './PackageTemplateDocumentPreview
 export type PackageTemplateEditorPaneProps = {
   activeTab: PackageDocumentTabId;
   packageKind: ContractDocumentPackageKind;
-  contractAndEstimateLocked: boolean;
+  /** Полная блокировка (только «Отказ»): шаблон договора доступен для просмотра. */
+  packageReadOnly: boolean;
   renderedDoc: string;
   /** Баннер неподписанного Д/с (null — не показывать). */
   unsignedAddendumBanner: ReactNode;
@@ -22,7 +23,7 @@ export type PackageTemplateEditorPaneProps = {
 export function PackageTemplateEditorPane({
   activeTab,
   packageKind,
-  contractAndEstimateLocked,
+  packageReadOnly,
   renderedDoc,
   unsignedAddendumBanner,
   addendumSlotContent,
@@ -31,7 +32,7 @@ export function PackageTemplateEditorPane({
     <>
       {unsignedAddendumBanner}
       {addendumSlotContent}
-      {activeTab === 'contract' && contractAndEstimateLocked ? (
+      {activeTab === 'contract' && packageReadOnly ? (
         <PackageLockNotice>{packageLockNoticeMessage('contract')}</PackageLockNotice>
       ) : null}
       <PackageTemplateDocumentPreview

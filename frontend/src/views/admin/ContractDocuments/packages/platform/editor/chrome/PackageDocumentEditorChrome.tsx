@@ -24,7 +24,8 @@ export type PackageDocumentEditorChromeProps = {
   packageKind: ContractDocumentPackageKind;
   tabs: readonly PackageDocumentTabId[];
   activeTab: PackageDocumentTabId;
-  contractAndEstimateLocked: boolean;
+  /** «Счёт-заказ»/«Смета» и «Спецификация» только для просмотра (подписан/отказ). */
+  signedDocsLocked: boolean;
   unsignedAddendumOrdinals: number[];
   signedAddendumOrdinals: number[];
   form: PackageFormData;
@@ -47,7 +48,7 @@ export function PackageDocumentEditorChrome({
   packageKind,
   tabs,
   activeTab,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   unsignedAddendumOrdinals,
   signedAddendumOrdinals,
   form,
@@ -76,7 +77,7 @@ export function PackageDocumentEditorChrome({
             packageKind={packageKind}
             tabs={tabs}
             activeTab={activeTab}
-            contractAndEstimateLocked={contractAndEstimateLocked}
+            signedDocsLocked={signedDocsLocked}
             contractConcluded={packageFlowStatus === 'CONTRACT_CONCLUDED'}
             unsignedAddendumOrdinals={unsignedAddendumOrdinals}
             signedAddendumOrdinals={signedAddendumOrdinals}

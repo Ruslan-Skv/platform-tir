@@ -14,7 +14,7 @@ export type PackageDataTabProps = {
   form: PackageFormData;
   setForm: React.Dispatch<React.SetStateAction<PackageFormData>>;
   touchPackageData: () => void;
-  contractAndEstimateLocked: boolean;
+  signedDocsLocked: boolean;
   isSuperAdmin: boolean;
   isProductDirectionPackage: boolean;
   packageKind: import('@/shared/api/admin-contract-document-packages').ContractDocumentPackageKind;

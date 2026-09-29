@@ -13,7 +13,10 @@ export type UsePackageDocumentEditorTabContentShellPropsOptions = {
   activeAddendumSlot: number | null;
   packageKind: ContractDocumentPackageKind;
   packageId: string;
-  contractAndEstimateLocked: boolean;
+  /** Полная блокировка прочих вкладок — только при статусе «Отказ». */
+  packageReadOnly: boolean;
+  /** Блокировка «Счёт-заказа»/«Сметы» и «Спецификации» — после подписания или отказа. */
+  signedDocsLocked: boolean;
   /** Статус «Договор подписан»: на вкладке «Спецификация» можно прикреплять новые версии файла. */
   contractConcluded: boolean;
   renderedDoc: string | null;
@@ -31,7 +34,8 @@ export function usePackageDocumentEditorTabContentShellProps({
   activeAddendumSlot,
   packageKind,
   packageId,
-  contractAndEstimateLocked,
+  packageReadOnly,
+  signedDocsLocked,
   contractConcluded,
   renderedDoc,
   unsignedAddendumOrdinals,
@@ -68,7 +72,8 @@ export function usePackageDocumentEditorTabContentShellProps({
       activeAddendumSlot,
       packageKind,
       packageId,
-      contractAndEstimateLocked,
+      packageReadOnly,
+      signedDocsLocked,
       contractConcluded,
       renderedDoc,
       unsignedAddendumOrdinals,
@@ -85,7 +90,8 @@ export function usePackageDocumentEditorTabContentShellProps({
       activeAddendumSlot,
       packageKind,
       packageId,
-      contractAndEstimateLocked,
+      packageReadOnly,
+      signedDocsLocked,
       contractConcluded,
       renderedDoc,
       unsignedAddendumOrdinals,

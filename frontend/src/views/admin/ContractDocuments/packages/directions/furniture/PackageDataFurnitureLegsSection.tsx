@@ -30,7 +30,7 @@ import {
 type Props = Pick<
   PackageDataTabProps,
   | 'form'
-  | 'contractAndEstimateLocked'
+  | 'signedDocsLocked'
   | 'packageKind'
   | 'executorProfiles'
   | 'updateContract'
@@ -193,7 +193,7 @@ function FurnitureLegNumberControl({
 
 export function PackageDataFurnitureLegsSection({
   form,
-  contractAndEstimateLocked,
+  signedDocsLocked,
   packageKind,
   executorProfiles,
   updateContract,
@@ -201,7 +201,7 @@ export function PackageDataFurnitureLegsSection({
   setForm,
   touchPackageData,
 }: Props) {
-  const locked = contractAndEstimateLocked;
+  const locked = signedDocsLocked;
 
   const patchLeg = useCallback(
     (legId: FurniturePackageLegId, patch: Partial<PackageFormData['furniture']['manufacture']>) => {
