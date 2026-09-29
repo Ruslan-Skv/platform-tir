@@ -219,110 +219,6 @@
   cursor: not-allowed;
 }
 
-/* --- Инкассации: панель истории --- */
-
-.incassationsTable {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: var(--admin-font-size-sm, 13px);
-}
-
-.incassationsTable th,
-.incassationsTable td {
-  text-align: left;
-  padding: var(--admin-space-xs, 8px) var(--admin-space-sm, 10px);
-  border-bottom: 1px solid var(--admin-border, #e5e7eb);
-  vertical-align: top;
-}
-
-.incassationsTable th {
-  color: var(--admin-text-muted, #6b7280);
-  font-weight: 600;
-  white-space: nowrap;
-}
-
-.incassationsTable td {
-  color: var(--admin-text, #111827);
-}
-
-.incassationsAmount {
-  font-weight: 600;
-  white-space: nowrap;
-  font-variant-numeric: tabular-nums;
-}
-
-.incassationsNotes {
-  max-width: 320px;
-  color: var(--admin-text-muted, #9ca3af);
-}
-
-/* --- История инкассаций: правка и аннулирование (супер-админ) --- */
-
-.incassationRowActions {
-  display: flex;
-  align-items: center;
-  gap: var(--admin-space-2xs, 4px);
-  white-space: nowrap;
-}
-
-.incassationRowBtn,
-.incassationRowBtnDanger {
-  border: 1px solid var(--admin-border, #d1d5db);
-  background: var(--admin-surface, #fff);
-  color: var(--admin-text, #111827);
-  border-radius: var(--admin-radius-sm, 6px);
-  padding: 2px 10px;
-  font-size: var(--admin-font-size-xs, 12px);
-  line-height: 20px;
-  cursor: pointer;
-}
-
-.incassationRowBtn:hover:not(:disabled) {
-  border-color: var(--admin-primary, #2563eb);
-  color: var(--admin-primary, #2563eb);
-}
-
-.incassationRowBtnDanger {
-  color: var(--admin-danger-text, #dc2626);
-  border-color: var(--admin-danger-border, #fca5a5);
-}
-
-.incassationRowBtnDanger:hover:not(:disabled) {
-  background: var(--admin-danger-bg-soft, #fef2f2);
-}
-
-.incassationRowBtn:disabled,
-.incassationRowBtnDanger:disabled {
-  opacity: 0.6;
-  cursor: default;
-}
-
-.incassationConfirmText {
-  font-size: var(--admin-font-size-xs, 12px);
-  color: var(--admin-danger-text, #dc2626);
-}
-
-.incassationEditingRow td {
-  vertical-align: middle;
-}
-
-.incassationEditInput {
-  width: 100%;
-  min-width: 90px;
-  border: 1px solid var(--admin-border, #d1d5db);
-  border-radius: var(--admin-radius-sm, 6px);
-  background: var(--admin-surface, #fff);
-  color: var(--admin-text, #111827);
-  padding: 3px 8px;
-  font-size: var(--admin-font-size-sm, 13px);
-  font-variant-numeric: tabular-nums;
-}
-
-.incassationEditInput:focus {
-  outline: none;
-  border-color: var(--admin-primary, #2563eb);
-}
-
 /* --- Ручная запись: переключатель типа операции --- */
 
 .manualEntryKindRow {
@@ -580,12 +476,6 @@
   margin: var(--admin-space-lg, 16px) 0 var(--admin-space-sm, 8px);
 }
 
-/* Горизонтальная прокрутка широкой таблицы истории инкассаций (контент модалки не скроллится по X) */
-.incassationsTableWrap {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
 /* Мобильная версия страницы ДП */
 @media (max-width: 900px) {
   /* Плитки итогов — ровная сетка по 2 колонки на телефоне */
@@ -619,11 +509,5 @@
 
   .statsSectionTitle {
     margin-top: var(--admin-space-md, 12px);
-  }
-
-  /* Таблица истории: компактнее на узких экранах */
-  .incassationsTable th,
-  .incassationsTable td {
-    padding: var(--admin-space-2xs, 4px) var(--admin-space-xs, 8px);
   }
 }
