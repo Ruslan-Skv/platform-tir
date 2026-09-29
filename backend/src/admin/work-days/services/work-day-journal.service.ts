@@ -7,7 +7,6 @@ import {
   WorkDayStatus,
   type WorkDay,
   type WorkDayAbsence,
-  type WorkDayLeave,
   type WorkDayRequest,
 } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
@@ -18,152 +17,33 @@ import {
   getTodayDateInTimezone,
   resolveDaySchedule,
 } from '../utils/work-day.utils';
+import {
+  type ApprovedDayOffRequestRow,
+  type WorkDayLeaveMarker,
+  type WorkDayJournalListRow,
+  type WorkDayJournalRow,
+  type WorkDayJournalUser,
+  type WorkDayLeaveRow,
+  type WorkDayRequestBadge,
+  buildDayOffRow,
+  buildLeaveRow,
+  buildScheduleDayOffRow,
+  buildTruancyRow,
+  dateKey,
+} from './work-day-journal-rows';
 
-/** Короткая карточка запроса (выходной / пораньше / попозже) для строк журнала. */
-export type WorkDayRequestBadge = {
-  id: string;
-  type: WorkDayRequestType;
-  status: WorkDayRequestStatus;
-  requestDate: string;
-  proposedEndTime: string | null;
-  comment: string | null;
-  createdAt: Date;
-};
-
-export type WorkDayJournalUser = {
-  id: string;
-  email: string;
-  firstName: string | null;
-  lastName: string | null;
-  role: UserRole;
-};
-
-/** Сотрудник с офисом — источник синтетических строк журнала (выходной / прогул). */
-type ScheduleJournalUser = WorkDayJournalUser & {
-  officeId: string | null;
-  office: { id: string; name: string } | null;
-};
-
-function toJournalUser(user: ScheduleJournalUser): WorkDayJournalUser {
-  return {
-    id: user.id,
-    email: user.email,
-    firstName: user.firstName,
-    lastName: user.lastName,
-    role: user.role,
-  };
-}
-
-/**
- * Строка журнала за выходной: согласованный с руководителем (по запросу)
- * либо обычный выходной по графику сотрудника, когда явки не было.
- */
-export type WorkDayDayOffRow = {
-  id: string;
-  userId: string;
-  officeId: string | null;
-  workDate: Date;
-  status: WorkDayStatus;
-  startedAt: null;
-  endedAt: null;
-  closeReason: null;
-  autoClosedAt: null;
-  startedFromIp: null;
-  startedFromUserAgent: null;
-  endedFromIp: null;
-  lateMinutes: number;
-  earlyLeaveMinutes: number;
-  reportedEndAt: null;
-  reopenCount: number;
-  isDayOffWork: false;
-  dayOffOnly: true;
-  truancyOnly?: false;
-  leaveOnly?: false;
-  /** true — обычный выходной по графику (не согласованный запрос). */
-  bySchedule?: true;
-  office: { id: string; name: string } | null;
-  user: WorkDayJournalUser | null;
-  absences: [];
-  requests: WorkDayRequestBadge[];
-};
-
-export type WorkDayJournalRow = WorkDay & {
-  user: WorkDayJournalUser;
-  office: { id: string; name: string } | null;
-  absences: WorkDayAbsence[];
-  requests: WorkDayRequestBadge[];
-  dayOffOnly?: false;
-  truancyOnly?: false;
-  leaveOnly?: false;
-  bySchedule?: false;
-};
-
-/** Строка журнала за прошедший рабочий день по графику без явки и без согласованного выходного. */
-export type WorkDayTruancyRow = {
-  id: string;
-  userId: string;
-  officeId: string | null;
-  workDate: Date;
-  status: WorkDayStatus;
-  startedAt: null;
-  endedAt: null;
-  closeReason: null;
-  autoClosedAt: null;
-  startedFromIp: null;
-  startedFromUserAgent: null;
-  endedFromIp: null;
-  lateMinutes: number;
-  earlyLeaveMinutes: number;
-  reportedEndAt: null;
-  reopenCount: number;
-  isDayOffWork: false;
-  truancyOnly: true;
-  dayOffOnly?: false;
-  leaveOnly?: false;
-  bySchedule?: false;
-  office: { id: string; name: string } | null;
-  user: WorkDayJournalUser | null;
-  absences: [];
-  requests: WorkDayRequestBadge[];
-};
-
-/** Строка журнала за день отпуска или больничного, отмеченных суперадмином (в т.ч. задним числом). */
-export type WorkDayLeaveRow = {
-  id: string;
-  userId: string;
-  officeId: string | null;
-  workDate: Date;
-  status: WorkDayStatus;
-  startedAt: null;
-  endedAt: null;
-  closeReason: null;
-  autoClosedAt: null;
-  startedFromIp: null;
-  startedFromUserAgent: null;
-  endedFromIp: null;
-  lateMinutes: number;
-  earlyLeaveMinutes: number;
-  reportedEndAt: null;
-  reopenCount: number;
-  isDayOffWork: false;
-  leaveOnly: true;
-  leaveType: WorkDayLeaveType;
-  /** Комментарий отметки (общий на весь период отпуска/больничного). */
-  leaveComment: string | null;
-  truancyOnly?: false;
-  dayOffOnly?: false;
-  bySchedule?: false;
-  office: { id: string; name: string } | null;
-  user: WorkDayJournalUser | null;
-  absences: [];
-  requests: WorkDayRequestBadge[];
-};
-
-export type WorkDayJournalListRow =
-  | WorkDayJournalRow
-  | WorkDayDayOffRow
-  | WorkDayTruancyRow
-  | WorkDayLeaveRow;
+export type {
+  ApprovedDayOffRequestRow,
+  ScheduleJournalUser,
+  WorkDayDayOffRow,
+  WorkDayJournalListRow,
+  WorkDayJournalRow,
+  WorkDayJournalUser,
+  WorkDayLeaveMarker,
+  WorkDayLeaveRow,
+  WorkDayRequestBadge,
+  WorkDayTruancyRow,
+} from './work-day-journal-rows';
 
 export type WorkDayJournalParams = {
   dateFrom?: string;
@@ -171,10 +51,6 @@ export type WorkDayJournalParams = {
   officeId?: string;
   userId?: string;
 };
-
-function dateKey(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
 
 function toRequestBadge(row: WorkDayRequest): WorkDayRequestBadge {
   return {
@@ -374,16 +250,7 @@ export class WorkDayJournalService {
       params: WorkDayJournalParams;
       recordKeys: Set<string>;
       approvedDayOffKeys: Set<string>;
-      approvedDayOffRows: Array<
-        WorkDayRequest & {
-          user:
-            | (WorkDayJournalUser & {
-                officeId: string | null;
-                office: { id: string; name: string } | null;
-              })
-            | null;
-        }
-      >;
+      approvedDayOffRows: ApprovedDayOffRequestRow[];
       requestsByKey: Map<string, WorkDayRequestBadge[]>;
     },
   ): Promise<void> {
@@ -434,7 +301,7 @@ export class WorkDayJournalService {
         if (ctx.recordKeys.has(key)) continue;
         const leave = leaveByUserDate.get(key);
         if (leave) {
-          rows.push(this.buildLeaveRow(user, date, leave));
+          rows.push(buildLeaveRow(user, date, leave));
           continue;
         }
         if (ctx.approvedDayOffKeys.has(key)) continue;
@@ -446,16 +313,20 @@ export class WorkDayJournalService {
         );
         if (schedule.isWorkDay) {
           if (date > lastMissedDate) continue;
-          rows.push(this.buildTruancyRow(user, date, ctx.requestsByKey.get(key) ?? []));
+          rows.push(buildTruancyRow(user, date, ctx.requestsByKey.get(key) ?? []));
         } else {
-          rows.push(this.buildScheduleDayOffRow(user, date, ctx.requestsByKey.get(key) ?? []));
+          rows.push(buildScheduleDayOffRow(user, date, ctx.requestsByKey.get(key) ?? []));
         }
       }
     }
   }
 
   /** Отпуска/больничные за период: ключ «userId|дата» → отметка. */
-  private async buildLeaveMap(from: Date, to: Date, params: WorkDayJournalParams) {
+  private async buildLeaveMap(
+    from: Date,
+    to: Date,
+    params: WorkDayJournalParams,
+  ): Promise<Map<string, WorkDayLeaveMarker>> {
     const leaves = await this.prisma.workDayLeave.findMany({
       where: {
         dateFrom: { lte: to },
@@ -464,7 +335,7 @@ export class WorkDayJournalService {
         ...(params.officeId ? { user: { officeId: params.officeId } } : {}),
       },
     });
-    const map = new Map<string, Pick<WorkDayLeave, 'id' | 'type' | 'comment'>>();
+    const map = new Map<string, WorkDayLeaveMarker>();
     for (const leave of leaves) {
       const start = leave.dateFrom < from ? from : new Date(leave.dateFrom);
       const end = leave.dateTo > to ? to : new Date(leave.dateTo);
@@ -479,18 +350,9 @@ export class WorkDayJournalService {
     rows: WorkDayJournalListRow[],
     ctx: {
       recordKeys: Set<string>;
-      approvedDayOffRows: Array<
-        WorkDayRequest & {
-          user:
-            | (WorkDayJournalUser & {
-                officeId: string | null;
-                office: { id: string; name: string } | null;
-              })
-            | null;
-        }
-      >;
+      approvedDayOffRows: ApprovedDayOffRequestRow[];
     },
-    leaveByUserDate: Map<string, Pick<WorkDayLeave, 'id' | 'type' | 'comment'>> | null,
+    leaveByUserDate: Map<string, WorkDayLeaveMarker> | null,
   ): void {
     for (const row of ctx.approvedDayOffRows) {
       const badge = toRequestBadge(row);
@@ -498,148 +360,7 @@ export class WorkDayJournalService {
       if (ctx.recordKeys.has(key)) continue;
       if (leaveByUserDate?.has(key)) continue;
       ctx.recordKeys.add(key);
-      rows.push(this.buildDayOffRow(row, badge));
+      rows.push(buildDayOffRow(row, badge));
     }
-  }
-
-  private buildLeaveRow(
-    user: ScheduleJournalUser,
-    date: Date,
-    leave: Pick<WorkDayLeave, 'id' | 'type' | 'comment'>,
-  ): WorkDayLeaveRow {
-    return {
-      id: `leave-${user.id}-${dateKey(date)}`,
-      userId: user.id,
-      officeId: user.officeId,
-      workDate: new Date(date),
-      status: WorkDayStatus.CLOSED,
-      startedAt: null,
-      endedAt: null,
-      closeReason: null,
-      autoClosedAt: null,
-      startedFromIp: null,
-      startedFromUserAgent: null,
-      endedFromIp: null,
-      lateMinutes: 0,
-      earlyLeaveMinutes: 0,
-      reportedEndAt: null,
-      reopenCount: 0,
-      isDayOffWork: false,
-      leaveOnly: true,
-      leaveType: leave.type,
-      leaveComment: leave.comment,
-      office: user.office ? { id: user.office.id, name: user.office.name } : null,
-      user: toJournalUser(user),
-      absences: [],
-      requests: [],
-    };
-  }
-
-  private buildTruancyRow(
-    user: ScheduleJournalUser,
-    date: Date,
-    requests: WorkDayRequestBadge[],
-  ): WorkDayTruancyRow {
-    return {
-      id: `truancy-${user.id}-${dateKey(date)}`,
-      userId: user.id,
-      officeId: user.officeId,
-      workDate: new Date(date),
-      status: WorkDayStatus.CLOSED,
-      startedAt: null,
-      endedAt: null,
-      closeReason: null,
-      autoClosedAt: null,
-      startedFromIp: null,
-      startedFromUserAgent: null,
-      endedFromIp: null,
-      lateMinutes: 0,
-      earlyLeaveMinutes: 0,
-      reportedEndAt: null,
-      reopenCount: 0,
-      isDayOffWork: false,
-      truancyOnly: true,
-      office: user.office ? { id: user.office.id, name: user.office.name } : null,
-      user: toJournalUser(user),
-      absences: [],
-      requests,
-    };
-  }
-
-  private buildScheduleDayOffRow(
-    user: ScheduleJournalUser,
-    date: Date,
-    requests: WorkDayRequestBadge[],
-  ): WorkDayDayOffRow {
-    return {
-      id: `dayoff-${user.id}-${dateKey(date)}`,
-      userId: user.id,
-      officeId: user.officeId,
-      workDate: new Date(date),
-      status: WorkDayStatus.CLOSED,
-      startedAt: null,
-      endedAt: null,
-      closeReason: null,
-      autoClosedAt: null,
-      startedFromIp: null,
-      startedFromUserAgent: null,
-      endedFromIp: null,
-      lateMinutes: 0,
-      earlyLeaveMinutes: 0,
-      reportedEndAt: null,
-      reopenCount: 0,
-      isDayOffWork: false,
-      dayOffOnly: true,
-      bySchedule: true,
-      office: user.office ? { id: user.office.id, name: user.office.name } : null,
-      user: toJournalUser(user),
-      absences: [],
-      requests,
-    };
-  }
-
-  private buildDayOffRow(
-    row: WorkDayRequest & {
-      user:
-        | (WorkDayJournalUser & {
-            officeId: string | null;
-            office: { id: string; name: string } | null;
-          })
-        | null;
-    },
-    badge: WorkDayRequestBadge,
-  ): WorkDayDayOffRow {
-    return {
-      id: row.id,
-      userId: row.userId,
-      officeId: row.user?.officeId ?? null,
-      workDate: row.requestDate,
-      status: WorkDayStatus.CLOSED,
-      startedAt: null,
-      endedAt: null,
-      closeReason: null,
-      autoClosedAt: null,
-      startedFromIp: null,
-      startedFromUserAgent: null,
-      endedFromIp: null,
-      lateMinutes: 0,
-      earlyLeaveMinutes: 0,
-      reportedEndAt: null,
-      reopenCount: 0,
-      isDayOffWork: false,
-      dayOffOnly: true,
-      office: row.user?.office ?? null,
-      user: row.user
-        ? {
-            id: row.user.id,
-            email: row.user.email,
-            firstName: row.user.firstName,
-            lastName: row.user.lastName,
-            role: row.user.role,
-          }
-        : null,
-      absences: [],
-      requests: [badge],
-    };
   }
 }
