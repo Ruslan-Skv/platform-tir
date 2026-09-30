@@ -40,6 +40,12 @@ export type SigningSessionDocument = {
   label: string;
   fileUrl: string;
   fileName: string;
+  /** SHA-256 содержимого, отправленного заказчику (для PDF — после штампа Подрядчика). */
+  sha256?: string;
+  /** Проставлен ли штамп ПЭП Подрядчика (PDF; внешние файлы — false). */
+  stamped?: boolean;
+  /** Копия файла с отметкой о подписании заказчиком (после подписания). */
+  signedFileUrl?: string;
 };
 
 export type ContractDocumentSigningSessionCreated = {
@@ -71,6 +77,9 @@ export type ContractDocumentSigningSessionListItem = {
   rejectedAt: string | null;
   rejectionReason: string | null;
   signedName: string | null;
+  contractorLabel: string | null;
+  contractorSignatory: string | null;
+  signedPackageUrl: string | null;
   createdAt: string;
 };
 
@@ -105,6 +114,8 @@ export async function createPackageSigningSession(
     managerNote?: string;
     expiresInDays?: number;
     sendEmail?: boolean;
+    contractorLabel?: string;
+    contractorSignatory?: string;
   }
 ): Promise<ContractDocumentSigningSessionCreated> {
   const form = new FormData();
@@ -127,6 +138,8 @@ export async function createPackageSigningSession(
   if (input.managerNote) form.append('managerNote', input.managerNote);
   if (input.expiresInDays != null) form.append('expiresInDays', String(input.expiresInDays));
   if (input.sendEmail) form.append('sendEmail', 'true');
+  if (input.contractorLabel) form.append('contractorLabel', input.contractorLabel);
+  if (input.contractorSignatory) form.append('contractorSignatory', input.contractorSignatory);
 
   const res = await fetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/signing-sessions`,
@@ -176,6 +189,22 @@ export async function cancelPackageSigningSession(
   if (!res.ok) {
     const text = await res.text().catch(() => '');
     throw new Error(parseApiErrorMessage(text, 'Не удалось отозвать ссылку'));
+  }
+  return (await res.json()) as ContractDocumentSigningSessionListItem;
+}
+
+/** (Пере)генерация подписанных копий с отметками ЭП и единого PDF-комплекта. */
+export async function finalizePackageSigningSession(
+  packageId: string,
+  sessionId: string
+): Promise<ContractDocumentSigningSessionListItem> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/signing-sessions/${sessionId}/finalize`,
+    { method: 'POST', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    const text = await res.text().catch(() => '');
+    throw new Error(parseApiErrorMessage(text, 'Не удалось сформировать подписанный комплект'));
   }
   return (await res.json()) as ContractDocumentSigningSessionListItem;
 }

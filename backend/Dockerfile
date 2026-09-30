@@ -93,6 +93,9 @@ RUN npx prisma generate
 # Copy built application
 COPY --from=builder /app/dist ./dist
 
+# Fonts for PDF stamps (remote signing ПЭП): Roboto TTF under assets/fonts
+COPY assets ./assets
+
 # Create uploads directory (backend stores files here)
 RUN mkdir -p uploads
 

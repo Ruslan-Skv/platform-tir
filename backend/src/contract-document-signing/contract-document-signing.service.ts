@@ -3,6 +3,7 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
@@ -18,6 +19,7 @@ import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
 import { ContractConcludedNotifyService } from '../contract-concluded-notify/contract-concluded-notify.service';
 import { ContractSigningNotifyService } from './contract-signing-notify.service';
+import { SigningStampService, formatMsp } from './signing-stamp.service';
 import { type SigningSessionDocumentMeta } from './signing-session-documents';
 
 export type { SigningSessionDocumentMeta } from './signing-session-documents';
@@ -38,6 +40,16 @@ function randomOtpCode(): string {
   return String(crypto.randomInt(100000, 999999));
 }
 
+/** Профили (реквизиты/подписанты) хранятся в html-колонке как JSON {items: [...]}. */
+function parseProfileItems(html: string): Array<Record<string, unknown>> {
+  try {
+    const parsed = JSON.parse(html) as { items?: unknown };
+    return Array.isArray(parsed?.items) ? (parsed.items as Array<Record<string, unknown>>) : [];
+  } catch {
+    return [];
+  }
+}
+
 /** Прикреплена ли к пакету смета (расчёт): estimate.selectedPresetId / selectedPresetIds. */
 function hasAttachedRepairEstimate(formData: unknown): boolean {
   if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return false;
@@ -53,6 +65,8 @@ function hasAttachedRepairEstimate(formData: unknown): boolean {
 
 @Injectable()
 export class ContractDocumentSigningService {
+  private readonly logger = new Logger(ContractDocumentSigningService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly config: ConfigService,
@@ -60,6 +74,7 @@ export class ContractDocumentSigningService {
     private readonly contractNumbering: ContractDocumentNumberingService,
     private readonly signingNotify: ContractSigningNotifyService,
     private readonly contractConcludedNotify: ContractConcludedNotifyService,
+    private readonly stamp: SigningStampService,
   ) {}
 
   private siteUrl(): string {
@@ -177,6 +192,59 @@ export class ContractDocumentSigningService {
     }
   }
 
+  /**
+   * Реквизиты Подрядчика для штампа ПЭП: из запроса менеджера, иначе — первый глобальный
+   * профиль реквизитов/подписантов направления (хранилище страниц «Реквизиты» и «Подписанты»).
+   */
+  private async resolveContractorInfo(
+    kind: ContractDocumentPackageKind,
+    input: { contractorLabel?: string | null; contractorSignatory?: string | null },
+  ): Promise<{ contractorLabel: string | null; contractorSignatory: string | null }> {
+    let contractorLabel = input.contractorLabel?.trim() || null;
+    let contractorSignatory = input.contractorSignatory?.trim() || null;
+    if (contractorLabel && contractorSignatory) {
+      return { contractorLabel, contractorSignatory };
+    }
+    try {
+      if (!contractorLabel) {
+        const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+          where: { kind_tab: { kind, tab: 'executor_profiles' } },
+          select: { html: true },
+        });
+        const first = row ? parseProfileItems(row.html)[0] : undefined;
+        if (first) {
+          const name = String(first.companyName || first.title || '').trim();
+          const inn = first.inn ? String(first.inn).trim() : '';
+          contractorLabel = [name, inn ? `ИНН ${inn}` : null].filter(Boolean).join(', ') || null;
+        }
+      }
+      if (!contractorSignatory) {
+        const row = await this.prisma.contractDocumentGlobalTemplate.findUnique({
+          where: { kind_tab: { kind, tab: 'signatory_profiles' } },
+          select: { html: true },
+        });
+        const first = row ? parseProfileItems(row.html)[0] : undefined;
+        if (first) {
+          const name = String(first.directorNameNominative || '').trim();
+          const basis = first.basis ? String(first.basis).trim() : '';
+          if (name) contractorSignatory = [name, basis].filter(Boolean).join(', ');
+        }
+      }
+    } catch (err) {
+      this.logger.warn(`Профили Подрядчика недоступны: ${(err as Error).message}`);
+    }
+    return { contractorLabel, contractorSignatory };
+  }
+
+  private async managerDisplayName(userId: string | null): Promise<string | null> {
+    if (!userId) return null;
+    const manager = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { firstName: true, lastName: true },
+    });
+    return [manager?.lastName, manager?.firstName].filter(Boolean).join(' ') || null;
+  }
+
   async createSession(input: {
     packageId: string;
     createdById: string | null;
@@ -187,6 +255,8 @@ export class ContractDocumentSigningService {
     managerNote?: string | null;
     expiresInDays?: number;
     sendEmail?: boolean;
+    contractorLabel?: string | null;
+    contractorSignatory?: string | null;
   }) {
     const pkg = await this.prisma.contractDocumentPackage.findFirst({
       where: { id: input.packageId, deletedAt: null },
@@ -235,6 +305,12 @@ export class ContractDocumentSigningService {
     const expiresAt = new Date(Date.now() + days * 24 * 60 * 60 * 1000);
     const otpExpiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
 
+    const { contractorLabel, contractorSignatory } = await this.resolveContractorInfo(pkg.kind, {
+      contractorLabel: input.contractorLabel,
+      contractorSignatory: input.contractorSignatory,
+    });
+    const managerName = await this.managerDisplayName(input.createdById);
+
     const session = await this.prisma.contractDocumentSigningSession.create({
       data: {
         packageId: input.packageId,
@@ -248,9 +324,33 @@ export class ContractDocumentSigningService {
         otpCodeHash: sha256Hex(otpCode),
         otpExpiresAt,
         expiresAt,
+        contractorLabel,
+        contractorSignatory,
         createdById: input.createdById,
       },
     });
+
+    // Штамп ПЭП Подрядчика на отправляемых PDF + фиксация SHA-256 состава документов.
+    // Ошибка штамповки не должна ломать отправку — документы уйдут без отметки.
+    let documents = input.documents;
+    try {
+      documents = await this.stamp.applyContractorStamps(input.documents, {
+        sessionId: session.id,
+        contractorLabel,
+        contractorSignatory,
+        managerName,
+        sentAt: session.createdAt,
+        siteUrl: this.siteUrl(),
+      });
+      await this.prisma.contractDocumentSigningSession.update({
+        where: { id: session.id },
+        data: { documents: documents as unknown as Prisma.InputJsonValue },
+      });
+    } catch (err) {
+      this.logger.error(
+        `Штамп Подрядчика не проставлен (сессия ${session.id}): ${(err as Error).message}`,
+      );
+    }
 
     try {
       await this.contractNumbering.softReserveNumbersForSigning({
@@ -271,7 +371,7 @@ export class ContractDocumentSigningService {
       sentAt: session.createdAt.toISOString(),
       expiresAt: expiresAt.toISOString(),
       signedAt: null,
-      documentCount: input.documents.length,
+      documentCount: documents.length,
     });
 
     let emailSent = false;
@@ -282,7 +382,7 @@ export class ContractDocumentSigningService {
         signUrl,
         otpCode,
         expiresAt,
-        documentLabels: input.documents.map((d) => d.label),
+        documentLabels: documents.map((d) => d.label),
       });
     }
 
@@ -296,7 +396,7 @@ export class ContractDocumentSigningService {
       customerEmail: session.customerEmail,
       customerPhone: session.customerPhone,
       customerName: session.customerName,
-      documents: input.documents,
+      documents,
       emailSent,
     };
   }
@@ -352,6 +452,9 @@ export class ContractDocumentSigningService {
     rejectedAt: Date | null;
     rejectionReason: string | null;
     signedName: string | null;
+    contractorLabel: string | null;
+    contractorSignatory: string | null;
+    signedPackageUrl: string | null;
     createdAt: Date;
   }) {
     return {
@@ -369,6 +472,9 @@ export class ContractDocumentSigningService {
       rejectedAt: row.rejectedAt?.toISOString() ?? null,
       rejectionReason: row.rejectionReason,
       signedName: row.signedName,
+      contractorLabel: row.contractorLabel,
+      contractorSignatory: row.contractorSignatory,
+      signedPackageUrl: row.signedPackageUrl,
       createdAt: row.createdAt.toISOString(),
     };
   }
@@ -552,6 +658,17 @@ export class ContractDocumentSigningService {
       signedName,
     });
 
+    // Отметки Заказчика на документах, протокол и единый подписанный комплект.
+    // Подпись уже зафиксирована — ошибка финализации не должна её отменять (комплект
+    // можно (пере)сформировать кнопкой в админке).
+    try {
+      await this.finalizeSignedArtifacts(updated.id);
+    } catch (err) {
+      this.logger.error(
+        `Не удалось сформировать подписанный комплект (сессия ${updated.id}): ${(err as Error).message}`,
+      );
+    }
+
     return this.getPublicSession(token);
   }
 
@@ -590,5 +707,119 @@ export class ContractDocumentSigningService {
     });
 
     return this.getPublicSession(token);
+  }
+
+  /** (Пере)генерация подписанных копий и единого комплекта для админки (в т.ч. легаси-сессий). */
+  async finalizeSession(packageId: string, sessionId: string) {
+    const row = await this.prisma.contractDocumentSigningSession.findFirst({
+      where: { id: sessionId, packageId },
+    });
+    if (!row) throw new NotFoundException('Сессия не найдена');
+    if (row.status !== ContractDocumentSigningSessionStatus.SIGNED) {
+      throw new BadRequestException('Комплект формируется только для подписанных сессий');
+    }
+    await this.finalizeSignedArtifacts(sessionId);
+    const fresh = await this.prisma.contractDocumentSigningSession.findUnique({
+      where: { id: sessionId },
+    });
+    if (!fresh) throw new NotFoundException('Сессия не найдена');
+    return this.toAdminDto(fresh);
+  }
+
+  /**
+   * Финализация подписанной сессии: копии документов с отметкой ПЭП Заказчика,
+   * лист-протокол, единый PDF-комплект и письмо клиенту со вложением.
+   */
+  private async finalizeSignedArtifacts(sessionId: string): Promise<void> {
+    const row = await this.prisma.contractDocumentSigningSession.findUnique({
+      where: { id: sessionId },
+      include: { package: { select: { title: true } } },
+    });
+    if (!row || row.status !== ContractDocumentSigningSessionStatus.SIGNED) return;
+
+    const artifacts = await this.stamp.buildSignedArtifacts({
+      sessionId: row.id,
+      documents: (Array.isArray(row.documents)
+        ? row.documents
+        : []) as SigningSessionDocumentMeta[],
+      packageTitle: row.package.title ?? 'Договор',
+      customerName: row.customerName,
+      customerPhone: row.customerPhone,
+      customerEmail: row.customerEmail,
+      contractorLabel: row.contractorLabel,
+      contractorSignatory: row.contractorSignatory,
+      signedName: row.signedName,
+      createdAt: row.createdAt,
+      viewedAt: row.viewedAt,
+      signedAt: row.signedAt,
+      signedIp: row.signedIp,
+      signedUserAgent: row.signedUserAgent,
+      siteUrl: this.siteUrl(),
+    });
+
+    await this.prisma.contractDocumentSigningSession.update({
+      where: { id: row.id },
+      data: {
+        documents: artifacts.documents as unknown as Prisma.InputJsonValue,
+        signedPackageUrl: artifacts.signedPackageUrl,
+      },
+    });
+
+    if (row.customerEmail) {
+      await this.sendSignedPackageEmail({
+        to: row.customerEmail,
+        customerName: row.customerName,
+        signedName: row.signedName,
+        signedAt: row.signedAt ?? row.createdAt,
+        packageTitle: row.package.title ?? 'Договор',
+        packageBuffer: artifacts.packageBuffer,
+        documentLabels: artifacts.documents.map((d) => d.label),
+      });
+    }
+  }
+
+  /** Письмо «Документы подписаны» с копией подписанного комплекта во вложении. */
+  private async sendSignedPackageEmail(input: {
+    to: string;
+    customerName: string | null;
+    signedName: string | null;
+    signedAt: Date;
+    packageTitle: string;
+    packageBuffer: Buffer;
+    documentLabels: string[];
+  }): Promise<boolean> {
+    const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
+    const name = input.customerName?.trim() || 'Здравствуйте';
+    const docs = input.documentLabels.map((l) => `• ${l}`).join('\n');
+    const when = formatMsp(input.signedAt);
+    // Почтовые серверы режут вложения за ~20–25 МБ — очень крупные комплекты не вкладываем.
+    const attachments =
+      input.packageBuffer.length <= 14 * 1024 * 1024
+        ? [
+            {
+              filename: 'Podpisannye_dokumenty.pdf',
+              content: input.packageBuffer,
+              contentType: 'application/pdf',
+            },
+          ]
+        : [];
+    const tail =
+      'Копия подписанного комплекта с отметками о подписании и протоколом — во вложении. Подписанный комплект также хранится на сайте.';
+    try {
+      await this.mailer.sendMail({
+        from: `"Договоры" <${from}>`,
+        to: input.to,
+        subject: `Документы подписаны — ${input.packageTitle}`,
+        text: `${name}!\n\nДокументы подписаны простой электронной подписью${input.signedName ? ` (${input.signedName})` : ''}.\nДата и время подписания: ${when}\n\nПодписанные документы:\n${docs}\n\n${tail}`,
+        html: `<p>${name}!</p><p>Документы подписаны простой электронной подписью${input.signedName ? ` (${input.signedName})` : ''}. Дата и время подписания: <strong>${when}</strong>.</p><p>Подписанные документы:</p><ul>${input.documentLabels.map((l) => `<li>${l}</li>`).join('')}</ul><p>${tail}</p>`,
+        attachments,
+      });
+      return true;
+    } catch (err) {
+      this.logger.error(
+        `Не удалось отправить письмо с подписанным комплектом (${input.to}): ${(err as Error).message}`,
+      );
+      return false;
+    }
   }
 }

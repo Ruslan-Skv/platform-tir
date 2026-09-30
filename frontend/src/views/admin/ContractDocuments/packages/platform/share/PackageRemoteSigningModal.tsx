@@ -50,6 +50,28 @@ function buildSigningShareMessage(created: ContractDocumentSigningSessionCreated
   return lines.join('\n');
 }
 
+/** Реквизиты Подрядчика для штампа ПЭП на документах («ООО «…», ИНН …»). */
+function buildContractorLabel(executor: {
+  companyName?: string;
+  inn?: string;
+}): string | undefined {
+  const company = executor.companyName?.trim();
+  const inn = executor.inn?.trim();
+  const label = [company || null, inn ? `ИНН ${inn}` : null].filter(Boolean).join(', ');
+  return label || undefined;
+}
+
+/** Подписант со стороны Подрядчика для штампа ПЭП (ФИО + основание). */
+function buildContractorSignatory(executor: {
+  directorNameNominative?: string;
+  basis?: string;
+}): string | undefined {
+  const name = executor.directorNameNominative?.trim();
+  const basis = executor.basis?.trim();
+  const label = [name || null, basis || null].filter(Boolean).join(', ');
+  return label || undefined;
+}
+
 export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreated }: Props) {
   const [ctx, setCtx] = useState<PackageCustomerShareContext | null>(null);
   const [selectedTabs, setSelectedTabs] = useState<PackageDocumentTabId[]>([]);
@@ -217,6 +239,8 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         customerPhone: phone,
         customerEmail: email,
         sendEmail: sendEmail && Boolean(email.trim()),
+        contractorLabel: buildContractorLabel(ctx.form.executor),
+        contractorSignatory: buildContractorSignatory(ctx.form.executor),
       });
       setCreated(result);
       onCreated?.();
@@ -268,8 +292,9 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         {!created ? (
           <>
             <p data-modal-form-hint style={{ marginTop: 0 }}>
-              Заказчик получит ссылку для просмотра PDF и код подтверждения. После ввода кода
-              договор будет отмечен как подписанный.
+              Заказчик получит ссылку для просмотра PDF и код подтверждения. На документы будет
+              поставлена отметка (штамп) о подписании со стороны Подрядчика, а после ввода кода
+              заказчиком — отметка о подписании ПЭП и итоговый протокол.
             </p>
             {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
             {ctx && !loading ? (

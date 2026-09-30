@@ -43,6 +43,10 @@ type CreateBody = {
   managerNote?: string;
   expiresInDays?: string;
   sendEmail?: string;
+  /** Реквизиты Подрядчика для штампа ПЭП («ООО «…», ИНН …»). Если пусто — глобальный профиль направления. */
+  contractorLabel?: string;
+  /** Подписант со стороны Подрядчика для штампа ПЭП (ФИО + основание). */
+  contractorSignatory?: string;
 };
 
 @Controller('admin/contract-document-packages')
@@ -99,11 +103,19 @@ export class ContractDocumentSigningAdminController {
       managerNote: body.managerNote,
       expiresInDays,
       sendEmail,
+      contractorLabel: body.contractorLabel?.trim().slice(0, 300) || null,
+      contractorSignatory: body.contractorSignatory?.trim().slice(0, 300) || null,
     });
   }
 
   @Post(':packageId/signing-sessions/:sessionId/cancel')
   cancel(@Param('packageId') packageId: string, @Param('sessionId') sessionId: string) {
     return this.signing.cancelSession(packageId, sessionId);
+  }
+
+  /** (Пере)генерация подписанных копий с отметками ЭП и единого PDF-комплекта. */
+  @Post(':packageId/signing-sessions/:sessionId/finalize')
+  finalize(@Param('packageId') packageId: string, @Param('sessionId') sessionId: string) {
+    return this.signing.finalizeSession(packageId, sessionId);
   }
 }

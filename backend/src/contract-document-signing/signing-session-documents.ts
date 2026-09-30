@@ -7,6 +7,12 @@ export type SigningSessionDocumentMeta = {
   label: string;
   fileUrl: string;
   fileName: string;
+  /** SHA-256 содержимого, отправленного Заказчику (для PDF — после штампа Подрядчика). */
+  sha256?: string;
+  /** Проставлен ли штамп ПЭП Подрядчика (true — PDF; внешние файлы направляются как есть). */
+  stamped?: boolean;
+  /** Копия файла с отметкой о подписании Заказчиком (заполняется после подписания). */
+  signedFileUrl?: string;
 };
 
 const BLOCKED_FILE_EXTENSIONS =
