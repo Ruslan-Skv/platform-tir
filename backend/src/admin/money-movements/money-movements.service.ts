@@ -9,6 +9,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { ManagerIncassationsService } from './manager-incassations.service';
 import { serializeMoneyMovement } from './money-movement-serialize';
+import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
   PACKAGE_DIRECTION_REGISTRY.map((d) => [d.kind, d.name]),
@@ -72,6 +73,7 @@ export class MoneyMovementsService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly incassations: ManagerIncassationsService,
+    private readonly salesTotalsNotify: SalesTotalsNotifyService,
   ) {}
 
   async findAll(params?: {
@@ -332,6 +334,7 @@ export class MoneyMovementsService {
           direction: pkg ? (PACKAGE_KIND_DIRECTION_NAME[pkg.kind] ?? pkg.kind) : null,
         },
       });
+      this.salesTotalsNotify.onSalesChanged();
     } catch (error) {
       this.logger.error(
         `ДП: не удалось записать движение по оплате ${payment.id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -395,6 +398,7 @@ export class MoneyMovementsService {
           ...(managerId ? { managerId } : {}),
         },
       });
+      this.salesTotalsNotify.onSalesChanged();
     } catch (error) {
       this.logger.error(
         `ДП: не обновить движение по оплате ${payment.id}: ${error instanceof Error ? error.message : String(error)}`,
@@ -406,6 +410,7 @@ export class MoneyMovementsService {
   async removeBySourceId(sourceId: string): Promise<void> {
     try {
       await this.prisma.moneyMovement.deleteMany({ where: { sourceId } });
+      this.salesTotalsNotify.onSalesChanged();
     } catch (error) {
       this.logger.error(
         `ДП: не удалить движение по оплате ${sourceId}: ${error instanceof Error ? error.message : String(error)}`,

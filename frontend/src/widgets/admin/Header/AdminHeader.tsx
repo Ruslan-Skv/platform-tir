@@ -37,6 +37,7 @@ import {
   getAdminBellMyWorkDayRequestReviews,
   getAdminBellNotificationHistory,
   getAdminBellRepairScheduleNotifications,
+  getAdminBellSalesTotalsNotifications,
   getAdminBellTrainingNotifications,
   getAdminBellWaybillNotifications,
   getAdminBellWorkDayNotifications,
@@ -55,6 +56,7 @@ import type {
   AdminBellMessengerNotification,
   AdminBellNotificationHistoryItem,
   AdminBellRepairScheduleNotification,
+  AdminBellSalesTotalsNotification,
   AdminBellTrainingNotification,
   AdminBellWaybillNotification,
   AdminBellWorkDayNotification,
@@ -110,6 +112,7 @@ import {
   messengerToBellNotificationItem,
   repairScheduleToBellNotificationItem,
   reviewToBellNotificationItem,
+  salesTotalsToBellNotificationItem,
   supportToBellNotificationItem,
   trainingToBellNotificationItem,
   waybillToBellNotificationItem,
@@ -196,6 +199,9 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
   const [incassationNotifications, setIncassationNotifications] = useState<
     AdminBellIncassationNotification[]
   >([]);
+  const [salesTotalsNotifications, setSalesTotalsNotifications] = useState<
+    AdminBellSalesTotalsNotification[]
+  >([]);
   const [calendarNotifications, setCalendarNotifications] = useState<
     AdminBellCalendarNotification[]
   >([]);
@@ -232,6 +238,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     furnitureSchedules: number;
     measurements: number;
     incassations: number;
+    salesTotals: number;
     calendar: number;
     messenger: number;
     kanban: number;
@@ -405,6 +412,10 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         settings?.notifyOnIncassations !== false
           ? getAdminBellIncassationNotifications(20)
           : Promise.resolve([] as AdminBellIncassationNotification[]);
+      const loadSalesTotals =
+        settings?.notifyOnSalesTotals !== false
+          ? getAdminBellSalesTotalsNotifications(20)
+          : Promise.resolve([] as AdminBellSalesTotalsNotification[]);
       const loadCalendar = hasAccess('admin.calendar')
         ? getAdminBellCalendarNotifications(20)
         : Promise.resolve([] as AdminBellCalendarNotification[]);
@@ -448,6 +459,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedulesResult,
         measurementsResult,
         incassationsResult,
+        salesTotalsResult,
         calendarResult,
         messengerResult,
         kanbanResult,
@@ -475,6 +487,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         loadFurnitureSchedules,
         loadMeasurements,
         loadIncassations,
+        loadSalesTotals,
         loadCalendar,
         loadMessenger,
         loadKanban,
@@ -520,6 +533,8 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         measurementsResult.status === 'fulfilled' ? (measurementsResult.value ?? []) : [];
       const newIncassations =
         incassationsResult.status === 'fulfilled' ? (incassationsResult.value ?? []) : [];
+      const newSalesTotals =
+        salesTotalsResult.status === 'fulfilled' ? (salesTotalsResult.value ?? []) : [];
       const newCalendar = calendarResult.status === 'fulfilled' ? (calendarResult.value ?? []) : [];
       const newMessenger =
         messengerResult.status === 'fulfilled' ? (messengerResult.value ?? []) : [];
@@ -543,6 +558,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         furnitureSchedules: newFurnitureSchedules.length,
         measurements: newMeasurements.length,
         incassations: newIncassations.length,
+        salesTotals: newSalesTotals.length,
         calendar: newCalendar.length,
         messenger: newMessenger.length,
         kanban: newKanban.length,
@@ -563,6 +579,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
         newFurnitureSchedules.length +
         newMeasurements.length +
         newIncassations.length +
+        newSalesTotals.length +
         newCalendar.length +
         newMessenger.length +
         newKanban.length +
@@ -581,6 +598,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
           prev.furnitureSchedules +
           prev.measurements +
           prev.incassations +
+          prev.salesTotals +
           prev.calendar +
           prev.messenger +
           prev.kanban +
@@ -632,6 +650,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
             ...newFurnitureSchedules.map(furnitureScheduleToBellNotificationItem),
             ...newMeasurements.map(measurementToBellNotificationItem),
             ...newIncassations.map(incassationToBellNotificationItem),
+            ...newSalesTotals.map(salesTotalsToBellNotificationItem),
             ...newCalendar.map(calendarToBellNotificationItem),
             ...newMessenger.map(messengerToBellNotificationItem),
             ...newKanban.map(kanbanToBellNotificationItem),
@@ -660,6 +679,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
       setFurnitureScheduleNotifications(newFurnitureSchedules);
       setMeasurementNotifications(newMeasurements);
       setIncassationNotifications(newIncassations);
+      setSalesTotalsNotifications(newSalesTotals);
       setCalendarNotifications(newCalendar);
       setMessengerNotifications(newMessenger);
       setKanbanNotifications(newKanban);
@@ -844,6 +864,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
     ...furnitureScheduleNotifications.map(furnitureScheduleToBellNotificationItem),
     ...measurementNotifications.map(measurementToBellNotificationItem),
     ...incassationNotifications.map(incassationToBellNotificationItem),
+    ...salesTotalsNotifications.map(salesTotalsToBellNotificationItem),
     ...calendarNotifications.map(calendarToBellNotificationItem),
     ...messengerNotifications.map(messengerToBellNotificationItem),
     ...kanbanNotifications.map(kanbanToBellNotificationItem),

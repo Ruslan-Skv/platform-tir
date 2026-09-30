@@ -189,6 +189,11 @@ export class UpdateAdminNotificationsDto {
   @IsBoolean()
   notifyOnIncassations?: boolean;
 
+  @ApiPropertyOptional({ description: 'Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)' })
+  @IsOptional()
+  @IsBoolean()
+  notifyOnSalesTotals?: boolean;
+
   @ApiPropertyOptional({
     description: 'Роль для профиля настроек (null/default = для всех, ADMIN, MODERATOR и т.д.)',
   })

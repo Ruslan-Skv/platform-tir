@@ -32,6 +32,7 @@ export const READER_NOTIFY_EVENT_KEYS = [
   'notifyOnContractConcludedBlinds',
   'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
+  'notifyOnSalesTotals',
 ] as const;
 
 type DeliveryOverlay = {
@@ -96,6 +97,7 @@ export class AdminNotificationSettingsReaderService {
       notifyOnContractConcludedBlinds: true,
       notifyOnContractConcludedFurniture: true,
       notifyOnIncassations: true,
+      notifyOnSalesTotals: true,
     };
   }
 

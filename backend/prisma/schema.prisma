@@ -167,6 +167,7 @@ model User {
   contractConcludedBellEvents             ContractConcludedBellEvent[]
   measurementBellEvents                   MeasurementBellEvent[]
   managerIncassationBellEvents            ManagerIncassationBellEvent[]
+  salesTotalBellEvents                    SalesTotalBellEvent[]
   waybillTaskAttachmentsUploaded          WaybillTaskAttachment[]                  @relation("WaybillTaskAttachmentUploadedBy")
   driverDeliveryAvailability              DriverDeliveryAvailability?
   installationSchedulesCompleted          InstallationScheduleEntry[]              @relation("InstallationScheduleCompletedBy")
@@ -2768,6 +2769,7 @@ model UserAdminNotificationOverride {
   notifyOnContractConcludedBlinds    Boolean  @default(true) // Договор подписан — Жалюзи
   notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
   notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
+  notifyOnSalesTotals                Boolean  @default(true) // Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)
   updatedAt                          DateTime @updatedAt
   user                               User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -2854,6 +2856,7 @@ model AdminNotificationsBlock {
   notifyOnContractConcludedBlinds    Boolean  @default(true) // Договор подписан — Жалюзи
   notifyOnContractConcludedFurniture Boolean  @default(true) // Договор подписан — Мебель
   notifyOnIncassations               Boolean  @default(true) // Инкассации наличных (журнал ДП)
+  notifyOnSalesTotals                Boolean  @default(true) // Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)
   updatedAt                          DateTime @updatedAt
 
   @@map("admin_notifications_block")
@@ -3691,6 +3694,38 @@ model ManagerIncassationBellEvent {
   @@index([recipientId, createdAt])
   @@index([incassationId])
   @@map("manager_incassation_bell_events")
+}
+
+/// События «Итоги продаж — N млн ₽» для колокольчика (при пересечении рубежа за месяц).
+model SalesTotalBellEvent {
+  id          String   @id @default(cuid())
+  recipientId String
+  /// Месяц итогов «YYYY-MM».
+  periodMonth String
+  /// Пересечённый рубеж в миллионах (1, 2, 3, …).
+  millions    Int
+  title       String
+  message     String   @db.Text
+  href        String
+  createdAt   DateTime @default(now())
+
+  recipient User @relation(fields: [recipientId], references: [id], onDelete: Cascade)
+
+  /// Один рубеж одному получателю в месяц — защита от дублей при гонках проверок.
+  @@unique([recipientId, periodMonth, millions])
+  @@index([recipientId, createdAt])
+  @@map("sales_total_bell_events")
+}
+
+/// Состояние миллионных рубежей итоговых продаж (по месяцам «YYYY-MM»).
+model SalesTotalMilestoneState {
+  /// Месяц «YYYY-MM».
+  periodMonth          String   @id
+  /// Сколько рубежей уже пройдено и отправлено (1 млн, 2 млн, …).
+  lastNotifiedMillions Int      @default(0)
+  updatedAt            DateTime @updatedAt
+
+  @@map("sales_total_milestone_state")
 }
 
 /// Выставленные счета на оплату по договорам (единая нумерация по всей организации).

@@ -117,6 +117,10 @@ const EVENT_TOGGLES: EventToggle[] = [
   { key: 'notifyOnContractConcludedFurniture', label: 'Договор подписан — Мебель' },
   { key: 'notifyOnIncassations', label: 'Инкассации наличных (журнал ДП)' },
   {
+    key: 'notifyOnSalesTotals',
+    label: 'Итоги продаж — каждый 1 млн ₽ за месяц (журнал ДП)',
+  },
+  {
     key: 'notifyOnKnowledgeFeedback',
     label: 'Ошибки и предложения по обучающей платформе',
     superAdminOnly: true,

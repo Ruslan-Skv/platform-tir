@@ -7,6 +7,7 @@ import { ManualEntriesService } from './manual-entries.service';
 import { ManagerIncassationsService } from './manager-incassations.service';
 import { MoneyMovementsController } from './money-movements.controller';
 import { MoneyMovementsService } from './money-movements.service';
+import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 
 @Module({
   imports: [DatabaseModule, BellPushModule],
@@ -16,6 +17,7 @@ import { MoneyMovementsService } from './money-movements.service';
     ManualEntriesService,
     IncassationNotifyService,
     ManagerIncassationsService,
+    SalesTotalsNotifyService,
   ],
   exports: [MoneyMovementsService],
 })

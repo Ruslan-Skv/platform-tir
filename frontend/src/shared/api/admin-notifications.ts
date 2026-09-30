@@ -42,6 +42,7 @@ export interface AdminNotificationsSettings {
   notifyOnContractConcludedBlinds: boolean;
   notifyOnContractConcludedFurniture: boolean;
   notifyOnIncassations: boolean;
+  notifyOnSalesTotals: boolean;
   /** События, разрешённые для роли супер-админом; false — событие роли недоступно. */
   allowedEvents?: Partial<Record<MyNotifyEventKey, boolean>>;
 }
@@ -93,6 +94,7 @@ const MY_NOTIFY_EVENT_KEYS = [
   'notifyOnContractConcludedBlinds',
   'notifyOnContractConcludedFurniture',
   'notifyOnIncassations',
+  'notifyOnSalesTotals',
 ] as const;
 
 export type MyNotifyEventKey = (typeof MY_NOTIFY_EVENT_KEYS)[number];
@@ -290,6 +292,7 @@ export async function updateAdminNotificationsSettingsByUser(
     notifyOnContractConcludedBlinds: data.notifyOnContractConcludedBlinds,
     notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
+    notifyOnSalesTotals: data.notifyOnSalesTotals,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings/by-user/${userId}`, {
     method: 'PATCH',
@@ -354,6 +357,7 @@ export async function updateAdminNotificationsSettings(
     notifyOnContractConcludedBlinds: data.notifyOnContractConcludedBlinds,
     notifyOnContractConcludedFurniture: data.notifyOnContractConcludedFurniture,
     notifyOnIncassations: data.notifyOnIncassations,
+    notifyOnSalesTotals: data.notifyOnSalesTotals,
   };
   const res = await apiFetch(`${API_URL}/admin/notifications/settings`, {
     method: 'PATCH',
@@ -691,6 +695,28 @@ export async function getAdminBellIncassationNotifications(
     headers: getAdminAuthHeaders(),
   });
   if (!res.ok) throw new Error('Не удалось загрузить уведомления по инкассациям');
+  const data = await res.json();
+  return Array.isArray(data) ? data : [];
+}
+
+export type AdminBellSalesTotalsNotification = {
+  id: string;
+  periodMonth: string;
+  millions: number;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export async function getAdminBellSalesTotalsNotifications(
+  limit = 20
+): Promise<AdminBellSalesTotalsNotification[]> {
+  const params = new URLSearchParams({ limit: String(limit) });
+  const res = await apiFetch(`${API_URL}/admin/notifications/bell/sales-totals?${params}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) throw new Error('Не удалось загрузить уведомления по итогам продаж');
   const data = await res.json();
   return Array.isArray(data) ? data : [];
 }

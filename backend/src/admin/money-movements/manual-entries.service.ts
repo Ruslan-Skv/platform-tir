@@ -14,6 +14,7 @@ import {
 } from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
+import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 import {
   DP_TRASH_RETENTION_DAYS,
   DP_TRASH_RETENTION_MS,
@@ -31,7 +32,10 @@ const TRASH_INCLUDE = {
 
 @Injectable()
 export class ManualEntriesService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly salesTotalsNotify: SalesTotalsNotifyService,
+  ) {}
 
   /**
    * Ручная запись (проводка) в журнале ДП: изъятие из кассы (amount < 0, например на бытовые
@@ -78,6 +82,7 @@ export class ManualEntriesService {
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
+    this.salesTotalsNotify.onSalesChanged();
     return serializeMoneyMovement(row);
   }
 
@@ -153,6 +158,7 @@ export class ManualEntriesService {
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
+    this.salesTotalsNotify.onSalesChanged();
     return serializeMoneyMovement(row);
   }
 
@@ -190,6 +196,7 @@ export class ManualEntriesService {
       data: { deletedAt: new Date(), deletedById: user.id },
       include: TRASH_INCLUDE,
     });
+    this.salesTotalsNotify.onSalesChanged();
     return serializeMoneyMovementTrash(row);
   }
 

@@ -24,6 +24,7 @@ export type AdminBellNotificationType =
   | 'contractSigning'
   | 'contractConcluded'
   | 'incassations'
+  | 'salesTotals'
   | 'calendar'
   | 'messenger'
   | 'kanban';
@@ -131,6 +132,16 @@ export type AdminBellMeasurementNotification = {
 export type AdminBellIncassationNotification = {
   id: string;
   incassationId: string;
+  title: string;
+  message: string;
+  href: string;
+  occurredAt: string;
+};
+
+export type AdminBellSalesTotalsNotification = {
+  id: string;
+  periodMonth: string;
+  millions: number;
   title: string;
   message: string;
   href: string;
@@ -439,6 +450,18 @@ export function incassationToBellNotificationItem(
   };
 }
 
+export function salesTotalsToBellNotificationItem(
+  item: AdminBellSalesTotalsNotification
+): AdminBellNotificationItem {
+  return {
+    type: 'salesTotals',
+    id: item.id,
+    date: item.occurredAt,
+    link: item.href || '/admin/dp',
+    text: item.message ? `${item.title}: ${item.message}` : item.title,
+  };
+}
+
 export function calendarToBellNotificationItem(
   item: AdminBellCalendarNotification
 ): AdminBellNotificationItem {
@@ -612,6 +635,11 @@ export function isNotificationItemEnabled(
     return isBellTypeEnabled(item.type, settings);
   }
 
+  if (item.type === 'salesTotals') {
+    // Рассылка всем с включённым чекбоксом — без требования доступа к журналу ДП.
+    return isBellTypeEnabled(item.type, settings);
+  }
+
   if (item.type === 'calendar') {
     return hasAccess('admin.calendar') && isBellTypeEnabled(item.type, settings);
   }
@@ -687,6 +715,8 @@ export function isBellTypeEnabled(
       );
     case 'incassations':
       return settings.notifyOnIncassations !== false;
+    case 'salesTotals':
+      return settings.notifyOnSalesTotals !== false;
     case 'calendar':
       return true;
     case 'messenger':
@@ -811,6 +841,12 @@ export function buildDesktopNotification(item: AdminBellNotificationItem): {
     case 'incassations':
       return {
         title: 'Инкассация',
+        body: item.text,
+        tag,
+      };
+    case 'salesTotals':
+      return {
+        title: 'Итоги продаж',
         body: item.text,
         tag,
       };

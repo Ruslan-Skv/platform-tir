@@ -42,6 +42,7 @@ import { AdminBellRepairScheduleFeedService } from './admin-bell-repair-schedule
 import { AdminBellFurnitureScheduleFeedService } from './admin-bell-furniture-schedule-feed.service';
 import { AdminBellMeasurementFeedService } from './services/admin-bell-measurement-feed.service';
 import { AdminBellIncassationFeedService } from './services/admin-bell-incassation-feed.service';
+import { AdminBellSalesTotalsFeedService } from './services/admin-bell-sales-totals-feed.service';
 import { AdminBellCalendarFeedService } from './admin-bell-calendar-feed.service';
 import { AdminBellMessengerFeedService } from './admin-bell-messenger-feed.service';
 import { AdminBellKanbanFeedService } from './admin-bell-kanban-feed.service';
@@ -83,6 +84,7 @@ export class AdminNotificationsController {
     private readonly bellFurnitureScheduleFeed: AdminBellFurnitureScheduleFeedService,
     private readonly bellMeasurementFeed: AdminBellMeasurementFeedService,
     private readonly bellIncassationFeed: AdminBellIncassationFeedService,
+    private readonly bellSalesTotalsFeed: AdminBellSalesTotalsFeedService,
     private readonly bellCalendarFeed: AdminBellCalendarFeedService,
     private readonly bellMessengerFeed: AdminBellMessengerFeedService,
     private readonly bellKanbanFeed: AdminBellKanbanFeedService,
@@ -250,6 +252,16 @@ export class AdminNotificationsController {
   getBellIncassationFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
     const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
     return this.bellIncassationFeed.listForUser(req.user.id, take);
+  }
+
+  @SkipThrottle()
+  @Get('bell/sales-totals')
+  @ApiOperation({
+    summary: 'События «Итоги продаж — N млн ₽» для колокольчика (персонально)',
+  })
+  getBellSalesTotalsFeed(@Req() req: RequestWithUser, @Query('limit') limit?: string) {
+    const take = Math.min(50, Math.max(1, limit ? parseInt(limit, 10) : 20));
+    return this.bellSalesTotalsFeed.listForUser(req.user.id, take);
   }
 
   @SkipThrottle()

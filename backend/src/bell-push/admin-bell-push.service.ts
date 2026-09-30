@@ -36,6 +36,7 @@ export type AdminBellPushEvent =
   | 'contract_concluded_blinds'
   | 'contract_concluded_furniture'
   | 'incassation'
+  | 'sales_totals'
   | 'calendar_event'
   | 'messenger_message'
   | 'kanban_card';
@@ -125,6 +126,7 @@ export class AdminBellPushService {
       notifyOnContractConcludedBlinds?: boolean;
       notifyOnContractConcludedFurniture?: boolean;
       notifyOnIncassations?: boolean;
+      notifyOnSalesTotals?: boolean;
     },
     role: string,
   ) {
@@ -186,6 +188,8 @@ export class AdminBellPushService {
         return settings.notifyOnContractConcludedFurniture !== false;
       case 'incassation':
         return settings.notifyOnIncassations !== false;
+      case 'sales_totals':
+        return settings.notifyOnSalesTotals !== false;
       case 'calendar_event':
         return true;
       case 'messenger_message':

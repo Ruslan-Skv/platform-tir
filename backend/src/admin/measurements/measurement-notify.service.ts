@@ -18,6 +18,8 @@ type MeasurementNotifyData = {
   id: string;
   managerId: string;
   surveyorId: string | null;
+  /** Основное направление замера — подставляется в заголовок «Новый замер — <направление>». */
+  direction: { name: string | null } | null;
   customerName: string;
   customerAddress: string | null;
   executionDate: Date | null;
@@ -70,7 +72,12 @@ export class MeasurementNotifyService {
     measurement: MeasurementNotifyData,
     actorUserId?: string,
   ): Promise<void> {
-    const title = KIND_LABELS[kind];
+    // «Новый замер — Ремонт / Двери / …» — направление подставляем только при создании.
+    const directionName = measurement.direction?.name?.trim();
+    const title =
+      kind === 'created' && directionName
+        ? `${KIND_LABELS[kind]} — ${directionName}`
+        : KIND_LABELS[kind];
     const message = this.buildMessage(measurement);
     // Рассылка всем сотрудникам с включённым чекбоксом события
     // («Новый замер» — отдельная настройка от статусов замера).
