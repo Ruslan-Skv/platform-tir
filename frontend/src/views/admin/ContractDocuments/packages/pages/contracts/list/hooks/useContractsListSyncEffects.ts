@@ -14,6 +14,7 @@ export type UseContractsListSyncEffectsParams = {
   dateFrom: string;
   dateTo: string;
   listViewMode: ContractsListViewMode;
+  epSigned: boolean;
   /** Пока данные не загружены, не трогаем восстановленные из localStorage page/фильтры. */
   loading: boolean;
   setPage: (page: number) => void;
@@ -36,6 +37,7 @@ export function useContractsListSyncEffects({
   dateFrom,
   dateTo,
   listViewMode,
+  epSigned,
   loading,
   setPage,
   setExpandedObjectIds,
@@ -61,6 +63,7 @@ export function useContractsListSyncEffects({
       dateFrom,
       dateTo,
       listViewMode,
+      epSigned,
     ]);
     const isFirstRun = prevFiltersSignatureRef.current === null;
     const changed = prevFiltersSignatureRef.current !== signature;
@@ -77,6 +80,7 @@ export function useContractsListSyncEffects({
     dateFrom,
     dateTo,
     listViewMode,
+    epSigned,
     setPage,
     setExpandedObjectIds,
   ]);

@@ -98,6 +98,8 @@ export interface ContractDocumentPackage {
   payments?: Array<{ amount: string | number }>;
   /** Число записей в журнале версий (для списка). Создание пакета всегда добавляет версию 1. */
   _count?: { versions: number };
+  /** В списке пакетов: есть подписанные (SIGNED) сессии дистанционного подписания ЭП. */
+  hasSignedSigningSessions?: boolean;
 }
 
 export type ContractDocumentPackagePaymentForm =
@@ -174,6 +176,14 @@ export interface ContractDocumentPackageVersionListItem {
 
 export type ExecutorRequisiteKind = 'COMPANY' | 'ENTREPRENEUR';
 
+/** QR-код для оплаты: картинка + заголовок блока для заказчика. */
+export interface ExecutorPaymentQr {
+  /** Картинка QR-кода (относительная ссылка `/uploads/...`). */
+  url: string;
+  /** Заголовок на странице подписания; пустой — «Оплата по QR-коду». */
+  title?: string;
+}
+
 export interface ExecutorRequisiteProfile {
   title: string;
   /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП, КПП обычно не применяется */
@@ -196,6 +206,8 @@ export interface ExecutorRequisiteProfile {
   requisitesPdfUrl?: string;
   /** Исходное имя PDF-файла (для подписи ссылки). */
   requisitesPdfName?: string;
+  /** QR-коды для оплаты (до двух), каждый со своим заголовком. */
+  paymentQrs?: ExecutorPaymentQr[];
 }
 
 /** Реквизиты исполнителя в PDF; файл сохраняется на сервере, в ответе — относительный `fileUrl`. */
@@ -208,6 +220,29 @@ export async function uploadExecutorRequisitesPdf(
   delete headers['Content-Type'];
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/executor-profiles/upload-requisites-pdf`,
+    {
+      method: 'POST',
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    },
+    FILE_UPLOAD_TIMEOUT_MS
+  );
+  if (!res.ok) {
+    throw new Error(await readAdminContractPackagesError(res));
+  }
+  return res.json() as Promise<{ fileUrl: string; fileName: string }>;
+}
+
+/** QR-код для оплаты исполнителя (картинка); файл сохраняется на сервере, в ответе — относительный `fileUrl`. */
+export async function uploadExecutorPaymentQr(
+  file: File
+): Promise<{ fileUrl: string; fileName: string }> {
+  const body = new FormData();
+  body.append('file', file);
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/executor-profiles/upload-payment-qr`,
     {
       method: 'POST',
       headers: { ...headers, Accept: 'application/json' },
@@ -390,6 +425,8 @@ export type GetContractDocumentPackagesParams = {
   countsMyDirectionIds?: string[];
   /** Явно запросить paginated-ответ (также включается при page). */
   paginated?: boolean;
+  /** Только пакеты с подписанными (SIGNED) сессиями ЭП. */
+  epSigned?: boolean;
 };
 
 export type ContractDocumentPackagesListCounts = {
@@ -457,6 +494,7 @@ export async function getContractDocumentPackagesPage(
     qs.set('countsMyDirectionIds', [...new Set(params.countsMyDirectionIds)].join(','));
   }
   if (params.paginated || params.page != null) qs.set('paginated', '1');
+  if (params.epSigned) qs.set('epSigned', '1');
   const query = qs.toString();
   const url = `${base}/admin/contract-document-packages${query ? `?${query}` : ''}`;
   const res = await apiFetch(url, { headers: getAdminAuthHeaders() });

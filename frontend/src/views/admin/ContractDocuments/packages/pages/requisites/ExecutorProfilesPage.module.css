@@ -212,6 +212,15 @@
   flex-shrink: 0;
 }
 
+.qrPreview {
+  width: 96px;
+  height: 96px;
+  object-fit: contain;
+  border: 1px solid rgb(17 24 39 / 0.12);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: #fff;
+}
+
 .pdfChip {
   display: inline-flex;
   align-items: center;

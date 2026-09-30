@@ -1750,3 +1750,30 @@
   border-color: var(--admin-info-light, #60a5fa);
   background: var(--admin-overlay-color-136, rgb(37 99 235 / 0.14));
 }
+
+/* Кнопка «ЭП»: золотой фон, если у договора есть подписанные через ЭП документы.
+   Двойной класс перебивает фон .button из AdminTableIconButton при любом порядке стилей. */
+.epSignedGold.epSignedGold {
+  background: #e7b93c;
+  border-color: #c29a2a;
+  color: #4a3a05;
+}
+
+.epSignedGold.epSignedGold:hover:not(:disabled) {
+  background: #dba92e;
+  border-color: #ad8f22;
+  color: #4a3a05;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .epSignedGold.epSignedGold {
+  background: #c9971d;
+  border-color: #8a6713;
+  color: #241a00;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .epSignedGold.epSignedGold:hover:not(:disabled) {
+  background: #d9a72e;
+  border-color: #a87f18;
+  color: #241a00;
+}

@@ -6,6 +6,7 @@ import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract
 import {
   type ContractDocumentSigningSessionCreated,
   createPackageSigningSession,
+  listPackageSigningSessions,
   remoteSigningStatusLabel,
 } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
@@ -89,6 +90,9 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     name: string;
   } | null>(null);
   const [includeRequisitesPdf, setIncludeRequisitesPdf] = useState(true);
+  const [paymentQrs, setPaymentQrs] = useState<Array<{ url: string; title: string }>>([]);
+  const [includePaymentQr, setIncludePaymentQr] = useState(false);
+  const [signedTabs, setSignedTabs] = useState<Set<string>>(new Set());
   const abortRef = useRef(false);
 
   useEffect(() => {
@@ -99,6 +103,8 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     setBusy(false);
     setExecutorRequisitesPdf(null);
     setIncludeRequisitesPdf(true);
+    setPaymentQrs([]);
+    setIncludePaymentQr(false);
     setLoading(true);
     void loadPackageCustomerShareContext(packageId)
       .then(async (next) => {
@@ -133,6 +139,17 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
               name: profile.requisitesPdfName || 'Реквизиты.pdf',
             });
           }
+          if (profile?.paymentQrs?.length) {
+            if (abortRef.current) return;
+            setPaymentQrs(
+              profile.paymentQrs
+                .map((qr) => ({ url: (qr.url ?? '').trim(), title: (qr.title ?? '').trim() }))
+                .filter((qr) => qr.url)
+                .slice(0, 2)
+            );
+            // QR у исполнителя есть — «Отправить ссылку на оплату» включена по умолчанию.
+            setIncludePaymentQr(true);
+          }
         } catch {
           // Справочник реквизитов недоступен — просто не прикладываем PDF.
         }
@@ -147,6 +164,30 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
       });
     return () => {
       abortRef.current = true;
+    };
+  }, [isOpen, packageId]);
+
+  // Какие документы уже подписаны заказчиком по ЭП — для бейджа «подписан ЭП»
+  // в перечне. Источник — подписанные (SIGNED) сессии дистанционного подписания.
+  useEffect(() => {
+    if (!isOpen || !packageId) return;
+    setSignedTabs(new Set());
+    let aborted = false;
+    void listPackageSigningSessions(packageId)
+      .then((sessions) => {
+        if (aborted) return;
+        const tabs = new Set<string>();
+        for (const session of sessions) {
+          if (session.status !== 'SIGNED') continue;
+          for (const doc of session.documents) tabs.add(doc.tabId);
+        }
+        setSignedTabs(tabs);
+      })
+      .catch(() => {
+        // История подписания недоступна — показываем перечень без бейджей.
+      });
+    return () => {
+      aborted = true;
     };
   }, [isOpen, packageId]);
 
@@ -248,6 +289,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         sendEmail: sendEmail && Boolean(email.trim()),
         contractorLabel: buildContractorLabel(ctx.form.executor),
         contractorSignatory: buildContractorSignatory(ctx.form.executor),
+        ...(includePaymentQr && paymentQrs.length > 0 ? { paymentQrs } : {}),
       });
       setCreated(result);
       onCreated?.();
@@ -347,6 +389,9 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                         />
                         <span>
                           {doc.label}
+                          {signedTabs.has(doc.tabId) ? (
+                            <span className={styles.signedBadge}>подписан ЭП</span>
+                          ) : null}
                           {doc.isExternalFile ? (
                             <span className={styles.docItemHint}>
                               {doc.externalFileUrls?.length
@@ -358,27 +403,49 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                       </label>
                     );
                   })}
-                  {executorRequisitesPdf ? (
-                    <label
-                      className={`${styles.docItem}${
-                        includeRequisitesPdf ? ` ${styles.docItemSelected}` : ''
-                      }`}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={includeRequisitesPdf}
-                        onChange={(e) => setIncludeRequisitesPdf(e.target.checked)}
-                      />
-                      <span>
-                        Карточка с реквизитами исполнителя
-                        <span className={styles.docItemHint}>
-                          {' '}
-                          (PDF: {executorRequisitesPdf.name})
-                        </span>
-                      </span>
-                    </label>
-                  ) : null}
                 </div>
+                {executorRequisitesPdf ? (
+                  <label
+                    className={`${styles.docItem}${
+                      includeRequisitesPdf ? ` ${styles.docItemSelected}` : ''
+                    }`}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={includeRequisitesPdf}
+                      onChange={(e) => setIncludeRequisitesPdf(e.target.checked)}
+                    />
+                    <span>
+                      Приложить карточку с реквизитами исполнителя
+                      {signedTabs.has('executorRequisites') ? (
+                        <span className={styles.signedBadge}>подписан ЭП</span>
+                      ) : null}
+                      <span className={styles.docItemHint}>
+                        {' '}
+                        (PDF: {executorRequisitesPdf.name}) — для ознакомления, подписания не
+                        требует
+                      </span>
+                    </span>
+                  </label>
+                ) : null}
+                <label className={styles.docItem}>
+                  <input
+                    type="checkbox"
+                    checked={includePaymentQr && paymentQrs.length > 0}
+                    disabled={paymentQrs.length === 0}
+                    onChange={(e) => setIncludePaymentQr(e.target.checked)}
+                  />
+                  <span>
+                    Отправить ссылку на оплату
+                    <span className={styles.docItemHint}>
+                      {paymentQrs.length > 0
+                        ? ` — заказчик увидит на странице подписания: ${paymentQrs
+                            .map((qr) => qr.title || 'QR-код')
+                            .join(' · ')}`
+                        : ' — к карточке исполнителя не прикреплён QR-код (справочник «Реквизиты»)'}
+                    </span>
+                  </span>
+                </label>
               </div>
             ) : null}
 

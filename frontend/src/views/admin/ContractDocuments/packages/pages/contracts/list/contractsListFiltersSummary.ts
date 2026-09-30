@@ -30,6 +30,8 @@ export type BuildContractsListFiltersSummaryParams = {
   dateFrom: string;
   dateTo: string;
   limit: ContractsPageLimit;
+  /** Только договоры с подписанными через ЭП документами. */
+  epSigned?: boolean;
 };
 
 const SCOPE_LABELS: Record<ContractsListScope, string> = {
@@ -79,6 +81,10 @@ export function buildContractsListFiltersSummary(
       return direction ? contractsListDirectionSummaryLabel(direction) : id;
     });
     items.push({ key: 'directions', label: `Направление: ${names.join(', ')}` });
+  }
+
+  if (params.epSigned) {
+    items.push({ key: 'ep_signed', label: 'Подписание: подписаны ЭП' });
   }
 
   const searchTrim = params.search.trim();

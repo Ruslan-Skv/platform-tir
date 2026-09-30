@@ -3828,6 +3828,8 @@ model ContractDocumentSigningSession {
   contractorLabel     String?
   /// Подписант со стороны Подрядчика (ФИО + основание) для штампа при отправке.
   contractorSignatory String?
+  /// QR-коды для оплаты (до 2: [{ url, title }]) из карточки исполнителя; показываются заказчику на странице подписания.
+  paymentQrs          Json?
   /// Путь к единому PDF подписанного комплекта (документы с отметками + протокол).
   signedPackageUrl    String?
   createdById         String?

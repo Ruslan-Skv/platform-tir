@@ -216,7 +216,12 @@ function PackageMobileCard({
         </AdminTableIconButton>
         <AdminTableIconButton
           disabled={actionsDisabled}
-          title="Отправить на дистанционное подписание"
+          className={pkg.hasSignedSigningSessions ? cdHub.epSignedGold : undefined}
+          title={
+            pkg.hasSignedSigningSessions
+              ? 'Отправить на дистанционное подписание (есть подписанные через ЭП документы)'
+              : 'Отправить на дистанционное подписание'
+          }
           aria-label={`Отправить на подписание (договор ${num})`}
           onClick={() => onOpenRemoteSigning(pkg.id)}
         >

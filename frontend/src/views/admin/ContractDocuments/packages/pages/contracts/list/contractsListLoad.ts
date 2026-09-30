@@ -72,6 +72,8 @@ export async function loadContractsListData(params?: {
   page?: number;
   limit?: number;
   listViewMode?: ContractsListViewMode;
+  /** Только договоры с подписанными через ЭП документами. */
+  epSigned?: boolean;
 }): Promise<ContractsListLoadResult> {
   try {
     await autoSyncContractDocumentObjects();
@@ -152,6 +154,7 @@ export async function loadContractsListData(params?: {
     sortOrder: params?.sortOrder ?? 'desc',
     page,
     limit,
+    epSigned: params?.epSigned ? true : undefined,
     includeCounts: true,
     countsUserId: params?.currentUserId ?? undefined,
     countsMyDirectionIds: myScopeDirectionIds.length > 0 ? myScopeDirectionIds : undefined,

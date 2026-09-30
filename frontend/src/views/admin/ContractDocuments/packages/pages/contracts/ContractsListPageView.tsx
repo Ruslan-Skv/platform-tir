@@ -64,6 +64,7 @@ export function ContractsListPageView({
         dateFrom={filters.dateFrom}
         dateTo={filters.dateTo}
         limit={filters.limit}
+        epSigned={filters.epSigned}
       >
         <ContractsListFiltersBar
           loading={load.loading}
@@ -94,6 +95,8 @@ export function ContractsListPageView({
             filters.setLimit(nextLimit);
             filters.setPage(1);
           }}
+          epSigned={filters.epSigned}
+          onEpSignedChange={filters.setEpSigned}
         />
       </ContractsListFiltersPanel>
 

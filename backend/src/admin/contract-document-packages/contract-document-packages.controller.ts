@@ -244,6 +244,7 @@ export class ContractDocumentPackagesController {
     @Query('countsUserId') countsUserId?: string,
     @Query('countsMyDirectionIds') countsMyDirectionIdsRaw?: string,
     @Query('paginated') paginatedRaw?: string,
+    @Query('epSigned') epSignedRaw?: string,
   ) {
     const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
     const k = kind && allowed.has(kind) ? (kind as ContractDocumentPackageKind) : undefined;
@@ -296,6 +297,7 @@ export class ContractDocumentPackagesController {
       includeCountsRaw === '1' || includeCountsRaw === 'true' || includeCountsRaw === 'yes';
     const paginated =
       paginatedRaw === '1' || paginatedRaw === 'true' || paginatedRaw === 'yes' || page != null;
+    const epSigned = epSignedRaw === '1' || epSignedRaw === 'true' || epSignedRaw === 'yes';
 
     return this.service.findAll({
       kind: k,
@@ -316,6 +318,7 @@ export class ContractDocumentPackagesController {
       countsUserId: countsUserId?.trim() || undefined,
       countsMyDirectionIds,
       paginated,
+      epSigned,
     });
   }
 
@@ -568,6 +571,49 @@ export class ContractDocumentPackagesController {
     }),
   )
   uploadExecutorRequisitesPdf(@UploadedFile() file: Express.Multer.File) {
+    if (!file?.path) {
+      throw new BadRequestException('Файл не загружен');
+    }
+    const filename = path.basename(file.path);
+    return {
+      fileUrl: `/uploads/contract-document-packages/executor-requisites/${filename}`,
+      fileName: decodeMultipartFilename(file.originalname),
+    };
+  }
+
+  /** QR-код для оплаты исполнителя (карточка на странице «Реквизиты»). */
+  @Post('executor-profiles/upload-payment-qr')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: diskStorage({
+        destination: (_req, _file, cb) => {
+          if (!fs.existsSync(executorRequisitesDir)) {
+            fs.mkdirSync(executorRequisitesDir, { recursive: true });
+          }
+          cb(null, executorRequisitesDir);
+        },
+        filename: (_req, file, cb) => {
+          const ext =
+            path.extname(decodeMultipartFilename(file.originalname)).toLowerCase() || '.png';
+          const unique = `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+          cb(null, `executor-payment-qr-${unique}${ext}`);
+        },
+      }),
+      limits: { fileSize: 10 * 1024 * 1024 },
+      fileFilter: (_req, file, cb) => {
+        const ext = path.extname(decodeMultipartFilename(file.originalname)).toLowerCase();
+        const mime = (file.mimetype || '').toLowerCase();
+        const isImage =
+          ['.png', '.jpg', '.jpeg', '.webp'].includes(ext) || mime.startsWith('image/');
+        if (!isImage) {
+          cb(new BadRequestException('Можно загрузить только картинку (PNG, JPG, WebP).'), false);
+          return;
+        }
+        cb(null, true);
+      },
+    }),
+  )
+  uploadExecutorPaymentQr(@UploadedFile() file: Express.Multer.File) {
     if (!file?.path) {
       throw new BadRequestException('Файл не загружен');
     }

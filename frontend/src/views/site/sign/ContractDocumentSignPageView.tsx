@@ -171,6 +171,47 @@ export function ContractDocumentSignPageView() {
         ))}
       </ul>
 
+      {session.paymentQrs && session.paymentQrs.length > 0 ? (
+        <div className={styles.paymentQrList} aria-label="Оплата по QR-коду">
+          {session.paymentQrs.map((qr, index) => (
+            <div
+              className={styles.paymentQrBox}
+              key={`${qr.url}-${index}`}
+              aria-label={qr.title?.trim() || 'Оплата по QR-коду'}
+            >
+              <a
+                className={styles.paymentQrLink}
+                href={publicUploadUrl(qr.url)}
+                target="_blank"
+                rel="noopener noreferrer"
+                title="Открыть картинку с QR-кодом"
+              >
+                <img
+                  className={styles.paymentQrImg}
+                  src={publicUploadUrl(qr.url)}
+                  alt={qr.title?.trim() || 'QR-код для оплаты'}
+                />
+              </a>
+              <div className={styles.paymentQrText}>
+                <strong>{qr.title?.trim() || 'Оплата по QR-коду'}</strong>
+                <p>
+                  Наведите камеру телефона на QR-код — откроется оплата. Картинку можно{' '}
+                  <a
+                    className={styles.link}
+                    href={publicUploadUrl(qr.url)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    открыть отдельно
+                  </a>
+                  .
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      ) : null}
+
       {session.status === 'SIGNED' ? (
         <div className={styles.successBox} role="status">
           Документы подписаны

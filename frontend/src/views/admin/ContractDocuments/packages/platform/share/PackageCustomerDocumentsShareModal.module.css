@@ -78,6 +78,25 @@
   font-size: var(--admin-font-size-xs, 0.75rem);
 }
 
+.signedBadge {
+  display: inline-flex;
+  align-items: center;
+  margin-left: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  vertical-align: middle;
+  white-space: nowrap;
+  background: rgb(34 197 94 / 0.16);
+  color: #15803d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .signedBadge {
+  background: rgb(74 222 128 / 0.18);
+  color: rgb(134 239 172);
+}
+
 @media (max-width: 640px) {
   .docList {
     max-height: min(36vh, 14rem);

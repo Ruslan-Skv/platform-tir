@@ -47,6 +47,8 @@ type ContractsListFiltersBarProps = {
   onDateToChange: (value: string) => void;
   limit: ContractsPageLimit;
   onLimitChange: (limit: ContractsPageLimit) => void;
+  epSigned: boolean;
+  onEpSignedChange: (value: boolean) => void;
 };
 
 function chipClass(active: boolean): string {
@@ -79,6 +81,8 @@ export function ContractsListFiltersBar({
   onDateToChange,
   limit,
   onLimitChange,
+  epSigned,
+  onEpSignedChange,
 }: ContractsListFiltersBarProps) {
   const showManagerFilter = listScope !== 'mine';
 
@@ -170,6 +174,28 @@ export function ContractsListFiltersBar({
             </button>
           );
         })}
+      </div>
+
+      <div className={cdHub.contractsListChipRow} role="group" aria-label="Подписание">
+        <span className={cdHub.contractsListChipRowLabel}>Подписание</span>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(!epSigned)}
+          onClick={() => onEpSignedChange(false)}
+          title="Все договоры, независимо от подписания ЭП"
+        >
+          Все
+        </button>
+        <button
+          type="button"
+          disabled={loading}
+          className={chipClass(epSigned)}
+          onClick={() => onEpSignedChange(true)}
+          title="Только договоры, у которых хотя бы один документ подписан через ЭП (золотая кнопка «ЭП»)"
+        >
+          Подписаны ЭП
+        </button>
       </div>
 
       <div className={cdHub.contractsListChipRow} role="group" aria-label="Режим списка">

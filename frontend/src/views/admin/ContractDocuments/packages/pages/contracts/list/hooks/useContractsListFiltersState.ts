@@ -55,6 +55,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
   const [expandedObjectIds, setExpandedObjectIds] = useState<string[]>(
     initialListFiltersRef.current.expandedObjectIds
   );
+  const [epSigned, setEpSignedState] = useState(initialListFiltersRef.current.epSigned);
 
   const searchNorm = normalizeContractsListSearch(search);
   const queuePreset = resolveContractsListQueuePreset(statusFilters);
@@ -65,7 +66,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     directionFilters.length > 0 ||
     dateFrom ||
     dateTo ||
-    listScope !== 'all'
+    listScope !== 'all' ||
+    epSigned
   );
 
   const setListScope = useCallback((scope: ContractsListScope) => {
@@ -89,6 +91,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     setListViewMode(saved.listViewMode);
     setPage(saved.page);
     setExpandedObjectIds(saved.expandedObjectIds);
+    setEpSignedState(saved.epSigned);
     listFiltersHydratedRef.current = true;
   }, []);
 
@@ -124,6 +127,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
       listViewMode,
       expandedObjectIds,
       page,
+      epSigned,
     });
   }, [
     search,
@@ -140,6 +144,7 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     listViewMode,
     expandedObjectIds,
     page,
+    epSigned,
   ]);
 
   const handleListSortChange = useCallback(
@@ -193,6 +198,11 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     );
   }, []);
 
+  const setEpSigned = useCallback((next: boolean) => {
+    setEpSignedState(next);
+    setScopeTouched(true);
+  }, []);
+
   return {
     search,
     setSearch,
@@ -220,6 +230,8 @@ export function useContractsListFiltersState(currentUserRole: string | null | un
     expandedObjectIds,
     setExpandedObjectIds,
     toggleExpandedObjectId,
+    epSigned,
+    setEpSigned,
     searchNorm,
     hasActiveFilters,
     handleListSortChange,

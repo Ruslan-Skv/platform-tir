@@ -35,6 +35,7 @@ export function useContractsListLoad(
     sortOrder: ContractsListSortOrder;
     page: number;
     limit: number;
+    epSigned: boolean;
   }
 ) {
   const [loading, setLoading] = useState(true);
@@ -73,6 +74,7 @@ export function useContractsListLoad(
         sortOrder: params.sortOrder,
         page: params.page,
         limit: params.limit,
+        epSigned: params.epSigned,
       });
       setRows(data.rows);
       setTotal(data.total);
@@ -104,6 +106,7 @@ export function useContractsListLoad(
     params.sortOrder,
     params.page,
     params.limit,
+    params.epSigned,
     refreshTrashCount,
   ]);
 

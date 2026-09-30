@@ -49,6 +49,24 @@ function randomOtpCode(): string {
   return String(crypto.randomInt(100000, 999999));
 }
 
+/** QR-коды для оплаты: не более двух, с обрезанными заголовками; пустые записи отбрасываем. */
+function normalizePaymentQrs(
+  qrs: Array<{ url: string; title?: string | null }> | null | undefined,
+): Array<{ url: string; title: string }> {
+  if (!Array.isArray(qrs)) return [];
+  return qrs
+    .slice(0, 2)
+    .map((qr) => ({
+      url: String(qr?.url ?? '')
+        .trim()
+        .slice(0, 320),
+      title: String(qr?.title ?? '')
+        .trim()
+        .slice(0, 120),
+    }))
+    .filter((qr) => qr.url.length > 0);
+}
+
 /** Прикреплена ли к пакету смета (расчёт): estimate.selectedPresetId / selectedPresetIds. */
 function hasAttachedRepairEstimate(formData: unknown): boolean {
   if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return false;
@@ -127,6 +145,8 @@ export class ContractDocumentSigningService {
     sendEmail?: boolean;
     contractorLabel?: string | null;
     contractorSignatory?: string | null;
+    /** QR-коды для оплаты (до 2) из карточки исполнителя; показываются заказчику на странице подписания. */
+    paymentQrs?: Array<{ url: string; title?: string | null }> | null;
   }) {
     const pkg = await this.prisma.contractDocumentPackage.findFirst({
       where: { id: input.packageId, deletedAt: null },
@@ -210,6 +230,7 @@ export class ContractDocumentSigningService {
         expiresAt,
         contractorLabel,
         contractorSignatory,
+        paymentQrs: normalizePaymentQrs(input.paymentQrs) as unknown as Prisma.InputJsonValue,
         createdById: input.createdById,
       },
     });
@@ -387,6 +408,12 @@ export class ContractDocumentSigningService {
       signedAt: row.signedAt?.toISOString() ?? null,
       rejectedAt: row.rejectedAt?.toISOString() ?? null,
       signedName: row.signedName,
+      paymentQrs: normalizePaymentQrs(
+        (Array.isArray(row.paymentQrs) ? row.paymentQrs : []) as Array<{
+          url: string;
+          title?: string | null;
+        }>,
+      ),
       documents: documents.map((d) => ({
         tabId: d.tabId,
         label: d.label,

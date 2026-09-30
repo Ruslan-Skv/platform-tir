@@ -1,5 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
+import {
+  ContractDocumentPackageKind,
+  ContractDocumentPackageStatus,
+  ContractDocumentSigningSessionStatus,
+} from '@prisma/client';
 
 import { PrismaService } from '../../../database/prisma.service';
 import { contractDocumentPackageInclude } from '../contract-package.include';
@@ -48,6 +52,8 @@ export type ContractDocumentPackageFindAllFilters = {
    * false/undefined без page → legacy массив (обратная совместимость).
    */
   paginated?: boolean;
+  /** Только пакеты, у которых есть подписанные (SIGNED) сессии дистанционного подписания ЭП. */
+  epSigned?: boolean;
 };
 
 export type ContractDocumentPackageListCounts = {
@@ -211,7 +217,24 @@ export class ContractDocumentPackageListService {
       dateTo,
     };
 
-    let filtered = annotated.filter((item) => matchesExact(item, baseOpts));
+    // Пакеты, у которых хотя бы один документ подписан через ЭП: флаг «ЭП» в списке и фильтр epSigned.
+    const signedSigningPackageIds = new Set(
+      (
+        await this.prisma.contractDocumentSigningSession.findMany({
+          where: { status: ContractDocumentSigningSessionStatus.SIGNED },
+          select: { packageId: true },
+          distinct: ['packageId'],
+        })
+      ).map((row) => row.packageId),
+    );
+    const withSigningFlag = (pkg: Row) => ({
+      ...pkg,
+      hasSignedSigningSessions: signedSigningPackageIds.has(pkg.id),
+    });
+
+    let filtered = annotated
+      .filter((item) => matchesExact(item, baseOpts))
+      .filter((item) => !filters?.epSigned || signedSigningPackageIds.has(item.pkg.id));
 
     filtered = this.sortAnnotatedPackages(filtered, sortBy, sortOrder);
 
@@ -234,12 +257,13 @@ export class ContractDocumentPackageListService {
       : undefined;
 
     if (!paginated) {
-      return filtered.map((x) => x.pkg);
+      return filtered.map((x) => withSigningFlag(x.pkg));
     }
 
     const total = filtered.length;
     const skip = (page - 1) * limit;
-    const data = filtered.slice(skip, skip + limit).map((x) => x.pkg);
+    const data = filtered.slice(skip, skip + limit).map((x) => withSigningFlag(x.pkg));
+
     return {
       data,
       total,

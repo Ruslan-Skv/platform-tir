@@ -94,6 +94,8 @@ export type PublicSigningSession = {
   signedAt: string | null;
   rejectedAt: string | null;
   signedName: string | null;
+  /** QR-коды для оплаты (до двух), если менеджер приложил их к отправке. */
+  paymentQrs?: Array<{ url: string; title?: string }>;
   documents: SigningSessionDocument[];
   canSign: boolean;
 };
@@ -116,6 +118,8 @@ export async function createPackageSigningSession(
     sendEmail?: boolean;
     contractorLabel?: string;
     contractorSignatory?: string;
+    /** QR-коды для оплаты (до двух) из карточки исполнителя; показываются заказчику на странице подписания. */
+    paymentQrs?: Array<{ url: string; title?: string }>;
   }
 ): Promise<ContractDocumentSigningSessionCreated> {
   const form = new FormData();
@@ -140,6 +144,12 @@ export async function createPackageSigningSession(
   if (input.sendEmail) form.append('sendEmail', 'true');
   if (input.contractorLabel) form.append('contractorLabel', input.contractorLabel);
   if (input.contractorSignatory) form.append('contractorSignatory', input.contractorSignatory);
+  if (input.paymentQrs?.length) {
+    form.append(
+      'paymentQrs',
+      JSON.stringify(input.paymentQrs.map((qr) => ({ url: qr.url, title: qr.title ?? '' })))
+    );
+  }
 
   const res = await fetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/signing-sessions`,

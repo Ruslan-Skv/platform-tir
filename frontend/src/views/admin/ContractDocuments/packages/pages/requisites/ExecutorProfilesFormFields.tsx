@@ -2,7 +2,10 @@
 
 import { useRef, useState } from 'react';
 
-import { uploadExecutorRequisitesPdf } from '@/shared/api/admin-contract-document-packages';
+import {
+  uploadExecutorPaymentQr,
+  uploadExecutorRequisitesPdf,
+} from '@/shared/api/admin-contract-document-packages';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 
 import styles from './ExecutorProfilesPage.module.css';
@@ -22,6 +25,26 @@ export function ExecutorProfilesFormFields({
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [pdfUploading, setPdfUploading] = useState(false);
   const [pdfError, setPdfError] = useState<string | null>(null);
+  const [qrUploadingIndex, setQrUploadingIndex] = useState<number | null>(null);
+  const [qrErrorIndex, setQrErrorIndex] = useState<number | null>(null);
+  const [qrError, setQrError] = useState<string | null>(null);
+
+  /** Два фиксированных слота QR-кодов: заполненные сохраняются в draft.paymentQrs. */
+  const qrSlots: Array<{ url: string; title: string }> = [0, 1].map((i) => {
+    const slot = draft.paymentQrs?.[i];
+    return { url: slot?.url ?? '', title: slot?.title ?? '' };
+  });
+
+  const updateQrSlot = (index: number, patch: { url?: string; title?: string }) => {
+    setDraft((p) => {
+      const slots: Array<{ url: string; title: string }> = [0, 1].map((i) => {
+        const slot = p.paymentQrs?.[i];
+        return { url: slot?.url ?? '', title: slot?.title ?? '' };
+      });
+      slots[index] = { ...slots[index]!, ...patch };
+      return { ...p, paymentQrs: slots.filter((s) => s.url.trim()) };
+    });
+  };
 
   const handlePdfSelect = async (file: File | undefined) => {
     if (!file) return;
@@ -43,6 +66,31 @@ export function ExecutorProfilesFormFields({
     } finally {
       setPdfUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
+    }
+  };
+
+  const handleQrSelect = async (index: number, file: File | undefined, input: HTMLInputElement) => {
+    if (!file) return;
+    const okName = /\.(png|jpe?g|webp)$/i.test(file.name);
+    const okType = (file.type || '').toLowerCase().startsWith('image/');
+    if (!okName && !okType) {
+      setQrErrorIndex(index);
+      setQrError('Можно загрузить только картинку (PNG, JPG, WebP).');
+      input.value = '';
+      return;
+    }
+    setQrUploadingIndex(index);
+    setQrErrorIndex(null);
+    setQrError(null);
+    try {
+      const { fileUrl } = await uploadExecutorPaymentQr(file);
+      updateQrSlot(index, { url: fileUrl });
+    } catch (e) {
+      setQrErrorIndex(index);
+      setQrError(e instanceof Error ? e.message : 'Не удалось загрузить QR-код');
+    } finally {
+      setQrUploadingIndex(null);
+      input.value = '';
     }
   };
 
@@ -260,6 +308,61 @@ export function ExecutorProfilesFormFields({
         </p>
         {pdfError ? <p data-modal-form-error>{pdfError}</p> : null}
       </div>
+
+      {qrSlots.map((slot, index) => (
+        <div key={index}>
+          <div data-modal-form-group>
+            <label htmlFor={`executor_payment_qr_title_${index}`}>
+              QR-код для оплаты №{index + 1} — заголовок
+            </label>
+            <input
+              id={`executor_payment_qr_title_${index}`}
+              value={slot.title}
+              maxLength={120}
+              onChange={(e) => updateQrSlot(index, { title: e.target.value })}
+              placeholder={index === 0 ? 'Например: Оплата по QR-коду' : 'Например: Оплата по СБП'}
+            />
+          </div>
+          <div data-modal-form-group>
+            <label htmlFor={`executor_payment_qr_file_${index}`}>
+              QR-код для оплаты №{index + 1} — картинка
+            </label>
+            {slot.url ? (
+              <div className={styles.pdfAttachRow}>
+                <img
+                  className={styles.qrPreview}
+                  src={publicUploadUrl(slot.url)}
+                  alt={`QR-код для оплаты №${index + 1}`}
+                />
+                <button
+                  type="button"
+                  className={styles.pdfAttachRemoveBtn}
+                  disabled={qrUploadingIndex !== null}
+                  onClick={() => updateQrSlot(index, { url: '' })}
+                >
+                  Убрать
+                </button>
+              </div>
+            ) : null}
+            <input
+              id={`executor_payment_qr_file_${index}`}
+              type="file"
+              accept="image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
+              disabled={qrUploadingIndex !== null}
+              onChange={(e) => {
+                const input = e.target;
+                void handleQrSelect(index, input.files?.[0], input);
+              }}
+            />
+            <p className={styles.fieldHint}>
+              {qrUploadingIndex === index
+                ? 'Загрузка QR-кода…'
+                : 'Картинка с QR-кодом (PNG, JPG, WebP, до 10 МБ). Показывается заказчику на странице подписания с указанным заголовком, если менеджер включит «Отправить ссылку на оплату».'}
+            </p>
+            {qrError && qrErrorIndex === index ? <p data-modal-form-error>{qrError}</p> : null}
+          </div>
+        </div>
+      ))}
 
       {formError ? <p data-modal-form-error>{formError}</p> : null}
     </>

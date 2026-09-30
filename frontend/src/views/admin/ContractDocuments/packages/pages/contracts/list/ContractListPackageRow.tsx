@@ -266,7 +266,12 @@ export function ContractListPackageRow({
               disabled={
                 loading || creating || copyingPackageId !== null || deletingPackageId !== null
               }
-              title="Отправить на дистанционное подписание"
+              className={pkg.hasSignedSigningSessions ? cdEstimatesList.epSignedGold : undefined}
+              title={
+                pkg.hasSignedSigningSessions
+                  ? 'Отправить на дистанционное подписание (есть подписанные через ЭП документы)'
+                  : 'Отправить на дистанционное подписание'
+              }
               aria-label={`Отправить на подписание (договор ${num})`}
               onClick={() => onOpenRemoteSigning(pkg.id)}
             >

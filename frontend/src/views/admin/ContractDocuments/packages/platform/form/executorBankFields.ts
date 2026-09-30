@@ -142,6 +142,23 @@ function hasStructuredBankFields(fields: ExecutorBankFields): boolean {
   );
 }
 
+/** QR-коды для оплаты: не более двух, с обрезанными заголовками; legacy `paymentQrUrl` — первым. */
+export function normalizeExecutorPaymentQrs(raw: {
+  paymentQrs?: Array<{ url?: string; title?: string }> | null;
+  paymentQrUrl?: string | null;
+}): Array<{ url: string; title: string }> {
+  const qrs: Array<{ url: string; title: string }> = [];
+  const legacyUrl = (raw.paymentQrUrl ?? '').trim();
+  if (legacyUrl) qrs.push({ url: legacyUrl, title: '' });
+  for (const qr of Array.isArray(raw.paymentQrs) ? raw.paymentQrs : []) {
+    const url = (qr?.url ?? '').trim().slice(0, 320);
+    if (!url) continue;
+    if (qrs.some((it) => it.url === url)) continue;
+    qrs.push({ url, title: (qr?.title ?? '').trim().slice(0, 120) });
+  }
+  return qrs.slice(0, 2);
+}
+
 /** Полная нормализация карточки исполнителя (тип, банк, сводные реквизиты). */
 export function normalizeExecutorRequisiteProfile(
   raw: ExecutorRequisiteProfile
@@ -165,6 +182,7 @@ export function normalizeExecutorRequisiteProfile(
     email: raw.email ?? '',
     requisitesPdfUrl: raw.requisitesPdfUrl ?? '',
     requisitesPdfName: raw.requisitesPdfName ?? '',
+    paymentQrs: normalizeExecutorPaymentQrs(raw),
   });
 }
 

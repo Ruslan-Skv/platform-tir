@@ -27,6 +27,7 @@ type ContractsListFiltersPanelProps = {
   dateFrom: string;
   dateTo: string;
   limit: ContractsPageLimit;
+  epSigned?: boolean;
   children: ReactNode;
 };
 
@@ -43,6 +44,7 @@ export function ContractsListFiltersPanel({
   dateFrom,
   dateTo,
   limit,
+  epSigned,
   children,
 }: ContractsListFiltersPanelProps) {
   const contentId = useId();
@@ -64,6 +66,7 @@ export function ContractsListFiltersPanel({
         dateFrom,
         dateTo,
         limit,
+        epSigned,
       }),
     [
       listScope,
@@ -78,6 +81,7 @@ export function ContractsListFiltersPanel({
       dateFrom,
       dateTo,
       limit,
+      epSigned,
     ]
   );
 

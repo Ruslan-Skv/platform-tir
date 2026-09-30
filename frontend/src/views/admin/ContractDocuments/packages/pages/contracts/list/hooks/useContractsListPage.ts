@@ -51,6 +51,7 @@ export function useContractsListPage() {
     sortOrder: filters.listSortOrder,
     page: filters.page,
     limit: filters.limit,
+    epSigned: filters.epSigned,
   });
   const modals = useContractsListModalsState();
 
@@ -99,6 +100,7 @@ export function useContractsListPage() {
     dateFrom: filters.dateFrom,
     dateTo: filters.dateTo,
     listViewMode: filters.listViewMode,
+    epSigned: filters.epSigned,
     loading: load.loading,
     setPage: filters.setPage,
     setExpandedObjectIds: filters.setExpandedObjectIds,

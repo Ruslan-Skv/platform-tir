@@ -48,6 +48,8 @@ type CreateBody = {
   contractorLabel?: string;
   /** Подписант со стороны Подрядчика для штампа ПЭП (ФИО + основание). */
   contractorSignatory?: string;
+  /** QR-коды для оплаты (до 2) для страницы подписания: JSON `[{"url":"…","title":"…"}]`. */
+  paymentQrs?: string;
 };
 
 @Controller('admin/contract-document-packages')
@@ -92,6 +94,26 @@ export class ContractDocumentSigningAdminController {
     if (!metas.length || metas.some((m) => !m.tabId)) {
       throw new BadRequestException('Укажите документы для отправки');
     }
+    let paymentQrs: Array<{ url: string; title?: string }> = [];
+    if (body.paymentQrs) {
+      try {
+        const raw = JSON.parse(body.paymentQrs);
+        if (!Array.isArray(raw)) throw new Error('not array');
+        paymentQrs = raw
+          .slice(0, 2)
+          .map((row: { url?: unknown; title?: unknown }) => ({
+            url: String(row?.url ?? '')
+              .trim()
+              .slice(0, 320),
+            title: String(row?.title ?? '')
+              .trim()
+              .slice(0, 120),
+          }))
+          .filter((row: { url: string }) => row.url.length > 0);
+      } catch {
+        throw new BadRequestException('Некорректный paymentQrs (ожидается JSON-массив)');
+      }
+    }
     // До записи файлов на диск: смета «Ремонта» + правила этапов подписания.
     await this.signing.assertCanCreateSigningSession(packageId, metas);
     const docs = persistSigningSessionDocuments(packageId, metas, files || []);
@@ -109,6 +131,7 @@ export class ContractDocumentSigningAdminController {
       sendEmail,
       contractorLabel: body.contractorLabel?.trim().slice(0, 300) || null,
       contractorSignatory: body.contractorSignatory?.trim().slice(0, 300) || null,
+      paymentQrs,
     });
   }
 

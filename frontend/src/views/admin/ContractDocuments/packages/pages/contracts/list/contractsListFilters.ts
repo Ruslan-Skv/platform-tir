@@ -37,6 +37,8 @@ export interface ContractsListFiltersPersisted {
   expandedObjectIds: string[];
   /** Текущая страница списка — сохраняем между визитами страницы. */
   page: number;
+  /** Только договоры с подписанными через ЭП документами. */
+  epSigned: boolean;
 }
 
 const CONTRACTS_LIST_FILTERS_STORAGE_KEY = 'admin_contract_documents_contracts_list_filters_v3';
@@ -58,6 +60,7 @@ export const EMPTY_CONTRACTS_LIST_FILTERS: ContractsListFiltersPersisted = {
   listViewMode: 'by_object',
   expandedObjectIds: [],
   page: 1,
+  epSigned: false,
 };
 
 function normalizePageLimit(raw: unknown): ContractsPageLimit {
@@ -182,6 +185,7 @@ function normalizePersistedFilters(
       typeof raw.page === 'number' && Number.isInteger(raw.page) && raw.page >= 1
         ? raw.page
         : EMPTY_CONTRACTS_LIST_FILTERS.page,
+    epSigned: typeof raw.epSigned === 'boolean' ? raw.epSigned : false,
   };
 }
 
