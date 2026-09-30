@@ -18,6 +18,7 @@ import { Roles } from '../common/decorators/roles.decorator';
 import { RolesGuard } from '../common/guards/roles.guard';
 import type { RequestWithUser } from '../common/types/request-with-user.types';
 import { ContractDocumentSigningService } from './contract-document-signing.service';
+import { SigningCompletionService } from './signing-completion.service';
 import { persistSigningSessionDocuments } from './signing-session-documents';
 
 const CRM_ROLES = [
@@ -53,7 +54,10 @@ type CreateBody = {
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...CRM_ROLES)
 export class ContractDocumentSigningAdminController {
-  constructor(private readonly signing: ContractDocumentSigningService) {}
+  constructor(
+    private readonly signing: ContractDocumentSigningService,
+    private readonly completion: SigningCompletionService,
+  ) {}
 
   @Get(':packageId/signing-sessions')
   list(@Param('packageId') packageId: string) {
@@ -116,6 +120,6 @@ export class ContractDocumentSigningAdminController {
   /** (Пере)генерация подписанных копий с отметками ЭП и единого PDF-комплекта. */
   @Post(':packageId/signing-sessions/:sessionId/finalize')
   finalize(@Param('packageId') packageId: string, @Param('sessionId') sessionId: string) {
-    return this.signing.finalizeSession(packageId, sessionId);
+    return this.completion.finalizeSession(packageId, sessionId);
   }
 }

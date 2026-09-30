@@ -9,6 +9,8 @@ import { ContractDocumentSigningAdminController } from './contract-document-sign
 import { ContractDocumentSigningPublicController } from './contract-document-signing-public.controller';
 import { ContractDocumentSigningService } from './contract-document-signing.service';
 import { ContractSigningNotifyService } from './contract-signing-notify.service';
+import { SigningCompletionService } from './signing-completion.service';
+import { SigningPackageMarkerService } from './signing-package-marker.service';
 import { SigningStampService } from './signing-stamp.service';
 
 @Module({
@@ -20,7 +22,13 @@ import { SigningStampService } from './signing-stamp.service';
     ContractConcludedNotifyModule,
   ],
   controllers: [ContractDocumentSigningPublicController, ContractDocumentSigningAdminController],
-  providers: [ContractDocumentSigningService, ContractSigningNotifyService, SigningStampService],
+  providers: [
+    ContractDocumentSigningService,
+    ContractSigningNotifyService,
+    SigningStampService,
+    SigningCompletionService,
+    SigningPackageMarkerService,
+  ],
   exports: [ContractDocumentSigningService],
 })
 export class ContractDocumentSigningModule {}

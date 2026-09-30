@@ -4,15 +4,15 @@ import * as path from 'path';
 import { PDFDocument } from 'pdf-lib';
 import * as fontkit from '@pdf-lib/fontkit';
 
+import { SigningStampService } from './signing-stamp.service';
 import {
-  SigningStampService,
   buildProtocolPdf,
   formatMsp,
   isPdfBuffer,
   mergePdfBuffers,
   stampPdfLastPage,
   uploadsFileUrl,
-} from './signing-stamp.service';
+} from './signing-pdf';
 import type { SigningSessionDocumentMeta } from './signing-session-documents';
 
 async function makePdf(pages: number, textOnEachPage?: string): Promise<Buffer> {
