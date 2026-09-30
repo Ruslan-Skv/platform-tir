@@ -20,7 +20,14 @@ export class SigningPackageMarkerService {
   async patch(
     packageId: string,
     marker: Record<string, unknown>,
-    opts?: { conclude?: boolean; signedName?: string },
+    opts?: {
+      conclude?: boolean;
+      signedName?: string;
+      /** Дополнительные поля formData (например, отметки о подписании актов по ЭП). */
+      extraFormFields?: Record<string, unknown>;
+      /** Записать снимок версии пакета (без смены статуса — для подписания актов). */
+      recordVersion?: boolean;
+    },
   ) {
     const pkg = await this.prisma.contractDocumentPackage.findUnique({ where: { id: packageId } });
     if (!pkg) return;
@@ -29,6 +36,9 @@ export class SigningPackageMarkerService {
         ? { ...(pkg.formData as Record<string, unknown>) }
         : {};
     formData._remoteSigning = marker;
+    if (opts?.extraFormFields) {
+      Object.assign(formData, opts.extraFormFields);
+    }
     if (opts?.conclude) {
       formData.contractConcludedAt =
         typeof formData.contractConcludedAt === 'string' && formData.contractConcludedAt.trim()
@@ -60,7 +70,7 @@ export class SigningPackageMarkerService {
       data,
     });
 
-    if (opts?.conclude) {
+    if (opts?.conclude || opts?.recordVersion) {
       await this.appendSigningVersion(packageId, formData, pkg.status, opts.signedName);
     }
 
@@ -79,6 +89,21 @@ export class SigningPackageMarkerService {
         null,
       );
     }
+  }
+
+  /** Убирает маркер `_remoteSigning` из formData (например, при ручном подписании договора). */
+  async clearRemoteSigningMarker(packageId: string): Promise<void> {
+    const pkg = await this.prisma.contractDocumentPackage.findUnique({ where: { id: packageId } });
+    if (!pkg || !pkg.formData || typeof pkg.formData !== 'object' || Array.isArray(pkg.formData)) {
+      return;
+    }
+    const formData = { ...(pkg.formData as Record<string, unknown>) };
+    if (!('_remoteSigning' in formData)) return;
+    delete formData._remoteSigning;
+    await this.prisma.contractDocumentPackage.update({
+      where: { id: packageId },
+      data: { formData: formData as Prisma.InputJsonValue },
+    });
   }
 
   private async appendSigningVersion(

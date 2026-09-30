@@ -3,6 +3,7 @@ import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } fr
 
 import { PrismaService } from '../../database/prisma.service';
 import { ContractConcludedNotifyService } from '../../contract-concluded-notify/contract-concluded-notify.service';
+import { ContractDocumentSigningService } from '../../contract-document-signing/contract-document-signing.service';
 import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
@@ -24,6 +25,7 @@ export class ContractDocumentPackageCrudService {
     private readonly repairScheduleFromPackage: RepairScheduleFromPackageService,
     private readonly contractNumbering: ContractDocumentNumberingService,
     private readonly contractConcludedNotify: ContractConcludedNotifyService,
+    private readonly signingSessions: ContractDocumentSigningService,
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -196,6 +198,16 @@ export class ContractDocumentPackageCrudService {
     });
     if (becomingConcluded) {
       this.contractConcludedNotify.onConcluded(updated, savedById);
+      // Договор подписан вручную — отзываем активные сессии ЭП и чистим маркер
+      // _remoteSigning, чтобы в списке не висело «На согласовании» рядом со «Подписан».
+      try {
+        await this.signingSessions.cancelActiveSessionsOnManualConclusion(id);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Отзыв сессий ЭП при ручном подписании пакета ${id} не выполнен: ${message}`,
+        );
+      }
     }
     if (recordVersion) {
       await this.appendPackageVersion(

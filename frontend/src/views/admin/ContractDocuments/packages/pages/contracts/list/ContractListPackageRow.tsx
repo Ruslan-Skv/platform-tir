@@ -4,7 +4,6 @@ import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.
 
 import type { ContractDocumentPackage } from '@/shared/api/admin-contract-document-packages';
 import type { CrmUser } from '@/shared/api/admin-crm';
-import { remoteSigningStatusLabel } from '@/shared/api/contract-documents/admin-contract-document-signing';
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
@@ -52,6 +51,7 @@ import {
   contractsListPackageKindLabel,
   contractsListPipelineStatus,
   contractsListRemainingToPayRub,
+  contractsListRemoteSigningHintLabel,
   contractsListSignedAddendumRub,
   contractsListWorkDescription,
   formatSigningDateOnly,
@@ -166,14 +166,8 @@ export function ContractListPackageRow({
             {packageListPipelineStatusLabel(pipelineStatus)}
           </span>
           {(() => {
-            const remote = (fd as Record<string, unknown>)._remoteSigning;
-            if (!remote || typeof remote !== 'object' || Array.isArray(remote)) return null;
-            const status =
-              typeof (remote as { status?: unknown }).status === 'string'
-                ? (remote as { status: string }).status
-                : '';
-            const label = remoteSigningStatusLabel(status);
-            if (!label || (status !== 'PENDING' && status !== 'VIEWED')) return null;
+            const label = contractsListRemoteSigningHintLabel(fd);
+            if (!label) return null;
             return (
               <div className={cdHub.contractsListRemoteSigningHint} title={label}>
                 {label}

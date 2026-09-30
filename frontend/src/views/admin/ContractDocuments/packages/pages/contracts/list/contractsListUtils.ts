@@ -4,6 +4,7 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 import type { CrmDirection, CrmUser, Measurement } from '@/shared/api/admin-crm';
+import { remoteSigningStatusLabel } from '@/shared/api/contract-documents/admin-contract-document-signing';
 
 import { PACKAGE_KIND_DIRECTION_SLUG } from '../../../config';
 import { CONTRACT_DOCUMENT_PACKAGE_KIND_LABELS } from '../../../config/contractDocumentsListKinds';
@@ -634,4 +635,24 @@ export function compareContractListRows(
     default:
       return 0;
   }
+}
+
+/**
+ * Подсказка об активной сессии ЭП под статусом договора («На согласовании» /
+ * «Просмотрено заказчиком»). Не показывается, если договор уже подписан
+ * (в т.ч. вручную при висящей ссылке ЭП) — маркер мог остаться устаревшим.
+ */
+export function contractsListRemoteSigningHintLabel(formData: unknown): string {
+  if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return '';
+  const fd = formData as Record<string, unknown>;
+  if (typeof fd.contractConcludedAt === 'string' && fd.contractConcludedAt.trim()) return '';
+  const remote = fd._remoteSigning;
+  if (!remote || typeof remote !== 'object' || Array.isArray(remote)) return '';
+  const status =
+    typeof (remote as { status?: unknown }).status === 'string'
+      ? (remote as { status: string }).status
+      : '';
+  const label = remoteSigningStatusLabel(status);
+  if (!label || (status !== 'PENDING' && status !== 'VIEWED')) return '';
+  return label;
 }

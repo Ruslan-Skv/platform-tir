@@ -17,10 +17,17 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
 import { ContractSigningNotifyService } from './contract-signing-notify.service';
-import { SigningStampService } from './signing-stamp.service';
-import { SigningCompletionService } from './signing-completion.service';
+import { SigningStampService } from './finalize/signing-stamp.service';
+import { SigningCompletionService } from './finalize/signing-completion.service';
 import { SigningPackageMarkerService } from './signing-package-marker.service';
 import { managerDisplayName, resolveContractorInfo } from './signing-contractor-info';
+import { sendSigningOtpEmail } from './signing-emails';
+import {
+  assertSigningChronologyAtSign,
+  detectSigningStage,
+  validateSigningStageCreation,
+} from './signing-stage';
+import { SigningStageEffectsService } from './signing-stage-effects.service';
 import { buildSignUrl, signingSiteUrl, toSigningSessionAdminDto } from './signing-session-dto';
 import { type SigningSessionDocumentMeta } from './signing-session-documents';
 
@@ -68,14 +75,22 @@ export class ContractDocumentSigningService {
     private readonly packageMarker: SigningPackageMarkerService,
     private readonly stamp: SigningStampService,
     private readonly completion: SigningCompletionService,
+    private readonly stageEffects: SigningStageEffectsService,
   ) {}
 
   buildSignUrl(token: string): string {
     return buildSignUrl(signingSiteUrl(this.config), token);
   }
 
-  /** Можно ли создавать сессию ЭП для пакета: договор «Ремонт» — только с прикреплённой сметой. */
-  async assertCanCreateSigningSession(packageId: string): Promise<void> {
+  /**
+   * Можно ли создавать сессию ЭП для пакета: договор «Ремонт» — только с прикреплённой
+   * сметой; состав документов — по правилам этапов (не более одного этапного документа,
+   * хронология «сначала договор, затем акты», без повторного подписания).
+   */
+  async assertCanCreateSigningSession(
+    packageId: string,
+    documents?: Array<{ tabId: string }>,
+  ): Promise<void> {
     const pkg = await this.prisma.contractDocumentPackage.findFirst({
       where: { id: packageId, deletedAt: null },
     });
@@ -87,6 +102,16 @@ export class ContractDocumentSigningService {
       throw new BadRequestException(
         'Договор «Ремонт» нельзя отправить на подписание без прикреплённой сметы (расчёта)',
       );
+    }
+    if (documents?.length) {
+      const stageInfo = detectSigningStage(documents);
+      validateSigningStageCreation({
+        stage: stageInfo.stage,
+        stageTabs: stageInfo.stageTabs,
+        kind: pkg.kind,
+        status: pkg.status,
+        formData: pkg.formData,
+      });
     }
   }
 
@@ -117,6 +142,16 @@ export class ContractDocumentSigningService {
         'Договор «Ремонт» нельзя отправить на подписание без прикреплённой сметы (расчёта)',
       );
     }
+
+    // Правила этапов: один этапный документ на сессию, хронология «сначала договор, затем акты».
+    const stageInfo = detectSigningStage(input.documents);
+    validateSigningStageCreation({
+      stage: stageInfo.stage,
+      stageTabs: stageInfo.stageTabs,
+      kind: pkg.kind,
+      status: pkg.status,
+      formData: pkg.formData,
+    });
 
     // Cancel previous active sessions for this package and release their number holds
     const previousActive = await this.prisma.contractDocumentSigningSession.findMany({
@@ -225,7 +260,7 @@ export class ContractDocumentSigningService {
 
     let emailSent = false;
     if (input.sendEmail && session.customerEmail) {
-      emailSent = await this.sendSigningEmail({
+      emailSent = await sendSigningOtpEmail(this.mailer, this.config, {
         to: session.customerEmail,
         customerName: session.customerName,
         signUrl,
@@ -248,33 +283,6 @@ export class ContractDocumentSigningService {
       documents,
       emailSent,
     };
-  }
-
-  private async sendSigningEmail(input: {
-    to: string;
-    customerName: string | null;
-    signUrl: string;
-    otpCode: string;
-    expiresAt: Date;
-    documentLabels: string[];
-  }): Promise<boolean> {
-    const from = this.config.get<string>('MAIL_FROM') || 'noreply@example.com';
-    const name = input.customerName?.trim() || 'Здравствуйте';
-    const docs = input.documentLabels.map((l) => `• ${l}`).join('\n');
-    const exp = input.expiresAt.toLocaleString('ru-RU');
-    try {
-      await this.mailer.sendMail({
-        from: `"Договоры" <${from}>`,
-        to: input.to,
-        subject: 'Документы на ознакомление и подписание',
-        text: `${name}!\n\nВам направлены документы для ознакомления и подписания:\n${docs}\n\nСсылка: ${input.signUrl}\nКод подтверждения: ${input.otpCode}\nСрок действия: до ${exp}\n\nОткройте ссылку, просмотрите документы и введите код для подписания.`,
-        html: `<p>${name}!</p><p>Вам направлены документы для ознакомления и подписания:</p><ul>${input.documentLabels.map((l) => `<li>${l}</li>`).join('')}</ul><p><a href="${input.signUrl}">Открыть документы</a></p><p>Код подтверждения: <strong>${input.otpCode}</strong></p><p>Срок действия: до ${exp}</p>`,
-      });
-      return true;
-    } catch (err) {
-      console.error('ContractDocumentSigningService.sendSigningEmail error:', err);
-      return false;
-    }
   }
 
   async listForPackage(packageId: string) {
@@ -317,11 +325,29 @@ export class ContractDocumentSigningService {
     return this.toAdminDto(updated);
   }
 
+  /**
+   * Договор подписан вручную (не через ЭП): активные сессии ЭП отзываем,
+   * маркер `_remoteSigning` затираем — чтобы в списке договоров не висело
+   * «На согласовании» рядом со статусом «Подписан».
+   */
+  cancelActiveSessionsOnManualConclusion(packageId: string): Promise<number> {
+    return this.stageEffects.cancelActiveSessionsOnManualConclusion(packageId);
+  }
+
   private async getByTokenOrThrow(token: string) {
     const row = await this.prisma.contractDocumentSigningSession.findUnique({
       where: { token },
       include: {
-        package: { select: { id: true, kind: true, title: true, status: true, deletedAt: true } },
+        package: {
+          select: {
+            id: true,
+            kind: true,
+            title: true,
+            status: true,
+            deletedAt: true,
+            formData: true,
+          },
+        },
       },
     });
     if (!row || row.package.deletedAt) throw new NotFoundException('Ссылка недействительна');
@@ -438,6 +464,13 @@ export class ContractDocumentSigningService {
       throw new BadRequestException('Неверный код подтверждения');
     }
 
+    // Хронология на момент подписания: акты — только после подписанного договора
+    // (статус пакета мог измениться после создания ссылки).
+    const stageInfo = detectSigningStage(
+      (Array.isArray(row.documents) ? row.documents : []) as SigningSessionDocumentMeta[],
+    );
+    assertSigningChronologyAtSign(stageInfo.stage, row.package.status);
+
     const updated = await this.prisma.contractDocumentSigningSession.update({
       where: { id: row.id },
       data: {
@@ -450,37 +483,78 @@ export class ContractDocumentSigningService {
       },
     });
 
-    await this.packageMarker.patch(
-      row.packageId,
-      {
-        sessionId: updated.id,
-        status: updated.status,
-        sentAt: updated.createdAt.toISOString(),
-        expiresAt: updated.expiresAt.toISOString(),
-        viewedAt: updated.viewedAt?.toISOString() ?? null,
-        signedAt: updated.signedAt?.toISOString() ?? null,
-        signedName,
-        documentCount: Array.isArray(updated.documents) ? updated.documents.length : 0,
-      },
-      { conclude: true, signedName },
-    );
-
-    this.signingNotify.onSessionEvent('signed', row, row.package.title ?? 'Договор', {
+    const signingMarker = {
+      sessionId: updated.id,
+      status: updated.status,
+      sentAt: updated.createdAt.toISOString(),
+      expiresAt: updated.expiresAt.toISOString(),
+      viewedAt: updated.viewedAt?.toISOString() ?? null,
+      signedAt: updated.signedAt?.toISOString() ?? null,
       signedName,
-    });
+      documentCount: Array.isArray(updated.documents) ? updated.documents.length : 0,
+    };
+    const notifySigned = () =>
+      this.signingNotify.onSessionEvent('signed', row, row.package.title ?? 'Договор', {
+        signedName,
+      });
 
-    // Отметки Заказчика на документах, протокол и единый подписанный комплект.
-    // Подпись уже зафиксирована — ошибка финализации не должна её отменять (комплект
-    // можно (пере)сформировать кнопкой в админке).
-    try {
-      await this.completion.finalizeSignedArtifacts(updated.id);
-    } catch (err) {
-      this.logger.error(
-        `Не удалось сформировать подписанный комплект (сессия ${updated.id}): ${(err as Error).message}`,
-      );
+    if (stageInfo.stage === 'CONTRACT') {
+      // Подписание договора: заключение (номер, статус, снимок версии, уведомления).
+      await this.packageMarker.patch(row.packageId, signingMarker, {
+        conclude: true,
+        signedName,
+      });
+      notifySigned();
+      await this.runCompletion(updated.id);
+      return this.getPublicSession(token);
     }
 
+    if (stageInfo.stage === 'ACT_START' || stageInfo.stage === 'ACT_ACCEPTANCE') {
+      // Подписание акта: дата акта + PDF с отметкой ЭП вместо фото, снимок версии.
+      await this.stageEffects.applyActEffects({
+        packageId: row.packageId,
+        stage: stageInfo.stage,
+        stageTab: stageInfo.stageTab,
+        sessionId: updated.id,
+        signedAt: updated.signedAt ?? new Date(),
+        signingMarker,
+      });
+      notifySigned();
+      return this.getPublicSession(token);
+    }
+
+    if (stageInfo.stage === 'ADDENDUM') {
+      // Подписание Д/с: слот отмечается подписанным (как ручной чекбокс в хабе).
+      await this.stageEffects.applyAddendumEffects({
+        packageId: row.packageId,
+        stageTab: stageInfo.stageTab,
+        sessionId: updated.id,
+        signedAt: updated.signedAt ?? new Date(),
+        signingMarker,
+        packageFormData: row.package.formData,
+      });
+      notifySigned();
+      await this.runCompletion(updated.id);
+      return this.getPublicSession(token);
+    }
+
+    // Прочие документы (спецификация, счёт-заказ…): подпись фиксируется,
+    // но статус пакета и договора не меняются.
+    await this.packageMarker.patch(row.packageId, signingMarker);
+    notifySigned();
+    await this.runCompletion(updated.id);
     return this.getPublicSession(token);
+  }
+
+  /** Финализация комплекта не должна отменять подпись — ошибки только в лог. */
+  private async runCompletion(sessionId: string): Promise<void> {
+    try {
+      await this.completion.finalizeSignedArtifacts(sessionId);
+    } catch (err) {
+      this.logger.error(
+        `Не удалось сформировать подписанный комплект (сессия ${sessionId}): ${(err as Error).message}`,
+      );
+    }
   }
 
   async reject(token: string, reason?: string) {

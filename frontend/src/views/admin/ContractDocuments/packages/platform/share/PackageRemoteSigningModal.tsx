@@ -31,6 +31,7 @@ import {
   loadPackageCustomerShareContext,
   openPackageCustomerMessenger,
 } from './packageCustomerDocumentShare';
+import { remoteSigningStageProblem } from './remoteSigningStage';
 
 type Props = {
   isOpen: boolean;
@@ -156,6 +157,12 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
   }, []);
 
   const message = useMemo(() => (created ? buildSigningShareMessage(created) : ''), [created]);
+
+  // Правила этапов: договор и акты — отдельными сессиями, акты после договора.
+  const stageProblem = useMemo(
+    () => (ctx ? remoteSigningStageProblem({ selectedTabs, ctx }) : null),
+    [ctx, selectedTabs]
+  );
 
   const createSession = async () => {
     if (!ctx || !packageId || selectedTabs.length === 0) return;
@@ -294,7 +301,8 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
             <p data-modal-form-hint style={{ marginTop: 0 }}>
               Заказчик получит ссылку для просмотра PDF и код подтверждения. На документы будет
               поставлена отметка (штамп) о подписании со стороны Подрядчика, а после ввода кода
-              заказчиком — отметка о подписании ПЭП и итоговый протокол.
+              заказчиком — отметка о подписании ПЭП и итоговый протокол. Договор, акты и доп.
+              соглашения подписаются отдельными сессиями: сначала договор, затем акты и Д/с.
             </p>
             {loading ? <p data-modal-form-hint>Загрузка…</p> : null}
             {ctx && !loading ? (
@@ -403,6 +411,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
               <span>Отправить ссылку и код на e-mail</span>
             </label>
 
+            {stageProblem ? <p data-modal-form-error>{stageProblem}</p> : null}
             {error ? <p data-modal-form-error>{error}</p> : null}
 
             <div data-modal-form-actions>
@@ -412,7 +421,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
               <button
                 type="button"
                 data-modal-btn="primary"
-                disabled={busy || loading || !ctx || selectedTabs.length === 0}
+                disabled={busy || loading || !ctx || selectedTabs.length === 0 || !!stageProblem}
                 onClick={() => void createSession()}
               >
                 {busy ? 'Готовим PDF и ссылку…' : 'Создать ссылку'}

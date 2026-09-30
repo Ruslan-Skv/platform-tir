@@ -13,6 +13,7 @@ import {
 import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
 
+import { remoteSigningStageLabel, remoteSigningStageOf } from '../../share/remoteSigningStage';
 import styles from './PackageRemoteSigningTimeline.module.css';
 
 function formatDateTime(iso: string | null): string {
@@ -162,73 +163,89 @@ export function PackageRemoteSigningTimeline({
         <p className={styles.hint}>Загрузка событий подписания…</p>
       ) : sessions.length === 0 ? (
         <p className={styles.hint}>
-          Договор ещё не отправлялся на электронное подписание. Отправить можно кнопкой «Подписать
-          дистанционно» на странице договора.
+          Документы ещё не отправлялись на электронное подписание (договор, акты, Д/с). Отправить
+          можно кнопкой «Подписать дистанционно» на странице договора.
         </p>
       ) : (
         <ul className={styles.list}>
-          {sessions.map((s) => (
-            <li key={s.id} className={styles.session}>
-              <div className={styles.sessionHead}>
-                <span className={statusClassName(s.status)}>
-                  {remoteSigningStatusLabel(s.status)}
-                </span>
+          {sessions.map((s) => {
+            const stageInfo = remoteSigningStageOf(s.documents.map((d) => d.tabId));
+            return (
+              <li key={s.id} className={styles.session}>
+                <div className={styles.sessionHead}>
+                  <span className={statusClassName(s.status)}>
+                    {remoteSigningStatusLabel(s.status)}
+                  </span>
+                  <span className={styles.hint}>
+                    {remoteSigningStageLabel(stageInfo.stage, stageInfo.stageTab)}
+                  </span>
+                  {s.documents.length > 0 ? (
+                    <span className={styles.hint}>документов: {s.documents.length}</span>
+                  ) : null}
+                  {s.status === 'SIGNED' ? (
+                    <button
+                      type="button"
+                      className={styles.packageBtn}
+                      disabled={finalizingId === s.id}
+                      title="Единый PDF: документы с отметками ЭП и протокол подписания"
+                      onClick={() => void openSignedPackage(s)}
+                    >
+                      {finalizingId === s.id
+                        ? 'Формируем комплект…'
+                        : s.signedPackageUrl
+                          ? 'Подписанный комплект (PDF)'
+                          : 'Сформировать подписанный комплект'}
+                    </button>
+                  ) : null}
+                </div>
+                <ul className={styles.events}>
+                  {sessionEvents(s).map((event, idx) => (
+                    <li
+                      key={`${s.id}-${idx}`}
+                      className={
+                        event.tone === 'signed'
+                          ? styles.eventToneSigned
+                          : event.tone === 'rejected'
+                            ? styles.eventToneRejected
+                            : undefined
+                      }
+                    >
+                      {event.text}
+                      {event.date ? (
+                        <span className={styles.eventDate}> · {formatDateTime(event.date)}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
                 {s.documents.length > 0 ? (
-                  <span className={styles.hint}>документов: {s.documents.length}</span>
-                ) : null}
-                {s.status === 'SIGNED' ? (
-                  <button
-                    type="button"
-                    className={styles.packageBtn}
-                    disabled={finalizingId === s.id}
-                    title="Единый PDF: документы с отметками ЭП и протокол подписания"
-                    onClick={() => void openSignedPackage(s)}
-                  >
-                    {finalizingId === s.id
-                      ? 'Формируем комплект…'
-                      : s.signedPackageUrl
-                        ? 'Подписанный комплект (PDF)'
-                        : 'Сформировать подписанный комплект'}
-                  </button>
-                ) : null}
-              </div>
-              <ul className={styles.events}>
-                {sessionEvents(s).map((event, idx) => (
-                  <li
-                    key={`${s.id}-${idx}`}
-                    className={
-                      event.tone === 'signed'
-                        ? styles.eventToneSigned
-                        : event.tone === 'rejected'
-                          ? styles.eventToneRejected
-                          : undefined
-                    }
-                  >
-                    {event.text}
-                    {event.date ? (
-                      <span className={styles.eventDate}> · {formatDateTime(event.date)}</span>
-                    ) : null}
-                  </li>
-                ))}
-              </ul>
-              {s.documents.length > 0 ? (
-                <div className={styles.docs}>
-                  <span className={styles.docsTitle}>Документы{signedDocLabel(s.status)}:</span>
-                  <ul className={styles.docsList}>
-                    {s.documents.map((doc) => (
-                      <li key={`${s.id}-${doc.tabId}-${doc.fileName}`}>
-                        {doc.signedFileUrl ? (
-                          <>
-                            <a
-                              className={styles.docLink}
-                              href={publicUploadUrl(doc.signedFileUrl)}
-                              target="_blank"
-                              rel="noreferrer"
-                              title={doc.fileName}
-                            >
-                              {doc.label || doc.fileName}
-                            </a>{' '}
-                            <span className={styles.docNote}>с отметкой ЭП</span>{' '}
+                  <div className={styles.docs}>
+                    <span className={styles.docsTitle}>Документы{signedDocLabel(s.status)}:</span>
+                    <ul className={styles.docsList}>
+                      {s.documents.map((doc) => (
+                        <li key={`${s.id}-${doc.tabId}-${doc.fileName}`}>
+                          {doc.signedFileUrl ? (
+                            <>
+                              <a
+                                className={styles.docLink}
+                                href={publicUploadUrl(doc.signedFileUrl)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={doc.fileName}
+                              >
+                                {doc.label || doc.fileName}
+                              </a>{' '}
+                              <span className={styles.docNote}>с отметкой ЭП</span>{' '}
+                              <a
+                                className={styles.docLink}
+                                href={publicUploadUrl(doc.fileUrl)}
+                                target="_blank"
+                                rel="noreferrer"
+                                title={doc.fileName}
+                              >
+                                (отправленный файл)
+                              </a>
+                            </>
+                          ) : doc.fileUrl ? (
                             <a
                               className={styles.docLink}
                               href={publicUploadUrl(doc.fileUrl)}
@@ -236,29 +253,19 @@ export function PackageRemoteSigningTimeline({
                               rel="noreferrer"
                               title={doc.fileName}
                             >
-                              (отправленный файл)
+                              {doc.label || doc.fileName}
                             </a>
-                          </>
-                        ) : doc.fileUrl ? (
-                          <a
-                            className={styles.docLink}
-                            href={publicUploadUrl(doc.fileUrl)}
-                            target="_blank"
-                            rel="noreferrer"
-                            title={doc.fileName}
-                          >
-                            {doc.label || doc.fileName}
-                          </a>
-                        ) : (
-                          <span>{doc.label || doc.fileName}</span>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </li>
-          ))}
+                          ) : (
+                            <span>{doc.label || doc.fileName}</span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       )}
     </div>

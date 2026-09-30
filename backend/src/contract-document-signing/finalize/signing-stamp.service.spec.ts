@@ -13,7 +13,7 @@ import {
   stampPdfLastPage,
   uploadsFileUrl,
 } from './signing-pdf';
-import type { SigningSessionDocumentMeta } from './signing-session-documents';
+import type { SigningSessionDocumentMeta } from '../signing-session-documents';
 
 async function makePdf(pages: number, textOnEachPage?: string): Promise<Buffer> {
   const doc = await PDFDocument.create();

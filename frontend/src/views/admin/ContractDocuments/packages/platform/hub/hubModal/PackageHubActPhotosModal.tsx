@@ -34,7 +34,12 @@ export function PackageHubActPhotosModal({ hub }: PackageHubActPhotosModalProps)
                   rel="noopener noreferrer"
                   className={cdHubModals.packageAttachedActPhotoImageLink}
                 >
-                  <img src={it.src} alt={it.title} />
+                  {it.src.toLowerCase().endsWith('.pdf') ? (
+                    // Акт, подписанный по ЭП: вместо фото — PDF с отметкой о подписании.
+                    <span>Акт подписан электронно — открыть PDF с отметкой ЭП</span>
+                  ) : (
+                    <img src={it.src} alt={it.title} />
+                  )}
                 </a>
               </div>
             </section>

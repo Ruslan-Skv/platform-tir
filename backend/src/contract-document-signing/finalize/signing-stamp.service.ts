@@ -3,7 +3,7 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type { SigningSessionDocumentMeta } from './signing-session-documents';
+import type { SigningSessionDocumentMeta } from '../signing-session-documents';
 import {
   type ContractorStampContext,
   type ProtocolDocumentRow,

@@ -3,11 +3,11 @@ import { ConfigService } from '@nestjs/config';
 import { MailerService } from '@nestjs-modules/mailer';
 import type { ContractDocumentSigningSessionStatus } from '@prisma/client';
 
-import { PrismaService } from '../database/prisma.service';
-import type { SigningSessionDocumentMeta } from './signing-session-documents';
+import { PrismaService } from '../../database/prisma.service';
+import type { SigningSessionDocumentMeta } from '../signing-session-documents';
 import { formatMsp } from './signing-pdf';
-import { SigningStampService } from './signing-stamp.service';
-import { buildSignUrl, signingSiteUrl, toSigningSessionAdminDto } from './signing-session-dto';
+import { SigningStampService, type SignedArtifactsResult } from './signing-stamp.service';
+import { buildSignUrl, signingSiteUrl, toSigningSessionAdminDto } from '../signing-session-dto';
 
 /**
  * Финализация подписанной сессии ЭП: копии документов с отметкой Заказчика,
@@ -43,12 +43,13 @@ export class SigningCompletionService {
     return toSigningSessionAdminDto(fresh, buildSignUrl(signingSiteUrl(this.config), fresh.token));
   }
 
-  async finalizeSignedArtifacts(sessionId: string): Promise<void> {
+  /** Возвращает артефакты финализации (для отметок об актах в formData) либо null. */
+  async finalizeSignedArtifacts(sessionId: string): Promise<SignedArtifactsResult | null> {
     const row = await this.prisma.contractDocumentSigningSession.findUnique({
       where: { id: sessionId },
       include: { package: { select: { title: true } } },
     });
-    if (!row || !isSigned(row.status)) return;
+    if (!row || !isSigned(row.status)) return null;
 
     const artifacts = await this.stamp.buildSignedArtifacts({
       sessionId: row.id,
@@ -89,6 +90,8 @@ export class SigningCompletionService {
         documentLabels: artifacts.documents.map((d) => d.label),
       });
     }
+
+    return artifacts;
   }
 
   /** Письмо «Документы подписаны» с копией подписанного комплекта во вложении. */
