@@ -3,11 +3,11 @@ import { Throttle } from '@nestjs/throttler';
 
 import { OriginGuard } from '../common/guards/origin.guard';
 import { RejectContractDocumentDto, SignContractDocumentDto } from './dto/public-signing.dto';
-import { ContractDocumentSigningService } from './contract-document-signing.service';
+import { ContractDocumentSigningPublicService } from './signing-public-flow.service';
 
 @Controller('contract-document-signing')
 export class ContractDocumentSigningPublicController {
-  constructor(private readonly signing: ContractDocumentSigningService) {}
+  constructor(private readonly signing: ContractDocumentSigningPublicService) {}
 
   @Get(':token')
   @Throttle({ default: { limit: 60, ttl: 60_000 } })

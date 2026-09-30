@@ -1,5 +1,6 @@
 import type { ConfigService } from '@nestjs/config';
 import type { ContractDocumentSigningSessionStatus, Prisma } from '@prisma/client';
+import * as crypto from 'crypto';
 
 export type SigningSessionAdminRow = {
   id: string;
@@ -25,6 +26,37 @@ export type SigningSessionAdminRow = {
 /** Базовый адрес сайта из конфигурации (без завершающего слэша). */
 export function signingSiteUrl(config: ConfigService): string {
   return (config.get<string>('SITE_URL') || 'http://localhost:3000').replace(/\/$/, '');
+}
+
+/** Общие хелперы сессий подписания (используются admin- и public-сервисами). */
+export function sha256Hex(value: string): string {
+  return crypto.createHash('sha256').update(value, 'utf8').digest('hex');
+}
+
+export function randomSessionToken(): string {
+  return crypto.randomBytes(24).toString('base64url');
+}
+
+export function randomOtpCode(): string {
+  return String(crypto.randomInt(100000, 999999));
+}
+
+/** QR-коды для оплаты: не более двух, с обрезанными заголовками; пустые записи отбрасываем. */
+export function normalizePaymentQrs(
+  qrs: Array<{ url: string; title?: string | null }> | null | undefined,
+): Array<{ url: string; title: string }> {
+  if (!Array.isArray(qrs)) return [];
+  return qrs
+    .slice(0, 2)
+    .map((qr) => ({
+      url: String(qr?.url ?? '')
+        .trim()
+        .slice(0, 320),
+      title: String(qr?.title ?? '')
+        .trim()
+        .slice(0, 120),
+    }))
+    .filter((qr) => qr.url.length > 0);
 }
 
 export function buildSignUrl(siteUrl: string, token: string): string {

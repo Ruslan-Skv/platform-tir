@@ -11,6 +11,7 @@ import { ContractDocumentSigningService } from './contract-document-signing.serv
 import { ContractSigningNotifyService } from './contract-signing-notify.service';
 import { SigningCompletionService } from './finalize/signing-completion.service';
 import { SigningPackageMarkerService } from './signing-package-marker.service';
+import { ContractDocumentSigningPublicService } from './signing-public-flow.service';
 import { SigningStageEffectsService } from './signing-stage-effects.service';
 import { SigningStampService } from './finalize/signing-stamp.service';
 
@@ -25,6 +26,7 @@ import { SigningStampService } from './finalize/signing-stamp.service';
   controllers: [ContractDocumentSigningPublicController, ContractDocumentSigningAdminController],
   providers: [
     ContractDocumentSigningService,
+    ContractDocumentSigningPublicService,
     ContractSigningNotifyService,
     SigningStampService,
     SigningCompletionService,
