@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import {
   type KnowledgeCategoryQuizResponse,
@@ -118,7 +118,10 @@ export function KnowledgeCategoryQuiz({
   const totalSeconds = quiz
     ? getQuizTimeLimitSeconds(quiz.questionCount, displaySecondsPerQuestion)
     : getQuizTimeLimitSeconds(displayQuestionCount, displaySecondsPerQuestion);
-  const allQuestions = quiz?.sections.flatMap((section) => section.questions) ?? [];
+  const allQuestions = useMemo(
+    () => quiz?.sections.flatMap((section) => section.questions) ?? [],
+    [quiz]
+  );
 
   const submitQuiz = useCallback(
     async (timedOut: boolean) => {

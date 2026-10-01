@@ -249,7 +249,92 @@ export class ManagerIncassationsService {
       take: Math.min(Math.max(limit, 1), 100),
       include: INCASSATION_MANAGER_INCLUDE,
     });
-    return records.map((record) => this.serializeIncassation(record));
+    const balancesAfter = await this.cashBalancesAfter(records);
+    return records.map((record) =>
+      this.serializeIncassation(record, balancesAfter.get(record.id) ?? null),
+    );
+  }
+
+  /**
+   * Остаток кассы на момент сразу после каждой инкассации списка: та же
+   * приходно-расходная модель, что у cashLedger, но срезом на performedAt
+   * записи — оплаты и проводки минус возвраты минус инкассации, проведённые
+   * не позже этой. Касса считается по менеджеру самой записи; позже внесённые
+   * задним числом оплаты исторический остаток не меняют — они попадают только
+   * в текущий.
+   */
+  private async cashBalancesAfter(
+    records: { id: string; managerId: string; performedAt: Date }[],
+  ): Promise<Map<string, Prisma.Decimal>> {
+    const balances = new Map<string, Prisma.Decimal>();
+    if (records.length === 0) return balances;
+
+    const managerIds = [...new Set(records.map((record) => record.managerId))];
+    // Самая поздняя инкассация списка — верхняя граница выборки событий кассы.
+    const cutoff = records.reduce(
+      (latest, record) => (record.performedAt > latest ? record.performedAt : latest),
+      records[0].performedAt,
+    );
+
+    const [movements, incassations] = await Promise.all([
+      this.prisma.moneyMovement.findMany({
+        where: {
+          managerId: { in: managerIds },
+          paymentForm: PaymentForm.CASH,
+          deletedAt: null,
+          performedAt: { lte: cutoff },
+        },
+        select: { managerId: true, paymentType: true, amount: true, performedAt: true },
+      }),
+      this.prisma.managerIncassation.findMany({
+        where: { managerId: { in: managerIds }, performedAt: { lte: cutoff } },
+        select: { managerId: true, amount: true, performedAt: true },
+      }),
+    ]);
+
+    // События кассы по менеджеру: возвраты и инкассации входят со знаком минуса
+    // (хранятся положительной суммой), изъятия уже отрицательны.
+    const eventsByManager = new Map<string, { at: Date; amount: Prisma.Decimal }[]>();
+    const pushEvent = (managerId: string | null, at: Date, amount: Prisma.Decimal) => {
+      if (!managerId) return;
+      const events = eventsByManager.get(managerId);
+      if (events) events.push({ at, amount });
+      else eventsByManager.set(managerId, [{ at, amount }]);
+    };
+    for (const movement of movements) {
+      pushEvent(
+        movement.managerId,
+        movement.performedAt,
+        movement.paymentType === PaymentType.REFUND ? movement.amount.neg() : movement.amount,
+      );
+    }
+    for (const incassation of incassations) {
+      pushEvent(incassation.managerId, incassation.performedAt, incassation.amount.neg());
+    }
+    for (const events of eventsByManager.values()) {
+      events.sort((a, b) => a.at.getTime() - b.at.getTime());
+    }
+
+    // Нарастающий итог по времени: сумма событий кассы менеджера до performedAt
+    // записи включительно — остаток сразу после неё.
+    const byTimeAsc = [...records].sort(
+      (a, b) => a.performedAt.getTime() - b.performedAt.getTime(),
+    );
+    for (const managerId of managerIds) {
+      const events = eventsByManager.get(managerId) ?? [];
+      let balance = new Prisma.Decimal(0);
+      let index = 0;
+      for (const record of byTimeAsc) {
+        if (record.managerId !== managerId) continue;
+        while (index < events.length && events[index].at <= record.performedAt) {
+          balance = balance.plus(events[index].amount);
+          index += 1;
+        }
+        balances.set(record.id, balance);
+      }
+    }
+
+    return balances;
   }
 
   /**
@@ -291,7 +376,10 @@ export class ManagerIncassationsService {
     return { ok: true };
   }
 
-  private serializeIncassation(row: IncassationWithManager) {
+  private serializeIncassation(
+    row: IncassationWithManager,
+    cashBalanceAfter?: Prisma.Decimal | null,
+  ) {
     return {
       id: row.id,
       performedAt: row.performedAt.toISOString(),
@@ -301,6 +389,8 @@ export class ManagerIncassationsService {
       manager: row.manager ? { id: row.manager.id, name: userName(row.manager) } : null,
       submitter: row.submitter ? { id: row.submitter.id, name: userName(row.submitter) } : null,
       createdAt: row.createdAt.toISOString(),
+      // null — остаток не считался (создание и правка записи, вне истории ДП).
+      cashBalanceAfter: cashBalanceAfter ? cashBalanceAfter.toString() : null,
     };
   }
 }

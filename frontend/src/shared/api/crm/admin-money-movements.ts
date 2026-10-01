@@ -124,6 +124,8 @@ export type ManagerIncassation = {
   manager: { id: string; name: string } | null;
   /** Менеджер, фактически сдавший инкассацию; null — сдал сам за себя. */
   submitter: { id: string; name: string } | null;
+  /** Остаток наличных в кассе менеджера сразу после этой инкассации (строкой, как Decimal). */
+  cashBalanceAfter?: string | null;
   createdAt: string;
 };
 

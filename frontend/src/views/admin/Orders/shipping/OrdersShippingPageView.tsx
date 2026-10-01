@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { DataTable } from '@/shared/ui/admin/DataTable';
 
@@ -15,6 +16,7 @@ type OrdersShippingPageViewProps = {
 };
 
 export function OrdersShippingPageView({ model }: OrdersShippingPageViewProps) {
+  const router = useRouter();
   const { orders, loading, total, page, setPage, limit, statusFilter, setStatusFilter } = model;
 
   const columns = [
@@ -124,7 +126,7 @@ export function OrdersShippingPageView({ model }: OrdersShippingPageViewProps) {
           columns={columns}
           keyExtractor={(order) => order.id}
           onRowClick={(order) => {
-            window.location.href = `/admin/orders/${order.id}`;
+            router.push(`/admin/orders/${order.id}`);
           }}
           pagination={{
             page,

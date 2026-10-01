@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import { useRouter } from 'next/navigation';
+
 import { useAuth } from '@/features/auth';
 import { getRoleLabel } from '@/shared/config/admin-roles';
 import { apiFetch } from '@/shared/lib/api-fetch';
@@ -72,6 +74,7 @@ export function AdminProfileForm({
   clearSaveSuccess,
   saveSuccessVisible,
 }: AdminProfileFormProps) {
+  const router = useRouter();
   const { user, getAuthHeaders, logout, refreshUser } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -269,7 +272,7 @@ export function AdminProfileForm({
 
       setTimeout(() => {
         logout();
-        window.location.href = '/admin/login';
+        router.push('/admin/login');
       }, 2000);
     } catch (error) {
       setPasswordError(error instanceof Error ? error.message : 'Ошибка');

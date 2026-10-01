@@ -258,6 +258,11 @@ export function IncassationHistoryModal({
                       <span className={styles.entryName}>
                         {`${formatDpDate(row.performedAt)} · ${formatDpTime(row.performedAt)} · ${formatDpMoney(row.amount)}`}
                       </span>
+                      {row.cashBalanceAfter != null ? (
+                        <span className={styles.entrySub}>
+                          {`Остаток в кассе после инкассации: ${formatDpMoney(row.cashBalanceAfter)}`}
+                        </span>
+                      ) : null}
                       <span className={styles.entrySub}>
                         {`Менеджер: ${row.manager?.name ?? '—'}${
                           row.submitter ? ` · сдал: ${row.submitter.name}` : ''
@@ -350,8 +355,8 @@ export function IncassationHistoryModal({
         <div data-modal-footer-info data-modal-tone="info" role="status">
           <span data-modal-footer-info-icon aria-hidden="true" />
           <span data-modal-footer-info-text>
-            Инкассация — сдача наличных из кассы менеджера; остаток кассы считается с момента
-            последней инкассации.{' '}
+            Инкассация — сдача наличных из кассы менеджера; остаток в карточке — касса на момент
+            сразу после сдачи, текущий остаток кассы считается с момента последней инкассации.{' '}
             {canManage
               ? 'Правка и аннулирование сразу пересчитывают остатки касс менеджеров.'
               : 'Править и аннулировать записи может только супер-администратор.'}

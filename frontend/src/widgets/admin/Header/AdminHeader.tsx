@@ -15,6 +15,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 import { useAdminAccessibleResources } from '@/features/admin/contexts/AdminAccessibleResourcesContext';
 import { AdminProfileModal } from '@/features/admin/profile';
@@ -158,6 +159,7 @@ type AdminHeaderProps = {
 };
 
 export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminHeaderProps = {}) {
+  const router = useRouter();
   const { user, logout, isLoading: authLoading } = useAuth();
   const { hasAccess, isLoading: accessLoading } = useAdminAccessibleResources();
   const canLoadAdminNotifications = !authLoading && canUseAdminNotificationBell(user?.role);
@@ -848,7 +850,7 @@ export function AdminHeader({ onMobileMenuOpen, mobileMenuOpen = false }: AdminH
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/admin/login';
+    router.push('/admin/login');
   };
 
   const notificationItems: NotificationItem[] = [

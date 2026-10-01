@@ -375,7 +375,7 @@ export function ProfilePageView() {
 
   const handleLogout = () => {
     logout();
-    window.location.href = '/login';
+    router.push('/login');
   };
 
   if (isLoading) {
