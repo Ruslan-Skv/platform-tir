@@ -5,6 +5,7 @@ import { ExternalNotifyModule } from '../../external-notify/external-notify.modu
 import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
 import { WaybillAttachmentsService } from './waybill-attachments.service';
 import { WaybillNotifyService } from './waybill-notify.service';
+import { WaybillSettlementsService } from './waybill-settlements.service';
 import { WaybillsController } from './waybills.controller';
 import { WaybillsService } from './waybills.service';
 
@@ -16,6 +17,7 @@ import { WaybillsService } from './waybills.service';
     DriverDeliveryAvailabilityService,
     WaybillNotifyService,
     WaybillAttachmentsService,
+    WaybillSettlementsService,
   ],
   exports: [WaybillsService, DriverDeliveryAvailabilityService],
 })

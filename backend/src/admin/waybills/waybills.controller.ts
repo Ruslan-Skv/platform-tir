@@ -33,6 +33,7 @@ import { UpsertDriverDeliveryAvailabilityDto } from './dto/upsert-driver-deliver
 import { UpdateWaybillTaskDto } from './dto/update-waybill-task.dto';
 import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
 import { WaybillAttachmentsService } from './waybill-attachments.service';
+import { WaybillSettlementsService } from './waybill-settlements.service';
 import { WaybillsService } from './waybills.service';
 
 const WAYBILL_ROLES = [
@@ -99,6 +100,7 @@ export class WaybillsController {
   constructor(
     private readonly waybillsService: WaybillsService,
     private readonly waybillAttachmentsService: WaybillAttachmentsService,
+    private readonly waybillSettlementsService: WaybillSettlementsService,
     private readonly driverAvailabilityService: DriverDeliveryAvailabilityService,
   ) {}
 
@@ -169,14 +171,14 @@ export class WaybillsController {
   /** История расчётов з/п водителей. */
   @Get('settlements')
   listSettlements(@Query('limit') limit?: string) {
-    return this.waybillsService.listSettlements(limit ? Number(limit) : undefined);
+    return this.waybillSettlementsService.listSettlements(limit ? Number(limit) : undefined);
   }
 
   /** Итоговый расчёт з/п: запись в историю + закрытие выполненных заданий периода. */
   @Post('settlements')
   createSettlement(@Req() req: RequestWithUser, @Body() dto: CreateWaybillSettlementDto) {
     this.assertPlanner(req.user.role);
-    return this.waybillsService.createSettlement(dto, req.user.id);
+    return this.waybillSettlementsService.createSettlement(dto, req.user.id);
   }
 
   @Get('driver-availability/resolve')
