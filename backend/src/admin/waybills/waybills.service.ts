@@ -8,6 +8,7 @@ import { Prisma, WaybillTaskStatus } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { WAYBILL_ATTACHMENT_SELECT } from './waybill-attachments.service';
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
+import { CreateWaybillSettlementDto } from './dto/create-waybill-settlement.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
 import { DriverDeliveryAvailabilityService } from './driver-delivery-availability.service';
 import { FailWaybillTaskDto } from './dto/fail-waybill-task.dto';
@@ -41,10 +42,16 @@ const TASK_INCLUDE = {
   completedBy: { select: USER_SELECT },
   createdBy: { select: USER_SELECT },
   deletedBy: { select: USER_SELECT },
+  settlement: true,
   attachments: {
     orderBy: { createdAt: 'asc' },
     select: WAYBILL_ATTACHMENT_SELECT,
   },
+} as const;
+
+const SETTLEMENT_INCLUDE = {
+  driver: { select: USER_SELECT },
+  createdBy: { select: USER_SELECT },
 } as const;
 
 /** Срок хранения задания в корзине до безвозвратного удаления. */
@@ -113,6 +120,13 @@ export class WaybillsService {
     return trimmed === '' ? null : trimmed;
   }
 
+  /** Задание, закрытое расчётом з/п, неизменяемо. */
+  private assertNotClosed(task: { status: WaybillTaskStatus }) {
+    if (task.status === WaybillTaskStatus.CLOSED) {
+      throw new BadRequestException('Задание закрыто расчётом з/п и больше не редактируется');
+    }
+  }
+
   private decimalOrNull(value?: number | null): Prisma.Decimal | null | undefined {
     if (value === undefined) return undefined;
     if (value === null) return null;
@@ -178,6 +192,7 @@ export class WaybillsService {
       customerAddress,
       customerPhone,
       customerPhones,
+      contractNumber: this.emptyToNull(dto.contractNumber) ?? null,
       deliveryCost: this.decimalOrNull(dto.deliveryCost) ?? null,
       deliveryPayer: this.emptyToNull(dto.deliveryPayer) ?? null,
       moversCost: this.decimalOrNull(dto.moversCost) ?? null,
@@ -259,6 +274,7 @@ export class WaybillsService {
 
   async update(id: string, dto: UpdateWaybillTaskDto, actorUserId?: string) {
     const existing = await this.findOne(id);
+    this.assertNotClosed(existing);
     const nextDate = dto.date !== undefined ? dto.date : existing.date.toISOString().slice(0, 10);
     const nextDriverId = dto.driverUserId !== undefined ? dto.driverUserId : existing.driverUserId;
     await this.assertDriverAcceptsDeliveriesOnDate(nextDriverId, nextDate);
@@ -324,6 +340,9 @@ export class WaybillsService {
       data.customerInfoText = this.emptyToNull(dto.customerInfoText) ?? null;
     }
 
+    if (dto.contractNumber !== undefined) {
+      data.contractNumber = this.emptyToNull(dto.contractNumber) ?? null;
+    }
     if (dto.deliveryCost !== undefined)
       data.deliveryCost = this.decimalOrNull(dto.deliveryCost) ?? null;
     if (dto.deliveryPayer !== undefined) {
@@ -354,6 +373,7 @@ export class WaybillsService {
   async remove(id: string, userId: string) {
     await this.purgeExpiredTrashedWaybillTasks();
     const task = await this.findOne(id);
+    this.assertNotClosed(task);
     if (task.status === WaybillTaskStatus.DONE) {
       throw new BadRequestException('Выполненные задания удалять нельзя');
     }
@@ -450,6 +470,7 @@ export class WaybillsService {
 
   async complete(id: string, userId: string, role: string, dto: CompleteWaybillTaskDto) {
     const task = await this.findOne(id);
+    this.assertNotClosed(task);
     this.assertCanComplete(task, userId, role);
     const updated = await this.prisma.waybillTask.update({
       where: { id },
@@ -467,6 +488,7 @@ export class WaybillsService {
 
   async fail(id: string, userId: string, role: string, dto: FailWaybillTaskDto) {
     const task = await this.findOne(id);
+    this.assertNotClosed(task);
     this.assertCanComplete(task, userId, role);
     const updated = await this.prisma.waybillTask.update({
       where: { id },
@@ -488,6 +510,7 @@ export class WaybillsService {
       throw new ForbiddenException('Переносить задание может только планировщик');
     }
     const source = await this.findOne(id);
+    this.assertNotClosed(source);
     if (source.status !== WaybillTaskStatus.PLANNED) {
       throw new BadRequestException('Скопировать можно только задание со статусом «В плане»');
     }
@@ -515,6 +538,7 @@ export class WaybillsService {
         customerAddress: source.customerAddress,
         customerPhone: source.customerPhone,
         customerPhones: source.customerPhones,
+        contractNumber: source.contractNumber,
         deliveryCost: source.deliveryCost,
         deliveryPayer: source.deliveryPayer,
         moversCost: source.moversCost,
@@ -535,7 +559,8 @@ export class WaybillsService {
     if (!this.isPlanner(role)) {
       throw new ForbiddenException('Только ответственный может вернуть задание в план');
     }
-    await this.findOne(id);
+    const task = await this.findOne(id);
+    this.assertNotClosed(task);
     return this.prisma.waybillTask.update({
       where: { id },
       data: {
@@ -545,6 +570,99 @@ export class WaybillsService {
         completedById: null,
       },
       include: TASK_INCLUDE,
+    });
+  }
+
+  /**
+   * Итоговый расчёт з/п водителя за период: создаёт запись в истории расчётов и закрывает
+   * все выполненные задания водителя за период (статус CLOSED — дальше не редактируются).
+   */
+  async createSettlement(dto: CreateWaybillSettlementDto, createdById: string) {
+    const dateFrom = this.parseDateOnly(dto.dateFrom);
+    const dateTo = this.parseDateOnly(dto.dateTo);
+    if (dateTo < dateFrom) {
+      throw new BadRequestException('Дата «по» раньше даты «с»');
+    }
+    const driverUserId = dto.driverUserId.trim();
+    if (!driverUserId) {
+      throw new BadRequestException('Укажите водителя, по которому делается расчёт');
+    }
+
+    const taskFilter: Prisma.WaybillTaskWhereInput = {
+      date: { gte: dateFrom, lte: dateTo },
+      driverUserId,
+      status: WaybillTaskStatus.DONE,
+      deletedAt: null,
+    };
+
+    const tasks = await this.prisma.waybillTask.findMany({
+      where: taskFilter,
+      select: {
+        deliveryCost: true,
+        deliveryPayer: true,
+        moversCost: true,
+        moversPayer: true,
+      },
+    });
+    if (tasks.length === 0) {
+      throw new BadRequestException('За выбранный период нет выполненных заданий этого водителя');
+    }
+
+    // Собрано с заказчиков (наличные у водителя) и начислено компанией —
+    // плательщик «Заказчик» значит, что деньги взяты водителем на руки.
+    const CUSTOMER_PAYER = 'Заказчик';
+    let deliveryTotal = new Prisma.Decimal(0);
+    let moversTotal = new Prisma.Decimal(0);
+    let collectedFromCustomers = new Prisma.Decimal(0);
+    for (const task of tasks) {
+      if (task.deliveryCost) {
+        deliveryTotal = deliveryTotal.add(task.deliveryCost);
+        if ((task.deliveryPayer ?? '').trim() === CUSTOMER_PAYER) {
+          collectedFromCustomers = collectedFromCustomers.add(task.deliveryCost);
+        }
+      }
+      if (task.moversCost) {
+        moversTotal = moversTotal.add(task.moversCost);
+        if ((task.moversPayer ?? '').trim() === CUSTOMER_PAYER) {
+          collectedFromCustomers = collectedFromCustomers.add(task.moversCost);
+        }
+      }
+    }
+
+    return this.prisma.$transaction(async (tx) => {
+      const settlement = await tx.waybillSettlement.create({
+        data: {
+          dateFrom,
+          dateTo,
+          driverUserId,
+          payoutAmount: new Prisma.Decimal(dto.payoutAmount ?? 0),
+          depositAmount: new Prisma.Decimal(dto.depositAmount ?? 0),
+          deliveryTotal,
+          moversTotal,
+          collectedFromCustomers,
+          tasksCount: tasks.length,
+          note: this.emptyToNull(dto.note) ?? null,
+          createdById,
+        },
+        include: SETTLEMENT_INCLUDE,
+      });
+      await tx.waybillTask.updateMany({
+        where: taskFilter,
+        data: {
+          status: WaybillTaskStatus.CLOSED,
+          settlementId: settlement.id,
+        },
+      });
+      return settlement;
+    });
+  }
+
+  /** История расчётов з/п водителей — свежие сверху. */
+  listSettlements(limit = 100) {
+    return this.prisma.waybillSettlement.findMany({
+      orderBy: { createdAt: 'desc' },
+      take: Math.min(200, Math.max(1, limit)),
+      include: SETTLEMENT_INCLUDE,
     });
   }
 }

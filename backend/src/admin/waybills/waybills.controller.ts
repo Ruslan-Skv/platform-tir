@@ -25,6 +25,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { CompleteWaybillTaskDto } from './dto/complete-waybill-task.dto';
+import { CreateWaybillSettlementDto } from './dto/create-waybill-settlement.dto';
 import { CreateWaybillTaskDto } from './dto/create-waybill-task.dto';
 import { FailWaybillTaskDto } from './dto/fail-waybill-task.dto';
 import { RescheduleWaybillTaskDto } from './dto/reschedule-waybill-task.dto';
@@ -163,6 +164,19 @@ export class WaybillsController {
   listDriverAvailability(@Req() req: RequestWithUser) {
     this.assertPlanner(req.user.role);
     return this.driverAvailabilityService.list();
+  }
+
+  /** История расчётов з/п водителей. */
+  @Get('settlements')
+  listSettlements(@Query('limit') limit?: string) {
+    return this.waybillsService.listSettlements(limit ? Number(limit) : undefined);
+  }
+
+  /** Итоговый расчёт з/п: запись в историю + закрытие выполненных заданий периода. */
+  @Post('settlements')
+  createSettlement(@Req() req: RequestWithUser, @Body() dto: CreateWaybillSettlementDto) {
+    this.assertPlanner(req.user.role);
+    return this.waybillsService.createSettlement(dto, req.user.id);
   }
 
   @Get('driver-availability/resolve')

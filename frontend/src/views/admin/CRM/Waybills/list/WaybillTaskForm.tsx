@@ -22,6 +22,7 @@ import {
 import type { WaybillFormValues } from '../shared/waybills-page.types';
 import {
   WAYBILL_DIRECTION_SUGGESTIONS,
+  WAYBILL_PAYER_OPTIONS,
   formatUserLabel,
   todayIsoDate,
 } from '../shared/waybills-page.utils';
@@ -39,6 +40,14 @@ export type WaybillTaskFormProps = {
 
 function resolveDayForDate(scheme: DriverDeliveryAvailabilityListItem['scheme'], date: string) {
   return previewDriverSchemeWeek({ scheme, fromDate: date, days: 1 })[0] ?? null;
+}
+
+/** Старые задания могли содержать произвольный текст — показываем его отдельным пунктом. */
+function payerOptions(current: string): string[] {
+  return current &&
+    !WAYBILL_PAYER_OPTIONS.includes(current as (typeof WAYBILL_PAYER_OPTIONS)[number])
+    ? [...WAYBILL_PAYER_OPTIONS, current]
+    : [...WAYBILL_PAYER_OPTIONS];
 }
 
 export function WaybillTaskForm({
@@ -301,6 +310,16 @@ export function WaybillTaskForm({
         <h3 className={sectionStyles.formSectionTitle}>Заказчик</h3>
         <div className={sectionStyles.sectionStack}>
           <div className={sectionStyles.sectionFieldsRow}>
+            <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldMid}`}>
+              <label htmlFor="wb-contract-number">Номер договора</label>
+              <input
+                id="wb-contract-number"
+                type="text"
+                value={values.contractNumber}
+                onChange={(e) => onChange({ ...values, contractNumber: e.target.value })}
+                placeholder="подставится из заказа или вручную"
+              />
+            </div>
             <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldGrow}`}>
               <label htmlFor="wb-customer-name">ФИО *</label>
               <input
@@ -394,14 +413,19 @@ export function WaybillTaskForm({
           </div>
           <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldGrow}`}>
             <label htmlFor="wb-delivery-payer">Кто платит (доставка) *</label>
-            <input
+            <select
               id="wb-delivery-payer"
-              type="text"
               value={values.deliveryPayer}
               onChange={(e) => onChange({ ...values, deliveryPayer: e.target.value })}
-              placeholder="Заказчик / Привокзальная…"
               required
-            />
+            >
+              <option value="">—</option>
+              {payerOptions(values.deliveryPayer).map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
           <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldTime}`}>
             <label htmlFor="wb-movers-cost">Грузчики, ₽ *</label>
@@ -416,13 +440,19 @@ export function WaybillTaskForm({
           </div>
           <div className={`${sectionStyles.sectionField} ${sectionStyles.sectionFieldGrow}`}>
             <label htmlFor="wb-movers-payer">Кто платит (грузчики) *</label>
-            <input
+            <select
               id="wb-movers-payer"
-              type="text"
               value={values.moversPayer}
               onChange={(e) => onChange({ ...values, moversPayer: e.target.value })}
               required
-            />
+            >
+              <option value="">—</option>
+              {payerOptions(values.moversPayer).map((option) => (
+                <option key={option} value={option}>
+                  {option}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
       </section>

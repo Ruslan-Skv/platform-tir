@@ -73,6 +73,12 @@ export class CreateWaybillTaskDto {
   @MaxLength(50, { each: true })
   customerPhones?: string[] | null;
 
+  @ApiPropertyOptional({ example: '№-2026/010' })
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  contractNumber?: string | null;
+
   @ApiPropertyOptional()
   @IsOptional()
   @Type(() => Number)

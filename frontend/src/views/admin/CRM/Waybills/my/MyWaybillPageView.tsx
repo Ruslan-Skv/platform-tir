@@ -63,6 +63,7 @@ export function MyWaybillPageView({ model }: MyWaybillPageViewProps) {
     PLANNED: tasks.filter((t) => t.status === 'PLANNED').length,
     DONE: tasks.filter((t) => t.status === 'DONE').length,
     FAILED: tasks.filter((t) => t.status === 'FAILED').length,
+    CLOSED: tasks.filter((t) => t.status === 'CLOSED').length,
   };
 
   const countTitle =

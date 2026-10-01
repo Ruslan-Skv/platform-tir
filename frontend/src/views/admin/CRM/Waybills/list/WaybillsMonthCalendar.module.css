@@ -266,6 +266,23 @@
   border-color: #e57373;
 }
 
+.pillCLOSED,
+.pillCLOSED:hover,
+.pillCLOSED:focus,
+.pillCLOSED:focus-visible,
+.pillCLOSED:visited,
+.pillCLOSED:active {
+  background: #eceff1;
+  border-color: #b0bec5;
+  color: #37474f;
+}
+
+.pillCLOSED:hover,
+.pillCLOSED:focus-visible {
+  background: #cfd8dc;
+  border-color: #90a4ae;
+}
+
 .tooltip {
   display: none;
   position: absolute;

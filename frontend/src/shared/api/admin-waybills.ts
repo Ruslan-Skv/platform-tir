@@ -12,7 +12,7 @@ function getAdminAuthHeaders(): HeadersInit {
   return headers;
 }
 
-export type WaybillTaskStatus = 'PLANNED' | 'DONE' | 'FAILED';
+export type WaybillTaskStatus = 'PLANNED' | 'DONE' | 'FAILED' | 'CLOSED';
 
 export interface WaybillTaskUser {
   id: string;
@@ -44,6 +44,8 @@ export interface WaybillTask {
   customerAddress?: string | null;
   customerPhone?: string | null;
   customerPhones?: string[];
+  /** № договора из заказа (пакета) — для сверки и расчёта з/п водителя. */
+  contractNumber?: string | null;
   deliveryCost: string | number | null;
   deliveryPayer: string | null;
   moversCost: string | number | null;
@@ -55,6 +57,8 @@ export interface WaybillTask {
   completedAt: string | null;
   completedById: string | null;
   createdById: string | null;
+  /** Расчёт з/п, закрывший задание (статус CLOSED). */
+  settlementId?: string | null;
   deletedAt: string | null;
   deletedById: string | null;
   /** ISO — дата безвозвратного удаления из корзины (только в ответе trash). */
@@ -80,12 +84,44 @@ export type WaybillTaskInput = {
   customerAddress?: string | null;
   customerPhone?: string | null;
   customerPhones?: string[] | null;
+  contractNumber?: string | null;
   deliveryCost?: number | null;
   deliveryPayer?: string | null;
   moversCost?: number | null;
   moversPayer?: string | null;
   responsibleUserId?: string | null;
   driverUserId?: string | null;
+};
+
+/** Запись «Истории расчётов»: итог сверки выполненных заданий за период. */
+export interface WaybillSettlement {
+  id: string;
+  dateFrom: string;
+  dateTo: string;
+  driverUserId: string | null;
+  /** Итог к выплате водителю из кассы. */
+  payoutAmount: string | number;
+  /** Итог к внесению водителем в кассу. */
+  depositAmount: string | number;
+  deliveryTotal: string | number;
+  moversTotal: string | number;
+  /** Собрано водителем наличными с заказчиков (плательщик «Заказчик»). */
+  collectedFromCustomers: string | number;
+  tasksCount: number;
+  note: string | null;
+  createdById: string | null;
+  createdAt: string;
+  driver?: WaybillTaskUser | null;
+  createdBy?: WaybillTaskUser | null;
+}
+
+export type WaybillSettlementInput = {
+  dateFrom: string;
+  dateTo: string;
+  driverUserId: string;
+  payoutAmount: number;
+  depositAmount: number;
+  note?: string | null;
 };
 
 async function throwApiError(res: Response, fallback: string): Promise<never> {
@@ -96,6 +132,28 @@ async function throwApiError(res: Response, fallback: string): Promise<never> {
 
 export async function getWaybillTasksByDate(date: string): Promise<WaybillTask[]> {
   return getWaybillTasks({ dateFrom: date, dateTo: date });
+}
+
+/** История расчётов з/п водителей — свежие сверху. */
+export async function getWaybillSettlements(limit = 100): Promise<WaybillSettlement[]> {
+  const res = await apiFetch(`${API_URL}/admin/waybills/settlements?limit=${limit}`, {
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось загрузить историю расчётов');
+  return res.json();
+}
+
+/** Сохраняет итоговый расчёт и закрывает выполненные задания водителя за период. */
+export async function createWaybillSettlement(
+  data: WaybillSettlementInput
+): Promise<WaybillSettlement> {
+  const res = await apiFetch(`${API_URL}/admin/waybills/settlements`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(data),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось сохранить расчёт');
+  return res.json();
 }
 
 export async function getWaybillTasks(params?: {

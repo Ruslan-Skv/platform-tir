@@ -129,6 +129,7 @@ export function useWaybillsPage() {
     customerName: string;
     customerAddress: string;
     customerPhones: string[];
+    contractNumber: string;
   } | null>(null);
 
   const loadTasks = useCallback(async () => {
@@ -236,34 +237,45 @@ export function useWaybillsPage() {
     [user?.id]
   );
 
-  const openEditModal = useCallback((item: WaybillTask) => {
-    const customer = resolveWaybillCustomerFields(item);
-    setFormValues({
-      date: item.date.slice(0, 10),
-      timeFrom: item.timeFrom ?? '',
-      timeTo: item.timeTo ?? '',
-      direction: item.direction ?? '',
-      taskText: item.taskText,
-      customerName: customer.customerName,
-      customerAddress: customer.customerAddress,
-      customerPhones: customer.customerPhones.length > 0 ? customer.customerPhones : [''],
-      packageId: '',
-      contractSearch: '',
-      deliveryCost: item.deliveryCost != null ? String(item.deliveryCost) : '',
-      deliveryPayer: item.deliveryPayer ?? '',
-      moversCost: item.moversCost != null ? String(item.moversCost) : '',
-      moversPayer: item.moversPayer ?? '',
-      responsibleUserId: item.responsibleUserId ?? '',
-      driverUserId: item.driverUserId ?? '',
-      pendingFiles: [],
-      existingAttachments: item.attachments ?? [],
-      removedAttachmentIds: [],
-    });
-    setFormError(null);
-    setSubmitting(false);
-    packagePrevCustomerRef.current = null;
-    setEditItem(item);
-  }, []);
+  const openEditModal = useCallback(
+    (item: WaybillTask) => {
+      if (item.status === 'CLOSED') {
+        flashMessage({
+          type: 'error',
+          text: 'Задание закрыто расчётом з/п и больше не редактируется',
+        });
+        return;
+      }
+      const customer = resolveWaybillCustomerFields(item);
+      setFormValues({
+        date: item.date.slice(0, 10),
+        timeFrom: item.timeFrom ?? '',
+        timeTo: item.timeTo ?? '',
+        direction: item.direction ?? '',
+        taskText: item.taskText,
+        customerName: customer.customerName,
+        customerAddress: customer.customerAddress,
+        customerPhones: customer.customerPhones.length > 0 ? customer.customerPhones : [''],
+        contractNumber: item.contractNumber ?? '',
+        packageId: '',
+        contractSearch: '',
+        deliveryCost: item.deliveryCost != null ? String(item.deliveryCost) : '',
+        deliveryPayer: item.deliveryPayer ?? '',
+        moversCost: item.moversCost != null ? String(item.moversCost) : '',
+        moversPayer: item.moversPayer ?? '',
+        responsibleUserId: item.responsibleUserId ?? '',
+        driverUserId: item.driverUserId ?? '',
+        pendingFiles: [],
+        existingAttachments: item.attachments ?? [],
+        removedAttachmentIds: [],
+      });
+      setFormError(null);
+      setSubmitting(false);
+      packagePrevCustomerRef.current = null;
+      setEditItem(item);
+    },
+    [flashMessage]
+  );
 
   const closeCreateModal = useCallback(() => {
     setCreateModalOpen(false);
@@ -287,6 +299,7 @@ export function useWaybillsPage() {
       customerAddress: values.customerAddress.trim() || null,
       customerPhone: phones[0] ?? null,
       customerPhones: phones,
+      contractNumber: values.contractNumber.trim() || null,
       deliveryCost: parseOptionalNumber(values.deliveryCost),
       deliveryPayer: values.deliveryPayer.trim() || null,
       moversCost: parseOptionalNumber(values.moversCost),
@@ -306,6 +319,7 @@ export function useWaybillsPage() {
           customerName: prev.customerName,
           customerAddress: prev.customerAddress,
           customerPhones: prev.customerPhones,
+          contractNumber: prev.contractNumber,
         };
       }
       return {
@@ -315,6 +329,7 @@ export function useWaybillsPage() {
         customerName: pick.customerName,
         customerAddress: pick.customerAddress,
         customerPhones: pick.customerPhones.length > 0 ? pick.customerPhones : [''],
+        contractNumber: pick.number,
       };
     });
   }, []);
@@ -330,6 +345,7 @@ export function useWaybillsPage() {
       customerName: restore?.customerName ?? '',
       customerAddress: restore?.customerAddress ?? '',
       customerPhones: restore && restore.customerPhones.length > 0 ? restore.customerPhones : [''],
+      contractNumber: restore?.contractNumber ?? '',
     }));
   }, []);
 
@@ -649,6 +665,8 @@ export function useWaybillsPage() {
     rescheduleError,
     applyPackage,
     clearPackage,
+    /** Показать зелёное уведомление в шапке (например, после сохранения расчёта). */
+    flashSuccess: (text: string) => flashMessage({ type: 'success', text }),
     refresh: loadTasks,
     trashOpen,
     setTrashOpen,

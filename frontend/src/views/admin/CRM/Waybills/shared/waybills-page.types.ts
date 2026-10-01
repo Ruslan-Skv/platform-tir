@@ -7,6 +7,8 @@ export type WaybillFormValues = {
   customerName: string;
   customerAddress: string;
   customerPhones: string[];
+  /** № договора — вручную или из выбранного заказа (пакета). */
+  contractNumber: string;
   /** Id выбранного заказа (пакета документов) — подставляет ФИО, адрес и телефоны. */
   packageId: string;
   /** Текст поиска заказа или подпись выбранного заказа. */
@@ -30,7 +32,7 @@ export type WaybillsPageMessage = {
   text: string;
 };
 
-export type WaybillStatusFilter = 'ALL' | 'PLANNED' | 'DONE' | 'FAILED';
+export type WaybillStatusFilter = 'ALL' | 'PLANNED' | 'DONE' | 'FAILED' | 'CLOSED';
 
 export type WaybillsViewMode = 'table' | 'calendar';
 

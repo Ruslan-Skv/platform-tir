@@ -94,6 +94,7 @@ const WAYBILL_STATUS_LABELS: Record<WaybillTaskStatus, string> = {
   PLANNED: 'Запланирована',
   DONE: 'Доставлено',
   FAILED: 'Срыв',
+  CLOSED: 'Закрыта расчётом',
 };
 
 const REPAIR_STATUS_LABELS: Record<RepairScheduleProjectStatus, string> = {

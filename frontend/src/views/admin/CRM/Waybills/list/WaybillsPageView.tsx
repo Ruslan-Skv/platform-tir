@@ -9,6 +9,7 @@ import { Modal } from '@/shared/ui/Modal';
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
 import {
   AdminListRefreshButton,
+  AdminToolbarIconButton,
   AdminToolbarTrashButton,
 } from '@/shared/ui/admin/AdminToolbarIconButton';
 import toolbarButtonStyles from '@/shared/ui/admin/AdminToolbarIconButton/AdminToolbarIconButton.module.css';
@@ -40,6 +41,8 @@ import {
   resolveWaybillCustomerFields,
 } from '../shared/waybills-page.utils';
 import { WaybillAttachmentsModal } from './WaybillAttachmentsModal';
+import { WaybillCalcModal } from './WaybillCalcModal';
+import { WaybillSettlementHistoryModal } from './WaybillSettlementHistoryModal';
 import { WaybillTaskForm } from './WaybillTaskForm';
 import { WaybillTaskRowActions } from './WaybillTaskRowActions';
 import { WaybillTrashModal } from './WaybillTrashModal';
@@ -120,6 +123,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     rescheduleError,
     applyPackage,
     clearPackage,
+    flashSuccess,
     refresh,
     trashOpen,
     setTrashOpen,
@@ -133,6 +137,8 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
   const [editDateBlocked, setEditDateBlocked] = useState(false);
   const [weekPreviewRefreshToken, setWeekPreviewRefreshToken] = useState(0);
   const [attachmentsItem, setAttachmentsItem] = useState<WaybillTask | null>(null);
+  const [calcOpen, setCalcOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
 
   /** Обязательные поля задания заполнены — кнопка «Создать» активна. */
   const formFilled = isWaybillFormFilled(formValues);
@@ -164,6 +170,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     PLANNED: tasks.filter((t) => t.status === 'PLANNED').length,
     DONE: tasks.filter((t) => t.status === 'DONE').length,
     FAILED: tasks.filter((t) => t.status === 'FAILED').length,
+    CLOSED: tasks.filter((t) => t.status === 'CLOSED').length,
   };
 
   const countTitle =
@@ -283,6 +290,7 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
     { value: 'PLANNED', label: 'В плане' },
     { value: 'DONE', label: 'Выполнено' },
     { value: 'FAILED', label: 'Не выполнено' },
+    { value: 'CLOSED', label: 'Закрыто' },
   ];
 
   const iconsDisabled = loading || submitting;
@@ -297,6 +305,27 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
       {canManageWaybillSettings ? (
         <WaybillsSettingsButton triggerClassName={toolbarButtonStyles.button} />
       ) : null}
+      <AdminToolbarIconButton
+        onClick={() => setHistoryOpen(true)}
+        title="История расчётов з/п"
+        aria-label="История расчётов з/п"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width={18}
+          height={18}
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={2}
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden
+        >
+          <circle cx="12" cy="12" r="10" />
+          <polyline points="12 6 12 12 16 14" />
+        </svg>
+      </AdminToolbarIconButton>
       <AdminListRefreshButton
         disabled={iconsDisabled}
         busy={loading}
@@ -349,6 +378,13 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
             onClick={openCreateModal}
           >
             + Задание
+          </button>
+          <button
+            type="button"
+            className={cdChrome.contractsListHeaderAddBtn}
+            onClick={() => setCalcOpen(true)}
+          >
+            + Расчёт
           </button>
           {iconActions('desktop')}
         </div>
@@ -581,6 +617,19 @@ export function WaybillsPageView({ model }: WaybillsPageViewProps) {
         onClose={() => setAttachmentsItem(null)}
         onChanged={() => void refresh()}
       />
+
+      <WaybillCalcModal
+        isOpen={calcOpen}
+        onClose={() => setCalcOpen(false)}
+        drivers={drivers}
+        onSaved={() => {
+          setCalcOpen(false);
+          flashSuccess('Расчёт сохранён — задания периода закрыты');
+          void refresh();
+        }}
+      />
+
+      <WaybillSettlementHistoryModal open={historyOpen} onClose={() => setHistoryOpen(false)} />
 
       <WaybillTrashModal
         isOpen={trashOpen}

@@ -481,6 +481,11 @@
   color: #c62828;
 }
 
+.badgeCLOSED {
+  background: #eceff1;
+  color: #455a64;
+}
+
 .lateFlag {
   display: inline-block;
   margin-left: 6px;
@@ -906,4 +911,158 @@
   color: var(--admin-info, #2563eb);
   text-decoration: underline;
   font-size: 12px;
+}
+
+/* --- Модалка «Расчёт з/п водителя» (сверка выполненных заданий) --- */
+.calcSummary {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: var(--admin-space-md);
+  margin-top: var(--admin-space-md);
+}
+
+.calcBlock {
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-info-border-soft, #bfdbfe);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface);
+}
+
+.calcBlockHead {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+}
+
+.calcBlockTitle {
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+}
+
+.calcBlockTotal {
+  font-size: var(--admin-font-size-md);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+}
+
+.calcPayerCaption {
+  margin-top: 2px;
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-text-muted);
+}
+
+.calcPayerList {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: var(--admin-space-sm) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.calcPayerRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--admin-space-md);
+  font-size: var(--admin-font-size-sm);
+}
+
+.calcPayerName {
+  min-width: 0;
+  color: var(--admin-text-secondary);
+}
+
+.calcPayerSum {
+  white-space: nowrap;
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.calcPayerEmpty {
+  margin-top: var(--admin-space-sm);
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-muted);
+}
+
+.calcGrand {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-muted, var(--admin-surface));
+  font-size: var(--admin-font-size-sm);
+  color: var(--admin-text-secondary);
+}
+
+.calcGrandSum {
+  font-size: var(--admin-font-size-md);
+  font-weight: 700;
+  color: var(--admin-text-primary);
+  white-space: nowrap;
+}
+
+.calcListTitle {
+  margin: var(--admin-space-lg) 0 0;
+  font-size: var(--admin-font-size-sm);
+  font-weight: 700;
+  color: var(--admin-text-secondary);
+}
+
+/* Фильтры расчёта з/п: период и водитель в одну строку (на узких — как обычно).
+   Атрибут добавляет специфичность, чтобы перебить сетку [data-modal-form-grid] из Modal. */
+.calcFiltersGrid:global([data-modal-form-grid]) {
+  grid-template-columns: max-content max-content 14rem;
+  align-items: end;
+}
+
+@media (max-width: 640px) {
+  .calcFiltersGrid:global([data-modal-form-grid]) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+/* --- Блок «Итоговый расчёт» в модалке расчёта з/п --- */
+.calcFinalBlock {
+  margin-top: var(--admin-space-md);
+  padding: var(--admin-space-md) var(--admin-space-lg);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-soft, var(--admin-surface));
+}
+
+.calcFinalRows {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-top: var(--admin-space-sm);
+}
+
+.calcFinalSuggest {
+  margin-top: 2px;
+  padding-top: 4px;
+  border-top: 1px dashed var(--admin-border);
+  font-weight: 600;
+  color: var(--admin-text-primary);
+}
+
+.calcFinalActions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm) var(--admin-space-lg);
+  margin-top: var(--admin-space-md);
+}
+
+.calcFinalHint {
+  font-size: var(--admin-font-size-2xs, 0.6875rem);
+  color: var(--admin-text-muted);
 }

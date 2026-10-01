@@ -2,10 +2,14 @@ import type { WaybillFormValues } from './waybills-page.types';
 
 export const WAYBILL_DIRECTION_SUGGESTIONS = ['двери', 'бавария'] as const;
 
+/** Варианты «Кто платит» для доставки и грузчиков. */
+export const WAYBILL_PAYER_OPTIONS = ['Заказчик', 'Компания', 'Менеджер', 'Прочее'] as const;
+
 export const STATUS_LABELS: Record<string, string> = {
   PLANNED: 'В плане',
   DONE: 'Выполнено',
   FAILED: 'Не выполнено',
+  CLOSED: 'Закрыто (расчёт)',
 };
 
 export function todayIsoDate(): string {
@@ -144,6 +148,7 @@ export function emptyWaybillForm(date: string, responsibleUserId = ''): WaybillF
     customerName: '',
     customerAddress: '',
     customerPhones: [''],
+    contractNumber: '',
     packageId: '',
     contractSearch: '',
     deliveryCost: '',
@@ -296,6 +301,35 @@ export function formatMoney(
   const num = typeof value === 'number' ? value : Number(value);
   const cost = Number.isFinite(num) ? `${num} ₽` : String(value);
   return payer ? `${cost} / ${payer}` : cost;
+}
+
+/** Сумма в рублях для сводки расчёта: 12 345,5 ₽ */
+export function formatRub(value: number): string {
+  return `${value.toLocaleString('ru-RU', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 2,
+  })} ₽`;
+}
+
+/** Числовая сумма задания (Decimal приходит строкой); null — сумма не указана. */
+export function parseWaybillCost(value: string | number | null | undefined): number | null {
+  if (value === null || value === undefined || value === '') return null;
+  const num = typeof value === 'number' ? value : Number(value);
+  return Number.isFinite(num) ? num : null;
+}
+
+/** Номер договора задания: поле задания либо legacy-формат «№ · ФИО · адрес · тел.». */
+export function resolveWaybillContractNumber(item: {
+  contractNumber?: string | null;
+  customerInfoText?: string | null;
+}): string {
+  const direct = item.contractNumber?.trim();
+  if (direct) return direct;
+  const parts = (item.customerInfoText ?? '')
+    .split(/\s{2,}|\t/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return parts.length >= 4 ? (parts[0] ?? '') : '';
 }
 
 /** Правка после 08:00 в день задания. */

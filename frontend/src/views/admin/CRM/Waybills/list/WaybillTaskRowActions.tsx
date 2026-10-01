@@ -49,6 +49,28 @@ export function WaybillTaskRowActions({
   onOpenAttachments,
 }: WaybillTaskRowActionsProps) {
   const attachmentsCount = item.attachments?.length ?? 0;
+  // Закрытое расчётом задание неизменяемо — доступны только файлы.
+  if (item.status === 'CLOSED') {
+    return (
+      <div className={styles.actions}>
+        <AdminTableIconButton
+          aria-label={
+            attachmentsCount > 0 ? `Файлы задания (${attachmentsCount})` : 'Файлы задания'
+          }
+          title="Задание закрыто расчётом — файлы доступны для просмотра"
+          className={
+            attachmentsCount > 0 ? styles.attachmentIconButtonActive : styles.attachmentIconButton
+          }
+          onClick={() => onOpenAttachments(item)}
+        >
+          <AttachmentsIcon />
+          {attachmentsCount > 0 ? (
+            <span className={styles.attachmentCountBadge}>{attachmentsCount}</span>
+          ) : null}
+        </AdminTableIconButton>
+      </div>
+    );
+  }
   return (
     <div className={styles.actions}>
       <AdminTableIconButton
