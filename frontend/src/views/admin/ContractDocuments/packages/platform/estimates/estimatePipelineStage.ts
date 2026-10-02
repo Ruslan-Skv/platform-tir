@@ -17,28 +17,23 @@ export function parseEstimatePipelineTab(raw: string | null): EstimatePipelineTa
   return 'active';
 }
 
-export function getGroupPipelineTab(group: ContractEstimateGroup | undefined): EstimatePipelineTab {
-  return group?.pipelineStage === 'prospect' || group?.pipelineStage === 'contract'
-    ? group.pipelineStage
-    : 'active';
-}
-
 export function getPresetPipelineTab(preset: ContractEstimatePreset): EstimatePipelineTab {
   return preset.pipelineStage === 'prospect' || preset.pipelineStage === 'contract'
     ? preset.pipelineStage
     : 'active';
 }
 
-/** Эффективная вкладка расчёта с учётом группы объекта. */
+/**
+ * Вкладка расчёта. Задаётся только у самого расчёта — вкладка объекта (группы)
+ * на расположение расчёта не влияет, чтобы расчёты одного объекта могли лежать
+ * на разных вкладках независимо.
+ */
 export function getEffectivePresetPipelineTab(
   preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[]
+  _groups: ContractEstimateGroup[]
 ): EstimatePipelineTab {
-  const ownTab = getPresetPipelineTab(preset);
-  if (ownTab !== 'active') return ownTab;
-  if (!preset.groupId) return 'active';
-  const g = groups.find((x) => x.id === preset.groupId);
-  return getGroupPipelineTab(g);
+  void _groups;
+  return getPresetPipelineTab(preset);
 }
 
 export function presetMatchesPipelineTab(
@@ -59,18 +54,6 @@ export function applyPresetPipelineTab(
     return { ...rest, updatedAt: ts };
   }
   return { ...preset, pipelineStage: tab, updatedAt: ts };
-}
-
-export function applyGroupPipelineTab(
-  group: ContractEstimateGroup,
-  tab: EstimatePipelineTab,
-  ts: string
-): ContractEstimateGroup {
-  if (tab === 'active') {
-    const { pipelineStage: _drop, ...rest } = group;
-    return { ...rest, updatedAt: ts };
-  }
-  return { ...group, pipelineStage: tab, updatedAt: ts };
 }
 
 /** Доступен для прикрепления к договору (только «В работе», не архив). */

@@ -21,7 +21,10 @@ import {
   type EstimatePipelineTab,
   applyPresetPipelineTab,
 } from '../../../../platform/estimates/estimatePipelineStage';
-import { applySplitBundleSaveToPresets } from '../../../../platform/estimates/estimateWorkScopeTree';
+import {
+  applySplitBundleSaveToPresets,
+  listPresetsInSplitBundle,
+} from '../../../../platform/estimates/estimateWorkScopeTree';
 import type { EstimateArchiveConfirmState } from '../../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';
 import {
@@ -171,8 +174,13 @@ export function useEstimatesListMutations({
   const setPresetPipelineStage = useCallback(
     (estimateId: string, tab: EstimatePipelineTab) => {
       const ts = new Date().toISOString();
+      // Расчёты одной связки («Разделение сметы») перемещаются между вкладками вместе.
+      const anchor = items.find((it) => it.id === estimateId);
+      const peerIds = new Set(
+        (anchor ? listPresetsInSplitBundle(anchor, items) : []).map((p) => p.id)
+      );
       const nextItems = items.map((it) =>
-        it.id === estimateId ? applyPresetPipelineTab(it, tab, ts) : it
+        it.id === estimateId || peerIds.has(it.id) ? applyPresetPipelineTab(it, tab, ts) : it
       );
       void persistEstimates(nextItems, groups);
     },

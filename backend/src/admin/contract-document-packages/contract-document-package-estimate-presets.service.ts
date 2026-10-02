@@ -79,16 +79,6 @@ export class ContractDocumentPackageEstimatePresetsService {
           'Нельзя прикрепить расчёт архивного объекта. Восстановите объект в списке расчётов.',
         );
       }
-      if (group?.pipelineStage === 'prospect') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт объекта из вкладки «В перспективе». Перенесите объект в «В работе».',
-        );
-      }
-      if (group?.pipelineStage === 'contract') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт объекта из вкладки «В договорах». Верните объект во «В работе».',
-        );
-      }
     }
   }
 
@@ -162,7 +152,15 @@ export class ContractDocumentPackageEstimatePresetsService {
       };
       return {
         items: Array.isArray(parsed?.items) ? parsed.items : [],
-        groups: Array.isArray(parsed?.groups) ? parsed.groups : [],
+        // Вкладка (pipelineStage) у групп больше не используется: расчёты одного
+        // объекта живут на вкладках независимо. Вычищаем legacy-значения при чтении.
+        groups: Array.isArray(parsed?.groups)
+          ? parsed.groups.map((g) => {
+              const copy = { ...g };
+              delete copy.pipelineStage;
+              return copy;
+            })
+          : [],
         updatedAt: row.updatedAt.toISOString(),
       };
     } catch {
@@ -463,7 +461,12 @@ export class ContractDocumentPackageEstimatePresetsService {
       (item) => !activeIds.has(item.id) && !trashedFromDtoIds.has(item.id),
     );
     const nextItems = [...activeFromDto, ...trashedFromDto, ...preservedTrash];
-    const nextGroups = dto.groups ?? previousRaw.groups;
+    // Вычищаем legacy-вкладку групп и при записи, чтобы данные со временем очистились.
+    const nextGroups = (dto.groups ?? previousRaw.groups).map((g) => {
+      const copy = { ...g };
+      delete copy.pipelineStage;
+      return copy;
+    });
     const previous = {
       items: previousRaw.items.filter((item) => !this.isEstimatePresetTrashed(item)),
       groups: previousRaw.groups,
