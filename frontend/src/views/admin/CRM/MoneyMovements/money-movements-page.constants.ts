@@ -41,7 +41,7 @@ export const DP_PAYMENT_FORM_LABELS: Record<string, string> = {
   QR: 'QR-код',
   INVOICE: 'По счёту',
   LC_TRANSFER: 'Переводы на ЛК',
-  BANK_APP: 'банк. прил.',
+  BANK_APP: 'Банк. прилож',
 };
 
 export const DP_PAYMENT_FORM_OPTIONS: { value: string; label: string }[] = [
@@ -50,7 +50,7 @@ export const DP_PAYMENT_FORM_OPTIONS: { value: string; label: string }[] = [
   { value: 'QR', label: 'QR-код' },
   { value: 'INVOICE', label: 'По счёту' },
   { value: 'LC_TRANSFER', label: 'Переводы на ЛК' },
-  { value: 'BANK_APP', label: 'банк. прил.' },
+  { value: 'BANK_APP', label: 'Банк. прилож' },
 ];
 
 export const DP_PAYMENT_TYPE_LABELS: Record<string, string> = {

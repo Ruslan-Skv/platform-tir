@@ -5,7 +5,7 @@ export const PACKAGE_PAYMENT_FORM_LABELS: Record<string, string> = {
   QR: 'QR-код',
   INVOICE: 'По счёту',
   LC_TRANSFER: 'Переводы на ЛК',
-  BANK_APP: 'банк. прил.',
+  BANK_APP: 'Банк. прилож',
 };
 
 /** ISO `yyyy-mm-dd` → `дд.мм.гггг` для шаблонов ПКО. */
