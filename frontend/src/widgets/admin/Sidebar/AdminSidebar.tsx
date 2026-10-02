@@ -233,6 +233,16 @@ const baseNavItems: NavItem[] = [
         href: '/admin/accounting/invoices',
         resourceId: 'admin.accounting.invoices',
       },
+      {
+        label: 'Банк',
+        href: '/admin/accounting/bank',
+        resourceId: 'admin.accounting.bank',
+      },
+      {
+        label: 'Сверка с ДП',
+        href: '/admin/accounting/bank/reconciliation',
+        resourceId: 'admin.accounting.bank',
+      },
     ],
   },
   {

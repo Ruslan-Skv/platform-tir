@@ -25,6 +25,16 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
     prefix: '/api/v1/admin/contract-document-packages/payment-invoices',
     resourceId: 'admin.accounting.invoices',
   },
+  // Бухгалтерия — поступления на расчётные счета банков
+  {
+    prefix: '/api/v1/admin/bank-entries',
+    resourceId: 'admin.accounting.bank',
+  },
+  // Бухгалтерия — сверка банка с журналом ДП
+  {
+    prefix: '/api/v1/admin/bank-reconciliation',
+    resourceId: 'admin.accounting.bank',
+  },
   // Настройки каталога (справочники)
   {
     prefix: '/api/v1/admin/catalog/component-catalog-kinds',

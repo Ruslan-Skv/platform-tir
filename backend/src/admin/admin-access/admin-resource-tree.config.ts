@@ -23,6 +23,7 @@ export const ADMIN_RESOURCE_PARENT: Readonly<Record<string, string>> = {
 
   // Бухгалтерия
   'admin.accounting.invoices': 'admin.accounting',
+  'admin.accounting.bank': 'admin.accounting',
 
   // Настройки → Оформление договоров (не путать с топ-«Договора» / «Расчёты»)
   'admin.contract-documents': 'admin.settings',

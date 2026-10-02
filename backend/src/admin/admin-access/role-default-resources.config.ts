@@ -44,6 +44,8 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.contract-documents.estimates',
     'admin.accounting',
     'admin.accounting.invoices',
+    // Банковская выписка (раздел «Банк») — только админам, остальным выдаётся вручную.
+    'admin.accounting.bank',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',

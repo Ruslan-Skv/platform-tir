@@ -3,6 +3,8 @@ import { CustomersModule } from './customers/customers.module';
 import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { MoneyMovementsModule } from './money-movements/money-movements.module';
+import { BankEntriesModule } from './bank-entries/bank-entries.module';
+import { BankReconciliationModule } from './bank-reconciliation/bank-reconciliation.module';
 import { OfficesModule } from './offices/offices.module';
 import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -65,6 +67,8 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     JointObjectsModule,
     MeasurementsModule,
     MoneyMovementsModule,
+    BankEntriesModule,
+    BankReconciliationModule,
     OfficesModule,
     ComplexObjectsModule,
     TasksModule,

@@ -1,0 +1,79 @@
+/* Раздел «Бухгалтерия → Банк»: каркас страницы и фильтры — как в журнале ДП
+   (styles/contracts-list-hub + MoneyMovements.module.css); здесь только специфика банка. */
+
+/* Бейдж банка в таблице */
+.bankBadge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f9fafb);
+  color: var(--admin-text-secondary, #4b5563);
+  white-space: nowrap;
+}
+
+.bank_SBER {
+  border-color: #2fa035;
+  color: #1d7a24;
+}
+
+.bank_ALFA {
+  border-color: #ef3124;
+  color: #d3271c;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bank_SBER {
+  color: #4ade80;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .bank_ALFA {
+  color: #fca5a5;
+}
+
+/* Колонка «Контрагент»: примечание — серой подстрокой */
+.counterpartyCell {
+  max-width: 260px;
+}
+
+.counterpartySubline {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+/* Числовые колонки */
+.mutedCell {
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.totalCell {
+  font-weight: 700;
+}
+
+/* Модалка внесения: строка итога */
+.formTotalRow {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--admin-space-md, 12px);
+  padding: var(--admin-space-sm, 8px) var(--admin-space-md, 12px);
+  margin: var(--admin-space-sm, 8px) 0;
+  border: 1px dashed var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-md, 8px);
+  background: var(--admin-surface-soft, #f9fafb);
+  font-size: var(--admin-font-size-sm, 14px);
+  color: var(--admin-text-secondary, #4b5563);
+}
+
+.formTotalRow strong {
+  color: var(--admin-text-primary, #111827);
+  font-variant-numeric: tabular-nums;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .formTotalRow {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border, #374151);
+}

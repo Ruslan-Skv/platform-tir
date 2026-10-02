@@ -147,6 +147,7 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Счета на оплату',
     path: '/admin/accounting/invoices',
   },
+  { id: 'admin.accounting.bank', label: 'Банк', path: '/admin/accounting/bank' },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },

@@ -1,0 +1,263 @@
+/* Сверка «Банк ↔ ДП»: каркас страницы — как в журнале ДП; здесь только специфика сверки. */
+
+.sectionHeading {
+  margin: var(--admin-space-lg, 20px) 0 var(--admin-space-sm, 10px);
+  font-size: var(--admin-font-size-md, 15px);
+  font-weight: 700;
+  color: var(--admin-text-primary, #111827);
+}
+
+.sectionCount {
+  color: var(--admin-text-muted, #6b7280);
+  font-weight: 600;
+}
+
+/* Статусы сопоставления */
+.statusBadge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface-soft, #f9fafb);
+  color: var(--admin-text-secondary, #4b5563);
+  white-space: nowrap;
+}
+
+.statusCovered {
+  border-color: #86efac;
+  background: #f0fdf4;
+  color: #15803d;
+}
+
+.statusSuggested {
+  border-color: var(--admin-info-border, #93c5fd);
+  background: var(--admin-info-bg-soft, #eff6ff);
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.statusPartial {
+  border-color: #fcd34d;
+  background: #fffbeb;
+  color: #b45309;
+}
+
+.statusUnmatched {
+  border-color: var(--admin-error-border, #fca5a5);
+  background: var(--admin-error-bg, #fef2f2);
+  color: var(--admin-error, #b91c1c);
+}
+
+.statusInTransit {
+  border-color: #c4b5fd;
+  background: #f5f3ff;
+  color: #6d28d9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusCovered {
+  background: rgba(34, 197, 94, 0.12);
+  color: #4ade80;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusSuggested {
+  background: rgba(59, 130, 246, 0.12);
+  color: #93c5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusPartial {
+  background: rgba(245, 158, 11, 0.12);
+  color: #fcd34d;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusUnmatched {
+  background: rgba(239, 68, 68, 0.12);
+  color: #fca5a5;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .statusInTransit {
+  background: rgba(139, 92, 246, 0.12);
+  color: #c4b5fd;
+}
+
+.coveredCell {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.coveredCount {
+  color: var(--admin-text-muted, #9ca3af);
+  font-weight: 500;
+  font-size: var(--admin-font-size-xs, 12px);
+}
+
+.matchBtn {
+  border: 1px solid var(--admin-border, #e5e7eb);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-secondary, #4b5563);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: 4px 12px;
+  min-height: 30px;
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.matchBtn:hover {
+  color: var(--admin-text-primary, #111827);
+  border-color: var(--admin-info, #3b82f6);
+}
+
+/* Модалки сопоставления */
+.section {
+  margin-bottom: var(--admin-space-md, 12px);
+}
+
+.sectionTitle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-sm, 8px);
+  margin-bottom: var(--admin-space-xs, 4px);
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 700;
+  color: var(--admin-text-primary, #111827);
+}
+
+.sectionHint {
+  font-weight: 500;
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.suggestionHint {
+  margin: 0 0 var(--admin-space-xs, 4px);
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+.movementList {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0 0 var(--admin-space-sm, 8px);
+  padding: 0;
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  padding: var(--admin-space-xs, 4px);
+}
+
+.movementRow {
+  display: flex;
+  align-items: center;
+}
+
+.candidateLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm, 8px);
+  flex: 1;
+  padding: 4px var(--admin-space-xs, 4px);
+  cursor: pointer;
+  min-width: 0;
+}
+
+.movementDate {
+  flex-shrink: 0;
+  width: 5.5rem;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+  font-variant-numeric: tabular-nums;
+}
+
+.movementTitle {
+  flex: 1;
+  min-width: 0;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-primary, #111827);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movementAmount {
+  flex-shrink: 0;
+  font-size: var(--admin-font-size-sm, 13px);
+  font-weight: 600;
+  color: var(--admin-text-primary, #111827);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.unLinkBtn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: pointer;
+  font-size: 16px;
+  line-height: 1;
+  padding: 2px 6px;
+}
+
+.unLinkBtn:hover {
+  color: var(--admin-error, #b91c1c);
+}
+
+.dangerLinkBtn {
+  border: none;
+  background: none;
+  color: var(--admin-error, #b91c1c);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs, 12px);
+  font-weight: 600;
+  padding: 2px 4px;
+}
+
+.dangerLinkBtn:hover {
+  text-decoration: underline;
+}
+
+.candidateSearch {
+  width: 100%;
+  margin-bottom: var(--admin-space-xs, 4px);
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 8px);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  background: var(--admin-surface, #fff);
+  color: var(--admin-text-primary, #111827);
+  font-size: var(--admin-font-size-sm, 13px);
+  min-height: 34px;
+}
+
+.emptyHint {
+  margin: 0;
+  padding: var(--admin-space-sm, 8px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.selectionRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--admin-space-md, 12px);
+  padding-top: var(--admin-space-xs, 4px);
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #4b5563);
+}
+
+.overWarn {
+  color: var(--admin-error, #b91c1c);
+  font-weight: 600;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .movementList,
+:where(html[data-theme='dark'], [data-app-theme='dark']) .candidateSearch {
+  background: var(--admin-surface-muted, #111827);
+  border-color: var(--admin-border, #374151);
+}
