@@ -7,7 +7,7 @@ import type {
   BankEntry,
   BankEntryInput,
   BankEntryType,
-} from '@/shared/api/admin-bank-entries';
+} from '@/shared/api/accounting/admin-bank-entries';
 import { Modal } from '@/shared/ui/Modal';
 
 import styles from './BankPage.module.css';

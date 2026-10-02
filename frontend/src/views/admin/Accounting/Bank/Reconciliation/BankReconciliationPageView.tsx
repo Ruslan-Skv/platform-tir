@@ -5,7 +5,7 @@ import { useId, useMemo, useState } from 'react';
 import type {
   ReconciliationEntry,
   ReconciliationHistoryItem,
-} from '@/shared/api/admin-bank-reconciliation';
+} from '@/shared/api/accounting/admin-bank-reconciliation';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';

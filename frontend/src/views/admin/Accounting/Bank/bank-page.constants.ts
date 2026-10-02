@@ -1,4 +1,4 @@
-import type { BankCode, BankEntryType } from '@/shared/api/admin-bank-entries';
+import type { BankCode, BankEntryType } from '@/shared/api/accounting/admin-bank-entries';
 
 /** Банки расчётных счётов — как в таблице учёта поступлений. */
 export const BANK_LABELS: Record<BankCode, string> = {

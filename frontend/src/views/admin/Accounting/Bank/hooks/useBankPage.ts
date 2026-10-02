@@ -12,7 +12,7 @@ import {
   deleteBankEntry,
   listBankEntries,
   updateBankEntry,
-} from '@/shared/api/admin-bank-entries';
+} from '@/shared/api/accounting/admin-bank-entries';
 
 import { currentMonthStartIso, todayIso } from '../bank-page.constants';
 

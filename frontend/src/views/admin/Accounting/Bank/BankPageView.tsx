@@ -2,7 +2,7 @@
 
 import { useId, useMemo, useState } from 'react';
 
-import type { BankEntriesTotals, BankEntry } from '@/shared/api/admin-bank-entries';
+import type { BankEntriesTotals, BankEntry } from '@/shared/api/accounting/admin-bank-entries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';

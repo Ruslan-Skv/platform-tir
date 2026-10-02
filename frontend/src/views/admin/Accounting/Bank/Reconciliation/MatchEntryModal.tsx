@@ -5,7 +5,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type {
   ReconciliationEntry,
   ReconciliationMovement,
-} from '@/shared/api/admin-bank-reconciliation';
+} from '@/shared/api/accounting/admin-bank-reconciliation';
 import { Modal } from '@/shared/ui/Modal';
 
 import { formatDateRu, formatMoneyRub } from '../../accounting-invoices-page.utils';

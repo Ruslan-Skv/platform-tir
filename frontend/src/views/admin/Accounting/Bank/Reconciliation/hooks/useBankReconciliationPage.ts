@@ -14,7 +14,7 @@ import {
   listReconciliationLinks,
   removeAllEntryLinks,
   removeReconciliationLink,
-} from '@/shared/api/admin-bank-reconciliation';
+} from '@/shared/api/accounting/admin-bank-reconciliation';
 
 import { currentMonthStartIso, todayIso } from '../../bank-page.constants';
 
