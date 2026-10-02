@@ -4,6 +4,7 @@ export enum PaymentFormDto {
   QR = 'QR',
   INVOICE = 'INVOICE',
   LC_TRANSFER = 'LC_TRANSFER',
+  BANK_APP = 'BANK_APP',
 }
 
 export enum PaymentTypeDto {

@@ -178,7 +178,9 @@ export function useBankReconciliationPage() {
 export function paymentFormToEntryType(
   paymentForm: string
 ): 'TERMINAL_QR' | 'INVOICE_PAYMENT' | 'LC_TRANSFER' | null {
-  if (paymentForm === 'TERMINAL' || paymentForm === 'QR') return 'TERMINAL_QR';
+  if (paymentForm === 'TERMINAL' || paymentForm === 'QR' || paymentForm === 'BANK_APP') {
+    return 'TERMINAL_QR';
+  }
   if (paymentForm === 'INVOICE') return 'INVOICE_PAYMENT';
   if (paymentForm === 'LC_TRANSFER') return 'LC_TRANSFER';
   return null;

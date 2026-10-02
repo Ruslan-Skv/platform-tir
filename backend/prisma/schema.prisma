@@ -4075,6 +4075,7 @@ enum PaymentForm {
   QR
   INVOICE
   LC_TRANSFER // Переводы на личный счёт (ЛК)
+  BANK_APP // Оплата через банковское приложение
 }
 
 enum PaymentType {

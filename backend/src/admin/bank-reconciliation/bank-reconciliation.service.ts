@@ -9,6 +9,7 @@ const PAYMENT_FORM_TO_ENTRY_TYPE: Partial<Record<PaymentForm, BankEntryType>> = 
   QR: 'TERMINAL_QR',
   INVOICE: 'INVOICE_PAYMENT',
   LC_TRANSFER: 'LC_TRANSFER',
+  BANK_APP: 'TERMINAL_QR',
 };
 
 const RECONCILABLE_FORMS = Object.keys(PAYMENT_FORM_TO_ENTRY_TYPE) as PaymentForm[];

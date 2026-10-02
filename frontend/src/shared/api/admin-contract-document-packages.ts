@@ -107,7 +107,8 @@ export type ContractDocumentPackagePaymentForm =
   | 'TERMINAL'
   | 'QR'
   | 'INVOICE'
-  | 'LC_TRANSFER';
+  | 'LC_TRANSFER'
+  | 'BANK_APP';
 
 export type ContractDocumentPackagePaymentKind =
   | 'PREPAYMENT'
