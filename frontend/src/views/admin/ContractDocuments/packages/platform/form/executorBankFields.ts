@@ -166,6 +166,7 @@ export function normalizeExecutorRequisiteProfile(
   const kind: ExecutorRequisiteKind = raw.kind === 'ENTREPRENEUR' ? 'ENTREPRENEUR' : 'COMPANY';
   return normalizeExecutorProfileBankFields({
     title: raw.title ?? '',
+    showInReconciliation: raw.showInReconciliation !== false,
     kind,
     companyName: raw.companyName ?? '',
     inn: raw.inn ?? '',
