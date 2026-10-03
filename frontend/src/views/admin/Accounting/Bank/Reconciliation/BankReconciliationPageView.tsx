@@ -116,7 +116,7 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
     setChoosePayment,
     acting,
     applyLink,
-    linkPaymentToEntry,
+    linkPaymentToEntries,
     unlink,
     unlinkAll,
     candidatesByType,
@@ -647,7 +647,7 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
         entries={chooseEntryCandidates}
         busy={acting}
         canEdit={canEdit}
-        onLink={linkPaymentToEntry}
+        onLink={linkPaymentToEntries}
       />
     </div>
   );

@@ -20,10 +20,16 @@ type ChooseEntryModalProps = {
   entries: ReconciliationEntry[];
   busy: boolean;
   canEdit: boolean;
-  onLink: (bankEntryId: string, movementId: string) => void;
+  /** Связи для создания: поступление → сумма части оплаты. */
+  onLink: (links: { bankEntryId: string; amount: number }[], movementId: string) => void;
 };
 
-/** Модалка выбора поступления для непоступившей оплаты ДП. */
+/**
+ * Модалка выбора поступлений для непоступившей оплаты ДП. Оплата могла прийти
+ * на счёт частями (несколько зачислений) — можно отметить несколько поступлений
+ * и указать сумму каждой части (по умолчанию — остаток поступления в пределах
+ * несвёренного остатка оплаты).
+ */
 export function ChooseEntryModal({
   isOpen,
   onClose,
@@ -33,16 +39,52 @@ export function ChooseEntryModal({
   canEdit,
   onLink,
 }: ChooseEntryModalProps) {
-  const [selectedId, setSelectedId] = useState('');
+  /** Сумма части оплаты для каждого отмеченного поступления (по id записи). */
+  const [amountsById, setAmountsById] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!isOpen) return;
-    setSelectedId('');
+    setAmountsById({});
   }, [isOpen, payment]);
 
   const candidates = useMemo(
     () => entries.filter((entry) => Number(entry.remainingAmount) > 0.005),
     [entries]
+  );
+
+  /** Остаток оплаты, который ещё не распределён по отмеченным поступлениям. */
+  const paymentRemainder = payment ? Number(payment.remainder) : 0;
+  const allocated = Object.values(amountsById).reduce(
+    (acc, value) => acc + (Number(value) || 0),
+    0
+  );
+  const leftover = paymentRemainder - allocated;
+
+  const toggle = (entry: ReconciliationEntry) => {
+    setAmountsById((prev) => {
+      const next = { ...prev };
+      if (next[entry.id] != null) {
+        delete next[entry.id];
+        return next;
+      }
+      // По умолчанию — сколько влезет: остаток оплаты против остатка поступления.
+      const alreadyTaken = Object.entries(prev).reduce(
+        (acc, [, value]) => acc + (Number(value) || 0),
+        0
+      );
+      const free = paymentRemainder - alreadyTaken;
+      const defaultAmount = Math.max(0, Math.min(free, Number(entry.remainingAmount)));
+      next[entry.id] = defaultAmount.toFixed(2);
+      return next;
+    });
+  };
+
+  const links = Object.entries(amountsById)
+    .map(([bankEntryId, value]) => ({ bankEntryId, amount: Number(value) || 0 }))
+    .filter((link) => link.amount > 0);
+
+  const invalidAmount = Object.values(amountsById).some(
+    (value) => (Number(value) || 0) <= 0 || (Number(value) || 0) > paymentRemainder + 0.005
   );
 
   if (!payment) return null;
@@ -61,8 +103,8 @@ export function ChooseEntryModal({
           Оплата от {formatDateRu(payment.paymentDate)}
           {payment.managerName ? `, ${payment.managerName}` : ''}
           {payment.contractNumber ? `, договор №${payment.contractNumber}` : ''}
-          {payment.customerName ? `, ${payment.customerName}` : ''}. Выберите поступление — фиксация
-          исключит сумму из дальнейших сверок.
+          {payment.customerName ? `, ${payment.customerName}` : ''}. Можно отметить несколько
+          поступлений и указать сумму каждой части. Фиксация исключит суммы из дальнейших сверок.
         </p>
 
         {candidates.length === 0 ? (
@@ -71,28 +113,57 @@ export function ChooseEntryModal({
           </p>
         ) : (
           <ul className={styles.movementList}>
-            {candidates.map((entry) => (
-              <li key={entry.id} className={styles.movementRow}>
-                <label className={styles.candidateLabel}>
-                  <input
-                    type="radio"
-                    name="reconciliation_entry"
-                    checked={selectedId === entry.id}
-                    onChange={() => setSelectedId(entry.id)}
-                    disabled={busy}
-                  />
-                  <span className={styles.movementDate}>{formatDateRu(entry.entryDate)}</span>
-                  <span className={styles.movementTitle}>
-                    {BANK_LABELS[entry.bank]} · {BANK_ENTRY_TYPE_LABELS[entry.entryType]}
-                  </span>
-                  <span className={styles.movementAmount}>
-                    остаток {formatMoneyRub(entry.remainingAmount)}
-                  </span>
-                </label>
-              </li>
-            ))}
+            {candidates.map((entry) => {
+              const checked = amountsById[entry.id] != null;
+              return (
+                <li key={entry.id} className={styles.movementRow}>
+                  <label className={styles.candidateLabel}>
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={() => toggle(entry)}
+                      disabled={busy}
+                    />
+                    <span className={styles.movementDate}>{formatDateRu(entry.entryDate)}</span>
+                    <span className={styles.movementTitle}>
+                      {BANK_LABELS[entry.bank]} · {BANK_ENTRY_TYPE_LABELS[entry.entryType]}
+                    </span>
+                    <span className={styles.movementAmount}>
+                      остаток {formatMoneyRub(entry.remainingAmount)}
+                    </span>
+                  </label>
+                  {checked ? (
+                    <div className={styles.amountSplitRow}>
+                      <label className={styles.amountSplitLabel}>
+                        Часть оплаты к этому поступлению, ₽
+                        <input
+                          type="number"
+                          min={0.01}
+                          step={0.01}
+                          value={amountsById[entry.id]}
+                          onChange={(e) =>
+                            setAmountsById((prev) => ({
+                              ...prev,
+                              [entry.id]: e.target.value,
+                            }))
+                          }
+                          disabled={busy}
+                        />
+                      </label>
+                    </div>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
         )}
+
+        <p className={styles.leftoverHint}>
+          Распределено:{' '}
+          <strong>{formatMoneyRub(String(Math.min(allocated, paymentRemainder)))}</strong> из{' '}
+          {formatMoneyRub(String(paymentRemainder))}
+          {leftover > 0.005 ? ` — остаток ${formatMoneyRub(String(leftover))}` : ''}
+        </p>
 
         <div data-modal-form-actions>
           <button type="button" data-modal-btn="secondary" onClick={onClose} disabled={busy}>
@@ -102,8 +173,8 @@ export function ChooseEntryModal({
             type="button"
             data-admin-mutation
             data-modal-btn="primary"
-            disabled={busy || !selectedId || !canEdit}
-            onClick={() => onLink(selectedId, payment.id)}
+            disabled={busy || links.length === 0 || invalidAmount || !canEdit}
+            onClick={() => onLink(links, payment.id)}
           >
             {busy ? 'Фиксация…' : 'Зафиксировать'}
           </button>

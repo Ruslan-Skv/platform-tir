@@ -127,7 +127,10 @@ export function useBankReconciliationPage() {
     if (!canEdit || movementIds.length === 0) return;
     setActing(true);
     try {
-      const res = await createReconciliationLinks(bankEntryId, movementIds);
+      const res = await createReconciliationLinks(
+        bankEntryId,
+        movementIds.map((id) => ({ moneyMovementId: id }))
+      );
       setWarning(res.warnings[0] ?? null);
       setMatchEntry(null);
       await load();
@@ -138,17 +141,30 @@ export function useBankReconciliationPage() {
     }
   };
 
-  /** Привязать оплату к выбранному поступлению (из карточки оплаты). */
-  const linkPaymentToEntry = async (bankEntryId: string, movementId: string) => {
-    if (!canEdit) return;
+  /**
+   * Привязать оплату к одному или нескольким поступлениям (из карточки оплаты):
+   * оплата могла прийти на счёт частями — по связи на каждое поступление.
+   */
+  const linkPaymentToEntries = async (
+    links: { bankEntryId: string; amount: number }[],
+    movementId: string
+  ) => {
+    if (!canEdit || links.length === 0) return;
     setActing(true);
     try {
-      const res = await createReconciliationLinks(bankEntryId, [movementId]);
-      setWarning(res.warnings[0] ?? null);
+      let warning: string | null = null;
+      for (const link of links) {
+        const res = await createReconciliationLinks(link.bankEntryId, [
+          { moneyMovementId: movementId, amount: link.amount },
+        ]);
+        warning ??= res.warnings[0] ?? null;
+      }
+      setWarning(warning);
       setChoosePayment(null);
       await load();
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Не удалось зафиксировать сверку');
+      await load();
     } finally {
       setActing(false);
     }
@@ -232,7 +248,7 @@ export function useBankReconciliationPage() {
     setChoosePayment,
     acting,
     applyLink,
-    linkPaymentToEntry,
+    linkPaymentToEntries,
     unlink,
     unlinkAll,
     candidatesByType,

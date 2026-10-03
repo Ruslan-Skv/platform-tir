@@ -153,15 +153,12 @@ export async function getReconciliationPreview(params: {
 
 export async function createReconciliationLinks(
   bankEntryId: string,
-  moneyMovementIds: string[]
+  items: { moneyMovementId: string; amount?: number }[]
 ): Promise<{ bankEntryId: string; created: number; warnings: string[] }> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/bank-reconciliation/links`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),
-    body: JSON.stringify({
-      bankEntryId,
-      items: moneyMovementIds.map((id) => ({ moneyMovementId: id })),
-    }),
+    body: JSON.stringify({ bankEntryId, items }),
   });
   if (!res.ok) throw new Error(await readError(res));
   return res.json();

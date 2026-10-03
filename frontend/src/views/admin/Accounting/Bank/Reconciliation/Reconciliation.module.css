@@ -273,3 +273,26 @@
   font-size: var(--admin-font-size-xs, 12px);
   color: var(--admin-text-muted, #6b7280);
 }
+
+.amountSplitRow {
+  flex-basis: 100%;
+  padding-left: 26px;
+}
+
+.amountSplitLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+.amountSplitLabel input {
+  max-width: 200px;
+}
+
+.leftoverHint {
+  margin-top: 8px;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #4b5563);
+}
