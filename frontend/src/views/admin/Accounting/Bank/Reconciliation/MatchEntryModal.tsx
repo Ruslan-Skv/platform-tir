@@ -134,6 +134,11 @@ export function MatchEntryModal({
                       : ''}
                     {link.moneyMovement.customerName ? ` · ${link.moneyMovement.customerName}` : ''}
                   </span>
+                  {link.moneyMovement.executorName ? (
+                    <span className={styles.movementExecutor}>
+                      {link.moneyMovement.executorName}
+                    </span>
+                  ) : null}
                   <span className={styles.movementAmount}>{formatMoneyRub(link.amount)}</span>
                   {link.note ? <span className={styles.linkNote}>{link.note}</span> : null}
                   {canDelete ? (
@@ -213,6 +218,9 @@ export function MatchEntryModal({
                         {movement.contractNumber ? ` · №${movement.contractNumber}` : ''}
                         {movement.customerName ? ` · ${movement.customerName}` : ''}
                       </span>
+                      {movement.executorName ? (
+                        <span className={styles.movementExecutor}>{movement.executorName}</span>
+                      ) : null}
                       <span className={styles.movementAmount}>
                         {formatMoneyRub(
                           String(Math.min(Number(movement.amount), Number(movement.remainder)))

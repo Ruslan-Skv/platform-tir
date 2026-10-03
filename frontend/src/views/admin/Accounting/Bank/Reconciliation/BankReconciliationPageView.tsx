@@ -260,6 +260,11 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
         render: (item: (typeof unmatchedPayments)[number]) => item.customerName || '—',
       },
       {
+        key: 'executorName',
+        title: 'Исполнитель',
+        render: (item: (typeof unmatchedPayments)[number]) => item.executorName || '—',
+      },
+      {
         key: 'amount',
         title: 'Сумма',
         render: (item: (typeof unmatchedPayments)[number]) => (

@@ -106,6 +106,25 @@ export function ExecutorProfilesFormFields({
         />
       </div>
 
+      <div data-modal-form-group>
+        <label
+          htmlFor="executor_show_in_reconciliation"
+          className={styles.showInReconciliationLabel}
+        >
+          <input
+            id="executor_show_in_reconciliation"
+            type="checkbox"
+            checked={draft.showInReconciliation !== false}
+            onChange={(e) => setDraft((p) => ({ ...p, showInReconciliation: e.target.checked }))}
+          />
+          Показывать исполнителя в сверке с банком
+        </label>
+        <p className={styles.fieldHint}>
+          Для оплат «Мебели» с несколькими исполнителями снимьте галочку у тех, кого не нужно
+          показывать на странице сверки банка.
+        </p>
+      </div>
+
       <div data-modal-form-grid>
         <div data-modal-form-group>
           <label htmlFor="executor_kind">Тип исполнителя</label>

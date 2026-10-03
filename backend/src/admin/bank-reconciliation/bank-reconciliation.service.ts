@@ -45,13 +45,19 @@ function toNumber(value: Prisma.Decimal | null | undefined): number {
 }
 
 /** Краткая форма оплаты ДП для экрана сверки. */
-function serializeMovement(row: MovementRow, linkedAmount: number) {
+function serializeMovement(row: MovementRow, linkedAmount: number, hiddenExecutors: Set<string>) {
   const amount = row.amount.toNumber();
+  // Исполнитель («Мебель»): в справочнике реквизитов можно скрыть исполнителя
+  // из сверки (showInReconciliation = false).
+  const executorName =
+    row.executorName && !hiddenExecutors.has(row.executorName) ? row.executorName : null;
   return {
     id: row.id,
     paymentDate: isoDate(row.paymentDate),
     amount: row.amount.toString(),
     paymentForm: row.paymentForm,
+    /** Исполнитель ручной записи «Мебели», если он не скрыт из сверки. */
+    executorName,
     contractNumber: row.contractNumber,
     customerName: row.customerName,
     managerName: movementName(row.manager),
@@ -66,6 +72,28 @@ function serializeMovement(row: MovementRow, linkedAmount: number) {
 export class BankReconciliationService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Названия исполнителей, скрытых из сверки (showInReconciliation = false). */
+  private async hiddenExecutorNames(): Promise<Set<string>> {
+    const rows = await this.prisma.contractDocumentGlobalTemplate.findMany({
+      where: { tab: 'executor_profiles' },
+      select: { html: true },
+    });
+    const hidden = new Set<string>();
+    for (const row of rows) {
+      try {
+        const parsed = JSON.parse(row.html) as {
+          items?: { title?: string; showInReconciliation?: boolean }[];
+        };
+        for (const item of parsed.items ?? []) {
+          if (item.title && item.showInReconciliation === false) hidden.add(item.title);
+        }
+      } catch {
+        /* повреждённый JSON справочника — просто пропускаем */
+      }
+    }
+    return hidden;
+  }
+
   /**
    * Сверка за период: поступления банка с покрытием зафиксированными связями,
    * авто-предложения сопоставления (лаг + групповые зачисления) и оплаты ДП
@@ -74,6 +102,9 @@ export class BankReconciliationService {
   async preview(params: { dateFrom: string; dateTo: string; lagDays?: number }) {
     const { dateFrom, dateTo } = params;
     const lagDays = Math.min(Math.max(params.lagDays ?? 3, 0), 14);
+
+    // Исполнители «Мебели», скрытые из сверки галочкой в справочнике реквизитов.
+    const hiddenExecutors = await this.hiddenExecutorNames();
 
     const bankWhere: Prisma.BankEntryWhereInput = {
       entryDate: { gte: new Date(dateFrom), lte: new Date(dateTo) },
@@ -156,7 +187,7 @@ export class BankReconciliationService {
     const serializeState = (state: MovementState) => {
       let serialized = serializedCache.get(state.row.id);
       if (!serialized) {
-        serialized = serializeMovement(state.row, state.linkedAmount);
+        serialized = serializeMovement(state.row, state.linkedAmount, hiddenExecutors);
         serializedCache.set(state.row.id, serialized);
       }
       return serialized;
@@ -502,6 +533,7 @@ export class BankReconciliationService {
       orderBy: { createdAt: 'desc' },
       take: Math.min(params.limit ?? 100, 200),
     });
+    const hiddenExecutors = await this.hiddenExecutorNames();
     return {
       items: links.map((link) => ({
         id: link.id,
@@ -515,7 +547,11 @@ export class BankReconciliationService {
           bank: link.bankEntry.bank,
           entryType: link.bankEntry.entryType,
         },
-        moneyMovement: serializeMovement(link.moneyMovement, link.moneyMovement.amount.toNumber()),
+        moneyMovement: serializeMovement(
+          link.moneyMovement,
+          link.moneyMovement.amount.toNumber(),
+          hiddenExecutors,
+        ),
       })),
     };
   }

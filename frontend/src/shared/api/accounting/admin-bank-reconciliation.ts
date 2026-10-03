@@ -35,6 +35,8 @@ export interface ReconciliationMovement {
   paymentDate: string;
   amount: string;
   paymentForm: string;
+  /** Исполнитель ручной записи «Мебели» (null — скрыт из сверки или отсутствует). */
+  executorName: string | null;
   contractNumber: string | null;
   customerName: string | null;
   managerName: string | null;

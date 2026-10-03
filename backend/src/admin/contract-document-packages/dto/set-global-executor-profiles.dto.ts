@@ -30,6 +30,11 @@ export class ExecutorProfileDto {
   @MaxLength(160)
   title: string;
 
+  /** Показывать исполнителя у оплат «Мебели» в сверке с банком (по умолчанию — да). */
+  @IsOptional()
+  @IsIn([true, false])
+  showInReconciliation?: boolean;
+
   @IsOptional()
   @IsIn(['COMPANY', 'ENTREPRENEUR'])
   kind?: 'COMPANY' | 'ENTREPRENEUR';

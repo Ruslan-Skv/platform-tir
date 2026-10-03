@@ -228,3 +228,11 @@
   margin-top: 2px;
   font-size: var(--admin-font-size-sm);
 }
+
+.showInReconciliationLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}

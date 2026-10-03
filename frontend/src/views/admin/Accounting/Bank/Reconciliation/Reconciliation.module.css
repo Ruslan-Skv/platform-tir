@@ -267,3 +267,9 @@
   background: var(--admin-surface-muted, #111827);
   border-color: var(--admin-border, #374151);
 }
+
+.movementExecutor {
+  flex-basis: 100%;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-text-muted, #6b7280);
+}

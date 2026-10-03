@@ -187,6 +187,8 @@ export interface ExecutorPaymentQr {
 
 export interface ExecutorRequisiteProfile {
   title: string;
+  /** Показывать исполнителя у оплат «Мебели» в сверке с банком (по умолчанию — да). */
+  showInReconciliation?: boolean;
   /** ЮЛ — ОГРН и КПП; ИП — ОГРНИП, КПП обычно не применяется */
   kind?: ExecutorRequisiteKind;
   companyName?: string;

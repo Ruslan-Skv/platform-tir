@@ -2,6 +2,7 @@ import type { ExecutorRequisiteProfile } from '@/shared/api/admin-contract-docum
 
 export const EMPTY_EXECUTOR_PROFILE: ExecutorRequisiteProfile = {
   title: '',
+  showInReconciliation: true,
   kind: 'COMPANY',
   companyName: '',
   inn: '',
