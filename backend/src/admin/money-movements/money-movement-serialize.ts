@@ -52,6 +52,10 @@ export function serializeMoneyMovement(row: MoneyMovementRowWithManager) {
     office: row.office,
     /** Первоначальные значения правленных супер-админом полей (значок «было …»). */
     originalValues: (row.originalValues as Record<string, string | null> | null) ?? null,
+    /** Примечание супер-админа (замечание/вопрос менеджеру); null — примечания нет. */
+    adminNote: row.adminNote ?? null,
+    /** Примечание отмечено решённым (заливка строки не показывается). */
+    adminNoteResolvedAt: row.adminNoteResolvedAt?.toISOString() ?? null,
     manager: row.manager
       ? {
           id: row.manager.id,

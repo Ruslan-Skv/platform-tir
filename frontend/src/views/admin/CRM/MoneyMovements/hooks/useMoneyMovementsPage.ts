@@ -19,6 +19,7 @@ import {
   getManagerIncassations,
   getMoneyMovementTrashCount,
   getMoneyMovements,
+  setMoneyMovementAdminNote,
   updateManagerIncassation,
   updateManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
@@ -258,7 +259,7 @@ export function useMoneyMovementsPage() {
 
   /**
    * Кнопка удаления ручной записи: сотруднику — только свои записи (он менеджер
-   * или автор) текущего месяца; супер-админу — любые ручные записи без срока.
+   * или автор) текущего месяца; супер-адммину — любые ручные записи без срока.
    */
   const canDeleteManualEntry = useCallback(
     (entry: MoneyMovement): boolean => {
@@ -269,6 +270,21 @@ export function useMoneyMovementsPage() {
       return isOwn && isCurrentMonthEntry(entry);
     },
     [canEditManualEntries, isCurrentMonthEntry, user?.id]
+  );
+
+  /** Сохранить примечание супер-админа к записи (создать/изменить/решить/удалить). */
+  const saveAdminNote = useCallback(
+    async (id: string, params: { note?: string; resolved?: boolean }) => {
+      try {
+        await setMoneyMovementAdminNote(id, params);
+        await refresh();
+        return true;
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : 'Не удалось сохранить примечание');
+        return false;
+      }
+    },
+    [refresh]
   );
 
   const openDeleteConfirm = useCallback((entry: MoneyMovement) => {
@@ -561,6 +577,8 @@ export function useMoneyMovementsPage() {
     submitIncassation,
     /** true — текущий пользователь супер-админ: правка и аннулирование инкассаций. */
     canManageIncassations,
+    /** Примечание супер-админа к записи: сохранить/решить/удалить. */
+    saveAdminNote,
     /** Идёт сохранение правки или аннулирование инкассации (история инкассаций). */
     incassationSaving,
     submitIncassationUpdate,

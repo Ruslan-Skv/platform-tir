@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ContractDocumentPackageKind, PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import {
@@ -326,6 +326,31 @@ export class MoneyMovementsService {
     }
     const covered = row.bankReconciliationLinks.reduce((acc, l) => acc + l.amount.toNumber(), 0);
     return covered >= row.amount.toNumber() - 0.005;
+  }
+
+  /**
+   * Примечание супер-админа к записи журнала ДП: создать/изменить текст,
+   * отметить решённым или удалить (пустой текст). Решённое примечание
+   * сохраняется в истории строки, но заливка строки снимается.
+   */
+  async setAdminNote(id: string, dto: { note?: string; resolved?: boolean }) {
+    const movement = await this.prisma.moneyMovement.findUnique({ where: { id } });
+    if (!movement || movement.deletedAt) {
+      throw new NotFoundException('Запись журнала ДП не найдена');
+    }
+    const note = dto.note?.trim() ?? movement.adminNote ?? '';
+    const data: Prisma.MoneyMovementUpdateInput = {};
+    if (!note) {
+      // Пустой текст — примечание удаляется целиком.
+      data.adminNote = null;
+      data.adminNoteResolvedAt = null;
+    } else {
+      data.adminNote = note;
+      // Новое/изменённое примечание снова требует внимания — сбрасываем «решено».
+      data.adminNoteResolvedAt = dto.resolved ? new Date() : null;
+    }
+    await this.prisma.moneyMovement.update({ where: { id }, data });
+    return { id, adminNote: note || null, adminNoteResolvedAt: data.adminNoteResolvedAt };
   }
 
   /**

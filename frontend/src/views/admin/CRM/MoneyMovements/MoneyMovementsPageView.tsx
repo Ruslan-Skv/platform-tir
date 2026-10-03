@@ -4,6 +4,7 @@ import { useId, useMemo, useState } from 'react';
 
 import type { MoneyMovement } from '@/shared/api/crm/admin-money-movements';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
+import { Modal } from '@/shared/ui/Modal';
 import {
   AdminListRefreshButton,
   AdminToolbarIconButton,
@@ -199,6 +200,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     manualEntrySubmitting,
     submitManualEntry,
     canEditManualEntries,
+    saveAdminNote,
     editingEntry,
     openManualEntryEditModal,
     executors,
@@ -223,6 +225,23 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
   const [statsOpen, setStatsOpen] = useState(false);
   const openStats = () => setStatsOpen(true);
   const closeStats = () => setStatsOpen(false);
+
+  /** Примечание супер-админа к записи: модалка редактирования (создать/решить/удалить). */
+  const [noteEditing, setNoteEditing] = useState<MoneyMovement | null>(null);
+  const [noteDraft, setNoteDraft] = useState('');
+  const [noteBusy, setNoteBusy] = useState(false);
+  const openNoteModal = (entry: MoneyMovement) => {
+    setNoteEditing(entry);
+    setNoteDraft(entry.adminNote ?? '');
+  };
+  const closeNoteModal = () => setNoteEditing(null);
+  const submitNote = async (params: { note?: string; resolved?: boolean }) => {
+    if (!noteEditing) return;
+    setNoteBusy(true);
+    const ok = await saveAdminNote(noteEditing.id, params);
+    setNoteBusy(false);
+    if (ok) closeNoteModal();
+  };
 
   const filtersSummary = useMemo(
     () =>
@@ -436,6 +455,38 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
             <EditedFieldMark original={parts.length > 0 ? parts.join(', ') : null} />
             {item.executorName ? (
               <span className={styles.paymentFormSubline}>{item.executorName}</span>
+            ) : null}
+          </div>
+        );
+      },
+    },
+    {
+      key: 'adminNote',
+      title: 'Примечание',
+      render: (item: MoneyMovement) => {
+        const note = item.adminNote;
+        if (!note && !canEditManualEntries) return null;
+        return (
+          <div className={styles.noteCell}>
+            {note ? (
+              <span
+                className={`${styles.noteBadge} ${
+                  item.adminNoteResolvedAt ? styles.noteBadgeResolved : ''
+                }`}
+                title={`${note}${item.adminNoteResolvedAt ? '\n(примечание решено)' : ''}`}
+              >
+                {item.adminNoteResolvedAt ? '✓' : '!'} {note}
+              </span>
+            ) : null}
+            {canEditManualEntries ? (
+              <button
+                type="button"
+                className={styles.noteEditBtn}
+                onClick={() => openNoteModal(item)}
+                title={note ? 'Изменить примечание' : 'Добавить примечание'}
+              >
+                {note ? '✎' : '+'}
+              </button>
             ) : null}
           </div>
         );
@@ -926,6 +977,10 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         data={items}
         columns={columns}
         keyExtractor={(item) => item.id}
+        /** Строка с нерешённым примечанием супер-админа подсвечена. */
+        getRowClassName={(item) =>
+          item.adminNote && !item.adminNoteResolvedAt ? styles.rowHasOpenNote : undefined
+        }
         loading={loading}
         emptyMessage="Денежных движений за выбранный период нет"
         serverSidePagination
@@ -938,6 +993,70 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         paginationClassName={cdHub.contractsListPagination}
         paginationActiveClassName={cdHub.contractsListPaginationPageActive}
       />
+
+      <Modal
+        isOpen={noteEditing !== null}
+        onClose={closeNoteModal}
+        title="Примечание к записи"
+        showCloseButton
+        compactOnMobile
+      >
+        <div data-modal-form>
+          <p data-modal-form-hint>
+            Примечание видно всем в колонке «Примечание»; строка с нерешённым примечанием
+            подсвечена. Отметьте «решено», когда вопрос закрыт — заливка снимется.
+          </p>
+          <label className={styles.noteFieldLabel} htmlFor="dp-admin-note">
+            Текст примечания (замечание или вопрос менеджеру)
+          </label>
+          <textarea
+            id="dp-admin-note"
+            className={styles.noteTextarea}
+            value={noteDraft}
+            onChange={(e) => setNoteDraft(e.target.value)}
+            rows={4}
+            maxLength={2000}
+            disabled={noteBusy}
+            placeholder="Например: проверить способ оплаты — расходится с выпиской банка"
+          />
+          <div className={styles.noteActions}>
+            <button
+              type="button"
+              data-admin-mutation
+              data-modal-btn="primary"
+              disabled={noteBusy || !noteDraft.trim()}
+              onClick={() => void submitNote({ note: noteDraft })}
+            >
+              {noteBusy ? 'Сохранение…' : 'Сохранить'}
+            </button>
+            {noteEditing?.adminNote ? (
+              <>
+                <button
+                  type="button"
+                  data-admin-mutation
+                  disabled={noteBusy}
+                  onClick={() =>
+                    void submitNote({
+                      note: noteEditing.adminNote ?? '',
+                      resolved: !noteEditing.adminNoteResolvedAt,
+                    })
+                  }
+                >
+                  {noteEditing.adminNoteResolvedAt ? 'Вернуть в работу' : 'Отметить решённым'}
+                </button>
+                <button
+                  type="button"
+                  data-admin-mutation
+                  disabled={noteBusy}
+                  onClick={() => void submitNote({ note: '' })}
+                >
+                  Удалить примечание
+                </button>
+              </>
+            ) : null}
+          </div>
+        </div>
+      </Modal>
 
       <DpStatsModal
         open={statsOpen}

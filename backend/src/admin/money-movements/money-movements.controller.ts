@@ -27,6 +27,7 @@ import {
   UpdateManagerIncassationDto,
 } from './dto/create-manager-incassation.dto';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
+import { SetAdminNoteDto } from './dto/set-admin-note.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -165,5 +166,15 @@ export class MoneyMovementsController {
       id: req.user!.id,
       role: req.user!.role,
     });
+  }
+
+  /**
+   * Примечание супер-админа к записи (замечание/вопрос менеджеру): создать,
+   * изменить, отметить решённым или удалить. Только супер-админ.
+   */
+  @Patch(':id/admin-note')
+  @Roles('SUPER_ADMIN')
+  setAdminNote(@Param('id') id: string, @Body() dto: SetAdminNoteDto) {
+    return this.moneyMovementsService.setAdminNote(id, dto);
   }
 }

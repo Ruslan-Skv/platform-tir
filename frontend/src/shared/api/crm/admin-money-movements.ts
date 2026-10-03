@@ -51,6 +51,10 @@ export type MoneyMovement = {
   updatedAt: string;
   /** Оплата полностью сверена с банком (после сверки) — галочка у суммы. */
   reconciled: boolean;
+  /** Примечание супер-админа к записи (замечание/вопрос менеджеру); null — нет. */
+  adminNote: string | null;
+  /** Примечание отмечено решённым (ISO) — заливка строки не показывается. */
+  adminNoteResolvedAt: string | null;
 };
 
 export type MoneyMovementManagerOption = { id: string; name: string };
@@ -271,6 +275,23 @@ export async function updateManualMoneyMovement(
     body: JSON.stringify(params),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось сохранить правку проводки');
+  return res.json();
+}
+
+/**
+ * Примечание супер-админа к записи журнала ДП: создать/изменить текст,
+ * отметить решённым (resolved) или удалить (пустой note).
+ */
+export async function setMoneyMovementAdminNote(
+  id: string,
+  params: { note?: string; resolved?: boolean }
+): Promise<{ id: string; adminNote: string | null; adminNoteResolvedAt: string | null }> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/${id}/admin-note`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify(params),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось сохранить примечание');
   return res.json();
 }
 

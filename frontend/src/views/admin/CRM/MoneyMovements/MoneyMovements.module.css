@@ -63,6 +63,71 @@
   font-size: var(--admin-font-size-xs, 12px);
 }
 
+/* Строка с нерешённым примечанием супер-админа — жёлтая заливка. */
+.rowHasOpenNote {
+  background: rgba(245, 158, 11, 0.14);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .rowHasOpenNote {
+  background: rgba(245, 158, 11, 0.18);
+}
+
+.noteCell {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 260px;
+}
+
+.noteBadge {
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-warning, #b45309);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  cursor: help;
+}
+
+.noteBadgeResolved {
+  color: var(--admin-success, #15803d);
+  text-decoration: line-through;
+}
+
+.noteEditBtn {
+  flex-shrink: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--admin-text-muted, #6b7280);
+  font-size: 14px;
+  line-height: 1;
+  padding: 2px 4px;
+}
+
+.noteEditBtn:hover {
+  color: var(--admin-primary, #1d4ed8);
+}
+
+.noteFieldLabel {
+  display: block;
+  margin-bottom: 4px;
+  font-size: var(--admin-font-size-sm, 13px);
+  color: var(--admin-text-secondary, #4b5563);
+}
+
+.noteTextarea {
+  width: 100%;
+  min-width: 320px;
+  resize: vertical;
+}
+
+.noteActions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
 .basisCell {
   max-width: 320px;
 }
