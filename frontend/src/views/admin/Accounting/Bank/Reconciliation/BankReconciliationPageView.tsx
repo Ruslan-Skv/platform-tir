@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo } from 'react';
 
 import type {
   ReconciliationEntry,
@@ -89,6 +89,8 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
     lagDays,
     setLagDays,
     resetFilters,
+    filtersCollapsed,
+    toggleFiltersCollapsed,
     matchEntry,
     setMatchEntry,
     choosePayment,
@@ -104,8 +106,6 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
   } = model;
 
   const filtersContentId = useId();
-  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
-  const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
 
   const totals = preview?.totals;
   const entries = useMemo(() => preview?.entries ?? [], [preview]);

@@ -20,6 +20,41 @@ import { currentMonthStartIso, todayIso } from '../../bank-page.constants';
 
 export const RECONCILIATION_LAG_OPTIONS = [0, 1, 2, 3, 5, 7] as const;
 
+/** Ключ localStorage для сохранения параметров и настроек страницы сверки банка. */
+const RECONCILIATION_PAGE_FILTERS_STORAGE_KEY = 'admin_bank_reconciliation_filters_v1';
+
+type ReconciliationPagePersistedFilters = {
+  dateFrom: string;
+  dateTo: string;
+  lagDays: number;
+  filtersCollapsed: boolean;
+};
+
+function readPersistedFilters(): Partial<ReconciliationPagePersistedFilters> | null {
+  try {
+    const raw = window.localStorage.getItem(RECONCILIATION_PAGE_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<ReconciliationPagePersistedFilters>;
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedFilters(filters: ReconciliationPagePersistedFilters): void {
+  try {
+    window.localStorage.setItem(RECONCILIATION_PAGE_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    /* localStorage недоступен — настройки просто не сохранятся */
+  }
+}
+
+function isReconciliationLag(value: unknown): value is number {
+  return (
+    typeof value === 'number' && (RECONCILIATION_LAG_OPTIONS as readonly number[]).includes(value)
+  );
+}
+
 export function useBankReconciliationPage() {
   const { canEdit } = useAdminSectionCanEdit();
   const { user } = useAuth();
@@ -34,6 +69,30 @@ export function useBankReconciliationPage() {
   const [dateFrom, setDateFrom] = useState(currentMonthStartIso);
   const [dateTo, setDateTo] = useState(todayIso);
   const [lagDays, setLagDays] = useState(3);
+  /** Свёрнутость панели параметров — хранится здесь, чтобы сохраняться вместе с фильтрами. */
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  const toggleFiltersCollapsed = useCallback(() => setFiltersCollapsed((value) => !value), []);
+  /** Фильтры восстановлены из localStorage (false до гидрации и при первом рендере на сервере). */
+  const [filtersRestored, setFiltersRestored] = useState(false);
+
+  // Восстановление сохранённых параметров после монтирования (SSR-безопасно).
+  useEffect(() => {
+    const persisted = readPersistedFilters();
+    if (persisted) {
+      if (typeof persisted.dateFrom === 'string') setDateFrom(persisted.dateFrom);
+      if (typeof persisted.dateTo === 'string') setDateTo(persisted.dateTo);
+      if (isReconciliationLag(persisted.lagDays)) setLagDays(persisted.lagDays);
+      if (typeof persisted.filtersCollapsed === 'boolean')
+        setFiltersCollapsed(persisted.filtersCollapsed);
+    }
+    setFiltersRestored(true);
+  }, []);
+
+  // Сохранение параметров и настроек при каждом их изменении.
+  useEffect(() => {
+    if (!filtersRestored) return;
+    writePersistedFilters({ dateFrom, dateTo, lagDays, filtersCollapsed });
+  }, [filtersRestored, dateFrom, dateTo, lagDays, filtersCollapsed]);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -159,6 +218,8 @@ export function useBankReconciliationPage() {
     lagDays,
     setLagDays,
     resetFilters,
+    filtersCollapsed,
+    toggleFiltersCollapsed,
     matchEntry,
     setMatchEntry,
     choosePayment,

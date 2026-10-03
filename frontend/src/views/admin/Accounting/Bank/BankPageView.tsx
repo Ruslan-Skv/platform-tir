@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo } from 'react';
 
 import type { BankEntriesTotals, BankEntry } from '@/shared/api/accounting/admin-bank-entries';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
@@ -107,6 +107,8 @@ export function BankPageView({ model }: BankPageViewProps) {
     setSearch,
     resetFilters,
     setPeriod,
+    filtersCollapsed,
+    toggleFiltersCollapsed,
     modalOpen,
     editing,
     saving,
@@ -123,9 +125,6 @@ export function BankPageView({ model }: BankPageViewProps) {
   } = model;
 
   const filtersContentId = useId();
-  /** Всегда свёрнуто при открытии страницы — как в журнале ДП. */
-  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
-  const toggleFiltersCollapsed = () => setFiltersCollapsed((value) => !value);
 
   const countTitle = `${total} ${pluralEntries(total)}`;
 

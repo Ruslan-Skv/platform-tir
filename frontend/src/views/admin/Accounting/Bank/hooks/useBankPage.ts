@@ -20,6 +20,44 @@ export const BANK_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
 export type BankPageLimit = (typeof BANK_PAGE_LIMIT_OPTIONS)[number];
 const DEFAULT_LIMIT: BankPageLimit = 50;
 
+/** Ключ localStorage для сохранения фильтров и настроек страницы банка. */
+const BANK_PAGE_FILTERS_STORAGE_KEY = 'admin_bank_page_filters_v1';
+
+type BankPagePersistedFilters = {
+  dateFrom: string;
+  dateTo: string;
+  bank: string;
+  entryType: string;
+  search: string;
+  limit: BankPageLimit;
+  filtersCollapsed: boolean;
+};
+
+function readPersistedFilters(): Partial<BankPagePersistedFilters> | null {
+  try {
+    const raw = window.localStorage.getItem(BANK_PAGE_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<BankPagePersistedFilters>;
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function writePersistedFilters(filters: BankPagePersistedFilters): void {
+  try {
+    window.localStorage.setItem(BANK_PAGE_FILTERS_STORAGE_KEY, JSON.stringify(filters));
+  } catch {
+    /* localStorage недоступен — настройки просто не сохранятся */
+  }
+}
+
+function isBankPageLimit(value: unknown): value is BankPageLimit {
+  return (
+    typeof value === 'number' && (BANK_PAGE_LIMIT_OPTIONS as readonly number[]).includes(value)
+  );
+}
+
 /** Локальная дата в ISO (YYYY-MM-DD) без сдвига таймзоны. */
 function toLocalIsoDate(date: Date): string {
   const pad = (n: number) => String(n).padStart(2, '0');
@@ -47,6 +85,44 @@ export function useBankPage() {
   const [entryType, setEntryType] = useState('');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  /** Фильтры восстановлены из localStorage (false до гидрации и при первом рендере на сервере). */
+  const [filtersRestored, setFiltersRestored] = useState(false);
+  /** Свёрнутость панели фильтров — хранится здесь, чтобы сохраняться вместе с фильтрами. */
+  const [filtersCollapsed, setFiltersCollapsed] = useState(true);
+  const toggleFiltersCollapsed = useCallback(() => setFiltersCollapsed((value) => !value), []);
+
+  // Восстановление сохранённых фильтров после монтирования (SSR-безопасно).
+  useEffect(() => {
+    const persisted = readPersistedFilters();
+    if (persisted) {
+      if (typeof persisted.dateFrom === 'string') setDateFrom(persisted.dateFrom);
+      if (typeof persisted.dateTo === 'string') setDateTo(persisted.dateTo);
+      if (typeof persisted.bank === 'string') setBank(persisted.bank);
+      if (typeof persisted.entryType === 'string') setEntryType(persisted.entryType);
+      if (typeof persisted.search === 'string') {
+        setSearch(persisted.search);
+        setDebouncedSearch(persisted.search.trim());
+      }
+      if (isBankPageLimit(persisted.limit)) setLimitState(persisted.limit);
+      if (typeof persisted.filtersCollapsed === 'boolean')
+        setFiltersCollapsed(persisted.filtersCollapsed);
+    }
+    setFiltersRestored(true);
+  }, []);
+
+  // Сохранение фильтров и настроек при каждом их изменении.
+  useEffect(() => {
+    if (!filtersRestored) return;
+    writePersistedFilters({
+      dateFrom,
+      dateTo,
+      bank,
+      entryType,
+      search,
+      limit,
+      filtersCollapsed,
+    });
+  }, [filtersRestored, dateFrom, dateTo, bank, entryType, search, limit, filtersCollapsed]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => setDebouncedSearch(search.trim()), 400);
@@ -217,6 +293,8 @@ export function useBankPage() {
     filtersActive,
     resetFilters,
     setPeriod,
+    filtersCollapsed,
+    toggleFiltersCollapsed,
     modalOpen,
     editing,
     saving,
