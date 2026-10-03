@@ -63,6 +63,7 @@ export class MoneyMovementsController {
       paymentForm: query.paymentForm,
       paymentType: query.paymentType,
       entryKind: query.entryKind,
+      reconciliation: query.reconciliation,
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
       search: query.search,

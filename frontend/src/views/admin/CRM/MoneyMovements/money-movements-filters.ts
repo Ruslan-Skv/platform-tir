@@ -14,6 +14,9 @@ export type DpListScope = 'all' | 'mine';
 /** Тип записи журнала: «manual» — ручные проводки, «auto» — автоматические; пусто — все. */
 export type DpEntryKind = '' | 'auto' | 'manual';
 
+/** Сверка с банком: пусто — все, «reconciled» — свёренные, «unreconciled» — несвёренные. */
+export type DpReconciliation = '' | 'reconciled' | 'unreconciled';
+
 /** Режим панели итогов за период: по направлениям или по менеджерам. */
 export type DpTotalsMode = 'direction' | 'manager';
 
@@ -23,6 +26,7 @@ export interface DpFiltersPersisted {
   direction: string;
   paymentForm: string;
   entryKind: DpEntryKind;
+  reconciliation: DpReconciliation;
   totalsMode: DpTotalsMode;
   search: string;
   dateFrom: string;
@@ -36,6 +40,7 @@ const DP_FILTERS_STORAGE_KEY = 'admin_dp_money_movements_filters_v1';
 
 const SCOPE_VALUES = new Set<DpListScope>(['all', 'mine']);
 const ENTRY_KIND_VALUES = new Set<DpEntryKind>(['', 'auto', 'manual']);
+const RECONCILIATION_VALUES = new Set<DpReconciliation>(['', 'reconciled', 'unreconciled']);
 const TOTALS_MODE_VALUES = new Set<DpTotalsMode>(['direction', 'manager']);
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -49,6 +54,7 @@ export function defaultDpFilters(): DpFiltersPersisted {
     direction: '',
     paymentForm: '',
     entryKind: '',
+    reconciliation: '',
     totalsMode: 'direction',
     search: '',
     dateFrom: bounds.from,
@@ -74,6 +80,11 @@ function normalizePersistedFilters(raw: unknown): DpFiltersPersisted {
       typeof value.entryKind === 'string' && ENTRY_KIND_VALUES.has(value.entryKind as DpEntryKind)
         ? (value.entryKind as DpEntryKind)
         : defaults.entryKind,
+    reconciliation:
+      typeof value.reconciliation === 'string' &&
+      RECONCILIATION_VALUES.has(value.reconciliation as DpReconciliation)
+        ? (value.reconciliation as DpReconciliation)
+        : defaults.reconciliation,
     totalsMode:
       typeof value.totalsMode === 'string' &&
       TOTALS_MODE_VALUES.has(value.totalsMode as DpTotalsMode)
@@ -142,6 +153,7 @@ export function buildDpFiltersSummary(params: {
   paymentForm: string;
   paymentFormLabels: Record<string, string>;
   entryKind: DpEntryKind;
+  reconciliation: DpReconciliation;
   totalsMode: DpTotalsMode;
   dateFrom: string;
   dateTo: string;
@@ -157,6 +169,13 @@ export function buildDpFiltersSummary(params: {
     items.push({
       key: 'entryKind',
       label: `Тип: ${params.entryKind === 'manual' ? 'ручные' : 'авто'}`,
+    });
+  }
+
+  if (params.reconciliation) {
+    items.push({
+      key: 'reconciliation',
+      label: `Сверка: ${params.reconciliation === 'reconciled' ? 'сверенные' : 'несверенные'}`,
     });
   }
 

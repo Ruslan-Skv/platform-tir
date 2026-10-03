@@ -56,6 +56,13 @@
   color: var(--admin-error, #b91c1c);
 }
 
+/* Маленькая зелёная галочка у суммы — оплата сверена с банком. */
+.reconciledMark {
+  margin-left: 4px;
+  color: var(--admin-success, #15803d);
+  font-size: var(--admin-font-size-xs, 12px);
+}
+
 .basisCell {
   max-width: 320px;
 }

@@ -27,6 +27,11 @@ export class QueryMoneyMovementsDto {
   @IsIn(['manual', 'auto'])
   entryKind?: 'manual' | 'auto';
 
+  /** Сверка с банком: «reconciled» — свёренные, «unreconciled» — несвёренные. */
+  @IsOptional()
+  @IsIn(['reconciled', 'unreconciled'])
+  reconciliation?: 'reconciled' | 'unreconciled';
+
   @IsOptional()
   @IsString()
   dateFrom?: string;

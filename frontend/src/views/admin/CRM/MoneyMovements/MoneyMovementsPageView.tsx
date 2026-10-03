@@ -153,6 +153,8 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     setPaymentForm,
     entryKind,
     setEntryKind,
+    reconciliation,
+    setReconciliation,
     totalsMode,
     setTotalsMode,
     searchInput,
@@ -233,6 +235,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         paymentForm,
         paymentFormLabels: DP_PAYMENT_FORM_LABELS,
         entryKind,
+        reconciliation,
         totalsMode,
         dateFrom,
         dateTo,
@@ -245,6 +248,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
       managers,
       paymentForm,
       entryKind,
+      reconciliation,
       totalsMode,
       dateFrom,
       dateTo,
@@ -406,6 +410,11 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
         >
           {formatDpMoney(item.amount)}
           <EditedFieldMark original={editedOriginal(item, 'amount', formatDpMoney)} />
+          {item.reconciled ? (
+            <span className={styles.reconciledMark} title="Оплата сверена с банком">
+              ✓
+            </span>
+          ) : null}
         </span>
       ),
     },
@@ -745,6 +754,34 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                   onClick={() => setEntryKind('manual')}
                 >
                   Ручные
+                </button>
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Сверка с банком">
+                <span className={cdHub.contractsListChipRowLabel}>Сверка</span>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(!reconciliation)}
+                  onClick={() => setReconciliation('')}
+                >
+                  Все
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(reconciliation === 'reconciled')}
+                  onClick={() => setReconciliation('reconciled')}
+                >
+                  Сверенные ✓
+                </button>
+                <button
+                  type="button"
+                  disabled={loading}
+                  className={chipClass(reconciliation === 'unreconciled')}
+                  onClick={() => setReconciliation('unreconciled')}
+                >
+                  Несверенные
                 </button>
               </div>
 

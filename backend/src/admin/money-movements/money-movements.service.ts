@@ -8,7 +8,10 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { ManagerIncassationsService } from './manager-incassations.service';
-import { serializeMoneyMovement } from './money-movement-serialize';
+import {
+  serializeMoneyMovement,
+  type MoneyMovementRowWithManager,
+} from './money-movement-serialize';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
@@ -86,6 +89,8 @@ export class MoneyMovementsService {
     paymentType?: string;
     /** Тип записи: «manual» — ручные проводки, «auto» — автоматические по оплатам договоров. */
     entryKind?: 'manual' | 'auto';
+    /** Сверка с банком: «reconciled» — свёренные, «unreconciled» — несвёренные. */
+    reconciliation?: 'reconciled' | 'unreconciled';
     dateFrom?: string;
     dateTo?: string;
     search?: string;
@@ -100,6 +105,7 @@ export class MoneyMovementsService {
       paymentForm,
       paymentType,
       entryKind,
+      reconciliation,
       dateFrom,
       dateTo,
       search,
@@ -140,6 +146,19 @@ export class MoneyMovementsService {
         { notes: { contains: q, mode: 'insensitive' } },
       ];
     }
+    if (reconciliation) {
+      // Полное покрытие оплат связями сверки нельзя выразить в Prisma-where,
+      // поэтому берём сырым SQL список ID свёренных записей (их немного) и
+      // фильтруем по нему: «несвёренные» — это просто NOT IN по этому списку.
+      const reconciledIds = await this.reconciledMovementIds();
+      if (reconciliation === 'reconciled') {
+        where.id = { in: reconciledIds };
+      } else if (where.NOT) {
+        (where.NOT as Prisma.MoneyMovementWhereInput).id = { in: reconciledIds };
+      } else {
+        where.NOT = { id: { in: reconciledIds } };
+      }
+    }
 
     // Итоговые продажи: записи «Прочее» — движения ДС вне продаж, в продажи не входят.
     // Исключаем их из сумм итогов, кроме случая, когда пользователь смотрит именно «Прочее»
@@ -161,6 +180,7 @@ export class MoneyMovementsService {
         where,
         include: {
           manager: { select: { id: true, email: true, firstName: true, lastName: true } },
+          bankReconciliationLinks: { select: { amount: true, mismatchAmount: true } },
         },
         orderBy: [{ paymentDate: 'desc' }, { performedAt: 'desc' }],
         skip,
@@ -246,7 +266,11 @@ export class MoneyMovementsService {
     const cashBalances = await this.incassations.getCashBalances(balanceManagerIds);
 
     return {
-      data: rawData.map((row) => serializeMoneyMovement(row)),
+      data: rawData.map((row) => ({
+        ...serializeMoneyMovement(row),
+        /** Оплата полностью сверена с поступлением банка (наличные не сверяются). */
+        reconciled: this.isMovementReconciled(row),
+      })),
       total,
       page,
       limit: take,
@@ -264,6 +288,44 @@ export class MoneyMovementsService {
       })),
       managers,
     };
+  }
+
+  /** ID несвёренных с банком оплат — тот же критерий, что у isMovementReconciled. */
+  private async reconciledMovementIds(): Promise<string[]> {
+    const rows: { id: string }[] = await this.prisma.$queryRaw`
+      SELECT m."id" FROM "money_movements" m
+      WHERE m.deleted_at IS NULL
+        AND m."paymentForm" <> 'CASH'
+        AND (
+          EXISTS (
+            SELECT 1 FROM "bank_reconciliation_links" l
+            WHERE l."moneyMovementId" = m."id" AND l."mismatchAmount" IS NOT NULL
+          )
+          OR COALESCE((
+            SELECT SUM(l."amount") FROM "bank_reconciliation_links" l
+            WHERE l."moneyMovementId" = m."id"
+          ), 0) >= m."amount" - 0.005
+        )`;
+    return rows.map((r) => r.id);
+  }
+
+  /**
+   * Оплата сверена с банком: несверяемые способы (наличные) — нет, остальные —
+   * когда связи сверки покрывают сумму целиком; связь с расхождением (округление)
+   * также закрывает оплату полностью.
+   */
+  private isMovementReconciled(
+    row: MoneyMovementRowWithManager & {
+      bankReconciliationLinks: { amount: Prisma.Decimal; mismatchAmount: Prisma.Decimal | null }[];
+    },
+  ): boolean {
+    if (row.paymentForm === 'CASH') return false;
+    if (row.bankReconciliationLinks.length === 0) return false;
+    if (row.bankReconciliationLinks.some((l) => (l.mismatchAmount?.toNumber() ?? 0) > 0)) {
+      return true;
+    }
+    const covered = row.bankReconciliationLinks.reduce((acc, l) => acc + l.amount.toNumber(), 0);
+    return covered >= row.amount.toNumber() - 0.005;
   }
 
   /**

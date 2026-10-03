@@ -26,6 +26,7 @@ import {
 import {
   type DpEntryKind,
   type DpListScope,
+  type DpReconciliation,
   type DpTotalsMode,
   defaultDpFilters,
   loadDpFilters,
@@ -59,6 +60,9 @@ export function useMoneyMovementsPage() {
   const [direction, setDirection] = useState(initialFiltersRef.current.direction);
   const [paymentForm, setPaymentForm] = useState(initialFiltersRef.current.paymentForm);
   const [entryKind, setEntryKindState] = useState<DpEntryKind>(initialFiltersRef.current.entryKind);
+  const [reconciliation, setReconciliationState] = useState<DpReconciliation>(
+    initialFiltersRef.current.reconciliation
+  );
   /** Режим панели итогов за период: по направлениям или по менеджерам. */
   const [totalsMode, setTotalsModeState] = useState<DpTotalsMode>(
     initialFiltersRef.current.totalsMode
@@ -118,6 +122,7 @@ export function useMoneyMovementsPage() {
       direction,
       paymentForm,
       entryKind,
+      reconciliation,
       totalsMode,
       search,
       dateFrom,
@@ -131,6 +136,7 @@ export function useMoneyMovementsPage() {
     direction,
     paymentForm,
     entryKind,
+    reconciliation,
     totalsMode,
     search,
     dateFrom,
@@ -170,6 +176,7 @@ export function useMoneyMovementsPage() {
         direction: direction || undefined,
         paymentForm: paymentForm || undefined,
         entryKind: entryKind || undefined,
+        reconciliation: reconciliation || undefined,
         search: search || undefined,
         page,
         limit,
@@ -197,7 +204,19 @@ export function useMoneyMovementsPage() {
     } finally {
       setLoading(false);
     }
-  }, [dateFrom, dateTo, managerId, scope, direction, paymentForm, entryKind, search, page, limit]);
+  }, [
+    dateFrom,
+    dateTo,
+    managerId,
+    scope,
+    direction,
+    paymentForm,
+    entryKind,
+    reconciliation,
+    search,
+    page,
+    limit,
+  ]);
 
   useEffect(() => {
     void refresh();
@@ -428,6 +447,7 @@ export function useMoneyMovementsPage() {
     setDirection('');
     setPaymentForm('');
     setEntryKindState('');
+    setReconciliationState('');
     setTotalsModeState('direction');
     setSearchInput('');
     setLimitState(DP_DEFAULT_PAGE_LIMIT);
@@ -488,6 +508,11 @@ export function useMoneyMovementsPage() {
     entryKind,
     setEntryKind: (value: DpEntryKind) => {
       setEntryKindState(value);
+      setPage(1);
+    },
+    reconciliation,
+    setReconciliation: (value: DpReconciliation) => {
+      setReconciliationState(value);
       setPage(1);
     },
     totalsMode,

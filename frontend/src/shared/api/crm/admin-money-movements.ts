@@ -49,6 +49,8 @@ export type MoneyMovement = {
   createdById: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Оплата полностью сверена с банком (после сверки) — галочка у суммы. */
+  reconciled: boolean;
 };
 
 export type MoneyMovementManagerOption = { id: string; name: string };
@@ -88,6 +90,8 @@ export async function getMoneyMovements(params?: {
   paymentType?: string;
   /** Тип записи: «manual» — ручные проводки, «auto» — автоматические по оплатам договоров. */
   entryKind?: 'manual' | 'auto';
+  /** Сверка с банком: свёренные или несвёренные оплаты. */
+  reconciliation?: 'reconciled' | 'unreconciled';
   dateFrom?: string;
   dateTo?: string;
   search?: string;
@@ -101,6 +105,7 @@ export async function getMoneyMovements(params?: {
   if (params?.paymentForm) search.set('paymentForm', params.paymentForm);
   if (params?.paymentType) search.set('paymentType', params.paymentType);
   if (params?.entryKind) search.set('entryKind', params.entryKind);
+  if (params?.reconciliation) search.set('reconciliation', params.reconciliation);
   if (params?.dateFrom) search.set('dateFrom', params.dateFrom);
   if (params?.dateTo) search.set('dateTo', params.dateTo);
   if (params?.search) search.set('search', params.search);
