@@ -47,16 +47,33 @@ function filterFieldClass(base: string, active: boolean): string {
 
 /** Статус сопоставления поступления — цветной бейдж. */
 function EntryStatusBadge({ entry }: { entry: ReconciliationEntry }) {
+  // Расхождение (округления и т.п.) не блокирует сверку — показываем его рядом
+  // с «Сверено», чтобы расхождение было видно в самой строке сверки.
+  const mismatch = Number(entry.mismatchAmount);
   if (entry.status === 'covered') {
-    return <span className={`${styles.statusBadge} ${styles.statusCovered}`}>Сверено</span>;
+    return (
+      <span
+        className={`${styles.statusBadge} ${styles.statusCovered}`}
+        title={
+          mismatch > 0
+            ? 'Сверка зафиксирована с расхождением сумм (см. пометки в связях)'
+            : undefined
+        }
+      >
+        Сверено
+        {mismatch > 0 ? ` · расхождение ${formatMoneyRub(entry.mismatchAmount)}` : ''}
+      </span>
+    );
   }
   if (entry.suggestion) {
+    const mismatch = entry.suggestion.mismatchAmount ? Number(entry.suggestion.mismatchAmount) : 0;
     return (
       <span
         className={`${styles.statusBadge} ${styles.statusSuggested}`}
         title="Автоматика нашла подходящие оплаты ДП — проверьте и зафиксируйте"
       >
         Предложение {formatMoneyRub(entry.suggestion.amount)}
+        {mismatch > 0 ? ` · расхождение ${formatMoneyRub(entry.suggestion.mismatchAmount!)}` : ''}
       </span>
     );
   }
@@ -81,6 +98,8 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
     loading,
     error,
     setError,
+    warning,
+    setWarning,
     load,
     dateFrom,
     setDateFrom,
@@ -311,7 +330,10 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
         key: 'amount',
         title: 'Сумма связи',
         render: (item: ReconciliationHistoryItem) => (
-          <span className={dpStyles.amountCell}>{formatMoneyRub(item.amount)}</span>
+          <span className={dpStyles.amountCell}>
+            {formatMoneyRub(item.amount)}
+            {item.note ? <span className={styles.linkNote}> · {item.note}</span> : null}
+          </span>
         ),
       },
     ],
@@ -371,6 +393,15 @@ export function BankReconciliationPageView({ model }: BankReconciliationPageView
         <div className={dpStyles.pageMessage}>
           <span>{error}</span>
           <button type="button" onClick={() => setError(null)} aria-label="Закрыть">
+            ×
+          </button>
+        </div>
+      ) : null}
+
+      {warning ? (
+        <div className={dpStyles.pageMessage}>
+          <span className={styles.overWarn}>{warning}</span>
+          <button type="button" onClick={() => setWarning(null)} aria-label="Закрыть">
             ×
           </button>
         </div>

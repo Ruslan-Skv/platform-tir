@@ -73,6 +73,10 @@ export function MatchEntryModal({
   );
 
   const over = selectedSum > remaining + 0.005;
+  // Расхождение (например, из-за округления) не блокирует сверку: зафиксируется
+  // доступный остаток зачисления, а разница сохранится пометкой в связи.
+  const overAmount = over ? selectedSum - remaining : 0;
+  const cappedSum = over ? remaining : selectedSum;
 
   const toggle = (id: string) => {
     setSelected((prev) => {
@@ -131,6 +135,7 @@ export function MatchEntryModal({
                     {link.moneyMovement.customerName ? ` · ${link.moneyMovement.customerName}` : ''}
                   </span>
                   <span className={styles.movementAmount}>{formatMoneyRub(link.amount)}</span>
+                  {link.note ? <span className={styles.linkNote}>{link.note}</span> : null}
                   {canDelete ? (
                     <button
                       type="button"
@@ -166,6 +171,13 @@ export function MatchEntryModal({
                     ? 'все оплаты одного дня'
                     : 'все оплаты за окно зачисления'}
                 ): {formatMoneyRub(entry.suggestion.amount)} — выбраны по умолчанию.
+                {entry.suggestion.mismatchAmount && Number(entry.suggestion.mismatchAmount) > 0 ? (
+                  <span className={styles.overWarn}>
+                    {' '}
+                    Расхождение {formatMoneyRub(entry.suggestion.mismatchAmount)} (округление):
+                    зафиксируется {formatMoneyRub(entry.remainingAmount)} с пометкой о разнице.
+                  </span>
+                ) : null}
               </p>
             ) : null}
             <input
@@ -215,14 +227,18 @@ export function MatchEntryModal({
               <span>
                 Выбрано: <strong>{formatMoneyRub(String(selectedSum))}</strong>
                 {over ? (
-                  <span className={styles.overWarn}> — больше остатка зачисления</span>
+                  <span className={styles.overWarn}>
+                    {' '}
+                    — расхождение {formatMoneyRub(String(overAmount))}: будет зафиксировано{' '}
+                    {formatMoneyRub(String(cappedSum))} с пометкой о разнице
+                  </span>
                 ) : null}
               </span>
               <button
                 type="button"
                 data-admin-mutation
                 data-modal-btn="primary"
-                disabled={busy || selected.size === 0 || over}
+                disabled={busy || selected.size === 0}
                 onClick={() => onLink(entry.id, [...selected])}
               >
                 {busy ? 'Фиксация…' : 'Зафиксировать сверку'}

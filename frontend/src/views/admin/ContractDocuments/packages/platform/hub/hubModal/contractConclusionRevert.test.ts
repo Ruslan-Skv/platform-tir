@@ -1,4 +1,5 @@
 import { defaultPackageFormData } from '../../form/defaults';
+import type { PackageFormData } from '../../form/types';
 import { revertContractConclusionForm } from './contractConclusionRevert';
 
 function slot(patch: Partial<PackageFormData['addendumSlots'][number]>) {

@@ -119,13 +119,16 @@ export function useBankReconciliationPage() {
   const [matchEntry, setMatchEntry] = useState<ReconciliationEntry | null>(null);
   const [choosePayment, setChoosePayment] = useState<UnmatchedPayment | null>(null);
   const [acting, setActing] = useState(false);
+  /** Предупреждения о расхождении сумм после фиксации сверки. */
+  const [warning, setWarning] = useState<string | null>(null);
 
   /** Зафиксировать сопоставление банк-записи с выбранными оплатами ДП. */
   const applyLink = async (bankEntryId: string, movementIds: string[]) => {
     if (!canEdit || movementIds.length === 0) return;
     setActing(true);
     try {
-      await createReconciliationLinks(bankEntryId, movementIds);
+      const res = await createReconciliationLinks(bankEntryId, movementIds);
+      setWarning(res.warnings[0] ?? null);
       setMatchEntry(null);
       await load();
     } catch (e) {
@@ -140,7 +143,8 @@ export function useBankReconciliationPage() {
     if (!canEdit) return;
     setActing(true);
     try {
-      await createReconciliationLinks(bankEntryId, [movementId]);
+      const res = await createReconciliationLinks(bankEntryId, [movementId]);
+      setWarning(res.warnings[0] ?? null);
       setChoosePayment(null);
       await load();
     } catch (e) {
@@ -210,6 +214,8 @@ export function useBankReconciliationPage() {
     loading,
     error,
     setError,
+    warning,
+    setWarning,
     load,
     dateFrom,
     setDateFrom,

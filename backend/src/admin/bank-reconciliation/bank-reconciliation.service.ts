@@ -128,10 +128,16 @@ export class BankReconciliationService {
     const movementStates = new Map<string, MovementState>();
     for (const row of dpMovements) {
       const linkedAmount = linkedByMovement.get(row.id) ?? 0;
+      // Оплата со связью «с расхождением» считается закрытой целиком: её
+      // непокрытый «хвост» от округления не должен висеть в «без поступления» —
+      // расхождение показывается в строке самого поступления.
+      const hasMismatch = row.bankReconciliationLinks.some(
+        (l) => (l.mismatchAmount?.toNumber() ?? 0) > 0,
+      );
       movementStates.set(row.id, {
         row,
-        linkedAmount,
-        remainder: row.amount.toNumber() - linkedAmount,
+        linkedAmount: hasMismatch ? row.amount.toNumber() : linkedAmount,
+        remainder: hasMismatch ? 0 : row.amount.toNumber() - linkedAmount,
       });
     }
 
@@ -140,6 +146,8 @@ export class BankReconciliationService {
     type Suggestion = {
       movements: ReturnType<typeof serializeMovement>[];
       amount: string;
+      /** Расхождение до 1 ₽ (округления) для неточного предложения, иначе null. */
+      mismatchAmount?: string;
       reason: 'exact' | 'day' | 'window';
     };
     const suggestionsByEntry = new Map<string, Suggestion>();
@@ -228,6 +236,22 @@ export class BankReconciliationService {
           amount: remaining.toFixed(2),
           reason: 'window',
         });
+        continue;
+      }
+
+      // 4) Одна оплата с расхождением менее 1 ₽ (округления стоимостей):
+      // точного совпадения нет, но разница копеечная — предлагаем сопоставить
+      // с пометкой; при фиксации связь урежется до зачисления с note.
+      const nearMiss = candidates.find(({ state }) => Math.abs(state.remainder - remaining) < 1);
+      if (nearMiss) {
+        const diff = nearMiss.state.remainder - remaining;
+        suggestedMovementIds.add(nearMiss.state.row.id);
+        suggestionsByEntry.set(entry.id, {
+          movements: [serializeState(nearMiss.state)],
+          amount: remaining.toFixed(2),
+          mismatchAmount: diff.toFixed(2),
+          reason: 'exact',
+        });
       }
     }
 
@@ -235,6 +259,10 @@ export class BankReconciliationService {
     const entries = bankEntries.map((entry) => {
       const covered = entry.bankReconciliationLinks.reduce(
         (acc, l) => acc + l.amount.toNumber(),
+        0,
+      );
+      const mismatchAmount = entry.bankReconciliationLinks.reduce(
+        (acc, l) => acc + (l.mismatchAmount?.toNumber() ?? 0),
         0,
       );
       const total = toNumber(entry.amount) + toNumber(entry.fee) + toNumber(entry.refund);
@@ -259,6 +287,8 @@ export class BankReconciliationService {
           .map((link) => ({
             id: link.id,
             amount: link.amount.toString(),
+            /** Пояснение, почему зафиксирована урезанная сумма (расхождение). */
+            note: link.note ?? null,
             createdAt: link.createdAt.toISOString(),
             moneyMovement: serializeState(
               movementStates.get(link.moneyMovementId) ?? {
@@ -269,6 +299,8 @@ export class BankReconciliationService {
             ),
           })),
         coveredAmount: covered.toFixed(2),
+        /** Суммарное расхождение связей (округления) — показывается у «Сверено». */
+        mismatchAmount: mismatchAmount.toFixed(2),
         remainingAmount: remaining.toFixed(2),
         suggestion: suggestion ?? null,
         status: remaining <= 0.005 ? 'covered' : covered > 0.005 ? 'partial' : 'unmatched',
@@ -365,7 +397,12 @@ export class BankReconciliationService {
     });
     const movementById = new Map(movements.map((m) => [m.id, m]));
 
-    const prepared: { moneyMovementId: string; amount: number }[] = [];
+    const prepared: {
+      moneyMovementId: string;
+      amount: number;
+      mismatchAmount: number | null;
+      note: string | null;
+    }[] = [];
     for (const item of dto.items) {
       const movement = movementById.get(item.moneyMovementId);
       if (!movement) throw new NotFoundException(`Оплата ДП не найдена (${item.moneyMovementId})`);
@@ -384,16 +421,19 @@ export class BankReconciliationService {
       if (movementRemaining <= 0.005) {
         throw new BadRequestException('Оплата уже полностью сверена');
       }
-      const amount = item.amount ?? Math.min(movementRemaining, entryRemaining);
+      // Расхождение сумм (например, из-за округления стоимостей) не блокирует
+      // сверку: связь фиксируется на доступный остаток, а разница — в note.
+      const requested = item.amount ?? movementRemaining;
+      const amount = Math.round(Math.min(requested, movementRemaining, entryRemaining) * 100) / 100;
       if (amount <= 0) throw new BadRequestException('Сумма связи должна быть положительной');
-      if (amount > movementRemaining + 0.005) {
-        throw new BadRequestException('Сумма связи превышает несвёренный остаток оплаты');
-      }
-      if (amount > entryRemaining + 0.005) {
-        throw new BadRequestException('Сумма связи превышает несвёренный остаток зачисления');
-      }
-      prepared.push({ moneyMovementId: movement.id, amount });
-      entryRemaining -= amount;
+      const mismatch = requested - amount;
+      const mismatchAmount = mismatch > 0.005 ? Math.round(mismatch * 100) / 100 : null;
+      const note =
+        mismatchAmount != null
+          ? `Расхождение сумм: к сопоставлению заявлено ${requested.toFixed(2)} ₽, зафиксировано ${amount.toFixed(2)} ₽ (разница ${mismatchAmount.toFixed(2)} ₽)`
+          : null;
+      prepared.push({ moneyMovementId: movement.id, amount, mismatchAmount, note });
+      entryRemaining = Math.round((entryRemaining - amount) * 100) / 100;
     }
 
     for (const item of prepared) {
@@ -404,17 +444,23 @@ export class BankReconciliationService {
             moneyMovementId: item.moneyMovementId,
           },
         },
-        update: { amount: item.amount },
+        update: { amount: item.amount, note: item.note, mismatchAmount: item.mismatchAmount },
         create: {
           bankEntryId: entry.id,
           moneyMovementId: item.moneyMovementId,
           amount: item.amount,
+          note: item.note,
+          mismatchAmount: item.mismatchAmount,
           createdById: createdById ?? null,
         },
       });
     }
 
-    return { bankEntryId: entry.id, created: prepared.length };
+    return {
+      bankEntryId: entry.id,
+      created: prepared.length,
+      warnings: prepared.filter((p) => p.note).map((p) => p.note),
+    };
   }
 
   /** Снять фиксацию (только супер-админ): суммы вернутся в будущие сверки. */
@@ -460,6 +506,7 @@ export class BankReconciliationService {
       items: links.map((link) => ({
         id: link.id,
         amount: link.amount.toString(),
+        note: link.note ?? null,
         createdAt: link.createdAt.toISOString(),
         createdBy: movementName(link.createdBy),
         bankEntry: {

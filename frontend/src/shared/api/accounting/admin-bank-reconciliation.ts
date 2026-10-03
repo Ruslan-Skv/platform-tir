@@ -46,12 +46,16 @@ export interface ReconciliationMovement {
 export interface ReconciliationSuggestion {
   movements: ReconciliationMovement[];
   amount: string;
+  /** Расхождение до 1 ₽ (округления) — предложение неточное, с пометкой. */
+  mismatchAmount?: string | null;
   reason: 'exact' | 'day' | 'window';
 }
 
 export interface ReconciliationEntryLink {
   id: string;
   amount: string;
+  /** Пояснение о расхождении сумм, если связь зафиксирована с урезанной суммой. */
+  note: string | null;
   createdAt: string;
   moneyMovement: ReconciliationMovement;
 }
@@ -69,6 +73,8 @@ export interface ReconciliationEntry {
   notes: string | null;
   links: ReconciliationEntryLink[];
   coveredAmount: string;
+  /** Суммарное расхождение связей (округления) — показывается у «Сверено». */
+  mismatchAmount: string;
   remainingAmount: string;
   suggestion: ReconciliationSuggestion | null;
   status: 'covered' | 'partial' | 'unmatched';
@@ -104,6 +110,7 @@ export interface ReconciliationPreview {
 export interface ReconciliationHistoryItem {
   id: string;
   amount: string;
+  note: string | null;
   createdAt: string;
   createdBy: string | null;
   bankEntry: {
@@ -145,7 +152,7 @@ export async function getReconciliationPreview(params: {
 export async function createReconciliationLinks(
   bankEntryId: string,
   moneyMovementIds: string[]
-): Promise<{ bankEntryId: string; created: number }> {
+): Promise<{ bankEntryId: string; created: number; warnings: string[] }> {
   const res = await apiFetch(`${getApiBaseUrl()}/admin/bank-reconciliation/links`, {
     method: 'POST',
     headers: getAdminAuthHeaders(),

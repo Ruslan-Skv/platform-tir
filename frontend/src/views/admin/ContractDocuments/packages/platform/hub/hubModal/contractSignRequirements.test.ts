@@ -1,7 +1,8 @@
+import { defaultPackageFormData } from '../../form/defaults';
 import { collectContractSignRequirements } from './contractSignRequirements';
 
 const filledCustomer = {
-  type: 'PERSON' as const,
+  ...defaultPackageFormData().customer,
   fullName: 'Сидоров Петр Петрович',
   phone: '+79646848888',
   phones: ['+79646848888'],

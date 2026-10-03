@@ -252,8 +252,14 @@
 }
 
 .overWarn {
-  color: var(--admin-error, #b91c1c);
+  color: var(--admin-warning, #b45309);
   font-weight: 600;
+}
+
+.linkNote {
+  flex-basis: 100%;
+  font-size: var(--admin-font-size-xs, 12px);
+  color: var(--admin-warning, #b45309);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .movementList,
