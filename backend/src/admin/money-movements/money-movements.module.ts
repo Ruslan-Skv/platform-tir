@@ -19,6 +19,6 @@ import { SalesTotalsNotifyService } from './sales-totals-notify.service';
     ManagerIncassationsService,
     SalesTotalsNotifyService,
   ],
-  exports: [MoneyMovementsService, ManualEntriesService],
+  exports: [MoneyMovementsService],
 })
 export class MoneyMovementsModule {}

@@ -5,16 +5,14 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import {
+  type CashBookEntry,
   type CashBookListResponse,
   type CashBookManagerTotals,
   createCashBookEntry,
   listCashBook,
 } from '@/shared/api/accounting/admin-cash-book';
 import { getContractDocumentExecutorProfiles } from '@/shared/api/admin-contract-document-packages';
-import {
-  type MoneyMovement,
-  type MoneyMovementManagerOption,
-} from '@/shared/api/crm/admin-money-movements';
+import type { MoneyMovementManagerOption } from '@/shared/api/crm/admin-money-movements';
 
 import { currentMonthStartIso, todayIso } from '../../Bank/bank-page.constants';
 import {
@@ -26,7 +24,7 @@ import {
 export { CASH_PAGE_LIMIT_OPTIONS, type CashPageLimit };
 
 export type CashPageModel = {
-  rows: MoneyMovement[];
+  rows: CashBookEntry[];
   totalSum: number;
   byManager: CashBookManagerTotals[];
   managers: MoneyMovementManagerOption[];
@@ -117,7 +115,7 @@ export function useCashPage(): CashPageModel {
   const { canEdit } = useAdminSectionCanEdit();
   const { user } = useAuth();
 
-  const [rows, setRows] = useState<MoneyMovement[]>([]);
+  const [rows, setRows] = useState<CashBookEntry[]>([]);
   const [listMeta, setListMeta] = useState<
     Pick<CashBookListResponse, 'totalSum' | 'byManager' | 'managers' | 'total'>
   >({ totalSum: 0, byManager: [], managers: [], total: 0 });

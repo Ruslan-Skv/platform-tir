@@ -1,32 +1,59 @@
-import { Injectable } from '@nestjs/common';
-import { PaymentForm, Prisma } from '@prisma/client';
+import { BadRequestException, Injectable } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
+import {
+  DP_FURNITURE_DIRECTION,
+  DP_MANUAL_DIRECTION_OTHER,
+  MANUAL_MONEY_MOVEMENT_DIRECTIONS,
+} from '../../common/config/package-direction-registry.config';
 import { PrismaService } from '../../database/prisma.service';
-import { ManualEntriesService } from '../money-movements/manual-entries.service';
-import { serializeMoneyMovement } from '../money-movements/money-movement-serialize';
 import { CreateCashBookEntryDto } from './dto/create-cash-book-entry.dto';
 
 const MANAGER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
 
-const MOVEMENT_INCLUDE = {
+const ENTRY_INCLUDE = {
   manager: { select: MANAGER_SELECT },
-} satisfies Prisma.MoneyMovementInclude;
+} satisfies Prisma.CashBookEntryInclude;
+
+type CashBookRowWithManager = Prisma.CashBookEntryGetPayload<{ include: typeof ENTRY_INCLUDE }>;
 
 function managerName(user: { email: string; firstName: string | null; lastName: string | null }) {
   return [user.lastName, user.firstName].filter(Boolean).join(' ').trim() || user.email;
 }
 
-/** Раздел «Касса»: сверённые наличные оплаты журнала ДП + ручные записи кассы. */
+/** Форма записи кассы для клиента. */
+function serializeCashBookEntry(row: CashBookRowWithManager) {
+  return {
+    id: row.id,
+    paymentDate: row.paymentDate.toISOString().slice(0, 10),
+    performedAt: row.performedAt.toISOString(),
+    amount: row.amount.toString(),
+    manager: row.manager
+      ? {
+          id: row.manager.id,
+          name: managerName(row.manager),
+        }
+      : null,
+    direction: row.direction,
+    contractNumber: row.contractNumber,
+    customerName: row.customerName,
+    executorName: row.executorName,
+    basis: row.basis,
+    notes: row.notes,
+    createdById: row.createdById,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+  };
+}
+
+/** Раздел «Касса»: собственные ручные записи движений наличных ДС. */
 @Injectable()
 export class CashBookService {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly manualEntries: ManualEntriesService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
-   * Записи кассы за период: наличные оплаты, отмеченные сверёнными супер-админом
-   * в журнале ДП (золотая печать). Удалённые в корзину ДП не участвуют.
+   * Записи кассы за период. В отличие от журнала ДП это отдельная сущность:
+   * записи кассы не попадают в ДП и не участвуют в его сверке.
    */
   async findAll(params: {
     dateFrom?: string;
@@ -42,10 +69,7 @@ export class CashBookService {
     const limit = Math.min(Math.max(params.limit ?? 50, 1), 200);
     const search = params.search?.trim();
 
-    const where: Prisma.MoneyMovementWhereInput = {
-      deletedAt: null,
-      paymentForm: PaymentForm.CASH,
-      manualReconciledAt: { not: null },
+    const where: Prisma.CashBookEntryWhereInput = {
       ...(params.dateFrom || params.dateTo
         ? {
             paymentDate: {
@@ -62,22 +86,22 @@ export class CashBookService {
               { customerName: { contains: search, mode: 'insensitive' } },
               { basis: { contains: search, mode: 'insensitive' } },
               { notes: { contains: search, mode: 'insensitive' } },
-            ] as Prisma.MoneyMovementWhereInput[],
+            ] as Prisma.CashBookEntryWhereInput[],
           }
         : {}),
     };
 
     const [total, rows, sumAgg, byManagerAgg] = await Promise.all([
-      this.prisma.moneyMovement.count({ where }),
-      this.prisma.moneyMovement.findMany({
+      this.prisma.cashBookEntry.count({ where }),
+      this.prisma.cashBookEntry.findMany({
         where,
-        include: MOVEMENT_INCLUDE,
+        include: ENTRY_INCLUDE,
         orderBy: [{ paymentDate: 'desc' }, { performedAt: 'desc' }],
         skip: (page - 1) * limit,
         take: limit,
       }),
-      this.prisma.moneyMovement.aggregate({ where, _sum: { amount: true } }),
-      this.prisma.moneyMovement.groupBy({
+      this.prisma.cashBookEntry.aggregate({ where, _sum: { amount: true } }),
+      this.prisma.cashBookEntry.groupBy({
         by: ['managerId'],
         where,
         _sum: { amount: true },
@@ -113,7 +137,7 @@ export class CashBookService {
       .sort((a, b) => a.name.localeCompare(b.name, 'ru'));
 
     return {
-      data: rows.map((row) => serializeMoneyMovement(row)),
+      data: rows.map((row) => serializeCashBookEntry(row)),
       total,
       page,
       limit,
@@ -125,26 +149,48 @@ export class CashBookService {
   }
 
   /**
-   * Ручная запись в кассе: та же проводка, что «+ Запись» в журнале ДП, но способ
-   * всегда «Наличные» и запись сразу сверена — касса учитывает только свёрнные
-   * наличные, иначе созданная запись в разделе была бы не видна.
+   * Ручная запись в кассе: внесение в кассу (amount > 0) или изъятие (amount < 0).
+   * Запись живёт только в кассе — в журнал ДП не попадает.
    */
   async createEntry(dto: CreateCashBookEntryDto, currentUserId?: string) {
-    const created = await this.manualEntries.createManualEntry(
-      {
-        managerId: dto.managerId,
+    const managerId = dto.managerId?.trim() || currentUserId;
+    if (!managerId) {
+      throw new BadRequestException('Не определён менеджер, по кассе которого проводится запись');
+    }
+    const managerExists = await this.prisma.user.findUnique({
+      where: { id: managerId },
+      select: { id: true },
+    });
+    if (!managerExists) throw new BadRequestException('Указанный менеджер не найден');
+
+    const direction = dto.direction?.trim() || null;
+    if (direction && !MANUAL_MONEY_MOVEMENT_DIRECTIONS.includes(direction)) {
+      throw new BadRequestException(
+        `Неизвестное направление «${direction}»: выберите направление договоров, «Материалы» или «Прочее»`,
+      );
+    }
+    // № договора и заказчик — только у записей по направлениям и «Материалам»;
+    // исполнитель — только у «Мебели»; «Прочее» — вне договоров.
+    const withContract = Boolean(direction) && direction !== DP_MANUAL_DIRECTION_OTHER;
+    const withExecutor = direction === DP_FURNITURE_DIRECTION;
+
+    const now = new Date();
+    const row = await this.prisma.cashBookEntry.create({
+      data: {
+        paymentDate: now,
+        performedAt: now,
         amount: dto.amount,
-        paymentForm: PaymentForm.CASH,
-        direction: dto.direction,
-        contractNumber: dto.contractNumber,
-        customerName: dto.customerName,
-        executorName: dto.executorName,
-        basis: dto.basis,
-        notes: dto.notes,
+        managerId,
+        direction,
+        contractNumber: withContract ? dto.contractNumber?.trim() || null : null,
+        customerName: withContract ? dto.customerName?.trim() || null : null,
+        executorName: withExecutor ? dto.executorName?.trim() || null : null,
+        basis: dto.basis.trim(),
+        notes: dto.notes?.trim() || null,
+        createdById: currentUserId,
       },
-      currentUserId,
-      { markReconciled: true },
-    );
-    return created;
+      include: ENTRY_INCLUDE,
+    });
+    return serializeCashBookEntry(row);
   }
 }

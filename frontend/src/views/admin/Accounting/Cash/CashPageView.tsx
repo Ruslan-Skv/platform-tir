@@ -2,8 +2,7 @@
 
 import { useId, useMemo } from 'react';
 
-import type { CashBookManagerTotals } from '@/shared/api/accounting/admin-cash-book';
-import type { MoneyMovement } from '@/shared/api/crm/admin-money-movements';
+import type { CashBookEntry, CashBookManagerTotals } from '@/shared/api/accounting/admin-cash-book';
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import { DataTable } from '@/shared/ui/admin/DataTable';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
@@ -130,37 +129,37 @@ export function CashPageView({ model }: CashPageViewProps) {
       {
         key: 'paymentDate',
         title: 'Дата',
-        render: (item: MoneyMovement) => formatDpDate(item.paymentDate),
+        render: (item: CashBookEntry) => formatDpDate(item.paymentDate),
       },
       {
         key: 'performedAt',
         title: 'Время',
-        render: (item: MoneyMovement) => formatDpTime(item.performedAt),
+        render: (item: CashBookEntry) => formatDpTime(item.performedAt),
       },
       {
         key: 'manager',
         title: 'Менеджер',
-        render: (item: MoneyMovement) => item.manager?.name || '—',
+        render: (item: CashBookEntry) => item.manager?.name || '—',
       },
       {
         key: 'direction',
         title: 'Направление',
-        render: (item: MoneyMovement) => item.direction || '—',
+        render: (item: CashBookEntry) => item.direction || '—',
       },
       {
         key: 'contractNumber',
         title: '№ договора',
-        render: (item: MoneyMovement) => item.contractNumber || '—',
+        render: (item: CashBookEntry) => item.contractNumber || '—',
       },
       {
         key: 'customerName',
         title: 'Заказчик',
-        render: (item: MoneyMovement) => item.customerName || '—',
+        render: (item: CashBookEntry) => item.customerName || '—',
       },
       {
         key: 'basis',
         title: 'Основание',
-        render: (item: MoneyMovement) => (
+        render: (item: CashBookEntry) => (
           <div className={dpStyles.basisCell}>
             {item.basis || '—'}
             {item.notes ? <span className={dpStyles.basisSubline}>{item.notes}</span> : null}
@@ -170,7 +169,7 @@ export function CashPageView({ model }: CashPageViewProps) {
       {
         key: 'amount',
         title: 'Сумма',
-        render: (item: MoneyMovement) => (
+        render: (item: CashBookEntry) => (
           <span
             className={`${dpStyles.amountCell}${
               Number(item.amount) < 0 ? ` ${dpStyles.amountCellRefund}` : ''

@@ -130,6 +130,8 @@ model User {
   managerIncassationsSubmitted            ManagerIncassation[]                     @relation("ManagerIncassationsSubmitter")
   managerIncassationsCreated              ManagerIncassation[]                     @relation("ManagerIncassationsCreated")
   bankEntriesCreated                      BankEntry[]                              @relation("BankEntryCreatedBy")
+  cashBookEntriesConducted                CashBookEntry[]                          @relation("CashBookEntryManager")
+  cashBookEntriesCreated                  CashBookEntry[]                          @relation("CashBookEntryCreatedBy")
   bankReconciliationLinksCreated          BankReconciliationLink[]                 @relation("BankReconciliationLinkCreatedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
   contractDocumentGlobalTemplatesUpdated  ContractDocumentGlobalTemplate[]         @relation("GlobalContractTemplateUpdatedBy")
@@ -3698,6 +3700,42 @@ model MoneyMovement {
   @@index([deletedAt])
   @@index([createdById])
   @@map("money_movements")
+}
+
+/// Раздел «Касса»: собственные ручные записи движений наличных ДС.
+/// Отдельная от журнала ДП сущность: записи кассы не попадают в ДП
+/// и не участвуют в его сверке и остатках кассы под инкассацию.
+model CashBookEntry {
+  id             String   @id @default(cuid())
+  /// Дата записи кассы.
+  paymentDate    DateTime @db.Date
+  /// Момент проведения операции (время в записи).
+  performedAt    DateTime
+  /// Сумма со знаком: внесение в кассу > 0, изъятие из кассы < 0.
+  amount         Decimal  @db.Decimal(12, 2)
+  /// Менеджер, по кассе которого проведена запись.
+  managerId      String?
+  /// Направление: направление договоров, «Материалы» или «Прочее».
+  direction      String?
+  contractNumber String?
+  customerName   String?
+  /// Исполнитель — только для направления «Мебель».
+  executorName   String?
+  /// Основание: «Бытовые нужды», «Возврат излишка» и т.п.
+  basis          String?  @db.Text
+  notes          String?  @db.Text
+  /// Кем создана запись.
+  createdById    String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  manager   User? @relation("CashBookEntryManager", fields: [managerId], references: [id], onDelete: SetNull)
+  createdBy User? @relation("CashBookEntryCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([paymentDate])
+  @@index([managerId])
+  @@index([createdById])
+  @@map("cash_book_entries")
 }
 
 /// Инкассация наличных менеджером (сдача выручки по журналу ДП).
