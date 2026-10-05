@@ -256,7 +256,6 @@ export function contractorStampLines(ctx: ContractorStampContext): StampLine[] {
 export function customerStampLines(input: {
   signedName: string;
   signedAt: Date;
-  packageTitle: string;
   sessionId: string;
   siteUrl: string;
 }): StampLine[] {
@@ -266,9 +265,10 @@ export function customerStampLines(input: {
     {
       text: `Дата и время подписания (МСК): ${formatMsp(input.signedAt)} · Сессия ЭП № ${input.sessionId.slice(0, 8).toUpperCase()}`,
     },
-    { text: `Договор: ${input.packageTitle}` },
+    // Без сноски «(п. 7.5–7.10 договора)»: длинная строка переносится и оставляет
+    // висячее слово; ссылка на пункты договора есть в протоколе подписания.
     {
-      text: `Подписание подтверждено вводом ФИО и одноразового кода на сайте ${hostOf(input.siteUrl)} (п. 7.5–7.10 договора)`,
+      text: `Подписание подтверждено вводом ФИО и одноразового кода на сайте ${hostOf(input.siteUrl)}`,
     },
   ];
 }

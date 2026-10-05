@@ -159,7 +159,6 @@ export class SigningStampService {
           customerStampLines({
             signedName: input.signedName?.trim() || 'Заказчик',
             signedAt: input.signedAt ?? input.createdAt,
-            packageTitle: input.packageTitle,
             sessionId: input.sessionId,
             siteUrl: input.siteUrl,
           }),
