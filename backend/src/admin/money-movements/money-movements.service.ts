@@ -1,4 +1,4 @@
-import { Injectable, Logger, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { ContractDocumentPackageKind, PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import {
@@ -20,6 +20,11 @@ const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> =
 
 /** Таб справочника «Карточки менеджеров» (см. ContractDocumentPackageGlobalLibraryService). */
 const SIGNATORY_PROFILES_TAB = 'signatory_profiles';
+
+/** Способы оплаты, не сверяемые с банком: их сверяет вручную супер-админ
+ *  (золотая печать в журнале ДП). Должно совпадать с отсутствием формы
+ *  в PAYMENT_FORM_TO_ENTRY_TYPE модуля банковской сверки. */
+const MANUALLY_RECONCILABLE_FORMS: PaymentForm[] = [PaymentForm.CASH, PaymentForm.LC_TRANSFER];
 
 function contractNumberFromFormData(formData: unknown): string | null {
   if (!formData || typeof formData !== 'object') return null;
@@ -268,7 +273,8 @@ export class MoneyMovementsService {
     return {
       data: rawData.map((row) => ({
         ...serializeMoneyMovement(row),
-        /** Оплата полностью сверена с поступлением банка (наличные не сверяются). */
+        /** Оплата полностью сверена с поступлением банка (наличные и переводы
+         *  на ЛК не сверяются — у них ручная сверка супер-админом). */
         reconciled: this.isMovementReconciled(row),
       })),
       total,
@@ -290,36 +296,45 @@ export class MoneyMovementsService {
     };
   }
 
-  /** ID несвёренных с банком оплат — тот же критерий, что у isMovementReconciled. */
+  /** ID несвёренных оплат — тот же критерий, что у isMovementReconciled. Наличные
+   *  и переводы на ЛК считаются сверенными, когда супер-админ отметил их вручную. */
   private async reconciledMovementIds(): Promise<string[]> {
     const rows: { id: string }[] = await this.prisma.$queryRaw`
       SELECT m."id" FROM "money_movements" m
       WHERE m.deleted_at IS NULL
-        AND m."paymentForm" <> 'CASH'
         AND (
-          EXISTS (
-            SELECT 1 FROM "bank_reconciliation_links" l
-            WHERE l."moneyMovementId" = m."id" AND l."mismatchAmount" IS NOT NULL
+          (
+            m."paymentForm" NOT IN ('CASH', 'LC_TRANSFER')
+            AND (
+              EXISTS (
+                SELECT 1 FROM "bank_reconciliation_links" l
+                WHERE l."moneyMovementId" = m."id" AND l."mismatchAmount" IS NOT NULL
+              )
+              OR COALESCE((
+                SELECT SUM(l."amount") FROM "bank_reconciliation_links" l
+                WHERE l."moneyMovementId" = m."id"
+              ), 0) >= m."amount" - 0.005
+            )
           )
-          OR COALESCE((
-            SELECT SUM(l."amount") FROM "bank_reconciliation_links" l
-            WHERE l."moneyMovementId" = m."id"
-          ), 0) >= m."amount" - 0.005
+          OR (
+            m."paymentForm" IN ('CASH', 'LC_TRANSFER')
+            AND m."manualReconciledAt" IS NOT NULL
+          )
         )`;
     return rows.map((r) => r.id);
   }
 
   /**
-   * Оплата сверена с банком: несверяемые способы (наличные) — нет, остальные —
-   * когда связи сверки покрывают сумму целиком; связь с расхождением (округление)
-   * также закрывает оплату полностью.
+   * Оплата сверена с банком: несверяемые способы (наличные, переводы на ЛК) — нет,
+   * остальные — когда связи сверки покрывают сумму целиком; связь с расхождением
+   * (округление) также закрывает оплату полностью.
    */
   private isMovementReconciled(
     row: MoneyMovementRowWithManager & {
       bankReconciliationLinks: { amount: Prisma.Decimal; mismatchAmount: Prisma.Decimal | null }[];
     },
   ): boolean {
-    if (row.paymentForm === 'CASH') return false;
+    if (MANUALLY_RECONCILABLE_FORMS.includes(row.paymentForm)) return false;
     if (row.bankReconciliationLinks.length === 0) return false;
     if (row.bankReconciliationLinks.some((l) => (l.mismatchAmount?.toNumber() ?? 0) > 0)) {
       return true;
@@ -351,6 +366,26 @@ export class MoneyMovementsService {
     }
     await this.prisma.moneyMovement.update({ where: { id }, data });
     return { id, adminNote: note || null, adminNoteResolvedAt: data.adminNoteResolvedAt };
+  }
+
+  /**
+   * Ручная сверка — только супер-админ: наличные и переводы на ЛК не сверяются
+   * с банком автоматически, сверенную сумму супер-админ отмечает сам
+   * (золотая печать у суммы в журнале ДП).
+   */
+  async setManualReconciliation(id: string, reconciled: boolean) {
+    const movement = await this.prisma.moneyMovement.findUnique({ where: { id } });
+    if (!movement || movement.deletedAt) {
+      throw new NotFoundException('Запись журнала ДП не найдена');
+    }
+    if (!MANUALLY_RECONCILABLE_FORMS.includes(movement.paymentForm)) {
+      throw new BadRequestException(
+        'Отметить сверенной вручную можно только наличные или переводы на ЛК',
+      );
+    }
+    const manualReconciledAt = reconciled ? new Date() : null;
+    await this.prisma.moneyMovement.update({ where: { id }, data: { manualReconciledAt } });
+    return { id, manualReconciledAt: manualReconciledAt?.toISOString() ?? null };
   }
 
   /**

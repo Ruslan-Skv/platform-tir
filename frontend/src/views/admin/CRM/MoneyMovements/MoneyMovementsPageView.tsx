@@ -201,6 +201,8 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     submitManualEntry,
     canEditManualEntries,
     saveAdminNote,
+    manualReconciliationSavingId,
+    submitManualReconciliation,
     editingEntry,
     openManualEntryEditModal,
     executors,
@@ -419,23 +421,58 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
     {
       key: 'amount',
       title: 'Сумма',
-      render: (item: MoneyMovement) => (
-        <span
-          className={`${styles.amountCell}${
-            item.paymentType === 'REFUND' || Number(item.amount) < 0
-              ? ` ${styles.amountCellRefund}`
-              : ''
-          }`}
-        >
-          {formatDpMoney(item.amount)}
-          <EditedFieldMark original={editedOriginal(item, 'amount', formatDpMoney)} />
-          {item.reconciled ? (
-            <span className={styles.reconciledMark} title="Оплата сверена с банком">
-              ✓
-            </span>
-          ) : null}
-        </span>
-      ),
+      render: (item: MoneyMovement) => {
+        // Ручная сверка супер-админом — для оплат, не сверяемых с банком:
+        // наличные и переводы на ЛК (должно совпадать с бэкендом).
+        const isManuallyReconcilable =
+          item.paymentForm === 'CASH' || item.paymentForm === 'LC_TRANSFER';
+        const manuallyReconciled = Boolean(item.manualReconciledAt);
+        return (
+          <span
+            className={`${styles.amountCell}${
+              item.paymentType === 'REFUND' || Number(item.amount) < 0
+                ? ` ${styles.amountCellRefund}`
+                : ''
+            }`}
+          >
+            {formatDpMoney(item.amount)}
+            <EditedFieldMark original={editedOriginal(item, 'amount', formatDpMoney)} />
+            {item.reconciled ? (
+              <span className={styles.reconciledMark} title="Оплата сверена с банком">
+                ✔
+              </span>
+            ) : null}
+            {/* Ручная сверка: золотая «печать» — круглая золотая галочка.
+                Сотрудники видят только отметку, супер-админ — кнопку: клик отмечает
+                оплату сверённой или снимает отметку. */}
+            {isManuallyReconcilable && canEditManualEntries ? (
+              <button
+                type="button"
+                data-admin-mutation
+                className={`${styles.manualReconcileBtn} ${
+                  manuallyReconciled ? styles.manualReconciledBtn : styles.manualReconcilePendingBtn
+                }`}
+                disabled={manualReconciliationSavingId === item.id}
+                onClick={() => void submitManualReconciliation(item, !manuallyReconciled)}
+                title={
+                  manuallyReconciled
+                    ? 'Оплата сверена вручную. Нажмите, чтобы снять отметку'
+                    : 'Отметить оплату сверённой (ручная сверка супер-админом)'
+                }
+                aria-label={
+                  manuallyReconciled ? 'Снять отметку ручной сверки' : 'Отметить оплату сверённой'
+                }
+              >
+                ✓
+              </button>
+            ) : isManuallyReconcilable && manuallyReconciled ? (
+              <span className={styles.manualReconciledMark} title="Оплата сверена вручную">
+                ✓
+              </span>
+            ) : null}
+          </span>
+        );
+      },
     },
     {
       key: 'paymentForm',
@@ -566,7 +603,9 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
   ];
 
   return (
-    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+    <div
+      className={`${cdBase.page} ${cdWorkspace.pageWide} ${styles.pageFull} ${cdHub.contractsListPage}`}
+    >
       <div className={cdHub.editorHeader}>
         <div className={cdHub.contractsListHeaderLeft}>
           <div className={cdHub.contractsHeaderTitleRow}>
@@ -808,7 +847,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 </button>
               </div>
 
-              <div className={cdHub.contractsListChipRow} role="group" aria-label="Сверка с банком">
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Сверка">
                 <span className={cdHub.contractsListChipRowLabel}>Сверка</span>
                 <button
                   type="button"

@@ -28,6 +28,7 @@ import {
 } from './dto/create-manager-incassation.dto';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
 import { SetAdminNoteDto } from './dto/set-admin-note.dto';
+import { SetManualReconciliationDto } from './dto/set-manual-reconciliation.dto';
 
 const CRM_ROLES = [
   'SUPER_ADMIN',
@@ -176,5 +177,15 @@ export class MoneyMovementsController {
   @Roles('SUPER_ADMIN')
   setAdminNote(@Param('id') id: string, @Body() dto: SetAdminNoteDto) {
     return this.moneyMovementsService.setAdminNote(id, dto);
+  }
+
+  /**
+   * Ручная сверка оплат, не сверяемых с банком (наличные, переводы на ЛК) —
+   * только супер-админ: сверенную сумму он отмечает золотой печатью сам.
+   */
+  @Patch(':id/manual-reconciliation')
+  @Roles('SUPER_ADMIN')
+  setManualReconciliation(@Param('id') id: string, @Body() dto: SetManualReconciliationDto) {
+    return this.moneyMovementsService.setManualReconciliation(id, dto.reconciled);
   }
 }

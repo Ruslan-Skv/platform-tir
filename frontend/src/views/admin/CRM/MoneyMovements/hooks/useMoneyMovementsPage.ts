@@ -20,6 +20,7 @@ import {
   getMoneyMovementTrashCount,
   getMoneyMovements,
   setMoneyMovementAdminNote,
+  setMoneyMovementManualReconciliation,
   updateManagerIncassation,
   updateManualMoneyMovement,
 } from '@/shared/api/crm/admin-money-movements';
@@ -282,6 +283,29 @@ export function useMoneyMovementsPage() {
       } catch (error) {
         setMessage(error instanceof Error ? error.message : 'Не удалось сохранить примечание');
         return false;
+      }
+    },
+    [refresh]
+  );
+
+  /**
+   * Ручная сверка оплат, не сверяемых с банком (наличные, переводы на ЛК) —
+   * только супер-админ: поставить/снять золотую печать у суммы. На время
+   * сохранения кнопка строки блокируется.
+   */
+  const [manualReconciliationSavingId, setManualReconciliationSavingId] = useState<string | null>(
+    null
+  );
+  const submitManualReconciliation = useCallback(
+    async (entry: MoneyMovement, reconciled: boolean) => {
+      setManualReconciliationSavingId(entry.id);
+      try {
+        await setMoneyMovementManualReconciliation(entry.id, reconciled);
+        await refresh();
+      } catch (error) {
+        setMessage(error instanceof Error ? error.message : 'Не удалось сохранить ручную сверку');
+      } finally {
+        setManualReconciliationSavingId(null);
       }
     },
     [refresh]
@@ -579,6 +603,10 @@ export function useMoneyMovementsPage() {
     canManageIncassations,
     /** Примечание супер-админа к записи: сохранить/решить/удалить. */
     saveAdminNote,
+    /** Ручная сверка (супер-админ): id сохраняемой сейчас строки. */
+    manualReconciliationSavingId,
+    /** Отметить оплату сверённой / снять отметку (золотая печать). */
+    submitManualReconciliation,
     /** Идёт сохранение правки или аннулирование инкассации (история инкассаций). */
     incassationSaving,
     submitIncassationUpdate,

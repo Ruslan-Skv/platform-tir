@@ -54,6 +54,9 @@ export function serializeMoneyMovement(row: MoneyMovementRowWithManager) {
     adminNote: row.adminNote ?? null,
     /** Примечание отмечено решённым (заливка строки не показывается). */
     adminNoteResolvedAt: row.adminNoteResolvedAt?.toISOString() ?? null,
+    /** Ручная сверка супер-админом — наличные и переводы на ЛК (золотая печать);
+     *  null — не сверены. */
+    manualReconciledAt: row.manualReconciledAt?.toISOString() ?? null,
     manager: row.manager
       ? {
           id: row.manager.id,

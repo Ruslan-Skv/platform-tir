@@ -51,6 +51,11 @@ export type MoneyMovement = {
   updatedAt: string;
   /** Оплата полностью сверена с банком (после сверки) — галочка у суммы. */
   reconciled: boolean;
+  /**
+   * Ручная сверка супер-админом для оплат, не сверяемых с банком (наличные,
+   * переводы на ЛК) — золотая печать у суммы (ISO); null — не сверены.
+   */
+  manualReconciledAt: string | null;
   /** Примечание супер-админа к записи (замечание/вопрос менеджеру); null — нет. */
   adminNote: string | null;
   /** Примечание отмечено решённым (ISO) — заливка строки не показывается. */
@@ -292,6 +297,23 @@ export async function setMoneyMovementAdminNote(
     body: JSON.stringify(params),
   });
   if (!res.ok) await throwApiError(res, 'Не удалось сохранить примечание');
+  return res.json();
+}
+
+/**
+ * Ручная сверка оплат, не сверяемых с банком (наличные, переводы на ЛК) —
+ * только супер-админ: сверенную сумму он отмечает золотой печатью сам.
+ */
+export async function setMoneyMovementManualReconciliation(
+  id: string,
+  reconciled: boolean
+): Promise<{ id: string; manualReconciledAt: string | null }> {
+  const res = await apiFetch(`${API_URL}/admin/money-movements/${id}/manual-reconciliation`, {
+    method: 'PATCH',
+    headers: getAdminAuthHeaders(),
+    body: JSON.stringify({ reconciled }),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось сохранить ручную сверку');
   return res.json();
 }
 

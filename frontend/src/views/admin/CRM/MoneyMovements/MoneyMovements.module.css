@@ -1,3 +1,12 @@
+/* Страница — на всю ширину контента. cdWorkspace.pageWide не надёжна: в прод-сборке
+   base.module.css попадает в CSS-чанк, который подключается позже чанка с workspace,
+   и его max-width:1200px выигрывает каскад. Этот модуль грузится последним,
+   поэтому переопределение здесь гарантирует full-width и в prod. */
+.pageFull {
+  max-width: none;
+  width: 100%;
+}
+
 .pageMessage {
   display: flex;
   align-items: center;
@@ -60,7 +69,63 @@
 .reconciledMark {
   margin-left: 4px;
   color: var(--admin-success, #15803d);
-  font-size: var(--admin-font-size-xs, 12px);
+  /* 13px/900 + глиф «✔» (см. MoneyMovementsPageView): обычный «✓» 12px/800 рядом
+     с жирной суммой терялся. */
+  font-size: 13px;
+  font-weight: 900;
+}
+
+/* Ручная сверка супер-админом — наличные и переводы на ЛК: включённая отметка —
+   золотая круглая «печать» с белой галочкой. Простая золотая галочка-глиф рядом
+   с жирной суммой терялась; печать видна в любом состоянии строки. */
+.manualReconciledMark,
+.manualReconcileBtn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  width: 17px;
+  height: 17px;
+  margin-left: 5px;
+  border: none;
+  border-radius: 50%;
+  padding: 0;
+  color: #fff;
+  background: var(--admin-warning-mustard, #ca8a04);
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 900;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.manualReconcileBtn {
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.manualReconcileBtn:hover:not(:disabled) {
+  background: var(--admin-warning-strong, #d97706);
+}
+
+.manualReconcileBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* Ещё не сверённая оплата: контур бледной галочки без заливки; при наведении —
+   предпросмотр золотой печати. Коробка 17px сохраняется, сдвига строки нет. */
+.manualReconcilePendingBtn {
+  background: transparent;
+  color: var(--admin-text-muted, #9ca3af);
+  font-weight: 700;
+  opacity: 0.55;
+}
+
+.manualReconcilePendingBtn:hover:not(:disabled) {
+  opacity: 1;
+  color: #fff;
+  background: var(--admin-warning-mustard, #ca8a04);
 }
 
 /* Строка с нерешённым примечанием супер-админа — жёлтая заливка. */

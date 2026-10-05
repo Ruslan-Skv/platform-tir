@@ -3,12 +3,13 @@ import { BankEntryType, PaymentForm, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 
-/** Сопоставление способов оплаты ДП с типами зачислений банка. Наличные не сверяются. */
+/** Сопоставление способов оплаты ДП с типами зачислений банка. Наличные и
+ *  переводы на ЛК не сверяются: они не приходят на расчётный счёт как оплаты
+ *  договоров — их сверяет вручную супер-админ (золотая галочка в журнале ДП). */
 const PAYMENT_FORM_TO_ENTRY_TYPE: Partial<Record<PaymentForm, BankEntryType>> = {
   TERMINAL: 'TERMINAL_QR',
   QR: 'TERMINAL_QR',
   INVOICE: 'INVOICE_PAYMENT',
-  LC_TRANSFER: 'LC_TRANSFER',
   BANK_APP: 'TERMINAL_QR',
 };
 
@@ -120,8 +121,8 @@ export class BankReconciliationService {
       }),
       // Оплаты для матчинга грузим с запасом на лаг до начала периода: зачисление
       // 1-го числа может покрывать оплату последних дней предыдущего периода.
-      // Участвуют и авто-записи, и ручные проводки — не сверяются только наличные
-      // (CASH): они сдаются инкассацией и на расчётный счёт напрямую не приходят.
+      // Участвуют и авто-записи, и ручные проводки — не сверяются наличные (CASH)
+      // и переводы на ЛК (LC_TRANSFER): их сверяет вручную супер-админ.
       this.prisma.moneyMovement.findMany({
         where: {
           deletedAt: null,

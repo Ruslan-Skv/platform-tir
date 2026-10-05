@@ -40,6 +40,16 @@ function amountToString(value: string | null): string {
   return Number.isFinite(n) ? String(n) : '';
 }
 
+/**
+ * Способы оплаты в модалке: «Перевод на ЛК» больше не вносится вручную —
+ * переводы на ЛК исключены из банковской сверки. Для старых записей с этим
+ * типом пункт оставляем, чтобы значение при правке не сбрасывалось.
+ */
+function entryTypeOptions(entry: BankEntry | null) {
+  if (entry?.entryType === 'LC_TRANSFER') return BANK_ENTRY_TYPE_OPTIONS;
+  return BANK_ENTRY_TYPE_OPTIONS.filter((opt) => opt.value !== 'LC_TRANSFER');
+}
+
 /** Модалка внесения/исправления поступления по банковской выписке. */
 export function BankEntryModal({ isOpen, onClose, entry, saving, onSubmit }: BankEntryModalProps) {
   const [entryDate, setEntryDate] = useState(todayIso());
@@ -164,7 +174,7 @@ export function BankEntryModal({ isOpen, onClose, entry, saving, onSubmit }: Ban
               disabled={saving}
               required
             >
-              {BANK_ENTRY_TYPE_OPTIONS.map((opt) => (
+              {entryTypeOptions(entry).map((opt) => (
                 <option key={opt.value} value={opt.value}>
                   {opt.label}
                 </option>
