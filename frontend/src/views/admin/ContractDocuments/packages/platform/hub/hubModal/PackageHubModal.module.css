@@ -11,6 +11,32 @@
   white-space: nowrap;
 }
 
+.modalTitleTextBtn {
+  align-items: center;
+  background: #dbeafe;
+  border: 1px solid #93c5fd;
+  border-radius: var(--admin-radius-sm, 6px);
+  color: #1d4ed8;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-fs-xs, 0.75rem);
+  font-weight: 500;
+  height: 1.75rem;
+  line-height: 1;
+  padding: 0 0.5rem;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.modalTitleTextBtn:hover {
+  background: #bfdbfe;
+}
+
+.modalTitleTextBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
 .modalContractNumberPlaceholder {
   color: transparent;
   font-size: var(--modal-fs-title, 1.0625rem);

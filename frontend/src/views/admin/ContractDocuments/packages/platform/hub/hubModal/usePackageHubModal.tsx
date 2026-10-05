@@ -1,7 +1,5 @@
 'use client';
 
-import { BanknotesIcon, CameraIcon } from '@heroicons/react/24/outline';
-
 import { useEffect, useRef, useState } from 'react';
 
 import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
@@ -94,23 +92,21 @@ export function usePackageHubModal({
       )}
       <button
         type="button"
-        className={crmDetailStyles.historyBtn}
+        className={hubStyles.modalTitleTextBtn}
         title="Журнал оплат"
-        aria-label="Журнал оплат"
         disabled={hub.loading && !hub.contentReady}
         onClick={() => setPaymentsJournalOpen(true)}
       >
-        <BanknotesIcon className={crmDetailStyles.editIcon} aria-hidden />
+        Журнал оплат
       </button>
       <button
         type="button"
-        className={crmDetailStyles.historyBtn}
+        className={hubStyles.modalTitleTextBtn}
         title={paymentProofsLabel}
-        aria-label={paymentProofsLabel}
         disabled={hub.loading && !hub.contentReady}
         onClick={() => hub.setPaymentProofsModalOpen(true)}
       >
-        <CameraIcon className={crmDetailStyles.editIcon} aria-hidden />
+        Чеки
       </button>
     </span>
   );
