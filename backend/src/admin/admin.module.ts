@@ -4,6 +4,7 @@ import { CrmDirectionsModule } from './crm-directions/crm-directions.module';
 import { MeasurementsModule } from './measurements/measurements.module';
 import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { BankEntriesModule } from './bank-entries/bank-entries.module';
+import { CashBookModule } from './cash-book/cash-book.module';
 import { BankReconciliationModule } from './bank-reconciliation/bank-reconciliation.module';
 import { OfficesModule } from './offices/offices.module';
 import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
@@ -68,6 +69,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     MeasurementsModule,
     MoneyMovementsModule,
     BankEntriesModule,
+    CashBookModule,
     BankReconciliationModule,
     OfficesModule,
     ComplexObjectsModule,

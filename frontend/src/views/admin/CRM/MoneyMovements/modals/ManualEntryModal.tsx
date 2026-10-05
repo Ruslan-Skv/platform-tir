@@ -3,7 +3,6 @@
 import { useEffect, useState } from 'react';
 
 import {
-  type IncassationCashBalance,
   type ManualMoneyMovementParams,
   type MoneyMovement,
   type MoneyMovementManagerOption,
@@ -28,14 +27,21 @@ type ManualEntryModalProps = {
   onClose: () => void;
   /** Менеджеры из справочника карточек — как в фильтре «Все менеджеры». */
   managers: MoneyMovementManagerOption[];
-  /** Ответ баланса — источник дефолтного менеджера (текущий пользователь). */
-  defaultManager: IncassationCashBalance | null;
+  /** Дефолтный менеджер (текущий пользователь); достаточно id и имени. */
+  defaultManager: { managerId: string; managerName: string | null } | null;
   /** Названия исполнителей из справочника реквизитов — для направления «Мебель». */
   executors: string[];
   submitting: boolean;
   onSubmit: (data: ManualEntrySubmitData) => Promise<void>;
   /** Редактируемая запись — режим правки (супер-админ); null/undefined — создание. */
   editing?: MoneyMovement | null;
+  /**
+   * Фиксированный способ оплаты (раздел «Касса»: всегда наличные) —
+   * селект «Способ» скрывается, в submit всегда уходит это значение.
+   */
+  fixedPaymentForm?: string;
+  /** Свой заголовок модалки (по умолчанию — заголовок журнала ДП). */
+  heading?: string;
 };
 
 export function ManualEntryModal({
@@ -47,6 +53,8 @@ export function ManualEntryModal({
   submitting,
   onSubmit,
   editing = null,
+  fixedPaymentForm,
+  heading,
 }: ManualEntryModalProps) {
   /** Тип операции не выбран по умолчанию — менеджер осознанно выбирает режим записи. */
   const [kind, setKind] = useState<ManualEntryKind | null>(null);
@@ -171,7 +179,7 @@ export function ManualEntryModal({
       await onSubmit({
         managerId,
         amount: kind === 'withdrawal' ? -amountNumber : amountNumber,
-        paymentForm,
+        paymentForm: fixedPaymentForm ?? paymentForm,
         direction,
         // № договора, заказчик и исполнитель — поля не всех направлений.
         ...(showContractFields
@@ -193,7 +201,9 @@ export function ManualEntryModal({
     <Modal
       isOpen={open}
       onClose={onClose}
-      title={editing ? 'Редактирование ручной записи ДП' : 'Ручная запись в журнале ДП'}
+      title={
+        heading ?? (editing ? 'Редактирование ручной записи ДП' : 'Ручная запись в журнале ДП')
+      }
       size="sm"
       className={formStyles.modalPanel}
       showCloseButton
@@ -340,22 +350,24 @@ export function ManualEntryModal({
           />
         </div>
 
-        <div data-modal-form-group>
-          <label htmlFor="manual-entry-payment-form">Способ *</label>
-          <select
-            id="manual-entry-payment-form"
-            value={paymentForm}
-            onChange={(e) => setPaymentForm(e.target.value)}
-            disabled={submitting}
-            required
-          >
-            {DP_PAYMENT_FORM_OPTIONS.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        {fixedPaymentForm ? null : (
+          <div data-modal-form-group>
+            <label htmlFor="manual-entry-payment-form">Способ *</label>
+            <select
+              id="manual-entry-payment-form"
+              value={paymentForm}
+              onChange={(e) => setPaymentForm(e.target.value)}
+              disabled={submitting}
+              required
+            >
+              {DP_PAYMENT_FORM_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>
+                  {option.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
 
         <div data-modal-form-group>
           <label htmlFor="manual-entry-basis">Основание *</label>

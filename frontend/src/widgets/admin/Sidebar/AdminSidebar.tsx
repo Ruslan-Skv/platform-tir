@@ -239,6 +239,11 @@ const baseNavItems: NavItem[] = [
         resourceId: 'admin.accounting.bank',
       },
       {
+        label: 'Касса',
+        href: '/admin/accounting/cash',
+        resourceId: 'admin.accounting.cash',
+      },
+      {
         label: 'Сверка с ДП',
         href: '/admin/accounting/bank/reconciliation',
         resourceId: 'admin.accounting.bank',

@@ -44,7 +44,11 @@ export class ManualEntriesService {
    * нужды) или внесение сумм, не проведённых в оплатах по договорам (amount > 0).
    * Наличные записи участвуют в остатке наличных менеджера для инкассации.
    */
-  async createManualEntry(dto: CreateManualMoneyMovementDto, currentUserId?: string) {
+  async createManualEntry(
+    dto: CreateManualMoneyMovementDto,
+    currentUserId?: string,
+    options?: { markReconciled?: boolean },
+  ) {
     if (!currentUserId) throw new UnauthorizedException('Пользователь не определён');
 
     const managerId = dto.managerId?.trim() || currentUserId;
@@ -81,6 +85,8 @@ export class ManualEntriesService {
         customerName: withContract ? dto.customerName?.trim() || null : null,
         executorName: withExecutor ? dto.executorName?.trim() || null : null,
         createdById: currentUserId,
+        // Ручная сверка при создании (раздел «Касса»): запись сразу учтена сверённой.
+        manualReconciledAt: options?.markReconciled ? new Date() : null,
       },
       include: { manager: { select: { id: true, email: true, firstName: true, lastName: true } } },
     });
