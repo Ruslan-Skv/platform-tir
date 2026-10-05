@@ -119,7 +119,7 @@ export class PriceScraperService {
               return { price, parser: { key: parserKey, title: this.parserTitles[parserKey] } };
             }
           }
-        } catch (e) {
+        } catch {
           // Продолжаем поиск
         }
       }

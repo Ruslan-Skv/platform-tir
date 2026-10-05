@@ -9,13 +9,11 @@ export type MoneyMovementRowWithManager = Prisma.MoneyMovementGetPayload<{
   include: { manager: { select: { id: true; email: true; firstName: true; lastName: true } } };
 }>;
 
-const USER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
-
 export type MoneyMovementRowWithUsers = Prisma.MoneyMovementGetPayload<{
   include: {
-    manager: { select: typeof USER_SELECT };
-    createdBy: { select: typeof USER_SELECT };
-    deletedBy: { select: typeof USER_SELECT };
+    manager: { select: { id: true; email: true; firstName: true; lastName: true } };
+    createdBy: { select: { id: true; email: true; firstName: true; lastName: true } };
+    deletedBy: { select: { id: true; email: true; firstName: true; lastName: true } };
   };
 }>;
 

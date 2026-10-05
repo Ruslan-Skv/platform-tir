@@ -4,7 +4,7 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { json, urlencoded, Request, Response, NextFunction } from 'express';
 import * as express from 'express';
 import helmet from 'helmet';
-import cookieParser = require('cookie-parser');
+import cookieParser from 'cookie-parser';
 import { join } from 'path';
 import { AppModule } from './app.module';
 

@@ -34,7 +34,7 @@ export class ElasticsearchService implements OnModuleInit {
       const health = await this.client.cluster.health();
       this.isConnected = true;
       this.logger.log(`Elasticsearch connected: ${health.status}`);
-    } catch (error) {
+    } catch {
       this.isConnected = false;
       this.logger.warn('Elasticsearch is not available. Search functionality will be limited.');
     }
@@ -52,7 +52,7 @@ export class ElasticsearchService implements OnModuleInit {
     if (!this.isConnected) return false;
     try {
       return await this.client.indices.exists({ index });
-    } catch (error) {
+    } catch {
       this.isConnected = false;
       return false;
     }
@@ -70,7 +70,7 @@ export class ElasticsearchService implements OnModuleInit {
         });
         this.logger.log(`Index created: ${index}`);
       }
-    } catch (error) {
+    } catch {
       this.isConnected = false;
     }
   }
@@ -84,7 +84,7 @@ export class ElasticsearchService implements OnModuleInit {
         id,
         document,
       });
-    } catch (error) {
+    } catch {
       this.isConnected = false;
     }
   }
@@ -100,7 +100,7 @@ export class ElasticsearchService implements OnModuleInit {
         body: query,
       });
       return result;
-    } catch (error) {
+    } catch {
       this.isConnected = false;
       return { body: { hits: { hits: [], total: { value: 0 } } } };
     }
@@ -113,7 +113,7 @@ export class ElasticsearchService implements OnModuleInit {
         index,
         id,
       });
-    } catch (error) {
+    } catch {
       this.isConnected = false;
     }
   }
@@ -126,7 +126,7 @@ export class ElasticsearchService implements OnModuleInit {
         body: operations,
       });
       return result;
-    } catch (error) {
+    } catch {
       this.isConnected = false;
       return { body: { items: [] } };
     }

@@ -1,10 +1,8 @@
 import { Prisma } from '@prisma/client';
 
-const USER_SELECT = { id: true, email: true, firstName: true, lastName: true } as const;
-
 /** Строка раздела «Банк» с автором записи — как её отдаёт список. */
 export type BankEntryRowWithUsers = Prisma.BankEntryGetPayload<{
-  include: { createdBy: { select: typeof USER_SELECT } };
+  include: { createdBy: { select: { id: true; email: true; firstName: true; lastName: true } } };
 }>;
 
 /** Форма записи банка для клиента: суммы строками (Decimal), даты — ISO. */
