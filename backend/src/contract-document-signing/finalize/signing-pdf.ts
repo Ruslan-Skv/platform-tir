@@ -11,6 +11,9 @@ const STAMP_RIGHT_MARGIN = 36;
 const STAMP_LINE_HEIGHT = 1.35;
 /** Зазор между штампом Подрядчика и штампом Заказчика над ним (pt). */
 export const STAMP_STACK_GAP_PT = 10;
+/** Синий «штамп»: текст и рамка читаются поверх текста документа. */
+const STAMP_BLUE = rgb(0.13, 0.34, 0.82);
+const STAMP_BLUE_DARK = rgb(0.09, 0.24, 0.63);
 
 const A4: [number, number] = [595.28, 841.89];
 const PROTOCOL_MARGIN = 48;
@@ -182,10 +185,11 @@ function drawStampBlock(
     width: blockWidth,
     height: blockHeight,
     color: rgb(1, 1, 1),
-    opacity: 0.88,
-    borderColor: rgb(0.42, 0.45, 0.5),
+    // Полупрозрачная подложка: текст документа под штампом остаётся читаемым.
+    opacity: 0.3,
+    borderColor: STAMP_BLUE,
     borderWidth: 0.8,
-    borderOpacity: 0.85,
+    borderOpacity: 0.65,
   });
 
   let baseline = y + STAMP_PADDING;
@@ -196,7 +200,7 @@ function drawStampBlock(
       y: baseline,
       size: line.size,
       font: line.bold ? fonts.bold : fonts.regular,
-      color: line.bold ? rgb(0.07, 0.07, 0.07) : rgb(0.2, 0.2, 0.2),
+      color: line.bold ? STAMP_BLUE_DARK : STAMP_BLUE,
     });
     baseline += line.size * (STAMP_LINE_HEIGHT - 1);
   }
