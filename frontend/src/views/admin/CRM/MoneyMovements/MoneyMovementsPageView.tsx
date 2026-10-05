@@ -456,7 +456,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 onClick={() => void submitManualReconciliation(item, !manuallyReconciled)}
                 title={
                   manuallyReconciled
-                    ? 'Оплата сверена вручную. Нажмите, чтобы снять отметку'
+                    ? 'Сверено'
                     : 'Отметить оплату сверённой (ручная сверка супер-админом)'
                 }
                 aria-label={
@@ -466,7 +466,7 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                 ✓
               </button>
             ) : isManuallyReconcilable && manuallyReconciled ? (
-              <span className={styles.manualReconciledMark} title="Оплата сверена вручную">
+              <span className={styles.manualReconciledMark} title="Сверено">
                 ✓
               </span>
             ) : null}

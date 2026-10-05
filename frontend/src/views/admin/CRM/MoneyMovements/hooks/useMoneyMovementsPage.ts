@@ -260,12 +260,16 @@ export function useMoneyMovementsPage() {
 
   /**
    * Кнопка удаления ручной записи: сотруднику — только свои записи (он менеджер
-   * или автор) текущего месяца; супер-адммину — любые ручные записи без срока.
+   * или автор) текущего месяца и не свёренные; супер-админу — любые ручные записи
+   * без срока и независимо от сверки.
    */
   const canDeleteManualEntry = useCallback(
     (entry: MoneyMovement): boolean => {
       if (!entry.isManual) return false;
       if (canEditManualEntries) return true;
+      // Сверенная запись (банк или ручная отметка супер-админа) не удаляется
+      // сотрудником — она уже учтена в сверке.
+      if (entry.reconciled || entry.manualReconciledAt) return false;
       if (!user?.id) return false;
       const isOwn = entry.manager?.id === user.id || entry.createdById === user.id;
       return isOwn && isCurrentMonthEntry(entry);

@@ -15,6 +15,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { CreateManualMoneyMovementDto } from './dto/create-manual-money-movement.dto';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
+import { MoneyMovementsService } from './money-movements.service';
 import {
   DP_TRASH_RETENTION_DAYS,
   DP_TRASH_RETENTION_MS,
@@ -35,6 +36,7 @@ export class ManualEntriesService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly salesTotalsNotify: SalesTotalsNotifyService,
+    private readonly moneyMovements: MoneyMovementsService,
   ) {}
 
   /**
@@ -187,6 +189,13 @@ export class ManualEntriesService {
       if (existing.performedAt < this.currentMonthStart()) {
         throw new BadRequestException(
           'Удалять можно только записи, сделанные в текущем месяце. Обратитесь к супер-администратору',
+        );
+      }
+      // Сверенную запись (банк или ручная отметка супер-админа) сотрудник не удаляет:
+      // она уже учтена в сверке, её удаление сломало бы сверку.
+      if (await this.moneyMovements.isMovementReconciledById(id)) {
+        throw new ForbiddenException(
+          'Сверенная запись не подлежит удалению. Обратитесь к супер-администратору',
         );
       }
     }

@@ -8,10 +8,7 @@ import {
 import { PrismaService } from '../../database/prisma.service';
 import { computePackageEffectiveManagerUserId } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
 import { ManagerIncassationsService } from './manager-incassations.service';
-import {
-  serializeMoneyMovement,
-  type MoneyMovementRowWithManager,
-} from './money-movement-serialize';
+import { serializeMoneyMovement } from './money-movement-serialize';
 import { SalesTotalsNotifyService } from './sales-totals-notify.service';
 
 const PACKAGE_KIND_DIRECTION_NAME: Record<ContractDocumentPackageKind, string> = Object.fromEntries(
@@ -329,11 +326,11 @@ export class MoneyMovementsService {
    * остальные — когда связи сверки покрывают сумму целиком; связь с расхождением
    * (округление) также закрывает оплату полностью.
    */
-  private isMovementReconciled(
-    row: MoneyMovementRowWithManager & {
-      bankReconciliationLinks: { amount: Prisma.Decimal; mismatchAmount: Prisma.Decimal | null }[];
-    },
-  ): boolean {
+  private isMovementReconciled(row: {
+    paymentForm: PaymentForm;
+    amount: Prisma.Decimal;
+    bankReconciliationLinks: { amount: Prisma.Decimal; mismatchAmount: Prisma.Decimal | null }[];
+  }): boolean {
     if (MANUALLY_RECONCILABLE_FORMS.includes(row.paymentForm)) return false;
     if (row.bankReconciliationLinks.length === 0) return false;
     if (row.bankReconciliationLinks.some((l) => (l.mismatchAmount?.toNumber() ?? 0) > 0)) {
@@ -341,6 +338,26 @@ export class MoneyMovementsService {
     }
     const covered = row.bankReconciliationLinks.reduce((acc, l) => acc + l.amount.toNumber(), 0);
     return covered >= row.amount.toNumber() - 0.005;
+  }
+
+  /**
+   * Сверена ли запись по id: ручная отметка супер-админа (наличные, переводы на ЛК)
+   * или банковская сверка. Публичная — используется проверками прав: сверенную
+   * запись сотрудник удалить не может.
+   */
+  async isMovementReconciledById(id: string): Promise<boolean> {
+    const row = await this.prisma.moneyMovement.findUnique({
+      where: { id },
+      select: {
+        paymentForm: true,
+        manualReconciledAt: true,
+        amount: true,
+        bankReconciliationLinks: { select: { amount: true, mismatchAmount: true } },
+      },
+    });
+    if (!row) return false;
+    if (row.manualReconciledAt) return true;
+    return this.isMovementReconciled(row);
   }
 
   /**
