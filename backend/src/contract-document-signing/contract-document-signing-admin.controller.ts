@@ -155,7 +155,14 @@ export class ContractDocumentSigningAdminController {
 
   /** (Пере)генерация подписанных копий с отметками ЭП и единого PDF-комплекта. */
   @Post(':packageId/signing-sessions/:sessionId/finalize')
-  finalize(@Param('packageId') packageId: string, @Param('sessionId') sessionId: string) {
-    return this.completion.finalizeSession(packageId, sessionId);
+  finalize(
+    @Param('packageId') packageId: string,
+    @Param('sessionId') sessionId: string,
+    @Body() body?: { email?: boolean },
+  ) {
+    // email: false — переформирование по кнопке из админки без повторного письма заказчику.
+    return this.completion.finalizeSession(packageId, sessionId, {
+      skipEmail: body?.email === false,
+    });
   }
 }

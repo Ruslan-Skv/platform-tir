@@ -115,19 +115,25 @@ export function PackageRemoteSigningTimeline({
     void load();
   }, [load, reloadToken]);
 
-  /** Скачивание единого подписанного комплекта; для легаси-сессий — генерация по кнопке. */
+  /**
+   * Переформировывает и открывает единый подписанный комплект: отметка Заказчика
+   * ставится заново поверх актуальных отправленных файлов (без повторного письма
+   * заказчику). ?v= сбрасывает кэш браузера — файл переписывается под тем же именем.
+   */
   const openSignedPackage = useCallback(
     async (session: ContractDocumentSigningSessionListItem) => {
-      if (session.signedPackageUrl) {
-        window.open(publicUploadUrl(session.signedPackageUrl), '_blank', 'noopener,noreferrer');
-        return;
-      }
       setFinalizingId(session.id);
       try {
-        const updated = await finalizePackageSigningSession(packageId, session.id);
+        const updated = await finalizePackageSigningSession(packageId, session.id, {
+          notifyCustomer: false,
+        });
         setSessions((prev) => (prev ? prev.map((s) => (s.id === updated.id ? updated : s)) : prev));
         if (updated.signedPackageUrl) {
-          window.open(publicUploadUrl(updated.signedPackageUrl), '_blank', 'noopener,noreferrer');
+          window.open(
+            `${publicUploadUrl(updated.signedPackageUrl)}?v=${Date.now()}`,
+            '_blank',
+            'noopener,noreferrer'
+          );
         }
       } catch (err) {
         onError?.(
@@ -187,7 +193,7 @@ export function PackageRemoteSigningTimeline({
                       type="button"
                       className={styles.packageBtn}
                       disabled={finalizingId === s.id}
-                      title="Единый PDF: документы с отметками ЭП и протокол подписания"
+                      title="Сформировать заново и открыть единый PDF: документы с отметками ЭП и протокол подписания (письмо заказчику не отправляется)"
                       onClick={() => void openSignedPackage(s)}
                     >
                       {finalizingId === s.id

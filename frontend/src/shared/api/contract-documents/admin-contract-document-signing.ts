@@ -211,11 +211,17 @@ export async function cancelPackageSigningSession(
 /** (Пере)генерация подписанных копий с отметками ЭП и единого PDF-комплекта. */
 export async function finalizePackageSigningSession(
   packageId: string,
-  sessionId: string
+  sessionId: string,
+  opts?: { notifyCustomer?: boolean }
 ): Promise<ContractDocumentSigningSessionListItem> {
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/signing-sessions/${sessionId}/finalize`,
-    { method: 'POST', headers: getAdminAuthHeaders() }
+    {
+      method: 'POST',
+      headers: { ...getAdminAuthHeaders(), 'Content-Type': 'application/json' },
+      // notifyCustomer: false — переформирование по кнопке без повторного письма заказчику.
+      body: JSON.stringify({ email: opts?.notifyCustomer !== false }),
+    }
   );
   if (!res.ok) {
     const text = await res.text().catch(() => '');

@@ -29,8 +29,12 @@ export class SigningCompletionService {
     private readonly stamp: SigningStampService,
   ) {}
 
-  /** (Пере)генерация подписанных копий и единого комплекта (в т.ч. легаси-сессий). */
-  async finalizeSession(packageId: string, sessionId: string) {
+  /**
+   * (Пере)генерация подписанных копий и единого комплекта (в т.ч. легаси-сессий).
+   * skipEmail — переформирование по кнопке из админки: заказчику письмо не отправляется
+   * (оно уже ушло при подписании; повторный клик менеджера не должен спамить клиента).
+   */
+  async finalizeSession(packageId: string, sessionId: string, opts?: { skipEmail?: boolean }) {
     const row = await this.prisma.contractDocumentSigningSession.findFirst({
       where: { id: sessionId, packageId },
     });
@@ -38,7 +42,7 @@ export class SigningCompletionService {
     if (row.status !== 'SIGNED') {
       throw new BadRequestException('Комплект формируется только для подписанных сессий');
     }
-    await this.finalizeSignedArtifacts(sessionId);
+    await this.finalizeSignedArtifacts(sessionId, opts);
     const fresh = await this.prisma.contractDocumentSigningSession.findUnique({
       where: { id: sessionId },
     });
@@ -47,7 +51,10 @@ export class SigningCompletionService {
   }
 
   /** Возвращает артефакты финализации (для отметок об актах в formData) либо null. */
-  async finalizeSignedArtifacts(sessionId: string): Promise<SignedArtifactsResult | null> {
+  async finalizeSignedArtifacts(
+    sessionId: string,
+    opts?: { skipEmail?: boolean },
+  ): Promise<SignedArtifactsResult | null> {
     const row = await this.prisma.contractDocumentSigningSession.findUnique({
       where: { id: sessionId },
       include: { package: { select: { title: true } } },
@@ -82,7 +89,7 @@ export class SigningCompletionService {
       },
     });
 
-    if (row.customerEmail) {
+    if (row.customerEmail && !opts?.skipEmail) {
       await this.sendSignedPackageEmail({
         to: row.customerEmail,
         customerName: row.customerName,
