@@ -46,6 +46,8 @@ export type SigningSessionDocument = {
   stamped?: boolean;
   /** Копия файла с отметкой о подписании заказчиком (после подписания). */
   signedFileUrl?: string;
+  /** Справочное вложение (карточка реквизитов): для ознакомления, ЭП не подписывается. */
+  unsignedAttachment?: boolean;
 };
 
 export type ContractDocumentSigningSessionCreated = {
@@ -109,6 +111,8 @@ export async function createPackageSigningSession(
       file: Blob;
       fileName: string;
       isExternalFile?: boolean;
+      /** Справочное вложение (карточка реквизитов): направить без ЭП-штампов и подписанных копий. */
+      unsignedAttachment?: boolean;
     }>;
     customerName?: string;
     customerPhone?: string;
@@ -130,6 +134,7 @@ export async function createPackageSigningSession(
         tabId: d.tabId,
         label: d.label,
         ...(d.isExternalFile ? { isExternalFile: true } : {}),
+        ...(d.unsignedAttachment ? { unsignedAttachment: true } : {}),
       }))
     )
   );

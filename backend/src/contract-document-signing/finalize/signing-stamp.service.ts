@@ -3,7 +3,10 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 
-import type { SigningSessionDocumentMeta } from '../signing-session-documents';
+import {
+  type SigningSessionDocumentMeta,
+  isUnsignedSigningAttachment,
+} from '../signing-session-documents';
 import {
   type ContractorStampContext,
   type ProtocolDocumentRow,
@@ -11,6 +14,7 @@ import {
   contractorStampLines,
   customerStampLines,
   isPdfBuffer,
+  measureStampBlockHeight,
   mergePdfBuffers,
   stampPdfLastPage,
   uploadsAbsolutePath,
@@ -43,6 +47,12 @@ export type SignedArtifactsResult = {
   packageBuffer: Buffer;
 };
 
+/**
+ * Резерв под строку «Менеджер: …» в штампе Подрядчика: имя менеджера в сессии не
+ * хранится, поэтому при оценке высоты уже стоящего штампа добавляем строку сверху.
+ */
+const MANAGER_LINE_RESERVE_PT = 14;
+
 /** Проставляет документы сессии штамп ПЭП Подрядчика (перед отправкой Заказчику) и фиксирует SHA-256. */
 @Injectable()
 export class SigningStampService {
@@ -63,6 +73,12 @@ export class SigningStampService {
       }
       if (!bytes) {
         result.push({ ...doc, stamped: false });
+        continue;
+      }
+      if (isUnsignedSigningAttachment(doc)) {
+        // Справочное вложение (карточка реквизитов) ЭП не подписывается —
+        // фиксируем только хэш направленного Заказчику содержимого.
+        result.push({ ...doc, stamped: false, sha256: sha256Hex(bytes) });
         continue;
       }
       if (isPdfBuffer(bytes)) {
@@ -103,8 +119,29 @@ export class SigningStampService {
     const stampedPdfBuffers: Buffer[] = [];
     const protocolRows: ProtocolDocumentRow[] = [];
 
+    // Отметка Заказчика ставится выше штампа Подрядчика, уже стоящего на отправленных
+    // PDF, — иначе штампы накладываются друг на друга в правом нижнем углу. Высоту
+    // оцениваем тем же алгоритмом вёрстки; имя менеджера не хранится — учитываем резервом.
+    const contractorStampHeight =
+      (await measureStampBlockHeight(
+        contractorStampLines({
+          sessionId: input.sessionId,
+          contractorLabel: input.contractorLabel,
+          contractorSignatory: input.contractorSignatory,
+          managerName: null,
+          sentAt: input.createdAt,
+          siteUrl: input.siteUrl,
+        }),
+      )) + MANAGER_LINE_RESERVE_PT;
+
     for (let i = 0; i < input.documents.length; i++) {
       const doc = input.documents[i]!;
+      if (isUnsignedSigningAttachment(doc)) {
+        // Справочное вложение (карточка реквизитов) не подписывается ЭП:
+        // без отметки Заказчика, без строки в протоколе и без копии в комплекте.
+        documents.push({ ...doc });
+        continue;
+      }
       protocolRows.push({
         label: doc.label,
         fileName: doc.fileName,
@@ -126,6 +163,8 @@ export class SigningStampService {
             sessionId: input.sessionId,
             siteUrl: input.siteUrl,
           }),
+          // Штамп Подрядчика есть только на документах, доштампованных при отправке.
+          doc.stamped ? { aboveHeightPt: contractorStampHeight } : undefined,
         );
         const safeTab = (doc.tabId || 'doc').replace(/[^\w-]+/g, '_').slice(0, 40);
         const fileName = `${i}_${safeTab}.pdf`;

@@ -96,6 +96,13 @@
   white-space: nowrap;
 }
 
+.docHint {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 400;
+  color: #6b7280;
+}
+
 .paymentQrList {
   display: grid;
   gap: 0.75rem;

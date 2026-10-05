@@ -13,7 +13,10 @@ import { ContractSigningNotifyService } from './contract-signing-notify.service'
 import { SigningCompletionService } from './finalize/signing-completion.service';
 import { SigningPackageMarkerService } from './signing-package-marker.service';
 import { normalizePaymentQrs, sha256Hex } from './signing-session-dto';
-import { type SigningSessionDocumentMeta } from './signing-session-documents';
+import {
+  type SigningSessionDocumentMeta,
+  isUnsignedSigningAttachment,
+} from './signing-session-documents';
 import { assertSigningChronologyAtSign, detectSigningStage } from './signing-stage';
 import { SigningStageEffectsService } from './signing-stage-effects.service';
 
@@ -101,6 +104,7 @@ export class ContractDocumentSigningPublicService {
         label: d.label,
         fileUrl: d.fileUrl,
         fileName: d.fileName,
+        ...(isUnsignedSigningAttachment(d) ? { unsignedAttachment: true } : {}),
       })),
       canSign:
         row.status === ContractDocumentSigningSessionStatus.PENDING ||

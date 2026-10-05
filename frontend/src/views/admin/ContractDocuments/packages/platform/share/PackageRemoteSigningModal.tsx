@@ -89,7 +89,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     url: string;
     name: string;
   } | null>(null);
-  const [includeRequisitesPdf, setIncludeRequisitesPdf] = useState(true);
+  const [includeRequisitesPdf, setIncludeRequisitesPdf] = useState(false);
   const [paymentQrs, setPaymentQrs] = useState<Array<{ url: string; title: string }>>([]);
   const [includePaymentQr, setIncludePaymentQr] = useState(false);
   const [signedTabs, setSignedTabs] = useState<Set<string>>(new Set());
@@ -102,7 +102,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
     setError(null);
     setBusy(false);
     setExecutorRequisitesPdf(null);
-    setIncludeRequisitesPdf(true);
+    setIncludeRequisitesPdf(false);
     setPaymentQrs([]);
     setIncludePaymentQr(false);
     setLoading(true);
@@ -179,7 +179,11 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         const tabs = new Set<string>();
         for (const session of sessions) {
           if (session.status !== 'SIGNED') continue;
-          for (const doc of session.documents) tabs.add(doc.tabId);
+          for (const doc of session.documents) {
+            // Справочные вложения (карточка реквизитов) ЭП не подписываются.
+            if (doc.unsignedAttachment || doc.tabId === 'executorRequisites') continue;
+            tabs.add(doc.tabId);
+          }
         }
         setSignedTabs(tabs);
       })
@@ -216,6 +220,7 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
         file: Blob;
         fileName: string;
         isExternalFile?: boolean;
+        unsignedAttachment?: boolean;
       }> = [];
       for (const tab of selectedTabs) {
         const meta = ctx.shareableDocuments.find((d) => d.tabId === tab);
@@ -278,6 +283,8 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
             ? executorRequisitesPdf.name
             : `${executorRequisitesPdf.name}.pdf`,
           isExternalFile: true,
+          // Карточка реквизитов — справочное вложение: без штампов ЭП, протокола и подписанных копий.
+          unsignedAttachment: true,
         });
       }
 
@@ -417,9 +424,6 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
                     />
                     <span>
                       Приложить карточку с реквизитами исполнителя
-                      {signedTabs.has('executorRequisites') ? (
-                        <span className={styles.signedBadge}>подписан ЭП</span>
-                      ) : null}
                       <span className={styles.docItemHint}>
                         {' '}
                         (PDF: {executorRequisitesPdf.name}) — для ознакомления, подписания не

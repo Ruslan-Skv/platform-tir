@@ -8,6 +8,9 @@ const STAMP_MAX_WIDTH = 400;
 const STAMP_PADDING = 8;
 const STAMP_BOTTOM_MARGIN = 14;
 const STAMP_RIGHT_MARGIN = 36;
+const STAMP_LINE_HEIGHT = 1.35;
+/** Зазор между штампом Подрядчика и штампом Заказчика над ним (pt). */
+export const STAMP_STACK_GAP_PT = 10;
 
 const A4: [number, number] = [595.28, 841.89];
 const PROTOCOL_MARGIN = 48;
@@ -106,12 +109,10 @@ async function embedFonts(doc: PDFDocument): Promise<EmbeddedFonts> {
   return { regular, bold };
 }
 
-/** Рисует блок-штамп (как у банков после ЭП) в правом нижнем углу последней страницы. */
-function drawStampBlock(page: PDFPage, fonts: EmbeddedFonts, lines: StampLine[]): void {
-  const { width: pageWidth } = page.getSize();
-  const lineHeight = 1.35;
+type FlatStampLine = { text: string; bold: boolean; size: number };
 
-  const flat: Array<{ text: string; bold: boolean; size: number }> = [];
+function flattenStampLines(fonts: EmbeddedFonts, lines: StampLine[]): FlatStampLine[] {
+  const flat: FlatStampLine[] = [];
   for (const line of lines) {
     const size = line.size ?? (line.bold ? 8 : 7.4);
     const font = line.bold ? fonts.bold : fonts.regular;
@@ -119,15 +120,61 @@ function drawStampBlock(page: PDFPage, fonts: EmbeddedFonts, lines: StampLine[])
       flat.push({ text: chunk, bold: !!line.bold, size });
     }
   }
+  return flat;
+}
 
-  const textWidth = Math.max(
-    ...flat.map((l) => (l.bold ? fonts.bold : fonts.regular).widthOfTextAtSize(l.text, l.size)),
-  );
+function stampBlockMetrics(
+  fonts: EmbeddedFonts,
+  flat: FlatStampLine[],
+): {
+  blockWidth: number;
+  blockHeight: number;
+} {
+  const textWidth = flat.length
+    ? Math.max(
+        ...flat.map((l) => (l.bold ? fonts.bold : fonts.regular).widthOfTextAtSize(l.text, l.size)),
+      )
+    : 0;
   const blockWidth = Math.min(STAMP_MAX_WIDTH, textWidth + STAMP_PADDING * 2);
-  const blockHeight = STAMP_PADDING * 2 + flat.reduce((sum, l) => sum + l.size * lineHeight, 0);
+  const blockHeight =
+    STAMP_PADDING * 2 + flat.reduce((sum, l) => sum + l.size * STAMP_LINE_HEIGHT, 0);
+  return { blockWidth, blockHeight };
+}
+
+/** Высота блока-штампа (pt) — чтобы поставить второй штамп выше уже нарисованного. */
+export async function measureStampBlockHeight(lines: StampLine[]): Promise<number> {
+  const doc = await PDFDocument.create();
+  const fonts = await embedFonts(doc);
+  return stampBlockMetrics(fonts, flattenStampLines(fonts, lines)).blockHeight;
+}
+
+/**
+ * Нижняя граница блока-штампа: обычно — от нижнего края страницы; при занятой зоне
+ * (уже стоит штамп Подрядчика) — выше неё с зазором, но не вылезая за страницу.
+ */
+export function resolveStampBottomY(
+  pageHeight: number,
+  blockHeight: number,
+  occupiedAbovePt = 0,
+): number {
+  const y = STAMP_BOTTOM_MARGIN + (occupiedAbovePt > 0 ? occupiedAbovePt + STAMP_STACK_GAP_PT : 0);
+  return Math.max(STAMP_BOTTOM_MARGIN, Math.min(y, pageHeight - blockHeight - STAMP_BOTTOM_MARGIN));
+}
+
+/** Рисует блок-штамп (как у банков после ЭП) в правом нижнем углу последней страницы. */
+function drawStampBlock(
+  page: PDFPage,
+  fonts: EmbeddedFonts,
+  lines: StampLine[],
+  occupiedAbovePt = 0,
+): void {
+  const { width: pageWidth } = page.getSize();
+
+  const flat = flattenStampLines(fonts, lines);
+  const { blockWidth, blockHeight } = stampBlockMetrics(fonts, flat);
 
   const x = Math.max(STAMP_RIGHT_MARGIN, pageWidth - STAMP_RIGHT_MARGIN - blockWidth);
-  const y = STAMP_BOTTOM_MARGIN;
+  const y = resolveStampBottomY(page.getHeight(), blockHeight, occupiedAbovePt);
 
   page.drawRectangle({
     x,
@@ -151,16 +198,20 @@ function drawStampBlock(page: PDFPage, fonts: EmbeddedFonts, lines: StampLine[])
       font: line.bold ? fonts.bold : fonts.regular,
       color: line.bold ? rgb(0.07, 0.07, 0.07) : rgb(0.2, 0.2, 0.2),
     });
-    baseline += line.size * (lineHeight - 1);
+    baseline += line.size * (STAMP_LINE_HEIGHT - 1);
   }
 }
 
 /** Наносит штамп на последнюю страницу PDF и возвращает новый буфер. */
-export async function stampPdfLastPage(buffer: Buffer, lines: StampLine[]): Promise<Buffer> {
+export async function stampPdfLastPage(
+  buffer: Buffer,
+  lines: StampLine[],
+  opts?: { aboveHeightPt?: number },
+): Promise<Buffer> {
   const doc = await PDFDocument.load(buffer, { ignoreEncryption: true });
   const fonts = await embedFonts(doc);
   const page = doc.getPage(doc.getPageCount() - 1);
-  drawStampBlock(page, fonts, lines);
+  drawStampBlock(page, fonts, lines, opts?.aboveHeightPt ?? 0);
   return Buffer.from(await doc.save());
 }
 

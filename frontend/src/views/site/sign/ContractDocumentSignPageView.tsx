@@ -162,7 +162,12 @@ export function ContractDocumentSignPageView() {
               target="_blank"
               rel="noopener noreferrer"
             >
-              <span>{doc.label}</span>
+              <span>
+                {doc.label}
+                {doc.unsignedAttachment ? (
+                  <span className={styles.docHint}>для ознакомления, не требует подписания</span>
+                ) : null}
+              </span>
               <span className={styles.docMeta}>
                 {(doc.fileName.match(/\.[a-z0-9]{1,8}$/i)?.[0] ?? '.pdf').slice(1).toUpperCase()}
               </span>

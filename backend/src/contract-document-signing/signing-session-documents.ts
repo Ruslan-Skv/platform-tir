@@ -13,7 +13,23 @@ export type SigningSessionDocumentMeta = {
   stamped?: boolean;
   /** Копия файла с отметкой о подписании Заказчиком (заполняется после подписания). */
   signedFileUrl?: string;
+  /**
+   * Справочное вложение (карточка с реквизитами исполнителя): направляется Заказчику
+   * для ознакомления как есть — без штампов ПЭП, подписанных копий, протокола и комплекта.
+   */
+  unsignedAttachment?: boolean;
 };
+
+/** tabId карточки с реквизитами исполнителя — справочное вложение, ЭП не проставляется. */
+export const UNSIGNED_ATTACHMENT_TAB_IDS = new Set(['executorRequisites']);
+
+/** Вложение без ЭП: по флагу либо по табу карточки реквизитов (легаси-сессии без флага). */
+export function isUnsignedSigningAttachment(doc: {
+  tabId: string;
+  unsignedAttachment?: boolean;
+}): boolean {
+  return doc.unsignedAttachment === true || UNSIGNED_ATTACHMENT_TAB_IDS.has(doc.tabId);
+}
 
 const BLOCKED_FILE_EXTENSIONS =
   /\.(exe|bat|cmd|com|msi|scr|dll|vbs|ps1|sh|jar|cpl|inf|reg|hta|msc|lnk|pif)$/i;
@@ -32,7 +48,12 @@ function ensureUploadDir(): string {
 /** Сохраняет загруженные файлы (PDF из шаблонов + внешние вложения) и возвращает метаданные документов. */
 export function persistSigningSessionDocuments(
   packageId: string,
-  metas: Array<{ tabId: string; label: string; isExternalFile?: boolean }>,
+  metas: Array<{
+    tabId: string;
+    label: string;
+    isExternalFile?: boolean;
+    unsignedAttachment?: boolean;
+  }>,
   files: Express.Multer.File[],
 ): SigningSessionDocumentMeta[] {
   if (!metas.length) {
@@ -66,6 +87,7 @@ export function persistSigningSessionDocuments(
       label: meta.label || meta.tabId,
       fileUrl: `/uploads/contract-document-packages/signing/${filename}`,
       fileName: file.originalname || `${safeTab}${ext}`,
+      ...(isUnsignedSigningAttachment(meta) ? { unsignedAttachment: true } : {}),
     });
   }
   return out;

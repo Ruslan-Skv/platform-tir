@@ -7,9 +7,12 @@ import * as fontkit from '@pdf-lib/fontkit';
 import { SigningStampService } from './signing-stamp.service';
 import {
   buildProtocolPdf,
+  contractorStampLines,
   formatMsp,
   isPdfBuffer,
+  measureStampBlockHeight,
   mergePdfBuffers,
+  resolveStampBottomY,
   stampPdfLastPage,
   uploadsFileUrl,
 } from './signing-pdf';
@@ -61,6 +64,36 @@ describe('signing-stamp helpers', () => {
     expect(doc.getPageCount()).toBe(2);
     // Полное встраивание шрифта делает файл ощутимо больше исходного.
     expect(stamped.length).toBeGreaterThan(original.length + 100_000);
+  });
+
+  it('resolveStampBottomY поднимает второй штамп над занятой зоной и не даёт вылезти за страницу', () => {
+    // Без занятой зоны — обычный отступ от нижнего края.
+    expect(resolveStampBottomY(841.89, 100)).toBe(14);
+    // Занятая зона (штамп Подрядчика): выше неё + зазор.
+    expect(resolveStampBottomY(841.89, 100, 90)).toBe(114);
+    // Кламп по верхнему краю короткой страницы.
+    expect(resolveStampBottomY(200, 150, 90)).toBe(36);
+    // Блок выше страницы — не опускается ниже нижнего отступа.
+    expect(resolveStampBottomY(100, 200, 0)).toBe(14);
+  });
+
+  it('measureStampBlockHeight считает высоту с учётом переноса строк', async () => {
+    const short = await measureStampBlockHeight([
+      { text: 'Подписано простой электронной подписью (ПЭП)', bold: true, size: 8 },
+      { text: 'Договор: Договор', bold: true },
+    ]);
+    const withWrap = await measureStampBlockHeight(
+      contractorStampLines({
+        sessionId: 'abcd1234efgh',
+        contractorLabel: 'ООО «Территория интерьера», ИНН 7712345678',
+        contractorSignatory: 'Иванов Иван Иванович, директор',
+        sentAt: new Date('2026-09-28T10:00:00Z'),
+        siteUrl: 'https://territory-interior.ru',
+      }),
+    );
+    expect(short).toBeGreaterThan(30);
+    // Пять строк Подрядчика (длинные — с переносами) выше короткого блока.
+    expect(withWrap).toBeGreaterThan(short);
   });
 
   it('buildProtocolPdf формирует валидный PDF на 1+ страницах', async () => {
@@ -158,6 +191,49 @@ describe('SigningStampService (файлы)', () => {
     expect(fs.readFileSync(rtfPath).toString()).toBe('{\\rtf1ansi spec}');
   });
 
+  it('applyContractorStamps не штампует карточку с реквизитами (по флагу и легаси-табу)', async () => {
+    const requisitesPath = path.join(testRoot, 'requisites.pdf');
+    const requisitesPdf = await makePdf(1, 'Реквизиты');
+    fs.writeFileSync(requisitesPath, requisitesPdf);
+    const legacyPath = path.join(testRoot, 'requisites-legacy.pdf');
+    const legacyPdf = await makePdf(1, 'Реквизиты');
+    fs.writeFileSync(legacyPath, legacyPdf);
+
+    const docs: SigningSessionDocumentMeta[] = [
+      {
+        tabId: 'executorRequisites',
+        label: 'Карточка с реквизитами (PDF)',
+        fileUrl: uploadsFileUrl(requisitesPath),
+        fileName: 'Реквизиты.pdf',
+        unsignedAttachment: true,
+      },
+      {
+        // Легаси-сессия без флага: карточка определяется по tabId.
+        tabId: 'executorRequisites',
+        label: 'Карточка с реквизитами (PDF)',
+        fileUrl: uploadsFileUrl(legacyPath),
+        fileName: 'Реквизиты.pdf',
+      },
+    ];
+
+    const result = await service.applyContractorStamps(docs, {
+      sessionId,
+      contractorLabel: 'ООО «Территория интерьера», ИНН 7712345678',
+      contractorSignatory: 'Иванов Иван Иванович, директор',
+      sentAt: new Date('2026-09-28T10:00:00Z'),
+      siteUrl: 'https://territory-interior.ru',
+    });
+
+    for (const row of result) {
+      expect(row.stamped).toBe(false);
+      expect(row.signedFileUrl).toBeUndefined();
+      expect(row.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    // Файлы на диске не изменились — штамп не наносился.
+    expect(fs.readFileSync(requisitesPath).equals(requisitesPdf)).toBe(true);
+    expect(fs.readFileSync(legacyPath).equals(legacyPdf)).toBe(true);
+  });
+
   it('buildSignedArtifacts создаёт копии с отметкой, протокол и единый комплект', async () => {
     const pdfPath = path.join(testRoot, 'contract.pdf');
     const rtfPath = path.join(testRoot, 'spec.rtf');
@@ -218,5 +294,93 @@ describe('SigningStampService (файлы)', () => {
     const second = await service.buildSignedArtifacts(input);
     expect(second.signedPackageUrl).toBe(first.signedPackageUrl);
     expect(second.documents[0]!.signedFileUrl).toBe(first.documents[0]!.signedFileUrl);
+  });
+
+  it('buildSignedArtifacts не подписывает карточку с реквизитами и не включает её в комплект', async () => {
+    const contractPath = path.join(testRoot, 'contract.pdf');
+    if (!fs.existsSync(contractPath)) fs.writeFileSync(contractPath, await makePdf(1, 'Договор'));
+    const requisitesPath = path.join(testRoot, 'requisites.pdf');
+    fs.writeFileSync(requisitesPath, await makePdf(2, 'Реквизиты'));
+
+    const docs: SigningSessionDocumentMeta[] = [
+      {
+        tabId: 'contract',
+        label: 'Договор',
+        fileUrl: uploadsFileUrl(contractPath),
+        fileName: 'contract.pdf',
+      },
+      {
+        tabId: 'executorRequisites',
+        label: 'Карточка с реквизитами (PDF)',
+        fileUrl: uploadsFileUrl(requisitesPath),
+        fileName: 'Реквизиты.pdf',
+        unsignedAttachment: true,
+      },
+    ];
+
+    const result = await service.buildSignedArtifacts({
+      sessionId,
+      documents: docs,
+      packageTitle: 'Договор ремонтных работ № 77/1/3д-5',
+      customerName: 'Сидоров Сергей Петрович',
+      contractorLabel: 'ООО «Территория интерьера», ИНН 7712345678',
+      signedName: 'Сидоров Сергей Петрович',
+      createdAt: new Date('2026-09-28T10:00:00Z'),
+      signedAt: new Date('2026-09-28T12:03:00Z'),
+      siteUrl: 'https://territory-interior.ru',
+    });
+
+    // Договор: подписанная копия создана; карточка: без копии.
+    expect(result.documents[0]!.signedFileUrl).toBeDefined();
+    expect(result.documents[1]!.signedFileUrl).toBeUndefined();
+
+    // Комплект: протокол (1 стр.) + копия договора (1 стр.) — карточка не входит.
+    const packageDoc = await PDFDocument.load(result.packageBuffer);
+    expect(packageDoc.getPageCount()).toBe(2);
+  });
+
+  it('buildSignedArtifacts ставит отметку Заказчика выше штампа Подрядчика (без наложения)', async () => {
+    const pdfPath = path.join(testRoot, 'stacked.pdf');
+    const originalPdf = await makePdf(2, 'Договор');
+    fs.writeFileSync(pdfPath, originalPdf);
+
+    const docs: SigningSessionDocumentMeta[] = [
+      {
+        tabId: 'contract',
+        label: 'Договор',
+        fileUrl: uploadsFileUrl(pdfPath),
+        fileName: 'contract.pdf',
+      },
+    ];
+    const stampedDocs = await service.applyContractorStamps(docs, {
+      sessionId,
+      contractorLabel: 'ООО «Территория интерьера», ИНН 7712345678',
+      contractorSignatory: 'Иванов Иван Иванович, директор',
+      managerName: 'Петрова Анна',
+      sentAt: new Date('2026-09-28T10:00:00Z'),
+      siteUrl: 'https://territory-interior.ru',
+    });
+    expect(stampedDocs[0]!.stamped).toBe(true);
+
+    const result = await service.buildSignedArtifacts({
+      sessionId,
+      documents: stampedDocs,
+      packageTitle: 'Договор ремонтных работ № 77/1/3д-5',
+      customerName: 'Сидоров Сергей Петрович',
+      contractorLabel: 'ООО «Территория интерьера», ИНН 7712345678',
+      contractorSignatory: 'Иванов Иван Иванович, директор',
+      signedName: 'Сидоров Сергей Петрович',
+      createdAt: new Date('2026-09-28T10:00:00Z'),
+      signedAt: new Date('2026-09-28T12:03:00Z'),
+      siteUrl: 'https://territory-interior.ru',
+    });
+
+    // Подписанная копия валидна, страницы не потерялись; отметка Заказчика размещена
+    // по resolveStampBottomY выше зоны штампа Подрядчика (см. тест геометрии).
+    const signedCopy = fs.readFileSync(
+      path.join(process.cwd(), result.documents[0]!.signedFileUrl!.replace(/^\//, '')),
+    );
+    const signedDoc = await PDFDocument.load(signedCopy);
+    expect(signedDoc.getPageCount()).toBe(2);
   });
 });

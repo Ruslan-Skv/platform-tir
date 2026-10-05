@@ -4,7 +4,10 @@ import { MailerService } from '@nestjs-modules/mailer';
 import type { ContractDocumentSigningSessionStatus } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
-import type { SigningSessionDocumentMeta } from '../signing-session-documents';
+import {
+  type SigningSessionDocumentMeta,
+  isUnsignedSigningAttachment,
+} from '../signing-session-documents';
 import { formatMsp } from './signing-pdf';
 import { SigningStampService, type SignedArtifactsResult } from './signing-stamp.service';
 import { buildSignUrl, signingSiteUrl, toSigningSessionAdminDto } from '../signing-session-dto';
@@ -87,7 +90,10 @@ export class SigningCompletionService {
         signedAt: row.signedAt ?? row.createdAt,
         packageTitle: row.package.title ?? 'Договор',
         packageBuffer: artifacts.packageBuffer,
-        documentLabels: artifacts.documents.map((d) => d.label),
+        // В перечне подписанных — только документы с ЭП (справочные вложения не входят).
+        documentLabels: artifacts.documents
+          .filter((d) => !isUnsignedSigningAttachment(d))
+          .map((d) => d.label),
       });
     }
 
