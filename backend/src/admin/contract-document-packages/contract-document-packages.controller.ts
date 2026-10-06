@@ -25,7 +25,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { decodeMultipartFilename } from '../../common/utils/upload-filename.util';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
-import { ContractDocumentPaymentInvoicesService } from './contract-document-payment-invoices.service';
+import { ContractDocumentPaymentInvoicesService } from './invoices/contract-document-payment-invoices.service';
+import { ContractDocumentPaymentInvoiceEpService } from './invoices/contract-document-payment-invoice-ep.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
@@ -216,6 +217,7 @@ export class ContractDocumentPackagesController {
     private readonly service: ContractDocumentPackagesService,
     private readonly packagePayments: ContractDocumentPackagePaymentsService,
     private readonly paymentInvoices: ContractDocumentPaymentInvoicesService,
+    private readonly paymentInvoiceEp: ContractDocumentPaymentInvoiceEpService,
     private readonly contractNumbering: ContractDocumentNumberingService,
   ) {}
 
@@ -840,7 +842,7 @@ export class ContractDocumentPackagesController {
     @Body() body: { contractorLabel?: string; contractorSignatory?: string },
     @Req() req: RequestWithUser,
   ) {
-    return this.paymentInvoices.signWithEp(
+    return this.paymentInvoiceEp.signWithEp(
       id,
       invoiceId,
       file,
@@ -855,7 +857,7 @@ export class ContractDocumentPackagesController {
   /** Отмена ПЭП счёта: снимает отметку подписания и удаляет подписанную копию PDF. */
   @Delete(':id/payment-invoices/:invoiceId/sign-ep')
   cancelPackagePaymentInvoiceEp(@Param('id') id: string, @Param('invoiceId') invoiceId: string) {
-    return this.paymentInvoices.cancelEp(id, invoiceId);
+    return this.paymentInvoiceEp.cancelEp(id, invoiceId);
   }
 
   /** Удаление выставленного счёта в корзину — только супер-админ (исправление ошибок менеджеров). */
@@ -866,7 +868,7 @@ export class ContractDocumentPackagesController {
     @Param('invoiceId') invoiceId: string,
     @Req() req: RequestWithUser,
   ) {
-    return this.paymentInvoices.remove(id, invoiceId, req.user?.id);
+    return this.paymentInvoiceEp.remove(id, invoiceId, req.user?.id);
   }
 
   @Post(':id/upload-work-start-act-photo')
@@ -1230,7 +1232,7 @@ export class ContractDocumentPackagesController {
     @Query('page') page?: string,
     @Query('limit') limit?: string,
   ) {
-    return this.paymentInvoices.findTrash({
+    return this.paymentInvoiceEp.findTrash({
       search,
       page: page ? parseInt(page, 10) : undefined,
       limit: limit ? parseInt(limit, 10) : undefined,
@@ -1241,7 +1243,7 @@ export class ContractDocumentPackagesController {
   @Get('payment-invoices/trash/count')
   @Roles('SUPER_ADMIN')
   paymentInvoicesTrashCount() {
-    return this.paymentInvoices.trashCount();
+    return this.paymentInvoiceEp.trashCount();
   }
 
   @Get('contract-number/preview')
