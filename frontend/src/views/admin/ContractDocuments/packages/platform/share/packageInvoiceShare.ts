@@ -16,7 +16,10 @@ import {
   mergeFormDataFromStorage,
 } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
-import { formWithExecutorProfileSync } from '@/views/admin/ContractDocuments/packages/platform/form/packageEditorProfileFields';
+import {
+  executorRequisitesFromProfile,
+  formWithExecutorProfileSync,
+} from '@/views/admin/ContractDocuments/packages/platform/form/packageEditorProfileFields';
 import type { PackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import { resolvePackageTemplateHtml } from '@/views/admin/ContractDocuments/packages/platform/form/resolvePackageTemplateHtml';
 import { formatPackageIssuedInvoiceAmountRub } from '@/views/admin/ContractDocuments/packages/platform/payments/packageInvoiceNumber';
@@ -31,7 +34,8 @@ import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocu
 import { canShareCustomerDocumentFiles } from './packageCustomerDocumentShare';
 
 export type PackageInvoiceShareContext = {
-  packageId: string;
+  /** null — свободный счёт без договора в базе. */
+  packageId: string | null;
   packageKind: ContractDocumentPackageKind;
   form: PackageFormData;
   invoice: ContractDocumentPaymentInvoice;
@@ -85,7 +89,7 @@ export function buildPackageInvoiceShareMessage(ctx: PackageInvoiceShareContext)
 }
 
 export function buildPackageInvoiceShareContext(input: {
-  packageId: string;
+  packageId: string | null;
   packageKind: ContractDocumentPackageKind;
   form: PackageFormData;
   invoice: ContractDocumentPaymentInvoice;
@@ -108,6 +112,38 @@ export function buildPackageInvoiceShareContext(input: {
 export async function loadPackageInvoiceShareContext(
   invoice: ContractDocumentPaymentInvoice
 ): Promise<PackageInvoiceShareContext> {
+  // Свободный счёт (без пакета): форму собираем из снимка реквизитов самого счёта,
+  // шаблон — обычный шаблон счёта направления «Ремонт».
+  if (!invoice.packageId) {
+    const presetsRes = await getContractDocumentTemplatePresets('REPAIR');
+    const base = mergeFormDataFromStorage({}).form;
+    const exec = invoice.executorProfile;
+    const executorFields = exec ? executorRequisitesFromProfile(exec) : null;
+    const form: PackageFormData = {
+      ...base,
+      contract: { ...base.contract, number: invoice.contractNumber ?? '' },
+      customer: { ...base.customer, fullName: invoice.customerName ?? '' },
+      executor: {
+        ...base.executor,
+        ...(executorFields ?? {}),
+        selectedProfileTitle: exec?.title ?? '',
+      },
+    };
+    const templateHtml = resolvePackageTemplateHtml(
+      PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB,
+      presetsRes.items ?? [],
+      {},
+      {}
+    );
+    return buildPackageInvoiceShareContext({
+      packageId: null,
+      packageKind: 'REPAIR',
+      form,
+      invoice,
+      templateHtml,
+    });
+  }
+
   const row = await getContractDocumentPackage(invoice.packageId);
   const packageKind = row.kind;
   const presetsKind: ContractDocumentPackageKind = isProductDirectionPackageKind(row.kind)

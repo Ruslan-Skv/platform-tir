@@ -79,6 +79,8 @@ function serializeUser(
 }
 
 export function serializeInvoice(row: ContractDocumentPaymentInvoiceRow) {
+  // Свободный счёт (без пакета): № договора и заказчик — из снимка в записи счёта.
+  const pkg = row.package;
   return {
     id: row.id,
     packageId: row.packageId,
@@ -91,6 +93,9 @@ export function serializeInvoice(row: ContractDocumentPaymentInvoiceRow) {
     basis: row.basis,
     lineItems: parseStoredLineItems(row.lineItems),
     legacyFormId: row.legacyFormId,
+    contractDate: row.contractDate ? row.contractDate.toISOString().slice(0, 10) : null,
+    customerId: row.customerId,
+    executorProfile: (row.executorProfile ?? null) as unknown,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
     issuedById: row.issuedById,
@@ -100,10 +105,10 @@ export function serializeInvoice(row: ContractDocumentPaymentInvoiceRow) {
     signedBy: serializeUser(row.signedBy),
     signedFileUrl: row.signedFileUrl,
     signedSha256: row.signedSha256,
-    packageTitle: row.package.title,
-    packageKind: row.package.kind,
-    contractNumber: contractNumberFromFormData(row.package.formData),
-    customerName: customerNameFromFormData(row.package.formData),
+    packageTitle: pkg?.title ?? null,
+    packageKind: pkg?.kind ?? null,
+    contractNumber: pkg ? contractNumberFromFormData(pkg.formData) : (row.contractNumber ?? ''),
+    customerName: pkg ? customerNameFromFormData(pkg.formData) : (row.customerName ?? ''),
   };
 }
 

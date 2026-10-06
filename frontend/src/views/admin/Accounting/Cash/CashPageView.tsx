@@ -324,7 +324,6 @@ export function CashPageView({ model }: CashPageViewProps) {
                   placeholder="Поиск: № договора, заказчик, основание…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  disabled={loading}
                   className={filterFieldClass(
                     cdHub.contractsListSearchInput,
                     Boolean(search.trim())

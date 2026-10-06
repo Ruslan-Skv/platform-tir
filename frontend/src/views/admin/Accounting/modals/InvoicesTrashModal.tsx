@@ -10,7 +10,7 @@ import { Modal } from '@/shared/ui/Modal';
 import panelStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import styles from '@/views/admin/CRM/Customers/modals/CrmCustomerTrashModal.module.css';
 
-import { formatDateRu, formatMoneyRub } from './accounting-invoices-page.utils';
+import { formatDateRu, formatMoneyRub } from '../accounting-invoices-page.utils';
 
 const PAGE_SIZE = 15;
 

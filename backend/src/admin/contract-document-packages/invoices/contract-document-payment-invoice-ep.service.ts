@@ -1,5 +1,6 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import type { ContractDocumentPackageKind } from '@prisma/client';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
@@ -24,9 +25,31 @@ import {
   serializeInvoiceTrash,
 } from './contract-document-payment-invoice-serialize';
 
+/** Реквизиты Подрядчика из снимка профиля исполнителя (свободный счёт без пакета). */
+function contractorFromExecutorProfile(profile: unknown): {
+  contractorLabel: string | null;
+  contractorSignatory: string | null;
+} {
+  if (!profile || typeof profile !== 'object') {
+    return { contractorLabel: null, contractorSignatory: null };
+  }
+  const p = profile as Record<string, unknown>;
+  const str = (v: unknown) => (typeof v === 'string' ? v.trim() : '');
+  const company = str(p.companyName);
+  const inn = str(p.inn);
+  const name = str(p.directorNameNominative);
+  const basis = str(p.basis);
+  return {
+    contractorLabel:
+      [company || null, inn ? `ИНН ${inn}` : null].filter(Boolean).join(', ') || null,
+    contractorSignatory: [name || null, basis || null].filter(Boolean).join(', ') || null,
+  };
+}
+
 /**
  * ЭП и корзина выставленных счетов: подписание счёта ПЭП со стороны Подрядчика,
  * отмена подписи, удаление в корзину и безвозвратная очистка корзины (30 дней).
+ * Счета ищутся по id: у договорных проверяется пакет, свободные идут без него.
  */
 @Injectable()
 export class ContractDocumentPaymentInvoiceEpService {
@@ -42,22 +65,33 @@ export class ContractDocumentPaymentInvoiceEpService {
    * в uploads, её SHA-256 фиксируется в записи счёта.
    */
   async signWithEp(
-    packageId: string,
+    packageId: string | null,
     invoiceId: string,
     file: Express.Multer.File,
     input: { contractorLabel?: string | null; contractorSignatory?: string | null },
     signedById?: string,
   ) {
-    const pkg = await this.prisma.contractDocumentPackage.findFirst({
-      where: { id: packageId, deletedAt: null },
-      select: { kind: true },
-    });
-    if (!pkg) {
-      throw new NotFoundException('Пакет документов не найден');
+    // Свободный счёт (packageId null) подписывается реквизитами из снимка исполнителя.
+    let packageKind: ContractDocumentPackageKind | null = null;
+    if (packageId) {
+      const pkg = await this.prisma.contractDocumentPackage.findFirst({
+        where: { id: packageId, deletedAt: null },
+        select: { kind: true },
+      });
+      if (!pkg) {
+        throw new NotFoundException('Пакет документов не найден');
+      }
+      packageKind = pkg.kind;
     }
     const invoice = await this.prisma.contractDocumentPaymentInvoice.findFirst({
-      where: { id: invoiceId, packageId, deletedAt: null },
-      select: { id: true, sequenceNumber: true, invoiceDate: true, signedAt: true },
+      where: { id: invoiceId, deletedAt: null },
+      select: {
+        id: true,
+        sequenceNumber: true,
+        invoiceDate: true,
+        signedAt: true,
+        executorProfile: true,
+      },
     });
     if (!invoice) {
       throw new NotFoundException('Счёт не найден');
@@ -72,10 +106,17 @@ export class ContractDocumentPaymentInvoiceEpService {
       throw new BadRequestException('Файл счёта должен быть PDF');
     }
 
-    const contractor = await resolveContractorInfo(this.prisma, pkg.kind, {
-      contractorLabel: input.contractorLabel,
-      contractorSignatory: input.contractorSignatory,
-    });
+    // Свободный счёт: явные значения из запроса, иначе — снимок исполнителя.
+    const snapshot = contractorFromExecutorProfile(invoice.executorProfile);
+    const contractor = packageKind
+      ? await resolveContractorInfo(this.prisma, packageKind, {
+          contractorLabel: input.contractorLabel,
+          contractorSignatory: input.contractorSignatory,
+        })
+      : {
+          contractorLabel: input.contractorLabel || snapshot.contractorLabel,
+          contractorSignatory: input.contractorSignatory || snapshot.contractorSignatory,
+        };
     const managerName = await managerDisplayName(this.prisma, signedById ?? null);
     const signedAt = new Date();
 
@@ -118,9 +159,13 @@ export class ContractDocumentPaymentInvoiceEpService {
   }
 
   /** Отмена ПЭП счёта: подписанная копия удаляется, отметка подписания снимается. */
-  async cancelEp(packageId: string, invoiceId: string) {
+  async cancelEp(invoiceId: string) {
     const invoice = await this.prisma.contractDocumentPaymentInvoice.findFirst({
-      where: { id: invoiceId, packageId, deletedAt: null, package: { deletedAt: null } },
+      where: {
+        id: invoiceId,
+        deletedAt: null,
+        OR: [{ package: null }, { package: { deletedAt: null } }],
+      },
       select: { id: true, signedAt: true, signedFileUrl: true },
     });
     if (!invoice) {
@@ -153,9 +198,13 @@ export class ContractDocumentPaymentInvoiceEpService {
    * Удаление выставленного счёта в корзину (только супер-админ): запись скрывается
    * из списков, через 30 дней удаляется безвозвратно (вместе с подписанной копией ЭП).
    */
-  async remove(packageId: string, invoiceId: string, deletedById?: string) {
+  async remove(invoiceId: string, deletedById?: string) {
     const invoice = await this.prisma.contractDocumentPaymentInvoice.findFirst({
-      where: { id: invoiceId, packageId, deletedAt: null, package: { deletedAt: null } },
+      where: {
+        id: invoiceId,
+        deletedAt: null,
+        OR: [{ package: null }, { package: { deletedAt: null } }],
+      },
       select: { id: true },
     });
     if (!invoice) {
@@ -176,7 +225,10 @@ export class ContractDocumentPaymentInvoiceEpService {
     const limit = Math.min(Math.max(params.limit ?? 15, 1), 50);
     const search = params.search?.trim().toLowerCase();
     const rows = await this.prisma.contractDocumentPaymentInvoice.findMany({
-      where: { deletedAt: { not: null }, package: { deletedAt: null } },
+      where: {
+        deletedAt: { not: null },
+        OR: [{ package: null }, { package: { deletedAt: null } }],
+      },
       include: INVOICE_INCLUDE,
       orderBy: { deletedAt: 'desc' },
     });

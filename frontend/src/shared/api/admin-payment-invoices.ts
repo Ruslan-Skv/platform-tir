@@ -1,5 +1,7 @@
 import { apiFetch } from '@/shared/lib/api-fetch';
 
+import type { ExecutorRequisiteProfile } from './admin-contract-document-packages';
+
 const API_FALLBACK = 'http://localhost:3001/api/v1';
 
 function getApiBaseUrl(): string {
@@ -50,7 +52,8 @@ export interface PaymentInvoiceLineItem {
 
 export interface ContractDocumentPaymentInvoice {
   id: string;
-  packageId: string;
+  /** null — свободный счёт без договора в базе. */
+  packageId: string | null;
   sequenceNumber: number;
   invoiceNumber: string;
   invoiceDate: string;
@@ -60,6 +63,12 @@ export interface ContractDocumentPaymentInvoice {
   basis: string;
   lineItems: PaymentInvoiceLineItem[];
   legacyFormId: string | null;
+  /** Свободный счёт: дата договора. */
+  contractDate: string | null;
+  /** Свободный счёт: карточка заказчика в CRM (если выбрана). */
+  customerId: string | null;
+  /** Свободный счёт: снимок профиля исполнителя (справочник «Реквизиты»). */
+  executorProfile: ExecutorRequisiteProfile | null;
   createdAt: string;
   updatedAt: string;
   issuedById: string | null;
@@ -72,7 +81,7 @@ export interface ContractDocumentPaymentInvoice {
   signedFileUrl: string | null;
   signedSha256: string | null;
   packageTitle: string | null;
-  packageKind: string;
+  packageKind: string | null;
   contractNumber: string;
   customerName: string;
 }
@@ -84,6 +93,20 @@ export interface ContractDocumentPaymentInvoiceInput {
   addendumNumber?: number;
   basis: string;
   lineItems: PaymentInvoiceLineItem[];
+}
+
+/** Свободный счёт без договора в базе: реквизиты передаются в запросе. */
+export interface FreePaymentInvoiceInput {
+  invoiceDate: string;
+  amount: number;
+  paymentType: Exclude<ContractDocumentPaymentInvoiceKind, 'AMENDMENT'>;
+  basis: string;
+  lineItems: PaymentInvoiceLineItem[];
+  contractNumber?: string;
+  contractDate?: string;
+  customerId?: string;
+  customerName: string;
+  executorProfile?: ExecutorRequisiteProfile;
 }
 
 /** Строка корзины: счёт + кто/когда удалил и момент безвозвратного удаления. */
@@ -178,9 +201,25 @@ export async function createPackagePaymentInvoice(
   return res.json();
 }
 
-/** Подписать выставленный счёт ПЭП со стороны Подрядчика (multipart: PDF счёта). */
+/** Выставить свободный счёт (без договора в базе). */
+export async function createFreePaymentInvoice(
+  body: FreePaymentInvoiceInput
+): Promise<ContractDocumentPaymentInvoice> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/free`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(body),
+    }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Подписать выставленный счёт ПЭП со стороны Подрядчика (multipart: PDF счёта).
+ *  Работает и для свободных счетов — счёт ищется по id. */
 export async function signPackagePaymentInvoiceEp(
-  packageId: string,
   invoiceId: string,
   input: {
     file: Blob;
@@ -198,7 +237,7 @@ export async function signPackagePaymentInvoiceEp(
   if (input.contractorLabel) form.append('contractorLabel', input.contractorLabel);
   if (input.contractorSignatory) form.append('contractorSignatory', input.contractorSignatory);
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}/sign-ep`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/${invoiceId}/sign-ep`,
     {
       method: 'POST',
       headers: token ? { Authorization: `Bearer ${token}` } : undefined,
@@ -211,11 +250,10 @@ export async function signPackagePaymentInvoiceEp(
 
 /** Отменить ПЭП счёта: снимает отметку подписания и удаляет подписанную копию PDF. */
 export async function cancelPackagePaymentInvoiceEp(
-  packageId: string,
   invoiceId: string
 ): Promise<ContractDocumentPaymentInvoice> {
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}/sign-ep`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/${invoiceId}/sign-ep`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readError(res));
@@ -224,11 +262,10 @@ export async function cancelPackagePaymentInvoiceEp(
 
 /** Удалить выставленный счёт в корзину (только супер-админ; хранение 30 дней). */
 export async function deletePackagePaymentInvoice(
-  packageId: string,
   invoiceId: string
 ): Promise<ContractDocumentPaymentInvoiceTrashItem> {
   const res = await apiFetch(
-    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}`,
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/${invoiceId}`,
     { method: 'DELETE', headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readError(res));

@@ -219,12 +219,13 @@ export function ContractsListFiltersBar({
       </div>
 
       <div className={cdHub.contractsListFilters}>
+        {/* Не блокируем поле при загрузке: disabled снимает фокус
+            (поиск перезагружает список во время набора). */}
         <input
           type="search"
           placeholder="Поиск по номеру договора, ФИО заказчика, адресу..."
           value={search}
           onChange={(e) => onSearchChange(e.target.value)}
-          disabled={loading}
           className={contractsListFilterFieldClass(
             cdHub.contractsListSearchInput,
             Boolean(search.trim()),

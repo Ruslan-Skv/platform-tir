@@ -1,6 +1,6 @@
 'use client';
 
-import { useId, useMemo } from 'react';
+import { useId, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 
@@ -26,18 +26,19 @@ import { PackageInvoiceShareModal } from '@/views/admin/ContractDocuments/packag
 import { contractsListFilterFieldClass } from '../ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
 import cdBase from '../ContractDocuments/styles/base.module.css';
 import cdHub from '../ContractDocuments/styles/contracts-list-hub.module.css';
-import cdDataTab from '../ContractDocuments/styles/data-tab.module.css';
 import cdChrome from '../ContractDocuments/styles/editor-chrome.module.css';
 import pageStyles from './AccountingInvoicesPage.module.css';
 import { currentMonthStartIso } from './Bank/bank-page.constants';
-import { InvoicesTrashModal } from './InvoicesTrashModal';
-import { PackageInvoicesModalLoader } from './PackageInvoicesModalLoader';
 import { formatDateRu, formatMoneyRub } from './accounting-invoices-page.utils';
 import {
   type AccountingInvoicesPageModel,
   INVOICES_PAGE_LIMIT_OPTIONS,
   type InvoicesPageLimit,
 } from './hooks/useAccountingInvoicesPage';
+import { FreeInvoiceModal } from './modals/FreeInvoiceModal';
+import { InvoicesTrashModal } from './modals/InvoicesTrashModal';
+import { IssueInvoiceChoiceModal } from './modals/IssueInvoiceChoiceModal';
+import { PackageInvoicesModalLoader } from './modals/PackageInvoicesModalLoader';
 
 type AccountingInvoicesPageViewProps = {
   model: AccountingInvoicesPageModel;
@@ -94,6 +95,11 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
     packageOptions,
     load,
     openIssueModal,
+    pickIssueChoice,
+    issueChoiceOpen,
+    setIssueChoiceOpen,
+    freeIssueOpen,
+    setFreeIssueOpen,
     closeIssueModal,
     openContractInvoices,
     closeContractInvoices,
@@ -121,6 +127,14 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
 
   const filtersContentId = useId();
 
+  // Поиск договора в модалке выставления счёта (фильтр по списку пакетов).
+  const [packageSearch, setPackageSearch] = useState('');
+  const filteredPackageOptions = useMemo(() => {
+    const q = packageSearch.trim().toLowerCase();
+    if (!q) return packageOptions;
+    return packageOptions.filter((opt) => opt.label.toLowerCase().includes(q));
+  }, [packageOptions, packageSearch]);
+
   const countTitle = formatInvoicesCount(rows.length);
 
   const periodChipLabel = `Период: ${dateFrom ? formatDateRu(dateFrom) : '…'} — ${
@@ -142,11 +156,15 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
       {
         key: 'contractNumber',
         title: 'Договор',
-        render: (item: (typeof rows)[number]) => (
-          <Link href={`/admin/contract-documents/contracts/${item.packageId}`}>
-            {item.contractNumber || '—'}
-          </Link>
-        ),
+        render: (item: (typeof rows)[number]) =>
+          // Свободный счёт (без пакета) — номер договора текстом, без ссылки.
+          item.packageId ? (
+            <Link href={`/admin/contract-documents/contracts/${item.packageId}`}>
+              {item.contractNumber || '—'}
+            </Link>
+          ) : (
+            item.contractNumber || '—'
+          ),
       },
       {
         key: 'customerName',
@@ -220,15 +238,19 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
               >
                 <ShareIcon tone="inherit" />
               </button>
-              <button
-                type="button"
-                className={cdBase.invoiceIssuedIconBtn}
-                onClick={() => openContractInvoices(item.packageId)}
-                title="Счета договора — модалка «Счета на оплату по договору»"
-                aria-label="Счета договора"
-              >
-                <DocumentsIcon />
-              </button>
+              {item.packageId ? (
+                <button
+                  type="button"
+                  className={cdBase.invoiceIssuedIconBtn}
+                  onClick={() => {
+                    if (item.packageId) openContractInvoices(item.packageId);
+                  }}
+                  title="Счета договора — модалка «Счета на оплату по договору»"
+                  aria-label="Счета договора"
+                >
+                  <DocumentsIcon />
+                </button>
+              ) : null}
               {isSuperAdmin ? (
                 <button
                   type="button"
@@ -495,26 +517,37 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
       >
         <div data-modal-form data-modal-density="compact">
           <p data-modal-form-hint className={pageStyles.modalHint}>
-            Выберите договор, основание и позиции в таблице. Итог и номер счёта подставляются
-            автоматически.
+            Найдите договор по номеру или заказчику, выберите основание и позиции в таблице. Итог и
+            номер счёта подставляются автоматически.
           </p>
-          <div
-            className={`${cdBase.field} ${cdDataTab.contractInlineField} ${pageStyles.modalFieldSpaced}`}
-          >
-            <label htmlFor="accounting_issue_package">Договор</label>
-            <select
-              id="accounting_issue_package"
-              value={selectedPackageId}
-              disabled={packagesLoading}
-              onChange={(e) => setSelectedPackageId(e.target.value)}
-            >
-              <option value="">— выберите договор —</option>
-              {packageOptions.map((opt) => (
-                <option key={opt.id} value={opt.id}>
-                  {opt.label}
-                </option>
-              ))}
-            </select>
+          <div data-modal-form-grid className={pageStyles.modalFieldSpaced}>
+            <div data-modal-form-group data-modal-span>
+              <label htmlFor="accounting_issue_package_search">Поиск договора</label>
+              <input
+                id="accounting_issue_package_search"
+                type="search"
+                value={packageSearch}
+                onChange={(e) => setPackageSearch(e.target.value)}
+                placeholder="№ договора или заказчик…"
+                autoComplete="off"
+              />
+            </div>
+            <div data-modal-form-group data-modal-span>
+              <label htmlFor="accounting_issue_package">Договор</label>
+              <select
+                id="accounting_issue_package"
+                value={selectedPackageId}
+                disabled={packagesLoading}
+                onChange={(e) => setSelectedPackageId(e.target.value)}
+              >
+                <option value="">— выберите договор —</option>
+                {filteredPackageOptions.map((opt) => (
+                  <option key={opt.id} value={opt.id}>
+                    {opt.label}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           {selectedPackageId ? (
             <PackageIssueInvoicePanel
@@ -569,6 +602,22 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
       />
 
       <InvoicesTrashModal isOpen={trashOpen} onClose={() => setTrashOpen(false)} />
+
+      <IssueInvoiceChoiceModal
+        isOpen={issueChoiceOpen}
+        onClose={() => setIssueChoiceOpen(false)}
+        onPick={pickIssueChoice}
+      />
+
+      <FreeInvoiceModal
+        isOpen={freeIssueOpen}
+        onClose={() => setFreeIssueOpen(false)}
+        onError={setError}
+        onCreated={() => {
+          void load();
+          void refreshTrashCount();
+        }}
+      />
     </div>
   );
 }

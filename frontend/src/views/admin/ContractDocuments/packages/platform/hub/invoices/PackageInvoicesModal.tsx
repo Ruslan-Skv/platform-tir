@@ -234,7 +234,7 @@ export function PackageInvoicesModal({
       'Счёт на оплату',
       buildPackagePaymentInvoiceDownloadFileName(conduct)
     );
-    await signPackagePaymentInvoiceEp(packageId, row.id, {
+    await signPackagePaymentInvoiceEp(row.id, {
       file: blob,
       fileName,
       ...packageContractorStampInfo(form),
@@ -246,7 +246,7 @@ export function PackageInvoicesModal({
     setSignEpBusy(true);
     try {
       if (row.signedAt) {
-        await cancelPackagePaymentInvoiceEp(packageId, row.id);
+        await cancelPackagePaymentInvoiceEp(row.id);
       } else {
         await signEpIssued(row);
       }
@@ -274,6 +274,9 @@ export function PackageInvoicesModal({
       basis: conduct.paymentBasis,
       lineItems: paymentInvoiceLineItemsForApi(conduct.lineItems),
       legacyFormId: null,
+      contractDate: null,
+      customerId: null,
+      executorProfile: null,
       createdAt: '',
       updatedAt: '',
       issuedById: null,

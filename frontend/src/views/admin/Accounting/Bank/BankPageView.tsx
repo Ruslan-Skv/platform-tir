@@ -517,7 +517,6 @@ export function BankPageView({ model }: BankPageViewProps) {
                   placeholder="Поиск: контрагент, примечание…"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
-                  disabled={loading}
                   className={filterFieldClass(
                     cdHub.contractsListSearchInput,
                     Boolean(search.trim())

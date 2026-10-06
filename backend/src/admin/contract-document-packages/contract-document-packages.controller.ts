@@ -31,6 +31,7 @@ import { ContractDocumentPackagePaymentsService } from './contract-document-pack
 import { ContractDocumentPackagesService } from './contract-document-packages.service';
 import { ContractDocumentNumberingService } from '../../contract-document-numbering/contract-document-numbering.service';
 import { CreateContractDocumentPaymentInvoiceDto } from './dto/create-contract-document-payment-invoice.dto';
+import { CreateFreePaymentInvoiceDto } from './dto/create-free-payment-invoice.dto';
 import { PreviewContractNumberDto } from './dto/preview-contract-number.dto';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles.dto';
@@ -824,26 +825,32 @@ export class ContractDocumentPackagesController {
     return this.paymentInvoices.create(id, dto, req.user?.id);
   }
 
+  /** Свободный счёт без договора в базе: единая нумерация, реквизиты передаются в теле. */
+  @Post('payment-invoices/free')
+  createFreePaymentInvoice(@Body() dto: CreateFreePaymentInvoiceDto, @Req() req: RequestWithUser) {
+    return this.paymentInvoices.createFree(dto, req.user?.id);
+  }
+
   /**
-   * Подписание выставленного счёта ПЭП со стороны Подрядчика (Заказчик не подписывает):
+   * Подписание счёта ПЭП со стороны Подрядчика (Заказчик не подписывает):
    * на загруженный PDF счёта ставится штамп ПЭП, копия сохраняется в uploads.
+   * Работает и для свободных счетов (без пакета) — реквизиты из снимка исполнителя.
    */
-  @Post(':id/payment-invoices/:invoiceId/sign-ep')
+  @Post('payment-invoices/:invoiceId/sign-ep')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
       limits: { fileSize: 25 * 1024 * 1024 },
     }),
   )
-  signPackagePaymentInvoiceEp(
-    @Param('id') id: string,
+  signPaymentInvoiceEp(
     @Param('invoiceId') invoiceId: string,
     @UploadedFile() file: Express.Multer.File,
     @Body() body: { contractorLabel?: string; contractorSignatory?: string },
     @Req() req: RequestWithUser,
   ) {
     return this.paymentInvoiceEp.signWithEp(
-      id,
+      null,
       invoiceId,
       file,
       {
@@ -855,20 +862,16 @@ export class ContractDocumentPackagesController {
   }
 
   /** Отмена ПЭП счёта: снимает отметку подписания и удаляет подписанную копию PDF. */
-  @Delete(':id/payment-invoices/:invoiceId/sign-ep')
-  cancelPackagePaymentInvoiceEp(@Param('id') id: string, @Param('invoiceId') invoiceId: string) {
-    return this.paymentInvoiceEp.cancelEp(id, invoiceId);
+  @Delete('payment-invoices/:invoiceId/sign-ep')
+  cancelPaymentInvoiceEp(@Param('invoiceId') invoiceId: string) {
+    return this.paymentInvoiceEp.cancelEp(invoiceId);
   }
 
   /** Удаление выставленного счёта в корзину — только супер-админ (исправление ошибок менеджеров). */
-  @Delete(':id/payment-invoices/:invoiceId')
+  @Delete('payment-invoices/:invoiceId')
   @Roles('SUPER_ADMIN')
-  removePackagePaymentInvoice(
-    @Param('id') id: string,
-    @Param('invoiceId') invoiceId: string,
-    @Req() req: RequestWithUser,
-  ) {
-    return this.paymentInvoiceEp.remove(id, invoiceId, req.user?.id);
+  removePaymentInvoice(@Param('invoiceId') invoiceId: string, @Req() req: RequestWithUser) {
+    return this.paymentInvoiceEp.remove(invoiceId, req.user?.id);
   }
 
   @Post(':id/upload-work-start-act-photo')

@@ -8,6 +8,7 @@ import {
   serializeInvoice,
 } from './contract-document-payment-invoice-serialize';
 import { CreateContractDocumentPaymentInvoiceDto } from '../dto/create-contract-document-payment-invoice.dto';
+import { CreateFreePaymentInvoiceDto } from '../dto/create-free-payment-invoice.dto';
 
 const COUNTER_ID = 'global';
 const MAX_INVOICES_PER_PACKAGE = 200;
@@ -255,7 +256,8 @@ export class ContractDocumentPaymentInvoicesService {
       where: {
         ...(packageId ? { packageId } : {}),
         deletedAt: null,
-        package: { deletedAt: null },
+        // Свободные счета (без пакета) попадают в общий список наравне с договорными.
+        OR: [{ package: null }, { package: { deletedAt: null } }],
         ...(invoiceDateFilter ? { invoiceDate: invoiceDateFilter } : {}),
       },
       include: INVOICE_INCLUDE,
@@ -329,6 +331,53 @@ export class ContractDocumentPaymentInvoicesService {
           basis: dto.basis.trim(),
           lineItems: lineItems as unknown as Prisma.InputJsonValue,
           issuedById: issuedById ?? null,
+        },
+        include: INVOICE_INCLUDE,
+      });
+    });
+
+    return serializeInvoice(created);
+  }
+
+  /**
+   * Свободный счёт без договора в базе: единая нумерация, реквизиты договора,
+   * заказчика и исполнителя хранятся снимком в самой записи.
+   */
+  async createFree(dto: CreateFreePaymentInvoiceDto, issuedById?: string) {
+    const lineItems = normalizeLineItemsForStorage(dto.lineItems);
+    if (lineItems.length === 0) {
+      throw new BadRequestException('Добавьте хотя бы одну позицию в таблицу счёта');
+    }
+    const linesTotal = lineItems.reduce((sum, line) => sum + line.amount, 0);
+    if (Math.abs(linesTotal - dto.amount) > 0.02) {
+      throw new BadRequestException('Сумма счёта должна совпадать с итогом по позициям');
+    }
+    const customerName = dto.customerName.trim();
+    if (!customerName) {
+      throw new BadRequestException('Укажите заказчика (найдите в базе или добавьте нового)');
+    }
+
+    const created = await this.prisma.$transaction(async (tx) => {
+      await this.seedCounterFromExisting(tx);
+      const sequenceNumber = await this.allocateSequenceNumber(tx);
+      return tx.contractDocumentPaymentInvoice.create({
+        data: {
+          packageId: null,
+          sequenceNumber,
+          invoiceDate: new Date(dto.invoiceDate),
+          amount: dto.amount,
+          paymentType: dto.paymentType as unknown as PaymentType,
+          addendumNumber: null,
+          basis: dto.basis.trim(),
+          lineItems: lineItems as unknown as Prisma.InputJsonValue,
+          issuedById: issuedById ?? null,
+          contractNumber: dto.contractNumber?.trim() || null,
+          contractDate: dto.contractDate ? new Date(dto.contractDate) : null,
+          customerId: dto.customerId?.trim() || null,
+          customerName,
+          ...(dto.executorProfile
+            ? { executorProfile: dto.executorProfile as Prisma.InputJsonValue }
+            : {}),
         },
         include: INVOICE_INCLUDE,
       });

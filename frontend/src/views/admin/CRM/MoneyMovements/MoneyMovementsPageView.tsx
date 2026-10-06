@@ -924,7 +924,6 @@ export function MoneyMovementsPageView({ model }: { model: MoneyMovementsPageMod
                   placeholder="Поиск: № договора, заказчик, основание, примечание…"
                   value={searchInput}
                   onChange={(e) => setSearchInput(e.target.value)}
-                  disabled={loading}
                   className={filterFieldClass(
                     cdHub.contractsListSearchInput,
                     Boolean(searchInput.trim())

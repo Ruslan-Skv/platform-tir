@@ -107,6 +107,8 @@ export function useAccountingInvoicesPage() {
   const [dateTo, setDateTo] = useState('');
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const [issueOpen, setIssueOpen] = useState(false);
+  const [issueChoiceOpen, setIssueChoiceOpen] = useState(false);
+  const [freeIssueOpen, setFreeIssueOpen] = useState(false);
   const [packages, setPackages] = useState<ContractDocumentPackage[]>([]);
   const [packagesLoading, setPackagesLoading] = useState(false);
   const [selectedPackageId, setSelectedPackageId] = useState('');
@@ -282,8 +284,14 @@ export function useAccountingInvoicesPage() {
     void loadSelectedPackageForIssue(selectedPackageId);
   }, [issueOpen, selectedPackageId, loadSelectedPackageForIssue]);
 
-  const openIssueModal = async () => {
+  /** «+ Выставить счёт»: сначала выбор сценария — по договору из базы или без договора. */
+  const openIssueModal = () => {
     if (!canEdit) return;
+    setIssueChoiceOpen(true);
+  };
+
+  /** Сценарий 1: счёт по договору из базы (поиск договора). */
+  const openContractIssue = async () => {
     setIssueOpen(true);
     setPackagesLoading(true);
     try {
@@ -296,6 +304,12 @@ export function useAccountingInvoicesPage() {
     }
   };
 
+  /** Выбор из модалки сценариев выставления счёта. */
+  const pickIssueChoice = (choice: 'contract' | 'free') => {
+    setIssueChoiceOpen(false);
+    if (choice === 'contract') void openContractIssue();
+    else setFreeIssueOpen(true);
+  };
   const closeIssueModal = () => {
     setIssueOpen(false);
     setSelectedPackageId('');
@@ -399,7 +413,7 @@ export function useAccountingInvoicesPage() {
     if (!deleteTarget) return;
     setDeleting(true);
     try {
-      await deletePackagePaymentInvoice(deleteTarget.packageId, deleteTarget.id);
+      await deletePackagePaymentInvoice(deleteTarget.id);
       setDeleteTarget(null);
       await load();
       await refreshTrashCount();
@@ -448,11 +462,11 @@ export function useAccountingInvoicesPage() {
     setRowBusyId(invoice.id);
     try {
       if (invoice.signedAt) {
-        await cancelPackagePaymentInvoiceEp(invoice.packageId, invoice.id);
+        await cancelPackagePaymentInvoiceEp(invoice.id);
       } else {
         const ctx = await loadPackageInvoiceShareContext(invoice);
         const file = await buildPackageInvoiceSharePdfFile(ctx);
-        await signPackagePaymentInvoiceEp(invoice.packageId, invoice.id, {
+        await signPackagePaymentInvoiceEp(invoice.id, {
           file,
           fileName: file.name,
           ...packageContractorStampInfo(ctx.form),
@@ -499,6 +513,11 @@ export function useAccountingInvoicesPage() {
     packageOptions,
     load,
     openIssueModal,
+    pickIssueChoice,
+    issueChoiceOpen,
+    setIssueChoiceOpen,
+    freeIssueOpen,
+    setFreeIssueOpen,
     closeIssueModal,
     openContractInvoices,
     closeContractInvoices,
