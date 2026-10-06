@@ -14,6 +14,7 @@ import {
 import type { EstimatePipelineTab } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
 import { getSplitBundleBadgeFraction } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateSplitBundle';
 import {
+  findSplitBundleSnapshotMismatches,
   listPresetsInSplitBundle,
   resolveSplitBundleId,
 } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateWorkScopeTree';
@@ -104,6 +105,7 @@ export function EstimatePresetTableRow({
     splitBundleAll,
     groups
   );
+  const splitBundleMismatchCount = findSplitBundleSnapshotMismatches(it, items).length;
   const splitBundleTooltip =
     splitBundleCount >= 2
       ? `Расчётов в связке: ${splitBundleCount}\n${splitBundleAll
@@ -111,6 +113,10 @@ export function EstimatePresetTableRow({
           .join('\n')}${
           splitBundleCoversAllPositions
             ? '\n\nВсе позиции сметы распределены по расчётам связки.'
+            : ''
+        }${
+          splitBundleMismatchCount > 0
+            ? `\n\n⚠ Связка собрана из разных смет (${splitBundleMismatchCount} расч. с другим составом) — «Разделение сметы» заблокировано. Связка должна состоять из копий одной сметы.`
             : ''
         }`
       : '';

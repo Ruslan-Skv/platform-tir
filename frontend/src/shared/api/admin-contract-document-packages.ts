@@ -1433,20 +1433,23 @@ export async function getContractDocumentEstimatePresetExport(
 
 /** Импорт файла переноса расчёта в текущую базу (только суперадмин). */
 export async function postContractDocumentEstimatePresetImport(
-  payload: ContractEstimateTransferPayload
+  file: File
 ): Promise<ContractEstimateTransferImportReport> {
+  const body = new FormData();
+  body.append('file', file, file.name || 'estimate-transfer.json');
+  const headers = getAdminAuthHeaders() as Record<string, string>;
+  delete headers['Content-Type'];
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/import`,
     {
       method: 'POST',
-      headers: getAdminAuthHeaders(),
-      body: JSON.stringify(payload),
-    }
+      headers: { ...headers, Accept: 'application/json' },
+      body,
+    },
+    FILE_UPLOAD_TIMEOUT_MS
   );
   if (!res.ok) {
-    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
-    const msg = Array.isArray(err.message) ? err.message.join('. ') : err.message;
-    throw new Error(msg || 'Не удалось загрузить расчёт из файла');
+    throw new Error(await readAdminContractPackagesError(res));
   }
   return res.json();
 }

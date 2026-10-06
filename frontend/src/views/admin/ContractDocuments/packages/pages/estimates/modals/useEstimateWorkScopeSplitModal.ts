@@ -12,6 +12,8 @@ import {
   buildEstimateWorkScopeTreeAsync,
   buildSiblingLineClaimIndex,
   collectAllLineScopeIds,
+  findSplitBundleSnapshotMismatches,
+  formatSplitBundleMismatchTitles,
   lineKeysFromCategoryNodeId,
   lineKeysFromRoomNodeId,
   lineKeysFromStageNodeId,
@@ -81,6 +83,15 @@ export function useEstimateWorkScopeSplitModal({
     () => buildSiblingLineClaimIndex(allPresets, preset),
     [allPresets, preset]
   );
+
+  /** Связка собрана из разных смет — распределять позиции нельзя, пока её не починят. */
+  const bundleMismatchWarning = useMemo(() => {
+    const mismatched = findSplitBundleSnapshotMismatches(preset, allPresets);
+    if (mismatched.length === 0) return null;
+    return `Связка должна состоять из копий одной сметы, а ${formatSplitBundleMismatchTitles(
+      mismatched
+    )} отличается составом. Сохранение состава заблокировано: уберите разнородные расчёты из связки (например, в корзину) или создайте для них отдельную связку.`;
+  }, [allPresets, preset]);
 
   const [selectedKeys, setSelectedKeys] = useState<string[]>([]);
   /** Исходное состояние выбора (при открытии расчёта / после сохранения) — для dirty-проверки. */
@@ -236,6 +247,10 @@ export function useEstimateWorkScopeSplitModal({
   };
 
   const handleSave = async () => {
+    if (bundleMismatchWarning) {
+      setLocalError(bundleMismatchWarning);
+      return;
+    }
     const hit = selectionIntersectsSiblingClaims(selectedSet, claimIndex);
     if (hit) {
       setLocalError(
@@ -260,6 +275,7 @@ export function useEstimateWorkScopeSplitModal({
     tree,
     treeLoading,
     workScopeSplitHint,
+    bundleMismatchWarning,
     splitGroupMode,
     setSplitGroupMode,
     selectedKeys,

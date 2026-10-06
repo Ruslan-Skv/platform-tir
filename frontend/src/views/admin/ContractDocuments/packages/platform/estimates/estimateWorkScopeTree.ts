@@ -719,6 +719,46 @@ export function listPresetsInSplitBundle(
   return presets.filter((p) => resolveSplitBundleId(p, presets) === bundle);
 }
 
+/** Канонический состав сметы для сравнения участников связки: помещения и позиции, без итоговых сумм. */
+export function estimateSnapshotRoomsFingerprint(preset: ContractEstimatePreset): string {
+  const rooms = preset.snapshot?.rooms;
+  if (!rooms?.length) return 'no-rooms';
+  return JSON.stringify(
+    rooms.map((room) => ({
+      name: room.name,
+      lines: (room.lines ?? []).map((line) => ({
+        name: line.name,
+        unit: line.unit,
+        quantity: line.quantity,
+        price: line.price,
+        amount: line.amount,
+        itemId: line.itemId ?? null,
+        // Признак «без наценки» живёт в данных, но не в API-типе снимка.
+        noMarkup: (line as { noMarkup?: boolean }).noMarkup ?? false,
+      })),
+    }))
+  );
+}
+
+/**
+ * Участники связки с составом сметы, отличным от состава `focus`. Связка «Разделения сметы»
+ * должна состоять строго из копий одной сметы; непустой результат — связка «разношёрстная»,
+ * и распределять её позиции нельзя, пока разнородные расчёты не убраны из связки.
+ */
+export function findSplitBundleSnapshotMismatches(
+  focus: ContractEstimatePreset,
+  presets: ContractEstimatePreset[]
+): ContractEstimatePreset[] {
+  const focusFingerprint = estimateSnapshotRoomsFingerprint(focus);
+  return listPresetsInSplitBundle(focus, presets).filter(
+    (p) => p.id !== focus.id && estimateSnapshotRoomsFingerprint(p) !== focusFingerprint
+  );
+}
+
+export function formatSplitBundleMismatchTitles(mismatched: ContractEstimatePreset[]): string {
+  return mismatched.map((p) => `«${p.title.trim() || 'Расчёт'}»`).join(', ');
+}
+
 /** Проставляет `splitBundleId` всем расчётам связки; ключи позиций — только у `focusPresetId`. */
 export function applySplitBundleSaveToPresets(
   items: ContractEstimatePreset[],

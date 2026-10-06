@@ -6,7 +6,6 @@ import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPe
 import type {
   ContractEstimateGroup,
   ContractEstimatePreset,
-  ContractEstimateTransferPayload,
 } from '@/shared/api/admin-contract-document-packages';
 import {
   getContractDocumentPackages,
@@ -165,8 +164,7 @@ export function useEstimatesListMutations({
       setError(null);
       clearOkMessage();
       try {
-        const payload = JSON.parse(await file.text()) as ContractEstimateTransferPayload;
-        const report = await postContractDocumentEstimatePresetImport(payload);
+        const report = await postContractDocumentEstimatePresetImport(file);
         await fetchEstimatesFromServer();
         refreshTrashCount();
         const summary = [

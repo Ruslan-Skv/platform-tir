@@ -38,7 +38,6 @@ import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
 import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
 import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
-import { ImportEstimatePresetsPayloadDto } from './dto/import-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
@@ -471,9 +470,27 @@ export class ContractDocumentPackagesController {
   /** Загрузка файла переноса расчёта в текущую базу (создаёт копии с новыми id). */
   @Post('estimate-presets/import')
   @Roles('SUPER_ADMIN')
-  importEstimatePreset(@Body() dto: ImportEstimatePresetsPayloadDto, @Req() req: RequestWithUser) {
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 25 * 1024 * 1024 },
+    }),
+  )
+  importEstimatePreset(
+    @UploadedFile() file: Express.Multer.File | undefined,
+    @Req() req: RequestWithUser,
+  ) {
+    if (!file || !file.buffer?.length) {
+      throw new BadRequestException('Прикрепите JSON-файл переноса расчёта');
+    }
+    let payload: unknown;
+    try {
+      payload = JSON.parse(file.buffer.toString('utf8'));
+    } catch {
+      throw new BadRequestException('Файл не является корректным JSON');
+    }
     return this.service.importEstimatePreset(
-      dto as unknown as Parameters<typeof this.service.importEstimatePreset>[0],
+      payload as Parameters<typeof this.service.importEstimatePreset>[0],
       req.user?.id,
     );
   }

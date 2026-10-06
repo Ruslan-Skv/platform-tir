@@ -1,6 +1,12 @@
 import type { ContractEstimatePreset } from '@/shared/api/admin-contract-document-packages';
 
-import { listPresetsInSplitBundle, resolveSplitBundleId } from './estimateWorkScopeTree';
+import {
+  estimateSnapshotRoomsFingerprint,
+  findSplitBundleSnapshotMismatches,
+  formatSplitBundleMismatchTitles,
+  listPresetsInSplitBundle,
+  resolveSplitBundleId,
+} from './estimateWorkScopeTree';
 
 export function generateSplitBundleId(): string {
   return `split_${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 10)}`;
@@ -181,6 +187,13 @@ export function getLinkedCopyDisabledReason(
       }
       return 'Сначала сохраните расчёт со сметой (нужны позиции для разделения).';
     }
+    // Связка — строго копии одной сметы: не добавляем экземпляр в связку с чужим составом.
+    const mismatched = findSplitBundleSnapshotMismatches(preset, allPresets);
+    if (mismatched.length > 0) {
+      return `Текущая связка собрана из разных смет: ${formatSplitBundleMismatchTitles(
+        mismatched
+      )} отличается составом. Связка должна состоять из копий одной сметы — сначала уберите из неё разнородные расчёты.`;
+    }
     return null;
   }
 
@@ -194,6 +207,19 @@ export function getLinkedCopyDisabledReason(
       (b) => b.bundleId === bundleId
     );
     if (!found) return 'Выбранная связка недоступна на этом объекте.';
+    // Связка — строго копии одной сметы: копируемый расчёт должен совпадать по составу с её участниками.
+    const bundleMembers = allPresets.filter(
+      (p) => resolveSplitBundleId(p, allPresets) === bundleId && p.id !== preset.id
+    );
+    const presetFingerprint = estimateSnapshotRoomsFingerprint(preset);
+    const mismatched = bundleMembers.filter(
+      (p) => estimateSnapshotRoomsFingerprint(p) !== presetFingerprint
+    );
+    if (mismatched.length > 0) {
+      return `Выбранная связка — из другой сметы: ${formatSplitBundleMismatchTitles(
+        mismatched
+      )} отличается составом от «${preset.title.trim() || 'Расчёт'}». Связка должна состоять из копий одной сметы.`;
+    }
     return null;
   }
 

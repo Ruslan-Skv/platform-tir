@@ -19,6 +19,7 @@ export function EstimateWorkScopeSplitModalView(
     tree,
     treeLoading,
     workScopeSplitHint,
+    bundleMismatchWarning,
     splitGroupMode,
     setSplitGroupMode,
     selectedKeys,
@@ -78,6 +79,11 @@ export function EstimateWorkScopeSplitModalView(
           <strong>{formatEstimatePresetTotalRub(unassignedAcrossBundleTotal)}</strong>
         </p>
         {localError ? <p data-modal-form-error>{localError}</p> : null}
+        {bundleMismatchWarning ? (
+          <p data-modal-form-error role="alert">
+            {bundleMismatchWarning}
+          </p>
+        ) : null}
 
         <div
           className={cdHub.contractsListChipRow}
@@ -165,8 +171,20 @@ export function EstimateWorkScopeSplitModalView(
             data-admin-mutation
             type="submit"
             data-modal-btn="primary"
-            disabled={saving || treeLoading || allLineIds.length === 0 || !selectionDirty}
-            title={selectionDirty ? undefined : 'Сначала измените отметки позиций'}
+            disabled={
+              saving ||
+              treeLoading ||
+              allLineIds.length === 0 ||
+              !selectionDirty ||
+              Boolean(bundleMismatchWarning)
+            }
+            title={
+              bundleMismatchWarning
+                ? 'Связка собрана из разных смет — сначала уберите из неё разнородные расчёты'
+                : selectionDirty
+                  ? undefined
+                  : 'Сначала измените отметки позиций'
+            }
           >
             {saving ? 'Сохранение…' : 'Сохранить состав'}
           </button>
