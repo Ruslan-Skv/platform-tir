@@ -119,10 +119,20 @@ export async function loadPackageInvoiceShareContext(
     const base = mergeFormDataFromStorage({}).form;
     const exec = invoice.executorProfile;
     const executorFields = exec ? executorRequisitesFromProfile(exec) : null;
+    const cs = invoice.customerSnapshot;
     const form: PackageFormData = {
       ...base,
       contract: { ...base.contract, number: invoice.contractNumber ?? '' },
-      customer: { ...base.customer, fullName: invoice.customerName ?? '' },
+      customer: {
+        ...base.customer,
+        ...(cs?.type ? { type: cs.type as PackageFormData['customer']['type'] } : {}),
+        fullName: cs?.fullName ?? invoice.customerName ?? '',
+        ...(cs?.organizationName ? { organizationName: cs.organizationName } : {}),
+        ...(cs?.inn ? { inn: cs.inn } : {}),
+        ...(cs?.address ? { address: cs.address } : {}),
+        ...(cs?.phone ? { phone: cs.phone, phones: [cs.phone] } : {}),
+        ...(cs?.email ? { email: cs.email } : {}),
+      },
       executor: {
         ...base.executor,
         ...(executorFields ?? {}),
@@ -135,13 +145,24 @@ export async function loadPackageInvoiceShareContext(
       {},
       {}
     );
-    return buildPackageInvoiceShareContext({
+    const ctx = buildPackageInvoiceShareContext({
       packageId: null,
       packageKind: 'REPAIR',
       form,
       invoice,
       templateHtml,
     });
+    // Основание в печатной форме счёта: «Договор №… от … (выбранное основание)».
+    const contractDateRu = invoice.contractDate
+      ? invoice.contractDate.split('-').reverse().join('.')
+      : '';
+    const contractLabel = invoice.contractNumber
+      ? `Договор №${invoice.contractNumber}${contractDateRu ? ` от ${contractDateRu}` : ''}`
+      : '';
+    if (contractLabel) {
+      ctx.conduct.paymentBasis = `${contractLabel} (${invoice.basis})`;
+    }
+    return ctx;
   }
 
   const row = await getContractDocumentPackage(invoice.packageId);

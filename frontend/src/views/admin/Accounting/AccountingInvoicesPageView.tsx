@@ -20,7 +20,7 @@ import {
 } from '@/shared/ui/icons';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
-import { PackageIssueInvoicePanel } from '@/views/admin/ContractDocuments/packages/platform/hub/invoices/PackageIssueInvoicePanel';
+import { PackageOrderSearch } from '@/views/admin/CRM/shared/PackageOrderSearch';
 import { PackageInvoiceShareModal } from '@/views/admin/ContractDocuments/packages/platform/share/PackageInvoiceShareModal';
 
 import { contractsListFilterFieldClass } from '../ContractDocuments/packages/pages/contracts/list/contractsListFormatters';
@@ -83,16 +83,8 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
     filtersCollapsed,
     toggleFiltersCollapsed,
     issueOpen,
-    packagesLoading,
-    selectedPackageId,
-    setSelectedPackageId,
-    issuePackageForm,
-    issuePackageInvoices,
-    issuePaymentRows,
-    issueSaving,
     contractEditorOpen,
     contractEditorPackageId,
-    packageOptions,
     load,
     openIssueModal,
     pickIssueChoice,
@@ -101,14 +93,12 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
     freeIssueOpen,
     setFreeIssueOpen,
     closeIssueModal,
+    pickIssuePackage,
     openContractInvoices,
     closeContractInvoices,
     shareInvoice,
     openShareInvoice,
     closeShareInvoice,
-    handleIssueInvoice,
-    handlePrintInvoice,
-    handleDownloadInvoice,
     rowBusyId,
     handlePrintRow,
     handleDownloadRow,
@@ -127,13 +117,8 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
 
   const filtersContentId = useId();
 
-  // Поиск договора в модалке выставления счёта (фильтр по списку пакетов).
-  const [packageSearch, setPackageSearch] = useState('');
-  const filteredPackageOptions = useMemo(() => {
-    const q = packageSearch.trim().toLowerCase();
-    if (!q) return packageOptions;
-    return packageOptions.filter((opt) => opt.label.toLowerCase().includes(q));
-  }, [packageOptions, packageSearch]);
+  // Текст поиска договора в модалке выставления счёта (панель «Поиск заказа»).
+  const [orderSearch, setOrderSearch] = useState('');
 
   const countTitle = formatInvoicesCount(rows.length);
 
@@ -515,54 +500,21 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
         showCloseButton
         compactOnMobile
       >
-        <div data-modal-form data-modal-density="compact">
+        <div data-modal-form data-modal-density="compact" className={pageStyles.issueSearchShell}>
           <p data-modal-form-hint className={pageStyles.modalHint}>
-            Найдите договор по номеру или заказчику, выберите основание и позиции в таблице. Итог и
-            номер счёта подставляются автоматически.
+            Найдите договор по номеру или заказчику (от 2 символов) и выберите его — откроется
+            модалка «Счета на оплату по договору» с полными данными и выставленными счетами.
           </p>
-          <div data-modal-form-grid className={pageStyles.modalFieldSpaced}>
-            <div data-modal-form-group data-modal-span>
-              <label htmlFor="accounting_issue_package_search">Поиск договора</label>
-              <input
-                id="accounting_issue_package_search"
-                type="search"
-                value={packageSearch}
-                onChange={(e) => setPackageSearch(e.target.value)}
-                placeholder="№ договора или заказчик…"
-                autoComplete="off"
-              />
-            </div>
-            <div data-modal-form-group data-modal-span>
-              <label htmlFor="accounting_issue_package">Договор</label>
-              <select
-                id="accounting_issue_package"
-                value={selectedPackageId}
-                disabled={packagesLoading}
-                onChange={(e) => setSelectedPackageId(e.target.value)}
-              >
-                <option value="">— выберите договор —</option>
-                {filteredPackageOptions.map((opt) => (
-                  <option key={opt.id} value={opt.id}>
-                    {opt.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          {selectedPackageId ? (
-            <PackageIssueInvoicePanel
-              packageId={selectedPackageId}
-              form={issuePackageForm}
-              issuedRows={issuePackageInvoices}
-              paymentRows={issuePaymentRows}
-              onError={setError}
-              saving={issueSaving}
-              onIssue={handleIssueInvoice}
-              onPrint={handlePrintInvoice}
-              onDownload={handleDownloadInvoice}
-              showIssuedTable={false}
+          <div className={pageStyles.modalFieldSpaced}>
+            <PackageOrderSearch
+              id="accounting_issue_package_search"
+              searchValue={orderSearch}
+              selectedPackageId=""
+              onSearchChange={setOrderSearch}
+              onSelect={(pkg) => pickIssuePackage(pkg.id)}
+              onClear={() => setOrderSearch('')}
             />
-          ) : null}
+          </div>
         </div>
       </Modal>
 
@@ -606,7 +558,11 @@ export function AccountingInvoicesPageView({ model }: AccountingInvoicesPageView
       <IssueInvoiceChoiceModal
         isOpen={issueChoiceOpen}
         onClose={() => setIssueChoiceOpen(false)}
-        onPick={pickIssueChoice}
+        onPick={(choice) => {
+          // При открытии сценария «из договора» сбрасываем прошлый поиск заказа.
+          if (choice === 'contract') setOrderSearch('');
+          pickIssueChoice(choice);
+        }}
       />
 
       <FreeInvoiceModal

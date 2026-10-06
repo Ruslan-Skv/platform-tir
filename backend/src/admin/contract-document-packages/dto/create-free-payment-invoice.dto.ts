@@ -68,4 +68,9 @@ export class CreateFreePaymentInvoiceDto {
   @IsOptional()
   @IsObject()
   executorProfile?: Record<string, unknown>;
+
+  /** Снимок реквизитов заказчика (телефон, e-mail, ИНН, адрес) для печатной формы. */
+  @IsOptional()
+  @IsObject()
+  customerSnapshot?: Record<string, unknown>;
 }

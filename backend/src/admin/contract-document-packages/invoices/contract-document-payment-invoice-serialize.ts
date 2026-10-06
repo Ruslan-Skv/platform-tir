@@ -95,6 +95,7 @@ export function serializeInvoice(row: ContractDocumentPaymentInvoiceRow) {
     legacyFormId: row.legacyFormId,
     contractDate: row.contractDate ? row.contractDate.toISOString().slice(0, 10) : null,
     customerId: row.customerId,
+    customerSnapshot: (row.customerSnapshot ?? null) as unknown,
     executorProfile: (row.executorProfile ?? null) as unknown,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),

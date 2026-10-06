@@ -1,41 +1,17 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
 import {
-  type ContractDocumentPackage,
-  getContractDocumentExecutorProfiles,
-  getContractDocumentPackage,
-  getContractDocumentPackagePayments,
-  getContractDocumentPackages,
-  getContractDocumentTemplatePresets,
-} from '@/shared/api/admin-contract-document-packages';
-import type { ContractTemplatePreset } from '@/shared/api/admin-contract-document-packages';
-import {
   type ContractDocumentPaymentInvoice,
   cancelPackagePaymentInvoiceEp,
-  createPackagePaymentInvoice,
   deletePackagePaymentInvoice,
   getPaymentInvoiceTrashCount,
   listAllPaymentInvoices,
-  listPackagePaymentInvoices,
   signPackagePaymentInvoiceEp,
 } from '@/shared/api/admin-payment-invoices';
-import { mergeFormDataFromStorage } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
-import type { PackageDocumentTemplateTabId } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
-import { getPackageContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
-import { formWithExecutorProfileSync } from '@/views/admin/ContractDocuments/packages/platform/form/packageEditorProfileFields';
-import { resolvePackageTemplateHtml } from '@/views/admin/ContractDocuments/packages/platform/form/resolvePackageTemplateHtml';
-import {
-  type PackageInvoiceConductDraft,
-  buildPackageInvoicePrintHtml,
-  downloadPackagePaymentInvoice,
-  paymentInvoiceLineItemsForApi,
-  printPackagePaymentInvoice,
-} from '@/views/admin/ContractDocuments/packages/platform/payments/packageInvoicePrint';
-import { packagePaymentBasisOptionByKey } from '@/views/admin/ContractDocuments/packages/platform/payments/packagePaymentBasisOptions';
 import {
   buildPackageInvoiceSharePdfFile,
   downloadInvoicePdfFile,
@@ -43,7 +19,6 @@ import {
   printInvoicePdfFile,
 } from '@/views/admin/ContractDocuments/packages/platform/share/packageInvoiceShare';
 import { packageContractorStampInfo } from '@/views/admin/ContractDocuments/packages/platform/share/remoteSigningContractor';
-import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '@/views/admin/ContractDocuments/packages/platform/tabs/packageActPrintTabs';
 
 import { currentMonthStartIso, todayIso } from '../Bank/bank-page.constants';
 
@@ -109,24 +84,6 @@ export function useAccountingInvoicesPage() {
   const [issueOpen, setIssueOpen] = useState(false);
   const [issueChoiceOpen, setIssueChoiceOpen] = useState(false);
   const [freeIssueOpen, setFreeIssueOpen] = useState(false);
-  const [packages, setPackages] = useState<ContractDocumentPackage[]>([]);
-  const [packagesLoading, setPackagesLoading] = useState(false);
-  const [selectedPackageId, setSelectedPackageId] = useState('');
-  const [issuePackageForm, setIssuePackageForm] = useState(() => mergeFormDataFromStorage({}).form);
-  const [issueTemplatePresets, setIssueTemplatePresets] = useState<ContractTemplatePreset[]>([]);
-  const [issueTemplateOverrides, setIssueTemplateOverrides] = useState<
-    Partial<Record<PackageDocumentTemplateTabId, string>>
-  >({});
-  const [issueSelectedTemplateIds, setIssueSelectedTemplateIds] = useState<
-    Partial<Record<PackageDocumentTemplateTabId, string>>
-  >({});
-  const [issuePackageInvoices, setIssuePackageInvoices] = useState<
-    ContractDocumentPaymentInvoice[]
-  >([]);
-  const [issuePaymentRows, setIssuePaymentRows] = useState<
-    Awaited<ReturnType<typeof getContractDocumentPackagePayments>>
-  >([]);
-  const [issueSaving, setIssueSaving] = useState(false);
   const [contractEditorOpen, setContractEditorOpen] = useState(false);
   const [contractEditorPackageId, setContractEditorPackageId] = useState('');
   const [shareInvoice, setShareInvoice] = useState<ContractDocumentPaymentInvoice | null>(null);
@@ -232,76 +189,15 @@ export function useAccountingInvoicesPage() {
     void refreshTrashCount();
   }, [refreshTrashCount, trashOpen]);
 
-  const packageOptions = useMemo(() => {
-    return packages
-      .filter((p) => p.kind === 'REPAIR')
-      .map((p) => {
-        const { form } = mergeFormDataFromStorage(p.formData);
-        const label = `${getPackageContractNumberDisplayForForm(form)}${form.customer.fullName ? ` — ${form.customer.fullName}` : ''}`;
-        return { id: p.id, label };
-      })
-      .sort((a, b) => a.label.localeCompare(b.label, 'ru'));
-  }, [packages]);
-
-  const loadSelectedPackageForIssue = useCallback(async (packageId: string) => {
-    if (!packageId) return;
-    try {
-      const [row, presetsRes, invoices, payments, profilesRes] = await Promise.all([
-        getContractDocumentPackage(packageId),
-        getContractDocumentTemplatePresets('REPAIR'),
-        listPackagePaymentInvoices(packageId),
-        getContractDocumentPackagePayments(packageId).catch(() => []),
-        // Реквизиты исполнителя синхронизируем со справочником (дефолтный вариант банка).
-        getContractDocumentExecutorProfiles('REPAIR').catch(() => ({ items: [] })),
-      ]);
-      const merged = mergeFormDataFromStorage(row.formData);
-      setIssuePackageForm(
-        formWithExecutorProfileSync(merged.form, profilesRes.items ?? [], row.status)
-      );
-      setIssueTemplateOverrides(merged.templateOverrides);
-      setIssueSelectedTemplateIds(merged.templatePresetIds);
-      setIssueTemplatePresets(presetsRes.items ?? []);
-      setIssuePackageInvoices(invoices);
-      setIssuePaymentRows(payments);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось загрузить договор');
-    }
-  }, []);
-
-  const resolveIssueTemplateHtml = useCallback(
-    () =>
-      resolvePackageTemplateHtml(
-        PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB,
-        issueTemplatePresets,
-        issueSelectedTemplateIds,
-        issueTemplateOverrides
-      ),
-    [issueTemplatePresets, issueSelectedTemplateIds, issueTemplateOverrides]
-  );
-
-  useEffect(() => {
-    if (!issueOpen || !selectedPackageId) return;
-    void loadSelectedPackageForIssue(selectedPackageId);
-  }, [issueOpen, selectedPackageId, loadSelectedPackageForIssue]);
-
   /** «+ Выставить счёт»: сначала выбор сценария — по договору из базы или без договора. */
   const openIssueModal = () => {
     if (!canEdit) return;
     setIssueChoiceOpen(true);
   };
 
-  /** Сценарий 1: счёт по договору из базы (поиск договора). */
-  const openContractIssue = async () => {
+  /** Сценарий 1: счёт по договору из базы — заказ ищется панелью «Поиск заказа». */
+  const openContractIssue = () => {
     setIssueOpen(true);
-    setPackagesLoading(true);
-    try {
-      const list = await getContractDocumentPackages('REPAIR');
-      setPackages(list);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось загрузить договоры');
-    } finally {
-      setPackagesLoading(false);
-    }
   };
 
   /** Выбор из модалки сценариев выставления счёта. */
@@ -312,7 +208,6 @@ export function useAccountingInvoicesPage() {
   };
   const closeIssueModal = () => {
     setIssueOpen(false);
-    setSelectedPackageId('');
   };
 
   const openContractInvoices = (packageId: string) => {
@@ -326,6 +221,12 @@ export function useAccountingInvoicesPage() {
     void load();
   };
 
+  /** Выбор договора в поиске: открываем ту же модалку счетов, что и из договора. */
+  const pickIssuePackage = (packageId: string) => {
+    setIssueOpen(false);
+    openContractInvoices(packageId);
+  };
+
   const openShareInvoice = (invoice: ContractDocumentPaymentInvoice) => {
     setShareInvoice(invoice);
   };
@@ -334,81 +235,6 @@ export function useAccountingInvoicesPage() {
     setShareInvoice(null);
   };
 
-  const handleIssueInvoice = async (
-    conduct: PackageInvoiceConductDraft,
-    option: NonNullable<ReturnType<typeof packagePaymentBasisOptionByKey>>
-  ) => {
-    if (!canEdit) return;
-    const amountNum = Number.parseFloat(conduct.amount.replace(',', '.'));
-    if (!Number.isFinite(amountNum) || amountNum <= 0) {
-      setError('Укажите корректную сумму счёта');
-      return;
-    }
-    const lineItems = paymentInvoiceLineItemsForApi(conduct.lineItems);
-    if (lineItems.length === 0) {
-      setError('Добавьте позиции в таблицу счёта');
-      return;
-    }
-    // Счёт — документ на оплату; для возврата денег клиенту счёт не выставляется.
-    if (option.paymentType === 'REFUND') {
-      setError('Для возврата денежных средств счёт не выставляется');
-      return;
-    }
-    setIssueSaving(true);
-    try {
-      await createPackagePaymentInvoice(selectedPackageId, {
-        invoiceDate: conduct.invoiceDate,
-        amount: amountNum,
-        paymentType: option.paymentType,
-        basis: conduct.paymentBasis,
-        lineItems,
-        ...(option.addendumNumber != null ? { addendumNumber: option.addendumNumber } : {}),
-      });
-      await load();
-      await loadSelectedPackageForIssue(selectedPackageId);
-      closeIssueModal();
-    } catch (e) {
-      setError(e instanceof Error ? e.message : 'Не удалось выставить счёт');
-    } finally {
-      setIssueSaving(false);
-    }
-  };
-
-  const handlePrintInvoice = (conduct: PackageInvoiceConductDraft) => {
-    void (async () => {
-      const html = await buildPackageInvoicePrintHtml(
-        issuePackageForm,
-        resolveIssueTemplateHtml(),
-        conduct
-      );
-      if (!html.trim()) {
-        setError('Нет данных для печати счёта');
-        return;
-      }
-      printPackagePaymentInvoice(html);
-    })();
-  };
-
-  const handleDownloadInvoice = (conduct: PackageInvoiceConductDraft) => {
-    void (async () => {
-      try {
-        const html = await buildPackageInvoicePrintHtml(
-          issuePackageForm,
-          resolveIssueTemplateHtml(),
-          conduct
-        );
-        if (!html.trim()) {
-          setError('Нет данных для скачивания счёта');
-          return;
-        }
-        await downloadPackagePaymentInvoice(html, conduct);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : 'Не удалось сформировать PDF');
-      }
-    })();
-  };
-
-  /** Удаление счёта в корзину — только супер-админ, после подтверждения в модалке. */
   const handleDeleteInvoice = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
@@ -501,16 +327,8 @@ export function useAccountingInvoicesPage() {
     filtersCollapsed,
     toggleFiltersCollapsed,
     issueOpen,
-    packagesLoading,
-    selectedPackageId,
-    setSelectedPackageId,
-    issuePackageForm,
-    issuePackageInvoices,
-    issuePaymentRows,
-    issueSaving,
     contractEditorOpen,
     contractEditorPackageId,
-    packageOptions,
     load,
     openIssueModal,
     pickIssueChoice,
@@ -519,14 +337,12 @@ export function useAccountingInvoicesPage() {
     freeIssueOpen,
     setFreeIssueOpen,
     closeIssueModal,
+    pickIssuePackage,
     openContractInvoices,
     closeContractInvoices,
     shareInvoice,
     openShareInvoice,
     closeShareInvoice,
-    handleIssueInvoice,
-    handlePrintInvoice,
-    handleDownloadInvoice,
     rowBusyId,
     handlePrintRow,
     handleDownloadRow,

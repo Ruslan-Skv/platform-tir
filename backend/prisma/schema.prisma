@@ -3883,43 +3883,45 @@ model SalesTotalMilestoneState {
 /// Выставленные счета на оплату по договорам (единая нумерация по всей организации).
 /// Свободный счёт (без договора в базе) — packageId null, реквизиты в полях ниже.
 model ContractDocumentPaymentInvoice {
-  id              String      @id @default(cuid())
+  id               String      @id @default(cuid())
   /// null — свободный счёт без договора в базе.
-  packageId       String?
+  packageId        String?
   /// Порядковый номер счёта в общей нумерации (отображается как № счёта).
-  sequenceNumber  Int         @unique
-  invoiceDate     DateTime    @db.Date
-  amount          Decimal     @db.Decimal(12, 2)
-  paymentType     PaymentType
-  addendumNumber  Int?
-  basis           String      @db.Text
+  sequenceNumber   Int         @unique
+  invoiceDate      DateTime    @db.Date
+  amount           Decimal     @db.Decimal(12, 2)
+  paymentType      PaymentType
+  addendumNumber   Int?
+  basis            String      @db.Text
   /// Позиции счёта: [{ name, quantity, unit, vatLabel, unitPrice, amount }, ...]
-  lineItems       Json        @default("[]")
+  lineItems        Json        @default("[]")
   /// Id из formData.issuedInvoices[] до миграции в БД.
-  legacyFormId    String?
-  issuedById      String?
+  legacyFormId     String?
+  issuedById       String?
   /// Свободный счёт: № договора (текстом, без привязки к пакету).
-  contractNumber  String?
+  contractNumber   String?
   /// Свободный счёт: дата договора.
-  contractDate    DateTime?
+  contractDate     DateTime?
   /// Свободный счёт: карточка заказчика в CRM (если выбрана).
-  customerId      String?
+  customerId       String?
   /// Свободный счёт: имя заказчика (снимок на момент выставления).
-  customerName    String?
+  customerName     String?
+  /// Свободный счёт: снимок реквизитов заказчика (телефон, e-mail, ИНН, адрес) для печатной формы.
+  customerSnapshot Json?
   /// Свободный счёт: снимок профиля исполнителя (справочник «Реквизиты») для печати и штампа ЭП.
-  executorProfile Json?
+  executorProfile  Json?
   /// Подписание счёта ПЭП со стороны Подрядчика (без подписи Заказчика).
-  signedAt        DateTime?
-  signedById      String?
+  signedAt         DateTime?
+  signedById       String?
   /// Подписанная копия PDF со штампом ПЭП Подрядчика (в uploads).
-  signedFileUrl   String?
+  signedFileUrl    String?
   /// SHA-256 подписанного PDF (контроль целостности файла).
-  signedSha256    String?
+  signedSha256     String?
   /// Корзина: момент удаления счёта супер-админом (null — не удалён).
-  deletedAt       DateTime?
-  deletedById     String?
-  createdAt       DateTime    @default(now())
-  updatedAt       DateTime    @updatedAt
+  deletedAt        DateTime?
+  deletedById      String?
+  createdAt        DateTime    @default(now())
+  updatedAt        DateTime    @updatedAt
 
   package   ContractDocumentPackage? @relation(fields: [packageId], references: [id], onDelete: Cascade)
   issuedBy  User?                    @relation("ContractDocumentPaymentInvoiceIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)

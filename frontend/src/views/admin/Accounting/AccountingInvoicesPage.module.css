@@ -185,3 +185,13 @@
   border-color: var(--admin-border);
   color: var(--admin-text-secondary);
 }
+
+/* Модалка поиска договора: запас высоты под выпадающий список «Поиска заказа». */
+.issueSearchShell {
+  min-height: min(60vh, 26rem);
+}
+
+/* Модалка свободного счёта: запас высоты как у модалки счетов договора. */
+.freeInvoiceShell {
+  min-height: min(60vh, 28rem);
+}

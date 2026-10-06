@@ -276,6 +276,7 @@ export function PackageInvoicesModal({
       legacyFormId: null,
       contractDate: null,
       customerId: null,
+      customerSnapshot: null,
       executorProfile: null,
       createdAt: '',
       updatedAt: '',

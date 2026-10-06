@@ -69,6 +69,8 @@ export interface ContractDocumentPaymentInvoice {
   customerId: string | null;
   /** Свободный счёт: снимок профиля исполнителя (справочник «Реквизиты»). */
   executorProfile: ExecutorRequisiteProfile | null;
+  /** Свободный счёт: снимок реквизитов заказчика для печатной формы счёта. */
+  customerSnapshot: FreeInvoiceCustomerSnapshot | null;
   createdAt: string;
   updatedAt: string;
   issuedById: string | null;
@@ -95,6 +97,17 @@ export interface ContractDocumentPaymentInvoiceInput {
   lineItems: PaymentInvoiceLineItem[];
 }
 
+/** Реквизиты заказчика свободного счёта (для печатной формы). */
+export interface FreeInvoiceCustomerSnapshot {
+  type?: string;
+  fullName?: string;
+  organizationName?: string;
+  inn?: string;
+  address?: string;
+  phone?: string;
+  email?: string;
+}
+
 /** Свободный счёт без договора в базе: реквизиты передаются в запросе. */
 export interface FreePaymentInvoiceInput {
   invoiceDate: string;
@@ -107,6 +120,7 @@ export interface FreePaymentInvoiceInput {
   customerId?: string;
   customerName: string;
   executorProfile?: ExecutorRequisiteProfile;
+  customerSnapshot?: FreeInvoiceCustomerSnapshot;
 }
 
 /** Строка корзины: счёт + кто/когда удалил и момент безвозвратного удаления. */

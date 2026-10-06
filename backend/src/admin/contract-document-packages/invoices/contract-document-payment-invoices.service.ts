@@ -378,6 +378,9 @@ export class ContractDocumentPaymentInvoicesService {
           ...(dto.executorProfile
             ? { executorProfile: dto.executorProfile as Prisma.InputJsonValue }
             : {}),
+          ...(dto.customerSnapshot
+            ? { customerSnapshot: dto.customerSnapshot as Prisma.InputJsonValue }
+            : {}),
         },
         include: INVOICE_INCLUDE,
       });
