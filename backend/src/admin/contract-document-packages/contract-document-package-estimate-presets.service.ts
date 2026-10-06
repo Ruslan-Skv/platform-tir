@@ -32,6 +32,12 @@ export class ContractDocumentPackageEstimatePresetsService {
     return this.loadGlobalEstimatePresetsBlobInternal(kind);
   }
 
+  /** Сырой блоб расчётов (включая корзину) — для экспорта/импорта суперадмином. */
+  async loadEstimatePresetsRaw(kind: ContractDocumentPackageKind) {
+    await this.purgeExpiredTrashedEstimatePresets(kind);
+    return this.loadGlobalEstimatePresetsBlobInternal(kind);
+  }
+
   /**
    * Для валидации прикрепления расчётов к пакету.
    * `expectedKind` — направление пакета: расчёты с явно проставленным другим направлением

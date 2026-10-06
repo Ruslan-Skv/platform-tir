@@ -17,6 +17,10 @@ import { SetWindowsWorkOrderMarkupDto } from './dto/set-windows-work-order-marku
 import { SetWindowsContractSettingsDto } from './dto/set-windows-settings.dto';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
+import {
+  type EstimateTransferPayload,
+  ContractDocumentPackageEstimateTransferService,
+} from './contract-document-package-estimate-transfer.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCrudService } from './contract-document-package-crud.service';
 import {
@@ -33,6 +37,7 @@ export class ContractDocumentPackagesService {
     private readonly list: ContractDocumentPackageListService,
     private readonly globalLibrary: ContractDocumentPackageGlobalLibraryService,
     private readonly estimatePresets: ContractDocumentPackageEstimatePresetsService,
+    private readonly estimateTransfer: ContractDocumentPackageEstimateTransferService,
     private readonly kindSettings: ContractDocumentPackageKindSettingsService,
     private readonly ceilingsPriceList: ContractDocumentPackageCeilingsPriceListService,
   ) {}
@@ -160,6 +165,16 @@ export class ContractDocumentPackagesService {
 
   setGlobalEstimatePresets(dto: SetGlobalEstimatePresetsDto, updatedById?: string) {
     return this.estimatePresets.setGlobalEstimatePresets(dto, updatedById);
+  }
+
+  /** Экспорт расчёта (со связкой, объектом и каталогом) в файл переноса — только суперадмин. */
+  exportEstimatePreset(kind: ContractDocumentPackageKind, presetId: string) {
+    return this.estimateTransfer.exportEstimatePreset(kind, presetId);
+  }
+
+  /** Импорт файла экспорта расчёта в текущую базу — только суперадмин. */
+  importEstimatePreset(payload: EstimateTransferPayload, updatedById?: string) {
+    return this.estimateTransfer.importEstimatePreset(payload, updatedById);
   }
 
   resolveDefaultWorkPeriodDays(kind: ContractDocumentPackageKind) {

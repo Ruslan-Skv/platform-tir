@@ -1371,6 +1371,86 @@ export async function putContractDocumentEstimatePresets(body: {
   return res.json();
 }
 
+/** Файл переноса расчёта: сам расчёт, связка, объект и позиции каталога (для суперадмина). */
+export type ContractEstimateTransferPayload = {
+  format: 'tir-estimate-presets-export';
+  version: 1;
+  exportedAt: string;
+  kind: ContractDocumentPackageKind;
+  presets: ContractEstimatePreset[];
+  groups: ContractEstimateGroup[];
+  catalog: {
+    categories: Array<{
+      id: string;
+      name: string;
+      slug: string;
+      priceMarkupPercent: number;
+      sortOrder: number;
+      isActive: boolean;
+      parentId?: string | null;
+    }>;
+    items: Array<{
+      id: string;
+      categoryId: string;
+      name: string;
+      price: number;
+      unit: string;
+      workGroup?: 'DEMOLITION' | 'ROUGH' | 'FINISHING' | null;
+      sortOrder: number;
+      isActive: boolean;
+    }>;
+  };
+};
+
+export type ContractEstimateTransferImportReport = {
+  ok: true;
+  kind: ContractDocumentPackageKind;
+  presets: Array<{ id: string; title: string }>;
+  groupTitles: string[];
+  catalogCategoriesCreated: number;
+  catalogItemsCreated: number;
+  catalogItemsUpdated: number;
+};
+
+/** Экспорт реального расчёта в JSON-файл переноса (только суперадмин). */
+export async function getContractDocumentEstimatePresetExport(
+  kind: ContractDocumentPackageKind,
+  presetId: string
+): Promise<ContractEstimateTransferPayload> {
+  const qs = new URLSearchParams({ kind });
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/${encodeURIComponent(
+      presetId
+    )}/export?${qs}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string };
+    throw new Error(err.message || 'Не удалось выгрузить расчёт');
+  }
+  return res.json();
+}
+
+/** Импорт файла переноса расчёта в текущую базу (только суперадмин). */
+export async function postContractDocumentEstimatePresetImport(
+  payload: ContractEstimateTransferPayload
+): Promise<ContractEstimateTransferImportReport> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/estimate-presets/import`,
+    {
+      method: 'POST',
+      headers: getAdminAuthHeaders(),
+      body: JSON.stringify(payload),
+    }
+  );
+  if (!res.ok) {
+    const err = (await res.json().catch(() => ({}))) as { message?: string | string[] };
+    const msg = Array.isArray(err.message) ? err.message.join('. ') : err.message;
+    throw new Error(msg || 'Не удалось загрузить расчёт из файла');
+  }
+  return res.json();
+}
+
 export type CeilingsPriceCategory = 'FABRIC' | 'TAPE' | 'PROFILE' | 'FABRIC_EXTRA' | 'GOODS';
 
 export type CeilingsPriceListSettings = {

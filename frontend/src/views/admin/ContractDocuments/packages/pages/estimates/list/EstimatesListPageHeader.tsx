@@ -1,5 +1,7 @@
 'use client';
 
+import { useRef } from 'react';
+
 import Link from 'next/link';
 
 import { AdminSaveNotice } from '@/shared/ui/admin/AdminSaveNotice';
@@ -32,6 +34,10 @@ export type EstimatesListPageHeaderProps = {
   trashCount: number;
   onOpenTrash: () => void;
   archiveCount: number;
+  /** Импорт файла переноса расчёта (виден только суперадмину). */
+  showImportControl?: boolean;
+  importing?: boolean;
+  onImportEstimateFile?: (file: File) => void;
 };
 
 export function EstimatesListPageHeader({
@@ -51,8 +57,12 @@ export function EstimatesListPageHeader({
   trashCount,
   onOpenTrash,
   archiveCount,
+  showImportControl,
+  importing,
+  onImportEstimateFile,
 }: EstimatesListPageHeaderProps) {
   const disabled = saving || refreshing;
+  const importInputRef = useRef<HTMLInputElement | null>(null);
 
   const iconActions = (placement: 'desktop' | 'mobile') => (
     <div
@@ -258,6 +268,33 @@ export function EstimatesListPageHeader({
       <div className={cdEstimatesList.headerButtonsRow}>
         {!archiveView ? (
           <>
+            {showImportControl && onImportEstimateFile ? (
+              <>
+                <input
+                  ref={importInputRef}
+                  type="file"
+                  accept="application/json,.json"
+                  className={cdEstimatesList.estimatesListVisuallyHidden}
+                  tabIndex={-1}
+                  aria-hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    e.target.value = '';
+                    if (file) onImportEstimateFile(file);
+                  }}
+                />
+                <button
+                  data-admin-mutation
+                  type="button"
+                  className={cdEstimatesList.secondaryBtn}
+                  disabled={disabled || importing}
+                  title="Загрузить JSON-файл переноса расчёта (экспорт из другой базы) — только для суперадмина"
+                  onClick={() => importInputRef.current?.click()}
+                >
+                  {importing ? 'Импорт…' : 'Импорт расчёта (JSON)'}
+                </button>
+              </>
+            ) : null}
             <button
               data-admin-mutation
               type="button"

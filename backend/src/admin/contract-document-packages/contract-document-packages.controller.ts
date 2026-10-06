@@ -38,6 +38,7 @@ import { SetGlobalExecutorProfilesDto } from './dto/set-global-executor-profiles
 import { SetGlobalContractTemplatesDto } from './dto/set-global-contract-templates.dto';
 import { SetGlobalSignatoryProfilesDto } from './dto/set-global-signatory-profiles.dto';
 import { SetGlobalEstimatePresetsDto } from './dto/set-global-estimate-presets.dto';
+import { ImportEstimatePresetsPayloadDto } from './dto/import-estimate-presets.dto';
 import { SetGlobalContractTemplateDto } from './dto/set-global-contract-template.dto';
 import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
@@ -454,6 +455,27 @@ export class ContractDocumentPackagesController {
   @Put('estimate-presets')
   setGlobalEstimatePresets(@Body() dto: SetGlobalEstimatePresetsDto, @Req() req: RequestWithUser) {
     return this.service.setGlobalEstimatePresets(dto, req.user?.id);
+  }
+
+  /** Выгрузка реального расчёта (связка + объект + позиции каталога) в JSON-файл переноса. */
+  @Get('estimate-presets/:presetId/export')
+  @Roles('SUPER_ADMIN')
+  exportEstimatePreset(@Query('kind') kind: string, @Param('presetId') presetId: string) {
+    const allowed = new Set<string>(Object.values(ContractDocumentPackageKind));
+    const safeKind = (
+      kind && allowed.has(kind) ? kind : ContractDocumentPackageKind.REPAIR
+    ) as ContractDocumentPackageKind;
+    return this.service.exportEstimatePreset(safeKind, presetId);
+  }
+
+  /** Загрузка файла переноса расчёта в текущую базу (создаёт копии с новыми id). */
+  @Post('estimate-presets/import')
+  @Roles('SUPER_ADMIN')
+  importEstimatePreset(@Body() dto: ImportEstimatePresetsPayloadDto, @Req() req: RequestWithUser) {
+    return this.service.importEstimatePreset(
+      dto as unknown as Parameters<typeof this.service.importEstimatePreset>[0],
+      req.user?.id,
+    );
   }
 
   @Get('ceilings-price-list')

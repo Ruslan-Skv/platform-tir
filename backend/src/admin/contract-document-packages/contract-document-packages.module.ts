@@ -15,6 +15,7 @@ import { ContractDocumentPackageCrudService } from './contract-document-package-
 import { ContractDocumentPackageListService } from './list-pipeline/contract-document-package-list.service';
 import { ContractDocumentPackageGlobalLibraryService } from './contract-document-package-global-library.service';
 import { ContractDocumentPackageEstimatePresetsService } from './contract-document-package-estimate-presets.service';
+import { ContractDocumentPackageEstimateTransferService } from './contract-document-package-estimate-transfer.service';
 import { ContractDocumentPackageKindSettingsService } from './contract-document-package-kind-settings.service';
 import { ContractDocumentPackageCeilingsPriceListService } from './contract-document-package-ceilings-price-list.service';
 
@@ -34,6 +35,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
     ContractDocumentPackageListService,
     ContractDocumentPackageGlobalLibraryService,
     ContractDocumentPackageEstimatePresetsService,
+    ContractDocumentPackageEstimateTransferService,
     ContractDocumentPackageKindSettingsService,
     ContractDocumentPackageCeilingsPriceListService,
     ContractDocumentPackagePaymentsService,

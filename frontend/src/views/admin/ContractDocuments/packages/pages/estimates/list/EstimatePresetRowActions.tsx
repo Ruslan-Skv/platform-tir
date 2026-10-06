@@ -1,5 +1,12 @@
 'use client';
 
+import { useState } from 'react';
+
+import { useAuth } from '@/features/auth';
+import {
+  type ContractEstimateTransferPayload,
+  getContractDocumentEstimatePresetExport,
+} from '@/shared/api/admin-contract-document-packages';
 import { AdminTableIconButton } from '@/shared/ui/admin/AdminTableIconButton';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
@@ -20,6 +27,24 @@ import {
   EstimatesToProspectIcon,
 } from './estimatesListTableUi';
 import { isUsageLocked } from './estimatesListUtils';
+
+function downloadEstimateTransferFile(payload: ContractEstimateTransferPayload, title: string) {
+  const safeTitle =
+    title
+      .trim()
+      .replace(/[^\p{L}\p{N}_-]+/gu, '_')
+      .slice(0, 60) || 'расчёт';
+  const day = new Date().toISOString().slice(0, 10);
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = `расчёт-${safeTitle}-${day}.json`;
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  URL.revokeObjectURL(url);
+}
 
 export type EstimatePresetRowActionsProps = Pick<
   EstimatePresetTableRowProps,
@@ -72,6 +97,21 @@ export function EstimatePresetRowActions({
   const inSplitBundle = Boolean(resolveSplitBundleId(it, items));
   const splitTree = buildEstimateWorkScopeTree(it, groups);
   const canOpenWorkScopeSplit = splitTree.length > 0;
+  const { user } = useAuth();
+  const isSuperAdmin = user?.role === 'SUPER_ADMIN';
+  const [exporting, setExporting] = useState(false);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const payload = await getContractDocumentEstimatePresetExport('REPAIR', it.id);
+      downloadEstimateTransferFile(payload, it.title);
+    } catch (e) {
+      window.alert(e instanceof Error ? e.message : 'Не удалось выгрузить расчёт');
+    } finally {
+      setExporting(false);
+    }
+  };
 
   const actions = (
     <div
@@ -241,6 +281,33 @@ export function EstimatePresetRowActions({
         >
           <DeleteIcon />
         </AdminTableIconButton>
+      </div>
+      <div className={cdEstimatesList.contractsListActionsSlot}>
+        {isSuperAdmin ? (
+          <AdminTableIconButton
+            aria-label="Выгрузить расчёт в файл"
+            title="Выгрузить расчёт (со связкой, объектом и каталогом) в JSON-файл переноса — только для суперадмина"
+            disabled={saving || exporting}
+            onClick={() => void handleExport()}
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width={14}
+              height={14}
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={2}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden
+            >
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </AdminTableIconButton>
+        ) : null}
       </div>
       <div className={cdEstimatesList.contractsListActionsSlot}>
         <button

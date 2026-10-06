@@ -125,6 +125,7 @@ export function useEstimatesListPage() {
     generateFromMeasurement,
     derived,
     mutations,
+    isSuperAdmin: user?.role === 'SUPER_ADMIN',
   };
 }
 

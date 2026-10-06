@@ -38,6 +38,7 @@ export function EstimatesListPageView({
   generateFromMeasurement,
   derived,
   mutations,
+  isSuperAdmin,
 }: EstimatesListPageViewProps) {
   const { visibleItems, pipelineTabCounts, archiveCount, addressGroupCount } = derived;
 
@@ -62,6 +63,11 @@ export function EstimatesListPageView({
         trashCount={modals.trashCount}
         onOpenTrash={() => modals.setTrashOpen(true)}
         archiveCount={archiveCount}
+        showImportControl={Boolean(isSuperAdmin) && !archiveView}
+        importing={mutations.importingEstimate}
+        onImportEstimateFile={
+          isSuperAdmin ? (file) => void mutations.importEstimateTransferFile(file) : undefined
+        }
       />
 
       {error ? <p className={cdDocPreview.error}>{error}</p> : null}

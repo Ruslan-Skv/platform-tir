@@ -1,4 +1,4 @@
-import { type Dispatch, type SetStateAction, useCallback } from 'react';
+import { type Dispatch, type SetStateAction, useCallback, useState } from 'react';
 
 import type { AppRouterInstance } from 'next/dist/shared/lib/app-router-context.shared-runtime';
 
@@ -6,9 +6,11 @@ import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPe
 import type {
   ContractEstimateGroup,
   ContractEstimatePreset,
+  ContractEstimateTransferPayload,
 } from '@/shared/api/admin-contract-document-packages';
 import {
   getContractDocumentPackages,
+  postContractDocumentEstimatePresetImport,
   putContractDocumentEstimatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import { trashContractEstimatePreset } from '@/shared/api/contract-documents/admin-contract-document-estimate-presets-trash';
@@ -153,6 +155,44 @@ export function useEstimatesListMutations({
       setRefreshing(false);
     }
   }, [clearOkMessage, fetchEstimatesFromServer, refreshing, saving, setError, setRefreshing]);
+
+  /** Импорт файла переноса расчёта (суперадмин): копии с новыми id + обновление списка. */
+  const [importingEstimate, setImportingEstimate] = useState(false);
+  const importEstimateTransferFile = useCallback(
+    async (file: File) => {
+      if (importingEstimate || saving) return;
+      setImportingEstimate(true);
+      setError(null);
+      clearOkMessage();
+      try {
+        const payload = JSON.parse(await file.text()) as ContractEstimateTransferPayload;
+        const report = await postContractDocumentEstimatePresetImport(payload);
+        await fetchEstimatesFromServer();
+        refreshTrashCount();
+        const summary = [
+          `расчётов: ${report.presets.length}`,
+          report.groupTitles.length > 0 ? `объекты: ${report.groupTitles.join(', ')}` : '',
+          `позиций каталога: создано ${report.catalogItemsCreated}, обновлено ${report.catalogItemsUpdated}`,
+        ]
+          .filter(Boolean)
+          .join('; ');
+        showOkMessage(`Расчёт загружен из файла (${summary}).`, 20000);
+      } catch (e) {
+        setError(e instanceof Error ? e.message : 'Не удалось загрузить расчёт из файла');
+      } finally {
+        setImportingEstimate(false);
+      }
+    },
+    [
+      clearOkMessage,
+      fetchEstimatesFromServer,
+      importingEstimate,
+      refreshTrashCount,
+      saving,
+      setError,
+      showOkMessage,
+    ]
+  );
 
   const handleWorkScopeSave = useCallback(
     async (
@@ -360,6 +400,8 @@ export function useEstimatesListMutations({
 
   return {
     refreshEstimates,
+    importingEstimate,
+    importEstimateTransferFile,
     handleWorkScopeSave,
     setPresetPipelineStage,
     setPresetArchived,
