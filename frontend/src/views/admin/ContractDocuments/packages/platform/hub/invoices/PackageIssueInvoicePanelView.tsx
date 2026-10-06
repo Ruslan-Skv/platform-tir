@@ -11,6 +11,9 @@ export function PackageIssueInvoicePanelView({
   onDownload,
   onReprint,
   onShare,
+  onToggleEp,
+  signEpBusy,
+  onDownloadRow,
   invoiceDate,
   setInvoiceDate,
   invoiceNumber,
@@ -89,6 +92,9 @@ export function PackageIssueInvoicePanelView({
           downloadBusy={downloadBusy}
           handleReprintDownload={handleReprintDownload}
           onShare={onShare}
+          onToggleEp={onToggleEp}
+          signEpBusy={signEpBusy}
+          onDownloadRow={onDownloadRow}
         />
       ) : null}
     </>

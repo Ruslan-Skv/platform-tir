@@ -3,10 +3,12 @@ import type {
   ContractTemplatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 import {
+  getContractDocumentExecutorProfiles,
   getContractDocumentPackage,
   getContractDocumentTemplatePresets,
 } from '@/shared/api/admin-contract-document-packages';
 import type { ContractDocumentPaymentInvoice } from '@/shared/api/admin-payment-invoices';
+import { publicUploadUrl } from '@/shared/lib/public-upload-url';
 import { buildDocumentPdfBlob } from '@/views/admin/ContractDocuments/core/printDocument';
 import { isProductDirectionPackageKind } from '@/views/admin/ContractDocuments/packages/config/productDirectionPackageKind';
 import {
@@ -14,6 +16,7 @@ import {
   mergeFormDataFromStorage,
 } from '@/views/admin/ContractDocuments/packages/platform/form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
+import { formWithExecutorProfileSync } from '@/views/admin/ContractDocuments/packages/platform/form/packageEditorProfileFields';
 import type { PackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
 import { resolvePackageTemplateHtml } from '@/views/admin/ContractDocuments/packages/platform/form/resolvePackageTemplateHtml';
 import { formatPackageIssuedInvoiceAmountRub } from '@/views/admin/ContractDocuments/packages/platform/payments/packageInvoiceNumber';
@@ -74,6 +77,9 @@ export function buildPackageInvoiceShareMessage(ctx: PackageInvoiceShareContext)
     lines.push(`Основание: ${ctx.invoice.basis.trim()}`);
   }
   lines.push(`Сумма: ${formatPackageIssuedInvoiceAmountRub(Number(ctx.invoice.amount))} ₽`);
+  if (ctx.invoice.signedFileUrl) {
+    lines.push('Счёт подписан ЭП со стороны Подрядчика.');
+  }
   lines.push('PDF счёта прилагается / будет отправлен отдельно.');
   return lines.join('\n');
 }
@@ -107,8 +113,13 @@ export async function loadPackageInvoiceShareContext(
   const presetsKind: ContractDocumentPackageKind = isProductDirectionPackageKind(row.kind)
     ? row.kind
     : 'REPAIR';
-  const presetsRes = await getContractDocumentTemplatePresets(presetsKind);
+  const [presetsRes, profilesRes] = await Promise.all([
+    getContractDocumentTemplatePresets(presetsKind),
+    // Дефолтный вариант банка — только для неподписанных пакетов.
+    getContractDocumentExecutorProfiles('REPAIR').catch(() => ({ items: [] })),
+  ]);
   const merged = mergeFormDataFromStorage(row.formData);
+  const form = formWithExecutorProfileSync(merged.form, profilesRes.items ?? [], row.status);
   const templateHtml = resolvePackageTemplateHtml(
     PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB,
     presetsRes.items ?? [],
@@ -118,7 +129,7 @@ export async function loadPackageInvoiceShareContext(
   return buildPackageInvoiceShareContext({
     packageId: invoice.packageId,
     packageKind,
-    form: merged.form,
+    form,
     invoice,
     templateHtml,
   });
@@ -148,9 +159,27 @@ export function buildPackageInvoiceShareContextFromLive(input: {
   });
 }
 
+/** Подписанный со стороны Подрядчика PDF счёта (со штампом ПЭП) — или null, если счёт не подписан. */
+export async function fetchPackageInvoiceSignedPdfFile(
+  invoice: Pick<ContractDocumentPaymentInvoice, 'signedFileUrl' | 'invoiceNumber' | 'invoiceDate'>
+): Promise<File | null> {
+  if (!invoice.signedFileUrl) return null;
+  const res = await fetch(publicUploadUrl(invoice.signedFileUrl));
+  if (!res.ok) {
+    throw new Error('Не удалось загрузить подписанный счёт (PDF со штампом ЭП)');
+  }
+  const blob = await res.blob();
+  return new File([blob], `Schet_${invoice.invoiceNumber}_${invoice.invoiceDate}_EP.pdf`, {
+    type: blob.type || 'application/pdf',
+  });
+}
+
 export async function buildPackageInvoiceSharePdfFile(
   ctx: PackageInvoiceShareContext
 ): Promise<File> {
+  // Подписанный счёт отправляем/скачиваем копией со штампом ПЭП Подрядчика.
+  const signed = await fetchPackageInvoiceSignedPdfFile(ctx.invoice);
+  if (signed) return signed;
   const html = await buildPackageInvoicePrintHtml(ctx.form, ctx.templateHtml, ctx.conduct);
   if (!html.trim()) {
     throw new Error('Нет данных для PDF счёта');
@@ -160,10 +189,7 @@ export async function buildPackageInvoiceSharePdfFile(
   return new File([blob], safeName, { type: 'application/pdf' });
 }
 
-export async function downloadPackageInvoiceSharePdf(
-  ctx: PackageInvoiceShareContext
-): Promise<void> {
-  const file = await buildPackageInvoiceSharePdfFile(ctx);
+export function downloadInvoicePdfFile(file: File): void {
   const url = URL.createObjectURL(file);
   const link = document.createElement('a');
   link.href = url;
@@ -173,6 +199,32 @@ export async function downloadPackageInvoiceSharePdf(
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+/** Печать готового PDF-файла через скрытый iframe (Chromium печатает PDF из iframe). */
+export function printInvoicePdfFile(file: File): void {
+  const url = URL.createObjectURL(file);
+  const iframe = document.createElement('iframe');
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText =
+    'position:fixed;left:-10000px;top:0;width:210mm;height:297mm;border:0;visibility:hidden;';
+  iframe.src = url;
+  iframe.onload = () => {
+    iframe.contentWindow?.focus();
+    iframe.contentWindow?.print();
+  };
+  document.body.appendChild(iframe);
+  window.setTimeout(() => {
+    iframe.remove();
+    URL.revokeObjectURL(url);
+  }, 60_000);
+}
+
+export async function downloadPackageInvoiceSharePdf(
+  ctx: PackageInvoiceShareContext
+): Promise<void> {
+  const file = await buildPackageInvoiceSharePdfFile(ctx);
+  downloadInvoicePdfFile(file);
 }
 
 export async function sharePackageInvoiceNative(

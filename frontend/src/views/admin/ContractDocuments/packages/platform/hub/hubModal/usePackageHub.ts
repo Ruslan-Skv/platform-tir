@@ -7,6 +7,7 @@ import {
   type ContractDocumentPackagePayment,
   type ContractDocumentPackageStatus,
   type ContractTemplatePreset,
+  getContractDocumentExecutorProfiles,
   getContractDocumentPackage,
   getContractDocumentPackagePayments,
   getContractDocumentTemplatePresets,
@@ -21,7 +22,7 @@ import { isProductDirectionPackageKind } from '../../../config/productDirectionP
 import type { FurnitureActiveDocLeg } from '../../../directions/furniture/furnitureLegs';
 import { ensureCeilingsContractTemplatePresets } from '../../../families/product-like/ceilings/ensureCeilingsContractTemplatePresets';
 import { furnitureDocumentTemplateHtml } from '../../../templates/furniture';
-import { packageTemplatePresetsKind } from '../../catalogKinds';
+import { packageExecutorProfilesKind, packageTemplatePresetsKind } from '../../catalogKinds';
 import {
   type BuildPersistedFormDataOptions,
   type PackageDocumentTemplateTabId,
@@ -29,6 +30,7 @@ import {
   mergeFormDataFromStorage,
 } from '../../form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '../../form/packageContractDisplay';
+import { formWithExecutorProfileSync } from '../../form/packageEditorProfileFields';
 import {
   PACKAGE_PAYMENT_PROOF_PHOTOS_MAX,
   type PackageFormData,
@@ -213,13 +215,17 @@ export function usePackageHub({
     try {
       const row = await getContractDocumentPackage(packageId);
       const presetsKind = packageTemplatePresetsKind(row.kind);
-      const [paymentsRes, presetsRes] = await Promise.all([
+      const [paymentsRes, presetsRes, executorProfilesRes] = await Promise.all([
         getContractDocumentPackagePayments(packageId).catch(
           () => [] as ContractDocumentPackagePayment[]
         ),
         getContractDocumentTemplatePresets(presetsKind).catch(() => ({
           items: [] as ContractTemplatePreset[],
           updatedAt: null,
+        })),
+        // Реквизиты исполнителя для печати из хаба: дефолтный вариант из справочника.
+        getContractDocumentExecutorProfiles(packageExecutorProfilesKind(row.kind)).catch(() => ({
+          items: [],
         })),
       ]);
       let templateItems = presetsRes.items ?? [];
@@ -256,7 +262,11 @@ export function usePackageHub({
       selectedTemplateIdsRef.current = templatePresetIds;
       linkedCrmCustomerIdRef.current = parseLinkedCrmCustomerIdFromFormData(row.formData);
       const live = getLiveFormRef.current?.();
-      const formToShow = live ?? mergedForm;
+      const formToShow = formWithExecutorProfileSync(
+        live ?? mergedForm,
+        executorProfilesRes.items ?? [],
+        row.status
+      );
       setForm(formToShow);
       formRef.current = formToShow;
       draftTitleRef.current = row.title?.trim() || null;

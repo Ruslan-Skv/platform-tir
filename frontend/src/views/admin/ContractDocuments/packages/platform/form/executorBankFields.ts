@@ -1,4 +1,5 @@
 import type {
+  ExecutorBankVariant,
   ExecutorRequisiteKind,
   ExecutorRequisiteProfile,
 } from '@/shared/api/admin-contract-document-packages';
@@ -180,6 +181,11 @@ export function normalizeExecutorRequisiteProfile(
     bankBik: raw.bankBik ?? '',
     bankCorrAccount: raw.bankCorrAccount ?? '',
     bankSettlementAccount: raw.bankSettlementAccount ?? '',
+    bankName2: raw.bankName2 ?? '',
+    bankBik2: raw.bankBik2 ?? '',
+    bankCorrAccount2: raw.bankCorrAccount2 ?? '',
+    bankSettlementAccount2: raw.bankSettlementAccount2 ?? '',
+    defaultBankVariant: normalizeExecutorBankVariant(raw.defaultBankVariant),
     email: raw.email ?? '',
     requisitesPdfUrl: raw.requisitesPdfUrl ?? '',
     requisitesPdfName: raw.requisitesPdfName ?? '',
@@ -187,35 +193,95 @@ export function normalizeExecutorRequisiteProfile(
   });
 }
 
+/** Вариант банковских реквизитов по умолчанию: нечто иное — основной вариант. */
+export function normalizeExecutorBankVariant(raw: unknown): ExecutorBankVariant {
+  return raw === 'SECONDARY' ? 'SECONDARY' : 'PRIMARY';
+}
+
+/** Поля дефолтного варианта; «Вариант 2» применяется, только если он заполнен. */
+export function executorDefaultBankFields(
+  profile: ExecutorRequisiteProfile
+): ExecutorBankFields & { variant: ExecutorBankVariant } {
+  if (normalizeExecutorBankVariant(profile.defaultBankVariant) === 'SECONDARY') {
+    const secondary: ExecutorBankFields = {
+      bankName: (profile.bankName2 ?? '').trim(),
+      bankBik: normalizeBankBik(profile.bankBik2 ?? ''),
+      bankCorrAccount: normalizeBankAccountDigits(profile.bankCorrAccount2 ?? ''),
+      bankSettlementAccount: normalizeBankAccountDigits(profile.bankSettlementAccount2 ?? ''),
+    };
+    if (hasStructuredBankFields(secondary)) {
+      return { ...secondary, variant: 'SECONDARY' };
+    }
+  }
+  return {
+    bankName: (profile.bankName ?? '').trim(),
+    bankBik: normalizeBankBik(profile.bankBik ?? ''),
+    bankCorrAccount: normalizeBankAccountDigits(profile.bankCorrAccount ?? ''),
+    bankSettlementAccount: normalizeBankAccountDigits(profile.bankSettlementAccount ?? ''),
+    variant: 'PRIMARY',
+  };
+}
+
+/** Реквизиты профиля для документов: поля дефолтного варианта + сводная строка. */
+export function executorDefaultBankBlock(
+  profile: ExecutorRequisiteProfile
+): ExecutorBankFields & { variant: ExecutorBankVariant; bankDetails: string } {
+  const fields = executorDefaultBankFields(profile);
+  return {
+    ...fields,
+    bankDetails: hasStructuredBankFields(fields)
+      ? composeExecutorBankDetails(fields)
+      : (profile.bankDetails ?? '').trim(),
+  };
+}
+
 /** Нормализует поля банка в профиле; при необходимости разбирает legacy `bankDetails`. */
 export function normalizeExecutorProfileBankFields(
   raw: ExecutorRequisiteProfile
 ): ExecutorRequisiteProfile {
-  const structured: ExecutorBankFields = {
+  const primary: ExecutorBankFields = {
     bankName: (raw.bankName ?? '').trim(),
     bankBik: normalizeBankBik(raw.bankBik ?? ''),
     bankCorrAccount: normalizeBankAccountDigits(raw.bankCorrAccount ?? ''),
     bankSettlementAccount: normalizeBankAccountDigits(raw.bankSettlementAccount ?? ''),
   };
 
-  if (!hasStructuredBankFields(structured) && (raw.bankDetails ?? '').trim()) {
+  if (!hasStructuredBankFields(primary) && (raw.bankDetails ?? '').trim()) {
     const parsed = parseExecutorBankDetails(raw.bankDetails ?? '');
-    structured.bankName = parsed.bankName;
-    structured.bankBik = normalizeBankBik(parsed.bik);
-    structured.bankCorrAccount = normalizeBankAccountDigits(parsed.corrAccount);
-    structured.bankSettlementAccount = normalizeBankAccountDigits(parsed.settlementAccount);
+    primary.bankName = parsed.bankName;
+    primary.bankBik = normalizeBankBik(parsed.bik);
+    primary.bankCorrAccount = normalizeBankAccountDigits(parsed.corrAccount);
+    primary.bankSettlementAccount = normalizeBankAccountDigits(parsed.settlementAccount);
   }
 
-  const bankDetails = hasStructuredBankFields(structured)
-    ? composeExecutorBankDetails(structured)
+  const secondary: ExecutorBankFields = {
+    bankName: (raw.bankName2 ?? '').trim(),
+    bankBik: normalizeBankBik(raw.bankBik2 ?? ''),
+    bankCorrAccount: normalizeBankAccountDigits(raw.bankCorrAccount2 ?? ''),
+    bankSettlementAccount: normalizeBankAccountDigits(raw.bankSettlementAccount2 ?? ''),
+  };
+
+  const defaultVariant: ExecutorBankVariant =
+    normalizeExecutorBankVariant(raw.defaultBankVariant) === 'SECONDARY' &&
+    hasStructuredBankFields(secondary)
+      ? 'SECONDARY'
+      : 'PRIMARY';
+
+  const bankDetails = hasStructuredBankFields(defaultVariant === 'SECONDARY' ? secondary : primary)
+    ? composeExecutorBankDetails(defaultVariant === 'SECONDARY' ? secondary : primary)
     : (raw.bankDetails ?? '').trim();
 
   return {
     ...raw,
-    bankName: structured.bankName,
-    bankBik: structured.bankBik,
-    bankCorrAccount: structured.bankCorrAccount,
-    bankSettlementAccount: structured.bankSettlementAccount,
+    bankName: primary.bankName,
+    bankBik: primary.bankBik,
+    bankCorrAccount: primary.bankCorrAccount,
+    bankSettlementAccount: primary.bankSettlementAccount,
+    bankName2: secondary.bankName,
+    bankBik2: secondary.bankBik,
+    bankCorrAccount2: secondary.bankCorrAccount,
+    bankSettlementAccount2: secondary.bankSettlementAccount,
+    defaultBankVariant: defaultVariant,
     bankDetails,
   };
 }

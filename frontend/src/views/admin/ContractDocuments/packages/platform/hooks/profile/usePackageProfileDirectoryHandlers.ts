@@ -101,6 +101,8 @@ export function usePackageProfileDirectoryHandlers({
   );
 
   useEffect(() => {
+    // Подписанный договор держит реквизиты на момент подписания — справочник его не обновляет.
+    if (signedDocsLocked) return;
     const title = form.executor.selectedProfileTitle?.trim();
     if (!title || executorProfiles.length === 0) return;
     const profile = executorProfiles.find((it) => it.title === title);
@@ -119,7 +121,7 @@ export function usePackageProfileDirectoryHandlers({
         },
       };
     });
-  }, [executorProfiles, form.executor.selectedProfileTitle, setForm]);
+  }, [signedDocsLocked, executorProfiles, form.executor.selectedProfileTitle, setForm]);
 
   const applySignatoryProfile = useCallback(
     (title: string) => {

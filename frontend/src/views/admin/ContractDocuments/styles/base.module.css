@@ -1049,6 +1049,55 @@
   gap: 6px;
 }
 
+/* Квадратная кнопка-иконка в таблице выставленных счетов (Печать/PDF/Отправить/ЭП) */
+.invoiceIssuedIconBtn {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-text-muted, #6b7280);
+  cursor: pointer;
+  display: inline-flex;
+  justify-content: center;
+  min-height: 2rem;
+  min-width: 2rem;
+  padding: 3px;
+}
+
+.invoiceIssuedIconBtn:not(:disabled):hover {
+  border-color: var(--admin-text-muted, #6b7280);
+  background: var(--admin-surface-soft, #f3f4f6);
+  color: var(--admin-text, #111827);
+}
+
+.invoiceIssuedIconBtn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Счёт подписан ЭП: салатовый фон у иконки подписи */
+.invoiceIssuedIconBtnSigned {
+  background: rgb(34 197 94 / 0.18);
+  border-color: rgb(34 197 94 / 0.65);
+}
+
+.invoiceIssuedIconBtnSigned:not(:disabled):hover {
+  background: rgb(34 197 94 / 0.3);
+  border-color: #22c55e;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .invoiceIssuedIconBtnSigned {
+  background: rgb(74 222 128 / 0.18);
+  border-color: rgb(74 222 128 / 0.6);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .invoiceIssuedIconBtnSigned:not(:disabled):hover {
+  background: rgb(74 222 128 / 0.3);
+  border-color: #4ade80;
+}
+
 .invoiceLinesMobileRow {
   background: transparent;
 }
@@ -1083,6 +1132,16 @@
 
   .invoiceIssuedRowActions button {
     width: 100%;
+  }
+
+  /* Ряд с иконками (Печать/PDF/ЭП/Отправить) на мобиле остаётся в строку */
+  .invoiceIssuedRowActions:has(.invoiceIssuedIconBtn) {
+    flex-direction: row;
+    align-items: center;
+  }
+
+  .invoiceIssuedRowActions .invoiceIssuedIconBtn {
+    width: auto;
   }
 
   /* «Товары и услуги»: компактнее ячейки для меньшей необходимости скролла */

@@ -44,6 +44,14 @@ export type PackageIssueInvoicePanelProps = {
 
   /** Отправка заказчику ещё не выставленного счёта (черновик из формы). */
   onShareDraft?: (conduct: PackageInvoiceConductDraft) => void;
+
+  /** Переключить ПЭП счёта со стороны Подрядчика: подписать / отменить подпись. */
+  onToggleEp?: (row: ContractDocumentPaymentInvoice) => void | Promise<void>;
+
+  signEpBusy?: boolean;
+
+  /** Скачивание строки с учётом подписи (подписанный PDF со штампом ЭП). */
+  onDownloadRow?: (row: ContractDocumentPaymentInvoice) => void | Promise<void>;
 };
 
 export function PackageIssueInvoicePanel(props: PackageIssueInvoicePanelProps) {

@@ -134,6 +134,8 @@ model User {
   cashBookEntriesCreated                  CashBookEntry[]                          @relation("CashBookEntryCreatedBy")
   bankReconciliationLinksCreated          BankReconciliationLink[]                 @relation("BankReconciliationLinkCreatedBy")
   contractDocumentPaymentInvoicesIssued   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceIssuedBy")
+  contractDocumentPaymentInvoicesSigned   ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceSignedBy")
+  contractDocumentPaymentInvoicesDeleted  ContractDocumentPaymentInvoice[]         @relation("ContractDocumentPaymentInvoiceDeletedBy")
   contractDocumentGlobalTemplatesUpdated  ContractDocumentGlobalTemplate[]         @relation("GlobalContractTemplateUpdatedBy")
   contractDocumentRepairSettingsUpdated   ContractDocumentRepairSettings[]         @relation("ContractDocumentRepairSettingsUpdatedBy")
   contractDocumentPackageVersionsSaved    ContractDocumentPackageVersion[]         @relation("ContractDocumentPackageVersionSavedBy")
@@ -3894,11 +3896,23 @@ model ContractDocumentPaymentInvoice {
   /// Id из formData.issuedInvoices[] до миграции в БД.
   legacyFormId   String?
   issuedById     String?
+  /// Подписание счёта ПЭП со стороны Подрядчика (без подписи Заказчика).
+  signedAt       DateTime?
+  signedById     String?
+  /// Подписанная копия PDF со штампом ПЭП Подрядчика (в uploads).
+  signedFileUrl  String?
+  /// SHA-256 подписанного PDF (контроль целостности файла).
+  signedSha256   String?
+  /// Корзина: момент удаления счёта супер-админом (null — не удалён).
+  deletedAt      DateTime?
+  deletedById    String?
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  package  ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
-  issuedBy User?                   @relation("ContractDocumentPaymentInvoiceIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  package   ContractDocumentPackage @relation(fields: [packageId], references: [id], onDelete: Cascade)
+  issuedBy  User?                   @relation("ContractDocumentPaymentInvoiceIssuedBy", fields: [issuedById], references: [id], onDelete: SetNull)
+  signedBy  User?                   @relation("ContractDocumentPaymentInvoiceSignedBy", fields: [signedById], references: [id], onDelete: SetNull)
+  deletedBy User?                   @relation("ContractDocumentPaymentInvoiceDeletedBy", fields: [deletedById], references: [id], onDelete: SetNull)
 
   @@unique([packageId, legacyFormId])
   @@index([packageId])

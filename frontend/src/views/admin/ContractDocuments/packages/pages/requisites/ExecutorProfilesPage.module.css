@@ -236,3 +236,36 @@
   cursor: pointer;
   font-weight: 600;
 }
+
+.bankSectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm);
+  margin: var(--admin-space-lg) 0 0;
+  font-size: var(--admin-font-size-base);
+  font-weight: 600;
+  color: var(--modal-text, var(--admin-text-secondary));
+}
+
+.bankDefaultBadge {
+  padding: 2px var(--admin-space-md);
+  border-radius: var(--admin-radius-xl, 12px);
+  font-size: var(--admin-font-size-xs);
+  font-weight: 600;
+  background: var(--admin-success-bg);
+  color: var(--admin-success-text);
+}
+
+.variantRadioRow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xl);
+}
+
+.variantRadioOption {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 400;
+}

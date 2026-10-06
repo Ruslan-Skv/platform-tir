@@ -177,6 +177,9 @@ export interface ContractDocumentPackageVersionListItem {
 
 export type ExecutorRequisiteKind = 'COMPANY' | 'ENTREPRENEUR';
 
+/** Вариант банковских реквизитов исполнителя: основной или дополнительный. */
+export type ExecutorBankVariant = 'PRIMARY' | 'SECONDARY';
+
 /** QR-код для оплаты: картинка + заголовок блока для заказчика. */
 export interface ExecutorPaymentQr {
   /** Картинка QR-кода (относительная ссылка `/uploads/...`). */
@@ -204,6 +207,13 @@ export interface ExecutorRequisiteProfile {
   bankBik?: string;
   bankCorrAccount?: string;
   bankSettlementAccount?: string;
+  /** Вариант 2 банковских реквизитов (дополнительный, можно не заполнять). */
+  bankName2?: string;
+  bankBik2?: string;
+  bankCorrAccount2?: string;
+  bankSettlementAccount2?: string;
+  /** Какой вариант банковских реквизитов используется в договорах и счетах по умолчанию. */
+  defaultBankVariant?: ExecutorBankVariant;
   email?: string;
   /** PDF-файл с реквизитами (относительная ссылка `/uploads/...`). */
   requisitesPdfUrl?: string;

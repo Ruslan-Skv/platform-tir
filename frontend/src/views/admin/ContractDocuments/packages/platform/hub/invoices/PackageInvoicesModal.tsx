@@ -2,8 +2,6 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-import Link from 'next/link';
-
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 import {
   type ContractDocumentPackagePayment,
@@ -12,23 +10,25 @@ import {
 import type { ContractTemplatePreset } from '@/shared/api/admin-contract-document-packages';
 import {
   type ContractDocumentPaymentInvoice,
+  cancelPackagePaymentInvoiceEp,
   createPackagePaymentInvoice,
   listPackagePaymentInvoices,
+  signPackagePaymentInvoiceEp,
 } from '@/shared/api/admin-payment-invoices';
 import { Modal } from '@/shared/ui/Modal';
 import crmFormStyles from '@/views/admin/CRM/Customers/modals/AddCrmCustomerModal.module.css';
 import crmDetailStyles from '@/views/admin/CRM/Customers/modals/CrmCustomerDetailModal.module.css';
+import { buildDocumentPdfBlob } from '@/views/admin/ContractDocuments/core/printDocument';
 
 import type { PackageDocumentTemplateTabId } from '../../form/formDataTemplateStorage';
 import { getPackageContractNumberDisplayForForm } from '../../form/packageContractDisplay';
 import type { PackageFormData } from '../../form/packageForm';
 import { resolvePackageTemplateHtml } from '../../form/resolvePackageTemplateHtml';
-import { formatPackageIssuedInvoiceAmountRub } from '../../payments/packageInvoiceNumber';
 import {
   type PackageInvoiceConductDraft,
   buildPackageInvoicePrintHtml,
+  buildPackagePaymentInvoiceDownloadFileName,
   downloadPackagePaymentInvoice,
-  lineItemsForPaymentInvoiceReprint,
   paymentInvoiceLineItemsForApi,
   printPackagePaymentInvoice,
 } from '../../payments/packageInvoicePrint';
@@ -37,6 +37,13 @@ import {
   type PackageInvoiceShareLiveInput,
   PackageInvoiceShareModal,
 } from '../../share/PackageInvoiceShareModal';
+import {
+  downloadInvoicePdfFile,
+  fetchPackageInvoiceSignedPdfFile,
+  invoiceRowToConductDraft,
+  printInvoicePdfFile,
+} from '../../share/packageInvoiceShare';
+import { packageContractorStampInfo } from '../../share/remoteSigningContractor';
 import { PACKAGE_PAYMENT_INVOICE_TEMPLATE_TAB } from '../../tabs/packageActPrintTabs';
 import { PackageIssueInvoicePanel } from './PackageIssueInvoicePanel';
 
@@ -47,6 +54,8 @@ export type PackageInvoicesModalProps = {
   packageKind?: ContractDocumentPackageKind;
   form: PackageFormData;
   isOpen: boolean;
+  /** Данные пакета ещё грузятся (модалка открыта сразу, чтобы анимация успела отыграться). */
+  preparing?: boolean;
   onClose: () => void;
   onError: (message: string) => void;
   onInvoicesChanged?: () => void;
@@ -60,6 +69,7 @@ export function PackageInvoicesModal({
   packageKind = 'REPAIR',
   form,
   isOpen,
+  preparing = false,
   onClose,
   onError,
   onInvoicesChanged,
@@ -73,6 +83,7 @@ export function PackageInvoicesModal({
   const [contentReady, setContentReady] = useState(false);
   const invoicesContentReadyRef = useRef(false);
   const [saving, setSaving] = useState(false);
+  const [signEpBusy, setSignEpBusy] = useState(false);
   const [shareInvoice, setShareInvoice] = useState<ContractDocumentPaymentInvoice | null>(null);
 
   useEffect(() => {
@@ -173,7 +184,6 @@ export function PackageInvoicesModal({
       });
       await load();
       onInvoicesChanged?.();
-      await printConduct(conduct);
     } catch (e) {
       onError(e instanceof Error ? e.message : 'Не удалось выставить счёт');
     } finally {
@@ -182,13 +192,71 @@ export function PackageInvoicesModal({
   };
 
   const reprintIssued = (row: ContractDocumentPaymentInvoice) => {
-    void printConduct({
-      invoiceDate: row.invoiceDate,
-      invoiceNumber: row.invoiceNumber,
-      paymentBasis: row.basis,
-      amount: formatPackageIssuedInvoiceAmountRub(Number(row.amount)),
-      lineItems: lineItemsForPaymentInvoiceReprint(row),
+    void (async () => {
+      try {
+        // Подписанный счёт печатаем копией со штампом ПЭП Подрядчика.
+        if (row.signedFileUrl) {
+          const signed = await fetchPackageInvoiceSignedPdfFile(row);
+          if (signed) printInvoicePdfFile(signed);
+          return;
+        }
+        await printConduct(invoiceRowToConductDraft(row));
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Не удалось напечатать счёт');
+      }
+    })();
+  };
+
+  const downloadIssued = (row: ContractDocumentPaymentInvoice) => {
+    void (async () => {
+      try {
+        // Подписанный счёт скачиваем копией со штампом ПЭП Подрядчика.
+        if (row.signedFileUrl) {
+          const signed = await fetchPackageInvoiceSignedPdfFile(row);
+          if (signed) downloadInvoicePdfFile(signed);
+          return;
+        }
+        await downloadConduct(invoiceRowToConductDraft(row));
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Не удалось сформировать PDF');
+      }
+    })();
+  };
+
+  /** Подписать выставленный счёт ПЭП со стороны Подрядчика (Заказчик не подписывает):
+   *  PDF счёта уходит на сервер, там ставится штамп ПЭП и сохраняется подписанная копия. */
+  const signEpIssued = async (row: ContractDocumentPaymentInvoice) => {
+    const conduct = invoiceRowToConductDraft(row);
+    const html = await buildInvoiceHtml(conduct);
+    if (!html) return;
+    const { blob, fileName } = await buildDocumentPdfBlob(
+      html,
+      'Счёт на оплату',
+      buildPackagePaymentInvoiceDownloadFileName(conduct)
+    );
+    await signPackagePaymentInvoiceEp(packageId, row.id, {
+      file: blob,
+      fileName,
+      ...packageContractorStampInfo(form),
     });
+  };
+
+  /** Иконка ЭП — переключатель: неподписанный счёт подписывает, подписанный — отменяет ЭП. */
+  const toggleEpIssued = async (row: ContractDocumentPaymentInvoice) => {
+    setSignEpBusy(true);
+    try {
+      if (row.signedAt) {
+        await cancelPackagePaymentInvoiceEp(packageId, row.id);
+      } else {
+        await signEpIssued(row);
+      }
+      await load();
+      onInvoicesChanged?.();
+    } catch (e) {
+      onError(e instanceof Error ? e.message : 'Не удалось изменить подпись ЭП счёта');
+    } finally {
+      setSignEpBusy(false);
+    }
   };
 
   /** Черновик счёта из формы — как запись счёта, для модалки отправки заказчику. */
@@ -210,6 +278,11 @@ export function PackageInvoicesModal({
       updatedAt: '',
       issuedById: null,
       issuedBy: null,
+      signedAt: null,
+      signedById: null,
+      signedBy: null,
+      signedFileUrl: null,
+      signedSha256: null,
       packageTitle: null,
       packageKind,
       contractNumber: contractNumberLabel,
@@ -251,20 +324,19 @@ export function PackageInvoicesModal({
           data-modal-form
           data-modal-density="compact"
           style={{ minHeight: 'min(60vh, 28rem)', position: 'relative' }}
-          aria-busy={loading && !contentReady}
+          aria-busy={preparing || (loading && !contentReady)}
         >
           <p data-modal-form-hint style={{ marginTop: 0 }}>
-            Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в{' '}
-            <Link href="/admin/accounting/invoices">бухгалтерии</Link> и открывает печать. «Скачать
-            PDF» — файл счёта для отправки клиенту или оплаты по QR. Оплату проводите в «Оплаты и
-            этапы».
+            Нумерация счетов единая для всей организации. «Выставить счёт» сохраняет запись в
+            бухгалтерии. Печать, PDF, отправку заказчику и подписание счёта ЭП со стороны Подрядчика
+            выполняйте в таблице выставленных счетов ниже. Оплату проводите в «Оплаты и этапы».
           </p>
-          {loading && !contentReady ? (
+          {preparing || (loading && !contentReady) ? (
             <p data-modal-form-hint style={{ margin: '12px 0 0' }}>
               Загрузка…
             </p>
           ) : null}
-          {contentReady ? (
+          {!preparing && contentReady ? (
             <PackageIssueInvoicePanel
               packageId={packageId}
               packageKind={packageKind}
@@ -279,6 +351,9 @@ export function PackageInvoicesModal({
               onReprint={reprintIssued}
               onShare={setShareInvoice}
               onShareDraft={shareDraft}
+              onToggleEp={toggleEpIssued}
+              signEpBusy={signEpBusy}
+              onDownloadRow={downloadIssued}
             />
           ) : null}
         </div>

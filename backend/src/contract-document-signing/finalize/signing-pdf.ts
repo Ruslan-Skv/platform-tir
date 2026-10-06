@@ -273,6 +273,55 @@ export function customerStampLines(input: {
   ];
 }
 
+/** Дата счёта «DD.MM.YYYY» для штампа ПЭП. */
+function invoiceDateRu(date: Date): string {
+  return new Intl.DateTimeFormat('ru-RU', {
+    timeZone: 'Europe/Moscow',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(date);
+}
+
+/**
+ * Штамп ПЭП на счёте на оплату — подписант только Подрядчик (Заказчик счёт
+ * не подписывает). Аналог штампа Подрядчика из сессий подписания, но без строки
+ * про направление Заказчику и с реквизитами счёта вместо номера сессии.
+ */
+export function invoiceContractorStampLines(input: {
+  invoiceNumber: string;
+  invoiceDate: Date;
+  contractorLabel?: string | null;
+  contractorSignatory?: string | null;
+  managerName?: string | null;
+  signedAt: Date;
+  siteUrl: string;
+}): StampLine[] {
+  const lines: StampLine[] = [
+    {
+      text: 'Подписано со стороны Подрядчика простой электронной подписью (ПЭП)',
+      bold: true,
+      size: 8,
+    },
+  ];
+  if (input.contractorLabel) {
+    lines.push({ text: `Подрядчик: ${input.contractorLabel}`, bold: true });
+  }
+  if (input.contractorSignatory) {
+    lines.push({ text: `Подписант: ${input.contractorSignatory}` });
+  }
+  if (input.managerName) {
+    lines.push({ text: `Менеджер: ${input.managerName}` });
+  }
+  lines.push({
+    text: `Дата и время (МСК): ${formatMsp(input.signedAt)} · Счёт № ${input.invoiceNumber} от ${invoiceDateRu(input.invoiceDate)}`,
+  });
+  lines.push({
+    text: `Счёт подписан ПЭП Подрядчика на сайте ${hostOf(input.siteUrl)}`,
+  });
+  return lines;
+}
+
 /** Лист-протокол подписания: реквизиты события, состав документов, хэши. */
 export async function buildProtocolPdf(input: {
   siteUrl: string;

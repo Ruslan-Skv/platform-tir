@@ -17,6 +17,22 @@ export {
   ADMIN_SHARE_ICON_SIZE,
   type ShareIconProps,
 } from './admin/ShareIcon';
+export { PrintIcon, ADMIN_PRINT_ICON_SIZE, type PrintIconProps } from './admin/PrintIcon';
+export {
+  DownloadIcon,
+  ADMIN_DOWNLOAD_ICON_SIZE,
+  type DownloadIconProps,
+} from './admin/DownloadIcon';
+export {
+  SignatureEpIcon,
+  ADMIN_SIGNATURE_EP_ICON_SIZE,
+  type SignatureEpIconProps,
+} from './admin/SignatureEpIcon';
+export {
+  DocumentsIcon,
+  ADMIN_DOCUMENTS_ICON_SIZE,
+  type DocumentsIconProps,
+} from './admin/DocumentsIcon';
 export {
   DeleteIcon,
   ADMIN_ACTION_ICON_DELETE_CLASS,

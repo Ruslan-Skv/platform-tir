@@ -16,7 +16,7 @@ import {
 } from '@nestjs/common';
 import { ContractDocumentPackageKind, ContractDocumentPackageStatus } from '@prisma/client';
 import { FileInterceptor } from '@nestjs/platform-express';
-import { diskStorage } from 'multer';
+import { diskStorage, memoryStorage } from 'multer';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -822,6 +822,53 @@ export class ContractDocumentPackagesController {
     return this.paymentInvoices.create(id, dto, req.user?.id);
   }
 
+  /**
+   * Подписание выставленного счёта ПЭП со стороны Подрядчика (Заказчик не подписывает):
+   * на загруженный PDF счёта ставится штамп ПЭП, копия сохраняется в uploads.
+   */
+  @Post(':id/payment-invoices/:invoiceId/sign-ep')
+  @UseInterceptors(
+    FileInterceptor('file', {
+      storage: memoryStorage(),
+      limits: { fileSize: 25 * 1024 * 1024 },
+    }),
+  )
+  signPackagePaymentInvoiceEp(
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @UploadedFile() file: Express.Multer.File,
+    @Body() body: { contractorLabel?: string; contractorSignatory?: string },
+    @Req() req: RequestWithUser,
+  ) {
+    return this.paymentInvoices.signWithEp(
+      id,
+      invoiceId,
+      file,
+      {
+        contractorLabel: body.contractorLabel,
+        contractorSignatory: body.contractorSignatory,
+      },
+      req.user?.id,
+    );
+  }
+
+  /** Отмена ПЭП счёта: снимает отметку подписания и удаляет подписанную копию PDF. */
+  @Delete(':id/payment-invoices/:invoiceId/sign-ep')
+  cancelPackagePaymentInvoiceEp(@Param('id') id: string, @Param('invoiceId') invoiceId: string) {
+    return this.paymentInvoices.cancelEp(id, invoiceId);
+  }
+
+  /** Удаление выставленного счёта в корзину — только супер-админ (исправление ошибок менеджеров). */
+  @Delete(':id/payment-invoices/:invoiceId')
+  @Roles('SUPER_ADMIN')
+  removePackagePaymentInvoice(
+    @Param('id') id: string,
+    @Param('invoiceId') invoiceId: string,
+    @Req() req: RequestWithUser,
+  ) {
+    return this.paymentInvoices.remove(id, invoiceId, req.user?.id);
+  }
+
   @Post(':id/upload-work-start-act-photo')
   @UseInterceptors(
     FileInterceptor('file', {
@@ -1175,6 +1222,28 @@ export class ContractDocumentPackagesController {
     return this.paymentInvoices.peekNextInvoiceNumber();
   }
 
+  /** Корзина выставленных счетов — только супер-админ. */
+  @Get('payment-invoices/trash')
+  @Roles('SUPER_ADMIN')
+  listPaymentInvoicesTrash(
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.paymentInvoices.findTrash({
+      search,
+      page: page ? parseInt(page, 10) : undefined,
+      limit: limit ? parseInt(limit, 10) : undefined,
+    });
+  }
+
+  /** Число счетов в корзине для бейджа кнопки — только супер-админ. */
+  @Get('payment-invoices/trash/count')
+  @Roles('SUPER_ADMIN')
+  paymentInvoicesTrashCount() {
+    return this.paymentInvoices.trashCount();
+  }
+
   @Get('contract-number/preview')
   previewContractNumber(
     @Query('managerUserId') managerUserId: string,
@@ -1202,11 +1271,15 @@ export class ContractDocumentPackagesController {
     @Query('search') search?: string,
     @Query('packageId') packageId?: string,
     @Query('limit') limit?: string,
+    @Query('dateFrom') dateFrom?: string,
+    @Query('dateTo') dateTo?: string,
   ) {
     return this.paymentInvoices.listAll({
       search,
       packageId,
       limit: limit ? parseInt(limit, 10) : undefined,
+      dateFrom,
+      dateTo,
     });
   }
 

@@ -91,6 +91,32 @@ export class ExecutorProfileDto {
   @MaxLength(20)
   bankSettlementAccount?: string;
 
+  /** Вариант 2 банковских реквизитов (дополнительный, можно не заполнять). */
+  @IsOptional()
+  @IsString()
+  @MaxLength(240)
+  bankName2?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(9)
+  bankBik2?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  bankCorrAccount2?: string;
+
+  @IsOptional()
+  @IsString()
+  @MaxLength(20)
+  bankSettlementAccount2?: string;
+
+  /** Какой вариант банковских реквизитов используется в договорах и счетах по умолчанию. */
+  @IsOptional()
+  @IsIn(['PRIMARY', 'SECONDARY'])
+  defaultBankVariant?: 'PRIMARY' | 'SECONDARY';
+
   @IsOptional()
   @IsString()
   @MaxLength(320)

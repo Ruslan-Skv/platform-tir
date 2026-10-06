@@ -32,6 +32,7 @@ import {
   loadPackageCustomerShareContext,
   openPackageCustomerMessenger,
 } from './packageCustomerDocumentShare';
+import { buildContractorLabel, buildContractorSignatory } from './remoteSigningContractor';
 import { remoteSigningStageProblem } from './remoteSigningStage';
 
 type Props = {
@@ -50,28 +51,6 @@ function buildSigningShareMessage(created: ContractDocumentSigningSessionCreated
   if (created.customerName) lines.splice(1, 0, `Заказчик: ${created.customerName}`);
   lines.push('Откройте ссылку, просмотрите документы и введите код для подписания.');
   return lines.join('\n');
-}
-
-/** Реквизиты Подрядчика для штампа ПЭП на документах («ООО «…», ИНН …»). */
-function buildContractorLabel(executor: {
-  companyName?: string;
-  inn?: string;
-}): string | undefined {
-  const company = executor.companyName?.trim();
-  const inn = executor.inn?.trim();
-  const label = [company || null, inn ? `ИНН ${inn}` : null].filter(Boolean).join(', ');
-  return label || undefined;
-}
-
-/** Подписант со стороны Подрядчика для штампа ПЭП (ФИО + основание). */
-function buildContractorSignatory(executor: {
-  directorNameNominative?: string;
-  basis?: string;
-}): string | undefined {
-  const name = executor.directorNameNominative?.trim();
-  const basis = executor.basis?.trim();
-  const label = [name || null, basis || null].filter(Boolean).join(', ');
-  return label || undefined;
 }
 
 export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreated }: Props) {

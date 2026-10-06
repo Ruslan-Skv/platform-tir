@@ -190,37 +190,43 @@ export function PackageIssueInvoiceIssueFormSection({
               {saving ? 'Сохранение…' : 'Выставить счёт'}
             </button>
 
-            <button
-              type="button"
-              className={cdBase.paymentsHubConductSecondaryBtn}
-              disabled={!formComplete}
-              onClick={handlePrint}
-            >
-              Печать
-            </button>
+            {/* Черновые Печать/PDF/Отправка — только там, где нет таблицы выставленных
+                счетов с теми же действиями (модалка бухгалтерии без списка по договору). */}
+            {!showIssuedTable ? (
+              <>
+                <button
+                  type="button"
+                  className={cdBase.paymentsHubConductSecondaryBtn}
+                  disabled={!formComplete}
+                  onClick={handlePrint}
+                >
+                  Печать
+                </button>
 
-            {onDownload ? (
-              <button
-                type="button"
-                className={cdBase.paymentsHubConductSecondaryBtn}
-                disabled={!formComplete || downloadBusy}
-                onClick={handleDownloadDraft}
-              >
-                {downloadBusy ? 'PDF…' : 'Скачать PDF'}
-              </button>
-            ) : null}
+                {onDownload ? (
+                  <button
+                    type="button"
+                    className={cdBase.paymentsHubConductSecondaryBtn}
+                    disabled={!formComplete || downloadBusy}
+                    onClick={handleDownloadDraft}
+                  >
+                    {downloadBusy ? 'PDF…' : 'Скачать PDF'}
+                  </button>
+                ) : null}
 
-            {canShareDraft ? (
-              <button
-                type="button"
-                className={cdBase.paymentsHubConductSecondaryBtn}
-                disabled={!formComplete}
-                onClick={handleShareDraft}
-                title="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
-                aria-label="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
-              >
-                <ShareIcon />
-              </button>
+                {canShareDraft ? (
+                  <button
+                    type="button"
+                    className={cdBase.paymentsHubConductSecondaryBtn}
+                    disabled={!formComplete}
+                    onClick={handleShareDraft}
+                    title="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
+                    aria-label="Отправить счёт заказчику (Telegram, WhatsApp, MAX, почта)"
+                  >
+                    <ShareIcon />
+                  </button>
+                ) : null}
+              </>
             ) : null}
           </div>
         </div>

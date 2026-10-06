@@ -3,6 +3,7 @@
 import { useRef, useState } from 'react';
 
 import {
+  type ExecutorBankVariant,
   uploadExecutorPaymentQr,
   uploadExecutorRequisitesPdf,
 } from '@/shared/api/admin-contract-document-packages';
@@ -225,6 +226,50 @@ export function ExecutorProfilesFormFields({
       </div>
 
       <div data-modal-form-group>
+        <label>Вариант банковских реквизитов по умолчанию</label>
+        <div
+          className={styles.variantRadioRow}
+          role="radiogroup"
+          aria-label="Вариант банковских реквизитов по умолчанию"
+        >
+          <label className={styles.variantRadioOption}>
+            <input
+              type="radio"
+              name="executor_default_bank_variant"
+              checked={draft.defaultBankVariant !== 'SECONDARY'}
+              onChange={() =>
+                setDraft((p) => ({ ...p, defaultBankVariant: 'PRIMARY' as ExecutorBankVariant }))
+              }
+            />
+            Вариант 1
+          </label>
+          <label className={styles.variantRadioOption}>
+            <input
+              type="radio"
+              name="executor_default_bank_variant"
+              checked={draft.defaultBankVariant === 'SECONDARY'}
+              onChange={() =>
+                setDraft((p) => ({ ...p, defaultBankVariant: 'SECONDARY' as ExecutorBankVariant }))
+              }
+            />
+            Вариант 2
+          </label>
+        </div>
+        <p className={styles.fieldHint}>
+          Выбранный вариант подставляется в неподписанные пакеты документов и их счета на оплату.
+          Уже подписанные договоры и выставленные по ним счета сохраняют реквизиты на момент
+          подписания. Если «Вариант 2» не заполнен, используется «Вариант 1».
+        </p>
+      </div>
+
+      <div className={styles.bankSectionTitle}>
+        Банковские реквизиты — вариант 1
+        {draft.defaultBankVariant !== 'SECONDARY' ? (
+          <span className={styles.bankDefaultBadge}>по умолчанию</span>
+        ) : null}
+      </div>
+
+      <div data-modal-form-group>
         <label htmlFor="executor_bank_name">Банк (наименование)</label>
         <input
           id="executor_bank_name"
@@ -282,8 +327,78 @@ export function ExecutorProfilesFormFields({
           autoComplete="off"
         />
         <p className={styles.fieldHint}>
-          Для счёта на оплату и договора используются эти поля. Старая сводная строка пересобирается
-          при сохранении.
+          Для счёта на оплату и договора используются поля выбранного по умолчанию варианта. Старая
+          сводная строка пересобирается при сохранении.
+        </p>
+      </div>
+
+      <div className={styles.bankSectionTitle}>
+        Банковские реквизиты — вариант 2
+        {draft.defaultBankVariant === 'SECONDARY' ? (
+          <span className={styles.bankDefaultBadge}>по умолчанию</span>
+        ) : null}
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="executor_bank_name2">Банк (наименование)</label>
+        <input
+          id="executor_bank_name2"
+          value={draft.bankName2 ?? ''}
+          onChange={(e) => setDraft((p) => ({ ...p, bankName2: e.target.value }))}
+          placeholder="Например: АО «Альфа-Банк»"
+        />
+      </div>
+
+      <div data-modal-form-grid>
+        <div data-modal-form-group>
+          <label htmlFor="executor_bank_bik2">БИК</label>
+          <input
+            id="executor_bank_bik2"
+            value={draft.bankBik2 ?? ''}
+            onChange={(e) =>
+              setDraft((p) => ({ ...p, bankBik2: e.target.value.replace(/\D/g, '').slice(0, 9) }))
+            }
+            placeholder="044030786"
+            inputMode="numeric"
+            autoComplete="off"
+          />
+        </div>
+        <div data-modal-form-group>
+          <label htmlFor="executor_bank_corr2">Корр. счёт (к/с)</label>
+          <input
+            id="executor_bank_corr2"
+            value={draft.bankCorrAccount2 ?? ''}
+            onChange={(e) =>
+              setDraft((p) => ({
+                ...p,
+                bankCorrAccount2: e.target.value.replace(/\D/g, '').slice(0, 20),
+              }))
+            }
+            placeholder="30101810200000000786"
+            inputMode="numeric"
+            autoComplete="off"
+          />
+        </div>
+      </div>
+
+      <div data-modal-form-group>
+        <label htmlFor="executor_bank_settlement2">Расчётный счёт (р/с)</label>
+        <input
+          id="executor_bank_settlement2"
+          value={draft.bankSettlementAccount2 ?? ''}
+          onChange={(e) =>
+            setDraft((p) => ({
+              ...p,
+              bankSettlementAccount2: e.target.value.replace(/\D/g, '').slice(0, 20),
+            }))
+          }
+          placeholder="40802810232160002046"
+          inputMode="numeric"
+          autoComplete="off"
+        />
+        <p className={styles.fieldHint}>
+          Дополнительный набор (например, другой банк). Можно не заполнять — тогда всегда действует
+          «Вариант 1».
         </p>
       </div>
 

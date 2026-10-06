@@ -16,6 +16,11 @@ export const EMPTY_EXECUTOR_PROFILE: ExecutorRequisiteProfile = {
   bankBik: '',
   bankCorrAccount: '',
   bankSettlementAccount: '',
+  bankName2: '',
+  bankBik2: '',
+  bankCorrAccount2: '',
+  bankSettlementAccount2: '',
+  defaultBankVariant: 'PRIMARY',
   email: '',
 };
 

@@ -64,6 +64,13 @@ export interface ContractDocumentPaymentInvoice {
   updatedAt: string;
   issuedById: string | null;
   issuedBy: ContractDocumentPaymentInvoiceUserRef | null;
+  /** Подписан ли счёт ПЭП со стороны Подрядчика (дата подписания). */
+  signedAt: string | null;
+  signedById: string | null;
+  signedBy: ContractDocumentPaymentInvoiceUserRef | null;
+  /** Подписанная копия PDF со штампом ПЭП Подрядчика (в uploads). */
+  signedFileUrl: string | null;
+  signedSha256: string | null;
   packageTitle: string | null;
   packageKind: string;
   contractNumber: string;
@@ -77,6 +84,24 @@ export interface ContractDocumentPaymentInvoiceInput {
   addendumNumber?: number;
   basis: string;
   lineItems: PaymentInvoiceLineItem[];
+}
+
+/** Строка корзины: счёт + кто/когда удалил и момент безвозвратного удаления. */
+export interface ContractDocumentPaymentInvoiceTrashItem extends ContractDocumentPaymentInvoice {
+  deletedAt: string | null;
+  deletedById: string | null;
+  deletedBy: ContractDocumentPaymentInvoiceUserRef | null;
+  /** Момент безвозвратного удаления — deletedAt + 30 дней хранения корзины. */
+  permanentDeleteAt: string | null;
+}
+
+export interface PaymentInvoiceTrashResponse {
+  items: ContractDocumentPaymentInvoiceTrashItem[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  trashRetentionDays: number;
 }
 
 async function readError(res: Response): Promise<string> {
@@ -107,11 +132,16 @@ export async function listAllPaymentInvoices(params?: {
   search?: string;
   packageId?: string;
   limit?: number;
+  /** Период по дате счёта (YYYY-MM-DD), границы включительно. */
+  dateFrom?: string;
+  dateTo?: string;
 }): Promise<{ items: ContractDocumentPaymentInvoice[]; total: number }> {
   const qs = new URLSearchParams();
   if (params?.search?.trim()) qs.set('search', params.search.trim());
   if (params?.packageId?.trim()) qs.set('packageId', params.packageId.trim());
   if (params?.limit != null) qs.set('limit', String(params.limit));
+  if (params?.dateFrom?.trim()) qs.set('dateFrom', params.dateFrom.trim());
+  if (params?.dateTo?.trim()) qs.set('dateTo', params.dateTo.trim());
   const query = qs.toString();
   const res = await apiFetch(
     `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices${query ? `?${query}` : ''}`,
@@ -143,6 +173,92 @@ export async function createPackagePaymentInvoice(
       headers: getAdminAuthHeaders(),
       body: JSON.stringify(body),
     }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Подписать выставленный счёт ПЭП со стороны Подрядчика (multipart: PDF счёта). */
+export async function signPackagePaymentInvoiceEp(
+  packageId: string,
+  invoiceId: string,
+  input: {
+    file: Blob;
+    fileName: string;
+    contractorLabel?: string;
+    contractorSignatory?: string;
+  }
+): Promise<ContractDocumentPaymentInvoice> {
+  const token =
+    typeof window !== 'undefined'
+      ? localStorage.getItem('admin_token') || localStorage.getItem('user_token')
+      : null;
+  const form = new FormData();
+  form.append('file', input.file, input.fileName);
+  if (input.contractorLabel) form.append('contractorLabel', input.contractorLabel);
+  if (input.contractorSignatory) form.append('contractorSignatory', input.contractorSignatory);
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}/sign-ep`,
+    {
+      method: 'POST',
+      headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+      body: form,
+    }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Отменить ПЭП счёта: снимает отметку подписания и удаляет подписанную копию PDF. */
+export async function cancelPackagePaymentInvoiceEp(
+  packageId: string,
+  invoiceId: string
+): Promise<ContractDocumentPaymentInvoice> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}/sign-ep`,
+    { method: 'DELETE', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Удалить выставленный счёт в корзину (только супер-админ; хранение 30 дней). */
+export async function deletePackagePaymentInvoice(
+  packageId: string,
+  invoiceId: string
+): Promise<ContractDocumentPaymentInvoiceTrashItem> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/${packageId}/payment-invoices/${invoiceId}`,
+    { method: 'DELETE', headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Корзина выставленных счетов (только супер-админ). */
+export async function getPaymentInvoiceTrash(params?: {
+  search?: string;
+  page?: number;
+  limit?: number;
+}): Promise<PaymentInvoiceTrashResponse> {
+  const qs = new URLSearchParams();
+  if (params?.search?.trim()) qs.set('search', params.search.trim());
+  if (params?.page != null) qs.set('page', String(params.page));
+  if (params?.limit != null) qs.set('limit', String(params.limit));
+  const query = qs.toString();
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/trash${query ? `?${query}` : ''}`,
+    { headers: getAdminAuthHeaders() }
+  );
+  if (!res.ok) throw new Error(await readError(res));
+  return res.json();
+}
+
+/** Число счетов в корзине для бейджа кнопки (только супер-админ). */
+export async function getPaymentInvoiceTrashCount(): Promise<{ count: number }> {
+  const res = await apiFetch(
+    `${getApiBaseUrl()}/admin/contract-document-packages/payment-invoices/trash/count`,
+    { headers: getAdminAuthHeaders() }
   );
   if (!res.ok) throw new Error(await readError(res));
   return res.json();

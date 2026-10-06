@@ -36,6 +36,9 @@ export function usePackageIssueInvoicePanel({
   showIssuedTable = true,
   onReprint,
   onShare,
+  onToggleEp,
+  signEpBusy,
+  onDownloadRow,
 }: PackageIssueInvoicePanelProps) {
   const [basisKey, setBasisKey] = useState<PackagePaymentBasisOptionKey | ''>('');
 
@@ -58,12 +61,14 @@ export function usePackageIssueInvoicePanel({
 
   const basisOptions = useMemo(() => {
     const opts = buildPackagePaymentBasisOptions(form, paymentRows, payableBreakdown);
-    // Счёт на возврат не выставляем — только на оплату.
+    // Счёт на возврат не выставляем — только на оплату. Основание блокируем только
+    // фактом выставленного счёта: полученная оплата (журнал «Оплаты и этапы») не мешает
+    // выставить счёт по этому основанию — например, подтвердить уже полученную сумму.
     return opts
       .filter((opt) => opt.paymentType !== 'REFUND')
       .map((opt) => ({
         ...opt,
-        disabled: opt.disabled || issuedRows.some((inv) => inv.basis.trim() === opt.label.trim()),
+        disabled: issuedRows.some((inv) => inv.basis.trim() === opt.label.trim()),
       }));
   }, [form, paymentRows, payableBreakdown, issuedRows]);
 
@@ -118,6 +123,9 @@ export function usePackageIssueInvoicePanel({
     onDownload,
     onReprint,
     onShare,
+    onToggleEp,
+    signEpBusy,
+    onDownloadRow,
     ...issueForm,
     basisKey,
     setBasisKey,
