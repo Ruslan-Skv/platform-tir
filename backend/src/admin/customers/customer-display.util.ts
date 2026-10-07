@@ -6,6 +6,7 @@ export type CustomerDisplaySource = {
   company?: string | null;
   entityType?: string | null;
   extendedProfile: unknown;
+  email?: string | null;
 };
 
 export type ResolvedCustomerEntityType = 'PERSON' | 'COMPANY' | 'ENTREPRENEUR';
@@ -48,4 +49,26 @@ export function resolvePersonDisplayName(customer: {
   const rowLn = (customer.lastName ?? '').trim();
   if (rowFn && /\s/.test(rowFn) && !rowLn) return rowFn;
   return [rowLn, rowFn].filter(Boolean).join(' ');
+}
+
+/**
+ * Отображаемое имя карточки для снимков в других сущностях (расчёты, замеры):
+ * физлицо — ФИО, организация — название. Совпадает с логикой фронтенда
+ * `personDisplayNameFromCrmDetail`.
+ */
+export function resolveCustomerDisplayName(customer: CustomerDisplaySource): string {
+  const email = (customer.email ?? '').trim();
+  if (resolveCustomerEntityType(customer) === 'PERSON') {
+    return resolvePersonDisplayName(customer) || email;
+  }
+  const company = (customer.company ?? '').trim();
+  if (company) return company;
+  const ext = (customer.extendedProfile ?? {}) as Record<string, unknown>;
+  const org = typeof ext.organizationName === 'string' ? ext.organizationName.trim() : '';
+  if (org) return org;
+  const names = [customer.lastName, customer.firstName]
+    .map((x) => (x ?? '').trim())
+    .filter(Boolean)
+    .join(' ');
+  return names || email;
 }

@@ -65,4 +65,23 @@ describe('isEstimatePresetForLinkedContractCustomer', () => {
       )
     ).toBe(false);
   });
+
+  it('та же карточка CRM с изменившимися данными заказчика — прикрепление не блокируется', () => {
+    // Договор подписан, данные заказчика в карточке поправили (ФИО/адрес), расчёт
+    // пересоздан из той же карточки: матч только по id карточки, данные не сравниваются.
+    expect(
+      isEstimatePresetForLinkedContractCustomer(
+        {
+          crmCustomerId: 'c1',
+          customerName: 'Гусева Рина Витальевна',
+          objectAddress: 'г. Мурманск ул. Новая 7',
+        } as never,
+        {
+          filterByLinkedCustomer: true,
+          linkedCrmCustomerId: 'c1',
+          packageObjectAddress: 'Мурманск Ленина 5',
+        }
+      )
+    ).toBe(true);
+  });
 });

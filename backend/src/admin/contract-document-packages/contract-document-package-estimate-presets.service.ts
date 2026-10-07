@@ -32,6 +32,44 @@ export class ContractDocumentPackageEstimatePresetsService {
     return this.loadGlobalEstimatePresetsBlobInternal(kind);
   }
 
+  /**
+   * Синхронизация снимка имени заказчика в расчётах при изменении карточки CRM:
+   * `customerName` пресета — снимок на момент сохранения, без синхронизации связка
+   * расчётов одного клиента со временем расходится («Рина» vs «Гусева Рина Витальевна»).
+   * Обновляет (во всех направлениях) пресеты с этим `crmCustomerId`, чьё имя отличается.
+   * Возвращает число обновлённых расчётов.
+   */
+  async syncCustomerNameInEstimatePresets(
+    customerId: string,
+    displayName: string,
+  ): Promise<number> {
+    const id = customerId.trim();
+    const name = displayName.trim();
+    if (!id || !name) return 0;
+
+    let updatedCount = 0;
+    for (const kind of Object.values(ContractDocumentPackageKind)) {
+      const raw = await this.loadGlobalEstimatePresetsBlobInternal(kind);
+      let changed = false;
+      const items = raw.items.map((item) => {
+        if (item.crmCustomerId?.trim() !== id) return item;
+        if ((item.customerName ?? '').trim() === name) return item;
+        changed = true;
+        updatedCount += 1;
+        return { ...item, customerName: name };
+      });
+      if (!changed) continue;
+      const payload = JSON.stringify({ items, groups: raw.groups });
+      await this.prisma.contractDocumentGlobalTemplate.upsert({
+        where: { kind_tab: { kind, tab: ESTIMATE_PRESETS_TAB } },
+        create: { kind, tab: ESTIMATE_PRESETS_TAB, html: payload, updatedById: null },
+        update: { html: payload },
+        select: { id: true },
+      });
+    }
+    return updatedCount;
+  }
+
   /** Сырой блоб расчётов (включая корзину) — для экспорта/импорта суперадмином. */
   async loadEstimatePresetsRaw(kind: ContractDocumentPackageKind) {
     await this.purgeExpiredTrashedEstimatePresets(kind);

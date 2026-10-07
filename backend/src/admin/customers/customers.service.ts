@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../database/prisma.service';
 import { CreateCustomerDto } from './dto/create-customer.dto';
 import { UpdateCustomerDto } from './dto/update-customer.dto';
@@ -18,7 +18,13 @@ import {
   buildDisplayContractList,
   findPackagesLinkedToCustomers,
 } from './customer-linked-packages.util';
-import { resolveCustomerEntityType, resolvePersonDisplayName } from './customer-display.util';
+import {
+  resolveCustomerDisplayName,
+  resolveCustomerEntityType,
+  resolvePersonDisplayName,
+} from './customer-display.util';
+import { ContractDocumentPackageEstimatePresetsService } from '../contract-document-packages/contract-document-package-estimate-presets.service';
+import { ContractDocumentPackageCustomerSyncService } from '../contract-document-packages/customer-sync/contract-document-package-customer-sync.service';
 
 function digitsPhone(s: string | null | undefined): string {
   return (s ?? '').replace(/\D/g, '');
@@ -40,11 +46,15 @@ const customerDetailInclude = {
 
 @Injectable()
 export class CustomersService {
+  private readonly logger = new Logger(CustomersService.name);
+
   constructor(
     private prisma: PrismaService,
     private directory: CustomersDirectoryService,
     private crm: CustomersCrmService,
     private duplicates: CustomersDuplicatesService,
+    private estimatePresets: ContractDocumentPackageEstimatePresetsService,
+    private packageCustomerSync: ContractDocumentPackageCustomerSyncService,
   ) {}
 
   private collectExistingPhones(customer: { phone: string | null; phones: string[] }): string[] {
@@ -424,11 +434,33 @@ export class CustomersService {
       }
     }
 
-    return this.prisma.customer.update({
+    const updated = await this.prisma.customer.update({
       where: { id },
       data,
       include: customerDetailInclude,
     });
+
+    // Расчёты и пакеты документов хранят данные заказчика снимком; после правки
+    // карточки подтягиваем актуальные данные, чтобы не переприкреплять вручную.
+    try {
+      await this.estimatePresets.syncCustomerNameInEstimatePresets(
+        updated.id,
+        resolveCustomerDisplayName(updated),
+      );
+    } catch (err) {
+      this.logger.warn(
+        `Не удалось синхронизировать имя заказчика в расчётах (карточка ${updated.id}): ${String(err)}`,
+      );
+    }
+    try {
+      await this.packageCustomerSync.syncCustomerInPackages(updated);
+    } catch (err) {
+      this.logger.warn(
+        `Не удалось синхронизировать данные заказчика в пакетах документов (карточка ${updated.id}): ${String(err)}`,
+      );
+    }
+
+    return updated;
   }
 
   getHistory(customerId: string) {
