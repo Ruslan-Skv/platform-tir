@@ -169,6 +169,9 @@ export function useEstimatesListMutations({
         refreshTrashCount();
         const summary = [
           `расчётов: ${report.presets.length}`,
+          report.skippedTrashed > 0
+            ? `пропущено из корзины источника: ${report.skippedTrashed}`
+            : '',
           report.groupTitles.length > 0 ? `объекты: ${report.groupTitles.join(', ')}` : '',
           `позиций каталога: создано ${report.catalogItemsCreated}, обновлено ${report.catalogItemsUpdated}`,
         ]

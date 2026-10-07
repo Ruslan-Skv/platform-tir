@@ -1410,6 +1410,8 @@ export type ContractEstimateTransferImportReport = {
   catalogCategoriesCreated: number;
   catalogItemsCreated: number;
   catalogItemsUpdated: number;
+  /** Расчёты из корзины источника, пропущенные при импорте. */
+  skippedTrashed: number;
 };
 
 /** Экспорт реального расчёта в JSON-файл переноса (только суперадмин). */

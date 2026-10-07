@@ -56,6 +56,8 @@ export type EstimateTransferImportReport = {
   catalogCategoriesCreated: number;
   catalogItemsCreated: number;
   catalogItemsUpdated: number;
+  /** Расчёты из корзины источника, пропущенные при импорте. */
+  skippedTrashed: number;
 };
 
 const PACKAGE_KINDS = new Set<string>(Object.values(ContractDocumentPackageKind));
@@ -181,32 +183,35 @@ export class ContractDocumentPackageEstimateTransferService {
   /**
    * Экспорт расчёта: сам расчёт, его связка «Разделения сметы», остальные расчёты того же
    * объекта, объекты и позиции каталога, на которые ссылаются снимки/черновики.
+   * Расчёты из корзины не выгружаются — их состав уже недоступен в списке.
    */
   async exportEstimatePreset(
     kind: ContractDocumentPackageKind,
     presetId: string,
   ): Promise<EstimateTransferPayload> {
     const raw = await this.presets.loadEstimatePresetsRaw(kind);
-    const target = raw.items.find((item) => item.id === presetId);
+    // Корзина (deletedAt) в экспорт не попадает: в списке этих расчётов нет.
+    const visibleItems = raw.items.filter((item) => !item.deletedAt?.trim());
+    const target = visibleItems.find((item) => item.id === presetId);
     if (!target) {
       throw new NotFoundException('Расчёт не найден');
     }
 
-    const bundleId = this.resolveSplitBundleId(target, raw.items);
+    const bundleId = this.resolveSplitBundleId(target, visibleItems);
     const selectedIds = new Set<string>([target.id]);
     if (bundleId) {
-      for (const item of raw.items) {
-        if (this.resolveSplitBundleId(item, raw.items) === bundleId) {
+      for (const item of visibleItems) {
+        if (this.resolveSplitBundleId(item, visibleItems) === bundleId) {
           selectedIds.add(item.id);
         }
       }
     }
     if (target.groupId) {
-      for (const item of raw.items) {
+      for (const item of visibleItems) {
         if (item.groupId === target.groupId) selectedIds.add(item.id);
       }
     }
-    const presets = raw.items.filter((item) => selectedIds.has(item.id));
+    const presets = visibleItems.filter((item) => selectedIds.has(item.id));
 
     const groupIds = new Set(
       presets.map((item) => item.groupId).filter((id): id is string => Boolean(id?.trim())),
@@ -349,7 +354,8 @@ export class ContractDocumentPackageEstimateTransferService {
   /**
    * Импорт файла экспорта в текущую базу: каталог докатывается/обновляется,
    * расчёты и объекты создаются с новыми id (связки и ссылки на объект сохраняются),
-   * копия попадает на вкладку «В работе».
+   * копия попадает на вкладку «В работе». Расчёты из корзины пропускаются
+   * (не «воскрешаются») — в файле они могли остаться от старых версий экспорта.
    */
   async importEstimatePreset(
     payload: EstimateTransferPayload,
@@ -369,8 +375,19 @@ export class ContractDocumentPackageEstimateTransferService {
     if (!Array.isArray(payload.presets) || payload.presets.length === 0) {
       throw new BadRequestException('В файле нет расчётов');
     }
-    payload.presets.forEach((preset, index) => this.assertPresetShape(preset, index));
-    const groups = Array.isArray(payload.groups) ? payload.groups : [];
+    // Корзину не импортируем: удалённые в источнике расчёты не должны появляться активными здесь.
+    const activePresets = payload.presets.filter((preset) => !preset.deletedAt?.trim());
+    if (activePresets.length === 0) {
+      throw new BadRequestException(
+        'В файле нет активных расчётов (остальные в корзине источника)',
+      );
+    }
+    const skippedTrashed = payload.presets.length - activePresets.length;
+    activePresets.forEach((preset, index) => this.assertPresetShape(preset, index));
+    const groups = (Array.isArray(payload.groups) ? payload.groups : []).filter(
+      // объекты, на которые не ссылается ни один активный расчёт, не создаём
+      (group) => activePresets.some((preset) => preset.groupId === group.id),
+    );
     groups.forEach((group, index) => this.assertGroupShape(group, index));
 
     const catalogReport = await this.importCatalog(payload);
@@ -380,11 +397,11 @@ export class ContractDocumentPackageEstimateTransferService {
       groupIdMap.set(group.id, randomUUID());
     }
     const presetIdMap = new Map<string, string>();
-    for (const preset of payload.presets) {
+    for (const preset of activePresets) {
       presetIdMap.set(preset.id, randomUUID());
     }
 
-    const importedPresets: ContractEstimatePresetDto[] = payload.presets.map((preset) => {
+    const importedPresets: ContractEstimatePresetDto[] = activePresets.map((preset) => {
       const copy = { ...preset } as Record<string, unknown>;
       copy.id = presetIdMap.get(preset.id);
       if (typeof copy.groupId === 'string' && copy.groupId) {
@@ -393,6 +410,7 @@ export class ContractDocumentPackageEstimateTransferService {
       }
       if (typeof copy.splitBundleId === 'string' && copy.splitBundleId) {
         const mapped = presetIdMap.get(copy.splitBundleId as string);
+        // Якорь связки мог уйти в корзину источника — связку собираем по оставшимся участникам.
         if (mapped) copy.splitBundleId = mapped;
         else delete copy.splitBundleId;
       }
@@ -432,6 +450,7 @@ export class ContractDocumentPackageEstimateTransferService {
       catalogCategoriesCreated: catalogReport.categoriesCreated,
       catalogItemsCreated: catalogReport.itemsCreated,
       catalogItemsUpdated: catalogReport.itemsUpdated,
+      skippedTrashed,
     };
   }
 }
