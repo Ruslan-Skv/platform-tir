@@ -12,6 +12,7 @@ import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import {
+  formatContractMoneyFieldRaw,
   formatHubDiscountCell,
   formatMoneyRub,
   formatPercentOfGrandTotal,
@@ -129,7 +130,7 @@ export function PackageContractPaymentsHubSummarySection({
                       <td
                         className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
                       >
-                        {form.contract.recommendedPrepayment.trim() || '—'}
+                        {formatContractMoneyFieldRaw(form.contract.recommendedPrepayment) || '—'}
                       </td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
                       <td className={cdBase.paymentsHubSummaryNumCol}>—</td>
@@ -167,13 +168,13 @@ export function PackageContractPaymentsHubSummarySection({
                       {formatHubDiscountCell(paymentsContractDiscountPct)}
                     </td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
-                      {form.contract.totalAmount.trim() ||
+                      {formatContractMoneyFieldRaw(form.contract.totalAmount) ||
                         formatMoneyRub(payableBreakdown.mainContractRub)}
                     </td>
                     <td
                       className={`${cdBase.paymentsHubSummaryNumCol} ${cdBase.paymentsHubSummaryRecommendedCol}`}
                     >
-                      {form.contract.recommendedPrepayment.trim() || '—'}
+                      {formatContractMoneyFieldRaw(form.contract.recommendedPrepayment) || '—'}
                     </td>
                     <td className={cdBase.paymentsHubSummaryNumCol}>
                       {loading

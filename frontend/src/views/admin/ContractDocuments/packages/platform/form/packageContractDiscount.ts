@@ -1,5 +1,5 @@
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
-import { formatMoneyWholePlain } from './moneyWhole';
+import { formatMoneyWholeGrouped, formatMoneyWholePlain } from './moneyWhole';
 
 /** Процент скидки по договору из поля формы: 0…100, пусто и нечисло → 0. */
 export function parsePackageContractDiscountPercent(raw: string | undefined | null): number {
@@ -54,6 +54,6 @@ export function packageEstimateTotalToContractFields(totalAfterDiscount: number 
   return {
     totalAmount,
     totalAmountWords: amountToRussianWords(totalAmount),
-    recommendedPrepayment: formatMoneyWholePlain(totalAfterDiscount * 0.7),
+    recommendedPrepayment: formatMoneyWholeGrouped(totalAfterDiscount * 0.7),
   };
 }

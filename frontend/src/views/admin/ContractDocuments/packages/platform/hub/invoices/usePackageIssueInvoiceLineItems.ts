@@ -4,8 +4,8 @@ import { useCallback, useMemo, useState } from 'react';
 
 import type { ContractDocumentPackageKind } from '@/shared/api/admin-contract-document-packages';
 
+import { formatMoneyRublesKopecksGrouped } from '../../form/moneyWhole';
 import type { PackageFormData } from '../../form/packageForm';
-import { formatPackageHubConductAmountInput } from '../../payments/packageHubConductPayment';
 import {
   type PackageInvoiceEstimateSourceId,
   paymentInvoiceLinesFromEstimateSource,
@@ -37,8 +37,9 @@ export function usePackageIssueInvoiceLineItems({
 
   const linesTotalRub = useMemo(() => sumPaymentInvoiceLineItems(lineItems), [lineItems]);
   const lineDisplay = useMemo(() => groupPaymentInvoiceLinesForDisplay(lineItems), [lineItems]);
+  // Поле «Итого» в форме счёта только для чтения — разряды через пробел.
   const amountDisplay = useMemo(
-    () => (linesTotalRub > 0 ? formatPackageHubConductAmountInput(linesTotalRub) : ''),
+    () => (linesTotalRub > 0 ? formatMoneyRublesKopecksGrouped(linesTotalRub) : ''),
     [linesTotalRub]
   );
 

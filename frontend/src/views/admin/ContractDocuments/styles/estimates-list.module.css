@@ -789,6 +789,11 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   max-width: 22rem;
 }
 
+/* Таблица центрирует ячейки (.table td); названия расчётов — всегда от левого края */
+.estimatesDirectoryTable td.estimatesListTitleCell {
+  text-align: left;
+}
+
 .estimatesListTitleCell .estimatesCardTitleRow {
   flex-wrap: wrap;
   gap: 4px;
@@ -796,7 +801,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 
 .estimatesListBindingCell {
   min-width: 0;
-  max-width: 14rem;
+  max-width: 12rem;
 }
 
 .estimatesListBindingCell .estimatesBadge {
@@ -826,6 +831,23 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   text-overflow: ellipsis;
   white-space: nowrap;
   color: var(--admin-text-secondary);
+}
+
+/* Заказчик расчёта — до двух строк, дальше многоточие; полное имя — в тултипе.
+   Кламп на внутреннем span: display на td менять нельзя — ломает таблицу. */
+.estimatesListCustomerCell {
+  width: 6rem;
+  max-width: 13rem;
+  color: var(--admin-text-secondary);
+}
+
+.estimatesListCustomerName {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .estimatesListCostCell {
@@ -937,7 +959,7 @@ a.primaryBtn.estimatesCompactPrimaryLink {
 /* В таблице расчётов жирным в строках — только название объекта (шапка — thead th) */
 .estimatesDirectoryTable .estimatesListTable .estimatesCardTitle {
   font-weight: normal;
-  font-size: 0.8125rem;
+  font-size: var(--admin-font-size-xs);
   line-height: 1.25;
 }
 

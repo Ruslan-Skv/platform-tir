@@ -9,6 +9,7 @@ import {
 
 import { isProductDirectionPackageKind } from '../../../config/productDirectionPackageKind';
 import { computeProductContractCostBreakdown } from '../../../families/product-like/cost/productContractCostBreakdown';
+import { formatMoneyRublesKopecksGrouped } from '../../form/moneyWhole';
 import { parsePackageContractDiscountPercent } from '../../form/packageContractDiscount';
 import { type PackageFormData, clampPackageAddendumSlotCount } from '../../form/packageForm';
 import { buildPackagePaymentBasisOptions } from '../../payments/packagePaymentBasisOptions';
@@ -45,7 +46,7 @@ export function usePackagePaymentsSummaryBreakdown({
       if (totalRub == null || !Number.isFinite(totalRub)) {
         return { num: i + 1, costStr: '', rec100: '', hasData: false as const };
       }
-      const costStr = totalRub.toFixed(2).replace('.', ',');
+      const costStr = formatMoneyRublesKopecksGrouped(totalRub);
       return {
         num: i + 1,
         costStr,

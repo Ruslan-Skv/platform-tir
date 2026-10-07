@@ -192,6 +192,10 @@ function EstimateMobileCard({
             <dd>{updatedLabel}</dd>
           </div>
           <div className={cdHub.contractsMobileCardRow}>
+            <dt>Заказчик</dt>
+            <dd>{it.customerName?.trim() || '—'}</dd>
+          </div>
+          <div className={cdHub.contractsMobileCardRow}>
             <dt>Автор</dt>
             <dd>{it.createdByName?.trim() || '—'}</dd>
           </div>

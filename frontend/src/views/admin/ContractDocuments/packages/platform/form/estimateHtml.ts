@@ -1,4 +1,4 @@
-import { formatMoneyWholePlain } from '../form/moneyWhole';
+import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -13,7 +13,7 @@ function buildEstimateRoomsDiscountSuffixHtml(
   const p = parsePackageContractDiscountPercent(contractDiscountPercentRaw ?? '');
   if (p <= 0 || !Number.isFinite(grossTotal) || grossTotal <= 0) return '';
   const net = applyPackageContractDiscountToAmount(grossTotal, p);
-  const fmt = formatMoneyWholePlain;
+  const fmt = formatMoneyWholeGrouped;
   return `<p class="estimateA4DiscountMeta" style="margin:8px 0 0;text-align:right;">Скидка по договору: ${String(p).replace('.', ',')}%</p>
 <p class="estimateA4Total" style="margin:4px 0 0;text-align:right;">Итого со скидкой: <strong>${fmt(net)} руб.</strong></p>`;
 }
@@ -46,15 +46,15 @@ export function buildEstimateRoomsHtmlFromSnapshot(
         const roomHeader = `<tr>
       <td colspan="4" style="border:1px solid #cbd5e1; padding:6px; font-weight:700; background:#f8fafc;">${escapeHtml(
         room.name
-      )} — ${formatMoneyWholePlain(room.total)}</td>
+      )} — ${formatMoneyWholeGrouped(room.total)}</td>
     </tr>`;
         const roomLines = room.lines
           .map(
             (line) => `<tr>
       <td style="border:1px solid #cbd5e1; padding:6px;">${escapeHtml(line.name)}</td>
       <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${line.quantity} ${escapeHtml(line.unit)}</td>
-      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${formatMoneyWholePlain(line.price)}</td>
-      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${formatMoneyWholePlain(line.amount)}</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${formatMoneyWholeGrouped(line.price)}</td>
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right;">${formatMoneyWholeGrouped(line.amount)}</td>
     </tr>`
           )
           .join('');
@@ -63,7 +63,7 @@ export function buildEstimateRoomsHtmlFromSnapshot(
       .join('')}
     <tr>
       <td colspan="3" style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:700;">Итого</td>
-      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:700;">${formatMoneyWholePlain(
+      <td style="border:1px solid #cbd5e1; padding:6px; text-align:right; font-weight:700;">${formatMoneyWholeGrouped(
         snapshot.total
       )}</td>
     </tr>

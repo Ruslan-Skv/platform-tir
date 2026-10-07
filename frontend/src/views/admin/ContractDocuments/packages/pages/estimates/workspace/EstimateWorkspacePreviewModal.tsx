@@ -3,7 +3,7 @@
 import { Modal } from '@/shared/ui/Modal';
 
 import cdDocPreview from '../../../../styles/documents-preview.module.css';
-import { formatPackageMoneyValue } from '../../../platform/editor/estimateTab/estimateTabUi';
+import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import previewStyles from './EstimateWorkspacePreviewModal.module.css';
 import type { EstimateWorkspacePreviewModel } from './estimateWorkspacePreview';
 
@@ -83,7 +83,7 @@ export function EstimateWorkspacePreviewModal({
                             <span>
                               {roomIndex + 1}. {room.name}
                             </span>
-                            <strong>{formatPackageMoneyValue(room.total)} руб.</strong>
+                            <strong>{formatMoneyWholeGrouped(room.total)} руб.</strong>
                           </div>
                           <table className={cdDocPreview.estimateA4Table}>
                             <thead>
@@ -103,8 +103,8 @@ export function EstimateWorkspacePreviewModal({
                                   <td>{line.name}</td>
                                   <td>{line.unit}</td>
                                   <td>{line.quantity}</td>
-                                  <td>{formatPackageMoneyValue(line.price)}</td>
-                                  <td>{formatPackageMoneyValue(line.amount)}</td>
+                                  <td>{formatMoneyWholeGrouped(line.price)}</td>
+                                  <td>{formatMoneyWholeGrouped(line.amount)}</td>
                                 </tr>
                               ))}
                             </tbody>
@@ -132,7 +132,7 @@ export function EstimateWorkspacePreviewModal({
                           return (
                             <li key={`category-summary-${section.categoryName}`}>
                               <span>{section.categoryName}</span>
-                              <strong>{formatPackageMoneyValue(categoryTotal)} руб.</strong>
+                              <strong>{formatMoneyWholeGrouped(categoryTotal)} руб.</strong>
                             </li>
                           );
                         })}
@@ -142,7 +142,7 @@ export function EstimateWorkspacePreviewModal({
                 </section>
                 <p className={cdDocPreview.estimateA4Total}>
                   Итого по смете:{' '}
-                  <strong>{formatPackageMoneyValue(model.snapshot.total)} руб.</strong>
+                  <strong>{formatMoneyWholeGrouped(model.snapshot.total)} руб.</strong>
                 </p>
               </article>
             </div>

@@ -33,7 +33,7 @@ export type EstimatePackageUsage =
       contractDate: string;
     };
 
-export const ESTIMATES_LIST_TABLE_COL_SPAN = 9;
+export const ESTIMATES_LIST_TABLE_COL_SPAN = 10;
 export const ESTIMATES_NO_ADDRESS_KEY = '__no_object_address__';
 
 export function isUsageLocked(u: EstimatePackageUsage): boolean {
@@ -140,12 +140,23 @@ export function parseOptionalPercentInput(raw: string): number | undefined {
   return n;
 }
 
+/** Разряды через неразрывный пробел: 1453377 → «1 453 377». */
+function groupThousands(intPart: string): string {
+  return intPart.replace(/\B(?=(\d{3})+(?!\d))/g, '\u00A0');
+}
+
+/** Стоимости расчётов с копейками и разделением разрядов: 1453377.76 → «1 453 377,76». */
+function formatEstimateCostWithKopecks(total: number): string {
+  const [intPart, frac] = total.toFixed(2).split('.');
+  return `${groupThousands(intPart)},${frac}`;
+}
+
 export function formatEstimatePresetTotalRub(total: number): string {
-  return `${total.toFixed(2).replace('.', ',')} руб.`;
+  return `${formatEstimateCostWithKopecks(total)} руб.`;
 }
 
 export function formatEstimateListTableCost(total: number): string {
-  return total.toFixed(2).replace('.', ',');
+  return formatEstimateCostWithKopecks(total);
 }
 
 /** Объединение ключей строк сметы (`wsl:…`) по всем расчётам связки. */
@@ -244,6 +255,12 @@ export function formatEstimateGroupUpdatedLabel(items: ContractEstimatePreset[])
 export function formatEstimateGroupAuthorLabel(items: ContractEstimatePreset[]): string {
   const author = latestUpdatedEstimatePreset(items)?.createdByName?.trim();
   return author || '—';
+}
+
+/** Заказчик объекта — заказчик самого свежего расчёта (как автор объекта). */
+export function formatEstimateGroupCustomerLabel(items: ContractEstimatePreset[]): string {
+  const customer = latestUpdatedEstimatePreset(items)?.customerName?.trim();
+  return customer || '—';
 }
 
 export function comparePresetsForListSort(

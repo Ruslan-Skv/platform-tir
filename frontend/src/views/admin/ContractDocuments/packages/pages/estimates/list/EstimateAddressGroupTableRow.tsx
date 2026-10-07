@@ -14,6 +14,7 @@ import {
   type EstimatePackageUsage,
   estimateObjectAddressDisplayLabel,
   formatEstimateGroupAuthorLabel,
+  formatEstimateGroupCustomerLabel,
   formatEstimateGroupUpdatedLabel,
 } from './estimatesListUtils';
 
@@ -95,6 +96,14 @@ export function EstimateAddressGroupTableRow({
         title="Дата последнего изменения расчётов объекта"
       >
         {formatEstimateGroupUpdatedLabel(section.items)}
+      </td>
+      <td
+        className={cdEstimatesList.estimatesListCustomerCell}
+        title="Заказчик последнего прикреплённого расчёта объекта"
+      >
+        <span className={cdEstimatesList.estimatesListCustomerName}>
+          {formatEstimateGroupCustomerLabel(section.items)}
+        </span>
       </td>
       <td
         className={cdEstimatesList.estimatesListAuthorCell}

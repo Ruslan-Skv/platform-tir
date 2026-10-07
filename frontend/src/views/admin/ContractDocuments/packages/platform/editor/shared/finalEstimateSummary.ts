@@ -1,3 +1,4 @@
+import { formatMoneyRublesKopecksGrouped } from '../../form/moneyWhole';
 import type { PackageFormData } from '../../form/packageForm';
 
 export type FinalEstimateSummaryRow = {
@@ -44,9 +45,7 @@ export function formatInstallerNameShort(fullName: string): string {
 }
 
 export function formatMoneyRubShort(value: number): string {
-  const rounded = Math.round(value);
-  if (Math.abs(value - rounded) < 0.005) return `${rounded}`;
-  return value.toFixed(2).replace('.', ',');
+  return formatMoneyRublesKopecksGrouped(value);
 }
 
 export function parsePercentForWorkOrder(raw: string): number {

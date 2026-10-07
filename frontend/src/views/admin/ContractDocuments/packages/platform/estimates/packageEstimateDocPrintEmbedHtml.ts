@@ -3,7 +3,7 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-import { formatMoneyWholePlain } from '../form/moneyWhole';
+import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
   parsePackageContractDiscountPercent,
@@ -187,7 +187,7 @@ function escapeHtml(value: string): string {
 
 /** Суммы в смете — целыми рублями (без копеек). */
 function formatMoney(value: number): string {
-  return formatMoneyWholePlain(value);
+  return formatMoneyWholeGrouped(value);
 }
 
 export type { EstimateDocPrintExecutorPartyLabel };

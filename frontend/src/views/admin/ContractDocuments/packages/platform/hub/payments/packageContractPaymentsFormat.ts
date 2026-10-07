@@ -1,3 +1,5 @@
+import { formatMoneyRublesKopecksGrouped } from '../../form/moneyWhole';
+
 export function formatMoneyRub(n: number | null | undefined) {
   if (n == null || !Number.isFinite(n)) return '—';
   return new Intl.NumberFormat('ru-RU', {
@@ -5,6 +7,15 @@ export function formatMoneyRub(n: number | null | undefined) {
     currency: 'RUB',
     maximumFractionDigits: 0,
   }).format(n);
+}
+
+/** Сумма из поля формы договора («12 345,67» / «12345.67») — с разделением разрядов при выводе. */
+export function formatContractMoneyFieldRaw(raw: string | undefined | null): string {
+  const t = (raw ?? '').trim();
+  if (!t) return '';
+  const normalized = t.replace(/\s+/g, '').replace(',', '.');
+  if (!/^\d+(\.\d+)?$/.test(normalized)) return t;
+  return formatMoneyRublesKopecksGrouped(Number(normalized));
 }
 
 /** Доля `partRub` от `grandTotalRub` (общая стоимость по сводке «Договор и Д/с»). */

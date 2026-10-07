@@ -115,6 +115,7 @@ export function EstimatesListTable({
                   sortOrder={listSortOrder}
                   onSort={onSort}
                 />
+                <th>Заказчик</th>
                 <th>Автор</th>
                 <th>Стоимость</th>
                 <EstimatesListSortableTh

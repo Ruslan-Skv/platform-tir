@@ -3,6 +3,8 @@ import type { ContractEstimatePreset } from '@/shared/api/admin-contract-documen
 import {
   estimateMatchesManagerFilter,
   formatEstimateGroupAuthorLabel,
+  formatEstimateListTableCost,
+  formatEstimatePresetTotalRub,
   sortEstimatesForList,
 } from './estimatesListUtils';
 
@@ -44,6 +46,21 @@ describe('estimateMatchesManagerFilter', () => {
     const managerIdsByPresetId = new Map([['est_1', new Set(['user_b'])]]);
     expect(estimateMatchesManagerFilter(preset, 'user_a', managerIdsByPresetId)).toBe(true);
     expect(estimateMatchesManagerFilter(preset, 'user_b', managerIdsByPresetId)).toBe(true);
+  });
+});
+
+describe('формат стоимостей расчётов', () => {
+  it('разряды через неразрывный пробел, копейки через запятую', () => {
+    expect(formatEstimateListTableCost(1453377.76)).toBe('1\u00A0453\u00A0377,76');
+  });
+
+  it('малые суммы без разделителей', () => {
+    expect(formatEstimateListTableCost(999.5)).toBe('999,50');
+    expect(formatEstimateListTableCost(1000)).toBe('1\u00A0000,00');
+  });
+
+  it('formatEstimatePresetTotalRub добавляет « руб.»', () => {
+    expect(formatEstimatePresetTotalRub(1453377.76)).toBe('1\u00A0453\u00A0377,76 руб.');
   });
 });
 

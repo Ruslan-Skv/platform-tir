@@ -178,6 +178,14 @@ export function EstimatePresetTableRow({
       </td>
       <td className={cdEstimatesList.estimatesListDateCell}>{updatedLabel}</td>
       <td
+        className={cdEstimatesList.estimatesListCustomerCell}
+        title={it.customerName?.trim() || undefined}
+      >
+        <span className={cdEstimatesList.estimatesListCustomerName}>
+          {it.customerName?.trim() || '—'}
+        </span>
+      </td>
+      <td
         className={cdEstimatesList.estimatesListAuthorCell}
         title={it.createdByName?.trim() || undefined}
       >
