@@ -2,6 +2,7 @@ import { buildProductPackageSignaturesFooterHtml } from '../../../platform/estim
 import { formatMoneyWholeGrouped } from '../../../platform/form/moneyWhole';
 import {
   applyPackageContractDiscountToAmount,
+  parseNonNegativePercent,
   parsePackageContractDiscountPercent,
 } from '../../../platform/form/packageContractDiscount';
 import type { CeilingsPriceItem } from './ceilingsPriceTypes';
@@ -275,7 +276,7 @@ export function computeCeilingsSpecificationNetTotal(spec: CeilingsSpecification
   netTotal: number;
 } {
   const grossTotal = spec.ceilings.reduce((s, c) => s + sumCeilingsCeilingGross(c), 0);
-  const extraMarkupPercent = parsePackageContractDiscountPercent(spec.extraMarkupPercent);
+  const extraMarkupPercent = parseNonNegativePercent(spec.extraMarkupPercent);
   const goodsTotal = spec.ceilings.reduce((s, c) => s + sumCeilingsCeilingGoods(c), 0);
   const noMarkupTotal = spec.goodsNoMarkup ? goodsTotal : 0;
   const markupableTotal = grossTotal - noMarkupTotal;

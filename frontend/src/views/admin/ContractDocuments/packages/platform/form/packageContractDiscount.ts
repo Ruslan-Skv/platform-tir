@@ -1,16 +1,19 @@
 import { amountToRussianWords } from '../../../core/amountToRussianWords';
 import { formatMoneyWholeGrouped, formatMoneyWholePlain } from './moneyWhole';
 
-/** Процент скидки по договору из поля формы: 0…100, пусто и нечисло → 0. */
-export function parsePackageContractDiscountPercent(raw: string | undefined | null): number {
+/** Процент из поля формы: ≥ 0 без верхнего предела; пусто и нечисло → 0. */
+export function parseNonNegativePercent(raw: string | undefined | null): number {
   if (raw == null) return 0;
   const normalized = String(raw).trim().replace(/\s+/g, '').replace(',', '.');
   if (!normalized) return 0;
   const parsed = Number(normalized);
-  if (!Number.isFinite(parsed)) return 0;
-  if (parsed < 0) return 0;
-  if (parsed > 100) return 100;
+  if (!Number.isFinite(parsed) || parsed < 0) return 0;
   return parsed;
+}
+
+/** Процент скидки по договору из поля формы: 0…100, пусто и нечисло → 0. */
+export function parsePackageContractDiscountPercent(raw: string | undefined | null): number {
+  return Math.min(100, parseNonNegativePercent(raw));
 }
 
 export function packageContractDiscountMoneyFactor(discountPercent: number): number {

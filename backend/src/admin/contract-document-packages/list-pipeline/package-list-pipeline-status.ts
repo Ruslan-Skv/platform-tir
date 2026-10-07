@@ -50,11 +50,12 @@ function parseRubAmount(raw: unknown): number | null {
 }
 
 function parseDiscountPercent(raw: unknown): number {
-  const n = parseRubAmount(raw);
-  if (n == null) return 0;
-  if (n < 0) return 0;
-  if (n > 100) return 100;
-  return n;
+  return Math.min(100, parseRubAmount(raw) ?? 0);
+}
+
+/** Процент наценки: ≥ 0 без верхнего предела — наценка может превышать 100. */
+function parseMarkupPercent(raw: unknown): number {
+  return parseRubAmount(raw) ?? 0;
 }
 
 function applyDiscount(amount: number, discountPercent: number): number {
@@ -203,7 +204,7 @@ function sumCeilingsProducts(formData: Record<string, unknown>): number {
       }
     }
   }
-  const withMarkupPct = parseDiscountPercent(spec.extraMarkupPercent);
+  const withMarkupPct = parseMarkupPercent(spec.extraMarkupPercent);
   const withMarkup = withMarkupPct > 0 ? gross * (1 + withMarkupPct / 100) : gross;
   return applyDiscount(withMarkup, parseDiscountPercent(spec.discountPercent));
 }
