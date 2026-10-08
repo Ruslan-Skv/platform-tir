@@ -14,7 +14,7 @@ import {
 export class SalarySettingsService {
   constructor(private prisma: PrismaService) {}
 
-  /** Полные настройки: глобальные параметры + категории с правилами ставок. */
+  /** Полные настройки: глобальные параметры + направления с правилами ставок. */
   async getSettings() {
     await this.ensureDefaults();
     const [global, categories] = await Promise.all([
@@ -37,11 +37,6 @@ export class SalarySettingsService {
     await this.ensureGlobalRow();
     const data: Prisma.SalaryGlobalSettingUncheckedUpdateInput = {};
     if (dto.taxPercent !== undefined) data.taxPercent = dto.taxPercent;
-    if (dto.brigadier1Percent !== undefined) data.brigadier1Percent = dto.brigadier1Percent;
-    if (dto.brigadier2Percent !== undefined) data.brigadier2Percent = dto.brigadier2Percent;
-    if (dto.brigadeSplitCoeff !== undefined) data.brigadeSplitCoeff = dto.brigadeSplitCoeff;
-    if (dto.commonPoolToBrigadier !== undefined)
-      data.commonPoolToBrigadier = dto.commonPoolToBrigadier;
     const updated = await this.prisma.salaryGlobalSetting.update({
       where: { id: 'singleton' },
       data,
@@ -49,12 +44,12 @@ export class SalarySettingsService {
     return this.serializeGlobal(updated);
   }
 
-  // --- Категории ---
+  // --- Направления ---
 
   async createCategory(dto: CreateSalaryCategoryDto) {
     const existing = await this.prisma.salaryCategory.findUnique({ where: { code: dto.code } });
     if (existing) {
-      throw new BadRequestException(`Категория с кодом «${dto.code}» уже существует`);
+      throw new BadRequestException(`Направление с кодом «${dto.code}» уже существует`);
     }
     return this.prisma.salaryCategory.create({
       data: {
@@ -93,7 +88,7 @@ export class SalarySettingsService {
     const contractsCount = await this.prisma.salaryContract.count({ where: { categoryId: id } });
     if (contractsCount > 0) {
       throw new BadRequestException(
-        `Нельзя удалить категорию: к ней привязано договоров — ${contractsCount}. Снимите категорию с активного использования.`,
+        `Нельзя удалить направление: к нему привязано договоров — ${contractsCount}. Снимите направление с активного использования.`,
       );
     }
     await this.prisma.salaryCategory.delete({ where: { id } });
@@ -145,19 +140,11 @@ export class SalarySettingsService {
   private serializeGlobal(
     global: {
       taxPercent: Prisma.Decimal;
-      brigadier1Percent: Prisma.Decimal;
-      brigadier2Percent: Prisma.Decimal;
-      brigadeSplitCoeff: Prisma.Decimal;
-      commonPoolToBrigadier: boolean;
       updatedAt: Date;
     } | null,
   ) {
     return {
       taxPercent: toNum(global?.taxPercent ?? 8),
-      brigadier1Percent: toNum(global?.brigadier1Percent ?? 3.5),
-      brigadier2Percent: toNum(global?.brigadier2Percent ?? 5),
-      brigadeSplitCoeff: toNum(global?.brigadeSplitCoeff ?? 1.5882),
-      commonPoolToBrigadier: global?.commonPoolToBrigadier ?? true,
       updatedAt: global?.updatedAt ?? null,
     };
   }
@@ -206,7 +193,7 @@ export class SalarySettingsService {
     };
   }
 
-  /** Первичный посев: глобальная строка + категории по умолчанию (идемпотентно). */
+  /** Первичный посев: глобальная строка + направления по умолчанию (идемпотентно). */
   private async ensureDefaults() {
     await this.ensureGlobalRow();
     const count = await this.prisma.salaryCategory.count();
@@ -227,7 +214,7 @@ export class SalarySettingsService {
 
   private async ensureCategory(id: string) {
     const category = await this.prisma.salaryCategory.findUnique({ where: { id } });
-    if (!category) throw new NotFoundException(`Категория ${id} не найдена`);
+    if (!category) throw new NotFoundException(`Направление ${id} не найдено`);
     return category;
   }
 }

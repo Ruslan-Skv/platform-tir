@@ -278,9 +278,7 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
       </div>
       <div
         className={dpStyles.totalsTile}
-        title={`Бригадирский фонд: бригада ${formatPercent(totals.brigadierFund)}${
-          settings.commonPoolToBrigadier ? ' + общий пул' : ''
-        }; делёж по коэффициенту ${settings.brigadeSplitCoeff}`}
+        title={`Бригадирский фонд: начислено бригадиру ${formatMoneyShort(totals.brigadierFund)} + общий пул`}
       >
         <span className={dpStyles.totalsTileLabel}>Бригадирский фонд</span>
         <span className={dpStyles.totalsTileValueRow}>
@@ -288,16 +286,12 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
             {formatMoney(totals.brigadierTotalNet)}
           </strong>
         </span>
-        <span className={dpStyles.totalsTileCash}>
-          1-й: {formatMoneyShort(totals.brigadier1Share * settings.netFactor)} · 2-й:{' '}
-          {formatMoneyShort(totals.brigadier2Share * settings.netFactor)}
-        </span>
       </div>
       {vsByCategory.map((v) => (
         <div
           key={v.categoryId}
           className={dpStyles.totalsTile}
-          title={`Ведущие специалисты категории «${v.categoryName}»: начислено ${formatMoney(v.gross)}`}
+          title={`Ведущие специалисты направления «${v.categoryName}»: начислено ${formatMoney(v.gross)}`}
         >
           <span className={dpStyles.totalsTileLabel}>ВС — {v.categoryName}</span>
           <span className={dpStyles.totalsTileValueRow}>
@@ -328,19 +322,13 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
       </div>
       <div
         className={dpStyles.totalsTile}
-        title={
-          settings.commonPoolToBrigadier
-            ? '«Общие» договоры ×2 — включены в бригадирский фонд'
-            : '«Общие» договоры ×2 — не включены в фонды'
-        }
+        title="«Общие» договоры ×2 — включены в бригадирский фонд"
       >
         <span className={dpStyles.totalsTileLabel}>Общий пул</span>
         <span className={dpStyles.totalsTileValueRow}>
           <strong className={dpStyles.totalsTileValue}>{formatMoney(totals.commonPool)}</strong>
         </span>
-        <span className={dpStyles.totalsTileCash}>
-          {settings.commonPoolToBrigadier ? '→ в бригадирский фонд' : 'не включён в фонды'}
-        </span>
+        <span className={dpStyles.totalsTileCash}>→ в бригадирский фонд</span>
       </div>
       <div className={dpStyles.totalsTile} title="Статистика договоров за период">
         <span className={dpStyles.totalsTileLabel}>Заключено / закрыто</span>
@@ -373,26 +361,8 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             name: 'Бригадирский фонд (общий)',
             gross: totals.brigadierTotal,
             net: totals.brigadierTotalNet,
-            comment: `бригада ${formatPercent(totals.brigadierFund)}${
-              settings.commonPoolToBrigadier ? ' + общий пул' : ''
-            }`,
+            comment: `начислено бригадиру ${formatMoneyShort(totals.brigadierFund)} + общий пул`,
             kind: 'total' as const,
-          },
-          {
-            id: 'brigadier1',
-            name: '— 1-й бригадир',
-            gross: totals.brigadier1Share,
-            net: totals.brigadier1Share * settings.netFactor,
-            comment: `делёж по коэффициенту ${settings.brigadeSplitCoeff}`,
-            kind: 'part' as const,
-          },
-          {
-            id: 'brigadier2',
-            name: '— 2-й бригадир',
-            gross: totals.brigadier2Share,
-            net: totals.brigadier2Share * settings.netFactor,
-            comment: `ставки: ${formatPercent(settings.brigadier1Percent)} / ${formatPercent(settings.brigadier2Percent)}`,
-            kind: 'part' as const,
           },
           ...result.vsByCategory.map((v) => ({
             id: `vs-${v.categoryId}`,
@@ -423,9 +393,7 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             name: 'Общий пул («общие» договоры ×2)',
             gross: totals.commonPool,
             net: null,
-            comment: settings.commonPoolToBrigadier
-              ? 'включён в бригадирский фонд'
-              : 'не включён в фонды',
+            comment: 'включён в бригадирский фонд',
             kind: 'total' as const,
           },
         ]}
@@ -478,7 +446,7 @@ type OfficeRow = {
   kind: 'cat' | 'total';
 };
 
-/** Разрез офис × категория с итогами по офису. */
+/** Разрез офис × направление с итогами по офису. */
 function OfficesTable({ result }: { result: SalaryCalcResult }) {
   if (result.byOffice.length === 0) return null;
   const rows: OfficeRow[] = result.byOffice.flatMap((office) => [
@@ -508,12 +476,12 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
 
   return (
     <div className={styles.tableBlock}>
-      <h2 className={styles.sectionTitle}>По офисам и категориям</h2>
+      <h2 className={styles.sectionTitle}>По офисам и направлениям</h2>
       <DataTable
         data={rows}
         columns={[
           { key: 'officeName', title: 'Офис', sortable: true },
-          { key: 'categoryName', title: 'Категория' },
+          { key: 'categoryName', title: 'Направление' },
           {
             key: 'vsAmount',
             title: 'ВС',
@@ -522,7 +490,7 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'brigadierAmount',
-            title: 'Бригада',
+            title: 'Бригадир',
             sortable: true,
             render: (r) => (
               <span className={dpStyles.amountCell}>{formatMoney(r.brigadierAmount)}</span>
@@ -657,7 +625,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             render: (r) => <span className={styles.nameCell}>{r.number}</span>,
           },
           { key: 'officeName', title: 'Офис', sortable: true },
-          { key: 'categoryName', title: 'Категория', sortable: true },
+          { key: 'categoryName', title: 'Направление', sortable: true },
           {
             key: 'signedAt',
             title: 'Заключён',
@@ -672,19 +640,26 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'baseAmount',
-            title: 'База',
+            title: 'Стоимость договора',
             sortable: true,
-            render: (r) => (
-              <span className={dpStyles.amountCell}>
-                {formatMoney(r.baseAmount)}
-                {r.extraBillsAmount !== 0 ? (
-                  <span className={styles.subline}>
-                    {' '}
-                    +{formatMoneyShort(r.extraBillsAmount)} дс
-                  </span>
-                ) : null}
-              </span>
-            ),
+            render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.baseAmount)}</span>,
+          },
+          {
+            key: 'extraBills',
+            title: 'Доп. согл.',
+            render: (r) =>
+              r.extraBills.length === 0 ? (
+                <span className={dpStyles.muted}>—</span>
+              ) : (
+                <span className={styles.billsCell}>
+                  {r.extraBills.map((b, i) => (
+                    <span key={i} className={styles.billsEntry}>
+                      <span className={styles.billsDate}>{formatDate(b.date)}</span>
+                      <span>{formatMoney(b.amount)}</span>
+                    </span>
+                  ))}
+                </span>
+              ),
           },
           {
             key: 'managerPercent',
@@ -715,7 +690,7 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
           },
           {
             key: 'brigadierAmount',
-            title: 'Бригаде',
+            title: 'Бригадиру',
             sortable: true,
             render: (r) => (
               <span className={dpStyles.amountCell}>{formatMoney(r.brigadierAmount)}</span>

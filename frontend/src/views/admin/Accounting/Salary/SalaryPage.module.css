@@ -223,6 +223,27 @@
   gap: var(--admin-space-2xs, 2px);
 }
 
+/* Доп. соглашения в таблицах: каждое — двумя строками (дата / сумма). */
+.billsCell {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+  font-variant-numeric: tabular-nums;
+}
+
+.billsEntry {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+}
+
+.billsDate {
+  color: var(--admin-text-muted, #9ca3af);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  white-space: nowrap;
+}
+
 /* «Общий» договор — часть уходит в пул ×2. */
 .rowCommon td {
   background: rgb(251 243 208 / 0.55);
@@ -243,6 +264,41 @@
 }
 
 /* ===== Бейджи ===== */
+
+/* Тип записи договора: «Ручн.» — вручную/импорт, «Авто» — синхронизация с договорами. */
+.entryKindBadge {
+  border-radius: var(--admin-radius-sm, 6px);
+  display: inline-block;
+  font-size: var(--admin-font-size-xs, 12px);
+  line-height: 1.2;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+.entryKindManual {
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+  color: #9a3412;
+  font-weight: 600;
+}
+
+.entryKindAuto {
+  background: var(--admin-surface-soft, #f3f4f6);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .entryKindManual {
+  background: rgb(154 52 18 / 0.28);
+  border-color: rgb(251 146 60 / 0.45);
+  color: #fdba74;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .entryKindAuto {
+  background: var(--admin-surface-soft);
+  border-color: var(--admin-border-strong);
+  color: var(--admin-text-muted);
+}
 
 .statusBadge {
   border-radius: var(--admin-radius-3xl, 999px);
@@ -313,7 +369,7 @@
   min-height: 40px;
 }
 
-/* Доп. счета в модалке договора. */
+/* Доп. соглашения в модалке договора. */
 .extraBillsList {
   display: flex;
   flex-direction: column;

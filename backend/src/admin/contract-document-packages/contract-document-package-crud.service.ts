@@ -5,6 +5,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { ContractConcludedNotifyService } from '../../contract-concluded-notify/contract-concluded-notify.service';
 import { ContractDocumentSigningService } from '../../contract-document-signing/contract-document-signing.service';
 import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
+import { SalaryContractsSyncService } from '../salary/salary-contracts-sync.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
@@ -26,6 +27,7 @@ export class ContractDocumentPackageCrudService {
     private readonly contractNumbering: ContractDocumentNumberingService,
     private readonly contractConcludedNotify: ContractConcludedNotifyService,
     private readonly signingSessions: ContractDocumentSigningService,
+    private readonly salarySync: SalaryContractsSyncService,
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
@@ -233,6 +235,8 @@ export class ContractDocumentPackageCrudService {
         );
       }
     }
+    // Событийная синхронизация договора в расчёт з/п (ошибки логируются внутри).
+    void this.salarySync.syncPackageSafe(id);
     return this.findOne(id);
   }
 
@@ -332,7 +336,7 @@ export class ContractDocumentPackageCrudService {
       await this.assertEstimatePresetsExclusive(id, row.formData);
     }
     await this.contractNumbering.syncNumberAssignmentsForPackage(id, row.formData);
-    return this.prisma.contractDocumentPackage.update({
+    const restored = await this.prisma.contractDocumentPackage.update({
       where: { id },
       data: {
         deletedAt: null,
@@ -340,6 +344,9 @@ export class ContractDocumentPackageCrudService {
       },
       include: contractDocumentPackageInclude,
     });
+    // Событийная синхронизация договора в расчёт з/п (ошибки логируются внутри).
+    void this.salarySync.syncPackageSafe(id);
+    return restored;
   }
 
   async remove(id: string, actorUserId?: string) {

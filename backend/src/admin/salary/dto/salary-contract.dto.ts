@@ -5,6 +5,7 @@ import {
   IsArray,
   IsBoolean,
   IsDateString,
+  IsIn,
   IsInt,
   IsNotEmpty,
   IsNumber,
@@ -18,16 +19,16 @@ import {
 } from 'class-validator';
 
 export class SalaryExtraBillDto {
-  /** id доп. счёта — cuid */
+  /** id доп. соглашения — cuid */
   @IsOptional()
   @IsString()
   id?: string;
 
-  /** Сумма доп. счёта (может быть отрицательной) */
+  /** Сумма доп. соглашения (может быть отрицательной) */
   @IsNumber()
   amount: number;
 
-  /** Дата доп. счёта (YYYY-MM-DD) */
+  /** Дата доп. соглашения (YYYY-MM-DD) */
   @IsDateString()
   date: string;
 
@@ -37,7 +38,7 @@ export class SalaryExtraBillDto {
   note?: string;
 }
 
-/** Ссылки на офис/категорию/сотрудников — cuid из CRM, не UUID. */
+/** Ссылки на офис/направление/сотрудников — cuid из CRM, не UUID. */
 export class CreateSalaryContractDto {
   @IsString()
   @IsNotEmpty()
@@ -97,7 +98,7 @@ export class CreateSalaryContractDto {
   @IsBoolean()
   surveyorHandled?: boolean;
 
-  /** База: ст-ть изделий + монтаж либо стоимость договора */
+  /** Стоимость договора: ст-ть изделий + монтаж либо стоимость договора */
   @IsNumber()
   @Min(0)
   baseAmount: number;
@@ -136,7 +137,7 @@ export class CreateSalaryContractDto {
   @MaxLength(1000)
   note?: string | null;
 
-  /** Доп. счета (при передаче — полностью заменяют существующие) */
+  /** Доп. соглашения (при передаче — полностью заменяют существующие) */
   @IsOptional()
   @IsArray()
   @ArrayMaxSize(20)
@@ -171,6 +172,11 @@ export class QuerySalaryContractsDto {
   @IsString()
   @MaxLength(200)
   search?: string;
+
+  /** Тип записи: «auto» — синхронизированы из договоров, «manual» — внесены вручную. */
+  @IsOptional()
+  @IsIn(['auto', 'manual'])
+  entryKind?: 'auto' | 'manual';
 
   @IsOptional()
   @Type(() => Number)

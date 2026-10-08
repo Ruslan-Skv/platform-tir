@@ -6,6 +6,7 @@ import { ContractConcludedNotifyModule } from '../../contract-concluded-notify/c
 import { ContractDocumentSigningModule } from '../../contract-document-signing/contract-document-signing.module';
 import { RepairSchedulesModule } from '../repair-schedules/repair-schedules.module';
 import { MoneyMovementsModule } from '../money-movements/money-movements.module';
+import { SalaryModule } from '../salary/salary.module';
 import { ContractDocumentPaymentInvoicesService } from './invoices/contract-document-payment-invoices.service';
 import { ContractDocumentPaymentInvoiceEpService } from './invoices/contract-document-payment-invoice-ep.service';
 import { ContractDocumentPackagePaymentsService } from './contract-document-package-payments.service';
@@ -27,6 +28,7 @@ import { ContractDocumentPackageCeilingsPriceListService } from './contract-docu
     MoneyMovementsModule,
     ContractConcludedNotifyModule,
     ContractDocumentSigningModule,
+    SalaryModule,
   ],
   controllers: [ContractDocumentPackagesController],
   providers: [

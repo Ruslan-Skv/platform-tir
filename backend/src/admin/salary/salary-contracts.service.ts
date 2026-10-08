@@ -31,6 +31,13 @@ export class SalaryContractsService {
     const where: Prisma.SalaryContractWhereInput = {
       officeId: query.officeId,
       categoryId: query.categoryId,
+      // Тип записи: «auto» — синхронизированы из договоров, «manual» — внесены вручную/импом.
+      sourcePackageId:
+        query.entryKind === 'auto'
+          ? { not: null }
+          : query.entryKind === 'manual'
+            ? null
+            : undefined,
       signedAt: query.dateFrom
         ? {
             gte: fromDateIso(query.dateFrom),
@@ -221,6 +228,7 @@ export class SalaryContractsService {
           ? null
           : toNum(contract.brigadierPercentOverride),
       source: contract.source,
+      sourcePackageId: contract.sourcePackageId,
       note: contract.note,
       extraBills: contract.extraBills.map((b) => ({
         id: b.id,
@@ -245,7 +253,7 @@ export class SalaryContractsService {
     }
     if (categoryId) {
       const category = await this.prisma.salaryCategory.findUnique({ where: { id: categoryId } });
-      if (!category) throw new NotFoundException(`Категория ${categoryId} не найдена`);
+      if (!category) throw new NotFoundException(`Направление ${categoryId} не найдено`);
     }
     if (managerId) {
       const user = await this.prisma.user.findUnique({ where: { id: managerId } });

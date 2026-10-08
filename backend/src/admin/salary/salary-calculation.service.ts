@@ -7,13 +7,14 @@ import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
  * Расчёт з/п за период — перенос логики Google-таблицы «Новая таблица 2025».
  *
  * Модель расчёта по договору (аналог листов «19о», «19-50/50» и т.п.):
- *  - база = ст-ть изделий + ст-ть монтажа (для «о»-категорий) или стоимость договора (ремонт);
- *  - з/п менеджера = база × %мен × доля_при_заключении (если дата заключения в периоде)
- *                  + база × %мен × доля_при_закрытии (если дата закрытия в периоде)
- *                  + Σ(доп.счёт × %мен) за доп.счета с датой в периоде;
+ *  - стоимость договора = ст-ть изделий + ст-ть монтажа (для «о»-направлений) или стоимость
+ *    договора (ремонт);
+ *  - з/п менеджера = стоимость × %мен × доля_при_заключении (если дата заключения в периоде)
+ *                  + стоимость × %мен × доля_при_закрытии (если дата закрытия в периоде)
+ *                  + Σ(доп.согл. × %мен) за доп. соглашения с датой в периоде;
  *  - замерщик = з/п менеджера × %зам / %мен (пропорционально своей ставке);
- *  - ВС (ведущий специалист) = з/п менеджера × %ВС / %мен — фонд по категории;
- *  - бригада = з/п менеджера × %бриг / %мен (ремонтные категории, обычно 8.5%);
+ *  - ВС (ведущий специалист) = з/п менеджера × %ВС / %мен — фонд по направлению;
+ *  - бригадир = з/п менеджера × %бриг / %мен (ремонтные направления, обычно 8.5%);
  *  - «общий» договор (менеджер не вёл / замера не было): соответствующая часть ×2
  *    уходит в общий пул офиса (в таблице — колонки «×(2−м)» / «×(2−зам)»).
  */
@@ -53,10 +54,6 @@ export class SalaryCalculationService {
     ]);
 
     const taxPercent = toNum(globalSetting?.taxPercent ?? 8);
-    const brigadier1Percent = toNum(globalSetting?.brigadier1Percent ?? 3.5);
-    const brigadier2Percent = toNum(globalSetting?.brigadier2Percent ?? 5);
-    const brigadeSplitCoeff = toNum(globalSetting?.brigadeSplitCoeff ?? 1.5882);
-    const commonPoolToBrigadier = globalSetting?.commonPoolToBrigadier ?? true;
     const netFactor = round2((1 - taxPercent / 100) * 10000) / 10000;
 
     const rulesByKey = new Map<string, number>();
@@ -121,7 +118,7 @@ export class SalaryCalculationService {
 
       const managerAmount = round2(signPart + closePart + extraPart);
 
-      // Замерщик/ВС/бригада — пропорционально ставке менеджера (как в таблице: зп × %свой / %мен).
+      // Замерщик/ВС/бригадир — пропорционально ставке менеджера (как в таблице: зп × %свой / %мен).
       const scale = managerPercent > 0 ? 1 / (managerPercent / 100) : 0;
       const surveyorAmount = round2(managerAmount * scale * (surveyorPercent / 100));
       const vsAmount = round2(managerAmount * scale * (vsPercent / 100));
@@ -164,6 +161,10 @@ export class SalaryCalculationService {
         surveyorHandled: contract.surveyorHandled,
         baseAmount: base,
         extraBillsAmount: round2(extraBase),
+        extraBills: extraBillsInPeriod.map((b) => ({
+          date: toDateIso(b.date),
+          amount: round2(toNum(b.amount)),
+        })),
         percents: {
           manager: managerPercent,
           surveyor: surveyorPercent,
@@ -306,13 +307,8 @@ export class SalaryCalculationService {
 
     const brigadierFund = round2(rows.reduce((s, r) => s + r.brigadierAmount, 0));
     const commonPool = round2(rows.reduce((s, r) => s + r.managerCommon + r.surveyorCommon, 0));
-    const brigadierTotal = round2(
-      commonPoolToBrigadier ? brigadierFund + commonPool : brigadierFund,
-    );
-    // Делёж фонда между бригадирами по коэффициенту: 2-й получает coeff× больше 1-го.
-    const brigadier1Share = round2(brigadierTotal / (1 + brigadeSplitCoeff));
-    const brigadier2Share = round2(brigadierTotal - brigadier1Share);
-
+    // Общий пул «общих» договоров всегда идёт в бригадирский фонд.
+    const brigadierTotal = round2(brigadierFund + commonPool);
     const managerPersonalTotal = round2(
       Array.from(byManager.values()).reduce((s, m) => s + m.amount, 0),
     );
@@ -338,10 +334,6 @@ export class SalaryCalculationService {
       settings: {
         taxPercent,
         netFactor,
-        brigadier1Percent,
-        brigadier2Percent,
-        brigadeSplitCoeff,
-        commonPoolToBrigadier,
       },
       totals: {
         contractsCount: rows.length,
@@ -353,8 +345,6 @@ export class SalaryCalculationService {
         commonPool,
         brigadierTotal,
         brigadierTotalNet: round2(brigadierTotal * netFactor),
-        brigadier1Share,
-        brigadier2Share,
         vsTotal: round2(vsByCategory.reduce((s, v) => s + v.gross, 0)),
         stats,
       },
@@ -384,7 +374,7 @@ export class SalaryCalculationService {
   }
 }
 
-/** Полная стоимость договора с учётом всех доп. счетов (для справки). */
+/** Полная стоимость договора с учётом всех доп. соглашений (для справки). */
 function contractSum(contract: { extraBills: Array<{ amount: Prisma.Decimal }> }): number {
   return contract.extraBills.reduce((s, b) => s + toNum(b.amount), 0);
 }

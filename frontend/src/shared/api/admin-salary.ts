@@ -33,10 +33,6 @@ async function request<T>(url: string, init?: RequestInit, errorMessage?: string
 
 export interface SalaryGlobalSettings {
   taxPercent: number;
-  brigadier1Percent: number;
-  brigadier2Percent: number;
-  brigadeSplitCoeff: number;
-  commonPoolToBrigadier: boolean;
   updatedAt: string | null;
 }
 
@@ -103,6 +99,8 @@ export interface SalaryContract {
   surveyorPercentOverride: number | null;
   vsPercentOverride: number | null;
   brigadierPercentOverride: number | null;
+  /** id пакета договора, из которого запись создана синхронизацией (null — ручная). */
+  sourcePackageId: string | null;
   source: string | null;
   note: string | null;
   extraBills: SalaryExtraBill[];
@@ -136,6 +134,8 @@ export interface SalaryCalcRow {
   surveyorHandled: boolean;
   baseAmount: number;
   extraBillsAmount: number;
+  /** Доп. соглашения, вошедшие в расчёт (дата в периоде) */
+  extraBills: Array<{ date: string; amount: number }>;
   percents: { manager: number; surveyor: number; vs: number; brigadier: number };
   split: { sign: number; close: number };
   parts: { sign: number; close: number; extra: number };
@@ -155,10 +155,6 @@ export interface SalaryCalcResult {
   settings: {
     taxPercent: number;
     netFactor: number;
-    brigadier1Percent: number;
-    brigadier2Percent: number;
-    brigadeSplitCoeff: number;
-    commonPoolToBrigadier: boolean;
   };
   totals: {
     contractsCount: number;
@@ -170,8 +166,6 @@ export interface SalaryCalcResult {
     commonPool: number;
     brigadierTotal: number;
     brigadierTotalNet: number;
-    brigadier1Share: number;
-    brigadier2Share: number;
     vsTotal: number;
     stats: { signedCount: number; signedAmount: number; closedCount: number; closedAmount: number };
   };
@@ -242,16 +236,7 @@ export function getSalarySettings(): Promise<SalarySettings> {
 }
 
 export function saveSalaryGlobalSettings(
-  dto: Partial<
-    Pick<
-      SalaryGlobalSettings,
-      | 'taxPercent'
-      | 'brigadier1Percent'
-      | 'brigadier2Percent'
-      | 'brigadeSplitCoeff'
-      | 'commonPoolToBrigadier'
-    >
-  >
+  dto: Partial<Pick<SalaryGlobalSettings, 'taxPercent'>>
 ): Promise<SalaryGlobalSettings> {
   return request(
     `${API_URL}/admin/salary/settings/global`,
@@ -266,7 +251,7 @@ export function createSalaryCategory(
   return request(
     `${API_URL}/admin/salary/settings/categories`,
     { method: 'POST', body: JSON.stringify(dto) },
-    'Не удалось создать категорию'
+    'Не удалось создать направление'
   );
 }
 
@@ -277,7 +262,7 @@ export function updateSalaryCategory(
   return request(
     `${API_URL}/admin/salary/settings/categories/${id}`,
     { method: 'PATCH', body: JSON.stringify(dto) },
-    'Не удалось сохранить категорию'
+    'Не удалось сохранить направление'
   );
 }
 
@@ -285,7 +270,7 @@ export function deleteSalaryCategory(id: string): Promise<{ ok: boolean }> {
   return request(
     `${API_URL}/admin/salary/settings/categories/${id}`,
     { method: 'DELETE' },
-    'Не удалось удалить категорию'
+    'Не удалось удалить направление'
   );
 }
 
@@ -317,6 +302,8 @@ export function getSalaryContracts(
     dateFrom?: string;
     dateTo?: string;
     search?: string;
+    /** Тип записи: 'auto' — синхронизированы из договоров, 'manual' — внесены вручную. */
+    entryKind?: 'auto' | 'manual';
     page?: number;
     limit?: number;
   } = {}
@@ -380,6 +367,23 @@ export function deleteSalaryContract(id: string): Promise<{ ok: boolean }> {
     `${API_URL}/admin/salary/contracts/${id}`,
     { method: 'DELETE' },
     'Не удалось удалить договор'
+  );
+}
+
+/** Итог синхронизации реестра з/п с договорами раздела «Договоры». */
+export interface SalaryContractsSyncReport {
+  created: number;
+  updated: number;
+  /** Ручные записи, «усыновлённые» синхронизацией по совпадению «офис + №». */
+  adopted: number;
+  skipped: Array<{ number: string; reason: string }>;
+}
+
+export function syncSalaryContracts(): Promise<SalaryContractsSyncReport> {
+  return request(
+    `${API_URL}/admin/salary/contracts/sync`,
+    { method: 'POST' },
+    'Не удалось синхронизировать договоры'
   );
 }
 

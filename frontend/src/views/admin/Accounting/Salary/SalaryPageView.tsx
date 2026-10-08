@@ -50,7 +50,7 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
   const activeError =
     tab === 'calc' ? calc.error : tab === 'contracts' ? contracts.error : settingsModel.error;
   const activeNotice =
-    tab === 'calc' ? calc.notice : tab === 'contracts' ? null : settingsModel.notice;
+    tab === 'calc' ? calc.notice : tab === 'contracts' ? contracts.notice : settingsModel.notice;
 
   const tabs: Array<{ key: SalaryTab; label: string }> = [
     { key: 'calc', label: 'Расчёт за период' },
@@ -163,6 +163,20 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
             </>
           ) : null}
           {tab === 'contracts' ? (
+            canEdit ? (
+              <button
+                data-admin-mutation
+                type="button"
+                className={cdChrome.contractsListHeaderAddBtn}
+                disabled={contracts.syncing || contracts.loading}
+                onClick={() => void contracts.sync()}
+                title="Подтянуть подписанные договоры из раздела «Договоры»"
+              >
+                {contracts.syncing ? 'Синхронизация…' : '↔ Синхронизировать'}
+              </button>
+            ) : null
+          ) : null}
+          {tab === 'contracts' ? (
             <button
               data-admin-mutation
               type="button"
@@ -183,9 +197,9 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
               className={cdChrome.contractsListHeaderAddBtn}
               disabled={settingsModel.categorySaving}
               onClick={settingsModel.openCreateCategoryModal}
-              title="Добавить категорию договоров"
+              title="Добавить направление договоров"
             >
-              + Категория
+              + Направление
             </button>
           ) : null}
           <div className={cdHub.contractsHeaderIconActionsDesktop}>

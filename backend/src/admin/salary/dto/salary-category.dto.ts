@@ -65,7 +65,7 @@ export class CreateSalaryCategoryDto {
   @Max(100)
   surveyorPercent?: number;
 
-  /** Процент бригады по умолчанию, % */
+  /** Процент бригадира по умолчанию, % */
   @IsOptional()
   @IsNumber()
   @Min(0)

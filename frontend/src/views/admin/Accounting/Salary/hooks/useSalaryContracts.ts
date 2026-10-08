@@ -12,6 +12,7 @@ import {
   createSalaryContract,
   deleteSalaryContract,
   getSalaryContracts,
+  syncSalaryContracts,
   updateSalaryContract,
 } from '@/shared/api/admin-salary';
 
@@ -25,15 +26,23 @@ const SALARY_CONTRACTS_FILTERS_STORAGE_KEY = 'admin_salary_contracts_filters_v1'
 /** Payload создания/обновления договора (форма модалки). */
 export type SalaryContractInput = SalaryContractPayload;
 
+/** Тип записи договора з/п: '' — все, 'auto' — из синхронизации, 'manual' — вручную. */
+export type SalaryEntryKind = '' | 'auto' | 'manual';
+
 type PersistedFilters = {
   filterOfficeId: string;
   filterCategoryId: string;
+  filterEntryKind: SalaryEntryKind;
   filterFrom: string;
   filterTo: string;
   search: string;
   limit: SalaryPageLimit;
   filtersCollapsed: boolean;
 };
+
+function isSalaryEntryKind(value: unknown): value is SalaryEntryKind {
+  return value === '' || value === 'auto' || value === 'manual';
+}
 
 function readPersistedFilters(): Partial<PersistedFilters> | null {
   try {
@@ -68,6 +77,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
 
   const [filterOfficeId, setFilterOfficeId] = useState('');
   const [filterCategoryId, setFilterCategoryId] = useState('');
+  const [filterEntryKind, setFilterEntryKindState] = useState<SalaryEntryKind>('');
   const [filterFrom, setFilterFrom] = useState('');
   const [filterTo, setFilterTo] = useState('');
   const [search, setSearch] = useState('');
@@ -86,6 +96,8 @@ export function useSalaryContracts(settings: SalarySettings | null) {
       if (typeof persisted.filterOfficeId === 'string') setFilterOfficeId(persisted.filterOfficeId);
       if (typeof persisted.filterCategoryId === 'string')
         setFilterCategoryId(persisted.filterCategoryId);
+      if (isSalaryEntryKind(persisted.filterEntryKind))
+        setFilterEntryKindState(persisted.filterEntryKind);
       if (typeof persisted.filterFrom === 'string') setFilterFrom(persisted.filterFrom);
       if (typeof persisted.filterTo === 'string') setFilterTo(persisted.filterTo);
       if (typeof persisted.search === 'string') {
@@ -104,6 +116,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     writePersistedFilters({
       filterOfficeId,
       filterCategoryId,
+      filterEntryKind,
       filterFrom,
       filterTo,
       search,
@@ -114,6 +127,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     filtersRestored,
     filterOfficeId,
     filterCategoryId,
+    filterEntryKind,
     filterFrom,
     filterTo,
     search,
@@ -126,7 +140,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     return () => window.clearTimeout(timer);
   }, [search]);
 
-  // Сохранённая категория может исчезнуть из настроек — не держим невалидный фильтр.
+  // Сохранённое направление может исчезнуть из настроек — не держим невалидный фильтр.
   useEffect(() => {
     if (
       settings &&
@@ -148,6 +162,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
       const data = await getSalaryContracts({
         officeId: filterOfficeId || undefined,
         categoryId: filterCategoryId || undefined,
+        entryKind: filterEntryKind || undefined,
         dateFrom: filterFrom || undefined,
         dateTo: filterTo || undefined,
         search: debouncedSearch || undefined,
@@ -168,7 +183,16 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     } finally {
       if (seq === loadSeqRef.current) setLoading(false);
     }
-  }, [filterOfficeId, filterCategoryId, filterFrom, filterTo, debouncedSearch, page, limit]);
+  }, [
+    filterOfficeId,
+    filterCategoryId,
+    filterEntryKind,
+    filterFrom,
+    filterTo,
+    debouncedSearch,
+    page,
+    limit,
+  ]);
 
   // Первый запрос — только после восстановления сохранённых фильтров, иначе стартовый
   // запрос с пустыми фильтрами гоняется с восстановленным и затирает его результат.
@@ -192,6 +216,11 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     setPage(1);
   }, []);
 
+  const setEntryKindFilter = useCallback((value: SalaryEntryKind) => {
+    setFilterEntryKindState(value);
+    setPage(1);
+  }, []);
+
   const setFromFilter = useCallback((value: string) => {
     setFilterFrom(value);
     setPage(1);
@@ -205,6 +234,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
   const resetFilters = useCallback(() => {
     setFilterOfficeId('');
     setFilterCategoryId('');
+    setFilterEntryKindState('');
     setFilterFrom('');
     setFilterTo('');
     setSearch('');
@@ -267,6 +297,40 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     }
   }, [deleteTarget, load]);
 
+  // ===== Синхронизация с договорами (contract-documents) =====
+
+  const [syncing, setSyncing] = useState(false);
+  const [notice, setNotice] = useState<string | null>(null);
+  const syncSeqRef = useRef(0);
+
+  const showNotice = useCallback((text: string) => {
+    setNotice(text);
+    window.setTimeout(() => setNotice((current) => (current === text ? null : current)), 6000);
+  }, []);
+
+  /** Подтянуть подписанные договоры раздела «Договоры»; silent — без плашки об ошибке. */
+  const sync = useCallback(
+    async (silent = false) => {
+      const seq = ++syncSeqRef.current;
+      setSyncing(true);
+      try {
+        const report = await syncSalaryContracts();
+        if (seq !== syncSeqRef.current) return;
+        const parts = [`+${report.created} новых`, `${report.updated} обновлено`];
+        if (report.adopted > 0) parts.push(`${report.adopted} привязано к договорам`);
+        const skippedNote =
+          report.skipped.length > 0 ? `, пропущено: ${report.skipped.length}` : '';
+        showNotice(`Синхронизация с договорами: ${parts.join(', ')}${skippedNote}`);
+        await load();
+      } catch (err) {
+        if (!silent) setError(err instanceof Error ? err.message : 'Не удалось синхронизировать');
+      } finally {
+        if (seq === syncSeqRef.current) setSyncing(false);
+      }
+    },
+    [load, setError, showNotice]
+  );
+
   const items = list?.items ?? [];
 
   return {
@@ -276,10 +340,15 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     error,
     setError,
     load,
+    notice,
+    syncing,
+    sync,
     filterOfficeId,
     setOfficeFilter,
     filterCategoryId,
     setCategoryFilter,
+    filterEntryKind,
+    setEntryKindFilter,
     filterFrom,
     setFromFilter,
     filterTo,

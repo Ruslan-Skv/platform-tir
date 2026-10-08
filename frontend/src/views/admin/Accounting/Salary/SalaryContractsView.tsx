@@ -49,7 +49,7 @@ export function SalaryContractsView({
     [settings]
   );
 
-  /** Для правки существующего договора оставляем его категорию в списке, даже если она выключена. */
+  /** Для правки существующего договора оставляем его направление в списке, даже если оно выключено. */
   const modalCategories = useMemo(() => {
     if (!model.editing) return categories;
     const present = categories.some((c) => c.id === model.editing!.categoryId);
@@ -68,8 +68,17 @@ export function SalaryContractsView({
       {
         key: 'category',
         label: model.filterCategoryId
-          ? `Категория: ${settings?.categories.find((c) => c.id === model.filterCategoryId)?.name ?? '—'}`
-          : 'Все категории',
+          ? `Направление: ${settings?.categories.find((c) => c.id === model.filterCategoryId)?.name ?? '—'}`
+          : 'Все направления',
+      },
+      {
+        key: 'entryKind',
+        label:
+          model.filterEntryKind === 'auto'
+            ? 'Тип записи: Авто'
+            : model.filterEntryKind === 'manual'
+              ? 'Тип записи: Ручные'
+              : 'Тип записи: все',
       },
     ];
     if (model.filterFrom || model.filterTo) {
@@ -85,6 +94,7 @@ export function SalaryContractsView({
   }, [
     model.filterOfficeId,
     model.filterCategoryId,
+    model.filterEntryKind,
     model.filterFrom,
     model.filterTo,
     model.search,
@@ -100,8 +110,26 @@ export function SalaryContractsView({
         sortable: true,
         render: (c: SalaryContract) => <span className={styles.nameCell}>{c.number}</span>,
       },
+      {
+        key: 'entryKind',
+        title: 'Тип записи',
+        render: (c: SalaryContract) => (
+          <span
+            className={`${styles.entryKindBadge} ${
+              c.sourcePackageId ? styles.entryKindAuto : styles.entryKindManual
+            }`}
+            title={
+              c.sourcePackageId
+                ? 'Автоматическая запись — синхронизирована из раздела «Договоры»'
+                : 'Ручная запись — внесена вручную или импортом'
+            }
+          >
+            {c.sourcePackageId ? 'Авто' : 'Ручн.'}
+          </span>
+        ),
+      },
       { key: 'officeName', title: 'Офис', sortable: true },
-      { key: 'categoryName', title: 'Категория', sortable: true },
+      { key: 'categoryName', title: 'Направление', sortable: true },
       {
         key: 'signedAt',
         title: 'Заключён',
@@ -138,7 +166,7 @@ export function SalaryContractsView({
       },
       {
         key: 'baseAmount',
-        title: 'База',
+        title: 'Стоимость договора',
         sortable: true,
         render: (c: SalaryContract) => (
           <span className={dpStyles.amountCell}>{formatMoney(c.baseAmount)}</span>
@@ -146,21 +174,18 @@ export function SalaryContractsView({
       },
       {
         key: 'extraBills',
-        title: 'Доп. счета',
+        title: 'Доп. согл.',
         render: (c: SalaryContract) =>
           c.extraBills.length === 0 ? (
             <span className={dpStyles.muted}>—</span>
           ) : (
-            <span
-              className={dpStyles.amountCell}
-              title={c.extraBills
-                .map(
-                  (b) =>
-                    `${formatDate(b.date)}: ${formatMoney(b.amount)}${b.note ? ` (${b.note})` : ''}`
-                )
-                .join('\n')}
-            >
-              {formatMoney(c.extraBills.reduce((s, b) => s + b.amount, 0))}
+            <span className={styles.billsCell}>
+              {c.extraBills.map((b) => (
+                <span key={b.id} className={styles.billsEntry} title={b.note ?? undefined}>
+                  <span className={styles.billsDate}>{formatDate(b.date)}</span>
+                  <span>{formatMoney(b.amount)}</span>
+                </span>
+              ))}
             </span>
           ),
       },
@@ -279,8 +304,36 @@ export function SalaryContractsView({
         ) : (
           <div id={filtersContentId} className={cdHub.contractsListFiltersPanelBody}>
             <div className={cdHub.contractsListFiltersStack}>
-              <div className={cdHub.contractsListChipRow} role="group" aria-label="Категория">
-                <span className={cdHub.contractsListChipRowLabel}>Категория</span>
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Тип записи">
+                <span className={cdHub.contractsListChipRowLabel}>Тип записи</span>
+                <button
+                  type="button"
+                  disabled={model.loading}
+                  className={chipClass(!model.filterEntryKind)}
+                  onClick={() => model.setEntryKindFilter('')}
+                >
+                  Все
+                </button>
+                <button
+                  type="button"
+                  disabled={model.loading}
+                  className={chipClass(model.filterEntryKind === 'auto')}
+                  onClick={() => model.setEntryKindFilter('auto')}
+                >
+                  Авто
+                </button>
+                <button
+                  type="button"
+                  disabled={model.loading}
+                  className={chipClass(model.filterEntryKind === 'manual')}
+                  onClick={() => model.setEntryKindFilter('manual')}
+                >
+                  Ручные
+                </button>
+              </div>
+
+              <div className={cdHub.contractsListChipRow} role="group" aria-label="Направление">
+                <span className={cdHub.contractsListChipRowLabel}>Направление</span>
                 <button
                   type="button"
                   disabled={model.loading}
@@ -430,7 +483,7 @@ export function SalaryContractsView({
         title="Удалить договор"
         message={
           model.deleteTarget
-            ? `Договор №${model.deleteTarget.number} (${model.deleteTarget.categoryName}, база ${formatMoney(model.deleteTarget.baseAmount)}) будет удалён безвозвратно. Продолжить?`
+            ? `Договор №${model.deleteTarget.number} (${model.deleteTarget.categoryName}, стоимость ${formatMoney(model.deleteTarget.baseAmount)}) будет удалён безвозвратно. Продолжить?`
             : ''
         }
         confirmText="Удалить"

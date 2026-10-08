@@ -12,14 +12,14 @@ import { SALARY_ROLE_OPTIONS, formatPercent, parseDecimal } from './salary-page.
 type SalaryRateRuleModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  /** Категория, для которой добавляется правило. */
+  /** Направление, для которого добавляется правило. */
   category: SalaryCategory | null;
   offices: Office[];
   saving: boolean;
   onSubmit: (input: SalaryRateRuleInput) => void;
 };
 
-/** Модалка добавления переопределения ставки по офису для категории. */
+/** Модалка добавления переопределения ставки по офису для направления. */
 export function SalaryRateRuleModal({
   isOpen,
   onClose,
@@ -61,9 +61,9 @@ export function SalaryRateRuleModal({
     >
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint>
-          Правило переопределяет ставку категории для выбранной должности и офиса (или всех офисов).
-          Приоритет: договор → офис → категория. Повторное правило с теми же офисом и должностью
-          обновляет процент.
+          Правило переопределяет ставку направления для выбранной должности и офиса (или всех
+          офисов). Приоритет: договор → офис → направление. Повторное правило с теми же офисом и
+          должностью обновляет процент.
         </p>
 
         <div data-modal-form-grid>

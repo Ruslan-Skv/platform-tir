@@ -95,19 +95,19 @@ export function pluralSettlements(count: number): string {
 export function pluralCategories(count: number): string {
   const mod10 = count % 10;
   const mod100 = count % 100;
-  if (mod10 === 1 && mod100 !== 11) return 'категория';
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'категории';
-  return 'категорий';
+  if (mod10 === 1 && mod100 !== 11) return 'направление';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'направления';
+  return 'направлений';
 }
 
 // ===== Словари =====
 
-/** Роли, доступные в правилах ставок категорий (как в бекенде SalaryRole). */
+/** Роли, доступные в правилах ставок направлений (как в бекенде SalaryRole). */
 export const SALARY_ROLE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'MANAGER', label: 'Менеджер' },
   { value: 'SURVEYOR', label: 'Замерщик' },
   { value: 'LEAD_SPECIALIST', label: 'Ведущий специалист (ВС)' },
-  { value: 'BRIGADIER', label: 'Бригадир / бригада' },
+  { value: 'BRIGADIER', label: 'Бригадир' },
 ];
 
 /** Роли CRM, из которых выбирается менеджер договора. */

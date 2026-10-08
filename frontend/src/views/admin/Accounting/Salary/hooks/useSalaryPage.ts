@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useAdminSectionCanEdit } from '@/features/admin/contexts/AdminSectionPermissionContext';
 import { useAuth } from '@/features/auth';
@@ -52,6 +52,19 @@ export function useSalaryPage() {
   const calc = useSalaryCalc();
   const contracts = useSalaryContracts(settings);
   const settingsModel = useSalarySettings(settings, reloadSettings);
+
+  // Автосинхронизация договоров з/п с разделом «Договоры» — один раз за сессию браузера.
+  const autoSyncRef = useRef(false);
+  useEffect(() => {
+    if (!canEdit || autoSyncRef.current) return;
+    if (window.sessionStorage.getItem('admin_salary_autosync_v1') === '1') {
+      autoSyncRef.current = true;
+      return;
+    }
+    autoSyncRef.current = true;
+    window.sessionStorage.setItem('admin_salary_autosync_v1', '1');
+    void contracts.sync(true);
+  }, [canEdit, contracts]);
 
   return {
     tab,

@@ -5,10 +5,10 @@ export const SALARY_ROLE_LABELS: Record<string, string> = {
   MANAGER: 'Менеджер',
   SURVEYOR: 'Замерщик',
   LEAD_SPECIALIST: 'Ведущий специалист (ВС)',
-  BRIGADIER: 'Бригадир / бригада',
+  BRIGADIER: 'Бригадир',
 };
 
-/** Категории по умолчанию — переносятся из Google-таблицы «Новая таблица 2025». */
+/** Направления по умолчанию — переносятся из Google-таблицы «Новая таблица 2025». */
 export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
   code: string;
   name: string;
@@ -32,8 +32,8 @@ export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
     sortOrder: 10,
   },
   {
-    code: 'DOORS_CEILINGS',
-    name: 'Двери + потолки',
+    code: 'DOORS',
+    name: 'Двери',
     vsPercent: 2,
     splitSign: 0.7,
     splitClose: 0.3,
@@ -41,6 +41,17 @@ export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
     surveyorPercent: 3,
     brigadierPercent: 0,
     sortOrder: 20,
+  },
+  {
+    code: 'CEILINGS',
+    name: 'Потолки',
+    vsPercent: 2,
+    splitSign: 0.7,
+    splitClose: 0.3,
+    managerPercent: 3,
+    surveyorPercent: 3,
+    brigadierPercent: 0,
+    sortOrder: 25,
   },
   {
     code: 'BLINDS',
@@ -57,23 +68,12 @@ export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
     code: 'REPAIR',
     name: 'Ремонт',
     vsPercent: 1,
-    splitSign: 0.7,
-    splitClose: 0.3,
-    managerPercent: 5,
-    surveyorPercent: 0,
-    brigadierPercent: 8.5,
-    sortOrder: 40,
-  },
-  {
-    code: 'REPAIR_5050',
-    name: 'Ремонт 50/50',
-    vsPercent: 1,
     splitSign: 0.5,
     splitClose: 0.5,
     managerPercent: 5,
     surveyorPercent: 0,
     brigadierPercent: 8.5,
-    sortOrder: 50,
+    sortOrder: 40,
   },
   {
     code: 'FURNITURE',
@@ -85,17 +85,6 @@ export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
     surveyorPercent: 0,
     brigadierPercent: 0,
     sortOrder: 60,
-  },
-  {
-    code: 'AURORA',
-    name: 'Аврора',
-    vsPercent: 0,
-    splitSign: 0.8,
-    splitClose: 0.2,
-    managerPercent: 3,
-    surveyorPercent: 0,
-    brigadierPercent: 0,
-    sortOrder: 70,
   },
 ];
 

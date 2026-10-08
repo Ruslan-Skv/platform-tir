@@ -12,7 +12,7 @@ import { parseDecimal } from './salary-page.constants';
 type SalaryCategoryModalProps = {
   isOpen: boolean;
   onClose: () => void;
-  /** Редактируемая категория; null — создание новой. */
+  /** Редактируемое направление; null — создание нового. */
   category: SalaryCategory | null;
   saving: boolean;
   onSubmit: (input: SalaryCategoryInput) => void;
@@ -44,7 +44,7 @@ const EMPTY_FORM: CategoryFormState = {
   isActive: true,
 };
 
-/** Модалка создания/правки категории договоров со ставками по должностям. */
+/** Модалка создания/правки направления договоров со ставками по должностям. */
 export function SalaryCategoryModal({
   isOpen,
   onClose,
@@ -80,11 +80,11 @@ export function SalaryCategoryModal({
 
   const handleSubmit = () => {
     if (!category && !form.code.trim()) {
-      setFormError('Укажите код категории (например, WINDOWS)');
+      setFormError('Укажите код направления (например, WINDOWS)');
       return;
     }
     if (!form.name.trim()) {
-      setFormError('Укажите название категории');
+      setFormError('Укажите название направления');
       return;
     }
     const numeric = {
@@ -112,16 +112,16 @@ export function SalaryCategoryModal({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={category ? `Категория «${category.name}»` : 'Новая категория'}
+      title={category ? `Направление «${category.name}»` : 'Новое направление'}
       size="md"
       showCloseButton
       compactOnMobile
     >
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint>
-          Ставки категории применяются ко всем договорам этой категории. Приоритет переопределений:
-          договор → офис → категория. Сплит — доля ставки при заключении и при закрытии договора
-          (сумма долей обычно равна 1).
+          Ставки направления применяются ко всем договорам этого направления. Приоритет
+          переопределений: договор → офис → направление. Сплит — доля ставки при заключении и при
+          закрытии договора (сумма долей обычно равна 1).
         </p>
 
         <div data-modal-form-grid>
@@ -214,7 +214,7 @@ export function SalaryCategoryModal({
           </div>
 
           <div data-modal-form-group>
-            <label htmlFor="salary_category_brigadier">% бригады</label>
+            <label htmlFor="salary_category_brigadier">% бригадира</label>
             <input
               id="salary_category_brigadier"
               type="text"
@@ -245,7 +245,7 @@ export function SalaryCategoryModal({
             onChange={(e) => patch({ isActive: e.target.checked })}
             disabled={saving}
           />
-          Категория активна (доступна в договорах и фильтрах)
+          Направление активно (доступно в договорах и фильтрах)
         </label>
 
         {formError ? <p data-modal-form-error>{formError}</p> : null}

@@ -158,11 +158,11 @@ export function ContractFormModal({
   const handleSubmit = () => {
     const baseAmount = parseDecimal(form.baseAmount);
     if (!form.officeId || !form.categoryId || !form.number.trim()) {
-      setFormError('Заполните офис, категорию и № договора');
+      setFormError('Заполните офис, направление и № договора');
       return;
     }
     if (baseAmount === null) {
-      setFormError('Укажите базу расчёта (изделия + монтаж либо стоимость)');
+      setFormError('Укажите стоимость договора (изделия + монтаж либо стоимость)');
       return;
     }
     onSubmit({
@@ -206,8 +206,8 @@ export function ContractFormModal({
     >
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint>
-          Договор попадает в расчёт з/п за период, если дата заключения, закрытия или доп. счёта
-          входят в него. «Общий» договор (без менеджера) и договор без замера удваивают
+          Договор попадает в расчёт з/п за период, если дата заключения, закрытия или доп.
+          соглашения входят в него. «Общий» договор (без менеджера) и договор без замера удваивают
           соответствующую часть в общий пул.
         </p>
 
@@ -230,7 +230,7 @@ export function ContractFormModal({
           </div>
 
           <div data-modal-form-group>
-            <label htmlFor="salary_contract_category">Категория *</label>
+            <label htmlFor="salary_contract_category">Направление *</label>
             <select
               id="salary_contract_category"
               value={form.categoryId}
@@ -258,7 +258,7 @@ export function ContractFormModal({
           </div>
 
           <div data-modal-form-group>
-            <label htmlFor="salary_contract_base">База расчёта, ₽ *</label>
+            <label htmlFor="salary_contract_base">Стоимость договора, ₽ *</label>
             <input
               id="salary_contract_base"
               type="text"
@@ -400,10 +400,10 @@ export function ContractFormModal({
 
         {selectedCategory ? (
           <p data-modal-form-hint>
-            Ставки категории «{selectedCategory.name}»: менеджер{' '}
+            Ставки направления «{selectedCategory.name}»: менеджер{' '}
             {formatPercent(selectedCategory.managerPercent)}, замерщик{' '}
             {formatPercent(selectedCategory.surveyorPercent)}, ВС{' '}
-            {formatPercent(selectedCategory.vsPercent)}, бригада{' '}
+            {formatPercent(selectedCategory.vsPercent)}, бригадир{' '}
             {formatPercent(selectedCategory.brigadierPercent)}; сплит {selectedCategory.splitSign}/
             {selectedCategory.splitClose}. Ниже можно переопределить ставки для этого договора.
           </p>
@@ -447,7 +447,7 @@ export function ContractFormModal({
             />
           </div>
           <div data-modal-form-group>
-            <label htmlFor="salary_override_brigadier">% бригады</label>
+            <label htmlFor="salary_override_brigadier">% бригадира</label>
             <input
               id="salary_override_brigadier"
               type="text"
@@ -461,10 +461,10 @@ export function ContractFormModal({
         </div>
 
         <div data-modal-form-group>
-          <label>Доп. счета (попадают в расчёт по своей дате)</label>
+          <label>Доп. согл. (попадают в расчёт по своей дате)</label>
           <div className={styles.extraBillsList}>
             {form.extraBills.length === 0 ? (
-              <span className={styles.mutedCell}>Доп. счетов нет</span>
+              <span className={styles.mutedCell}>Доп. согл. нет</span>
             ) : null}
             {form.extraBills.map((bill, index) => (
               <div className={styles.extraBillRow} key={index}>
@@ -476,7 +476,7 @@ export function ContractFormModal({
                   value={bill.amount}
                   onChange={(e) => setExtraBill(index, { amount: e.target.value })}
                   disabled={saving}
-                  aria-label="Сумма доп. счёта"
+                  aria-label="Сумма доп. согл."
                 />
                 <input
                   type="date"
@@ -484,7 +484,7 @@ export function ContractFormModal({
                   value={bill.date}
                   onChange={(e) => setExtraBill(index, { date: e.target.value })}
                   disabled={saving}
-                  aria-label="Дата доп. счёта"
+                  aria-label="Дата доп. согл."
                 />
                 <input
                   type="text"
@@ -493,7 +493,7 @@ export function ContractFormModal({
                   value={bill.note}
                   onChange={(e) => setExtraBill(index, { note: e.target.value })}
                   disabled={saving}
-                  aria-label="Примечание доп. счёта"
+                  aria-label="Примечание доп. согл."
                 />
                 <button
                   type="button"
@@ -505,8 +505,8 @@ export function ContractFormModal({
                     }))
                   }
                   disabled={saving}
-                  title="Убрать строку доп. счёта"
-                  aria-label="Убрать строку доп. счёта"
+                  title="Убрать строку доп. согл."
+                  aria-label="Убрать строку доп. согл."
                 >
                   ×
                 </button>

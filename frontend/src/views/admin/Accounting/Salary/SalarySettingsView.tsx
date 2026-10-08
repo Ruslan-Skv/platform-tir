@@ -21,7 +21,7 @@ type SettingsViewProps = {
   settingsLoading: boolean;
 };
 
-/** Вкладка «Настройки» (только суперадмин): проценты, сплиты, налог, категории, правила по офисам. */
+/** Вкладка «Настройки» (только суперадмин): проценты, сплиты, налог, направления, правила по офисам. */
 export function SalarySettingsView({
   model,
   offices,
@@ -34,7 +34,7 @@ export function SalarySettingsView({
     () => [
       {
         key: 'name',
-        title: 'Категория',
+        title: 'Направление',
         sortable: true,
         render: (c: SalaryCategory) => (
           <span className={styles.nameCell}>
@@ -67,7 +67,7 @@ export function SalarySettingsView({
       },
       {
         key: 'brigadierPercent',
-        title: '% бригады',
+        title: '% бригадира',
         sortable: true,
         render: (c: SalaryCategory) => formatPercent(c.brigadierPercent),
       },
@@ -92,8 +92,8 @@ export function SalarySettingsView({
               type="button"
               className={dpStyles.editEntryBtn}
               onClick={() => model.openEditCategoryModal(c)}
-              title="Исправить категорию"
-              aria-label="Исправить категорию"
+              title="Исправить направление"
+              aria-label="Исправить направление"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -115,8 +115,8 @@ export function SalarySettingsView({
               type="button"
               className={dpStyles.deleteEntryBtn}
               onClick={() => model.setDeleteCategoryTarget(c)}
-              title="Удалить категорию"
-              aria-label="Удалить категорию"
+              title="Удалить направление"
+              aria-label="Удалить направление"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -173,53 +173,6 @@ export function SalarySettingsView({
               disabled={model.globalSaving}
             />
           </label>
-          <label className={styles.settingsField}>
-            <span>Ставка 1-го бригадира, %</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={model.globalForm.brigadier1Percent}
-              onChange={(e) =>
-                model.setGlobalForm((f) => ({ ...f, brigadier1Percent: e.target.value }))
-              }
-              disabled={model.globalSaving}
-            />
-          </label>
-          <label className={styles.settingsField}>
-            <span>Ставка 2-го бригадира, %</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={model.globalForm.brigadier2Percent}
-              onChange={(e) =>
-                model.setGlobalForm((f) => ({ ...f, brigadier2Percent: e.target.value }))
-              }
-              disabled={model.globalSaving}
-            />
-          </label>
-          <label className={styles.settingsField}>
-            <span>Коэфф. дележа фонда (2-й / 1-й)</span>
-            <input
-              type="text"
-              inputMode="decimal"
-              value={model.globalForm.brigadeSplitCoeff}
-              onChange={(e) =>
-                model.setGlobalForm((f) => ({ ...f, brigadeSplitCoeff: e.target.value }))
-              }
-              disabled={model.globalSaving}
-            />
-          </label>
-          <label className={styles.formCheckbox}>
-            <input
-              type="checkbox"
-              checked={model.globalForm.commonPoolToBrigadier}
-              onChange={(e) =>
-                model.setGlobalForm((f) => ({ ...f, commonPoolToBrigadier: e.target.checked }))
-              }
-              disabled={model.globalSaving}
-            />
-            Общий пул «общих» договоров включать в бригадирский фонд
-          </label>
         </div>
         <div className={styles.settingsActions}>
           <button
@@ -234,15 +187,15 @@ export function SalarySettingsView({
         </div>
       </section>
 
-      {/* Категории */}
+      {/* Направления */}
       <div className={styles.tableBlock}>
-        <h2 className={styles.sectionTitle}>Категории договоров и ставки по должностям</h2>
+        <h2 className={styles.sectionTitle}>Направления договоров и ставки по должностям</h2>
         <DataTable
           data={categories}
           columns={columns}
           keyExtractor={(c) => c.id}
           getRowClassName={(c) => (c.isActive ? undefined : styles.rowInactive)}
-          emptyMessage="Категорий нет — добавьте первой кнопкой «+ Категория» в шапке раздела"
+          emptyMessage="Направлений нет — добавьте первой кнопкой «+ Направление» в шапке раздела"
         />
       </div>
 
@@ -250,7 +203,7 @@ export function SalarySettingsView({
       <div className={styles.tableBlock}>
         <h2 className={styles.sectionTitle}>
           Переопределения ставок по офисам
-          <span className={styles.mutedCell}> (приоритет: договор → офис → категория)</span>
+          <span className={styles.mutedCell}> (приоритет: договор → офис → направление)</span>
         </h2>
         <div className={styles.rulesList}>
           {categories.map((category) => (
@@ -317,10 +270,10 @@ export function SalarySettingsView({
         isOpen={model.deleteCategoryTarget != null}
         onClose={() => model.setDeleteCategoryTarget(null)}
         onConfirm={() => void model.handleDeleteCategory()}
-        title="Удалить категорию"
+        title="Удалить направление"
         message={
           model.deleteCategoryTarget
-            ? `Категория «${model.deleteCategoryTarget.name}» будет удалена. Категорию с договорами удалить нельзя. Продолжить?`
+            ? `Направление «${model.deleteCategoryTarget.name}» будет удалено. Направление с договорами удалить нельзя. Продолжить?`
             : ''
         }
         confirmText="Удалить"
@@ -336,7 +289,7 @@ export function SalarySettingsView({
         title="Удалить правило ставок"
         message={
           model.deleteRuleTarget
-            ? `Правило для категории «${model.deleteRuleTarget.category.name}» будет удалено. Продолжить?`
+            ? `Правило для направления «${model.deleteRuleTarget.category.name}» будет удалено. Продолжить?`
             : ''
         }
         confirmText="Удалить"

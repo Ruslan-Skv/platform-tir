@@ -4402,7 +4402,7 @@ enum SalaryRole {
   MANAGER /// Менеджер
   SURVEYOR /// Замерщик
   LEAD_SPECIALIST /// Ведущий специалист (ВС)
-  BRIGADIER /// Бригадир / бригада
+  BRIGADIER /// Бригадир
 }
 
 /// Статус зафиксированного расчёта з/п
@@ -4416,15 +4416,7 @@ model SalaryGlobalSetting {
   id String @id @default("singleton")
 
   /// Налог, удерживаемый из фондов, % (в таблице 8% → множитель ×0.92)
-  taxPercent            Decimal @default(8) @db.Decimal(5, 2)
-  /// Процент 1-го бригадира от общего фонда, %
-  brigadier1Percent     Decimal @default(3.5) @db.Decimal(5, 2)
-  /// Процент 2-го бригадира от общего фонда, %
-  brigadier2Percent     Decimal @default(5) @db.Decimal(5, 2)
-  /// Коэффициент дележа фонда между 1-м и 2-м бригадиром (в таблице 1.5882)
-  brigadeSplitCoeff     Decimal @default(1.5882) @db.Decimal(6, 4)
-  /// Пул «общих» договоров (без менеджера/замерщика) идёт бригадирскому фонду
-  commonPoolToBrigadier Boolean @default(true)
+  taxPercent Decimal @default(8) @db.Decimal(5, 2)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4432,11 +4424,11 @@ model SalaryGlobalSetting {
   @@map("salary_global_settings")
 }
 
-/// Категория договоров для расчёта з/п (окна, двери+потолки, жалюзи, ремонт, ремонт 50/50, мебель, Аврора)
+/// Направление договоров для расчёта з/п (окна, двери, потолки, жалюзи, ремонт, мебель)
 model SalaryCategory {
   id String @id @default(cuid())
 
-  /// Код категории (уникальный)
+  /// Код направления (уникальный)
   code String @unique
   name String
 
@@ -4451,7 +4443,7 @@ model SalaryCategory {
   managerPercent   Decimal @default(3) @db.Decimal(5, 2)
   /// Процент замерщика по умолчанию, % (0 = замерщик не участвует)
   surveyorPercent  Decimal @default(0) @db.Decimal(5, 2)
-  /// Процент бригады по умолчанию, % (ремонтные категории: 8.5)
+  /// Процент бригадира по умолчанию, % (ремонтные направления: 8.5)
   brigadierPercent Decimal @default(0) @db.Decimal(5, 2)
 
   isActive  Boolean  @default(true)
@@ -4465,8 +4457,8 @@ model SalaryCategory {
   @@map("salary_categories")
 }
 
-/// Переопределение процента по должности для категории (опционально — конкретного офиса).
-/// Приоритет: правило (категория+офис) → правило (категория, все офисы) → категория по умолчанию.
+/// Переопределение процента по должности для направления (опционально — конкретного офиса).
+/// Приоритет: правило (направление+офис) → правило (направление, все офисы) → направление по умолчанию.
 model SalaryRateRule {
   id String @id @default(cuid())
 
@@ -4483,7 +4475,7 @@ model SalaryRateRule {
   category SalaryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   office   Office?        @relation(fields: [officeId], references: [id], onDelete: Cascade)
 
-  /// Уникальность (категория+офис+должность) контролируется сервисом:
+  /// Уникальность (направление+офис+должность) контролируется сервисом:
   /// officeId NULL («все офисы») не покрывается UNIQUE в Postgres.
   @@index([categoryId, officeId, role])
   @@index([officeId])
@@ -4518,18 +4510,22 @@ model SalaryContract {
   /// Был ли замер (в таблице колонка «зам»): false → часть замерщика ×2 уходит в общий пул
   surveyorHandled Boolean @default(true)
 
-  /// База расчёта: ст-ть изделий + ст-ть монтажа (для «о»-категорий) или стоимость договора (ремонт)
+  /// Стоимость договора (первоначальная, без доп. соглашений): ст-ть изделий + ст-ть монтажа
+  /// (для «о»-направлений) или стоимость договора (ремонт)
   baseAmount Decimal @db.Decimal(12, 2)
 
-  /// Точечные переопределения процентов по договору (пусто — берётся из категории/правил офиса)
+  /// Точечные переопределения процентов по договору (пусто — берётся из направления/правил офиса)
   managerPercentOverride   Decimal? @db.Decimal(5, 2)
   surveyorPercentOverride  Decimal? @db.Decimal(5, 2)
   vsPercentOverride        Decimal? @db.Decimal(5, 2)
   brigadierPercentOverride Decimal? @db.Decimal(5, 2)
 
   /// Источник клиента («уже обращался», «яндекс», «наружка» …) — информационно
-  source String?
-  note   String?
+  source          String?
+  /// id пакета договора (contract-documents), из которого запись создана синхронизацией.
+  /// NULL — запись внесена вручную/импом. Тип записи «Авто/Ручн.» выводится из этого поля.
+  sourcePackageId String? @unique
+  note            String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -4548,12 +4544,12 @@ model SalaryContract {
   @@map("salary_contracts")
 }
 
-/// Доп. счёт (дс) по договору: увеличивает базу, з/п начисляется по дате доп. счёта
+/// Доп. соглашение (дс) к договору: увеличивает стоимость, з/п начисляется по его дате
 model SalaryContractExtraBill {
   id String @id @default(cuid())
 
   contractId String
-  /// Сумма доп. счёта (может быть отрицательной — возврат/скидка)
+  /// Сумма доп. соглашения (может быть отрицательной — возврат/скидка)
   amount     Decimal  @db.Decimal(12, 2)
   date       DateTime @db.Date
   note       String?

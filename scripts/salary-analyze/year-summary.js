@@ -20,7 +20,6 @@ async function main() {
   console.log(`  менеджеры (личные):   ${t.managerPersonalTotal.toFixed(2)} → к выплате ${t.managerPersonalNet.toFixed(2)}`);
   console.log(`  фонд замерщиков:      ${t.surveyorFund.toFixed(2)} → к выплате ${t.surveyorFundNet.toFixed(2)}`);
   console.log(`  бригадирский фонд:    ${t.brigadierFund.toFixed(2)} + общий пул ${t.commonPool.toFixed(2)} = ${t.brigadierTotal.toFixed(2)} → к выплате ${t.brigadierTotalNet.toFixed(2)}`);
-  console.log(`    1-й бригадир: ${t.brigadier1Share.toFixed(2)}; 2-й бригадир: ${t.brigadier2Share.toFixed(2)}`);
   console.log(`  фонды ВС: ${t.vsTotal.toFixed(2)}`);
   for (const v of result.vsByCategory.filter((x) => x.gross > 0)) {
     console.log(`    ${v.categoryName}: ${v.gross.toFixed(2)} → к выплате ${v.net.toFixed(2)}`);

@@ -18,6 +18,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { SalaryContractsService } from './salary-contracts.service';
+import { SalaryContractsSyncService } from './salary-contracts-sync.service';
 import {
   CreateSalaryContractDto,
   QuerySalaryContractsDto,
@@ -38,7 +39,18 @@ const SALARY_SECTION_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...SALARY_SECTION_ROLES)
 export class SalaryContractsController {
-  constructor(private readonly contracts: SalaryContractsService) {}
+  constructor(
+    private readonly contracts: SalaryContractsService,
+    private readonly sync: SalaryContractsSyncService,
+  ) {}
+
+  /** Синхронизация реестра з/п с подписанными договорами раздела «Договоры». */
+  @Post('sync')
+  @HttpCode(HttpStatus.OK)
+  @Roles('SUPER_ADMIN', 'ADMIN')
+  syncContracts() {
+    return this.sync.sync();
+  }
 
   @Get()
   findAll(@Query() query: QuerySalaryContractsDto) {

@@ -14,13 +14,9 @@ import {
 
 export interface GlobalFormState {
   taxPercent: string;
-  brigadier1Percent: string;
-  brigadier2Percent: string;
-  brigadeSplitCoeff: string;
-  commonPoolToBrigadier: boolean;
 }
 
-/** Payload модалки создания/правки категории (code — только при создании). */
+/** Payload модалки создания/правки направления (code — только при создании). */
 export interface SalaryCategoryInput {
   code?: string;
   name: string;
@@ -43,13 +39,9 @@ export interface SalaryRateRuleInput {
 
 const EMPTY_GLOBAL: GlobalFormState = {
   taxPercent: '8',
-  brigadier1Percent: '3.5',
-  brigadier2Percent: '5',
-  brigadeSplitCoeff: '1.5882',
-  commonPoolToBrigadier: true,
 };
 
-/** Логика вкладки «Настройки» (суперадмин): глобальные параметры, категории, правила ставок. */
+/** Логика вкладки «Настройки» (суперадмин): глобальные параметры, направления, правила ставок. */
 export function useSalarySettings(
   settings: SalarySettings | null,
   reloadSettings: () => Promise<void>
@@ -68,10 +60,6 @@ export function useSalarySettings(
     if (settings) {
       setGlobalForm({
         taxPercent: String(settings.global.taxPercent),
-        brigadier1Percent: String(settings.global.brigadier1Percent),
-        brigadier2Percent: String(settings.global.brigadier2Percent),
-        brigadeSplitCoeff: String(settings.global.brigadeSplitCoeff),
-        commonPoolToBrigadier: settings.global.commonPoolToBrigadier,
       });
     }
   }, [settings]);
@@ -82,10 +70,6 @@ export function useSalarySettings(
     try {
       await saveSalaryGlobalSettings({
         taxPercent: Number(globalForm.taxPercent.replace(',', '.')),
-        brigadier1Percent: Number(globalForm.brigadier1Percent.replace(',', '.')),
-        brigadier2Percent: Number(globalForm.brigadier2Percent.replace(',', '.')),
-        brigadeSplitCoeff: Number(globalForm.brigadeSplitCoeff.replace(',', '.')),
-        commonPoolToBrigadier: globalForm.commonPoolToBrigadier,
       });
       showNotice('Глобальные параметры сохранены');
       await reloadSettings();
@@ -96,10 +80,10 @@ export function useSalarySettings(
     }
   }, [globalForm, reloadSettings, showNotice]);
 
-  // ===== Категории: создание/правка через модалку, удаление через ConfirmModal =====
+  // ===== Направления: создание/правка через модалку, удаление через ConfirmModal =====
 
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
-  /** null — создание новой категории. */
+  /** null — создание нового направления. */
   const [editingCategory, setEditingCategory] = useState<SalaryCategory | null>(null);
   const [categorySaving, setCategorySaving] = useState(false);
   const [deleteCategoryTarget, setDeleteCategoryTarget] = useState<SalaryCategory | null>(null);
@@ -123,7 +107,7 @@ export function useSalarySettings(
   const handleSubmitCategory = useCallback(
     async (input: SalaryCategoryInput) => {
       if (!editingCategory && !input.code?.trim()) {
-        setError('Укажите код новой категории');
+        setError('Укажите код нового направления');
         return;
       }
       setCategorySaving(true);
@@ -131,15 +115,15 @@ export function useSalarySettings(
         if (editingCategory) {
           const { code: _code, ...update } = input;
           await updateSalaryCategory(editingCategory.id, update);
-          showNotice('Категория сохранена');
+          showNotice('Направление сохранено');
         } else {
           await createSalaryCategory({ ...input, code: input.code!.trim().toUpperCase() });
-          showNotice('Категория добавлена');
+          showNotice('Направление добавлено');
         }
         closeCategoryModal();
         await reloadSettings();
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Не удалось сохранить категорию');
+        setError(err instanceof Error ? err.message : 'Не удалось сохранить направление');
       } finally {
         setCategorySaving(false);
       }
@@ -152,11 +136,11 @@ export function useSalarySettings(
     setDeletingCategory(true);
     try {
       await deleteSalaryCategory(deleteCategoryTarget.id);
-      showNotice('Категория удалена');
+      showNotice('Направление удалено');
       setDeleteCategoryTarget(null);
       await reloadSettings();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Не удалось удалить категорию');
+      setError(err instanceof Error ? err.message : 'Не удалось удалить направление');
     } finally {
       setDeletingCategory(false);
     }
@@ -164,7 +148,7 @@ export function useSalarySettings(
 
   // ===== Правила ставок по офисам: добавление через модалку =====
 
-  /** Категория, для которой открыта модалка добавления правила. */
+  /** Направление, для которого открыта модалка добавления правила. */
   const [ruleCategory, setRuleCategory] = useState<SalaryCategory | null>(null);
   const [rulesSaving, setRulesSaving] = useState(false);
   const [deleteRuleTarget, setDeleteRuleTarget] = useState<{
