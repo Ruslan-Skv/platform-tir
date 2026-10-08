@@ -6,6 +6,7 @@ import type {
   SalaryContract,
   SalaryContractPayload,
   SalaryContractsList,
+  SalaryContractsSyncReport,
   SalarySettings,
 } from '@/shared/api/admin-salary';
 import {
@@ -67,6 +68,13 @@ function isSalaryPageLimit(value: unknown): value is SalaryPageLimit {
   return (
     typeof value === 'number' && (SALARY_PAGE_LIMIT_OPTIONS as readonly number[]).includes(value)
   );
+}
+
+/** Причины пропуска договоров при синхронизации, сгруппированные: «нет № договора — 3; …». */
+function formatSyncSkipReasons(skipped: SalaryContractsSyncReport['skipped']): string {
+  const counts = new Map<string, number>();
+  for (const item of skipped) counts.set(item.reason, (counts.get(item.reason) ?? 0) + 1);
+  return [...counts.entries()].map(([reason, count]) => `${reason} — ${count}`).join('; ');
 }
 
 /** Логика вкладки «Договоры»: реестр договоров для расчёта з/п. */
@@ -303,9 +311,9 @@ export function useSalaryContracts(settings: SalarySettings | null) {
   const [notice, setNotice] = useState<string | null>(null);
   const syncSeqRef = useRef(0);
 
-  const showNotice = useCallback((text: string) => {
+  const showNotice = useCallback((text: string, holdMs = 6000) => {
     setNotice(text);
-    window.setTimeout(() => setNotice((current) => (current === text ? null : current)), 6000);
+    window.setTimeout(() => setNotice((current) => (current === text ? null : current)), holdMs);
   }, []);
 
   /** Подтянуть подписанные договоры раздела «Договоры»; silent — без плашки об ошибке. */
@@ -319,8 +327,13 @@ export function useSalaryContracts(settings: SalarySettings | null) {
         const parts = [`+${report.created} новых`, `${report.updated} обновлено`];
         if (report.adopted > 0) parts.push(`${report.adopted} привязано к договорам`);
         const skippedNote =
-          report.skipped.length > 0 ? `, пропущено: ${report.skipped.length}` : '';
-        showNotice(`Синхронизация с договорами: ${parts.join(', ')}${skippedNote}`);
+          report.skipped.length > 0
+            ? `, пропущено: ${report.skipped.length} (${formatSyncSkipReasons(report.skipped)})`
+            : '';
+        showNotice(
+          `Синхронизация с договорами: ${parts.join(', ')}${skippedNote}`,
+          report.skipped.length > 0 ? 12000 : undefined
+        );
         await load();
       } catch (err) {
         if (!silent) setError(err instanceof Error ? err.message : 'Не удалось синхронизировать');
