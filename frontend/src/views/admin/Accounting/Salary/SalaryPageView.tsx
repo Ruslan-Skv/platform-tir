@@ -220,7 +220,9 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
 
       {activeNotice ? <div className={styles.pageNotice}>{activeNotice}</div> : null}
 
-      {tab === 'calc' ? <SalaryCalcView model={calc} offices={offices} canEdit={canEdit} /> : null}
+      {tab === 'calc' ? (
+        <SalaryCalcView model={calc} offices={offices} users={users} canEdit={canEdit} />
+      ) : null}
       {tab === 'contracts' ? (
         <SalaryContractsView
           model={contracts}
@@ -234,6 +236,7 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
         <SalarySettingsView
           model={settingsModel}
           offices={offices}
+          users={users}
           settings={settings}
           settingsLoading={settingsLoading}
         />

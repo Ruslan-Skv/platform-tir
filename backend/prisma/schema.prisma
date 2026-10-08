@@ -207,6 +207,7 @@ model User {
   salaryContractsManager                  SalaryContract[]                         @relation("SalaryContractManager")
   salaryContractsSurveyor                 SalaryContract[]                         @relation("SalaryContractSurveyor")
   salarySettlementsCreated                SalarySettlement[]                       @relation("SalarySettlementCreatedBy")
+  salaryGlobalSettingBrigadier            SalaryGlobalSetting[]                    @relation("SalaryGlobalSettingBrigadier")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -4417,6 +4418,11 @@ model SalaryGlobalSetting {
 
   /// Налог, удерживаемый из фондов, % (в таблице 8% → множитель ×0.92)
   taxPercent Decimal @default(8) @db.Decimal(5, 2)
+
+  /// Пользователь-бригадир, которому начисляется бригадирский фонд
+  /// (может совмещать с ролью замерщика)
+  brigadierUserId String?
+  brigadier       User?   @relation("SalaryGlobalSettingBrigadier", fields: [brigadierUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

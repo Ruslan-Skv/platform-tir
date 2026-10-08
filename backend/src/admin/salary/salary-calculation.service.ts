@@ -22,7 +22,12 @@ import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
 export class SalaryCalculationService {
   constructor(private prisma: PrismaService) {}
 
-  async calculate(input: { dateFrom: string; dateTo: string; officeId?: string }) {
+  async calculate(input: {
+    dateFrom: string;
+    dateTo: string;
+    officeId?: string;
+    employeeId?: string;
+  }) {
     const from = fromDateIso(input.dateFrom);
     const to = fromDateIso(input.dateTo);
     if (from.getTime() > to.getTime()) {
@@ -30,16 +35,27 @@ export class SalaryCalculationService {
     }
 
     const [globalSetting, categories, rateRules, contracts] = await Promise.all([
-      this.prisma.salaryGlobalSetting.findUnique({ where: { id: 'singleton' } }),
+      this.prisma.salaryGlobalSetting.findUnique({
+        where: { id: 'singleton' },
+        include: { brigadier: { select: { id: true, firstName: true, lastName: true } } },
+      }),
       this.prisma.salaryCategory.findMany(),
       this.prisma.salaryRateRule.findMany({ where: { isActive: true } }),
       this.prisma.salaryContract.findMany({
         where: {
           officeId: input.officeId,
-          OR: [
-            { signedAt: { gte: from, lte: to } },
-            { closedAt: { gte: from, lte: to } },
-            { extraBills: { some: { date: { gte: from, lte: to } } } },
+          AND: [
+            {
+              OR: [
+                { signedAt: { gte: from, lte: to } },
+                { closedAt: { gte: from, lte: to } },
+                { extraBills: { some: { date: { gte: from, lte: to } } } },
+              ],
+            },
+            // Фильтр по сотруднику — договоры, где он менеджер или замерщик (как «Менеджер» в ДП).
+            ...(input.employeeId
+              ? [{ OR: [{ managerId: input.employeeId }, { surveyorId: input.employeeId }] }]
+              : []),
           ],
         },
         include: {
@@ -309,6 +325,15 @@ export class SalaryCalculationService {
     const commonPool = round2(rows.reduce((s, r) => s + r.managerCommon + r.surveyorCommon, 0));
     // Общий пул «общих» договоров всегда идёт в бригадирский фонд.
     const brigadierTotal = round2(brigadierFund + commonPool);
+    // Бригадирский фонд закреплён за пользователем из настроек (может совмещать
+    // роль замерщика — тогда з/п складывается из обеих частей).
+    const brigadierUserName =
+      globalSetting?.brigadier != null
+        ? [globalSetting.brigadier.lastName, globalSetting.brigadier.firstName]
+            .filter(Boolean)
+            .join(' ')
+            .trim() || null
+        : null;
     const managerPersonalTotal = round2(
       Array.from(byManager.values()).reduce((s, m) => s + m.amount, 0),
     );
@@ -347,6 +372,12 @@ export class SalaryCalculationService {
         brigadierTotalNet: round2(brigadierTotal * netFactor),
         vsTotal: round2(vsByCategory.reduce((s, v) => s + v.gross, 0)),
         stats,
+      },
+      brigadier: {
+        userId: globalSetting?.brigadierUserId ?? null,
+        userName: brigadierUserName,
+        total: brigadierTotal,
+        totalNet: round2(brigadierTotal * netFactor),
       },
       vsByCategory,
       byManager: Array.from(byManager.values()).sort((a, b) => b.amount - a.amount),

@@ -1,8 +1,8 @@
 'use client';
 
-import { useId } from 'react';
+import { useId, useMemo } from 'react';
 
-import type { Office } from '@/shared/api/admin-crm';
+import type { CrmUser, Office } from '@/shared/api/admin-crm';
 import type { SalaryCalcResult, SalarySettlementListItem } from '@/shared/api/admin-salary';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -16,6 +16,7 @@ import { formatDate, formatMoney, formatMoneyShort, formatPercent } from './sala
 type CalcViewProps = {
   model: SalaryCalcModel;
   offices: Office[];
+  users: CrmUser[];
   canEdit: boolean;
 };
 
@@ -27,11 +28,20 @@ function filterFieldClass(base: string, active: boolean): string {
   return active ? `${base} ${cdHub.contractsListFilterActive}` : base;
 }
 
+function userName(user: CrmUser): string {
+  return [user.lastName, user.firstName].filter(Boolean).join(' ') || user.email;
+}
+
 /** Вкладка «Расчёт за период»: фонды, итоги по офисам/сотрудникам, договоры в расчёте. */
-export function SalaryCalcView({ model, offices, canEdit }: CalcViewProps) {
+export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps) {
   const { isSnapshot } = model;
   const shown = model.activeSettlement?.snapshot ?? model.result;
   const filtersContentId = useId();
+  const sortedUsers = useMemo(
+    () => users.slice().sort((a, b) => userName(a).localeCompare(userName(b))),
+    [users]
+  );
+  const selectedEmployee = users.find((u) => u.id === model.employeeId) ?? null;
 
   const filtersSummary = [
     {
@@ -43,6 +53,10 @@ export function SalaryCalcView({ model, offices, canEdit }: CalcViewProps) {
       label: model.officeId
         ? `Офис: ${offices.find((o) => o.id === model.officeId)?.name ?? '—'}`
         : 'Все офисы',
+    },
+    {
+      key: 'employee',
+      label: selectedEmployee ? `Сотрудник: ${userName(selectedEmployee)}` : 'Все сотрудники',
     },
   ];
 
@@ -173,6 +187,32 @@ export function SalaryCalcView({ model, offices, canEdit }: CalcViewProps) {
                 </button>
               </div>
 
+              <div
+                className={cdHub.contractsListChipRow}
+                role="radiogroup"
+                aria-label="Панель итогов"
+              >
+                <span className={cdHub.contractsListChipRowLabel}>Панель итогов</span>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={model.totalsMode === 'funds'}
+                  className={chipClass(model.totalsMode === 'funds')}
+                  onClick={() => model.setTotalsMode('funds')}
+                >
+                  По фондам
+                </button>
+                <button
+                  type="button"
+                  role="radio"
+                  aria-checked={model.totalsMode === 'employees'}
+                  className={chipClass(model.totalsMode === 'employees')}
+                  onClick={() => model.setTotalsMode('employees')}
+                >
+                  По сотрудникам
+                </button>
+              </div>
+
               <div className={cdHub.contractsListFilters}>
                 <div className={cdHub.contractsListDateFilters}>
                   <label className={cdHub.contractsListDateLabel}>
@@ -204,6 +244,20 @@ export function SalaryCalcView({ model, offices, canEdit }: CalcViewProps) {
                     />
                   </label>
                 </div>
+                <select
+                  value={model.employeeId}
+                  onChange={(e) => model.setEmployeeId(e.target.value)}
+                  disabled={isSnapshot}
+                  className={filterFieldClass(cdHub.contractsListSelect, Boolean(model.employeeId))}
+                  aria-label="Сотрудник"
+                >
+                  <option value="">Все сотрудники</option>
+                  {sortedUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {userName(u)}
+                    </option>
+                  ))}
+                </select>
                 <button
                   type="button"
                   className={dpStyles.resetBtn}
@@ -226,7 +280,11 @@ export function SalaryCalcView({ model, offices, canEdit }: CalcViewProps) {
         </div>
       ) : (
         <>
-          <CalcTotalsRow result={shown} />
+          {model.totalsMode === 'employees' ? (
+            <EmployeeTotalsRow result={shown} />
+          ) : (
+            <CalcTotalsRow result={shown} />
+          )}
           <FundsTable result={shown} />
           <OfficesTable result={shown} />
           <PeopleTables result={shown} />
@@ -287,6 +345,9 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
             {formatMoney(totals.brigadierTotalNet)}
           </strong>
         </span>
+        <span className={dpStyles.totalsTileCash}>
+          {result.brigadier?.userName ?? 'не назначен в настройках'}
+        </span>
       </div>
       {vsByCategory.map((v) => (
         <div
@@ -321,6 +382,93 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
         </span>
         <span className={dpStyles.totalsTileCash}>разобрано договоров: {managerContracts}</span>
       </div>
+    </div>
+  );
+}
+
+type EmployeeTotalsRowItem = {
+  key: string;
+  name: string;
+  manager: number;
+  surveyor: number;
+  brigadier: number;
+  gross: number;
+};
+
+/** Разрез плиток итогов по сотрудникам: личные начисления менеджера/замерщика + бригадирский фонд. */
+function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
+  const byKey = new Map<string, EmployeeTotalsRowItem>();
+  const acc = (key: string, name: string): EmployeeTotalsRowItem => {
+    const existing = byKey.get(key);
+    if (existing) return existing;
+    const created: EmployeeTotalsRowItem = {
+      key,
+      name,
+      manager: 0,
+      surveyor: 0,
+      brigadier: 0,
+      gross: 0,
+    };
+    byKey.set(key, created);
+    return created;
+  };
+  for (const m of result.byManager) {
+    acc(m.managerId ?? `name:${m.managerName}`, m.managerName).manager += m.amount;
+  }
+  for (const s of result.bySurveyor) {
+    acc(s.surveyorId ?? `name:${s.surveyorName}`, s.surveyorName).surveyor += s.amount;
+  }
+  if (result.brigadier?.userId && result.brigadier.total > 0) {
+    acc(result.brigadier.userId, result.brigadier.userName ?? 'Бригадир').brigadier +=
+      result.brigadier.total;
+  }
+  return [...byKey.values()]
+    .map((e) => ({ ...e, gross: e.manager + e.surveyor + e.brigadier }))
+    .filter((e) => e.gross > 0)
+    .sort((a, b) => b.gross - a.gross);
+}
+
+function employeePartsLine(e: EmployeeTotalsRowItem): string {
+  return [
+    e.manager > 0 ? `менеджер ${formatMoneyShort(e.manager)}` : null,
+    e.surveyor > 0 ? `замеры ${formatMoneyShort(e.surveyor)}` : null,
+    e.brigadier > 0 ? `бригадир ${formatMoneyShort(e.brigadier)}` : null,
+  ]
+    .filter(Boolean)
+    .join(' · ');
+}
+
+/** Плитки итогов по сотрудникам: «К выплате» за вычетом налога по всем личным ролям. */
+function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
+  const { totals, settings } = result;
+  const netTotal =
+    totals.brigadierTotalNet +
+    totals.surveyorFundNet +
+    totals.managerPersonalNet +
+    result.vsByCategory.reduce((sum, v) => sum + v.net, 0);
+  const employees = employeeTotalsRows(result);
+
+  return (
+    <div className={dpStyles.totalsRow} aria-label="Итоги по сотрудникам за период">
+      <div
+        className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
+        title={`Все фонды к выплате за вычетом налога ${formatPercent(settings.taxPercent)}; фонды ВС идут ведущим специалистам направлений и в разрезе сотрудников не показаны`}
+      >
+        <span className={dpStyles.totalsTileLabel}>К выплате всего</span>
+        <strong className={dpStyles.totalsTileValue}>{formatMoney(netTotal)}</strong>
+        <span className={dpStyles.totalsTileCash}>сотрудников: {employees.length}</span>
+      </div>
+      {employees.map((e) => (
+        <div key={e.key} className={dpStyles.totalsTile} title={employeePartsLine(e)}>
+          <span className={dpStyles.totalsTileLabel}>{e.name}</span>
+          <span className={dpStyles.totalsTileValueRow}>
+            <strong className={dpStyles.totalsTileValue}>
+              {formatMoney(e.gross * settings.netFactor)}
+            </strong>
+          </span>
+          <span className={dpStyles.totalsTileCash}>{employeePartsLine(e)}</span>
+        </div>
+      ))}
     </div>
   );
 }
@@ -500,10 +648,16 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
   );
 }
 
-/** Личные начисления менеджерам и замерщикам. */
+/** Личные начисления менеджерам, замерщикам и бригадиру. */
 function PeopleTables({ result }: { result: SalaryCalcResult }) {
-  if (result.byManager.length === 0 && result.bySurveyor.length === 0) return null;
+  const hasPersonal = result.byManager.length > 0 || result.bySurveyor.length > 0;
+  const brigadier = result.brigadier?.userId ? result.brigadier : null;
+  if (!hasPersonal && !brigadier) return null;
   const netFactor = result.settings.netFactor;
+  // Договоры, из которых сложился бригадирский фонд: с процентом бригадира или «общие».
+  const brigadierContracts = result.rows.filter(
+    (r) => r.brigadierAmount > 0 || r.managerCommon > 0 || r.surveyorCommon > 0
+  ).length;
   return (
     <div className={styles.tablesRow}>
       {result.byManager.length > 0 ? (
@@ -580,6 +734,52 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
               },
             ]}
             keyExtractor={(s) => s.rowKey}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
+      {brigadier && brigadier.total > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Бригадир</h2>
+          <DataTable
+            data={[
+              {
+                id: brigadier.userId ?? 'brigadier',
+                userName: brigadier.userName ?? '—',
+                contractsCount: brigadierContracts,
+                amount: brigadier.total,
+                net: brigadier.totalNet,
+              },
+            ]}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Сотрудник',
+                render: (b) => <span className={styles.nameCell}>{b.userName}</span>,
+              },
+              {
+                key: 'contractsCount',
+                title: 'Договоров',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.contractsCount}</span>,
+              },
+              {
+                key: 'amount',
+                title: 'Начислено',
+                sortable: true,
+                render: (b) => <span className={dpStyles.amountCell}>{formatMoney(b.amount)}</span>,
+              },
+              {
+                key: 'net',
+                title: 'К выплате',
+                render: (b) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(b.net)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(b) => b.id}
             emptyMessage="Нет начислений"
           />
         </div>

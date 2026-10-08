@@ -14,6 +14,12 @@ export class CalculateSalaryDto {
   @IsString()
   @IsNotEmpty()
   officeId?: string;
+
+  /** Ограничить расчёт договорами сотрудника (где он менеджер или замерщик) */
+  @IsOptional()
+  @IsString()
+  @IsNotEmpty()
+  employeeId?: string;
 }
 
 export class CreateSalarySettlementDto extends CalculateSalaryDto {}

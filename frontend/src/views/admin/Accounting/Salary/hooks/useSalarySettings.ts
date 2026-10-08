@@ -14,6 +14,8 @@ import {
 
 export interface GlobalFormState {
   taxPercent: string;
+  /** Пользователь-бригадир; '' — не назначен. */
+  brigadierUserId: string;
 }
 
 /** Payload модалки создания/правки направления (code — только при создании). */
@@ -39,6 +41,7 @@ export interface SalaryRateRuleInput {
 
 const EMPTY_GLOBAL: GlobalFormState = {
   taxPercent: '8',
+  brigadierUserId: '',
 };
 
 /** Логика вкладки «Настройки» (суперадмин): глобальные параметры, направления, правила ставок. */
@@ -60,6 +63,7 @@ export function useSalarySettings(
     if (settings) {
       setGlobalForm({
         taxPercent: String(settings.global.taxPercent),
+        brigadierUserId: settings.global.brigadierUserId ?? '',
       });
     }
   }, [settings]);
@@ -70,6 +74,7 @@ export function useSalarySettings(
     try {
       await saveSalaryGlobalSettings({
         taxPercent: Number(globalForm.taxPercent.replace(',', '.')),
+        brigadierUserId: globalForm.brigadierUserId || null,
       });
       showNotice('Глобальные параметры сохранены');
       await reloadSettings();

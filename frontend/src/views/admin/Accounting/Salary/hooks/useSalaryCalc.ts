@@ -21,6 +21,36 @@ import {
   prevMonthStartIso,
 } from '../salary-page.constants';
 
+/** Режим панели итогов: «По фондам» (по умолчанию) или «По сотрудникам». */
+export type SalaryTotalsMode = 'funds' | 'employees';
+
+/** Ключ localStorage для сохранения фильтров вкладки расчёта. */
+const SALARY_CALC_FILTERS_STORAGE_KEY = 'admin_salary_calc_filters_v1';
+
+type PersistedCalcFilters = {
+  dateFrom: string;
+  dateTo: string;
+  officeId: string;
+  employeeId: string;
+  totalsMode: SalaryTotalsMode;
+  filtersCollapsed: boolean;
+};
+
+function isIsoDay(value: unknown): value is string {
+  return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function readPersistedFilters(): Partial<PersistedCalcFilters> | null {
+  try {
+    const raw = window.localStorage.getItem(SALARY_CALC_FILTERS_STORAGE_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<PersistedCalcFilters>;
+    return typeof parsed === 'object' && parsed !== null ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Логика вкладки «Расчёт за период»: живой расчёт и зафиксированные ведомости.
  * Живой расчёт выполняется автоматически — при открытии раздела, смене периода/офиса
@@ -30,6 +60,8 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
   const [dateFrom, setDateFrom] = useState(monthStartIso);
   const [dateTo, setDateTo] = useState(monthEndIso);
   const [officeId, setOfficeId] = useState('');
+  /** Фильтр по сотруднику: договоры, где он менеджер или замерщик ('' — все). */
+  const [employeeId, setEmployeeId] = useState('');
   const [result, setResult] = useState<SalaryCalcResult | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -46,6 +78,49 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
   /** Панель периода по умолчанию раскрыта: смена периода сразу меняет живой расчёт. */
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const toggleFiltersCollapsed = useCallback(() => setFiltersCollapsed((v) => !v), []);
+
+  /** Разрез панели итогов — только отображение, данные не фильтрует. */
+  const [totalsMode, setTotalsMode] = useState<SalaryTotalsMode>('funds');
+
+  /** Фильтры восстановлены из localStorage — с этого момента их можно сохранять и считать. */
+  const [filtersRestored, setFiltersRestored] = useState(false);
+
+  // Восстановление сохранённых фильтров — до первого расчёта, иначе стартовый запрос
+  // с дефолтным периодом гоняется с восстановленным и затирает его результат.
+  useEffect(() => {
+    const saved = readPersistedFilters();
+    if (saved) {
+      if (isIsoDay(saved.dateFrom)) setDateFrom(saved.dateFrom);
+      if (isIsoDay(saved.dateTo)) setDateTo(saved.dateTo);
+      if (typeof saved.officeId === 'string') setOfficeId(saved.officeId);
+      if (typeof saved.employeeId === 'string') setEmployeeId(saved.employeeId);
+      if (saved.totalsMode === 'funds' || saved.totalsMode === 'employees') {
+        setTotalsMode(saved.totalsMode);
+      }
+      if (typeof saved.filtersCollapsed === 'boolean') setFiltersCollapsed(saved.filtersCollapsed);
+    }
+    setFiltersRestored(true);
+  }, []);
+
+  // Сохранение фильтров — на каждое изменение после восстановления.
+  useEffect(() => {
+    if (!filtersRestored) return;
+    try {
+      window.localStorage.setItem(
+        SALARY_CALC_FILTERS_STORAGE_KEY,
+        JSON.stringify({
+          dateFrom,
+          dateTo,
+          officeId,
+          employeeId,
+          totalsMode,
+          filtersCollapsed,
+        } satisfies PersistedCalcFilters)
+      );
+    } catch {
+      /* localStorage недоступен — настройки просто не сохранятся */
+    }
+  }, [filtersRestored, dateFrom, dateTo, officeId, employeeId, totalsMode, filtersCollapsed]);
 
   const isSnapshot = activeSettlement !== null;
 
@@ -67,7 +142,12 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     setLoading(true);
     setError(null);
     try {
-      const data = await calculateSalary({ dateFrom, dateTo, officeId: officeId || undefined });
+      const data = await calculateSalary({
+        dateFrom,
+        dateTo,
+        officeId: officeId || undefined,
+        employeeId: employeeId || undefined,
+      });
       if (seq !== runSeqRef.current) return;
       setResult(data);
     } catch (err) {
@@ -76,15 +156,16 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     } finally {
       if (seq === runSeqRef.current) setLoading(false);
     }
-  }, [dateFrom, dateTo, officeId]);
+  }, [dateFrom, dateTo, officeId, employeeId]);
 
   // Живой расчёт запускается сам: при открытии раздела, смене периода/офиса и после
   // изменения договоров или настроек з/п. Пока открыта зафиксированная ведомость,
   // пересчёт идёт фоном и ведомость не закрывает.
   useEffect(() => {
+    if (!filtersRestored) return;
     const timer = window.setTimeout(() => void run(), 300);
     return () => window.clearTimeout(timer);
-  }, [run, contractsRevision, settingsRevision]);
+  }, [filtersRestored, run, contractsRevision, settingsRevision]);
 
   const loadSettlements = useCallback(async () => {
     try {
@@ -112,6 +193,7 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     setDateFrom(monthStartIso());
     setDateTo(monthEndIso());
     setOfficeId('');
+    setEmployeeId('');
   }, []);
 
   const openSettlement = useCallback(async (id: string) => {
@@ -182,6 +264,8 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     setDateTo,
     officeId,
     setOfficeId,
+    employeeId,
+    setEmployeeId,
     result,
     loading,
     error,
@@ -198,6 +282,8 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     resetFilters,
     filtersCollapsed,
     toggleFiltersCollapsed,
+    totalsMode,
+    setTotalsMode,
     fixSettlement,
     confirmSettlement,
     deleteTarget,

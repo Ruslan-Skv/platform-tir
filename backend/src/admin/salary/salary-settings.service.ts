@@ -10,6 +10,11 @@ import {
   UpsertSalaryRateRuleDto,
 } from './dto/salary-category.dto';
 
+/** Пользователь-бригадир для ответов настроек: id + ФИО. */
+const BRIGADIER_INCLUDE = {
+  brigadier: { select: { id: true, firstName: true, lastName: true } },
+} as const;
+
 @Injectable()
 export class SalarySettingsService {
   constructor(private prisma: PrismaService) {}
@@ -18,7 +23,10 @@ export class SalarySettingsService {
   async getSettings() {
     await this.ensureDefaults();
     const [global, categories] = await Promise.all([
-      this.prisma.salaryGlobalSetting.findUnique({ where: { id: 'singleton' } }),
+      this.prisma.salaryGlobalSetting.findUnique({
+        where: { id: 'singleton' },
+        include: BRIGADIER_INCLUDE,
+      }),
       this.prisma.salaryCategory.findMany({
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         include: {
@@ -37,9 +45,18 @@ export class SalarySettingsService {
     await this.ensureGlobalRow();
     const data: Prisma.SalaryGlobalSettingUncheckedUpdateInput = {};
     if (dto.taxPercent !== undefined) data.taxPercent = dto.taxPercent;
+    if (dto.brigadierUserId !== undefined) {
+      const brigadierUserId = dto.brigadierUserId?.trim() || null;
+      if (brigadierUserId) {
+        const user = await this.prisma.user.findUnique({ where: { id: brigadierUserId } });
+        if (!user) throw new NotFoundException(`Пользователь ${brigadierUserId} не найден`);
+      }
+      data.brigadierUserId = brigadierUserId;
+    }
     const updated = await this.prisma.salaryGlobalSetting.update({
       where: { id: 'singleton' },
       data,
+      include: BRIGADIER_INCLUDE,
     });
     return this.serializeGlobal(updated);
   }
@@ -140,11 +157,21 @@ export class SalarySettingsService {
   private serializeGlobal(
     global: {
       taxPercent: Prisma.Decimal;
+      brigadierUserId: string | null;
+      brigadier?: { id: string; firstName: string | null; lastName: string | null } | null;
       updatedAt: Date;
     } | null,
   ) {
     return {
       taxPercent: toNum(global?.taxPercent ?? 8),
+      brigadierUserId: global?.brigadierUserId ?? null,
+      brigadierName:
+        global?.brigadier != null
+          ? [global.brigadier.lastName, global.brigadier.firstName]
+              .filter(Boolean)
+              .join(' ')
+              .trim() || null
+          : null,
       updatedAt: global?.updatedAt ?? null,
     };
   }

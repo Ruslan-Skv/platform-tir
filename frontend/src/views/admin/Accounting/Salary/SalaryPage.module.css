@@ -455,7 +455,8 @@
   gap: var(--admin-space-xs, 4px);
 }
 
-.settingsField input {
+.settingsField input,
+.settingsField select {
   background: var(--admin-surface, #ffffff);
   border: 1px solid var(--admin-border-strong, #d1d5db);
   border-radius: var(--admin-radius-md, 8px);
@@ -468,7 +469,8 @@
   padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
 }
 
-.settingsField input:focus {
+.settingsField input:focus,
+.settingsField select:focus {
   border-color: var(--admin-accent, #d90632);
   box-shadow: var(--admin-shadow-focus-soft, 0 0 0 3px rgb(217 6 50 / 0.12));
   outline: none;

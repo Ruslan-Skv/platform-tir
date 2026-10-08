@@ -33,6 +33,9 @@ async function request<T>(url: string, init?: RequestInit, errorMessage?: string
 
 export interface SalaryGlobalSettings {
   taxPercent: number;
+  /** Пользователь-бригадир (получатель бригадирского фонда); null — не назначен. */
+  brigadierUserId: string | null;
+  brigadierName: string | null;
   updatedAt: string | null;
 }
 
@@ -169,6 +172,13 @@ export interface SalaryCalcResult {
     vsTotal: number;
     stats: { signedCount: number; signedAmount: number; closedCount: number; closedAmount: number };
   };
+  /** Кому начислен бригадирский фонд (фиксируется в настройках з/п). */
+  brigadier: {
+    userId: string | null;
+    userName: string | null;
+    total: number;
+    totalNet: number;
+  };
   vsByCategory: Array<{
     categoryId: string;
     categoryCode: string;
@@ -236,7 +246,7 @@ export function getSalarySettings(): Promise<SalarySettings> {
 }
 
 export function saveSalaryGlobalSettings(
-  dto: Partial<Pick<SalaryGlobalSettings, 'taxPercent'>>
+  dto: Partial<Pick<SalaryGlobalSettings, 'taxPercent' | 'brigadierUserId'>>
 ): Promise<SalaryGlobalSettings> {
   return request(
     `${API_URL}/admin/salary/settings/global`,
@@ -393,9 +403,11 @@ export function calculateSalary(params: {
   dateFrom: string;
   dateTo: string;
   officeId?: string;
+  employeeId?: string;
 }): Promise<SalaryCalcResult> {
   const qs = new URLSearchParams({ dateFrom: params.dateFrom, dateTo: params.dateTo });
   if (params.officeId) qs.set('officeId', params.officeId);
+  if (params.employeeId) qs.set('employeeId', params.employeeId);
   return request(
     `${API_URL}/admin/salary/calculate?${qs.toString()}`,
     {},

@@ -2,7 +2,7 @@
 
 import { useMemo } from 'react';
 
-import type { Office } from '@/shared/api/admin-crm';
+import type { CrmUser, Office } from '@/shared/api/admin-crm';
 import type { SalaryCategory, SalarySettings } from '@/shared/api/admin-salary';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal/ConfirmModal';
 import { DataTable } from '@/shared/ui/admin/DataTable';
@@ -17,18 +17,28 @@ import { SALARY_ROLE_OPTIONS, formatPercent } from './salary-page.constants';
 type SettingsViewProps = {
   model: SalarySettingsModel;
   offices: Office[];
+  users: CrmUser[];
   settings: SalarySettings | null;
   settingsLoading: boolean;
 };
+
+function userName(user: CrmUser): string {
+  return [user.lastName, user.firstName].filter(Boolean).join(' ') || user.email;
+}
 
 /** Вкладка «Настройки» (только суперадмин): проценты, сплиты, налог, направления, правила по офисам. */
 export function SalarySettingsView({
   model,
   offices,
+  users,
   settings,
   settingsLoading,
 }: SettingsViewProps) {
   const categories = settings?.categories ?? [];
+  const sortedUsers = useMemo(
+    () => users.slice().sort((a, b) => userName(a).localeCompare(userName(b))),
+    [users]
+  );
 
   const columns = useMemo(
     () => [
@@ -172,6 +182,23 @@ export function SalarySettingsView({
               onChange={(e) => model.setGlobalForm((f) => ({ ...f, taxPercent: e.target.value }))}
               disabled={model.globalSaving}
             />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Бригадир (получатель бригадирского фонда)</span>
+            <select
+              value={model.globalForm.brigadierUserId}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, brigadierUserId: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            >
+              <option value="">— не назначен —</option>
+              {sortedUsers.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {userName(u)}
+                </option>
+              ))}
+            </select>
           </label>
         </div>
         <div className={styles.settingsActions}>
