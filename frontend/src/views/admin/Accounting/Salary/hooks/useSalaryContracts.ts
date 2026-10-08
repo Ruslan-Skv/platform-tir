@@ -256,6 +256,10 @@ export function useSalaryContracts(settings: SalarySettings | null) {
   const [deleteTarget, setDeleteTarget] = useState<SalaryContract | null>(null);
   const [deleting, setDeleting] = useState(false);
 
+  /** Ревизия данных реестра: растёт после создания/правки/удаления договора и после
+   * синхронизации с изменениями — по ней живой расчёт з/п пересчитывается сам. */
+  const [dataRevision, setDataRevision] = useState(0);
+
   const openCreateModal = useCallback(() => {
     setEditing(null);
     setModalOpen(true);
@@ -282,6 +286,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
         }
         closeModal();
         await load();
+        setDataRevision((v) => v + 1);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Не удалось сохранить договор');
       } finally {
@@ -298,6 +303,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
       await deleteSalaryContract(deleteTarget.id);
       setDeleteTarget(null);
       await load();
+      setDataRevision((v) => v + 1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось удалить договор');
     } finally {
@@ -335,6 +341,9 @@ export function useSalaryContracts(settings: SalarySettings | null) {
           report.skipped.length > 0 ? 12000 : undefined
         );
         await load();
+        if (report.created + report.updated + report.adopted > 0) {
+          setDataRevision((v) => v + 1);
+        }
       } catch (err) {
         if (!silent) setError(err instanceof Error ? err.message : 'Не удалось синхронизировать');
       } finally {
@@ -353,6 +362,7 @@ export function useSalaryContracts(settings: SalarySettings | null) {
     error,
     setError,
     load,
+    dataRevision,
     notice,
     syncing,
     sync,

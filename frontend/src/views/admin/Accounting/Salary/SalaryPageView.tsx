@@ -137,30 +137,17 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
           </div>
         </div>
         <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
-          {tab === 'calc' && !calc.isSnapshot ? (
-            <>
-              <button
-                type="button"
-                className={cdChrome.contractsListHeaderAddBtn}
-                disabled={calc.loading}
-                onClick={() => void calc.run()}
-                title="Рассчитать з/п за выбранный период"
-              >
-                {calc.loading ? 'Расчёт…' : 'Рассчитать'}
-              </button>
-              {canEdit ? (
-                <button
-                  data-admin-mutation
-                  type="button"
-                  className={cdChrome.contractsListHeaderAddBtn}
-                  disabled={calc.saving}
-                  onClick={() => void calc.fixSettlement()}
-                  title="Зафиксировать расчёт за период как черновик ведомости"
-                >
-                  {calc.saving ? 'Сохранение…' : 'Зафиксировать расчёт'}
-                </button>
-              ) : null}
-            </>
+          {tab === 'calc' && !calc.isSnapshot && canEdit ? (
+            <button
+              data-admin-mutation
+              type="button"
+              className={cdChrome.contractsListHeaderAddBtn}
+              disabled={calc.saving}
+              onClick={() => void calc.fixSettlement()}
+              title="Зафиксировать расчёт за период как черновик ведомости"
+            >
+              {calc.saving ? 'Сохранение…' : 'Зафиксировать расчёт'}
+            </button>
           ) : null}
           {tab === 'contracts' ? (
             canEdit ? (

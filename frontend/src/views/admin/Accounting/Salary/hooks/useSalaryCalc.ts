@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import {
   type SalaryCalcResult,
@@ -21,13 +21,17 @@ import {
   prevMonthStartIso,
 } from '../salary-page.constants';
 
-/** Логика вкладки «Расчёт за период»: живой расчёт и зафиксированные ведомости. */
-export function useSalaryCalc() {
+/**
+ * Логика вкладки «Расчёт за период»: живой расчёт и зафиксированные ведомости.
+ * Живой расчёт выполняется автоматически — при открытии раздела, смене периода/офиса
+ * и после изменения исходных данных; revisions — счётчики изменений договоров и настроек.
+ */
+export function useSalaryCalc(contractsRevision: number, settingsRevision: number) {
   const [dateFrom, setDateFrom] = useState(monthStartIso);
   const [dateTo, setDateTo] = useState(monthEndIso);
   const [officeId, setOfficeId] = useState('');
   const [result, setResult] = useState<SalaryCalcResult | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   /** Успешное уведомление (авто-скрытие) — «расчёт зафиксирован» и т.п. */
   const [notice, setNotice] = useState<string | null>(null);
@@ -39,7 +43,7 @@ export function useSalaryCalc() {
   const [deleteTarget, setDeleteTarget] = useState<SalarySettlementListItem | null>(null);
   const [deleting, setDeleting] = useState(false);
 
-  /** Панель периода по умолчанию раскрыта: задать период и рассчитать — основное действие вкладки. */
+  /** Панель периода по умолчанию раскрыта: смена периода сразу меняет живой расчёт. */
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const toggleFiltersCollapsed = useCallback(() => setFiltersCollapsed((v) => !v), []);
 
@@ -50,23 +54,37 @@ export function useSalaryCalc() {
     window.setTimeout(() => setNotice((current) => (current === text ? null : current)), 4000);
   }, []);
 
+  /** Счётчик запросов: побеждает последний — поздний ответ устаревшего запроса не затирает свежий. */
+  const runSeqRef = useRef(0);
+
   const run = useCallback(async () => {
     if (!dateFrom || !dateTo) {
-      setError('Укажите период расчёта');
+      setResult(null);
+      setError(null);
       return;
     }
+    const seq = ++runSeqRef.current;
     setLoading(true);
     setError(null);
     try {
       const data = await calculateSalary({ dateFrom, dateTo, officeId: officeId || undefined });
+      if (seq !== runSeqRef.current) return;
       setResult(data);
-      setActiveSettlement(null);
     } catch (err) {
+      if (seq !== runSeqRef.current) return;
       setError(err instanceof Error ? err.message : 'Ошибка расчёта');
     } finally {
-      setLoading(false);
+      if (seq === runSeqRef.current) setLoading(false);
     }
   }, [dateFrom, dateTo, officeId]);
+
+  // Живой расчёт запускается сам: при открытии раздела, смене периода/офиса и после
+  // изменения договоров или настроек з/п. Пока открыта зафиксированная ведомость,
+  // пересчёт идёт фоном и ведомость не закрывает.
+  useEffect(() => {
+    const timer = window.setTimeout(() => void run(), 300);
+    return () => window.clearTimeout(timer);
+  }, [run, contractsRevision, settingsRevision]);
 
   const loadSettlements = useCallback(async () => {
     try {
@@ -176,7 +194,6 @@ export function useSalaryCalc() {
     closeSettlement,
     reloadSettlements: loadSettlements,
     saving,
-    run,
     setPeriod,
     resetFilters,
     filtersCollapsed,

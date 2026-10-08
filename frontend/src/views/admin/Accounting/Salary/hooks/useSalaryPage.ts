@@ -25,10 +25,13 @@ export function useSalaryPage() {
   const [users, setUsers] = useState<CrmUser[]>([]);
   const [settings, setSettings] = useState<SalarySettings | null>(null);
   const [settingsLoading, setSettingsLoading] = useState(true);
+  /** Ревизия настроек: растёт после каждой перезагрузки — живой расчёт по ней пересчитывается. */
+  const [settingsRevision, setSettingsRevision] = useState(0);
 
   const reloadSettings = useCallback(async () => {
     try {
       setSettings(await getSalarySettings());
+      setSettingsRevision((v) => v + 1);
     } catch {
       /* без настроек вкладка «Настройки» покажет ошибку, расчёт работает на дефолтах бекенда */
     } finally {
@@ -49,8 +52,8 @@ export function useSalaryPage() {
     })();
   }, [reloadSettings]);
 
-  const calc = useSalaryCalc();
   const contracts = useSalaryContracts(settings);
+  const calc = useSalaryCalc(contracts.dataRevision, settingsRevision);
   const settingsModel = useSalarySettings(settings, reloadSettings);
 
   // Автосинхронизация договоров з/п с разделом «Договоры» — один раз за сессию браузера.
