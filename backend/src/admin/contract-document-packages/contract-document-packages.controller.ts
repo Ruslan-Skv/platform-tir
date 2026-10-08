@@ -834,7 +834,9 @@ export class ContractDocumentPackagesController {
     return this.packagePayments.create(id, dto, req.user?.id);
   }
 
+  /** Редактирование проведённой оплаты — только супер-админ (исправление ошибок менеджеров). */
   @Patch(':id/payments/:paymentId')
+  @Roles('SUPER_ADMIN')
   updatePackagePayment(
     @Param('id') id: string,
     @Param('paymentId') paymentId: string,

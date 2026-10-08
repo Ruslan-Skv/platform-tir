@@ -18,6 +18,8 @@ export function PackageContractPaymentsTabView({
   loading,
   cancelingPaymentId,
   cancelPayment,
+  updatingPaymentId,
+  updatePayment,
   saving,
   showHubSummary,
   showJournalTable,
@@ -121,6 +123,8 @@ export function PackageContractPaymentsTabView({
           packageKind={packageKind}
           cancelingPaymentId={cancelingPaymentId}
           cancelPayment={cancelPayment}
+          updatingPaymentId={updatingPaymentId}
+          updatePayment={updatePayment}
         />
       ) : null}
     </div>

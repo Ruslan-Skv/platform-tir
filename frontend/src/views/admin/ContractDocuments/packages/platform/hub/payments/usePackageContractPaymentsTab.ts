@@ -73,6 +73,8 @@ export function usePackageContractPaymentsTab({
     loading: journal.loading,
     cancelingPaymentId: journal.cancelingPaymentId,
     cancelPayment: journal.cancelPayment,
+    updatingPaymentId: journal.updatingPaymentId,
+    updatePayment: journal.updatePayment,
     saving: conduct.saving,
     showHubSummary,
     showJournalTable,

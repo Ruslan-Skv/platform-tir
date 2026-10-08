@@ -1711,6 +1711,47 @@
   opacity: 0.65;
 }
 
+/* «Изменить» в журнале оплат — действие только супер-админа, нейтрально-синий аутлайн. */
+.paymentsEditBtn {
+  align-items: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-info, #2563eb);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-info, #2563eb);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  font-weight: 600;
+  justify-content: center;
+  line-height: var(--admin-line-height-sm, 1.25);
+  min-height: 1.75rem;
+  padding: var(--admin-space-xs, 2px) var(--admin-space-md, 12px);
+  white-space: nowrap;
+}
+
+.paymentsEditBtn:not(:disabled):hover {
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.paymentsEditBtn:disabled {
+  border-color: var(--admin-border-strong, #d1d5db);
+  color: var(--admin-text-muted, #6b7280);
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+/* Модалка «Изменить проведённую оплату» */
+.paymentsEditModal .paymentsFormGrid {
+  margin-top: var(--admin-space-sm);
+}
+
+.paymentsEditModalFieldError {
+  color: var(--admin-danger, #dc2626);
+  font-size: var(--admin-font-size-xs, 0.8125rem);
+  margin: var(--admin-space-2xs, 2px) 0 0;
+}
+
 .workScopeSplitModalForm [data-modal-form-hint],
 .workScopeSplitModalForm [data-modal-form-error] {
   font-size: var(--admin-font-size-xs, 0.8125rem);

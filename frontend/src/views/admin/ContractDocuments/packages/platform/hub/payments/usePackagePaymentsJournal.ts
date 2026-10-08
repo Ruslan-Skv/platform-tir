@@ -4,8 +4,10 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import {
   type ContractDocumentPackagePayment,
+  type ContractDocumentPackagePaymentPatch,
   deleteContractDocumentPackagePayment,
   getContractDocumentPackagePayments,
+  updateContractDocumentPackagePayment,
 } from '@/shared/api/admin-contract-document-packages';
 
 import { resolveFurniturePaymentLeg } from '../../../directions/furniture/furniturePaymentLeg';
@@ -35,6 +37,7 @@ export function usePackagePaymentsJournal({
   const [rows, setRows] = useState<ContractDocumentPackagePayment[]>([]);
   const [loading, setLoading] = useState(true);
   const [cancelingPaymentId, setCancelingPaymentId] = useState<string | null>(null);
+  const [updatingPaymentId, setUpdatingPaymentId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -65,6 +68,25 @@ export function usePackagePaymentsJournal({
         onError(e instanceof Error ? e.message : 'Не удалось отменить оплату');
       } finally {
         setCancelingPaymentId(null);
+      }
+    },
+    [packageId, load, onJournalChanged, onError]
+  );
+
+  /** Редактирование проведённой оплаты — только супер-админ (роль проверяется и на бэкенде). */
+  const updatePayment = useCallback(
+    async (paymentId: string, patch: ContractDocumentPackagePaymentPatch): Promise<boolean> => {
+      setUpdatingPaymentId(paymentId);
+      try {
+        await updateContractDocumentPackagePayment(packageId, paymentId, patch);
+        await load();
+        onJournalChanged?.();
+        return true;
+      } catch (e) {
+        onError(e instanceof Error ? e.message : 'Не удалось сохранить изменения оплаты');
+        return false;
+      } finally {
+        setUpdatingPaymentId(null);
       }
     },
     [packageId, load, onJournalChanged, onError]
@@ -138,6 +160,8 @@ export function usePackagePaymentsJournal({
     load,
     cancelingPaymentId,
     cancelPayment,
+    updatingPaymentId,
+    updatePayment,
     paidAllocations,
     coverage,
     journalPaidRub,

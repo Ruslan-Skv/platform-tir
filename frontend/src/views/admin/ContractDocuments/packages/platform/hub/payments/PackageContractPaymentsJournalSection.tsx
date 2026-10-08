@@ -3,6 +3,7 @@
 import { useState } from 'react';
 
 import { useAuth } from '@/features/auth/context/AuthContext';
+import { type ContractDocumentPackagePaymentPatch } from '@/shared/api/admin-contract-document-packages';
 import { ConfirmModal } from '@/shared/ui/ConfirmModal';
 
 import cdBase from '../../../../styles/base.module.css';
@@ -11,6 +12,7 @@ import cdTemplates from '../../../../styles/templates-library.module.css';
 import { isFurnitureLikePackageKind } from '../../../config';
 import { furniturePaymentLegDisplayLabel } from '../../../directions/furniture/furniturePaymentLeg';
 import { PACKAGE_PAYMENT_FORM_LABELS } from '../../payments/packagePaymentFormLabels';
+import { PackageContractPaymentsEditModal } from './PackageContractPaymentsEditModal';
 import {
   formatDateRu,
   formatMoneyRub,
@@ -27,6 +29,8 @@ export type PackageContractPaymentsJournalSectionProps = Pick<
   | 'packageKind'
   | 'cancelingPaymentId'
   | 'cancelPayment'
+  | 'updatingPaymentId'
+  | 'updatePayment'
 >;
 
 export function PackageContractPaymentsJournalSection({
@@ -37,13 +41,19 @@ export function PackageContractPaymentsJournalSection({
   packageKind = 'REPAIR',
   cancelingPaymentId,
   cancelPayment,
+  updatingPaymentId,
+  updatePayment,
 }: PackageContractPaymentsJournalSectionProps) {
   const { user } = useAuth();
-  // Отменять проведённые оплаты может только супер-админ (роль проверяется и на бэкенде).
-  const canCancelPayments = user?.role === 'SUPER_ADMIN';
+  // Редактировать и отменять проведённые оплаты может только супер-админ
+  // (роль проверяется и на бэкенде).
+  const canManagePayments = user?.role === 'SUPER_ADMIN';
   const [pendingCancelId, setPendingCancelId] = useState<string | null>(null);
   const pendingCancelRow = rows.find((r) => r.id === pendingCancelId) ?? null;
+  const [editingPaymentId, setEditingPaymentId] = useState<string | null>(null);
+  const editingRow = rows.find((r) => r.id === editingPaymentId) ?? null;
   const showFurnitureLeg = isFurnitureLikePackageKind(packageKind);
+  const rowActionBusy = cancelingPaymentId != null || updatingPaymentId != null;
 
   const pendingCancelSummary = pendingCancelRow
     ? [
@@ -54,6 +64,12 @@ export function PackageContractPaymentsJournalSection({
         .filter(Boolean)
         .join(' · ')
     : '';
+
+  const handleEditSave = async (patch: ContractDocumentPackagePaymentPatch) => {
+    if (!editingRow) return;
+    const ok = await updatePayment(editingRow.id, patch);
+    if (ok) setEditingPaymentId(null);
+  };
 
   return (
     <div
@@ -80,7 +96,7 @@ export function PackageContractPaymentsJournalSection({
                 <th>Способ оплаты</th>
                 <th>Основание</th>
                 <th>Кто внёс</th>
-                {canCancelPayments ? <th>Действия</th> : null}
+                {canManagePayments ? <th>Действия</th> : null}
               </tr>
             </thead>
             <tbody>
@@ -91,6 +107,7 @@ export function PackageContractPaymentsJournalSection({
                 const displayRub = r.paymentType === 'REFUND' && rowRub != null ? -rowRub : rowRub;
                 const rowPct = formatPercentOfGrandTotal(displayRub, grandTotalRub);
                 const rowCanceling = cancelingPaymentId === r.id;
+                const rowSaving = updatingPaymentId === r.id;
                 return (
                   <tr key={r.id}>
                     <td>{formatDateRu(r.paymentDate)}</td>
@@ -106,13 +123,23 @@ export function PackageContractPaymentsJournalSection({
                             .join(' ') || r.recordedBy.email
                         : '—'}
                     </td>
-                    {canCancelPayments ? (
+                    {canManagePayments ? (
                       <td className={cdBase.paymentsTableActionsCell}>
                         <button
                           data-admin-mutation
                           type="button"
+                          className={cdBase.paymentsEditBtn}
+                          disabled={rowActionBusy}
+                          title="Изменить проведённую оплату (только супер-админ)"
+                          onClick={() => setEditingPaymentId(r.id)}
+                        >
+                          {rowSaving ? 'Сохранение…' : 'Изменить'}
+                        </button>
+                        <button
+                          data-admin-mutation
+                          type="button"
                           className={cdBase.paymentsCancelBtn}
-                          disabled={cancelingPaymentId != null}
+                          disabled={rowActionBusy}
                           title="Отменить оплату (только супер-админ)"
                           onClick={() => setPendingCancelId(r.id)}
                         >
@@ -146,6 +173,17 @@ export function PackageContractPaymentsJournalSection({
         confirmText="Отменить оплату"
         variant="danger"
       />
+
+      {canManagePayments ? (
+        <PackageContractPaymentsEditModal
+          payment={editingRow}
+          saving={updatingPaymentId != null}
+          onClose={() => {
+            if (updatingPaymentId == null) setEditingPaymentId(null);
+          }}
+          onSave={(patch) => void handleEditSave(patch)}
+        />
+      ) : null}
     </div>
   );
 }
