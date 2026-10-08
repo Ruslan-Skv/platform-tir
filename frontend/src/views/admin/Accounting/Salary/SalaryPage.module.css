@@ -1,0 +1,561 @@
+/*
+ * Локальные стили раздела «Расчёт з/п».
+ * Каркас страницы, шапка, фильтры, чипы, таблицы и кнопки — общие модули
+ * (ContractDocuments/styles/*, MoneyMovements.module.css, DataTable).
+ * Здесь только специфика: баннеры, бейджи, плитки правил, формы настроек.
+ */
+
+/* ===== Каркас вкладки ===== */
+
+.tabSection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xl, 12px);
+}
+
+/* ===== Вкладки раздела — ярлычки как у «В работе / В перспективе / В договорах» расчётов ===== */
+
+/* Колонка шапки: строка заголовка + ярлычки вкладок под ней. */
+.headerStack {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--admin-space-xs, 4px);
+  width: 100%;
+  min-width: 0;
+}
+
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-xs);
+  /* Ярлычки притёрты к нижней линии шапки (съедают её padding-bottom) — как у расчётов. */
+  margin: 0 0 calc(-1 * var(--admin-space-md, 8px));
+}
+
+.tab {
+  padding: var(--admin-space-xs, 4px) var(--admin-space-md, 8px);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  line-height: 1.25;
+  border: 1px solid var(--admin-border);
+  border-bottom: none;
+  border-radius: var(--admin-radius-md, 8px) var(--admin-radius-md, 8px) 0 0;
+  background: var(--admin-surface);
+  color: var(--admin-sidebar-text);
+  cursor: pointer;
+}
+
+.tab:hover {
+  background: var(--admin-surface-soft);
+}
+
+.tabActiveCalc {
+  background: var(--admin-success-bg-soft);
+  border-color: var(--admin-success-border-soft);
+  color: var(--admin-success-strong);
+  font-weight: 600;
+}
+
+.tabActiveContracts {
+  background: var(--admin-info-bg-soft);
+  border-color: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+  font-weight: 600;
+}
+
+.tabActiveSettings {
+  background: var(--admin-warning-bg-soft);
+  border-color: var(--admin-warning-border-soft);
+  color: var(--admin-warning-strong);
+  font-weight: 600;
+}
+
+.tabCount {
+  margin-left: var(--admin-space-xs, 4px);
+  padding: 0 var(--admin-space-sm, 6px);
+  border-radius: var(--admin-radius-3xl, 999px);
+  background: var(--admin-border);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.4;
+  color: var(--admin-text-muted);
+}
+
+.tabActiveCalc .tabCount {
+  background: var(--admin-success-border-soft);
+  color: var(--admin-success-strong);
+}
+
+.tabActiveContracts .tabCount {
+  background: var(--admin-info-border-soft);
+  color: var(--admin-info-strong);
+}
+
+.tabActiveSettings .tabCount {
+  background: var(--admin-warning-border-soft);
+  color: var(--admin-warning-strong);
+}
+
+.tableBlock {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+}
+
+/* Пара таблиц «Менеджеры / Замерщики» — в ряд на широких экранах. */
+.tablesRow {
+  display: grid;
+  gap: var(--admin-space-xl, 12px);
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  align-items: start;
+}
+
+.sectionTitle {
+  color: var(--admin-text-primary, #111827);
+  font-size: var(--admin-font-size-md, 0.9375rem);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  margin: var(--admin-space-sm, 6px) 0 0;
+}
+
+/* ===== Баннеры ===== */
+
+.pageNotice {
+  background: var(--admin-success-bg-soft, #ecfdf5);
+  border: 1px solid var(--admin-success-emerald, #6ee7b7);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-success-text, #047857);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  line-height: 1.45;
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.snapshotBanner {
+  align-items: center;
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-info-strong, #1d4ed8);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  gap: var(--admin-space-md, 8px);
+  justify-content: space-between;
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
+.snapshotBannerActions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.bannerBtn {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-info-strong, #1d4ed8);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  padding: var(--admin-space-2xs, 2px) var(--admin-space-md, 8px);
+}
+
+.bannerBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted, #f3f4f6);
+}
+
+.bannerBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.bannerBtnDanger {
+  border-color: var(--admin-error-border, #fca5a5);
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+.bannerBtnDanger:hover:not(:disabled) {
+  background: var(--admin-error-bg-soft, #fef2f2);
+}
+
+.hintBlock {
+  background: var(--admin-surface-muted, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-xl, 12px);
+  color: var(--admin-text-secondary, #4b5563);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  line-height: 1.5;
+  padding: var(--admin-space-xl, 12px) var(--admin-space-2xl, 16px);
+}
+
+/* ===== Ячейки таблиц ===== */
+
+.nameCell {
+  font-weight: 600;
+}
+
+.mutedCell {
+  color: var(--admin-text-muted, #9ca3af);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+}
+
+.numCell {
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.totalCell {
+  font-weight: 700;
+}
+
+.subline {
+  color: var(--admin-text-muted, #9ca3af);
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.noteCell {
+  align-items: flex-start;
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs, 2px);
+}
+
+/* «Общий» договор — часть уходит в пул ×2. */
+.rowCommon td {
+  background: rgb(251 243 208 / 0.55);
+}
+
+/* Итоговая строка разреза. */
+.rowStrong td {
+  background: var(--admin-surface-muted, #f3f4f6);
+  font-weight: 600;
+}
+
+.rowIndented td:first-child {
+  padding-left: var(--admin-space-2xl, 16px);
+}
+
+.rowInactive {
+  opacity: 0.55;
+}
+
+/* ===== Бейджи ===== */
+
+.statusBadge {
+  border-radius: var(--admin-radius-3xl, 999px);
+  display: inline-block;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 0 var(--admin-space-md, 8px);
+  white-space: nowrap;
+}
+
+.statusActive {
+  background: var(--admin-success-bg-soft, #ecfdf5);
+  border: 1px solid var(--admin-success-emerald, #6ee7b7);
+  color: var(--admin-success-text, #047857);
+}
+
+.statusDraft {
+  background: var(--admin-error-bg-soft, #fef2f2);
+  border: 1px solid var(--admin-error-border, #fca5a5);
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+.statusInactive {
+  background: var(--admin-surface-muted, #f3f4f6);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  color: var(--admin-text-muted, #9ca3af);
+}
+
+.badgeCommon {
+  background: rgb(254 243 199 / 0.9);
+  border: 1px solid var(--admin-warning-mustard, #ca8a04);
+  border-radius: var(--admin-radius-3xl, 999px);
+  color: var(--admin-warning-text, #b45309);
+  display: inline-block;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  line-height: 1.6;
+  padding: 0 var(--admin-space-md, 8px);
+  white-space: nowrap;
+}
+
+.openSettlementBtn {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  padding: var(--admin-space-2xs, 2px) var(--admin-space-lg, 10px);
+}
+
+.openSettlementBtn:hover:not(:disabled) {
+  background: var(--admin-surface-muted, #f3f4f6);
+}
+
+/* ===== Формы (модалки и панель настроек) ===== */
+
+.formCheckbox {
+  align-items: center;
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  gap: var(--admin-space-sm, 6px);
+  line-height: 1.4;
+  min-height: 40px;
+}
+
+/* Доп. счета в модалке договора. */
+.extraBillsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.extraBillRow {
+  align-items: center;
+  display: flex;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.extraBillAmount {
+  flex: 0 0 150px;
+}
+
+.extraBillDate {
+  flex: 0 0 160px;
+}
+
+.extraBillNote {
+  flex: 1 1 160px;
+}
+
+.extraBillRemove {
+  background: transparent;
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-muted, #9ca3af);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: var(--admin-font-size-md, 0.9375rem);
+  line-height: 1;
+  padding: var(--admin-space-xs, 4px) var(--admin-space-sm, 6px);
+}
+
+.extraBillRemove:hover:not(:disabled) {
+  border-color: var(--admin-error-border, #fca5a5);
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+.extraBillAdd {
+  align-self: flex-start;
+  background: transparent;
+  border: 1px dashed var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-text-secondary, #4b5563);
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  padding: var(--admin-space-2xs, 2px) var(--admin-space-md, 8px);
+}
+
+.extraBillAdd:hover:not(:disabled) {
+  border-color: var(--admin-info, #3b82f6);
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+/* ===== Панель глобальных параметров ===== */
+
+.settingsPanel {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border, #e5e7eb);
+  border-radius: var(--admin-radius-xl, 12px);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-lg, 10px);
+  padding: var(--admin-space-lg, 10px) var(--admin-space-2xl, 16px) var(--admin-space-xl, 12px);
+}
+
+.settingsGrid {
+  display: grid;
+  gap: var(--admin-space-lg, 10px);
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.settingsField {
+  color: var(--admin-text-primary, #111827);
+  display: flex;
+  flex-direction: column;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.settingsField input {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  font-size: var(--admin-font-size-md, 0.9375rem);
+  font-weight: 400;
+  min-height: 40px;
+  padding: var(--admin-space-md, 8px) var(--admin-space-xl, 12px);
+}
+
+.settingsField input:focus {
+  border-color: var(--admin-accent, #d90632);
+  box-shadow: var(--admin-shadow-focus-soft, 0 0 0 3px rgb(217 6 50 / 0.12));
+  outline: none;
+}
+
+.settingsActions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.saveBtn {
+  background: var(--admin-info, #3b82f6);
+  border: none;
+  border-radius: var(--admin-radius-md, 8px);
+  color: #ffffff;
+  cursor: pointer;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  padding: var(--admin-space-md, 8px) var(--admin-space-2xl, 16px);
+}
+
+.saveBtn:hover:not(:disabled) {
+  opacity: 0.92;
+}
+
+.saveBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+/* ===== Правила ставок по офисам ===== */
+
+.rulesList {
+  display: flex;
+  flex-direction: column;
+}
+
+.rulesBlock {
+  border-top: 1px solid var(--admin-border, #e5e7eb);
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-sm, 6px);
+  padding: var(--admin-space-md, 8px) 0;
+}
+
+.rulesBlock:first-child {
+  border-top: none;
+}
+
+.rulesBlockHeader {
+  align-items: center;
+  display: flex;
+  gap: var(--admin-space-md, 8px);
+  justify-content: space-between;
+}
+
+.addRuleBtn {
+  background: transparent;
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-md, 8px);
+  color: var(--admin-info-strong, #1d4ed8);
+  cursor: pointer;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  padding: var(--admin-space-2xs, 2px) var(--admin-space-md, 8px);
+}
+
+.addRuleBtn:hover:not(:disabled) {
+  background: var(--admin-info-bg-soft, #eff6ff);
+}
+
+.addRuleBtn:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.rulesChips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.ruleChip {
+  align-items: center;
+  background: var(--admin-info-bg-soft, #eff6ff);
+  border: 1px solid var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-3xl, 999px);
+  color: var(--admin-info-strong, #1d4ed8);
+  display: inline-flex;
+  font-size: var(--admin-font-size-xs, 0.75rem);
+  font-weight: 600;
+  gap: var(--admin-space-2xs, 2px);
+  line-height: 1.6;
+  padding: 0 var(--admin-space-sm, 6px) 0 var(--admin-space-md, 8px);
+  white-space: nowrap;
+}
+
+.ruleChipRemove {
+  background: transparent;
+  border: none;
+  border-radius: var(--admin-radius-sm, 6px);
+  color: inherit;
+  cursor: pointer;
+  font-size: var(--admin-font-size-md, 0.9375rem);
+  line-height: 1;
+  padding: var(--admin-space-2xs, 2px) var(--admin-space-2xs, 2px);
+}
+
+.ruleChipRemove:hover:not(:disabled) {
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+/* ===== Тёмная тема ===== */
+
+@media (max-width: 900px) {
+  .tabBar {
+    width: 100%;
+    margin: 0;
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    min-height: 2rem;
+  }
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) {
+  .rowCommon td {
+    background: rgb(120 84 10 / 0.18);
+  }
+
+  .badgeCommon {
+    background: rgb(120 84 10 / 0.22);
+  }
+
+  .settingsPanel input,
+  .openSettlementBtn,
+  .bannerBtn {
+    background: var(--admin-surface, #1f2937);
+    color: var(--admin-text-primary, #f9fafb);
+  }
+}

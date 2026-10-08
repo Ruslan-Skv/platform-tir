@@ -48,6 +48,8 @@ export const ROLE_DEFAULT_RESOURCES: Partial<Record<UserRole, string[]>> = {
     'admin.accounting.bank',
     // Касса (свёрнные наличные) — по умолчанию вместе с Банком.
     'admin.accounting.cash',
+    // Расчёт з/п — чувствительные данные, по умолчанию только админам.
+    'admin.accounting.salary',
     'admin.content',
     'admin.content.home',
     'admin.content.hero',

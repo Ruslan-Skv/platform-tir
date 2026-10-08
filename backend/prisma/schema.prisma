@@ -204,6 +204,9 @@ model User {
   calendarCustomEventsCreated             CalendarCustomEvent[]                    @relation("CalendarCustomEventCreatedBy")
   calendarCustomEventRecipients           CalendarCustomEventRecipient[]           @relation("CalendarCustomEventRecipientUser")
   calendarCustomEventBellEvents           CalendarCustomEventBellEvent[]           @relation("CalendarCustomEventBellRecipient")
+  salaryContractsManager                  SalaryContract[]                         @relation("SalaryContractManager")
+  salaryContractsSurveyor                 SalaryContract[]                         @relation("SalaryContractSurveyor")
+  salarySettlementsCreated                SalarySettlement[]                       @relation("SalarySettlementCreatedBy")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -4359,12 +4362,14 @@ model Office {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
-  complexObjects ComplexObject[]
-  otherExpenses  OfficeOtherExpense[]
-  incassations   OfficeIncassation[]
-  history        OfficeHistory[]
-  users          User[]
-  workDays       WorkDay[]
+  complexObjects  ComplexObject[]
+  otherExpenses   OfficeOtherExpense[]
+  incassations    OfficeIncassation[]
+  history         OfficeHistory[]
+  users           User[]
+  workDays        WorkDay[]
+  salaryContracts SalaryContract[]
+  salaryRateRules SalaryRateRule[]
 
   @@index([isActive])
   @@map("offices")
@@ -4385,6 +4390,203 @@ model OfficeHistory {
   @@index([officeId])
   @@index([changedAt])
   @@map("office_history")
+}
+
+// ============================================================
+// Расчёт з/п (менеджеры, ведущие специалисты, бригадиры)
+// Перенос расчёта из Google-таблицы «Новая таблица 2025»
+// ============================================================
+
+/// Должность участника расчёта з/п
+enum SalaryRole {
+  MANAGER /// Менеджер
+  SURVEYOR /// Замерщик
+  LEAD_SPECIALIST /// Ведущий специалист (ВС)
+  BRIGADIER /// Бригадир / бригада
+}
+
+/// Статус зафиксированного расчёта з/п
+enum SalarySettlementStatus {
+  DRAFT
+  CONFIRMED
+}
+
+/// Глобальные параметры расчёта з/п (одна строка; редактирует суперадмин)
+model SalaryGlobalSetting {
+  id String @id @default("singleton")
+
+  /// Налог, удерживаемый из фондов, % (в таблице 8% → множитель ×0.92)
+  taxPercent            Decimal @default(8) @db.Decimal(5, 2)
+  /// Процент 1-го бригадира от общего фонда, %
+  brigadier1Percent     Decimal @default(3.5) @db.Decimal(5, 2)
+  /// Процент 2-го бригадира от общего фонда, %
+  brigadier2Percent     Decimal @default(5) @db.Decimal(5, 2)
+  /// Коэффициент дележа фонда между 1-м и 2-м бригадиром (в таблице 1.5882)
+  brigadeSplitCoeff     Decimal @default(1.5882) @db.Decimal(6, 4)
+  /// Пул «общих» договоров (без менеджера/замерщика) идёт бригадирскому фонду
+  commonPoolToBrigadier Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("salary_global_settings")
+}
+
+/// Категория договоров для расчёта з/п (окна, двери+потолки, жалюзи, ремонт, ремонт 50/50, мебель, Аврора)
+model SalaryCategory {
+  id String @id @default(cuid())
+
+  /// Код категории (уникальный)
+  code String @unique
+  name String
+
+  /// Процент ведущего специалиста (ВС) от базы, % (окна 1.5, двери+потолки 2, ремонт 1 …)
+  vsPercent  Decimal @default(0) @db.Decimal(5, 2)
+  /// Доля з/п менеджера при заключении договора (0.7 / 0.5 / 0.8)
+  splitSign  Decimal @default(0.7) @db.Decimal(4, 2)
+  /// Доля з/п менеджера при закрытии договора (0.3 / 0.5 / 0.2)
+  splitClose Decimal @default(0.3) @db.Decimal(4, 2)
+
+  /// Процент менеджера по умолчанию, %
+  managerPercent   Decimal @default(3) @db.Decimal(5, 2)
+  /// Процент замерщика по умолчанию, % (0 = замерщик не участвует)
+  surveyorPercent  Decimal @default(0) @db.Decimal(5, 2)
+  /// Процент бригады по умолчанию, % (ремонтные категории: 8.5)
+  brigadierPercent Decimal @default(0) @db.Decimal(5, 2)
+
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts SalaryContract[]
+  rateRules SalaryRateRule[]
+
+  @@map("salary_categories")
+}
+
+/// Переопределение процента по должности для категории (опционально — конкретного офиса).
+/// Приоритет: правило (категория+офис) → правило (категория, все офисы) → категория по умолчанию.
+model SalaryRateRule {
+  id String @id @default(cuid())
+
+  categoryId String
+  officeId   String?
+  role       SalaryRole
+  /// Процент от базы, %
+  percent    Decimal    @db.Decimal(5, 2)
+
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  category SalaryCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  office   Office?        @relation(fields: [officeId], references: [id], onDelete: Cascade)
+
+  /// Уникальность (категория+офис+должность) контролируется сервисом:
+  /// officeId NULL («все офисы») не покрывается UNIQUE в Postgres.
+  @@index([categoryId, officeId, role])
+  @@index([officeId])
+  @@map("salary_rate_rules")
+}
+
+/// Договор, участвующий в расчёте з/п (аналог строки листов «19о», «19-50/50» и т.п.)
+model SalaryContract {
+  id String @id @default(cuid())
+
+  officeId   String
+  categoryId String
+
+  /// № договора
+  number       String
+  /// Дата заключения (может отсутствовать — как в таблице: договор без даты заключения не даёт долю «при заключении»)
+  signedAt     DateTime? @db.Date
+  /// Дата закрытия (пусто — договор не закрыт)
+  closedAt     DateTime? @db.Date
+  customerName String?
+
+  /// Менеджер, ведший договор (для личной з/п)
+  managerId    String?
+  /// Имя менеджера снапшотом — если человек не привязан к пользователю
+  managerName  String?
+  /// Замерщик
+  surveyorId   String?
+  surveyorName String?
+
+  /// Вёл ли менеджер (в таблице колонка «м»): false → его часть ×2 уходит в общий пул
+  managerHandled  Boolean @default(true)
+  /// Был ли замер (в таблице колонка «зам»): false → часть замерщика ×2 уходит в общий пул
+  surveyorHandled Boolean @default(true)
+
+  /// База расчёта: ст-ть изделий + ст-ть монтажа (для «о»-категорий) или стоимость договора (ремонт)
+  baseAmount Decimal @db.Decimal(12, 2)
+
+  /// Точечные переопределения процентов по договору (пусто — берётся из категории/правил офиса)
+  managerPercentOverride   Decimal? @db.Decimal(5, 2)
+  surveyorPercentOverride  Decimal? @db.Decimal(5, 2)
+  vsPercentOverride        Decimal? @db.Decimal(5, 2)
+  brigadierPercentOverride Decimal? @db.Decimal(5, 2)
+
+  /// Источник клиента («уже обращался», «яндекс», «наружка» …) — информационно
+  source String?
+  note   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  office     Office                    @relation(fields: [officeId], references: [id], onDelete: Restrict)
+  category   SalaryCategory            @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  manager    User?                     @relation("SalaryContractManager", fields: [managerId], references: [id], onDelete: SetNull)
+  surveyor   User?                     @relation("SalaryContractSurveyor", fields: [surveyorId], references: [id], onDelete: SetNull)
+  extraBills SalaryContractExtraBill[]
+
+  @@unique([officeId, number])
+  @@index([categoryId])
+  @@index([signedAt])
+  @@index([closedAt])
+  @@index([managerId])
+  @@map("salary_contracts")
+}
+
+/// Доп. счёт (дс) по договору: увеличивает базу, з/п начисляется по дате доп. счёта
+model SalaryContractExtraBill {
+  id String @id @default(cuid())
+
+  contractId String
+  /// Сумма доп. счёта (может быть отрицательной — возврат/скидка)
+  amount     Decimal  @db.Decimal(12, 2)
+  date       DateTime @db.Date
+  note       String?
+
+  createdAt DateTime @default(now())
+
+  contract SalaryContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([date])
+  @@map("salary_contract_extra_bills")
+}
+
+/// Зафиксированный расчёт з/п за период (снапшот всех итогов на момент фиксации)
+model SalarySettlement {
+  id String @id @default(cuid())
+
+  dateFrom DateTime               @db.Date
+  dateTo   DateTime               @db.Date
+  status   SalarySettlementStatus @default(DRAFT)
+
+  /// Полный снапшот расчёта (структура ответа /calculate)
+  snapshot Json
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation("SalarySettlementCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([dateFrom, dateTo])
+  @@index([createdAt])
+  @@map("salary_settlements")
 }
 
 model OfficeOtherExpense {

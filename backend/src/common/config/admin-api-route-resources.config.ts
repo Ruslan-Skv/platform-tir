@@ -40,6 +40,11 @@ const ADMIN_API_ROUTE_RESOURCE_PREFIXES_RAW: ReadonlyArray<{
     prefix: '/api/v1/admin/cash-book',
     resourceId: 'admin.accounting.cash',
   },
+  // Бухгалтерия — расчёт з/п
+  {
+    prefix: '/api/v1/admin/salary',
+    resourceId: 'admin.accounting.salary',
+  },
   // Настройки каталога (справочники)
   {
     prefix: '/api/v1/admin/catalog/component-catalog-kinds',

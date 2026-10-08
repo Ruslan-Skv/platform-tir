@@ -248,6 +248,11 @@ const baseNavItems: NavItem[] = [
         href: '/admin/accounting/bank/reconciliation',
         resourceId: 'admin.accounting.bank',
       },
+      {
+        label: 'Расчёт з/п',
+        href: '/admin/accounting/salary',
+        resourceId: 'admin.accounting.salary',
+      },
     ],
   },
   {

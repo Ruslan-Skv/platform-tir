@@ -6,6 +6,7 @@ import { MoneyMovementsModule } from './money-movements/money-movements.module';
 import { BankEntriesModule } from './bank-entries/bank-entries.module';
 import { CashBookModule } from './cash-book/cash-book.module';
 import { BankReconciliationModule } from './bank-reconciliation/bank-reconciliation.module';
+import { SalaryModule } from './salary/salary.module';
 import { OfficesModule } from './offices/offices.module';
 import { ComplexObjectsModule } from './complex-objects/complex-objects.module';
 import { TasksModule } from './tasks/tasks.module';
@@ -71,6 +72,7 @@ import { JointObjectsModule } from './joint-objects/joint-objects.module';
     BankEntriesModule,
     CashBookModule,
     BankReconciliationModule,
+    SalaryModule,
     OfficesModule,
     ComplexObjectsModule,
     TasksModule,
