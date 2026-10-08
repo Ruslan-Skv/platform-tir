@@ -281,7 +281,7 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
         className={dpStyles.totalsTile}
         title={`Бригадирский фонд: начислено бригадиру ${formatMoneyShort(totals.brigadierFund)} + общий пул`}
       >
-        <span className={dpStyles.totalsTileLabel}>Бригадирский фонд</span>
+        <span className={dpStyles.totalsTileLabel}>Бригадир</span>
         <span className={dpStyles.totalsTileValueRow}>
           <strong className={dpStyles.totalsTileValue}>
             {formatMoney(totals.brigadierTotalNet)}
@@ -302,7 +302,7 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
         </div>
       ))}
       <div className={dpStyles.totalsTile} title="Личные начисления замерщиков по замерам">
-        <span className={dpStyles.totalsTileLabel}>Фонд замерщиков</span>
+        <span className={dpStyles.totalsTileLabel}>Замеры</span>
         <span className={dpStyles.totalsTileValueRow}>
           <strong className={dpStyles.totalsTileValue}>
             {formatMoney(totals.surveyorFundNet)}
@@ -313,35 +313,13 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
         className={dpStyles.totalsTile}
         title="Личные начисления менеджеров по разобранным договорам"
       >
-        <span className={dpStyles.totalsTileLabel}>Менеджеры (личные)</span>
+        <span className={dpStyles.totalsTileLabel}>Менеджеры</span>
         <span className={dpStyles.totalsTileValueRow}>
           <strong className={dpStyles.totalsTileValue}>
             {formatMoney(totals.managerPersonalNet)}
           </strong>
         </span>
         <span className={dpStyles.totalsTileCash}>разобрано договоров: {managerContracts}</span>
-      </div>
-      <div
-        className={dpStyles.totalsTile}
-        title="«Общие» договоры ×2 — включены в бригадирский фонд"
-      >
-        <span className={dpStyles.totalsTileLabel}>Общий пул</span>
-        <span className={dpStyles.totalsTileValueRow}>
-          <strong className={dpStyles.totalsTileValue}>{formatMoney(totals.commonPool)}</strong>
-        </span>
-        <span className={dpStyles.totalsTileCash}>→ в бригадирский фонд</span>
-      </div>
-      <div className={dpStyles.totalsTile} title="Статистика договоров за период">
-        <span className={dpStyles.totalsTileLabel}>Заключено / закрыто</span>
-        <span className={dpStyles.totalsTileValueRow}>
-          <strong className={dpStyles.totalsTileValue}>
-            {totals.stats.signedCount} / {totals.stats.closedCount}
-          </strong>
-        </span>
-        <span className={dpStyles.totalsTileCash}>
-          {formatMoneyShort(totals.stats.signedAmount)} /{' '}
-          {formatMoneyShort(totals.stats.closedAmount)}
-        </span>
       </div>
     </div>
   );
