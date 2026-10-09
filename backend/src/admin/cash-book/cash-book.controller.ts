@@ -39,9 +39,9 @@ const CASH_SECTION_ROLES = [
 export class CashBookController {
   constructor(private readonly cashBook: CashBookService) {}
 
-  /** Список записей кассы: свёрнные наличные оплаты ДП за период. */
+  /** Список записей кассы: свёрнутые наличные оплаты ДП + собственные записи кассы. */
   @Get()
-  findAll(@Query() query: QueryCashBookDto, @Req() req: RequestWithUser) {
+  findAll(@Query() query: QueryCashBookDto) {
     return this.cashBook.findAll({
       dateFrom: query.dateFrom,
       dateTo: query.dateTo,
@@ -49,7 +49,6 @@ export class CashBookController {
       search: query.search,
       page: query.page,
       limit: query.limit,
-      requesterId: req.user?.id,
     });
   }
 

@@ -206,7 +206,7 @@ export class MoneyMovementsService {
         where: salesWhere,
         _sum: { amount: true },
       }),
-      this.signatoryProfileUserIds(),
+      this.getSignatoryProfileUserIds(),
     ]);
 
     const managerRows = signatoryUserIds.length
@@ -408,8 +408,9 @@ export class MoneyMovementsService {
   /**
    * Пользователи из справочника «Карточки менеджеров» (Подписанты) —
    * менеджером по договору может быть любой сотрудник, а не только роль «Менеджер».
+   * Источник списка «Все менеджеры» журнала ДП и раздела «Касса».
    */
-  private async signatoryProfileUserIds(): Promise<string[]> {
+  async getSignatoryProfileUserIds(): Promise<string[]> {
     const rows = await this.prisma.contractDocumentGlobalTemplate.findMany({
       where: { tab: SIGNATORY_PROFILES_TAB },
       select: { html: true },

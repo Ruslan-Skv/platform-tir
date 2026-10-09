@@ -235,6 +235,13 @@ export function useCashPage(): CashPageModel {
     setPageState(1);
   }, []);
 
+  // Если сохранённый менеджер исчез из справочника карточек — сбрасываем выбор.
+  useEffect(() => {
+    if (!managerId || listMeta.managers.length === 0) return;
+    if (listMeta.managers.some((m) => m.id === managerId)) return;
+    setManagerId('');
+  }, [listMeta.managers, managerId, setManagerId]);
+
   /** Быстрый период как в Банке и ДП: сегодня / неделя / текущий месяц. */
   const setPeriod = useCallback((kind: 'today' | 'week' | 'month') => {
     const today = todayIso();
