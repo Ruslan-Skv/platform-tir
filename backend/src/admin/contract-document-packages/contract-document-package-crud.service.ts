@@ -235,6 +235,20 @@ export class ContractDocumentPackageCrudService {
         );
       }
     }
+    // Статус договора в списке мог измениться (акты/суммы) — двигаем проект план-графика.
+    if (updated.kind === ContractDocumentPackageKind.REPAIR) {
+      try {
+        await this.repairScheduleFromPackage.syncProjectStatusFromPackage(
+          updated.id,
+          savedById ?? null,
+        );
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Синхронизация статуса план-графика ремонта для пакета ${updated.id} не удалась: ${message}`,
+        );
+      }
+    }
     // Событийная синхронизация договора в расчёт з/п (ошибки логируются внутри).
     void this.salarySync.syncPackageSafe(id);
     return this.findOne(id);

@@ -119,7 +119,11 @@ export class RepairSchedulesService {
     };
   }
 
-  async create(dto: CreateRepairScheduleProjectDto, createdById?: string | null) {
+  async create(
+    dto: CreateRepairScheduleProjectDto,
+    createdById?: string | null,
+    options?: { notify?: boolean },
+  ) {
     const actorId = emptyToNull(createdById) ?? null;
     const { installerId, installerName } = await this.resolveInstaller(
       dto.installerId,
@@ -194,7 +198,7 @@ export class RepairSchedulesService {
       },
       include: PROJECT_INCLUDE,
     });
-    if (actorId) {
+    if (actorId && options?.notify !== false) {
       this.notify.onCreated(this.toNotifyPayload(project), actorId);
     }
     return withDerived(project);
@@ -281,11 +285,16 @@ export class RepairSchedulesService {
     return withDerived(project);
   }
 
-  async update(id: string, dto: UpdateRepairScheduleProjectDto, actorUserId: string) {
+  async update(
+    id: string,
+    dto: UpdateRepairScheduleProjectDto,
+    actorUserId?: string | null,
+    options?: { notify?: boolean },
+  ) {
     await this.findOne(id);
-    const data: Prisma.RepairScheduleProjectUpdateInput = {
-      updatedBy: { connect: { id: actorUserId } },
-    };
+    const actorId = emptyToNull(actorUserId) ?? null;
+    const data: Prisma.RepairScheduleProjectUpdateInput = {};
+    if (actorId) data.updatedBy = { connect: { id: actorId } };
 
     if (dto.status !== undefined) {
       data.status = dto.status;
@@ -392,16 +401,22 @@ export class RepairSchedulesService {
       include: PROJECT_DETAIL_INCLUDE,
     });
     const derived = withDerived(updated);
+    const skipNotify = options?.notify === false || !actorId;
     if (dto.status !== undefined) {
-      this.notify.onStatusChanged(this.toNotifyPayload(updated), actorUserId);
-    } else {
-      this.notify.onUpdated(this.toNotifyPayload(updated), actorUserId);
+      if (!skipNotify) this.notify.onStatusChanged(this.toNotifyPayload(updated), actorId);
+    } else if (!skipNotify) {
+      this.notify.onUpdated(this.toNotifyPayload(updated), actorId);
     }
     return derived;
   }
 
-  async setStatus(id: string, status: RepairScheduleProjectStatus, actorUserId: string) {
-    return this.update(id, { status }, actorUserId);
+  async setStatus(
+    id: string,
+    status: RepairScheduleProjectStatus,
+    actorUserId?: string | null,
+    options?: { notify?: boolean },
+  ) {
+    return this.update(id, { status }, actorUserId, options);
   }
 
   async remove(id: string) {

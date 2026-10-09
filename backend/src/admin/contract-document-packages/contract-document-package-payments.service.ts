@@ -1,8 +1,9 @@
-import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { PaymentForm, PaymentType, Prisma } from '@prisma/client';
 
 import { PrismaService } from '../../database/prisma.service';
 import { MoneyMovementsService } from '../money-movements/money-movements.service';
+import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
 import { CreateContractDocumentPackagePaymentDto } from './dto/create-contract-document-package-payment.dto';
 import { UpdateContractDocumentPackagePaymentDto } from './dto/update-contract-document-package-payment.dto';
 
@@ -16,10 +17,25 @@ function assertAmendmentAddendumNumber(n: number | null | undefined): asserts n 
 
 @Injectable()
 export class ContractDocumentPackagePaymentsService {
+  private readonly logger = new Logger(ContractDocumentPackagePaymentsService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly moneyMovements: MoneyMovementsService,
+    private readonly repairScheduleFromPackage: RepairScheduleFromPackageService,
   ) {}
+
+  /** Оплаты двигают статус договора («В работе»/«Закрыт») — за ним едет проект план-графика. */
+  private syncRepairScheduleStatus(packageId: string, actorUserId?: string | null) {
+    return this.repairScheduleFromPackage
+      .syncProjectStatusFromPackage(packageId, actorUserId ?? null)
+      .catch((err: unknown) => {
+        const message = err instanceof Error ? err.message : String(err);
+        this.logger.warn(
+          `Синхронизация план-графика ремонта по оплатам пакета ${packageId} не удалась: ${message}`,
+        );
+      });
+  }
 
   private serialize(
     p: Prisma.ContractDocumentPackagePaymentGetPayload<{
@@ -114,6 +130,7 @@ export class ContractDocumentPackagePaymentsService {
       },
     });
     await this.moneyMovements.recordFromPackagePayment(created);
+    void this.syncRepairScheduleStatus(packageId, recordedById);
     return this.serialize(created);
   }
 
@@ -152,6 +169,7 @@ export class ContractDocumentPackagePaymentsService {
       },
     });
     await this.moneyMovements.syncFromPackagePayment(updated);
+    void this.syncRepairScheduleStatus(packageId, updated.recordedById);
     return this.serialize(updated);
   }
 
@@ -166,6 +184,7 @@ export class ContractDocumentPackagePaymentsService {
     }
     await this.prisma.contractDocumentPackagePayment.delete({ where: { id: paymentId } });
     await this.moneyMovements.removeBySourceId(paymentId);
+    void this.syncRepairScheduleStatus(packageId, null);
     return { ok: true };
   }
 }

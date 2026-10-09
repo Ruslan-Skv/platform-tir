@@ -256,6 +256,23 @@ export type RepairScheduleImportResult = {
   entriesUpserted: number;
 };
 
+export type RepairScheduleAutoSyncResult = {
+  scannedPackages: number;
+  created: number;
+  createdProjectIds: string[];
+  statusUpdated: number;
+};
+
+/** Автозагрузка подписанных договоров «Ремонт» без проекта в план-график. */
+export async function autoSyncRepairSchedules(): Promise<RepairScheduleAutoSyncResult> {
+  const res = await apiFetch(`${API_URL}/admin/repair-schedules/auto-sync`, {
+    method: 'POST',
+    headers: getAdminAuthHeaders(),
+  });
+  if (!res.ok) await throwApiError(res, 'Не удалось синхронизировать договоры с план-графиком');
+  return res.json();
+}
+
 export async function importRepairScheduleExcel(
   file: File,
   years: number[] = [2025, 2026]

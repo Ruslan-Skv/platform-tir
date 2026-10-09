@@ -25,6 +25,7 @@ import { CreateRepairScheduleProjectDto } from './dto/create-repair-schedule-pro
 import { SetRepairScheduleProjectStatusDto } from './dto/set-repair-schedule-project-status.dto';
 import { UpdateRepairScheduleEntryDto } from './dto/update-repair-schedule-entry.dto';
 import { UpdateRepairScheduleProjectDto } from './dto/update-repair-schedule-project.dto';
+import { RepairScheduleFromPackageService } from './repair-schedule-from-package.service';
 import { RepairSchedulesService } from './repair-schedules.service';
 
 const SCHEDULE_ROLES = [
@@ -56,7 +57,10 @@ const PLANNER_ROLES = [
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...SCHEDULE_ROLES)
 export class RepairSchedulesController {
-  constructor(private readonly service: RepairSchedulesService) {}
+  constructor(
+    private readonly service: RepairSchedulesService,
+    private readonly fromPackage: RepairScheduleFromPackageService,
+  ) {}
 
   private assertPlanner(role: string) {
     if (!(PLANNER_ROLES as readonly string[]).includes(role)) {
@@ -118,6 +122,12 @@ export class RepairSchedulesController {
     return this.service.importFromExcel(file.buffer, req.user.id, {
       years: yearList?.length ? yearList : [2025, 2026],
     });
+  }
+
+  @Post('auto-sync')
+  autoSyncFromPackages(@Req() req: RequestWithUser) {
+    this.assertPlanner(req.user.role);
+    return this.fromPackage.autoSyncFromConcludedRepairPackages(req.user.id);
   }
 
   @Get(':id')

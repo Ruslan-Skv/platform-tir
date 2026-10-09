@@ -8,6 +8,7 @@ import { type InstallerMaster, getInstallers } from '@/shared/api/admin-crm';
 import {
   type RepairScheduleProject,
   type RepairScheduleProjectStatus,
+  autoSyncRepairSchedules,
   createRepairScheduleProject,
   deleteRepairScheduleProject,
   getRepairScheduleProjects,
@@ -69,6 +70,11 @@ export function useRepairSchedulesPage() {
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
+      try {
+        await autoSyncRepairSchedules();
+      } catch {
+        /* автозагрузка договоров не должна блокировать список */
+      }
       setItems(
         await getRepairScheduleProjects({
           search: search.trim() || undefined,

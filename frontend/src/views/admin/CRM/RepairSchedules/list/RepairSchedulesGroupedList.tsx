@@ -29,6 +29,21 @@ type Props = {
 
 const COL_SPAN = 8;
 
+/** Фон строки/карточки по близости окончания срока договора. */
+function deadlineRowTint(warning: RepairScheduleProject['deadlineWarning']): string {
+  if (warning === 'OVERDUE' || warning === 'D3') return styles.deadlineRowUrgent;
+  if (warning === 'D10') return styles.deadlineRowHigh;
+  if (warning === 'D20') return styles.deadlineRowSoft;
+  return '';
+}
+
+function deadlineCardTint(warning: RepairScheduleProject['deadlineWarning']): string {
+  if (warning === 'OVERDUE' || warning === 'D3') return styles.deadlineCardUrgent;
+  if (warning === 'D10') return styles.deadlineCardHigh;
+  if (warning === 'D20') return styles.deadlineCardSoft;
+  return '';
+}
+
 export function RepairSchedulesGroupedList({
   items,
   loading,
@@ -173,7 +188,10 @@ export function RepairSchedulesGroupedList({
   );
 
   const renderMobileCard = (item: RepairScheduleProject) => (
-    <article key={item.id} className={styles.mobileCard}>
+    <article
+      key={item.id}
+      className={`${styles.mobileCard} ${deadlineCardTint(item.deadlineWarning)}`}
+    >
       <div className={styles.mobileCardTop}>
         <div>
           <div className={styles.mobileCardName}>{item.contractNumber || 'Без номера'}</div>
@@ -305,7 +323,10 @@ export function RepairSchedulesGroupedList({
                   if (!group.isCluster) {
                     const item = group.projects[0];
                     return (
-                      <tr key={item.id} className={dataTableStyles.row}>
+                      <tr
+                        key={item.id}
+                        className={`${dataTableStyles.row} ${deadlineRowTint(item.deadlineWarning)}`}
+                      >
                         {renderProjectCells(item, false)}
                       </tr>
                     );
@@ -392,7 +413,7 @@ export function RepairSchedulesGroupedList({
                         ? group.projects.map((item) => (
                             <tr
                               key={item.id}
-                              className={`${dataTableStyles.row} ${styles.objectChildRow}`}
+                              className={`${dataTableStyles.row} ${styles.objectChildRow} ${deadlineRowTint(item.deadlineWarning)}`}
                             >
                               {renderProjectCells(item, true)}
                             </tr>

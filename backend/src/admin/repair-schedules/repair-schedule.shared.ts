@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { Prisma, RepairScheduleEntryKind, RepairScheduleProjectStatus } from '@prisma/client';
 
+import type { PackageListPipelineStatus } from '../contract-document-packages/list-pipeline/package-list-pipeline-status';
+
 /** Проекты «В работе» без записи за это число дней считаются «протухшими». */
 export const REPAIR_SCHEDULE_STALE_DAYS = 7;
 
@@ -48,6 +50,27 @@ export function emptyToNull(value?: string | null): string | null | undefined {
   const trimmed = value.trim();
   return trimmed === '' ? null : trimmed;
 }
+
+/**
+ * Статус списка договоров → раздел план-графика:
+ * «Подписан» → «Новые», «В работе» → «В работе», «Закрыт» → «Закрытые».
+ * «В проекте» и «Отказ» проекта не касаются (null = не трогать).
+ */
+export function pipelineStatusToProjectStatus(
+  pipeline: PackageListPipelineStatus | string,
+): RepairScheduleProjectStatus | null {
+  if (pipeline === 'SIGNED') return RepairScheduleProjectStatus.NEW;
+  if (pipeline === 'WORK_IN_PROGRESS') return RepairScheduleProjectStatus.IN_PROGRESS;
+  if (pipeline === 'CLOSED') return RepairScheduleProjectStatus.CLOSED;
+  return null;
+}
+
+/** Порядок «жизненного цикла» проекта: статус двигается только вперёд. */
+export const REPAIR_PROJECT_STATUS_RANK: Record<RepairScheduleProjectStatus, number> = {
+  NEW: 0,
+  IN_PROGRESS: 1,
+  CLOSED: 2,
+};
 
 export function parseDateOnly(dateStr: string): Date {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(dateStr.trim());

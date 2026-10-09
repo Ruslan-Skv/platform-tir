@@ -273,6 +273,34 @@
   color: var(--admin-error-text, #b91c1c);
 }
 
+/* Подсветка строк и мобильных карточек с приближающимся сроком окончания договора. */
+.deadlineRowSoft {
+  background: rgba(194, 65, 12, 0.05);
+}
+
+.deadlineRowHigh {
+  background: rgba(234, 88, 12, 0.1);
+}
+
+.deadlineRowUrgent {
+  background: rgba(185, 28, 28, 0.1);
+}
+
+.deadlineCardSoft {
+  background: rgba(194, 65, 12, 0.05);
+  border-color: rgba(194, 65, 12, 0.4);
+}
+
+.deadlineCardHigh {
+  background: rgba(234, 88, 12, 0.1);
+  border-color: rgba(234, 88, 12, 0.5);
+}
+
+.deadlineCardUrgent {
+  background: rgba(185, 28, 28, 0.1);
+  border-color: rgba(185, 28, 28, 0.55);
+}
+
 .subline {
   display: block;
   color: var(--admin-text-muted);
