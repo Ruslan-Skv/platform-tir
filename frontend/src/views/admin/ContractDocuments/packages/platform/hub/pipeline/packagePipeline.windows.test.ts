@@ -73,7 +73,9 @@ describe('computePackageContractPipelineModel WINDOWS', () => {
     expect(model.workStartPaymentReady).toBe(true);
     expect(model.windowsWorkPeriodStartDate).toBe('2026-06-03');
     expect(model.workStarted).toBe(true);
-    expect(model.listPipelineStatus).toBe('WORK_IN_PROGRESS');
+    // В списке договоров «В работе» — только «Ремонт»; окна остаются «Подписан»
+    // (шаг конвейера в хабе при этом отмечает начало работ и срок).
+    expect(model.listPipelineStatus).toBe('SIGNED');
     expect(model.windowsContractDeadline?.workingDays).toBe(50);
     expect(model.windowsContractDeadline?.startLabelRu).toBe('03.06.2026');
     expect(model.windowsContractDeadline?.labelRu).toBeTruthy();

@@ -116,6 +116,10 @@ export interface PackageContractPipelineModel {
   steps: PackageContractPipelineStepView[];
   currentStepId: PackageContractPipelineStepId | 'refusal';
   listPipelineStatus: PackageListPipelineStatus;
+  /** Договор подписан, но оплата ниже порога (70%) — в списке «Подписан (оплата N%!)». */
+  signedPaymentDue: boolean;
+  /** Сколько процентов стоимости договора уже оплачено (целое, вниз) — для «(оплата N%!)». */
+  signedPaymentDuePaidPct: number | null;
   contractSignedRevertRemainingMs: number;
   canRevertContractConcluded: boolean;
   /** Прикреплена ли смета (расчёт) к основному договору (для «Ремонта» — обязательна к подписанию). */
@@ -619,6 +623,18 @@ export function computePackageContractPipelineModel(input: {
     nowMs
   );
 
+  /*
+   * «Подписан (оплата N%!)»: договор подписан, но оплаты меньше порога
+   * (70% от суммы договора) — визуальный статус списка до оплаты до нормы.
+   */
+  const signedPaymentDue =
+    input.packageFlowStatus === 'CONTRACT_CONCLUDED' &&
+    hasPositivePayableGrandTotal(payableBreakdown) &&
+    !workStartPaymentReady;
+  const signedPaymentDuePaidPct = signedPaymentDue
+    ? Math.max(0, Math.floor((journalTotal / (payableBreakdown.grandTotalRub as number)) * 100))
+    : null;
+
   return {
     packageKind,
     packageFlowStatus: input.packageFlowStatus,
@@ -645,9 +661,20 @@ export function computePackageContractPipelineModel(input: {
       packageKind,
       packageFlowStatus: input.packageFlowStatus,
       isRefused,
-      workStarted,
+      /*
+       * В списке договоров «В работе» — этап только «Ремонта» (после Акта начала работ).
+       * Продуктовые направления после подписания остаются «Подписан» до закрытия;
+       * шаги конвейера в хабе пакета при этом сохраняют свою детализацию.
+       */
+      workStarted: isProductDirection ? false : workStarted,
       contractClosed,
     }),
+    /*
+     * «Подписан (оплата N%!)»: договор подписан, но оплаты меньше порога
+     * (70% от суммы договора) — визуальный статус списка до оплаты до нормы.
+     */
+    signedPaymentDue,
+    signedPaymentDuePaidPct,
     contractSignedRevertRemainingMs,
     canRevertContractConcluded:
       input.packageFlowStatus === 'CONTRACT_CONCLUDED' &&
@@ -660,28 +687,52 @@ export function computePackageContractPipelineModel(input: {
 export function packageListPipelineStatusFromPackage(
   pkg: Pick<ContractDocumentPackage, 'kind' | 'status' | 'formData' | 'payments'>
 ): PackageListPipelineStatus {
+  return packageListPipelineStatusInfoFromPackage(pkg).status;
+}
+
+/** Статус списка + признак «Подписан (оплата N%!)» — оплата ниже порога 70%. */
+export function packageListPipelineStatusInfoFromPackage(
+  pkg: Pick<ContractDocumentPackage, 'kind' | 'status' | 'formData' | 'payments'>
+): {
+  status: PackageListPipelineStatus;
+  signedPaymentDue: boolean;
+  signedPaymentDuePaidPct: number | null;
+} {
   const fd = (pkg.formData ?? {}) as Record<string, unknown>;
-  if (pkg.status === 'REFUSED' || fd.repairContractClientRefused === true) return 'REFUSED';
+  if (pkg.status === 'REFUSED' || fd.repairContractClientRefused === true) {
+    return { status: 'REFUSED', signedPaymentDue: false, signedPaymentDuePaidPct: null };
+  }
 
   const form = mergePackageFormData(pkg.formData);
   const packageFlowStatus: ContractDocumentPackageStatus =
     pkg.status === 'CONTRACT_CONCLUDED' ? 'CONTRACT_CONCLUDED' : 'IN_PROGRESS';
   const packageKind = isProductDirectionPackageKind(pkg.kind) ? pkg.kind : 'REPAIR';
 
-  return computePackageContractPipelineModel({
+  const model = computePackageContractPipelineModel({
     packageKind,
     packageFlowStatus,
     form,
     payments: pkg.payments as ContractDocumentPackagePayment[] | undefined,
-  }).listPipelineStatus;
+  });
+  return {
+    status: model.listPipelineStatus,
+    signedPaymentDue: model.signedPaymentDue,
+    signedPaymentDuePaidPct: model.signedPaymentDuePaidPct,
+  };
 }
 
-export function packageListPipelineStatusLabel(st: PackageListPipelineStatus): string {
+export function packageListPipelineStatusLabel(
+  st: PackageListPipelineStatus,
+  opts?: { signedPaymentDue?: boolean; signedPaymentDuePaidPct?: number | null }
+): string {
   switch (st) {
     case 'IN_PROJECT':
       return 'В проекте';
-    case 'SIGNED':
-      return 'Подписан';
+    case 'SIGNED': {
+      if (!opts?.signedPaymentDue) return 'Подписан';
+      const pct = opts.signedPaymentDuePaidPct;
+      return typeof pct === 'number' ? `Подписан (оплата ${pct}%!)` : 'Подписан (оплата!)';
+    }
     case 'WORK_IN_PROGRESS':
       return 'В работе';
     case 'CLOSED':

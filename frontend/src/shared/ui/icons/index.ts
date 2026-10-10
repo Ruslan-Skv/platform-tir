@@ -45,6 +45,12 @@ export {
   ADMIN_EDIT_ICON_SIZE,
   type EditIconProps,
 } from './EditIcon';
+export {
+  RevertSigningIcon,
+  ADMIN_ACTION_ICON_REVERT_CLASS,
+  ADMIN_REVERT_SIGNING_ICON_SIZE,
+  type RevertSigningIconProps,
+} from './admin/RevertSigningIcon';
 export { CommentIcon, ADMIN_COMMENT_ICON_SIZE, type CommentIconProps } from './CommentIcon';
 export {
   InterestingMaterialIcon,

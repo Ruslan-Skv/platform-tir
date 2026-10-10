@@ -14,7 +14,7 @@ import { getDisplayContractNumber } from '../../../platform/form/packageContract
 import { type PackageFormData, mergePackageFormData } from '../../../platform/form/packageForm';
 import {
   type PackageListPipelineStatus,
-  packageListPipelineStatusFromPackage,
+  packageListPipelineStatusInfoFromPackage,
 } from '../../../platform/hub/pipeline/packagePipeline';
 import type { ContractsListSortBy, ContractsListSortOrder } from './contractsListSort';
 
@@ -427,12 +427,28 @@ export function formatSigningDateOnly(r: ContractDocumentPackage): string {
 export function contractsListPipelineStatus(
   pkg: ContractDocumentPackage
 ): PackageListPipelineStatus {
+  return contractsListPipelineStatusInfo(pkg).status;
+}
+
+/**
+ * Статус колонки + признак «Подписан (оплата N%!)» (подписан, но оплата ниже порога 70%).
+ * Упрощённые направления (мебель) — без признака оплаты.
+ */
+export function contractsListPipelineStatusInfo(pkg: ContractDocumentPackage): {
+  status: PackageListPipelineStatus;
+  signedPaymentDue: boolean;
+  signedPaymentDuePaidPct: number | null;
+} {
   if (pkg.kind === 'REPAIR' || isProductDirectionPackageKind(pkg.kind)) {
-    return packageListPipelineStatusFromPackage(pkg);
+    return packageListPipelineStatusInfoFromPackage(pkg);
   }
-  if (pkg.status === 'REFUSED') return 'REFUSED';
-  if (pkg.status === 'CONTRACT_CONCLUDED') return 'SIGNED';
-  return 'IN_PROJECT';
+  if (pkg.status === 'REFUSED') {
+    return { status: 'REFUSED', signedPaymentDue: false, signedPaymentDuePaidPct: null };
+  }
+  if (pkg.status === 'CONTRACT_CONCLUDED') {
+    return { status: 'SIGNED', signedPaymentDue: false, signedPaymentDuePaidPct: null };
+  }
+  return { status: 'IN_PROJECT', signedPaymentDue: false, signedPaymentDuePaidPct: null };
 }
 
 /** Удаление: нельзя при оплатах или при прикреплённой смете (основной договор). */
@@ -641,8 +657,13 @@ export function compareContractListRows(
  * Подсказка об активной сессии ЭП под статусом договора («На согласовании» /
  * «Просмотрено заказчиком»). Не показывается, если договор уже подписан
  * (в т.ч. вручную при висящей ссылке ЭП) — маркер мог остаться устаревшим.
+ * `concluded` — статус пакета из БД: страховка от рассинхрона formData и статуса.
  */
-export function contractsListRemoteSigningHintLabel(formData: unknown): string {
+export function contractsListRemoteSigningHintLabel(
+  formData: unknown,
+  opts?: { concluded?: boolean }
+): string {
+  if (opts?.concluded) return '';
   if (!formData || typeof formData !== 'object' || Array.isArray(formData)) return '';
   const fd = formData as Record<string, unknown>;
   if (typeof fd.contractConcludedAt === 'string' && fd.contractConcludedAt.trim()) return '';

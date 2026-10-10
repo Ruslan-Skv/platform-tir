@@ -644,6 +644,14 @@
   color: var(--admin-success-text-strong);
 }
 
+/* Подписан (оплата!) — подписан, но оплата ниже порога (70%) */
+.contractsListStatusBadgeSignedPaymentDue {
+  background: var(--admin-warning-bg);
+  border-color: var(--admin-warning-text);
+  color: var(--admin-warning-text);
+  font-weight: 600;
+}
+
 /* В работе — как «В работе» (замер) */
 .contractsListStatusBadgeWork {
   background: var(--admin-warning-bg);
@@ -1172,6 +1180,12 @@
   background: var(--admin-overlay-color-098);
   border-color: var(--admin-success-lime);
   color: var(--admin-success-border-soft);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeSignedPaymentDue {
+  background: var(--admin-overlay-color-020);
+  border-color: var(--admin-warning-border);
+  color: var(--admin-warning-border);
 }
 
 :where(html[data-theme='dark'], [data-app-theme='dark']) .contractsListStatusBadgeWork {

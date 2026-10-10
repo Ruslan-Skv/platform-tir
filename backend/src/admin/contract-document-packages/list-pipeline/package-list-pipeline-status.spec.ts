@@ -87,7 +87,7 @@ describe('computePackageListPipelineStatus', () => {
     ).toBe('CLOSED');
   });
 
-  it('returns WORK_IN_PROGRESS for windows after 70% prepayment', () => {
+  it('keeps windows SIGNED after 70% prepayment — «В работе» только у «Ремонта»', () => {
     expect(
       computePackageListPipelineStatus({
         kind: ContractDocumentPackageKind.WINDOWS,
@@ -99,7 +99,7 @@ describe('computePackageListPipelineStatus', () => {
         },
         payments: [{ amount: '70000', paymentType: 'PREPAYMENT', paymentDate: '2026-01-20' }],
       }),
-    ).toBe('WORK_IN_PROGRESS');
+    ).toBe('SIGNED');
   });
 
   it('simplifies furniture to SIGNED/IN_PROJECT', () => {

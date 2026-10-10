@@ -1,0 +1,4 @@
+:global(.admin-action-icon-revert) {
+  color: var(--admin-icon-revert-bell);
+  flex-shrink: 0;
+}

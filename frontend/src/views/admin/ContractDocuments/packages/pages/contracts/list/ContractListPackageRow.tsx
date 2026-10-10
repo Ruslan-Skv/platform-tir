@@ -10,7 +10,7 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 import { ShareIcon } from '@/shared/ui/icons';
 import { CopyIcon } from '@/shared/ui/icons/CopyIcon';
 import { DeleteIcon } from '@/shared/ui/icons/DeleteIcon';
-import { EditIcon } from '@/shared/ui/icons/EditIcon';
+import { RevertSigningIcon } from '@/shared/ui/icons/admin/RevertSigningIcon';
 import { adminContractDocumentsContractsPackageHref } from '@/views/admin/ContractDocuments/packages/config/contractDocumentsContractsRoutes';
 import { getDisplayContractNumber } from '@/views/admin/ContractDocuments/packages/platform/form/packageContractDisplay';
 import { mergePackageFormData } from '@/views/admin/ContractDocuments/packages/platform/form/packageForm';
@@ -49,7 +49,7 @@ import {
   contractsListManagerDisplayLabel,
   contractsListObjectAddress,
   contractsListPackageKindLabel,
-  contractsListPipelineStatus,
+  contractsListPipelineStatusInfo,
   contractsListRemainingToPayRub,
   contractsListRemoteSigningHintLabel,
   contractsListSignedAddendumRub,
@@ -130,7 +130,11 @@ export function ContractListPackageRow({
   const copyBusy = copyingPackageId === pkg.id;
   const deleteBusy = deletingPackageId === pkg.id;
   const canDeleteDraft = isPackageDraftDeletionAllowed(pkg);
-  const pipelineStatus = contractsListPipelineStatus(pkg);
+  const {
+    status: pipelineStatus,
+    signedPaymentDue,
+    signedPaymentDuePaidPct,
+  } = contractsListPipelineStatusInfo(pkg);
   const actPhotoItems = contractsListAttachedActPhotosFromForm(form, publicUploadUrl);
   const packageHref = adminContractDocumentsContractsPackageHref(pkg.id);
   const rowClass = childOfObject
@@ -162,11 +166,25 @@ export function ContractListPackageRow({
       {col('date') ? <td>{formatSigningDateOnly(pkg)}</td> : null}
       {col('status') ? (
         <td>
-          <span className={contractsListPipelineStatusBadgeClass(pipelineStatus)}>
-            {packageListPipelineStatusLabel(pipelineStatus)}
+          <span
+            className={contractsListPipelineStatusBadgeClass(pipelineStatus, {
+              signedPaymentDue,
+            })}
+            title={
+              signedPaymentDue
+                ? `Договор подписан, оплачено ${signedPaymentDuePaidPct ?? '—'}% от суммы договора (порог 70%)`
+                : undefined
+            }
+          >
+            {packageListPipelineStatusLabel(pipelineStatus, {
+              signedPaymentDue,
+              signedPaymentDuePaidPct,
+            })}
           </span>
           {(() => {
-            const label = contractsListRemoteSigningHintLabel(fd);
+            const label = contractsListRemoteSigningHintLabel(fd, {
+              concluded: pkg.status === 'CONTRACT_CONCLUDED',
+            });
             if (!label) return null;
             return (
               <div className={cdHub.contractsListRemoteSigningHint} title={label}>
@@ -346,7 +364,7 @@ export function ContractListPackageRow({
                 title="Отменить подписание и вернуть на доработку (только супер-админ)"
                 onClick={() => onRevertSigning(pkg)}
               >
-                <EditIcon
+                <RevertSigningIcon
                   className={revertSigningBusy ? cdChrome.estimatesRefreshIconSpinning : undefined}
                 />
               </AdminTableIconButton>

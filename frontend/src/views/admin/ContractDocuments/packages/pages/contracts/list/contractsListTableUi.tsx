@@ -25,13 +25,18 @@ export function ContractsListActPhotosTriggerIcon() {
   );
 }
 
-export function contractsListPipelineStatusBadgeClass(st: PackageListPipelineStatus): string {
+export function contractsListPipelineStatusBadgeClass(
+  st: PackageListPipelineStatus,
+  opts?: { signedPaymentDue?: boolean }
+): string {
   const base = cdHub.contractsListStatusBadge;
   switch (st) {
     case 'IN_PROJECT':
       return `${base} ${cdHub.contractsListStatusBadgeInProject}`;
     case 'SIGNED':
-      return `${base} ${cdHub.contractsListStatusBadgeSigned}`;
+      return opts?.signedPaymentDue
+        ? `${base} ${cdHub.contractsListStatusBadgeSignedPaymentDue}`
+        : `${base} ${cdHub.contractsListStatusBadgeSigned}`;
     case 'WORK_IN_PROGRESS':
       return `${base} ${cdHub.contractsListStatusBadgeWork}`;
     case 'CLOSED':

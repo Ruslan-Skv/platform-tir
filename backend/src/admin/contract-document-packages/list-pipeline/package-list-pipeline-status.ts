@@ -411,7 +411,12 @@ export function computePackageListPipelineStatus(input: {
     ? workStartPaymentReady && Boolean(windowsStart)
     : isFormWorkStartActComplete(formData);
   const closeActDone = closeActComplete(formData);
-  const workStarted = workStartPaymentReady && workStartActDone;
+  /*
+   * «В работе» — этап только направления «Ремонт» (после подписания Акта начала работ).
+   * Продуктовые направления (окна, двери, жалюзи, потолки) после подписания договора
+   * остаются «Подписан» до закрытия (полная оплата + Акт сдачи).
+   */
+  const workStarted = !product && workStartPaymentReady && workStartActDone;
   const contractClosed = allPaymentsComplete && closeActDone;
 
   return deriveListPipelineStatus({

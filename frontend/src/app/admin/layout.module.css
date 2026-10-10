@@ -496,6 +496,8 @@
   --admin-icon-pin: var(--admin-chart-series-4);
   --admin-icon-pin-active: var(--admin-chart-series-2);
   --admin-icon-publish: var(--admin-success-lime);
+  --admin-icon-revert-bell: var(--admin-chart-series-1);
+  --admin-icon-revert-slash: var(--admin-chart-series-6);
   --admin-icon-action-disabled: var(--admin-text-muted);
   --admin-chart-series-7: var(--admin-chart-violet-strong);
   --admin-chart-series-8: var(--admin-success-deep);
@@ -940,6 +942,8 @@
   --admin-icon-pin: var(--admin-chart-series-4);
   --admin-icon-pin-active: var(--admin-chart-series-2);
   --admin-icon-publish: var(--admin-success-lime);
+  --admin-icon-revert-bell: var(--admin-chart-series-1);
+  --admin-icon-revert-slash: var(--admin-chart-series-6);
   --admin-icon-action-disabled: var(--admin-text-muted);
   --admin-chart-series-7: rgb(var(--color-accent-rgb) / 0.78);
   --admin-chart-series-8: rgb(52 211 153 / 0.95);
