@@ -19,6 +19,8 @@ export type UsePackageEstimatePresetHandlersOptions = {
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
   schedulePersistDebounced: () => void;
+  /** Продуктовые направления: пересчёт сметы сохраняет в итоге договора стоимость изделий. */
+  productDirection?: boolean;
 };
 
 export function usePackageEstimatePresetHandlers({
@@ -30,6 +32,7 @@ export function usePackageEstimatePresetHandlers({
   estimatePresets,
   estimateGroups,
   schedulePersistDebounced,
+  productDirection,
 }: UsePackageEstimatePresetHandlersOptions) {
   const applyEstimatePresetIdsToForm = useCallback(
     (presetIds: string[]) => {
@@ -40,7 +43,8 @@ export function usePackageEstimatePresetHandlers({
           p,
           uniqueIds,
           estimatePresets,
-          estimateGroups
+          estimateGroups,
+          { productDirection }
         );
         formRef.current = nextForm;
         schedulePersistDebounced();
@@ -56,6 +60,7 @@ export function usePackageEstimatePresetHandlers({
       formRef,
       schedulePersistDebounced,
       setDirty,
+      productDirection,
     ]
   );
 

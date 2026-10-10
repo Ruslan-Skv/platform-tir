@@ -1340,6 +1340,72 @@ export async function downloadDocumentPdf(
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+/**
+ * Детект «потерянных» слов html2canvas: обычный режим рисует текст пословно по
+ * Range-измерениям, и слова с нулевыми прямоугольниками (особенности окружения:
+ * браузер/масштаб/шрифты) склеиваются в точке (0,0) канваса — из документа они
+ * при этом «исчезают» (баг ЭП-комплекта № 3742о-2: выпали куски пп. 1.2–2.3).
+ * Измеряем слова тем же способом в исходном iframe (раскладка клона идентична)
+ * и считаем видимые слова без координат.
+ */
+function countZeroBoundsVisibleWords(doc: Document): number {
+  const root = doc.querySelector('.docPrint') ?? doc.body;
+  const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+  let zeroBoundsWords = 0;
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    const text = node.nodeValue ?? '';
+    const wordRe = /\S+/g;
+    let match: RegExpExecArray | null;
+    while ((match = wordRe.exec(text))) {
+      const word = match[0].replace(/[\u200B-\u200D\uFEFF]/g, '');
+      if (!word.trim()) continue;
+      const range = doc.createRange();
+      range.setStart(node, match.index);
+      range.setEnd(node, match.index + match[0].length);
+      let hasBounds = false;
+      for (const rect of range.getClientRects()) {
+        if (rect.width !== 0 || rect.height !== 0) {
+          hasBounds = true;
+          break;
+        }
+      }
+      if (!hasBounds) zeroBoundsWords += 1;
+    }
+  }
+  return zeroBoundsWords;
+}
+
+export type PdfPageSlice = {
+  /** Верхняя граница полосы в пикселях канваса. */
+  topPx: number;
+  /** Высота полосы в пикселях канваса (последняя страница — короче). */
+  heightPx: number;
+};
+
+/**
+ * Разметка канваса на полосы-страницы: границы через Math.round, поэтому полосы
+ * стыкуются точно без зазоров и пересечений (конец полосы i == начало полосы i+1),
+ * а вместе они покрывают весь канвас.
+ */
+export function computePdfPageSlices(
+  canvasHeightPx: number,
+  contentHeightMm: number,
+  pxPerMm: number
+): PdfPageSlice[] {
+  const pageHeightPx = contentHeightMm * pxPerMm;
+  if (!(pageHeightPx > 0) || canvasHeightPx <= 0) return [];
+  const pageCount = Math.max(1, Math.ceil(canvasHeightPx / pageHeightPx));
+  const slices: PdfPageSlice[] = [];
+  for (let page = 0; page < pageCount; page += 1) {
+    const topPx = Math.round(page * pageHeightPx);
+    const endPx = Math.min(canvasHeightPx, Math.round((page + 1) * pageHeightPx));
+    if (endPx - topPx <= 0) break;
+    slices.push({ topPx, heightPx: endPx - topPx });
+  }
+  return slices;
+}
+
 /** PDF как Blob (для Web Share / прикрепления в мессенджер). */
 export async function buildDocumentPdfBlob(
   innerHtml: string,
@@ -1393,7 +1459,7 @@ export async function buildDocumentPdfBlob(
      * из-за чего PDF терял границы таблиц и компактный кегль печатной вёрстки.
      */
     const html2canvas = (await import('html2canvas')).default;
-    const canvas = await html2canvas(doc.body, {
+    const renderOptions = {
       scale: 2,
       useCORS: true,
       logging: false,
@@ -1401,7 +1467,30 @@ export async function buildDocumentPdfBlob(
       windowWidth: doc.documentElement.scrollWidth,
       scrollX: 0,
       scrollY: 0,
-    });
+    } as const;
+    /*
+     * Если часть слов не имеет координат (см. countZeroBoundsVisibleWords), обычный
+     * режим html2canvas нарисует их стопкой в углу — переключаемся на foreignObject:
+     * там текст отрисовывает сам браузер, пословная раскладка не используется.
+     */
+    const zeroBoundsWords = countZeroBoundsVisibleWords(doc);
+    let canvas: HTMLCanvasElement;
+    if (zeroBoundsWords > 0) {
+      console.warn(
+        `[printDocument] html2canvas: ${zeroBoundsWords} слов без координат — рендер в foreignObject`
+      );
+      try {
+        canvas = await html2canvas(doc.body, {
+          ...renderOptions,
+          foreignObjectRendering: true,
+        });
+      } catch (err) {
+        console.warn('[printDocument] foreignObject-рендер не удался, обычный рендер', err);
+        canvas = await html2canvas(doc.body, renderOptions);
+      }
+    } else {
+      canvas = await html2canvas(doc.body, renderOptions);
+    }
 
     const { jsPDF } = await import('jspdf');
     const pdf = new jsPDF({
@@ -1414,20 +1503,45 @@ export async function buildDocumentPdfBlob(
     const pdfMargin = 10;
     const contentWidth = pageWidth - pdfMargin * 2;
     const contentHeight = pageHeight - pdfMargin * 2;
-    const imgHeightMm = (canvas.height / canvas.width) * contentWidth;
-    const pageCount = Math.max(1, Math.ceil(imgHeightMm / contentHeight));
-    const imgData = canvas.toDataURL('image/jpeg', 0.96);
-
-    for (let page = 0; page < pageCount; page += 1) {
+    /*
+     * Канвас режем на полосы высотой области контента и кладём каждую в (margin, margin).
+     * Раньше на каждую страница клали одно изображение целиком со сдвигом
+     * `margin - page * contentHeight`: соседние страницы перекрывались на 2×margin (20 мм),
+     * и абзацы конца страницы дублировались в начале следующей (баг ЭП-комплектов).
+     */
+    const pxPerMm = canvas.width / contentWidth;
+    const slices = computePdfPageSlices(canvas.height, contentHeight, pxPerMm);
+    for (let page = 0; page < slices.length; page += 1) {
+      const slice = slices[page]!;
+      const sliceCanvas = document.createElement('canvas');
+      sliceCanvas.width = canvas.width;
+      sliceCanvas.height = slice.heightPx;
+      const sliceCtx = sliceCanvas.getContext('2d');
+      if (!sliceCtx) {
+        throw new Error('Не удалось подготовить страницу PDF');
+      }
+      sliceCtx.fillStyle = '#ffffff';
+      sliceCtx.fillRect(0, 0, sliceCanvas.width, sliceCanvas.height);
+      sliceCtx.drawImage(
+        canvas,
+        0,
+        slice.topPx,
+        canvas.width,
+        slice.heightPx,
+        0,
+        0,
+        canvas.width,
+        slice.heightPx
+      );
       if (page > 0) pdf.addPage();
       pdf.addImage(
-        imgData,
+        sliceCanvas.toDataURL('image/jpeg', 0.96),
         'JPEG',
         pdfMargin,
-        pdfMargin - page * contentHeight,
+        pdfMargin,
         contentWidth,
-        imgHeightMm,
-        'printDocumentPage'
+        slice.heightPx / pxPerMm,
+        `printDocumentPage-${page}`
       );
     }
 

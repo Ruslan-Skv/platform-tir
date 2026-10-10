@@ -7,6 +7,7 @@ import {
   updateContractDocumentPackage,
 } from '@/shared/api/admin-contract-document-packages';
 
+import { isProductDirectionPackageKind } from '../../config/productDirectionPackageKind';
 import { buildPersistedFormData, mergeFormDataFromStorage } from '../form/formDataTemplateStorage';
 import {
   applyEstimatePresetIdsToAddendumSlot,
@@ -38,7 +39,9 @@ export async function persistPackageAfterRemovingEstimatePreset(
   const row = await getContractDocumentPackage(packageId);
   const { form, templateOverrides, templatePresetIds } = mergeFormDataFromStorage(row.formData);
   const nextIds = normalizedEstimateIdsFromForm(form).filter((id) => id !== presetIdToRemove);
-  let nextForm = applyEstimatePresetIdsToPackageForm(form, nextIds, presets, estimateGroups);
+  let nextForm = applyEstimatePresetIdsToPackageForm(form, nextIds, presets, estimateGroups, {
+    productDirection: isProductDirectionPackageKind(row.kind),
+  });
   for (let i = 0; i < 5; i++) {
     const slot = nextForm.addendumSlots[i];
     const add = [...(slot.selectedPresetIds ?? [])].filter((id) => id !== presetIdToRemove);

@@ -4,6 +4,10 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
+import {
+  computeProductContractCostBreakdown,
+  productContractTotalToContractFields,
+} from '../../families/product-like/cost/productContractCostBreakdown';
 import { formatMoneyWholeGrouped } from '../form/moneyWhole';
 import {
   applyPackageContractDiscountToNullableBase,
@@ -12,9 +16,43 @@ import {
 import type { PackageFormData } from '../form/packageForm';
 import { isEstimatePresetAttachableToContract } from './estimatePipelineStage';
 
+/**
+ * Пересчёт блока estimate + сумм договора по списку id пресетов (как в редакторе пакета).
+ * `productDirection`: итог договора продуктовых направлений = работы (смета) + изделия
+ * (спецификация), поэтому пересчёт сметы не должен затирать изделия из суммы договора.
+ */
+export type ApplyEstimatePresetIdsOptions = {
+  productDirection?: boolean;
+};
+
+/** Поля блока contract после снятия/пересчёта сметы: продуктовые направления — итог с изделиями. */
+function contractTotalsForEstimate(
+  previous: PackageFormData,
+  snapshot: PackageFormData['estimate']['snapshot'],
+  productDirection?: boolean
+): ReturnType<typeof packageEstimateTotalToContractFields> {
+  if (!productDirection) {
+    return packageEstimateTotalToContractFields(
+      applyPackageContractDiscountToNullableBase(
+        snapshot?.total ?? null,
+        previous.contract.discountPercent
+      )
+    );
+  }
+  return productContractTotalToContractFields(
+    computeProductContractCostBreakdown({
+      ...previous,
+      estimate: { ...previous.estimate, snapshot },
+    }).totalAmount
+  );
+}
+
 /** Снятие основной сметы договора: очистить снимок и суммы в блоке договора (не из шаблона вручную). */
-function detachMainPackageEstimateFromForm(previous: PackageFormData): PackageFormData {
-  const cleared = packageEstimateTotalToContractFields(null);
+function detachMainPackageEstimateFromForm(
+  previous: PackageFormData,
+  productDirection?: boolean
+): PackageFormData {
+  const cleared = contractTotalsForEstimate(previous, null, productDirection);
   return {
     ...previous,
     estimateObjectGroupKey: '',
@@ -368,23 +406,24 @@ export function applyEstimatePresetIdsToPackageForm(
   previous: PackageFormData,
   presetIds: string[],
   presets: ContractEstimatePreset[],
-  estimateGroups: ContractEstimateGroup[] = []
+  estimateGroups: ContractEstimateGroup[] = [],
+  options?: ApplyEstimatePresetIdsOptions
 ): PackageFormData {
   const uniqueIds = [...new Set(presetIds.filter(Boolean))];
   if (uniqueIds.length === 0) {
-    return detachMainPackageEstimateFromForm(previous);
+    return detachMainPackageEstimateFromForm(previous, options?.productDirection);
   }
   const selectedPresetsRaw = uniqueIds
     .map((id) => presets.find((it) => it.id === id))
     .filter((x): x is ContractEstimatePreset => Boolean(x));
   if (selectedPresetsRaw.length === 0) {
-    return detachMainPackageEstimateFromForm(previous);
+    return detachMainPackageEstimateFromForm(previous, options?.productDirection);
   }
   const groupKey = presetObjectGroupKey(selectedPresetsRaw[0]);
   const selectedPresets = selectedPresetsRaw.filter((p) => presetObjectGroupKey(p) === groupKey);
   const coercedIds = selectedPresets.map((p) => p.id);
   if (selectedPresets.length === 0) {
-    return detachMainPackageEstimateFromForm(previous);
+    return detachMainPackageEstimateFromForm(previous, options?.productDirection);
   }
   const mergedSnapshot = mergeEstimateSnapshots(
     selectedPresets.map((preset) => ({
@@ -393,11 +432,10 @@ export function applyEstimatePresetIdsToPackageForm(
     }))
   );
   const notes = formatCombinedEstimateNotes(selectedPresets, mergedSnapshot, estimateGroups);
-  const contractTotals = packageEstimateTotalToContractFields(
-    applyPackageContractDiscountToNullableBase(
-      mergedSnapshot?.total ?? null,
-      previous.contract.discountPercent
-    )
+  const contractTotals = contractTotalsForEstimate(
+    previous,
+    mergedSnapshot,
+    options?.productDirection
   );
   return {
     ...previous,

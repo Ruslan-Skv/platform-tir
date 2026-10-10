@@ -195,7 +195,8 @@ export async function buildWorkOrderHtmlForInstallationSchedule(
     mergedForm,
     normalizedEstimateIds,
     estimatePresets,
-    estimateGroups
+    estimateGroups,
+    { productDirection: isProductDirectionPackageKind(packageKind) }
   );
   /** Налог/наценку заказ-наряда ремонта добираем из глобальных настроек, если в пакете пусто. */
   if (packageKind === 'REPAIR') {

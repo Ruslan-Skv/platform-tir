@@ -503,6 +503,7 @@ export function usePackageDocumentEditorController({
       estimatePresets,
       estimateGroups,
       schedulePersistDebounced: schedulePersistPackageDebounced,
+      productDirection: isProductDirectionPackage,
     });
 
   const { patchAddendumDocumentDate } = usePackageAddendumSlotActions({

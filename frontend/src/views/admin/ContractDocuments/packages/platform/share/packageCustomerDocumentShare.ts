@@ -537,7 +537,10 @@ export async function loadPackageCustomerShareContext(
     mergedForm,
     normalizedEstimateIds,
     estimatePresets,
-    estimateGroups
+    estimateGroups,
+    // Итог договора продуктовых направлений = работы + изделия: пересчёт сметы
+    // из каталога не должен затирать стоимость изделий (баг ЭП-комплекта №3742о-2).
+    { productDirection: isProductDirectionPackageKind(packageKind) }
   );
 
   const windowsWorkOrderMarkupPercent = normalizeWindowsWorkOrderMarkupPercent(

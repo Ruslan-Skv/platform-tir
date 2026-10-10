@@ -344,7 +344,8 @@ export function usePackageDocumentLoad({
             finalForm,
             normalizedEstimateIds,
             presetsList,
-            estGroupsList
+            estGroupsList,
+            { productDirection: isProductDirectionPackageKind(currentKind) }
           );
         }
         for (let i = 0; i < 5; i++) {
