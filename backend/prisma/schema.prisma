@@ -208,6 +208,7 @@ model User {
   salaryContractsSurveyor                 SalaryContract[]                         @relation("SalaryContractSurveyor")
   salarySettlementsCreated                SalarySettlement[]                       @relation("SalarySettlementCreatedBy")
   salaryGlobalSettingBrigadier            SalaryGlobalSetting[]                    @relation("SalaryGlobalSettingBrigadier")
+  salaryCategoriesLeadSpecialist          SalaryCategory[]                         @relation("SalaryCategoryLeadSpecialist")
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -4452,6 +4453,10 @@ model SalaryCategory {
   surveyorPercent  Decimal @default(0) @db.Decimal(5, 2)
   /// Процент бригадира по умолчанию, % (ремонтные направления: 8.5)
   brigadierPercent Decimal @default(0) @db.Decimal(5, 2)
+
+  /// Пользователь — ведущий специалист направления, получающий з/п ВС по нему
+  leadSpecialistUserId String?
+  leadSpecialist       User?   @relation("SalaryCategoryLeadSpecialist", fields: [leadSpecialistUserId], references: [id], onDelete: SetNull, onUpdate: Cascade)
 
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)

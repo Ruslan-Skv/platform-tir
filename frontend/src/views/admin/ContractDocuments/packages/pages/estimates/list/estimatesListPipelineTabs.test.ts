@@ -76,7 +76,7 @@ describe('вкладки расчётов: автоматические стат
     expect(tabOf('a', ctx)).toBe('active');
   });
 
-  it('прикреплённый к неподписанному договору — «Прикреплённые»', () => {
+  it('прикреплённый к неподписанному договору — «Прикреплены»', () => {
     const ctx = buildFixtures([{ id: 'a', usage: 'attached' }]);
     expect(getEstimateAttachmentStatus(ctx.items[0], ctx.usageByEstimateId)).toBe('attached');
     expect(tabOf('a', ctx)).toBe('attached');
@@ -98,7 +98,7 @@ describe('вкладки расчётов: автоматические стат
     expect(tabOf('paused_signed', ctx)).toBe('signed');
   });
 
-  it('legacy: «В перспективе» и архив трактуются как «Отложенные»', () => {
+  it('legacy: «В перспективе» и архив трактуются как «Отложены»', () => {
     const ctx = buildFixtures([
       { id: 'old_prospect', stage: 'prospect' },
       { id: 'old_archived', archived: true },
@@ -111,7 +111,7 @@ describe('вкладки расчётов: автоматические стат
 });
 
 describe('вкладки расчётов: связка живёт целиком', () => {
-  it('связка не уходит на «Прикреплённые», пока прикреплён не последний участник', () => {
+  it('связка не уходит на «Прикреплены», пока прикреплён не последний участник', () => {
     const ctx = buildFixtures([
       { id: 'anchor', bundle: 'anchor', usage: 'attached' },
       { id: 'copy', bundle: 'anchor', usage: 'free' },

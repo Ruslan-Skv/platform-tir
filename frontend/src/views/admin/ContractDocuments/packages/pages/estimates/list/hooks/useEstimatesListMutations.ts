@@ -204,7 +204,7 @@ export function useEstimatesListMutations({
     [groups, items, persistEstimates, setWorkScopeModalPresetId]
   );
 
-  /** Ручной перенос «В работе» ↔ «Отложенные»: расчёты одной связки перемещаются вместе. */
+  /** Ручной перенос «В работе» ↔ «Отложены»: расчёты одной связки перемещаются вместе. */
   const setPresetPipelineStage = useCallback(
     (estimateId: string, tab: 'active' | 'deferred') => {
       const ts = new Date().toISOString();

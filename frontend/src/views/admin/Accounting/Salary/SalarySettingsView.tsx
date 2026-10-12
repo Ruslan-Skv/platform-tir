@@ -201,6 +201,39 @@ export function SalarySettingsView({
             </select>
           </label>
         </div>
+        <p className={styles.mutedCell}>
+          Ведущие специалисты направлений — получатели з/п ВС по каждому направлению:
+        </p>
+        <div className={styles.settingsGrid}>
+          {categories.map((category) => (
+            <label key={category.id} className={styles.settingsField}>
+              <span>
+                ВС — {category.name}
+                {!category.isActive ? ' (неактивно)' : ''}
+              </span>
+              <select
+                value={model.globalForm.leadSpecialistUserIds[category.id] ?? ''}
+                onChange={(e) =>
+                  model.setGlobalForm((f) => ({
+                    ...f,
+                    leadSpecialistUserIds: {
+                      ...f.leadSpecialistUserIds,
+                      [category.id]: e.target.value,
+                    },
+                  }))
+                }
+                disabled={model.globalSaving}
+              >
+                <option value="">— не назначен —</option>
+                {sortedUsers.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {userName(u)}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ))}
+        </div>
         <div className={styles.settingsActions}>
           <button
             data-admin-mutation

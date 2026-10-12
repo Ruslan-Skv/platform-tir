@@ -16,6 +16,8 @@ export interface GlobalFormState {
   taxPercent: string;
   /** Пользователь-бригадир; '' — не назначен. */
   brigadierUserId: string;
+  /** Ведущий специалист по направлениям: id направления → id пользователя; '' — не назначен. */
+  leadSpecialistUserIds: Record<string, string>;
 }
 
 /** Payload модалки создания/правки направления (code — только при создании). */
@@ -42,6 +44,7 @@ export interface SalaryRateRuleInput {
 const EMPTY_GLOBAL: GlobalFormState = {
   taxPercent: '8',
   brigadierUserId: '',
+  leadSpecialistUserIds: {},
 };
 
 /** Логика вкладки «Настройки» (суперадмин): глобальные параметры, направления, правила ставок. */
@@ -64,6 +67,9 @@ export function useSalarySettings(
       setGlobalForm({
         taxPercent: String(settings.global.taxPercent),
         brigadierUserId: settings.global.brigadierUserId ?? '',
+        leadSpecialistUserIds: Object.fromEntries(
+          settings.categories.map((c) => [c.id, c.leadSpecialistUserId ?? ''])
+        ),
       });
     }
   }, [settings]);
@@ -76,6 +82,18 @@ export function useSalarySettings(
         taxPercent: Number(globalForm.taxPercent.replace(',', '.')),
         brigadierUserId: globalForm.brigadierUserId || null,
       });
+      // Привязки ВС хранятся на направлениях — сохраняем только изменившиеся.
+      const current = new Map(
+        (settings?.categories ?? []).map((c) => [c.id, c.leadSpecialistUserId ?? ''])
+      );
+      const changed = Object.entries(globalForm.leadSpecialistUserIds).filter(
+        ([categoryId, userId]) => current.get(categoryId) !== userId
+      );
+      await Promise.all(
+        changed.map(([categoryId, userId]) =>
+          updateSalaryCategory(categoryId, { leadSpecialistUserId: userId || null })
+        )
+      );
       showNotice('Глобальные параметры сохранены');
       await reloadSettings();
     } catch (err) {
@@ -83,7 +101,7 @@ export function useSalarySettings(
     } finally {
       setGlobalSaving(false);
     }
-  }, [globalForm, reloadSettings, showNotice]);
+  }, [globalForm, settings, reloadSettings, showNotice]);
 
   // ===== Направления: создание/правка через модалку, удаление через ConfirmModal =====
 

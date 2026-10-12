@@ -72,6 +72,11 @@ export class CreateSalaryCategoryDto {
   @Max(100)
   brigadierPercent?: number;
 
+  /** Пользователь — ведущий специалист направления (получатель з/п ВС); '' / null — не назначен. */
+  @IsOptional()
+  @IsString()
+  leadSpecialistUserId?: string | null;
+
   @IsOptional()
   @IsBoolean()
   isActive?: boolean;

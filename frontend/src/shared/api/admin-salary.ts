@@ -58,6 +58,9 @@ export interface SalaryCategory {
   managerPercent: number;
   surveyorPercent: number;
   brigadierPercent: number;
+  /** Пользователь — ведущий специалист направления (получатель з/п ВС); null — не назначен. */
+  leadSpecialistUserId: string | null;
+  leadSpecialistName: string | null;
   isActive: boolean;
   sortOrder: number;
   rateRules: SalaryRateRule[];
@@ -256,7 +259,10 @@ export function saveSalaryGlobalSettings(
 }
 
 export function createSalaryCategory(
-  dto: Partial<Omit<SalaryCategory, 'id' | 'rateRules'>> & { code: string; name: string }
+  dto: Partial<Omit<SalaryCategory, 'id' | 'rateRules' | 'leadSpecialistName'>> & {
+    code: string;
+    name: string;
+  }
 ): Promise<SalaryCategory> {
   return request(
     `${API_URL}/admin/salary/settings/categories`,
@@ -267,7 +273,7 @@ export function createSalaryCategory(
 
 export function updateSalaryCategory(
   id: string,
-  dto: Partial<Omit<SalaryCategory, 'id' | 'rateRules'>>
+  dto: Partial<Omit<SalaryCategory, 'id' | 'rateRules' | 'leadSpecialistName'>>
 ): Promise<SalaryCategory> {
   return request(
     `${API_URL}/admin/salary/settings/categories/${id}`,

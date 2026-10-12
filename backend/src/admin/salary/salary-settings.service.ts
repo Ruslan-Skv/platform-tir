@@ -15,6 +15,20 @@ const BRIGADIER_INCLUDE = {
   brigadier: { select: { id: true, firstName: true, lastName: true } },
 } as const;
 
+/** Пользователь-ВС направления для ответов настроек: id + ФИО. */
+const CATEGORY_LEAD_SPECIALIST_INCLUDE = {
+  leadSpecialist: { select: { id: true, firstName: true, lastName: true } },
+} as const;
+
+/** ФИО пользователя для ответов («Фамилия Имя»), либо null. */
+function userFullName(
+  user: { firstName: string | null; lastName: string | null } | null | undefined,
+) {
+  return user != null
+    ? [user.lastName, user.firstName].filter(Boolean).join(' ').trim() || null
+    : null;
+}
+
 @Injectable()
 export class SalarySettingsService {
   constructor(private prisma: PrismaService) {}
@@ -31,6 +45,7 @@ export class SalarySettingsService {
         orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
         include: {
           rateRules: { include: { office: { select: { id: true, name: true } } } },
+          ...CATEGORY_LEAD_SPECIALIST_INCLUDE,
         },
       }),
     ]);
@@ -46,12 +61,7 @@ export class SalarySettingsService {
     const data: Prisma.SalaryGlobalSettingUncheckedUpdateInput = {};
     if (dto.taxPercent !== undefined) data.taxPercent = dto.taxPercent;
     if (dto.brigadierUserId !== undefined) {
-      const brigadierUserId = dto.brigadierUserId?.trim() || null;
-      if (brigadierUserId) {
-        const user = await this.prisma.user.findUnique({ where: { id: brigadierUserId } });
-        if (!user) throw new NotFoundException(`Пользователь ${brigadierUserId} не найден`);
-      }
-      data.brigadierUserId = brigadierUserId;
+      data.brigadierUserId = await this.resolveUserId(dto.brigadierUserId);
     }
     const updated = await this.prisma.salaryGlobalSetting.update({
       where: { id: 'singleton' },
@@ -78,6 +88,7 @@ export class SalarySettingsService {
         managerPercent: dto.managerPercent ?? 3,
         surveyorPercent: dto.surveyorPercent ?? 0,
         brigadierPercent: dto.brigadierPercent ?? 0,
+        leadSpecialistUserId: await this.resolveUserId(dto.leadSpecialistUserId),
         isActive: dto.isActive ?? true,
         sortOrder: dto.sortOrder ?? 0,
       },
@@ -95,6 +106,9 @@ export class SalarySettingsService {
     if (dto.managerPercent !== undefined) data.managerPercent = dto.managerPercent;
     if (dto.surveyorPercent !== undefined) data.surveyorPercent = dto.surveyorPercent;
     if (dto.brigadierPercent !== undefined) data.brigadierPercent = dto.brigadierPercent;
+    if (dto.leadSpecialistUserId !== undefined) {
+      data.leadSpecialistUserId = await this.resolveUserId(dto.leadSpecialistUserId);
+    }
     if (dto.isActive !== undefined) data.isActive = dto.isActive;
     if (dto.sortOrder !== undefined) data.sortOrder = dto.sortOrder;
     return this.prisma.salaryCategory.update({ where: { id }, data });
@@ -165,13 +179,7 @@ export class SalarySettingsService {
     return {
       taxPercent: toNum(global?.taxPercent ?? 8),
       brigadierUserId: global?.brigadierUserId ?? null,
-      brigadierName:
-        global?.brigadier != null
-          ? [global.brigadier.lastName, global.brigadier.firstName]
-              .filter(Boolean)
-              .join(' ')
-              .trim() || null
-          : null,
+      brigadierName: userFullName(global?.brigadier),
       updatedAt: global?.updatedAt ?? null,
     };
   }
@@ -186,6 +194,8 @@ export class SalarySettingsService {
     managerPercent: Prisma.Decimal;
     surveyorPercent: Prisma.Decimal;
     brigadierPercent: Prisma.Decimal;
+    leadSpecialistUserId: string | null;
+    leadSpecialist?: { id: string; firstName: string | null; lastName: string | null } | null;
     isActive: boolean;
     sortOrder: number;
     rateRules: Array<{
@@ -207,6 +217,8 @@ export class SalarySettingsService {
       managerPercent: toNum(category.managerPercent),
       surveyorPercent: toNum(category.surveyorPercent),
       brigadierPercent: toNum(category.brigadierPercent),
+      leadSpecialistUserId: category.leadSpecialistUserId,
+      leadSpecialistName: userFullName(category.leadSpecialist),
       isActive: category.isActive,
       sortOrder: category.sortOrder,
       rateRules: category.rateRules.map((r) => ({
@@ -229,6 +241,16 @@ export class SalarySettingsService {
         data: DEFAULT_SALARY_CATEGORIES.map((c) => ({ ...c })),
       });
     }
+  }
+
+  /** Идентификатор пользователя из DTO: '' → null, с проверкой существования. */
+  private async resolveUserId(userId: string | null | undefined): Promise<string | null> {
+    const trimmed = userId?.trim() || null;
+    if (trimmed) {
+      const user = await this.prisma.user.findUnique({ where: { id: trimmed } });
+      if (!user) throw new NotFoundException(`Пользователь ${trimmed} не найден`);
+    }
+    return trimmed;
   }
 
   private ensureGlobalRow() {

@@ -117,7 +117,7 @@ export class ContractEstimatePresetDto {
   @Type(() => Boolean)
   archived?: boolean;
 
-  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». Прикрепление и подписание вкладками не хранятся. */
+  /** Вкладка списка расчётов: `deferred` — «Отложены» (ручная пауза заказчика); иначе «В работе». Прикрепление и подписание вкладками не хранятся. */
   @IsOptional()
   @IsIn(['active', 'prospect', 'contract', 'deferred'])
   pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
@@ -196,7 +196,7 @@ export class ContractEstimateGroupDto {
   @Type(() => Boolean)
   archived?: boolean;
 
-  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». */
+  /** Вкладка списка расчётов: `deferred` — «Отложены» (ручная пауза заказчика); иначе «В работе». */
   @IsOptional()
   @IsIn(['active', 'prospect', 'contract', 'deferred'])
   pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
