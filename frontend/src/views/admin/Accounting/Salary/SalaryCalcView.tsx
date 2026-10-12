@@ -488,6 +488,32 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
 /** Детализация фондов — аналог листа «Д» таблицы. */
 function FundsTable({ result }: { result: SalaryCalcResult }) {
   const { totals, settings } = result;
+
+  // З/п замерщиков в разрезе направлений (считаем из договоров расчёта).
+  const surveyorAggs = new Map<string, { gross: number; surveyors: Set<string> }>();
+  for (const r of result.rows) {
+    if (r.surveyorAmount === 0) continue;
+    const agg = surveyorAggs.get(r.categoryId) ?? { gross: 0, surveyors: new Set<string>() };
+    agg.gross = Math.round((agg.gross + r.surveyorAmount) * 100) / 100;
+    if (r.surveyorName) agg.surveyors.add(r.surveyorName);
+    surveyorAggs.set(r.categoryId, agg);
+  }
+  const surveyorRow = (categoryId: string, categoryName: string) => {
+    const agg = surveyorAggs.get(categoryId);
+    const gross = agg?.gross ?? 0;
+    const names = agg ? [...agg.surveyors].sort((a, b) => a.localeCompare(b)) : [];
+    return {
+      id: `surveyor-${categoryId}`,
+      name: `Замеры (${categoryName})`,
+      gross,
+      net: Math.round(gross * settings.netFactor * 100) / 100,
+      comment: names.length > 0 ? `замерщики: ${names.join(', ')}` : 'замеров в периоде не было',
+      kind: 'total' as const,
+    };
+  };
+  // Замеры по ремонту показываем всегда — сразу после бригадира.
+  const repairCategory = result.vsByCategory.find((v) => v.categoryCode === 'REPAIR');
+
   return (
     <div className={styles.tableBlock}>
       <h2 className={styles.sectionTitle}>
@@ -497,12 +523,15 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
         data={[
           {
             id: 'brigadier',
-            name: 'Бригадирский фонд',
+            name: 'Бригадир (без замеров)',
             gross: totals.brigadierTotal,
             net: totals.brigadierTotalNet,
             comment: `начислено бригадиру ${formatMoneyShort(totals.brigadierFund)}`,
             kind: 'total' as const,
           },
+          ...(repairCategory
+            ? [surveyorRow(repairCategory.categoryId, repairCategory.categoryName)]
+            : []),
           ...result.vsByCategory.map((v) => ({
             id: `vs-${v.categoryId}`,
             name: `ВС — ${v.categoryName}`,
@@ -513,17 +542,12 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             }`,
             kind: 'total' as const,
           })),
-          {
-            id: 'surveyor',
-            name: 'Фонд замерщиков',
-            gross: totals.surveyorFund,
-            net: totals.surveyorFundNet,
-            comment: 'личные начисления по замерам',
-            kind: 'total' as const,
-          },
+          ...result.vsByCategory
+            .filter((v) => v.categoryCode !== 'REPAIR' && surveyorAggs.has(v.categoryId))
+            .map((v) => surveyorRow(v.categoryId, v.categoryName)),
           {
             id: 'manager',
-            name: 'Менеджеры (личные начисления)',
+            name: 'Менеджеры',
             gross: totals.managerPersonalTotal,
             net: totals.managerPersonalNet,
             comment: 'личные начисления по договорам',
