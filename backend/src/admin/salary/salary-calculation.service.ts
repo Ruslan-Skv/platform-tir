@@ -13,10 +13,10 @@ import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
  *                  + стоимость × %мен × доля_при_закрытии (если дата закрытия в периоде)
  *                  + Σ(доп.согл. × %мен) за доп. соглашения с датой в периоде;
  *  - замерщик = з/п менеджера × %зам / %мен (пропорционально своей ставке);
+ *    если замерщика у договора нет — з/п за замер не считается и никому не переходит;
  *  - ВС (ведущий специалист) = з/п менеджера × %ВС / %мен — фонд по направлению;
- *  - бригадир = з/п менеджера × %бриг / %мен (ремонтные направления, обычно 8.5%);
- *  - «общий» договор (менеджер не вёл / замера не было): соответствующая часть ×2
- *    уходит в общий пул офиса (в таблице — колонки «×(2−м)» / «×(2−зам)»).
+ *  - бригадир = з/п менеджера × %бриг / %мен (ремонтные направления, обычно 8.5%)
+ *    и получает только свой фонд (общий пул упразднён).
  */
 @Injectable()
 export class SalaryCalculationService {
@@ -145,15 +145,6 @@ export class SalaryCalculationService {
 
       const managerAmount = round2(signPart + closePart + extraPart);
 
-      // Замерщик/ВС/бригадир — пропорционально ставке менеджера (как в таблице: зп × %свой / %мен).
-      const scale = managerPercent > 0 ? 1 / (managerPercent / 100) : 0;
-      const surveyorAmount = round2(managerAmount * scale * (surveyorPercent / 100));
-      const vsAmount = round2(managerAmount * scale * (vsPercent / 100));
-      const brigadierAmount = round2(managerAmount * scale * (brigadierPercent / 100));
-
-      const managerCommon = contract.managerHandled ? 0 : round2(managerAmount * 2);
-      const surveyorCommon = contract.surveyorHandled ? 0 : round2(surveyorAmount * 2);
-
       const managerName =
         contract.managerName ||
         [contract.manager?.lastName, contract.manager?.firstName]
@@ -168,6 +159,17 @@ export class SalaryCalculationService {
           .join(' ')
           .trim() ||
         null;
+
+      // Замерщик/ВС/бригадир — пропорционально ставке менеджера (как в таблице: зп × %свой / %мен).
+      const scale = managerPercent > 0 ? 1 / (managerPercent / 100) : 0;
+      // Нет замерщика (замера не было или он не указан) — з/п за замер не считается
+      // и никому не переходит.
+      const surveyorAmount =
+        contract.surveyorHandled && surveyorName != null
+          ? round2(managerAmount * scale * (surveyorPercent / 100))
+          : 0;
+      const vsAmount = round2(managerAmount * scale * (vsPercent / 100));
+      const brigadierAmount = round2(managerAmount * scale * (brigadierPercent / 100));
 
       return {
         id: contract.id,
@@ -204,8 +206,6 @@ export class SalaryCalculationService {
         surveyorAmount,
         vsAmount,
         brigadierAmount,
-        managerCommon,
-        surveyorCommon,
         signedInPeriod: signedIn,
         closedInPeriod: closedIn,
         totalAmount: round2(base + toNum(contractSum(contract))),
@@ -237,7 +237,6 @@ export class SalaryCalculationService {
             surveyorAmount: number;
             vsAmount: number;
             brigadierAmount: number;
-            commonPool: number;
             signedCount: number;
             signedAmount: number;
             closedCount: number;
@@ -249,8 +248,8 @@ export class SalaryCalculationService {
     >();
 
     for (const row of rows) {
-      // Личная з/п менеджера — только разобранные договоры с известным менеджером.
-      if (row.managerHandled && row.managerName) {
+      // Личная з/п менеджера — по договорам с известным менеджером.
+      if (row.managerName) {
         const key = row.managerId ?? `name:${row.managerName}`;
         const agg = byManager.get(key) ?? {
           managerId: row.managerId,
@@ -262,8 +261,9 @@ export class SalaryCalculationService {
         agg.contractsCount += 1;
         byManager.set(key, agg);
       }
-      // Личная з/п замерщика — только где замер был.
-      if (row.surveyorHandled && row.percents.surveyor > 0 && row.surveyorName) {
+      // Личная з/п замерщика — только где замерщик известен (amount уже 0 без замера);
+      // отрицательные суммы (возвраты по доп. соглашениям) уменьшают итог.
+      if (row.surveyorName && row.surveyorAmount !== 0) {
         const key = row.surveyorId ?? `name:${row.surveyorName}`;
         const agg = bySurveyor.get(key) ?? {
           surveyorId: row.surveyorId,
@@ -289,7 +289,6 @@ export class SalaryCalculationService {
         surveyorAmount: 0,
         vsAmount: 0,
         brigadierAmount: 0,
-        commonPool: 0,
         signedCount: 0,
         signedAmount: 0,
         closedCount: 0,
@@ -300,7 +299,6 @@ export class SalaryCalculationService {
       cat.surveyorAmount = round2(cat.surveyorAmount + row.surveyorAmount);
       cat.vsAmount = round2(cat.vsAmount + row.vsAmount);
       cat.brigadierAmount = round2(cat.brigadierAmount + row.brigadierAmount);
-      cat.commonPool = round2(cat.commonPool + row.managerCommon + row.surveyorCommon);
       cat.contractsCount += 1;
       if (row.signedInPeriod) {
         cat.signedCount += 1;
@@ -364,9 +362,9 @@ export class SalaryCalculationService {
       .map((e) => ({ ...e, amountNet: round2(e.amount * netFactor) }));
 
     const brigadierFund = round2(rows.reduce((s, r) => s + r.brigadierAmount, 0));
-    const commonPool = round2(rows.reduce((s, r) => s + r.managerCommon + r.surveyorCommon, 0));
-    // Общий пул «общих» договоров всегда идёт в бригадирский фонд.
-    const brigadierTotal = round2(brigadierFund + commonPool);
+    // brigadierTotal — синоним фонда (общий пул упразднён; имя оставлено для совместимости
+    // со старыми зафиксированными ведомостями).
+    const brigadierTotal = brigadierFund;
     // Бригадирский фонд закреплён за пользователем из настроек (может совмещать
     // роль замерщика — тогда з/п складывается из обеих частей).
     const brigadierUserName =
@@ -379,9 +377,7 @@ export class SalaryCalculationService {
     const managerPersonalTotal = round2(
       Array.from(byManager.values()).reduce((s, m) => s + m.amount, 0),
     );
-    const surveyorFund = round2(
-      rows.reduce((s, r) => s + (r.surveyorHandled ? r.surveyorAmount : 0), 0),
-    );
+    const surveyorFund = round2(rows.reduce((s, r) => s + r.surveyorAmount, 0));
 
     const stats = {
       signedCount: rows.filter((r) => r.signedInPeriod).length,
@@ -409,7 +405,6 @@ export class SalaryCalculationService {
         surveyorFund,
         surveyorFundNet: round2(surveyorFund * netFactor),
         brigadierFund,
-        commonPool,
         brigadierTotal,
         brigadierTotalNet: round2(brigadierTotal * netFactor),
         vsTotal: round2(vsByCategory.reduce((s, v) => s + v.gross, 0)),
@@ -436,9 +431,6 @@ export class SalaryCalculationService {
             vsAmount: round2(Array.from(o.byCategory.values()).reduce((s, c) => s + c.vsAmount, 0)),
             brigadierAmount: round2(
               Array.from(o.byCategory.values()).reduce((s, c) => s + c.brigadierAmount, 0),
-            ),
-            commonPool: round2(
-              Array.from(o.byCategory.values()).reduce((s, c) => s + c.commonPool, 0),
             ),
           },
         }))

@@ -150,12 +150,7 @@ export function SalaryContractsView({
       {
         key: 'manager',
         title: 'Менеджер',
-        render: (c: SalaryContract) => (
-          <span>
-            {c.managerName ?? '—'}
-            {!c.managerHandled ? <span className={styles.badgeCommon}> общий</span> : null}
-          </span>
-        ),
+        render: (c: SalaryContract) => c.managerName ?? '—',
       },
       {
         key: 'surveyorName',
@@ -462,7 +457,6 @@ export function SalaryContractsView({
         }}
         paginationClassName={cdHub.contractsListPagination}
         paginationActiveClassName={cdHub.contractsListPaginationPageActive}
-        getRowClassName={(c) => (c.managerHandled ? undefined : styles.rowCommon)}
       />
 
       <ContractFormModal

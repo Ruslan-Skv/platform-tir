@@ -337,7 +337,7 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
       </div>
       <div
         className={dpStyles.totalsTile}
-        title={`Бригадирский фонд: начислено бригадиру ${formatMoneyShort(totals.brigadierFund)} + общий пул`}
+        title={`Бригадирский фонд: ${formatMoneyShort(totals.brigadierFund)}`}
       >
         <span className={dpStyles.totalsTileLabel}>Бригадир</span>
         <span className={dpStyles.totalsTileValueRow}>
@@ -497,10 +497,10 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
         data={[
           {
             id: 'brigadier',
-            name: 'Бригадирский фонд (общий)',
+            name: 'Бригадирский фонд',
             gross: totals.brigadierTotal,
             net: totals.brigadierTotalNet,
-            comment: `начислено бригадиру ${formatMoneyShort(totals.brigadierFund)} + общий пул`,
+            comment: `начислено бригадиру ${formatMoneyShort(totals.brigadierFund)}`,
             kind: 'total' as const,
           },
           ...result.vsByCategory.map((v) => ({
@@ -526,15 +526,7 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             name: 'Менеджеры (личные начисления)',
             gross: totals.managerPersonalTotal,
             net: totals.managerPersonalNet,
-            comment: 'разобранные договоры; неразобранные — в общем пуле',
-            kind: 'total' as const,
-          },
-          {
-            id: 'common',
-            name: 'Общий пул («общие» договоры ×2)',
-            gross: totals.commonPool,
-            net: null,
-            comment: 'включён в бригадирский фонд',
+            comment: 'личные начисления по договорам',
             kind: 'total' as const,
           },
         ]}
@@ -581,7 +573,6 @@ type OfficeRow = {
   categoryName: string;
   vsAmount: number;
   brigadierAmount: number;
-  commonPool: number;
   signed: string;
   closed: string;
   kind: 'cat' | 'total';
@@ -597,7 +588,6 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
       categoryName: cat.categoryName,
       vsAmount: cat.vsAmount,
       brigadierAmount: cat.brigadierAmount,
-      commonPool: cat.commonPool,
       signed: `${cat.signedCount} / ${formatMoneyShort(cat.signedAmount)}`,
       closed: `${cat.closedCount} / ${formatMoneyShort(cat.closedAmount)}`,
       kind: 'cat',
@@ -608,7 +598,6 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
       categoryName: 'Итого',
       vsAmount: office.totals.vsAmount,
       brigadierAmount: office.totals.brigadierAmount,
-      commonPool: office.totals.commonPool,
       signed: `договоров: ${office.byCategory.reduce((s, c) => s + c.contractsCount, 0)}`,
       closed: '—',
       kind: 'total',
@@ -638,12 +627,6 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
             ),
           },
           {
-            key: 'commonPool',
-            title: 'Общий пул',
-            sortable: true,
-            render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.commonPool)}</span>,
-          },
-          {
             key: 'signed',
             title: 'Заключено',
             render: (r) => <span className={styles.numCell}>{r.signed}</span>,
@@ -670,10 +653,8 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
   const leadSpecialists = result.byLeadSpecialist ?? [];
   if (!hasPersonal && !brigadier && leadSpecialists.length === 0) return null;
   const netFactor = result.settings.netFactor;
-  // Договоры, из которых сложился бригадирский фонд: с процентом бригадира или «общие».
-  const brigadierContracts = result.rows.filter(
-    (r) => r.brigadierAmount > 0 || r.managerCommon > 0 || r.surveyorCommon > 0
-  ).length;
+  // Договоры, из которых сложился бригадирский фонд (с процентом бригадира).
+  const brigadierContracts = result.rows.filter((r) => r.brigadierAmount > 0).length;
   return (
     <div className={styles.tablesRow}>
       {result.byManager.length > 0 ? (
@@ -940,25 +921,16 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             title: 'Примечание',
             render: (r) => (
               <span className={styles.noteCell}>
-                {!r.managerHandled ? (
-                  <span className={styles.badgeCommon}>
-                    общий ×2 → {formatMoneyShort(r.managerCommon)}
-                  </span>
-                ) : null}
-                {!r.surveyorHandled && r.surveyorAmount > 0 ? (
-                  <span className={styles.badgeCommon}>
-                    без замера ×2 → {formatMoneyShort(r.surveyorCommon)}
-                  </span>
-                ) : null}
-                {r.managerHandled && r.surveyorHandled ? (
+                {!r.surveyorHandled ? (
+                  <span className={styles.mutedCell}>без замера — з/п за замер не считается</span>
+                ) : (
                   <span className={styles.mutedCell}>{r.customerName ?? ''}</span>
-                ) : null}
+                )}
               </span>
             ),
           },
         ]}
         keyExtractor={(r) => r.id}
-        getRowClassName={(r) => (r.managerHandled ? undefined : styles.rowCommon)}
         emptyMessage="Договоров в расчёте нет"
       />
     </div>

@@ -44,7 +44,6 @@ interface FormState {
   managerName: string;
   surveyorId: string;
   surveyorName: string;
-  managerHandled: boolean;
   surveyorHandled: boolean;
   baseAmount: string;
   managerPercentOverride: string;
@@ -67,7 +66,6 @@ const EMPTY_FORM: FormState = {
   managerName: '',
   surveyorId: '',
   surveyorName: '',
-  managerHandled: true,
   surveyorHandled: true,
   baseAmount: '',
   managerPercentOverride: '',
@@ -112,7 +110,6 @@ export function ContractFormModal({
         managerName: contract.managerName ?? '',
         surveyorId: contract.surveyorId ?? '',
         surveyorName: contract.surveyorName ?? '',
-        managerHandled: contract.managerHandled,
         surveyorHandled: contract.surveyorHandled,
         baseAmount: String(contract.baseAmount),
         managerPercentOverride:
@@ -176,7 +173,6 @@ export function ContractFormModal({
       managerName: form.managerName.trim() || null,
       surveyorId: form.surveyorId || null,
       surveyorName: form.surveyorName.trim() || null,
-      managerHandled: form.managerHandled,
       surveyorHandled: form.surveyorHandled,
       baseAmount,
       managerPercentOverride: parseDecimal(form.managerPercentOverride),
@@ -207,8 +203,7 @@ export function ContractFormModal({
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint>
           Договор попадает в расчёт з/п за период, если дата заключения, закрытия или доп.
-          соглашения входят в него. «Общий» договор (без менеджера) и договор без замера удваивают
-          соответствующую часть в общий пул.
+          соглашения входят в него. Если замера не было — з/п за замер по договору не считается.
         </p>
 
         <div data-modal-form-grid>
@@ -348,16 +343,6 @@ export function ContractFormModal({
             />
           </div>
 
-          <label className={styles.formCheckbox}>
-            <input
-              type="checkbox"
-              checked={form.managerHandled}
-              onChange={(e) => patch({ managerHandled: e.target.checked })}
-              disabled={saving}
-            />
-            Менеджер вёл договор (снять — «общий», з/п ×2 в пул)
-          </label>
-
           <div data-modal-form-group>
             <label htmlFor="salary_contract_surveyor">Замерщик</label>
             <select
@@ -394,7 +379,7 @@ export function ContractFormModal({
               onChange={(e) => patch({ surveyorHandled: e.target.checked })}
               disabled={saving}
             />
-            Замер был (снять — часть замерщика ×2 в пул)
+            Замер был (снять — з/п за замер по договору не считается)
           </label>
         </div>
 

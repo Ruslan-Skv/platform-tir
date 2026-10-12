@@ -149,8 +149,6 @@ export interface SalaryCalcRow {
   surveyorAmount: number;
   vsAmount: number;
   brigadierAmount: number;
-  managerCommon: number;
-  surveyorCommon: number;
   signedInPeriod: boolean;
   closedInPeriod: boolean;
   totalAmount: number;
@@ -169,7 +167,6 @@ export interface SalaryCalcResult {
     surveyorFund: number;
     surveyorFundNet: number;
     brigadierFund: number;
-    commonPool: number;
     brigadierTotal: number;
     brigadierTotalNet: number;
     vsTotal: number;
@@ -224,14 +221,13 @@ export interface SalaryCalcResult {
       surveyorAmount: number;
       vsAmount: number;
       brigadierAmount: number;
-      commonPool: number;
       signedCount: number;
       signedAmount: number;
       closedCount: number;
       closedAmount: number;
       contractsCount: number;
     }>;
-    totals: { vsAmount: number; brigadierAmount: number; commonPool: number };
+    totals: { vsAmount: number; brigadierAmount: number };
   }>;
   rows: SalaryCalcRow[];
 }
@@ -358,7 +354,6 @@ export interface SalaryContractPayload {
   managerName: string | null;
   surveyorId: string | null;
   surveyorName: string | null;
-  managerHandled: boolean;
   surveyorHandled: boolean;
   baseAmount: number;
   managerPercentOverride: number | null;
