@@ -12,6 +12,7 @@ import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-worksp
 import { SalaryCalcView } from './SalaryCalcView';
 import { SalaryContractsView } from './SalaryContractsView';
 import styles from './SalaryPage.module.css';
+import { SalaryRulesInfoTip } from './SalaryRulesInfoTip';
 import { SalarySettingsView } from './SalarySettingsView';
 import type { SalaryPageModel, SalaryTab } from './hooks/useSalaryPage';
 import { pluralCategories, pluralContracts, pluralSettlements } from './salary-page.constants';
@@ -87,6 +88,7 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
               <div className={cdHub.contractsHeaderTitleCluster}>
                 <div className={cdHub.contractsListHeaderTitleGroup}>
                   <h1 className={cdHub.title}>Расчёт з/п</h1>
+                  <SalaryRulesInfoTip />
                 </div>
                 <span className={cdHub.contractsListCount} title={countTitle}>
                   <span className={cdHub.contractsListCountDesktop}>{countTitle}</span>

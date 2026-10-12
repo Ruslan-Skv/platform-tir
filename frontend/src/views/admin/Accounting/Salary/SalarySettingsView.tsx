@@ -174,7 +174,7 @@ export function SalarySettingsView({
         <h2 className={styles.sectionTitle}>Глобальные параметры расчёта</h2>
         <div className={styles.settingsGrid}>
           <label className={styles.settingsField}>
-            <span>Налог из фондов, %</span>
+            <span>Налог из фондов, % (кроме з/п менеджеров)</span>
             <input
               type="text"
               inputMode="decimal"

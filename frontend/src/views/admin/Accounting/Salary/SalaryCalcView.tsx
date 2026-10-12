@@ -187,32 +187,6 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
                 </button>
               </div>
 
-              <div
-                className={cdHub.contractsListChipRow}
-                role="radiogroup"
-                aria-label="Панель итогов"
-              >
-                <span className={cdHub.contractsListChipRowLabel}>Панель итогов</span>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={model.totalsMode === 'funds'}
-                  className={chipClass(model.totalsMode === 'funds')}
-                  onClick={() => model.setTotalsMode('funds')}
-                >
-                  По фондам
-                </button>
-                <button
-                  type="button"
-                  role="radio"
-                  aria-checked={model.totalsMode === 'employees'}
-                  className={chipClass(model.totalsMode === 'employees')}
-                  onClick={() => model.setTotalsMode('employees')}
-                >
-                  По сотрудникам
-                </button>
-              </div>
-
               <div className={cdHub.contractsListFilters}>
                 <div className={cdHub.contractsListDateFilters}>
                   <label className={cdHub.contractsListDateLabel}>
@@ -280,11 +254,7 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
         </div>
       ) : (
         <>
-          {model.totalsMode === 'employees' ? (
-            <EmployeeTotalsRow result={shown} />
-          ) : (
-            <CalcTotalsRow result={shown} />
-          )}
+          <EmployeeTotalsRow result={shown} />
           <FundsTable result={shown} />
           <OfficesTable result={shown} />
           <PeopleTables result={shown} />
@@ -309,82 +279,6 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
         closeOnConfirm={false}
         confirmLoading={model.deleting}
       />
-    </div>
-  );
-}
-
-/** Плитки итогов: фонды к выплате за вычетом налога и статистика периода. */
-function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
-  const { totals, settings, vsByCategory } = result;
-  const netTotal =
-    totals.brigadierTotalNet +
-    totals.surveyorFundNet +
-    totals.managerPersonalNet +
-    vsByCategory.reduce((sum, v) => sum + v.net, 0);
-  const managerContracts = result.byManager.reduce((sum, m) => sum + m.contractsCount, 0);
-
-  return (
-    <div className={dpStyles.totalsRow} aria-label="Итоги расчёта за период">
-      <div
-        className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
-        title={`Все фонды к выплате за вычетом налога ${formatPercent(settings.taxPercent)}`}
-      >
-        <span className={dpStyles.totalsTileLabel}>К выплате всего</span>
-        <strong className={dpStyles.totalsTileValue}>{formatMoney(netTotal)}</strong>
-        <span className={dpStyles.totalsTileCash}>
-          договоров в расчёте: {totals.contractsCount}
-        </span>
-      </div>
-      <div
-        className={dpStyles.totalsTile}
-        title={`Бригадирский фонд: ${formatMoneyShort(totals.brigadierFund)}`}
-      >
-        <span className={dpStyles.totalsTileLabel}>Бригадир</span>
-        <span className={dpStyles.totalsTileValueRow}>
-          <strong className={dpStyles.totalsTileValue}>
-            {formatMoney(totals.brigadierTotalNet)}
-          </strong>
-        </span>
-        <span className={dpStyles.totalsTileCash}>
-          {result.brigadier?.userName ?? 'не назначен в настройках'}
-        </span>
-      </div>
-      {vsByCategory.map((v) => (
-        <div
-          key={v.categoryId}
-          className={dpStyles.totalsTile}
-          title={`Ведущие специалисты направления «${v.categoryName}»: начислено ${formatMoney(v.gross)}`}
-        >
-          <span className={dpStyles.totalsTileLabel}>ВС — {v.categoryName}</span>
-          <span className={dpStyles.totalsTileValueRow}>
-            <strong className={dpStyles.totalsTileValue}>{formatMoney(v.net)}</strong>
-            <span className={dpStyles.totalsTilePercent}>{formatPercent(v.vsPercent)}</span>
-          </span>
-          <span className={dpStyles.totalsTileCash}>
-            {v.userName ?? 'не назначен в настройках'}
-          </span>
-        </div>
-      ))}
-      <div className={dpStyles.totalsTile} title="Личные начисления замерщиков по замерам">
-        <span className={dpStyles.totalsTileLabel}>Замеры</span>
-        <span className={dpStyles.totalsTileValueRow}>
-          <strong className={dpStyles.totalsTileValue}>
-            {formatMoney(totals.surveyorFundNet)}
-          </strong>
-        </span>
-      </div>
-      <div
-        className={dpStyles.totalsTile}
-        title="Личные начисления менеджеров по разобранным договорам"
-      >
-        <span className={dpStyles.totalsTileLabel}>Менеджеры</span>
-        <span className={dpStyles.totalsTileValueRow}>
-          <strong className={dpStyles.totalsTileValue}>
-            {formatMoney(totals.managerPersonalNet)}
-          </strong>
-        </span>
-        <span className={dpStyles.totalsTileCash}>разобрано договоров: {managerContracts}</span>
-      </div>
     </div>
   );
 }
@@ -439,18 +333,25 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
     .sort((a, b) => b.gross - a.gross);
 }
 
-function employeePartsLine(e: EmployeeTotalsRowItem): string {
+function employeePartsLine(e: EmployeeTotalsRowItem, netFactor: number): string {
+  const part = (v: number) => Math.round(v * netFactor * 100) / 100;
   return [
     e.manager > 0 ? `менеджер ${formatMoneyShort(e.manager)}` : null,
-    e.surveyor > 0 ? `замеры ${formatMoneyShort(e.surveyor)}` : null,
-    e.vs > 0 ? `ВС ${formatMoneyShort(e.vs)}` : null,
-    e.brigadier > 0 ? `бригадир ${formatMoneyShort(e.brigadier)}` : null,
+    e.surveyor > 0 ? `замеры ${formatMoneyShort(part(e.surveyor))}` : null,
+    e.vs > 0 ? `ВС ${formatMoneyShort(part(e.vs))}` : null,
+    e.brigadier > 0 ? `бригадир ${formatMoneyShort(part(e.brigadier))}` : null,
   ]
     .filter(Boolean)
     .join(' · ');
 }
 
-/** Плитки итогов по сотрудникам: «К выплате» за вычетом налога по всем личным ролям. */
+/** Итог сотрудника к выплате: з/п менеджера — целиком, остальные роли — за вычетом налога. */
+function employeePayout(e: EmployeeTotalsRowItem, netFactor: number): number {
+  const part = (v: number) => Math.round(v * netFactor * 100) / 100;
+  return e.manager + part(e.surveyor) + part(e.vs) + part(e.brigadier);
+}
+
+/** Плитки итогов по сотрудникам: к выплате по всем ролям. */
 function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
   const { totals, settings } = result;
   const netTotal =
@@ -464,28 +365,34 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
     <div className={dpStyles.totalsRow} aria-label="Итоги по сотрудникам за период">
       <div
         className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
-        title={`Все фонды к выплате за вычетом налога ${formatPercent(settings.taxPercent)}`}
+        title="Все начисления к выплате за период"
       >
         <span className={dpStyles.totalsTileLabel}>К выплате всего</span>
         <strong className={dpStyles.totalsTileValue}>{formatMoney(netTotal)}</strong>
         <span className={dpStyles.totalsTileCash}>сотрудников: {employees.length}</span>
       </div>
       {employees.map((e) => (
-        <div key={e.key} className={dpStyles.totalsTile} title={employeePartsLine(e)}>
+        <div
+          key={e.key}
+          className={dpStyles.totalsTile}
+          title={employeePartsLine(e, settings.netFactor)}
+        >
           <span className={dpStyles.totalsTileLabel}>{e.name}</span>
           <span className={dpStyles.totalsTileValueRow}>
             <strong className={dpStyles.totalsTileValue}>
-              {formatMoney(e.gross * settings.netFactor)}
+              {formatMoney(employeePayout(e, settings.netFactor))}
             </strong>
           </span>
-          <span className={dpStyles.totalsTileCash}>{employeePartsLine(e)}</span>
+          <span className={dpStyles.totalsTileCash}>
+            {employeePartsLine(e, settings.netFactor)}
+          </span>
         </div>
       ))}
     </div>
   );
 }
 
-/** Детализация фондов — аналог листа «Д» таблицы. */
+/** Детализация фондов — аналог листа «Д» таблицы; суммы сразу к выплате. */
 function FundsTable({ result }: { result: SalaryCalcResult }) {
   const { totals, settings } = result;
 
@@ -500,13 +407,11 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
   }
   const surveyorRow = (categoryId: string, categoryName: string) => {
     const agg = surveyorAggs.get(categoryId);
-    const gross = agg?.gross ?? 0;
     const names = agg ? [...agg.surveyors].sort((a, b) => a.localeCompare(b)) : [];
     return {
       id: `surveyor-${categoryId}`,
       name: `Замеры (${categoryName})`,
-      gross,
-      net: Math.round(gross * settings.netFactor * 100) / 100,
+      amount: Math.round((agg?.gross ?? 0) * settings.netFactor * 100) / 100,
       comment: names.length > 0 ? `замерщики: ${names.join(', ')}` : 'замеров в периоде не было',
       kind: 'total' as const,
     };
@@ -524,9 +429,8 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
           {
             id: 'brigadier',
             name: 'Бригадир (без замеров)',
-            gross: totals.brigadierTotal,
-            net: totals.brigadierTotalNet,
-            comment: `начислено бригадиру ${formatMoneyShort(totals.brigadierFund)}`,
+            amount: totals.brigadierTotalNet,
+            comment: `получатель: ${result.brigadier?.userName ?? 'не назначен в настройках'}`,
             kind: 'total' as const,
           },
           ...(repairCategory
@@ -535,8 +439,7 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
           ...result.vsByCategory.map((v) => ({
             id: `vs-${v.categoryId}`,
             name: `ВС — ${v.categoryName}`,
-            gross: v.gross,
-            net: v.net,
+            amount: v.net,
             comment: `ставка ВС ${formatPercent(v.vsPercent)} · получатель: ${
               v.userName ?? 'не назначен'
             }`,
@@ -548,8 +451,7 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
           {
             id: 'manager',
             name: 'Менеджеры',
-            gross: totals.managerPersonalTotal,
-            net: totals.managerPersonalNet,
+            amount: totals.managerPersonalTotal,
             comment: 'личные начисления по договорам',
             kind: 'total' as const,
           },
@@ -561,21 +463,13 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             render: (r) => <span className={styles.nameCell}>{r.name}</span>,
           },
           {
-            key: 'gross',
-            title: 'Начислено',
-            render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.gross)}</span>,
-          },
-          {
-            key: 'net',
-            title: `К выплате (− налог ${formatPercent(settings.taxPercent)})`,
-            render: (r) =>
-              r.net === null ? (
-                <span className={dpStyles.muted}>—</span>
-              ) : (
-                <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
-                  {formatMoney(r.net)}
-                </span>
-              ),
+            key: 'amount',
+            title: 'К выплате',
+            render: (r) => (
+              <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                {formatMoney(r.amount)}
+              </span>
+            ),
           },
           {
             key: 'comment',
@@ -602,16 +496,17 @@ type OfficeRow = {
   kind: 'cat' | 'total';
 };
 
-/** Разрез офис × направление с итогами по офису. */
+/** Разрез офис × направление с итогами по офису; суммы к выплате. */
 function OfficesTable({ result }: { result: SalaryCalcResult }) {
   if (result.byOffice.length === 0) return null;
+  const toNet = (value: number) => Math.round(value * result.settings.netFactor * 100) / 100;
   const rows: OfficeRow[] = result.byOffice.flatMap((office) => [
     ...office.byCategory.map<OfficeRow>((cat) => ({
       id: `${office.officeId}-${cat.categoryId}`,
       officeName: office.officeName,
       categoryName: cat.categoryName,
-      vsAmount: cat.vsAmount,
-      brigadierAmount: cat.brigadierAmount,
+      vsAmount: toNet(cat.vsAmount),
+      brigadierAmount: toNet(cat.brigadierAmount),
       signed: `${cat.signedCount} / ${formatMoneyShort(cat.signedAmount)}`,
       closed: `${cat.closedCount} / ${formatMoneyShort(cat.closedAmount)}`,
       kind: 'cat',
@@ -620,8 +515,8 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
       id: `${office.officeId}-total`,
       officeName: office.officeName,
       categoryName: 'Итого',
-      vsAmount: office.totals.vsAmount,
-      brigadierAmount: office.totals.brigadierAmount,
+      vsAmount: toNet(office.totals.vsAmount),
+      brigadierAmount: toNet(office.totals.brigadierAmount),
       signed: `договоров: ${office.byCategory.reduce((s, c) => s + c.contractsCount, 0)}`,
       closed: '—',
       kind: 'total',
@@ -701,16 +596,11 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
               },
               {
                 key: 'amount',
-                title: 'Начислено',
-                sortable: true,
-                render: (m) => <span className={dpStyles.amountCell}>{formatMoney(m.amount)}</span>,
-              },
-              {
-                key: 'net',
                 title: 'К выплате',
+                sortable: true,
                 render: (m) => (
                   <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
-                    {formatMoney(m.amount * netFactor)}
+                    {formatMoney(m.amount)}
                   </span>
                 ),
               },
@@ -740,16 +630,11 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
               },
               {
                 key: 'amount',
-                title: 'Начислено',
-                sortable: true,
-                render: (s) => <span className={dpStyles.amountCell}>{formatMoney(s.amount)}</span>,
-              },
-              {
-                key: 'net',
                 title: 'К выплате',
+                sortable: true,
                 render: (s) => (
                   <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
-                    {formatMoney(s.amount * netFactor)}
+                    {formatMoney(Math.round(s.amount * netFactor * 100) / 100)}
                   </span>
                 ),
               },
@@ -780,14 +665,6 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
                 render: (ls) => <span className={styles.mutedCell}>{ls.categoriesLine}</span>,
               },
               {
-                key: 'amount',
-                title: 'Начислено',
-                sortable: true,
-                render: (ls) => (
-                  <span className={dpStyles.amountCell}>{formatMoney(ls.amount)}</span>
-                ),
-              },
-              {
                 key: 'amountNet',
                 title: 'К выплате',
                 sortable: true,
@@ -812,7 +689,6 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
                 id: brigadier.userId ?? 'brigadier',
                 userName: brigadier.userName ?? '—',
                 contractsCount: brigadierContracts,
-                amount: brigadier.total,
                 net: brigadier.totalNet,
               },
             ]}
@@ -827,12 +703,6 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
                 title: 'Договоров',
                 sortable: true,
                 render: (b) => <span className={styles.numCell}>{b.contractsCount}</span>,
-              },
-              {
-                key: 'amount',
-                title: 'Начислено',
-                sortable: true,
-                render: (b) => <span className={dpStyles.amountCell}>{formatMoney(b.amount)}</span>,
               },
               {
                 key: 'net',
@@ -853,9 +723,11 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
   );
 }
 
-/** Договоры, вошедшие в расчёт. */
+/** Договоры, вошедшие в расчёт; суммы ролей — к выплате (у менеджера без вычета налога). */
 function ContractsTable({ result }: { result: SalaryCalcResult }) {
   if (result.rows.length === 0) return null;
+  // Налог удерживается со всех, кроме менеджеров.
+  const toNet = (value: number) => Math.round(value * result.settings.netFactor * 100) / 100;
   return (
     <div className={styles.tableBlock}>
       <h2 className={styles.sectionTitle}>Договоры в расчёте ({result.rows.length})</h2>
@@ -923,21 +795,23 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             title: 'Замерщику',
             sortable: true,
             render: (r) => (
-              <span className={dpStyles.amountCell}>{formatMoney(r.surveyorAmount)}</span>
+              <span className={dpStyles.amountCell}>{formatMoney(toNet(r.surveyorAmount))}</span>
             ),
           },
           {
             key: 'vsAmount',
             title: 'ВС',
             sortable: true,
-            render: (r) => <span className={dpStyles.amountCell}>{formatMoney(r.vsAmount)}</span>,
+            render: (r) => (
+              <span className={dpStyles.amountCell}>{formatMoney(toNet(r.vsAmount))}</span>
+            ),
           },
           {
             key: 'brigadierAmount',
             title: 'Бригадиру',
             sortable: true,
             render: (r) => (
-              <span className={dpStyles.amountCell}>{formatMoney(r.brigadierAmount)}</span>
+              <span className={dpStyles.amountCell}>{formatMoney(toNet(r.brigadierAmount))}</span>
             ),
           },
           {

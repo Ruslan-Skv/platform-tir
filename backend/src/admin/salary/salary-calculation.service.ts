@@ -16,7 +16,9 @@ import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
  *    если замерщика у договора нет — з/п за замер не считается и никому не переходит;
  *  - ВС (ведущий специалист) = з/п менеджера × %ВС / %мен — фонд по направлению;
  *  - бригадир = з/п менеджера × %бриг / %мен (ремонтные направления, обычно 8.5%)
- *    и получает только свой фонд (общий пул упразднён).
+ *    и получает только свой фонд (общий пул упразднён);
+ *  - налог из настроек удерживается из всех фондов, кроме з/п менеджеров:
+ *    менеджеры получают начисления по своей ставке целиком.
  */
 @Injectable()
 export class SalaryCalculationService {
@@ -401,7 +403,8 @@ export class SalaryCalculationService {
       totals: {
         contractsCount: rows.length,
         managerPersonalTotal,
-        managerPersonalNet: round2(managerPersonalTotal * netFactor),
+        // Налог с менеджеров не удерживается — з/п выдаётся по ставке целиком.
+        managerPersonalNet: managerPersonalTotal,
         surveyorFund,
         surveyorFundNet: round2(surveyorFund * netFactor),
         brigadierFund,

@@ -21,9 +21,6 @@ import {
   prevMonthStartIso,
 } from '../salary-page.constants';
 
-/** Режим панели итогов: «По фондам» (по умолчанию) или «По сотрудникам». */
-export type SalaryTotalsMode = 'funds' | 'employees';
-
 /** Ключ localStorage для сохранения фильтров вкладки расчёта. */
 const SALARY_CALC_FILTERS_STORAGE_KEY = 'admin_salary_calc_filters_v1';
 
@@ -32,7 +29,6 @@ type PersistedCalcFilters = {
   dateTo: string;
   officeId: string;
   employeeId: string;
-  totalsMode: SalaryTotalsMode;
   filtersCollapsed: boolean;
 };
 
@@ -79,9 +75,6 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
   const [filtersCollapsed, setFiltersCollapsed] = useState(false);
   const toggleFiltersCollapsed = useCallback(() => setFiltersCollapsed((v) => !v), []);
 
-  /** Разрез панели итогов — только отображение, данные не фильтрует. */
-  const [totalsMode, setTotalsMode] = useState<SalaryTotalsMode>('funds');
-
   /** Фильтры восстановлены из localStorage — с этого момента их можно сохранять и считать. */
   const [filtersRestored, setFiltersRestored] = useState(false);
 
@@ -94,9 +87,6 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
       if (isIsoDay(saved.dateTo)) setDateTo(saved.dateTo);
       if (typeof saved.officeId === 'string') setOfficeId(saved.officeId);
       if (typeof saved.employeeId === 'string') setEmployeeId(saved.employeeId);
-      if (saved.totalsMode === 'funds' || saved.totalsMode === 'employees') {
-        setTotalsMode(saved.totalsMode);
-      }
       if (typeof saved.filtersCollapsed === 'boolean') setFiltersCollapsed(saved.filtersCollapsed);
     }
     setFiltersRestored(true);
@@ -113,14 +103,13 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
           dateTo,
           officeId,
           employeeId,
-          totalsMode,
           filtersCollapsed,
         } satisfies PersistedCalcFilters)
       );
     } catch {
       /* localStorage недоступен — настройки просто не сохранятся */
     }
-  }, [filtersRestored, dateFrom, dateTo, officeId, employeeId, totalsMode, filtersCollapsed]);
+  }, [filtersRestored, dateFrom, dateTo, officeId, employeeId, filtersCollapsed]);
 
   const isSnapshot = activeSettlement !== null;
 
@@ -282,8 +271,6 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     resetFilters,
     filtersCollapsed,
     toggleFiltersCollapsed,
-    totalsMode,
-    setTotalsMode,
     fixSettlement,
     confirmSettlement,
     deleteTarget,
