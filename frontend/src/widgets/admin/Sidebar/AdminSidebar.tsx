@@ -131,6 +131,12 @@ const baseNavItems: NavItem[] = [
     resourceId: 'admin.settings.my-notifications',
   },
   {
+    label: 'Моя з/п',
+    href: '/admin/accounting/salary/my',
+    icon: '💰',
+    resourceId: 'admin.accounting.salary.my',
+  },
+  {
     label: 'CRM',
     href: '/admin/crm',
     icon: '👥',

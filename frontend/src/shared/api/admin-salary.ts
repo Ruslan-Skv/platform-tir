@@ -427,6 +427,50 @@ export function calculateSalary(params: {
   );
 }
 
+// ===== Моя з/п =====
+
+export interface MySalaryContractPart {
+  role: string;
+  amount: number;
+}
+
+export interface MySalaryContract {
+  id: string;
+  number: string;
+  categoryName: string;
+  officeName: string;
+  signedAt: string | null;
+  closedAt: string | null;
+  customerName: string | null;
+  baseAmount: number;
+  roles: string[];
+  parts: MySalaryContractPart[];
+  payout: number;
+}
+
+/** Личный расчёт текущего сотрудника: суммы по ролям (итоговые к выплате) и договоры. */
+export interface MySalaryResult {
+  period: { from: string; to: string };
+  employee: { userId: string; userName: string };
+  payouts: {
+    manager: number;
+    managerContracts: number;
+    surveyor: number;
+    surveyorContracts: number;
+    vs: number;
+    vsCategories: string[];
+    brigadier: number;
+    isBrigadier: boolean;
+    total: number;
+  };
+  contracts: MySalaryContract[];
+}
+
+export function getMySalary(params: { dateFrom: string; dateTo: string }): Promise<MySalaryResult> {
+  const qs = new URLSearchParams({ dateFrom: params.dateFrom, dateTo: params.dateTo });
+  return request(`${API_URL}/admin/salary/my?${qs.toString()}`, {}, 'Не удалось загрузить з/п');
+}
+
 export function getSalarySettlements(): Promise<SalarySettlementListItem[]> {
   return request(
     `${API_URL}/admin/salary/settlements`,

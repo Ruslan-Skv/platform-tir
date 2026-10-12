@@ -3,6 +3,7 @@ import { DatabaseModule } from '../../database/database.module';
 import { SalarySettingsController } from './salary-settings.controller';
 import { SalaryContractsController } from './salary-contracts.controller';
 import { SalarySettlementsController } from './salary-settlements.controller';
+import { SalaryMyController } from './salary-my.controller';
 import { SalarySettingsService } from './salary-settings.service';
 import { SalaryContractsService } from './salary-contracts.service';
 import { SalaryContractsSyncService } from './salary-contracts-sync.service';
@@ -11,7 +12,12 @@ import { SalarySettlementsService } from './salary-settlements.service';
 
 @Module({
   imports: [DatabaseModule],
-  controllers: [SalarySettingsController, SalaryContractsController, SalarySettlementsController],
+  controllers: [
+    SalarySettingsController,
+    SalaryContractsController,
+    SalarySettlementsController,
+    SalaryMyController,
+  ],
   providers: [
     SalarySettingsService,
     SalaryContractsService,

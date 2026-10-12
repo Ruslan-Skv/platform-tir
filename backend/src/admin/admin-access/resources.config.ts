@@ -163,6 +163,11 @@ export const ADMIN_RESOURCES: AdminResourceItem[] = [
     label: 'Бухгалтерия — Расчёт з/п',
     path: '/admin/accounting/salary',
   },
+  {
+    id: 'admin.accounting.salary.my',
+    label: 'Моя з/п',
+    path: '/admin/accounting/salary/my',
+  },
   { id: 'admin.content', label: 'Контент', path: '/admin/content' },
   { id: 'admin.content.home', label: 'Главная страница', path: '/admin/content/home' },
   { id: 'admin.content.hero', label: 'Первый блок', path: '/admin/content/hero' },

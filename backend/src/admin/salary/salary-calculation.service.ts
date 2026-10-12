@@ -1,4 +1,4 @@
-import { BadRequestException, Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
 import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
@@ -439,6 +439,98 @@ export class SalaryCalculationService {
         }))
         .sort((a, b) => a.officeName.localeCompare(b.officeName)),
       rows,
+    };
+  }
+
+  /**
+   * Личный расчёт з/п сотрудника («Моя з/п»): его роли за период — менеджер, замерщик,
+   * ведущий специалист направлений, бригадир — и договоры, из которых сложилась его з/п.
+   * Менеджеру начисления считаются без вычета налога, остальным ролям — за вычетом.
+   */
+  async calculateMy(userId: string, input: { dateFrom: string; dateTo: string }) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { id: true, firstName: true, lastName: true, email: true },
+    });
+    if (!user) throw new NotFoundException('Пользователь не найден');
+
+    const full = await this.calculate(input);
+    const netFactor = full.settings.netFactor;
+    const roundNet = (value: number) => round2(value * netFactor);
+
+    // Участники договора привязываются к пользователям системы; свободные имена из
+    // импорта таблиц в личном расчёте не учитываются (могут быть неточными).
+    const ledCategories = full.vsByCategory.filter((v) => v.userId === userId);
+    const ledCategoryIds = new Set(ledCategories.map((v) => v.categoryId));
+    const isBrigadier = full.brigadier?.userId === userId;
+
+    const myRows = full.rows.filter(
+      (r) =>
+        r.managerId === userId ||
+        r.surveyorId === userId ||
+        ledCategoryIds.has(r.categoryId) ||
+        (isBrigadier && r.brigadierAmount > 0),
+    );
+
+    const manager = full.byManager.find((m) => m.managerId === userId) ?? null;
+    const surveyor = full.bySurveyor.find((s) => s.surveyorId === userId) ?? null;
+    const vsNet = round2(ledCategories.reduce((s, v) => s + v.net, 0));
+    const brigadierNet = isBrigadier ? (full.brigadier?.totalNet ?? 0) : 0;
+
+    // Расшифровка по договорам: роль и итоговая сумма по ней.
+    const contracts = myRows
+      .map((r) => {
+        const parts: Array<{ role: string; amount: number }> = [];
+        if (r.managerId === userId && r.managerAmount !== 0) {
+          parts.push({ role: 'менеджер', amount: r.managerAmount });
+        }
+        if (r.surveyorId === userId && r.surveyorAmount !== 0) {
+          parts.push({ role: 'замерщик', amount: roundNet(r.surveyorAmount) });
+        }
+        if (ledCategoryIds.has(r.categoryId) && r.vsAmount !== 0) {
+          parts.push({ role: 'ВС', amount: roundNet(r.vsAmount) });
+        }
+        if (isBrigadier && r.brigadierAmount !== 0) {
+          parts.push({ role: 'бригадир', amount: roundNet(r.brigadierAmount) });
+        }
+        return {
+          id: r.id,
+          number: r.number,
+          categoryName: r.categoryName,
+          officeName: r.officeName,
+          signedAt: r.signedAt,
+          closedAt: r.closedAt,
+          customerName: r.customerName,
+          baseAmount: r.baseAmount,
+          roles: parts.map((p) => p.role),
+          parts,
+          payout: round2(parts.reduce((s, p) => s + p.amount, 0)),
+        };
+      })
+      .filter((c) => c.parts.length > 0)
+      .sort((a, b) => (a.signedAt ?? '').localeCompare(b.signedAt ?? ''));
+
+    const managerAmount = manager?.amount ?? 0;
+    const surveyorNetAmount = roundNet(surveyor?.amount ?? 0);
+
+    return {
+      period: full.period,
+      employee: {
+        userId,
+        userName: [user.lastName, user.firstName].filter(Boolean).join(' ').trim() || user.email,
+      },
+      payouts: {
+        manager: managerAmount,
+        managerContracts: manager?.contractsCount ?? 0,
+        surveyor: surveyorNetAmount,
+        surveyorContracts: surveyor?.contractsCount ?? 0,
+        vs: vsNet,
+        vsCategories: ledCategories.filter((v) => v.gross > 0).map((v) => v.categoryName),
+        brigadier: brigadierNet,
+        isBrigadier,
+        total: round2(managerAmount + surveyorNetAmount + vsNet + brigadierNet),
+      },
+      contracts,
     };
   }
 }

@@ -1,0 +1,278 @@
+'use client';
+
+import type { ReactNode } from 'react';
+
+import type { MySalaryResult } from '@/shared/api/admin-salary';
+import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
+import { DataTable } from '@/shared/ui/admin/DataTable';
+import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
+import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
+import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.module.css';
+import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.module.css';
+import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
+
+import styles from '../SalaryPage.module.css';
+import { formatDate, formatMoney, pluralContracts } from '../salary-page.constants';
+import type { MySalaryPageModel } from './hooks/useMySalaryPage';
+
+type Props = {
+  model: MySalaryPageModel;
+};
+
+/** Карточка роли в плитках итогов. */
+function roleTile(
+  key: string,
+  label: string,
+  amount: number,
+  cash: string,
+  title: string
+): ReactNode {
+  return (
+    <div key={key} className={dpStyles.totalsTile} title={title}>
+      <span className={dpStyles.totalsTileLabel}>{label}</span>
+      <span className={dpStyles.totalsTileValueRow}>
+        <strong className={dpStyles.totalsTileValue}>{formatMoney(amount)}</strong>
+      </span>
+      {cash ? <span className={dpStyles.totalsTileCash}>{cash}</span> : null}
+    </div>
+  );
+}
+
+/** Раздел «Моя з/п»: личные начисления за период и договоры, из которых они сложились. */
+export function MySalaryPageView({ model }: Props) {
+  const { dateFrom, setDateFrom, dateTo, setDateTo, setPeriod, reload, result, loading, error } =
+    model;
+
+  const contractsTitle = result
+    ? `${result.contracts.length} ${pluralContracts(result.contracts.length)}`
+    : '';
+
+  const iconActions = (placement: 'desktop' | 'mobile') => (
+    <div
+      className={
+        placement === 'mobile'
+          ? cdHub.contractsHeaderIconActionsMobile
+          : cdHub.contractsHeaderIconActionsDesktop
+      }
+    >
+      <AdminListRefreshButton
+        disabled={loading}
+        busy={loading}
+        title="Обновить расчёт"
+        aria-label={loading ? 'Обновление расчёта' : 'Обновить расчёт'}
+        onClick={() => void reload()}
+      />
+    </div>
+  );
+
+  return (
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
+      <div className={cdHub.editorHeader}>
+        <div className={cdHub.contractsListHeaderLeft}>
+          <div className={cdHub.contractsHeaderTitleRow}>
+            <div className={cdHub.contractsHeaderTitleCluster}>
+              <div className={cdHub.contractsListHeaderTitleGroup}>
+                <h1 className={cdHub.title}>Моя з/п</h1>
+              </div>
+              <span className={cdHub.contractsListCount} title={contractsTitle}>
+                <span className={cdHub.contractsListCountDesktop}>{contractsTitle}</span>
+                <span className={cdHub.contractsListCountMobile}>
+                  {result?.contracts.length ?? 0}
+                </span>
+              </span>
+            </div>
+            {iconActions('mobile')}
+          </div>
+        </div>
+        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+          {iconActions('desktop')}
+        </div>
+      </div>
+
+      {error ? <div className={dpStyles.pageMessage}>{error}</div> : null}
+
+      <section className={cdHub.contractsListFiltersPanel} aria-label="Период расчёта зарплаты">
+        <div className={cdHub.contractsListFiltersStack}>
+          <div className={cdHub.contractsListChipRow} role="group" aria-label="Быстрый период">
+            <span className={cdHub.contractsListChipRowLabel}>Период</span>
+            <button
+              type="button"
+              className={cdHub.contractsListChip}
+              onClick={() => setPeriod('month')}
+            >
+              Текущий месяц
+            </button>
+            <button
+              type="button"
+              className={cdHub.contractsListChip}
+              onClick={() => setPeriod('prevMonth')}
+            >
+              Прошлый месяц
+            </button>
+          </div>
+
+          <div className={cdHub.contractsListFilters}>
+            <div className={cdHub.contractsListDateFilters}>
+              <label className={cdHub.contractsListDateLabel}>
+                <span className={cdHub.contractsListDateLabelText}>Период с</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className={cdHub.contractsListDateInput}
+                  aria-label="Дата начала периода"
+                />
+              </label>
+              <label className={cdHub.contractsListDateLabel}>
+                <span className={cdHub.contractsListDateLabelText}>по</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className={cdHub.contractsListDateInput}
+                  aria-label="Дата конца периода"
+                />
+              </label>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {loading && !result ? (
+        <div className={styles.hintBlock}>Расчёт…</div>
+      ) : !result ? (
+        <div className={styles.hintBlock}>
+          Не удалось загрузить расчёт. Нажмите «Обновить», чтобы повторить.
+        </div>
+      ) : (
+        <MySalaryBody result={result} />
+      )}
+    </div>
+  );
+}
+
+function MySalaryBody({ result }: { result: MySalaryResult }) {
+  const p = result.payouts;
+  const roles: ReactNode[] = [];
+  if (p.manager !== 0) {
+    roles.push(
+      roleTile(
+        'manager',
+        'Менеджер',
+        p.manager,
+        `договоров: ${p.managerContracts}`,
+        'З/п менеджера по договорам (по ставке, без вычета налога)'
+      )
+    );
+  }
+  if (p.surveyor !== 0) {
+    roles.push(
+      roleTile(
+        'surveyor',
+        'Замеры',
+        p.surveyor,
+        `замеров: ${p.surveyorContracts}`,
+        'З/п за замеры по договорам, где вы замерщик'
+      )
+    );
+  }
+  if (p.vs !== 0) {
+    roles.push(
+      roleTile(
+        'vs',
+        'ВС',
+        p.vs,
+        p.vsCategories.length > 0 ? p.vsCategories.join(', ') : '',
+        'З/п ведущего специалиста по закреплённым за вами направлениям'
+      )
+    );
+  }
+  if (p.brigadier !== 0) {
+    roles.push(roleTile('brigadier', 'Бригадир', p.brigadier, '', 'Бригадирский фонд'));
+  }
+
+  return (
+    <>
+      <div className={dpStyles.totalsRow} aria-label="Моя з/п за период">
+        <div
+          className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
+          title={`К выплате за ${formatDate(result.period.from)} — ${formatDate(result.period.to)}`}
+        >
+          <span className={dpStyles.totalsTileLabel}>К выплате за период</span>
+          <strong className={dpStyles.totalsTileValue}>{formatMoney(p.total)}</strong>
+          <span className={dpStyles.totalsTileCash}>{result.employee.userName}</span>
+        </div>
+        {roles}
+      </div>
+
+      {result.contracts.length === 0 ? (
+        <div className={styles.hintBlock}>
+          За период начислений нет — договоров с вашим участием не найдено.
+        </div>
+      ) : (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>
+            Договоры в моём расчёте ({result.contracts.length})
+          </h2>
+          <DataTable
+            data={result.contracts}
+            columns={[
+              {
+                key: 'number',
+                title: '№',
+                sortable: true,
+                render: (c) => <span className={styles.nameCell}>{c.number}</span>,
+              },
+              { key: 'categoryName', title: 'Направление', sortable: true },
+              { key: 'officeName', title: 'Офис', sortable: true },
+              {
+                key: 'signedAt',
+                title: 'Заключён',
+                sortable: true,
+                render: (c) => formatDate(c.signedAt),
+              },
+              {
+                key: 'closedAt',
+                title: 'Закрыт',
+                sortable: true,
+                render: (c) => formatDate(c.closedAt),
+              },
+              {
+                key: 'baseAmount',
+                title: 'Стоимость договора',
+                sortable: true,
+                render: (c) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(c.baseAmount)}</span>
+                ),
+              },
+              {
+                key: 'roles',
+                title: 'Моя роль',
+                render: (c) => (
+                  <span className={styles.mutedCell}>{c.roles.join(' + ') || '—'}</span>
+                ),
+              },
+              {
+                key: 'payout',
+                title: 'К выплате',
+                sortable: true,
+                render: (c) => (
+                  <span
+                    className={`${dpStyles.amountCell} ${styles.totalCell}`}
+                    title={c.parts
+                      .map((part) => `${part.role}: ${formatMoney(part.amount)}`)
+                      .join('\n')}
+                  >
+                    {formatMoney(c.payout)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(c) => c.id}
+            emptyMessage="Договоров в расчёте нет"
+          />
+        </div>
+      )}
+    </>
+  );
+}
