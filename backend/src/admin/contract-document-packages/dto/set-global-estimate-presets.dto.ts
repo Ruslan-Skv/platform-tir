@@ -117,10 +117,10 @@ export class ContractEstimatePresetDto {
   @Type(() => Boolean)
   archived?: boolean;
 
-  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
+  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». Прикрепление и подписание вкладками не хранятся. */
   @IsOptional()
-  @IsIn(['active', 'prospect', 'contract'])
-  pipelineStage?: 'active' | 'prospect' | 'contract';
+  @IsIn(['active', 'prospect', 'contract', 'deferred'])
+  pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
 
   /** Направление расчёта — то же, что выбирается при создании договора; у старых расчётов нет (трактуется как REPAIR). */
   @IsOptional()
@@ -196,10 +196,10 @@ export class ContractEstimateGroupDto {
   @Type(() => Boolean)
   archived?: boolean;
 
-  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
+  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». */
   @IsOptional()
-  @IsIn(['active', 'prospect', 'contract'])
-  pipelineStage?: 'active' | 'prospect' | 'contract';
+  @IsIn(['active', 'prospect', 'contract', 'deferred'])
+  pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
 
   /** Порядок блока объекта в общей ленте. */
   @IsOptional()

@@ -89,7 +89,6 @@ export class ContractDocumentPackageEstimatePresetsService {
     const raw = await this.loadGlobalEstimatePresetsBlobInternal(
       ContractDocumentPackageKind.REPAIR,
     );
-    const groupsById = new Map((raw.groups ?? []).map((g) => [g.id, g]));
     for (const id of presetIds) {
       const preset = raw.items.find((item) => item.id === id);
       if (!preset) continue;
@@ -102,27 +101,9 @@ export class ContractDocumentPackageEstimatePresetsService {
           }».`,
         );
       }
-      if (preset.archived) {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт из архива. Восстановите его в списке расчётов.',
-        );
-      }
-      if (preset.pipelineStage === 'prospect') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт из вкладки «В перспективе». Перенесите его в «В работе».',
-        );
-      }
-      if (preset.pipelineStage === 'contract') {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт из вкладки «В договорах». Верните его во «В работе».',
-        );
-      }
-      const group = preset.groupId ? groupsById.get(preset.groupId) : undefined;
-      if (group?.archived) {
-        throw new BadRequestException(
-          'Нельзя прикрепить расчёт архивного объекта. Восстановите объект в списке расчётов.',
-        );
-      }
+      // Вкладка расчёта («В работе»/«Отложенные») и прежний архив прикреплению
+      // не мешают: возврат заказчика из паузы не должен требовать ручного перевода.
+      // Подписанные и уже прикреплённые расчёты исключает фильтр привязок на фронте.
     }
   }
 

@@ -10,19 +10,6 @@ export function useEstimatesListNavigation(
   searchParams: URLSearchParams,
   setPage: (page: number) => void
 ) {
-  const navigateArchiveView = useCallback(
-    (nextArchive: boolean) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (nextArchive) {
-        params.set('archive', '1');
-        params.delete('pipeline');
-      } else params.delete('archive');
-      const qs = params.toString();
-      router.push(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
-    },
-    [pathname, router, searchParams]
-  );
-
   const navigatePipelineTab = useCallback(
     (nextTab: EstimatePipelineTab) => {
       const params = new URLSearchParams(searchParams.toString());
@@ -35,5 +22,5 @@ export function useEstimatesListNavigation(
     [pathname, router, searchParams, setPage]
   );
 
-  return { navigateArchiveView, navigatePipelineTab };
+  return { navigatePipelineTab };
 }

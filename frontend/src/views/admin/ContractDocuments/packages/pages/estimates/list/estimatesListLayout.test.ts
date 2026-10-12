@@ -64,8 +64,6 @@ describe('buildEstimateLayoutBlocks: сортировка объектов по 
   const addressKeys = (sortBy: 'date' | 'binding', sortOrder: 'asc' | 'desc') =>
     buildEstimateLayoutBlocks({
       visibleItems: items,
-      groups: [],
-      archiveView: false,
       listViewMode: 'by_object',
       listSortBy: sortBy,
       listSortOrder: sortOrder,
@@ -102,8 +100,6 @@ describe('объект из одного расчёта — сразу карт�
 
   const blocks = buildEstimateLayoutBlocks({
     visibleItems: items,
-    groups: [],
-    archiveView: false,
     listViewMode: 'by_object',
     listSortBy: 'date',
     listSortOrder: 'desc',

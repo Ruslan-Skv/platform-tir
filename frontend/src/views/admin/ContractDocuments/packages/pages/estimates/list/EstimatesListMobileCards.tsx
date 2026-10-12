@@ -10,7 +10,10 @@ import {
   getBaseSnapshotWithMarkupForPreset,
   getSnapshotForEstimateAttach,
 } from '@/views/admin/ContractDocuments/packages/platform/estimates/applyEstimatePresetIds';
-import type { EstimatePipelineTab } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
+import type {
+  EstimatePipelineManualTab,
+  EstimatePipelineTab,
+} from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
 import { getSplitBundleBadgeFraction } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateSplitBundle';
 import {
   listPresetsInSplitBundle,
@@ -20,7 +23,6 @@ import cdHub from '@/views/admin/ContractDocuments/styles/contracts-list-hub.mod
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
 import { packageKindUiLabel } from '../../../config/packageDirectionRegistry';
-import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import type { EstimatesTableDisplayItem } from './estimatesListLayout';
@@ -38,13 +40,11 @@ import {
 } from './estimatesListUtils';
 
 export type EstimatesListMobileCardsProps = {
-  archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
   loading: boolean;
   refreshing: boolean;
   saving: boolean;
   visibleItemCount: number;
-  hasAnythingInArchive: boolean;
   hasActiveListFilters: boolean;
   totalTableRows: number;
   paginatedDisplayItems: EstimatesTableDisplayItem[];
@@ -56,9 +56,7 @@ export type EstimatesListMobileCardsProps = {
   onToggleAddressExpand: (addressKey: string) => void;
   onGroupMarkupChange: (groupId: string, raw: string) => void;
   router: AppRouterInstance;
-  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
-  onPresetArchived: (presetId: string, archived: boolean) => void;
-  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
+  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineManualTab) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -72,15 +70,12 @@ function EstimateMobileCard({
   nested,
   showObjectAddress,
   saving,
-  archiveView,
   pipelineTab,
   groups,
   items,
   usageByEstimateId,
   router,
   onPresetPipelineStage,
-  onPresetArchived,
-  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -95,15 +90,12 @@ function EstimateMobileCard({
 } & Pick<
   EstimatesListMobileCardsProps,
   | 'saving'
-  | 'archiveView'
   | 'pipelineTab'
   | 'groups'
   | 'items'
   | 'usageByEstimateId'
   | 'router'
   | 'onPresetPipelineStage'
-  | 'onPresetArchived'
-  | 'onArchivePreset'
   | 'onPresetMarkupChange'
   | 'onDetachEdit'
   | 'onCopyPreset'
@@ -273,15 +265,12 @@ function EstimateMobileCard({
           as="inline"
           preset={it}
           saving={saving}
-          archiveView={archiveView}
           pipelineTab={pipelineTab}
           groups={groups}
           items={items}
           usageByEstimateId={usageByEstimateId}
           router={router}
           onPresetPipelineStage={onPresetPipelineStage}
-          onPresetArchived={onPresetArchived}
-          onArchivePreset={onArchivePreset}
           onDetachEdit={onDetachEdit}
           onCopyPreset={onCopyPreset}
           onOpenWorkScopeSplit={onOpenWorkScopeSplit}
@@ -294,13 +283,11 @@ function EstimateMobileCard({
 }
 
 export function EstimatesListMobileCards({
-  archiveView,
   pipelineTab,
   loading,
   refreshing,
   saving,
   visibleItemCount,
-  hasAnythingInArchive,
   hasActiveListFilters,
   totalTableRows,
   paginatedDisplayItems,
@@ -313,8 +300,6 @@ export function EstimatesListMobileCards({
   onGroupMarkupChange,
   router,
   onPresetPipelineStage,
-  onPresetArchived,
-  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -328,14 +313,14 @@ export function EstimatesListMobileCards({
   if (visibleItemCount === 0) {
     return (
       <p className={cdHub.contractsMobileEmpty}>
-        {archiveView && !hasAnythingInArchive
-          ? 'В архиве пока нет расчётов и объектов.'
-          : hasActiveListFilters
-            ? 'Нет расчётов по выбранным фильтрам.'
-            : pipelineTab === 'prospect'
-              ? 'На вкладке «В перспективе» пока нет расчётов.'
-              : pipelineTab === 'contract'
-                ? 'На вкладке «В договорах» пока нет расчётов.'
+        {hasActiveListFilters
+          ? 'Нет расчётов по выбранным фильтрам.'
+          : pipelineTab === 'attached'
+            ? 'На вкладке «Прикреплённые» пока нет расчётов.'
+            : pipelineTab === 'signed'
+              ? 'На вкладке «Подписаны» пока нет расчётов.'
+              : pipelineTab === 'deferred'
+                ? 'На вкладке «Отложенные» пока нет расчётов.'
                 : 'На вкладке «В работе» пока нет расчётов.'}
       </p>
     );
@@ -352,14 +337,6 @@ export function EstimatesListMobileCards({
     <div className={cdHub.contractsMobileCards} aria-label="Список расчётов">
       {paginatedDisplayItems.map((item) => {
         if (item.type === 'gap') return null;
-
-        if (item.type === 'soloArchivedSection') {
-          return (
-            <p key="_soloArchived" className={cdEstimatesList.estimatesMobileSectionHint}>
-              В архиве отдельно (объект в основном списке)
-            </p>
-          );
-        }
 
         if (item.type === 'estimate' && item.childOfAddress) {
           // Уже отрисованы внутри развёрнутого объекта — не дублируем.
@@ -445,15 +422,12 @@ export function EstimatesListMobileCards({
                       preset={preset}
                       nested
                       saving={saving}
-                      archiveView={archiveView}
                       pipelineTab={pipelineTab}
                       groups={groups}
                       items={items}
                       usageByEstimateId={usageByEstimateId}
                       router={router}
                       onPresetPipelineStage={onPresetPipelineStage}
-                      onPresetArchived={onPresetArchived}
-                      onArchivePreset={onArchivePreset}
                       onPresetMarkupChange={onPresetMarkupChange}
                       onDetachEdit={onDetachEdit}
                       onCopyPreset={onCopyPreset}
@@ -473,15 +447,12 @@ export function EstimatesListMobileCards({
             preset={item.preset}
             showObjectAddress={item.showObjectAddress}
             saving={saving}
-            archiveView={archiveView}
             pipelineTab={pipelineTab}
             groups={groups}
             items={items}
             usageByEstimateId={usageByEstimateId}
             router={router}
             onPresetPipelineStage={onPresetPipelineStage}
-            onPresetArchived={onPresetArchived}
-            onArchivePreset={onArchivePreset}
             onPresetMarkupChange={onPresetMarkupChange}
             onDetachEdit={onDetachEdit}
             onCopyPreset={onCopyPreset}

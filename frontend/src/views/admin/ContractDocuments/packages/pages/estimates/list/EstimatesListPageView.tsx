@@ -25,7 +25,6 @@ type EstimatesListPageViewProps = EstimatesListPageModel;
 
 export function EstimatesListPageView({
   router,
-  archiveView,
   pipelineTab,
   saving,
   error,
@@ -40,15 +39,11 @@ export function EstimatesListPageView({
   mutations,
   isSuperAdmin,
 }: EstimatesListPageViewProps) {
-  const { visibleItems, pipelineTabCounts, archiveCount, addressGroupCount } = derived;
+  const { visibleItems, pipelineTabCounts, addressGroupCount } = derived;
 
   return (
-    <div
-      className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdEstimatesList.estimatesPage}${archiveView ? ` ${cdEstimatesList.estimatesPageInArchive}` : ''}`}
-    >
+    <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdEstimatesList.estimatesPage}`}>
       <EstimatesListPageHeader
-        archiveView={archiveView}
-        onNavigateArchiveView={navigation.navigateArchiveView}
         listViewMode={filters.listViewMode}
         visibleItemCount={visibleItems.length}
         addressGroupCount={addressGroupCount}
@@ -62,8 +57,7 @@ export function EstimatesListPageView({
         onRefresh={() => void mutations.refreshEstimates()}
         trashCount={modals.trashCount}
         onOpenTrash={() => modals.setTrashOpen(true)}
-        archiveCount={archiveCount}
-        showImportControl={Boolean(isSuperAdmin) && !archiveView}
+        showImportControl={Boolean(isSuperAdmin)}
         importing={mutations.importingEstimate}
         onImportEstimateFile={
           isSuperAdmin ? (file) => void mutations.importEstimateTransferFile(file) : undefined
@@ -113,13 +107,11 @@ export function EstimatesListPageView({
       </EstimatesListFiltersPanel>
 
       <EstimatesListTable
-        archiveView={archiveView}
         pipelineTab={pipelineTab}
         loading={load.loading}
         refreshing={load.refreshing}
         saving={saving}
         visibleItemCount={visibleItems.length}
-        hasAnythingInArchive={archiveCount > 0}
         hasActiveListFilters={filters.hasActiveListFilters}
         totalTableRows={derived.totalTableRows}
         paginatedDisplayItems={derived.paginatedDisplayItems}
@@ -135,8 +127,6 @@ export function EstimatesListPageView({
         onGroupMarkupChange={mutations.updateGroupAdditionalMarkupPercent}
         router={router}
         onPresetPipelineStage={mutations.setPresetPipelineStage}
-        onPresetArchived={mutations.setPresetArchived}
-        onArchivePreset={modals.setArchiveConfirmModal}
         onPresetMarkupChange={mutations.updatePresetAdditionalMarkupPercent}
         onDetachEdit={(estimateId, usages) => modals.setDetachEditModal({ estimateId, usages })}
         onCopyPreset={modals.setCopyChoicePresetId}
@@ -150,7 +140,6 @@ export function EstimatesListPageView({
 
       <EstimatesListModals
         saving={saving}
-        archiveView={archiveView}
         groups={load.groups}
         items={load.items}
         workScopePreset={modals.workScopePreset}
@@ -182,9 +171,6 @@ export function EstimatesListPageView({
         trashConfirmModal={modals.trashConfirmModal}
         onCloseTrashConfirm={() => modals.setTrashConfirmModal(null)}
         onConfirmTrashMove={mutations.handleConfirmTrashMove}
-        archiveConfirmModal={modals.archiveConfirmModal}
-        onCloseArchiveConfirm={() => modals.setArchiveConfirmModal(null)}
-        onConfirmArchive={mutations.handleConfirmArchive}
         trashOpen={modals.trashOpen}
         trashMineOnly={modals.trashMineOnly}
         onCloseTrash={() => {

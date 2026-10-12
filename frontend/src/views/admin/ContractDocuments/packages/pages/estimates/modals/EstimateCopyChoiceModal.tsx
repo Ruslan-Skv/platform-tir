@@ -38,7 +38,6 @@ export function EstimateCopyChoiceModal({
   isOpen,
   preset,
   allPresets,
-  archiveView,
   hasLockedUsage,
   saving,
   onClose,
@@ -47,7 +46,6 @@ export function EstimateCopyChoiceModal({
   isOpen: boolean;
   preset: ContractEstimatePreset | null;
   allPresets: ContractEstimatePreset[];
-  archiveView: boolean;
   hasLockedUsage: boolean;
   saving: boolean;
   onClose: () => void;
@@ -64,7 +62,6 @@ export function EstimateCopyChoiceModal({
       isOpen={isOpen}
       preset={cachedPreset}
       allPresets={allPresets}
-      archiveView={archiveView}
       hasLockedUsage={hasLockedUsage}
       saving={saving}
       onClose={onClose}
@@ -77,7 +74,6 @@ function EstimateCopyChoiceModalOpened({
   isOpen,
   preset,
   allPresets,
-  archiveView,
   hasLockedUsage,
   saving,
   onClose,
@@ -86,7 +82,6 @@ function EstimateCopyChoiceModalOpened({
   isOpen: boolean;
   preset: ContractEstimatePreset;
   allPresets: ContractEstimatePreset[];
-  archiveView: boolean;
   hasLockedUsage: boolean;
   saving: boolean;
   onClose: () => void;
@@ -106,7 +101,6 @@ function EstimateCopyChoiceModalOpened({
   const linkedDisabledReason =
     activeLinkedTarget != null
       ? getLinkedCopyDisabledReason(preset, allPresets, activeLinkedTarget, {
-          archiveView,
           hasLockedUsage,
         })
       : null;
@@ -127,7 +121,6 @@ function EstimateCopyChoiceModalOpened({
     target: LinkedCopySplitTarget
   ) => {
     const reason = getLinkedCopyDisabledReason(preset, allPresets, target, {
-      archiveView,
       hasLockedUsage,
     });
     return (

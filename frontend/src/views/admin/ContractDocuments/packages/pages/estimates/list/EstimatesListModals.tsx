@@ -5,8 +5,6 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-import { EstimateArchiveConfirmModal } from '../modals/EstimateArchiveConfirmModal';
-import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import { EstimateCopyChoiceModal } from '../modals/EstimateCopyChoiceModal';
 import { EstimateDetachEditModal } from '../modals/EstimateDetachEditModal';
 import {
@@ -22,7 +20,6 @@ import { EstimateWorkScopeSplitModal } from '../modals/EstimateWorkScopeSplitMod
 
 export type EstimatesListModalsProps = {
   saving: boolean;
-  archiveView: boolean;
   groups: ContractEstimateGroup[];
   items: ContractEstimatePreset[];
   workScopePreset: ContractEstimatePreset | null;
@@ -41,9 +38,6 @@ export type EstimatesListModalsProps = {
   trashConfirmModal: EstimateTrashConfirmState | null;
   onCloseTrashConfirm: () => void;
   onConfirmTrashMove: () => void;
-  archiveConfirmModal: EstimateArchiveConfirmState | null;
-  onCloseArchiveConfirm: () => void;
-  onConfirmArchive: () => void;
   trashOpen: boolean;
   trashMineOnly?: boolean;
   onCloseTrash: () => void;
@@ -59,7 +53,6 @@ export type EstimatesListModalsProps = {
 
 export function EstimatesListModals({
   saving,
-  archiveView,
   groups,
   items,
   workScopePreset,
@@ -75,9 +68,6 @@ export function EstimatesListModals({
   trashConfirmModal,
   onCloseTrashConfirm,
   onConfirmTrashMove,
-  archiveConfirmModal,
-  onCloseArchiveConfirm,
-  onConfirmArchive,
   trashOpen,
   trashMineOnly = false,
   onCloseTrash,
@@ -106,7 +96,6 @@ export function EstimatesListModals({
         isOpen={copyChoicePreset != null}
         preset={copyChoicePreset}
         allPresets={items}
-        archiveView={archiveView}
         hasLockedUsage={copyChoiceHasLockedUsage}
         saving={saving}
         onClose={onCloseCopyChoice}
@@ -125,13 +114,6 @@ export function EstimatesListModals({
         saving={saving}
         onClose={onCloseTrashConfirm}
         onConfirm={onConfirmTrashMove}
-      />
-
-      <EstimateArchiveConfirmModal
-        state={archiveConfirmModal}
-        saving={saving}
-        onClose={onCloseArchiveConfirm}
-        onConfirm={onConfirmArchive}
       />
 
       <EstimateTrashModal

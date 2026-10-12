@@ -11,7 +11,10 @@ import {
   getBaseSnapshotWithMarkupForPreset,
   getSnapshotForEstimateAttach,
 } from '@/views/admin/ContractDocuments/packages/platform/estimates/applyEstimatePresetIds';
-import type { EstimatePipelineTab } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
+import type {
+  EstimatePipelineManualTab,
+  EstimatePipelineTab,
+} from '@/views/admin/ContractDocuments/packages/platform/estimates/estimatePipelineStage';
 import { getSplitBundleBadgeFraction } from '@/views/admin/ContractDocuments/packages/platform/estimates/estimateSplitBundle';
 import {
   findSplitBundleSnapshotMismatches,
@@ -22,7 +25,6 @@ import cdBase from '@/views/admin/ContractDocuments/styles/base.module.css';
 import cdEstimatesList from '@/views/admin/ContractDocuments/styles/estimates-list.module.css';
 
 import { packageKindUiLabel } from '../../../config/packageDirectionRegistry';
-import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import { EstimatePresetRowMarkupCell } from './EstimatePresetRowMarkupCell';
@@ -47,15 +49,12 @@ export type EstimatePresetTableRowProps = {
   /** Единственный расчёт объекта — показать адрес объекта в карточке. */
   showObjectAddress?: boolean;
   saving: boolean;
-  archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
   groups: ContractEstimateGroup[];
   items: ContractEstimatePreset[];
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
   router: AppRouterInstance;
-  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
-  onPresetArchived: (presetId: string, archived: boolean) => void;
-  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
+  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineManualTab) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -72,15 +71,12 @@ export function EstimatePresetTableRow({
   standaloneCard,
   showObjectAddress,
   saving,
-  archiveView,
   pipelineTab,
   groups,
   items,
   usageByEstimateId,
   router,
   onPresetPipelineStage,
-  onPresetArchived,
-  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -232,15 +228,12 @@ export function EstimatePresetTableRow({
       <EstimatePresetRowActions
         preset={it}
         saving={saving}
-        archiveView={archiveView}
         pipelineTab={pipelineTab}
         groups={groups}
         items={items}
         usageByEstimateId={usageByEstimateId}
         router={router}
         onPresetPipelineStage={onPresetPipelineStage}
-        onPresetArchived={onPresetArchived}
-        onArchivePreset={onArchivePreset}
         onDetachEdit={onDetachEdit}
         onCopyPreset={onCopyPreset}
         onOpenWorkScopeSplit={onOpenWorkScopeSplit}

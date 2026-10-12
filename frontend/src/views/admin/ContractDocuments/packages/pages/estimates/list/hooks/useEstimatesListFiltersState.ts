@@ -15,10 +15,7 @@ import { getEstimatesListRoleDefaults } from '../estimatesListScope';
 import { type EstimatesListSortBy, type EstimatesListSortOrder } from '../estimatesListSort';
 import { normalizeEstimatesListSearch } from '../estimatesListUtils';
 
-export function useEstimatesListFiltersState(
-  archiveView: boolean,
-  currentUserRole: string | null | undefined
-) {
+export function useEstimatesListFiltersState(currentUserRole: string | null | undefined) {
   const initialListFiltersRef = useRef(loadEstimatesListFilters());
   const listFiltersHydratedRef = useRef(false);
   const skipListFiltersPersistRef = useRef(true);
@@ -168,7 +165,6 @@ export function useEstimatesListFiltersState(
     directionFilters,
     listSortBy,
     listSortOrder,
-    archiveView,
   ]);
 
   return {

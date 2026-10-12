@@ -293,15 +293,45 @@ export function estimateObjectAddressDisplayLabel(addressKey: string): string {
   return addressKey === ESTIMATES_NO_ADDRESS_KEY ? 'Без адреса объекта' : addressKey;
 }
 
+/** Расчёты одной связки всегда идут подряд: участники подтягиваются к первому из них. */
+function keepSplitBundleMembersAdjacent(
+  sorted: ContractEstimatePreset[]
+): ContractEstimatePreset[] {
+  if (sorted.length < 2) return sorted;
+  const bundleOf = new Map<string, string>();
+  for (const p of sorted) {
+    const bundleId = resolveSplitBundleId(p, sorted);
+    if (bundleId) bundleOf.set(p.id, bundleId);
+  }
+  if (bundleOf.size === 0) return sorted;
+  const emitted = new Set<string>();
+  const out: ContractEstimatePreset[] = [];
+  for (const p of sorted) {
+    if (emitted.has(p.id)) continue;
+    emitted.add(p.id);
+    out.push(p);
+    const bundleId = bundleOf.get(p.id);
+    if (!bundleId) continue;
+    for (const peer of sorted) {
+      if (emitted.has(peer.id)) continue;
+      if (bundleOf.get(peer.id) !== bundleId) continue;
+      emitted.add(peer.id);
+      out.push(peer);
+    }
+  }
+  return out;
+}
+
 export function sortEstimatesForList(
   list: ContractEstimatePreset[],
   sortBy: EstimatesListSortBy,
   sortOrder: EstimatesListSortOrder,
   usageByEstimateId?: Map<string, EstimatePackageUsage[]>
 ): ContractEstimatePreset[] {
-  return [...list].sort((a, b) =>
+  const sorted = [...list].sort((a, b) =>
     comparePresetsForListSort(a, b, sortBy, sortOrder, usageByEstimateId)
   );
+  return keepSplitBundleMembersAdjacent(sorted);
 }
 
 /** Убирает ссылку на несуществующую группу (после удаления объекта и т.п.). */

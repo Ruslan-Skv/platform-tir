@@ -11,8 +11,10 @@ import dataTableStyles from '@/shared/ui/admin/DataTable/DataTable.module.css';
 
 import cdHub from '../../../../styles/contracts-list-hub.module.css';
 import cdEstimatesList from '../../../../styles/estimates-list.module.css';
-import type { EstimatePipelineTab } from '../../../platform/estimates/estimatePipelineStage';
-import type { EstimateArchiveConfirmState } from '../modals/EstimateArchiveConfirmModal';
+import type {
+  EstimatePipelineManualTab,
+  EstimatePipelineTab,
+} from '../../../platform/estimates/estimatePipelineStage';
 import type { EstimateTrashConfirmState } from '../modals/EstimateTrashConfirmModal';
 import { EstimateAddressGroupTableRow } from './EstimateAddressGroupTableRow';
 import { EstimatePresetTableRow } from './EstimatePresetTableRow';
@@ -23,13 +25,11 @@ import { EstimatesListSortableTh } from './estimatesListTableUi';
 import { ESTIMATES_LIST_TABLE_COL_SPAN, type EstimatePackageUsage } from './estimatesListUtils';
 
 export type EstimatesListTableProps = {
-  archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
   loading: boolean;
   refreshing: boolean;
   saving: boolean;
   visibleItemCount: number;
-  hasAnythingInArchive: boolean;
   hasActiveListFilters: boolean;
   totalTableRows: number;
   paginatedDisplayItems: EstimatesTableDisplayItem[];
@@ -44,9 +44,7 @@ export type EstimatesListTableProps = {
   onToggleAddressExpand: (addressKey: string) => void;
   onGroupMarkupChange: (groupId: string, raw: string) => void;
   router: AppRouterInstance;
-  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineTab) => void;
-  onPresetArchived: (presetId: string, archived: boolean) => void;
-  onArchivePreset: (state: EstimateArchiveConfirmState) => void;
+  onPresetPipelineStage: (presetId: string, tab: EstimatePipelineManualTab) => void;
   onPresetMarkupChange: (presetId: string, raw: string) => void;
   onDetachEdit: (estimateId: string, usages: EstimatePackageUsage[]) => void;
   onCopyPreset: (presetId: string) => void;
@@ -59,13 +57,11 @@ export type EstimatesListTableProps = {
 };
 
 export function EstimatesListTable({
-  archiveView,
   pipelineTab,
   loading,
   refreshing,
   saving,
   visibleItemCount,
-  hasAnythingInArchive,
   hasActiveListFilters,
   totalTableRows,
   paginatedDisplayItems,
@@ -81,8 +77,6 @@ export function EstimatesListTable({
   onGroupMarkupChange,
   router,
   onPresetPipelineStage,
-  onPresetArchived,
-  onArchivePreset,
   onPresetMarkupChange,
   onDetachEdit,
   onCopyPreset,
@@ -95,7 +89,7 @@ export function EstimatesListTable({
 }: EstimatesListTableProps) {
   return (
     <div
-      className={`${dataTableStyles.tableContainer} ${cdEstimatesList.contractsDirectoryTable} ${cdEstimatesList.estimatesDirectoryTable}${archiveView ? ` ${cdEstimatesList.estimatesDirectoryTableArchive}` : ''}`}
+      className={`${dataTableStyles.tableContainer} ${cdEstimatesList.contractsDirectoryTable} ${cdEstimatesList.estimatesDirectoryTable}`}
       data-estimates-tab={pipelineTab}
     >
       <div className={`${dataTableStyles.tableWrapper} ${cdEstimatesList.estimatesDesktopTable}`}>
@@ -133,14 +127,14 @@ export function EstimatesListTable({
               {visibleItemCount === 0 ? (
                 <tr>
                   <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN} className={dataTableStyles.emptyCell}>
-                    {archiveView && !hasAnythingInArchive
-                      ? 'В архиве пока нет расчётов и объектов.'
-                      : hasActiveListFilters
-                        ? 'Нет расчётов по выбранным фильтрам.'
-                        : pipelineTab === 'prospect'
-                          ? 'На вкладке «В перспективе» пока нет расчётов.'
-                          : pipelineTab === 'contract'
-                            ? 'На вкладке «В договорах» пока нет расчётов.'
+                    {hasActiveListFilters
+                      ? 'Нет расчётов по выбранным фильтрам.'
+                      : pipelineTab === 'attached'
+                        ? 'На вкладке «Прикреплённые» пока нет расчётов.'
+                        : pipelineTab === 'signed'
+                          ? 'На вкладке «Подписаны» пока нет расчётов.'
+                          : pipelineTab === 'deferred'
+                            ? 'На вкладке «Отложенные» пока нет расчётов.'
                             : 'На вкладке «В работе» пока нет расчётов.'}
                   </td>
                 </tr>
@@ -178,15 +172,6 @@ export function EstimatesListTable({
                       />
                     );
                   }
-                  if (item.type === 'soloArchivedSection') {
-                    return (
-                      <tr key="_soloArchived" className={cdEstimatesList.estimatesListSectionRow}>
-                        <td colSpan={ESTIMATES_LIST_TABLE_COL_SPAN}>
-                          В архиве отдельно (объект в основном списке)
-                        </td>
-                      </tr>
-                    );
-                  }
                   const next = paginatedDisplayItems[index + 1];
                   const isLastAddressChild =
                     Boolean(item.childOfAddress) &&
@@ -200,15 +185,12 @@ export function EstimatesListTable({
                       standaloneCard={item.standaloneCard}
                       showObjectAddress={item.showObjectAddress}
                       saving={saving}
-                      archiveView={archiveView}
                       pipelineTab={pipelineTab}
                       groups={groups}
                       items={items}
                       usageByEstimateId={usageByEstimateId}
                       router={router}
                       onPresetPipelineStage={onPresetPipelineStage}
-                      onPresetArchived={onPresetArchived}
-                      onArchivePreset={onArchivePreset}
                       onPresetMarkupChange={onPresetMarkupChange}
                       onDetachEdit={onDetachEdit}
                       onCopyPreset={onCopyPreset}
@@ -225,13 +207,11 @@ export function EstimatesListTable({
       </div>
 
       <EstimatesListMobileCards
-        archiveView={archiveView}
         pipelineTab={pipelineTab}
         loading={loading}
         refreshing={refreshing}
         saving={saving}
         visibleItemCount={visibleItemCount}
-        hasAnythingInArchive={hasAnythingInArchive}
         hasActiveListFilters={hasActiveListFilters}
         totalTableRows={totalTableRows}
         paginatedDisplayItems={paginatedDisplayItems}
@@ -244,8 +224,6 @@ export function EstimatesListTable({
         onGroupMarkupChange={onGroupMarkupChange}
         router={router}
         onPresetPipelineStage={onPresetPipelineStage}
-        onPresetArchived={onPresetArchived}
-        onArchivePreset={onArchivePreset}
         onPresetMarkupChange={onPresetMarkupChange}
         onDetachEdit={onDetachEdit}
         onCopyPreset={onCopyPreset}

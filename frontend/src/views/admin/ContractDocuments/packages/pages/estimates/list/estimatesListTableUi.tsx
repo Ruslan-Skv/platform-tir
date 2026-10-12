@@ -51,52 +51,8 @@ export function unifiedGroupIdForEstimates(items: ContractEstimatePreset[]): str
   return [...ids][0];
 }
 
-export function EstimatesArchiveIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--admin-chart-series-3)"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M21 8v13H3V8" />
-      <path d="M23 3v5H1V3z" />
-      <path d="M10 12h4" />
-    </svg>
-  );
-}
-
-export function EstimatesRestoreFromArchiveIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--admin-chart-series-1)"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M8 6h13" />
-      <path d="M8 12h13" />
-      <path d="M8 18h13" />
-      <path d="M3 6h.01" />
-      <path d="M3 12h.01" />
-      <path d="M3 18h.01" />
-    </svg>
-  );
-}
-
-export function EstimatesToProspectIcon() {
+/** «Отложить»: пауза заказчика (подумать, сделать позже). */
+export function EstimatesDeferIcon() {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
@@ -110,8 +66,8 @@ export function EstimatesToProspectIcon() {
       strokeLinejoin="round"
       aria-hidden
     >
-      <path d="M5 12h14" />
-      <path d="m13 6 6 6-6 6" />
+      <rect x="6" y="4" width="4" height="16" rx="1" />
+      <rect x="14" y="4" width="4" height="16" rx="1" />
     </svg>
   );
 }
@@ -132,28 +88,6 @@ export function EstimatesToActiveIcon() {
     >
       <path d="M19 12H5" />
       <path d="m11 6-6 6 6 6" />
-    </svg>
-  );
-}
-
-export function EstimatesToContractsIcon() {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      width={14}
-      height={14}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="var(--admin-warning-strong)"
-      strokeWidth={2}
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden
-    >
-      <path d="M13 21H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8l6 6v4" />
-      <path d="M14 3v6h6" />
-      <path d="M14 17h7" />
-      <path d="m18 14 3 3-3 3" />
     </svg>
   );
 }

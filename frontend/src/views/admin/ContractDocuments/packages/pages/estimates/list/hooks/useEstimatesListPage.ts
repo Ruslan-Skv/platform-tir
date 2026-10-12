@@ -21,10 +21,7 @@ export function useEstimatesListPage() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
-  const archiveView = searchParams.get('archive') === '1';
-  const pipelineTab = archiveView
-    ? 'active'
-    : parseEstimatePipelineTab(searchParams.get('pipeline'));
+  const pipelineTab = parseEstimatePipelineTab(searchParams.get('pipeline'));
 
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -35,7 +32,7 @@ export function useEstimatesListPage() {
   }, []);
 
   const load = useEstimatesListLoad(handleLoadError);
-  const filters = useEstimatesListFiltersState(archiveView, user?.role);
+  const filters = useEstimatesListFiltersState(user?.role);
   const navigation = useEstimatesListNavigation(pathname, router, searchParams, filters.setPage);
   const modals = useEstimatesListModalsState(load.items, filters.listScope);
   const preview = useEstimatesListPreview({ items: load.items, groups: load.groups });
@@ -45,7 +42,6 @@ export function useEstimatesListPage() {
     items: load.items,
     groups: load.groups,
     workspacePackages: load.workspacePackages,
-    archiveView,
     pipelineTab,
     searchNorm: filters.searchNorm,
     dateFrom: filters.dateFrom,
@@ -94,8 +90,6 @@ export function useEstimatesListPage() {
     setDetachEditModal: modals.setDetachEditModal,
     trashConfirmModal: modals.trashConfirmModal,
     setTrashConfirmModal: modals.setTrashConfirmModal,
-    archiveConfirmModal: modals.archiveConfirmModal,
-    setArchiveConfirmModal: modals.setArchiveConfirmModal,
     setWorkScopeModalPresetId: modals.setWorkScopeModalPresetId,
     router,
     refreshTrashCount: modals.refreshTrashCount,
@@ -112,7 +106,6 @@ export function useEstimatesListPage() {
 
   return {
     router,
-    archiveView,
     pipelineTab,
     saving,
     error,

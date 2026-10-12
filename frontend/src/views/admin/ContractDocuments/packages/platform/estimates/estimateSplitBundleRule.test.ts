@@ -35,7 +35,7 @@ function presetWith(fields: Partial<ContractEstimatePreset>): ContractEstimatePr
   } as ContractEstimatePreset;
 }
 
-const copyOptions = { archiveView: false, hasLockedUsage: false };
+const copyOptions = { hasLockedUsage: false };
 
 describe('estimateSnapshotRoomsFingerprint', () => {
   it('совпадает для одинакового состава и не зависит от итоговой суммы', () => {

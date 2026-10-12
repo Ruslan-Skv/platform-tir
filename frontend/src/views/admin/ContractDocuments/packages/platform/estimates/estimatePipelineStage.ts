@@ -3,67 +3,69 @@ import type {
   ContractEstimatePreset,
 } from '@/shared/api/admin-contract-document-packages';
 
-export type EstimatePipelineTab = 'active' | 'prospect' | 'contract';
+export type EstimatePipelineTab = 'active' | 'attached' | 'signed' | 'deferred';
+
+/** Вкладки, доступные для ручного перевода расчёта. */
+export type EstimatePipelineManualTab = 'active' | 'deferred';
 
 export const ESTIMATE_PIPELINE_TAB_LABELS: Record<EstimatePipelineTab, string> = {
   active: 'В работе',
-  prospect: 'В перспективе',
-  contract: 'В договорах',
+  attached: 'Прикреплённые',
+  signed: 'Подписаны',
+  deferred: 'Отложенные',
+};
+
+/** Подсказки на ярлыках вкладок: что лежит на вкладке и как расчёты туда попадают. */
+export const ESTIMATE_PIPELINE_TAB_TOOLTIPS: Record<EstimatePipelineTab, string> = {
+  active:
+    'Новые и текущие расчёты. Вновь созданные расчёты попадают сюда автоматически. Ручной перевод на другие вкладки, кроме «Отложенные», не предусмотрен.',
+  attached:
+    'Расчёты, прикреплённые к пакету документов (договору) или Д/с, которые ещё не подписаны. Перемещаются сюда автоматически при прикреплении; связка — целиком, когда прикреплён её последний расчёт.',
+  signed:
+    'Расчёты, прикреплённые к подписанным договорам или Д/с. Перемещаются сюда автоматически после подписания; связка — целиком, когда подписан её последний расчёт.',
+  deferred:
+    'Расчёты, по которым заказчик взял паузу (подумать, сделать позже). Переносятся вручную кнопкой «Отложить» (кроме подписанных), обратно — кнопкой «В работу». Прикрепление к договору возвращает расчёт в работу автоматически.',
 };
 
 export function parseEstimatePipelineTab(raw: string | null): EstimatePipelineTab {
-  if (raw === 'prospect') return 'prospect';
-  if (raw === 'contract') return 'contract';
+  if (raw === 'attached') return 'attached';
+  if (raw === 'signed') return 'signed';
+  if (raw === 'deferred') return 'deferred';
   return 'active';
 }
 
-export function getPresetPipelineTab(preset: ContractEstimatePreset): EstimatePipelineTab {
-  return preset.pipelineStage === 'prospect' || preset.pipelineStage === 'contract'
-    ? preset.pipelineStage
-    : 'active';
-}
-
 /**
- * Вкладка расчёта. Задаётся только у самого расчёта — вкладка объекта (группы)
- * на расположение расчёта не влияет, чтобы расчёты одного объекта могли лежать
- * на разных вкладках независимо.
+ * Ручная стадия расчёта. Из хранимых значений ручной остаётся только «Отложенные»:
+ * `deferred` — новое значение, `prospect` и `archived` — прежние («В перспективе», архив),
+ * которые после отказа от этих вкладок трактуются как «Отложенные». Значение `contract`
+ * (бывшая ручная вкладка «В договорах») игнорируется: прикрепление и подписание
+ * определяются автоматически по привязкам к договорам.
  */
-export function getEffectivePresetPipelineTab(
+export function getEstimateManualPipelineTab(
   preset: ContractEstimatePreset,
-  _groups: ContractEstimateGroup[]
-): EstimatePipelineTab {
-  void _groups;
-  return getPresetPipelineTab(preset);
+  groups: ContractEstimateGroup[]
+): 'active' | 'deferred' {
+  if (preset.pipelineStage === 'deferred' || preset.pipelineStage === 'prospect') {
+    return 'deferred';
+  }
+  if (preset.archived) return 'deferred';
+  if (preset.groupId) {
+    const g = groups.find((x) => x.id === preset.groupId);
+    if (g?.archived || g?.pipelineStage === 'prospect') return 'deferred';
+  }
+  return 'active';
 }
 
-export function presetMatchesPipelineTab(
-  preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[],
-  tab: EstimatePipelineTab
-): boolean {
-  return getEffectivePresetPipelineTab(preset, groups) === tab;
-}
-
+/** Ручной перенос («Отложенные» ↔ «В работе») снимает прежний архивный флаг. */
 export function applyPresetPipelineTab(
   preset: ContractEstimatePreset,
-  tab: EstimatePipelineTab,
+  tab: EstimatePipelineManualTab,
   ts: string
 ): ContractEstimatePreset {
   if (tab === 'active') {
-    const { pipelineStage: _drop, ...rest } = preset;
+    const { pipelineStage: _drop, archived: _dropArchived, ...rest } = preset;
     return { ...rest, updatedAt: ts };
   }
-  return { ...preset, pipelineStage: tab, updatedAt: ts };
-}
-
-/** Доступен для прикрепления к договору (только «В работе», не архив). */
-export function isEstimatePresetAttachableToContract(
-  preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[]
-): boolean {
-  if (preset.archived) return false;
-  if (getEffectivePresetPipelineTab(preset, groups) !== 'active') return false;
-  if (!preset.groupId) return true;
-  const g = groups.find((x) => x.id === preset.groupId);
-  return !g?.archived;
+  const { archived: _dropArchived, ...rest } = preset;
+  return { ...rest, pipelineStage: 'deferred', updatedAt: ts };
 }

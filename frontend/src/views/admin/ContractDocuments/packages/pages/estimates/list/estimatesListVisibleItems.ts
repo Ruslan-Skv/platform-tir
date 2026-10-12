@@ -5,11 +5,9 @@ import type {
 } from '@/shared/api/admin-contract-document-packages';
 
 import type { EstimatePipelineTab } from '../../../platform/estimates/estimatePipelineStage';
-import {
-  getEffectivePresetPipelineTab,
-  presetMatchesPipelineTab,
-} from '../../../platform/estimates/estimatePipelineStage';
 import type { EstimatesListScope } from './estimatesListFilters';
+import { getEstimateListPipelineTab } from './estimatesListPipelineTabs';
+import type { EstimatePackageUsage } from './estimatesListUtils';
 import {
   estimateBelongsToUser,
   estimateMatchesDateRange,
@@ -20,7 +18,6 @@ import {
 export type FilterVisibleEstimatesListItemsParams = {
   items: ContractEstimatePreset[];
   groups: ContractEstimateGroup[];
-  archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
   searchNorm: string;
   dateFrom: string;
@@ -31,12 +28,30 @@ export type FilterVisibleEstimatesListItemsParams = {
   managerIdsByPresetId: Map<string, Set<string>>;
   /** Выбранные направления чипами; пусто — все. Расчёты без направления ловит только «Все». */
   directionFilter: ContractDocumentPackageKind[];
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>;
 };
+
+function matchesBaseEstimatesFilters(
+  it: ContractEstimatePreset,
+  groups: ContractEstimateGroup[],
+  pipelineTab: EstimatePipelineTab,
+  items: ContractEstimatePreset[],
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>,
+  searchNorm: string,
+  dateFrom: string,
+  dateTo: string
+): boolean {
+  if (getEstimateListPipelineTab(it, items, groups, usageByEstimateId) !== pipelineTab) {
+    return false;
+  }
+  if (!estimateMatchesSearch(it, searchNorm)) return false;
+  if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
+  return true;
+}
 
 export function filterVisibleEstimatesListItems({
   items,
   groups,
-  archiveView,
   pipelineTab,
   searchNorm,
   dateFrom,
@@ -46,17 +61,23 @@ export function filterVisibleEstimatesListItems({
   currentUserId,
   managerIdsByPresetId,
   directionFilter,
+  usageByEstimateId,
 }: FilterVisibleEstimatesListItemsParams): ContractEstimatePreset[] {
   return items.filter((it) => {
-    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    const groupArchived = Boolean(g?.archived);
-    const rowArchived = Boolean(it.archived);
-    const inArchiveCombined = groupArchived || rowArchived;
-    const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
-    if (!archiveOk) return false;
-    if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) return false;
-    if (!estimateMatchesSearch(it, searchNorm)) return false;
-    if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
+    if (
+      !matchesBaseEstimatesFilters(
+        it,
+        groups,
+        pipelineTab,
+        items,
+        usageByEstimateId,
+        searchNorm,
+        dateFrom,
+        dateTo
+      )
+    ) {
+      return false;
+    }
     if (directionFilter.length > 0 && (!it.direction || !directionFilter.includes(it.direction))) {
       return false;
     }
@@ -73,26 +94,26 @@ export function filterVisibleEstimatesListItems({
 export function countEstimatesListScopes(
   items: ContractEstimatePreset[],
   groups: ContractEstimateGroup[],
-  archiveView: boolean,
   pipelineTab: EstimatePipelineTab,
   searchNorm: string,
   dateFrom: string,
   dateTo: string,
   currentUserId: string | null,
-  managerIdsByPresetId: Map<string, Set<string>>
+  managerIdsByPresetId: Map<string, Set<string>>,
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>
 ): Record<EstimatesListScope, number> {
-  const base = items.filter((it) => {
-    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    const groupArchived = Boolean(g?.archived);
-    const rowArchived = Boolean(it.archived);
-    const inArchiveCombined = groupArchived || rowArchived;
-    const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
-    if (!archiveOk) return false;
-    if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) return false;
-    if (!estimateMatchesSearch(it, searchNorm)) return false;
-    if (!estimateMatchesDateRange(it, dateFrom, dateTo)) return false;
-    return true;
-  });
+  const base = items.filter((it) =>
+    matchesBaseEstimatesFilters(
+      it,
+      groups,
+      pipelineTab,
+      items,
+      usageByEstimateId,
+      searchNorm,
+      dateFrom,
+      dateTo
+    )
+  );
 
   return {
     mine: currentUserId
@@ -102,16 +123,16 @@ export function countEstimatesListScopes(
   };
 }
 
-/** Счётчики чипов «Направления»: по тем же базовым фильтрам (архив/вкладка/поиск/даты).
+/** Счётчики чипов «Направления»: по тем же базовым фильтрам (вкладка/поиск/даты).
  *  Расчёты без направления (старые) не относятся ни к одному чипу — видны только в «Все». */
 export function countEstimatesDirections(
   items: ContractEstimatePreset[],
   groups: ContractEstimateGroup[],
-  archiveView: boolean,
   pipelineTab: EstimatePipelineTab,
   searchNorm: string,
   dateFrom: string,
-  dateTo: string
+  dateTo: string,
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>
 ): Record<ContractDocumentPackageKind, number> {
   const counts = {
     REPAIR: 0,
@@ -123,15 +144,20 @@ export function countEstimatesDirections(
   } as Record<ContractDocumentPackageKind, number>;
   for (const it of items) {
     if (!it.direction) continue;
-    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    const groupArchived = Boolean(g?.archived);
-    const rowArchived = Boolean(it.archived);
-    const inArchiveCombined = groupArchived || rowArchived;
-    const archiveOk = archiveView ? inArchiveCombined : !inArchiveCombined;
-    if (!archiveOk) continue;
-    if (!archiveView && !presetMatchesPipelineTab(it, groups, pipelineTab)) continue;
-    if (!estimateMatchesSearch(it, searchNorm)) continue;
-    if (!estimateMatchesDateRange(it, dateFrom, dateTo)) continue;
+    if (
+      !matchesBaseEstimatesFilters(
+        it,
+        groups,
+        pipelineTab,
+        items,
+        usageByEstimateId,
+        searchNorm,
+        dateFrom,
+        dateTo
+      )
+    ) {
+      continue;
+    }
     counts[it.direction] += 1;
   }
   return counts;
@@ -142,41 +168,22 @@ export function countEstimatesPipelineTabs(
   groups: ContractEstimateGroup[],
   listScope: EstimatesListScope,
   currentUserId: string | null,
-  managerIdsByPresetId: Map<string, Set<string>>
-): { active: number; prospect: number; contract: number } {
-  let active = 0;
-  let prospect = 0;
-  let contract = 0;
+  managerIdsByPresetId: Map<string, Set<string>>,
+  usageByEstimateId: Map<string, EstimatePackageUsage[]>
+): Record<EstimatePipelineTab, number> {
+  const counts: Record<EstimatePipelineTab, number> = {
+    active: 0,
+    attached: 0,
+    signed: 0,
+    deferred: 0,
+  };
   for (const it of items) {
-    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    if (Boolean(it.archived) || Boolean(g?.archived)) continue;
     if (listScope === 'mine') {
       if (!currentUserId || !estimateBelongsToUser(it, currentUserId, managerIdsByPresetId)) {
         continue;
       }
     }
-    const tab = getEffectivePresetPipelineTab(it, groups);
-    if (tab === 'prospect') prospect += 1;
-    else if (tab === 'contract') contract += 1;
-    else active += 1;
+    counts[getEstimateListPipelineTab(it, items, groups, usageByEstimateId)] += 1;
   }
-  return { active, prospect, contract };
-}
-
-export function countArchivedEstimates(
-  items: ContractEstimatePreset[],
-  groups: ContractEstimateGroup[],
-  listScope: EstimatesListScope,
-  currentUserId: string | null,
-  managerIdsByPresetId: Map<string, Set<string>>
-): number {
-  return items.filter((it) => {
-    const g = it.groupId ? groups.find((x) => x.id === it.groupId) : undefined;
-    if (!(Boolean(it.archived) || Boolean(g?.archived))) return false;
-    if (listScope === 'mine') {
-      if (!currentUserId) return false;
-      return estimateBelongsToUser(it, currentUserId, managerIdsByPresetId);
-    }
-    return true;
-  }).length;
+  return counts;
 }

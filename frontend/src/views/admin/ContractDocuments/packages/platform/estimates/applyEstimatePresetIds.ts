@@ -14,7 +14,6 @@ import {
   packageEstimateTotalToContractFields,
 } from '../form/packageContractDiscount';
 import type { PackageFormData } from '../form/packageForm';
-import { isEstimatePresetAttachableToContract } from './estimatePipelineStage';
 
 /**
  * Пересчёт блока estimate + сумм договора по списку id пресетов (как в редакторе пакета).
@@ -343,14 +342,6 @@ export function getSnapshotForEstimateAttach(
 
 function presetObjectGroupKey(preset: ContractEstimatePreset): string {
   return preset.groupId ? preset.groupId : '__ungrouped__';
-}
-
-/** Расчёт из «В работе», неархивного объекта (или вне объекта) — доступен для прикрепления к пакету. */
-export function isContractEstimatePresetAttachable(
-  preset: ContractEstimatePreset,
-  groups: ContractEstimateGroup[]
-): boolean {
-  return isEstimatePresetAttachableToContract(preset, groups);
 }
 
 /**

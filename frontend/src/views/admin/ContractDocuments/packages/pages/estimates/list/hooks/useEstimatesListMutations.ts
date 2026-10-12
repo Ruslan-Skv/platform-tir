@@ -18,15 +18,11 @@ import { packageKindsUsingSharedEstimateCatalog } from '../../../../config/packa
 import { clampEstimateAdditionalMarkupPercent } from '../../../../platform/estimates/applyEstimatePresetIds';
 import { persistPackageAfterRemovingEstimatePreset } from '../../../../platform/estimates/detachEstimatePresetFromPackages';
 import { ensureEstimateObjectGroups } from '../../../../platform/estimates/estimateObjectGroupSync';
-import {
-  type EstimatePipelineTab,
-  applyPresetPipelineTab,
-} from '../../../../platform/estimates/estimatePipelineStage';
+import { applyPresetPipelineTab } from '../../../../platform/estimates/estimatePipelineStage';
 import {
   applySplitBundleSaveToPresets,
   listPresetsInSplitBundle,
 } from '../../../../platform/estimates/estimateWorkScopeTree';
-import type { EstimateArchiveConfirmState } from '../../modals/EstimateArchiveConfirmModal';
 import type { EstimateTrashConfirmState } from '../../modals/EstimateTrashConfirmModal';
 import {
   type EstimatesListWorkspacePackage,
@@ -53,8 +49,6 @@ export type UseEstimatesListMutationsParams = {
   >;
   trashConfirmModal: EstimateTrashConfirmState | null;
   setTrashConfirmModal: Dispatch<SetStateAction<EstimateTrashConfirmState | null>>;
-  archiveConfirmModal: EstimateArchiveConfirmState | null;
-  setArchiveConfirmModal: Dispatch<SetStateAction<EstimateArchiveConfirmState | null>>;
   setWorkScopeModalPresetId: Dispatch<SetStateAction<string | null>>;
   router: AppRouterInstance;
   refreshTrashCount: () => void;
@@ -81,8 +75,6 @@ export function useEstimatesListMutations({
   setDetachEditModal,
   trashConfirmModal,
   setTrashConfirmModal,
-  archiveConfirmModal,
-  setArchiveConfirmModal,
   setWorkScopeModalPresetId,
   router,
   refreshTrashCount,
@@ -212,10 +204,10 @@ export function useEstimatesListMutations({
     [groups, items, persistEstimates, setWorkScopeModalPresetId]
   );
 
+  /** Ручной перенос «В работе» ↔ «Отложенные»: расчёты одной связки перемещаются вместе. */
   const setPresetPipelineStage = useCallback(
-    (estimateId: string, tab: EstimatePipelineTab) => {
+    (estimateId: string, tab: 'active' | 'deferred') => {
       const ts = new Date().toISOString();
-      // Расчёты одной связки («Разделение сметы») перемещаются между вкладками вместе.
       const anchor = items.find((it) => it.id === estimateId);
       const peerIds = new Set(
         (anchor ? listPresetsInSplitBundle(anchor, items) : []).map((p) => p.id)
@@ -224,23 +216,11 @@ export function useEstimatesListMutations({
         it.id === estimateId || peerIds.has(it.id) ? applyPresetPipelineTab(it, tab, ts) : it
       );
       void persistEstimates(nextItems, groups);
+      if (tab === 'deferred') {
+        showOkMessage('Расчёт отложен (заказчик взял паузу).', 3000);
+      }
     },
-    [groups, items, persistEstimates]
-  );
-
-  const setPresetArchived = useCallback(
-    (estimateId: string, archived: boolean) => {
-      const nextItems = items.map((it) => {
-        if (it.id !== estimateId) return it;
-        if (archived) {
-          return { ...it, archived: true, updatedAt: new Date().toISOString() };
-        }
-        const { archived: _drop, ...rest } = it;
-        return { ...rest, updatedAt: new Date().toISOString() } as ContractEstimatePreset;
-      });
-      void persistEstimates(nextItems, groups);
-    },
-    [groups, items, persistEstimates]
+    [groups, items, persistEstimates, showOkMessage]
   );
 
   const moveEstimateToTrashById = useCallback(
@@ -322,19 +302,6 @@ export function useEstimatesListMutations({
     trashConfirmModal,
   ]);
 
-  const handleConfirmArchive = useCallback(async () => {
-    if (!archiveConfirmModal) return;
-    const { estimateId } = archiveConfirmModal;
-    const it = items.find((x) => x.id === estimateId);
-    if (!it) {
-      setArchiveConfirmModal(null);
-      return;
-    }
-    setArchiveConfirmModal(null);
-    setPresetArchived(estimateId, true);
-    showOkMessage('Расчёт отправлен в архив.', 3000);
-  }, [archiveConfirmModal, items, setArchiveConfirmModal, setPresetArchived, showOkMessage]);
-
   const updateGroupAdditionalMarkupPercent = useCallback(
     (groupId: string, raw: string) => {
       if (groupIdsWithLockedEstimate.has(groupId)) return;
@@ -405,10 +372,8 @@ export function useEstimatesListMutations({
     importEstimateTransferFile,
     handleWorkScopeSave,
     setPresetPipelineStage,
-    setPresetArchived,
     handleConfirmDetachEdit,
     handleConfirmTrashMove,
-    handleConfirmArchive,
     updateGroupAdditionalMarkupPercent,
     updatePresetAdditionalMarkupPercent,
   };

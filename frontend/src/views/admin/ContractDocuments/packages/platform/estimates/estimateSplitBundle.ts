@@ -169,9 +169,8 @@ export function getLinkedCopyDisabledReason(
   preset: ContractEstimatePreset,
   allPresets: ContractEstimatePreset[],
   target: LinkedCopySplitTarget,
-  options: { archiveView: boolean; hasLockedUsage: boolean }
+  options: { hasLockedUsage: boolean }
 ): string | null {
-  if (options.archiveView) return 'Недоступно в режиме архива.';
   if (options.hasLockedUsage) {
     return 'Расчёт заблокирован: договор подписан или Д/с подписано.';
   }

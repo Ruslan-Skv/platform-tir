@@ -324,8 +324,8 @@ export interface ContractEstimateGroup {
   additionalMarkupPercent?: number;
   /** Объект в архиве: скрыт в основном списке и в выборе при оформлении договоров. */
   archived?: boolean;
-  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
-  pipelineStage?: 'active' | 'prospect' | 'contract';
+  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». Прикрепление и подписание вычисляются по привязкам к договорам. */
+  pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
   /**
    * Порядок блока объекта в общей ленте (вместе с расчётами вне объекта): меньше — выше.
    * Если не задан — позиция по дате (режим сортировки на странице).
@@ -390,8 +390,8 @@ export interface ContractEstimatePreset {
   inGroupListOrder?: number;
   /** Расчёт в архиве (отдельно от объекта): скрыт в основном списке и в выборе при оформлении договоров. */
   archived?: boolean;
-  /** Вкладка списка расчётов: `prospect` — «В перспективе», `contract` — «В договорах»; иначе «В работе». */
-  pipelineStage?: 'active' | 'prospect' | 'contract';
+  /** Вкладка списка расчётов: `deferred` — «Отложенные» (ручная пауза заказчика); иначе «В работе». Прикрепление и подписание вычисляются по привязкам к договорам. */
+  pipelineStage?: 'active' | 'prospect' | 'contract' | 'deferred';
   /** Направление расчёта — как при создании договора; у старых расчётов нет (трактуется как REPAIR). */
   direction?: ContractDocumentPackageKind;
   /**

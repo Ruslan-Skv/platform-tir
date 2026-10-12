@@ -11,7 +11,6 @@ import type {
 import {
   estimatePresetMatchesPackageDirection,
   getContractEstimateObjectGroupKey,
-  isContractEstimatePresetAttachable,
   isEstimatePresetForLinkedContractCustomer,
 } from '../../estimates/applyEstimatePresetIds';
 import {
@@ -124,7 +123,6 @@ export function usePackageEstimateAttachCatalog({
       }
     }
     return estimatePresets.filter((preset) => {
-      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
       if (!estimatePresetMatchesPackageDirection(preset, packageKind)) return false;
       if (!isEstimatePresetForLinkedContractCustomer(preset, estimateCustomerFilter)) {
         return false;
@@ -135,7 +133,6 @@ export function usePackageEstimateAttachCatalog({
     });
   }, [
     estimatePresets,
-    estimateGroups,
     estimateUsageById,
     form.estimate.selectedPresetIds,
     form.addendumSlots,
@@ -158,7 +155,6 @@ export function usePackageEstimateAttachCatalog({
     }
     return estimatePresets.some((preset) => {
       if (estimatePresetMatchesPackageDirection(preset, packageKind)) return false;
-      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
       if (!isEstimatePresetForLinkedContractCustomer(preset, estimateCustomerFilter)) return false;
       if (selected.has(preset.id)) return false;
       if (usedOnAddenda.has(preset.id)) return false;
@@ -167,7 +163,6 @@ export function usePackageEstimateAttachCatalog({
   }, [
     attachableEstimatePresets.length,
     estimatePresets,
-    estimateGroups,
     estimateUsageById,
     form.estimate.selectedPresetIds,
     form.addendumSlots,
@@ -184,7 +179,6 @@ export function usePackageEstimateAttachCatalog({
     if (!addrKey) return false;
     const selected = new Set(form.estimate.selectedPresetIds ?? []);
     return estimatePresets.some((preset) => {
-      if (!isContractEstimatePresetAttachable(preset, estimateGroups)) return false;
       if (selected.has(preset.id)) return false;
       if ((estimateUsageById.get(preset.id)?.length ?? 0) !== 0) return false;
       if (normalizeAddressMatchKey(preset.objectAddress ?? '') !== addrKey) return false;
@@ -197,7 +191,6 @@ export function usePackageEstimateAttachCatalog({
     packageObjectAddress,
     form.estimate.selectedPresetIds,
     estimatePresets,
-    estimateGroups,
     estimateUsageById,
   ]);
 
@@ -215,7 +208,6 @@ export function usePackageEstimateAttachCatalog({
     if (contractEstimateObjectKey) return contractEstimateObjectKey;
     const candidates = estimatePresets.filter(
       (p) =>
-        isContractEstimatePresetAttachable(p, estimateGroups) &&
         estimatePresetMatchesPackageDirection(p, packageKind) &&
         isEstimatePresetForLinkedContractCustomer(p, estimateCustomerFilter)
     );
@@ -227,10 +219,10 @@ export function usePackageEstimateAttachCatalog({
   }, [
     contractEstimateObjectKey,
     estimatePresets,
-    estimateGroups,
     packageKind,
     estimateCustomerFilter,
     packageObjectAddress,
+    estimateGroups,
   ]);
 
   const attachEstimatePickMeta = useMemo(() => {
@@ -249,9 +241,9 @@ export function usePackageEstimateAttachCatalog({
     return { hasUngrouped, groupsOrdered };
   }, [
     attachableEstimatePresets,
-    estimateGroups,
     form.estimate.selectedPresetIds?.length,
     contractEstimateObjectKey,
+    estimateGroups,
   ]);
 
   const attachableForSelectedGroup = useMemo(() => {
@@ -286,7 +278,6 @@ export function usePackageEstimateAttachCatalog({
     });
     return estimatePresets
       .filter((p) => {
-        if (!isContractEstimatePresetAttachable(p, estimateGroups)) return false;
         if (!estimatePresetMatchesPackageDirection(p, packageKind)) return false;
         if (!isEstimatePresetForLinkedContractCustomer(p, estimateCustomerFilter)) return false;
         if (usedElsewhere.has(p.id)) return false;
@@ -302,7 +293,6 @@ export function usePackageEstimateAttachCatalog({
     form.estimate.selectedPresetIds,
     form.addendumSlots,
     estimatePresets,
-    estimateGroups,
     estimateUsageById,
     estimateCustomerFilter,
     packageKind,

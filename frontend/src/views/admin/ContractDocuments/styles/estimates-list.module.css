@@ -351,6 +351,43 @@
   font-weight: 600;
 }
 
+/* «Прикреплённые»: фиолетовый — отдельный от «В работе» (зелёный), «Отложенных»
+   (синий) и «Подписаны» (оранжевый). Палитра локальная: фирменный accent в тёмной
+   теме совпадает с красным ошибки, стандартные series-переменные меняют смысл между темами. */
+.estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveAttached {
+  background: #f5f3ff;
+  border-color: #ddd6fe;
+  border-bottom: none;
+  color: #6d28d9;
+  font-weight: 600;
+}
+
+.estimatesPage
+  .estimatesPipelineTabBar
+  .estimatesPipelineTabActiveAttached
+  .estimatesPipelineTabCount {
+  background: #ddd6fe;
+  color: #6d28d9;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesPage
+  .estimatesPipelineTabBar
+  .estimatesPipelineTabActiveAttached {
+  background: rgb(139 92 246 / 0.16);
+  border-color: rgb(139 92 246 / 0.42);
+  color: #c4b5fd;
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark'])
+  .estimatesPage
+  .estimatesPipelineTabBar
+  .estimatesPipelineTabActiveAttached
+  .estimatesPipelineTabCount {
+  background: rgb(139 92 246 / 0.38);
+  color: #ddd6fe;
+}
+
 .estimatesPage .estimatesPipelineTabBar .estimatesPipelineTabActiveProspect {
   background: var(--admin-info-bg-soft);
   border-color: var(--admin-info-border-soft);

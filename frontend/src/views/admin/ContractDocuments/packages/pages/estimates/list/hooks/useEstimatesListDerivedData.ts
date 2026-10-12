@@ -23,7 +23,6 @@ import {
 import type { EstimatesListWorkspacePackage } from '../estimatesListPackageUsage';
 import type { EstimatesListSortBy, EstimatesListSortOrder } from '../estimatesListSort';
 import {
-  countArchivedEstimates,
   countEstimatesDirections,
   countEstimatesListScopes,
   countEstimatesPipelineTabs,
@@ -34,7 +33,6 @@ export type UseEstimatesListDerivedDataParams = {
   items: ContractEstimatePreset[];
   groups: ContractEstimateGroup[];
   workspacePackages: EstimatesListWorkspacePackage[];
-  archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
   searchNorm: string;
   dateFrom: string;
@@ -56,7 +54,6 @@ export function useEstimatesListDerivedData({
   items,
   groups,
   workspacePackages,
-  archiveView,
   pipelineTab,
   searchNorm,
   dateFrom,
@@ -97,7 +94,6 @@ export function useEstimatesListDerivedData({
       filterVisibleEstimatesListItems({
         items,
         groups,
-        archiveView,
         pipelineTab,
         searchNorm,
         dateFrom,
@@ -107,11 +103,11 @@ export function useEstimatesListDerivedData({
         currentUserId,
         managerIdsByPresetId,
         directionFilter,
+        usageByEstimateId,
       }),
     [
       items,
       groups,
-      archiveView,
       pipelineTab,
       searchNorm,
       dateFrom,
@@ -121,6 +117,7 @@ export function useEstimatesListDerivedData({
       currentUserId,
       managerIdsByPresetId,
       directionFilter,
+      usageByEstimateId,
     ]
   );
 
@@ -129,13 +126,13 @@ export function useEstimatesListDerivedData({
       countEstimatesDirections(
         items,
         groups,
-        archiveView,
         pipelineTab,
         searchNorm,
         dateFrom,
-        dateTo
+        dateTo,
+        usageByEstimateId
       ),
-    [items, groups, archiveView, pipelineTab, searchNorm, dateFrom, dateTo]
+    [items, groups, pipelineTab, searchNorm, dateFrom, dateTo, usageByEstimateId]
   );
 
   const scopeCounts = useMemo(
@@ -143,35 +140,38 @@ export function useEstimatesListDerivedData({
       countEstimatesListScopes(
         items,
         groups,
-        archiveView,
         pipelineTab,
         searchNorm,
         dateFrom,
         dateTo,
         currentUserId,
-        managerIdsByPresetId
+        managerIdsByPresetId,
+        usageByEstimateId
       ),
     [
       items,
       groups,
-      archiveView,
       pipelineTab,
       searchNorm,
       dateFrom,
       dateTo,
       currentUserId,
       managerIdsByPresetId,
+      usageByEstimateId,
     ]
   );
 
   const pipelineTabCounts = useMemo(
-    () => countEstimatesPipelineTabs(items, groups, listScope, currentUserId, managerIdsByPresetId),
-    [items, groups, listScope, currentUserId, managerIdsByPresetId]
-  );
-
-  const archiveCount = useMemo(
-    () => countArchivedEstimates(items, groups, listScope, currentUserId, managerIdsByPresetId),
-    [items, groups, listScope, currentUserId, managerIdsByPresetId]
+    () =>
+      countEstimatesPipelineTabs(
+        items,
+        groups,
+        listScope,
+        currentUserId,
+        managerIdsByPresetId,
+        usageByEstimateId
+      ),
+    [items, groups, listScope, currentUserId, managerIdsByPresetId, usageByEstimateId]
   );
 
   const addressGroupCount = useMemo(
@@ -183,14 +183,12 @@ export function useEstimatesListDerivedData({
     () =>
       buildEstimateLayoutBlocks({
         visibleItems,
-        groups,
-        archiveView,
         listViewMode,
         listSortBy,
         listSortOrder,
         usageByEstimateId,
       }),
-    [visibleItems, archiveView, groups, listViewMode, listSortBy, listSortOrder, usageByEstimateId]
+    [visibleItems, listViewMode, listSortBy, listSortOrder, usageByEstimateId]
   );
 
   const tableDisplayItems = useMemo(
@@ -219,7 +217,6 @@ export function useEstimatesListDerivedData({
     scopeCounts,
     directionCounts,
     pipelineTabCounts,
-    archiveCount,
     addressGroupCount,
     estimateLayoutBlocks,
     tableDisplayItems,
