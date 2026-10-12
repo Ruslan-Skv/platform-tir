@@ -6,7 +6,7 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
 import { CalculateSalaryDto } from './dto/calculate-salary.dto';
-import { SalaryCalculationService } from './salary-calculation.service';
+import { SalaryMyService } from './services/salary-my.service';
 
 /**
  * «Моя з/п»: личный расчёт текущего сотрудника за период. Доступ к разделу выдаёт
@@ -17,10 +17,10 @@ import { SalaryCalculationService } from './salary-calculation.service';
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(...ADMIN_ROLES)
 export class SalaryMyController {
-  constructor(private readonly calculation: SalaryCalculationService) {}
+  constructor(private readonly mySalary: SalaryMyService) {}
 
   @Get()
   findMy(@Query() query: CalculateSalaryDto, @Req() req: RequestWithUser) {
-    return this.calculation.calculateMy(req.user.id, query);
+    return this.mySalary.calculateMy(req.user.id, query);
   }
 }

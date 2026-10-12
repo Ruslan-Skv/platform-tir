@@ -17,8 +17,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
-import { SalaryCalculationService } from './salary-calculation.service';
-import { SalarySettlementsService } from './salary-settlements.service';
+import { SalaryCalculationService } from './services/salary-calculation.service';
+import { SalarySettlementsService } from './services/salary-settlements.service';
 import { CalculateSalaryDto, CreateSalarySettlementDto } from './dto/calculate-salary.dto';
 
 /**

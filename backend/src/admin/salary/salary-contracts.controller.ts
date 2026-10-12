@@ -17,8 +17,8 @@ import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import type { RequestWithUser } from '../../common/types/request-with-user.types';
-import { SalaryContractsService } from './salary-contracts.service';
-import { SalaryContractsSyncService } from './salary-contracts-sync.service';
+import { SalaryContractsService } from './services/salary-contracts.service';
+import { SalaryContractsSyncService } from './services/salary-contracts-sync.service';
 import {
   CreateSalaryContractDto,
   QuerySalaryContractsDto,

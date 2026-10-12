@@ -1,14 +1,14 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { DEFAULT_SALARY_CATEGORIES, SALARY_ROLE_LABELS, toNum } from './salary.constants';
-import { SaveSalaryGlobalSettingsDto } from './dto/save-salary-global-settings.dto';
+import { PrismaService } from '../../../database/prisma.service';
+import { DEFAULT_SALARY_CATEGORIES, SALARY_ROLE_LABELS, toNum } from '../salary.constants';
+import { SaveSalaryGlobalSettingsDto } from '../dto/save-salary-global-settings.dto';
 import {
   CreateSalaryCategoryDto,
   SALARY_ROLE_VALUES,
   UpdateSalaryCategoryDto,
   UpsertSalaryRateRuleDto,
-} from './dto/salary-category.dto';
+} from '../dto/salary-category.dto';
 
 /** Пользователь-бригадир для ответов настроек: id + ФИО. */
 const BRIGADIER_INCLUDE = {

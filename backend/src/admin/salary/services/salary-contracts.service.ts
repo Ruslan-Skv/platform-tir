@@ -1,12 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
-import { PrismaService } from '../../database/prisma.service';
-import { toNum, toDateIso, fromDateIso } from './salary.constants';
+import { PrismaService } from '../../../database/prisma.service';
+import { toNum, toDateIso, fromDateIso } from '../salary.constants';
 import type {
   CreateSalaryContractDto,
   QuerySalaryContractsDto,
   UpdateSalaryContractDto,
-} from './dto/salary-contract.dto';
+} from '../dto/salary-contract.dto';
 
 const CONTRACT_INCLUDE = {
   office: { select: { id: true, name: true } },

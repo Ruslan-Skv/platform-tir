@@ -1,8 +1,8 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
-import { PrismaService } from '../../database/prisma.service';
-import { toDateIso } from './salary.constants';
+import { PrismaService } from '../../../database/prisma.service';
+import { toDateIso } from '../salary.constants';
 import { SalaryCalculationService } from './salary-calculation.service';
-import type { CreateSalarySettlementDto } from './dto/calculate-salary.dto';
+import type { CreateSalarySettlementDto } from '../dto/calculate-salary.dto';
 
 /**
  * Зафиксированные расчёты з/п за период (аналог «закрытых» месяцев таблицы):

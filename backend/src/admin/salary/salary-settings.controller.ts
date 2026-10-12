@@ -3,7 +3,7 @@ import { Body, Controller, Delete, Get, Param, Patch, Post, Put, UseGuards } fro
 import { Roles } from '../../common/decorators/roles.decorator';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
-import { SalarySettingsService } from './salary-settings.service';
+import { SalarySettingsService } from './services/salary-settings.service';
 import { SaveSalaryGlobalSettingsDto } from './dto/save-salary-global-settings.dto';
 import {
   CreateSalaryCategoryDto,

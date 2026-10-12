@@ -5,7 +5,7 @@ import { PrismaService } from '../../database/prisma.service';
 import { ContractConcludedNotifyService } from '../../contract-concluded-notify/contract-concluded-notify.service';
 import { ContractDocumentSigningService } from '../../contract-document-signing/contract-document-signing.service';
 import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
-import { SalaryContractsSyncService } from '../salary/salary-contracts-sync.service';
+import { SalaryContractsSyncService } from '../salary/services/salary-contracts-sync.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';

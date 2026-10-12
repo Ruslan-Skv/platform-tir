@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 
-import { PrismaService } from '../../database/prisma.service';
-import { fromDateIso, round2 } from './salary.constants';
+import { PrismaService } from '../../../database/prisma.service';
+import { fromDateIso, round2 } from '../salary.constants';
 
 /**
  * Синхронизация договоров расчёта з/п из раздела «Договоры» (contract-document-packages).
