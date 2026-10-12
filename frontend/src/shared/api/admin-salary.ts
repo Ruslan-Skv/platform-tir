@@ -31,12 +31,38 @@ async function request<T>(url: string, init?: RequestInit, errorMessage?: string
 
 // ===== Типы =====
 
+export interface SalaryEmployeeSalary {
+  userId: string;
+  userName: string | null;
+  monthlySalary: number;
+}
+
 export interface SalaryGlobalSettings {
   taxPercent: number;
+  /** Контролировать режим работы (−50 ₽ из оклада за каждое опоздание/ранний уход). */
+  workModeEnforced?: boolean;
+  /** Учитывать прогулы (удержание дневной доли оклада за каждый прогул). */
+  truancyEnforced?: boolean;
+  /** Премии за места по итогам продаж месяца (журнал ДП), ₽. */
+  salesBonusFirstPlace?: number;
+  salesBonusSecondPlace?: number;
+  salesBonusThirdPlace?: number;
+  /** Минимальный уровень продаж менеджера за месяц для права на премию, ₽. */
+  salesBonusMinSales?: number;
+  /** План продаж: пороги объёма продаж за месяц, ₽. */
+  salesPlanThreshold1?: number;
+  salesPlanThreshold2?: number;
+  salesPlanThreshold3?: number;
+  /** Премия за достижение порога плана — % от з/п менеджера по договорам. */
+  salesPlanPercent1?: number;
+  salesPlanPercent2?: number;
+  salesPlanPercent3?: number;
   /** Пользователь-бригадир (получатель бригадирского фонда); null — не назначен. */
   brigadierUserId: string | null;
   brigadierName: string | null;
   updatedAt: string | null;
+  /** Установленные месячные оклады сотрудников. */
+  employeeSalaries?: SalaryEmployeeSalary[];
 }
 
 export interface SalaryRateRule {
@@ -170,8 +196,60 @@ export interface SalaryCalcResult {
     brigadierTotal: number;
     brigadierTotalNet: number;
     vsTotal: number;
+    /** Сумма окладов, начисленных за период. */
+    salariesTotal?: number;
+    /** Сумма премий за места по итогам продаж. */
+    salesBonusesTotal?: number;
+    /** Сумма премий за выполнение плана продаж. */
+    salesPlanBonusesTotal?: number;
+    /** Сумма премий «Нал + QR». */
+    cashQrBonusesTotal?: number;
     stats: { signedCount: number; signedAmount: number; closedCount: number; closedAmount: number };
   };
+  /** Оклады за период: за каждый день 1/N оклада (N — дней в месяце этого дня);
+   * при включённом контроле режима из оклада вычитаются удержания за опоздания/ранние уходы. */
+  salaries?: Array<{
+    userId: string;
+    userName: string | null;
+    monthlySalary: number;
+    days: number;
+    violationsCount?: number;
+    penalty?: number;
+    truancyDays?: number;
+    truancyDeduction?: number;
+    amount: number;
+  }>;
+  /** Премии за места по итогам продаж за завершённые месяцы (журнал ДП). */
+  salesBonuses?: Array<{
+    userId: string;
+    userName: string | null;
+    month: string;
+    place: number;
+    salesAmount: number;
+    amount: number;
+  }>;
+  /** Премии за выполнение плана продаж (пороги → % от з/п по договорам). */
+  salesPlanBonuses?: Array<{
+    userId: string;
+    userName: string | null;
+    month: string;
+    salesAmount: number;
+    reachedTiers: number;
+    percent: number;
+    baseAmount: number;
+    amount: number;
+  }>;
+  /** Премии «Нал + QR»: терминал < 50% продаж → 0,5% от остальных продаж. */
+  cashQrBonuses?: Array<{
+    userId: string;
+    userName: string | null;
+    month: string;
+    totalSales: number;
+    terminalSales: number;
+    otherSales: number;
+    terminalShare: number;
+    amount: number;
+  }>;
   /** Кому начислен бригадирский фонд (фиксируется в настройках з/п). */
   brigadier: {
     userId: string | null;
@@ -256,7 +334,27 @@ export function getSalarySettings(): Promise<SalarySettings> {
 }
 
 export function saveSalaryGlobalSettings(
-  dto: Partial<Pick<SalaryGlobalSettings, 'taxPercent' | 'brigadierUserId'>>
+  dto: Partial<
+    Pick<
+      SalaryGlobalSettings,
+      | 'taxPercent'
+      | 'brigadierUserId'
+      | 'workModeEnforced'
+      | 'truancyEnforced'
+      | 'salesBonusFirstPlace'
+      | 'salesBonusSecondPlace'
+      | 'salesBonusThirdPlace'
+      | 'salesBonusMinSales'
+      | 'salesPlanThreshold1'
+      | 'salesPlanThreshold2'
+      | 'salesPlanThreshold3'
+      | 'salesPlanPercent1'
+      | 'salesPlanPercent2'
+      | 'salesPlanPercent3'
+    > & {
+      employeeSalaries: Array<{ userId: string; monthlySalary: number | null }>;
+    }
+  >
 ): Promise<SalaryGlobalSettings> {
   return request(
     `${API_URL}/admin/salary/settings/global`,
@@ -461,6 +559,14 @@ export interface MySalaryResult {
     vsCategories: string[];
     brigadier: number;
     isBrigadier: boolean;
+    /** Оклад за период (1/N оклада за каждый день). */
+    salary?: number;
+    /** Премия за место по итогам продаж за прошедшие месяцы. */
+    bonus?: number;
+    /** Премия за выполнение плана продаж. */
+    planBonus?: number;
+    /** Премия «Нал + QR». */
+    cashQrBonus?: number;
     total: number;
   };
   contracts: MySalaryContract[];

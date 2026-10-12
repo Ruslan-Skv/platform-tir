@@ -21,6 +21,6 @@ import { WorkDaysService } from './work-days.service';
     WorkDayJournalService,
     WorkDayLeavesService,
   ],
-  exports: [WorkDaysService, WorkDayRequestsService],
+  exports: [WorkDaysService, WorkDayRequestsService, WorkDayJournalService],
 })
 export class WorkDaysModule {}

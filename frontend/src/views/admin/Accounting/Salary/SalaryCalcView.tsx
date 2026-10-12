@@ -290,6 +290,8 @@ type EmployeeTotalsRowItem = {
   surveyor: number;
   brigadier: number;
   vs: number;
+  salary: number;
+  bonus: number;
   gross: number;
 };
 
@@ -306,6 +308,8 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
       surveyor: 0,
       brigadier: 0,
       vs: 0,
+      salary: 0,
+      bonus: 0,
       gross: 0,
     };
     byKey.set(key, created);
@@ -327,28 +331,54 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
       acc(v.userId, v.userName ?? 'Ведущий специалист').vs += v.gross;
     }
   }
+  // Оклады за период — сотрудникам с установленным окладом.
+  for (const s of result.salaries ?? []) {
+    acc(s.userId, s.userName ?? 'Сотрудник').salary += s.amount;
+  }
+  // Премии за места по итогам продаж (журнал ДП).
+  for (const b of result.salesBonuses ?? []) {
+    acc(b.userId, b.userName ?? 'Менеджер').bonus += b.amount;
+  }
+  // Премии за выполнение плана продаж.
+  for (const b of result.salesPlanBonuses ?? []) {
+    acc(b.userId, b.userName ?? 'Менеджер').bonus += b.amount;
+  }
+  // Премии «Нал + QR».
+  for (const b of result.cashQrBonuses ?? []) {
+    acc(b.userId, b.userName ?? 'Менеджер').bonus += b.amount;
+  }
   return [...byKey.values()]
-    .map((e) => ({ ...e, gross: e.manager + e.surveyor + e.brigadier + e.vs }))
+    .map((e) => ({ ...e, gross: e.manager + e.surveyor + e.brigadier + e.vs + e.salary + e.bonus }))
     .filter((e) => e.gross > 0)
     .sort((a, b) => b.gross - a.gross);
 }
 
-function employeePartsLine(e: EmployeeTotalsRowItem, netFactor: number): string {
+/** Части, из которых сложилась з/п сотрудника: оклад первой строкой, далее роли. */
+function employeePartsList(
+  e: EmployeeTotalsRowItem,
+  netFactor: number,
+  penalty = 0,
+  truancyDeduction = 0
+): string[] {
   const part = (v: number) => Math.round(v * netFactor * 100) / 100;
+  const retention =
+    penalty + truancyDeduction > 0
+      ? ` (удержание −${formatMoneyShort(penalty + truancyDeduction)})`
+      : '';
   return [
+    e.salary > 0 ? `оклад ${formatMoneyShort(e.salary)}${retention}` : null,
+    e.bonus > 0 ? `премия ${formatMoneyShort(e.bonus)}` : null,
     e.manager > 0 ? `менеджер ${formatMoneyShort(e.manager)}` : null,
     e.surveyor > 0 ? `замеры ${formatMoneyShort(part(e.surveyor))}` : null,
     e.vs > 0 ? `ВС ${formatMoneyShort(part(e.vs))}` : null,
     e.brigadier > 0 ? `бригадир ${formatMoneyShort(part(e.brigadier))}` : null,
-  ]
-    .filter(Boolean)
-    .join(' · ');
+  ].filter((p): p is string => !!p);
 }
 
 /** Итог сотрудника к выплате: з/п менеджера — целиком, остальные роли — за вычетом налога. */
 function employeePayout(e: EmployeeTotalsRowItem, netFactor: number): number {
   const part = (v: number) => Math.round(v * netFactor * 100) / 100;
-  return e.manager + part(e.surveyor) + part(e.vs) + part(e.brigadier);
+  return e.manager + part(e.surveyor) + part(e.vs) + part(e.brigadier) + e.salary + e.bonus;
 }
 
 /** Плитки итогов по сотрудникам: к выплате по всем ролям. */
@@ -358,7 +388,11 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
     totals.brigadierTotalNet +
     totals.surveyorFundNet +
     totals.managerPersonalNet +
-    result.vsByCategory.reduce((sum, v) => sum + v.net, 0);
+    result.vsByCategory.reduce((sum, v) => sum + v.net, 0) +
+    (totals.salariesTotal ?? 0) +
+    (totals.salesBonusesTotal ?? 0) +
+    (totals.salesPlanBonusesTotal ?? 0) +
+    (totals.cashQrBonusesTotal ?? 0);
   const employees = employeeTotalsRows(result);
 
   return (
@@ -371,23 +405,27 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
         <strong className={dpStyles.totalsTileValue}>{formatMoney(netTotal)}</strong>
         <span className={dpStyles.totalsTileCash}>сотрудников: {employees.length}</span>
       </div>
-      {employees.map((e) => (
-        <div
-          key={e.key}
-          className={dpStyles.totalsTile}
-          title={employeePartsLine(e, settings.netFactor)}
-        >
-          <span className={dpStyles.totalsTileLabel}>{e.name}</span>
-          <span className={dpStyles.totalsTileValueRow}>
-            <strong className={dpStyles.totalsTileValue}>
-              {formatMoney(employeePayout(e, settings.netFactor))}
-            </strong>
-          </span>
-          <span className={dpStyles.totalsTileCash}>
-            {employeePartsLine(e, settings.netFactor)}
-          </span>
-        </div>
-      ))}
+      {employees.map((e) => {
+        const salaryRow = (result.salaries ?? []).find((s) => s.userId === e.key);
+        const penalty = salaryRow?.penalty ?? 0;
+        const truancyDeduction = salaryRow?.truancyDeduction ?? 0;
+        const parts = employeePartsList(e, settings.netFactor, penalty, truancyDeduction);
+        return (
+          <div key={e.key} className={dpStyles.totalsTile} title={parts.join(' · ')}>
+            <span className={dpStyles.totalsTileLabel}>{e.name}</span>
+            <span className={dpStyles.totalsTileValueRow}>
+              <strong className={dpStyles.totalsTileValue}>
+                {formatMoney(employeePayout(e, settings.netFactor))}
+              </strong>
+            </span>
+            <span className={`${dpStyles.totalsTileCash} ${styles.tilePartsColumn}`}>
+              {parts.map((p) => (
+                <span key={p}>{p}</span>
+              ))}
+            </span>
+          </div>
+        );
+      })}
     </div>
   );
 }
@@ -719,6 +757,248 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
           />
         </div>
       ) : null}
+      {(result.salaries ?? []).length > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Оклады</h2>
+          <DataTable
+            data={result.salaries ?? []}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Сотрудник',
+                sortable: true,
+                render: (s) => <span className={styles.nameCell}>{s.userName ?? '—'}</span>,
+              },
+              {
+                key: 'monthlySalary',
+                title: 'Оклад, ₽/мес',
+                sortable: true,
+                render: (s) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(s.monthlySalary)}</span>
+                ),
+              },
+              {
+                key: 'days',
+                title: 'Дней в периоде',
+                sortable: true,
+                render: (s) => <span className={styles.numCell}>{s.days}</span>,
+              },
+              {
+                key: 'violationsCount',
+                title: 'Нарушений режима',
+                sortable: true,
+                render: (s) => (
+                  <span className={styles.numCell}>
+                    {s.violationsCount
+                      ? `${s.violationsCount} (−${formatMoneyShort(s.penalty ?? 0)})`
+                      : '—'}
+                  </span>
+                ),
+              },
+              {
+                key: 'truancyDays',
+                title: 'Прогулов',
+                sortable: true,
+                render: (s) => (
+                  <span className={styles.numCell}>
+                    {s.truancyDays
+                      ? `${s.truancyDays} (−${formatMoneyShort(s.truancyDeduction ?? 0)})`
+                      : '—'}
+                  </span>
+                ),
+              },
+              {
+                key: 'amount',
+                title: 'К выплате',
+                sortable: true,
+                render: (s) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(s.amount)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(s) => s.userId}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
+      {(result.salesBonuses ?? []).length > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Премии за продажи (итоги ДП)</h2>
+          <DataTable
+            data={result.salesBonuses ?? []}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Менеджер',
+                sortable: true,
+                render: (b) => <span className={styles.nameCell}>{b.userName ?? '—'}</span>,
+              },
+              {
+                key: 'month',
+                title: 'Месяц',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.month}</span>,
+              },
+              {
+                key: 'place',
+                title: 'Место',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.place}</span>,
+              },
+              {
+                key: 'salesAmount',
+                title: 'Продажи за месяц',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.salesAmount)}</span>
+                ),
+              },
+              {
+                key: 'amount',
+                title: 'Премия',
+                sortable: true,
+                render: (b) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(b.amount)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(b) => `${b.userId}-${b.month}`}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
+      {(result.salesPlanBonuses ?? []).length > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Премии за план продаж</h2>
+          <DataTable
+            data={result.salesPlanBonuses ?? []}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Менеджер',
+                sortable: true,
+                render: (b) => <span className={styles.nameCell}>{b.userName ?? '—'}</span>,
+              },
+              {
+                key: 'month',
+                title: 'Месяц',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.month}</span>,
+              },
+              {
+                key: 'salesAmount',
+                title: 'Продажи за месяц',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.salesAmount)}</span>
+                ),
+              },
+              {
+                key: 'reachedTiers',
+                title: 'Порогов достигнуто',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.reachedTiers}</span>,
+              },
+              {
+                key: 'baseAmount',
+                title: 'З/п по договорам',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.baseAmount)}</span>
+                ),
+              },
+              {
+                key: 'percent',
+                title: '% премии',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{formatPercent(b.percent)}</span>,
+              },
+              {
+                key: 'amount',
+                title: 'Премия',
+                sortable: true,
+                render: (b) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(b.amount)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(b) => `${b.userId}-${b.month}`}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
+      {(result.cashQrBonuses ?? []).length > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Премии «Нал + QR»</h2>
+          <DataTable
+            data={result.cashQrBonuses ?? []}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Менеджер',
+                sortable: true,
+                render: (b) => <span className={styles.nameCell}>{b.userName ?? '—'}</span>,
+              },
+              {
+                key: 'month',
+                title: 'Месяц',
+                sortable: true,
+                render: (b) => <span className={styles.numCell}>{b.month}</span>,
+              },
+              {
+                key: 'totalSales',
+                title: 'Продажи всего',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.totalSales)}</span>
+                ),
+              },
+              {
+                key: 'terminalSales',
+                title: 'Терминал',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.terminalSales)}</span>
+                ),
+              },
+              {
+                key: 'terminalShare',
+                title: 'Доля терминала',
+                sortable: true,
+                render: (b) => (
+                  <span className={styles.numCell}>{formatPercent(b.terminalShare)}</span>
+                ),
+              },
+              {
+                key: 'otherSales',
+                title: 'Остальные продажи',
+                sortable: true,
+                render: (b) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(b.otherSales)}</span>
+                ),
+              },
+              {
+                key: 'amount',
+                title: 'Премия (0,5%)',
+                sortable: true,
+                render: (b) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(b.amount)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(b) => `${b.userId}-${b.month}`}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -739,6 +1019,19 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             title: '№',
             sortable: true,
             render: (r) => <span className={styles.nameCell}>{r.number}</span>,
+          },
+          {
+            key: 'customerName',
+            title: 'Заказчик',
+            render: (r) => (
+              <span className={styles.noteCell}>
+                {!r.surveyorHandled ? (
+                  <span className={styles.mutedCell}>без замера — з/п за замер не считается</span>
+                ) : (
+                  <span className={styles.mutedCell}>{r.customerName ?? ''}</span>
+                )}
+              </span>
+            ),
           },
           { key: 'officeName', title: 'Офис', sortable: true },
           { key: 'categoryName', title: 'Направление', sortable: true },
@@ -812,19 +1105,6 @@ function ContractsTable({ result }: { result: SalaryCalcResult }) {
             sortable: true,
             render: (r) => (
               <span className={dpStyles.amountCell}>{formatMoney(toNet(r.brigadierAmount))}</span>
-            ),
-          },
-          {
-            key: 'note',
-            title: 'Примечание',
-            render: (r) => (
-              <span className={styles.noteCell}>
-                {!r.surveyorHandled ? (
-                  <span className={styles.mutedCell}>без замера — з/п за замер не считается</span>
-                ) : (
-                  <span className={styles.mutedCell}>{r.customerName ?? ''}</span>
-                )}
-              </span>
             ),
           },
         ]}

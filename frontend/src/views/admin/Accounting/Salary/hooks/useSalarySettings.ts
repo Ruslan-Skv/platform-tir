@@ -14,10 +14,30 @@ import {
 
 export interface GlobalFormState {
   taxPercent: string;
+  /** Контролировать режим работы (удержания из оклада). */
+  workModeEnforced: boolean;
+  /** Учитывать прогулы (удержание дневной доли оклада за прогул). */
+  truancyEnforced: boolean;
+  /** Премии за места по итогам продаж месяца, ₽. */
+  salesBonusFirstPlace: string;
+  salesBonusSecondPlace: string;
+  salesBonusThirdPlace: string;
+  /** Минимальный уровень продаж менеджера для права на премию, ₽. */
+  salesBonusMinSales: string;
+  /** План продаж: пороги объёма продаж за месяц, ₽. */
+  salesPlanThreshold1: string;
+  salesPlanThreshold2: string;
+  salesPlanThreshold3: string;
+  /** Премии за пороги плана — % от з/п менеджера по договорам. */
+  salesPlanPercent1: string;
+  salesPlanPercent2: string;
+  salesPlanPercent3: string;
   /** Пользователь-бригадир; '' — не назначен. */
   brigadierUserId: string;
   /** Ведущий специалист по направлениям: id направления → id пользователя; '' — не назначен. */
   leadSpecialistUserIds: Record<string, string>;
+  /** Строки окладов: сотрудник + месячный оклад (пустая строка — не установлен). */
+  employeeSalaries: Array<{ userId: string; monthlySalary: string }>;
 }
 
 /** Payload модалки создания/правки направления (code — только при создании). */
@@ -43,8 +63,21 @@ export interface SalaryRateRuleInput {
 
 const EMPTY_GLOBAL: GlobalFormState = {
   taxPercent: '8',
+  workModeEnforced: false,
+  truancyEnforced: false,
+  salesBonusFirstPlace: '0',
+  salesBonusSecondPlace: '0',
+  salesBonusThirdPlace: '0',
+  salesBonusMinSales: '0',
+  salesPlanThreshold1: '0',
+  salesPlanThreshold2: '0',
+  salesPlanThreshold3: '0',
+  salesPlanPercent1: '0',
+  salesPlanPercent2: '0',
+  salesPlanPercent3: '0',
   brigadierUserId: '',
   leadSpecialistUserIds: {},
+  employeeSalaries: [],
 };
 
 /** Логика вкладки «Настройки» (суперадмин): глобальные параметры, направления, правила ставок. */
@@ -66,10 +99,26 @@ export function useSalarySettings(
     if (settings) {
       setGlobalForm({
         taxPercent: String(settings.global.taxPercent),
+        workModeEnforced: settings.global.workModeEnforced ?? false,
+        truancyEnforced: settings.global.truancyEnforced ?? false,
+        salesBonusFirstPlace: String(settings.global.salesBonusFirstPlace ?? 0),
+        salesBonusSecondPlace: String(settings.global.salesBonusSecondPlace ?? 0),
+        salesBonusThirdPlace: String(settings.global.salesBonusThirdPlace ?? 0),
+        salesBonusMinSales: String(settings.global.salesBonusMinSales ?? 0),
+        salesPlanThreshold1: String(settings.global.salesPlanThreshold1 ?? 0),
+        salesPlanThreshold2: String(settings.global.salesPlanThreshold2 ?? 0),
+        salesPlanThreshold3: String(settings.global.salesPlanThreshold3 ?? 0),
+        salesPlanPercent1: String(settings.global.salesPlanPercent1 ?? 0),
+        salesPlanPercent2: String(settings.global.salesPlanPercent2 ?? 0),
+        salesPlanPercent3: String(settings.global.salesPlanPercent3 ?? 0),
         brigadierUserId: settings.global.brigadierUserId ?? '',
         leadSpecialistUserIds: Object.fromEntries(
           settings.categories.map((c) => [c.id, c.leadSpecialistUserId ?? ''])
         ),
+        employeeSalaries: (settings.global.employeeSalaries ?? []).map((s) => ({
+          userId: s.userId,
+          monthlySalary: String(s.monthlySalary),
+        })),
       });
     }
   }, [settings]);
@@ -80,7 +129,27 @@ export function useSalarySettings(
     try {
       await saveSalaryGlobalSettings({
         taxPercent: Number(globalForm.taxPercent.replace(',', '.')),
+        workModeEnforced: globalForm.workModeEnforced,
+        truancyEnforced: globalForm.truancyEnforced,
+        salesBonusFirstPlace: Number(globalForm.salesBonusFirstPlace.replace(',', '.')),
+        salesBonusSecondPlace: Number(globalForm.salesBonusSecondPlace.replace(',', '.')),
+        salesBonusThirdPlace: Number(globalForm.salesBonusThirdPlace.replace(',', '.')),
+        salesBonusMinSales: Number(globalForm.salesBonusMinSales.replace(',', '.')),
+        salesPlanThreshold1: Number(globalForm.salesPlanThreshold1.replace(',', '.')),
+        salesPlanThreshold2: Number(globalForm.salesPlanThreshold2.replace(',', '.')),
+        salesPlanThreshold3: Number(globalForm.salesPlanThreshold3.replace(',', '.')),
+        salesPlanPercent1: Number(globalForm.salesPlanPercent1.replace(',', '.')),
+        salesPlanPercent2: Number(globalForm.salesPlanPercent2.replace(',', '.')),
+        salesPlanPercent3: Number(globalForm.salesPlanPercent3.replace(',', '.')),
         brigadierUserId: globalForm.brigadierUserId || null,
+        employeeSalaries: globalForm.employeeSalaries
+          .filter((row) => row.userId)
+          .map((row) => ({
+            userId: row.userId,
+            monthlySalary: row.monthlySalary.trim()
+              ? Number(row.monthlySalary.replace(',', '.'))
+              : null,
+          })),
       });
       // Привязки ВС хранятся на направлениях — сохраняем только изменившиеся.
       const current = new Map(

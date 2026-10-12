@@ -36,7 +36,7 @@ export class SalarySettingsService {
   /** Полные настройки: глобальные параметры + направления с правилами ставок. */
   async getSettings() {
     await this.ensureDefaults();
-    const [global, categories] = await Promise.all([
+    const [global, categories, employeeSalaries] = await Promise.all([
       this.prisma.salaryGlobalSetting.findUnique({
         where: { id: 'singleton' },
         include: BRIGADIER_INCLUDE,
@@ -48,9 +48,21 @@ export class SalarySettingsService {
           ...CATEGORY_LEAD_SPECIALIST_INCLUDE,
         },
       }),
+      this.prisma.salaryEmployeeSalary.findMany({
+        where: { monthlySalary: { gt: 0 } },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+        orderBy: { userId: 'asc' },
+      }),
     ]);
     return {
-      global: this.serializeGlobal(global),
+      global: {
+        ...this.serializeGlobal(global),
+        employeeSalaries: employeeSalaries.map((s) => ({
+          userId: s.userId,
+          userName: userFullName(s.user),
+          monthlySalary: toNum(s.monthlySalary),
+        })),
+      },
       roles: SALARY_ROLE_LABELS,
       categories: categories.map((c) => this.serializeCategory(c)),
     };
@@ -60,6 +72,21 @@ export class SalarySettingsService {
     await this.ensureGlobalRow();
     const data: Prisma.SalaryGlobalSettingUncheckedUpdateInput = {};
     if (dto.taxPercent !== undefined) data.taxPercent = dto.taxPercent;
+    if (dto.workModeEnforced !== undefined) data.workModeEnforced = dto.workModeEnforced;
+    if (dto.truancyEnforced !== undefined) data.truancyEnforced = dto.truancyEnforced;
+    if (dto.salesBonusFirstPlace !== undefined)
+      data.salesBonusFirstPlace = dto.salesBonusFirstPlace;
+    if (dto.salesBonusSecondPlace !== undefined)
+      data.salesBonusSecondPlace = dto.salesBonusSecondPlace;
+    if (dto.salesBonusThirdPlace !== undefined)
+      data.salesBonusThirdPlace = dto.salesBonusThirdPlace;
+    if (dto.salesBonusMinSales !== undefined) data.salesBonusMinSales = dto.salesBonusMinSales;
+    if (dto.salesPlanThreshold1 !== undefined) data.salesPlanThreshold1 = dto.salesPlanThreshold1;
+    if (dto.salesPlanThreshold2 !== undefined) data.salesPlanThreshold2 = dto.salesPlanThreshold2;
+    if (dto.salesPlanThreshold3 !== undefined) data.salesPlanThreshold3 = dto.salesPlanThreshold3;
+    if (dto.salesPlanPercent1 !== undefined) data.salesPlanPercent1 = dto.salesPlanPercent1;
+    if (dto.salesPlanPercent2 !== undefined) data.salesPlanPercent2 = dto.salesPlanPercent2;
+    if (dto.salesPlanPercent3 !== undefined) data.salesPlanPercent3 = dto.salesPlanPercent3;
     if (dto.brigadierUserId !== undefined) {
       data.brigadierUserId = await this.resolveUserId(dto.brigadierUserId);
     }
@@ -68,7 +95,38 @@ export class SalarySettingsService {
       data,
       include: BRIGADIER_INCLUDE,
     });
+    if (dto.employeeSalaries !== undefined) {
+      await this.saveEmployeeSalaries(dto.employeeSalaries);
+    }
     return this.serializeGlobal(updated);
+  }
+
+  /**
+   * Оклады сотрудников: передан полный список — заменяем существующий.
+   * null/0 → оклад снимается (строка удаляется).
+   */
+  private async saveEmployeeSalaries(
+    items: Array<{ userId: string; monthlySalary: number | null }>,
+  ) {
+    const keep = new Map<string, number>();
+    for (const item of items) {
+      const userId = await this.resolveUserId(item.userId);
+      if (!userId) throw new BadRequestException('Не указан сотрудник для оклада');
+      const amount = item.monthlySalary ?? 0;
+      if (amount > 0) keep.set(userId, amount);
+    }
+    await this.prisma.$transaction([
+      this.prisma.salaryEmployeeSalary.deleteMany({
+        where: { userId: { notIn: [...keep.keys()] } },
+      }),
+      ...[...keep.entries()].map(([userId, monthlySalary]) =>
+        this.prisma.salaryEmployeeSalary.upsert({
+          where: { userId },
+          create: { userId, monthlySalary },
+          update: { monthlySalary },
+        }),
+      ),
+    ]);
   }
 
   // --- Направления ---
@@ -171,6 +229,18 @@ export class SalarySettingsService {
   private serializeGlobal(
     global: {
       taxPercent: Prisma.Decimal;
+      workModeEnforced?: boolean;
+      truancyEnforced?: boolean;
+      salesBonusFirstPlace?: Prisma.Decimal;
+      salesBonusSecondPlace?: Prisma.Decimal;
+      salesBonusThirdPlace?: Prisma.Decimal;
+      salesBonusMinSales?: Prisma.Decimal;
+      salesPlanThreshold1?: Prisma.Decimal;
+      salesPlanThreshold2?: Prisma.Decimal;
+      salesPlanThreshold3?: Prisma.Decimal;
+      salesPlanPercent1?: Prisma.Decimal;
+      salesPlanPercent2?: Prisma.Decimal;
+      salesPlanPercent3?: Prisma.Decimal;
       brigadierUserId: string | null;
       brigadier?: { id: string; firstName: string | null; lastName: string | null } | null;
       updatedAt: Date;
@@ -178,6 +248,18 @@ export class SalarySettingsService {
   ) {
     return {
       taxPercent: toNum(global?.taxPercent ?? 8),
+      workModeEnforced: global?.workModeEnforced ?? false,
+      truancyEnforced: global?.truancyEnforced ?? false,
+      salesBonusFirstPlace: toNum(global?.salesBonusFirstPlace ?? 0),
+      salesBonusSecondPlace: toNum(global?.salesBonusSecondPlace ?? 0),
+      salesBonusThirdPlace: toNum(global?.salesBonusThirdPlace ?? 0),
+      salesBonusMinSales: toNum(global?.salesBonusMinSales ?? 0),
+      salesPlanThreshold1: toNum(global?.salesPlanThreshold1 ?? 0),
+      salesPlanThreshold2: toNum(global?.salesPlanThreshold2 ?? 0),
+      salesPlanThreshold3: toNum(global?.salesPlanThreshold3 ?? 0),
+      salesPlanPercent1: toNum(global?.salesPlanPercent1 ?? 0),
+      salesPlanPercent2: toNum(global?.salesPlanPercent2 ?? 0),
+      salesPlanPercent3: toNum(global?.salesPlanPercent3 ?? 0),
       brigadierUserId: global?.brigadierUserId ?? null,
       brigadierName: userFullName(global?.brigadier),
       updatedAt: global?.updatedAt ?? null,

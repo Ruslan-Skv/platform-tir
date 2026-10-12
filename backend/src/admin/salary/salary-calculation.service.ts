@@ -1,7 +1,12 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../database/prisma.service';
+import { WorkDayJournalService } from '../work-days/services/work-day-journal.service';
+import { DP_MANUAL_DIRECTION_OTHER } from '../../common/config/package-direction-registry.config';
 import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
+
+/** Удержание за нарушение режима работы (опоздание / ранний уход), ₽. */
+const SALARY_WORK_MODE_PENALTY_RUB = 50;
 
 /**
  * Расчёт з/п за период — перенос логики Google-таблицы «Новая таблица 2025».
@@ -22,7 +27,10 @@ import { fromDateIso, round2, toDateIso, toNum } from './salary.constants';
  */
 @Injectable()
 export class SalaryCalculationService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private workDayJournal: WorkDayJournalService,
+  ) {}
 
   async calculate(input: {
     dateFrom: string;
@@ -36,7 +44,7 @@ export class SalaryCalculationService {
       throw new BadRequestException('Начало периода не может быть позже конца');
     }
 
-    const [globalSetting, categories, rateRules, contracts] = await Promise.all([
+    const [globalSetting, categories, rateRules, employeeSalaries, contracts] = await Promise.all([
       this.prisma.salaryGlobalSetting.findUnique({
         where: { id: 'singleton' },
         include: { brigadier: { select: { id: true, firstName: true, lastName: true } } },
@@ -45,6 +53,13 @@ export class SalaryCalculationService {
         include: { leadSpecialist: { select: { id: true, firstName: true, lastName: true } } },
       }),
       this.prisma.salaryRateRule.findMany({ where: { isActive: true } }),
+      this.prisma.salaryEmployeeSalary.findMany({
+        where: {
+          monthlySalary: { gt: 0 },
+          ...(input.employeeId ? { userId: input.employeeId } : {}),
+        },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+      }),
       this.prisma.salaryContract.findMany({
         where: {
           officeId: input.officeId,
@@ -213,6 +228,372 @@ export class SalaryCalculationService {
         totalAmount: round2(base + toNum(contractSum(contract))),
       };
     });
+
+    // --- Оклады: за каждый день периода 1/N оклада (N — дней в месяце этого дня).
+    // Будущие дни не начисляются: оклад считается по сегодняшний день включительно
+    // и растёт с каждым днём до полной суммы к концу месяца. ---
+
+    const today = new Date();
+    const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
+    // Контроль режима работы: −50 ₽ за каждое опоздание/убытие раньше графика
+    // (lateMinutes/earlyLeaveMinutes уже учитывают льготные 10 минут и
+    // согласованные заявки). Считается только по дням, вошедшим в начисление
+    // оклада (не позже сегодняшнего дня).
+    const workModePenalties = new Map<string, number>();
+    if (globalSetting?.workModeEnforced && employeeSalaries.length > 0) {
+      const penaltyUntil = new Date(
+        Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
+      );
+      const violations = await this.prisma.workDay.findMany({
+        where: {
+          userId: { in: employeeSalaries.map((s) => s.userId) },
+          workDate: { gte: from, lte: penaltyUntil },
+          OR: [{ lateMinutes: { gt: 0 } }, { earlyLeaveMinutes: { gt: 0 } }],
+        },
+        select: { userId: true, lateMinutes: true, earlyLeaveMinutes: true },
+      });
+      for (const v of violations) {
+        const count = (v.lateMinutes > 0 ? 1 : 0) + (v.earlyLeaveMinutes > 0 ? 1 : 0);
+        workModePenalties.set(v.userId, (workModePenalties.get(v.userId) ?? 0) + count);
+      }
+    }
+    // Учёт прогулов: за каждый прогул (прошедший рабочий день по графику без явки
+    // и без согласованного выходного/отпуска — как в журнале рабочих дней)
+    // из оклада удерживается дневная доля (оклад / дней в месяце этого дня).
+    const truancyByUser = new Map<string, Date[]>();
+    if (globalSetting?.truancyEnforced && employeeSalaries.length > 0) {
+      const salaryUserIds = new Set(employeeSalaries.map((s) => s.userId));
+      // Существующие записи рабочих дней обязательны: без них журнал сочтёт
+      // прогулом каждый рабочий день по графику.
+      const records = await this.prisma.workDay.findMany({
+        where: { userId: { in: [...salaryUserIds] }, workDate: { gte: from, lte: to } },
+        include: {
+          user: { select: { id: true, email: true, firstName: true, lastName: true, role: true } },
+          office: { select: { id: true, name: true } },
+          absences: { orderBy: { startedAt: 'asc' } },
+        },
+      });
+      const journalRows = await this.workDayJournal.attachRequests(records, {
+        dateFrom: toDateIso(from) ?? undefined,
+        dateTo: toDateIso(to) ?? undefined,
+      });
+      for (const row of journalRows) {
+        if (row.truancyOnly !== true) continue;
+        if (!salaryUserIds.has(row.userId)) continue;
+        const workDate = new Date(
+          Date.UTC(
+            row.workDate.getUTCFullYear(),
+            row.workDate.getUTCMonth(),
+            row.workDate.getUTCDate(),
+          ),
+        );
+        // Прогул уменьшает только уже начисленную часть оклада (не будущие дни).
+        if (workDate.getTime() > todayUtc) continue;
+        const list = truancyByUser.get(row.userId) ?? [];
+        list.push(workDate);
+        truancyByUser.set(row.userId, list);
+      }
+    }
+    const salaries = employeeSalaries.map((s) => {
+      const monthlySalary = toNum(s.monthlySalary);
+      let amount = 0;
+      let days = 0;
+      const day = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), from.getUTCDate()));
+      const end = new Date(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()));
+      const daySalary = (d: Date) => {
+        const daysInMonth = new Date(
+          Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + 1, 0),
+        ).getUTCDate();
+        return monthlySalary / daysInMonth;
+      };
+      while (day.getTime() <= end.getTime()) {
+        if (day.getTime() > todayUtc) break;
+        amount += daySalary(day);
+        days += 1;
+        day.setUTCDate(day.getUTCDate() + 1);
+      }
+      const violationsCount = workModePenalties.get(s.userId) ?? 0;
+      const penalty = violationsCount * SALARY_WORK_MODE_PENALTY_RUB;
+      const truancyDays = truancyByUser.get(s.userId) ?? [];
+      const truancyDeduction = round2(truancyDays.reduce((sum, d) => sum + daySalary(d), 0));
+      return {
+        userId: s.userId,
+        userName: [s.user.lastName, s.user.firstName].filter(Boolean).join(' ').trim() || null,
+        monthlySalary,
+        days,
+        violationsCount,
+        penalty,
+        truancyDays: truancyDays.length,
+        truancyDeduction,
+        amount: round2(Math.max(0, amount - penalty - truancyDeduction)),
+      };
+    });
+    const salariesTotal = round2(salaries.reduce((sum, s) => sum + s.amount, 0));
+
+    // --- Премии за места по итогам продаж за завершённые месяцы (журнал ДП) ---
+    // Участвуют только менеджеры из итогов продаж ДП, чья сумма за месяц не ниже
+    // минимального уровня из настроек. Месяц учитывается, когда он полностью
+    // завершился и входит в период расчёта.
+
+    const bonusByPlace = [
+      toNum(globalSetting?.salesBonusFirstPlace ?? 0),
+      toNum(globalSetting?.salesBonusSecondPlace ?? 0),
+      toNum(globalSetting?.salesBonusThirdPlace ?? 0),
+    ];
+    const bonusMinSales = toNum(globalSetting?.salesBonusMinSales ?? 0);
+    const salesBonuses: Array<{
+      userId: string;
+      userName: string | null;
+      month: string;
+      place: number;
+      salesAmount: number;
+      amount: number;
+    }> = [];
+    const hasBonuses = bonusByPlace.some((b) => b > 0);
+    if (hasBonuses) {
+      // Первый день месяца периода → перебор месяцев до конца периода.
+      const month = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+      const periodEnd = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
+      while (month.getTime() <= periodEnd) {
+        const monthStart = new Date(month);
+        const monthEnd = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0));
+        // Премия начисляется сразу после завершения месяца: текущий месяц не участвует.
+        if (monthEnd.getTime() < todayUtc) {
+          const monthSums = await this.prisma.moneyMovement.groupBy({
+            by: ['managerId'],
+            where: {
+              deletedAt: null,
+              managerId: { not: null },
+              paymentDate: { gte: monthStart, lte: monthEnd },
+              direction: { not: DP_MANUAL_DIRECTION_OTHER },
+            },
+            _sum: { amount: true },
+          });
+          const ranked = monthSums
+            .map((row) => ({
+              userId: row.managerId as string,
+              salesAmount: toNum(row._sum.amount ?? 0),
+            }))
+            .filter((row) => row.salesAmount > 0 && row.salesAmount >= bonusMinSales)
+            .sort((a, b) => b.salesAmount - a.salesAmount);
+          const winners = ranked.slice(0, 3);
+          const bonusUsers = winners.length
+            ? await this.prisma.user.findMany({
+                where: { id: { in: winners.map((w) => w.userId) } },
+                select: { id: true, firstName: true, lastName: true },
+              })
+            : [];
+          const nameById = new Map(
+            bonusUsers.map((u) => [
+              u.id,
+              [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || null,
+            ]),
+          );
+          winners.forEach((winner, index) => {
+            const amount = bonusByPlace[index] ?? 0;
+            if (amount <= 0) return;
+            if (input.employeeId && winner.userId !== input.employeeId) return;
+            salesBonuses.push({
+              userId: winner.userId,
+              userName: nameById.get(winner.userId) ?? null,
+              month: `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}`,
+              place: index + 1,
+              salesAmount: round2(winner.salesAmount),
+              amount: round2(amount),
+            });
+          });
+        }
+        month.setUTCMonth(month.getUTCMonth() + 1);
+      }
+    }
+    const salesBonusesTotal = round2(salesBonuses.reduce((sum, b) => sum + b.amount, 0));
+
+    // --- Премия за выполнение плана продаж: порог объёма продаж за месяц →
+    // премия в % от з/п менеджера по договорам за этот месяц (без оклада
+    // и других премий). Проценты порогов не суммируются — премия считается
+    // по самому высокому достигнутому порогу. ---
+
+    const planTiers = [
+      {
+        threshold: toNum(globalSetting?.salesPlanThreshold1 ?? 0),
+        percent: toNum(globalSetting?.salesPlanPercent1 ?? 0),
+      },
+      {
+        threshold: toNum(globalSetting?.salesPlanThreshold2 ?? 0),
+        percent: toNum(globalSetting?.salesPlanPercent2 ?? 0),
+      },
+      {
+        threshold: toNum(globalSetting?.salesPlanThreshold3 ?? 0),
+        percent: toNum(globalSetting?.salesPlanPercent3 ?? 0),
+      },
+    ].filter((tier) => tier.threshold > 0 && tier.percent > 0);
+    const salesPlanBonuses: Array<{
+      userId: string;
+      userName: string | null;
+      month: string;
+      salesAmount: number;
+      reachedTiers: number;
+      percent: number;
+      baseAmount: number;
+      amount: number;
+    }> = [];
+    if (planTiers.length > 0) {
+      // З/п менеджеров по договорам в разрезе месяцев: доли при заключении/закрытии
+      // и доп. соглашения относятся к месяцам своих дат.
+      const monthKey = (iso: string | null) => (iso ? iso.slice(0, 7) : null);
+      const managerPartsByMonth = new Map<string, number>();
+      for (const row of rows) {
+        if (!row.managerId) continue;
+        const add = (iso: string | null, value: number) => {
+          const key = monthKey(iso);
+          if (!key || value === 0) return;
+          const mapKey = `${row.managerId}|${key}`;
+          managerPartsByMonth.set(mapKey, round2((managerPartsByMonth.get(mapKey) ?? 0) + value));
+        };
+        add(row.signedAt, row.parts.sign);
+        add(row.closedAt, row.parts.close);
+        for (const bill of row.extraBills) {
+          add(bill.date, round2(bill.amount * (row.percents.manager / 100)));
+        }
+      }
+
+      const month = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+      const periodEnd = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
+      while (month.getTime() <= periodEnd) {
+        const monthStart = new Date(month);
+        const monthEnd = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0));
+        if (monthEnd.getTime() < todayUtc) {
+          const monthKeyStr = `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}`;
+          const monthSums = await this.prisma.moneyMovement.groupBy({
+            by: ['managerId'],
+            where: {
+              deletedAt: null,
+              managerId: { not: null },
+              paymentDate: { gte: monthStart, lte: monthEnd },
+              direction: { not: DP_MANUAL_DIRECTION_OTHER },
+            },
+            _sum: { amount: true },
+          });
+          const candidates = monthSums
+            .map((row) => ({
+              userId: row.managerId as string,
+              salesAmount: toNum(row._sum.amount ?? 0),
+            }))
+            .filter((row) => planTiers.some((tier) => row.salesAmount >= tier.threshold));
+          const planUsers = candidates.length
+            ? await this.prisma.user.findMany({
+                where: { id: { in: candidates.map((c) => c.userId) } },
+                select: { id: true, firstName: true, lastName: true },
+              })
+            : [];
+          const nameById = new Map(
+            planUsers.map((u) => [
+              u.id,
+              [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || null,
+            ]),
+          );
+          for (const candidate of candidates) {
+            if (input.employeeId && candidate.userId !== input.employeeId) continue;
+            const baseAmount = managerPartsByMonth.get(`${candidate.userId}|${monthKeyStr}`) ?? 0;
+            if (baseAmount <= 0) continue;
+            const reached = planTiers.filter((tier) => candidate.salesAmount >= tier.threshold);
+            // Проценты не суммируются: премия считается по самому высокому достигнутому порогу.
+            const percent = reached.length > 0 ? reached[reached.length - 1].percent : 0;
+            salesPlanBonuses.push({
+              userId: candidate.userId,
+              userName: nameById.get(candidate.userId) ?? null,
+              month: monthKeyStr,
+              salesAmount: round2(candidate.salesAmount),
+              reachedTiers: reached.length,
+              percent,
+              baseAmount,
+              amount: round2((baseAmount * percent) / 100),
+            });
+          }
+        }
+        month.setUTCMonth(month.getUTCMonth() + 1);
+      }
+    }
+    const salesPlanBonusesTotal = round2(salesPlanBonuses.reduce((sum, b) => sum + b.amount, 0));
+
+    // --- Премия «Нал + QR»: если продажи через терминал за завершившийся месяц
+    // составляют менее 50% от всех продаж менеджера — премия 0,5% от остальных
+    // (не через терминал: наличные, QR, счёт, перевод на ЛК, банк-приложение)
+    // продаж за этот месяц. ---
+
+    const CASH_QR_BONUS_PERCENT = 0.5;
+    const cashQrBonuses: Array<{
+      userId: string;
+      userName: string | null;
+      month: string;
+      totalSales: number;
+      terminalSales: number;
+      otherSales: number;
+      terminalShare: number;
+      amount: number;
+    }> = [];
+    {
+      const month = new Date(Date.UTC(from.getUTCFullYear(), from.getUTCMonth(), 1));
+      const periodEnd = Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate());
+      while (month.getTime() <= periodEnd) {
+        const monthStart = new Date(month);
+        const monthEnd = new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 0));
+        if (monthEnd.getTime() < todayUtc) {
+          const formSums = await this.prisma.moneyMovement.groupBy({
+            by: ['managerId', 'paymentForm'],
+            where: {
+              deletedAt: null,
+              managerId: { not: null },
+              paymentDate: { gte: monthStart, lte: monthEnd },
+              direction: { not: DP_MANUAL_DIRECTION_OTHER },
+            },
+            _sum: { amount: true },
+          });
+          const totals = new Map<string, { total: number; terminal: number }>();
+          for (const row of formSums) {
+            const userId = row.managerId as string;
+            const agg = totals.get(userId) ?? { total: 0, terminal: 0 };
+            const amount = toNum(row._sum.amount ?? 0);
+            agg.total += amount;
+            if (row.paymentForm === 'TERMINAL') agg.terminal += amount;
+            totals.set(userId, agg);
+          }
+          const winners = [...totals.entries()].filter(
+            ([, v]) => v.total > 0 && v.terminal < v.total * 0.5,
+          );
+          const bonusUsers = winners.length
+            ? await this.prisma.user.findMany({
+                where: { id: { in: winners.map(([id]) => id) } },
+                select: { id: true, firstName: true, lastName: true },
+              })
+            : [];
+          const nameById = new Map(
+            bonusUsers.map((u) => [
+              u.id,
+              [u.lastName, u.firstName].filter(Boolean).join(' ').trim() || null,
+            ]),
+          );
+          for (const [userId, v] of winners) {
+            if (input.employeeId && userId !== input.employeeId) continue;
+            const otherSales = round2(v.total - v.terminal);
+            const amount = round2((otherSales * CASH_QR_BONUS_PERCENT) / 100);
+            if (amount <= 0) continue;
+            cashQrBonuses.push({
+              userId,
+              userName: nameById.get(userId) ?? null,
+              month: `${monthStart.getUTCFullYear()}-${String(monthStart.getUTCMonth() + 1).padStart(2, '0')}`,
+              totalSales: round2(v.total),
+              terminalSales: round2(v.terminal),
+              otherSales,
+              terminalShare: round2((v.terminal / v.total) * 100),
+              amount,
+            });
+          }
+        }
+        month.setUTCMonth(month.getUTCMonth() + 1);
+      }
+    }
+    const cashQrBonusesTotal = round2(cashQrBonuses.reduce((sum, b) => sum + b.amount, 0));
 
     // --- Агрегации ---
 
@@ -399,6 +780,8 @@ export class SalaryCalculationService {
       settings: {
         taxPercent,
         netFactor,
+        workModeEnforced: globalSetting?.workModeEnforced ?? false,
+        truancyEnforced: globalSetting?.truancyEnforced ?? false,
       },
       totals: {
         contractsCount: rows.length,
@@ -411,6 +794,10 @@ export class SalaryCalculationService {
         brigadierTotal,
         brigadierTotalNet: round2(brigadierTotal * netFactor),
         vsTotal: round2(vsByCategory.reduce((s, v) => s + v.gross, 0)),
+        salariesTotal,
+        salesBonusesTotal,
+        salesPlanBonusesTotal,
+        cashQrBonusesTotal,
         stats,
       },
       brigadier: {
@@ -419,6 +806,14 @@ export class SalaryCalculationService {
         total: brigadierTotal,
         totalNet: round2(brigadierTotal * netFactor),
       },
+      /** Оклады за период (начисляются целиком, без вычета налога из фондов). */
+      salaries,
+      /** Премии за места по итогам продаж за завершённые месяцы (журнал ДП). */
+      salesBonuses,
+      /** Премии за выполнение плана продаж (пороги объёма → % от з/п по договорам). */
+      salesPlanBonuses,
+      /** Премии «Нал + QR» (терминал < 50% продаж → 0,5% от остальных продаж). */
+      cashQrBonuses,
       vsByCategory,
       byLeadSpecialist,
       byManager: Array.from(byManager.values()).sort((a, b) => b.amount - a.amount),
@@ -512,6 +907,22 @@ export class SalaryCalculationService {
 
     const managerAmount = manager?.amount ?? 0;
     const surveyorNetAmount = roundNet(surveyor?.amount ?? 0);
+    const salary = full.salaries?.find((s) => s.userId === userId)?.amount ?? 0;
+    const bonus = round2(
+      (full.salesBonuses ?? []).reduce((sum, b) => (b.userId === userId ? sum + b.amount : sum), 0),
+    );
+    const planBonus = round2(
+      (full.salesPlanBonuses ?? []).reduce(
+        (sum, b) => (b.userId === userId ? sum + b.amount : sum),
+        0,
+      ),
+    );
+    const cashQrBonus = round2(
+      (full.cashQrBonuses ?? []).reduce(
+        (sum, b) => (b.userId === userId ? sum + b.amount : sum),
+        0,
+      ),
+    );
 
     return {
       period: full.period,
@@ -528,7 +939,20 @@ export class SalaryCalculationService {
         vsCategories: ledCategories.filter((v) => v.gross > 0).map((v) => v.categoryName),
         brigadier: brigadierNet,
         isBrigadier,
-        total: round2(managerAmount + surveyorNetAmount + vsNet + brigadierNet),
+        salary,
+        bonus,
+        planBonus,
+        cashQrBonus,
+        total: round2(
+          managerAmount +
+            surveyorNetAmount +
+            vsNet +
+            brigadierNet +
+            salary +
+            bonus +
+            planBonus +
+            cashQrBonus,
+        ),
       },
       contracts,
     };

@@ -190,6 +190,50 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
   if (p.brigadier !== 0) {
     roles.push(roleTile('brigadier', 'Бригадир', p.brigadier, '', 'Бригадирский фонд'));
   }
+  if ((p.salary ?? 0) !== 0) {
+    roles.push(
+      roleTile(
+        'salary',
+        'Оклад',
+        p.salary ?? 0,
+        '',
+        'Оклад: за каждый день периода начисляется 1/N часть (N — дней в месяце)'
+      )
+    );
+  }
+  if ((p.bonus ?? 0) !== 0) {
+    roles.push(
+      roleTile(
+        'bonus',
+        'Премия за продажи',
+        p.bonus ?? 0,
+        '',
+        'Премия за место по итогам продаж за прошедшие месяцы (журнал ДП)'
+      )
+    );
+  }
+  if ((p.planBonus ?? 0) !== 0) {
+    roles.push(
+      roleTile(
+        'planBonus',
+        'Премия за план',
+        p.planBonus ?? 0,
+        '',
+        'Премия за достижение порогов плана продаж — % от з/п по договорам за месяц'
+      )
+    );
+  }
+  if ((p.cashQrBonus ?? 0) !== 0) {
+    roles.push(
+      roleTile(
+        'cashQrBonus',
+        'Нал + QR',
+        p.cashQrBonus ?? 0,
+        '',
+        'Премия, если продажи через терминал за месяц менее 50% — 0,5% от остальных продаж'
+      )
+    );
+  }
 
   return (
     <>

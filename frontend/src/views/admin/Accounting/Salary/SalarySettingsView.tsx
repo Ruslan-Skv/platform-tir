@@ -201,6 +201,167 @@ export function SalarySettingsView({
             </select>
           </label>
         </div>
+        <label className={styles.settingsCheckbox}>
+          <input
+            type="checkbox"
+            checked={model.globalForm.workModeEnforced}
+            onChange={(e) =>
+              model.setGlobalForm((f) => ({ ...f, workModeEnforced: e.target.checked }))
+            }
+            disabled={model.globalSaving}
+          />
+          <span>
+            Контролировать режим работы — за каждое опоздание или убытие раньше графика (сверх
+            согласованных 10 минут) оклад сотрудника уменьшается на 50 ₽
+          </span>
+        </label>
+        <label className={styles.settingsCheckbox}>
+          <input
+            type="checkbox"
+            checked={model.globalForm.truancyEnforced}
+            onChange={(e) =>
+              model.setGlobalForm((f) => ({ ...f, truancyEnforced: e.target.checked }))
+            }
+            disabled={model.globalSaving}
+          />
+          <span>
+            Учитывать прогулы — за каждый прогул (рабочий день по графику без явки и без
+            согласованного выходного) из оклада удерживается дневная доля
+          </span>
+        </label>
+        <p className={styles.mutedCell}>
+          Премии за места по итогам продаж за месяц (журнал ДП) — начисляются менеджерам из итогов
+          продаж за полностью завершённые месяцы:
+        </p>
+        <div className={styles.settingsGrid}>
+          <label className={styles.settingsField}>
+            <span>Премия за 1 место, ₽</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesBonusFirstPlace}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesBonusFirstPlace: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Премия за 2 место, ₽</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesBonusSecondPlace}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesBonusSecondPlace: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Премия за 3 место, ₽</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesBonusThirdPlace}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesBonusThirdPlace: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Минимальные продажи для премии, ₽</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesBonusMinSales}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesBonusMinSales: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+        </div>
+        <p className={styles.mutedCell}>
+          План продаж — при достижении порога объёма продаж за месяц менеджеру начисляется премия в
+          % от его з/п по договорам за этот месяц; премия считается по самому высокому достигнутому
+          порогу:
+        </p>
+        <div className={styles.settingsGrid}>
+          <label className={styles.settingsField}>
+            <span>Порог 1, ₽ продаж</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanThreshold1}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanThreshold1: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Премия за порог 1, %</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanPercent1}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanPercent1: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Порог 2, ₽ продаж</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanThreshold2}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanThreshold2: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Премия за порог 2, %</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanPercent2}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanPercent2: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Порог 3, ₽ продаж</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanThreshold3}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanThreshold3: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+          <label className={styles.settingsField}>
+            <span>Премия за порог 3, %</span>
+            <input
+              type="text"
+              inputMode="decimal"
+              value={model.globalForm.salesPlanPercent3}
+              onChange={(e) =>
+                model.setGlobalForm((f) => ({ ...f, salesPlanPercent3: e.target.value }))
+              }
+              disabled={model.globalSaving}
+            />
+          </label>
+        </div>
         <p className={styles.mutedCell}>
           Ведущие специалисты направлений — получатели з/п ВС по каждому направлению:
         </p>
@@ -233,6 +394,86 @@ export function SalarySettingsView({
               </select>
             </label>
           ))}
+        </div>
+        <p className={styles.mutedCell}>
+          Месячные оклады сотрудников — при расчёте з/п за каждый день периода начисляется 1/N часть
+          оклада (N — число дней в месяце этого дня):
+        </p>
+        {model.globalForm.employeeSalaries.length > 0 ? (
+          <div className={styles.salaryRows}>
+            {model.globalForm.employeeSalaries.map((row, index) => (
+              <div key={index} className={styles.salaryRow}>
+                <select
+                  value={row.userId}
+                  onChange={(e) =>
+                    model.setGlobalForm((f) => ({
+                      ...f,
+                      employeeSalaries: f.employeeSalaries.map((r, i) =>
+                        i === index ? { ...r, userId: e.target.value } : r
+                      ),
+                    }))
+                  }
+                  disabled={model.globalSaving}
+                  aria-label="Сотрудник"
+                >
+                  <option value="">— выберите сотрудника —</option>
+                  {sortedUsers.map((u) => (
+                    <option key={u.id} value={u.id}>
+                      {userName(u)}
+                    </option>
+                  ))}
+                </select>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  placeholder="оклад, ₽/мес"
+                  value={row.monthlySalary}
+                  onChange={(e) =>
+                    model.setGlobalForm((f) => ({
+                      ...f,
+                      employeeSalaries: f.employeeSalaries.map((r, i) =>
+                        i === index ? { ...r, monthlySalary: e.target.value } : r
+                      ),
+                    }))
+                  }
+                  disabled={model.globalSaving}
+                  aria-label="Месячный оклад"
+                />
+                <button
+                  data-admin-mutation
+                  type="button"
+                  className={styles.salaryRowRemove}
+                  onClick={() =>
+                    model.setGlobalForm((f) => ({
+                      ...f,
+                      employeeSalaries: f.employeeSalaries.filter((_, i) => i !== index),
+                    }))
+                  }
+                  disabled={model.globalSaving}
+                  title="Убрать оклад"
+                  aria-label="Убрать оклад"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <div className={styles.settingsActions}>
+          <button
+            data-admin-mutation
+            type="button"
+            className={styles.addRuleBtn}
+            onClick={() =>
+              model.setGlobalForm((f) => ({
+                ...f,
+                employeeSalaries: [...f.employeeSalaries, { userId: '', monthlySalary: '' }],
+              }))
+            }
+            disabled={model.globalSaving}
+          >
+            + Оклад сотрудника
+          </button>
         </div>
         <div className={styles.settingsActions}>
           <button

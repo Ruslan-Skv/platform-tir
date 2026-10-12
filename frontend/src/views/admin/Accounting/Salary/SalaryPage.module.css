@@ -617,3 +617,72 @@
     color: var(--admin-text-primary, #f9fafb);
   }
 }
+
+/* Строки окладов: select + input + кнопка удаления на всю ширину панели */
+.salaryRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.salaryRow {
+  display: flex;
+  align-items: center;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.salaryRow select {
+  flex: 2 1 220px;
+  min-width: 0;
+}
+
+.salaryRow input {
+  flex: 1 1 120px;
+  min-width: 0;
+}
+
+.salaryRowRemove {
+  align-self: center;
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: var(--admin-font-size-md, 0.9375rem);
+  line-height: 1;
+  min-height: 40px;
+  padding: 0 var(--admin-space-md, 8px);
+}
+
+.salaryRowRemove:hover:not(:disabled) {
+  border-color: var(--admin-error-text-strong, #b91c1c);
+  color: var(--admin-error-text-strong, #b91c1c);
+}
+
+/* Части з/п в плитке сотрудника — столбцом (оклад первой строкой) */
+.tilePartsColumn {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-2xs, 2px);
+}
+
+/* Чекбокс режима работы в глобальных параметрах */
+.settingsCheckbox {
+  align-items: flex-start;
+  color: var(--admin-text-primary, #111827);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.settingsCheckbox input {
+  accent-color: var(--admin-accent, #d90632);
+  flex: 0 0 auto;
+  margin: 2px 0 0;
+  min-height: auto;
+  width: 16px;
+  height: 16px;
+}
