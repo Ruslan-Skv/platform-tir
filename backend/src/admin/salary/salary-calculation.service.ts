@@ -39,7 +39,9 @@ export class SalaryCalculationService {
         where: { id: 'singleton' },
         include: { brigadier: { select: { id: true, firstName: true, lastName: true } } },
       }),
-      this.prisma.salaryCategory.findMany(),
+      this.prisma.salaryCategory.findMany({
+        include: { leadSpecialist: { select: { id: true, firstName: true, lastName: true } } },
+      }),
       this.prisma.salaryRateRule.findMany({ where: { isActive: true } }),
       this.prisma.salaryContract.findMany({
         where: {
@@ -52,9 +54,18 @@ export class SalaryCalculationService {
                 { extraBills: { some: { date: { gte: from, lte: to } } } },
               ],
             },
-            // Фильтр по сотруднику — договоры, где он менеджер или замерщик (как «Менеджер» в ДП).
+            // Фильтр по сотруднику — договоры, где он менеджер, замерщик или ведущий
+            // специалист направления (как «Менеджер» в ДП).
             ...(input.employeeId
-              ? [{ OR: [{ managerId: input.employeeId }, { surveyorId: input.employeeId }] }]
+              ? [
+                  {
+                    OR: [
+                      { managerId: input.employeeId },
+                      { surveyorId: input.employeeId },
+                      { category: { leadSpecialistUserId: input.employeeId } },
+                    ],
+                  },
+                ]
               : []),
           ],
         },
@@ -318,8 +329,39 @@ export class SalaryCalculationService {
         vsPercent: toNum(c.vsPercent),
         gross,
         net: round2(gross * netFactor),
+        // Получатель фонда ВС направления — из привязки в настройках направлений.
+        userId: c.leadSpecialistUserId ?? null,
+        userName:
+          c.leadSpecialist != null
+            ? [c.leadSpecialist.lastName, c.leadSpecialist.firstName]
+                .filter(Boolean)
+                .join(' ')
+                .trim() || null
+            : null,
       };
     });
+
+    // З/п ведущих специалистов — по получателям из привязок направлений
+    // (один сотрудник может вести несколько направлений).
+    const byLeadSpecialistMap = new Map<
+      string,
+      { userId: string; userName: string | null; categories: string[]; amount: number }
+    >();
+    for (const v of vsByCategory) {
+      if (!v.userId || v.gross <= 0) continue;
+      const agg = byLeadSpecialistMap.get(v.userId) ?? {
+        userId: v.userId,
+        userName: v.userName,
+        categories: [],
+        amount: 0,
+      };
+      agg.categories.push(v.categoryName);
+      agg.amount = round2(agg.amount + v.gross);
+      byLeadSpecialistMap.set(v.userId, agg);
+    }
+    const byLeadSpecialist = Array.from(byLeadSpecialistMap.values())
+      .sort((a, b) => b.amount - a.amount)
+      .map((e) => ({ ...e, amountNet: round2(e.amount * netFactor) }));
 
     const brigadierFund = round2(rows.reduce((s, r) => s + r.brigadierAmount, 0));
     const commonPool = round2(rows.reduce((s, r) => s + r.managerCommon + r.surveyorCommon, 0));
@@ -380,6 +422,7 @@ export class SalaryCalculationService {
         totalNet: round2(brigadierTotal * netFactor),
       },
       vsByCategory,
+      byLeadSpecialist,
       byManager: Array.from(byManager.values()).sort((a, b) => b.amount - a.amount),
       bySurveyor: Array.from(bySurveyor.values()).sort((a, b) => b.amount - a.amount),
       byOffice: Array.from(byOffice.values())

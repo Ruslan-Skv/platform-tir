@@ -360,6 +360,9 @@ function CalcTotalsRow({ result }: { result: SalaryCalcResult }) {
             <strong className={dpStyles.totalsTileValue}>{formatMoney(v.net)}</strong>
             <span className={dpStyles.totalsTilePercent}>{formatPercent(v.vsPercent)}</span>
           </span>
+          <span className={dpStyles.totalsTileCash}>
+            {v.userName ?? 'не назначен в настройках'}
+          </span>
         </div>
       ))}
       <div className={dpStyles.totalsTile} title="Личные начисления замерщиков по замерам">
@@ -392,10 +395,11 @@ type EmployeeTotalsRowItem = {
   manager: number;
   surveyor: number;
   brigadier: number;
+  vs: number;
   gross: number;
 };
 
-/** Разрез плиток итогов по сотрудникам: личные начисления менеджера/замерщика + бригадирский фонд. */
+/** Разрез плиток итогов по сотрудникам: личные начисления + фонды бригадира и ВС. */
 function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
   const byKey = new Map<string, EmployeeTotalsRowItem>();
   const acc = (key: string, name: string): EmployeeTotalsRowItem => {
@@ -407,6 +411,7 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
       manager: 0,
       surveyor: 0,
       brigadier: 0,
+      vs: 0,
       gross: 0,
     };
     byKey.set(key, created);
@@ -422,8 +427,14 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
     acc(result.brigadier.userId, result.brigadier.userName ?? 'Бригадир').brigadier +=
       result.brigadier.total;
   }
+  // Фонды ВС — получателям направлений из настроек з/п.
+  for (const v of result.vsByCategory) {
+    if (v.userId && v.gross > 0) {
+      acc(v.userId, v.userName ?? 'Ведущий специалист').vs += v.gross;
+    }
+  }
   return [...byKey.values()]
-    .map((e) => ({ ...e, gross: e.manager + e.surveyor + e.brigadier }))
+    .map((e) => ({ ...e, gross: e.manager + e.surveyor + e.brigadier + e.vs }))
     .filter((e) => e.gross > 0)
     .sort((a, b) => b.gross - a.gross);
 }
@@ -432,6 +443,7 @@ function employeePartsLine(e: EmployeeTotalsRowItem): string {
   return [
     e.manager > 0 ? `менеджер ${formatMoneyShort(e.manager)}` : null,
     e.surveyor > 0 ? `замеры ${formatMoneyShort(e.surveyor)}` : null,
+    e.vs > 0 ? `ВС ${formatMoneyShort(e.vs)}` : null,
     e.brigadier > 0 ? `бригадир ${formatMoneyShort(e.brigadier)}` : null,
   ]
     .filter(Boolean)
@@ -452,7 +464,7 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
     <div className={dpStyles.totalsRow} aria-label="Итоги по сотрудникам за период">
       <div
         className={`${dpStyles.totalsTile} ${dpStyles.totalsTileTotal}`}
-        title={`Все фонды к выплате за вычетом налога ${formatPercent(settings.taxPercent)}; фонды ВС идут ведущим специалистам направлений и в разрезе сотрудников не показаны`}
+        title={`Все фонды к выплате за вычетом налога ${formatPercent(settings.taxPercent)}`}
       >
         <span className={dpStyles.totalsTileLabel}>К выплате всего</span>
         <strong className={dpStyles.totalsTileValue}>{formatMoney(netTotal)}</strong>
@@ -496,7 +508,9 @@ function FundsTable({ result }: { result: SalaryCalcResult }) {
             name: `ВС — ${v.categoryName}`,
             gross: v.gross,
             net: v.net,
-            comment: `ставка ВС ${formatPercent(v.vsPercent)}`,
+            comment: `ставка ВС ${formatPercent(v.vsPercent)} · получатель: ${
+              v.userName ?? 'не назначен'
+            }`,
             kind: 'total' as const,
           })),
           {
@@ -648,11 +662,13 @@ function OfficesTable({ result }: { result: SalaryCalcResult }) {
   );
 }
 
-/** Личные начисления менеджерам, замерщикам и бригадиру. */
+/** Личные начисления менеджерам, замерщикам, ведущим специалистам и бригадиру. */
 function PeopleTables({ result }: { result: SalaryCalcResult }) {
   const hasPersonal = result.byManager.length > 0 || result.bySurveyor.length > 0;
   const brigadier = result.brigadier?.userId ? result.brigadier : null;
-  if (!hasPersonal && !brigadier) return null;
+  // В старых зафиксированных ведомостях разреза по ведущим специалистам нет.
+  const leadSpecialists = result.byLeadSpecialist ?? [];
+  if (!hasPersonal && !brigadier && leadSpecialists.length === 0) return null;
   const netFactor = result.settings.netFactor;
   // Договоры, из которых сложился бригадирский фонд: с процентом бригадира или «общие».
   const brigadierContracts = result.rows.filter(
@@ -734,6 +750,50 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
               },
             ]}
             keyExtractor={(s) => s.rowKey}
+            emptyMessage="Нет начислений"
+          />
+        </div>
+      ) : null}
+      {leadSpecialists.length > 0 ? (
+        <div className={styles.tableBlock}>
+          <h2 className={styles.sectionTitle}>Ведущие специалисты</h2>
+          <DataTable
+            data={leadSpecialists.map((ls) => ({
+              ...ls,
+              categoriesLine: ls.categories.join(', '),
+            }))}
+            columns={[
+              {
+                key: 'userName',
+                title: 'Сотрудник',
+                sortable: true,
+                render: (ls) => <span className={styles.nameCell}>{ls.userName ?? '—'}</span>,
+              },
+              {
+                key: 'categoriesLine',
+                title: 'Направления',
+                render: (ls) => <span className={styles.mutedCell}>{ls.categoriesLine}</span>,
+              },
+              {
+                key: 'amount',
+                title: 'Начислено',
+                sortable: true,
+                render: (ls) => (
+                  <span className={dpStyles.amountCell}>{formatMoney(ls.amount)}</span>
+                ),
+              },
+              {
+                key: 'amountNet',
+                title: 'К выплате',
+                sortable: true,
+                render: (ls) => (
+                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                    {formatMoney(ls.amountNet)}
+                  </span>
+                ),
+              },
+            ]}
+            keyExtractor={(ls) => ls.userId}
             emptyMessage="Нет начислений"
           />
         </div>

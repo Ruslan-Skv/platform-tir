@@ -189,6 +189,17 @@ export interface SalaryCalcResult {
     vsPercent: number;
     gross: number;
     net: number;
+    /** Получатель фонда ВС направления (из настроек); null — не назначен. */
+    userId: string | null;
+    userName: string | null;
+  }>;
+  /** З/п ведущих специалистов — по получателям из привязок направлений. */
+  byLeadSpecialist: Array<{
+    userId: string;
+    userName: string | null;
+    categories: string[];
+    amount: number;
+    amountNet: number;
   }>;
   byManager: Array<{
     managerId: string | null;
