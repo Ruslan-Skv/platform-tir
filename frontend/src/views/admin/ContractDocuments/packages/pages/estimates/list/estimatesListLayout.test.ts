@@ -1,6 +1,9 @@
 import {
   type EstimatesTableDisplayItem,
   buildEstimateLayoutBlocks,
+  buildEstimatesTableDisplayItems,
+  countEstimatesAddressGroups,
+  isExpandedAddressKeyVisibleInLayout,
   paginateEstimatesTableDisplayItems,
 } from './estimatesListLayout';
 
@@ -83,5 +86,49 @@ describe('buildEstimateLayoutBlocks: сортировка объектов по 
     expect(addressKeys('binding', 'asc')).toEqual(
       ['ул. Старая, 1', 'ул. Новая, 2'].sort((a, b) => a.localeCompare(b, 'ru'))
     );
+  });
+});
+
+describe('объект из одного расчёта — сразу карточка расчёта', () => {
+  const usage = new Map<string, never[]>();
+  const preset = (id: string, address: string) =>
+    ({ id, title: id, objectAddress: address, updatedAt: '2026-01-01T00:00:00.000Z' }) as never;
+
+  const items = [
+    preset('solo', 'ул. Одиночная, 7'),
+    preset('multi_a', 'ул. Групповая, 1'),
+    preset('multi_b', 'ул. Групповая, 1'),
+  ] as never[];
+
+  const blocks = buildEstimateLayoutBlocks({
+    visibleItems: items,
+    groups: [],
+    archiveView: false,
+    listViewMode: 'by_object',
+    listSortBy: 'date',
+    listSortOrder: 'desc',
+    usageByEstimateId: usage,
+  });
+
+  it('в выдаче таблицы нет строки объекта для одиночного расчёта', () => {
+    const display = buildEstimatesTableDisplayItems(blocks, []);
+    const soloRow = display.find((d) => d.type === 'estimate' && d.preset.id === 'solo');
+    expect(soloRow).toMatchObject({
+      type: 'estimate',
+      standaloneCard: true,
+      showObjectAddress: true,
+    });
+    expect(display.some((d) => d.type === 'address' && d.items.length === 1)).toBe(false);
+    expect(display.some((d) => d.type === 'address' && d.items.length === 2)).toBe(true);
+  });
+
+  it('ключ разворота одиночного объекта считается невидимым', () => {
+    expect(isExpandedAddressKeyVisibleInLayout(blocks, 'ул. Одиночная, 7')).toBe(false);
+    expect(isExpandedAddressKeyVisibleInLayout(blocks, 'ул. Групповая, 1')).toBe(true);
+  });
+
+  it('счётчик объектов учитывает только адреса с двумя и более расчётами', () => {
+    expect(countEstimatesAddressGroups(items, 'by_object')).toBe(1);
+    expect(countEstimatesAddressGroups(items, 'flat')).toBe(0);
   });
 });

@@ -28,7 +28,10 @@ import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import { EstimatePresetRowMarkupCell } from './EstimatePresetRowMarkupCell';
 import { EstimatePresetRowUsageCell } from './EstimatePresetRowUsageCell';
 import {
+  ESTIMATES_NO_ADDRESS_KEY,
   type EstimatePackageUsage,
+  estimateObjectAddressDisplayLabel,
+  estimateObjectAddressKey,
   formatEstimateListTableCost,
   isUsageLocked,
   splitBundleCoversAllWorkScopeLines,
@@ -41,6 +44,8 @@ export type EstimatePresetTableRowProps = {
   lastAddressChild?: boolean;
   /** Расчёт без объекта — карточка со скруглением. */
   standaloneCard?: boolean;
+  /** Единственный расчёт объекта — показать адрес объекта в карточке. */
+  showObjectAddress?: boolean;
   saving: boolean;
   archiveView: boolean;
   pipelineTab: EstimatePipelineTab;
@@ -65,6 +70,7 @@ export function EstimatePresetTableRow({
   childOfAddress,
   lastAddressChild,
   standaloneCard,
+  showObjectAddress,
   saving,
   archiveView,
   pipelineTab,
@@ -130,6 +136,11 @@ export function EstimatePresetTableRow({
       })
     : '—';
   const isChildRow = Boolean(childOfAddress);
+  const addressKey = estimateObjectAddressKey(it);
+  const objectAddressLabel =
+    showObjectAddress && addressKey !== ESTIMATES_NO_ADDRESS_KEY
+      ? estimateObjectAddressDisplayLabel(addressKey)
+      : null;
   const rowClass = isChildRow
     ? `${dataTableStyles.row} ${cdEstimatesList.estimatesListEstimateRow} ${cdBase.contractsListChildRow}${
         lastAddressChild ? ` ${cdEstimatesList.estimatesListChildRowLast}` : ''
@@ -169,6 +180,11 @@ export function EstimatePresetTableRow({
             </span>
           ) : null}
         </div>
+        {objectAddressLabel ? (
+          <div className={cdEstimatesList.estimatesSoloObjectAddress} title="Адрес объекта">
+            📍 {objectAddressLabel}
+          </div>
+        ) : null}
       </td>
       <td
         className={cdEstimatesList.estimatesListDirectionCell}

@@ -1178,6 +1178,16 @@ a.primaryBtn.estimatesCompactPrimaryLink {
   word-break: break-word;
 }
 
+/* Адрес объекта под названием в карточке одиночного расчёта (объект из одного расчёта). */
+.estimatesSoloObjectAddress {
+  margin-top: 2px;
+  font-size: var(--admin-font-size-2xs);
+  font-weight: 500;
+  color: var(--admin-text-muted);
+  line-height: 1.3;
+  word-break: break-word;
+}
+
 .estimatesBadge {
   font-size: var(--admin-font-size-2xs);
   font-weight: 500;

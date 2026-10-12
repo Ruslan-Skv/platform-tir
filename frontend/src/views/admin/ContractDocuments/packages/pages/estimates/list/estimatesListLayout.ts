@@ -26,6 +26,8 @@ export type EstimatesTableDisplayItem =
       childOfAddress?: boolean;
       /** Расчёт вне объекта — отдельная карточка. */
       standaloneCard?: boolean;
+      /** Единственный расчёт объекта: карточка заменила строку объекта — показываем адрес объекта. */
+      showObjectAddress?: boolean;
     }
   | { type: 'soloArchivedSection' }
   | { type: 'gap'; id: string };
@@ -41,13 +43,23 @@ export type BuildEstimateLayoutBlocksParams = {
   usageByEstimateId: Map<string, EstimatePackageUsage[]>;
 };
 
+/** Объект из одного расчёта не группируем — он не показывается карточкой объекта,
+ *  поэтому в счётчике «объектов» учитываются только адреса с двумя и более расчётами. */
 export function countEstimatesAddressGroups(
   visibleItems: ContractEstimatePreset[],
   listViewMode: EstimatesListViewMode
 ): number {
   if (listViewMode === 'flat') return 0;
-  const keys = new Set(visibleItems.map((it) => estimateObjectAddressKey(it)));
-  return keys.size;
+  const countsByKey = new Map<string, number>();
+  for (const it of visibleItems) {
+    const key = estimateObjectAddressKey(it);
+    countsByKey.set(key, (countsByKey.get(key) ?? 0) + 1);
+  }
+  let grouped = 0;
+  for (const count of countsByKey.values()) {
+    if (count > 1) grouped += 1;
+  }
+  return grouped;
 }
 
 export function buildEstimateLayoutBlocks({
@@ -149,6 +161,18 @@ export function buildEstimatesTableDisplayItems(
       }
     } else if (block.kind === 'address') {
       if (needsGapBeforeNextCard) pushGap(`gap-before-addr-${block.addressKey}`);
+      // Объект из одного расчёта — без карточки объекта: сразу карточка расчёта
+      // (как одиночный договор в списке договоров), с адресом объекта в карточке.
+      if (block.items.length === 1) {
+        out.push({
+          type: 'estimate',
+          preset: block.items[0],
+          standaloneCard: true,
+          showObjectAddress: block.addressKey !== ESTIMATES_NO_ADDRESS_KEY,
+        });
+        needsGapBeforeNextCard = true;
+        continue;
+      }
       out.push({
         type: 'address',
         addressKey: block.addressKey,
@@ -178,7 +202,11 @@ export function isExpandedAddressKeyVisibleInLayout(
   blocks: EstimateLayoutBlock[],
   expandedAddressKey: string
 ): boolean {
-  return blocks.some((b) => b.kind === 'address' && b.addressKey === expandedAddressKey);
+  // Объект из одного расчёта не разворачивается — ключ расширения считаем «невидимым»,
+  // чтобы синхронизация состояния вычистила его.
+  return blocks.some(
+    (b) => b.kind === 'address' && b.addressKey === expandedAddressKey && b.items.length > 1
+  );
 }
 
 /**

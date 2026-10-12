@@ -26,8 +26,10 @@ import { EstimatePresetRowActions } from './EstimatePresetRowActions';
 import type { EstimatesTableDisplayItem } from './estimatesListLayout';
 import { unifiedGroupIdForEstimates } from './estimatesListTableUi';
 import {
+  ESTIMATES_NO_ADDRESS_KEY,
   type EstimatePackageUsage,
   estimateObjectAddressDisplayLabel,
+  estimateObjectAddressKey,
   formatEstimateGroupAuthorLabel,
   formatEstimateListTableCost,
   formatEstimatePackageUsageLabel,
@@ -68,6 +70,7 @@ export type EstimatesListMobileCardsProps = {
 function EstimateMobileCard({
   preset: it,
   nested,
+  showObjectAddress,
   saving,
   archiveView,
   pipelineTab,
@@ -87,6 +90,8 @@ function EstimateMobileCard({
 }: {
   preset: ContractEstimatePreset;
   nested?: boolean;
+  /** Единственный расчёт объекта — показать адрес объекта в карточке. */
+  showObjectAddress?: boolean;
 } & Pick<
   EstimatesListMobileCardsProps,
   | 'saving'
@@ -149,6 +154,12 @@ function EstimateMobileCard({
       })
     : '—';
 
+  const addressKey = estimateObjectAddressKey(it);
+  const objectAddressLabel =
+    showObjectAddress && addressKey !== ESTIMATES_NO_ADDRESS_KEY
+      ? estimateObjectAddressDisplayLabel(addressKey)
+      : null;
+
   return (
     <article
       className={`${cdHub.contractsMobileCard}${nested ? ` ${cdHub.contractsMobileCardNested}` : ''}`}
@@ -183,6 +194,12 @@ function EstimateMobileCard({
           </div>
         </div>
         <dl className={cdHub.contractsMobileCardRows}>
+          {objectAddressLabel ? (
+            <div className={cdHub.contractsMobileCardRow}>
+              <dt>Адрес объекта</dt>
+              <dd>{objectAddressLabel}</dd>
+            </div>
+          ) : null}
           <div className={cdHub.contractsMobileCardRow}>
             <dt>Направление</dt>
             <dd>{it.direction ? packageKindUiLabel(it.direction) : '—'}</dd>
@@ -454,6 +471,7 @@ export function EstimatesListMobileCards({
           <EstimateMobileCard
             key={item.preset.id}
             preset={item.preset}
+            showObjectAddress={item.showObjectAddress}
             saving={saving}
             archiveView={archiveView}
             pipelineTab={pipelineTab}

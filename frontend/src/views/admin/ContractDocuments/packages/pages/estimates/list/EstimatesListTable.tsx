@@ -198,6 +198,7 @@ export function EstimatesListTable({
                       childOfAddress={item.childOfAddress}
                       lastAddressChild={isLastAddressChild}
                       standaloneCard={item.standaloneCard}
+                      showObjectAddress={item.showObjectAddress}
                       saving={saving}
                       archiveView={archiveView}
                       pipelineTab={pipelineTab}
