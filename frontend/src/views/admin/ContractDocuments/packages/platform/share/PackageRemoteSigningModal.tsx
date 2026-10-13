@@ -319,6 +319,9 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
       isOpen={isOpen}
       onClose={onClose}
       title="Отправить на подписание"
+      titleAside={
+        ctx?.contractNumberLabel?.trim() ? `№ ${ctx.contractNumberLabel.trim()}` : undefined
+      }
       size="md"
       className={panelStyles.modalPanel}
       showCloseButton

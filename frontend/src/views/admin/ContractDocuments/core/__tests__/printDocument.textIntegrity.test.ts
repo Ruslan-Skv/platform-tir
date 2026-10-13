@@ -9,7 +9,7 @@ const seed = JSON.parse(
     resolve(process.cwd(), '../backend/prisma/seed-data/windows-library-templates.seed.json'),
     'utf8'
   )
-) as { items: Array<{ tabId: string; content: string }> };
+) as { items: Array<{ tabId: string; html: string }> };
 
 const template = seed.items.find((i) => i.tabId === 'contract')!.html;
 
