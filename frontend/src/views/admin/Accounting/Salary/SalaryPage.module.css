@@ -739,6 +739,15 @@
   gap: var(--admin-space-2xs, 2px);
 }
 
+/* Расшифровки сумм — синим, а не «кассовым» оранжево-красным из totalsTileCash */
+span.tilePartsColumn {
+  color: var(--admin-info-strong, #1d4ed8);
+}
+
+:where(html[data-theme='dark'], [data-app-theme='dark']) span.tilePartsColumn {
+  color: var(--admin-info-light, #60a5fa);
+}
+
 /* Чекбоксы-переключатели расчётов: обычный вес — текст длинный, жирный не нужен */
 .settingsCheckbox {
   align-items: flex-start;

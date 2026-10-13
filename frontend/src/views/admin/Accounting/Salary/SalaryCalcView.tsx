@@ -362,12 +362,10 @@ function employeePartsList(
   truancyDeduction = 0
 ): string[] {
   const part = (v: number) => Math.round(v * netFactor * 100) / 100;
-  const retention =
-    penalty + autoClosePenalty + truancyDeduction > 0
-      ? ` (удержание −${formatMoneyShort(penalty + autoClosePenalty + truancyDeduction)})`
-      : '';
+  const retention = penalty + autoClosePenalty + truancyDeduction;
   return [
-    e.salary > 0 ? `оклад ${formatMoneyShort(e.salary)}${retention}` : null,
+    e.salary > 0 ? `оклад ${formatMoneyShort(e.salary)}` : null,
+    e.salary > 0 && retention > 0 ? `удержание −${formatMoneyShort(retention)}` : null,
     e.bonus > 0 ? `премия ${formatMoneyShort(e.bonus)}` : null,
     e.manager > 0 ? `менеджер ${formatMoneyShort(e.manager)}` : null,
     e.surveyor > 0 ? `замеры ${formatMoneyShort(part(e.surveyor))}` : null,
