@@ -21,6 +21,46 @@ export class SalaryEmployeeSalaryDto {
   monthlySalary: number | null;
 }
 
+export class SalaryManagerSalesPlanDto {
+  @IsString()
+  userId: string;
+
+  /** Пороги объёма продаж за месяц, ₽; null/0 — порог не задан. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  threshold1?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  threshold2?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  threshold3?: number | null;
+
+  /** Премия за достижение порога, % от з/п менеджера по договорам. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  percent1?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  percent2?: number | null;
+
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  percent3?: number | null;
+}
+
 export class SaveSalaryGlobalSettingsDto {
   /** Налог, удерживаемый из фондов, % */
   @IsOptional()
@@ -33,6 +73,35 @@ export class SaveSalaryGlobalSettingsDto {
   @IsOptional()
   @IsBoolean()
   workModeEnforced?: boolean;
+
+  /** Удержание из оклада за каждое опоздание/ранний уход, ₽. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  workModePenaltyRub?: number;
+
+  /** Учитывать автозакрытия (удержания из оклада за автозакрытые рабочие дни). */
+  @IsOptional()
+  @IsBoolean()
+  autoCloseEnforced?: boolean;
+
+  /** Удержание из оклада за каждое автозакрытие рабочего дня, ₽. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  autoClosePenaltyRub?: number;
+
+  /** Начислять премию «QR + Н» (терминал < 50% продаж месяца). */
+  @IsOptional()
+  @IsBoolean()
+  cashQrBonusEnforced?: boolean;
+
+  /** Премия «QR + Н»: процент от не терминальных продаж месяца, %. */
+  @IsOptional()
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  cashQrBonusPercent?: number;
 
   /** Учитывать прогулы (удержание дневной доли оклада за каждый прогул). */
   @IsOptional()
@@ -61,41 +130,6 @@ export class SaveSalaryGlobalSettingsDto {
   @Min(0)
   salesBonusMinSales?: number;
 
-  /** План продаж: пороги объёма продаж за месяц, ₽. */
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  salesPlanThreshold1?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  salesPlanThreshold2?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  salesPlanThreshold3?: number;
-
-  /** Премия за достижение порога плана — % от з/п менеджера по договорам за месяц. */
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  salesPlanPercent1?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  salesPlanPercent2?: number;
-
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  salesPlanPercent3?: number;
-
   /** Пользователь-бригадир (получатель бригадирского фонда); '' / null — не назначен. */
   @IsOptional()
   @IsString()
@@ -107,4 +141,11 @@ export class SaveSalaryGlobalSettingsDto {
   @ValidateNested({ each: true })
   @Type(() => SalaryEmployeeSalaryDto)
   employeeSalaries?: SalaryEmployeeSalaryDto[];
+
+  /** Индивидуальные планы продаж менеджеров (полный список — замена существующего). */
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => SalaryManagerSalesPlanDto)
+  managerSalesPlans?: SalaryManagerSalesPlanDto[];
 }

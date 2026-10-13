@@ -168,6 +168,11 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     void loadSettlements();
   }, [loadSettlements]);
 
+  /** Ручное обновление вкладки («Обновить» в шапке): живой расчёт + список ведомостей. */
+  const reload = useCallback(async () => {
+    await Promise.all([run(), loadSettlements()]);
+  }, [run, loadSettlements]);
+
   const setPeriod = useCallback((kind: 'month' | 'prevMonth') => {
     if (kind === 'month') {
       setDateFrom(monthStartIso());
@@ -266,6 +271,7 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
     openSettlement,
     closeSettlement,
     reloadSettlements: loadSettlements,
+    reload,
     saving,
     setPeriod,
     resetFilters,

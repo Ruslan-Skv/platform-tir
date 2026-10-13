@@ -210,6 +210,7 @@ model User {
   salaryGlobalSettingBrigadier            SalaryGlobalSetting[]                    @relation("SalaryGlobalSettingBrigadier")
   salaryCategoriesLeadSpecialist          SalaryCategory[]                         @relation("SalaryCategoryLeadSpecialist")
   salaryEmployeeSalaries                  SalaryEmployeeSalary[]
+  salaryManagerSalesPlans                 SalaryManagerSalesPlan[]
 
   @@unique([employeeCode])
   @@index([officeId])
@@ -4426,6 +4427,23 @@ model SalaryGlobalSetting {
   /// сумму за каждое опоздание/убытие раньше графика (по учёту рабочих дней).
   workModeEnforced Boolean @default(false)
 
+  /// Удержание из оклада за каждое опоздание/убытие раньше графика, ₽.
+  workModePenaltyRub Decimal @default(50) @db.Decimal(12, 2)
+
+  /// Учитывать автозакрытия: за каждый рабочий день, закрытый автоматически
+  /// по истечении срока (не закрыт сотрудником сам), оклад уменьшается на сумму.
+  autoCloseEnforced Boolean @default(false)
+
+  /// Удержание из оклада за каждое автозакрытие рабочего дня, ₽.
+  autoClosePenaltyRub Decimal @default(50) @db.Decimal(12, 2)
+
+  /// Начислять премию «QR + нал»: если терминал дал менее 50% продаж месяца,
+  /// менеджер получает процент от остальных продаж.
+  cashQrBonusEnforced Boolean @default(true)
+
+  /// Премия «QR + нал»: процент от не терминальных продаж месяца, %.
+  cashQrBonusPercent Decimal @default(0.5) @db.Decimal(5, 2)
+
   /// Учитывать прогулы: за каждый прогул (рабочий день по графику без явки
   /// и без согласованного выходного/отпуска) из оклада удерживается дневная доля.
   truancyEnforced Boolean @default(false)
@@ -4436,16 +4454,6 @@ model SalaryGlobalSetting {
   salesBonusThirdPlace  Decimal @default(0) @db.Decimal(12, 2)
   /// Минимальный уровень продаж менеджера за месяц для права на премию, ₽.
   salesBonusMinSales    Decimal @default(0) @db.Decimal(12, 2)
-
-  /// План продаж: пороги объёма продаж за месяц, ₽ (порог 1 ≤ порог 2 ≤ порог 3).
-  salesPlanThreshold1 Decimal @default(0) @db.Decimal(12, 2)
-  salesPlanThreshold2 Decimal @default(0) @db.Decimal(12, 2)
-  salesPlanThreshold3 Decimal @default(0) @db.Decimal(12, 2)
-  /// Премия за достижение порога — % от з/п менеджера по договорам за месяц
-  /// (без оклада и других премий); с каждым порогом процент растёт.
-  salesPlanPercent1   Decimal @default(0) @db.Decimal(5, 2)
-  salesPlanPercent2   Decimal @default(0) @db.Decimal(5, 2)
-  salesPlanPercent3   Decimal @default(0) @db.Decimal(5, 2)
 
   /// Пользователь-бригадир, которому начисляется бригадирский фонд
   /// (может совмещать с ролью замерщика)
@@ -4599,6 +4607,33 @@ model SalaryEmployeeSalary {
 
   @@unique([userId])
   @@map("salary_employee_salaries")
+}
+
+/// Индивидуальный план продаж менеджера: при достижении порога объёма продаж
+/// за месяц начисляется премия — % от з/п менеджера по договорам за этот месяц
+/// (без оклада и других премий); пороги не суммируются, действует самый высокий.
+model SalaryManagerSalesPlan {
+  id String @id @default(cuid())
+
+  userId String
+
+  /// Пороги объёма продаж за месяц, ₽ (порог 1 ≤ порог 2 ≤ порог 3).
+  threshold1 Decimal @default(0) @db.Decimal(12, 2)
+  threshold2 Decimal @default(0) @db.Decimal(12, 2)
+  threshold3 Decimal @default(0) @db.Decimal(12, 2)
+
+  /// Премия за достижение порога, % от з/п менеджера по договорам.
+  percent1 Decimal @default(0) @db.Decimal(5, 2)
+  percent2 Decimal @default(0) @db.Decimal(5, 2)
+  percent3 Decimal @default(0) @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: Cascade)
+
+  @@unique([userId])
+  @@map("salary_manager_sales_plans")
 }
 
 model SalaryContractExtraBill {

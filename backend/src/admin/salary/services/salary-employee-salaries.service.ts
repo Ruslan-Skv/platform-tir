@@ -4,9 +4,6 @@ import { PrismaService } from '../../../database/prisma.service';
 import { WorkDayJournalService } from '../../work-days/services/work-day-journal.service';
 import { round2, toDateIso, toNum } from '../salary.constants';
 
-/** Удержание за нарушение режима работы (опоздание / ранний уход), ₽. */
-export const SALARY_WORK_MODE_PENALTY_RUB = 50;
-
 /** Строка справочника окладов с данными сотрудника. */
 type EmployeeSalaryRow = {
   userId: string;
@@ -22,6 +19,8 @@ export type SalaryEmployeePayout = {
   days: number;
   violationsCount: number;
   penalty: number;
+  autoCloseCount: number;
+  autoClosePenalty: number;
   truancyDays: number;
   truancyDeduction: number;
   amount: number;
@@ -32,6 +31,8 @@ export type SalaryEmployeePayout = {
  *  - за каждый день периода начисляется 1/N оклада (N — дней в месяце этого дня);
  *    будущие дни не начисляются — оклад считается по сегодняшний день включительно;
  *  - при включённом контроле режима — удержание за каждое опоздание/ранний уход;
+ *  - при включённом учёте автозакрытий — удержание за каждый рабочий день,
+ *    закрытый автоматически по истечении срока;
  *  - при включённом учёте прогулов — удержание дневной доли за каждый прогул
  *    (прошедший рабочий день по графику без явки и без согласованного выходного).
  */
@@ -47,14 +48,19 @@ export class SalaryEmployeeSalariesService {
     to: Date;
     todayUtc: number;
     workModeEnforced: boolean;
+    /** Удержание из оклада за каждое опоздание/ранний уход, ₽ (из настроек). */
+    workModePenaltyRub: number;
+    autoCloseEnforced: boolean;
+    /** Удержание из оклада за каждое автозакрытие рабочего дня, ₽ (из настроек). */
+    autoClosePenaltyRub: number;
     truancyEnforced: boolean;
     employeeSalaries: EmployeeSalaryRow[];
   }): Promise<{ salaries: SalaryEmployeePayout[]; salariesTotal: number }> {
     const { from, to, todayUtc, employeeSalaries } = input;
 
-    // Контроль режима работы: −50 ₽ за каждое опоздание/убытие раньше графика
-    // (lateMinutes/earlyLeaveMinutes уже учитывают льготные 10 минут и
-    // согласованные заявки). Считается только по дням, вошедшим в начисление
+    // Контроль режима работы: за каждое опоздание/убытие раньше графика удерживается
+    // сумма из настроек (lateMinutes/earlyLeaveMinutes уже учитывают льготные 10 минут
+    // и согласованные заявки). Считается только по дням, вошедшим в начисление
     // оклада (не позже сегодняшнего дня).
     const workModePenalties = new Map<string, number>();
     if (input.workModeEnforced && employeeSalaries.length > 0) {
@@ -72,6 +78,28 @@ export class SalaryEmployeeSalariesService {
       for (const v of violations) {
         const count = (v.lateMinutes > 0 ? 1 : 0) + (v.earlyLeaveMinutes > 0 ? 1 : 0);
         workModePenalties.set(v.userId, (workModePenalties.get(v.userId) ?? 0) + count);
+      }
+    }
+
+    // Учёт автозакрытий: за каждый рабочий день, закрытый автоматически
+    // по истечении срока (сотрудник не закрыл день сам), удерживается сумма
+    // из настроек. Как и контроль режима, считается только по дням,
+    // вошедшим в начисление оклада (не позже сегодняшнего дня).
+    const autoCloseCounts = new Map<string, number>();
+    if (input.autoCloseEnforced && employeeSalaries.length > 0) {
+      const penaltyUntil = new Date(
+        Math.min(Date.UTC(to.getUTCFullYear(), to.getUTCMonth(), to.getUTCDate()), todayUtc),
+      );
+      const autoClosed = await this.prisma.workDay.findMany({
+        where: {
+          userId: { in: employeeSalaries.map((s) => s.userId) },
+          workDate: { gte: from, lte: penaltyUntil },
+          status: 'AUTO_CLOSED',
+        },
+        select: { userId: true },
+      });
+      for (const day of autoClosed) {
+        autoCloseCounts.set(day.userId, (autoCloseCounts.get(day.userId) ?? 0) + 1);
       }
     }
 
@@ -132,7 +160,9 @@ export class SalaryEmployeeSalariesService {
         day.setUTCDate(day.getUTCDate() + 1);
       }
       const violationsCount = workModePenalties.get(s.userId) ?? 0;
-      const penalty = violationsCount * SALARY_WORK_MODE_PENALTY_RUB;
+      const penalty = round2(violationsCount * input.workModePenaltyRub);
+      const autoCloseCount = autoCloseCounts.get(s.userId) ?? 0;
+      const autoClosePenalty = round2(autoCloseCount * input.autoClosePenaltyRub);
       const truancyDays = truancyByUser.get(s.userId) ?? [];
       const truancyDeduction = round2(truancyDays.reduce((sum, d) => sum + daySalary(d), 0));
       return {
@@ -142,9 +172,11 @@ export class SalaryEmployeeSalariesService {
         days,
         violationsCount,
         penalty,
+        autoCloseCount,
+        autoClosePenalty,
         truancyDays: truancyDays.length,
         truancyDeduction,
-        amount: round2(Math.max(0, amount - penalty - truancyDeduction)),
+        amount: round2(Math.max(0, amount - penalty - autoClosePenalty - truancyDeduction)),
       };
     });
     return { salaries, salariesTotal: round2(salaries.reduce((sum, s) => sum + s.amount, 0)) };

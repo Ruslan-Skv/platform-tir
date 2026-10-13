@@ -12,12 +12,31 @@ import cdChrome from '@/views/admin/ContractDocuments/styles/editor-chrome.modul
 import cdWorkspace from '@/views/admin/ContractDocuments/styles/estimates-workspace.module.css';
 
 import styles from '../SalaryPage.module.css';
-import { formatDate, formatMoney, pluralContracts } from '../salary-page.constants';
+import {
+  formatDate,
+  formatMoney,
+  monthEndIso,
+  monthStartIso,
+  pluralContracts,
+  prevMonthEndIso,
+  prevMonthStartIso,
+} from '../salary-page.constants';
+import { MySalaryRulesInfoTip } from './MySalaryRulesInfoTip';
 import type { MySalaryPageModel } from './hooks/useMySalaryPage';
 
 type Props = {
   model: MySalaryPageModel;
 };
+
+/** Чип быстрого периода подсвечен, когда выбранный период совпадает с ним. */
+function chipClass(active: boolean): string {
+  return `${cdHub.contractsListChip}${active ? ` ${cdHub.contractsListChipActive}` : ''}`;
+}
+
+/** Поле фильтра подсвечено, когда в нём задано значение. */
+function filterFieldClass(base: string, active: boolean): string {
+  return active ? `${base} ${cdHub.contractsListFilterActive}` : base;
+}
 
 /** Карточка роли в плитках итогов. */
 function roleTile(
@@ -73,6 +92,7 @@ export function MySalaryPageView({ model }: Props) {
             <div className={cdHub.contractsHeaderTitleCluster}>
               <div className={cdHub.contractsListHeaderTitleGroup}>
                 <h1 className={cdHub.title}>Моя з/п</h1>
+                <MySalaryRulesInfoTip />
               </div>
               <span className={cdHub.contractsListCount} title={contractsTitle}>
                 <span className={cdHub.contractsListCountDesktop}>{contractsTitle}</span>
@@ -97,14 +117,16 @@ export function MySalaryPageView({ model }: Props) {
             <span className={cdHub.contractsListChipRowLabel}>Период</span>
             <button
               type="button"
-              className={cdHub.contractsListChip}
+              className={chipClass(dateFrom === monthStartIso() && dateTo === monthEndIso())}
               onClick={() => setPeriod('month')}
             >
               Текущий месяц
             </button>
             <button
               type="button"
-              className={cdHub.contractsListChip}
+              className={chipClass(
+                dateFrom === prevMonthStartIso() && dateTo === prevMonthEndIso()
+              )}
               onClick={() => setPeriod('prevMonth')}
             >
               Прошлый месяц
@@ -119,7 +141,7 @@ export function MySalaryPageView({ model }: Props) {
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className={cdHub.contractsListDateInput}
+                  className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateFrom))}
                   aria-label="Дата начала периода"
                 />
               </label>
@@ -129,7 +151,7 @@ export function MySalaryPageView({ model }: Props) {
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className={cdHub.contractsListDateInput}
+                  className={filterFieldClass(cdHub.contractsListDateInput, Boolean(dateTo))}
                   aria-label="Дата конца периода"
                 />
               </label>
@@ -227,10 +249,10 @@ function MySalaryBody({ result }: { result: MySalaryResult }) {
     roles.push(
       roleTile(
         'cashQrBonus',
-        'Нал + QR',
+        'QR + Н',
         p.cashQrBonus ?? 0,
         '',
-        'Премия, если продажи через терминал за месяц менее 50% — 0,5% от остальных продаж'
+        'Премия, если продажи через терминал за месяц менее 50% — установленный % от остальных продаж'
       )
     );
   }

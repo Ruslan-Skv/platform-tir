@@ -1,8 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
-import { DEFAULT_SALARY_CATEGORIES, SALARY_ROLE_LABELS, toNum } from '../salary.constants';
-import { SaveSalaryGlobalSettingsDto } from '../dto/save-salary-global-settings.dto';
+import {
+  DEFAULT_AUTO_CLOSE_PENALTY_RUB,
+  DEFAULT_CASH_QR_BONUS_PERCENT,
+  DEFAULT_SALARY_CATEGORIES,
+  DEFAULT_WORK_MODE_PENALTY_RUB,
+  SALARY_ROLE_LABELS,
+  toNum,
+} from '../salary.constants';
+import {
+  SaveSalaryGlobalSettingsDto,
+  SalaryManagerSalesPlanDto,
+} from '../dto/save-salary-global-settings.dto';
 import {
   CreateSalaryCategoryDto,
   SALARY_ROLE_VALUES,
@@ -36,7 +46,7 @@ export class SalarySettingsService {
   /** Полные настройки: глобальные параметры + направления с правилами ставок. */
   async getSettings() {
     await this.ensureDefaults();
-    const [global, categories, employeeSalaries] = await Promise.all([
+    const [global, categories, employeeSalaries, managerSalesPlans] = await Promise.all([
       this.prisma.salaryGlobalSetting.findUnique({
         where: { id: 'singleton' },
         include: BRIGADIER_INCLUDE,
@@ -53,6 +63,13 @@ export class SalarySettingsService {
         include: { user: { select: { id: true, firstName: true, lastName: true } } },
         orderBy: { userId: 'asc' },
       }),
+      this.prisma.salaryManagerSalesPlan.findMany({
+        where: {
+          OR: [{ threshold1: { gt: 0 } }, { threshold2: { gt: 0 } }, { threshold3: { gt: 0 } }],
+        },
+        include: { user: { select: { id: true, firstName: true, lastName: true } } },
+        orderBy: { userId: 'asc' },
+      }),
     ]);
     return {
       global: {
@@ -61,6 +78,16 @@ export class SalarySettingsService {
           userId: s.userId,
           userName: userFullName(s.user),
           monthlySalary: toNum(s.monthlySalary),
+        })),
+        managerSalesPlans: managerSalesPlans.map((p) => ({
+          userId: p.userId,
+          userName: userFullName(p.user),
+          threshold1: toNum(p.threshold1),
+          threshold2: toNum(p.threshold2),
+          threshold3: toNum(p.threshold3),
+          percent1: toNum(p.percent1),
+          percent2: toNum(p.percent2),
+          percent3: toNum(p.percent3),
         })),
       },
       roles: SALARY_ROLE_LABELS,
@@ -73,6 +100,17 @@ export class SalarySettingsService {
     const data: Prisma.SalaryGlobalSettingUncheckedUpdateInput = {};
     if (dto.taxPercent !== undefined) data.taxPercent = dto.taxPercent;
     if (dto.workModeEnforced !== undefined) data.workModeEnforced = dto.workModeEnforced;
+    if (dto.workModePenaltyRub !== undefined) data.workModePenaltyRub = dto.workModePenaltyRub;
+    if (dto.autoCloseEnforced !== undefined) data.autoCloseEnforced = dto.autoCloseEnforced;
+    if (dto.autoClosePenaltyRub !== undefined) {
+      data.autoClosePenaltyRub = dto.autoClosePenaltyRub;
+    }
+    if (dto.cashQrBonusEnforced !== undefined) {
+      data.cashQrBonusEnforced = dto.cashQrBonusEnforced;
+    }
+    if (dto.cashQrBonusPercent !== undefined) {
+      data.cashQrBonusPercent = dto.cashQrBonusPercent;
+    }
     if (dto.truancyEnforced !== undefined) data.truancyEnforced = dto.truancyEnforced;
     if (dto.salesBonusFirstPlace !== undefined)
       data.salesBonusFirstPlace = dto.salesBonusFirstPlace;
@@ -81,12 +119,6 @@ export class SalarySettingsService {
     if (dto.salesBonusThirdPlace !== undefined)
       data.salesBonusThirdPlace = dto.salesBonusThirdPlace;
     if (dto.salesBonusMinSales !== undefined) data.salesBonusMinSales = dto.salesBonusMinSales;
-    if (dto.salesPlanThreshold1 !== undefined) data.salesPlanThreshold1 = dto.salesPlanThreshold1;
-    if (dto.salesPlanThreshold2 !== undefined) data.salesPlanThreshold2 = dto.salesPlanThreshold2;
-    if (dto.salesPlanThreshold3 !== undefined) data.salesPlanThreshold3 = dto.salesPlanThreshold3;
-    if (dto.salesPlanPercent1 !== undefined) data.salesPlanPercent1 = dto.salesPlanPercent1;
-    if (dto.salesPlanPercent2 !== undefined) data.salesPlanPercent2 = dto.salesPlanPercent2;
-    if (dto.salesPlanPercent3 !== undefined) data.salesPlanPercent3 = dto.salesPlanPercent3;
     if (dto.brigadierUserId !== undefined) {
       data.brigadierUserId = await this.resolveUserId(dto.brigadierUserId);
     }
@@ -97,6 +129,9 @@ export class SalarySettingsService {
     });
     if (dto.employeeSalaries !== undefined) {
       await this.saveEmployeeSalaries(dto.employeeSalaries);
+    }
+    if (dto.managerSalesPlans !== undefined) {
+      await this.saveManagerSalesPlans(dto.managerSalesPlans);
     }
     return this.serializeGlobal(updated);
   }
@@ -124,6 +159,58 @@ export class SalarySettingsService {
           where: { userId },
           create: { userId, monthlySalary },
           update: { monthlySalary },
+        }),
+      ),
+    ]);
+  }
+
+  /**
+   * Индивидуальные планы продаж менеджеров: передан полный список — заменяем
+   * существующий. Строка без ни одного заданного порога → план снимается.
+   */
+  private async saveManagerSalesPlans(items: SalaryManagerSalesPlanDto[]) {
+    type PlanData = {
+      userId: string;
+      threshold1: number;
+      threshold2: number;
+      threshold3: number;
+      percent1: number;
+      percent2: number;
+      percent3: number;
+    };
+    const keep = new Map<string, PlanData>();
+    for (const item of items) {
+      const userId = await this.resolveUserId(item.userId);
+      if (!userId) throw new BadRequestException('Не указан менеджер для плана продаж');
+      const plan: PlanData = {
+        userId,
+        threshold1: item.threshold1 ?? 0,
+        threshold2: item.threshold2 ?? 0,
+        threshold3: item.threshold3 ?? 0,
+        percent1: item.percent1 ?? 0,
+        percent2: item.percent2 ?? 0,
+        percent3: item.percent3 ?? 0,
+      };
+      if (plan.threshold1 > 0 || plan.threshold2 > 0 || plan.threshold3 > 0) {
+        keep.set(userId, plan);
+      }
+    }
+    await this.prisma.$transaction([
+      this.prisma.salaryManagerSalesPlan.deleteMany({
+        where: { userId: { notIn: [...keep.keys()] } },
+      }),
+      ...[...keep.values()].map((plan) =>
+        this.prisma.salaryManagerSalesPlan.upsert({
+          where: { userId: plan.userId },
+          create: plan,
+          update: {
+            threshold1: plan.threshold1,
+            threshold2: plan.threshold2,
+            threshold3: plan.threshold3,
+            percent1: plan.percent1,
+            percent2: plan.percent2,
+            percent3: plan.percent3,
+          },
         }),
       ),
     ]);
@@ -230,17 +317,16 @@ export class SalarySettingsService {
     global: {
       taxPercent: Prisma.Decimal;
       workModeEnforced?: boolean;
+      workModePenaltyRub?: Prisma.Decimal;
+      autoCloseEnforced?: boolean;
+      autoClosePenaltyRub?: Prisma.Decimal;
+      cashQrBonusEnforced?: boolean;
+      cashQrBonusPercent?: Prisma.Decimal;
       truancyEnforced?: boolean;
       salesBonusFirstPlace?: Prisma.Decimal;
       salesBonusSecondPlace?: Prisma.Decimal;
       salesBonusThirdPlace?: Prisma.Decimal;
       salesBonusMinSales?: Prisma.Decimal;
-      salesPlanThreshold1?: Prisma.Decimal;
-      salesPlanThreshold2?: Prisma.Decimal;
-      salesPlanThreshold3?: Prisma.Decimal;
-      salesPlanPercent1?: Prisma.Decimal;
-      salesPlanPercent2?: Prisma.Decimal;
-      salesPlanPercent3?: Prisma.Decimal;
       brigadierUserId: string | null;
       brigadier?: { id: string; firstName: string | null; lastName: string | null } | null;
       updatedAt: Date;
@@ -249,17 +335,16 @@ export class SalarySettingsService {
     return {
       taxPercent: toNum(global?.taxPercent ?? 8),
       workModeEnforced: global?.workModeEnforced ?? false,
+      workModePenaltyRub: toNum(global?.workModePenaltyRub ?? DEFAULT_WORK_MODE_PENALTY_RUB),
+      autoCloseEnforced: global?.autoCloseEnforced ?? false,
+      autoClosePenaltyRub: toNum(global?.autoClosePenaltyRub ?? DEFAULT_AUTO_CLOSE_PENALTY_RUB),
+      cashQrBonusEnforced: global?.cashQrBonusEnforced ?? true,
+      cashQrBonusPercent: toNum(global?.cashQrBonusPercent ?? DEFAULT_CASH_QR_BONUS_PERCENT),
       truancyEnforced: global?.truancyEnforced ?? false,
       salesBonusFirstPlace: toNum(global?.salesBonusFirstPlace ?? 0),
       salesBonusSecondPlace: toNum(global?.salesBonusSecondPlace ?? 0),
       salesBonusThirdPlace: toNum(global?.salesBonusThirdPlace ?? 0),
       salesBonusMinSales: toNum(global?.salesBonusMinSales ?? 0),
-      salesPlanThreshold1: toNum(global?.salesPlanThreshold1 ?? 0),
-      salesPlanThreshold2: toNum(global?.salesPlanThreshold2 ?? 0),
-      salesPlanThreshold3: toNum(global?.salesPlanThreshold3 ?? 0),
-      salesPlanPercent1: toNum(global?.salesPlanPercent1 ?? 0),
-      salesPlanPercent2: toNum(global?.salesPlanPercent2 ?? 0),
-      salesPlanPercent3: toNum(global?.salesPlanPercent3 ?? 0),
       brigadierUserId: global?.brigadierUserId ?? null,
       brigadierName: userFullName(global?.brigadier),
       updatedAt: global?.updatedAt ?? null,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useId } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 
 import { AdminListRefreshButton } from '@/shared/ui/admin/AdminToolbarIconButton';
 import dpStyles from '@/views/admin/CRM/MoneyMovements/MoneyMovements.module.css';
@@ -68,7 +68,8 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
 
   const handleRefresh = () => {
     if (tab === 'calc') {
-      void calc.reloadSettlements();
+      // Живой расчёт + список ведомостей — иначе кнопка обновляла только ведомости.
+      void calc.reload();
     } else if (tab === 'contracts') {
       void contracts.load();
     } else {
@@ -78,6 +79,43 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
 
   const refreshBusy =
     tab === 'contracts' ? contracts.loading : tab === 'calc' ? calc.loading : settingsLoading;
+
+  // «Сохранить параметры»: прилипает, когда шапка с кнопками прокручена вверх
+  // и есть несохранённые изменения. В прилипшем состоянии остаётся на том же
+  // месте экрана, где стоит в шапке раздела (координаты замеряем заранее).
+  const headerActionsRef = useRef<HTMLDivElement | null>(null);
+  const [headerActionsVisible, setHeaderActionsVisible] = useState(true);
+  useEffect(() => {
+    const el = headerActionsRef.current;
+    if (!el || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(([entry]) =>
+      setHeaderActionsVisible(entry.isIntersecting)
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  const saveBtnRef = useRef<HTMLButtonElement | null>(null);
+  const saveBtnOrigin = useRef<{ top: number; right: number } | null>(null);
+  const saveSticky =
+    tab === 'settings' && isSuperAdmin && settingsModel.isGlobalDirty && !headerActionsVisible;
+
+  // Пока кнопка статична — запоминаем её позицию при «исходном состоянии» страницы.
+  useEffect(() => {
+    if (saveSticky) return;
+    const measure = () => {
+      const btn = saveBtnRef.current;
+      if (!btn) return;
+      const rect = btn.getBoundingClientRect();
+      saveBtnOrigin.current = {
+        top: Math.round(rect.top + window.scrollY),
+        right: Math.round(document.documentElement.clientWidth - rect.right),
+      };
+    };
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [saveSticky, tab, settings]);
 
   return (
     <div className={`${cdBase.page} ${cdWorkspace.pageWide} ${cdHub.contractsListPage}`}>
@@ -138,7 +176,10 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
             </div>
           </div>
         </div>
-        <div className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}>
+        <div
+          ref={headerActionsRef}
+          className={`${cdChrome.headerButtonsRow} ${cdHub.contractsListHeaderActions}`}
+        >
           {tab === 'calc' && !calc.isSnapshot && canEdit ? (
             <button
               data-admin-mutation
@@ -177,6 +218,28 @@ export function SalaryPageView({ model }: SalaryPageViewProps) {
               }
             >
               + Договор
+            </button>
+          ) : null}
+          {tab === 'settings' && isSuperAdmin ? (
+            <button
+              ref={saveBtnRef}
+              data-admin-mutation
+              type="button"
+              className={`${cdChrome.contractsListHeaderAddBtn} ${styles.saveHeaderBtn}${saveSticky ? ` ${styles.saveSticky}` : ''}`}
+              style={saveSticky && saveBtnOrigin.current ? saveBtnOrigin.current : undefined}
+              disabled={settingsModel.globalSaving || !settingsModel.isGlobalDirty}
+              onClick={() => {
+                // Сообщение о результате сохранения показывается вверху страницы.
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+                void settingsModel.saveGlobal();
+              }}
+              title={
+                settingsModel.isGlobalDirty
+                  ? 'Сохранить изменения параметров расчёта'
+                  : 'Изменений нет'
+              }
+            >
+              {settingsModel.globalSaving ? 'Сохранение…' : 'Сохранить параметры'}
             </button>
           ) : null}
           {tab === 'settings' && isSuperAdmin ? (

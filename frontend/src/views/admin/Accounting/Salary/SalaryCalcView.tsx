@@ -343,7 +343,7 @@ function employeeTotalsRows(result: SalaryCalcResult): EmployeeTotalsRowItem[] {
   for (const b of result.salesPlanBonuses ?? []) {
     acc(b.userId, b.userName ?? 'Менеджер').bonus += b.amount;
   }
-  // Премии «Нал + QR».
+  // Премии «QR + Н».
   for (const b of result.cashQrBonuses ?? []) {
     acc(b.userId, b.userName ?? 'Менеджер').bonus += b.amount;
   }
@@ -358,12 +358,13 @@ function employeePartsList(
   e: EmployeeTotalsRowItem,
   netFactor: number,
   penalty = 0,
+  autoClosePenalty = 0,
   truancyDeduction = 0
 ): string[] {
   const part = (v: number) => Math.round(v * netFactor * 100) / 100;
   const retention =
-    penalty + truancyDeduction > 0
-      ? ` (удержание −${formatMoneyShort(penalty + truancyDeduction)})`
+    penalty + autoClosePenalty + truancyDeduction > 0
+      ? ` (удержание −${formatMoneyShort(penalty + autoClosePenalty + truancyDeduction)})`
       : '';
   return [
     e.salary > 0 ? `оклад ${formatMoneyShort(e.salary)}${retention}` : null,
@@ -408,8 +409,15 @@ function EmployeeTotalsRow({ result }: { result: SalaryCalcResult }) {
       {employees.map((e) => {
         const salaryRow = (result.salaries ?? []).find((s) => s.userId === e.key);
         const penalty = salaryRow?.penalty ?? 0;
+        const autoClosePenalty = salaryRow?.autoClosePenalty ?? 0;
         const truancyDeduction = salaryRow?.truancyDeduction ?? 0;
-        const parts = employeePartsList(e, settings.netFactor, penalty, truancyDeduction);
+        const parts = employeePartsList(
+          e,
+          settings.netFactor,
+          penalty,
+          autoClosePenalty,
+          truancyDeduction
+        );
         return (
           <div key={e.key} className={dpStyles.totalsTile} title={parts.join(' · ')}>
             <span className={dpStyles.totalsTileLabel}>{e.name}</span>
@@ -796,6 +804,18 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
                 ),
               },
               {
+                key: 'autoCloseCount',
+                title: 'Автозакрытий',
+                sortable: true,
+                render: (s) => (
+                  <span className={styles.numCell}>
+                    {s.autoCloseCount
+                      ? `${s.autoCloseCount} (−${formatMoneyShort(s.autoClosePenalty ?? 0)})`
+                      : '—'}
+                  </span>
+                ),
+              },
+              {
                 key: 'truancyDays',
                 title: 'Прогулов',
                 sortable: true,
@@ -935,7 +955,7 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
       ) : null}
       {(result.cashQrBonuses ?? []).length > 0 ? (
         <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Премии «Нал + QR»</h2>
+          <h2 className={styles.sectionTitle}>Премии «QR + Н»</h2>
           <DataTable
             data={result.cashQrBonuses ?? []}
             columns={[
@@ -985,7 +1005,7 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
               },
               {
                 key: 'amount',
-                title: 'Премия (0,5%)',
+                title: `Премия (${formatPercent(result.settings.cashQrBonusPercent ?? 0.5)})`,
                 sortable: true,
                 render: (b) => (
                   <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>

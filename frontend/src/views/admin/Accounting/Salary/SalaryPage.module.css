@@ -446,12 +446,27 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
+/* Компактная сетка числовых полей: колонки не растягиваются на всю ширину */
+.settingsGridNumbers {
+  display: grid;
+  gap: var(--admin-space-lg, 10px);
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+}
+
+/* Подзаголовок внутри панели настроек (между sectionTitle и полями) */
+.settingsSubTitle {
+  color: var(--admin-text-primary, #111827);
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  margin: var(--admin-space-xs, 4px) 0 0;
+}
+
 .settingsField {
   color: var(--admin-text-primary, #111827);
   display: flex;
   flex-direction: column;
   font-size: var(--admin-font-size-sm, 0.8125rem);
-  font-weight: 600;
+  font-weight: 500;
   gap: var(--admin-space-xs, 4px);
 }
 
@@ -481,24 +496,26 @@
   justify-content: flex-end;
 }
 
-.saveBtn {
-  background: var(--admin-info, #3b82f6);
-  border: none;
-  border-radius: var(--admin-radius-md, 8px);
-  color: #ffffff;
-  cursor: pointer;
-  font-size: var(--admin-font-size-sm, 0.8125rem);
-  font-weight: 600;
-  padding: var(--admin-space-md, 8px) var(--admin-space-2xl, 16px);
+/* «Сохранить параметры» (в шапке рядом с «+ Направление»): когда есть
+   несохранённые изменения и шапка прокручена вверх — фиксируется на месте
+   своего исходного положения в шапке (координаты задаются инлайн из JS) */
+.saveSticky {
+  position: fixed;
+  z-index: 60;
+  box-shadow: var(--admin-shadow-lg, 0 6px 16px rgb(0 0 0 / 0.2));
 }
 
-.saveBtn:hover:not(:disabled) {
-  opacity: 0.92;
+/* Неактивная (изменений нет) — серая, а не ярко-синяя с прозрачностью */
+.saveHeaderBtn:disabled {
+  background: var(--admin-surface-muted, #f3f4f6);
+  color: var(--admin-text-muted, #9ca3af);
+  opacity: 1;
 }
 
-.saveBtn:disabled {
-  cursor: default;
-  opacity: 0.5;
+/* Кнопки «+ добавить строку» под списком строк (оклады, планы) */
+.settingsAddRow {
+  display: flex;
+  justify-content: flex-start;
 }
 
 /* ===== Правила ставок по офисам ===== */
@@ -611,6 +628,12 @@
   }
 
   .settingsPanel input,
+  .settingsCheckbox input.inlineAmountInput,
+  .salaryRow select,
+  .salaryRow input,
+  .planRow select,
+  .planRow input,
+  .salaryRowRemove,
   .openSettlementBtn,
   .bannerBtn {
     background: var(--admin-surface, #1f2937);
@@ -641,6 +664,55 @@
   min-width: 0;
 }
 
+/* Строки индивидуальных планов продаж менеджеров (менеджер + 3 порога с премиями) */
+.planRows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--admin-space-xs, 4px);
+}
+
+.planRow {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--admin-space-sm, 6px);
+}
+
+.planRow select {
+  flex: 2 1 200px;
+  min-width: 0;
+}
+
+.planRow input {
+  flex: 1 1 92px;
+  min-width: 0;
+}
+
+/* Поля строк окладов и планов — единый вид с остальными полями настроек */
+.salaryRow select,
+.salaryRow input,
+.planRow select,
+.planRow input {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-md, 8px);
+  box-sizing: border-box;
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  min-height: 36px;
+  padding: var(--admin-space-xs, 4px) var(--admin-space-md, 8px);
+}
+
+.salaryRow select:focus,
+.salaryRow input:focus,
+.planRow select:focus,
+.planRow input:focus {
+  border-color: var(--admin-accent, #d90632);
+  box-shadow: var(--admin-shadow-focus-soft, 0 0 0 3px rgb(217 6 50 / 0.12));
+  outline: none;
+}
+
 .salaryRowRemove {
   align-self: center;
   background: var(--admin-surface, #ffffff);
@@ -651,7 +723,7 @@
   flex: 0 0 auto;
   font-size: var(--admin-font-size-md, 0.9375rem);
   line-height: 1;
-  min-height: 40px;
+  min-height: 36px;
   padding: 0 var(--admin-space-md, 8px);
 }
 
@@ -667,14 +739,14 @@
   gap: var(--admin-space-2xs, 2px);
 }
 
-/* Чекбокс режима работы в глобальных параметрах */
+/* Чекбоксы-переключатели расчётов: обычный вес — текст длинный, жирный не нужен */
 .settingsCheckbox {
   align-items: flex-start;
   color: var(--admin-text-primary, #111827);
   cursor: pointer;
   display: flex;
   font-size: var(--admin-font-size-sm, 0.8125rem);
-  font-weight: 600;
+  font-weight: 400;
   gap: var(--admin-space-sm, 6px);
 }
 
@@ -685,4 +757,27 @@
   min-height: auto;
   width: 16px;
   height: 16px;
+}
+
+/* Поле суммы удержания внутри текста чекбокса режима работы */
+.settingsCheckbox input.inlineAmountInput {
+  background: var(--admin-surface, #ffffff);
+  border: 1px solid var(--admin-border-strong, #d1d5db);
+  border-radius: var(--admin-radius-sm, 6px);
+  box-sizing: border-box;
+  color: var(--admin-text-primary, #111827);
+  color-scheme: light;
+  font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
+  height: 24px;
+  margin: 0;
+  padding: 0 var(--admin-space-sm, 6px);
+  text-align: center;
+  width: 76px;
+}
+
+.settingsCheckbox input.inlineAmountInput:focus {
+  border-color: var(--admin-accent, #d90632);
+  box-shadow: var(--admin-shadow-focus-soft, 0 0 0 3px rgb(217 6 50 / 0.12));
+  outline: none;
 }

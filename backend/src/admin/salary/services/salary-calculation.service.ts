@@ -3,7 +3,15 @@ import { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { SalaryBonusesService } from './salary-bonuses.service';
 import { SalaryEmployeeSalariesService } from './salary-employee-salaries.service';
-import { fromDateIso, round2, toDateIso, toNum } from '../salary.constants';
+import {
+  DEFAULT_AUTO_CLOSE_PENALTY_RUB,
+  DEFAULT_CASH_QR_BONUS_PERCENT,
+  DEFAULT_WORK_MODE_PENALTY_RUB,
+  fromDateIso,
+  round2,
+  toDateIso,
+  toNum,
+} from '../salary.constants';
 
 /**
  * Расчёт з/п за период — перенос логики Google-таблицы «Новая таблица 2025».
@@ -227,8 +235,8 @@ export class SalaryCalculationService {
       };
     });
 
-    // --- Оклады (1/N за день, удержания за режим и прогулы) и премии
-    // (места по продажам, план продаж, «Нал + QR») — выделенные сервисы. ---
+    // --- Оклады (1/N за день, удержания за режим, автозакрытия и прогулы) и премии
+    // (места по продажам, план продаж, «QR + Н») — выделенные сервисы. ---
 
     const today = new Date();
     const todayUtc = Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate());
@@ -238,6 +246,13 @@ export class SalaryCalculationService {
         to,
         todayUtc,
         workModeEnforced: globalSetting?.workModeEnforced ?? false,
+        workModePenaltyRub: toNum(
+          globalSetting?.workModePenaltyRub ?? DEFAULT_WORK_MODE_PENALTY_RUB,
+        ),
+        autoCloseEnforced: globalSetting?.autoCloseEnforced ?? false,
+        autoClosePenaltyRub: toNum(
+          globalSetting?.autoClosePenaltyRub ?? DEFAULT_AUTO_CLOSE_PENALTY_RUB,
+        ),
         truancyEnforced: globalSetting?.truancyEnforced ?? false,
         employeeSalaries,
       }),
@@ -445,7 +460,12 @@ export class SalaryCalculationService {
         taxPercent,
         netFactor,
         workModeEnforced: globalSetting?.workModeEnforced ?? false,
+        autoCloseEnforced: globalSetting?.autoCloseEnforced ?? false,
         truancyEnforced: globalSetting?.truancyEnforced ?? false,
+        cashQrBonusEnforced: globalSetting?.cashQrBonusEnforced ?? true,
+        cashQrBonusPercent: toNum(
+          globalSetting?.cashQrBonusPercent ?? DEFAULT_CASH_QR_BONUS_PERCENT,
+        ),
       },
       totals: {
         contractsCount: rows.length,
@@ -476,7 +496,7 @@ export class SalaryCalculationService {
       salesBonuses,
       /** Премии за выполнение плана продаж (пороги объёма → % от з/п по договорам). */
       salesPlanBonuses,
-      /** Премии «Нал + QR» (терминал < 50% продаж → 0,5% от остальных продаж). */
+      /** Премии «QR + Н» (терминал < 50% продаж → % от остальных продаж). */
       cashQrBonuses,
       vsByCategory,
       byLeadSpecialist,

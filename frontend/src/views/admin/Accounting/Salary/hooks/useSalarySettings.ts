@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import type { SalaryCategory, SalarySettings } from '@/shared/api/admin-salary';
 import {
@@ -16,6 +16,16 @@ export interface GlobalFormState {
   taxPercent: string;
   /** Контролировать режим работы (удержания из оклада). */
   workModeEnforced: boolean;
+  /** Удержание из оклада за каждое опоздание/ранний уход, ₽. */
+  workModePenaltyRub: string;
+  /** Учитывать автозакрытия (удержания из оклада за автозакрытые дни). */
+  autoCloseEnforced: boolean;
+  /** Удержание из оклада за каждое автозакрытие рабочего дня, ₽. */
+  autoClosePenaltyRub: string;
+  /** Начислять премию «QR + Н» (терминал < 50% продаж месяца). */
+  cashQrBonusEnforced: boolean;
+  /** Премия «QR + Н»: процент от не терминальных продаж месяца, %. */
+  cashQrBonusPercent: string;
   /** Учитывать прогулы (удержание дневной доли оклада за прогул). */
   truancyEnforced: boolean;
   /** Премии за места по итогам продаж месяца, ₽. */
@@ -24,14 +34,16 @@ export interface GlobalFormState {
   salesBonusThirdPlace: string;
   /** Минимальный уровень продаж менеджера для права на премию, ₽. */
   salesBonusMinSales: string;
-  /** План продаж: пороги объёма продаж за месяц, ₽. */
-  salesPlanThreshold1: string;
-  salesPlanThreshold2: string;
-  salesPlanThreshold3: string;
-  /** Премии за пороги плана — % от з/п менеджера по договорам. */
-  salesPlanPercent1: string;
-  salesPlanPercent2: string;
-  salesPlanPercent3: string;
+  /** Индивидуальные планы продаж менеджеров: 3 порога + премии за них. */
+  managerSalesPlans: Array<{
+    userId: string;
+    threshold1: string;
+    threshold2: string;
+    threshold3: string;
+    percent1: string;
+    percent2: string;
+    percent3: string;
+  }>;
   /** Пользователь-бригадир; '' — не назначен. */
   brigadierUserId: string;
   /** Ведущий специалист по направлениям: id направления → id пользователя; '' — не назначен. */
@@ -64,21 +76,56 @@ export interface SalaryRateRuleInput {
 const EMPTY_GLOBAL: GlobalFormState = {
   taxPercent: '8',
   workModeEnforced: false,
+  workModePenaltyRub: '50',
+  autoCloseEnforced: false,
+  autoClosePenaltyRub: '50',
+  cashQrBonusEnforced: true,
+  cashQrBonusPercent: '0.5',
   truancyEnforced: false,
   salesBonusFirstPlace: '0',
   salesBonusSecondPlace: '0',
   salesBonusThirdPlace: '0',
   salesBonusMinSales: '0',
-  salesPlanThreshold1: '0',
-  salesPlanThreshold2: '0',
-  salesPlanThreshold3: '0',
-  salesPlanPercent1: '0',
-  salesPlanPercent2: '0',
-  salesPlanPercent3: '0',
+  managerSalesPlans: [],
   brigadierUserId: '',
   leadSpecialistUserIds: {},
   employeeSalaries: [],
 };
+
+/** Форма глобальных параметров, заполненная текущими настройками. */
+function formFromSettings(settings: SalarySettings): GlobalFormState {
+  return {
+    taxPercent: String(settings.global.taxPercent),
+    workModeEnforced: settings.global.workModeEnforced ?? false,
+    workModePenaltyRub: String(settings.global.workModePenaltyRub ?? 50),
+    autoCloseEnforced: settings.global.autoCloseEnforced ?? false,
+    autoClosePenaltyRub: String(settings.global.autoClosePenaltyRub ?? 50),
+    cashQrBonusEnforced: settings.global.cashQrBonusEnforced ?? true,
+    cashQrBonusPercent: String(settings.global.cashQrBonusPercent ?? 0.5),
+    truancyEnforced: settings.global.truancyEnforced ?? false,
+    salesBonusFirstPlace: String(settings.global.salesBonusFirstPlace ?? 0),
+    salesBonusSecondPlace: String(settings.global.salesBonusSecondPlace ?? 0),
+    salesBonusThirdPlace: String(settings.global.salesBonusThirdPlace ?? 0),
+    salesBonusMinSales: String(settings.global.salesBonusMinSales ?? 0),
+    managerSalesPlans: (settings.global.managerSalesPlans ?? []).map((p) => ({
+      userId: p.userId,
+      threshold1: String(p.threshold1 ?? 0),
+      threshold2: String(p.threshold2 ?? 0),
+      threshold3: String(p.threshold3 ?? 0),
+      percent1: String(p.percent1 ?? 0),
+      percent2: String(p.percent2 ?? 0),
+      percent3: String(p.percent3 ?? 0),
+    })),
+    brigadierUserId: settings.global.brigadierUserId ?? '',
+    leadSpecialistUserIds: Object.fromEntries(
+      settings.categories.map((c) => [c.id, c.leadSpecialistUserId ?? ''])
+    ),
+    employeeSalaries: (settings.global.employeeSalaries ?? []).map((s) => ({
+      userId: s.userId,
+      monthlySalary: String(s.monthlySalary),
+    })),
+  };
+}
 
 /** Логика вкладки «Настройки» (суперадмин): глобальные параметры, направления, правила ставок. */
 export function useSalarySettings(
@@ -86,6 +133,8 @@ export function useSalarySettings(
   reloadSettings: () => Promise<void>
 ) {
   const [globalForm, setGlobalForm] = useState<GlobalFormState>(EMPTY_GLOBAL);
+  /** Форма на момент последней загрузки/сохранения — для проверки «есть изменения». */
+  const [savedForm, setSavedForm] = useState<GlobalFormState | null>(null);
   const [globalSaving, setGlobalSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -97,31 +146,17 @@ export function useSalarySettings(
 
   useEffect(() => {
     if (settings) {
-      setGlobalForm({
-        taxPercent: String(settings.global.taxPercent),
-        workModeEnforced: settings.global.workModeEnforced ?? false,
-        truancyEnforced: settings.global.truancyEnforced ?? false,
-        salesBonusFirstPlace: String(settings.global.salesBonusFirstPlace ?? 0),
-        salesBonusSecondPlace: String(settings.global.salesBonusSecondPlace ?? 0),
-        salesBonusThirdPlace: String(settings.global.salesBonusThirdPlace ?? 0),
-        salesBonusMinSales: String(settings.global.salesBonusMinSales ?? 0),
-        salesPlanThreshold1: String(settings.global.salesPlanThreshold1 ?? 0),
-        salesPlanThreshold2: String(settings.global.salesPlanThreshold2 ?? 0),
-        salesPlanThreshold3: String(settings.global.salesPlanThreshold3 ?? 0),
-        salesPlanPercent1: String(settings.global.salesPlanPercent1 ?? 0),
-        salesPlanPercent2: String(settings.global.salesPlanPercent2 ?? 0),
-        salesPlanPercent3: String(settings.global.salesPlanPercent3 ?? 0),
-        brigadierUserId: settings.global.brigadierUserId ?? '',
-        leadSpecialistUserIds: Object.fromEntries(
-          settings.categories.map((c) => [c.id, c.leadSpecialistUserId ?? ''])
-        ),
-        employeeSalaries: (settings.global.employeeSalaries ?? []).map((s) => ({
-          userId: s.userId,
-          monthlySalary: String(s.monthlySalary),
-        })),
-      });
+      const next = formFromSettings(settings);
+      setGlobalForm(next);
+      setSavedForm(next);
     }
   }, [settings]);
+
+  /** Есть несохранённые правки глобальных параметров. */
+  const isGlobalDirty = useMemo(
+    () => savedForm !== null && JSON.stringify(globalForm) !== JSON.stringify(savedForm),
+    [globalForm, savedForm]
+  );
 
   const saveGlobal = useCallback(async () => {
     setGlobalSaving(true);
@@ -130,17 +165,16 @@ export function useSalarySettings(
       await saveSalaryGlobalSettings({
         taxPercent: Number(globalForm.taxPercent.replace(',', '.')),
         workModeEnforced: globalForm.workModeEnforced,
+        workModePenaltyRub: Number(globalForm.workModePenaltyRub.replace(',', '.')) || 0,
+        autoCloseEnforced: globalForm.autoCloseEnforced,
+        autoClosePenaltyRub: Number(globalForm.autoClosePenaltyRub.replace(',', '.')) || 0,
+        cashQrBonusEnforced: globalForm.cashQrBonusEnforced,
+        cashQrBonusPercent: Number(globalForm.cashQrBonusPercent.replace(',', '.')) || 0,
         truancyEnforced: globalForm.truancyEnforced,
         salesBonusFirstPlace: Number(globalForm.salesBonusFirstPlace.replace(',', '.')),
         salesBonusSecondPlace: Number(globalForm.salesBonusSecondPlace.replace(',', '.')),
         salesBonusThirdPlace: Number(globalForm.salesBonusThirdPlace.replace(',', '.')),
         salesBonusMinSales: Number(globalForm.salesBonusMinSales.replace(',', '.')),
-        salesPlanThreshold1: Number(globalForm.salesPlanThreshold1.replace(',', '.')),
-        salesPlanThreshold2: Number(globalForm.salesPlanThreshold2.replace(',', '.')),
-        salesPlanThreshold3: Number(globalForm.salesPlanThreshold3.replace(',', '.')),
-        salesPlanPercent1: Number(globalForm.salesPlanPercent1.replace(',', '.')),
-        salesPlanPercent2: Number(globalForm.salesPlanPercent2.replace(',', '.')),
-        salesPlanPercent3: Number(globalForm.salesPlanPercent3.replace(',', '.')),
         brigadierUserId: globalForm.brigadierUserId || null,
         employeeSalaries: globalForm.employeeSalaries
           .filter((row) => row.userId)
@@ -149,6 +183,17 @@ export function useSalarySettings(
             monthlySalary: row.monthlySalary.trim()
               ? Number(row.monthlySalary.replace(',', '.'))
               : null,
+          })),
+        managerSalesPlans: globalForm.managerSalesPlans
+          .filter((row) => row.userId)
+          .map((row) => ({
+            userId: row.userId,
+            threshold1: row.threshold1.trim() ? Number(row.threshold1.replace(',', '.')) : null,
+            threshold2: row.threshold2.trim() ? Number(row.threshold2.replace(',', '.')) : null,
+            threshold3: row.threshold3.trim() ? Number(row.threshold3.replace(',', '.')) : null,
+            percent1: row.percent1.trim() ? Number(row.percent1.replace(',', '.')) : null,
+            percent2: row.percent2.trim() ? Number(row.percent2.replace(',', '.')) : null,
+            percent3: row.percent3.trim() ? Number(row.percent3.replace(',', '.')) : null,
           })),
       });
       // Привязки ВС хранятся на направлениях — сохраняем только изменившиеся.
@@ -292,6 +337,7 @@ export function useSalarySettings(
     globalForm,
     setGlobalForm,
     globalSaving,
+    isGlobalDirty,
     saveGlobal,
     error,
     setError,

@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../../../database/prisma.service';
 import { DP_MANUAL_DIRECTION_OTHER } from '../../../common/config/package-direction-registry.config';
-import { round2, toNum } from '../salary.constants';
+import { DEFAULT_CASH_QR_BONUS_PERCENT, round2, toNum } from '../salary.constants';
 
 /** Премия за место по итогам продаж за завершённый месяц (журнал ДП). */
 export type SalesPlaceBonus = {
@@ -26,7 +26,7 @@ export type SalesPlanBonus = {
   amount: number;
 };
 
-/** Премия «Нал + QR»: терминал < 50% продаж → 0,5% от остальных продаж. */
+/** Премия «QR + Н»: терминал < 50% продаж → процент от остальных продаж. */
 export type CashQrBonus = {
   userId: string;
   userName: string | null;
@@ -44,12 +44,8 @@ export type BonusSettings = {
   salesBonusSecondPlace?: Prisma.Decimal | null;
   salesBonusThirdPlace?: Prisma.Decimal | null;
   salesBonusMinSales?: Prisma.Decimal | null;
-  salesPlanThreshold1?: Prisma.Decimal | null;
-  salesPlanThreshold2?: Prisma.Decimal | null;
-  salesPlanThreshold3?: Prisma.Decimal | null;
-  salesPlanPercent1?: Prisma.Decimal | null;
-  salesPlanPercent2?: Prisma.Decimal | null;
-  salesPlanPercent3?: Prisma.Decimal | null;
+  cashQrBonusEnforced?: boolean;
+  cashQrBonusPercent?: Prisma.Decimal | null;
 };
 
 /** Строка расчёта по договору — источник з/п менеджера для премии за план. */
@@ -62,16 +58,14 @@ type ContractRowForPlan = {
   percents: { manager: number };
 };
 
-/** Премии «Нал + QR»: процент от не терминальных продаж, %. */
-const CASH_QR_BONUS_PERCENT = 0.5;
-
 /**
  * Премии менеджеров по итогам продаж за полностью завершённые месяцы периода:
  *  - за призовые места (1–3) по объёму продаж месяца — фикс из настроек,
  *    только при продажах не ниже минимального уровня;
  *  - за достижение порогов плана продаж — % от з/п менеджера по договорам
  *    за месяц (без оклада и других премий), по самому высокому порогу;
- *  - «Нал + QR» — если терминал даёт менее 50% продаж месяца, 0,5% от остальных.
+ *  - «QR + Н» — если терминал даёт менее 50% продаж месяца, установленный
+ *    в настройках процент от остальных.
  */
 @Injectable()
 export class SalaryBonusesService {
@@ -130,25 +124,22 @@ export class SalaryBonusesService {
     const salesBonusesTotal = round2(salesBonuses.reduce((sum, b) => sum + b.amount, 0));
 
     // --- Премии за выполнение плана продаж: порог объёма за месяц → % от з/п
-    // менеджера по договорам за этот месяц. Проценты порогов не суммируются —
-    // премия считается по самому высокому достигнутому порогу. ---
+    // менеджера по договорам за этот месяц. Планы устанавливаются индивидуально
+    // на каждого менеджера. Проценты порогов не суммируются — премия считается
+    // по самому высокому достигнутому порогу. ---
 
-    const planTiers = [
-      {
-        threshold: toNum(settings.salesPlanThreshold1 ?? 0),
-        percent: toNum(settings.salesPlanPercent1 ?? 0),
-      },
-      {
-        threshold: toNum(settings.salesPlanThreshold2 ?? 0),
-        percent: toNum(settings.salesPlanPercent2 ?? 0),
-      },
-      {
-        threshold: toNum(settings.salesPlanThreshold3 ?? 0),
-        percent: toNum(settings.salesPlanPercent3 ?? 0),
-      },
-    ].filter((tier) => tier.threshold > 0 && tier.percent > 0);
+    const planRows = await this.prisma.salaryManagerSalesPlan.findMany();
+    const planTiersByUser = new Map<string, Array<{ threshold: number; percent: number }>>();
+    for (const plan of planRows) {
+      const tiers = [
+        { threshold: toNum(plan.threshold1), percent: toNum(plan.percent1) },
+        { threshold: toNum(plan.threshold2), percent: toNum(plan.percent2) },
+        { threshold: toNum(plan.threshold3), percent: toNum(plan.percent3) },
+      ].filter((tier) => tier.threshold > 0 && tier.percent > 0);
+      if (tiers.length > 0) planTiersByUser.set(plan.userId, tiers);
+    }
     const salesPlanBonuses: SalesPlanBonus[] = [];
-    if (planTiers.length > 0) {
+    if (planTiersByUser.size > 0) {
       // З/п менеджеров по договорам в разрезе месяцев: доли при заключении/закрытии
       // и доп. соглашения относятся к месяцам своих дат.
       const monthOf = (iso: string | null) => (iso ? iso.slice(0, 7) : null);
@@ -170,16 +161,17 @@ export class SalaryBonusesService {
 
       for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
         const monthKeyStr = this.monthKey(monthStart);
-        const candidates = (await this.monthSalesByManager(monthStart)).filter((row) =>
-          planTiers.some((tier) => row.salesAmount >= tier.threshold),
-        );
-        const nameById = await this.userNames(candidates.map((c) => c.userId));
-        for (const candidate of candidates) {
+        const monthManagers = await this.monthSalesByManager(monthStart);
+        const nameById = await this.userNames(monthManagers.map((c) => c.userId));
+        for (const candidate of monthManagers) {
+          const planTiers = planTiersByUser.get(candidate.userId);
+          if (!planTiers) continue;
           if (employeeId && candidate.userId !== employeeId) continue;
+          const reached = planTiers.filter((tier) => candidate.salesAmount >= tier.threshold);
+          if (reached.length === 0) continue;
           const baseAmount = managerPartsByMonth.get(`${candidate.userId}|${monthKeyStr}`) ?? 0;
           if (baseAmount <= 0) continue;
-          const reached = planTiers.filter((tier) => candidate.salesAmount >= tier.threshold);
-          const percent = reached.length > 0 ? reached[reached.length - 1].percent : 0;
+          const percent = reached[reached.length - 1].percent;
           salesPlanBonuses.push({
             userId: candidate.userId,
             userName: nameById.get(candidate.userId) ?? null,
@@ -195,52 +187,56 @@ export class SalaryBonusesService {
     }
     const salesPlanBonusesTotal = round2(salesPlanBonuses.reduce((sum, b) => sum + b.amount, 0));
 
-    // --- Премия «Нал + QR»: терминал < 50% продаж месяца → 0,5% от остальных
-    // (не через терминал: наличные, QR, счёт, перевод на ЛК, банк-приложение). ---
+    // --- Премия «QR + Н»: терминал < 50% продаж месяца → установленный
+    // в настройках процент от остальных (не через терминал: наличные, QR,
+    // счёт, перевод на ЛК, банк-приложение). ---
 
+    const cashQrPercent = toNum(settings.cashQrBonusPercent ?? DEFAULT_CASH_QR_BONUS_PERCENT);
     const cashQrBonuses: CashQrBonus[] = [];
-    for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
-      const formSums = await this.prisma.moneyMovement.groupBy({
-        by: ['managerId', 'paymentForm'],
-        where: {
-          deletedAt: null,
-          managerId: { not: null },
-          paymentDate: {
-            gte: monthStart,
-            lte: new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0)),
+    if (settings.cashQrBonusEnforced !== false && cashQrPercent > 0) {
+      for (const { monthStart } of this.completedMonths(from, to, todayUtc)) {
+        const formSums = await this.prisma.moneyMovement.groupBy({
+          by: ['managerId', 'paymentForm'],
+          where: {
+            deletedAt: null,
+            managerId: { not: null },
+            paymentDate: {
+              gte: monthStart,
+              lte: new Date(Date.UTC(monthStart.getUTCFullYear(), monthStart.getUTCMonth() + 1, 0)),
+            },
+            direction: { not: DP_MANUAL_DIRECTION_OTHER },
           },
-          direction: { not: DP_MANUAL_DIRECTION_OTHER },
-        },
-        _sum: { amount: true },
-      });
-      const totals = new Map<string, { total: number; terminal: number }>();
-      for (const row of formSums) {
-        const userId = row.managerId as string;
-        const agg = totals.get(userId) ?? { total: 0, terminal: 0 };
-        const amount = toNum(row._sum.amount ?? 0);
-        agg.total += amount;
-        if (row.paymentForm === 'TERMINAL') agg.terminal += amount;
-        totals.set(userId, agg);
-      }
-      const winners = [...totals.entries()].filter(
-        ([, v]) => v.total > 0 && v.terminal < v.total * 0.5,
-      );
-      const nameById = await this.userNames(winners.map(([id]) => id));
-      for (const [userId, v] of winners) {
-        if (employeeId && userId !== employeeId) continue;
-        const otherSales = round2(v.total - v.terminal);
-        const amount = round2((otherSales * CASH_QR_BONUS_PERCENT) / 100);
-        if (amount <= 0) continue;
-        cashQrBonuses.push({
-          userId,
-          userName: nameById.get(userId) ?? null,
-          month: this.monthKey(monthStart),
-          totalSales: round2(v.total),
-          terminalSales: round2(v.terminal),
-          otherSales,
-          terminalShare: round2((v.terminal / v.total) * 100),
-          amount,
+          _sum: { amount: true },
         });
+        const totals = new Map<string, { total: number; terminal: number }>();
+        for (const row of formSums) {
+          const userId = row.managerId as string;
+          const agg = totals.get(userId) ?? { total: 0, terminal: 0 };
+          const amount = toNum(row._sum.amount ?? 0);
+          agg.total += amount;
+          if (row.paymentForm === 'TERMINAL') agg.terminal += amount;
+          totals.set(userId, agg);
+        }
+        const winners = [...totals.entries()].filter(
+          ([, v]) => v.total > 0 && v.terminal < v.total * 0.5,
+        );
+        const nameById = await this.userNames(winners.map(([id]) => id));
+        for (const [userId, v] of winners) {
+          if (employeeId && userId !== employeeId) continue;
+          const otherSales = round2(v.total - v.terminal);
+          const amount = round2((otherSales * cashQrPercent) / 100);
+          if (amount <= 0) continue;
+          cashQrBonuses.push({
+            userId,
+            userName: nameById.get(userId) ?? null,
+            month: this.monthKey(monthStart),
+            totalSales: round2(v.total),
+            terminalSales: round2(v.terminal),
+            otherSales,
+            terminalShare: round2((v.terminal / v.total) * 100),
+            amount,
+          });
+        }
       }
     }
     const cashQrBonusesTotal = round2(cashQrBonuses.reduce((sum, b) => sum + b.amount, 0));

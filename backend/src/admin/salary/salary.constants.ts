@@ -8,6 +8,15 @@ export const SALARY_ROLE_LABELS: Record<string, string> = {
   BRIGADIER: 'Бригадир',
 };
 
+/** Удержание за нарушение режима работы (опоздание / ранний уход) по умолчанию, ₽. */
+export const DEFAULT_WORK_MODE_PENALTY_RUB = 50;
+
+/** Удержание за автозакрытие рабочего дня по умолчанию, ₽. */
+export const DEFAULT_AUTO_CLOSE_PENALTY_RUB = 50;
+
+/** Премия «QR + Н»: процент от не терминальных продаж по умолчанию, %. */
+export const DEFAULT_CASH_QR_BONUS_PERCENT = 0.5;
+
 /** Направления по умолчанию — переносятся из Google-таблицы «Новая таблица 2025». */
 export const DEFAULT_SALARY_CATEGORIES: ReadonlyArray<{
   code: string;

@@ -37,10 +37,32 @@ export interface SalaryEmployeeSalary {
   monthlySalary: number;
 }
 
+/** Индивидуальный план продаж менеджера: 3 порога объёма за месяц + премии за них. */
+export interface SalaryManagerSalesPlan {
+  userId: string;
+  userName: string | null;
+  threshold1: number;
+  threshold2: number;
+  threshold3: number;
+  percent1: number;
+  percent2: number;
+  percent3: number;
+}
+
 export interface SalaryGlobalSettings {
   taxPercent: number;
-  /** Контролировать режим работы (−50 ₽ из оклада за каждое опоздание/ранний уход). */
+  /** Контролировать режим работы (удержания из оклада за опоздания/ранние уходы). */
   workModeEnforced?: boolean;
+  /** Удержание из оклада за каждое опоздание/ранний уход, ₽. */
+  workModePenaltyRub?: number;
+  /** Учитывать автозакрытия (удержания из оклада за автозакрытые рабочие дни). */
+  autoCloseEnforced?: boolean;
+  /** Удержание из оклада за каждое автозакрытие рабочего дня, ₽. */
+  autoClosePenaltyRub?: number;
+  /** Начислять премию «QR + Н» (терминал < 50% продаж месяца). */
+  cashQrBonusEnforced?: boolean;
+  /** Премия «QR + Н»: процент от не терминальных продаж месяца, %. */
+  cashQrBonusPercent?: number;
   /** Учитывать прогулы (удержание дневной доли оклада за каждый прогул). */
   truancyEnforced?: boolean;
   /** Премии за места по итогам продаж месяца (журнал ДП), ₽. */
@@ -49,20 +71,14 @@ export interface SalaryGlobalSettings {
   salesBonusThirdPlace?: number;
   /** Минимальный уровень продаж менеджера за месяц для права на премию, ₽. */
   salesBonusMinSales?: number;
-  /** План продаж: пороги объёма продаж за месяц, ₽. */
-  salesPlanThreshold1?: number;
-  salesPlanThreshold2?: number;
-  salesPlanThreshold3?: number;
-  /** Премия за достижение порога плана — % от з/п менеджера по договорам. */
-  salesPlanPercent1?: number;
-  salesPlanPercent2?: number;
-  salesPlanPercent3?: number;
   /** Пользователь-бригадир (получатель бригадирского фонда); null — не назначен. */
   brigadierUserId: string | null;
   brigadierName: string | null;
   updatedAt: string | null;
   /** Установленные месячные оклады сотрудников. */
   employeeSalaries?: SalaryEmployeeSalary[];
+  /** Индивидуальные планы продаж менеджеров. */
+  managerSalesPlans?: SalaryManagerSalesPlan[];
 }
 
 export interface SalaryRateRule {
@@ -185,6 +201,8 @@ export interface SalaryCalcResult {
   settings: {
     taxPercent: number;
     netFactor: number;
+    /** Премия «QR + Н»: процент от не терминальных продаж, %. */
+    cashQrBonusPercent?: number;
   };
   totals: {
     contractsCount: number;
@@ -202,12 +220,13 @@ export interface SalaryCalcResult {
     salesBonusesTotal?: number;
     /** Сумма премий за выполнение плана продаж. */
     salesPlanBonusesTotal?: number;
-    /** Сумма премий «Нал + QR». */
+    /** Сумма премий «QR + Н». */
     cashQrBonusesTotal?: number;
     stats: { signedCount: number; signedAmount: number; closedCount: number; closedAmount: number };
   };
   /** Оклады за период: за каждый день 1/N оклада (N — дней в месяце этого дня);
-   * при включённом контроле режима из оклада вычитаются удержания за опоздания/ранние уходы. */
+   * при включённых контроле режима / учёте автозакрытий из оклада вычитаются
+   * соответствующие удержания. */
   salaries?: Array<{
     userId: string;
     userName: string | null;
@@ -215,6 +234,8 @@ export interface SalaryCalcResult {
     days: number;
     violationsCount?: number;
     penalty?: number;
+    autoCloseCount?: number;
+    autoClosePenalty?: number;
     truancyDays?: number;
     truancyDeduction?: number;
     amount: number;
@@ -239,7 +260,7 @@ export interface SalaryCalcResult {
     baseAmount: number;
     amount: number;
   }>;
-  /** Премии «Нал + QR»: терминал < 50% продаж → 0,5% от остальных продаж. */
+  /** Премии «QR + Н»: терминал < 50% продаж → % от остальных продаж. */
   cashQrBonuses?: Array<{
     userId: string;
     userName: string | null;
@@ -340,19 +361,27 @@ export function saveSalaryGlobalSettings(
       | 'taxPercent'
       | 'brigadierUserId'
       | 'workModeEnforced'
+      | 'workModePenaltyRub'
+      | 'autoCloseEnforced'
+      | 'autoClosePenaltyRub'
+      | 'cashQrBonusEnforced'
+      | 'cashQrBonusPercent'
       | 'truancyEnforced'
       | 'salesBonusFirstPlace'
       | 'salesBonusSecondPlace'
       | 'salesBonusThirdPlace'
       | 'salesBonusMinSales'
-      | 'salesPlanThreshold1'
-      | 'salesPlanThreshold2'
-      | 'salesPlanThreshold3'
-      | 'salesPlanPercent1'
-      | 'salesPlanPercent2'
-      | 'salesPlanPercent3'
     > & {
       employeeSalaries: Array<{ userId: string; monthlySalary: number | null }>;
+      managerSalesPlans: Array<{
+        userId: string;
+        threshold1: number | null;
+        threshold2: number | null;
+        threshold3: number | null;
+        percent1: number | null;
+        percent2: number | null;
+        percent3: number | null;
+      }>;
     }
   >
 ): Promise<SalaryGlobalSettings> {
@@ -565,7 +594,7 @@ export interface MySalaryResult {
     bonus?: number;
     /** Премия за выполнение плана продаж. */
     planBonus?: number;
-    /** Премия «Нал + QR». */
+    /** Премия «QR + Н». */
     cashQrBonus?: number;
     total: number;
   };
