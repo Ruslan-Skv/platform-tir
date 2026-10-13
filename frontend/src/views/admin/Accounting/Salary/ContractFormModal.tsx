@@ -8,12 +8,7 @@ import { Modal } from '@/shared/ui/Modal';
 
 import styles from './SalaryPage.module.css';
 import type { SalaryContractInput } from './hooks/useSalaryContracts';
-import {
-  CONTRACT_MANAGER_ROLES,
-  CONTRACT_SURVEYOR_ROLES,
-  formatPercent,
-  parseDecimal,
-} from './salary-page.constants';
+import { CONTRACT_MANAGER_ROLES, formatPercent, parseDecimal } from './salary-page.constants';
 
 type ContractFormModalProps = {
   isOpen: boolean;
@@ -41,16 +36,12 @@ interface FormState {
   closedAt: string;
   customerName: string;
   managerId: string;
-  managerName: string;
   surveyorId: string;
-  surveyorName: string;
-  surveyorHandled: boolean;
   baseAmount: string;
   managerPercentOverride: string;
   surveyorPercentOverride: string;
   vsPercentOverride: string;
   brigadierPercentOverride: string;
-  source: string;
   note: string;
   extraBills: ExtraBillDraft[];
 }
@@ -63,16 +54,12 @@ const EMPTY_FORM: FormState = {
   closedAt: '',
   customerName: '',
   managerId: '',
-  managerName: '',
   surveyorId: '',
-  surveyorName: '',
-  surveyorHandled: true,
   baseAmount: '',
   managerPercentOverride: '',
   surveyorPercentOverride: '',
   vsPercentOverride: '',
   brigadierPercentOverride: '',
-  source: '',
   note: '',
   extraBills: [],
 };
@@ -107,10 +94,7 @@ export function ContractFormModal({
         closedAt: contract.closedAt ?? '',
         customerName: contract.customerName ?? '',
         managerId: contract.managerId ?? '',
-        managerName: contract.managerName ?? '',
         surveyorId: contract.surveyorId ?? '',
-        surveyorName: contract.surveyorName ?? '',
-        surveyorHandled: contract.surveyorHandled,
         baseAmount: String(contract.baseAmount),
         managerPercentOverride:
           contract.managerPercentOverride === null ? '' : String(contract.managerPercentOverride),
@@ -122,7 +106,6 @@ export function ContractFormModal({
           contract.brigadierPercentOverride === null
             ? ''
             : String(contract.brigadierPercentOverride),
-        source: contract.source ?? '',
         note: contract.note ?? '',
         extraBills: contract.extraBills.map((b) => ({
           amount: String(b.amount),
@@ -135,13 +118,17 @@ export function ContractFormModal({
     }
   }, [isOpen, contract, categories]);
 
+  // Менеджер и замерщик выбираются из одного списка — все пользователи админки
+  // с ролями, допущенными к договорам.
   const managers = users.filter((u) =>
     (CONTRACT_MANAGER_ROLES as readonly string[]).includes(u.role)
   );
-  const surveyors = users.filter((u) =>
-    (CONTRACT_SURVEYOR_ROLES as readonly string[]).includes(u.role)
-  );
   const selectedCategory = categories.find((c) => c.id === form.categoryId);
+
+  /** Обязательные поля (помечены *) заполнены — кнопка сохранения активна. */
+  const requiredFilled =
+    Boolean(form.officeId && form.categoryId && form.number.trim() && form.managerId) &&
+    parseDecimal(form.baseAmount) !== null;
 
   const patch = (update: Partial<FormState>) => setForm((f) => ({ ...f, ...update }));
 
@@ -154,8 +141,8 @@ export function ContractFormModal({
 
   const handleSubmit = () => {
     const baseAmount = parseDecimal(form.baseAmount);
-    if (!form.officeId || !form.categoryId || !form.number.trim()) {
-      setFormError('Заполните офис, направление и № договора');
+    if (!form.officeId || !form.categoryId || !form.number.trim() || !form.managerId) {
+      setFormError('Заполните офис, направление, № договора и менеджера');
       return;
     }
     if (baseAmount === null) {
@@ -170,16 +157,19 @@ export function ContractFormModal({
       closedAt: form.closedAt || null,
       customerName: form.customerName.trim() || null,
       managerId: form.managerId || null,
-      managerName: form.managerName.trim() || null,
+      // Свободные имена и источник в форме больше не редактируются —
+      // при правке договора сохраняем прежние значения.
+      managerName: contract?.managerName ?? null,
       surveyorId: form.surveyorId || null,
-      surveyorName: form.surveyorName.trim() || null,
-      surveyorHandled: form.surveyorHandled,
+      surveyorName: contract?.surveyorName ?? null,
+      // З/п за замер считается только когда замерщик выбран из списка.
+      surveyorHandled: Boolean(form.surveyorId),
       baseAmount,
       managerPercentOverride: parseDecimal(form.managerPercentOverride),
       surveyorPercentOverride: parseDecimal(form.surveyorPercentOverride),
       vsPercentOverride: parseDecimal(form.vsPercentOverride),
       brigadierPercentOverride: parseDecimal(form.brigadierPercentOverride),
-      source: form.source.trim() || null,
+      source: contract?.source ?? null,
       note: form.note.trim() || null,
       extraBills: form.extraBills
         .filter((b) => b.amount !== '' && b.date)
@@ -203,7 +193,7 @@ export function ContractFormModal({
       <div data-modal-form data-modal-density="compact">
         <p data-modal-form-hint>
           Договор попадает в расчёт з/п за период, если дата заключения, закрытия или доп.
-          соглашения входят в него. Если замера не было — з/п за замер по договору не считается.
+          соглашения входят в него. Если замерщик не выбран — з/п за замер по договору не считается.
         </p>
 
         <div data-modal-form-grid>
@@ -235,7 +225,7 @@ export function ContractFormModal({
               <option value="">— выберите —</option>
               {categories.map((c) => (
                 <option key={c.id} value={c.id}>
-                  {c.name} (ВС {c.vsPercent}%, мен {c.managerPercent}%)
+                  {c.name}
                 </option>
               ))}
             </select>
@@ -298,24 +288,11 @@ export function ContractFormModal({
               maxLength={200}
             />
           </div>
-
-          <div data-modal-form-group>
-            <label htmlFor="salary_contract_source">Источник</label>
-            <input
-              id="salary_contract_source"
-              type="text"
-              placeholder="яндекс, наружка, по рекомендации…"
-              value={form.source}
-              onChange={(e) => patch({ source: e.target.value })}
-              disabled={saving}
-              maxLength={200}
-            />
-          </div>
         </div>
 
         <div data-modal-form-grid>
           <div data-modal-form-group>
-            <label htmlFor="salary_contract_manager">Менеджер</label>
+            <label htmlFor="salary_contract_manager">Менеджер *</label>
             <select
               id="salary_contract_manager"
               value={form.managerId}
@@ -332,18 +309,6 @@ export function ContractFormModal({
           </div>
 
           <div data-modal-form-group>
-            <label htmlFor="salary_contract_manager_name">Имя менеджера (если нет в списке)</label>
-            <input
-              id="salary_contract_manager_name"
-              type="text"
-              value={form.managerName}
-              onChange={(e) => patch({ managerName: e.target.value })}
-              disabled={saving}
-              maxLength={200}
-            />
-          </div>
-
-          <div data-modal-form-group>
             <label htmlFor="salary_contract_surveyor">Замерщик</label>
             <select
               id="salary_contract_surveyor"
@@ -352,35 +317,13 @@ export function ContractFormModal({
               disabled={saving}
             >
               <option value="">— не выбран —</option>
-              {surveyors.map((u) => (
+              {managers.map((u) => (
                 <option key={u.id} value={u.id}>
                   {userName(u)}
                 </option>
               ))}
             </select>
           </div>
-
-          <div data-modal-form-group>
-            <label htmlFor="salary_contract_surveyor_name">Имя замерщика (если нет в списке)</label>
-            <input
-              id="salary_contract_surveyor_name"
-              type="text"
-              value={form.surveyorName}
-              onChange={(e) => patch({ surveyorName: e.target.value })}
-              disabled={saving}
-              maxLength={200}
-            />
-          </div>
-
-          <label className={styles.formCheckbox}>
-            <input
-              type="checkbox"
-              checked={form.surveyorHandled}
-              onChange={(e) => patch({ surveyorHandled: e.target.checked })}
-              disabled={saving}
-            />
-            Замер был (снять — з/п за замер по договору не считается)
-          </label>
         </div>
 
         {selectedCategory ? (
@@ -536,7 +479,8 @@ export function ContractFormModal({
             data-admin-mutation
             data-modal-btn="primary"
             onClick={handleSubmit}
-            disabled={saving}
+            disabled={saving || !requiredFilled}
+            title={requiredFilled ? undefined : 'Заполните обязательные поля (помечены *)'}
           >
             {saving ? 'Сохранение…' : contract ? 'Сохранить' : 'Добавить'}
           </button>

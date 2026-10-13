@@ -5,7 +5,7 @@ import { PrismaService } from '../database/prisma.service';
 import { ContractDocumentNumberingService } from '../contract-document-numbering/contract-document-numbering.service';
 import { SigningCompletionService } from './finalize/signing-completion.service';
 import { SigningPackageMarkerService } from './signing-package-marker.service';
-import { addendumOrdinalFromTab } from './signing-stage';
+import { addendumOrdinalFromTab } from './stage/signing-stage';
 
 /** Дата подписания акта (YYYY-MM-DD) по московскому времени. */
 function moscowDateOnly(date: Date): string {

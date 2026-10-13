@@ -110,16 +110,8 @@ export const SALARY_ROLE_OPTIONS: Array<{ value: string; label: string }> = [
   { value: 'BRIGADIER', label: 'Бригадир' },
 ];
 
-/** Роли CRM, из которых выбирается менеджер договора. */
+/** Роли CRM, из которых выбираются менеджер и замерщик договора. */
 export const CONTRACT_MANAGER_ROLES = ['MANAGER', 'ADMIN', 'SUPER_ADMIN', 'TRAINEE'] as const;
-
-/** Роли CRM, из которых выбирается замерщик договора. */
-export const CONTRACT_SURVEYOR_ROLES = [
-  'SURVEYOR',
-  'LEAD_SPECIALIST_WINDOWS_DOORS',
-  'LEAD_SPECIALIST_FURNITURE',
-  'BRIGADIER',
-] as const;
 
 export const SALARY_PAGE_LIMIT_OPTIONS = [20, 50, 100, 200] as const;
 export type SalaryPageLimit = (typeof SALARY_PAGE_LIMIT_OPTIONS)[number];

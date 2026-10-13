@@ -1,5 +1,6 @@
 import type {
   ContractDocumentPackageKind,
+  ContractDocumentPackageStatus,
   ContractEstimateGroup,
   ContractEstimatePreset,
   ContractTemplatePreset,
@@ -166,6 +167,8 @@ export type PackageCustomerShareableDocument = {
 export type PackageCustomerShareContext = {
   packageId: string;
   packageKind: ContractDocumentPackageKind;
+  /** Статус пакета (для правил этапов ЭП); из открытого редактора может отсутствовать. */
+  packageStatus?: ContractDocumentPackageStatus;
   form: PackageFormData;
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
@@ -457,6 +460,7 @@ function customerPrimaryPhone(form: PackageFormData): string {
 function buildContextFromParts(input: {
   packageId: string;
   packageKind: ContractDocumentPackageKind;
+  packageStatus?: ContractDocumentPackageStatus;
   form: PackageFormData;
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];
@@ -471,6 +475,7 @@ function buildContextFromParts(input: {
   return {
     packageId: input.packageId,
     packageKind: input.packageKind,
+    packageStatus: input.packageStatus,
     form: input.form,
     estimatePresets: input.estimatePresets,
     estimateGroups: input.estimateGroups,
@@ -558,6 +563,7 @@ export async function loadPackageCustomerShareContext(
   return buildContextFromParts({
     packageId,
     packageKind,
+    packageStatus: row.status,
     form,
     estimatePresets,
     estimateGroups,
@@ -571,6 +577,7 @@ export async function loadPackageCustomerShareContext(
 export function buildPackageCustomerShareContextFromEditor(input: {
   packageId: string;
   packageKind: ContractDocumentPackageKind;
+  packageStatus?: ContractDocumentPackageStatus;
   form: PackageFormData;
   estimatePresets: ContractEstimatePreset[];
   estimateGroups: ContractEstimateGroup[];

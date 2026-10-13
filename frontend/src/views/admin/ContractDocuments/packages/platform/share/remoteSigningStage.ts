@@ -82,14 +82,23 @@ function addendumSlotHasClientData(slot: unknown): boolean {
 /**
  * Превалидация состава документов для сессии ЭП (правила этапов).
  * Возвращает текст проблемы или null, если состав допустим.
+ *
+ * Договор считается подписанным по любому из признаков: дата contractConcludedAt
+ * в форме, статус пакета CONTRACT_CONCLUDED или подписанная (SIGNED) сессия ЭП —
+ * форма могла быть загружена до подписания и не знать о нём.
  */
 export function remoteSigningStageProblem(input: {
   selectedTabs: PackageDocumentTabId[];
-  ctx: Pick<PackageCustomerShareContext, 'packageKind' | 'form'>;
+  ctx: Pick<PackageCustomerShareContext, 'packageKind' | 'form' | 'packageStatus'>;
+  /** Этапные документы с подписанными (SIGNED) сессиями ЭП (как бейдж «подписан ЭП»). */
+  signedTabs?: ReadonlySet<string>;
 }): string | null {
   const { stage, stageTabs, stageTab } = remoteSigningStageOf(input.selectedTabs);
   const form = input.ctx.form;
-  const concluded = Boolean(form.contractConcludedAt?.trim());
+  const concluded =
+    Boolean(form.contractConcludedAt?.trim()) ||
+    input.ctx.packageStatus === 'CONTRACT_CONCLUDED' ||
+    input.signedTabs?.has('contract') === true;
 
   if (stageTabs.length > 1) {
     return 'Нельзя объединять в одной ссылке договор, акты и доп. соглашения — отправьте их отдельными сессиями: сначала договор, затем акты и Д/с.';
@@ -112,9 +121,17 @@ export function remoteSigningStageProblem(input: {
     if (form.repairWorkStartActSignedAt?.trim()) {
       return 'Акт начала работ уже отмечен подписанным — повторная отправка на ЭП не требуется.';
     }
+    if (input.signedTabs?.has('actStart')) {
+      return 'Акт начала работ уже подписан по ЭП — повторная отправка не требуется.';
+    }
   }
-  if (stage === 'ACT_ACCEPTANCE' && form.repairContractCloseActSignedAt?.trim()) {
-    return 'Акт сдачи-приёмки уже отмечен подписанным — повторная отправка на ЭП не требуется.';
+  if (stage === 'ACT_ACCEPTANCE') {
+    if (form.repairContractCloseActSignedAt?.trim()) {
+      return 'Акт сдачи-приёмки уже отмечен подписанным — повторная отправка на ЭП не требуется.';
+    }
+    if (input.signedTabs?.has('actAcceptance')) {
+      return 'Акт сдачи-приёмки уже подписан по ЭП — повторная отправка не требуется.';
+    }
   }
   if (stage === 'ADDENDUM') {
     const ordinal = addendumOrdinalFromTab(stageTab ?? '');
@@ -124,6 +141,9 @@ export function remoteSigningStageProblem(input: {
     }
     if (slot && slot.status !== 'OPEN') {
       return `Д/с №${ordinal} уже отмечено подписанным — повторная отправка на ЭП не требуется.`;
+    }
+    if (ordinal && input.signedTabs?.has(`addendum${ordinal}`)) {
+      return `Д/с №${ordinal} уже подписано по ЭП — повторная отправка не требуется.`;
     }
   }
   return null;

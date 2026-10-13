@@ -256,4 +256,91 @@ describe('assertSigningChronologyAtSign', () => {
     expect(() => assertSigningChronologyAtSign('CONTRACT', IN_PROGRESS)).not.toThrow();
     expect(() => assertSigningChronologyAtSign(null, IN_PROGRESS)).not.toThrow();
   });
+
+  it('подписанная сессия ЭП договора открывает хронологию, даже если статус затёрт', () => {
+    expect(() =>
+      assertSigningChronologyAtSign('ACT_ACCEPTANCE', IN_PROGRESS, new Set(['contract'])),
+    ).not.toThrow();
+    expect(() =>
+      assertSigningChronologyAtSign('ADDENDUM', IN_PROGRESS, new Set(['addendum1', 'contract'])),
+    ).not.toThrow();
+    expect(() =>
+      assertSigningChronologyAtSign('ADDENDUM', IN_PROGRESS, new Set(['addendum1'])),
+    ).toThrow('договор ещё не подписан');
+  });
+});
+
+describe('validateSigningStageCreation: признаки подписанного договора', () => {
+  const base = {
+    kind: KIND,
+    status: IN_PROGRESS,
+    formData: {},
+  };
+
+  it('подписанная сессия ЭП договора открывает акты и Д/с при затёртом статусе', () => {
+    expect(() =>
+      validateSigningStageCreation({
+        ...base,
+        stage: 'ACT_ACCEPTANCE',
+        stageTabs: ['actAcceptance'],
+        signedStageTabs: new Set(['contract']),
+      }),
+    ).not.toThrow();
+  });
+
+  it('дата contractConcludedAt в форме открывает акты и Д/с при затёртом статусе', () => {
+    expect(() =>
+      validateSigningStageCreation({
+        ...base,
+        formData: {
+          contractConcludedAt: '2026-10-10T21:30:00.000Z',
+          addendumSlots: [{ status: 'OPEN', selectedPresetIds: ['preset-1'] }],
+        },
+        stage: 'ADDENDUM',
+        stageTabs: ['addendum1'],
+      }),
+    ).not.toThrow();
+  });
+
+  it('подписанный по ЭП договор нельзя отправить повторно даже без статуса', () => {
+    expect(() =>
+      validateSigningStageCreation({
+        ...base,
+        stage: 'CONTRACT',
+        stageTabs: ['contract'],
+        signedStageTabs: new Set(['contract']),
+      }),
+    ).toThrow('уже подписан');
+  });
+
+  it('подписанные по ЭП акты и Д/с повторно отправить нельзя', () => {
+    const concluded = { ...base, status: CONCLUDED };
+    expect(() =>
+      validateSigningStageCreation({
+        ...concluded,
+        stage: 'ACT_START',
+        stageTabs: ['actStart'],
+        signedStageTabs: new Set(['actStart']),
+      }),
+    ).toThrow('уже подписан по ЭП');
+    expect(() =>
+      validateSigningStageCreation({
+        ...concluded,
+        stage: 'ACT_ACCEPTANCE',
+        stageTabs: ['actAcceptance'],
+        signedStageTabs: new Set(['actAcceptance']),
+      }),
+    ).toThrow('уже подписан по ЭП');
+    expect(() =>
+      validateSigningStageCreation({
+        ...concluded,
+        formData: {
+          addendumSlots: [{ status: 'OPEN', selectedPresetIds: ['preset-1'] }],
+        },
+        stage: 'ADDENDUM',
+        stageTabs: ['addendum1'],
+        signedStageTabs: new Set(['addendum1']),
+      }),
+    ).toThrow('уже подписано по ЭП');
+  });
 });

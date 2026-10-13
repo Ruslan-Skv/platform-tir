@@ -17,7 +17,8 @@ import {
   type SigningSessionDocumentMeta,
   isUnsignedSigningAttachment,
 } from './signing-session-documents';
-import { assertSigningChronologyAtSign, detectSigningStage } from './signing-stage';
+import { assertSigningChronologyAtSign, detectSigningStage } from './stage/signing-stage';
+import { loadSignedStageTabIds } from './stage/signing-stage-evidence';
 import { SigningStageEffectsService } from './signing-stage-effects.service';
 
 const MAX_OTP_ATTEMPTS = 8;
@@ -178,11 +179,20 @@ export class ContractDocumentSigningPublicService {
     }
 
     // Хронология на момент подписания: акты — только после подписанного договора
-    // (статус пакета мог измениться после создания ссылки).
+    // (статус пакета мог измениться после создания ссылки). Подписанные сессии ЭП —
+    // самостоятельный признак: договор могли подписать, а formData — перезаписать.
     const stageInfo = detectSigningStage(
       (Array.isArray(row.documents) ? row.documents : []) as SigningSessionDocumentMeta[],
     );
-    assertSigningChronologyAtSign(stageInfo.stage, row.package.status);
+    if (stageInfo.stage && stageInfo.stage !== 'CONTRACT') {
+      assertSigningChronologyAtSign(
+        stageInfo.stage,
+        row.package.status,
+        await loadSignedStageTabIds(this.prisma, row.packageId),
+      );
+    } else {
+      assertSigningChronologyAtSign(stageInfo.stage, row.package.status);
+    }
 
     const updated = await this.prisma.contractDocumentSigningSession.update({
       where: { id: row.id },

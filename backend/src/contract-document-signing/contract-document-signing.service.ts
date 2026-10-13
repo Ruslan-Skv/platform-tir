@@ -13,7 +13,8 @@ import { SigningStampService } from './finalize/signing-stamp.service';
 import { SigningPackageMarkerService } from './signing-package-marker.service';
 import { managerDisplayName, resolveContractorInfo } from './signing-contractor-info';
 import { sendSigningOtpEmail } from './signing-emails';
-import { detectSigningStage, validateSigningStageCreation } from './signing-stage';
+import { detectSigningStage, validateSigningStageCreation } from './stage/signing-stage';
+import { loadSignedStageTabIds } from './stage/signing-stage-evidence';
 import { SigningStageEffectsService } from './signing-stage-effects.service';
 import {
   buildSignUrl,
@@ -95,6 +96,7 @@ export class ContractDocumentSigningService {
         kind: pkg.kind,
         status: pkg.status,
         formData: pkg.formData,
+        signedStageTabs: await loadSignedStageTabIds(this.prisma, packageId),
       });
     }
   }
@@ -137,6 +139,7 @@ export class ContractDocumentSigningService {
       kind: pkg.kind,
       status: pkg.status,
       formData: pkg.formData,
+      signedStageTabs: await loadSignedStageTabIds(this.prisma, input.packageId),
     });
 
     // Cancel previous active sessions for this package and release their number holds

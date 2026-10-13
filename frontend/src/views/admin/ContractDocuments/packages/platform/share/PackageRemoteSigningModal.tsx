@@ -183,9 +183,11 @@ export function PackageRemoteSigningModal({ isOpen, onClose, packageId, onCreate
   const message = useMemo(() => (created ? buildSigningShareMessage(created) : ''), [created]);
 
   // Правила этапов: договор и акты — отдельными сессиями, акты после договора.
+  // Подписанные сессии ЭП (бейдж «подписан ЭП») — самостоятельный признак того,
+  // что договор уже подписан, даже если форма пакета загружена до подписания.
   const stageProblem = useMemo(
-    () => (ctx ? remoteSigningStageProblem({ selectedTabs, ctx }) : null),
-    [ctx, selectedTabs]
+    () => (ctx ? remoteSigningStageProblem({ selectedTabs, ctx, signedTabs }) : null),
+    [ctx, selectedTabs, signedTabs]
   );
 
   const createSession = async () => {

@@ -4,9 +4,16 @@ import { ContractDocumentPackageKind, ContractDocumentPackageStatus, Prisma } fr
 import { PrismaService } from '../../database/prisma.service';
 import { ContractConcludedNotifyService } from '../../contract-concluded-notify/contract-concluded-notify.service';
 import { ContractDocumentSigningService } from '../../contract-document-signing/contract-document-signing.service';
+import { preserveRemoteSigningStateOnUpdate } from '../../contract-document-signing/stage/signing-state-preservation';
 import { RepairScheduleFromPackageService } from '../repair-schedules/repair-schedule-from-package.service';
 import { SalaryContractsSyncService } from '../salary/services/salary-contracts-sync.service';
 import { contractDocumentPackageInclude } from './contract-package.include';
+import {
+  customerNameFromFormData,
+  displayContractNumberFromFormData,
+  extractEstimatePresetIds,
+  extractSignatoryCrmUserId,
+} from './form/contract-package-form-read';
 import { CreateContractDocumentPackageDto } from './dto/create-contract-document-package.dto';
 import { UpdateContractDocumentPackageDto } from './dto/update-contract-document-package.dto';
 import { injectDefaultWorkPeriodIntoFormData } from './repair-contract-work-period';
@@ -31,7 +38,7 @@ export class ContractDocumentPackageCrudService {
   ) {}
 
   async create(dto: CreateContractDocumentPackageDto, createdById?: string) {
-    const fromFormSignatory = this.extractSignatoryCrmUserId(dto.formData);
+    const fromFormSignatory = extractSignatoryCrmUserId(dto.formData);
     const responsibleManagerId = await this.resolveResponsibleManagerId(
       dto.responsibleManagerId ?? fromFormSignatory,
       createdById,
@@ -121,8 +128,8 @@ export class ContractDocumentPackageCrudService {
     return {
       data: pageRows.map((pkg) => ({
         id: pkg.id,
-        contractNumber: this.displayContractNumberFromFormData(pkg.formData),
-        customerName: this.customerNameFromFormData(pkg.formData),
+        contractNumber: displayContractNumberFromFormData(pkg.formData),
+        customerName: customerNameFromFormData(pkg.formData),
         title: pkg.title,
         deletedAt: pkg.deletedAt!.toISOString(),
         deletedBy: pkg.deletedBy,
@@ -142,24 +149,37 @@ export class ContractDocumentPackageCrudService {
         expectedKind: row.kind,
       });
     }
+    /**
+     * Признаки подписания (contractConcludedAt, статусы Д/с, отметки актов, маркер
+     * _remoteSigning) могли быть записаны ЭП-флоу уже после того, как отправляющая
+     * сторона загрузила форму, — устаревшая форма редактора их не затирает.
+     */
+    const { formToUpdate, statusToUpdate } = await preserveRemoteSigningStateOnUpdate(this.prisma, {
+      packageId: id,
+      logger: this.logger,
+      storedFormData: row.formData,
+      incomingFormData: dto.formData,
+      incomingStatus: dto.status,
+      storedStatus: row.status,
+    });
+
     const responsibleManagerId =
       dto.responsibleManagerId !== undefined
         ? await this.resolveResponsibleManagerId(dto.responsibleManagerId, null)
-        : dto.formData !== undefined
+        : formToUpdate !== undefined
           ? await this.resolveResponsibleManagerId(
-              this.extractSignatoryCrmUserId(dto.formData) ?? row.responsibleManagerId,
+              extractSignatoryCrmUserId(formToUpdate) ?? row.responsibleManagerId,
               null,
             )
           : undefined;
     const recordVersion = dto.recordVersion === true;
     const becomingConcluded =
-      dto.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
+      statusToUpdate === ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
       row.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED;
 
     if (becomingConcluded && row.kind === ContractDocumentPackageKind.REPAIR) {
-      const effectiveForm =
-        dto.formData !== undefined ? dto.formData : row.formData !== undefined ? row.formData : {};
-      if (this.extractEstimatePresetIds(effectiveForm).length === 0) {
+      const effectiveForm = formToUpdate !== undefined ? formToUpdate : (row.formData ?? {});
+      if (extractEstimatePresetIds(effectiveForm).length === 0) {
         throw new BadRequestException(
           'Договор «Ремонт» нельзя отметить подписанным без прикреплённой сметы (расчёта)',
         );
@@ -167,10 +187,9 @@ export class ContractDocumentPackageCrudService {
     }
 
     let formDataToSave: Prisma.InputJsonValue | undefined =
-      dto.formData !== undefined ? (dto.formData as Prisma.InputJsonValue) : undefined;
+      formToUpdate !== undefined ? (formToUpdate as Prisma.InputJsonValue) : undefined;
     if (becomingConcluded) {
-      const baseForm =
-        dto.formData !== undefined ? dto.formData : row.formData !== undefined ? row.formData : {};
+      const baseForm = formToUpdate !== undefined ? formToUpdate : (row.formData ?? {});
       try {
         formDataToSave = (await this.contractNumbering.finalizeFormDataNumbersOnConclude(
           row.kind,
@@ -194,7 +213,7 @@ export class ContractDocumentPackageCrudService {
         ...(dto.title !== undefined ? { title: dto.title } : {}),
         ...(formDataToSave !== undefined ? { formData: formDataToSave } : {}),
         ...(responsibleManagerId !== undefined ? { responsibleManagerId } : {}),
-        ...(dto.status !== undefined ? { status: dto.status } : {}),
+        ...(statusToUpdate !== undefined ? { status: statusToUpdate } : {}),
       },
       include: contractDocumentPackageInclude,
     });
@@ -323,7 +342,7 @@ export class ContractDocumentPackageCrudService {
         'Нельзя удалить пакет с зарегистрированными оплатами. Сначала удалите записи об оплатах.',
       );
     }
-    const estimatePresetIds = this.extractEstimatePresetIds(row.formData);
+    const estimatePresetIds = extractEstimatePresetIds(row.formData);
     if (estimatePresetIds.length > 0) {
       throw new BadRequestException(
         'Нельзя удалить договор с прикреплённым расчётом. Сначала отвяжите его на вкладке сметы (счёт-заказа).',
@@ -367,14 +386,6 @@ export class ContractDocumentPackageCrudService {
     return this.moveToTrash(id, actorUserId);
   }
 
-  private extractSignatoryCrmUserId(formData: unknown): string | null {
-    if (!formData || typeof formData !== 'object') return null;
-    const executor = (formData as Record<string, unknown>).executor;
-    if (!executor || typeof executor !== 'object') return null;
-    const id = (executor as Record<string, unknown>).signatoryCrmUserId;
-    return typeof id === 'string' && id.trim() ? id.trim() : null;
-  }
-
   private async resolveResponsibleManagerId(
     candidateId: string | null | undefined,
     fallbackUserId?: string | null,
@@ -392,23 +403,6 @@ export class ContractDocumentPackageCrudService {
     return user.id;
   }
 
-  private extractEstimatePresetIds(formData: unknown): string[] {
-    if (!formData || typeof formData !== 'object') return [];
-    const est = (formData as Record<string, unknown>).estimate;
-    if (!est || typeof est !== 'object') return [];
-    const e = est as Record<string, unknown>;
-    const ids: string[] = [];
-    if (typeof e.selectedPresetId === 'string' && e.selectedPresetId.trim()) {
-      ids.push(e.selectedPresetId.trim());
-    }
-    if (Array.isArray(e.selectedPresetIds)) {
-      for (const x of e.selectedPresetIds) {
-        if (typeof x === 'string' && x.trim()) ids.push(x.trim());
-      }
-    }
-    return [...new Set(ids)];
-  }
-
   /**
    * Расчёт можно прикрепить только к одному пакету — любого направления.
    * Направление расчёта должно совпадать с направлением пакета (`expectedKind`).
@@ -423,12 +417,12 @@ export class ContractDocumentPackageCrudService {
       expectedKind?: ContractDocumentPackageKind;
     },
   ): Promise<void> {
-    const ids = this.extractEstimatePresetIds(formData);
+    const ids = extractEstimatePresetIds(formData);
     if (ids.length === 0) return;
 
     const previousIds =
       options?.previousFormData !== undefined
-        ? new Set(this.extractEstimatePresetIds(options.previousFormData))
+        ? new Set(extractEstimatePresetIds(options.previousFormData))
         : null;
     // Валидируем только новые привязки: сохранение/снятие старых не должно падать
     // из-за двойных привязок, оставшихся в данных до кросс-видовой проверки.
@@ -445,7 +439,7 @@ export class ContractDocumentPackageCrudService {
       select: { id: true, formData: true },
     });
     for (const pkg of others) {
-      const otherIds = this.extractEstimatePresetIds(pkg.formData);
+      const otherIds = extractEstimatePresetIds(pkg.formData);
       const conflict = addedIds.find((id) => otherIds.includes(id));
       if (conflict) {
         throw new BadRequestException(
@@ -453,51 +447,6 @@ export class ContractDocumentPackageCrudService {
         );
       }
     }
-  }
-
-  private displayContractNumberFromFormData(formData: unknown): string {
-    if (!formData || typeof formData !== 'object') return '—';
-    const fd = formData as Record<string, unknown>;
-    const contract =
-      fd.contract && typeof fd.contract === 'object'
-        ? (fd.contract as Record<string, unknown>)
-        : null;
-    const num = typeof contract?.number === 'string' ? contract.number.trim() : '';
-    if (num) return num;
-    const furniture = fd.furniture;
-    if (furniture && typeof furniture === 'object') {
-      const legs = furniture as Record<string, unknown>;
-      const parts: string[] = [];
-      for (const key of ['manufacture', 'montage', 'appliances'] as const) {
-        const leg = legs[key];
-        if (!leg || typeof leg !== 'object') continue;
-        const enabled = (leg as { enabled?: unknown }).enabled;
-        if (key !== 'manufacture' && enabled !== true) continue;
-        const legContract = (leg as { contract?: unknown }).contract;
-        if (!legContract || typeof legContract !== 'object') continue;
-        const legNum = (legContract as { number?: unknown }).number;
-        if (typeof legNum === 'string' && legNum.trim()) parts.push(legNum.trim());
-      }
-      if (parts.length > 0) return parts.join(' / ');
-    }
-    return '—';
-  }
-
-  private customerNameFromFormData(formData: unknown): string {
-    if (!formData || typeof formData !== 'object') return '—';
-    const fd = formData as Record<string, unknown>;
-    const c =
-      fd.customer && typeof fd.customer === 'object'
-        ? (fd.customer as Record<string, unknown>)
-        : null;
-    if (!c) return '—';
-    const type = c.type;
-    if (type === 'COMPANY' || type === 'ENTREPRENEUR') {
-      const org = typeof c.organizationName === 'string' ? c.organizationName.trim() : '';
-      return org || '—';
-    }
-    const full = typeof c.fullName === 'string' ? c.fullName.trim() : '';
-    return full || '—';
   }
 
   private packageMatchesTrashSearch(
@@ -508,8 +457,8 @@ export class ContractDocumentPackageCrudService {
     searchNorm: string,
   ): boolean {
     const haystack = [
-      this.displayContractNumberFromFormData(pkg.formData),
-      this.customerNameFromFormData(pkg.formData),
+      displayContractNumberFromFormData(pkg.formData),
+      customerNameFromFormData(pkg.formData),
       pkg.title ?? '',
     ]
       .join(' ')

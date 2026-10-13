@@ -32,6 +32,11 @@ export function detectSigningStage(documents: Array<{ tabId: string }>): {
   return { stage: STAGE_BY_TAB[stageTabs[0]!]!, stageTabs, stageTab: stageTabs[0]! };
 }
 
+/** Таб образует этап подписания (договор, акты, Д/с). */
+export function isSigningStageTab(tab: string): boolean {
+  return tab in STAGE_BY_TAB;
+}
+
 /** «addendum3» → 3; не Д/с-таб → null. */
 export function addendumOrdinalFromTab(tab: string | null | undefined): number | null {
   const match = /^addendum([1-5])$/.exec(tab ?? '');
@@ -99,6 +104,10 @@ function addendumSlotHasData(slot: Record<string, unknown> | null): boolean {
  * - повторное подписание уже подписанного документа запрещено;
  * - «Акт начала работ» — только для направления «Ремонт»;
  * - Д/с подписывается только с прикреплённым расчётом (спецификацией).
+ *
+ * Договор считается подписанным не только по статусу пакета: дата contractConcludedAt
+ * в formData и подписанная (SIGNED) сессия ЭП с договором — самостоятельные признаки
+ * (устаревшая форма редактора могла затереть часть из них).
  */
 export function validateSigningStageCreation(input: {
   stage: SigningStage;
@@ -106,14 +115,20 @@ export function validateSigningStageCreation(input: {
   kind: ContractDocumentPackageKind;
   status: ContractDocumentPackageStatus;
   formData: unknown;
+  /** Этапные табы с подписанными (SIGNED) сессиями ЭП. */
+  signedStageTabs?: ReadonlySet<string>;
 }): void {
   if (input.stageTabs.length > 1) {
     throw new BadRequestException(
       'Нельзя объединять в одной ссылке договор, акты и доп. соглашения — отправьте их отдельными сессиями: сначала договор, затем акты и Д/с.',
     );
   }
+  const contractConcluded =
+    input.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED ||
+    formField(input.formData, 'contractConcludedAt') !== '' ||
+    input.signedStageTabs?.has('contract') === true;
   if (input.stage === 'CONTRACT') {
-    if (input.status === ContractDocumentPackageStatus.CONTRACT_CONCLUDED) {
+    if (contractConcluded) {
       throw new BadRequestException(
         'Договор уже подписан. Для изменений используйте доп. соглашения (Д/с) или направьте документы без вкладки «Договор».',
       );
@@ -128,7 +143,7 @@ export function validateSigningStageCreation(input: {
     input.stage === 'ACT_ACCEPTANCE' ||
     input.stage === 'ADDENDUM'
   ) {
-    if (input.status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED) {
+    if (!contractConcluded) {
       throw new BadRequestException(
         `Сначала подпишите договор: «${signingStageLabel(input.stage, input.stageTabs[0])}» направляется заказчику после подписания договора.`,
       );
@@ -145,11 +160,21 @@ export function validateSigningStageCreation(input: {
         'Акт начала работ уже отмечен подписанным — повторная отправка на ЭП не требуется.',
       );
     }
+    if (input.signedStageTabs?.has('actStart')) {
+      throw new BadRequestException(
+        'Акт начала работ уже подписан по ЭП — повторная отправка не требуется.',
+      );
+    }
   }
   if (input.stage === 'ACT_ACCEPTANCE') {
     if (formField(input.formData, 'repairContractCloseActSignedAt')) {
       throw new BadRequestException(
         'Акт сдачи-приёмки уже отмечен подписанным — повторная отправка на ЭП не требуется.',
+      );
+    }
+    if (input.signedStageTabs?.has('actAcceptance')) {
+      throw new BadRequestException(
+        'Акт сдачи-приёмки уже подписан по ЭП — повторная отправка не требуется.',
       );
     }
   }
@@ -166,6 +191,11 @@ export function validateSigningStageCreation(input: {
         `Доп. соглашение №${ordinal} уже отмечено подписанным — повторная отправка на ЭП не требуется.`,
       );
     }
+    if (ordinal && input.signedStageTabs?.has(`addendum${ordinal}`)) {
+      throw new BadRequestException(
+        `Доп. соглашение №${ordinal} уже подписано по ЭП — повторная отправка не требуется.`,
+      );
+    }
   }
 }
 
@@ -173,11 +203,16 @@ export function validateSigningStageCreation(input: {
 export function assertSigningChronologyAtSign(
   stage: SigningStage,
   status: ContractDocumentPackageStatus,
+  /** Этапные табы с подписанными (SIGNED) сессиями ЭП — договор мог подписать ЭП-флоу. */
+  signedStageTabs?: ReadonlySet<string>,
 ): void {
   if (stage !== 'ACT_START' && stage !== 'ACT_ACCEPTANCE' && stage !== 'ADDENDUM') {
     return;
   }
-  if (status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED) {
+  if (
+    status !== ContractDocumentPackageStatus.CONTRACT_CONCLUDED &&
+    signedStageTabs?.has('contract') !== true
+  ) {
     throw new BadRequestException(
       `Подписание «${signingStageLabel(stage)}» недоступно: договор ещё не подписан. Запросите у менеджера новую ссылку после подписания договора.`,
     );
