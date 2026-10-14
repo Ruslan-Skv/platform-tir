@@ -193,6 +193,8 @@ export function useSalaryCalc(contractsRevision: number, settingsRevision: numbe
   const openSettlement = useCallback(async (id: string) => {
     try {
       setActiveSettlement(await getSalarySettlement(id));
+      // Баннер зафиксированной ведомости — вверху вкладки; кнопка «Открыть» — внизу.
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Не удалось открыть расчёт');
     }

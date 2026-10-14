@@ -61,7 +61,7 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
   ];
 
   return (
-    <div className={styles.tabSection}>
+    <div className={`${styles.tabSection}${isSnapshot ? ` ${styles.tabSectionSnapshot}` : ''}`}>
       {isSnapshot && model.activeSettlement ? (
         <div className={styles.snapshotBanner} role="status">
           <span>
@@ -258,6 +258,7 @@ export function SalaryCalcView({ model, offices, users, canEdit }: CalcViewProps
           <FundsTable result={shown} />
           <OfficesTable result={shown} />
           <PeopleTables result={shown} />
+          <SalariesTable result={shown} />
           <ContractsTable result={shown} />
         </>
       )}
@@ -763,84 +764,6 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
           />
         </div>
       ) : null}
-      {(result.salaries ?? []).length > 0 ? (
-        <div className={styles.tableBlock}>
-          <h2 className={styles.sectionTitle}>Оклады</h2>
-          <DataTable
-            data={result.salaries ?? []}
-            columns={[
-              {
-                key: 'userName',
-                title: 'Сотрудник',
-                sortable: true,
-                render: (s) => <span className={styles.nameCell}>{s.userName ?? '—'}</span>,
-              },
-              {
-                key: 'monthlySalary',
-                title: 'Оклад, ₽/мес',
-                sortable: true,
-                render: (s) => (
-                  <span className={dpStyles.amountCell}>{formatMoney(s.monthlySalary)}</span>
-                ),
-              },
-              {
-                key: 'days',
-                title: 'Дней в периоде',
-                sortable: true,
-                render: (s) => <span className={styles.numCell}>{s.days}</span>,
-              },
-              {
-                key: 'violationsCount',
-                title: 'Нарушений режима',
-                sortable: true,
-                render: (s) => (
-                  <span className={styles.numCell}>
-                    {s.violationsCount
-                      ? `${s.violationsCount} (−${formatMoneyShort(s.penalty ?? 0)})`
-                      : '—'}
-                  </span>
-                ),
-              },
-              {
-                key: 'autoCloseCount',
-                title: 'Автозакрытий',
-                sortable: true,
-                render: (s) => (
-                  <span className={styles.numCell}>
-                    {s.autoCloseCount
-                      ? `${s.autoCloseCount} (−${formatMoneyShort(s.autoClosePenalty ?? 0)})`
-                      : '—'}
-                  </span>
-                ),
-              },
-              {
-                key: 'truancyDays',
-                title: 'Прогулов',
-                sortable: true,
-                render: (s) => (
-                  <span className={styles.numCell}>
-                    {s.truancyDays
-                      ? `${s.truancyDays} (−${formatMoneyShort(s.truancyDeduction ?? 0)})`
-                      : '—'}
-                  </span>
-                ),
-              },
-              {
-                key: 'amount',
-                title: 'К выплате',
-                sortable: true,
-                render: (s) => (
-                  <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
-                    {formatMoney(s.amount)}
-                  </span>
-                ),
-              },
-            ]}
-            keyExtractor={(s) => s.userId}
-            emptyMessage="Нет начислений"
-          />
-        </div>
-      ) : null}
       {(result.salesBonuses ?? []).length > 0 ? (
         <div className={styles.tableBlock}>
           <h2 className={styles.sectionTitle}>Премии за продажи (итоги ДП)</h2>
@@ -1017,6 +940,89 @@ function PeopleTables({ result }: { result: SalaryCalcResult }) {
           />
         </div>
       ) : null}
+    </div>
+  );
+}
+
+/** Оклады за период — отдельным блоком на всю ширину. */
+function SalariesTable({ result }: { result: SalaryCalcResult }) {
+  if ((result.salaries ?? []).length === 0) return null;
+  return (
+    <div className={styles.tableBlock}>
+      <h2 className={styles.sectionTitle}>Оклады</h2>
+      <DataTable
+        data={result.salaries ?? []}
+        columns={[
+          {
+            key: 'userName',
+            title: 'Сотрудник',
+            sortable: true,
+            render: (s) => <span className={styles.nameCell}>{s.userName ?? '—'}</span>,
+          },
+          {
+            key: 'monthlySalary',
+            title: 'Оклад, ₽/мес',
+            sortable: true,
+            render: (s) => (
+              <span className={dpStyles.amountCell}>{formatMoney(s.monthlySalary)}</span>
+            ),
+          },
+          {
+            key: 'days',
+            title: 'Дней в периоде',
+            sortable: true,
+            render: (s) => <span className={styles.numCell}>{s.days}</span>,
+          },
+          {
+            key: 'violationsCount',
+            title: 'Нарушений режима',
+            sortable: true,
+            render: (s) => (
+              <span className={styles.numCell}>
+                {s.violationsCount
+                  ? `${s.violationsCount} (−${formatMoneyShort(s.penalty ?? 0)})`
+                  : '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'autoCloseCount',
+            title: 'Автозакрытий',
+            sortable: true,
+            render: (s) => (
+              <span className={styles.numCell}>
+                {s.autoCloseCount
+                  ? `${s.autoCloseCount} (−${formatMoneyShort(s.autoClosePenalty ?? 0)})`
+                  : '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'truancyDays',
+            title: 'Прогулов',
+            sortable: true,
+            render: (s) => (
+              <span className={styles.numCell}>
+                {s.truancyDays
+                  ? `${s.truancyDays} (−${formatMoneyShort(s.truancyDeduction ?? 0)})`
+                  : '—'}
+              </span>
+            ),
+          },
+          {
+            key: 'amount',
+            title: 'К выплате',
+            sortable: true,
+            render: (s) => (
+              <span className={`${dpStyles.amountCell} ${styles.totalCell}`}>
+                {formatMoney(s.amount)}
+              </span>
+            ),
+          },
+        ]}
+        keyExtractor={(s) => s.userId}
+        emptyMessage="Нет начислений"
+      />
     </div>
   );
 }

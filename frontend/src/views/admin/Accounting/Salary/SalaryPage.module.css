@@ -13,6 +13,16 @@
   gap: var(--admin-space-xl, 12px);
 }
 
+/* Режим просмотра зафиксированной ведомости: вся вкладка на подкрашенном фоне
+   с пунктирной рамкой — переключение с живого расчёта видно при любом скролле.
+   Тон полупрозрачный, чтобы синий баннер сверху оставался заметен на его фоне. */
+.tabSectionSnapshot {
+  background: rgb(59 130 246 / 0.06);
+  border: 1px dashed var(--admin-info-border, #93c5fd);
+  border-radius: var(--admin-radius-xl, 12px);
+  padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
+}
+
 /* ===== Вкладки раздела — ярлычки как у «В работе / В перспективе / В договорах» расчётов ===== */
 
 /* Колонка шапки: строка заголовка + ярлычки вкладок под ней. */
@@ -134,11 +144,14 @@
   align-items: center;
   background: var(--admin-info-bg-soft, #eff6ff);
   border: 1px solid var(--admin-info-border, #93c5fd);
+  /* Акцентная полоса — баннер заметен и на подкрашенном фоне вкладки-снимка. */
+  border-left: 4px solid var(--admin-info, #3b82f6);
   border-radius: var(--admin-radius-md, 8px);
   color: var(--admin-info-strong, #1d4ed8);
   display: flex;
   flex-wrap: wrap;
   font-size: var(--admin-font-size-sm, 0.8125rem);
+  font-weight: 600;
   gap: var(--admin-space-md, 8px);
   justify-content: space-between;
   padding: var(--admin-space-md, 8px) var(--admin-space-lg, 10px);
@@ -625,6 +638,11 @@
 
   .badgeCommon {
     background: rgb(120 84 10 / 0.22);
+  }
+
+  .tabSectionSnapshot {
+    background: rgb(59 130 246 / 0.1);
+    border-color: rgb(96 165 250 / 0.35);
   }
 
   .settingsPanel input,
